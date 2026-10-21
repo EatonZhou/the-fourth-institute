@@ -4,7 +4,7 @@ from functools import lru_cache
 from html import escape
 from html.parser import HTMLParser
 import json
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 import re
 
 
@@ -28,20 +28,22 @@ def _public_paths() -> dict[str, str]:
     from management_common.site_config import read_site_config
 
     def directory(key, value):
-        # Validate authored values before resolution can erase traversal. The
-        # browser's root contract also excludes backslashes and control chars.
+        # Validate traversal before resolution. Windows accepts either native
+        # separator; the browser receives the resolved path with forward slashes.
         def invalid(text):
             return (not isinstance(text, str) or not text.strip()
                     or re.search(r"[\\\x00-\x1f\x7f-\x9f]", text)
                     or ".." in text.split("/"))
 
-        if invalid(value):
+        authored = (value.replace("\\", "/") if isinstance(value, str)
+                    and isinstance(portal_paths.PORTAL_ROOT, PureWindowsPath) else value)
+        if invalid(authored):
             raise ValueError(f"Invalid public directory: {key}")
         try:
             resolved = portal_paths.resolve_directory(value)
         except (OSError, RuntimeError, ValueError):
             raise ValueError(f"Invalid public directory: {key}") from None
-        text = str(resolved)
+        text = resolved.as_posix()
         if invalid(text) or not resolved.is_absolute() or resolved.parent == resolved:
             raise ValueError(f"Invalid public directory: {key}")
         return text

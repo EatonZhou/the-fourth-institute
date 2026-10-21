@@ -141,6 +141,40 @@ INSERT INTO "s"."t" ("a") VALUES ('body\nINSERT INTO "x"."y" ("z") VALUES (1);')
             self.assertEqual(saved['observed'], result)
             self.assertIn('fixture startup failure', saved['component_log_tails']['worker'])
 
+    def test_login_http_failure_keeps_status_and_running_web_log(self):
+        """进程仍运行时，登录页 500 也保留 HTTP 状态及有界 web 日志。"""
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / 'runtime').mkdir()
+            target = {'install_root': str(root), 'service_prefix': 'tfi-fixture', 'run_id': 'fixture',
+                      'supervisor_resident_id': '', 'ports': {'web': 28000}, 'bind': '127.0.0.1', 'python': sys.executable}
+            state = {'target': target}
+            (root / 'runtime/worker-health.json').write_text(json.dumps({
+                'ok': True, 'instance': 'tfi-fixture', 'updated_at': installer.time.time()}))
+            (root / 'runtime/web.log').write_text('old-start-marker\n' + 'old output\n' * 2000
+                + 'Traceback (most recent call last):\nValueError: Invalid public directory: share_root\n')
+            health = Mock(status=200)
+            health.__enter__ = Mock(return_value=health)
+            health.__exit__ = Mock(return_value=False)
+            health.read.return_value = json.dumps({'ok': True, 'instance': 'tfi-fixture',
+                'execution_layer': {'ok': True}, 'society_service': {'ok': True}}).encode()
+            login = HTTPError('http://localhost/login', 500, 'Internal Server Error', {}, io.BytesIO(b'Internal Server Error'))
+            controller = Mock()
+            controller.status.side_effect = lambda name: {'service': name, 'active': 'active'}
+            with patch.object(installer, 'service_controller', return_value=controller), \
+                    patch.object(installer, 'urlopen', side_effect=[health, login]):
+                result = installer.observed_status(state)
+            self.assertEqual(result['status'], 'unhealthy')
+            self.assertEqual(result['checks'][1]['http_status'], 500)
+            self.assertEqual(installer.health_failures(result), ['/login: HTTP 500'])
+            error = installer.health_failure(state, result)
+            self.assertIn('/login: HTTP 500', error)
+            self.assertIn('ValueError: Invalid public directory: share_root', error)
+            self.assertNotIn('old-start-marker', error)
+            saved = json.loads((root / 'runtime/startup-diagnostics.json').read_text())
+            self.assertEqual(set(saved['component_log_tails']), {'web'})
+            self.assertEqual(saved['observed'], result)
+
 
 @unittest.skipUnless(os.getenv('TFI_TEST_POSTGRES_ROOT'), 'Requires an explicit disposable PostgreSQL binary directory')
 class SeedDatabase(unittest.TestCase):
