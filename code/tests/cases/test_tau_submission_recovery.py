@@ -171,6 +171,32 @@ def test_proven_unaccepted_request_ends_without_send_or_cancel(tmp_path, config)
     assert adapter.cleanup_ready(run_dir=tmp_path / "evidence")
 
 
+def test_pre_submission_lifecycle_rejection_does_not_create_unknown_input(tmp_path, config, monkeypatch):
+    """投递前资源归属检查拒绝时不发送输入，也不进入未知回执循环"""
+    from management_common.resource_lifecycle import LifecycleStore
+
+    def reject(_self, _scope, _actor):
+        raise ValueError("Resident still belongs to an unfinished resource lifecycle")
+
+    monkeypatch.setattr(LifecycleStore, "bind", reject)
+
+    def invoke(**kwargs):
+        kwargs["on_assigned"](PENDING)
+        pytest.fail("submission must stop before the instruction is sent")
+
+    adapter = TauAdapter(config, invoke, lambda _: _verified_dev_target(),
+                         resolve_submission=lambda **_: pytest.fail("no submission to resolve"),
+                         cancel_invocation=lambda *args: pytest.fail("no input to cancel"))
+    persisted = []
+    outcome = execute(adapter, tmp_path, on_submitted=persisted.append)
+    assert outcome.status == "unsupported"
+    assert "unfinished resource lifecycle" in outcome.details["summary"]
+    assert persisted == []
+    checkpoint = json.loads((tmp_path / "evidence" / "tau-invocation.json").read_text())
+    assert checkpoint["handle"]["submission_state"] == "not_submitted"
+    assert adapter.cleanup_ready(run_dir=tmp_path / "evidence")
+
+
 @pytest.mark.parametrize("crash", [False, True])
 def test_campaign_preserves_unresolved_work_and_recovers_without_retrigger(tmp_path, config, monkeypatch, crash):
     """提交结果未知或执行器崩溃时 TAU 运行保持进行中，下次执行观察原请求而不重发"""
