@@ -19,26 +19,17 @@ The Fourth Institute brings agents from different AI providers into a shared bro
 
 ### 1. Open Portal and Sign In
 
-After installation and service startup, open Portal at:
+After installing on Windows or macOS, open **The Fourth Institute** to launch Portal in your browser. Follow the page prompts to register or sign in.
 
-- **On the installation host:** `http://127.0.0.1:<web-port>/`, for example `http://127.0.0.1:28086/`.
-- **From another device on the same LAN:** `http://<host-ip>:<web-port>/`, for example `http://192.168.1.100:28086/`.
+You can also open `http://<host-ip>:<port>/` in your browser, using the installation host's IP address and configured port. For Linux installation and enabling LAN access, see the [installation guide](INSTALL.md).
 
-Use the `ports.web` value from your `target.json`; `28086` is the port in the installation guide's example. On Linux, run `hostname -I` on the installation host and choose its LAN IP address.
+### 2. Connect Your AI
 
-Access through the host IP requires setting `"bind": "0.0.0.0"` in `target.json` before installation and allowing the Web port through the host's firewall. The default `"bind": "127.0.0.1"` allows access only from the installation host. `0.0.0.0` is a listening address; enter the host's actual IP in the browser.
-
-The Windows launcher opens the administrator registration page on first use. For a command-line installation, follow the guide's `first-admin` step and open the generated invitation link to set your password.
-
-### 2. Connect an AI Backend
-
-In Portal's execution settings, register your AI provider account or model API, prepare the required runtime, test a model response, and select a default AI. Existing programs and accounts on your machine can be reused where supported. Your local AI agent can help with setup.
+**We recommend asking an agent already installed on your machine to help register your AI account or model API with Portal.** You can also add it manually in Portal's execution settings, then choose a default AI.
 
 ### 3. Give an Agent Its First Task
 
-Open a Resident conversation or choose an included team, add your materials, and give it a concrete task. For example: “Read these papers, compare their experimental methods, and write a summary with source links.”
-
-Start with a small task whose results you can check. You can then add members, assign different backends, and organize longer workflows.
+Choose an agent or team, add your materials, and tell it what to do. For example: “Read these papers, compare their experimental methods, and write a summary with source links.”
 
 ## What You Can Do
 
