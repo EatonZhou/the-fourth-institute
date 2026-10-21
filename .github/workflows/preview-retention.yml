@@ -1,0 +1,32 @@
+name: Clean old preview installers
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/preview-retention.yml
+      - code/scripts/tfi_preview_retention.py
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [windows, macos]
+    concurrency:
+      group: ${{ matrix.platform }}-preview-release
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Remove older previews and tags
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: python3 code/scripts/tfi_preview_retention.py --platform "${{ matrix.platform }}"

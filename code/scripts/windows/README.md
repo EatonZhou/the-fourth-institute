@@ -118,6 +118,9 @@ Windows 当前仍为试用版。安装包、SHA-256 和构建收据发布在本�
 [GitHub Releases](https://github.com/EatonZhou/the-fourth-institute/releases)，中英文 README 提供对应版本入口。
 修改 `release.json` 的版本号并发布到 main 后，Windows preview installer 工作流从该提交
 构建、校验两种案例工程和 EXE，再上传为 prerelease。安装包不写入 Git 文件历史。
+新版发布且附件齐全后，仅保留最新 Windows 试用版，自动删除更旧的试用版 Release、
+安装附件及对应标签。发布失败或缺件时保留当前可用版本。历史版本下载链接会失效。
+`Clean old preview installers` 工作流也可清理现有 Windows/macOS 旧版本，各平台独立保留最新版。
 
 首次安装复用安装器刚完成的就绪检查，直接准备注册入口，不再重复启动服务。
 后续桌面启动和安装器使用同一个就绪检查：等待上限约 120 秒，HTTP 单次最长 3 秒，

@@ -637,9 +637,12 @@ class WindowsPreviewPublishing(unittest.TestCase):
                     patch.object(sys, 'argv', ['publish.py', '--commit', 'a' * 40]), \
                     patch.object(publish.subprocess, 'run') as upload:
                 publish.main()
-                self.assertIn('--prerelease', upload.call_args.args[0])
-                self.assertIn(str(exe), upload.call_args.args[0])
-                self.assertIn(str(build / 'receipt.json'), upload.call_args.args[0])
+                self.assertIn('--prerelease', upload.call_args_list[0].args[0])
+                self.assertIn(str(exe), upload.call_args_list[0].args[0])
+                self.assertIn(str(build / 'receipt.json'), upload.call_args_list[0].args[0])
+                self.assertEqual(upload.call_count, 2)
+                self.assertEqual(upload.call_args.args[0][-2:], ['--platform', 'windows'])
+                self.assertTrue(upload.call_args.args[0][1].endswith('tfi_preview_retention.py'))
                 upload.reset_mock()
                 for field, value in [('source_commit', 'b' * 40), ('source_dirty', True),
                                      ('prepared_engineering_validation', 'not_run'),
@@ -648,3 +651,8 @@ class WindowsPreviewPublishing(unittest.TestCase):
                     with self.subTest(field=field), self.assertRaises(ValueError):
                         publish.main()
                     upload.assert_not_called()
+                (build / 'receipt.json').write_text(json.dumps(receipt))
+                upload.side_effect = subprocess.CalledProcessError(1, ['gh', 'release', 'create'])
+                with self.assertRaises(subprocess.CalledProcessError):
+                    publish.main()
+                self.assertEqual(upload.call_count, 1)

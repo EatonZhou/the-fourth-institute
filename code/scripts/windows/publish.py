@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import re
 import subprocess
+import sys
 
 REPO = Path(__file__).resolve().parents[3]
 
@@ -35,6 +36,8 @@ def main():
                     '--notes-file', str(Path(__file__).with_name('RELEASE.md')),
                     str(exe), str(build / (exe.name + '.sha256')),
                     str(build / 'receipt.json')], cwd=REPO, check=True)
+    subprocess.run([sys.executable, str(Path(__file__).resolve().parents[1] / 'tfi_preview_retention.py'),
+                    '--platform', 'windows'], cwd=REPO, check=True)
 
 
 if __name__ == '__main__':
