@@ -80,6 +80,8 @@ DECLARATIONS = (
         P("secret", description="一次性密钥，只写入站点密钥文件，不回显"),
         P("provider", description="服务商名称"),
         P("routes", "array", "明确绑定的服务路线；每项包含 backend 和 route_id", items={"type": "object"}),
+        P("models", "array", "模型目录；每项含唯一的 id，可选 reasoning_efforts（该模型接受的推理强度，"
+          "如 low、medium、high）、enabled 等", items={"type": "object"}),
         P("default_parameters", "object", "协议允许的默认生成参数"),
         P("timeout_seconds", "number", "单次请求超时秒数，默认 360", minimum=1),
         P("retries", "integer", "请求失败后的重试次数，默认 0", minimum=0),
@@ -87,7 +89,7 @@ DECLARATIONS = (
     ), (MODEL_API,), mutates=True, owner="execution"),
     _d("UpdateModelApi", FIXED, "修改一个模型接口的登记。", (
         R("api_id", description="模型接口 ID"),
-        R("changes", "object", "要修改的登记字段，如 base_url、default_model、enabled；不能改 api_id"),
+        R("changes", "object", "要修改的登记字段，如 base_url、default_model、models、enabled；不能改 api_id"),
         P("secret", description="一次性密钥")), (
         MODEL_API, R("version", "integer", "修改后的登记版本"),
     ), mutates=True, target="api_id", owner="execution"),
