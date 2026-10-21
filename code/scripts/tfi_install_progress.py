@@ -22,8 +22,21 @@ class FileProgress:
         if self.files == self.total_files or time.monotonic() - self.last >= 0.25:
             self.report()
 
+    def advance_bytes(self, size):
+        """Report a large file while it is still being read or decompressed."""
+        self.bytes += size
+        if time.monotonic() - self.last >= 0.25:
+            self.report()
+
     def report(self):
         self.last = time.monotonic()
         percent = int(100 * self.bytes / self.total_bytes) if self.total_bytes else (100 if self.files == self.total_files else 0)
         self.callback(f'{self.label}：{self.files}/{self.total_files} 个文件'
                       f'（{percent}%，{self.bytes / 1048576:.1f}/{self.total_bytes / 1048576:.1f} MiB）')
+
+
+def copy_stream(source, output, meter):
+    while chunk := source.read(1024 * 1024):
+        output.write(chunk)
+        meter.advance_bytes(len(chunk))
+    meter.advance(0)

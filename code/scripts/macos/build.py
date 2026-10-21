@@ -41,9 +41,13 @@ def smoke(executable, destination, included):
         command(argv, timeout=900)
         state_path = destination / "instance/desktop/installation.json"
         before = json.loads(state_path.read_text())
-        manifest = json.loads((destination / ".build/example_instance-macos/engineering/manifest.json").read_text())
+        manifest = json.loads((destination / ".build/m/engineering/manifest.json").read_text())
         if manifest["include_examples"] != included:
             raise ValueError("Selected seed was not used")
+        if (destination / 'instance/example_instance/seed').exists() or any(destination.glob('*-engineering.zip')):
+            raise ValueError("Desktop retained a redundant seed or engineering archive copy")
+        if before['platform_preflight']['file_verification'] != 'skipped_by_operator':
+            raise ValueError("Desktop performed duplicate file verification")
         # Second launch must preserve DB identity and data, not reimport seed.
         command(argv, timeout=240)
         after = json.loads(state_path.read_text())
@@ -161,13 +165,16 @@ with tempfile.TemporaryDirectory() as tmp:
              "--venv", python.parent.parent, "--json"], env=env)
     bundled = bundle_native_dependencies(repo, payload, cache, target="macos/" + arch)
     verify_prepared_payload(payload, target_platform="macos")
+    for name in ('example-seed.zip', 'base-seed.zip'):
+        (payload / name).unlink()
     receipt = {
         "schema": "tfi.macos-package.v1", "target": "macos/" + arch,
         "source_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo, text=True).strip(),
         "source_dirty": bool(subprocess.check_output(["git", "status", "--porcelain"], cwd=repo)),
         "python": runtime, "bundled_native_dependencies": bundled,
-        "seed_sha256": digest(payload / "example-seed.zip"),
-        "base_seed_sha256": digest(payload / "base-seed.zip"),
+        "engineering_sha256": digest(payload / "example-engineering.zip"),
+        "base_engineering_sha256": digest(payload / "base-engineering.zip"),
+        "engineering_prepared_at_build": True,
         "initialization_requires_network": False, "signed": False,
         "prepared_engineering_validation": "passed",
     }

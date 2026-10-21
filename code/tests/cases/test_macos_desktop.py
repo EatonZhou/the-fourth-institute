@@ -224,14 +224,14 @@ class MacDesktopGUI(unittest.TestCase):
             copy_started, allow_copy = threading.Event(), threading.Event()
             attempts, ticks, completed = [], [], []
             original_copy = launcher.materialize
-            def copy(source, target):
+            def copy(source, target, **kwargs):
                 attempts.append(threading.get_ident())
                 copy_started.set()
                 if not allow_copy.wait(5):
                     raise TimeoutError("GUI event loop did not run while copying")
                 if len(attempts) == 1:
                     raise OSError("copy interrupted")
-                original_copy(source, target)
+                original_copy(source, target, **kwargs)
             root = tk.Tk()
             root.withdraw()
             def heartbeat():
