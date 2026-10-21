@@ -1,0 +1,68 @@
+name: Withdraw unusable Windows preview
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/withdraw-windows-preview.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: windows-preview-release
+  cancel-in-progress: false
+
+jobs:
+  withdraw:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Remove the withdrawn release, assets and tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import urllib.error
+          import urllib.request
+
+          tag = 'windows-preview-20261021.4'
+          release_id = 419269630
+          commit = '84a1a45a5397c8a1c831558fa5a4d94f43b3458b'
+          root = 'https://api.github.com/repos/' + os.environ['GH_REPO']
+
+          def api(path, method='GET'):
+              request = urllib.request.Request(root + path, method=method, headers={
+                  'Authorization': 'Bearer ' + os.environ['GH_TOKEN'],
+                  'Accept': 'application/vnd.github+json',
+                  'User-Agent': 'TFI-withdraw-windows-preview',
+              })
+              try:
+                  with urllib.request.urlopen(request, timeout=30) as response:
+                      data = response.read()
+                      return json.loads(data) if data else None
+              except urllib.error.HTTPError as error:
+                  if error.code == 404:
+                      return None
+                  raise
+
+          release = api('/releases/tags/' + tag)
+          ref_path = '/git/refs/tags/' + tag
+          ref = api('/git/ref/tags/' + tag)
+          if release is not None and (release['id'] != release_id or release['tag_name'] != tag):
+              raise RuntimeError('Release changed; refusing to remove another publication')
+          if ref is not None and (ref['ref'] != 'refs/tags/' + tag or ref['object']['sha'] != commit):
+              raise RuntimeError('Tag changed; refusing to remove another source revision')
+          if release is not None:
+              api('/releases/' + str(release_id), 'DELETE')
+          if ref is not None:
+              api(ref_path, 'DELETE')
+          if api('/releases/tags/' + tag) is not None or api('/git/ref/tags/' + tag) is not None:
+              raise RuntimeError('Withdrawal is incomplete')
+          print('Removed ' + tag + ', its uploaded assets and source tag')
+          PY

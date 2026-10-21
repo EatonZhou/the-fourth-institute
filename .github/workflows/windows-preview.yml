@@ -2,11 +2,6 @@ name: Windows preview installer
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - .github/workflows/windows-preview.yml
-      - code/scripts/windows/release.json
 
 permissions:
   contents: write
@@ -41,7 +36,9 @@ jobs:
 
   package:
     needs: process-records
-    if: github.ref == 'refs/heads/main'
+    # Withdrawn at the user's request: resume publication only after the
+    # Windows installation failures have been resolved and verified.
+    if: ${{ false }}
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
