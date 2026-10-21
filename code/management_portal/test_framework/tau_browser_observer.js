@@ -15,7 +15,8 @@ function safePath(value) {
     // arbitrary nested paths. Query values remain excluded in both Node and
     // the injected ResourceTiming observer.
     if (['/api/agent-conversations', '/api/scheduled-triggered', '/api/resources/resolve', '/api/resources/reference', '/api/resources/content',
-      '/api/agent-workbench/link-file', '/api/agent-workbench/link-file-raw'].includes(u.pathname)) return u.pathname;
+      '/api/agent-workbench/link-file', '/api/agent-workbench/link-file-raw',
+      '/test/api/preview', '/test/api/catalog/case'].includes(u.pathname)) return u.pathname;
     return u.pathname.split('/').map(part => {
       if (!part || words.has(part) || /^(home|lineage|test|paper|chat|hatg-panel)\.html$/.test(part)) return part;
       const extension = part.match(/\.(pdf|js|css|png|jpg|jpeg|svg|woff2?)$/i)?.[1];

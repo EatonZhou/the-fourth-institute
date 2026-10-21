@@ -115,9 +115,12 @@ async function resourceContract(observe) {
     '/api/resources/reference?address=resident_111111111111',
     '/api/resources/content?address=resident_111111111111',
     '/api/private-name?path=%2Fprivate-name.md&meta=1',
+    '/test/api/preview?token=query-secret',
+    '/test/api/catalog/case?case_id=private-case-id',
+    '/private-name/preview?token=other-secret',
   ];
   await capture(urls.map(url => ({ url })), ({ starts, output }) => {
-    assert.deepEqual(starts.map(row => row.resource_scope?.mode || null),
+    assert.deepEqual(starts.slice(0, 8).map(row => row.resource_scope?.mode || null),
       ['probe', 'read', 'read', 'resolve', 'resolve', 'reference', 'content', null], 'resource modes');
     assert.deepEqual(starts.slice(0, 7).map(row => row.resource_scope.kind),
       ['file', 'file', 'file', 'resource', 'resource', 'resource', 'resource']);
@@ -126,8 +129,11 @@ async function resourceContract(observe) {
     assert.equal(new Set(digests).size, 3, 'different resource targets stay distinct');
     for (const digest of digests) assert.match(digest, /^[0-9a-f]{64}$/, 'target identity is a SHA256 digest');
     assert.equal(starts[7].resource_scope, undefined, 'unknown endpoint has no resource scope');
+    assert.deepEqual(starts.slice(8).map(row => row.path),
+      ['/test/api/preview', '/test/api/catalog/case', '/[segment]/[segment]'],
+      'public test routes remain distinguishable without exposing arbitrary path words');
     excludes(output, ['private-name', 'query-secret', 'other-secret', 'private-response-body',
-      'resident_111111111111', 'resident_222222222222', 'private-header']);
+      'resident_111111111111', 'resident_222222222222', 'private-header', 'private-case-id']);
   }, observe);
 }
 
