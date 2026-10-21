@@ -1,0 +1,33 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs'), path = require('node:path'), vm = require('node:vm');
+const {JSDOM} = require('jsdom');
+const {babelParse} = require('./babel_parse.cjs');
+const dom = new JSDOM('<main></main>');
+const tag = (parts, ...values) => parts.reduce((text, part, i) => text + part + (values[i] ?? ''), '');
+const context = vm.createContext({
+  window: {PortalI18n: {t: x => x, html: tag, text: tag}},
+  esc: x => String(x ?? '').replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;'),
+  formatDateTime: value => value ? new Date(value).toISOString() : '',
+});
+const source = fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static/home.js'), 'utf8');
+const fn = babelParse(source, 'home.js').program.body.find(n => n.type === 'FunctionDeclaration' && n.id.name === 'accountCreditsHtml');
+vm.runInContext(source.slice(fn.start, fn.end), context);
+const render = account => {
+  dom.window.document.querySelector('main').innerHTML = context.accountCreditsHtml(account);
+  return dom.window.document.querySelector('[data-account-credits]');
+};
+try {
+  const credits = {balance: 1234, observed_at: 1000, stale: false};
+  const fresh = render({credits, checked_at: 9999});
+  assert.match(fresh.title, /1970-01-01T00:16:40.000Z/);
+  assert.equal(fresh.classList.contains('is-stale'), false);
+  const failed = render({credits: {...credits, stale: true}, error: '读取超时'});
+  assert.match(failed.title, /1970-01-01T00:16:40.000Z/);
+  assert.match(failed.title, /数据已过期.*读取超时/);
+  assert.match(failed.textContent, /1,234\*/);
+  const unknown = render({credits: {balance: null}, checked_at: 9999});
+  assert.match(unknown.title, /采样时间未知/);
+  assert.match(unknown.textContent, /—/);
+  assert.equal(render({}), null);
+  console.log('Credits retain their own sampling identity, stale value and unknown-time display');
+} finally { dom.window.close(); }

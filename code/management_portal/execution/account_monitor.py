@@ -102,6 +102,8 @@ class AccountMonitor:
                 previous.update(status="unavailable", error_code=error_code, error=message, refreshing=False)
                 for window in previous.get("rate_limits") or []:
                     window["stale"] = True
+                if isinstance(previous.get("credits"), dict):
+                    previous["credits"]["stale"] = True
                 self._samples[account.account_id] = previous
         self.refresh_usage(account)
 

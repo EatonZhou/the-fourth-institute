@@ -56,6 +56,30 @@ def test_quota_windows_stay_current_until_a_read_fails(monkeypatch):
     assert window["remaining_percent"] == 80 and window["stale"] is True
 
 
+def test_credits_keep_original_sample_time_on_failure_and_refresh_on_recovery(monkeypatch):
+    """Credits 的采样时间属于余额读数，读取失败不能换成最近尝试时间。"""
+    state, account, client, clock = monitor(monkeypatch)
+    client.request.return_value = {"rateLimits": {
+        "primary": {"usedPercent": 20, "windowDurationMins": 10080},
+        "credits": {"balance": "61988.95", "hasCredits": True},
+    }}
+    state.refresh_account(account)
+    sample = state.snapshot()["accounts"][0]
+    assert sample["credits"]["observed_at"] == sample["rate_limits"][0]["observed_at"] == 1000
+    assert sample["credits"]["stale"] is False
+    clock[0] = 2000
+    client.request.side_effect = TimeoutError("unavailable")
+    state.refresh_account(account)
+    retained = state.snapshot()["accounts"][0]["credits"]
+    assert retained["observed_at"] == 1000
+    assert retained["balance"] == 61988.95 and retained["stale"] is True
+    client.request.side_effect = None
+    clock[0] = 3000
+    state.refresh_account(account)
+    current = state.snapshot()["accounts"][0]["credits"]
+    assert current["observed_at"] == 3000 and current["stale"] is False
+
+
 @pytest.mark.parametrize("with_previous_sample", [True, False])
 @pytest.mark.parametrize("failure, code, message", [
     (CodexTurnAuthenticationError("", "", "private provider detail"), "provider_authentication_failed", "登录凭据失效，请重新登录"),

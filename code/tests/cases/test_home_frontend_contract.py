@@ -7,6 +7,12 @@ ROOT = Path(__file__).resolve().parents[2]
 PORTAL_ROOT = ROOT / "management_portal"
 
 
+def test_credits_show_their_own_sample_time_and_failed_read_state() -> None:
+    """Credits 详情使用自身采样时间，过期保留旧值，未知时间不借用账号检查时间。"""
+    script = Path(__file__).with_name("javascript") / "home_account_freshness.cjs"
+    subprocess.run(["node", str(script)], check=True, cwd=ROOT)
+
+
 def test_activity_icons_keep_identity_links_with_fallback_avatars() -> None:
     """Home 默认头像、队列图标与真实会话链接
 

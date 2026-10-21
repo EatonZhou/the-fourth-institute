@@ -958,7 +958,11 @@ function accountCreditsHtml(account) {
   const known = typeof credits.balance === "number" && Number.isFinite(credits.balance);
   // Balances run to tens of thousands; fractions only matter below 100.
   const value = credits.unlimited ? window.PortalI18n.t("不限") : known ? credits.balance.toLocaleString(undefined, {maximumFractionDigits: credits.balance < 100 ? 2 : 0}) : "—";
-  const title = [window.PortalI18n.t("Codex credits 余额；额度用完时 Portal 暂停该账号的自动工作，不使用 credits"), stale && window.PortalI18n.t("数据已过期，数值为上次采样")].filter(Boolean).join(" · ");
+  const observed = credits.observed_at;
+  const sampled = formatDateTime(typeof observed === "number" ? observed * 1000 : observed || "");
+  const title = [window.PortalI18n.t("Codex credits 余额；额度用完时 Portal 暂停该账号的自动工作，不使用 credits"),
+    sampled ? window.PortalI18n.text`采样于 ${sampled}` : window.PortalI18n.t("采样时间未知"),
+    stale && window.PortalI18n.t("数据已过期，数值为上次采样"), account.error].filter(Boolean).join(" · ");
   return window.PortalI18n.html`<div class="agent-status-account-credits${stale ? " is-stale" : ""}" data-account-credits title="${esc(title)}"><span class="agent-status-window-name">Credits</span><span class="agent-status-account-credits-value">${esc(value)}${stale && known ? "*" : ""}</span></div>`;
 }
 

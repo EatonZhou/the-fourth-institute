@@ -1780,8 +1780,9 @@ def _stale_accounts(accounts: list[dict[str, Any]]) -> list[dict[str, Any]]:
     result = []
     for account in accounts:
         item = {**account, "rate_limits": [{**window, "stale": True} for window in account.get("rate_limits") or []]}
-        if isinstance(account.get("balance"), dict):
-            item["balance"] = {**account["balance"], "stale": True}
+        for field in ("balance", "credits"):
+            if isinstance(account.get(field), dict):
+                item[field] = {**account[field], "stale": True}
         result.append(item)
     return result
 
