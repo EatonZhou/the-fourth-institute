@@ -404,6 +404,12 @@ class TauCampaignExecutor:
                 }
                 self.records.append_result(run_id, group_id, result)
                 self.records.update_group(run_id, group_id, {"active_invocation": {}, "case_started_at_epoch": 0})
+                if cleanup_error:
+                    # continue_on_failure applies to test verdicts. An unfinished
+                    # resource lifecycle cannot accept the module's next case.
+                    status = "error"
+                    error = f"测试资源清理尚未完成，停止本模块后续用例：{cleanup_error}"
+                    break
                 if item_status != "passed":
                     status = item_status
                     if not group_spec.get("continue_on_failure"):

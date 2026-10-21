@@ -1446,6 +1446,53 @@ def test_run_history_limit_preserves_active_campaigns(tmp_path):
     assert records.run_ids() == {active, current, *completed[-100:]}
 
 
+@pytest.mark.parametrize("first_verdict", ["passed", "failed"])
+def test_tau_cleanup_failure_stops_same_module_but_other_modules_continue(tmp_path, first_verdict):
+    """资源未清理时不向同一模块继续派发，其他模块正常执行并保留原结果。"""
+    records = RunRecords(tmp_path / "runs.json")
+    source = "tests/cases/test_test_framework.py"
+    selected = [
+        {"case_id": case_id, "case_title": "清理隔离", "module": module,
+         "runner": {"id": "tau"}, "source_sha256": hashlib.sha256((ROOT / source).read_bytes()).hexdigest(),
+         "implementation": {"id": case_id, "source": source}}
+        for case_id, module in [("test_123456789001", "workflow.paper"),
+                                ("test_123456789002", "workflow.paper"),
+                                ("test_123456789003", "resource.service")]
+    ]
+    groups = [
+        {"group_id": "module:"+module, "runner": "tau", "module_id": module,
+         "item_indexes": indexes, "continue_on_failure": True}
+        for module, indexes in [("workflow.paper", [0, 1]), ("resource.service", [2])]
+    ]
+    run = records.create({"executable": True, "campaign": "tau", "selected": selected,
+                          "execution": {"groups": groups}}, "alice")
+    executed = []
+
+    class Adapter:
+        def execute(self, *, planned, **kwargs):
+            executed.append(planned["case_id"])
+            return AdapterResult(status=first_verdict if planned["case_id"] == selected[0]["case_id"] else "passed",
+                                 details={"summary": "原始行为证据保留"})
+
+        def cleanup(self, *, run_dir, emit):
+            if run_dir.name == selected[0]["case_id"]:
+                raise RuntimeError("review is still running")
+            return {"complete": True}
+
+    TauCampaignExecutor(records, tmp_path / "artifacts", Adapter()).run(run["run_id"])
+    record = records.get(run["run_id"])
+    assert set(executed) == {selected[0]["case_id"], selected[2]["case_id"]}
+    assert record["status"] == "error"
+    results = {row["case_id"]: row for row in record["results"]}
+    assert results[selected[0]["case_id"]]["status"] == "error"
+    assert results[selected[0]["case_id"]]["details"]["summary"] == "原始行为证据保留"
+    assert results[selected[0]["case_id"]]["details"]["cleanup_error"] == "review is still running"
+    assert results[selected[2]["case_id"]]["status"] == "passed"
+    paper = next(group for group in record["groups"] if group["module_id"] == "workflow.paper")
+    assert "清理尚未完成" in paper["error"]
+    assert not paper.get("active_invocation")
+
+
 def test_tau_cleanup_scan_tolerates_concurrent_report_deletion(tmp_path, monkeypatch):
     """清理扫描时旧运行报告被并发删除，不阻塞新的 TAU 运行"""
     records = RunRecords(tmp_path / "runs.json")
