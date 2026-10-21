@@ -45,7 +45,7 @@ class AccountMonitor:
         self._usage_store = usage_store if usage_store is not None else AccountUsageStore()
         self._login_store = login_state_store if login_state_store is not None else login_store()
         for account in accounts.accounts():
-            if callable(getattr(accounts.adapters[account.provider], "usage", None)):
+            if self._reads_usage(account):
                 self._usage[account.account_id] = self._stored_usage(account)
         self._last_refresh_request = 0.0
         self._refresh_refused = False
@@ -107,10 +107,14 @@ class AccountMonitor:
                 self._samples[account.account_id] = previous
         self.refresh_usage(account)
 
+    def _reads_usage(self, account):
+        # Daily usage buckets describe a subscription; an API key's spend is its balance.
+        return callable(getattr(self.accounts.adapters[account.provider], "usage", None)) and _subscription(account)
+
     def refresh_usage(self, account):
-        read = getattr(self.accounts.adapters[account.provider], "usage", None)
-        if read is None:
+        if not self._reads_usage(account):
             return
+        read = self.accounts.adapters[account.provider].usage
         with self._lock:
             previous = deepcopy(self._usage.get(account.account_id) or {})
         now = time.time()
@@ -143,7 +147,7 @@ class AccountMonitor:
         items = []
         identities = self.accounts.usage_identities()
         for account in self.accounts.accounts():
-            if not callable(getattr(self.accounts.adapters[account.provider], "usage", None)):
+            if not self._reads_usage(account):
                 continue
             sample = samples.get(account.account_id) or {"status": "loading"}
             backend, account_id = identities.normalize(account.provider, account.account_id)

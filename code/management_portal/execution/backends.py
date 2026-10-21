@@ -766,6 +766,15 @@ class Backend(Protocol):
         ...
 
 
+def _model_api_entry(api_id: str, model: str) -> dict[str, Any]:
+    from management_portal.ai_provider_registry import AIProviderRegistry, shared_ai_provider_registry
+    try:
+        entry = shared_ai_provider_registry.get(api_id)
+    except ValueError:
+        return {}
+    return dict(AIProviderRegistry.model_entry(entry, model))
+
+
 class CodexBackend:
 
     provider_id = "codex"
@@ -1437,6 +1446,12 @@ class CodexBackend:
                 key=lambda route: route.account_id != clean_route_id
             )
         for route in routes:
+            if getattr(route, "kind", "") == "api_profile":
+                # A Model API declares its models' context windows itself.
+                declared = _model_api_entry(route.api_id, model)
+                if declared:
+                    return route.account_id, declared
+                continue
             try:
                 payload = json.loads(
                     (route.codex_home / "models_cache.json").read_text(

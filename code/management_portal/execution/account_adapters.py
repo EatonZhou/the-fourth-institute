@@ -24,6 +24,9 @@ class CodexAccountRoute:
     max_concurrency: int
     fallback_account_ids: tuple[str, ...] = ()
     registration_id: str = ""
+    kind: str = "subscription_login"
+    # The Model API an api_profile route authenticates with.
+    api_id: str = ""
 
 
 class CodexRoutes:
@@ -39,7 +42,8 @@ class CodexRoutes:
         self._accounts = {row["route_id"]: CodexAccountRoute(
             row["route_id"], account_home("codex", row["account_id"]), codex_socket_path(row["account_id"]),
             row["max_concurrency"], tuple(next((r["route_id"] for r in rows if r["account_id"] == value), value)
-                                          for value in row["config"].get("fallback_account_ids", [])), row["account_id"]) for row in rows}
+                                          for value in row["config"].get("fallback_account_ids", [])), row["account_id"],
+            row["kind"], row["config"].get("api_id", "")) for row in rows}
         self._aliases = {row["account_id"]: row["route_id"] for row in rows}
         self._enabled = {row["route_id"] for row in rows if row["enabled"]}
         defaults = [row["route_id"] for row in rows if row["enabled"] and row["config"].get("is_default")]
@@ -114,14 +118,36 @@ class CodexAccounts:
     @staticmethod
     def _account(route):
         name = route.account_id.removeprefix("codex_")
+        kind = getattr(route, "kind", "subscription_login")
+        # An API key is billed by its Model API balance, not a subscription quota.
+        api = kind == "api_profile"
         return ExecutionAccount(getattr(route, "registration_id", "") or f"codex_{name}", "codex", route.account_id,
-                                f"codex:{name}", route.max_concurrency, "reserve", (name,))
+                                f"codex:{name}", route.max_concurrency, "none" if api else "reserve", (name,),
+                                billing_account_id=route.api_id if api else "", kind=kind)
 
     def resolve(self, route_id, options, *, bound=False):
         if bound and not route_id:
             raise ValueError("existing session requires an account route")
         route = self.registry.get(route_id) if route_id else self.registry.default_for_new_session()
         return self._account(route)
+
+    @staticmethod
+    def api_registration(route):
+        """The api_profile registration behind a Codex route, ``None`` for a subscription."""
+        from .account_registrations import registrations
+        key = str(route or "").strip().lower()
+        return next((row for row in registrations("codex") if row["kind"] == "api_profile"
+                     and key in (row["route_id"], row["account_id"])), None) if key else None
+
+    @classmethod
+    def route_upstream(cls, route):
+        # An API key reaches its own Model API, a service Portal has no probe for.
+        return "model_api" if cls.api_registration(route) else ""
+
+    @classmethod
+    def route_takes_images(cls, route):
+        # A Model API declares no image input for its models.
+        return cls.api_registration(route) is None
 
     def canonical_route(self, route_id):
         if not str(route_id or "").strip():
@@ -177,9 +203,14 @@ class CodexAccounts:
         from management_portal.codex_app_server_client import client_for_socket
         from management_portal.codex_capabilities import runtime_catalog
         from .codex_runtime_settings import resolve_codex_runtime_catalog
-        return resolve_codex_runtime_catalog(
-            runtime_catalog(client_for_socket(self.registry.get(account.route_id).socket_path), account.account_id)
-        )
+        route = self.registry.get(account.route_id)
+        if getattr(route, "kind", "") == "api_profile":
+            # An API key's models are the ones its Model API declares; model/list
+            # describes ChatGPT plans.
+            from management_portal.ai_provider_registry import shared_ai_provider_registry
+            from .codex_api_accounts import catalog
+            return resolve_codex_runtime_catalog(catalog(shared_ai_provider_registry.get(route.api_id), account.account_id))
+        return resolve_codex_runtime_catalog(runtime_catalog(client_for_socket(route.socket_path), account.account_id))
 
     def usage(self, account):
         from management_portal.codex_app_server_client import client_for_socket
@@ -201,6 +232,9 @@ class CodexAccounts:
         from management_portal.codex_app_server_client import client_for_socket
         from .codex_quota import credits, quota_sample
         route = self.registry.get(account.route_id)
+        if getattr(route, "kind", "") == "api_profile":
+            # Rate-limit windows belong to ChatGPT plans; an API key's spend is its balance.
+            return {"status": "ok", "rate_limits": []}
         client = client_for_socket(route.socket_path)
         payload = client.request("account/rateLimits/read", {}, timeout=15.0)
         sample = quota_sample(payload, observed_at=time.time())
@@ -227,7 +261,7 @@ class ClaudeAccounts:
     def accounts(self):
         return tuple(ExecutionAccount(row["account_id"], self.provider, row["route_id"], f"account:{row['account_id']}",
                                       row["max_concurrency"], "reserve" if row["kind"] == "subscription_login" else "none",
-                                      billing_account_id=row["config"].get("api_id", ""),
+                                      billing_account_id=row["config"].get("api_id", ""), kind=row["kind"],
                                       # Historical native usage used the vendor
                                       # before subscriptions moved to registrations.
                                       usage_aliases=(("anthropic", row["account_id"]),)

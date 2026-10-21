@@ -71,7 +71,8 @@ DECLARATIONS = (
     ), (R("session_id", description="终端会话 ID，Portal 页面用它读写终端"), R("alive", "boolean", "终端进程是否仍在运行"),
         P("cwd", description="终端的起始目录")), mutates=True),
     _d("ListModelApis", FIXED, "列出已登记的模型接口。", (),
-       (R("apis", "array", "模型接口登记：api_id、base_url、default_model、provider、enabled、version…；不含密钥"),),
+       (R("apis", "array", "模型接口登记：api_id、base_url、default_model、provider、enabled、version、"
+          "harness_protocols（Agent Harness 可用的协议）…；不含密钥"),),
        owner="execution"),
     _d("CreateModelApi", FIXED, "登记一个新的模型接口。", (
         R("api_id", description="新模型接口的 ID"),
@@ -82,6 +83,8 @@ DECLARATIONS = (
         P("routes", "array", "明确绑定的服务路线；每项包含 backend 和 route_id", items={"type": "object"}),
         P("models", "array", "模型目录；每项含唯一的 id，可选 reasoning_efforts（该模型接受的推理强度，"
           "如 low、medium、high）、enabled 等", items={"type": "object"}),
+        P("protocols", "object", "Agent Harness 可用的其他协议：openai_responses（{}，Codex 使用）、"
+          "anthropic_messages（可含 base_url 与 auth=bearer|x-api-key，Claude Code 使用）；Chat Completions 无需声明"),
         P("default_parameters", "object", "协议允许的默认生成参数"),
         P("timeout_seconds", "number", "单次请求超时秒数，默认 360", minimum=1),
         P("retries", "integer", "请求失败后的重试次数，默认 0", minimum=0),
@@ -89,11 +92,11 @@ DECLARATIONS = (
     ), (MODEL_API,), mutates=True, owner="execution"),
     _d("UpdateModelApi", FIXED, "修改一个模型接口的登记。", (
         R("api_id", description="模型接口 ID"),
-        R("changes", "object", "要修改的登记字段，如 base_url、default_model、models、enabled；不能改 api_id"),
+        R("changes", "object", "要修改的登记字段，如 base_url、default_model、models、protocols、enabled；不能改 api_id"),
         P("secret", description="一次性密钥")), (
         MODEL_API, R("version", "integer", "修改后的登记版本"),
     ), mutates=True, target="api_id", owner="execution"),
-    _d("DeleteModelApi", FIXED, "删除一个模型接口的登记。", (R("api_id", description="模型接口 ID"),),
+    _d("DeleteModelApi", FIXED, "删除一个模型接口的登记；仍有执行账号使用时拒绝。", (R("api_id", description="模型接口 ID"),),
        (R("api_id", description="被删除的模型接口"),),
        mutates=True, target="api_id", owner="execution"),
     _d("CompleteChat", FIXED, "调用一个已登记的模型接口，完成一次无状态的文本生成。", (

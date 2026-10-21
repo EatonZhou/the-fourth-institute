@@ -16,7 +16,11 @@ API_FIELDS = {
     "default_model": "TEXT", "timeout_s": "DOUBLE PRECISION", "max_retries": "INTEGER",
     "cost_tier": "TEXT", "privacy_tier": "TEXT", "priority": "INTEGER",
     "models": "JSONB", "default_headers": "JSONB", "default_parameters": "JSONB",
+    # Wire protocols agent harnesses may use, beyond the direct-call kind.
+    "protocols": "JSONB",
 }
+# Columns added after the first release; older instances gain them in place.
+ADDED_FIELDS = ("protocols",)
 SERVICE_ROUTES = {("dsh", "deepseek"): "deepseek", ("opencode", "openrouter"): "openrouter"}
 DDL = """
 CREATE TABLE IF NOT EXISTS apis (
@@ -42,6 +46,18 @@ CREATE TABLE IF NOT EXISTS relay_resources (
     updated_by TEXT NOT NULL
 );
 """
+# Every reader decodes all API_FIELDS, so a missing column must be added before
+# use; check first to avoid taking an ALTER lock on every process start.
+DDL += "\n".join("""
+DO $upgrade$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_attribute
+                   WHERE attrelid = 'apis'::regclass AND attname = '%s' AND NOT attisdropped) THEN
+        ALTER TABLE apis ADD COLUMN %s %s;
+    END IF;
+END
+$upgrade$;
+""" % (name, name, API_FIELDS[name]) for name in ADDED_FIELDS)
 
 
 @lru_cache(maxsize=8)

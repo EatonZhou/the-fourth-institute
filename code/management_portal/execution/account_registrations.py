@@ -16,7 +16,7 @@ from management_portal.hatg.contracts import InstructionError, invalid, not_foun
 from management_portal.model_api_store import now
 
 PROVIDER_KINDS = {
-    "codex": ("subscription_login",), "claude": ("subscription_login", "api_profile"),
+    "codex": ("subscription_login", "api_profile"), "claude": ("subscription_login", "api_profile"),
     "kimi": ("service",), "dsh": ("api_profile",),
     "opencode": ("service", "api_profile"), "provider_api": ("api_profile",),
 }
@@ -76,7 +76,9 @@ def _validate(data):
     if not isinstance(route, str) or (route and not IDENTIFIER.fullmatch(route)):
         raise invalid("route_id 格式无效")
     config = data.get("config", {})
-    allowed = {"api_id"} if kind == "api_profile" else {"fallback_account_ids", "is_default"} if provider == "codex" else {"models", "default_model"} if provider == "claude" else set()
+    # A Codex API account can be the default route; it never falls back to a subscription.
+    allowed = ({"api_id", "is_default"} if provider == "codex" else {"api_id"}) if kind == "api_profile" else \
+        {"fallback_account_ids", "is_default"} if provider == "codex" else {"models", "default_model"} if provider == "claude" else set()
     if not isinstance(config, dict) or set(config) - allowed:
         raise invalid("config 含不支持的 Provider 字段")
     if kind == "api_profile" and not IDENTIFIER.fullmatch(str(config.get("api_id") or "")):
@@ -135,6 +137,11 @@ def _check_relationships(c, row):
     if row["provider"] != "provider_api" and c.execute("SELECT 1 FROM registrations WHERE provider=%s AND route_id=%s AND account_id<>%s",
                                                        (row["provider"], row.get("route_id", ""), row["account_id"])).fetchone():
         raise InstructionError("instruction.conflict", "Provider 路线已被其他账号登记")
+    fallbacks = row.get("config", {}).get("fallback_account_ids", [])
+    if fallbacks and c.execute("SELECT 1 FROM registrations WHERE provider=%s AND kind='api_profile' AND account_id = ANY(%s)",
+                               (row["provider"], fallbacks)).fetchone():
+        # Falling back from a subscription to an API key would spend its balance unasked.
+        raise invalid("备用账号不能是 API 账号")
     if row["provider"] == "codex" and row.get("config", {}).get("is_default") and c.execute(
         "SELECT 1 FROM registrations WHERE provider='codex' AND config->>'is_default'='true' AND account_id<>%s",
         (row["account_id"],)).fetchone():

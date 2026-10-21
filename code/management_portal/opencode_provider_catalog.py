@@ -7,6 +7,9 @@ other model services.  Portal offers:
 - one route per service in ``SERVICES`` (today OpenRouter), named after the
   service, with an explicitly bound Model API registration providing the
   key and billing account.
+- one route per other ``api_profile`` account: its Model API, which speaks
+  Chat Completions, becomes an OpenAI-compatible provider of OpenCode's own,
+  named after the route, with the models the registration declares.
 
 The runtime records the models when it is staged (``models.json``,
 ``OpenCodeRuntime``): Zen's free models under ``models`` and each service's
@@ -46,6 +49,10 @@ class Service(NamedTuple):
 
 # By the registry entry's provider, which also names the service's route.
 SERVICES = {"openrouter": Service("openrouter", "OpenRouter", "OPENROUTER_API_KEY")}
+# OpenCode's name for a custom route's provider is this prefix and the route.
+CUSTOM_PREFIX = "portal-"
+# The output budget of a declared model that names only its context window.
+CUSTOM_OUTPUT_TOKENS = 32768
 
 
 def binary() -> Path:
@@ -87,11 +94,29 @@ def _registry_entry(route: str) -> dict:
     raise ValueError(f"OpenCode route {route} has no enabled, explicitly bound API")
 
 
+def _custom_entry(route: str) -> dict | None:
+    """The Model API registration of a custom route; ``None`` for the free and service routes."""
+
+    if route in {"", ROUTE} or route in SERVICES:
+        return None
+    from management_portal.execution.account_registrations import registrations
+    row = next((row for row in registrations("opencode")
+                if row["kind"] == "api_profile" and row["route_id"] == route), None)
+    if row is None:
+        raise ValueError(f"Unsupported OpenCode route: {route}")
+    entry = shared_ai_provider_registry.get(row["config"]["api_id"])
+    if "openai_chat" not in AIProviderRegistry.harness_protocols(entry):
+        raise ValueError(f"OpenCode route {route} needs a Chat Completions Model API")
+    return entry
+
+
 def service(route: str) -> str:
     """OpenCode's name for the service the route's requests go to."""
 
     if route in {"", ROUTE}:
         return ZEN
+    if _custom_entry(route) is not None:
+        return CUSTOM_PREFIX + route
     _registry_entry(route)
     return SERVICES[route].name
 
@@ -101,11 +126,53 @@ def api_key(route: str) -> str:
 
     if route in {"", ROUTE}:
         return ""
-    row = _registry_entry(route)
+    row = _custom_entry(route) or _registry_entry(route)
     return shared_ai_provider_registry.read_secret(shared_ai_provider_registry.secret_path(row))
 
 
+def _declared_models(entry: dict) -> dict[str, int]:
+    """A custom route's models and their context windows (0 when not declared)."""
+
+    models = AIProviderRegistry.harness_models(entry)
+    # The default model comes first; it also answers OpenCode's small requests (titles).
+    models.sort(key=lambda model: model != entry.get("default_model"))
+    return {model: int(AIProviderRegistry.model_entry(entry, model).get("context_window") or 0) for model in models}
+
+
+def provider_config(route: str) -> dict:
+    """OpenCode's definition of a custom route's provider, without its key; {} for other routes.
+
+    The key reaches OpenCode through its credential store (``PUT /auth``), so
+    neither this configuration nor the tools' environment holds it.
+    """
+
+    entry = _custom_entry(route)
+    if entry is None:
+        return {}
+    base_url, _auth = AIProviderRegistry.harness_endpoint(entry, "openai_chat")
+    options: dict = {"baseURL": base_url}
+    headers = {str(name): str(value).strip() for name, value in (entry.get("default_headers") or {}).items()
+               if str(value or "").strip()}
+    if headers:
+        options["headers"] = headers
+    models = {model: {"name": model, **({"limit": {"context": window, "output": min(window, CUSTOM_OUTPUT_TOKENS)}}
+                                         if window else {})}
+              for model, window in _declared_models(entry).items()}
+    return {service(route): {"npm": "@ai-sdk/openai-compatible", "name": str(entry.get("label") or entry["id"]),
+                             "options": options, "models": models}}
+
+
 def catalog(route: str = ROUTE) -> dict:
+    entry = _custom_entry(route)
+    if entry is not None:
+        # A custom provider is not in the staged listing; its registration declares the models.
+        windows = _declared_models(entry)
+        if not windows:
+            raise ValueError(f"OpenCode route {route} has no declared model")
+        order = list(windows)
+        default = str(entry.get("default_model") or "") if entry.get("default_model") in windows else order[0]
+        return _catalog(route, str(entry.get("label") or entry["id"]), entry["id"], "model_api", order, default,
+                        {model: [] for model in order}, windows)
     staged = _staged()
     if route in {"", ROUTE}:
         route, name, label, rows, preferred = ROUTE, ZEN, "OpenCode Zen (free)", staged.get("models") or [], []
@@ -122,11 +189,16 @@ def catalog(route: str = ROUTE) -> dict:
         raise ValueError(f"OpenCode runtime has no models for {route}; stage the shared OpenCode runtime")
     order = list(dict.fromkeys([model for model in preferred if model in models] + sorted(models)))
     default = "big-pickle" if name == ZEN and "big-pickle" in models else order[0]
+    return _catalog(route, label, billing, name, order, default,
+                    {model: list(models[model].get("variants") or []) for model in order},
+                    {model: int(models[model].get("context") or 0) for model in order})
+
+
+def _catalog(route: str, label: str, billing: str, upstream: str, order: list[str], default: str,
+             efforts: dict[str, list[str]], windows: dict[str, int]) -> dict:
     return {"schema": "tfi.agent-runtime-catalog.v1", "backend": "opencode", "provider": "opencode",
-            "label": label, "backend_route_id": route, "provider_profile": billing, "upstream_provider": name,
-            "models": order, "default_model": default,
-            "efforts_by_model": {model: list(models[model].get("variants") or []) for model in order},
-            "context_windows": {model: int(models[model].get("context") or 0) for model in order},
+            "label": label, "backend_route_id": route, "provider_profile": billing, "upstream_provider": upstream,
+            "models": order, "default_model": default, "efforts_by_model": efforts, "context_windows": windows,
             "runtime_settings": ["model", "reasoning_effort"], "settings_apply": "next_turn",
             "service_tiers_by_model": {model: [] for model in order},
             "permission_policy": {"permission_preset_editable": False},
@@ -135,8 +207,11 @@ def catalog(route: str = ROUTE) -> dict:
 
 
 def routes() -> list[dict]:
+    from management_portal.execution.account_registrations import registrations
+    custom = [row["route_id"] for row in registrations("opencode")
+              if row["kind"] == "api_profile" and row["enabled"] and row["route_id"] not in {ROUTE, *SERVICES}]
     offered = []
-    for route in [ROUTE, *SERVICES]:
+    for route in [ROUTE, *SERVICES, *custom]:
         try:
             offered.append(catalog(route))
         except ValueError:

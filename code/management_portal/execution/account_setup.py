@@ -68,11 +68,15 @@ def prepare(inv):
 
 def _started_codex_catalog(row, *, timeout=30.0):
     """Wait for the socket after service start, without retrying model execution."""
-    from management_portal.codex_app_server_client import CodexAppServerUnavailable
+    from management_portal.codex_app_server_client import CodexAppServerUnavailable, client_for_socket
+    from .account_hosting import codex_socket_path
 
     deadline = time.monotonic() + timeout
     while True:
         try:
+            if row.get("kind") == "api_profile":
+                # Its catalog is local data; ask the app-server so the turn finds it listening.
+                client_for_socket(codex_socket_path(row["account_id"])).request("account/read", {}, timeout=10.0)
             return catalog(row)
         except CodexAppServerUnavailable:
             remaining = deadline - time.monotonic()
@@ -89,6 +93,11 @@ def check(inv):
         raise InstructionError("instruction.conflict", "请先准备运行环境", details={"reason": "account.runtime_missing"})
     if row["provider"] == "codex":
         from . import account_hosting
+        if row["kind"] == "api_profile":
+            # The home may predate the runtime or the Model API's current key;
+            # an app-server whose configuration changes is restarted.
+            from .codex_api_accounts import refresh
+            refresh([row])
         # Registration may precede runtime preparation. Starting an already
         # running instance is idempotent and preserves its existing login.
         account_hosting.start_codex_instance(row["account_id"])

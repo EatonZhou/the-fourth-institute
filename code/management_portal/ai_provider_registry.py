@@ -10,6 +10,13 @@ from typing import Any
 from management_portal import model_api_store
 from management_portal.provider_transport_diagnostics import ProviderTransportObservation
 
+# Wire protocols an agent harness speaks to a Model API; each AgentProvider
+# names the one its API-key accounts need.
+HARNESS_PROTOCOLS = ("openai_chat", "openai_responses", "anthropic_messages")
+# Options a registration may declare per protocol; chat follows ``kind``.
+DECLARED_PROTOCOL_OPTIONS = {"openai_responses": frozenset(), "anthropic_messages": frozenset({"base_url", "auth"})}
+ANTHROPIC_AUTH = ("bearer", "x-api-key")
+
 
 class AIProviderRegistryError(RuntimeError):
     """A provider configuration cannot be used."""
@@ -80,6 +87,50 @@ class AIProviderRegistry:
         if protocol == "anthropic" and not url.endswith("/anthropic"):
             url = url.removesuffix("/v1") + "/anthropic"
         return url
+
+    @staticmethod
+    def declares_protocols(item: dict[str, Any]) -> bool:
+        return isinstance(item.get("protocols"), dict)
+
+    @staticmethod
+    def harness_protocols(item: dict[str, Any]) -> dict[str, dict[str, Any]]:
+        """Wire protocols an agent harness can use with this registration.
+
+        Chat follows the direct-call kind; the others are declared. A DeepSeek
+        registration that declares nothing keeps its historical Anthropic route.
+        """
+        chat = item.get("kind") == "openai_compatible_chat"
+        protocols: dict[str, dict[str, Any]] = {"openai_chat": {}} if chat else {}
+        if AIProviderRegistry.declares_protocols(item):
+            protocols.update({str(name): dict(options or {}) for name, options in item["protocols"].items()
+                              if name in DECLARED_PROTOCOL_OPTIONS})
+        elif chat and item.get("provider") == "deepseek":
+            protocols["anthropic_messages"] = {}
+        return protocols
+
+    @staticmethod
+    def harness_endpoint(item: dict[str, Any], protocol: str) -> tuple[str, str]:
+        """The base URL and authentication style a harness uses for ``protocol``."""
+        options = AIProviderRegistry.harness_protocols(item).get(protocol)
+        if options is None:
+            raise ValueError(f"Model API {item.get('id')} does not offer {protocol}")
+        if protocol != "anthropic_messages":
+            return AIProviderRegistry.base_url(item), "bearer"
+        if not AIProviderRegistry.declares_protocols(item):
+            return AIProviderRegistry.base_url(item, protocol="anthropic"), "bearer"
+        url = str(options.get("base_url") or "").strip().rstrip("/")
+        return url or AIProviderRegistry.base_url(item).removesuffix("/v1"), str(options.get("auth") or "bearer")
+
+    @staticmethod
+    def harness_models(item: dict[str, Any]) -> list[str]:
+        """Declared models, or the default model when none are declared."""
+        default = str(item.get("default_model") or "").strip()
+        return AIProviderRegistry.models(item) or ([default] if default else [])
+
+    @staticmethod
+    def model_entry(item: dict[str, Any], model: str) -> dict[str, Any]:
+        return next((entry for entry in item.get("models") or []
+                     if isinstance(entry, dict) and entry.get("id") == model), {})
 
     @staticmethod
     def retryable_error(error: Exception) -> bool:

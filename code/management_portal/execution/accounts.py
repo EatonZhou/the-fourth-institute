@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from management_portal.ai_provider_registry import AIProviderRegistry
 
+import logging
 import threading
 import time
 from contextlib import contextmanager
@@ -15,6 +16,7 @@ from dataclasses import dataclass
 from typing import Any, Iterator, Protocol
 
 _BATCH = threading.local()
+LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -28,6 +30,8 @@ class ExecutionAccount:
     aliases: tuple[str, ...] = ()
     billing_account_id: str = ""
     usage_aliases: tuple[tuple[str, str], ...] = ()
+    # The registration kind (subscription_login, api_profile, service).
+    kind: str = ""
 
     @property
     def quota_enabled(self) -> bool:
@@ -239,7 +243,11 @@ class ExecutionAccounts:
                     # Configured model capabilities are local adapter data. Live
                     # catalogs are read only when that account is selected.
                     if definition.local_catalog:
-                        route.update(self.runtime_catalog(account.account_id))
+                        try:
+                            route.update(self.runtime_catalog(account.account_id))
+                        except Exception:  # noqa: BLE001 - one broken route must not hide the others
+                            LOGGER.warning("Runtime catalog unavailable for %s", account.account_id, exc_info=True)
+                            continue
                     row["routes"].append(route)
                 default = self.resident_selection(definition.provider).get("default_account_id") or definition.default_route
                 row["default_route"] = next((a.route_id for a in accounts if default in (a.account_id, a.route_id)),

@@ -232,6 +232,34 @@ def test_an_openrouter_route_reaches_the_service_with_the_registrys_key_kept_out
         _run_turn(opencode, "turn-unknown", "plain", provider_profile="openrouter", model="free-model")
 
 
+def test_an_api_key_route_runs_on_its_own_openai_compatible_provider(opencode, tmp_path):
+    """opencode 的自定义 API 路线以模型 API 作为唯一的 OpenAI 兼容 Provider 运行，密钥不进入工具环境也不落盘
+
+    :module: platform.core"""
+    from management_portal.execution import account_registrations
+    from tests.cases.model_api_test_support import register_apis
+    key_file = tmp_path / "gateway.key"
+    key_file.write_text("sk-gateway\n")
+    register_apis({"id": "gateway", "kind": "openai_compatible_chat", "provider": "example",
+                   "base_url": "https://gateway.invalid/v1", "default_model": "gpt-test", "api_key_file": str(key_file),
+                   "models": [{"id": "gpt-test", "context_window": 128000}]})
+    account_registrations.create_registration({"account_id": "gateway-opencode", "provider": "opencode",
+                                               "kind": "api_profile", "config": {"api_id": "gateway"}}, "test")
+    result = _run_turn(opencode, "turn-gateway", "plain", provider_profile="gateway-opencode", model="gpt-test")
+    assert result.response == "answer to: plain"
+    auth, prompt = opencode.prompts()
+    assert auth == {"kind": "auth", "service": "portal-gateway-opencode", "key": "sk-gateway", "first": True}
+    assert prompt["model"] == {"providerID": "portal-gateway-opencode", "modelID": "gpt-test"}
+    (server,) = opencode.servers()
+    assert server["config"] == {
+        "provider": {"portal-gateway-opencode": {
+            "npm": "@ai-sdk/openai-compatible", "name": "gateway", "options": {"baseURL": "https://gateway.invalid/v1"},
+            "models": {"gpt-test": {"name": "gpt-test", "limit": {"context": 128000, "output": 32768}}}}},
+        "enabled_providers": ["portal-gateway-opencode"], "small_model": "portal-gateway-opencode/gpt-test"}
+    assert server["OPENCODE_DISABLE_MODELS_FETCH"] == "1" and server["PORTAL_OPENCODE_API_KEY"] is None
+    assert "sk-gateway" not in (opencode.state / result.session_id / "launch.json").read_text()
+
+
 def test_an_opencode_turn_takes_send_now_while_it_runs(opencode) -> None:
     """OpenCode 运行中的一轮接受立即发送
 

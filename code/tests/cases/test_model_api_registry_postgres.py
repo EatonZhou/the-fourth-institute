@@ -47,7 +47,8 @@ def test_model_api_instructions_keep_versioned_rows_in_postgres():
     CreateModelApi/UpdateModelApi/DeleteModelApi 在 PostgreSQL 中新建、修改（版本递增、记录修改人）和删除登记；重复 ID 冲突、空 ID 无效、不存在的 ID 报 not_found；Provider 路由读到的是同一行，不涉及任何登记文件。
     """
     created = _call(execution_isa.create_model_api, **MOONSHOT)
-    assert created["api"] == {**MOONSHOT, "kind": "openai_compatible_chat", "enabled": True, "version": 1}
+    assert created["api"] == {**MOONSHOT, "kind": "openai_compatible_chat", "enabled": True,
+                              "harness_protocols": ["openai_chat"], "version": 1}
     _call(execution_isa.create_model_api, **DEEPSEEK)
     assert _failure(execution_isa.create_model_api, **MOONSHOT) == "instruction.conflict"
     assert _failure(execution_isa.create_model_api, **{**DEEPSEEK, "api_id": "  "}) == "instruction.invalid_arguments"
@@ -56,7 +57,7 @@ def test_model_api_instructions_keep_versioned_rows_in_postgres():
                     changes={"default_model": "kimi-k2", "enabled": False})
     assert updated["version"] == 2
     assert updated["api"] == {**MOONSHOT, "kind": "openai_compatible_chat", "default_model": "kimi-k2",
-                              "enabled": False, "version": 2}
+                              "enabled": False, "harness_protocols": ["openai_chat"], "version": 2}
     assert [(api["api_id"], api["version"]) for api in _call(execution_isa.list_model_apis)["apis"]] == [
         ("moonshot_test", 2), ("deepseek_test", 1)]
     from management_portal.hatg.catalog import declaration
@@ -184,3 +185,88 @@ def test_explicit_routes_are_validated_and_follow_the_api_lifecycle():
     assert model_api_store.route_api_id("dsh", "deepseek") == "deepseek_second"
     _call(execution_isa.delete_model_api, api_id="deepseek_second")
     assert model_api_store.route_api_id("dsh", "deepseek") is None
+
+
+def test_model_apis_declare_the_protocols_agent_harnesses_may_use():
+    """模型接口声明 Agent Harness 可用的协议；未声明的 DeepSeek 登记保持原有 Anthropic 地址
+
+    Chat Completions 跟随 kind；openai_responses（Codex）与 anthropic_messages（Claude Code）需要显式声明，后者可指定地址与认证方式，缺省为去掉 /v1 的基础地址和 Bearer。未声明 protocols 的 DeepSeek 登记仍按原规则提供 /anthropic；一旦声明，就只以声明为准。未知协议、chat 声明、错误选项、非 http(s) 地址、未知认证方式都返回 invalid_arguments；非 Chat 接口不能声明协议。
+    """
+    gateway = {"api_id": "gateway_test", "base_url": "https://gateway.invalid/v1", "default_model": "gpt-test",
+               "secret_file": "/secrets/gateway", "provider": "example"}
+    created = _call(execution_isa.create_model_api, **gateway, protocols={
+        "openai_responses": {}, "anthropic_messages": {"auth": "x-api-key"}})
+    assert created["api"]["harness_protocols"] == ["openai_chat", "openai_responses", "anthropic_messages"]
+    entry = AIProviderRegistry().get("gateway_test")
+    assert AIProviderRegistry.harness_endpoint(entry, "openai_responses") == ("https://gateway.invalid/v1", "bearer")
+    assert AIProviderRegistry.harness_endpoint(entry, "anthropic_messages") == ("https://gateway.invalid", "x-api-key")
+    assert AIProviderRegistry.harness_models(entry) == ["gpt-test"]
+    _call(execution_isa.update_model_api, api_id="gateway_test", changes={
+        "protocols": {"anthropic_messages": {"base_url": "https://claude.gateway.invalid/"}}})
+    entry = AIProviderRegistry().get("gateway_test")
+    assert sorted(AIProviderRegistry.harness_protocols(entry)) == ["anthropic_messages", "openai_chat"]
+    assert AIProviderRegistry.harness_endpoint(entry, "anthropic_messages") == ("https://claude.gateway.invalid", "bearer")
+    with pytest.raises(ValueError):
+        AIProviderRegistry.harness_endpoint(entry, "openai_responses")
+
+    legacy = _call(execution_isa.create_model_api, **DEEPSEEK, provider="deepseek")
+    assert legacy["api"]["harness_protocols"] == ["openai_chat", "anthropic_messages"]
+    assert AIProviderRegistry.harness_endpoint(AIProviderRegistry().get("deepseek_test"), "anthropic_messages") == (
+        "https://deepseek.invalid/anthropic", "bearer")
+    declared = _call(execution_isa.update_model_api, api_id="deepseek_test", changes={"protocols": {}})
+    assert declared["api"]["harness_protocols"] == ["openai_chat"]
+
+    for rejected in ("openai_responses", {"openai_chat": {}}, {"websocket": {}}, {"openai_responses": {"base_url": "x"}},
+                     {"anthropic_messages": {"base_url": "ftp://gateway.invalid"}},
+                     {"anthropic_messages": {"auth": "cookie"}}, {"anthropic_messages": []}):
+        assert _failure(execution_isa.update_model_api, api_id="gateway_test",
+                        changes={"protocols": rejected}) == "instruction.invalid_arguments"
+    assert _failure(execution_isa.update_model_api, api_id="gateway_test",
+                    changes={"kind": "typesafe_system_one"}) == "instruction.invalid_arguments"
+    from management_portal.hatg.catalog import declaration
+    declaration("CreateModelApi").validate_arguments({**gateway, "protocols": {"openai_responses": {}}})
+
+
+def test_a_model_api_in_use_by_an_execution_account_is_not_deleted():
+    """仍被执行账号引用的模型接口不能删除
+
+    DeleteModelApi 在有执行账号的 config.api_id 指向该接口时返回 instruction.conflict（reason account.api_in_use，并列出账号），登记保持不变；账号删除后接口可以删除。
+    """
+    from management_portal.execution import account_registrations
+    from tests.cases.model_api_test_support import register_accounts
+
+    _call(execution_isa.create_model_api, **MOONSHOT)
+    register_accounts({"account_id": "moonshot_direct", "provider": "provider_api", "kind": "api_profile",
+                       "config": {"api_id": "moonshot_test"}, "max_concurrency": 1})
+    with pytest.raises(InstructionError) as error:
+        _call(execution_isa.delete_model_api, api_id="moonshot_test")
+    assert error.value.code == "instruction.conflict"
+    assert error.value.details == {"reason": "account.api_in_use", "account_ids": ["moonshot_direct"]}
+    assert model_api_store.api_version("moonshot_test") == 1
+    account_registrations.delete_registration("moonshot_direct")
+    assert _call(execution_isa.delete_model_api, api_id="moonshot_test") == {"api_id": "moonshot_test"}
+
+
+def test_an_older_model_api_table_gains_the_protocols_column_once():
+    """已有实例的模型接口表在首次使用时补上 protocols 列，之后的检查不锁表
+
+    旧实例的 apis 表没有 protocols 列，而读取会解码全部字段；DDL 先查 pg_attribute，缺列时才 ALTER TABLE，列已存在时不对 apis 加任何锁。
+    """
+    database = model_api_store.database()
+    database.ensure()
+    table = database.database.schema + ".apis"
+
+    def columns(connection):
+        return {row["attname"] for row in connection.execute(
+            "SELECT attname FROM pg_attribute WHERE attrelid=to_regclass(%s) AND NOT attisdropped", (table,))}
+
+    with database.database.transaction() as connection:
+        connection.execute("ALTER TABLE apis DROP COLUMN protocols")
+    with database.database.transaction() as connection:
+        assert "protocols" not in columns(connection)
+        connection.executescript(model_api_store.DDL)
+        assert "protocols" in columns(connection)
+    with database.database.transaction() as connection:
+        connection.executescript(model_api_store.DDL)
+        assert [row["mode"] for row in connection.execute(
+            "SELECT mode FROM pg_locks WHERE pid=pg_backend_pid() AND relation=to_regclass(%s)", (table,))] == []

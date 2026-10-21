@@ -105,6 +105,12 @@ class OpenCodeServer:
             "mcp": {MCP_SERVER: {"type": "remote", "url": mcp_url, "oauth": False,
                                  "headers": {"Authorization": f"Bearer {mcp_token}"}}},
         }
+        provider = config.get("provider") or {}
+        if provider:
+            # A custom route's Model API is the session's only provider, titles included.
+            service = str(config["service"])
+            settings.update(provider=provider, enabled_providers=[service],
+                            small_model=f"{service}/{next(iter(provider[service]['models']))}")
         state = Path(config["state_dir"])
         # The client started the bridge with the Resident's environment; OpenCode's
         # tools inherit OpenCode's, so the key stays out of it.
@@ -126,6 +132,9 @@ class OpenCodeServer:
             OPENCODE_DISABLE_CLAUDE_CODE="1",
             OPENCODE_DISABLE_LSP_DOWNLOAD="1",
         )
+        if provider:
+            # Its models are declared; there is no service listing to fetch.
+            env["OPENCODE_DISABLE_MODELS_FETCH"] = "1"
         self.process = spawn_process(
             [config["binary"], "serve", "--hostname", "127.0.0.1", "--port", "0"],
             cwd=config["cwd"], env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
