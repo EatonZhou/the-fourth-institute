@@ -18,18 +18,22 @@ def digest(data):
     return hashlib.sha256(data).hexdigest()
 
 
-def repair(platform, payload):
+def repair(platform, payload, *, extra_payloads=(), versions=(ORIGINAL_COMMIT,), backup_name='ipc-acl'):
     platform = Path(platform).resolve(strict=True)
-    data = Path(payload).read_bytes()
-    if digest(data) != REPAIRED_SHA256:
-        raise ValueError('Repair payload checksum mismatch. Download the repair archive again.')
+    updates = [('management_common/local_ipc.py', payload, ORIGINAL_SHA256, REPAIRED_SHA256), *extra_payloads]
+    prepared = []
+    for relative, source, old_hash, new_hash in updates:
+        data = Path(source).read_bytes()
+        if digest(data) != new_hash:
+            raise ValueError('Repair payload checksum mismatch. Download the repair archive again.')
+        prepared.append((relative, data, old_hash, new_hash))
     sys.path.insert(0, str(platform / 'code'))
     from scripts.tfi_windows_launcher import launcher_lock, stop_all
 
     with launcher_lock(platform):
         receipt = json.loads((platform / 'windows-package.json').read_text(encoding='utf-8'))
-        if receipt.get('source_commit') != ORIGINAL_COMMIT:
-            raise ValueError('This repair supports only preview 4ac9224; no files changed.')
+        if receipt.get('source_commit') not in versions:
+            raise ValueError('This repair does not support the installed preview; no files changed.')
         root = platform / 'instance/example_instance'
         states = list((platform / 'instance').glob('*/installation.json'))
         if states != [root / 'installation.json']:
@@ -40,34 +44,47 @@ def repair(platform, payload):
         if (Path(state['target']['shared_code_root']).resolve() != platform / 'code'
                 or Path(state['target']['install_root']).resolve() != root):
             raise ValueError('The instance belongs to a different code directory.')
-        target = platform / 'code/management_common/local_ipc.py'
-        if any(path.is_symlink() for path in (target, target.parent, target.parent.parent)):
-            raise ValueError('Redirected code path; no files changed.')
-        original = target.read_bytes()
-        if digest(original) == REPAIRED_SHA256:
+        pending = []
+        for relative, data, old_hash, new_hash in prepared:
+            target = platform / 'code' / relative
+            if any(path.is_symlink() for path in (target, target.parent, target.parent.parent)):
+                raise ValueError('Redirected code path; no files changed.')
+            original = target.read_bytes()
+            if digest(original) == new_hash:
+                continue
+            if digest(original) != old_hash:
+                raise ValueError('Installed code was modified; no files changed: ' + relative)
+            pending.append((target, original, data))
+        if not pending:
             return 'already repaired'
-        if digest(original) != ORIGINAL_SHA256:
-            raise ValueError('Installed IPC code was modified; no files changed.')
         # Stop through the installed lifecycle, never kill unowned processes.
         stop_all(platform)
-        backup = platform / '.build/windows/repairs/ipc-acl'
+        backup = platform / '.build/windows/repairs' / backup_name
         backup.mkdir(parents=True, exist_ok=True)
-        saved = backup / 'local_ipc.before.py'
-        if saved.exists():
-            if saved.read_bytes() != original:
+        for target, original, _ in pending:
+            saved = backup / (target.stem + '.before.py')
+            if saved.exists() and saved.read_bytes() != original:
                 raise ValueError('Existing repair backup differs; no files changed.')
-        else:
-            with saved.open('xb') as stream:
-                stream.write(original)
-        fd, temporary = tempfile.mkstemp(prefix='.ipc-repair-', dir=target.parent)
+        staged = []
         try:
-            with os.fdopen(fd, 'wb') as stream:
-                stream.write(data)
-                stream.flush()
-                os.fsync(stream.fileno())
-            os.replace(temporary, target)
+            for target, original, data in pending:
+                saved = backup / (target.stem + '.before.py')
+                if not saved.exists():
+                    with saved.open('xb') as stream:
+                        stream.write(original)
+                fd, temporary = tempfile.mkstemp(prefix='.startup-repair-', dir=target.parent)
+                staged.append((temporary, target))
+                with os.fdopen(fd, 'wb') as stream:
+                    stream.write(data)
+                    stream.flush()
+                    os.fsync(stream.fileno())
+            # Every file is validated and staged first. Each compatible update
+            # is atomic; an interrupted multi-file repair can safely be rerun.
+            for temporary, target in staged:
+                os.replace(temporary, target)
         finally:
-            Path(temporary).unlink(missing_ok=True)
+            for temporary, _ in staged:
+                Path(temporary).unlink(missing_ok=True)
         return 'repaired'
 
 

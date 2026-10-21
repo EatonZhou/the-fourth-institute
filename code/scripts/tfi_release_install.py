@@ -840,11 +840,22 @@ def install(manifest_path, raw_target, *, prepare_only=False, freeze_evidence=No
                 controller.start(unit_name(target, component))
             save_stage(state, phase, "checking")
             phase = "health"
-            deadline = time.monotonic() + 360
+            started = time.monotonic()
+            deadline = started + 360
+            last_progress = None
+            next_progress = started
+            print('@TFI_PROGRESS ' + json.dumps({'message': '正在检查 Portal 就绪状态'}, ensure_ascii=False), flush=True)
             while True:
                 result = observed_status(state)
                 if result["status"] == "installed" or time.monotonic() >= deadline:
                     break
+                pending = '; '.join(health_failures(result))
+                now = time.monotonic()
+                if pending != last_progress or now >= next_progress:
+                    print('@TFI_PROGRESS ' + json.dumps({'message':
+                        f'正在检查 Portal 就绪状态（已等待 {int(now - started)} 秒）：' + pending},
+                        ensure_ascii=False), flush=True)
+                    last_progress, next_progress = pending, now + 15
                 if target.get('windows_service_mode') == 'user' and any(
                         service['active'] == 'inactive' and not service.get('pid')
                         for service in result['services']):
@@ -879,9 +890,8 @@ def install(manifest_path, raw_target, *, prepare_only=False, freeze_evidence=No
             raise
 
 
-def health_failure(state, result):
-    """Save the pre-rollback observations and point at instance-owned logs."""
-    root = Path(state['target']['install_root'])
+def health_failures(result):
+    """Describe the specific checks still blocking startup."""
     failures = [service['service'] + ': ' + service['active'] for service in result['services']
                 if service['active'] != 'active']
     for check in result['checks']:
@@ -893,13 +903,23 @@ def health_failure(state, result):
             reasons = [name for name in ('execution_layer', 'society_service')
                        if isinstance(payload.get(name), dict) and payload[name].get('ok') is not True]
             if reasons:
-                detail = '未就绪: ' + ', '.join(reasons)
+                detail = (detail + '; ' if detail else '') + '未就绪: ' + ', '.join(reasons)
         failures.append((check.get('component') or check.get('route', 'health')) + ': ' + (detail or '未就绪'))
+    return failures
+
+
+def health_failure(state, result):
+    """Save the pre-rollback observations and point at instance-owned logs."""
+    root = Path(state['target']['install_root'])
+    failures = health_failures(result)
     report = root / 'runtime/startup-diagnostics.json'
     excerpts = {}
     for component in COMPONENTS:
         name = unit_name(state['target'], component)
-        if not any(s['service'] == name and s['active'] != 'active' for s in result['services']):
+        failed_check = any(not check['ok'] and (
+            check.get('component') == component or (component == 'web' and check.get('route')))
+            for check in result['checks'])
+        if not failed_check and not any(s['service'] == name and s['active'] != 'active' for s in result['services']):
             continue
         log = root / 'runtime' / (component + '.log')
         try:
@@ -926,6 +946,7 @@ def observed_status(state):
     url = f"http://127.0.0.1:{target['ports']['web']}"
     checks = []
     for route in ("/api/health", "/login"):
+        observation = {"route": route}
         try:
             from urllib.error import HTTPError
             try:
@@ -933,19 +954,23 @@ def observed_status(state):
             except HTTPError as exc:
                 response = exc
             with response:
+                observation['http_status'] = response.status
                 body = response.read()
                 ok = response.status == 200
+                if not ok:
+                    observation['error'] = f'HTTP {response.status}'
             if route == "/api/health":
                 payload = json.loads(body)
                 ok = (ok and payload.get("ok") is True
                       and payload.get("instance") == expected_instance
                       and payload.get("execution_layer", {}).get("ok") is True
                       and payload.get("society_service", {}).get("ok") is True)
-                checks.append({"route": route, "ok": ok, "payload": payload})
+                checks.append({**observation, "ok": ok, "payload": payload})
             else:
-                checks.append({"route": route, "ok": ok, "bytes": len(body)})
+                checks.append({**observation, "ok": ok, "bytes": len(body)})
         except Exception as exc:
-            checks.append({"route": route, "ok": False, "error": str(exc)})
+            detail = (observation.get('error', '') + '; ' if observation.get('error') else '') + str(exc)
+            checks.append({**observation, "ok": False, "error": detail})
     try:
         worker = read_json(root / "runtime/worker-health.json")
         checks.append({"component": "worker", "ok": worker.get("ok") is True

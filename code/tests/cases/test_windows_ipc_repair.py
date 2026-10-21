@@ -77,3 +77,45 @@ def test_invalid_or_busy_installations_are_not_patched(installed, monkeypatch, c
         repair.repair(platform, payload)
     assert target.read_bytes() == before
     assert not stopped
+
+
+@pytest.mark.parametrize('ipc_already_patched', [False, True])
+def test_startup_repair_supports_both_previews_and_preserves_state(installed, monkeypatch, ipc_already_patched):
+    from scripts.windows import repair_startup as startup
+    platform, root, target, payload, stopped = installed
+    source = Path(__file__).resolve().parents[2]
+    bundle = platform / 'payload'
+    bundle.mkdir()
+    (bundle / 'local_ipc.py').write_bytes(payload.read_bytes())
+    if ipc_already_patched:
+        target.write_bytes(payload.read_bytes())
+        (platform / 'windows-package.json').write_text(json.dumps({'source_commit': startup.VERSIONS[1]}))
+    updates = []
+    for relative, _, new_hash in startup.UPDATES:
+        original = ('original ' + relative).encode()
+        destination = platform / 'code' / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(original)
+        (bundle / Path(relative).name).write_bytes((source / relative).read_bytes())
+        updates.append((relative, hashlib.sha256(original).hexdigest(), new_hash))
+    monkeypatch.setattr(startup, 'UPDATES', updates)
+    state = (root / 'installation.json').read_bytes()
+    assert startup.repair_install(platform, bundle) == 'repaired'
+    assert startup.repair_install(platform, bundle) == 'already repaired'
+    assert stopped == [platform]
+    assert (root / 'installation.json').read_bytes() == state
+    for relative, _, _ in updates:
+        assert (platform / 'code' / relative).read_bytes() == (source / relative).read_bytes()
+
+
+def test_later_payload_validation_prevents_partial_repair(installed):
+    platform, _, target, payload, stopped = installed
+    second = platform / 'code/management_portal/page_bootstrap.py'
+    second.parent.mkdir()
+    second.write_bytes(b'operator edit')
+    with pytest.raises(ValueError, match='Installed code was modified'):
+        repair.repair(platform, payload, extra_payloads=[('management_portal/page_bootstrap.py',
+            payload, hashlib.sha256(b'expected source').hexdigest(), repair.REPAIRED_SHA256)])
+    assert target.read_bytes() == b'original fixture code'
+    assert second.read_bytes() == b'operator edit'
+    assert not stopped
