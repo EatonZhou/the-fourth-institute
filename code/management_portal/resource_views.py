@@ -61,6 +61,7 @@ def _knowledge_item(record: dict[str, Any]) -> dict[str, Any]:
     project_ids = list(attrs.get("project_ids") or [])
     item = {
         "kb_id": resource_id,
+        "resource_type": _text(record.get("resource_type")),
         "title": _text(record.get("title")),
         "preview": _text(record.get("summary")),
         "project": _text(project_ids[0]) if project_ids else "",

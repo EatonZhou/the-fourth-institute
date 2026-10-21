@@ -1,4 +1,160 @@
 {
+  "服务账号": {
+    "zh-CN": "服务账号",
+    "en": "Service account"
+  },
+  "高级设置（可选）": {
+    "zh-CN": "高级设置（可选）",
+    "en": "Advanced settings (optional)"
+  },
+  "接入订阅账号": {
+    "zh-CN": "接入订阅账号",
+    "en": "Connect a subscription"
+  },
+  "接入你的 AI": {
+    "zh-CN": "接入你的 AI",
+    "en": "Connect your AI"
+  },
+  "先选择接入方式。这里连接你已有的账号或接口；订阅开通和 API Key 申请请在服务商处完成。": {
+    "zh-CN": "先选择接入方式。这里连接你已有的账号或接口；订阅开通和 API Key 申请请在服务商处完成。",
+    "en": "Choose how to connect an existing account or API. Purchase subscriptions and obtain API keys from your provider."
+  },
+  "订阅账号登录": {
+    "zh-CN": "订阅账号登录",
+    "en": "Subscription login"
+  },
+  "已有支持的 AI 编程订阅？给账号起名，选择后端，再通过浏览器登录授权，无需填写 API Key。": {
+    "zh-CN": "已有支持的 AI 编程订阅？给账号起名，选择后端，再通过浏览器登录授权，无需填写 API Key。",
+    "en": "Have a supported AI coding subscription? Name your account, choose a backend, then authorize in your browser. No API key needed."
+  },
+  "使用模型 API": {
+    "zh-CN": "使用模型 API",
+    "en": "Use a model API"
+  },
+  "已有 API Key？填写接口地址、模型名称和密钥，保存后继续测试；也可只保存接口。": {
+    "zh-CN": "已有 API Key？填写接口地址、模型名称和密钥，保存后继续测试；也可只保存接口。",
+    "en": "Have an API key? Enter the API address, model name and key, then continue to testing. You can also save just the API connection."
+  },
+  "1. 给账号起名并选择后端 → 2. 准备环境、登录授权 → 3. 选择模型并测试。": {
+    "zh-CN": "1. 给账号起名并选择后端 → 2. 准备环境、登录授权 → 3. 选择模型并测试。",
+    "en": "1. Name your account and choose a backend → 2. Prepare the runtime and sign in → 3. Choose a model and test."
+  },
+  "账号名称": {
+    "zh-CN": "账号名称",
+    "en": "Account name"
+  },
+  "这是你在 Portal 中使用的唯一名称，不是服务商的登录邮箱。以小写字母开头，只用小写字母、数字、下划线或短横线，最多 128 字符。": {
+    "zh-CN": "这是你在 Portal 中使用的唯一名称，不是服务商的登录邮箱。以小写字母开头，只用小写字母、数字、下划线或短横线，最多 128 字符。",
+    "en": "A unique name within Portal, not your sign-in email. Start with a lowercase letter; use lowercase letters, digits, underscores or hyphens, up to 128 characters."
+  },
+  "AI 后端": {
+    "zh-CN": "AI 后端",
+    "en": "AI backend"
+  },
+  "接入方式": {
+    "zh-CN": "接入方式",
+    "en": "Connection method"
+  },
+  "保存后按页面提示打开浏览器完成授权。不要在这里填写订阅密码或 API Key。": {
+    "zh-CN": "保存后按页面提示打开浏览器完成授权。不要在这里填写订阅密码或 API Key。",
+    "en": "After saving, follow the browser authorization steps. Do not enter your subscription password or API key here."
+  },
+  "选择已保存的接口。还没有接口？关闭此窗口，使用页面顶部的“新增模型 API”。": {
+    "zh-CN": "选择已保存的接口。还没有接口？关闭此窗口，使用页面顶部的“新增模型 API”。",
+    "en": "Choose a saved API. If you have none, close this window and select Add model API at the top of the page."
+  },
+  "更换 API Key（可选）": {
+    "zh-CN": "更换 API Key（可选）",
+    "en": "Replace API key (optional)"
+  },
+  "留空沿用已保存的密钥。填写后替换所选接口的 API Key，提交后不回显。": {
+    "zh-CN": "留空沿用已保存的密钥。填写后替换所选接口的 API Key，提交后不回显。",
+    "en": "Leave blank to keep the saved key. Enter a new key to replace it for the selected API. Submitted keys are never displayed."
+  },
+  "修改连接信息。API Key 留空时保留当前密钥。": {
+    "zh-CN": "修改连接信息。API Key 留空时保留当前密钥。",
+    "en": "Edit the connection. Leave API key blank to keep the current key."
+  },
+  "准备好服务商提供的 API Key、Base URL 和模型名称。新增接口使用 OpenAI 兼容的 Chat Completions 协议。": {
+    "zh-CN": "准备好服务商提供的 API Key、Base URL 和模型名称。新增接口使用 OpenAI 兼容的 Chat Completions 协议。",
+    "en": "Have your provider's API key, base URL and model name ready. New connections use the OpenAI-compatible Chat Completions protocol."
+  },
+  "连接名称": {
+    "zh-CN": "连接名称",
+    "en": "Connection name"
+  },
+  "自己起一个唯一名称，保存后不可改名。以小写字母开头，只用小写字母、数字、下划线或短横线，最多 128 字符。": {
+    "zh-CN": "自己起一个唯一名称，保存后不可改名。以小写字母开头，只用小写字母、数字、下划线或短横线，最多 128 字符。",
+    "en": "Choose a unique name; it cannot be renamed after saving. Start with a lowercase letter; use lowercase letters, digits, underscores or hyphens, up to 128 characters."
+  },
+  "接口基础地址（Base URL）": {
+    "zh-CN": "接口基础地址（Base URL）",
+    "en": "API base URL"
+  },
+  "复制服务商提供的 API 基础地址，不是官网或聊天网页；不要附加 /chat/completions。": {
+    "zh-CN": "复制服务商提供的 API 基础地址，不是官网或聊天网页；不要附加 /chat/completions。",
+    "en": "Copy the API base URL from your provider, not its website or chat page. Do not append /chat/completions."
+  },
+  "模型名称": {
+    "zh-CN": "模型名称",
+    "en": "Model name"
+  },
+  "填写服务商文档中的模型标识，必须与接口支持的名称完全一致。": {
+    "zh-CN": "填写服务商文档中的模型标识，必须与接口支持的名称完全一致。",
+    "en": "Use the exact model identifier supported by the API, as listed in your provider's documentation."
+  },
+  "API Key（密钥）": {
+    "zh-CN": "API Key（密钥）",
+    "en": "API key"
+  },
+  "留空保留当前密钥；填写则替换。密钥不会回显，也不是一次性验证码。": {
+    "zh-CN": "留空保留当前密钥；填写则替换。密钥不会回显，也不是一次性验证码。",
+    "en": "Leave blank to keep the current key, or enter a replacement. Keys are never displayed again. This is not a one-time verification code."
+  },
+  "粘贴服务商生成的 API Key。Portal 会保存供后续调用使用，提交后不回显；这不是一次性验证码。无需密钥的接口可留空。": {
+    "zh-CN": "粘贴服务商生成的 API Key。Portal 会保存供后续调用使用，提交后不回显；这不是一次性验证码。无需密钥的接口可留空。",
+    "en": "Paste the API key issued by your provider. Portal saves it for future calls without displaying it again. This is not a one-time code. Leave blank for APIs that require no key."
+  },
+  "服务商名称（可选）": {
+    "zh-CN": "服务商名称（可选）",
+    "en": "Provider name (optional)"
+  },
+  "仅用于标记接口来源，不是登录账号；填写服务商名称即可。": {
+    "zh-CN": "仅用于标记接口来源，不是登录账号；填写服务商名称即可。",
+    "en": "Labels the source of this API, not a sign-in account. Enter the provider's name."
+  },
+  "服务器上的密钥文件路径（可选）": {
+    "zh-CN": "服务器上的密钥文件路径（可选）",
+    "en": "Key file path on the server (optional)"
+  },
+  "仅在密钥已由管理员放在 Portal 服务器上时填写绝对路径；不是你电脑上的文件。已填写 API Key 时无需填写。": {
+    "zh-CN": "仅在密钥已由管理员放在 Portal 服务器上时填写绝对路径；不是你电脑上的文件。已填写 API Key 时无需填写。",
+    "en": "Only enter an absolute path if an administrator has placed the key on the Portal server, not on your computer. Unnecessary when entering an API key above."
+  },
+  "启用此接口": {
+    "zh-CN": "启用此接口",
+    "en": "Enable this API"
+  },
+  "AI 账号名称（可选）": {
+    "zh-CN": "AI 账号名称（可选）",
+    "en": "AI account name (optional)"
+  },
+  "留空使用连接名称": {
+    "zh-CN": "留空使用连接名称",
+    "en": "Leave blank to use the connection name"
+  },
+  "同时添加为 AI 账号，继续接入与测试": {
+    "zh-CN": "同时添加为 AI 账号，继续接入与测试",
+    "en": "Also add an AI account and continue setup"
+  },
+  "用于 Resident 对话。保存后选择模型并测试，可设为默认 AI；直连模型 API 不提供工具执行。测试会发起模型调用，可能产生费用。": {
+    "zh-CN": "用于 Resident 对话。保存后选择模型并测试，可设为默认 AI；直连模型 API 不提供工具执行。测试会发起模型调用，可能产生费用。",
+    "en": "Use this for Resident conversations. After saving, choose a model and test it; you can then set it as the default AI. Direct model APIs do not execute tools. Testing makes a model call and may incur charges."
+  },
+  "API 已保存，但 AI 账号尚未添加。可修改账号名称后重试保存，不会重复创建 API；也可取消勾选，仅保留接口。": {
+    "zh-CN": "API 已保存，但 AI 账号尚未添加。可修改账号名称后重试保存，不会重复创建 API；也可取消勾选，仅保留接口。",
+    "en": "API saved, but the AI account was not added. You can change the account name and retry without creating another API, or uncheck the option to keep just the API."
+  },
   "账号额度保护暂停了测试，等待额度恢复或选择其他账号。": {
     "en": "The test is waiting for account quota to recover. You can choose another account.",
     "zh-CN": "账号额度保护暂停了测试，等待额度恢复或选择其他账号。"
