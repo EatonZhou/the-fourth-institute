@@ -111,9 +111,88 @@ async function arrowHistoryListsQueuedSentThenServerPages() {
   }
 }
 
+async function deletedQueueInputRemainsRecallable() {
+  let scope = 'deleted-queue';
+  const fullText = 'queued input '.repeat(80) + 'the complete ending';
+  const queued = (id, text, author = 'sample_admin', extra = []) => ({
+    message_id: id, author_id: author,
+    content_parts: [{ type: 'text', text }, ...extra],
+  });
+  let items = [
+    queued('other-user', 'not my input', 'CASE-A'),
+    { message_id: 'preview-only', author_id: 'sample_admin', preview: 'truncated preview' },
+    queued('mine-first', 'earlier queued input'),
+    queued('mine-last', fullText, 'sample_admin', [{
+      type: 'file', upload_id: 'upload-history', path: '/uploads/history.txt',
+      name: 'history.txt', mime: 'text/plain',
+    }]),
+  ];
+  let finishFirstPage;
+  const firstPage = new Promise(resolve => { finishFirstPage = resolve; });
+  let listed = [];
+  let loads = 0;
+  const workspace = w.PortalChatWorkspace.createWorkspace({
+    root: w.document.getElementById('fixture'), id: 'queue-history', refs: false,
+    historyScope: () => scope,
+    onLoadInputHistory: async () => ++loads === 1 ? firstPage : { messages: listed, next_page_token: '' },
+    onQueueDelete: id => {
+      items = items.filter(item => item.message_id !== id);
+      workspace.setComposer({ can_send: true, queue: { items } });
+    },
+    contract: { schema: 'portal.chat_workspace.v3', messages: [], composer: { can_send: true, queue: { items } } },
+  });
+  const composer = w.document.querySelector('#fixture .composerInput');
+  const press = async key => {
+    composer.focus();
+    composer.dispatchEvent(new w.KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+    await settle();
+    return composer.textContent.trim();
+  };
+  try {
+    await settle();
+    workspace.setDraftText('unsent draft');
+    w.document.querySelector('[data-workspace-queue-delete="mine-last"]').click();
+    assert.equal(composer.textContent.trim(), 'unsent draft', 'deletion must not replace a draft');
+    assert.ok((await press('ArrowUp')).includes(fullText), 'Up recalls the complete removed queue input');
+    assert.equal(workspace.attachments()[0]?.upload_id, 'upload-history', 'the uploaded file is restored');
+    // Undelivered inputs are absent from the server trace, even after cancellation.
+    finishFirstPage({ messages: [], next_page_token: '' });
+    await settle();
+    assert.equal(await press('ArrowDown'), 'unsent draft', 'Down returns to the saved draft');
+    assert.equal(workspace.attachments().length, 0, 'Down restores the draft attachment set');
+    assert.ok((await press('ArrowUp')).includes(fullText), 'a late empty page must not erase the removed input');
+    assert.equal(await press('ArrowUp'), 'earlier queued input');
+    assert.equal(await press('ArrowUp'), 'earlier queued input', 'other authors and preview-only rows are excluded');
+    await press('ArrowDown');
+    await press('ArrowDown');
+
+    // Leaving the queue for execution must still deduplicate when the trace catches up.
+    items = [];
+    workspace.setComposer({ can_send: true, queue: { items } });
+    listed = [message('mine-first', 'earlier queued input')];
+    workspace.setMessages(listed);
+    await settle();
+    assert.ok((await press('ArrowUp')).includes(fullText));
+    assert.equal(await press('ArrowUp'), 'earlier queued input');
+    assert.ok((await press('ArrowDown')).includes(fullText), 'the server-listed input must not appear twice');
+
+    scope = 'different-resident';
+    listed = [];
+    workspace.setDraftText('');
+    workspace.setComposer({ can_send: true, queue: { items: [] } });
+    workspace.setMessages([]);
+    await settle();
+    assert.equal(await press('ArrowUp'), '', 'removed inputs never cross conversation scopes');
+  } finally {
+    finishFirstPage({ messages: [], next_page_token: '' });
+    workspace.destroy();
+  }
+}
+
 (async () => {
   try {
     await arrowHistoryListsQueuedSentThenServerPages();
+    await deletedQueueInputRemainsRecallable();
     console.log('PASS the Arrow history lists queued and just-sent inputs, then the server pages, per conversation');
   } finally {
     await new Promise(resolve => setImmediate(resolve));
