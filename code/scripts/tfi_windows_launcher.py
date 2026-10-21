@@ -176,13 +176,17 @@ def selected_engineering(platform, included):
     return platform / ('example-engineering.zip' if included else 'base-engineering.zip')
 
 
-def unpack_engineering(platform, *, included=True, progress=None):
+def unpack_engineering(platform, *, included=True, progress=None, archive=None, parent=None):
     """Extract a build-verified candidate once, without scanning or hashing it."""
-    from scripts.tfi_install_progress import FileProgress
+    from scripts.tfi_install_progress import FileProgress, copy_stream
     import shutil
     import stat
-    archive = selected_engineering(platform, included)
-    parent = platform / '.build/w'
+    archive = Path(archive) if archive is not None else selected_engineering(platform, included)
+    parent = Path(parent) if parent is not None else platform / '.build/w'
+    if not parent.absolute().is_relative_to(platform.absolute() / '.build'):
+        raise ValueError('Engineering destination must stay in the platform build directory')
+    if parent.absolute() != parent.resolve():
+        raise ValueError('Redirected engineering destination')
     destination, temporary = parent / 'engineering', parent / 'engineering.pending'
     if any(p.is_symlink() for p in (platform, platform / '.build', parent, destination, temporary)):
         raise ValueError('Redirected engineering destination')
@@ -221,8 +225,9 @@ def unpack_engineering(platform, *, included=True, progress=None):
             else:
                 target.parent.mkdir(parents=True, exist_ok=True)
                 with zipped.open(entry) as source, target.open('wb') as output:
-                    shutil.copyfileobj(source, output)
-                meter.advance(entry.file_size)
+                    copy_stream(source, output, meter)
+                if os.name != 'nt' and entry.create_system == 3:
+                    target.chmod(stat.S_IMODE(entry.external_attr >> 16) & 0o777)
         # Empty data roots are not entries in the file inventory.
         for relative in manifest['files'].values():
             if Path(relative).parts[:1] != ('data',) or '..' in Path(relative).parts or '\\' in relative or ':' in relative:

@@ -82,9 +82,9 @@ def verify_prepared_payload(platform, *, target_platform="windows"):
                 zipped.extractall(seed)
             subprocess.run([sys.executable, str(root / "prepare_install.py"), "--platform", target_platform, *options],
                            cwd=root, env=env, check=True)
-            if target_platform == 'windows':
-                bundle_engineering(root / '.build/w/engineering',
-                                   platform / ('base-engineering.zip' if options else 'example-engineering.zip'))
+            build_dir = '.build/w' if target_platform == 'windows' else '.build/example_instance-' + target_platform
+            bundle_engineering(root / build_dir / 'engineering',
+                               platform / ('base-engineering.zip' if options else 'example-engineering.zip'))
 
 
 def bundle_native_dependencies(repo, destination, native_cache, *, target="windows/x86_64"):

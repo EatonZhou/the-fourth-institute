@@ -1,4 +1,4 @@
-"""Windows directly consumes build-prepared cases with bounded file progress.
+"""Desktop installers consume build-prepared cases with bounded file progress.
 
 :module: operations.deployment
 :design: decision_d88306d0bd17
@@ -132,3 +132,98 @@ def test_progress_throttles_updates_and_always_reports_completion():
             meter.advance(2)
     assert len(messages) == 2
     assert '100/100' in messages[-1] and '100%' in messages[-1]
+
+
+def test_large_file_reports_bytes_before_completion():
+    import io
+    from itertools import count
+    from scripts.tfi_install_progress import copy_stream
+    messages = []
+    content = b'x' * (3 * 1024 * 1024 + 17)
+    output = io.BytesIO()
+    with patch('scripts.tfi_install_progress.time.monotonic', side_effect=count()):
+        meter = FileProgress('解压', 1, len(content), messages.append)
+        copy_stream(io.BytesIO(content), output, meter)
+    assert output.getvalue() == content
+    assert any('0/1' in m and '33%' in m and '1.0/' in m for m in messages)
+    assert '1/1' in messages[-1] and '100%' in messages[-1]
+
+
+def test_macos_materialization_omits_archives_and_preserves_runtime(tmp_path):
+    from scripts.tfi_macos_launcher import materialize
+    bundle, target = tmp_path / '应用包', tmp_path / 'Library/TFI'
+    binary = bundle / 'python/bin/python3'
+    binary.parent.mkdir(parents=True)
+    binary.write_bytes(b'embedded runtime')
+    binary.chmod(0o755)
+    (binary.parent / 'python').symlink_to('python3')
+    (bundle / 'macos-package.json').write_text('{"version": "test"}')
+    (bundle / 'base-engineering.zip').write_bytes(b'do not copy')
+    (bundle / 'example-engineering.zip').write_bytes(b'do not copy')
+    opened = []
+    original_open = Path.open
+    def tracked_open(path, *args, **kwargs):
+        if args and args[0] == 'rb':
+            opened.append(path)
+        return original_open(path, *args, **kwargs)
+    messages = []
+    with patch.object(Path, 'open', tracked_open):
+        materialize(bundle, target, progress=messages.append)
+    assert opened == [bundle / 'macos-package.json', binary]
+    assert (target / 'python/bin/python3').stat().st_mode & 0o777 == 0o755
+    assert (target / 'python/bin/python').readlink() == Path('python3')
+    assert (target / 'python/bin/python').read_bytes() == b'embedded runtime'
+    assert not list(target.glob('*-engineering.zip'))
+    assert '100%' in messages[-1] and 'MiB' in messages[-1]
+    opened.clear()
+    with patch.object(Path, 'open', tracked_open):
+        materialize(bundle, target)
+    assert not opened
+
+
+def test_macos_uses_selected_app_archive_directly_and_retains_choice(tmp_path):
+    from scripts import tfi_macos_launcher as mac
+    app, target = tmp_path / '应用包', tmp_path / 'Library/TFI'
+    app.mkdir()
+    archive(app, False)
+    flow = mac.MacStartup(target, included=False, bundle=app)
+    with patch.object(flow, 'execute') as execute, patch.object(mac, 'unpack_seed', side_effect=AssertionError('seed copy')):
+        flow.initialize()
+        assert execute.call_count == 1
+        command = execute.call_args.args[0]
+        assert '--skip-file-verification' in command
+        assert command[2] == 'install'
+        manifest_path = Path(command[command.index('--manifest') + 1])
+        assert manifest_path == target / '.build/m/engineering/manifest.json'
+        assert not (manifest_path.parent / 'data/share_root/Lenia').exists()
+        assert not list(target.glob('*-engineering.zip'))
+        assert not (target / 'instance/example_instance/seed').exists()
+        # A new launch with the default checked choice must keep the saved base selection.
+        retried = mac.MacStartup(target, bundle=app)
+        with patch.object(retried, 'execute'), patch.object(zipfile.ZipFile, 'open', side_effect=AssertionError('repeat content read')):
+            with patch.object(zipfile.ZipFile, 'read', return_value=manifest_path.read_bytes()):
+                retried.initialize()
+    assert json.loads((target / '.build/macos/options.json').read_text())['include_examples'] is False
+
+
+def test_mac_archive_extracts_modes_and_rejects_redirected_parent(tmp_path):
+    import os
+    if os.name == 'nt':
+        pytest.skip('POSIX modes and symlinks')
+    app, target = tmp_path / '应用 包', tmp_path / 'Library/TFI'
+    app.mkdir()
+    zipped, _ = archive(app, extra=('code/run', b'#!/bin/sh\n'))
+    # zipfile.writestr defaults to a non-executable regular file; explicitly set executable mode.
+    with zipfile.ZipFile(zipped, 'a') as stream:
+        script = zipfile.ZipInfo('code/launch')
+        script.create_system = 3
+        script.external_attr = 0o100755 << 16
+        stream.writestr(script, b'#!/bin/sh\n')
+    manifest = launcher.unpack_engineering(target, archive=zipped, parent=target / '.build/m')
+    assert (manifest.parent / 'code/launch').stat().st_mode & 0o777 == 0o755
+    outside = tmp_path / 'outside'
+    outside.mkdir()
+    (target / '.build/link').symlink_to(outside, target_is_directory=True)
+    with pytest.raises(ValueError, match='Redirected'):
+        launcher.unpack_engineering(target, archive=zipped, parent=target / '.build/link/deeper')
+    assert not list(outside.iterdir())
