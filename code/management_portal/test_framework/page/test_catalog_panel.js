@@ -8,6 +8,7 @@
     let filtersOpen = false;
     let matchedCaseIds = null;
     let queryPending = false;
+    let queryError = "";
     let queryRevision = 0;
     let searchTimer = 0;
     const closeFilters = ({ restoreFocus = true } = {}) => {
@@ -29,7 +30,7 @@
       if (panel?.contains(event.target) || button?.contains(event.target)) return;
       closeFilters({ restoreFocus: false });
     };
-    const visible = () => T.store.cases.filter(item => (
+    const visible = () => queryPending || queryError ? [] : T.store.cases.filter(item => (
       item.lifecycle !== "retired"
       && (matchedCaseIds === null || matchedCaseIds.has(item.id))
     ));
@@ -80,6 +81,8 @@
     const rowsHtml = rows => {
       if (T.store.catalogStatus === "error") return window.PortalI18n.html`<div class="testEmpty">测试目录加载失败：${T.escapeHtml(T.store.catalogError)}</div>`;
       if (T.store.catalogStatus !== "loaded") return window.PortalI18n.markup('<div class="testEmpty" role="status">正在加载测试目录…</div>');
+      if (queryPending) return window.PortalI18n.markup('<div class="testEmpty" role="status">正在筛选测试目录…</div>');
+      if (queryError) return window.PortalI18n.html`<div class="testEmpty" role="alert">筛选测试目录失败：${T.escapeHtml(queryError)} <button class="portalButton" data-retry-query type="button">重试筛选</button></div>`;
       return rows.length ? rows.map(item => {
         const label = T.caseLabel(item);
         const tags = [...(item.aspects || []).map(aspect => T.aspectLabels[aspect] || aspect), ...(item.is_design_point ? [item.design_point_ref ? "WALL 点已绑定" : "设计点未绑定"] : []), ...(item.live ? ["Live"] : [])];
@@ -93,6 +96,7 @@
       button.textContent = T.store.selection.size ? window.PortalI18n.text`生成运行计划（${T.store.selection.size}）` : window.PortalI18n.t("生成运行计划");
     };
     const bindRows = () => {
+      root.querySelector("[data-retry-query]")?.addEventListener("click", () => refilter());
       root.querySelectorAll("[data-open-case]").forEach(button => button.addEventListener("click", () => T.openCase(button.dataset.openCase)));
       root.querySelectorAll("[data-case-id]").forEach(row => row.addEventListener("click", event => {
         if (event.target.closest("button, input, select, textarea, a")) return;
@@ -110,9 +114,9 @@
       const list = root.querySelector(".testCaseList");
       if (list) list.innerHTML = rowsHtml(rows);
       const meta = root.querySelector("[data-portal-board-meta]");
-      if (meta) meta.textContent = queryPending ? window.PortalI18n.t("筛选中…") : `${matches.length} / ${activeTotal}`;
+      if (meta) meta.textContent = queryPending ? window.PortalI18n.t("筛选中…") : queryError ? window.PortalI18n.t("筛选失败") : `${matches.length} / ${activeTotal}`;
       const count = root.querySelector("[data-visible-case-count]");
-      if (count) count.textContent = window.PortalI18n.text`已显示 ${rows.length} / ${matches.length} 条`;
+      if (count) count.textContent = queryPending ? window.PortalI18n.t("正在筛选") : queryError ? window.PortalI18n.t("请重试筛选") : window.PortalI18n.text`已显示 ${rows.length} / ${matches.length} 条`;
       const filterLabel = root.querySelector("[data-filter-toggle] span");
       if (filterLabel) filterLabel.textContent = filterButtonLabel();
       bindRows();
@@ -146,16 +150,18 @@
     };
     const refilter = ({ debounce = false } = {}) => {
       window.clearTimeout(searchTimer);
+      // Invalidate the old request as soon as the filter changes, including the
+      // debounce window before the next request starts.
+      const revision = ++queryRevision;
+      queryError = "";
+      queryPending = hasQueryFilters();
+      if (!queryPending) {
+        matchedCaseIds = null;
+        applyMatchedResults();
+        return;
+      }
+      updateResults();
       const execute = async () => {
-        const revision = ++queryRevision;
-        if (!hasQueryFilters()) {
-          matchedCaseIds = null;
-          queryPending = false;
-          applyMatchedResults();
-          return;
-        }
-        queryPending = true;
-        updateResults();
         try {
           const payload = await T.api(`/test/api/catalog/query?${queryParams().toString()}`);
           if (revision !== queryRevision) return;
@@ -165,8 +171,8 @@
         } catch (error) {
           if (revision !== queryRevision) return;
           queryPending = false;
+          queryError = error.message || String(error);
           updateResults();
-          T.notify(`筛选测试目录失败：${error.message || error}`, "error");
         }
       };
       if (debounce) searchTimer = window.setTimeout(execute, 160);
@@ -232,8 +238,7 @@
       root.querySelector("[data-design]")?.addEventListener("change", event => { filters.design = event.target.value; refilter(); });
       root.querySelectorAll("[data-aspect]").forEach(input => input.addEventListener("change", () => { input.checked ? filters.aspects.add(input.dataset.aspect) : filters.aspects.delete(input.dataset.aspect); refilter(); }));
       root.querySelector("[data-live-only]")?.addEventListener("change", event => { filters.liveOnly = event.target.checked; refilter(); });
-      bindRows();
-      bindMore(matches.length);
+      updateResults();
       root.querySelector("[data-run-selected]")?.addEventListener("click", () => T.prepareRun([...T.store.selection]));
     };
     root.classList.add("testPanel");
