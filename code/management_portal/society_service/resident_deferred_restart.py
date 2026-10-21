@@ -1,6 +1,7 @@
 """Durable session migrations admitted while the current execution is still running."""
 from __future__ import annotations
 import copy
+import logging
 import secrets
 from . import resident_catalog, resident_execution_work
 
@@ -130,4 +131,13 @@ def reconcile(records=None):
         records = catalog.get_many(ids)
     for record in records:
         if pending(record):
-            advance(record)
+            try:
+                advance(record)
+            except Exception:
+                # An unconfirmed handoff keeps its durable intent for retry.
+                # It must not prevent other Residents (or the remaining
+                # execution recovery stages) from making progress.
+                logging.getLogger(__name__).exception(
+                    "Deferred session restart reconciliation failed for %s",
+                    record.get("resident_id"),
+                )

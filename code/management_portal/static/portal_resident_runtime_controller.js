@@ -95,17 +95,18 @@
         b.dialog?.close?.(); b.dialog?.destroy?.(); b.dialog = null;
         if (e.presentation === b) e.presentation = null;
       };
-      const check = (token, identity) => {
+      const check = (token, identity, allowActive = false) => {
         // Cache refreshes do not change the dialog's authority. The fresh
         // projection below validates the actual route and current permission.
-        if (!live(token) || identity !== identityRevision || active(e.restart)) throw stale();
+        if (!live(token) || identity !== identityRevision || (!allowActive && active(e.restart))) throw stale();
       };
-      const freshDetail = async (token, identity, route, restart = false) => {
-        check(token, identity);
+      const freshDetail = async (token, identity, route, operation = "settings") => {
+        const allowActive = operation === "cancel";
+        check(token, identity, allowActive);
         const detail = await service().projection({ residentId: id });
-        check(token, identity);
+        check(token, identity, allowActive);
         if (routeKey(detail) !== route) { invalidate(id); throw stale(); }
-        if (restart ? detail?.allows?.RestartSession !== true : !mayEdit(detail)) {
+        if (operation === "settings" ? !mayEdit(detail) : detail?.allows?.RestartSession !== true) {
           invalidate(id); throw denied();
         }
       };
@@ -156,34 +157,36 @@
           b.dialog.open({ ...config, runtime_settings: config.runtime_settings || e.settings, resident_id: id, choose_runtime_settings: true }, values => {
             if (submission) return submission;
             submission = (async () => {
-              await freshDetail(token, identity, route, true);
+              await freshDetail(token, identity, route, "restart");
               const result = await service().restartSession({ ...values, resident_id: id });
               if (!["accepted", "completed"].includes(result?.status)) throw new Error(window.PortalI18n.t("Session 切换结果尚未确认，请刷新查看状态"));
               if (result.status === "completed") { invalidate(id); changed(e, result); }
               return result;
             })();
             return submission.finally(() => { submission = null; });
-          }, () => { invalidate(id); return load(e); }, values => {
-            if (!live(token)) throw stale();
+          }, () => { invalidate(id); return load(e); }, async values => {
+            await freshDetail(token, identity, route, "cancel");
             return service().cancelSessionRestart({ resident_id: id, restart_id: values.restart_id });
           });
         }
       }
       async function open(kind, focusTarget) {
-        if (b.disposed || e.opening || e.saving || active(e.restart)) return;
+        // Progress remains readable during migration; settings and conflicting
+        // submissions stay locked, and cancellation retains its own validation.
+        if (b.disposed || e.opening || e.saving || (kind !== "restart" && active(e.restart))) return;
         const previous = e.presentation;
         previous?.dialog?.close?.(); previous?.dialog?.destroy?.();
         if (previous) previous.dialog = null;
         b.dialog?.destroy?.(); b.dialog = null;
-        const token = ++b.generation;
+        const token = ++b.generation, identity = identityRevision;
         e.opening = (async () => {
           // Re-check permissions and current Provider even when another entry primed the cache.
           e.valid = false; await load(e);
-          if (!live(token) || active(e.restart)) return;
+          if (!live(token) || identity !== identityRevision || (kind !== "restart" && active(e.restart))) return;
           if (kind === "settings" && !mayEdit(e.detail)) kind = "restart";
           if (kind === "restart" && e.detail?.allows?.RestartSession !== true) throw denied();
           const config = kind === "restart" ? await service().sessionRestartOptions(id) : null;
-          if (!live(token) || active(e.restart)) return;
+          if (!live(token) || identity !== identityRevision || (kind !== "restart" && active(e.restart))) return;
           present(kind, token, focusTarget, config);
         })();
         notify(e);
