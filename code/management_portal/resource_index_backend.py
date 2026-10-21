@@ -732,7 +732,7 @@ class IndexStore:
             self._change_generation += 1
             if direct:
                 revisions = self._direct_revisions.setdefault(adapter, {})
-                for resource_id in set(validated) | effective_deletes:
+                for resource_id in set(validated) | delete_ids:
                     revisions[resource_id] = self._change_generation
             index_updated_at = self._index_updated_at
         if persist:
@@ -1552,6 +1552,26 @@ class AdapterLayer:
         )
         if resource_id not in result["upserted_ids"]:
             raise RuntimeError(f"registration projection rejected {resource_id}")
+        self._completed_refresh(adapter.name, {
+            **result, "changed": True, "scanned": False, "incremental": True,
+        }, forced=True, emit=True)
+        return result
+
+    def project_unregistered(self, resource_type: str, resource_id: str) -> dict[str, Any]:
+        """Remove a committed identity before callers query the derived list.
+
+        The direct revision also fences scans begun before the unregistration,
+        including a scan whose first observation of this ID is still in flight.
+        """
+        owners = [adapter for adapter in self.adapters.values()
+                  if resource_type in adapter.resource_types]
+        if len(owners) != 1:
+            raise ValueError(f"unregistration has no unique index adapter: {resource_type}")
+        adapter = owners[0]
+        result = self.store.apply(ChangeSet(
+            adapter.name, deletes=(resource_id,),
+            source_state=self.store.adapter_source_state(adapter.name),
+        ), direct=True)
         self._completed_refresh(adapter.name, {
             **result, "changed": True, "scanned": False, "incremental": True,
         }, forced=True, emit=True)

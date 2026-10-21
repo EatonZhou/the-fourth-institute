@@ -265,6 +265,11 @@ def dispatch(facade_id: str, trigger: str, actor: str, *, facts: dict | None = N
                                         "pressure_threshold", "pressure_value", "oldest_wait_seconds"}})
     options = {"message_id": message_id} if message_id else {}
     if trigger == "route":
+        # A Lineage can contain nested Families. Expose this layer's exact
+        # routing boundary instead of making the Router infer it from the graph.
+        facts["routing"] = {"members": list(family["members"]), "steward": family["steward"],
+            "constraint": "target 只能是本层 members 中的直接成员或本层 steward。成员若为嵌套 Family，"
+                          "选择其门面，由该 Family 继续路由；不要选择其内部 Router、Steward 或成员。"}
         mid = str(facts.get("message_id") or "")
         if not mid:
             raise ValueError("路由任务必须绑定原消息")

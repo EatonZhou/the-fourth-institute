@@ -374,6 +374,9 @@ class ResourceService:
                 self._index().project_registered(resource_type, record)
                 projection = {}
             else:
+                if kind == "delete":
+                    stage = "index_projection"
+                    self._index().project_unregistered(resource_type, resource_id)
                 stage = "index_notification"
                 projection = self._notify_mutation(
                     resource_id=resource_id,

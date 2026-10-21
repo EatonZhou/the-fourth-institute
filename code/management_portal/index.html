@@ -1169,6 +1169,8 @@
       }
       .scheduled-triggered-workbench {
         display: grid;
+        min-width: 0;
+        grid-template-columns: minmax(0, 1fr);
         gap: 8px;
       }
       .statusDisclosureIcon { width: 18px; height: 18px; padding: 2px; border: none; border-radius: 5px; background: transparent; color: var(--muted); fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; flex: 0 0 auto; transition: transform 140ms ease; }
@@ -1192,6 +1194,8 @@
         grid-column: 1 / -1;
       }
       .scheduled-triggered-lineage-title {
+        min-width: 0;
+        overflow-wrap: anywhere;
         grid-column: 1 / -1;
         padding: 7px 2px 4px;
         border-bottom: 1px solid var(--border);
@@ -1259,9 +1263,7 @@
       .scheduled-triggered-title {
         color: var(--text);
         font-weight: 750;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        overflow-wrap: anywhere;
       }
       .scheduled-triggered-kind,
       .scheduled-triggered-subtle {
@@ -1280,9 +1282,7 @@
       }
       .scheduled-triggered-summary-value {
         color: var(--text);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        overflow-wrap: anywhere;
       }
       .scheduled-triggered-row-tools {
         display: flex;
@@ -1304,6 +1304,20 @@
         display: flex;
         align-items: center;
         gap: 6px;
+      }
+      .scheduled-triggered-actions[data-scheduled-triggered-settings] {
+        flex-wrap: wrap;
+      }
+      [data-scheduled-triggered-settings] > label {
+        display: grid;
+        min-width: 0;
+        flex: 1 1 140px;
+        gap: 3px;
+      }
+      [data-scheduled-triggered-settings] input {
+        box-sizing: border-box;
+        min-width: 0;
+        width: 100%;
       }
       .scheduled-triggered-schedule .scheduled-triggered-actions {
         flex-wrap: wrap;
@@ -1529,7 +1543,7 @@
         .agent-status-account-windows { grid-column: 1; }
         .agent-status-account-details { grid-column: 1; }
       }
-      @media (max-width: 900px) {
+      @container home-panel (max-width: 900px) {
         .scheduled-triggered-grid {
           grid-template-columns: 10px minmax(170px, 1.35fr) minmax(140px, 0.9fr) auto;
         }
@@ -1539,6 +1553,8 @@
       }
       @media (max-width: 620px) {
         .agent-status-usage-summary { grid-template-columns: 1fr; }
+      }
+      @container home-panel (max-width: 620px) {
         .scheduled-triggered-grid {
           grid-template-columns: 10px minmax(0, 1fr) auto;
           column-gap: 9px;

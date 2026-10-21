@@ -60,6 +60,8 @@ class ResourceIndex(Protocol):
         self, resource_type: str, record: dict[str, Any],
     ) -> dict[str, Any]: ...
 
+    def project_unregistered(self, resource_type: str, resource_id: str) -> dict[str, Any]: ...
+
     def change_targets(
         self,
         *,

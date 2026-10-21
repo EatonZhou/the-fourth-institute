@@ -337,8 +337,8 @@ def update_resource(inv: Invocation) -> dict[str, Any]:
 
 def unregister_resource(inv: Invocation) -> dict[str, Any]:
     with _registry_errors():
-        _service().unregister(inv.argument("resource_id"), actor=inv.caller, **INDEX_WAIT)
-    return {"resource_id": inv.argument("resource_id")}
+        record = _service().unregister(inv.argument("resource_id"), actor=inv.caller, **INDEX_WAIT)
+    return {**record, "resource_id": inv.argument("resource_id")}
 
 
 def _action_target(resource_id: str, actor: str) -> dict[str, Any]:

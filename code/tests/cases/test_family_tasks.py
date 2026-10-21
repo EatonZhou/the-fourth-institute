@@ -76,6 +76,8 @@ def test_router_task_keeps_sender_original_media_and_request_binding(configured_
     assert resident_conversation_stream.get_repository().message(family["facade"], mid)["quote"] == quote
     assert "完整的 Family 资料" not in text and "成员摘要" not in text and "<packet>" not in text
     assert "family-work-guide.md" in text
+    assert json.dumps({"members": family["members"], "steward": family["steward"]}, ensure_ascii=False)[1:-1] in text
+    assert "选择其门面" in text
 
 
 def test_invalid_template_is_rejected_before_it_can_replace_current_task(configured_family):

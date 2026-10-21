@@ -847,6 +847,7 @@ def test_resource_mutations_dispatch_by_type_and_notify_the_derived_index(tmp_pa
         ),
     ]
     index.project_registered.assert_called_once_with("repo", created)
+    index.project_unregistered.assert_called_once_with("repo", repo_id)
     assert index.change_targets.call_args_list == [
         mock.call(
             path="",

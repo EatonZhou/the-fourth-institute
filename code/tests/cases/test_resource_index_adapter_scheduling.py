@@ -196,3 +196,41 @@ def test_changes_during_a_scan_are_coalesced_and_committed_sequentially(
         finally:
             release.set()
             layer.stop()
+
+
+def test_unregistration_fences_an_inflight_scan_even_before_first_indexing(isolated_portal_case):
+    """注销立即撤下索引条目，先前启动的扫描不能重新发布已删除身份"""
+    import pytest
+    for already_indexed in (False, True):
+        with isolated_portal_case():
+            entered, release = threading.Event(), threading.Event()
+            rid = "repo_123456789abc"
+            record = _record(rid, "repo", adapter="resource_registry")
+            class Adapter:
+                name = "resource_registry"
+                resource_types = ("repo",)
+                def fingerprint(self):
+                    return "source"
+                def scan(self):
+                    entered.set()
+                    assert release.wait(3)
+                    return [record], {}
+            store = backend.IndexStore()
+            layer = backend.AdapterLayer(store, [Adapter()], start_worker=False)
+            try:
+                if already_indexed:
+                    store.apply(backend.ChangeSet("resource_registry", upserts=(record,)))
+                with ThreadPoolExecutor(1) as pool:
+                    running = pool.submit(layer.refresh_now, "resource_registry", force=True)
+                    try:
+                        assert entered.wait(2)
+                        layer.project_unregistered("repo", rid)
+                        with pytest.raises(KeyError):
+                            store.internal_get(rid)
+                    finally:
+                        release.set()
+                    running.result()
+                with pytest.raises(KeyError):
+                    store.internal_get(rid)
+            finally:
+                layer.stop()

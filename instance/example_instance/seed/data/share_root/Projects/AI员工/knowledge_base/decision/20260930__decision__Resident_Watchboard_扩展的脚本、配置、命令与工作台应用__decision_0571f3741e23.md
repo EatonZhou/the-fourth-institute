@@ -134,7 +134,7 @@ Telepus 联系人的授权、身份映射和状态保存由 decision_692a484e9be
 
 ### 组件与接口
 
-`resident_watchboard_domain.py` 只投影清单、配置与状态。`watchboard_lineage.py` 从当前定义生成安装计划：面板标识事件源使用 `client_key=watchboard.<resident_id>.view`，各命令组件 ID 由 Resident 和命令身份确定。文件写入与图提交相互独立；Lineage 定义使用读取时的 revision 作冲突前提，组件和连线作为一次原子修改提交。
+`resident_watchboard_domain.py` 只投影清单、配置与状态。`watchboard_lineage.py` 从当前定义生成安装计划：面板标识事件源使用 `client_key=watchboard.<resident_id>.view`，每次安装的组件与连线 ID 包含安装计划所依据的定义 revision，因此移除后重装使用新身份，不能复用已删除对象的 ID。命令的稳定 client_key 保留 Resident 与命令身份；读取按钮目标时按 client_key 查找当前图中的实际 ID，后续无关定义修改不改变已安装命令的目标。文件写入与图提交相互独立；Lineage 定义使用读取时的 revision 作冲突前提，组件和连线作为一次原子修改提交。
 
 浏览器 `PortalResidentService` 组合以下既有指令。Effect 和脚本执行逻辑没有 Watchboard 专用指令：
 

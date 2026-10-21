@@ -426,8 +426,9 @@ def _watchboard_for_record(
             status_error = str(exc)
     commands = _watchboard_commands_from_manifest(manifest)
     recent_runs = []
-    actual_ids = {item["id"] for item in watchboard_lineage.components(record)}
-    commands = [{**item, **watchboard_lineage.command_ids(record, item["id"])} for item in commands]
+    graph = watchboard_lineage.definition(record)
+    actual_ids = {item["id"] for item in watchboard_lineage.components(record, graph)}
+    commands = [{**item, **watchboard_lineage.command_ids(record, item["id"], graph)} for item in commands]
     commands = [item for item in commands if item["event_source_id"] in actual_ids and item["effect_id"] in actual_ids]
     resident_id = _resident_id(record)
     signature = _resident_status_signature({

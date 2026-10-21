@@ -16,7 +16,7 @@ const plain = value => JSON.parse(JSON.stringify(value));
 // The browser retains pointer/focus, popup placement, touch and drag/avoidance.
 // Here the real Panel, protocol, renderer and read observer run in a DOM without
 // geometry. Only network responses, stream connectivity and frame timing are I/O.
-function chat(t, handlers = {}) {
+function chat(t, handlers = {}, options = {}) {
   const errors = [], requests = [], observers = new Set(), frames = new Map();
   const log = new VirtualConsole();
   log.on("jsdomError", error => errors.push(error.message));
@@ -51,7 +51,7 @@ function chat(t, handlers = {}) {
     "portal_command_registry.js", "portal_workbench_context.js", "portal_workbench.js", "portal_resident_service.js",
     "resident_protocol.js", "portal_chat_workspace.js"]) w.eval(source(name) + `\n//# sourceURL=${name}`);
   const panel = w.PortalChatWorkspace.panelPackage.create({ root: w.document.getElementById("fixture"), id: "assistant",
-    autoLoad: false, target: { resident_id: FACADE, lineage_id: LINEAGE }, onError: error => errors.push(String(error)) });
+    autoLoad: false, target: { resident_id: FACADE, lineage_id: LINEAGE }, onError: error => errors.push(String(error)), ...options });
   t.after(async () => {
     await drain(); panel.destroy();
     w.dispatchEvent(new w.Event("pagehide"));
@@ -303,4 +303,54 @@ test("navigation omits the AMA shortcut, retains Which and the primary facade in
       assert.ok(list.querySelector(".whichResidentWrap"));
     }
   }
+});
+
+
+test("a pending host draft moves into the Resident and never returns after send", async t => {
+  const app = chat(t, {
+    GetConversation: () => ({ resident: { resident_id: FACADE, lineage_id: LINEAGE }, messages: [], cursor: 1,
+      state: { work_state: "idle" }, controls: { can_send: true }, queue: { items: [] } }),
+    DeliverMessage: args => ({ accepted: true, resident_id: args.resident_id, message_id: args.message.message_id, input_state: { state: "queued" } }),
+  }, { target: {}, pendingHistoryScope: "wall:project:point", resolveBeforeSend: async () => ({ resident_id: FACADE, lineage_id: LINEAGE }) });
+  app.w.PortalResidentProjection = { load: async () => ({ resident: { resident_id: FACADE, lineage_id: LINEAGE },
+    chat_workspace: { schema: "portal.chat_workspace.v3", target: { kind: "resident", id: FACADE, lineage_id: LINEAGE },
+      messages: [], composer: { can_send: true, can_edit: true } } }) };
+  app.panel.showState({ schema: "portal.chat_workspace.v3", messages: [], composer: { can_send: true, can_edit: true } });
+  app.panel.workspace.setDraftText("send once");
+  app.panel.workspace.saveDraft({ immediate: true });
+  const oldScope = app.panel.workspace.draftScope();
+  assert.equal(oldScope, "wall:project:point");
+  await app.panel.send();
+  assert.equal(app.requests.filter(item => item.instruction === "DeliverMessage").length, 1);
+  assert.equal(app.panel.workspace.draftText(), "");
+  app.panel.workspace.restoreDraft(oldScope);
+  assert.equal(app.panel.workspace.draftText(), "", "reopening the card cannot revive a sent draft");
+  app.panel.workspace.setDraftText("new unsent input");
+  app.panel.workspace.saveDraft({ immediate: true });
+  assert.equal(app.panel.workspace.clearDraft(oldScope, { text: "send once" }), false);
+  app.panel.workspace.restoreDraft(oldScope);
+  assert.equal(app.panel.workspace.draftText(), "new unsent input", "late migration must preserve a newer draft");
+});
+
+
+test("Stop after sending targets the pending input, not a stale active snapshot", async t => {
+  let accept;
+  const app = chat(t, {
+    GetConversation: () => ({ resident: { resident_id: FACADE, lineage_id: LINEAGE }, messages: [], cursor: 1,
+      state: { work_state: "idle", active_message_id: "msg_previous" }, controls: { can_send: true, can_stop: true }, queue: { items: [] } }),
+    DeliverMessage: args => new Promise(resolve => { accept = () => resolve({ accepted: true, resident_id: args.resident_id,
+      message_id: args.message.message_id, input_state: { state: "queued" } }); }),
+    CancelInput: args => ({ message_id: args.message_id, input_state: { state: "cancelled" } }),
+  });
+  await app.load();
+  app.panel.workspace.setDraftText("new turn");
+  const sending = app.panel.send();
+  for (let i = 0; i < 10 && !accept; ++i) await drain();
+  assert.ok(accept, "new input reached its owner");
+  const newId = app.requests.find(r => r.instruction === "DeliverMessage").args.message.message_id;
+  const stopping = app.panel.stop();
+  assert.equal(app.requests.filter(r => r.instruction === "CancelInput").length, 0, "wait for the exact send acknowledgement");
+  accept();
+  await sending; await stopping;
+  assert.equal(app.requests.find(r => r.instruction === "CancelInput").args.message_id, newId);
 });

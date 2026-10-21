@@ -599,7 +599,10 @@ body[data-resource-category="device"] #resourceDetailBody {
 }
 
 .deviceDetailWorkspace {
+  container: device-detail / inline-size;
+  min-width: 0;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
 }
 
@@ -657,6 +660,7 @@ body[data-resource-category="device"] #resourceDetailBody {
 }
 
 .deviceDetailHeroMain > p {
+  overflow-wrap: anywhere;
   max-width: 760px;
   margin: 12px 0 0;
   color: var(--text);
@@ -672,6 +676,7 @@ body[data-resource-category="device"] #resourceDetailBody {
 }
 
 .deviceDetailHeroMeta > small {
+  overflow-wrap: anywhere;
   color: var(--muted);
   font-size: 10px;
 }
@@ -1150,7 +1155,15 @@ body[data-resource-category="device"] #resourceDetailBody {
   .deviceOperationsLayout { grid-template-columns: minmax(0, 1fr); }
   .deviceTelemetryPanel,
   .deviceInventoryPanel { grid-column: 1; }
+}
+
+@container device-detail (max-width: 900px) {
   .deviceDetailInfoGrid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@container device-detail (max-width: 720px) {
+  .deviceDetailHero { grid-template-columns: minmax(0, 1fr); }
+  .deviceDetailObserved { min-width: 0; }
 }
 
 @media (max-width: 720px) {
@@ -1159,8 +1172,6 @@ body[data-resource-category="device"] #resourceDetailBody {
     flex-direction: column;
     gap: 10px;
   }
-  .deviceDetailHero { grid-template-columns: minmax(0, 1fr); }
-  .deviceDetailObserved { min-width: 0; }
   .deviceStatsGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .deviceCapacityRow {
     grid-template-columns: minmax(100px, .85fr) minmax(80px, 1fr) auto;

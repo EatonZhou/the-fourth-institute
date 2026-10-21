@@ -7545,9 +7545,11 @@
       restoreDraft(scope = historyScope(), restoreOptions = {}) {
         return restoreDraftScope(scope, { force: restoreOptions.force !== false });
       },
-      clearDraft(scope = state.activeDraftScope || historyScope()) {
+      clearDraft(scope = state.activeDraftScope || historyScope(), expected = null) {
+        if (expected && draftContentSignature(draftStore.read(scope)) !== draftContentSignature(normalizeWorkspaceDraft(expected))) return false;
         draftStore.clear(scope);
         if (scope === state.activeDraftScope) draftBaseline = draftSignatures(captureWorkspaceDraft());
+        return true;
       },
       confirmSubmittedMessages(messageIds, scope = state.activeDraftScope || historyScope()) {
         const accepted = new Set((messageIds || []).filter(Boolean));
@@ -8608,7 +8610,7 @@
     draftPersistenceSuspended() { return this.controller?.draftPersistenceSuspended?.() || false; }
     saveDraft(options) { return this.controller?.saveDraft?.(options); }
     restoreDraft(scope, options) { return this.controller?.restoreDraft?.(scope, options); }
-    clearDraft(scope) { return this.controller?.clearDraft?.(scope); }
+    clearDraft(scope, expected) { return this.controller?.clearDraft?.(scope, expected); }
     confirmSubmittedMessages(messageIds, scope) { return this.controller?.confirmSubmittedMessages?.(messageIds, scope); }
     submit(send, options) { return this.controller?.submit?.(send, options); }
     setBusy(value) { return this.controller?.setBusy?.(value); }
@@ -12947,6 +12949,7 @@
           const draft = this.workspace.draftText();
           const attachments = this.workspace.attachments();
           const refs = this.workspace.refs();
+          const pendingDraftScope = this.workspace.draftScope();
           if (draft !== initialDraft) submitOptions = { ...submitOptions, clear: false };
           const binding = this.setResident(identity);
           preparationRevision = this.targetRevision;
@@ -12959,6 +12962,12 @@
             }
           }
           if (preparationRevision !== this.targetRevision) return null;
+          // Move the pre-Resident composition to its conversation. Leaving a
+          // copy under the host/card scope would revive it after a later send.
+          this.workspace.saveDraft({ immediate: true });
+          if (pendingDraftScope !== this.workspace.draftScope()) {
+            this.workspace.clearDraft(pendingDraftScope, { text: draft, attachments, refs });
+          }
           this.initialContext = this.options.initialContext?.(surface || identity, surface ? identity : this.detail) || null;
         } catch (error) {
           if (preparationRevision === this.targetRevision) {
@@ -13058,10 +13067,8 @@
       if (this.familyStatusFamily) return this.stopFamily();
       const target = this.workspace.target();
       const snapshot = this.protocol?.snapshot?.() || {};
-      const pending = snapshot.state?.active_message_id
-        ? this.pendingTurnSubmissions.get(snapshot.state.active_message_id)
-        : this.pendingTurnForTarget(target);
-      const messageId = String(snapshot?.state?.active_message_id || pending?.messageId || "").trim();
+      const pending = this.pendingTurnForTarget(target);
+      const messageId = String(pending?.messageId || snapshot?.state?.active_message_id || "").trim();
       if (!target.resident_id || !messageId) return null;
       const scope = residentSessionScope(target);
       if (this.stopRequest?.scope === scope && this.stopRequest.messageId === messageId) {

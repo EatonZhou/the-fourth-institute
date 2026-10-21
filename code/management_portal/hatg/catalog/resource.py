@@ -101,6 +101,7 @@ DECLARATIONS = (
         R("resource_id", description="资源统一 ID"),
     ), (
         R("resource_id", description="被撤销的统一 ID"),
+        P("index_projection", "object", "若索引通知未完成，保留未确认状态及原因；登记注销已提交"),
     ), mutates=True, target="resource_id"),
     # Whether an action changes state is declared by the action itself.
     _d("RunResourceAction", (On("resource_id"),), "执行资源类型在动作目录中声明的一个专用动作。", (

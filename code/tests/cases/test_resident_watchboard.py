@@ -99,6 +99,30 @@ class ResidentWatchboardTest(unittest.TestCase):
         }, lineage_nodes=[])
         return plan
 
+    def test_reinstall_preserves_files_and_uses_new_live_command_identities(self):
+        first = self.install()
+        old_ids = {op["value"]["id"] for op in first["install"]}
+        config = watchboard_lineage.root(self.record) / "config/config.yaml"
+        config.write_text('{"custom": true}\n', encoding="utf-8")
+        self.graph["revision"] += 1
+        removal = watchboard_lineage.installation_plan(self.record)
+        self.assertEqual({op["id"] for op in removal["remove"]}, old_ids)
+        self.graph["program"] = {"components": [], "wires": []}
+        self.graph["revision"] += 1
+        second = self.install()
+        new_ids = {op["value"]["id"] for op in second["install"]}
+        self.assertTrue(old_ids.isdisjoint(new_ids))
+        self.assertEqual(second["files"], [])
+        self.assertEqual(json.loads(config.read_text()), {"custom": True})
+        # Later unrelated edits must not change the installed button targets.
+        self.graph["revision"] += 10
+        payload = backend.get_resident_watchboard(self.record["resident_id"], "CASE-A")
+        commands = payload["watchboard"]["commands"]
+        self.assertTrue(commands)
+        for command in commands:
+            self.assertIn(command["event_source_id"], new_ids)
+            self.assertIn(command["effect_id"], new_ids)
+
     def test_installation_is_read_only_until_client_applies_files_and_graph(self):
         """生成 Watchboard 安装计划不写文件，客户端写入文件和图组件后才启用"""
         plan = watchboard_lineage.installation_plan(self.record)

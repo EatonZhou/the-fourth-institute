@@ -305,3 +305,12 @@ def test_code_generations_of_one_instance_share_configured_upload_store(tmp_path
         monkeypatch.setenv("PORTAL_INSTANCE", instance)
         roots.add(resource_isa.upload_root())
     assert roots == {tmp_path / "uploads"}
+
+
+def test_unregister_preserves_post_commit_projection_receipt(monkeypatch):
+    """注销指令保留已提交的领域结果和未确认索引回执"""
+    from types import SimpleNamespace
+    receipt = {"resource_id": "repo_123456789abc", "deleted": True,
+               "index_projection": {"status": "unconfirmed", "reason": "refresh_incomplete"}}
+    monkeypatch.setattr(resource_isa, "_service", lambda: SimpleNamespace(unregister=lambda *a, **kw: receipt))
+    assert resource_isa.unregister_resource(invoke("UnregisterResource", {"resource_id": receipt["resource_id"]})) == receipt

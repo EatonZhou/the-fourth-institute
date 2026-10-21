@@ -1106,10 +1106,13 @@
     const panel = entry.panel;
     const current = () => state.chats.get(entry.kind) === entry;
     const draft = saved || { draft: panel.workspace.draftText(), refs: panel.workspace.refs(), attachments: panel.workspace.attachments() };
+    const previousDraftScope = panel.workspace.draftScope();
+    let bound = false;
     const carryDraft = saved || draft.draft || draft.attachments?.length || window.PortalChatWorkspace.refCount(draft.refs);
     entry.residentId = identity.resident_id;
     try {
       await panel.setResident({ resident_id: identity.resident_id }, { load: true, force: true });
+      bound = true;
       if (current()) entry.unavailable = "";
     } catch (error) {
       if (current()) {
@@ -1121,6 +1124,10 @@
       if (current() && carryDraft) {
         panel.workspace.setDraftText(draft.draft, draft.attachments);
         panel.workspace.setRefs(draft.refs);
+        if (bound && previousDraftScope !== panel.workspace.draftScope()) {
+          panel.workspace.saveDraft({ immediate: true });
+          panel.workspace.clearDraft(previousDraftScope, { text: draft.draft, attachments: draft.attachments, refs: draft.refs });
+        }
       }
     }
   }

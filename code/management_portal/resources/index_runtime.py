@@ -195,6 +195,9 @@ class ResourceIndexRuntime:
     ) -> dict[str, Any]:
         return self.adapter_layer.project_registered(resource_type, record)
 
+    def project_unregistered(self, resource_type: str, resource_id: str) -> dict[str, Any]:
+        return self.adapter_layer.project_unregistered(resource_type, resource_id)
+
     def change_targets(
         self,
         *,

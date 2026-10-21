@@ -599,6 +599,11 @@
       label = window.PortalI18n.t("检查中…");
       detail = window.PortalI18n.t("读取 Git 状态");
       disabled = true;
+    } else if (status?.error) {
+      label = "状态不可用";
+      detail = String(status.error);
+      title = detail;
+      disabled = true;
     } else if (lastRun?.state === "error") {
       label = "重试 AI Commit";
       detail = lastRun.error || "上次执行失败";
@@ -638,6 +643,9 @@
     const status = automationStatusFor(record.resource_id);
     if (!status) {
       return window.PortalI18n.markup('<div class="repoCardStatus is-loading"><span>正在读取 Git 状态…</span></div>');
+    }
+    if (status.error) {
+      return window.PortalI18n.html`<div class="repoCardStatus is-error" title="${esc(String(status.error))}"><span>Git 状态不可用</span></div>`;
     }
     const sync = [];
     if (Number(status.ahead || 0)) sync.push(`↑${Number(status.ahead)}`);
@@ -3070,6 +3078,7 @@
   }
 
   async function unregisterRepo() {
+    const resourceId = state.selectedId;
     const name = state.overview.name || state.selectedId;
     if (!await window.PortalUI.confirm({
       title: window.PortalI18n.t("解除 Repo 注册？"),
@@ -3078,14 +3087,18 @@
       tone: "danger",
     })) return;
     try {
-      await repoInstruction("UnregisterResource", {});
-      detailResourceGuest.deleted({ resourceId: state.selectedId, kind: "unregistered" });
+      const result = await repoInstruction("UnregisterResource", { resource_id: resourceId });
+      detailResourceGuest.deleted({ resourceId, kind: "unregistered" });
+      if (state.selectedId !== resourceId) return;
       writeQuery({ item: "", tab: "code", path: "", file: "" });
       state.selectedId = "";
       state.mode = "board";
       state.overview = null;
       await loadRepos({ keepWorkspace: false });
-      showToast(window.PortalI18n.t("Repo 注册已解除；checkout 保持不变。"), "success");
+      const pendingIndex = result.index_projection?.status === "unconfirmed";
+      showToast(window.PortalI18n.t(pendingIndex
+        ? "Repo 注册已解除；checkout 保持不变，索引通知尚未完成。"
+        : "Repo 注册已解除；checkout 保持不变。"), pendingIndex ? "warning" : "success");
     } catch (error) {
       showToast(error.message || error, "error");
     }

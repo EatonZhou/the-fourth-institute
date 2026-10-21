@@ -43,15 +43,18 @@ def installed(record):
     return any(item.get("client_key") == prefix(record) + "view" for item in components(record))
 
 
-def component_id(record, kind, key):
-    token = hashlib.sha256((prefix(record) + key).encode()).hexdigest()[:20]
+def component_id(record, kind, key, revision):
+    # A removed object's identity remains tombstoned. Each installation gets
+    # identities scoped to the definition revision used by its guarded plan.
+    token = hashlib.sha256((prefix(record) + str(revision) + ":" + key).encode()).hexdigest()[:20]
     return kind + "_" + token
 
 
-def command_ids(record, command):
+def command_ids(record, command, graph=None):
     key = "command." + hashlib.sha256(command.encode()).hexdigest()[:20]
-    return {"event_source_id": component_id(record, "event_source", key),
-            "effect_id": component_id(record, "effect", key), "key": key}
+    current = {item.get("client_key"): item["id"] for item in components(record, graph)}
+    return {"event_source_id": current.get(prefix(record) + key + ".trigger", ""),
+            "effect_id": current.get(prefix(record) + key + ".effect", ""), "key": key}
 
 
 def installation_plan(record, graph=None):
@@ -59,6 +62,11 @@ def installation_plan(record, graph=None):
 
     graph = definition(record) if graph is None else graph
     current = components(record, graph)
+    by_key = {item.get("client_key"): item["id"] for item in current}
+
+    def installation_id(kind, key):
+        return by_key.get(prefix(record) + key) or component_id(record, kind, key, graph.get("revision", 0))
+
     present = {item["id"] for item in current}
     program = graph.get("program") or {}
     remove = [{"op": "delete", "kind": "wire", "id": item["id"]} for item in program.get("wires", [])
@@ -89,7 +97,7 @@ def installation_plan(record, graph=None):
         defaults["config/config.yaml"] = "{}\n"
     files = [{"address": record["owned_workspace_id"] + "/file/watchboard/" + path, "content": content}
              for path, content in defaults.items() if not (script_root / path).exists()]
-    view_id = component_id(record, "event_source", "view")
+    view_id = installation_id("event_source", "view")
     wanted = [{"id": view_id, "kind": "event_source", "client_key": prefix(record) + "view",
                "title": "Watchboard · " + str(record.get("title") or record["resident_id"]),
                "config": {"event_type": "manual.triggered"}}]
@@ -98,7 +106,9 @@ def installation_plan(record, graph=None):
     for command, spec in manifest["commands"].items():
         if not isinstance(spec, dict):
             raise ValueError("agent.yaml command definitions must be objects")
-        ids = command_ids(record, command)
+        ids = command_ids(record, command, graph)
+        ids["event_source_id"] = installation_id("event_source", ids["key"] + ".trigger")
+        ids["effect_id"] = installation_id("effect", ids["key"] + ".effect")
         timeout = spec.get("timeout_seconds", manifest.get("default_timeout_seconds"))
         command_input = {"entrypoint": manifest["entrypoint"], "spec": {
             key: spec[key] for key in ("map_to", "args", "parameters") if key in spec}}
@@ -117,7 +127,7 @@ def installation_plan(record, graph=None):
             {"id": ids["effect_id"], "kind": "effect", "client_key": prefix(record) + ids["key"] + ".effect",
              "title": "Watchboard · " + command, "config": {"script": script}},
         ])
-        wires.append({"id": component_id(record, "wire", ids["key"]), "kind": "route",
+        wires.append({"id": component_id(record, "wire", ids["key"], graph.get("revision", 0)), "kind": "route",
                       "source": ids["event_source_id"], "target": ids["effect_id"]})
     present_wires = {item["id"] for item in program.get("wires", [])}
     install = [{"op": "create", "kind": "component", "value": item} for item in wanted if item["id"] not in present]
