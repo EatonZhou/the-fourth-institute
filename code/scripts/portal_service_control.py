@@ -51,7 +51,8 @@ class ServiceControl:
         if self.platform not in {"linux", "macos", "windows"}:
             raise RuntimeError(f"Portal service control does not support {value}")
         self.run = runner or _run
-        self.agent_root = agent_root or Path.home() / "Library" / "LaunchAgents"
+        configured = os.environ.get("TFI_MACOS_SERVICE_DIRECTORY") if self.platform == "macos" else None
+        self.agent_root = agent_root or (Path(configured) if configured else Path.home() / "Library" / "LaunchAgents")
         self.uid = os.getuid() if uid is None and hasattr(os, "getuid") else uid
 
     @staticmethod

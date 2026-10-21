@@ -74,7 +74,7 @@ def satisfies_minimum(actual: str | None, minimum: str | None) -> bool:
 
 def installed_versions(python: Path) -> dict[str, str]:
     output = run_utf8_capture(
-        [str(python), "-m", "pip", "list", "--format=json"],
+        [str(python), "-m", "pip", "list", "--disable-pip-version-check", "--format=json"],
         timeout=90, check=True,
     ).stdout
     return {item["name"].lower().replace("_", "-"): item["version"]

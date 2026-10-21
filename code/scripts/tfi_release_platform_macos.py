@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import plistlib
+import os
 from pathlib import Path
 
 from scripts.tfi_instance_layout import code_root, installer_path
@@ -15,7 +16,7 @@ def safe_path(value):
 
 def service_controller():
     from scripts.portal_service_control import ServiceControl
-    return ServiceControl(platform="macos")
+    return ServiceControl(platform="macos", agent_root=unit_directory())
 
 
 def unit_name(target, component):
@@ -23,7 +24,8 @@ def unit_name(target, component):
 
 
 def unit_directory():
-    return Path.home() / "Library" / "LaunchAgents"
+    configured = os.environ.get("TFI_MACOS_SERVICE_DIRECTORY")
+    return safe_path(configured) if configured else Path.home() / "Library" / "LaunchAgents"
 
 
 def unit_path(directory, name):
