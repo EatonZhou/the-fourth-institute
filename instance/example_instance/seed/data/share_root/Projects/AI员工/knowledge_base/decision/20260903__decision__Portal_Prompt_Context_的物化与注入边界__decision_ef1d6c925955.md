@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 16
-  created_at: '2026-09-03'
+  number: 17
+  created_at: "2026-09-03"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-19T19:43:45Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-10-21T13:11:51Z"
   updated_by:
-    user: tfi-exported-user
-    agent: resident_865c3c24f251
+    user: ""
+    agent: "resident_977d1a613d44"
 importance: 9
 metaness: 3
 ai_generated: false
@@ -41,6 +41,14 @@ links:
   derived_from: []
 ---
 # Portal Prompt Context 的物化与注入边界
+
+## 规则文件与更新边界
+
+Resident 的身份文件是 Resident Folder 内的小写 `resident.md`，由 Portal 通过 `resident_md` 部分显式读取并发送。仓库 `AGENTS.md` 是开发入口说明；公开 `/guide/agent.md` 面向以 User 身份连接的外部客户端，不是节点身份文件。Portal 托管的 Codex 关闭自动项目文档加载，不能依赖 AGENTS.md 传递共用规则。
+
+共用提示以 `code/core_skills/tfi-agent-rule/` 为源码，发行 seed 和本站 `${share_root}/Skills/tfi-agent-rule/` 同步维护。运行时读取本站主文件与所选角色文件；`resident` 不自动包含 `development` 全文，而通过共用和 Resident 角色规则要求在开发任务开始前读取 portal-development.md 与 SPEC 中的快速发布规范 `decision_08bb2d9141f9`。
+
+文件变化只影响后续物化，不改写已有 Provider 会话中已送达的内容。下一轮是否发送仍取决于各部分的注入时机、会话状态和 Provider 保留策略。维护者用 `PreviewPromptInjection` 分别检查首轮、后续轮次及压缩后计划，不能把预览的新正文当作所有运行中 Resident 已收到更新的证据。
 
 ## Family 工作指南的物化边界
 

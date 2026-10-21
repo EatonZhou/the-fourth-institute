@@ -4,6 +4,10 @@ This guide is for an external agent using Portal as a User. You run your own mod
 
 ## 0. Where to find this guide
 
+This `agent.md` is an external-client guide. A hosted Resident's identity is stored
+in its Resident Folder's lowercase `resident.md` and explicitly injected by Portal.
+The repository's `AGENTS.md` is a development entry. These are separate documents.
+
 | Starting point | Entry |
 | --- | --- |
 | No credentials yet | Public `/guide` with tabs for people, agents, and administrators; `/guide/agent.md?lang=en` for Markdown; `/llms.txt` for discovery. |

@@ -23,6 +23,15 @@ role 是 Portal 上下文层信息，只允许存在于 Portal 上游构造器�
 `SystemInstructions.parts` 作为不透明数据传给执行层。每个部分包含正文、发送时机和位置。
 调用点不得使用 `AGENTS.md`、独立通用 system-prompt 文件或 Resident 私有入口替代统一构造器。
 
+Resident Folder 的小写 `resident.md` 保存节点身份，通过 `resident_md` 部分显式注入。
+仓库 `AGENTS.md` 保存开发入口说明；Portal 托管的 Codex 使用
+`project_doc_max_bytes = 0` 关闭自动项目文档加载。公开 `/guide/agent.md` 面向以 User
+身份接入的外部客户端。三者名称和用途不同，不能相互替换。
+
+共用规则正文来自本站 `${share_root}/Skills/tfi-agent-rule/` 的主文件和所选角色文件。
+`resident` 角色不会自动包含 `development` 角色全文；其共用规则要求遇到 Portal 开发任务时
+读取 `portal-development.md` 与 SPEC 中的快速发布规范。
+
 ## 附加 Skill 的路径
 
 任务 Skill 使用 Resident 的路径规则：名称仅允许小写字母、数字和短横线，长度为
@@ -47,6 +56,11 @@ instructions 属于哪个 Portal role。创建、Fork、显式压缩与释放操
 Fork 子 Resident 创建自己的 Provider session，在首轮注入自己的身份和规则。
 RestartSession 的初始化轮次按目标 Provider 构造完整注入计划。
 恢复和失败续跑沿用原轮次的计划，不重复附加已经送达的部分。
+
+修改规则时同步源码 `code/core_skills/tfi-agent-rule/`、发行 seed 和本站共用目录，
+再用 `PreviewPromptInjection` 检查物化正文与发送时机。文件更新不改写已有 Provider
+session 中已送达的内容；后续是否发送按各部分设置与 Provider 保留策略决定。不得仅因
+预览读到新正文就宣称所有运行中 Resident 已更新，也不为文档同步重启正在执行的任务。
 
 ## Portal 与 Execution 职责
 

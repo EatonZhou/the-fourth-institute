@@ -13,7 +13,7 @@ Release worktree；不要根据 `${code_root}` 或当前进程所在目录猜测
 Release 推送远端 `main`。不为功能、修复或审计创建额外分支或工作树。
 
 **开发 Portal 前必须读取当前 SPEC 索引中的《Portal 共享运行基础与 Dev 到 Release
-的发布流程》（当前 Design 为 `decision_08bb2d9141f9`）。** 两个入口共用本站数据、
+的快速发布流程》（当前 Design 为 `decision_08bb2d9141f9`）。** 两个入口共用本站数据、
 账号、Session、队列和后台；Dev/Release 切换是访问两个 Web 服务，不是在一个目录
 切分支，也不新建测试数据库来代替 Dev。独立测试夹具仍应隔离业务数据。
 

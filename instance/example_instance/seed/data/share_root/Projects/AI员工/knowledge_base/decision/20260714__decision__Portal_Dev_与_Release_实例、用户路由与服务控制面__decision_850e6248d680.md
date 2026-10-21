@@ -1,18 +1,19 @@
 ---
 kb_id: decision_850e6248d680
 type: decision
+status: obsolete
 project: AI员工
 created_at: '2026-07-14'
 version:
-  number: 49
-  created_at: '2026-07-14'
+  number: 50
+  created_at: "2026-07-14"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-19T19:42:22Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-10-21T13:11:45Z"
   updated_by:
-    user: tfi-exported-user
-    agent: resident_865c3c24f251
+    user: ""
+    agent: "resident_977d1a613d44"
 importance: 9
 metaness: 3
 ai_generated: false
@@ -47,6 +48,8 @@ links:
   derived_from: []
 ---
 # Portal Dev 与 Release 实例、用户路由与服务控制面
+
+> **历史规范（已废止）**：当前开发站采用同一实例内的两个 Git worktree、两个 Web 入口和一组共享后台，现行规范为 `decision_08bb2d9141f9`。下文保留旧部署的审计记录；其中旧仓库路径、端口、分支和双后台服务命令不得用于当前部署。
 
 Portal 同时运行 Dev 和 Release 两个实例：Dev 运行开发工作树中的最新源码，Release 运行已经发布的网页代码。本 Design 说明这两个实例由哪些服务组成、运行文件放在哪里、浏览器请求怎样被送到其中一个实例，以及运维人员和 Agent 怎样通过服务控制面查看、启动、停止和重启实例，Dev 又怎样在源码变化后自动更新受影响的服务。
 

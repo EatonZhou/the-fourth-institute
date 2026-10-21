@@ -2,7 +2,7 @@
 
 当前发行版不提供 Project Board／Project Page 页面或 `/projects/` 路由；项目资源、项目归属与知识筛选仍保留。旧页面设计仅作历史参考，不属于以下现行设计索引。
 
-- [本地 Dev worktree 与 main 发布](docs/design/local-development.md)
+- [Dev / Release 双工作树与快速发布](docs/design/local-development.md)
 - [macOS 桌面安装与数据归属](docs/design/macos-desktop.md)
 
 - [共享代码与实例状态隔离](/r/decision_d88306d0bd17)
@@ -171,7 +171,6 @@
 - [Portal 运行状态与 Component Lifecycle 投影](/r/decision_99bb5dc0f96b)
 - [Portal 共享运行基础与 Dev 到 Release 的快速发布流程](/r/decision_08bb2d9141f9)
 - [Portal 运行维护：安装、检查、发布与恢复](/r/decision_ab9880dc4c9d)
-- [Portal Dev 与 Release 实例、用户路由与服务控制面](/r/decision_850e6248d680)
 - [Portal Web 重启通知与服务恢复编排](/r/decision_37f98f8fcb4b)
 - [Portal Resource Backup 监控、触发与恢复边界](/r/decision_b06ae321a668)
 - [Portal Test Case、Catalog 与运行证据协议](/r/decision_8273271b67b1)

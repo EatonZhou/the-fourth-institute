@@ -23,6 +23,8 @@ Resident Folder 是一个 Lineage 节点的身份与记录目录，属于 System
 - `workspace/`：单独登记的节点自有 Workspace，保存 Seed、报告和其他运行产物。
 - `runtime/`：Provider 本地目录、工具缓存、授权上下文及扩展运行资料；运行配置、session、job、事件、恢复状态和 token usage 的真值在 PostgreSQL。
 
+`resident.md` 使用上述小写文件名，由 Portal 显式读取并注入节点身份；仓库 `AGENTS.md` 和公开 `/guide/agent.md` 都不代替它。共用工作规则另由 `tfi-agent-rule` 注入，具体时机见 `./portal-context-injection.md`。
+
 Resident Folder 不创建 `knowledge_base/`。项目代码、实验和任务文档写入 Workspace；可复用项目知识写入 `GetProject` 返回的实际项目目录下的 `knowledge_base/`。交付物通过当前可用的 Workspace 文件地址或相应资源入口提供，不凭目录名另造存储协议。
 
 ## Workspace 与 Context fork

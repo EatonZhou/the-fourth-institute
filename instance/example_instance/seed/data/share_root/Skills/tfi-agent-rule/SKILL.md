@@ -21,7 +21,13 @@ metadata:
 
 角色文件补充身份、上下文、工作目录和写入边界。个人 AMA 与资源讨论通过 Resident 承接，页面或资源名称不产生新的系统角色。角色未列出时报告调用配置错误，不自行选择相近角色。非 Portal 场景直接触发本 Skill 时，只使用本文件。
 
-任务修改 `${code_root}` 时，无论当前 agent 的主要角色是什么，都必须额外读取 `./portal-development.md`。 开发 Portal 前，还必须读取当前 `SPEC.md` 索引中的《Portal 共享运行基础与 Dev 到 Release 的发布流程》（当前 `decision_08bb2d9141f9`）；该规范明确双 worktree、共享运行和按文件快速发布，不以工作区干净或全量测试为门槛。任务新增或修改 Portal 的模型调用、Resident 入口、prompt、session 或 Execution request 时，还必须读取 `./portal-context-injection.md`。已注入或已读且未变化的正文不重复读取。
+任务涉及 Portal 源码、测试、开发规范或发布时，无论当前角色和工作目录是什么，都必须额外读取 `./portal-development.md`，以及 `${code_root}/SPEC.md` 索引中的《Portal 共享运行基础与 Dev 到 Release 的快速发布流程》（当前 `decision_08bb2d9141f9`）。该规范明确两个同时存在的 Dev / Release worktree、共享运行和按文件快速发布，不以工作区干净或全量测试为门槛。任务新增或修改 Portal 的模型调用、Resident 入口、prompt、session 或 Execution request 时，还必须读取 `./portal-context-injection.md`。已注入或已读且未变化的正文不重复读取。
+
+### 规则文件与注入
+
+节点身份文件固定为 Resident Folder 内的小写 `resident.md`，由 Portal 显式读取并注入。它与本 Skill 的共用规则、角色规则是不同部分。仓库 `AGENTS.md` 是开发入口说明；Portal 托管的 Codex 已关闭自动项目文档加载，不依赖它传递规则。`/guide/agent.md` 则是以 User 身份连接 Portal 的外部客户端指南。
+
+共用规则以 `code/core_skills/tfi-agent-rule/` 为源码，发行 seed 与本站 `${share_root}/Skills/tfi-agent-rule/` 保持同步。服务端读取本站共用目录，再按 Resident 的 `prompt_injection` 设置发送；文件更新不会改写已送达的会话内容。用 `PreviewPromptInjection` 核对下一次注入，不把仓库文件已更新等同于所有运行中会话已收到。
 
 任务涉及 Portal 的执行账号登记、Backend 角色、Codex 账号、`CODEX_HOME`、账号路由、登录身份或故障切换时，还必须读取 `./portal-codex-accounts.md`；通过 HATG ISA 查询和修改当前站点登记。
 

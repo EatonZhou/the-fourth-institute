@@ -4,41 +4,33 @@ type: decision
 project: AI员工
 created_at: '2026-09-24'
 version:
-  number: 29
+  number: 30
   created_at: "2026-09-24"
   created_by:
     user: ""
     agent: "resident_403556d33f74"
-  updated_at: "2026-10-19T08:53:23Z"
+  updated_at: "2026-10-21T13:11:39Z"
   updated_by:
     user: ""
-    agent: "resident_20bd82ebf4c6"
+    agent: "resident_977d1a613d44"
 importance: 8
 ai_generated: false
 links:
   source:
-  - /home/dirty-base/dirtybase-portal/scripts/publish_portal_release.py
-  - /home/dirty-base/dirtybase-portal/scripts/portal_dev_commit.py
-  - /home/dirty-base/dirtybase-portal/scripts/portal_release.py
-  - /home/dirty-base/dirtybase-portal/scripts/portal_source_layout.py
-  - /home/dirty-base/dirtybase-portal/scripts/restart_portal_release.py
-  - /home/dirty-base/dirtybase-portal/scripts/prepare_portal_release_services
-  - /home/dirty-base/dirtybase-portal/scripts/run_portal_shared_component.py
-  - /home/dirty-base/dirtybase-portal/management_portal/__init__.py
-  - /home/dirty-base/dirtybase-portal/management_portal/hatg/kernel.py
-  - /home/dirty-base/dirtybase-portal/management_portal/web_isa.py
-  - /home/dirty-base/dirtybase-portal/management_portal/wall_backend.py
-  - /home/dirty-base/dirtybase-portal/systemd/management-portal-release.service
-  - /home/dirty-base/dirtybase-portal/tests/cases/test_publish_portal_release.py
-  - /home/dirty-base/dirtybase-portal/tests/cases/test_portal_release.py
-  - /home/dirty-base/dirtybase-portal/tests/cases/test_restart_portal_release.py
+  - ${code_root}/scripts/tfi_dev.py
+  - ${code_root}/scripts/tfi_development_runtime.py
+  - ${code_root}/scripts/tfi_release_install.py
+  - ${code_root}/management_portal/agent_prompt_context.py
+  - ${code_root}/management_portal/agent_skill_context.py
+  - ${code_root}/core_skills/tfi-agent-rule/portal-development.md
   related:
   - decision_ab9880dc4c9d
   - decision_850e6248d680
   - decision_06defc47e960
   - decision_37f98f8fcb4b
   - decision_6febe7bb57f9
-  supersedes: []
+  supersedes:
+  - decision_850e6248d680
   derived_from: []
 ---
 # Portal 共享运行基础与 Dev 到 Release 的快速发布流程
@@ -90,3 +82,13 @@ Portal 开发任务的授权默认包含本次修复的提交、发布和推送�
 共享服务按代码职责选择更新；Worker 使用已有平滑换代机制，保留执行 ID 与在途输入。普通发布不重启 PostgreSQL、NATS 或 Provider 账号服务，不创建或恢复旧数据库。独立单元测试使用隔离夹具；这种隔离不改变本站两个 Web 共用业务状态的设计。
 
 发布器、安装器、核心提示词和 AGENTS 必须指向本规范；迁移到新代码根只改变本地路径和服务配置，不得把共享工作树流程改成“干净工作区、整棵 squash、独立 Dev 数据库”而仍称为本设计。没有 Git 的独立发行安装不被强制变成开发站。
+
+## 开发规则如何进入 Resident 上下文
+
+节点身份文件是 Resident Folder 内的小写 `resident.md`，由 Portal 显式注入；仓库 `AGENTS.md` 是开发入口说明，公开 `/guide/agent.md` 是以 User 身份接入的外部客户端指南。Portal 托管的 Codex 关闭自动项目文档加载（`project_doc_max_bytes = 0`），不能只修改 AGENTS.md 来传递开发规则。
+
+共用提示的源码为 `code/core_skills/tfi-agent-rule/`，运行时从实例 `${share_root}/Skills/tfi-agent-rule/` 读取主文件和所选角色文件。Resident 角色收到 SKILL.md 与 portal-resident.md；两者明确要求涉及 Portal 开发时再读取 portal-development.md、SPEC 和本规范，并不自动包含 development 角色全文。
+
+修改共用规则时同步源码、发行 seed 与本站共用目录，通过 `PreviewPromptInjection` 核对正文和发送时机。已有会话已送达的内容不会因文件变化而被改写；后续注入遵守 `prompt_injection` 设置与 Provider 保留策略，不能以预览的新正文代替实际送达证据。
+
+`decision_850e6248d680` 记录的双实例、双后台服务部署已废止，仅保留历史。当前工作树、共享后台和发布命令以本规范为准。

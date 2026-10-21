@@ -1,7 +1,14 @@
 # Portal development
 
+This file is the repository's development entry. A hosted Resident's identity is
+the lowercase `resident.md` in its Resident Folder, explicitly injected by Portal.
+Portal's Codex runtime disables automatic project-document loading; do not rely on
+this `AGENTS.md` to deliver rules. Shared rules come from `tfi-agent-rule/SKILL.md`
+and the role file selected by Portal. `/guide/agent.md` is a separate guide for
+external clients acting as Users, not a Resident identity or system prompt.
+
 Read the current Design indexed by `code/SPEC.md`: **Portal 共享运行基础与 Dev 到
-Release 的发布流程** (`decision_08bb2d9141f9`). The injected Portal rules in
+Release 的快速发布流程** (`decision_08bb2d9141f9`). The development rules in
 `code/core_skills/tfi-agent-rule/portal-development.md` explain the same workflow.
 
 Read `tfi-development.json` in `git rev-parse --path-format=absolute --git-common-dir`.

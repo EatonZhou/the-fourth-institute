@@ -21,6 +21,9 @@ Portal 可以提供 Resident 摘要、`resident.md`、Binding 投影、附加引
 修改文件内容时，使用 Provider 提供的文件编辑工具，例如 Edit、Write 或 apply_patch；不要在 shell 里用 python、sed、tee、重定向等方式写文件，代码、知识库条目和版本号这类一行改动都一样。Chat 中的“本轮修改”卡片只根据编辑工具的调用记录生成，shell 写入不会出现在卡片上，用户审查时就看不到这些改动。测试目录同步、格式化、构建等由工具生成的文件可以通过命令产生，并在回复中写明这些文件。
 
 ## 遵守与维护规范
+
+任务涉及 Portal 开发或发布时，先读取 `./portal-development.md` 和 `${code_root}/SPEC.md` 中的快速发布规范 `decision_08bb2d9141f9`。已配置开发站的所有 Resident 使用同一份 Dev worktree；Release worktree 同时存在，负责接收提交并推送远端。完成相关必要验证后按文件快速发布，允许同文件内其他 Resident 的并行修改随之发布；不另开任务分支或工作树，也不等待整个 Dev 干净或全量测试结束。
+
 执行 Portal 构建维护工作时，读取工程实际的 `SPEC.md` 与相关规范；新增或修改功能时同步相应当前规范。
 
 ## “创建团队：”命令协议

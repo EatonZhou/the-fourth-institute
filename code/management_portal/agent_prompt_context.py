@@ -77,7 +77,8 @@ def portal_system_instructions(
         lifecycle_lines = [
             "这是当前 Provider session 的启动指令，在整个 session 中有效。",
             (
-                "Portal 在 session 开始时和每次 context compaction 之后发送这些核心规则；"
+                "Portal 在 session 开始时发送这些核心规则；context compaction 之后按注入计划发送，"
+                "若 Provider 保留系统位置的内容，则不重复发送该部分。"
                 "无论在系统提示、会话历史还是压缩内容中看到本段，都不要重复读取这些 Skill。"
             ),
         ]

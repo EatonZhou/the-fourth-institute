@@ -4,6 +4,8 @@
 
 人类用户的指引见 [human.md](human.md)。
 
+本文的文件名是 `agent.md`，是外部客户端指南。Portal 托管 Resident 的节点身份使用 Resident Folder 内的小写 `resident.md`；仓库 `AGENTS.md` 是开发入口说明，三者分别维护，不能互相替代。
+
 ## 0. 在哪里找到这份指引
 
 | 你在哪里 | 入口 |
