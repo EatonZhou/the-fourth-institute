@@ -1,11 +1,16 @@
 """Stop account services owned by one release installation."""
 import hashlib
+import json
 import os
 import plistlib
 import re
 import subprocess
 import sys
 from pathlib import Path
+
+ACCOUNT_UNIT = r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}\.service"
+# Codex account services running when the instance last stopped.
+RESTART_RECORD = "runtime/codex-accounts-to-restart.json"
 
 
 def _run(*arguments):
@@ -70,14 +75,15 @@ def owned_services(target, directory):
     if not required.issubset(lines):
         raise ValueError("Provider service belongs to another instance")
     for name in sorted(names):
-        if not re.fullmatch(re.escape(prefix) + r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}\.service", name):
+        if not re.fullmatch(re.escape(prefix) + ACCOUNT_UNIT, name):
             raise ValueError("Unexpected Provider service identity")
         properties = dict(line.split("=", 1) for line in _run(
             "show", name, "--property=FragmentPath,DropInPaths").splitlines() if "=" in line)
         if properties.get("FragmentPath") != str(template) or properties.get("DropInPaths"):
             raise ValueError("Provider service has a foreign definition or overrides")
     return {"template": template, "daemons": daemons,
-            "names": sorted(names | {path.name for path in daemons})}
+            "names": sorted(names | {path.name for path in daemons}),
+            "accounts": sorted(names), "account_prefix": prefix, "restart_record": root / RESTART_RECORD}
 
 
 def _macos_owned_services(target, directory):
@@ -111,24 +117,63 @@ def _macos_owned_services(target, directory):
     return {"platform": "macos", "template": None, "daemons": [], "names": names} if names else None
 
 
+def _recorded(record):
+    try:
+        names = json.loads(record.read_text())
+    except (OSError, ValueError):
+        return []
+    return [name for name in names if isinstance(name, str)] if isinstance(names, list) else []
+
+
+def _record(record, names):
+    if not names:
+        record.unlink(missing_ok=True)
+        return
+    record.parent.mkdir(parents=True, exist_ok=True)
+    temporary = record.with_name(record.name + ".tmp")
+    temporary.write_text(json.dumps(sorted(names)) + "\n")
+    temporary.replace(record)
+
+
 def start_services(plan, controller):
-    """Registered shared daemons start with the instance; Codex stays on demand."""
-    if plan is not None:
-        for path in plan["daemons"]:
-            controller.start(path.name)
+    """Registered shared daemons start with the instance, and so do the Codex
+    accounts that were running when it stopped. A turn never starts one."""
+    if plan is None:
+        return
+    for path in plan["daemons"]:
+        controller.start(path.name)
+    record = plan.get("restart_record")
+    if record is None:
+        return
+    failed = []
+    for name in _recorded(record):
+        if not re.fullmatch(re.escape(plan["account_prefix"]) + ACCOUNT_UNIT, name):
+            continue
+        try:
+            _run("enable", "--now", name)
+        except subprocess.CalledProcessError:
+            failed.append(name)
+    # The next start retries an account that did not start.
+    _record(record, failed)
 
 
 def stop_services(plan, controller):
     if plan is None:
         return
+    record = plan.get("restart_record")
+    if record is not None:
+        running = {name for name in plan["accounts"]
+                   if controller.status(name)["active"] in {"active", "activating", "reloading"}}
+        # A repeated stop keeps what the first one recorded.
+        _record(record, running | set(_recorded(record)))
     for name in plan["names"]:
         controller.stop(name)
     for name in plan["names"]:
         state = controller.status(name)
         if state["pid"] or state["active"] not in {"inactive", "failed"}:
             raise RuntimeError("Provider services did not stop; cleanup refused")
-    # Account services are restarted on demand by the next instance use.
-    # Do not let default.target revive them while their instance is stopped.
+    # Do not let default.target revive account services while their instance
+    # is stopped; instance start restores the recorded ones.
     if plan["names"] and plan.get("platform") != "macos":
         _run("disable", *plan["names"])
 
