@@ -289,16 +289,51 @@ def apply_request(root, request):
     return result
 
 
-def restart(root, instance, components=None):
+def worker_health(root):
+    try:
+        value = read(root / "runtime/worker-health.json")
+    except (OSError, ValueError):
+        return {}
+    return value if isinstance(value, dict) else {}
+
+
+def wait_worker_replacement(root, previous_id, *, requested_at, timeout_seconds=270):
+    deadline = time.monotonic() + timeout_seconds
+    while time.monotonic() < deadline:
+        value = worker_health(root)
+        current = value.get("current") or {}
+        worker_id = current.get("worker_id") if isinstance(current, dict) else None
+        updated_at = value.get("updated_at")
+        if (value.get("ok") and worker_id and worker_id != previous_id
+                and isinstance(updated_at, (int, float)) and updated_at >= requested_at):
+            return value
+        time.sleep(0.5)
+    raise RuntimeError("explicit Worker restart has not activated a new Worker")
+
+
+def restart(root, instance, components=None, *, force_worker_restart=True):
     prefix = read(root / "installation.json")["target"]["service_prefix"]
+    worker = None
     for component in restart_components(instance, components):
         unit = prefix + "-" + component + ".service"
         if component == "worker":
-            control("kill", "--kill-whom=main", "--signal=HUP", unit)
+            if force_worker_restart:
+                current = worker_health(root).get("current") or {}
+                previous_id = current.get("worker_id") if isinstance(current, dict) else None
+                requested_at = time.time()
+                # Explicit restart replaces even the current generation, using
+                # the manager's ready/activate/drain handoff. HUP is only reload.
+                control("kill", "--kill-whom=main", "--signal=USR1", unit)
+                worker = wait_worker_replacement(root, previous_id, requested_at=requested_at)
+            else:
+                control("kill", "--kill-whom=main", "--signal=HUP", unit)
         else:
             control("restart", unit)
     config = read(root / "config/development.json")
-    return {"ok": True, "instance": instance, "web": health(config["web_ports"][instance], instance)}
+    result = {"ok": True, "instance": instance, "web": health(config["web_ports"][instance], instance)}
+    if worker is not None:
+        result["execution_worker"] = worker
+    return result
 
 
 def activate(root, paths, commit, *, initial=False):

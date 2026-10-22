@@ -325,7 +325,7 @@ def restart(instance: str, *, notice_seconds: int, components: tuple[str, ...] |
     if root:
         if release_commit:
             raise ValueError('Publish the commit with tfi_dev before restarting')
-        return paired.restart(root, instance, components)
+        return paired.restart(root, instance, components, force_worker_restart=force_worker_restart)
     raise RuntimeError('Standalone TFI: use install_tfi_release status/cleanup; source Dev/Release control is unsupported')
 
 def request_restart(instance: str, *, components: tuple[str, ...] | list[str] | None=None) -> dict[str, Any]:
