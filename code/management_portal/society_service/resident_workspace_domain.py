@@ -99,8 +99,7 @@ def _resident_workspace_roots_with_usage(record: dict) -> tuple[list[dict[str, A
             **root,
             "is_primary": bool(
                 default_cwd
-                and str(Path(str(root.get("path") or "")).expanduser().resolve(strict=False))
-                == default_cwd
+                and root.get("workspace_id") == record["owned_workspace_id"]
             ),
         }
         for root in roots
@@ -1246,7 +1245,7 @@ def _get_resident_workspace_roots(resident_id: str, actor: str = "") -> dict:
     roots = []
     for root_info in workspace_roots:
         root_path = Path(str(root_info.get("path") or "")).expanduser().resolve(strict=False)
-        roots.append({**root_info, "path": str(root_path), "exists": root_path.exists(), "is_dir": root_path.is_dir()})
+        roots.append({**root_info, "path": root_path.as_posix(), "exists": root_path.exists(), "is_dir": root_path.is_dir()})
     return {
         "resident_id": _resident_id(record),
         "workspace_id": str(record.get("owned_workspace_id") or ""),

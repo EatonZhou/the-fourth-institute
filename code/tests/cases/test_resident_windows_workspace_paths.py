@@ -1,4 +1,5 @@
 """Windows Resident paths keep WorkspaceStore's portable spelling end to end."""
+from contextlib import nullcontext
 from pathlib import PureWindowsPath
 from types import SimpleNamespace
 
@@ -86,3 +87,43 @@ def test_reference_binding_roundtrip_keeps_identity_and_purpose(windows_record, 
     resident_workspace_domain._set_resident_reference_bindings(record, [
         str(path), path.as_posix(), record["owned_workspace"]["path"]])
     assert record["workspace_bindings"] == [dict(workspace_id=EXTRA, path=path.as_posix(), purpose="keep")]
+
+
+@pytest.mark.parametrize("invalid_owned_path", [False, True])
+def test_workspace_roots_keep_valid_owned_identity_primary(windows_record, monkeypatch, invalid_owned_path):
+    record = windows_record
+    resident_record_domain._set_resident_owned_workspace_binding(record)
+    expected = record["owned_workspace"]["path"]
+    extra_path = (WindowsPath(record["workspace_path"]) / "extra").as_posix()
+    record["workspace_bindings"] = [dict(workspace_id=EXTRA, path=extra_path, purpose="reference")]
+    if invalid_owned_path:
+        record["owned_workspace"]["path"] += "-other"
+    monkeypatch.setattr(workspace_store, "get_workspace_store", lambda: SimpleNamespace(
+        rows=lambda ids: {OWN: {"title": "Owned"}, EXTRA: {"title": "Reference"}}))
+
+    roots, cwd = resident_workspace_domain._resident_workspace_roots_with_usage(record)
+
+    assert cwd == ("" if invalid_owned_path else expected)
+    assert [root["workspace_id"] for root in roots if root["is_primary"]] == (
+        [] if invalid_owned_path else [OWN])
+    assert roots[1]["path"] == extra_path
+    assert roots[1]["purpose"] == "reference"
+
+
+def test_workspace_api_keeps_canonical_path_equal_to_default_cwd(windows_record, monkeypatch):
+    record = windows_record
+    resident_record_domain._set_resident_owned_workspace_binding(record)
+    monkeypatch.setattr(workspace_store, "get_workspace_store", lambda: SimpleNamespace(rows=lambda ids: {}))
+    monkeypatch.setattr(WindowsPath, "exists", lambda self: True, raising=False)
+    monkeypatch.setattr(WindowsPath, "is_dir", lambda self: True, raising=False)
+    monkeypatch.setattr(resident_workspace_domain, "_find_resident", lambda rid: record)
+    monkeypatch.setattr(resident_workspace_domain.resident_lineage, "access_snapshot_scope", nullcontext)
+    monkeypatch.setattr(resident_workspace_domain.business_fact_views, "canonical_views", lambda records, **kwargs: records)
+    monkeypatch.setattr(resident_workspace_domain, "ensure_resident_visible_to_actor", lambda *args: None)
+
+    result = resident_workspace_domain._get_resident_workspace_roots(RID, "sample_admin")
+
+    root, = result["roots"]
+    assert root["path"] == result["default_cwd"] == record["owned_workspace"]["path"]
+    assert root["workspace_id"] == result["workspace_id"] == OWN
+    assert root["exists"] and root["is_dir"]
