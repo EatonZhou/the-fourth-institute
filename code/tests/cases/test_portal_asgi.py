@@ -77,6 +77,56 @@ async def _response_body(response) -> bytes:
     return b"".join([chunk async for chunk in response.body_iterator])
 
 
+def test_static_assets_remain_available_when_domain_http_pool_is_busy(isolated_portal_case):
+    """业务 HTTP 线程池阻塞时脚本仍能加载，普通 API 保留原执行容量"""
+    async def exercise():
+        loop = asyncio.get_running_loop()
+        handlers = ThreadPoolExecutor(max_workers=1)
+        assets = ThreadPoolExecutor(max_workers=1)
+        started, release = threading.Event(), threading.Event()
+
+        def occupy_handler():
+            started.set()
+            release.wait()
+
+        busy = loop.run_in_executor(handlers, occupy_handler)
+        ordinary = None
+        app = SimpleNamespace(state=SimpleNamespace(
+            http_handler_executor=handlers, static_handler_executor=assets,
+        ))
+        try:
+            while not started.is_set():
+                await asyncio.sleep(0.001)
+            with mock.patch.object(asgi.portal, '_portal_health_payload', return_value={'ok': True}):
+                ordinary = asyncio.create_task(asgi.portal_http(_request('/api/health', app=app)))
+                for method in ('GET', 'HEAD'):
+                    response = await asyncio.wait_for(
+                        asgi.portal_http(_request('/static/portal_events.js', method=method, app=app)),
+                        timeout=2,
+                    )
+                    body = await _response_body(response)
+                    assert response.status_code == 200
+                    if method == 'GET':
+                        assert b'PortalEvents' in body
+                    assert not busy.done()
+                    assert not ordinary.done(), 'ordinary APIs must not consume the asset pool'
+                release.set()
+                await busy
+                response = await asyncio.wait_for(ordinary, timeout=2)
+                assert json.loads(await _response_body(response)) == {'ok': True}
+        finally:
+            release.set()
+            await busy
+            if ordinary is not None and not ordinary.done():
+                ordinary.cancel()
+                await asyncio.gather(ordinary, return_exceptions=True)
+            handlers.shutdown(wait=True, cancel_futures=True)
+            assets.shutdown(wait=True, cancel_futures=True)
+
+    with isolated_portal_case():
+        asyncio.run(exercise())
+
+
 def test_asgi_errors_use_portal_json_contract():
     """ASGI 的 413、403 和 405 错误使用 Portal JSON 错误格式"""
     async def exercise():

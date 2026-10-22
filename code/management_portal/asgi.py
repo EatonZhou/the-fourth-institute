@@ -48,6 +48,7 @@ HTTP_HANDLER_WORKERS = max(
     int(os.getenv("PORTAL_HTTP_HANDLER_WORKERS", "32")),
 )
 INSTRUCTION_HANDLER_WORKERS = 16
+STATIC_HANDLER_WORKERS = 4
 
 
 def _json_error(status: int, message: str, **fields: object) -> JSONResponse:
@@ -176,6 +177,13 @@ async def portal_http(request: Request) -> StreamingResponse:
             "http_handler_executor",
             None,
         )
+        if request.method in {"GET", "HEAD"} and request.url.path.startswith("/static/"):
+            # Slow domain RPCs must not starve the scripts/styles needed to show
+            # their error or recovery UI. Keep the existing handler and its
+            # routing/authorization rules; only isolate the bounded I/O capacity.
+            handler_executor = getattr(
+                getattr(app, "state", None), "static_handler_executor", None,
+            ) or handler_executor
         if handler_executor is None:
             capture = await asyncio.to_thread(_run_sync_handler, request, body)
         else:
@@ -697,12 +705,17 @@ async def lifespan(_app: Starlette):
         max_workers=INSTRUCTION_HANDLER_WORKERS,
         thread_name_prefix="portal-instruction",
     )
+    static_handler_executor = ThreadPoolExecutor(
+        max_workers=STATIC_HANDLER_WORKERS,
+        thread_name_prefix="portal-static",
+    )
     sse_payload_executor = ThreadPoolExecutor(
         max_workers=SSE_PAYLOAD_WORKERS,
         thread_name_prefix="portal-sse-payload",
     )
     _app.state.notification_fanout = notification_fanout
     _app.state.http_handler_executor = http_handler_executor
+    _app.state.static_handler_executor = static_handler_executor
     _app.state.instruction_executor = instruction_executor
     _app.state.sse_payload_executor = sse_payload_executor
     _app.state.realtime_lifecycle = RealtimeConnectionLifecycle()
@@ -721,6 +734,7 @@ async def lifespan(_app: Starlette):
             await asyncio.to_thread(stop)
         notification_fanout.close()
         http_handler_executor.shutdown(wait=False, cancel_futures=True)
+        static_handler_executor.shutdown(wait=False, cancel_futures=True)
         instruction_executor.shutdown(wait=False, cancel_futures=True)
         sse_payload_executor.shutdown(wait=False, cancel_futures=True)
         await asyncio.to_thread(close_notifications)
