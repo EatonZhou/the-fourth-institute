@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Iterable, Mapping
 
 from . import identity_contract, lineage_storage, resident_backend
+from management_portal.resources.workspace_store import canonical_path
 from .state_store import (
     FORBIDDEN_FORK_IDENTITY_FIELDS,
     LineageDataStore,
@@ -54,8 +55,10 @@ def default_cwd_path(record: Mapping[str, Any]) -> str:
     if own.get("workspace_id") != record["owned_workspace_id"]:
         return ""
     try:
+        # Stored paths must already be canonical. Resolving the supplied path
+        # here would accept a symlink alias as the Resident's owned directory.
         path = str(own.get("path") or "")
-        return path if path == str(owned_workspace_path(record)) else ""
+        return path if path == canonical_path(owned_workspace_path(record)) else ""
     except (OSError, ValueError):
         return ""
 

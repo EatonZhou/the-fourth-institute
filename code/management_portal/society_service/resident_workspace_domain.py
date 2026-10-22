@@ -423,6 +423,7 @@ def persist_lineage_project_member_updates(
     records: Iterable[dict[str, Any]],
 ) -> None:
     from .resident_record_domain import _require_resident_owned_workspace_binding, _resident_owned_workspace_path
+    from .resident_workspace_storage import canonical_path
     catalog = resident_catalog.get_catalog()
 
     def commit() -> None:
@@ -430,7 +431,7 @@ def persist_lineage_project_member_updates(
             # The canonical Lineage entry may now point to its new Project folder.
             # Keep the Workspace identity while resolving its new physical path.
             owned = record["owned_workspace"]
-            owned["path"] = str(_resident_owned_workspace_path(record))
+            owned["path"] = canonical_path(_resident_owned_workspace_path(record))
             record["default_cwd"] = owned["path"]
             _require_resident_owned_workspace_binding(record)
             _refresh_resident_workspace_document(record)
@@ -1006,10 +1007,10 @@ def _validated_reference_workspace_path(workspace_path: str) -> Path:
 
 
 def _set_resident_reference_bindings(record: dict, paths: list[str]) -> None:
-    from .resident_workspace_storage import apply_binding_projection
+    from .resident_workspace_storage import apply_binding_projection, canonical_path
     from .domain_ports import resource_port
-    resolved = list(dict.fromkeys(str(_validated_reference_workspace_path(path)) for path in paths))
-    own_path = str(Path(record["owned_workspace"]["path"]).resolve())
+    resolved = list(dict.fromkeys(canonical_path(_validated_reference_workspace_path(path)) for path in paths))
+    own_path = canonical_path(record["owned_workspace"]["path"])
     previous = {item["path"]: item for item in record.get("workspace_bindings") or []}
     record["workspace_bindings"] = [
         copy.deepcopy(previous[path]) if path in previous else {
@@ -1031,7 +1032,7 @@ def add_resident_reference_workspace(
     from .resident_directory_domain import _can_manage
     from .resident_lifecycle_domain import _apply_resident_lifecycle_step, _lifecycle_operations, _now_iso, _state_lock
     from .resident_record_domain import _apply_resident_resource_identity, _require_resident_owned_workspace_binding
-    from .resident_workspace_storage import apply_binding_projection
+    from .resident_workspace_storage import apply_binding_projection, canonical_path
     actor_id = canonical_actor_id(actor)
     if not actor_id:
         raise ValueError("需要登录后增加 Workspace")
@@ -1045,11 +1046,11 @@ def add_resident_reference_workspace(
         if not _can_manage(record, actor_id):
             raise PermissionError(manage_denial(record, "增加 Workspace"))
 
-        resolved_text = str(resolved_path)
+        resolved_text = canonical_path(resolved_path)
         existing_root = next(
             (
                 root for root in _resident_workspace_roots(record)
-                if str(Path(str(root.get("path") or "")).expanduser().resolve(strict=False)) == resolved_text
+                if canonical_path(root["path"]) == resolved_text
             ),
             None,
         )
@@ -1059,7 +1060,7 @@ def add_resident_reference_workspace(
                 item
                 for item in record.get("workspace_bindings") or []
                 if isinstance(item, dict)
-                and str(Path(str(item.get("path") or "")).expanduser().resolve(strict=False))
+                and canonical_path(item["path"])
                 == resolved_text
             ),
             None,

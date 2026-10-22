@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 import ctypes
+from datetime import datetime, timezone
 from contextlib import contextmanager
 from functools import lru_cache
 import json
@@ -287,14 +288,23 @@ def supervise(path):
         raise ValueError("Migration cutover has not been approved")
     target = state["target"]
     command, env = api.component_command(target, value["component"])
-    process = spawn_process(command, cwd=value["code"], env=env,
+    # A native Python crash otherwise leaves no traceback in the component log.
+    process = spawn_process(command, cwd=value["code"], env={**env, "PYTHONFAULTHANDLER": "1"},
                             stdin=subprocess.DEVNULL, stdout=sys.stdout, stderr=sys.stderr,
                             creationflags=subprocess.CREATE_NO_WINDOW)
     record_path = state_path(value)
     created = process_stamp(os.getpid())
+    reason = "child_exit"
+    def event(name, **details):
+        print("@TFI_SERVICE " + json.dumps({
+            "time": datetime.now(timezone.utc).isoformat(), "component": value["component"],
+            "event": name, "supervisor_pid": os.getpid(), "child_pid": process.pid,
+            **details,
+        }), flush=True)
     try:
         write_record(record_path, json.dumps({"pid": os.getpid(), "created": created,
                                              "child_pid": process.pid, "child_created": process_stamp(process.pid)}))
+        event("started")
         stop = record_path.with_suffix(".stop")
         while process.poll() is None:
             try:
@@ -302,14 +312,23 @@ def supervise(path):
             except FileNotFoundError:
                 requested = False
             if requested:
+                reason = "stop_requested"
+                event("stop_requested")
                 if value["component"] == "postgres":
                     subprocess.run([str(Path(target["pg_bin"]) / "pg_ctl.exe"), "stop", "-D",
                                     str(database_root(target)), "-m", "fast", "-w", "-t", "60"],
                                    env=env, check=True, timeout=210)
                 break
             time.sleep(0.2)
+    except BaseException as exc:
+        reason = "supervisor_error"
+        event("supervisor_error", error_type=type(exc).__name__)
+        raise
     finally:
         terminate_process_tree(process, timeout=30)
+        code = process.poll()
+        event("exited", reason=reason, exit_code=code,
+              exit_code_hex=f"0x{code & 0xffffffff:08X}" if code is not None else None)
         remove_record(record_path)
         remove_record(record_path.with_suffix(".stop"))
 

@@ -270,7 +270,7 @@ def _set_resident_owned_workspace_binding(record: dict[str, Any], *, resident_id
     if record.get("deleted_at"):
         raise KeyError("resident not found")
     target_id = resident_id or _resident_id(record)
-    path = str(_resident_owned_workspace_path(record, target_id))
+    path = canonical_path(_resident_owned_workspace_path(record, target_id))
     previous = record.get("owned_workspace") or {}
     # A Fork owns a new Workspace, while a move preserves the original ID.
     own_id = (record.get("owned_workspace_id") if target_id == _resident_id(record) else "")
