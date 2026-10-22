@@ -25,6 +25,27 @@ def personal(future_creation_store, charters):
     return ama, assistant
 
 
+def test_personal_family_can_precede_first_ai_account(future_creation_store, charters, monkeypatch):
+    """首次注册完整个人 Family 不依赖 Codex 账号，执行配置留待默认 AI 就绪。"""
+    from management_portal.execution import account_registrations
+    from management_portal.society_service import resident_registration_domain, resident_runtime_domain
+    monkeypatch.setattr(account_registrations, "roles", lambda: [])
+    def no_account(*args, **kwargs):
+        raise ValueError("No enabled default Codex account")
+    monkeypatch.setattr(resident_registration_domain, "resolve_account_configuration", no_account)
+    ama = principal_hierarchy_domain.ensure_personal_ama("newcomer", "newcomer")
+    assistant = personal_assistant.ensure("newcomer", ama["resident_id"], "newcomer")
+    graph = graphs.get_lineage(assistant["lineage_id"], "newcomer")
+    family = graph["function_blocks"][0]["family"]
+    for rid in [ama["resident_id"], *(family[r] for r in ("facade", "router", "steward"))]:
+        record = resident_catalog.get_catalog().get(rid)
+        assert record["backend_route_id"] == ""
+        settings = resident_runtime_domain._read_resident_runtime_settings(record)
+        assert settings["backend_role"] == "default"
+        assert not settings.get("model")
+    assert personal_assistant.ensure("newcomer", ama["resident_id"], "newcomer") == assistant
+
+
 def test_personal_initialization_is_private_and_resumable(personal):
     """个人助手初始化幂等，内部角色保持私有并退出发现候选"""
     ama, assistant = personal

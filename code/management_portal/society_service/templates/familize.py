@@ -440,11 +440,15 @@ def sync_all_generated_structure() -> dict:
     return report
 
 
-def _new_role(lineage_id: str, role: str, title: str, actor: str, near: str, settings: dict, placement: dict, *, creation_key: str = "") -> str:
-    chosen = dict(settings.get(role) or {})
-    provider = chosen.get("provider") or "codex"
+def _new_role(lineage_id: str, role: str, title: str, actor: str, near: str, settings: dict, placement: dict, *, creation_key: str = "", follow_default_backend: bool = False) -> str:
+    # Personal enrollment precedes AI setup. Use the same default-role binding
+    # as the AMA itself, including its pending state on a fresh installation.
+    # Template-specific Codex/model defaults must not override that site role.
+    chosen = {} if follow_default_backend else dict(settings.get(role) or {})
     payload = {"title": title if role == "facade" else f"{title} · {'Router' if role == 'router' else role}",
-               "backend": provider, "near_resident_id": near}
+               "near_resident_id": near}
+    if not follow_default_backend:
+        payload["backend"] = chosen.get("provider") or "codex"
     if creation_key:
         payload["creation_key"] = creation_key
     starting = chosen.get("settings", {})
@@ -493,7 +497,8 @@ def familize(lineage_id: str, resident_ids: Iterable[str], actor: str, *, title:
     placement = dict(placement_request or {})
     near = str(placement.get("near_resident_id") or _central_member(lineage, members))
     roles = {role: _new_role(lineage_id, role, title, actor, near, settings, placement,
-                           creation_key=f"personal-assistant:{personal_ama_id}:{role}" if personal_ama_id else "")
+                           creation_key=f"personal-assistant:{personal_ama_id}:{role}" if personal_ama_id else "",
+                           follow_default_backend=bool(personal_ama_id))
              for role in ("facade", "steward", "router")}
     leader = str(lineage.get("leader_resident_id") or "")
     from .. import identity_contract

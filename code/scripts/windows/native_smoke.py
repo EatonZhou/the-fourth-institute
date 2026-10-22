@@ -86,11 +86,14 @@ def exercise(exe, root, included, evidence):
         ama = registered.get('personal_ama', {})
         check(registered.get('administrator', {}).get('granted'), 'First administrator was not granted')
         check(ama.get('resident_id') and not ama.get('error'), 'First registration could not provision AMA')
+        assistant = ama.get('personal_assistant', {})
+        check(assistant.get('resident_id') and assistant.get('family_id'), 'Personal Family was not created')
         request('/login', {'username': registered['username'], 'password': password}, form=True)
         me = request('/api/me')
         check(me.get('username') == registered['username'], 'Password login did not persist a session')
         for instruction, arguments in [('GetLineage', {'lineage_id': ama['lineage_id']}),
-                                       ('GetConversation', {'resident_id': ama['resident_id']})]:
+                                       ('GetConversation', {'resident_id': ama['resident_id']}),
+                                       ('GetConversation', {'resident_id': assistant['resident_id']})]:
             response = request('/api/instructions/execute', {'instruction': instruction, 'arguments': arguments})
             check(not response.get('error') and response.get('status') != 'failed', instruction + ' failed')
         marker = root / 'instance/example_instance/data/native-restart-marker.txt'

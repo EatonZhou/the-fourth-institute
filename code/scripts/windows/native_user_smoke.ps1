@@ -43,7 +43,7 @@ New-Item -ItemType Directory -Force `$env:TEMP | Out-Null
 New-Item -ItemType Directory -Force `$env:APPDATA | Out-Null
 New-Item -ItemType Directory evidence | Out-Null
 `$ErrorActionPreference = 'Continue'
-& '$quotedPython' native_smoke.py --installer Setup.exe --work installations --evidence evidence *> evidence/smoke.log
+& '$quotedPython' native_smoke.py --installer Setup.exe --work installations --evidence evidence 2>&1 | Out-File evidence/smoke.log -Encoding utf8
 `$code = `$LASTEXITCODE
 Get-ChildItem installations -Filter *.log -Recurse -ErrorAction SilentlyContinue |
     Where-Object { `$_.Directory.Name -eq 'runtime' } | ForEach-Object {
