@@ -214,6 +214,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
   const saveButton = form => form.append(node("button", t("保存"), {type: "submit", class: "portalButton is-primary"}));
   function setupEditor(accountId) {
     let timer, progressTimer, closed = false, checking = false, working = false, setup = null;
+    let preparationRequested = false, setupFailed = false;
     let progressMessage = "", startedAt = 0;
     const {view, form} = newEditor("接入并启用 AI", () => { closed = true; clearTimeout(timer); clearInterval(progressTimer); });
     form.append(node("p", accountId));
@@ -225,15 +226,10 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     const useDefault = field(form, "用作默认 AI", "use_default", "", {type: "checkbox"});
     const defaultRole = state.roles.find(role => role.role === "default");
     useDefault.checked = !defaultRole?.account_id;
-    const prepare = button("准备运行环境", () => void perform(async () => {
-      const result = await execute("PrepareProviderRuntime", {provider: setup.provider});
-      status.textContent = t(result.preparation.message || (result.preparation.status === "ready" ? "运行环境已就绪" : "正在准备运行环境…"));
-      await reload();
-    }, "正在准备运行环境…"), true);
     const authorize = button("登录", () => {
       login = openLogin(accountId, {onChanged: () => { login?.close(); void perform(reload); }});
     }, true);
-    const retry = button("刷新", () => void perform(reload));
+    const retry = button("重试", () => { preparationRequested = false; void perform(reload); });
     const test = button("测试并完成", () => void perform(async () => {
       if (!model.value.trim()) { model.reportValidity(); return; }
       checking = true; model.disabled = true; useDefault.disabled = true; setButtons();
@@ -243,18 +239,19 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
         await pollCheck(receipt.execution_id);
       } catch (error) { checking = false; model.disabled = false; useDefault.disabled = false; throw error; }
     }, "正在启动本地后台并检查连接，请稍候…"), true);
-    form.append(capabilities, status, actions(prepare, authorize, retry, test));
+    form.append(capabilities, status, actions(authorize, retry, test));
     form.addEventListener("submit", event => event.preventDefault());
     function setButtons() {
-      prepare.disabled = !canWrite || !setup || working || checking;
-      authorize.hidden = !setup || setup.login_state === "not_applicable";
+      authorize.hidden = !setup || ["logged_in", "succeeded", "not_applicable"].includes(setup.login_state);
       authorize.disabled = !canWrite || !setup?.runtime_ready || working || checking;
-      test.disabled = !canWrite || !setup?.enabled || !setup?.runtime_ready || working || checking;
+      test.disabled = !canWrite || !setup?.enabled || !setup?.runtime_ready || setupFailed ||
+        ["logged_out", "login_expired", "pending", "awaiting_user"].includes(setup?.login_state) || working || checking;
+      retry.hidden = !setupFailed;
       retry.disabled = working || checking;
     }
     async function perform(work, message = "正在检查运行环境与登录状态…") {
       if (closed || working) return;
-      working = true; setButtons();
+      working = true; setupFailed = false; setButtons();
       startedAt = Date.now(); progressMessage = message;
       clearTimeout(timer); clearInterval(progressTimer);
       status.setAttribute("aria-busy", "true");
@@ -262,7 +259,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       progressTimer = setInterval(() => { if (!closed) status.textContent = t(progressMessage) + " " +
         t("已等待 {p0} 秒", {p0: Math.floor((Date.now() - startedAt) / 1000)}); }, 1000);
       try { await work(); }
-      catch (error) { if (!closed) status.textContent = errorText(error); }
+      catch (error) { if (!closed) { setupFailed = true; status.textContent = errorText(error); } }
       finally { working = false; if (!checking) stopProgress(); if (!closed) setButtons(); }
     }
     function stopProgress() {
@@ -277,10 +274,30 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
         {value: typeof item === "string" ? item : item.id || item.model || ""})));
       if (!model.value) model.value = setup.default_model || "";
       capabilities.textContent = t(setup.supports_tools ? "支持对话与工具任务；本次测试验证模型回复。" : "支持对话；此接入方式不提供工具执行。");
-      status.textContent = [t(setup.runtime_ready ? "运行环境已就绪" : "需要准备运行环境"),
+      status.textContent = [t(setup.runtime_ready ? "已就绪" : "正在自动准备运行环境…"),
         t(loginStates[setup.login_state] || setup.login_state), t(setup.preparation?.message || ""), t(setup.catalog_error || "")].filter(Boolean).join(" · ");
       clearTimeout(timer);
-      if (!setup.runtime_ready && ["preparing", "pending"].includes(setup.preparation?.status)) timer = setTimeout(() => void perform(reload), 2000);
+      if (!setup.runtime_ready && canWrite) {
+        if (["preparing", "pending"].includes(setup.preparation?.status)) {
+          preparationRequested = true;
+          timer = setTimeout(() => void perform(reload), 2000);
+        } else if (!preparationRequested) {
+          preparationRequested = true;
+          progressMessage = "正在自动准备运行环境…";
+          const result = await execute("PrepareProviderRuntime", {provider: setup.provider});
+          if (closed) return;
+          if (result.preparation.status === "busy") {
+            // Another runtime update owns the lock; observe and retry without user action.
+            preparationRequested = false;
+            status.textContent = t("运行环境正在更新，完成后将自动继续。");
+            timer = setTimeout(() => void perform(reload), 2000);
+          } else {
+            await reload();
+          }
+        } else {
+          throw new Error(setup.preparation?.message || t("运行环境准备未完成，请重试。"));
+        }
+      }
       setButtons();
     }
     async function pollCheck(executionId) {
@@ -304,6 +321,10 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
         }
         stopProgress();
         checking = false; model.disabled = false; useDefault.disabled = false; setButtons();
+        if (result.check.passed && !closed) {
+          notice.textContent = t(useDefault.checked ? "测试通过，已设为默认 AI。" : "测试通过，AI 接入已完成。");
+          view.close();
+        }
       } catch (error) {
         stopProgress();
         if (!closed) { checking = false; model.disabled = false; useDefault.disabled = false; status.textContent = errorText(error); setButtons(); }
@@ -317,7 +338,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     if (!canRegister) throw new Error(t("你没有新增 AI 账号的权限。"));
     if (!providersReady || !state.providers.length) throw new Error(t("Provider 列表不可用，请刷新后重试。"));
     const {view, form} = newEditor("新增执行账号");
-    form.append(node("p", t("1. 给账号起名并选择后端 → 2. 准备环境、登录授权 → 3. 选择模型并测试。"), {class: "backendHint"}));
+    form.append(node("p", t("选择接入方式并保存，Portal 会自动完成环境准备。需要时登录授权，随后可测试连接。"), {class: "backendHint"}));
     const id = field(form, "账号名称", "account_id", "", {required: true, pattern: "[a-z][a-z0-9_\\-]{0,127}", autocomplete: "off", placeholder: "my-ai"});
     hint(id, "这是你在 Portal 中使用的唯一名称，不是服务商的登录邮箱。以小写字母开头，只用小写字母、数字、下划线或短横线，最多 128 字符。");
     const providers = preferredKind ? state.providers.filter(p => p.kinds.includes(preferredKind)) : state.providers;

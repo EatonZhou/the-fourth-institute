@@ -1,4 +1,28 @@
 {
+  "运行环境正在更新，完成后将自动继续。": {
+    "zh-CN": "运行环境正在更新，完成后将自动继续。",
+    "en": "The runtime is being updated. Setup will continue automatically."
+  },
+  "正在自动准备运行环境…": {
+    "zh-CN": "正在自动准备运行环境…",
+    "en": "Preparing the runtime automatically…"
+  },
+  "运行环境准备未完成，请重试。": {
+    "zh-CN": "运行环境准备未完成，请重试。",
+    "en": "Runtime setup did not complete. Please retry."
+  },
+  "测试通过，已设为默认 AI。": {
+    "zh-CN": "测试通过，已设为默认 AI。",
+    "en": "Test passed. This account is now the default AI."
+  },
+  "测试通过，AI 接入已完成。": {
+    "zh-CN": "测试通过，AI 接入已完成。",
+    "en": "Test passed. Your AI connection is ready."
+  },
+  "选择接入方式并保存，Portal 会自动完成环境准备。需要时登录授权，随后可测试连接。": {
+    "zh-CN": "选择接入方式并保存，Portal 会自动完成环境准备。需要时登录授权，随后可测试连接。",
+    "en": "Choose a connection and save. Portal sets up the runtime automatically. Sign in if needed, then test the connection."
+  },
   "测试通过，正在设为默认 AI…": {
     "zh-CN": "测试通过，正在设为默认 AI…",
     "en": "Test passed. Setting this account as the default AI…"
