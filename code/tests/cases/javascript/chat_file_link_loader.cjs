@@ -17,6 +17,7 @@ test('Resident Menu awaits shared file links before opening dynamically loaded C
     addEventListener() {},
     dispatchEvent() {},
     PortalState: { storage: { readText: (_key, fallback) => fallback } },
+    PortalCompatibility: { identifier: name => `portal-${name}` },
     PortalI18n: { t: text => text, definition: value => value, normalize: language => language || 'original' },
     PortalUI: { toast: message => { throw new Error(message); } },
     PortalResidentMenu: { open() {

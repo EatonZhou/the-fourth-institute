@@ -122,10 +122,15 @@ TAU 执行器当前依赖 Linux；浏览器工具安装成功不代表 Windows T
 
 ## 发布与启动检查
 
-Windows 当前仍为试用版。安装包、SHA-256 和构建收据发布在本仓库的
-[GitHub Releases](https://github.com/EatonZhou/the-fourth-institute/releases)，中英文 README 提供对应版本入口。
-修改 `release.json` 的版本号并发布到 main 后，Windows preview installer 工作流从该提交
-构建、校验两种案例工程和 EXE，再上传为 prerelease。安装包不写入 Git 文件历史。
+Windows 当前仍为试用版，公开安装包和 README 下载入口已撤下。新测试包通过 Portal
+交付，不创建 GitHub Release，也不把安装包写入 Git 文件历史。
+更新 `test-build.json` 并发布到 main，或手动触发 Windows preview installer 工作流，
+会生成仅保留一天的 Actions 测试文件，再在 Windows 上检查真实 DACL、进程记录、
+本机通信、离线初始化、首次管理员注册及 AMA、启动器退出后的服务存活、停止注销后
+重启和数据保留。完整服务验收同时覆盖包含和不包含 Lenia、中文及空格路径。
+验收不调用外部 AI；原生回执属于实际测试的 EXE SHA，不可套用到另一个包。
+静默安装使用 `/S`，不会自动弹出启动窗口；添加 `/NOEXAMPLES` 可不安装 Lenia。
+静默安装只展开平台，后续仍由桌面入口完成实例初始化。
 新版发布且附件齐全后，仅保留最新 Windows 试用版，自动删除更旧的试用版 Release、
 安装附件及对应标签。发布失败或缺件时保留当前可用版本。历史版本下载链接会失效。
 `Clean old preview installers` 工作流也可清理现有 Windows/macOS 旧版本，各平台独立保留最新版。

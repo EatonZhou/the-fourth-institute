@@ -3,6 +3,7 @@ Unicode true
 !include "x64.nsh"
 !include "WinVer.nsh"
 !include "nsDialogs.nsh"
+!include "FileFunc.nsh"
 Var RemoveInstances
 Var RemoveInstancesCheckbox
 Var UninstallDialog
@@ -114,6 +115,12 @@ FunctionEnd
 
 Function .onInit
   StrCpy $IncludeExamples ${BST_CHECKED}
+  ${GetParameters} $0
+  ClearErrors
+  ${GetOptions} $0 "/NOEXAMPLES" $1
+  ${IfNot} ${Errors}
+    StrCpy $IncludeExamples ${BST_UNCHECKED}
+  ${EndIf}
   ${IfNot} ${RunningX64}
     MessageBox MB_ICONSTOP "This package requires 64-bit Windows."
     Abort
@@ -189,7 +196,9 @@ Section "Platform"
 SectionEnd
 
 Function .onInstSuccess
+  IfSilent done
   Exec '"$INSTDIR\dependencies\python\pythonw.exe" "$INSTDIR\code\scripts\tfi_windows_launcher.py"'
+  done:
 FunctionEnd
 
 Section "Uninstall"
