@@ -2663,6 +2663,8 @@
 
       const state = {
         raw: null,
+        // A confirmed deletion must survive older paginated/index responses.
+        deletedKnowledgeIds: new Set(),
         query: "",
         selected: null,
         indexPaging: {
@@ -3180,6 +3182,7 @@
           }
           const item = knowledgeApi.requireJson(result);
           if (!item?.kb_id) throw new Error("服务返回了无效的知识条目");
+          if (state.deletedKnowledgeIds.has(item.kb_id)) return;
           const existing = (state.raw?.items || []).filter(entry => entry.kb_id !== item.kb_id);
           state.raw = { ...(state.raw || {}), items: [item, ...existing] };
           state.indexPaging.total = Math.max(state.indexPaging.total, state.raw.items.length);
@@ -3698,7 +3701,7 @@
           Object.assign(document.createElement("span"), { textContent: summary }),
           Object.assign(document.createElement("span"), {
             textContent: state.indexPaging.error
-              ? window.PortalI18n.text`已加载 ${loadedTotal}/${total} · 后续分页失败`
+              ? window.PortalI18n.text`已加载 ${loadedTotal}/${total} · 索引加载失败`
               : window.PortalI18n.text`已加载 ${loadedTotal}/${total}`,
             title: state.indexPaging.error || "",
           }),
@@ -3709,7 +3712,7 @@
           } else if (state.exactQuery.status === "error" && state.exactQuery.id === state.query) {
             el.empty.textContent = window.PortalI18n.text`${state.exactQuery.error}。请检查 ID 或访问权限后重试。`;
           } else if (state.indexPaging.error) {
-            el.empty.textContent = window.PortalI18n.text`索引后续页面加载失败：${state.indexPaging.error}。请点击刷新后重试。`;
+            el.empty.textContent = window.PortalI18n.text`索引加载失败：${state.indexPaging.error}。请点击刷新后重试。`;
           } else if (state.query) {
             el.empty.textContent = window.PortalI18n.t("没有本地匹配。自然语言问题可使用搜索框旁的“语义检索”。");
           } else {
@@ -3763,7 +3766,8 @@
 
       function applyIndexPage(page, { reset = false } = {}) {
         const pageInfo = page?.page || {};
-        const pageItems = Array.isArray(page?.items) ? page.items : [];
+        const pageItems = (Array.isArray(page?.items) ? page.items : [])
+          .filter(item => !state.deletedKnowledgeIds.has(item.kb_id));
         if (reset || !state.raw) {
           state.raw = page || {};
           state.raw.items = pageItems;
@@ -3859,14 +3863,23 @@
       async function loadIndex({ refresh = false, preserveScroll = false, waitForRefresh = true } = {}) {
         const scrollY = preserveScroll ? window.scrollY : 0;
         const seq = beginIndexLoad();
-        const result = await knowledgeApi.requestResult(
-          `/knowledge/api/index?${indexRequestParams(0, { refresh })}`,
-          { cache: "no-store", detectLoginRedirect: false },
-        );
-        if (!result.response.ok) throw new Error(`HTTP ${result.response.status}`);
-        const firstPage = knowledgeApi.requireJson(result);
-        applyLoadedIndex(firstPage, seq, { preserveScroll, scrollY });
-        if (waitForRefresh) waitForRefreshedIndex(firstPage.generated_at, seq);
+        try {
+          const result = await knowledgeApi.requestResult(
+            `/knowledge/api/index?${indexRequestParams(0, { refresh })}`,
+            { cache: "no-store", detectLoginRedirect: false },
+          );
+          if (seq !== state.indexPaging.requestSeq) return;
+          if (!result.response.ok) throw new Error(`HTTP ${result.response.status}`);
+          const firstPage = knowledgeApi.requireJson(result);
+          applyLoadedIndex(firstPage, seq, { preserveScroll, scrollY });
+          if (waitForRefresh) waitForRefreshedIndex(firstPage.generated_at, seq);
+        } catch (error) {
+          if (seq !== state.indexPaging.requestSeq) return;
+          state.indexPaging.error = error.message || String(error);
+          if (state.raw) renderAll();
+          else el.meta.textContent = window.PortalI18n.text`索引加载失败：${state.indexPaging.error}。请点击刷新后重试。`;
+          throw error;
+        }
       }
 
       // ── Modal ─────────────────────────────────────────────────────────────
@@ -5225,10 +5238,24 @@
         state.detailDeleting = true;
         syncDetailButtons();
         try {
-          await knowledgeApi.request("/knowledge/api/detail/delete", {
+          const receipt = await knowledgeApi.request("/knowledge/api/detail/delete", {
             method: "POST",
             body: JSON.stringify({ kb_id: fileId }),
           });
+          if (receipt?.deleted !== true || String(receipt.kb_id || receipt.skill_id || "") !== fileId) {
+            throw new Error("删除结果未确认，请刷新后核对条目状态。");
+          }
+          state.deletedKnowledgeIds.add(fileId);
+          // Invalidate both in-flight list pages and direct-ID lookups before
+          // rendering the acknowledged deletion; neither may resurrect it.
+          state.indexPaging.requestSeq += 1;
+          state.indexPaging.prefetching = false;
+          state.exactQuery = { seq: state.exactQuery.seq + 1, id: "", status: "", error: "" };
+          if (state.raw) {
+            state.raw = { ...state.raw, items: (state.raw.items || []).filter(entry => entry.kb_id !== fileId) };
+            state.indexPaging.total = Math.max(state.raw.items.length, state.indexPaging.total - 1);
+            renderAll();
+          }
           const embedded = detailResourceGuest?.deleted({
             resourceId: fileId,
             kind: "deleted",
