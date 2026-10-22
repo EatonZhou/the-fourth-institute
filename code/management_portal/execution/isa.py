@@ -340,6 +340,39 @@ def complete_chat(inv: Invocation) -> dict[str, Any]:
     return result
 
 
+def probe_model_api(inv: Invocation) -> dict[str, Any]:
+    """Which harness protocols an endpoint serves; the arguments override a registration."""
+    from management_portal.ai_provider_registry import AIProviderRegistry
+    from .model_api_probe import probe
+    api_id = inv.argument("api_id")
+    entry: dict[str, Any] = {"id": api_id or "probe"}
+    if api_id:
+        entry = next((item for item, _version in model_api_store.apis() if item["id"] == api_id), None)
+        if entry is None:
+            raise not_found(f"模型接口不存在：{api_id}")
+    draft = {name: inv.argument(name) for name in ("base_url", "default_model", "secret_file", "headers")
+             if inv.argument(name) is not None}
+    try:
+        entry = {**entry, **_stored_fields(draft)}
+    except ValueError as exc:
+        raise invalid(str(exc)) from exc
+    if not re.fullmatch(r"https?://\S+", str(entry.get("base_url") or "").strip()):
+        raise invalid("base_url 必须是 http(s) 地址")
+    if not str(entry.get("default_model") or "").strip():
+        raise invalid("请提供 default_model")
+    anthropic_base_url = str(inv.argument("anthropic_base_url") or "").strip()
+    if anthropic_base_url and not re.fullmatch(r"https?://\S+", anthropic_base_url):
+        raise invalid("anthropic_base_url 必须是 http(s) 地址")
+    secret = inv.argument("secret")
+    if secret is None and AIProviderRegistry.secret_path(entry):
+        try:
+            secret = AIProviderRegistry.read_secret(AIProviderRegistry.secret_path(entry))
+        except (OSError, ValueError):
+            raise invalid("无法读取接口的密钥文件") from None
+    return {"model": entry["default_model"],
+            "results": probe(entry, str(secret or "").strip(), anthropic_base_url=anthropic_base_url)}
+
+
 # -- accounts, scheduling and usage ------------------------------------------------
 
 
@@ -362,7 +395,7 @@ def _registration_public(row, actor):
 
 
 def list_providers(inv):
-    from .account_registrations import PROVIDER_KINDS, registrations
+    from .account_registrations import PROVIDER_KINDS, config_fields, default_route, registrations
     from .provider_catalog import AGENT_PROVIDERS
     from .provider_updates import provider_runtime_status
     runtime_status = provider_runtime_status(refresh=inv.argument("refresh") is True)
@@ -371,8 +404,9 @@ def list_providers(inv):
     for provider, kinds in PROVIDER_KINDS.items():
         definition = AGENT_PROVIDERS.get(provider)
         own = [row for row in rows if row["provider"] == provider]
-        default = next((r["route_id"] for r in own if r["enabled"] and r["config"].get("is_default")),
-                       definition.default_route if definition else "")
+        # Providers whose registrations mark a default report the route that is used.
+        marks_default = any("is_default" in config_fields(provider, kind) for kind in kinds)
+        default = (default_route(own) if marks_default else "") or (definition.default_route if definition else "")
         providers.append({"provider": provider, "title": definition.label if definition else "Model API",
                           "kinds": list(kinds), "capabilities": definition.runtime_capabilities() if definition else {},
                           "runtime": runtime_status.get(provider, {"installed_version": "", "available_version": "",
@@ -811,6 +845,7 @@ HANDLERS = {
     "UpdateModelApi": update_model_api,
     "DeleteModelApi": delete_model_api,
     "CompleteChat": complete_chat,
+    "ProbeModelApi": probe_model_api,
     "ListProviderAccounts": list_provider_accounts,
     "UpdateProviderAccount": update_provider_account,
     "GetUsage": get_usage,

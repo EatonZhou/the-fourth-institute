@@ -66,6 +66,23 @@ def registration(account_id):
         return _decode(c.execute("SELECT * FROM registrations WHERE account_id=%s", (account_id,)).fetchone())
 
 
+def config_fields(provider, kind):
+    """The config keys a registration of this Provider and kind accepts."""
+    # A Codex API account can be the default route; it never falls back to a subscription.
+    if kind == "api_profile":
+        return {"api_id", "is_default"} if provider == "codex" else {"api_id"}
+    return {"fallback_account_ids", "is_default"} if provider == "codex" else \
+        {"models", "default_model"} if provider == "claude" else set()
+
+
+def default_route(rows):
+    """The route of the enabled registration marked is_default, else of the only
+    enabled one; empty when several are enabled and none is marked."""
+    enabled = [row for row in rows if row["enabled"]]
+    marked = [row["route_id"] for row in enabled if row["config"].get("is_default")]
+    return marked[0] if marked else enabled[0]["route_id"] if len(enabled) == 1 else ""
+
+
 def _validate(data):
     if not IDENTIFIER.fullmatch(str(data.get("account_id") or "")):
         raise invalid("account_id 只允许小写字母、数字、下划线和短横线")
@@ -76,9 +93,7 @@ def _validate(data):
     if not isinstance(route, str) or (route and not IDENTIFIER.fullmatch(route)):
         raise invalid("route_id 格式无效")
     config = data.get("config", {})
-    # A Codex API account can be the default route; it never falls back to a subscription.
-    allowed = ({"api_id", "is_default"} if provider == "codex" else {"api_id"}) if kind == "api_profile" else \
-        {"fallback_account_ids", "is_default"} if provider == "codex" else {"models", "default_model"} if provider == "claude" else set()
+    allowed = config_fields(provider, kind)
     if not isinstance(config, dict) or set(config) - allowed:
         raise invalid("config 含不支持的 Provider 字段")
     if kind == "api_profile" and not IDENTIFIER.fullmatch(str(config.get("api_id") or "")):
@@ -127,6 +142,13 @@ def update_registration(account_id, changes, expected_version, actor):
         _check_version(account_id, row["version"], expected_version, "账号登记版本已改变")
         row.update(changes)
         _validate(row)
+        if row["config"].get("is_default"):
+            # Marking an existing account moves the mark in one transaction, so
+            # a Provider never has two defaults or, in between, none.
+            c.execute("""UPDATE registrations SET config=jsonb_set(config,'{is_default}','false'),
+                version=version+1,updated_at=%s,updated_by=%s
+                WHERE provider=%s AND account_id<>%s AND config->>'is_default'='true'""",
+                      (now(), actor, row["provider"], account_id))
         _check_relationships(c, row)
         return _decode(c.execute("""UPDATE registrations SET config=%s,route_id=%s,enabled=%s,
             max_concurrency=%s,version=version+1,updated_at=%s,updated_by=%s WHERE account_id=%s RETURNING *""",

@@ -36,7 +36,7 @@ class CodexRoutes:
         self._load()
 
     def _load(self):
-        from .account_registrations import registrations
+        from .account_registrations import default_route, registrations
         from .account_hosting import account_home, codex_socket_path
         rows = registrations("codex")
         self._accounts = {row["route_id"]: CodexAccountRoute(
@@ -46,13 +46,11 @@ class CodexRoutes:
             row["kind"], row["config"].get("api_id", "")) for row in rows}
         self._aliases = {row["account_id"]: row["route_id"] for row in rows}
         self._enabled = {row["route_id"] for row in rows if row["enabled"]}
-        defaults = [row["route_id"] for row in rows if row["enabled"] and row["config"].get("is_default")]
-        if len(defaults) > 1:
+        if sum(1 for row in rows if row["enabled"] and row["config"].get("is_default")) > 1:
             raise ValueError("Multiple default Codex accounts")
         # A site's only enabled Codex account is its default without being marked;
         # among several, the default must be chosen explicitly.
-        enabled = [row["route_id"] for row in rows if row["enabled"]]
-        self.default_account_id = defaults[0] if defaults else enabled[0] if len(enabled) == 1 else ""
+        self.default_account_id = default_route(rows)
         self._loaded_at = time.monotonic()
 
     def _refresh(self):

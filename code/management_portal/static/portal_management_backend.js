@@ -5,6 +5,8 @@ const kinds = {subscription_login: "订阅登录", api_profile: "模型 API 账�
 const loginStates = {logged_in: "已登录", login_expired: "登录已过期", logged_out: "未登录", not_applicable: "无需登录",
   unavailable: "等待准备环境或检查授权",
   pending: "正在启动登录…", awaiting_user: "等待浏览器授权", succeeded: "登录成功", failed: "登录失败", expired: "登录已过期"};
+const probeStates = {supported: "支持", unsupported: "不支持", auth_failed: "认证失败", rejected: "接口存在但拒绝了请求",
+  error: "接口返回错误", unreachable: "无法连接"};
 const logins = new Map();
 
 function node(tag, text, attrs = {}) {
@@ -429,6 +431,34 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     const declaredProtocols = protocolState();
     const showAnthropic = () => { anthropicUrl.parentElement.hidden = anthropicAuth.parentElement.hidden = !anthropic.checked; };
     showAnthropic();
+    // The endpoint answers which protocols it serves; the result fills the boxes above, which stay editable.
+    const probeResults = node("ul", undefined, {class: "backendProbe", "aria-live": "polite"});
+    const probe = button("检测接口协议", () => void (async () => {
+      probe.disabled = true; probeResults.replaceChildren(node("li", t("正在检测…")));
+      try {
+        const args = {...(api ? {api_id: api.api_id} : {}), base_url: url.value.trim(), default_model: model.value.trim(),
+          ...(secret.value ? {secret: secret.value} : {}), ...(path.value.trim() ? {secret_file: path.value.trim()} : {}),
+          ...(anthropicUrl.value.trim() ? {anthropic_base_url: anthropicUrl.value.trim()} : {})};
+        const {results} = await execute("ProbeModelApi", args);
+        probeResults.replaceChildren(...[["openai_chat", "Chat Completions（OpenCode、直连）"], ["openai_responses", "OpenAI Responses（Codex）"],
+          ["anthropic_messages", "Anthropic Messages（Claude Code）"]].map(([name, label]) => {
+          const result = results[name] || {};
+          const detail = [result.http_status ? `HTTP ${result.http_status}` : "", result.message ? t(result.message) : ""].filter(Boolean).join(" · ");
+          return node("li", `${t(label)}：${t(probeStates[result.status] || result.status || "—")}${detail ? `（${detail}）` : ""}`,
+            {"data-protocol": name, "data-status": result.status || ""});
+        }));
+        for (const [box, name] of [[responses, "openai_responses"], [anthropic, "anthropic_messages"]]) {
+          if (results[name]?.status === "supported") box.checked = true;
+          else if (results[name]?.status === "unsupported") box.checked = false;
+        }
+        if (results.anthropic_messages?.auth) anthropicAuth.value = results.anthropic_messages.auth;
+        showAnthropic(); renderHarnesses();
+      } catch (error) { probeResults.replaceChildren(node("li", errorText(error), {role: "alert"})); }
+      finally { probe.disabled = !canWrite; }
+    })(), !canWrite);
+    probe.name = "probe_protocols"; options.append(probe);
+    hint(probe, "向三种协议各发一次很短的请求并按结果勾选上面的协议，可再修改；会调用模型，可能产生少量费用。");
+    options.append(probeResults);
     const enabled = field(options, "启用此接口", "enabled", "", {type: "checkbox"}); enabled.checked = api?.enabled !== false;
     const canCreateAccount = !api && canRegister && state.providers.some(p => p.provider === "provider_api" && p.kinds.includes("api_profile"));
     const account = canCreateAccount ? field(options, "AI 账号名称（可选）", "account_id", "", {pattern: "[a-z][a-z0-9_\\-]{0,127}", placeholder: t("留空使用连接名称")}) : null;
@@ -489,7 +519,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
             await execute("RegisterProviderAccount", {account_id: accountId, provider: backend, kind: "api_profile", config: {api_id: createdId}, max_concurrency: 1});
           } catch (_) {
             options.parentElement.open = true;
-            for (const input of [id, provider, url, model, path, models, responses, anthropic, anthropicUrl, anthropicAuth, secret, enabled]) input.disabled = true;
+            for (const input of [id, provider, url, model, path, models, responses, anthropic, anthropicUrl, anthropicAuth, probe, secret, enabled]) input.disabled = true;
             const message = t("API 已保存，但 AI 账号尚未添加。可修改账号名称后重试保存，不会重复创建 API；也可取消勾选，仅保留接口。");
             form.querySelector('[role="alert"]').textContent = message; notice.textContent = message;
             await refresh("apis"); return false;
@@ -520,12 +550,21 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       const identity = node("div", api?.default_model || a.account_id, {title: a.account_id});
       if (api?.base_url) identity.append(node("small", api.base_url));
       const readonly = !canWrite || a.kind === "service" || !Number.isInteger(a.registration_version);
+      // The route a Resident uses when it names no account: marked, or the only enabled one.
+      const defaultRoute = state.providers.find(p => p.provider === a.provider)?.default_route_id;
+      const isDefault = Boolean(defaultRoute) && defaultRoute === a.route_id;
+      // Enabling, disabling or removing an account can change which one is the default.
+      const reload = async () => { await refresh("providers"); await refresh("accounts"); };
       return {id: a.account_id, cells: [identity, a.kind === "api_profile" ? "API Key" : t(kinds[a.kind] || a.kind || "—"),
-        [t(a.enabled === false ? "已停用" : "已启用"), a.kind === "subscription_login" ? t(loginStates[a.login_state] || a.login_state || "—") : ""].filter(Boolean).join(" · "),
+        [t(a.enabled === false ? "已停用" : "已启用"), a.kind === "subscription_login" ? t(loginStates[a.login_state] || a.login_state || "—") : "",
+          isDefault ? t("默认路线") : ""].filter(Boolean).join(" · "),
         actions(button("接入与测试", () => setupEditor(a.account_id), !canWrite), ...(a.kind === "subscription_login" ? [button(a.login_state === "login_expired" ? "重新登录" : "登录", () => { login = openLogin(a.account_id, {onChanged: () => void refresh("accounts")}); }, !canWrite)] : []),
-          button(a.enabled === false ? "启用" : "停用", () => void run(async () => { await execute("UpdateProviderAccountRegistration", {account_id: a.account_id, changes: {enabled: a.enabled === false}}, {expectedVersion: a.registration_version}); await refresh("accounts"); }), readonly),
+          ...(a.provider === "codex" && a.enabled !== false && !isDefault ? [button("设为默认路线", () => void run(async () => {
+            await execute("UpdateProviderAccountRegistration", {account_id: a.account_id, changes: {config: {...(a.config || {}), is_default: true}}}, {expectedVersion: a.registration_version});
+            await reload(); }), readonly)] : []),
+          button(a.enabled === false ? "启用" : "停用", () => void run(async () => { await execute("UpdateProviderAccountRegistration", {account_id: a.account_id, changes: {enabled: a.enabled === false}}, {expectedVersion: a.registration_version}); await reload(); }), readonly),
           button("编辑初始并发", () => concurrencyEditor(a), readonly),
-          button("删除", () => void run(async () => { if (await confirm("删除执行账号？", a.account_id)) { await execute("DeleteProviderAccount", {account_id: a.account_id}); await refresh("accounts"); } }), readonly))]};
+          button("删除", () => void run(async () => { if (await confirm("删除执行账号？", a.account_id)) { await execute("DeleteProviderAccount", {account_id: a.account_id}); await reload(); } }), readonly))]};
     })),
     apis: () => table("apis", ["连接名称", "服务商", "接口地址", "默认模型", "状态", "操作"], state.apis.map(api => {
       const result = node("span", "", {role: "status"});

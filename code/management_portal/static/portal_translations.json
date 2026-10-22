@@ -40462,5 +40462,57 @@
   "只列出声明了 {p0} 协议的接口；可在模型 API 的高级设置中勾选。": {
     "zh-CN": "只列出声明了 {p0} 协议的接口；可在模型 API 的高级设置中勾选。",
     "en": "Only APIs that declare the {p0} protocol are listed; check it under the Model API's Advanced settings."
+  },
+  "检测接口协议": {
+    "zh-CN": "检测接口协议",
+    "en": "Detect protocols"
+  },
+  "正在检测…": {
+    "zh-CN": "正在检测…",
+    "en": "Detecting…"
+  },
+  "Chat Completions（OpenCode、直连）": {
+    "zh-CN": "Chat Completions（OpenCode、直连）",
+    "en": "Chat Completions (OpenCode, direct calls)"
+  },
+  "OpenAI Responses（Codex）": {
+    "zh-CN": "OpenAI Responses（Codex）",
+    "en": "OpenAI Responses (Codex)"
+  },
+  "Anthropic Messages（Claude Code）": {
+    "zh-CN": "Anthropic Messages（Claude Code）",
+    "en": "Anthropic Messages (Claude Code)"
+  },
+  "支持": {
+    "zh-CN": "支持",
+    "en": "Supported"
+  },
+  "认证失败": {
+    "zh-CN": "认证失败",
+    "en": "Authentication failed"
+  },
+  "接口存在但拒绝了请求": {
+    "zh-CN": "接口存在但拒绝了请求",
+    "en": "Endpoint exists but rejected the request"
+  },
+  "接口返回错误": {
+    "zh-CN": "接口返回错误",
+    "en": "Endpoint returned an error"
+  },
+  "无法连接": {
+    "zh-CN": "无法连接",
+    "en": "Unreachable"
+  },
+  "返回内容不是该协议的格式": {
+    "zh-CN": "返回内容不是该协议的格式",
+    "en": "The response is not in this protocol's format"
+  },
+  "向三种协议各发一次很短的请求并按结果勾选上面的协议，可再修改；会调用模型，可能产生少量费用。": {
+    "zh-CN": "向三种协议各发一次很短的请求并按结果勾选上面的协议，可再修改；会调用模型，可能产生少量费用。",
+    "en": "Sends one short request per protocol and ticks the protocols above from the result; you can still change them. This calls the model and may incur a small cost."
+  },
+  "设为默认路线": {
+    "zh-CN": "设为默认路线",
+    "en": "Make default route"
   }
 }

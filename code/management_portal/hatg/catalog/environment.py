@@ -107,6 +107,16 @@ DECLARATIONS = (
     ), (R("message", "object", "模型的回答消息：OpenAI 兼容的 role、content…"),
         R("usage", "object", "接口返回的 token 用量；未返回时为空"),
         P("structured", "any", "提供 response_schema 时，按它解析并校验后的回答")), mutates=True, target="api_id", owner="execution"),
+    _d("ProbeModelApi", FIXED, "向模型接口的各协议地址各发一次很短的请求，检测它为 Agent Harness 提供哪些协议；不保存任何内容。", (
+        P("api_id", description="已登记的模型接口；其余参数覆盖它的登记值"),
+        P("base_url", description="接口基础地址"), P("default_model", description="检测请求使用的模型"),
+        P("secret_file", description="密钥文件路径"), P("secret", description="一次性密钥，只用于本次检测，不保存、不回显"),
+        P("headers", "object", "不含密钥"),
+        P("anthropic_base_url", description="Anthropic Messages 地址；省略时用登记的地址或去掉 /v1 的接口基础地址"),
+    ), (R("model", description="检测请求使用的模型"),
+        R("results", "object", "按协议（openai_chat、openai_responses、anthropic_messages）给出 status（supported、unsupported、"
+          "auth_failed、rejected、error、unreachable）、http_status 与 message；anthropic_messages 支持时另有 auth（bearer 或 x-api-key）")),
+       mutates=True, target="api_id", owner="execution"),
     _d("ListProviderAccounts", FIXED, "读取执行账号的额度窗口、余额、Codex credits 或可用性与调度设置。", (
         P("account_id", description="只读取这个执行账号；省略时读取全部"),
         P("refresh", "boolean", "先请求重新采集额度与余额"),

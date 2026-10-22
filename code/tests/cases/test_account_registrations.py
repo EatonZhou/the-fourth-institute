@@ -41,6 +41,37 @@ def test_registration_versions_and_roles():
         store.update_role("default", "codex_test", "model", "low", 0, "bob")
 
 
+def test_marking_another_default_route_moves_the_mark_in_one_update(monkeypatch):
+    """把另一个 Codex 账号设为默认路线时在同一事务中取消原标记；ListProviders 报告实际使用的默认路线
+
+    新登记一个默认账号时已有默认仍被拒绝；被取消标记的账号版本递增。只剩一个启用账号时，它就是报告的默认路线。
+    """
+    from management_portal.execution import account_registrations as store, isa, provider_updates
+    from management_portal.execution.account_adapters import CodexRoutes
+    monkeypatch.setattr(provider_updates, "provider_runtime_status", lambda refresh=False: {})
+    monkeypatch.setattr(provider_updates, "preparation_status", lambda provider: {"status": "missing"})
+
+    def reported():
+        providers = isa.list_providers(SimpleNamespace(argument=lambda name: None))["providers"]
+        return next(row["default_route_id"] for row in providers if row["provider"] == "codex")
+
+    for name, default in (("one", True), ("two", False)):
+        store.create_registration({"account_id": f"codex_{name}", "provider": "codex", "kind": "subscription_login",
+                                   "route_id": name, "config": {"is_default": default}}, "alice")
+    with pytest.raises(InstructionError) as error:
+        store.create_registration({"account_id": "codex_three", "provider": "codex", "kind": "subscription_login",
+                                   "route_id": "three", "config": {"is_default": True}}, "alice")
+    assert error.value.code == "instruction.conflict"
+    assert reported() == "one"
+    moved = store.update_registration("codex_two", {"config": {"is_default": True}}, 1, "bob")
+    assert moved["config"]["is_default"] is True
+    previous = store.registration("codex_one")
+    assert (previous["config"]["is_default"], previous["version"], previous["updated_by"]) == (False, 2, "bob")
+    assert CodexRoutes().default_for_new_session().account_id == "two" and reported() == "two"
+    store.update_registration("codex_two", {"enabled": False}, 2, "bob")
+    assert reported() == "one"
+
+
 def test_registration_rejects_invalid_identity_and_sensitive_config():
     """登记拒绝越界目录 ID、无效 Provider 和任意敏感配置。"""
     from management_portal.execution import account_registrations as store
