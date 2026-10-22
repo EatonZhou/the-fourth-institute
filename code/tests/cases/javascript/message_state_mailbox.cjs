@@ -14,7 +14,7 @@ const payload = { entries: Array.from({ length: 18 }, (_, index) => ({
   section: 'conversation', unread: false, pinned: false, updated_at: '2026-10-15T00:00:00Z', read_revision: 0,
 })), content_signature: 'loaded', ready: true, unread_count: 0, next_page_token: 'next' };
 
-function mailbox({ connected = false, transform = (_name, source) => source } = {}) {
+function mailbox({ connected = false, targetRead, transform = (_name, source) => source } = {}) {
   const errors = [], reads = [], responses = [];
   const virtualConsole = new VirtualConsole();
   virtualConsole.on('jsdomError', error => errors.push(error.message));
@@ -53,6 +53,7 @@ function mailbox({ connected = false, transform = (_name, source) => source } = 
   // Pages load portal_nav.js before the Inbox; this viewer has no personal assistant.
   window.PortalNav = { personalAssistantTarget: async () => null };
   window.PortalAPI = { get(url) {
+    if (url.startsWith('/api/agent-conversations?resident=') && targetRead) return targetRead(url);
     assert.equal(url, '/api/agent-conversations');
     reads.push(url);
     assert.ok(responses.length, 'Unexpected snapshot request');
@@ -120,6 +121,57 @@ function mailbox({ connected = false, transform = (_name, source) => source } = 
 }
 
 const checks = {
+  async 'background-index-budget'() {
+    const requests = [], active = new Set();
+    let peak = 0;
+    const app = mailbox({ connected: true, targetRead(url) {
+      const resident = new URL(url, 'https://fixture.invalid').searchParams.get('resident');
+      let resolve;
+      const promise = new Promise(yes => { resolve = yes; });
+      const request = { resident, finish(cursor) {
+        active.delete(request);
+        resolve({ target_state: 'present', target_present: true, resident_cursor: cursor, projection_cursor: cursor,
+          entries: [{ key: `resident:${resident}`, resident_id: resident, title: resident,
+            cursor, kind: 'resident-main', section: 'conversation', unread: false }] });
+      } };
+      active.add(request);
+      requests.push(request);
+      peak = Math.max(peak, active.size);
+      return promise;
+    } });
+    const residents = Array.from({ length: 16 }, (_, i) => `resident_${i.toString(16).padStart(12, '0')}`);
+    const change = (ids, cursor) => app.window.dispatchEvent(new app.window.CustomEvent('portal:change', {
+      detail: { resident_events: ids.map(resident_id => ({ resident_id, cursor, event_type: 'message.created' })) },
+    }));
+    try {
+      app.queue(payload);
+      await app.refresh();
+      change(residents, 1);
+      await app.advance(80);
+      assert.equal(active.size, 2, 'background reads leave browser connections for foreground controls');
+      // Coalesce newer events for both an active target and a still queued one.
+      change([residents[0], residents[15]], 3);
+      requests[0].finish(1);
+      await drain();
+      assert.equal(active.size, 2, 'free capacity drains the next waiting Resident');
+      for (let step = 0; active.size && step < 20; step += 1) {
+        for (const request of [...active]) request.finish(request.resident === residents[15] ? 3 : 1);
+        await drain();
+      }
+      await app.advance(160);
+      assert.deepEqual([...active].map(item => item.resident).sort(), [residents[0], residents[15]],
+        'newer active and queued cursors survive their refresh timers');
+      for (const request of [...active]) request.finish(3);
+      await drain();
+      assert.equal(active.size, 0);
+      assert.equal(peak, 2);
+      assert.deepEqual([...new Set(requests.map(item => item.resident))].sort(), residents.sort(), 'no queued target is lost');
+      assert.equal(requests.filter(item => item.resident === residents[15]).length, 1, 'queued changes coalesce');
+      for (const resident of residents) assert.ok(app.store.entry(`resident:${resident}`), 'each target reaches the store');
+      assert.equal(app.store.entry(`resident:${residents[0]}`).cursor, 3);
+      assert.equal(app.store.entry(`resident:${residents[15]}`).cursor, 3);
+    } finally { await app.close(); }
+  },
   async 'realtime-disconnect'(options = {}) {
     const app = mailbox({ ...options, connected: true });
     try {

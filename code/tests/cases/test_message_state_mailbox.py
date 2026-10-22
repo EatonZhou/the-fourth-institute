@@ -39,3 +39,8 @@ def test_transient_snapshot_failure_retries_and_clears_banner():
     :design-point:
     """
     _run("transient-retry")
+
+
+def test_background_index_budget_preserves_queued_and_newer_events():
+    """Background index reads reserve control capacity and eventually apply every queued update."""
+    _run("background-index-budget")

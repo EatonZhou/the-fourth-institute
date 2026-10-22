@@ -11,7 +11,10 @@
   const PAGE_SIZE = 50;
   const EVENT_REFRESH_DELAY = 80;
   const TARGET_RETRY_LIMIT = 6;
-  const TARGET_REQUEST_LIMIT = 6;
+  // These are background index reads. Six simultaneous reads can occupy an
+  // HTTP/1 origin's entire browser connection pool and queue foreground actions
+  // such as Stop before they reach the server. Leave room for control and SSE.
+  const TARGET_REQUEST_LIMIT = 2;
   const NON_INDEX_RESIDENT_EVENT_TYPES = new Set([
     "resident.activity.changed",
     "resident.queue.changed",
