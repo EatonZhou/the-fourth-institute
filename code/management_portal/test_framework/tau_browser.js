@@ -16,7 +16,10 @@
 //   try { await portal.page.goto("/"); ... } finally { await portal.close(); }
 //
 // Observing one message: `portal.inputState(residentId, messageId)` reads that
-// message's own processing state (GetInputState), and
+// message's own processing state (GetInputState). The returned input_state is
+// already unwrapped: read input.state and input.message_id, not input.current
+// or input.input_state.
+//
 // `portal.waitForInput(residentId, messageId, { states })` waits until it reaches
 // one of `states`. Both are reads; use them before a Stop, and to check what a
 // crashed helper already submitted instead of submitting it again.
