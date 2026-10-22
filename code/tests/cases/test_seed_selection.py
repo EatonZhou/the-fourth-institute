@@ -129,7 +129,7 @@ INSERT INTO "s"."t" ("a") VALUES ('body\nINSERT INTO "x"."y" ("z") VALUES (1);')
             controller.status.return_value = {'service': 'tfi-fixture-worker', 'active': 'inactive'}
             (root / 'runtime/worker.log').write_text('earlier output\nTraceback (most recent call last):\nRuntimeError: fixture startup failure\n')
             with patch.object(installer, 'service_controller', return_value=controller), \
-                    patch.object(installer, 'urlopen', side_effect=[http, OSError('not ready')]):
+                    patch.object(installer._LOCAL_HTTP, 'open', side_effect=[http, OSError('not ready')]):
                 result = installer.observed_status(state)
             self.assertEqual(result['checks'][0]['payload'], payload)
             with patch.object(installer, 'unit_name', side_effect=lambda target, component: 'tfi-fixture-' + component):
@@ -162,7 +162,7 @@ INSERT INTO "s"."t" ("a") VALUES ('body\nINSERT INTO "x"."y" ("z") VALUES (1);')
             controller = Mock()
             controller.status.side_effect = lambda name: {'service': name, 'active': 'active'}
             with patch.object(installer, 'service_controller', return_value=controller), \
-                    patch.object(installer, 'urlopen', side_effect=[health, login]):
+                    patch.object(installer._LOCAL_HTTP, 'open', side_effect=[health, login]):
                 result = installer.observed_status(state)
             self.assertEqual(result['status'], 'unhealthy')
             self.assertEqual(result['checks'][1]['http_status'], 500)

@@ -1,6 +1,7 @@
 """macOS private files must not treat mode bits as an ACL check."""
 import ctypes
 import errno
+import os
 from types import SimpleNamespace
 
 import pytest
@@ -17,21 +18,51 @@ class Function:
         return self.call(*args)
 
 
+OWNER_UUID = bytes(range(16))
+OTHER_UUID = b"x" * 16
+
+
 @pytest.fixture
 def mac_acl(monkeypatch):
     calls = []
-    state = {"entry": 0, "errno": errno.EINVAL, "acl": 123, "query_errno": 0}
+    state = {"entry": 0, "errno": errno.EINVAL, "acl": 123, "query_errno": 0,
+             "entries": [(1, OTHER_UUID)], "identity_error": 0, "tag_error": 0,
+             "qualifier_null": False, "valid": 0}
+    qualifiers = []  # Keep allocated UUIDs alive until the mock ACL is released.
     def query(fd, kind):
         calls.append(("get", fd, kind))
         ctypes.set_errno(state["query_errno"])
         return state["acl"]
-    def entry(*args):
+    def entry(acl, selector, output):
+        assert selector in (0, -1)  # Darwin ACL_FIRST_ENTRY / ACL_NEXT_ENTRY.
+        state["index"] = 0 if selector == 0 else state["index"] + 1
         ctypes.set_errno(state["errno"])
-        return state["entry"]
+        if state["entry"] == -1 or state["index"] >= len(state["entries"]):
+            return -1
+        ctypes.cast(output, ctypes.POINTER(ctypes.c_void_p))[0] = state["index"] + 1000
+        return 0
+    def tag(entry, output):
+        ctypes.cast(output, ctypes.POINTER(ctypes.c_int))[0] = state["entries"][state["index"]][0]
+        return state["tag_error"]
+    def qualifier(entry):
+        if state["qualifier_null"]:
+            return None
+        value = ctypes.create_string_buffer(state["entries"][state["index"]][1])
+        qualifiers.append(value)
+        pointer = ctypes.addressof(value)
+        calls.append(("qualifier", pointer))
+        return pointer
+    def identity(uid, output):
+        calls.append(("identity", uid))
+        ctypes.memmove(output, OWNER_UUID, 16)
+        return state["identity_error"]
     lib = SimpleNamespace(
         acl_get_fd_np=Function(query),
-        acl_valid=Function(lambda acl: 0),
+        acl_valid=Function(lambda acl: state["valid"]),
         acl_get_entry=Function(entry),
+        acl_get_tag_type=Function(tag),
+        acl_get_qualifier=Function(qualifier),
+        mbr_uid_to_uuid=Function(identity),
         acl_free=Function(lambda acl: calls.append(("free", acl)) or 0),
     )
     monkeypatch.setattr(private, "sys", SimpleNamespace(platform="darwin"), raising=False)
@@ -104,3 +135,51 @@ def test_shared_private_atomic_write_checks_acl_before_payload(tmp_path, mac_acl
         shared_state.atomic_replace_json(target, {"secret": "never written"}, mode=0o600)
     assert target.read_bytes() == b"old"
     assert list(tmp_path.iterdir()) == [target]
+
+
+@pytest.mark.parametrize("entries", [
+    [(1, OWNER_UUID)],
+    [(2, OTHER_UUID)],
+    [(2, OTHER_UUID), (1, OWNER_UUID), (1, OWNER_UUID)],
+])
+def test_owner_grants_and_deny_entries_allow_private_roundtrip(tmp_path, mac_acl, entries):
+    state, calls = mac_acl
+    state["entries"] = entries
+    target = tmp_path / "private/key"
+    private.atomic_write_private_bytes(target, b"fixture")
+    assert private.read_private_bytes(target) == b"fixture"
+    assert state["entries"] == entries  # No destructive ACL replacement.
+    for call in calls:
+        if call[0] == "qualifier":
+            assert ("free", call[1]) in calls
+        if call[0] == "identity":
+            assert call[1] == os.geteuid()
+    if all(tag == 2 for tag, _ in entries):
+        assert not any(call[0] == "identity" for call in calls)
+
+
+@pytest.mark.parametrize("entries", [
+    [(1, OWNER_UUID), (1, OTHER_UUID)],
+    [(2, OTHER_UUID), (1, OTHER_UUID)],
+    [(999, OWNER_UUID)],
+])
+def test_other_grants_and_unknown_entries_fail_before_payload(tmp_path, mac_acl, entries):
+    mac_acl[0]["entries"] = entries
+    target = tmp_path / "private/key"
+    with pytest.raises(private.PrivateFileError):
+        private.atomic_write_private_bytes(target, b"not-written")
+    assert not target.exists()
+    assert mac_acl[1][-1] == ("free", 123)
+
+
+@pytest.mark.parametrize("failure", [
+    {"identity_error": errno.ENOENT}, {"tag_error": -1},
+    {"qualifier_null": True}, {"errno": errno.EACCES}, {"valid": -1},
+])
+def test_unverifiable_owner_acl_fails_closed(tmp_path, mac_acl, failure):
+    mac_acl[0].update(entries=[(1, OWNER_UUID)], **failure)
+    target = tmp_path / "private/key"
+    with pytest.raises(private.PrivateFileError):
+        private.atomic_write_private_bytes(target, b"not-written")
+    assert not target.exists()
+    assert mac_acl[1][-1] == ("free", 123)

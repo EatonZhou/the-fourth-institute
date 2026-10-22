@@ -4,8 +4,8 @@ Private APIs check the opened object *before* reading its contents. Windows
 objects use a protected current-user DACL at creation; existing objects must be
 owned by that user and may grant access only to that user, SYSTEM or local
 Administrators. NULL DACLs and unrecognised ACEs fail closed. POSIX uses the
-existing 0700/0600 convention plus ownership and no-follow checks. macOS private
-objects with extended ACLs are rejected rather than trusting mode bits alone.
+existing 0700/0600 convention plus ownership and no-follow checks. macOS also
+checks extended ACLs: only current-user grants and deny entries are permitted.
 
 The atomic permission APIs also support ordinary, non-private files. Call them
 on an empty temporary file before writing payload bytes. They never assert that
@@ -35,6 +35,9 @@ def _macos_acl_api():
         ("acl_get_fd_np", [ctypes.c_int, ctypes.c_int], ctypes.c_void_p),
         ("acl_valid", [ctypes.c_void_p], ctypes.c_int),
         ("acl_get_entry", [ctypes.c_void_p, ctypes.c_int, ctypes.POINTER(ctypes.c_void_p)], ctypes.c_int),
+        ("acl_get_tag_type", [ctypes.c_void_p, ctypes.POINTER(ctypes.c_int)], ctypes.c_int),
+        ("acl_get_qualifier", [ctypes.c_void_p], ctypes.c_void_p),
+        ("mbr_uid_to_uuid", [ctypes.c_uint32, ctypes.c_void_p], ctypes.c_int),
         ("acl_free", [ctypes.c_void_p], ctypes.c_int),
     ):
         function = getattr(library, name)
@@ -43,8 +46,11 @@ def _macos_acl_api():
 
 
 def assert_private_posix_acl(descriptor: int) -> None:
-    """macOS ACLs can grant access independently of mode bits; reject them.
+    """Reject macOS ACL grants to anyone except the verified current owner.
 
+    Callers check the opened object's ownership and mode separately. Deny
+    entries can only restrict access; an allow entry must name the current UID's
+    native membership UUID. This also applies to inherited/inherit-only grants.
     No ACL is removed or rewritten. An unsupported/unreadable ACL fails closed,
     including on newly created objects which inherited it from their parent.
     Linux POSIX access ACL grants are constrained by the existing mode check.
@@ -65,14 +71,37 @@ def assert_private_posix_acl(descriptor: int) -> None:
     try:
         if library.acl_valid(acl) != 0:
             raise PrivateFileError("Private file has an invalid extended ACL")
-        entry = ctypes.c_void_p()
-        ctypes.set_errno(0)
-        result = library.acl_get_entry(acl, 0, ctypes.byref(entry))  # ACL_FIRST_ENTRY
-        if result == 0:
-            raise PrivateFileError("Private file has an extended ACL")
-        # Darwin returns -1/EINVAL at the end of a validated, empty ACL.
-        if result != -1 or ctypes.get_errno() != errno.EINVAL:
-            raise PrivateFileError("Cannot enumerate private file extended ACL")
+        current_uuid = None
+        selector = 0  # ACL_FIRST_ENTRY; Darwin's ACL_NEXT_ENTRY is -1.
+        while True:
+            entry = ctypes.c_void_p()
+            ctypes.set_errno(0)
+            result = library.acl_get_entry(acl, selector, ctypes.byref(entry))
+            # Darwin returns -1/EINVAL at the end of a validated ACL.
+            if result == -1 and ctypes.get_errno() == errno.EINVAL:
+                break
+            if result != 0 or not entry.value:
+                raise PrivateFileError("Cannot enumerate private file extended ACL")
+            selector = -1
+            tag = ctypes.c_int()
+            if library.acl_get_tag_type(entry, ctypes.byref(tag)) != 0:
+                raise PrivateFileError("Cannot inspect private file ACL entry")
+            if tag.value == 2:  # ACL_EXTENDED_DENY
+                continue
+            if tag.value != 1:  # ACL_EXTENDED_ALLOW
+                raise PrivateFileError("Private file contains an unsupported ACL entry")
+            if current_uuid is None:
+                current_uuid = (ctypes.c_ubyte * 16)()
+                if library.mbr_uid_to_uuid(os.geteuid(), current_uuid) != 0:
+                    raise PrivateFileError("Cannot verify current user ACL identity")
+            qualifier = library.acl_get_qualifier(entry)
+            if not qualifier:
+                raise PrivateFileError("Cannot inspect private file ACL identity")
+            try:
+                if ctypes.string_at(qualifier, 16) != bytes(current_uuid):
+                    raise PrivateFileError("Private object grants access to another principal")
+            finally:
+                library.acl_free(qualifier)
     finally:
         library.acl_free(acl)
 
@@ -357,7 +386,7 @@ def _directory(path, *, create=False, private=False):
 
 
 def ensure_private_directory(path):
-    """Create owner-only directories; reject unsafe Windows ACLs, never repair them."""
+    """Ensure owner-only directories; reject unsafe ACLs without rewriting them."""
     with _directory(path, create=True, private=True):
         pass
 

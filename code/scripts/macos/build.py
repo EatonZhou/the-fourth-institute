@@ -18,6 +18,7 @@ from prepare_install import digest
 from management_common.distribution_targets import identify_host
 from scripts.tfi_instance_layout import GENERATED_CODE_DIRECTORIES, source_inventory
 from scripts.windows.build import public_seed, bundle_seed, bundle_native_dependencies, verify_prepared_payload
+from scripts.macos.python_dependencies import bundle as bundle_python_dependencies, cache_directory
 
 
 def command(argv, **kwargs):
@@ -102,6 +103,8 @@ def smoke(executable, destination, included):
                 or before["manifest_sha256"] != restarted["manifest_sha256"]
                 or marker.read_text() != "user data survives unregister and restart"):
             raise ValueError("Restart after unregister changed instance identity or user data")
+        if not included:
+            upgrade_smoke(argv, destination)
     except Exception as exc:
         failure = exc
         runtime = destination / "instance/desktop/runtime"
@@ -123,6 +126,37 @@ def smoke(executable, destination, included):
                 if failure is not None:
                     raise ExceptionGroup("Native smoke and cleanup both failed", [failure, exc]) from None
                 raise RuntimeError(f"Native smoke cleanup failed; no release will be produced: {exc}") from exc
+
+
+def upgrade_smoke(argv, destination):
+    """Exercise compatible updates with a real local PostgreSQL row.
+
+    A distinct receipt simulates an older compatible generation. Historical
+    schema migrations still require their own release-to-release validation.
+    """
+    probe = '''
+import json, pathlib, sys
+platform = pathlib.Path(sys.argv[1])
+sys.path.insert(0, str(platform / "code"))
+from scripts import tfi_release_install as api
+import psycopg
+state = json.loads((platform / "instance/desktop/installation.json").read_text())
+with psycopg.connect(api.clean_environment(state["target"])["PORTAL_DATABASE_URL"]) as db:
+    if sys.argv[2] == "create":
+        db.execute("CREATE TABLE public.tfi_desktop_update_probe (value text)")
+        db.execute("INSERT INTO public.tfi_desktop_update_probe VALUES ('local data survives')")
+    else:
+        assert db.execute("SELECT value FROM public.tfi_desktop_update_probe").fetchall() == [("local data survives",)]
+'''
+    python = destination / "dependencies/python/bin/python3"
+    command([python, "-c", probe, destination, "create"])
+    marker = destination / "macos-package.json"
+    original = json.loads(marker.read_text())
+    marker.write_text(json.dumps({**original, "source_commit": "0" * 40}))
+    command([*argv, "--upgrade"], timeout=600)
+    if json.loads(marker.read_text()) != original:
+        raise ValueError("Desktop update did not switch the application receipt")
+    command([python, "-c", probe, destination, "check"])
 
 
 def build(repo, output):
@@ -164,19 +198,55 @@ def build(repo, output):
     env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1", "PYTHONNOUSERSITE": "1"}
     env.pop("PYTHONPATH", None)
     env.pop("PYTHONHOME", None)
-    command([python, "-m", "pip", "install", "--disable-pip-version-check", "--no-compile",
-             "--only-binary=:all:", "-r", payload / "code/requirements.txt"], env=env)
+    for name in list(env):
+        if name.startswith('PIP_'):
+            env.pop(name)
+    env['PIP_CONFIG_FILE'] = os.devnull
+    python_packages = bundle_python_dependencies(repo, payload, cache_directory(repo, 'macos/' + arch),
+                                                target='macos/' + arch)
+    wheelhouse = payload / 'dependencies/python-wheels'
+    command([python, '-I', '-m', 'pip', '--isolated', 'install', '--no-index',
+             '--find-links', wheelhouse, '--require-hashes', '--only-binary=:all:',
+             '--disable-pip-version-check', '--no-compile', '-r', wheelhouse / 'requirements.lock'], env=env)
+    command([python, '-I', '-m', 'pip', '--isolated', 'check', '--disable-pip-version-check'], env=env)
+    # Exercise the same local-only recovery path used when preinstalled core
+    # packages are missing. A fresh venv cannot reuse packages in the app.
+    with tempfile.TemporaryDirectory(prefix='tfi-offline-python-') as tmp:
+        environment = Path(tmp) / 'venv'
+        command([python, payload / 'code/scripts/bootstrap_portal', 'install', 'core',
+                 '--venv', environment, '--wheelhouse', wheelhouse], env=env, timeout=300)
+        command([environment / 'bin/python', payload / 'code/scripts/bootstrap_portal',
+                 'doctor', 'core', '--tools-only', '--venv', environment, '--json'], env=env)
+        command([environment / 'bin/python', '-I', '-c', '''
+import json, ssl, OpenSSL, cbor2, cryptography
+from webauthn import generate_registration_options, generate_authentication_options, options_to_json
+from webauthn import verify_registration_response, verify_authentication_response
+from webauthn.helpers.structs import (AuthenticatorSelectionCriteria, AuthenticatorTransport,
+    PublicKeyCredentialDescriptor, ResidentKeyRequirement, UserVerificationRequirement)
+registration = generate_registration_options(rp_id='localhost', rp_name='TFI',
+    user_name='offline-check', user_id=b'offline-check')
+authentication = generate_authentication_options(rp_id='localhost')
+assert json.loads(options_to_json(registration))['rp']['id'] == 'localhost'
+assert json.loads(options_to_json(authentication))['rpId'] == 'localhost'
+assert cbor2.loads(cbor2.dumps({'offline': True})) == {'offline': True}
+'''], env=env)
     # Check GUI and native imports, not merely package metadata.
     command([python, "-c", "import tkinter,ssl,psycopg,cryptography,psutil; r=tkinter.Tk(); r.update(); r.destroy()"], env=env)
     # Exercise the real Darwin ACL API before starting any services.
     command([python, "-c", """
 from pathlib import Path
-import os, socket, socketserver, subprocess, tempfile
+import os, pwd, socket, socketserver, subprocess, tempfile
 from management_common.file_permissions import atomic_write_private_bytes, read_private_bytes, PrivateFileError
 from management_common.service_endpoint import LocalServiceSocketMixin, service_endpoint
 with tempfile.TemporaryDirectory() as tmp:
     key = Path(tmp).resolve() / 'private/key'
     atomic_write_private_bytes(key, b'fixture')
+    assert read_private_bytes(key) == b'fixture'
+    owner = pwd.getpwuid(os.geteuid()).pw_name
+    subprocess.run(['/bin/chmod', '+a', f'user:{owner} allow read,write', str(key)], check=True)
+    assert read_private_bytes(key) == b'fixture'
+    # Deny-only entries (including Finder's delete protection) cannot expose data.
+    subprocess.run(['/bin/chmod', '+a', 'group:everyone deny execute', str(key)], check=True)
     assert read_private_bytes(key) == b'fixture'
     subprocess.run(['/bin/chmod', '+a', 'everyone allow read', str(key)], check=True)
     try:
@@ -212,6 +282,9 @@ with tempfile.TemporaryDirectory() as tmp:
         "source_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo, text=True).strip(),
         "source_dirty": bool(subprocess.check_output(["git", "status", "--porcelain"], cwd=repo)),
         "python": runtime, "bundled_native_dependencies": bundled,
+        "bundled_python_dependencies": python_packages,
+        "offline_dependency_validation": "passed: pinned wheels, closure, pip check, fresh venv install and doctor with --no-index",
+        "native_preparation_requires_network": False,
         "engineering_sha256": digest(payload / "example-engineering.zip"),
         "base_engineering_sha256": digest(payload / "base-engineering.zip"),
         "engineering_prepared_at_build": True,
@@ -248,7 +321,7 @@ with tempfile.TemporaryDirectory() as tmp:
         for included in (False, True):
             destination = (Path(tmp) / ("full" if included else "base")).resolve()
             smoke(executables / "TheFourthInstitute", destination, included)
-    receipt["native_installation_smoke"] = "passed: native entry, base/full, login, repeat start, unregister/restart, GUI copy/retry"
+    receipt["native_installation_smoke"] = "passed: native entry, base/full, login, repeat start, unregister/restart, compatible update with database row, GUI copy/retry"
     verify_app(contents.parent)
     receipt["app_signature_verification"] = "passed"
     (image_root / "Applications").symlink_to("/Applications", target_is_directory=True)

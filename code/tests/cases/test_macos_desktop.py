@@ -7,6 +7,7 @@
 """
 import json
 import os
+import shutil
 from pathlib import Path
 import tempfile
 import sys
@@ -116,6 +117,13 @@ class MacDesktop(unittest.TestCase):
                 dmg.with_suffix(".json").write_text(json.dumps({
                     "source_commit": "commit", "source_dirty": False, "target": "macos/" + arch,
                     "prepared_engineering_validation": "passed", "native_installation_smoke": "passed: fixture",
+                    "offline_dependency_validation": "passed: fixture",
+                    "initialization_requires_network": False, "native_preparation_requires_network": False,
+                    "bundled_python_dependencies": {
+                        "target": "cp312-macosx_15_0_" + ("arm64" if arch == "aarch64" else "x86_64"),
+                        "path": "dependencies/python-wheels", "lock_sha256": "a" * 64,
+                        "files": [{"path": "fixture.whl"}],
+                    },
                     "signed": True, "signing_identity": "ad-hoc",
                     "app_signature_verification": "passed", "dmg_app_signature_verification": "passed",
                     "dmg_bytes": dmg.stat().st_size, "dmg_sha256": sha,
@@ -133,13 +141,21 @@ class MacDesktop(unittest.TestCase):
             self.assertTrue(all(call.kwargs["check"] for call in run.call_args_list))
             receipt = dmg.with_suffix(".json")
             record = json.loads(receipt.read_text())
-            for field in ("app_signature_verification", "dmg_app_signature_verification", "signed", "signing_identity"):
+            for field in ("app_signature_verification", "dmg_app_signature_verification", "signed", "signing_identity",
+                          "offline_dependency_validation", "initialization_requires_network",
+                          "native_preparation_requires_network", "bundled_python_dependencies"):
                 invalid = dict(record)
                 invalid.pop(field)
                 receipt.write_text(json.dumps(invalid))
                 with self.subTest(field=field), patch.object(publisher.subprocess, "run") as run, self.assertRaises(ValueError):
                     publisher.publish(directory, "commit")
                 run.assert_not_called()
+            invalid = {**record, "bundled_python_dependencies": {
+                **record["bundled_python_dependencies"], "target": "cp312-win_amd64"}}
+            receipt.write_text(json.dumps(invalid))
+            with patch.object(publisher.subprocess, "run") as run, self.assertRaises(ValueError):
+                publisher.publish(directory, "commit")
+            run.assert_not_called()
             receipt.write_text(json.dumps(record))
             dmg.write_bytes(b"tampered")
             with self.assertRaises(ValueError):
@@ -312,6 +328,7 @@ class MacDesktopGUI(unittest.TestCase):
             bundle, destination = Path(tmp).resolve() / "app", Path(tmp).resolve() / "installed"
             bundle.mkdir()
             (bundle / "macos-package.json").write_text('{}')
+            shutil.copytree(Path(launcher.__file__).parent / 'windows/branding', bundle / 'branding')
             flow = launcher.MacStartup(destination, included=False, bundle=bundle)
             copy_started, allow_copy = threading.Event(), threading.Event()
             attempts, ticks, completed = [], [], []
@@ -343,6 +360,8 @@ class MacDesktopGUI(unittest.TestCase):
                         patch.object(desktop.DefaultStartup, "run", return_value="http://127.0.0.1:12345/") as run, \
                         patch.object(desktop.webbrowser, "open", side_effect=lambda url: completed.append(url) or True):
                     window = launcher.Launcher(root, flow=flow)
+                    self.assertGreater(window.mark.width(), 0)
+                    self.assertFalse(destination.exists(), 'Branding must load before first copy')
                     root.after(20, heartbeat)
                     pump_until(lambda: bool(attempts) and not window.busy)
                     self.assertGreaterEqual(len(ticks), 3)

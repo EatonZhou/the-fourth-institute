@@ -1,21 +1,32 @@
 # macOS 安装包 · 试用版
 
 此试用版包含 Codex 后台启动环境、长路径通信、登录等待提示及应用图标修复。
-目标为 macOS 15 及以上，分别构建 Apple Silicon（arm64）和 Intel（x64）DMG，暂不支持覆盖升级。
+目标为 macOS 15 及以上，分别构建 Apple Silicon（arm64）和 Intel（x64）DMG。
 
 打开 DMG，将 **The Fourth Institute.app** 拖到 Applications，弹出磁盘映像，然后打开应用。
 首次启动可以取消勾选“安装 Lenia 预置案例”。不勾选时只解压基础资料，案例相关的
 项目、Resident、工作区、文件和数据库记录均不导入。安装重试保持首次选择。
 
-**已试用过旧版的用户**：暂不支持覆盖旧运行目录。请在 Terminal 使用独立目录启动，
+**正在使用 20261022.2 及更早测试包的用户**：这些包不支持覆盖旧运行目录。请在 Terminal 使用独立目录启动，
 保留原有资料与账号；新目录需要重新连接 AI 账号：
 
 ```sh
 "/Applications/The Fourth Institute.app/Contents/MacOS/TheFourthInstitute" --platform "$HOME/Library/TFI-trial-20261022"
 ```
 
-Python 3.12、核心 Python 包、PostgreSQL、NATS、Node.js 已内置，准备基础平台无需联网，
-也不依赖电脑已有的 Python 或 Homebrew。连接 AI Provider、下载其运行工具及使用在线模型
+兼容升级实现已经接入源码，经过后续原生构建验证的包会在发现旧目录时显示
+“升级并保留资料”。相同芯片、内置运行环境与 Python 依赖的应用更新保留原账号、
+项目、数据库和案例选择；无需重新授权，也不导入新包的 Lenia 案例。
+升级前关闭任务并等待队列完成。启动器停止本实例服务、显示复制进度、保留旧目录备份，
+然后切换新版；失败时恢复旧版，失败现场另存。运行环境不兼容时继续使用独立测试目录。
+命令行的对应操作为 `--upgrade`，旧包不支持此参数。私有备份和升级记录在
+`~/Library/.TFI-launcher/`；它们包含账号及资料，勿上传或作为普通缓存清理。
+
+完整基础安装包内置 Python 3.12、核心 Python 包及全部间接依赖、PostgreSQL、NATS、Node.js，
+准备基础平台无需联网，也不依赖电脑已有的 Python 或 Homebrew。两种芯片各有固定版本和
+摘要的离线 wheel 包；优先复用预装环境，缺少 Python 包时从包内恢复到独立环境。
+离线材料缺失或损坏时明确报错，不转为联网下载。此机制将在下一次原生构建验证后随测试包交付。
+连接 AI Provider、下载其运行工具及使用在线模型
 需要网络。TeX、浏览器自动化和测试工具由用户按需安装；缺失不阻止基础平台启动。
 
 应用将运行代码与数据放在 `~/Library/TFI/`，不会写入只读 DMG 或应用包。
@@ -57,11 +68,19 @@ ad-hoc 试用包的 `spctl` 评估可能拒绝执行；不将完整性校验通�
 在对应芯片的 macOS 15 构建机、Python 3.12 环境中执行：
 
 ```sh
-python3 -m pip install -r code/requirements.txt
+# Apple Silicon 用 arm64，Intel 用 x86_64。
+python3 -m pip install --require-hashes --only-binary=:all: -r code/scripts/macos/requirements-core-arm64.lock
 npm install --ignore-scripts --prefix /tmp/tfi-codex-check @openai/codex@0.163.0
 export TFI_TEST_CODEX_BINARY=/tmp/tfi-codex-check/node_modules/.bin/codex
 python3 code/scripts/macos/build.py
 ```
+
+构建只消费已提交的架构锁文件，包内安装使用 `--no-index --require-hashes`，并运行
+`pip check` 与空虚拟环境的离线安装、核心检查及 WebAuthn/CBOR 调用检查。
+维护者更新依赖时显式运行 `python3 code/scripts/macos/python_dependencies.py --refresh-locks`，
+下载并验证两种架构的完整依赖后才替换锁文件；正常安装和构建不重新解析版本。
+Intel 使用仍提供兼容二进制包的 cryptography 48.0.1 与 cbor2 5.9.0，配套锁定
+webauthn 2.8.0、pyOpenSSL 26.2.0；选择在维护脚本中显式记录，缺件不自动降级或现场编译。
 
 构建器校验固定摘要的 Python 与原生程序，生成基础和完整案例包，运行真实初始化、
 数据库导入、launchd 启停、登录页就绪、重复启动与注销后重启检查，再生成与校验 DMG。

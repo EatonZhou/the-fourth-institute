@@ -28,6 +28,7 @@ def welcome_logo(root, frame, bundle):
     from tkinter import ttk
     logo = tk.PhotoImage(master=root, file=str(Path(bundle) / "branding/logo.png"))
     root.iconphoto(True, logo)
+    root._tfi_icon = logo
     logo = logo.subsample(max(1, (logo.width() + 127) // 128))
     label = ttk.Label(frame, image=logo)
     label.image = logo  # Tk stores only the image name; retain the Python object.
@@ -44,7 +45,7 @@ def materialize(bundle, destination, *, progress=None):
     marker = destination / "macos-package.json"
     if marker.exists():
         if json.loads(marker.read_text()) != receipt:
-            raise ValueError("此目录已有其他版本。试用版暂不支持覆盖升级，请使用原版本打开已有资料。")
+            raise ValueError("此目录已有其他版本，请使用桌面启动器的“升级并保留资料”入口。")
         if progress:
             progress("复用已准备的本地运行环境")
         return
@@ -95,10 +96,11 @@ def materialize(bundle, destination, *, progress=None):
 
 
 class MacStartup(DefaultStartup):
-    def __init__(self, platform, progress=lambda message: None, *, included=True, bundle=None):
+    def __init__(self, platform, progress=lambda message: None, *, included=True, bundle=None, upgrade=False):
         super().__init__(platform, progress)
         self.included = included
         self.bundle = bundle
+        self.upgrade = upgrade
         self.root = self.platform / "instance/desktop"
         self.log_path = self.platform / ".build/macos/logs/desktop.log"
         if bundle is not None:
@@ -108,6 +110,14 @@ class MacStartup(DefaultStartup):
 
     def run(self):
         if self.bundle is not None:
+            from scripts.tfi_macos_upgrade import DesktopUpgrade, changed, pending
+            if pending(self.platform):
+                DesktopUpgrade(self).recover()
+                raise RuntimeError("已恢复上次升级前的资料。点击重试可重新升级，或使用原版本打开。")
+            if changed(self.bundle, self.platform):
+                if not self.upgrade:
+                    raise ValueError("此目录已有旧版本。请在欢迎页选择“升级并保留资料”；命令行启动请加 --upgrade。")
+                return DesktopUpgrade(self).apply(lambda: super(MacStartup, self).run())
             self.progress("正在准备本地运行环境，首次复制可能需要一些时间")
             materialize(self.bundle, self.platform, progress=self.progress)
             self.log_path = self.platform / ".build/macos/logs/desktop.log"
@@ -154,6 +164,10 @@ class MacStartup(DefaultStartup):
             target.pop("windows_service_mode")
             target["python"] = self.command()[0]
             target["offline_dependencies"] = True
+            receipt_path = self.platform / 'macos-package.json'
+            receipt = json.loads(receipt_path.read_text()) if receipt_path.is_file() else {}
+            if receipt.get('bundled_python_dependencies'):
+                target['bundled_python_dependencies'] = True
             write_json(target_path, target)
         self.progress("正在初始化 Portal；使用安装包内置的运行环境")
         self.execute(self.command("install", "--manifest", bundle, "--target", target_path,
@@ -185,6 +199,7 @@ def main():
     parser.add_argument("--platform", type=Path, default=default_platform())
     parser.add_argument("--headless", action="store_true")
     parser.add_argument("--without-examples", action="store_true")
+    parser.add_argument("--upgrade", action="store_true", help="Update compatible desktop code, retaining local data and a rollback copy")
     parser.add_argument("--stop", action="store_true")
     parser.add_argument("--unregister", action="store_true", help="Stop services and remove launch agents; keep data")
     args = parser.parse_args()
@@ -199,7 +214,8 @@ def main():
     lock_root = args.platform.parent / ("." + args.platform.name + "-launcher")
     with launcher_lock(lock_root, system="macos"):
         if args.headless:
-            flow = MacStartup(args.platform, print, included=not args.without_examples, bundle=args.bundle)
+            flow = MacStartup(args.platform, print, included=not args.without_examples,
+                              bundle=args.bundle, upgrade=args.upgrade)
             flow.run()  # Never print the first-user invitation secret.
             print(json.dumps({"status": "ready", "root": str(flow.root)}))
             return
@@ -214,19 +230,26 @@ def main():
         ttk.Label(frame, text="与 AI 一起探索、协作、创造知识。", wraplength=450).pack(pady=10)
         ttk.Label(frame, text="macOS 15+ 试用版，基础安装无需联网。", wraplength=450).pack(pady=10)
         included = tk.BooleanVar(value=not args.without_examples)
+        from scripts.tfi_macos_upgrade import changed, pending
+        upgrading = changed(args.bundle, args.platform) or pending(args.platform)
         choice = ttk.Checkbutton(frame, text="安装 Lenia 预置案例", variable=included)
         choice.pack(pady=15)
         if (args.platform / ".build/macos/options.json").exists():
             choice.pack_forget()
+        if upgrading:
+            choice.pack_forget()
+            ttk.Label(frame, text="发现已有版本。升级将保留账号和资料，并保留旧目录备份；失败时恢复旧版。",
+                      wraplength=450).pack(pady=10)
         def begin():
             try:
                 # Launcher runs flow.run in its worker thread; never copy a
                 # multi-hundred-MB payload on Tk's event loop.
-                Launcher(root, flow=MacStartup(args.platform, included=included.get(), bundle=args.bundle))
+                Launcher(root, flow=MacStartup(args.platform, included=included.get(),
+                                              bundle=args.bundle, upgrade=upgrading or args.upgrade))
                 frame.destroy()
             except Exception as exc:
                 messagebox.showerror("启动未完成", str(exc), parent=root)
-        ttk.Button(frame, text="打开研究空间", command=begin).pack(pady=10)
+        ttk.Button(frame, text="升级并保留资料" if upgrading else "打开研究空间", command=begin).pack(pady=10)
         root.mainloop()
 
 

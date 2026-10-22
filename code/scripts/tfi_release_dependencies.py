@@ -31,12 +31,16 @@ def environment_key(target, selected):
     files += [path for path in (source / "package.json",
               source / "management_portal/test_framework/tau_runtime/package.json",
               source / "management_portal/dsh_runtime/package.json") if path.is_file()]
-    if target.get('bundled_python_dependencies'):
-        files.append(source / 'scripts/windows/requirements-core.lock')
     digest = hashlib.sha256(json.dumps(sorted(selected)).encode())
     for path in files:
         digest.update(path.relative_to(source).as_posix().encode())
         digest.update(path.read_bytes())
+    if target.get('bundled_python_dependencies'):
+        digest.update(b'bundled-python-lock')
+        try:
+            digest.update((dependencies_root(target) / 'python-wheels/requirements.lock').read_bytes())
+        except FileNotFoundError as exc:
+            raise RuntimeError('安装包缺少离线 Python 依赖，请重新获取完整安装包。') from exc
     return digest.hexdigest()
 
 

@@ -25,7 +25,7 @@ import time
 import traceback
 import uuid
 from urllib.parse import quote
-from urllib.request import urlopen
+from urllib.request import build_opener, ProxyHandler
 
 SOURCE_ROOT = Path(__file__).resolve().parents[1]
 if Path(__file__).parent.name == "runtime":
@@ -39,6 +39,9 @@ from management_common.native_output import decode_native_output, run_native_cap
 from scripts.tfi_instance_layout import code_root, database_root, installer_path, validate_shared_code
 
 STATE_FILE = "installation.json"
+# These probes only address this instance on loopback. System proxy settings
+# (including macOS network preferences) must never route them off the machine.
+_LOCAL_HTTP = build_opener(ProxyHandler({}))
 SCHEMA = "tfi.release-installation.v1"
 COMPONENTS = ("postgres", "nats", "resource", "execution", "society", "worker", "web")
 MODULES = {"resource": "management_portal.resources.server",
@@ -927,6 +930,7 @@ def health_failure(state, result):
     failures = health_failures(result)
     report = root / 'runtime/startup-diagnostics.json'
     excerpts = {}
+    error_excerpts = {}
     for component in COMPONENTS:
         name = unit_name(state['target'], component)
         failed_check = any(not check['ok'] and (
@@ -943,10 +947,23 @@ def health_failure(state, result):
             excerpts[component] = '\n'.join(tail.splitlines()[-30:])
         except OSError as exc:
             excerpts[component] = f'无法读取组件日志: {exc}'
+        # launchd writes stderr separately; Python startup tracebacks usually
+        # land here while the corresponding stdout file is empty.
+        try:
+            with (root / 'runtime' / (component + '.error.log')).open('rb') as stream:
+                stream.seek(0, 2)
+                stream.seek(max(0, stream.tell() - 8192))
+                tail = stream.read().decode('utf-8', errors='replace')
+            if tail.strip():
+                error_excerpts[component] = '\n'.join(tail.splitlines()[-30:])
+        except OSError:
+            pass
     write_json(report, {'status': 'failed', 'observed': result,
                        'component_log_tails': excerpts,
+                       'component_error_log_tails': error_excerpts,
                        'component_logs': {c: str(root / 'runtime' / (c + '.log')) for c in COMPONENTS}})
     detail = ''.join(f'\n\n{c}.log（末尾）：\n{tail}' for c, tail in excerpts.items())
+    detail += ''.join(f'\n\n{c}.error.log（末尾）：\n{tail}' for c, tail in error_excerpts.items())
     return '服务启动检查失败：' + '; '.join(failures) + f'。诊断记录：{report}；组件日志：{root / "runtime"}' + detail
 
 
@@ -1005,7 +1022,7 @@ def observed_status(state, *, request_timeout=3):
         try:
             from urllib.error import HTTPError
             try:
-                response = urlopen(url + route, timeout=request_timeout)
+                response = _LOCAL_HTTP.open(url + route, timeout=request_timeout)
             except HTTPError as exc:
                 response = exc
             with response:
@@ -1015,7 +1032,14 @@ def observed_status(state, *, request_timeout=3):
                 if not ok:
                     observation['error'] = f'HTTP {response.status}'
             if route == "/api/health":
-                payload = json.loads(body)
+                try:
+                    payload = json.loads(body)
+                    if not isinstance(payload, dict):
+                        raise ValueError('Expected health object')
+                except ValueError:
+                    checks.append({**observation, 'ok': False,
+                                   'error': observation.get('error') or '健康接口未返回有效的 JSON 对象'})
+                    continue
                 ok = (ok and payload.get("ok") is True
                       and payload.get("instance") == expected_instance
                       and payload.get("execution_layer", {}).get("ok") is True

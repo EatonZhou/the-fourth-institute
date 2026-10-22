@@ -498,9 +498,14 @@ class Launcher:
                         bordercolor="#dce8e4", lightcolor="#08616a", darkcolor="#08616a")
         frame = tk.Frame(root, bg="#f5f8f7", padx=32, pady=24)
         frame.pack(fill="both", expand=True)
-        mark = self.flow.platform / "branding/mark.png"
+        # On the first macOS launch the destination has not been copied yet.
+        # The immutable app bundle already contains the artwork.
+        assets = Path(getattr(self.flow, "bundle", None) or self.flow.platform)
+        mark = assets / "branding/mark.png"
         if mark.is_file():
             self.mark = tk.PhotoImage(file=str(mark))
+            if sys.platform == "darwin":
+                root.iconphoto(True, self.mark)
             tk.Label(frame, image=self.mark, bg="#f5f8f7").pack()
         tk.Label(frame, text="The Fourth Institute", font=("Segoe UI", 21, "bold"),
                  fg="#083f48", bg="#f5f8f7").pack(pady=(8, 4))

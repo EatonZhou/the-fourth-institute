@@ -1,4 +1,4 @@
-"""Build a complete, pinned Windows Python wheelhouse before shipping an EXE."""
+"""Build complete, pinned desktop wheelhouses (Windows and native macOS)."""
 from email.parser import BytesParser
 import hashlib
 import json
@@ -10,12 +10,33 @@ import tempfile
 import zipfile
 
 
-def validate(source, wheels, lock):
-    # Build-only imports: the Windows installer itself needs only stdlib + pip.
+def target_settings(target='windows/x86_64'):
     from packaging.markers import default_environment
+    from packaging.tags import cpython_tags, compatible_tags, mac_platforms
+    env = default_environment()
+    env.update(python_version='3.12', python_full_version='3.12.15',
+               implementation_version='3.12.15', implementation_name='cpython',
+               platform_python_implementation='CPython', extra='')
+    if target == 'windows/x86_64':
+        env.update(sys_platform='win32', os_name='nt', platform_system='Windows', platform_machine='AMD64')
+        platforms = ['win_amd64']
+        relative_lock = 'scripts/windows/requirements-core.lock'
+    elif target in {'macos/aarch64', 'macos/x86_64'}:
+        arch = 'arm64' if target.endswith('/aarch64') else 'x86_64'
+        env.update(sys_platform='darwin', os_name='posix', platform_system='Darwin', platform_machine=arch)
+        platforms = list(mac_platforms((15, 0), arch))
+        relative_lock = f'scripts/macos/requirements-core-{arch}.lock'
+    else:
+        raise ValueError('Unsupported Python wheelhouse target: ' + target)
+    tags = list(cpython_tags((3, 12), abis=['cp312'], platforms=platforms))
+    tags += list(compatible_tags((3, 12), interpreter='cp312', platforms=platforms))
+    return env, tags, platforms, relative_lock
+
+
+def validate(source, wheels, lock, *, target='windows/x86_64'):
+    # Build-only imports: the Windows installer itself needs only stdlib + pip.
     from packaging.requirements import Requirement
     from packaging.specifiers import SpecifierSet
-    from packaging.tags import cpython_tags, compatible_tags
     from packaging.utils import canonicalize_name, parse_wheel_filename
 
     pins = {}
@@ -26,23 +47,20 @@ def validate(source, wheels, lock):
         requirement, sha = line.split(' --hash=sha256:')
         req = Requirement(requirement)
         if req.url or req.marker or req.extras or len(sha) != 64:
-            raise ValueError('Invalid Windows Python lock entry: ' + line)
+            raise ValueError('Invalid desktop Python lock entry: ' + line)
+        if canonicalize_name(req.name) in pins:
+            raise ValueError('Duplicate Python lock entry: ' + line)
         pins[canonicalize_name(req.name)] = (req, sha)
-    env = default_environment()
-    env.update(sys_platform='win32', os_name='nt', platform_system='Windows',
-               platform_machine='AMD64', python_version='3.12', python_full_version='3.12.15',
-               implementation_version='3.12.15', implementation_name='cpython',
-               platform_python_implementation='CPython', extra='')
-    tags = set(cpython_tags((3, 12), abis=['cp312'], platforms=['win_amd64']))
-    tags.update(compatible_tags((3, 12), interpreter='cp312', platforms=['win_amd64']))
+    env, tags, _, _ = target_settings(target)
+    tags = set(tags)
     packages, rows = {}, []
     for path in sorted(wheels.glob('*.whl')):
         name, version, _, wheel_tags = parse_wheel_filename(path.name)
         sha = hashlib.sha256(path.read_bytes()).hexdigest()
         if name not in pins or version not in pins[name][0].specifier or sha != pins[name][1]:
-            raise ValueError('Wheel does not match Windows Python lock: ' + path.name)
+            raise ValueError('Wheel does not match Python lock: ' + path.name)
         if name in packages or not wheel_tags & tags:
-            raise ValueError('Duplicate or incompatible Windows wheel: ' + path.name)
+            raise ValueError('Duplicate or incompatible desktop wheel: ' + path.name)
         with zipfile.ZipFile(path) as archive:
             if archive.testzip() is not None:
                 raise ValueError('Damaged wheel: ' + path.name)
@@ -56,7 +74,7 @@ def validate(source, wheels, lock):
         packages[name] = (version, [Requirement(r) for r in metadata.get_all('Requires-Dist', [])])
         rows.append({'path': path.name, 'size': path.stat().st_size, 'sha256': sha})
     if not pins or set(packages) != set(pins):
-        raise ValueError('Incomplete Windows wheelhouse')
+        raise ValueError('Incomplete desktop wheelhouse')
 
     def roots(path):
         for line in path.read_text(encoding='utf-8').splitlines():
@@ -71,7 +89,7 @@ def validate(source, wheels, lock):
     def require(req):
         name = canonicalize_name(req.name)
         if req.url or name not in packages or packages[name][0] not in req.specifier:
-            raise ValueError('Windows wheelhouse is missing a compatible dependency: ' + str(req))
+            raise ValueError('Desktop wheelhouse is missing a compatible dependency: ' + str(req))
         extras[name].update(req.extras)
 
     for req in roots(source / 'requirements.txt'):
@@ -88,23 +106,24 @@ def validate(source, wheels, lock):
     return rows
 
 
-def bundle(repo, destination, cache):
+def bundle(repo, destination, cache, *, target='windows/x86_64'):
     source = repo / 'code'
-    lock = source / 'scripts/windows/requirements-core.lock'
+    _, _, platforms, relative_lock = target_settings(target)
+    lock = source / relative_lock
     cache.mkdir(parents=True, exist_ok=True)
     try:
-        rows = validate(source, cache, lock)
+        rows = validate(source, cache, lock, target=target)
     except (OSError, ValueError, zipfile.BadZipFile):
         with tempfile.TemporaryDirectory(prefix='python-wheels-', dir=cache.parent) as temporary:
             wheels = Path(temporary)
             subprocess.run([sys.executable, '-m', 'pip', '--isolated', 'download',
                             '--index-url', 'https://pypi.org/simple', '--find-links', str(cache),
-                            '--platform', 'win_amd64', '--python-version', '3.12',
+                            *[arg for platform in platforms for arg in ('--platform', platform)], '--python-version', '3.12',
                             '--implementation', 'cp', '--abi', 'cp312', '--only-binary=:all:',
                             '--no-deps', '--require-hashes', '--disable-pip-version-check',
                             '--timeout', '120', '--retries', '5', '--dest', str(wheels),
                             '-r', str(lock)], check=True)
-            rows = validate(source, wheels, lock)
+            rows = validate(source, wheels, lock, target=target)
             # Copy only the validated generation; never ship stale cache wheels.
             result = destination / 'dependencies/python-wheels'
             result.mkdir(parents=True)
@@ -117,7 +136,7 @@ def bundle(repo, destination, cache):
         for row in rows:
             shutil.copyfile(cache / row['path'], result / row['path'])
     shutil.copyfile(lock, result / 'requirements.lock')
-    receipt = {'target': 'cp312-win_amd64', 'path': 'dependencies/python-wheels',
+    receipt = {'target': 'cp312-' + platforms[0], 'path': 'dependencies/python-wheels',
                'lock_sha256': hashlib.sha256(lock.read_bytes()).hexdigest(), 'files': rows}
     (result / 'receipt.json').write_text(json.dumps(receipt, indent=2) + '\n', encoding='utf-8')
     return receipt

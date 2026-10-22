@@ -14,12 +14,21 @@ def validate(directory, commit):
         dmg = directory / f"TheFourthInstitute-macOS-{suffix}.dmg"
         receipt = dmg.with_suffix(".json")
         record = json.loads(receipt.read_text())
+        dependencies = record.get('bundled_python_dependencies') or {}
+        expected_python_target = 'cp312-macosx_15_0_' + ('arm64' if arch == 'aarch64' else 'x86_64')
         with dmg.open("rb") as stream:
             actual = hashlib.file_digest(stream, "sha256").hexdigest()
         if (record["source_commit"] != commit or record["source_dirty"]
                 or record["target"] != "macos/" + arch
                 or record["prepared_engineering_validation"] != "passed"
                 or not record.get("native_installation_smoke", "").startswith("passed:")
+                or not record.get('offline_dependency_validation', '').startswith('passed:')
+                or record.get('initialization_requires_network') is not False
+                or record.get('native_preparation_requires_network') is not False
+                or dependencies.get('target') != expected_python_target
+                or dependencies.get('path') != 'dependencies/python-wheels'
+                or not re.fullmatch(r'[0-9a-f]{64}', dependencies.get('lock_sha256', ''))
+                or not dependencies.get('files')
                 or record.get("app_signature_verification") != "passed"
                 or record.get("dmg_app_signature_verification") != "passed"
                 or record.get("signed") is not True

@@ -103,12 +103,43 @@ def _macos_owned_services(target, directory):
         expected_command = [runtime_python(target), "-m", "management_portal.codex_app_server_host",
                             "--socket", str(root / "sockets" / f"codex-{account}.sock"),
                             "--binary", argv[6], "--account-home", str(accounts / "codex" / account)]
+        environment = definition.get("EnvironmentVariables")
+        if environment is not None:
+            _check_macos_environment(target, environment)
         expected = plistlib.loads(adapter.command_unit_text(
             name, expected_command, cwd=code_root(target), log_root=root / "logs", log_name=name).encode())
+        if environment is not None:
+            expected["EnvironmentVariables"] = environment
         if definition != expected:
             raise ValueError("Provider launch agent belongs to another instance or has overrides")
         names.append(name)
     return {"platform": "macos", "template": None, "daemons": [], "names": names} if names else None
+
+
+def _check_macos_environment(target, environment):
+    """Recognize the production Codex environment when stopping an owned job.
+
+    Legacy jobs omit it. New jobs must retain this instance's paths, not gain
+    arbitrary environment overrides merely because their argv still matches.
+    """
+    from scripts import tfi_release_install as api
+    if not isinstance(environment, dict):
+        raise ValueError("Provider launch agent environment is invalid")
+    expected = api.clean_environment(target)
+    required = {"PORTAL_INSTANCES_ROOT", "PORTAL_ACCOUNTS_ROOT", "PORTAL_SECRETS_DIR",
+                "PORTAL_NETWORK_CONFIG", "PORTAL_SITE_CONFIG", "PORTAL_PATHS_CONFIG",
+                "PATH", "HOME", "PYTHONNOUSERSITE", "PYTHONDONTWRITEBYTECODE", "PYTHONUTF8"}
+    allowed = required | {"XDG_CONFIG_HOME", "XDG_CACHE_HOME", "TMPDIR", "LANG",
+                          "TFI_MACOS_SERVICE_DIRECTORY", "PORTAL_PROVIDER_EGRESS_ENV_FILE"}
+    root = Path(target["install_root"])
+    configured = api.read_json(root / "config/site.json").get("deployment", {}).get("providers", {})
+    if configured.get("egress_env_file"):
+        path = Path(configured["egress_env_file"])
+        if path.is_absolute():
+            expected["PORTAL_PROVIDER_EGRESS_ENV_FILE"] = str(path.resolve())
+    if (not required.issubset(environment) or set(environment) - allowed
+            or any(expected.get(key) != value for key, value in environment.items())):
+        raise ValueError("Provider launch agent environment belongs to another instance or has overrides")
 
 
 def start_services(plan, controller):

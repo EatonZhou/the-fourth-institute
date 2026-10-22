@@ -24,8 +24,10 @@ jobs:
         include:
           - runner: macos-15
             arch: arm64
+            python_lock: arm64
           - runner: macos-15-intel
             arch: x64
+            python_lock: x86_64
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 45
     steps:
@@ -36,7 +38,7 @@ jobs:
       - name: Install build dependencies
         timeout-minutes: 5
         run: |
-          python -m pip install --only-binary=:all: --timeout 30 --retries 2 -r code/requirements.txt
+          python -m pip install --require-hashes --only-binary=:all: --timeout 30 --retries 2 -r code/scripts/macos/requirements-core-${{ matrix.python_lock }}.lock
       - name: Build, install and validate native DMG
         env:
           PYTHONDONTWRITEBYTECODE: '1'
