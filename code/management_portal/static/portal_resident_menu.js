@@ -54,7 +54,7 @@
     const confirmed = await window.PortalUI.confirm({
       title: deleting ? window.PortalI18n.t("删除整个 Family？") : window.PortalI18n.t("Unfamilize（保留成员）？"),
       message: deleting
-        ? window.PortalI18n.text`删除「${family.title || "Family"}」及其内部全部对象：门面、Router、Steward、所有成员、子 Family 和工作流。正在运行的 Session 会停止，自有 Workspace 与相关图引用会移除；对话和运行轨迹保留。所在 Lineage 和 Family 外的成员保留。`
+        ? window.PortalI18n.text`删除「${family.title || "Family"}」及其内部全部对象：门面、Router、Steward、所有成员、子 Family 和工作流。正在运行的 Session 会停止，相关图引用会移除；关联 Workspace 仅在没有其他存活 Resident 引用时回收，仍被引用的 Workspace 保留。对话和运行轨迹保留。所在 Lineage 和 Family 外的成员保留。`
         : window.PortalI18n.text`解除「${family.title || "Family"}」的组合，保留成员、子 Family、业务工作流及其会话和工作区；删除门面、Router、Steward 与自动生成的协作结构，并将领导职责和门面连线交还成员。`,
       confirmLabel: deleting ? window.PortalI18n.t("删除整个 Family") : window.PortalI18n.t("Unfamilize · 保留成员"),
       tone: "danger",
@@ -426,7 +426,7 @@
       $id("transferNodeBtn").setAttribute("aria-expanded", "false");
       removeButton.disabled = false;
       removeButton.textContent = window.PortalI18n.t("删除节点");
-      removeButton.title = window.PortalI18n.t("Resident 将标记为已删除，并移除 Session、图引用与自有 Workspace；对话与运行轨迹保留。");
+      removeButton.title = window.PortalI18n.t("Resident 将标记为已删除，并移除 Session 和图引用；关联 Workspace 仅在没有其他存活 Resident 引用时回收，仍被引用的 Workspace 保留。对话与运行轨迹保留。");
       dialog.open();
       if (tab !== "display") await switchNodeSettingsTab(tab);
       else await loadNodeMenuRuntime();
@@ -452,7 +452,7 @@
         <div data-family-members></div>
         <div class="residentMenuFamilyActions">
           <section><div><strong>Unfamilize · 保留成员</strong><p>解除组合，保留成员、子 Family 和业务工作流；移除门面、Router、Steward 与自动生成的协作结构。</p></div><button class="portalButton" type="button" data-family-action="unfamilize">Unfamilize</button></section>
-          <section><div><strong>删除整个 Family</strong><p>停止并删除门面及内部所有成员、子 Family 和工作流，移除 Session 与自有 Workspace；对话和运行轨迹保留。</p></div><button class="portalButton is-danger" type="button" data-family-action="delete">删除整个 Family</button></section>
+          <section><div><strong>删除整个 Family</strong><p>停止并删除门面及内部所有成员、子 Family 和工作流，移除 Session；关联 Workspace 仅在没有其他存活 Resident 引用时回收，仍被引用的 Workspace 保留。对话和运行轨迹保留。</p></div><button class="portalButton is-danger" type="button" data-family-action="delete">删除整个 Family</button></section>
         </div>`;
       familySettingsView = window.PortalChatWorkspace.mountFamilyStatus(context.residentId, root.querySelector("[data-family-members]"));
       root.querySelector("[data-family-add]").addEventListener("click", () => openFamilyMemberPicker(context));
@@ -879,7 +879,7 @@
         finally { context.busy = false; }
         return;
       }
-      if (!await window.PortalUI.confirm({title: window.PortalI18n.t("删除 Resident？"), message: window.PortalI18n.text`删除「${node.title}」将移除 Session、图引用与自有 Workspace；对话与运行轨迹保留。`, confirmLabel: window.PortalI18n.t("删除"), tone: "danger"}) || nodeMenuContext !== context) return;
+      if (!await window.PortalUI.confirm({title: window.PortalI18n.t("删除 Resident？"), message: window.PortalI18n.text`删除「${node.title}」将移除 Session 和图引用；关联 Workspace 仅在没有其他存活 Resident 引用时回收，仍被引用的 Workspace 保留。对话与运行轨迹保留。`, confirmLabel: window.PortalI18n.t("删除"), tone: "danger"}) || nodeMenuContext !== context) return;
       context.busy = true;
       try {
         const result = await window.PortalResidentService.remove({resident_id: context.residentId});
