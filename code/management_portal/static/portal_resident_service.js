@@ -4,6 +4,59 @@
   if (window.PortalResidentService) return;
 
   const restartRegistries = new WeakMap();
+  // All clients in this page share the same Resident lifecycle, including
+  // clients with their own API adapter and the graph's instruction client.
+  const residentReads = new Map();
+  function readState(residentId) {
+    const id = String(residentId || "").trim();
+    if (!id) throw new TypeError("resident_id required");
+    if (!residentReads.has(id)) residentReads.set(id, { reads: new Set(), deletion: null, deleted: false });
+    return residentReads.get(id);
+  }
+  function deletedResidentError(residentId) {
+    return Object.assign(new Error("Resident has been deleted"), {
+      name: "ResidentDeletedError", code: "resident.deleted", residentId,
+    });
+  }
+  async function readResident(residentId, operation) {
+    let state = readState(residentId);
+    while (state.deletion) {
+      await state.settled;
+      state = readState(residentId);
+    }
+    if (state.deleted) throw deletedResidentError(residentId);
+    let finish;
+    const pending = new Promise(resolve => { finish = resolve; });
+    state.reads.add(pending);
+    try { return await operation(); }
+    finally {
+      state.reads.delete(pending);
+      finish();
+      if (!state.reads.size && !state.deletion && !state.deleted) residentReads.delete(String(residentId).trim());
+    }
+  }
+  function withResidentDeletion(residentId, operation) {
+    const state = readState(residentId);
+    if (state.deletion) return state.deletion;
+    if (state.deleted) return Promise.reject(deletedResidentError(residentId));
+    let release;
+    state.settled = new Promise(resolve => { release = resolve; });
+    state.deletion = (async () => {
+      try {
+        // Let already dispatched reads finish while the Resident still exists.
+        // New reads wait for the write outcome instead of racing its commit.
+        await Promise.allSettled([...state.reads]);
+        const result = await operation();
+        state.deleted = true;
+        return result;
+      } finally {
+        state.deletion = null;
+        release();
+        if (!state.deleted && !state.reads.size) residentReads.delete(String(residentId).trim());
+      }
+    })();
+    return state.deletion;
+  }
 
   function createClient(options = {}) {
     const configuredApi = options.api || null;
@@ -127,13 +180,22 @@
     };
     const get = (path, values = null) => {
       const suffix = values ? query(values) : "";
-      return transport("get").get(`${path}${suffix ? `?${suffix}` : ""}`, { cache: "no-store" });
+      const operation = () => transport("get").get(`${path}${suffix ? `?${suffix}` : ""}`, { cache: "no-store" });
+      const residentId = path.startsWith("/api/agent-workbench/residents/") ? values?.id || values?.resident_id
+        : path === "/api/agent-workbench/agent-runtime-catalog" ? values?.resident_id : "";
+      return residentId ? readResident(residentId, operation) : operation();
     };
     const post = (path, payload = {}) => transport("post").post(path, payload);
     const residentPath = suffix => `/api/agent-workbench/residents${suffix || ""}`;
     // Mutations use ISA; application workflows compose the owning instructions.
-    const execute = options.execute
+    const executeInstruction = options.execute
       || ((name, args = {}, controls = {}) => window.PortalInstructionClient.execute(name, args, controls));
+    const execute = (name, args = {}, controls = {}) => {
+      const operation = () => executeInstruction(name, args, controls);
+      if (name === "DeleteResident") return withResidentDeletion(args.resident_id, operation);
+      if (args.resident_id && /^(Get|List|Search|Preview)/.test(name)) return readResident(args.resident_id, operation);
+      return operation();
+    };
     const watch = options.watch
       || ((name, args, onBatch, controls) => window.PortalInstructionClient.watch(name, args, onBatch, controls));
     const watchboardRuns = new Map();
@@ -752,5 +814,5 @@
   }
 
   const defaultClient = createClient();
-  window.PortalResidentService = Object.freeze({ ...defaultClient, createClient });
+  window.PortalResidentService = Object.freeze({ ...defaultClient, createClient, withResidentDeletion });
 })();

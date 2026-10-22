@@ -50,7 +50,10 @@
       }
       let result;
       try {
-        result = await execute(name, args, instructionControls);
+        const operation = () => execute(name, args, instructionControls);
+        result = name === "DeleteResident" && window.PortalResidentService?.withResidentDeletion
+          ? await window.PortalResidentService.withResidentDeletion(args.resident_id, operation)
+          : await operation();
       } catch (error) {
         if (definition && ["instruction.conflict", "instruction.version_conflict"].includes(error.code)) {
           const reason = error.message;
