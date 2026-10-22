@@ -1,6 +1,7 @@
 /* The directory reuses the collection board: toolbar, Project groups and item cards.
    This file adds only what a workbench card carries beyond a resource card. */
-.workbenchCatalog { min-width: 0; color: var(--text); }
+/* The floating mailbox can overlap the last card on desktop as well as mobile. */
+.workbenchCatalog { min-width: 0; color: var(--text); padding-inline-end: 44px; }
 .workbenchCatalog *, .workbenchCatalog *::before, .workbenchCatalog *::after { box-sizing: border-box; }
 .workbenchCatalogIcon { width: 15px; height: 15px; flex: 0 0 auto; }
 .workbenchCatalogCreate { display: inline-flex; align-items: center; gap: 5px; text-decoration: none; white-space: nowrap; }
@@ -88,7 +89,5 @@
 .workbenchCatalogErrorDetails pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; }
 
 @media (max-width: 640px) {
-  /* Leave the fixed mailbox launcher clear of card actions and status. */
-  .workbenchCatalog { padding-inline-end: 44px; }
   .workbenchCatalogTeamDetail { display: none; }
 }
