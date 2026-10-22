@@ -162,6 +162,23 @@ def test_a_codex_api_account_is_billed_by_its_model_api_and_lists_its_declared_m
     assert NATIVE_IMAGE_INPUT in codex.harness_capabilities("one")
 
 
+def test_a_sites_only_codex_account_is_its_default_without_being_marked(gateway, fake_codex, monkeypatch, tmp_path):
+    """站点唯一启用的 Codex 账号不用勾选“默认路线”也是 Codex 默认账号；有多个账号时仍须明确指定
+
+    从模型 API 页面以 Codex 运行器添加的 API 账号不带默认标记；未指定账号的 Resident 和个人助理使用它。有第二个启用账号后，没有标记就没有默认账号。
+    """
+    from management_portal.execution.account_adapters import CodexRoutes
+    from tests.cases.account_registration_test_support import register_codex
+    register_codex(monkeypatch, tmp_path, names=())
+    _register("gateway-codex", "codex")
+    assert CodexRoutes().default_for_new_session().account_id == "gateway-codex"
+    _register("spare-codex", "codex")
+    with pytest.raises(ValueError, match="No enabled default Codex account"):
+        CodexRoutes().default_for_new_session()
+    _call(isa.update_provider_account_registration, account_id="spare-codex", changes={"enabled": False})
+    assert CodexRoutes().default_for_new_session().account_id == "gateway-codex"
+
+
 def test_api_key_accounts_need_a_model_api_that_speaks_their_harness_protocol(gateway, fake_codex):
     """API 账号的模型 API 必须提供其 Harness 使用的协议，使用中的协议不能撤下
 

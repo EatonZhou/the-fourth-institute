@@ -49,7 +49,10 @@ class CodexRoutes:
         defaults = [row["route_id"] for row in rows if row["enabled"] and row["config"].get("is_default")]
         if len(defaults) > 1:
             raise ValueError("Multiple default Codex accounts")
-        self.default_account_id = defaults[0] if defaults else ""
+        # A site's only enabled Codex account is its default without being marked;
+        # among several, the default must be chosen explicitly.
+        enabled = [row["route_id"] for row in rows if row["enabled"]]
+        self.default_account_id = defaults[0] if defaults else enabled[0] if len(enabled) == 1 else ""
         self._loaded_at = time.monotonic()
 
     def _refresh(self):
