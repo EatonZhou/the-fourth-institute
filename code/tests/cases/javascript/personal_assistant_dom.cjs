@@ -354,3 +354,95 @@ test("Stop after sending targets the pending input, not a stale active snapshot"
   await sending; await stopping;
   assert.equal(app.requests.find(r => r.instruction === "CancelInput").args.message_id, newId);
 });
+
+function inputEvent(app, cursor, type, payload) {
+  if (type === 'resident.state.changed') payload = { ...payload,
+    controls: { disabled_reason: '', send_hint: '', ...payload.controls } };
+  app.w.dispatchEvent(new app.w.CustomEvent('portal:change', { detail: {
+    resident_events: [{ resident_id: FACADE, cursor, event_type: type, payload }],
+  } }));
+}
+
+test('Stop survives a delivery-only receipt until the exact input has a control projection', async t => {
+  let cancel;
+  const app = chat(t, {
+    GetConversation: () => ({ resident: { resident_id: FACADE, lineage_id: LINEAGE }, messages: [], input_states: [], cursor: 1,
+      state: { work_state: 'idle', active_message_id: '' }, controls: { can_send: true, can_stop: false }, queue: { items: [] } }),
+    // DeliverMessage can accept before the execution owner creates input_state.
+    DeliverMessage: args => ({ accepted: true, resident_id: args.resident_id, message_id: args.message.message_id, input_state: {} }),
+    CancelInput: args => new Promise(resolve => { cancel = () => resolve({ resident_id: FACADE, cursor: 3,
+      message_id: args.message_id, input_state: { message_id: args.message_id, state: 'cancelled' } }); }),
+  });
+  await app.load();
+  await app.panel.send({ text: 'send then immediately stop', attachments: [], refs: [] });
+  const id = app.requests.find(r => r.instruction === 'DeliverMessage').args.message.message_id;
+  assert.equal(app.panel.workspace.state.composer.can_stop, true, 'delivery acknowledgement must not leave a Stop gap');
+  assert.equal(app.panel.snapshot().state.work_state, 'idle', 'local action must not invent a server work state');
+  const stopping = app.panel.stop();
+  await drain();
+  assert.equal(app.requests.find(r => r.instruction === 'CancelInput').args.message_id, id);
+  const button = app.panel.workspace.els.stop;
+  assert.equal(button.disabled, true);
+  assert.match(button.getAttribute('aria-label'), /停止|Stopping/);
+  assert.equal(button.getAttribute('aria-label'), button.title, 'accessible name exposes the current pending action');
+  inputEvent(app, 2, 'resident.state.changed', { state: { work_state: 'idle', active_message_id: '' }, controls: { can_send: true, can_stop: false } });
+  assert.equal(app.panel.workspace.state.composer.can_stop, true, 'an unrelated newer cursor cannot finish this cancellation');
+  assert.equal(button.disabled, true);
+  cancel(); await stopping;
+  assert.equal(app.panel.workspace.state.composer.can_stop, false);
+  assert.equal(app.panel.pendingTurnSubmissions.size, 0);
+});
+
+for (const outcome of ['running', 'queued', 'completed']) {
+  test(`local Stop hands over to the exact ${outcome} input projection`, async t => {
+    const app = chat(t, {
+      GetConversation: () => ({ resident: { resident_id: FACADE, lineage_id: LINEAGE }, messages: [], input_states: [], cursor: 1,
+        state: { work_state: 'idle' }, controls: { can_send: true, can_stop: false }, queue: { items: [] } }),
+      DeliverMessage: args => ({ accepted: true, resident_id: FACADE, message_id: args.message.message_id, input_state: {} }),
+    });
+    await app.load();
+    await app.panel.send({ text: 'handover', attachments: [], refs: [] });
+    const id = app.requests.find(r => r.instruction === 'DeliverMessage').args.message.message_id;
+    if (outcome === 'running') inputEvent(app, 2, 'resident.state.changed', {
+      state: { work_state: 'running', active_message_id: id }, controls: { can_send: true, can_stop: true } });
+    else if (outcome === 'queued') inputEvent(app, 2, 'resident.queue.changed', { queue: { items: [{ message_id: id }] } });
+    else inputEvent(app, 2, 'resident.input.state.changed', { input_state: { message_id: id, state: 'completed' } });
+    assert.equal(app.panel.pendingTurnSubmissions.size, 0, 'authoritative controls/queue/terminal own the action now');
+    assert.equal(app.panel.workspace.state.composer.can_stop, outcome === 'running');
+  });
+}
+
+test('a rejected submission cannot leave a local Stop action', async t => {
+  const app = chat(t, {
+    GetConversation: () => ({ resident: { resident_id: FACADE, lineage_id: LINEAGE }, messages: [], cursor: 1,
+      state: { work_state: 'idle' }, controls: { can_send: true, can_stop: false }, queue: { items: [] } }),
+    DeliverMessage: () => { throw Object.assign(new Error('denied'), { status: 403 }); },
+  });
+  await app.load();
+  await assert.rejects(app.panel.send({ text: 'denied input', attachments: [], refs: [] }), /denied/);
+  assert.equal(app.panel.workspace.state.composer.can_stop, false);
+  assert.equal(app.panel.pendingTurnSubmissions.size, 0);
+});
+
+test('failed cancellation can retry the same accepted input before the stream catches up', async t => {
+  let attempts = 0;
+  const app = chat(t, {
+    GetConversation: args => ({ resident: { resident_id: args.resident_id, lineage_id: LINEAGE }, messages: [], input_states: [], cursor: 1,
+      state: { work_state: 'idle' }, controls: { can_send: true, can_stop: false }, queue: { items: [] } }),
+    DeliverMessage: args => ({ accepted: true, resident_id: FACADE, message_id: args.message.message_id, input_state: {} }),
+    CancelInput: args => {
+      if (++attempts === 1) throw new Error('transport unavailable');
+      return { resident_id: FACADE, message_id: args.message_id, input_state: { message_id: args.message_id, state: 'cancelled' } };
+    },
+  });
+  await app.load();
+  await app.panel.send({ text: 'cancel once', attachments: [], refs: [] });
+  const id = app.requests.find(r => r.instruction === 'DeliverMessage').args.message.message_id;
+  await assert.rejects(app.panel.stop(), /transport unavailable/);
+  assert.equal(app.panel.workspace.state.composer.can_stop, true);
+  assert.equal(app.panel.workspace.els.stop.disabled, false);
+  await app.panel.stop();
+  assert.deepEqual(app.requests.filter(r => r.instruction === 'CancelInput').map(r => r.args.message_id), [id, id]);
+  assert.equal(app.panel.pendingTurnSubmissions.size, 0);
+  assert.equal(app.requests.filter(r => r.instruction === 'DeliverMessage').length, 1, 'retry cancellation never replays input');
+});

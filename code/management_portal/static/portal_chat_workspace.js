@@ -6692,6 +6692,7 @@
         els.stop.disabled = stopPending || (state.contract ? !canStopByContract : !(canStopByContract || (options.canStop && options.canStop())));
         els.stop.textContent = stopPending ? window.PortalI18n.t("正在停止…") : window.PortalI18n.t("Stop");
         els.stop.title = stopPending ? window.PortalI18n.t("已请求停止，等待当前任务确认") : window.PortalI18n.t("停止当前任务");
+        els.stop.setAttribute("aria-label", els.stop.title);
       }
       if (els.status) {
         const transientStatus = state.busy
@@ -12901,6 +12902,19 @@
       const composer = this.workspace?.state?.composer;
       if (!this.workspace?.state?.contract || !composer) return;
       const snapshot = this.protocol?.snapshot?.() || this.pendingSnapshot;
+      const scope = residentSessionScope(this.workspace.target());
+      for (const [id, pending] of this.pendingTurnSubmissions) {
+        if (!pending.acknowledged || pending.scope !== scope) continue;
+        // DeliverMessage can commit before its input state exists. Keep this
+        // Editor's exact-message cancellation handle until an authoritative
+        // active control, visible queue item or terminal state takes over.
+        // A receipt or an unrelated event cursor alone is not that handoff.
+        const terminal = (snapshot?.input_states || []).some(input => input.message_id === id
+          && ["completed", "failed", "cancelled"].includes(input.state));
+        const active = snapshot?.state?.active_message_id === id && snapshot?.controls?.can_stop === true;
+        const queued = (snapshot?.queue?.items || []).some(input => input.message_id === id);
+        if (terminal || active || queued) this.pendingTurnSubmissions.delete(id);
+      }
       const stop = this.stopRequest;
       if (stop && (stop.scope !== residentSessionScope(this.workspace.target())
         || (snapshot?.input_states || []).some(input => input.message_id === stop.messageId
@@ -13040,6 +13054,7 @@
         focus: submitOptions.focus,
         clearRefsOnSuccess: submitOptions.clearRefsOnSuccess !== false,
         onSuccess: (result, context) => {
+          pending.acknowledged = true;
           if (context.scope === this.workspace.sessionScope()) this.initialContext = null;
           if (steer) this.sendSubagentSteerNow(target, context.messageIdentity);
           // Host callbacks describe the submitted conversation even if this
@@ -13058,7 +13073,7 @@
       try {
         return await submission;
       } finally {
-        this.pendingTurnSubmissions.delete(pending.messageId);
+        if (!pending.acknowledged) this.pendingTurnSubmissions.delete(pending.messageId);
         this.refreshPendingTurnStopCapability();
       }
     }
@@ -13142,7 +13157,10 @@
             resident_id: target.resident_id,
             message_id: pending.messageId,
           });
-        })();
+        })().catch(error => {
+          pending.stopPromise = null;
+          throw error;
+        });
         return pending.stopPromise;
       }
       return window.PortalResidentProtocol.cancelInput({
