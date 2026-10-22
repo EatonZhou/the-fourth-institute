@@ -2490,7 +2490,7 @@
             "live.controlled"
           ],
           "risk": "external-side-effects",
-          "task_prompt": "使用真实 Chromium、当前 Dev 和框架提供的 <test-actor> storage state。先通过真实页面完成任务，失败后才阅读源码诊断；记录并实际查看截图，保存操作时延、精确对象 ID、网络状态。临时对象全程保留框架规定的 TAU 标记。不得修改已有业务 Family、Resident 或权限。在固定 TAU Lineage 创建本用例临时 Resident。从 Chat 功能菜单安装默认 Watchboard，核对状态面板和默认 status/run-once 命令，运行 status 并等待终态，修改一项示例配置、保存、刷新并核对。移除 Watchboard 后确认面板不再显示；重新安装后配置与脚本保留。通过正常 Fork 创建另一临时 Resident，确认它可以读取继承的 Watchboard；移除副本上的挂载不影响原 Resident 的启用状态。清理本用例创建的 Resident，不删除共享路径或已有对象。"
+          "task_prompt": "使用真实 Chromium、当前 Dev 和框架提供的 <test-actor> storage state。先通过真实页面完成任务，失败后才阅读源码诊断；记录并实际查看截图，保存操作时延、精确对象 ID、网络状态。临时对象全程保留框架规定的 TAU 标记。不得修改已有业务 Family、Resident 或权限。在固定 TAU Lineage 创建本用例临时 Resident。从 Chat 功能菜单安装默认 Watchboard，核对状态面板和默认 status/run-once 命令，运行 status 并等待终态，修改一项示例配置、保存、刷新并核对。移除 Watchboard 后确认面板不再显示；重新安装后配置与脚本保留。通过正常 Fork 创建另一临时 Resident，确认它可以读取继承的 Watchboard；移除副本上的挂载不影响原 Resident 的启用状态。清理本用例创建的 Resident，不删除共享路径或已有对象。\n取证准备：第一次写入之前先验证辅助脚本需要的变量、模块和回执监听可用；异步辅助函数显式传入所需依赖，不假定 require 或外层变量可用。通过 page.waitForResponse 在点击前注册匹配 /api/instructions/execute 且 request.postDataJSON().instruction 为目标指令的响应等待；用本次请求参数和返回的精确对象 ID 关联 CreateResident、ForkResident 及后续写入，只摘录 HTTP 状态、instruction_id、状态和必要对象 ID，不保存完整请求或响应正文。未收到回执时先核对是否已生效，禁止重复写入。每个原始动作都用 portal.action 包住操作和实际 ready 检查，并现场保存证据；恢复后的观察不能补写原动作终点。\n以本轮可见 DOM 决定 ready 条件：Resident 节点还包含身份等文字，不把整个按钮文本等于标题作为创建就绪条件；以新 Resident ID 对应节点内的标题和弹窗状态确认。status 要关联本次 script_run_id，在实际状态区域核对终态及命令，注意文本可能跨行，不使用不跨行的组合正则猜测。配置刷新和重装要逐字核对原样例内容。Fork 的 Chat 就绪与 Watchboard 挂载分开检查；先确认继承状态，再经正常功能菜单挂载并验证原配置，不能把自动打开面板作为 Fork 完成的前提。删除测试 Resident 前关闭其自建 Chat/面板，保留删除回执及精确目标；仍出现网络错误时保存逐请求事实，无法证明原因的记录为 unknown。辅助脚本失败导致原始回执或 ready 缺失时仍判证据未通过，不用恢复成功替代。"
         }
       ]
     },
