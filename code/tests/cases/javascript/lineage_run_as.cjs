@@ -132,13 +132,15 @@ const choose = id => { $('lineageRunAsInput').value = id ? JSON.stringify({ kind
   // Updating the live graph must not upgrade the version attached to an old draft.
   const openingRevision = $('lineageForm').dataset.revision;
   api.state.lineage.revision = 99;
-  rejection = Object.assign(new Error('changed concurrently'), { code: 'instruction.conflict' });
+  server.revision = 100;
+  rejection = Object.assign(new Error('changed concurrently'), { code: 'instruction.version_conflict' });
   const writes = calls.filter(c => c.name === 'UpdateLineage').length;
   await submit();
   const lastWrite = calls.filter(c => c.name === 'UpdateLineage').at(-1);
   assert.equal(lastWrite.controls.expectedVersion, Number(openingRevision));
   assert.equal(calls.filter(c => c.name === 'UpdateLineage').length, writes + 1, 'conflict does not replay');
   assert.match($('lineageFormError').textContent, /changed concurrently/);
+  assert.equal(api.state.lineage.revision, server.revision, 'formal version conflict refreshes the graph');
   rejection = null;
 
   // A missing catalog entry cannot silently clear an existing explicit identity.

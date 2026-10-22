@@ -52,7 +52,7 @@
       try {
         result = await execute(name, args, instructionControls);
       } catch (error) {
-        if (definition && error.code === "instruction.conflict") {
+        if (definition && ["instruction.conflict", "instruction.version_conflict"].includes(error.code)) {
           const reason = error.message;
           error.message = `${window.PortalI18n.t("图已被其他操作修改，本次修改未保存。请查看最新图后重新编辑。")} ${reason}`;
           const expected = instructionControls.expectedVersion;
