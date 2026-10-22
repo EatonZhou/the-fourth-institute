@@ -76,9 +76,10 @@
     agent: Object.freeze({ width: 154, height: 94, columnGap: 88, rowGap: 24, maxRows: 7 }),
   });
   const HATG_WORLD_SIZE = Object.freeze({ width: 1280, height: 900 });
-  const AUTO_LAYOUT_VIEW = Object.freeze({ duration: 280, minScale: 0.65, maxScale: 1, padding: 64 });
-  // Overview must also fit a large graph in a narrow dock. Auto layout keeps
-  // cards readable; Fit all may zoom out further to show the complete graph.
+  // Both arrange and Fit all must fit the actual usable canvas. A readability
+  // floor can put outer cards behind the toolbar in a narrow or short dock;
+  // users can focus or zoom a card after the complete layout is visible.
+  const AUTO_LAYOUT_VIEW = Object.freeze({ duration: 280, maxScale: 1, padding: 64 });
   const FIT_ALL_VIEW = Object.freeze({ duration: 280, maxScale: 1 });
   const DEFAULT_TEMPLATE_TIMEOUT_MS = 360_000;
 
@@ -8482,7 +8483,7 @@
       state.graphFocusMode = previousFocusMode;
       graphProgramProjectionCache = null;
       renderLineageSurface();
-      window.requestAnimationFrame(() => state.graphController?.fit?.({ duration: 180, minScale: AUTO_LAYOUT_VIEW.minScale }));
+      window.requestAnimationFrame(() => state.graphController?.fit?.({ ...AUTO_LAYOUT_VIEW, duration: 180 }));
       toast(window.PortalI18n.text`自动整理失败：${error.message || error}`, "error");
     } finally {
       state.autoLayoutInFlight = false;
