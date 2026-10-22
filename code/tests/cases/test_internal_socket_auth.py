@@ -88,7 +88,16 @@ def test_domain_clients_send_signed_requests_to_a_verifying_socket(tmp_path, cli
             observed.append((request["method"], actor))
             self.wfile.write(json.dumps({"id": request["id"], "ok": True, "result": {"ok": True}}).encode() + b"\n")
 
-    with socketserver.ThreadingUnixStreamServer(str(path), Handler) as server:
+    from management_common.service_endpoint import LocalServiceSocketMixin, service_endpoint
+    from management_common.service_shutdown import DrainingStreamServer
+
+    class Receiver(LocalServiceSocketMixin, DrainingStreamServer):
+        def __init__(self):
+            self.endpoint = service_endpoint(path)
+            self.address_family = self.endpoint.family
+            super().__init__(self.endpoint.address, Handler)
+
+    with Receiver() as server:
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
         try:
@@ -129,9 +138,9 @@ def receiving_socket(request, tmp_path, monkeypatch):
             self.address_family = self.endpoint.family
             super().__init__(self.endpoint.address, handlers[owner])
     seen = []
-    def execute_local(call, context, *, owner):
+    def execute_local(call, context, *, owner, instruction_id=""):
         seen.append(context.caller)
-        return InstructionResult(instruction_id='instruction_111111111111', instruction=call.instruction, status='committed', result={})
+        return InstructionResult(instruction_id=instruction_id or 'instruction_111111111111', instruction=call.instruction, status='committed', result={})
     monkeypatch.setattr(routing, 'execute_local', execute_local)
     with Receiver() as server:
         server.rpc_auth = RpcAuthenticator(path)
@@ -158,13 +167,17 @@ def receiving_socket(request, tmp_path, monkeypatch):
 def test_receivers_reject_unsigned_tampered_and_replayed_instructions(receiving_socket):
     """各 owner 接收端拒绝未签名、被篡改和重放的指令"""
     owner, verifier, seen, send = receiving_socket
-    params = {'context': InstructionContext(caller='alice', entry='web').to_payload(), 'call': {'instruction':'GetUser', 'arguments':{'username':'alice'}}}
+    from management_portal.hatg.kernel import new_instruction_id
+    original_id = new_instruction_id(owner)
+    params = {'context': InstructionContext(caller='alice', entry='web').to_payload(), 'call': {'instruction':'GetUser', 'arguments':{'username':'alice'}}, 'instruction_id': original_id}
     assert not send(params)['ok']
     auth = sign_rpc_auth(verifier.key, socket_rpc.METHOD, params, actor='alice')
     tampered = {**params, 'context': InstructionContext(caller='bob', entry='web').to_payload()}
     assert not send(tampered, auth)['ok']
+    assert not send({**params, 'instruction_id': new_instruction_id(owner)}, auth)['ok']
     assert seen == []
-    assert send(params, auth)['ok']
+    response = send(params, auth)
+    assert response['ok'] and response['result']['instruction_id'] == original_id
     assert seen == ['alice']
     assert not send(params, auth)['ok']
     assert seen == ['alice']

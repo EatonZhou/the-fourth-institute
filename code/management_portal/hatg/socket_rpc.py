@@ -19,7 +19,7 @@ from typing import Any, Callable, Iterator
 from management_common.instance_paths import instance_root
 from management_common.service_socket import connect_service
 
-from .contracts import InstructionCall, InstructionContext, InstructionError, InstructionResult
+from .contracts import InstructionCall, InstructionContext, InstructionError, InstructionResult, failed_result
 
 
 METHOD = "instruction.execute"
@@ -114,14 +114,16 @@ def _signed(owner: str, params: dict[str, Any], context: InstructionContext) -> 
 
 
 def _open(owner: str, payload: dict[str, Any], timeout: float) -> tuple[socket.socket, Any]:
+    encoded = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8") + b"\n"
     connection: socket.socket | None = None
+    sending = False
     try:
         # An owner that is restarting gets waited for, as a request to it has
         # not been sent yet.
         connection, _path = connect_service(owner_socket(owner), timeout=timeout)
-        connection.sendall(
-            json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8") + b"\n"
-        )
+        sending = True
+        connection.sendall(encoded)
+        return connection, connection.makefile("rb")
     except OSError as exc:
         if connection is not None:
             connection.close()
@@ -130,9 +132,9 @@ def _open(owner: str, payload: dict[str, Any], timeout: float) -> tuple[socket.s
             f"拥有该指令的服务暂时不可用（{owner}）",
             details={"owner": owner},
             retryable=True,
-            commit_state="not_committed",
+            # sendall may have delivered the entire request before raising.
+            commit_state="unknown" if sending else "not_committed",
         ) from exc
-    return connection, connection.makefile("rb")
 
 
 def _unavailable(owner: str, message: str) -> InstructionError:
@@ -169,23 +171,32 @@ def _decode(owner: str, raw: bytes, request_id: str) -> dict[str, Any]:
 def call_remote(
     owner: str, call: InstructionCall, context: InstructionContext, *, timeout: float = DEFAULT_TIMEOUT_SECONDS,
 ) -> InstructionResult:
+    from .kernel import new_instruction_id
+
+    # This ID is authenticated with the request and reserved by the owner.
+    # A lost response still gives the caller an owner-routable lookup handle.
+    instruction_id = new_instruction_id(owner)
     request_id = f"isa-{secrets.token_hex(10)}"
     params = request_params(call, context)
+    params["instruction_id"] = instruction_id
     payload = {"id": request_id, "method": METHOD, "params": params, **_signed(owner, params, context)}
-    connection, stream = _open(owner, payload, timeout)
     try:
+        connection, stream = _open(owner, payload, timeout)
         try:
-            raw = stream.readline()
-        except (OSError, TimeoutError) as exc:
-            raise _unavailable(owner, f"等待 {owner} 返回结果超时或连接中断") from exc
-        response = _decode(owner, raw, request_id)
-    finally:
-        stream.close()
-        connection.close()
-    result = response.get("result")
-    if not isinstance(result, dict):
-        raise _unavailable(owner, f"{owner} 返回的结果格式无效")
-    return InstructionResult.from_payload(result)
+            try:
+                raw = stream.readline()
+            except (OSError, TimeoutError) as exc:
+                raise _unavailable(owner, f"等待 {owner} 返回结果超时或连接中断") from exc
+            response = _decode(owner, raw, request_id)
+        finally:
+            stream.close()
+            connection.close()
+        result = response.get("result")
+        if not isinstance(result, dict):
+            raise _unavailable(owner, f"{owner} 返回的结果格式无效")
+        return InstructionResult.from_payload(result)
+    except InstructionError as exc:
+        return failed_result(instruction_id, call.instruction, exc)
 
 
 def release_recovery_remote(owner: str, recovery_key: str, instruction_ids: list[str], context: InstructionContext) -> int:
@@ -287,7 +298,7 @@ def serve(
         write_line(failure(exc))
         return
     if not target.streaming:
-        result = execute_local(call, context, owner=owner)
+        result = execute_local(call, context, owner=owner, instruction_id=params.get("instruction_id", ""))
         write_line({"id": request_id, "ok": True, "result": result.to_payload()})
         return
     try:

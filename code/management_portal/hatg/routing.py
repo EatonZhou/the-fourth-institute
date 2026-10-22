@@ -96,7 +96,9 @@ def execute(call: InstructionCall | Mapping[str, Any], context: InstructionConte
         return failed_result(new_instruction_id("entry"), parsed.instruction, normalize_error(exc))
 
 
-def execute_local(call: InstructionCall, context: InstructionContext, *, owner: str) -> InstructionResult:
+def execute_local(
+    call: InstructionCall, context: InstructionContext, *, owner: str, instruction_id: str = "",
+) -> InstructionResult:
     """Execute on this process's own kernel (used by the socket method)."""
 
     declaration = declaration_for(call.instruction)
@@ -109,7 +111,7 @@ def execute_local(call: InstructionCall, context: InstructionContext, *, owner: 
             InstructionError("instruction.failed", f"{call.instruction} 不由 {owner} 执行"),
         )
     kernel = kernel_for(owner, required=True)
-    return kernel.execute(call, context)
+    return kernel.execute(call, context, instruction_id=instruction_id)
 
 
 def stream(call: InstructionCall | Mapping[str, Any], context: InstructionContext, *, cancellation=None) -> Iterator[list[dict[str, Any]]]:

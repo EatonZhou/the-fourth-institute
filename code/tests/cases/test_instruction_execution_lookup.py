@@ -1,12 +1,14 @@
 """Original idempotent request lookup uses the owner store and receipt authorization."""
 from copy import deepcopy
+import json
+from unittest.mock import MagicMock
 
 import pytest
 
 from management_common.portal_database import portal_database
-from management_portal.hatg import routing
+from management_portal.hatg import routing, socket_rpc
 from management_portal.hatg.catalog import declaration
-from management_portal.hatg.contracts import InstructionCall, InstructionContext
+from management_portal.hatg.contracts import InstructionCall, InstructionContext, InstructionError
 from management_portal.hatg.kernel import InstructionKernel
 from management_portal.hatg.store import ExecutionStore
 from tests.cases.test_hatg_isa_kernel import fake, kernel, scheduler_call  # noqa: F401
@@ -15,6 +17,65 @@ from tests.cases import permission_test_support
 
 def lookup(arguments, actor="alice"):
     return routing.execute(InstructionCall("GetInstructionExecution", arguments), InstructionContext(actor, "web"))
+
+
+@pytest.mark.parametrize("lost_response", ["empty", "timeout", "malformed"])
+def test_lost_owner_response_retains_queryable_execution_without_replay(kernel, fake, monkeypatch, lost_response):
+    """owner 已提交而回执丢失时，入口返回原执行 ID，查询不重放写入。"""
+    connection = MagicMock()
+    stream = connection.makefile.return_value
+    owner_responses = []
+    sent = []
+
+    def send(encoded):
+        payload = json.loads(encoded)
+        sent.append(payload)
+        socket_rpc.serve(payload["params"], payload["id"], owner_responses.append,
+                         owner="execution", verified_caller="alice")
+
+    connection.sendall.side_effect = send
+    if lost_response == "timeout":
+        stream.readline.side_effect = TimeoutError("owner committed before response timeout")
+    else:
+        stream.readline.return_value = b"" if lost_response == "empty" else b"broken response"
+    monkeypatch.setattr(socket_rpc, "connect_service", lambda *a, **k: (connection, "test.sock"))
+    monkeypatch.setattr(socket_rpc, "_signed", lambda *a: {})
+    monkeypatch.setattr(routing, "kernel_for", lambda owner, required=False: kernel if required else None)
+    result = routing.execute(scheduler_call(), InstructionContext("alice", "web"))
+    assert result.status == "failed" and result.error["commit_state"] == "unknown"
+    assert len(sent) == len(owner_responses) == len(fake.calls) == 1
+    assert result.instruction_id == sent[0]["params"]["instruction_id"]
+    assert result.instruction_id == owner_responses[0]["result"]["instruction_id"]
+    connection.close.assert_called_once()
+    stream.close.assert_called_once()
+    monkeypatch.setattr(routing, "kernel_for", lambda *a, **k: kernel)
+    record = lookup({"instruction_id": result.instruction_id}).raise_for_error()
+    assert record["status"] == "committed"
+    assert lookup({"instruction_id": result.instruction_id}, "outsider").error["code"] == "instruction.not_found"
+    assert len(fake.calls) == 1
+
+
+@pytest.mark.parametrize("stage", ["connect", "sendall", "makefile"])
+def test_instruction_transport_distinguishes_unsent_from_unknown_without_retry(monkeypatch, stage):
+    """连接前故障才是未提交；发送或读流建立中断保留未知且不重发。"""
+    connection = MagicMock()
+    connect = MagicMock(return_value=(connection, "test.sock"))
+    (connect if stage == "connect" else getattr(connection, stage)).side_effect = OSError("interrupted")
+    monkeypatch.setattr(socket_rpc, "connect_service", connect)
+    with pytest.raises(InstructionError) as error:
+        socket_rpc._open("execution", {"id": "transport-test"}, 1)
+    assert error.value.commit_state == ("not_committed" if stage == "connect" else "unknown")
+    assert connect.call_count == 1
+    assert connection.sendall.call_count == (0 if stage == "connect" else 1)
+    assert connection.close.call_count == (0 if stage == "connect" else 1)
+
+
+@pytest.mark.parametrize("instruction_id", ["inst_lin_" + "a" * 20, "inst_exe_bad", 123, 0, None, []])
+def test_owner_rejects_invalid_transport_execution_id_before_mutation(kernel, fake, instruction_id):
+    """内部请求的执行 ID 必须具有该 owner 的规范格式。"""
+    result = kernel.execute(scheduler_call(), InstructionContext("alice", "web"), instruction_id=instruction_id)
+    assert result.error["code"] == "instruction.invalid_arguments"
+    assert not fake.calls
 
 
 def test_lookup_scopes_key_to_actor_and_instruction_without_replay(kernel, fake, monkeypatch):

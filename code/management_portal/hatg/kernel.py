@@ -313,8 +313,19 @@ class InstructionKernel:
 
     # -- public API ------------------------------------------------------------
 
-    def execute(self, call: InstructionCall, context: InstructionContext) -> InstructionResult:
-        instruction_id = new_instruction_id(self.owner)
+    def execute(
+        self, call: InstructionCall, context: InstructionContext, *, instruction_id: str = "",
+    ) -> InstructionResult:
+        if instruction_id != "":
+            import re
+
+            if not isinstance(instruction_id, str) or not re.fullmatch(
+                rf"inst_{OWNER_MARKS[self.owner]}_[0-9a-f]{{20}}", instruction_id,
+            ):
+                return failed_result(new_instruction_id(self.owner), call.instruction,
+                                     InstructionError("instruction.invalid_arguments", "执行 ID 与指令 owner 不匹配"))
+        else:
+            instruction_id = new_instruction_id(self.owner)
         try:
             declaration = self._resolve(call, streaming=False)
             self._authorize_call(declaration, call, context, instruction_id=instruction_id)
