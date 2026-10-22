@@ -53,7 +53,8 @@ def repair(platform, payload, *, extra_payloads=(), versions=(ORIGINAL_COMMIT,),
             original = target.read_bytes()
             if digest(original) == new_hash:
                 continue
-            if digest(original) != old_hash:
+            allowed_hashes = (old_hash,) if isinstance(old_hash, str) else old_hash
+            if digest(original) not in allowed_hashes:
                 raise ValueError('Installed code was modified; no files changed: ' + relative)
             pending.append((target, original, data))
         if not pending:

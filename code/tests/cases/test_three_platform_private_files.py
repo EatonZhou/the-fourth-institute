@@ -107,6 +107,31 @@ class PrivateFilesTests(unittest.TestCase):
                 with self.assertRaises(private.PrivateFileError):
                     private._validate_windows_acl(current, owner, aces)
 
+    def test_windows_acl_accepts_python_private_directory_owner_rights(self):
+        private = self.capability()
+        current = "S-1-5-21-1-2-3-1001"
+        # CPython 3.12.15 mkdir(mode=0700) installs
+        # D:P(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;FA;;;OW).
+        aces = [(0, 3, 0x1F01FF, sid) for sid in ("S-1-5-18", "S-1-5-32-544", "S-1-3-4")]
+        private._validate_windows_acl(current, current, aces)
+        # OWNER RIGHTS is safe only with the already-verified current owner.
+        with self.assertRaises(private.PrivateFileError):
+            private._validate_windows_acl(current, "S-1-5-21-1-2-3-1002", aces)
+        for sid in ("S-1-1-0", "S-1-5-32-545", "S-1-3-0"):
+            with self.subTest(sid=sid), self.assertRaises(private.PrivateFileError):
+                private._validate_windows_acl(current, current, [*aces, (0, 3, 0x1F01FF, sid)])
+
+    @unittest.skipUnless(os.name == "nt", "Windows DACL integration")
+    def test_windows_python_private_directory_supports_secret_roundtrip(self):
+        private = self.capability()
+        directory = self.root / "python-private"
+        directory.mkdir(mode=0o700)
+        private.ensure_private_directory(directory)
+        target = directory / "synthetic.key"
+        private.atomic_write_private_bytes(target, b"synthetic-first")
+        private.atomic_write_private_bytes(target, b"synthetic-replacement")
+        self.assertEqual(private.read_private_bytes(target), b"synthetic-replacement")
+
     def test_windows_object_type_rejects_reparse_and_non_disk(self):
         private = self.capability()
         private._validate_windows_object(1, 0x80, directory=False)

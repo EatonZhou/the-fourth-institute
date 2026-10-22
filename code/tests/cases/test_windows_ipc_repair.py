@@ -124,24 +124,44 @@ def test_later_payload_validation_prevents_partial_repair(installed):
     assert not stopped
 
 
+def test_repair_accepts_only_exact_known_source_hashes(installed):
+    platform, _, target, payload, stopped = installed
+    allowed = (repair.ORIGINAL_SHA256, hashlib.sha256(b'earlier repair').hexdigest())
+    target.write_bytes(b'earlier repair')
+    update = ('management_common/local_ipc.py', allowed, repair.REPAIRED_SHA256)
+    assert repair.repair(platform, payload, primary_update=update) == 'repaired'
+    assert target.read_bytes() == payload.read_bytes()
+    target.write_bytes(b'unknown operator change')
+    with pytest.raises(ValueError, match='Installed code was modified'):
+        repair.repair(platform, payload, primary_update=update)
+    assert target.read_bytes() == b'unknown operator change'
+    assert stopped == [platform]
+
+
 @pytest.mark.parametrize('version', [
     '28b94ae89bb7d1e1e966cde8472f9b25f5a41cca',
     '43d7e5544a564dc8625a2187bdfdd7c624797491',
 ])
-def test_secret_repair_only_replaces_private_file_helper_and_preserves_state(installed, monkeypatch, version):
+@pytest.mark.parametrize('previous_repair', [False, True])
+def test_secret_repair_only_replaces_private_file_helper_and_preserves_state(installed, monkeypatch, version, previous_repair):
     from scripts.windows import repair_secrets as secrets
     platform, root, ipc, _, stopped = installed
     receipt = platform / 'windows-package.json'
     receipt.write_text(json.dumps({'source_commit': version}))
     target = ipc.with_name('file_permissions.py')
-    original = b'original private-file helper'
+    original = b'previously repaired helper' if previous_repair else b'original private-file helper'
     target.write_bytes(original)
     payload = Path(__file__).resolve().parents[2] / 'management_common/file_permissions.py'
-    monkeypatch.setattr(secrets, 'OLD_SHA256', hashlib.sha256(original).hexdigest())
+    monkeypatch.setattr(secrets, 'PREVIOUS_SHA256' if previous_repair else 'OLD_SHA256', hashlib.sha256(original).hexdigest())
     preserved = {p: p.read_bytes() for p in (ipc, receipt, root / 'installation.json')}
+    if previous_repair:
+        backup = platform / '.build/windows/repairs/secret-attributes/file_permissions.before.py'
+        backup.parent.mkdir(parents=True)
+        backup.write_bytes(b'original private-file helper')
+        preserved[backup] = backup.read_bytes()
     assert secrets.repair_install(platform, payload) == 'repaired'
     assert target.read_bytes() == payload.read_bytes()
-    assert (platform / '.build/windows/repairs/secret-attributes/file_permissions.before.py').read_bytes() == original
+    assert (platform / '.build/windows/repairs/secret-owner-rights/file_permissions.before.py').read_bytes() == original
     assert secrets.repair_install(platform, payload) == 'already repaired'
     assert stopped == [platform]
     assert all(path.read_bytes() == before for path, before in preserved.items())

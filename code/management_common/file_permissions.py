@@ -80,7 +80,9 @@ def assert_private_posix_acl(descriptor: int) -> None:
 def _validate_windows_acl(current_sid, owner_sid, aces):
     if owner_sid != current_sid or aces is None:
         raise PrivateFileError("Private object has a foreign owner or NULL DACL")
-    trusted = {current_sid, "S-1-5-18", "S-1-5-32-544"}
+    # CPython's Windows mkdir(mode=0o700) grants OWNER RIGHTS (OW),
+    # which applies to the object's owner already verified above.
+    trusted = {current_sid, "S-1-5-18", "S-1-5-32-544", "S-1-3-4"}
     for ace_type, flags, mask, sid in aces:
         # Unknown/object/callback ACEs are deliberately not approximated.
         if ace_type not in (0, 1):
