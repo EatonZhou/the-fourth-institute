@@ -19,6 +19,47 @@ def _draft_store(tmp_path: Path) -> paper_backend.PaperStore:
     return store
 
 
+@pytest.mark.parametrize("outside_allowed_root", [False, True])
+def test_registration_rejects_unavailable_local_pdf_before_creating_paper(tmp_path, outside_allowed_root):
+    """无效的本地 PDF 不创建论文，也不启动摘要或消费上传草稿。"""
+    store = _draft_store(tmp_path)
+    source = tmp_path / "input.pdf"
+    if outside_allowed_root:
+        source.write_bytes(b"%PDF-1.7\nfixture")
+    with (
+        mock.patch.object(paper_backend, "PAPER_STORE", store),
+        mock.patch.object(paper_backend, "ALLOWED_FILE_ROOTS", [store.root] if outside_allowed_root else [tmp_path]),
+        mock.patch.object(store, "register") as register,
+        mock.patch.object(paper_backend, "_start_summary_task") as summary,
+        mock.patch.object(paper_backend, "_start_assets_task") as assets,
+    ):
+        with pytest.raises(ValueError, match="registration PDF is unavailable"):
+            paper_backend.register_paper({"title": "Unavailable source", "pdf_path": str(source)}, "alice")
+    register.assert_not_called()
+    summary.assert_not_called()
+    assets.assert_not_called()
+
+
+def test_empty_summary_material_records_failure_without_calling_model_or_writing_summary(tmp_path):
+    """空材料使摘要任务明确失败，不请求模型，不留下可复用的摘要文件。"""
+    path = tmp_path / "summary.md"
+    paper = {"id": "paper_012345abcdef", "title": "No source", "abstract": ""}
+    with (
+        mock.patch.object(paper_backend, "_paper_by_id", return_value=paper),
+        mock.patch.object(paper_backend, "_paper_store_file", return_value=path),
+        mock.patch.object(paper_backend, "_analysis_text", return_value="  "),
+        mock.patch.object(paper_backend, "_pdf_text_for_paper", return_value="\n"),
+        mock.patch.object(paper_backend, "_resident_reply") as reply,
+        mock.patch.object(paper_backend, "_update_paper_run_record") as record,
+    ):
+        with pytest.raises(ValueError, match="requires an abstract"):
+            paper_backend._run_summary_job(paper["id"], actor="alice", job_id="summary-source-test")
+    reply.assert_not_called()
+    assert not path.exists()
+    assert record.call_args.args[1]["status"] == "error"
+    assert record.call_args.args[1]["job_id"] == "summary-source-test"
+
+
 def test_registration_pdf_upload_creates_owned_background_draft_contracts(tmp_path, subtests, isolated_portal_case):
     """上传 PDF 创建后台草稿并从正文和文件名提取元数据"""
     with subtests.test(contract='test_registration_pdf_upload_creates_owned_background_draft'), isolated_portal_case() as case_path:

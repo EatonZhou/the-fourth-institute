@@ -3011,6 +3011,18 @@ def register_paper(payload: dict, actor: str) -> dict:
             clean_payload[key] = draft_metadata.get(key)
     if staged_pdf:
         clean_payload["pdf_path"] = str(staged_pdf)
+    pdf_source = str(clean_payload.get("pdf_path") or "").strip()
+    if pdf_source and not _is_url(pdf_source):
+        source = _safe_file_path(pdf_source)
+        if not source or not source.is_file():
+            raise ValueError("registration PDF is unavailable; upload the PDF again")
+        # Reject an unreadable local source before creating the Paper or
+        # consuming its draft. Remote downloads retain their pending path.
+        try:
+            with source.open("rb") as stream:
+                stream.read(1)
+        except OSError as exc:
+            raise ValueError("registration PDF is unreadable; upload the PDF again") from exc
     with LOCK:
         reused = bool(PAPER_STORE.find_existing_id(clean_payload))
         paper = PAPER_STORE.register(clean_payload, actor)
@@ -4950,7 +4962,9 @@ def _ensure_paper_summary(paper: dict, *, actor: str = "", force: bool = False) 
 
 def _generate_paper_summary(paper: dict, *, actor: str) -> tuple[str, dict]:
     abstract = str(paper.get("abstract") or "").strip()
-    source_text = abstract or _analysis_text(paper, limit=1800) or _pdf_text_for_paper(paper)[:1800]
+    source_text = abstract or _analysis_text(paper, limit=1800).strip() or _pdf_text_for_paper(paper)[:1800].strip()
+    if not source_text:
+        raise ValueError("paper summary requires an abstract, analysis, or readable PDF text")
     prompt = f"""请用一段中文总结这篇论文，80-160 个中文字，不要标题、列表或 Markdown。说明研究问题、核心方法和适合继续阅读的场景。
 如实保留摘要材料对证据性质的限定（例如合成数据、示例、非真实论文、未经验证的结果），不要把这类内容写成实测结论或已验证的事实。
 
