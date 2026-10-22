@@ -3988,6 +3988,7 @@
       async function retireDeletedResidentSurfaces(residentIds) {
         const deleted = new Set(residentIds.map(id => String(id || "").trim()).filter(Boolean));
         if (!deleted.size) return;
+        window.PortalResidentMenu?.retireResidents([...deleted]);
         for (const id of deleted) unavailableResidentBindings.add(id);
         if (deleted.has(selectedResidentId())) {
           const resident = currentResident();

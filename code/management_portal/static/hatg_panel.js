@@ -30,7 +30,7 @@
   const societyService = window.PortalSocietyService.createClient({
     get: apiGet,
     getRevision: id => state.lineage?.lineage_id === id ? state.lineage.revision : undefined,
-    onResidentsDeleted: ids => hatgComponentOptions.onResidentsDeleted?.(ids),
+    onResidentsDeleted: retireDeletedResidents,
     onConflict: ({ lineageId, lineage, error }) => {
       if (state.lineage?.lineage_id !== lineageId) return;
       const roots = [hatgComponentRoot, ...detachedRoots];
@@ -58,6 +58,10 @@
       setSyncStatus(error.message, "error");
     },
   });
+  function retireDeletedResidents(ids) {
+    window.PortalResidentMenu?.retireResidents(ids);
+    return hatgComponentOptions.onResidentsDeleted?.(ids);
+  }
   const residentDiscovery = window.PortalResidentDiscoveryService.createClient({ post: apiPost });
   const clone = value => JSON.parse(JSON.stringify(value));
   const normalizeOptionalLimit = (value, maximum = Number.MAX_SAFE_INTEGER) => (
@@ -7619,6 +7623,10 @@
         }
       return true;
     } catch (error) {
+      if (error.committedMutation?.instruction === "DeleteResident") {
+        toast(window.PortalI18n.text`Resident 已删除，图刷新失败，请刷新查看，勿重复删除：${error.message || error}`, "warning", 9000);
+        return true;
+      }
       toast(window.PortalI18n.text`删除失败，HATG 未改变：${error.message || error}`, "error", 7000);
       return false;
     }

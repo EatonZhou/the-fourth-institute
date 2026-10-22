@@ -37,6 +37,16 @@
   const toast = (message, kind = "success", timeout = 3600) => window.PortalUI.toast(message, kind, {duration: timeout});
   let instance = null;
   let openSequence = 0;
+  let openingResidentId = "";
+
+  function retireResidents(residentIds) {
+    const deleted = new Set(residentIds.map(id => String(id || "").trim()).filter(Boolean));
+    if (deleted.has(openingResidentId)) {
+      openSequence += 1;
+      openingResidentId = "";
+    }
+    instance?.retireResidents(deleted);
+  }
 
   async function removeFamily({family, lineageId, action, execute = (name, args) => window.PortalInstructionClient.execute(name, args)}) {
     if (!["unfamilize", "delete"].includes(action)) throw new TypeError("Unknown Family action");
@@ -615,6 +625,10 @@
 
     }
 
+    function retireResidents(deleted) {
+      if (deleted.has(nodeMenuContext?.residentId)) dialog.close({force: true});
+    }
+
     async function leaveNodeMenu() {
       if (!await leaveNodeDetails()) return false;
       const context = nodeMenuContext;
@@ -861,7 +875,7 @@
       if (!context || context.busy || context.saving) return;
       if (options.onDelete) {
         context.busy = true;
-        try { if (await options.onDelete(node)) dialog.close({force: true}); }
+        try { if (await options.onDelete(node) && nodeMenuContext === context) dialog.close({force: true}); }
         finally { context.busy = false; }
         return;
       }
@@ -968,12 +982,14 @@
         await openNodeSettingsModal(next.node, next.tab || "display");
         return true;
       },
+      retireResidents,
       destroy() { dialog.close({force: true}); dialog.destroy(); surface?.destroy(); modal.remove(); },
     };
   }
 
   async function open(options = {}) {
     const sequence = ++openSequence;
+    openingResidentId = String(options.residentId || options.principalId || nodeResidentId(options.node)).trim();
     const active = (options.group?.tabs || []).find(tab => tab.key === options.group.active);
     if (active && !active.residentId) {
       if (!options.lineage) throw new TypeError("lineage is required");
@@ -992,9 +1008,10 @@
         .then(result => result.states?.[0] || null),
     ]);
     if (sequence !== openSequence) return null;
+    openingResidentId = "";
     instance ||= createMenu();
     await instance.open({...options, node: {...node, id: residentId, backend: node.provider || node.backend, intake_state: runtime?.state?.intake_state || node.intake_state}, lineage});
     return instance;
   }
-  window.PortalResidentMenu = Object.freeze({open, removeFamily});
+  window.PortalResidentMenu = Object.freeze({open, removeFamily, retireResidents});
 })();
