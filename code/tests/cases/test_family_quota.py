@@ -90,6 +90,28 @@ def quota_family(team, monkeypatch):
                            message=message_id, accounts=accounts)
 
 
+def test_missing_bound_account_wait_does_not_erase_quota_incident_or_choose_another_account(quota_family):
+    """账号缺失保留原绑定和额度事故，恢复账号仍受原额度保护。"""
+    f = quota_family
+    record = _record(f.steward)
+    store = family_quota.get_lineage_data_store().family_quota_migrations
+    incident = {"epoch": "existing-window", "attempts": 1, "tried_accounts": ["codex_two"],
+                "status": "unavailable", "reason": "quota incident"}
+    with store.transaction(record["lineage_id"], f.steward) as state:
+        state.update(incident)
+    assert family_quota.ensure_role_reserve(record, [f.accounts[1]])
+    held = family_quota.role_migration(record)
+    assert held == {**incident, "account_wait": held["account_wait"]}
+    assert "当前绑定" in held["account_wait"]
+    assert _record(f.steward)["backend_route_id"] == "one"
+    assert family_quota.role_availability(_record(f.steward))["status"] == "unavailable"
+    # Recovering a route with stale quota must not release its old incident.
+    assert family_quota.ensure_role_reserve(record, [_account("one", 90, fresh=False)])
+    assert family_quota.role_migration(record) == incident
+    assert not family_quota.ensure_role_reserve(record, [_account("one", 90)])
+    assert family_quota.role_migration(record) == {}
+
+
 def test_low_weekly_request_waits_for_the_steward_then_relays_original_content_once(quota_family):
     """Family 周额度预防与监督
 

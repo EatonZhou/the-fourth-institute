@@ -25,15 +25,16 @@ def personal(future_creation_store, charters):
     return ama, assistant
 
 
-def test_personal_family_can_precede_first_ai_account(future_creation_store, monkeypatch):
+@pytest.mark.empty_execution_registrations
+def test_personal_family_can_precede_first_ai_account(future_creation_store, monkeypatch, capsys):
     """首次注册完整个人 Family 不依赖 Codex 账号，执行配置留待默认 AI 就绪。"""
-    from management_portal.execution import account_registrations, account_adapters
-    from management_portal.society_service import resident_registration_domain, resident_runtime_domain
-    monkeypatch.setattr(account_registrations, "roles", lambda: [])
-    def no_account(*args, **kwargs):
-        raise ValueError("No enabled default Codex account")
-    monkeypatch.setattr(resident_registration_domain, "resolve_account_configuration", no_account)
-    monkeypatch.setattr(account_adapters.CodexRoutes, "default_for_new_session", no_account)
+    from management_portal.execution import account_registrations
+    from management_portal.society_service import resident_runtime_domain
+    from management_portal.society_service.domain_ports import execution_port
+    assert account_registrations.registrations() == []
+    assert account_registrations.roles() == []
+    accounts = []
+    monkeypatch.setattr(execution_port, "service", lambda: SimpleNamespace(accounts=lambda: {"accounts": accounts}))
     from management_portal import permission_system
     from management_portal.society_service import resource_client
     # The isolated resource boundary must expose the real personal-owner
@@ -58,6 +59,52 @@ def test_personal_family_can_precede_first_ai_account(future_creation_store, mon
         assert settings["backend_role"] == "default"
         assert not settings.get("model")
     assert personal_assistant.ensure("newcomer", ama["resident_id"], "newcomer") == assistant
+    # Background recovery must accept the same unconfigured installation as
+    # registration, without abandoning other Residents' accepted work.
+    from management_portal.society_service import family_quota, resident_intake_domain, resident_domain
+    from management_portal.society_service.coordinator import LineageCoordinator
+    starts = []
+    monkeypatch.setattr(resident_intake_domain, "_start_resident_continuation", lambda record, cid:
+                        starts.append((record["resident_id"], cid)))
+    coordinator = LineageCoordinator(
+        resume_residents=resident_execution_domain.resume_pending_resident_executions,
+        resume_resident=resident_execution_domain.resume_resident_execution,
+        reconcile_all=lambda: {}, reconcile_lineage=lambda _: {},
+    )
+    for _ in range(2):
+        coordinator._recover_resident(family["steward"])
+        coordinator._recover()
+        assert coordinator.snapshot()["last_error"] == ""
+        assert coordinator.snapshot()["last_recovery"]["errors"] == 0
+        assert resident_execution_work.read(steward) == job
+    assert starts == []
+    availability = family_quota.role_availability(steward)
+    assert availability["status"] == "unavailable"
+    assert "配置" in availability["reason"] and "原任务已保留" in availability["reason"]
+    assert "coordinator failed" not in capsys.readouterr().err
+
+    # A separately configured Lineage still resumes. These are isolated test
+    # registrations and account observations, with no credentials or model IO.
+    account_registrations.create_registration({"account_id": "claude_fixture", "provider": "claude",
+        "kind": "subscription_login", "route_id": "claude_fixture",
+        "config": {"models": [{"id": "sonnet"}], "default_model": "sonnet"}}, "newcomer")
+    accounts.append({"account_id": "claude_fixture", "provider": "claude", "backend_route_id": "claude_fixture"})
+    other = resident_domain.register_resident({"title": "Independent work", "project_id": "project_test", "backend": "claude",
+        "backend_route_id": "claude_fixture", "mode": "new_session"}, "newcomer")
+    resident_domain.deliver_resident_message_content(other["resident_id"], "newcomer", "independent input")
+    coordinator._recover()
+    assert coordinator.snapshot()["last_recovery"]["errors"] == 0
+    assert [rid for rid, _ in starts] == [other["resident_id"]]
+    assert resident_execution_work.read(steward) == job
+
+    # Configuring the first default AI releases the original organization
+    # input, including when the selected provider is not the Codex placeholder.
+    account_registrations.update_role("default", "claude_fixture", "", "", 0, "newcomer")
+    coordinator._recover_resident(family["steward"])
+    assert coordinator.snapshot()["last_error"] == ""
+    assert starts[-1][0] == family["steward"]
+    assert resident_execution_work.read(steward)["user_message_id"] == job["user_message_id"]
+    assert not family_quota.role_migration(steward).get("account_wait")
 
 
 def test_personal_initialization_is_private_and_resumable(personal):

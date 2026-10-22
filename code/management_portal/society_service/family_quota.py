@@ -22,7 +22,7 @@ from .state_store import get_lineage_data_store
 
 MIGRATION_FIELDS = frozenset({
     "epoch", "attempts", "tried_accounts", "checked_at", "pending_restart", "owner_notified",
-    "status", "reason",
+    "status", "reason", "account_wait",
 })
 RECHECK_SECONDS = 60
 MAX_MIGRATIONS = 2
@@ -46,6 +46,8 @@ def role_availability(record: dict[str, Any], *, execution_gate: dict[str, Any] 
     intake = _resident_intake_state(record)
     if intake != "open":
         return {"status": "paused", "reason": "接单已关闭；门面开放时平台将恢复，关闭门面可暂停 Family", "intake": intake}
+    if state.get("account_wait"):
+        return {"status": "unavailable", "reason": state["account_wait"], "intake": intake}
     from .resident_work_recovery import latest_failed_input, recovery_entry
     failed = latest_failed_input(record)
     if failed:
@@ -318,6 +320,18 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
             logging.getLogger(__name__).exception("Family role account service unavailable for %s", resident_id)
             return True
     account = resident_account(record, accounts)
+    migration = role_migration(record)
+    if not account:
+        reason = "尚未配置可用的 AI 账号；请在设置中连接 AI 并设为默认。原任务已保留，配置后将自动继续。"
+        if record.get("backend_route_id"):
+            reason = "当前绑定的 AI 账号不可用；请检查账号设置。原任务已保留，不会自动改用其他账号。"
+        if migration.get("account_wait") != reason:
+            with get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as state:
+                state["account_wait"] = reason
+        return True
+    if migration.get("account_wait"):
+        with get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as state:
+            state.pop("account_wait", None)
     remaining = reserve_remaining(account)
     if (remaining is not None and remaining > WEEKLY_RESERVE_PERCENT
             or remaining is None and sufficient_weekly_reserve(account)):
@@ -410,7 +424,7 @@ def check_role_availability(lineage_id: str, family_id: str, actor: str) -> dict
     restore_role_intakes(roles)
     # Intake maintenance must not poll accounts or migrate idle roles. Quota
     # admission belongs to the execution queue; report existing incidents only.
-    waiting = sum(bool(role_migration(r).get("status")) for r in roles)
+    waiting = sum(bool((state := role_migration(r)).get("status") or state.get("account_wait")) for r in roles)
     return {"family_id": block["id"], "paused": False, "waiting_count": waiting,
             "roles": [{"resident_id": r["resident_id"], **role_availability(_find_resident(r["resident_id"]))}
                       for r in roles]}

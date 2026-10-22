@@ -86,6 +86,13 @@ def resident_account(record: Mapping[str, Any], accounts: list[dict[str, Any]]) 
     binding = resident_backend.session_record(record)
     route = str(binding.get("backend_route_id") or record.get("backend_route_id") or "")
     if not route:
-        route = str(resident_backend.execution_account(record, binding).get("backend_route_id") or "")
+        try:
+            configured = resident_backend.execution_account(record, binding)
+        except (ValueError, KeyError):
+            # Fresh installations may accept work before a default AI exists.
+            # This is an absent account observation, not a recovery failure.
+            return {}
+        provider = str(configured.get("provider") or provider)
+        route = str(configured.get("backend_route_id") or "")
     return next((a for a in accounts if a.get("provider") == provider
                  and str(a.get("backend_route_id") or "") == route), {})
