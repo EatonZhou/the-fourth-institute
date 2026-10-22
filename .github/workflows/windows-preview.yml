@@ -81,6 +81,7 @@ jobs:
         run: |
           function Report-Tail($file, $count) {
             $tail = (Get-Content $file.FullName -Tail $count -Encoding utf8) -join "`n"
+            if ($tail.Length -gt 3500) { $tail = $tail.Substring($tail.Length - 3500) }
             Write-Output $file.Name
             Write-Output $tail
             $escaped = $tail.Replace('%', '%25').Replace("`r", '%0D').Replace("`n", '%0A')
