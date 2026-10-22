@@ -203,7 +203,9 @@ def update_model_api(inv: Invocation) -> dict[str, Any]:
         raise invalid(str(exc)) from exc
     _check_api_users_keep_protocols(api_id, {**current, **stored})
     from . import codex_api_accounts
-    reconfigures = secret is not None or bool(set(stored) & codex_api_accounts.CONFIGURED_FIELDS)
+    # The edit form sends every field; only values that change reconfigure an app-server.
+    changed = {name for name, value in stored.items() if current.get(name) != value}
+    reconfigures = secret is not None or bool(changed & codex_api_accounts.CONFIGURED_FIELDS)
     if reconfigures:
         _refuse_busy_codex_api_accounts(api_id)
     try:
@@ -433,12 +435,17 @@ def register_provider_account(inv):
 
 
 def _refuse_busy_codex_api_accounts(api_id):
-    """Changing what a Codex API account authenticates with restarts its app-server."""
+    """Changing what a Codex API account authenticates with restarts its app-server.
+
+    Bound sessions continue on the restarted app-server, as after a runtime
+    update; queued or running executions would be cut off.
+    """
     from .codex_api_accounts import busy_accounts
-    busy = busy_accounts(api_id)
+    busy = sorted(busy_accounts(api_id))
     if busy:
-        raise InstructionError("instruction.conflict", "使用该模型 API 的 Codex 账号仍有会话或执行：" + "、".join(busy),
-                               details={"reason": "account.busy", "account_ids": sorted(busy)})
+        raise InstructionError("instruction.conflict",
+                               "使用该模型 API 的 Codex 账号正在执行任务：" + "、".join(busy) + "；请等任务结束后再保存。",
+                               details={"reason": "account.running", "account_ids": busy})
 
 
 def _registration_expected_version(inv, object_id, *, minimum):

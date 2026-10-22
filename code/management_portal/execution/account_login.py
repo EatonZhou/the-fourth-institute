@@ -201,7 +201,10 @@ def provider_binary(provider):
     from management_common.site_config import read_site_config
     from management_common.portal_paths import resolve_directory
     configured = read_site_config().get("deployment", {}).get("providers", {}).get(f"{provider}_binary")
-    binary = str(resolve_directory(configured)) if configured else shutil.which(provider)
+    # Codex logs in with the program its app-server runs; that link already
+    # reuses a Codex found on PATH.
+    binary = (str(resolve_directory(configured)) if configured
+              else None if provider == "codex" else shutil.which(provider))
     if not binary:
         from .provider_updates import CodexRuntime, ClaudeRuntime
         if provider == "codex":

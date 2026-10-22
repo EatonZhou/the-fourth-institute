@@ -5,6 +5,8 @@
 from types import SimpleNamespace
 from unittest.mock import Mock
 import json
+import os
+import sys
 
 import pytest
 
@@ -52,7 +54,8 @@ def test_login_reuses_path_or_prepared_runtime(monkeypatch, tmp_path, provider):
     assert account_login.login_command(provider, status=True)[0] == str(binary)
     existing = str(tmp_path / "developer-installed-cli")
     monkeypatch.setattr(account_login.shutil, "which", lambda _: existing)
-    assert account_login.login_command(provider)[0] == existing
+    # Codex logs in with its runtime link, which itself reuses PATH.
+    assert account_login.login_command(provider)[0] == (str(binary) if provider == "codex" else existing)
 
 
 def test_codex_link_reuses_configured_or_path_binary(monkeypatch, tmp_path):
@@ -66,7 +69,57 @@ def test_codex_link_reuses_configured_or_path_binary(monkeypatch, tmp_path):
     assert updates.CodexRuntime().link() == configured
 
 
-def test_missing_runtime_preparation_can_retry(monkeypatch, tmp_path):
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX executables and directory permissions")
+def test_a_broken_codex_on_path_is_left_alone_while_portal_prepares_its_own(monkeypatch, tmp_path):
+    """PATH 上无法运行的 Codex 保持原样，准备运行环境改用 Portal 自己的运行时
+
+    之后后台和登录都使用 Portal 准备的 Codex。
+    """
+    from management_common import site_config
+    from management_portal import business_tasks
+    from management_portal.execution import account_login
+    monkeypatch.setattr(updates, "_PROVIDER_DEPLOYMENT", {})
+    monkeypatch.setattr(site_config, "read_site_config", lambda: {})
+    monkeypatch.setattr(updates, "RUNTIMES", tmp_path / "runtimes")
+    monkeypatch.setattr(updates, "STATE_ROOT", tmp_path / "state")
+    system = tmp_path / "system-bin"
+    system.mkdir()
+    broken = system / "codex"
+    broken.write_text("#!/bin/sh\necho 'Missing optional dependency' >&2\nexit 1\n")
+    broken.chmod(0o755)
+    monkeypatch.setenv("PATH", str(system) + os.pathsep + os.environ["PATH"])
+
+    def stage(self, versions):
+        root = updates.RUNTIMES / f"codex-cli-{versions[0]}"
+        binary = self.link_target(root)
+        binary.parent.mkdir(parents=True)
+        binary.write_text(f"#!/bin/sh\necho 'codex-cli {versions[0]}'\n")
+        binary.chmod(0o755)
+        return root
+
+    monkeypatch.setattr(updates.CodexRuntime, "available", lambda self: ("1.2.3",))
+    monkeypatch.setattr(updates.CodexRuntime, "stage", stage)
+    monkeypatch.setattr(updates.CodexRuntime, "services", property(lambda self: ()))
+    monkeypatch.setattr(updates, "runtimes", lambda: {"codex": updates.CodexRuntime()})
+    monkeypatch.setattr(updates, "_active_executions", lambda provider: 0)
+    monkeypatch.setattr(business_tasks, "start", lambda task_id, work: work())
+    assert updates.CodexRuntime().link() == broken
+    assert not updates.runtime_available("codex")
+    system.chmod(0o555)  # like a system directory the service user cannot write
+    try:
+        updates.prepare_runtime("codex")
+    finally:
+        system.chmod(0o755)
+    assert updates.preparation_status("codex")["status"] == "ready"
+    managed = updates.RUNTIMES / "codex"
+    assert managed.resolve() == updates.CodexRuntime().link_target(updates.RUNTIMES / "codex-cli-1.2.3")
+    assert updates.CodexRuntime().link() == managed
+    assert account_login.provider_binary("codex") == str(managed)
+    assert [path.name for path in system.iterdir()] == ["codex"]
+    assert "Missing optional dependency" in broken.read_text()
+
+
+def test_missing_runtime_preparation_can_retry(monkeypatch, tmp_path, caplog):
     from management_portal import business_tasks
     runtime = Mock()
     runtime.stage.side_effect = [RuntimeError("private download details"), tmp_path / "runtime"]
@@ -79,6 +132,7 @@ def test_missing_runtime_preparation_can_retry(monkeypatch, tmp_path):
     updates.prepare_runtime("claude")
     failed = updates.preparation_status("claude")
     assert failed["status"] == "failed" and "private" not in str(failed)
+    assert "claude preparation failed (RuntimeError in work)" in caplog.text and "private" not in caplog.text
     updates.prepare_runtime("claude")
     assert updates.preparation_status("claude")["status"] == "ready"
 

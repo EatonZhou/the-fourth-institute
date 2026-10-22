@@ -19,11 +19,13 @@ import ctypes
 import hashlib
 from pathlib import Path
 import re
+import shlex
 import shutil
 import struct
 import subprocess
 import sys
 import time
+import traceback
 from urllib.request import urlopen
 
 from packaging.version import Version
@@ -102,8 +104,9 @@ class ProviderRuntime:
     ``available`` and ``installed`` give the versions of the packages the
     runtime is built from, in the same order; a newer release of any of them
     stages a new runtime.  Portal's clients run the current runtime through
-    ``link``; activation points it at the staged one (``link_target``) and
-    restarts ``services``.
+    ``link``; activation points ``activation_link`` at the staged one
+    (``link_target``) and restarts ``services``.  When the two differ, ``link``
+    is a program Portal did not install: it is reused but never replaced.
     """
 
     services: tuple[str, ...] = ()
@@ -124,6 +127,9 @@ class ProviderRuntime:
 
     def link(self) -> Path:
         raise NotImplementedError
+
+    def activation_link(self) -> Path:
+        return self.link()
 
     def link_target(self, root: Path) -> Path:
         return root
@@ -163,13 +169,41 @@ class CodexRuntime(ProviderRuntime):
         marker = root / ".portal-validated"
         if not marker.is_file() or not binary.is_file():
             run_command("npm", "install", "--global", "--prefix", str(root), "--omit=dev", f"@openai/codex@{version}")
+        if sys.platform == "linux":
+            binary = self._write_launcher(root, binary)
         if Version(codex_cli_version(run_command(str(binary), "--version", timeout=60))) != Version(version):
             raise RuntimeError("Codex staged version mismatch")
         run_command(str(binary), "app-server", "--help", timeout=60)
         marker.write_text(version + "\n")
         return root
 
+    @staticmethod
+    def _write_launcher(root: Path, entry: Path) -> Path:
+        """npm's entry finds node through PATH. systemd account services do not
+        share Portal's PATH (launchd jobs carry it), so run the entry with the
+        node that installed this runtime."""
+        node = shutil.which("node")
+        if not node:
+            raise RuntimeError("Codex requires node on PATH")
+        launcher = root / "portal-codex"
+        content = f'#!/bin/sh\nexec {shlex.quote(node)} {shlex.quote(str(entry.resolve()))} "$@"\n'
+        if not launcher.is_file() or launcher.read_text() != content:
+            temporary = launcher.with_name(f".{launcher.name}.{os.getpid()}.tmp")
+            temporary.write_text(content)
+            temporary.chmod(0o755)
+            temporary.replace(launcher)
+        return launcher
+
     def link(self) -> Path:
+        managed = self.activation_link()
+        if sys.platform == "win32" or _PROVIDER_DEPLOYMENT.get("codex_binary") or managed.is_symlink():
+            return managed
+        # Until Portal activates its own runtime, reuse a Codex found on PATH.
+        # Once activated, the managed link stays the program services run.
+        existing = shutil.which("codex")
+        return Path(existing) if existing else managed
+
+    def activation_link(self) -> Path:
         if sys.platform == "win32":
             return RUNTIMES / "codex-cli-current"
         configured = _PROVIDER_DEPLOYMENT.get("codex_binary")
@@ -180,13 +214,12 @@ class CodexRuntime(ProviderRuntime):
             # Activation replaces this link. Resolve only its parent so an
             # instance can reuse an installed binary without updating that copy.
             return resolve_directory(str(path.parent)) / path.name
-        existing = shutil.which("codex")
-        if existing:
-            return Path(existing)
         return RUNTIMES / "codex"
 
     def link_target(self, root: Path) -> Path:
-        return root if sys.platform == "win32" else npm_binary(root, "codex")
+        if sys.platform == "win32":
+            return root
+        return root / "portal-codex" if sys.platform == "linux" else npm_binary(root, "codex")
 
 
 class ClaudeRuntime(ProviderRuntime):
@@ -447,7 +480,7 @@ def _activate(provider: str, runtime: ProviderRuntime, root: Path) -> bool:
         return False
     services = runtime.services
     controller = _service_control()
-    link = runtime.link()
+    link = runtime.activation_link()
     previous = link.resolve() if link.exists() else None
     _link(link, runtime.link_target(root))
     try:
@@ -632,8 +665,13 @@ def prepare_runtime(provider: str) -> dict:
                         result.update(status="ready", source="installed")
                     else:
                         result.update(status="pending", message="运行环境已准备，等待当前执行结束后启用。")
-            except Exception:
-                # Package manager output can contain configured endpoints or credentials.
+            except Exception as exc:
+                # Package manager output can contain configured endpoints or
+                # credentials. Record only where preparation stopped.
+                step = next((frame for frame in reversed(traceback.extract_tb(exc.__traceback__))
+                             if frame.filename == __file__), None)
+                LOGGER.warning("Provider %s preparation failed (%s in %s)", provider, type(exc).__name__,
+                               step.name if step else "?")
                 result.update(status="failed", message="环境准备失败，请检查下载网络和运行依赖后重试。")
             result["updated_at"] = datetime.now(timezone.utc).isoformat()
             save()
@@ -660,6 +698,9 @@ def run_update_pass() -> dict[str, object]:
                 if not _newer(available, installed):
                     if pending.pop(provider, None) is not None:
                         save()
+                    continue
+                if runtime.link() != runtime.activation_link():
+                    # A reused program is updated by whoever installed it.
                     continue
                 RUNTIMES.mkdir(parents=True, exist_ok=True)
                 root = runtime.stage(available)

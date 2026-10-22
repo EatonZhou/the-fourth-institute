@@ -58,7 +58,7 @@ def gateway(tmp_path):
     key.chmod(0o600)
     entry = {"api_id": "gateway", "base_url": "https://gateway.invalid/v1", "default_model": "gpt-test",
              "secret_file": str(key), "provider": "example", "headers": {"X-Team": "lab"},
-             "models": [{"id": "gpt-test", "reasoning_efforts": ["low", "high", "max"], "context_window": 200000},
+             "models": [{"id": "gpt-test", "reasoning_efforts": ["low", "high", "max", "ultra"], "context_window": 200000},
                         {"id": "gpt-mini"}],
              "protocols": {"openai_responses": {}, "anthropic_messages": {"auth": "x-api-key"}}}
     _call(isa.create_model_api, **entry)
@@ -153,13 +153,30 @@ def test_a_codex_api_account_is_billed_by_its_model_api_and_lists_its_declared_m
     assert not _subscription(api) and _subscription(subscription)
     catalog = adapter.catalog(api)
     assert catalog["models"] == ["gpt-test", "gpt-mini"] and catalog["default_model"] == "gpt-test"
-    assert catalog["efforts_by_model"] == {"gpt-test": ["low", "high"], "gpt-mini": []}
+    assert catalog["efforts_by_model"] == {"gpt-test": ["low", "high", "max"], "gpt-mini": []}
     assert catalog["default_reasoning_effort"] == "high"
     assert adapter.observe(api) == {"status": "ok", "rate_limits": []}
     codex = AGENT_PROVIDERS["codex"]
     assert (codex.upstream_for("gateway-codex"), codex.upstream_for("one")) == ("model_api", "openai")
     assert NATIVE_IMAGE_INPUT not in codex.harness_capabilities("gateway-codex")
     assert NATIVE_IMAGE_INPUT in codex.harness_capabilities("one")
+
+
+def test_a_sites_only_codex_account_is_its_default_without_being_marked(gateway, fake_codex, monkeypatch, tmp_path):
+    """站点唯一启用的 Codex 账号不用勾选“默认路线”也是 Codex 默认账号；有多个账号时仍须明确指定
+
+    从模型 API 页面以 Codex 运行器添加的 API 账号不带默认标记；未指定账号的 Resident 和个人助理使用它。有第二个启用账号后，没有标记就没有默认账号。
+    """
+    from management_portal.execution.account_adapters import CodexRoutes
+    from tests.cases.account_registration_test_support import register_codex
+    register_codex(monkeypatch, tmp_path, names=())
+    _register("gateway-codex", "codex")
+    assert CodexRoutes().default_for_new_session().account_id == "gateway-codex"
+    _register("spare-codex", "codex")
+    with pytest.raises(ValueError, match="No enabled default Codex account"):
+        CodexRoutes().default_for_new_session()
+    _call(isa.update_provider_account_registration, account_id="spare-codex", changes={"enabled": False})
+    assert CodexRoutes().default_for_new_session().account_id == "gateway-codex"
 
 
 def test_api_key_accounts_need_a_model_api_that_speaks_their_harness_protocol(gateway, fake_codex):
@@ -182,17 +199,26 @@ def test_api_key_accounts_need_a_model_api_that_speaks_their_harness_protocol(ga
         "config": {"is_default": True, "fallback_account_ids": ["gateway-codex"]}}).code == "instruction.invalid_arguments"
 
 
-def test_a_busy_codex_api_account_holds_back_changes_that_restart_it(gateway, fake_codex, monkeypatch):
-    """Codex API 账号有会话或执行时，会重启它的模型 API 修改被拒绝；删除账号同时删除保存密钥的目录
+def test_a_codex_api_account_holds_back_restarts_only_while_its_work_runs(gateway, fake_codex, monkeypatch):
+    """Codex API 账号有排队或运行中的执行时，会重启它的模型 API 修改被拒绝；只有会话时照常保存
 
-    修改地址、密钥等会改写配置并重启 app-server，账号忙时返回 conflict（account.busy）且不修改登记；只改模型目录不需要重启。删除空闲的 Codex API 账号会停用实例并删除账号目录（auth.json 存有密钥）。
+    修改地址、密钥等会改写配置并重启 app-server：账号有执行时返回 conflict（account.running）且不修改登记；只有已绑定的会话时照常保存并重启，会话在重启后继续。编辑表单连同未改动的字段一起提交、只改模型目录时不重启，执行中也能保存。删除空闲的 Codex API 账号会停用实例并删除账号目录（auth.json 存有密钥）。
     """
     _register("gateway-codex", "codex")
-    monkeypatch.setattr(isa, "account_busy_counts", lambda row: {"session_count": 1, "execution_count": 0})
+    monkeypatch.setattr(isa, "account_busy_counts", lambda row: {"session_count": 1, "execution_count": 1})
     error = _failure(isa.update_model_api, api_id="gateway", changes={"base_url": "https://moved.invalid/v1"})
-    assert (error.code, error.details["reason"]) == ("instruction.conflict", "account.busy")
+    assert (error.code, error.details["reason"]) == ("instruction.conflict", "account.running")
     assert _call(isa.list_model_apis)["apis"][0]["base_url"] == "https://gateway.invalid/v1"
-    _call(isa.update_model_api, api_id="gateway", changes={"models": [{"id": "gpt-test"}]})
+    # The edit form sends every field along with the changed model list.
+    form = {"base_url": "https://gateway.invalid/v1", "default_model": "gpt-test", "provider": "example",
+            "headers": {"X-Team": "lab"}, "secret_file": str(gateway.key_file), "enabled": True,
+            "models": [{"id": "gpt-test", "reasoning_efforts": ["high"]}]}
+    restarts = len(fake_codex.hosting)
+    _call(isa.update_model_api, api_id="gateway", changes=form)
+    assert len(fake_codex.hosting) == restarts
+    monkeypatch.setattr(isa, "account_busy_counts", lambda row: {"session_count": 1, "execution_count": 0})
+    _call(isa.update_model_api, api_id="gateway", changes={**form, "base_url": "https://moved.invalid/v1"})
+    assert fake_codex.hosting[-2:] == [("stop_codex_instance", "gateway-codex"), ("start_codex_instance", "gateway-codex")]
     monkeypatch.setattr(isa, "account_busy_counts", lambda row: {"session_count": 0, "execution_count": 0})
     home = account_home("codex", "gateway-codex")
     assert home.is_dir()

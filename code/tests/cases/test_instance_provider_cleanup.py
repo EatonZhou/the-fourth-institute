@@ -83,6 +83,39 @@ class ProviderCleanupTests(unittest.TestCase):
         self.assertTrue(self.template.exists())
         self.assertFalse(any(call.args[0] == "disable" for call in self.runner.call_args_list))
 
+    def test_instance_start_restores_the_codex_accounts_running_at_stop(self):
+        """安装与实例回归：实例启动时恢复停止前正在运行的 Codex 账号服务
+
+        停止前已停的账号保持停止；重复停止不丢失记录；启动失败的账号留待下次启动重试。
+        """
+        idle = "tfi-one-codex-app-server@idle.service"
+        listed = [f"{self.unit} loaded active running account\n{idle} loaded inactive dead idle\n"]
+        def run(command, *arguments):
+            if command == "list-units":
+                return listed[0]
+            if command == "enable" and failures:
+                failures.pop()
+                raise subprocess.CalledProcessError(1, ["systemctl", command])
+            return self.run_systemctl(command, *arguments)
+        failures = []
+        states = {self.unit: "active", idle: "inactive"}
+        controller = Mock()
+        controller.status.side_effect = lambda name: {"pid": 0, "active": states[name]}
+        controller.stop.side_effect = lambda name: states.__setitem__(name, "inactive")
+        runner = Mock(side_effect=run)
+        record = self.root / "instance" / providers.RESTART_RECORD
+        with patch.object(providers, "_run", runner):
+            providers.stop_services(providers.owned_services(self.target, self.root), controller)
+            providers.stop_services(providers.owned_services(self.target, self.root), controller)
+            listed[0] = ""  # stopped instances are no longer loaded
+            failures.append(True)
+            providers.start_services(providers.owned_services(self.target, self.root), controller)
+            self.assertTrue(record.exists())
+            providers.start_services(providers.owned_services(self.target, self.root), controller)
+        enabled = [call.args for call in runner.call_args_list if call.args[0] == "enable"]
+        self.assertEqual(enabled, [("enable", "--now", self.unit)] * 2)
+        self.assertFalse(record.exists())
+
     def test_absent_template_and_empty_unit_glob_need_no_cleanup(self):
         """安装与实例回归：absent template and empty unit glob need no cleanup。"""
         self.template.unlink()

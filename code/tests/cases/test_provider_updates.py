@@ -7,6 +7,9 @@
 import json
 import importlib.util
 from pathlib import Path
+import shutil
+import subprocess
+import sys
 from types import SimpleNamespace
 import pytest
 
@@ -36,6 +39,8 @@ def _isolated(monkeypatch, tmp_path):
     monkeypatch.setattr(updates, "pypi_version", lambda package: "0.2.162")
     for runtime, versions in INSTALLED.items():
         monkeypatch.setattr(runtime, "installed", lambda self, versions=versions: versions)
+    # These passes update a Codex Portal installed, whatever the host's PATH holds.
+    monkeypatch.setattr(updates.CodexRuntime, "link", updates.CodexRuntime.activation_link)
 
 
 def _stage_into(monkeypatch, staged, root):
@@ -236,6 +241,24 @@ def test_check_refreshes_pending_version_before_activation(monkeypatch, tmp_path
     assert result["errors"] == {}
 
 
+def test_update_pass_leaves_a_reused_codex_to_its_installer(monkeypatch, tmp_path):
+    """复用 PATH 上的 Codex 时，更新检查只记录新版本，不准备也不替换它"""
+    _isolated(monkeypatch, tmp_path)
+    monkeypatch.setattr(updates, "_PROVIDER_DEPLOYMENT", {})
+    monkeypatch.setattr(updates.CodexRuntime, "link", lambda self: tmp_path / "system-bin/codex")
+    original = updates.npm_version
+    monkeypatch.setattr(updates, "npm_version", lambda package, tag: (
+        "0.160.0" if package == "@openai/codex" else original(package, tag)
+    ))
+    staged, attempts = [], []
+    _stage_into(monkeypatch, staged, lambda name, versions: tmp_path / f"{name}-{versions[0]}")
+    monkeypatch.setattr(updates, "_activate", lambda provider, runtime, root: attempts.append(provider) or True)
+    result = updates.run_update_pass()
+    assert result["checked"]["codex"] == {"installed": "0.159.2", "available": "0.160.0"}
+    assert "codex" not in [name for name, _ in staged] and "codex" not in attempts
+    assert result["errors"] == {} and "codex" not in result["pending"]
+
+
 def test_failed_refresh_preserves_pending_runtime(monkeypatch, tmp_path):
     """查询新版本失败时保留原有的待激活运行时并记录错误"""
     _isolated(monkeypatch, tmp_path)
@@ -369,6 +392,31 @@ def test_partial_kimi_install_is_repaired_before_activation(monkeypatch, tmp_pat
     assert (root / ".portal-validated").read_text().strip() == "2.2.0"
     updates.KimiRuntime().stage(("2.2.0",))
     assert len(installs) == 1
+
+
+@pytest.mark.skipif(sys.platform != "linux" or not shutil.which("node"), reason="Linux Codex launcher needs node")
+def test_a_staged_codex_runs_with_the_node_that_installed_it(monkeypatch, tmp_path):
+    """Linux 上暂存的 Codex 用安装它的 node 运行，账号服务的 PATH 中没有 node 也能启动"""
+    monkeypatch.setattr(updates, "RUNTIMES", tmp_path)
+    root = tmp_path / "codex-cli-1.2.3"
+    original = updates.run_command
+
+    def command(*args, **kwargs):
+        if args[0:2] == ("npm", "install"):
+            entry = root / "lib/node_modules/@openai/codex/bin/codex.js"
+            entry.parent.mkdir(parents=True)
+            entry.write_text("#!/usr/bin/env node\nconsole.log(`codex-cli 1.2.3 ${process.argv.slice(2).join(' ')}`)\n")
+            (root / "bin").mkdir()
+            (root / "bin/codex").symlink_to(entry)
+            return ""
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(updates, "run_command", command)
+    runtime = updates.CodexRuntime()
+    assert runtime.stage(("1.2.3",)) == root
+    result = subprocess.run([str(runtime.link_target(root)), "app-server", "--help"], env={"PATH": "/nonexistent"},
+                            capture_output=True, text=True, check=True)
+    assert result.stdout.strip() == "codex-cli 1.2.3 app-server --help"
 
 
 def test_claude_runtime_installs_a_requirement_the_daemon_gains(monkeypatch, tmp_path):
