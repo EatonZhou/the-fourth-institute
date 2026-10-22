@@ -5,6 +5,7 @@ const { EventEmitter } = require('node:events');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const vm = require('node:vm');
 const { randomUUID } = require('node:crypto');
 const { observeBrowser } = require('../../../management_portal/test_framework/tau_browser_observer');
 
@@ -139,30 +140,57 @@ async function resourceContract(observe) {
 
 async function residentContract(observe) {
   const resident_id = 'resident_111111111111';
+  const actualReads = [];
+  const window = {};
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname,
+    '../../../management_portal/static/portal_resident_service.js'), 'utf8'), { window, URLSearchParams });
+  const client = window.PortalResidentService.createClient({ api: {
+    get: async url => { actualReads.push({ url: `${url}&token=query-secret` }); return {}; },
+  }});
+  // Exercise the real client routes: hand-written obsolete ID-in-path examples
+  // previously passed while every actual Resident GET lost target identity.
+  await client.projection({ residentId: resident_id });
+  await client.navigationTarget(resident_id);
+  await client.sessionRestartOptions(resident_id);
+  await client.watchboard(resident_id);
+  await client.forwardTargets({ residentId: resident_id });
+  await client.runtimeCatalog({ residentId: resident_id });
+  const operations = ['DeleteResident', 'GetConversation', 'GetInputState', 'GetMailbox',
+    'GetResidentInitialization', 'ListMessages', 'GetResidentRequest'];
   const inputs = [
-    { url: `/api/agent-workbench/residents/${resident_id}?token=query-secret` },
-    { url: `/api/agent-workbench/residents/${resident_id}/session-restart-options?token=query-secret` },
-    ...['DeleteResident', 'GetConversation', 'GetInputState', 'private-instruction'].map(instruction => ({
+    ...actualReads,
+    ...operations.map(instruction => ({
       url: '/api/instructions/execute', method: 'POST',
       body: { instruction, arguments: { resident_id, message: 'private-message', token: 'private-token' } },
     })),
+    { url: '/api/instructions/execute', method: 'POST',
+      body: { instruction: 'private-instruction', arguments: { resident_id } } },
     ...['resident_222222222222', 'private-invalid-id'].map(target => ({
       url: '/api/instructions/execute', method: 'POST',
       body: { instruction: 'GetResident', arguments: { resident_id: target } },
     })),
+    { url: `/api/agent-workbench/residents/${resident_id}` },
+    { url: '/api/agent-workbench/residents/projection?id=private-invalid-id' },
+    { url: `/api/agent-workbench/residents/projection?id=${resident_id}&id=resident_222222222222` },
+    { url: `/api/agent-workbench/residents/projection?resident_id=${resident_id}` },
   ];
   await capture(inputs, ({ starts, output }) => {
     const scopes = starts.map(row => row.resource_scope);
-    assert.deepEqual(scopes.slice(0, 5).map(scope => scope.mode),
-      ['read', 'restart_options', 'DeleteResident', 'GetConversation', 'GetInputState'], 'Resident lifecycle modes');
-    assert.equal(new Set(scopes.slice(0, 5).map(scope => scope.target_sha256)).size, 1,
+    const known = actualReads.length + operations.length;
+    assert.deepEqual(scopes.slice(0, known).map(scope => scope.mode),
+      ['projection', 'navigation_target', 'restart_options', 'watchboard', 'forward_targets', 'runtime_catalog',
+        ...operations], 'Resident lifecycle modes');
+    assert.deepEqual(starts.slice(0, actualReads.length).map(row => row.path),
+      actualReads.map(input => new URL(input.url, origin).pathname), 'complete public route retained');
+    assert.equal(new Set(scopes.slice(0, known).map(scope => scope.target_sha256)).size, 1,
       'read and lifecycle operations share target identity');
     assert.equal(scopes[0].kind, 'resident');
     assert.match(scopes[0].target_sha256, /^[0-9a-f]{64}$/, 'resident identity is a SHA256 digest');
-    assert.notEqual(scopes[6].target_sha256, scopes[0].target_sha256, 'different Resident identity');
-    assert.equal(scopes[5], undefined, 'private instruction has no resource scope');
-    assert.equal(scopes[7], undefined, 'invalid Resident has no resource scope');
-    assert.equal(starts[5].instruction, null, 'private instruction name is excluded');
+    assert.notEqual(scopes[known + 1].target_sha256, scopes[0].target_sha256, 'different Resident identity');
+    assert.equal(scopes[known], undefined, 'private instruction has no resource scope');
+    assert.equal(starts[known].instruction, null, 'private instruction name is excluded');
+    for (const scope of scopes.slice(known + 2)) assert.equal(scope, undefined,
+      'invalid, ambiguous, obsolete or missing targets have no inferred resource scope');
     excludes(output, ['resident_111111111111', 'resident_222222222222', 'query-secret',
       'private-response-body', 'private-message', 'private-token', 'private-instruction',
       'private-invalid-id', 'private-header']);

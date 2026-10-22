@@ -4,6 +4,17 @@ const path = require('path');
 const { randomUUID, createHash } = require('crypto');
 const { safeError } = require('./tau_safe_error');
 
+// The current Resident HTTP surface puts identity in a named query field.
+// Keep the complete public route, never arbitrary path/query vocabulary.
+const residentReadRoutes = new Map([
+  ['/api/agent-workbench/residents/projection', ['id', 'projection']],
+  ['/api/agent-workbench/residents/navigation-target', ['id', 'navigation_target']],
+  ['/api/agent-workbench/residents/session-restart-options', ['id', 'restart_options']],
+  ['/api/agent-workbench/residents/watchboard', ['id', 'watchboard']],
+  ['/api/agent-workbench/residents/forward-targets', ['resident_id', 'forward_targets']],
+  ['/api/agent-workbench/agent-runtime-catalog', ['resident_id', 'runtime_catalog']],
+]);
+
 // Unknown path components may contain names or credentials. Keep only public
 // endpoint vocabulary; identity is carried by request/frame/document IDs.
 function safePath(value) {
@@ -11,6 +22,7 @@ function safePath(value) {
   try {
     const u = new URL(value, 'http://observation.invalid');
     if (!['http:', 'https:'].includes(u.protocol)) return '[non-http]';
+    if (residentReadRoutes.has(u.pathname)) return u.pathname;
     // These are complete public routes, not a vocabulary allowance for
     // arbitrary nested paths. Query values remain excluded in both Node and
     // the injected ResourceTiming observer.
@@ -30,12 +42,16 @@ function safePath(value) {
 function resourceScope(request) {
   try {
     const url = new URL(request.url());
-    const resident = url.pathname.match(/^\/api\/agent-workbench\/residents\/(resident_[0-9a-f]{12})(?:\/session-restart-options)?$/);
-    if (request.method() === 'GET' && resident) return {
-      kind: 'resident', mode: url.pathname.endsWith('/session-restart-options') ? 'restart_options' : 'read',
-      target_sha256: createHash('sha256').update(resident[1]).digest('hex'),
-    };
     if (request.method() !== 'GET') return undefined;
+    const route = residentReadRoutes.get(url.pathname);
+    if (route) {
+      const targets = url.searchParams.getAll(route[0]);
+      const target = targets.length === 1 ? targets[0].trim() : '';
+      return /^resident_[0-9a-f]{12}$/.test(target) ? {
+        kind: 'resident', mode: route[1],
+        target_sha256: createHash('sha256').update(target).digest('hex'),
+      } : undefined;
+    }
     const file = ['/api/agent-workbench/link-file', '/api/agent-workbench/link-file-raw'].includes(url.pathname);
     if (!file && !['/api/resources/resolve', '/api/resources/reference', '/api/resources/content'].includes(url.pathname)) return undefined;
     const target = url.searchParams.get(file ? 'path' : 'address');
@@ -60,6 +76,9 @@ function instructionScope(request) {
         residentCount: Array.isArray(ids) && ids.every(item => typeof item === 'string') ? new Set(ids).size : null };
     }
     const operations = new Set(['GetResident', 'GetResidentSettings', 'UpdateResidentSettings',
+      'GetResidentInitialization', 'GetResidentRequest', 'ListResidentRequests',
+      'ListMessages', 'ListInputHistory', 'SearchMessages', 'GetMessage', 'GetSentPrompt',
+      'PreviewPromptInjection', 'GetMailbox', 'WatchMailbox', 'ListMailboxTodos',
       'GetConversation', 'WatchConversationEvents', 'GetInputState', 'DeleteResident', 'ClearContext',
       'RestartSession', 'GetSessionRestart', 'CancelSessionRestart', 'CancelInput', 'DeliverMessage']);
     if (!operations.has(body?.instruction)) return {};
