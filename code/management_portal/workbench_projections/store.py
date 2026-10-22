@@ -340,11 +340,9 @@ class Store:
         data["updated_at"] = now()
         return data
 
-    def update(self, app_id: str, payload: dict, actor: str, expected_revision: int, *, authority: str = "") -> dict:
-        """``authority`` is whose right to change the page this write uses when
-        the writer acts for someone else (a designer saving a requested page)."""
+    def update(self, app_id: str, payload: dict, actor: str, expected_revision: int) -> dict:
         current = self.get(app_id, actor)
-        self.require_write(current, authority or actor)
+        self.require_write(current, actor)
         if current["revision"] != expected_revision:
             raise ProjectionError("projection.conflict", "工作台已被更新，请刷新后重试", 409)
         data = self.updated_manifest(current, payload)

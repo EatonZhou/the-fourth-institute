@@ -21,7 +21,8 @@ def advance(job, *, actor, submit=False):
     try:
         workflow = WorkflowBindings()
         if submit:
-            handle = workflow.trigger(handle, actor=actor, prompt=job['request_prompt'], request_id=job['id'])
+            handle = workflow.trigger(handle, actor=actor, prompt=job['request_prompt'], request_id=job['id'],
+                                      temporary_credentials=[{"a": "@contributor", "resource_id": job['workbench_id']}])
         else:
             handle = workflow.observe(handle, actor=actor)
     except WorkflowPending as error:

@@ -39,7 +39,7 @@ def install(service, app, actor):
     resident_id = binding["residents"]["designer"]
     workflows = WorkflowBindings()
     return {name: workflows.install(actor=actor, lineage_id=binding["lineage_id"], resident_id=resident_id,
-                                   name=f"studio:{name}", title=title, prompt=prompt)
+                                   name=f"studio:{name}", title=title, prompt=prompt, lend_temporary_credentials=True)
             for name, (title, prompt) in FLOWS.items()}
 
 
@@ -153,6 +153,7 @@ def start_reverse(service, payload, actor):
         }
         instructions = f"""依据输入提出反投影计划，并像普通 Resident 一样用自然语言与用户协作。机器可读计划不要放在聊天正文中；完成后用 HATG ISA 指令 RunResourceAction 提交：
 resource_id="{app['workbench_id']}"，action="reverse.plan.save"，arguments={{"job_id":"{job_id}","plan":{{...}}}}。plan 包含 summary、operations（UI/确定性/AI/聊天分类）、reuse、risks、verification、domain_spec_changes、steps。
+本条消息附带目标工作台的临时修改凭证，随本次输入结束失效。始终以自己的 Resident 身份调用；目标 Lineage 与其他资源仍按你自身权限检查。此凭证只供保存本次计划，不代表应用计划或发布页面的指令。
 """ + """steps 是有序数组，每项仅含 id、instruction、arguments。仅允许 CreateResident、CreateComponent、CreateWire，参数遵循 HATG ISA Schema，lineage_id 由宿主填写。参数内可以用 {"$ref":"先前步骤ID.component_id"} 引用组件回执，新建 Resident 用 {"$ref":"先前步骤ID.resident_id"}。优先复用已有 resident_id，不要猜 ID。没有必要新增时 steps=[]。
 固定任务提示词写在 Effect 脚本里 DeliverMessage 的 message 中；本次业务输入由 TriggerEvent 的 prompt 追加。连接 manual.triggered Event Source → 调用 DeliverMessage 的 Effect → Resident。不要为纯筛选或每轮聊天建立 Effect。不得自动触发任务、修改权限、删除对象或发布页面。
 创建入口示例：CreateComponent arguments={"kind":"event_source","title":"请求分析","config":{"event_type":"manual.triggered"}}；CreateComponent arguments={"kind":"effect","title":"分析任务","config":{"script":"DeliverMessage resident_id=\\"${endpoint.target}\\" message=\\"固定任务说明\\"","endpoints":["target"]}（Effect 脚本只能调用 DeliverMessage）}。CreateWire arguments={"kind":"route","source":{"$ref":"request.component_id"},"target":{"$ref":"effect.component_id"},"config":{"include_envelope":false}}；target 连接为 {"kind":"target","source":{"$ref":"effect.component_id"},"source_port":"target","target":"真实resident_id"}。

@@ -316,26 +316,53 @@ def test_directory_stars_are_personal_and_leave_with_the_workbench(store, permis
     assert runtime.set_favorite(paper, False, "bob") == {"favorites": []}
 
 
-def test_designer_saves_on_the_requesters_right_to_change_the_page(store, resources, permissions, monkeypatch):
-    """设计师按发起人的修改权保存生成页面
-
-    设计师 Resident 自己不能修改页面，保存 AI 生成的页面时按发起生成的人校验修改权：能修改的人发起的任务可以保存，无权修改的人发起的任务被拒绝。
+def test_designer_saves_only_with_its_own_task_credentials(store, resources, permissions, monkeypatch):
+    """设计师以自己的随任务凭证保存指定草稿，不能借发起人身份，输入结束后凭证失效。
 
     :importance: P1
     :aspects: functional, behavior
     :design-point:
     """
     place_workbenches(permissions)
+    permissions.place(Fact("lineage", "lineage_222222222222"),
+                      Fact("resident", RESIDENT, {"lineage": "lineage_222222222222"}))
+    from management_portal import permission_system
+    from management_portal.permission_system import management
+    monkeypatch.setattr(management, "input_open", lambda resident, message: (resident, message) == (RESIDENT, "msg_owner"))
     runtime = service.ProjectionService(store)
     page = {"title": "新界面", "html": "<button>刷新</button>"}
     store.job("by_owner", "alice", {"id": "by_owner", "status": "running", "workbench_id": APP, "base_revision": 1,
                                     "lineage_id": LINEAGE, "resident_id": RESIDENT, "message_id": "msg_owner"})
-    assert runtime.save_generation_result(APP, {"job_id": "by_owner", "base_revision": 1, **page}, RESIDENT)["revision"] == 2
-    store.job("by_visitor", "bob", {"id": "by_visitor", "status": "running", "workbench_id": APP, "base_revision": 2,
-                                    "lineage_id": LINEAGE, "resident_id": RESIDENT, "message_id": "msg_visitor"})
     with pytest.raises(PermissionError, match="无权修改"):
-        runtime.save_generation_result(APP, {"job_id": "by_visitor", "base_revision": 2, **page}, RESIDENT)
+        runtime.save_generation_result(APP, {"job_id": "by_owner", "base_revision": 1, **page}, RESIDENT)
+    assert store.get(APP, "alice")["revision"] == 1
+    grant = {"principal_id": RESIDENT, "a": "@contributor", "resource_id": APP, "message_id": "msg_owner"}
+    with pytest.raises(PermissionError):
+        permission_system.manage("IssueTemporaryCredential", grant, actor="bob")
+    permission_system.manage("IssueTemporaryCredential", grant, actor="alice")
+    assert permissions.holds(RESIDENT, "@contributor", APP)
+    assert not permissions.holds(RESIDENT, "@contributor", LINEAGE)
+    assert runtime.save_generation_result(APP, {"job_id": "by_owner", "base_revision": 1, **page}, RESIDENT)["revision"] == 2
+    assert store.get(APP, "alice")["published_revision"] is None
+    with permissions.store.transaction() as connection:
+        assert permission_system.end_task_credentials(connection, RESIDENT, "msg_owner") == 1
+    with pytest.raises(PermissionError, match="无权修改"):
+        runtime.save_generation_result(APP, {"job_id": "by_owner", "base_revision": 1, **page}, RESIDENT)
     assert store.get(APP, "alice")["revision"] == 2
+
+
+def test_reverse_plan_save_uses_the_designers_current_permission(store, permissions):
+    """反投影计划也只按当前设计师自身权限保存，任务发起人字段不能授予修改权。"""
+    place_workbenches(permissions)
+    runtime = service.ProjectionService(store)
+    store.job("reverse_permission", "alice", {"id": "reverse_permission", "kind": "reverse", "status": "running",
+        "workbench_id": APP, "base_revision": 1, "resident_id": RESIDENT, "lineage_id": LINEAGE})
+    payload = {"job_id": "reverse_permission", "plan": {"summary": "复用当前团队", "steps": []}}
+    with pytest.raises(PermissionError, match="无权修改"):
+        runtime.save_reverse_plan(APP, payload, RESIDENT)
+    permissions.grant(RESIDENT, APP)
+    assert runtime.save_reverse_plan(APP, payload, RESIDENT)["workbench_id"] == APP
+    assert store.get(APP, "alice")["revision"] == 1
 
 
 def test_delete_page_does_not_touch_lineage(store, monkeypatch):
@@ -753,6 +780,7 @@ def test_generation_persists_the_current_workflow_receipt(store, resources, monk
     assert store.job(result["id"], "alice") == result
     assert runtime.start_generation(request, "alice") == result
     assert len(calls) == 1 and calls[0][1] == "TriggerEvent"
+    assert calls[0][2]["payload"] == {"temporary_credentials": [{"a": "@contributor", "resource_id": APP}]}
     assert not {"run_id", "invocation_id"}.intersection(result)
 
 

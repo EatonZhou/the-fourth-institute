@@ -106,8 +106,9 @@ def lineage_graph(actor: str, lineage_id: str) -> dict:
     return dict(isa_client.call(actor, "GetLineage", {"lineage_id": lineage_id}).get("lineage") or {})
 
 
-def _deliver_effect_config(prompt: str) -> dict:
-    return {"script": deliver_message_script(prompt), "endpoints": ["target"]}
+def _deliver_effect_config(prompt: str, *, lend_temporary_credentials: bool = False) -> dict:
+    return {"script": deliver_message_script(prompt, lend_temporary_credentials=lend_temporary_credentials),
+            "endpoints": ["target"]}
 
 
 class WorkflowBindings:
@@ -159,7 +160,7 @@ class WorkflowBindings:
             isa_client.call(actor, 'DeleteResident', {'lineage_id': lineage_id, 'resident_id': resident_id},
                             key=f'release:{resident_id}:finalize')
 
-    def install(self, *, actor, lineage_id, resident_id, name, title, prompt):
+    def install(self, *, actor, lineage_id, resident_id, name, title, prompt, lend_temporary_credentials=False):
         identity = hashlib.sha256(json.dumps([lineage_id, resident_id, name]).encode()).hexdigest()
         state = self.store.get(lineage_id, resident_id, name)
         if (state and set(state["steps"]) == {"event", "effect", "target", "invoke"}
@@ -167,7 +168,11 @@ class WorkflowBindings:
             # Reusing an unchanged workflow is a read. It must not queue behind
             # installations for every other Resident in the same team.
             current = lineage_graph(actor, lineage_id)
-            return self._validated_binding(state, current)
+            binding = self._validated_binding(state, current)
+            effect = next(item for item in current["program"]["components"] if item["id"] == binding["effect_id"])
+            parts = deliver_script_parts(str((effect.get("config") or {}).get("script") or ""))
+            if not lend_temporary_credentials or (parts and parts[2].get("lend_temporary_credentials")):
+                return binding
         with self.lineage_lock(lineage_id):
             graph = lineage_graph(actor, lineage_id)
             if resident_id not in {node.get("id") for node in graph.get("nodes", [])}:
@@ -196,7 +201,8 @@ class WorkflowBindings:
                 "near_resident_id": resident_id,
             }, "component_id")
             effect = step("effect", "CreateComponent", {
-                "kind": "effect", "title": title + " · 执行", "config": _deliver_effect_config(prompt),
+                "kind": "effect", "title": title + " · 执行",
+                "config": _deliver_effect_config(prompt, lend_temporary_credentials=lend_temporary_credentials),
                 "near_resident_id": resident_id,
             }, "component_id")
             step("target", "CreateWire", {
@@ -209,7 +215,8 @@ class WorkflowBindings:
             current = lineage_graph(actor, lineage_id)
             binding = self._validated_binding(state, current)
             components = {item["id"]: item for item in current.get("program", {}).get("components", [])}
-            self._keep_prompt_current(actor, lineage_id, identity, state, components[effect], prompt)
+            self._keep_prompt_current(actor, lineage_id, identity, state, components[effect], prompt,
+                                      lend_temporary_credentials=lend_temporary_credentials)
         return binding
 
     @staticmethod
@@ -228,23 +235,35 @@ class WorkflowBindings:
         return {"lineage_id": state["lineage_id"], "resident_id": resident_id,
                 "event_source_id": event, "effect_id": effect}
 
-    def _keep_prompt_current(self, actor, lineage_id, identity, state, effect, prompt):
+    def _keep_prompt_current(self, actor, lineage_id, identity, state, effect, prompt, *, lend_temporary_credentials=False):
         """The Effect keeps the business's current fixed prompt while it still holds the text this workflow wrote.
 
         A message someone changed in the Lineage after installation stays as it is.
         """
         parts = deliver_script_parts(str((effect.get("config") or {}).get("script") or ""))
         if parts is None:
+            if lend_temporary_credentials:
+                raise ValueError("工作流 Effect 已自定义；请显式配置随任务转交临时凭证后再提交")
             return
         endpoint, message, constants = parts
         wanted = hashlib.sha256(prompt.encode()).hexdigest()
+        needs_credentials = lend_temporary_credentials and not constants.get("lend_temporary_credentials")
         if message != prompt:
             if not state.get("prompt_sha256") or hashlib.sha256(message.encode()).hexdigest() != state["prompt_sha256"]:
+                if needs_credentials:
+                    raise ValueError("工作流 Effect 已自定义；请显式配置随任务转交临时凭证后再提交")
                 return
+        if needs_credentials:
+            if "temporary_credentials" in constants:
+                raise ValueError("工作流已有自定义临时凭证；请显式改为随本次任务转交")
+            constants["lend_temporary_credentials"] = True
+        if message != prompt or needs_credentials:
+            script = deliver_message_script(prompt, endpoint=endpoint, **constants)
+            digest = hashlib.sha256(script.encode()).hexdigest()
             isa_client.call(actor, "UpdateComponent", {
                 "lineage_id": lineage_id, "component_id": effect["id"],
-                "changes": {"script": deliver_message_script(prompt, endpoint=endpoint, **constants)},
-            }, key=f"workflow:{identity}:prompt:{wanted[:32]}")
+                "changes": {"script": script},
+            }, key=f"workflow:{identity}:script:{digest[:32]}")
         if state.get("prompt_sha256") != wanted:
             state["prompt_sha256"] = wanted
             self.store.save(state)
@@ -268,12 +287,16 @@ class WorkflowBindings:
             raise WorkflowFailed(handle, {})
         return {**handle, "status": "running"}
 
-    def trigger(self, binding, *, actor, prompt, request_id, content_parts=None, entry="web"):
+    def trigger(self, binding, *, actor, prompt, request_id, content_parts=None, temporary_credentials=None, entry="web"):
         handle = self.prepare(binding, request_id=request_id)
         arguments = {"lineage_id": handle["lineage_id"], "event_source_id": handle["event_source_id"],
                      "prompt": prompt}
         if content_parts:
             arguments["content_parts"] = list(content_parts)
+        if temporary_credentials is not None:
+            # DeliverMessage checks the actual Event initiator's authority and
+            # issues grants tied to its resulting input. This is not an actor override.
+            arguments["payload"] = {"temporary_credentials": list(temporary_credentials)}
         try:
             # A lost receipt is recovered by reads, never another TriggerEvent.
             receipt = isa_client.call(actor, "TriggerEvent", arguments,

@@ -120,10 +120,10 @@ class ProjectionService:
         record = get_resource_service().unregister(app_id, actor=actor)
         return {"deleted": record["resource_id"]}
 
-    def apply_update(self, app_id: str, payload: dict, actor: str, *, authority: str = "") -> dict:
+    def apply_update(self, app_id: str, payload: dict, actor: str) -> dict:
         with self.lock(f"updates:{app_id}"):
             current = self.store.get(app_id, actor)
-            self.store.require_write(current, authority or actor)
+            self.store.require_write(current, actor)
             revision = int(payload["expected_revision"])
             if revision != current["revision"]:
                 raise ProjectionError("projection.conflict", "工作台已被更新，请刷新后重试", 409)
@@ -160,17 +160,16 @@ class ProjectionService:
                 from management_portal.resources.providers.common import explicit_project_ids
 
                 projects = explicit_project_ids(payload["project_ids"], "Workbench")
-                destination_actor = authority or actor
-                allowed = permission_system.permitted_ids(destination_actor, "UpdateProject", "project_id", projects)
+                allowed = permission_system.permitted_ids(actor, "UpdateProject", "project_id", projects)
                 if set(projects) - allowed:
                     raise PermissionError("无权管理目标项目")
                 for project in projects:
-                    isa(destination_actor, "GetProject", {"project_id": project})
+                    isa(actor, "GetProject", {"project_id": project})
                 payload = {**payload, "project_ids": projects}
             prepared = self.store.updated_manifest(current, payload)
             if "bindings" in payload:
                 self.check_binding_changes(current["bindings"], prepared["bindings"], actor)
-            return self.store.update(app_id, payload, actor, revision, authority=authority)
+            return self.store.update(app_id, payload, actor, revision)
 
     def summary(self, app: dict) -> dict:
         url = f"/workbenches/view?id={app['workbench_id']}" if app.get("published_revision") else f"/workbenches?panel=settings&id={app['workbench_id']}"
@@ -417,7 +416,7 @@ class ProjectionService:
             coordinator = graph.get("leader_resident_id") or next(iter(members(graph)), "")
             # A new Workbench takes the bound Lineage's Project; a Lineage outside any Project makes it public.
             app = self.store.get(app_id, actor) if app_id else self.create({"title": str(payload.get("title") or graph["title"] + "工作台"), "description": str(payload.get("requirements") or ""), "project_ids": ["@public"], "bindings": {"main": {"lineage_id": target, "residents": {"coordinator": coordinator} if coordinator else {}}}}, actor)
-            # The designer later saves with this requester's right to change the page.
+            # Delivery lends this page's write permission for the designer's input.
             self.store.require_write(app, actor)
             if app["bindings"].get("main", {}).get("lineage_id") != target:
                 raise ProjectionError("projection.binding_mismatch", "所选团队与页面绑定不同，请先在高级设置中更新并保存绑定", 409)
@@ -453,6 +452,7 @@ class ProjectionService:
         def render(values):
             return f"""你是 Portal 前端投影工坊中的普通 Resident。请像其他 Resident 一样与用户自然协作，并直接实现现有 Workbench 页面，不要把页面源码或机器 JSON 当作聊天回复。
 本次只修改工作台 {app['workbench_id']} 的业务页面代码；应用包可修改其已登记仓库目录内的业务源码。不要启动目标团队任务，不修改目标团队、其他 Portal 源码或其他资源，也不要发布页面。
+本条任务消息附带目标工作台的临时修改凭证，随本次输入结束失效；始终以自己的 Resident 身份调用，不借用发起人身份。其他资源仍按你自身权限检查。
 先读取工作台及引用资源，核对基线 revision {app['revision']}。完成后用 HATG ISA 指令 RunResourceAction 提交本次草稿：
 resource_id="{app['workbench_id']}"，action="generation.save"，arguments={{"job_id":"{job_id}","base_revision":{app['revision']},"title":"...","description":"...","html":"..."}}。title、description、html 是要保存的页面字段；动作会校验任务身份、基线版本和页面代码，并产生正式回执。
 提交成功后用正常语言说明实现了什么、如何验证以及页面仍未发布；不要在回复中重复完整源码。遇到信息不足、权限失败或版本冲突时直接解释阻断，不提交假成功或空页面。
@@ -495,6 +495,7 @@ TriggerEvent 回执的输入 ID 用 Projection.eventInputIds(receipt) 读取；�
                 raise ProjectionError("projection.generation_target", "生成任务与目标工作台不匹配", 409)
             if expected_revision != job.get("base_revision"):
                 raise ProjectionError("projection.conflict", "提交基线与生成任务不一致", 409)
+            self.store.require_write(self.store.get(app_id, resident_id), resident_id)
             receipt = job.get("save_receipt")
             if receipt:
                 if receipt.get("payload_hash") != payload_hash:
@@ -518,9 +519,7 @@ TriggerEvent 回执的输入 ID 用 Projection.eventInputIds(receipt) 读取；�
                 job["pending_save"] = pending
                 self.store.job(job_id, job["created_by"], job)
             if not replayed:
-                # The designer saves on the requester's right to change the page, not on its own.
-                saved = self.apply_update(app_id, {**changes, "expected_revision": expected_revision}, resident_id,
-                                          authority=job["created_by"])
+                saved = self.apply_update(app_id, {**changes, "expected_revision": expected_revision}, resident_id)
             else:
                 saved = current
             receipt = {
@@ -548,6 +547,7 @@ TriggerEvent 回执的输入 ID 用 Projection.eventInputIds(receipt) 读取；�
             job = self.store.resident_job(job_id, resident_id)
             if job.get("kind") != "reverse" or job.get("workbench_id") != app_id:
                 raise ProjectionError("projection.reverse_target", "反投影任务与目标工作台不匹配", 409)
+            self.store.require_write(self.store.get(app_id, resident_id), resident_id)
             receipt = job.get("plan_receipt")
             if receipt:
                 if receipt.get("plan_hash") != digest:

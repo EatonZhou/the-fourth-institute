@@ -244,6 +244,41 @@ def test_an_effect_without_a_recorded_prompt_is_not_rewritten(workflow_runtime, 
     assert "UpdateComponent" not in [name for name, _ in workflow_runtime.calls]
 
 
+def test_workflow_adds_task_credentials_once_and_preserves_custom_effects(workflow_runtime, monkeypatch):
+    """只升级仍由流程持有的 Effect；普通流程不转交凭证，自定义流程先修绑定。"""
+    runtime = workflow_runtime
+    accept_component_updates(runtime, monkeypatch)
+    binding = installed(runtime)
+    def install():
+        return runtime.bindings.install(actor="owner", lineage_id=LINEAGE, resident_id=RESIDENT,
+                                        name="feature", title="Feature", prompt="Fixed prompt",
+                                        lend_temporary_credentials=True)
+    assert install() == binding
+    assert effect_message(runtime, binding)[1]["lend_temporary_credentials"] is True
+    assert install() == binding
+    assert [name for name, _ in runtime.calls].count("UpdateComponent") == 1
+    credentials = [{"a": "@contributor", "resource_id": "workbench_aaaaaaaaaaaa"}]
+    runtime.bindings.trigger(binding, actor="owner", prompt="Generate", request_id="req-credentials",
+                             temporary_credentials=credentials)
+    assert runtime.calls[-1][1]["payload"] == {"temporary_credentials": credentials}
+    effect = next(item for item in runtime.graph["program"]["components"] if item["id"] == binding["effect_id"])
+    effect["config"]["script"] = deliver_message_script("Custom instructions")
+    with pytest.raises(ValueError, match="已自定义"):
+        install()
+    assert effect_message(runtime, binding)[0] == "Custom instructions"
+    assert [name for name, _ in runtime.calls].count("UpdateComponent") == 1
+
+
+def test_every_studio_flow_delivers_explicit_task_credentials(monkeypatch):
+    """生成、优化、反投影均通过普通消息流程转交凭证，其他业务流程仍默认不转交。"""
+    from management_portal.workbench_projections import studio
+    calls = []
+    monkeypatch.setattr(studio.WorkflowBindings, "install", lambda self, **kwargs: calls.append(kwargs) or kwargs)
+    studio.install(None, {"bindings": {"main": {"lineage_id": LINEAGE, "residents": {"designer": RESIDENT}}}}, "owner")
+    assert {item["name"] for item in calls} == {"studio:generate", "studio:optimize", "studio:reverse"}
+    assert all(item["lend_temporary_credentials"] is True for item in calls)
+
+
 @pytest.mark.parametrize("lost_receipt", [False, True])
 def test_dynamic_wall_dispatch_installs_only_requested_flow_without_triggering(workflow_runtime, monkeypatch, lost_receipt):
     """动态 WALL 分派只安装请求流程且不触发执行"""

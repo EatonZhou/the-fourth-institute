@@ -271,6 +271,22 @@ def test_written_scripts_round_trip_their_text_exactly():
     assert deliver_script_parts('A\nDeliverMessage resident_id="${endpoint.target}" message="x"') is None
 
 
+def test_delivery_workflow_preserves_typed_message_credentials():
+    """显式启用的流程把本次 Event 的凭证请求原样交给 DeliverMessage，普通流程不借权。"""
+    credentials = [{"a": "@contributor", "resource_id": "workbench_aaaaaaaaaaaa"}]
+    inputs = {"endpoint": {"target": "resident_aaaaaaaaaaaa"},
+              "event": {"payload": {"temporary_credentials": credentials}}}
+    script = deliver_message_script("Draft only", lend_temporary_credentials=True)
+    assert deliver_script_parts(script) == ("target", "Draft only", {"lend_temporary_credentials": True})
+    outcome, calls = run(script, inputs)
+    assert outcome.status == "succeeded", outcome.error
+    assert calls[0].arguments["temporary_credentials"] == credentials
+    _, ordinary = run(deliver_message_script("Ordinary"), inputs)
+    assert "temporary_credentials" not in ordinary[0].arguments
+    with pytest.raises(ValueError, match="one source"):
+        deliver_message_script("Invalid", lend_temporary_credentials=True, temporary_credentials=credentials)
+
+
 
 
 # -- execution with the resume journal ------------------------------------------------------------

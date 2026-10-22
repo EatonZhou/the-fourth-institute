@@ -1238,13 +1238,18 @@ def call_line(instruction: str, arguments: Iterable[str]) -> str:
     return " ".join([instruction, *arguments])
 
 
-def deliver_message_script(message: str, *, endpoint: str = "target", **constants: Any) -> str:
+def deliver_message_script(message: str, *, endpoint: str = "target", lend_temporary_credentials: bool = False,
+                           **constants: Any) -> str:
     """The one-line script that delivers a fixed prompt to the Resident behind ``endpoint``."""
 
+    if lend_temporary_credentials and "temporary_credentials" in constants:
+        raise ValueError("Temporary credentials must have one source")
     return call_line("DeliverMessage", [
         f"resident_id={reference('endpoint.' + endpoint)}",
         literal_argument("message", message),
         *(literal_argument(name, value) for name, value in constants.items()),
+        *([f"temporary_credentials={reference('event.payload.temporary_credentials')}"]
+          if lend_temporary_credentials else []),
     ])
 
 
@@ -1274,6 +1279,10 @@ def deliver_script_parts(text: str) -> tuple[str, str, dict[str, Any]] | None:
             if len(refs) != 1 or len(value.parts) != 1 or refs[0].path[:1] != ("endpoint",) or len(refs[0].path) != 2:
                 return None
             endpoint = refs[0].path[1]
+        elif (argument.name == "temporary_credentials" and isinstance(value, Word)
+              and len(value.parts) == 1 and isinstance(value.parts[0], Ref)
+              and value.parts[0].path == ("event", "payload", "temporary_credentials")):
+            constants["lend_temporary_credentials"] = True
         elif isinstance(value, Word) and value.text is not None:
             if argument.name == "message":
                 message = value.text
