@@ -9527,7 +9527,9 @@
     } catch (error) {
       setSyncStatus("原语定义加载失败", "error");
       toast(window.PortalI18n.text`HATG 原语定义加载失败：${error.message || error}`, "error", 8000);
-      return;
+      // Let the mount boundary retain the target and show its retry action.
+      // A failed prerequisite is not an initialized, empty Lineage panel.
+      throw error;
     }
     const hatgPane = $id("hatgPane");
     if (hatgPane) hatgPane.hidden = false;

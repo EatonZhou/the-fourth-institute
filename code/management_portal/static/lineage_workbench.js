@@ -14,6 +14,7 @@
         messageId: String(new URLSearchParams(window.location.search).get("message") || "").trim(),
       };
       let pendingProgramItemId = openingNavigation.programItemId;
+      let openingHatgNavigationApplied = false;
       let pendingWorkspaceId = openingNavigation.workspaceId;
       const $id = (id) => document.getElementById(id);
       const agentDialogControllers = new Map();
@@ -6777,11 +6778,11 @@
           applyLineageUiState({
             preserveSideView: state.sideViewInteractionSeq !== sideViewInteractionSeq,
           });
-          if (loadSeq === 1) {
-            void Promise.resolve(applyOpeningHatgNavigation()).catch(error => {
-              window.PortalUI.toast(window.PortalI18n.text`打开 HATG 失败：${error.message || error}`, "error");
-            });
-          }
+          // A recovery load can supersede load #1 before identity is ready.
+          // Consume the opening intent at the first live Workbench, once.
+          void Promise.resolve(applyOpeningHatgNavigation()).catch(error => {
+            window.PortalUI.toast(window.PortalI18n.text`打开 HATG 失败：${error.message || error}`, "error");
+          });
           const preserveHiddenOpeningChat = !targetResidentId && !openingNavigation.openChat
             && performance.getEntriesByType("navigation")[0]?.type === "reload"
             && lineageWorkbench.getState().hidden.includes("chat");
@@ -7519,13 +7520,14 @@
       }
 
       function applyOpeningHatgNavigation() {
-        if (!openingNavigation.lineageId) return;
+        if (openingHatgNavigationApplied || !openingNavigation.lineageId) return;
         // Set the captured URL target before Resident loading: a restored panel
         // may belong to another Lineage, and the Resident may no longer exist.
         const applied = syncLineageHatgPanel({
           lineageId: openingNavigation.lineageId,
           residentId: openingNavigation.residentId,
         });
+        openingHatgNavigationApplied = true;
         // Bind the explicit graph before any Resident reads can fail. Ordinary
         // navigation retains the restored layout, including a hidden canvas.
         if (openingNavigation.view !== "hatg") return applied;

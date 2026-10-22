@@ -75,7 +75,7 @@ function entry(query, {collapsed = false, hidden = true, delayed = false} = {}) 
     'initialProgramItemIdFromUrl', 'initialOpenChatFromUrl', 'syncLineageHatgPanel',
     'lineageHatgWorkspace', 'applyOpeningHatgNavigation'];
   vm.runInContext(names.map(name => owner(source, name)).join('\n'), context);
-  const capture = /const openingNavigation = \{[\s\S]*?\n      \};\n      let pendingProgramItemId = openingNavigation.programItemId;/.exec(source);
+  const capture = /const openingNavigation = \{[\s\S]*?\n      \};\n      let pendingProgramItemId = openingNavigation.programItemId;\n      let openingHatgNavigationApplied = false;/.exec(source);
   assert(capture, 'Capture the production opening URL before restored panels publish locations');
   vm.runInContext(capture[0], context);
   return {context, calls, targets, reveals, layout, graphState, release,
@@ -142,7 +142,7 @@ test('opening intent is applied once after identity/layout restore, with the men
   const reveal = load.indexOf('applyOpeningHatgNavigation()');
   assert(load.indexOf('await window.PortalIdentity.load()') < restore);
   assert(restore >= 0 && reveal > restore);
-  assert.match(load.slice(restore, reveal), /if \(loadSeq === 1\) \{/);
+  assert.doesNotMatch(load.slice(restore, reveal), /if \(loadSeq === 1\) \{/);
   assert.match(owner(source, 'initLineageWorkbench'), /presets: \[[\s\S]*lineageHatgWorkspace\(\)/);
 });
 
@@ -182,4 +182,49 @@ test('unavailable Chat removes only its stale URL target and retains the explici
   assert.equal(location.searchParams.get('open_chat'), '1');
   context.onLineagePanelBinding({event: 'binding-ready', sourcePanelId: 'chat'}, workbench);
   assert.equal(unavailableResidentBindings.has(residentId), false);
+});
+
+
+test('first surviving load applies the opening graph once, later recovery preserves new navigation', async () => {
+  const page = entry(`?lineage=${lineageId}&view=hatg`, {delayed: true});
+  // Identity was superseded before the first Workbench existed. No opening
+  // action ran; the surviving service-recovery load owns the first surface.
+  page.context.state.loadAllSeq = 2;
+  const opened = page.open();
+  assert.equal(page.targets.length, 1);
+  assert.equal(page.targets[0].lineageId, lineageId);
+  await page.open();
+  assert.equal(page.targets.length, 1, 'overlapping recovery does not submit the target twice');
+  page.release();
+  await opened;
+  page.context.window.location.search = '?lineage=lineage_new&view=chat';
+  page.layout.active = 'chat';
+  await page.open();
+  assert.equal(page.targets.length, 1, 'later recovery cannot restore the obsolete opening target');
+  assert.equal(page.layout.active, 'chat');
+});
+
+test('failed primitive prerequisite reaches the retry boundary and can initialize on retry', async () => {
+  const failure = new Error('primitive definitions unavailable');
+  let fail = true, bound = 0;
+  const statuses = [];
+  const context = vm.createContext({
+    window: {
+      PortalLineageProgram: {loadPrimitiveDefinitions: async () => { if (fail) throw failure; }},
+      PortalIdentity: {load: async () => ({username: 'test-actor'})},
+      PortalI18n: {text: parts => parts.join('')},
+    },
+    mountTemplates: noop, setSyncStatus: value => statuses.push(value), toast: noop,
+    $id: () => null, bindModals: () => { bound++; }, bindActions: noop,
+    initHatgGraph: noop, renderLineageSurface: noop, hatgComponentRoot: {},
+    loadLineagePageData: async () => {}, state: {}, lineageCatalogHydrated: false,
+  });
+  vm.runInContext(owner(hatgSource, 'init'), context);
+  await assert.rejects(context.init(), error => error === failure);
+  assert.equal(context.lineageCatalogHydrated, false);
+  assert.equal(bound, 0, 'failed prerequisite does not partially bind the surface');
+  fail = false;
+  await context.init();
+  assert.equal(context.lineageCatalogHydrated, true);
+  assert.equal(bound, 1);
 });
