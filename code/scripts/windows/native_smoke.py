@@ -86,18 +86,26 @@ def exercise(exe, root, included, evidence):
         ama = registered.get('personal_ama', {})
         check(registered.get('administrator', {}).get('granted'), 'First administrator was not granted')
         check(ama.get('resident_id') and not ama.get('error'), 'First registration could not provision AMA')
-        assistant = ama.get('personal_assistant', {})
-        check(assistant.get('resident_id') and assistant.get('family_id'), 'Personal Family was not created')
         request('/login', {'username': registered['username'], 'password': password}, form=True)
         me = request('/api/me')
         check(me.get('username') == registered['username'], 'Password login did not persist a session')
-        for instruction, arguments in [('GetProject', {'project_id': 'AI员工'}),
+        def instruction(name, arguments):
+            response = request('/api/instructions/execute', {'instruction': name, 'arguments': arguments})
+            check(not response.get('error') and response.get('status') == 'committed', name + ' failed')
+            return response['result']
+        # Enrollment intentionally returns only the AMA identity. Inspect its
+        # authenticated graph for the personal Family instead of expecting an
+        # internal provision result in the public registration response.
+        graph = instruction('GetLineage', {'lineage_id': ama['lineage_id']})['lineage']
+        families = [b['family'] for b in graph.get('function_blocks', [])
+                    if (b.get('family') or {}).get('personal_ama_id') == ama['resident_id']]
+        check(len(families) == 1 and families[0].get('facade'), 'Personal Family was not created')
+        facade_id = families[0]['facade']
+        for name, arguments in [('GetProject', {'project_id': 'AI员工'}),
                                        *([('GetProject', {'project_id': '元胞自动机研究'})] if included else []),
-                                       ('GetLineage', {'lineage_id': ama['lineage_id']}),
                                        ('GetConversation', {'resident_id': ama['resident_id']}),
-                                       ('GetConversation', {'resident_id': assistant['resident_id']})]:
-            response = request('/api/instructions/execute', {'instruction': instruction, 'arguments': arguments})
-            check(not response.get('error') and response.get('status') == 'committed', instruction + ' failed')
+                                       ('GetConversation', {'resident_id': facade_id})]:
+            instruction(name, arguments)
         marker = root / 'instance/example_instance/data/native-restart-marker.txt'
         marker.write_text('Preserve this installation and its registered user', encoding='utf-8')
         run_worker(root, 'cleanup', log)
