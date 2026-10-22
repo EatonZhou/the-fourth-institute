@@ -157,7 +157,8 @@ def main():
         digest = hashlib.file_digest(stream, 'sha256').hexdigest()
     receipt = {'schema': 'tfi.windows-native-smoke.v1', 'status': 'passed', 'exe_sha256': digest,
                'process_elevated': False,
-               'source_commit': os.environ.get('GITHUB_SHA', ''), 'cases': rows,
+               'source_commit': os.environ.get('TFI_PACKAGE_SHA', os.environ.get('GITHUB_SHA', '')),
+               'harness_source_commit': os.environ.get('GITHUB_SHA', ''), 'cases': rows,
                'network_check': 'invalid outbound proxies; local-only initialization',
                'ai_inference': 'not_requested'}
     (args.evidence / 'native-smoke.json').write_text(json.dumps(receipt, indent=2), encoding='utf-8')

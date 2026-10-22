@@ -22,18 +22,25 @@ try {
     Copy-Item "$PSScriptRoot/native_smoke.py" (Join-Path $fixture 'native_smoke.py')
     $quotedPython = $python.Replace("'", "''")
     $sha = $env:GITHUB_SHA
+    $packageSha = (Get-Content (Join-Path (Split-Path $Installer) 'receipt.json') -Raw | ConvertFrom-Json).source_commit
+    if ($packageSha -notmatch '^[0-9a-f]{40}$') { throw 'Missing package source commit' }
     $script = @"
 `$ErrorActionPreference = 'Stop'
 Set-Location `$PSScriptRoot
 `$env:PYTHONUTF8 = '1'
 `$env:GITHUB_SHA = '$sha'
-`$env:USERPROFILE = [Environment]::GetFolderPath('UserProfile')
-`$env:LOCALAPPDATA = [Environment]::GetFolderPath('LocalApplicationData')
-`$env:APPDATA = [Environment]::GetFolderPath('ApplicationData')
+`$env:TFI_PACKAGE_SHA = '$packageSha'
+`$sid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+`$profile = (Get-ItemProperty ("HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\" + `$sid)).ProfileImagePath
+if (-not `$profile) { throw 'The standard user has no loaded profile' }
+`$env:USERPROFILE = [Environment]::ExpandEnvironmentVariables(`$profile)
+`$env:LOCALAPPDATA = Join-Path `$env:USERPROFILE 'AppData\Local'
+`$env:APPDATA = Join-Path `$env:USERPROFILE 'AppData\Roaming'
 `$OutputEncoding = [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new(`$false)
 `$env:TEMP = Join-Path `$env:LOCALAPPDATA 'Temp'
 `$env:TMP = `$env:TEMP
 New-Item -ItemType Directory -Force `$env:TEMP | Out-Null
+New-Item -ItemType Directory -Force `$env:APPDATA | Out-Null
 New-Item -ItemType Directory evidence | Out-Null
 `$ErrorActionPreference = 'Continue'
 & '$quotedPython' native_smoke.py --installer Setup.exe --work installations --evidence evidence *> evidence/smoke.log
