@@ -1,5 +1,6 @@
 .projectionContentPane { display: flex; flex-direction: column; height: 100%; min-height: 0; }
 .projectionContentBody { flex: 1; min-height: 0; overflow: hidden; }
+.projectionContentBody > .projectionWorkbenchShell { height: 100%; min-height: 0; }
 .projectionContentBody > [role="alert"] { padding: 12px; color: var(--danger); }
 .projectionContentBody .projectionFrame { display: block; width: 100%; height: 100%; min-height: 0; box-sizing: border-box; border: 0; border-radius: 0; }
 .projectionConfirm { max-width: 650px; width: 85vw; max-height: calc(100dvh - 48px); overflow: auto; box-sizing: border-box; border: 1px solid var(--border); border-radius: var(--portal-surface-radius); background: var(--panel); color: var(--text); padding: 24px; }

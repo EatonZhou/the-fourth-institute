@@ -368,7 +368,7 @@
       if (disposed) return;
       title.textContent = regionTitle || current.title;
       const packageEntry = source?.startsWith("package:") ? source.slice(8).trim() : null;
-      content = !source && current.manifest ? await mount(body, current, { preview }) : await mountContent(body, source ? { ...current, title: regionTitle, html: packageEntry ? "" : current.panels[source] } : current, { preview, panelId, page, visible, packageEntry, isCurrent: () => !disposed });
+      content = !source && current.manifest ? await mount(body, current, { preview, embedded: true }) : await mountContent(body, source ? { ...current, title: regionTitle, html: packageEntry ? "" : current.panels[source] } : current, { preview, panelId, page, visible, packageEntry, isCurrent: () => !disposed });
       if (disposed) content.destroy();
       else {
         // Application entries own their content heading and controls. The
@@ -564,8 +564,9 @@
     const railRoot = document.createElement("aside"); railRoot.className = "portalActivityRail";
     const panelRoot = document.createElement("div"); panelRoot.className = "portalWorkbenchViewportRoot projectionWorkbenchRoot";
     shell.append(railRoot, panelRoot); root.replaceChildren(shell);
-    if (options.externalRail) railRoot.hidden = true;
-    const id = `projection-${app.workbench_id}-${options.preview ? "preview" : "published"}${options.region ? `-${options.region}` : ""}`;
+    const showRail = !options.externalRail && !options.embedded;
+    if (!showRail) railRoot.hidden = true;
+    const id = `projection-${app.workbench_id}-${options.preview ? "preview" : "published"}${options.region ? `-${options.region}` : ""}${options.embedded ? "-embedded" : ""}`;
     const page = app.manifest ? pageController(app, options) : null;
     const regions = (app.manifest?.sidebar || [{ id: "content", title: app.title, icon: "window" }])
       .map(item => app.builtin === "development" ? { ...item, title: window.PortalI18n.t(item.title) } : item)
@@ -615,7 +616,10 @@
     const workbench = window.PortalWorkbench.create({
       id, root: panelRoot, label: app.title, insets: { top: 0, right: 0, bottom: 0, left: 0 },
       initialEditors: editors,
-      defaultLayout: chatIds.length ? window.PortalWorkbench.model.split("horizontal", [contentLayout, window.PortalWorkbench.model.stack(chatIds, selectedChat)], [2, 1]) : contentLayout,
+      // An independent Panel uses its host's slot. Keep every region and Chat
+      // available as tabs instead of nesting a second rail and split workspace.
+      defaultLayout: options.embedded ? window.PortalWorkbench.model.stack(editors.map(item => item.id), selected)
+        : chatIds.length ? window.PortalWorkbench.model.split("horizontal", [contentLayout, window.PortalWorkbench.model.stack(chatIds, selectedChat)], [2, 1]) : contentLayout,
     });
     const openRegion = panelId => {
       if (!workbench.focusPanel(panelId)) return false;
@@ -627,7 +631,7 @@
     };
     page?.attach(workbench, openRegion);
     if (facadeError) { const alert = document.createElement("p"); alert.setAttribute("role", "alert"); alert.textContent = `${facadeError.code || "projection.resident_unbound"}：${facadeError.message}`; root.prepend(alert); }
-    if (!options.externalRail) rail = window.PortalWorkbench.createActivityRail({ id, root: railRoot, label: app.title, activeView: selected, itemsLabel: window.PortalI18n.t("门面对话"), onItemSelect: () => workbench.showPanel("facade"), views: regions.map(item => ({ id: item.id, icon: item.icon || "window", label: item.title })), onViewSelect: view => {
+    if (showRail) rail = window.PortalWorkbench.createActivityRail({ id, root: railRoot, label: app.title, activeView: selected, itemsLabel: window.PortalI18n.t("门面对话"), onItemSelect: () => workbench.showPanel("facade"), views: regions.map(item => ({ id: item.id, icon: item.icon || "window", label: item.title })), onViewSelect: view => {
       openRegion(typeof view === "string" ? view : view.id);
     } });
     if (editors.some(item => item.id === "facade")) updateFacade(facadeDetail);

@@ -5,7 +5,11 @@
 .wallWorkspace { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 10px; flex: 1; min-height: 0; overflow: hidden; }
 .wallWorkspace > .portalActivityRail { position: relative; inset: auto; width: 52px; height: 100%; min-height: 0; }
 .wallWorkspaceViews, .wallWorkspaceView { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
-.wallWorkspaceView { flex: 1; }
+.wallWorkspaceView { flex: 1; overflow-y: auto; }
+.wallWorkspaceView > .wallToolbar { flex: none; }
+/* The launcher may move vertically. Keep card actions clear along the entire
+   right edge, including in an embedded or narrow development view. */
+body:has(.portalAgentInbox:not([hidden])) .wallWorkspaceView { padding-right: 50px; }
 .wallWorkspaceView > .wallToolbar { border-bottom: 1px solid var(--border); background: var(--panel); }
 @media (max-width: 640px) { .wallWorkspace { gap: 6px; } }
 .wallToolbar { padding: 10px 18px 12px; display: grid; gap: 10px; }
@@ -32,10 +36,11 @@
 .wallPage [data-kind="dev"] { --wall-category: color-mix(in srgb, #2674d9 90%, var(--accent)); }
 .wallPage [data-kind="inconsistency"] { --wall-category: color-mix(in srgb, #965ed0 90%, var(--accent)); }
 .wallPage [data-kind="direction"] { --wall-category: var(--accent); }
-.wallMain { flex: 1; min-height: 0; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
+.wallMain { flex: 1 0 auto; min-height: 0; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
 .wallSemantic { flex: none; max-height: 25vh; overflow: auto; }
 .wallSemantic:has(.portalSemanticItem) { padding: 8px 10px 0; }
-.wallBoard { display: flex; flex: 1; min-height: 0; gap: 0; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; overflow-anchor: none; }
+.wallBoard { display: flex; flex: 1 0 220px; min-height: 220px; gap: 0; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; overflow-anchor: none; }
+.wallBoard[data-zoom="detail"] { flex-basis: 328px; min-height: 328px; }
 .wallStage { display: flex; flex-direction: column; flex: none; min-width: 0; }
 .wallStageBody { position: relative; flex: 1; min-height: 0; }
 .wallGroup { position: absolute; min-width: 0; display: flex; flex-direction: column; }

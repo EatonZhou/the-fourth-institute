@@ -12,6 +12,7 @@ const staticRoot = path.join(repo, 'management_portal/static');
 const modules = ['portal_text.js', 'portal_state.js', 'portal_i18n.js', 'portal_ui.js', 'portal_ui_primitives.js',
   'portal_command_registry.js', 'portal_editor_open_service.js', 'portal_workbench_context.js', 'portal_workbench.js',
   'portal_projections.js', 'projection_host.js'];
+const styles = ['portal_design_system.css', 'portal_components.css', 'portal_workbench.css', 'workbench_studio.css', 'projection_host.css'];
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const hostPath = process.env.PROJECTION_HOST_SOURCE || path.join(staticRoot, 'projection_host.js');
 const hostSource = fs.readFileSync(hostPath, 'utf8');
@@ -47,15 +48,16 @@ const server = http.createServer(async (req, res) => {
   s.calls.push(call);
   let body, type = 'text/plain', status = 200, delay = 0;
   if (url.pathname === '/') {
-    type = 'text/html'; body = '<!doctype html><html><head><meta charset="utf-8"></head><body><main id="root"></main>' +
+    type = 'text/html'; body = '<!doctype html><html><head><meta charset="utf-8">' +
+      (s.options.embedded ? styles.map(name => `<link rel="stylesheet" href="/static/${name}">`).join('') : '') + '</head><body><main id="root"></main>' +
       modules.map(name => `<script src="/static/${name}"></script>`).join('') + '</body></html>';
   } else if (url.pathname.startsWith('/static/')) {
     const name = url.pathname.slice(8);
-    if (![...modules, 'projection_sdk.js', 'portal_components.css', 'portal_design_system.css', 'portal_workbench.css'].includes(name)) { status = 404; body = 'unknown static'; }
+    if (![...modules, 'projection_sdk.js', ...styles].includes(name)) { status = 404; body = 'unknown static'; }
     else { body = name === 'projection_host.js' ? hostSource : fs.readFileSync(path.join(staticRoot, name)); type = name.endsWith('.css') ? 'text/css' : 'text/javascript'; }
     if (name === 'projection_sdk.js' || name.endsWith('.css')) delay = s.options.delays ? 120 : 0;
   } else if (url.pathname === '/api/workbenches/detail') { body = JSON.stringify(s.app); type = 'application/json'; }
-  else if (url.pathname === '/api/workbenches/facade') { body = JSON.stringify({ code: 'projection.resident_unbound', error: 'No chat in fixture' }); type = 'application/json'; status = 404; }
+  else if (url.pathname === '/api/workbenches/facade') { body = JSON.stringify(s.target || { code: 'projection.resident_unbound', error: 'No chat in fixture' }); type = 'application/json'; status = s.target ? 200 : 404; }
   else if (url.pathname.startsWith('/api/workbenches/assets/')) {
     const prefix = `/api/workbenches/assets/${s.app.workbench_id}/${s.app.revision}/${s.app.application_build.artifact_hash}/`;
     assert.ok(url.pathname.startsWith(prefix), 'exact revision/hash URL');
@@ -98,7 +100,7 @@ async function pageFor(browser, options = {}, name) {
   });
   const s = scenario;
   return { page, s, async close() {
-    await page.evaluate(() => { window.abort?.abort(); window.controller?.destroy(); });
+    await page.evaluate(() => { window.abort?.abort(); window.controller?.destroy(); window.embedded?.destroy(); });
     await page.waitForTimeout(30);
     assert.deepEqual(errors, [], 'no unhandled errors');
     reports.push({ name, options, peakAssetRequests: s.peak, calls: s.calls });
@@ -199,12 +201,55 @@ async function contracts(browser) {
     assert.equal(h.s.calls.some(call => call.asset), false, 'v1 does not require package assets');
   } finally { await h.close(); }
 }
+async function embeddedLayout(browser) {
+  const h = await pageFor(browser, { embedded: true }, 'embedded-panel-layout');
+  h.s.target = { lineage_id: 'lineage_fixture', resident_id: 'resident_fixture' };
+  h.s.app.manifest.chat = { binding: 'team' };
+  h.s.app.bindings.team = { lineage_id: h.s.target.lineage_id, residents: { facade: h.s.target.resident_id } };
+  try {
+    await h.page.setViewportSize({ width: 1440, height: 900 });
+    await h.page.evaluate(async () => {
+      // The Chat package is isolated from live messaging; host layout and
+      // application frames use their production implementations.
+      PortalWorkbench.registerPanelPackage({ type: 'chat', version: 1, component: 'FixtureChat',
+        presentation: { title: 'Chat', icon: 'chat' }, sizing: { minWidth: 220, minHeight: 180 },
+        instances: 'single', capabilities: [], behavior: {}, context: { channels: [] }, persistence: { schemaVersion: 1 },
+        create({ root }) { root.innerHTML = '<textarea aria-label="Chat draft"></textarea>'; return { root, show() {}, hide() {}, destroy() {} }; } });
+      const root = document.getElementById('root'); root.style.cssText = 'width:330px;height:500px';
+      window.embedded = PortalProjectionHost.createPanel({ root, projectionId: 'workbench_111111111111' });
+      embedded.show(); await embedded.ready;
+    });
+    await h.page.waitForFunction(() => loaded.length === 3);
+    const frame = h.page.frames().find(f => f.parentFrame()?.parentFrame() && f.url() === 'about:srcdoc');
+    assert.ok(frame);
+    await frame.locator('#draft').fill('retain independent draft');
+    const geometry = await h.page.evaluate(() => {
+      const root = document.getElementById('root'), shell = root.querySelector('.projectionWorkbenchShell');
+      const content = root.querySelector('.projectionFrame');
+      return { railHidden: shell.querySelector('.portalActivityRail').hidden,
+        width: content.getBoundingClientRect().width, height: content.getBoundingClientRect().height,
+        bottom: shell.getBoundingClientRect().bottom, hostBottom: root.getBoundingClientRect().bottom,
+        tabs: [...root.querySelectorAll('[role=tab]')].map(tab => tab.textContent) };
+    });
+    assert.equal(geometry.railHidden, true);
+    assert.ok(geometry.width >= 300, JSON.stringify(geometry));
+    assert.ok(geometry.height >= 300 && geometry.bottom <= geometry.hostBottom + 1, JSON.stringify(geometry));
+    assert.equal(geometry.tabs.length, 4, 'all regions and Chat remain accessible');
+    await h.page.getByRole('tab', { name: 'progress', exact: true }).click();
+    await h.page.getByRole('tab', { name: '开发团队对话', exact: true }).click();
+    await h.page.getByLabel('Chat draft').fill('retain chat draft');
+    await h.page.getByRole('tab', { name: 'architecture', exact: true }).click();
+    assert.equal(await frame.locator('#draft').inputValue(), 'retain independent draft');
+    await h.page.getByRole('tab', { name: '开发团队对话', exact: true }).click();
+    assert.equal(await h.page.getByLabel('Chat draft').inputValue(), 'retain chat draft');
+  } finally { await h.close(); }
+}
 (async () => {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   origin = 'http://127.0.0.1:' + server.address().port;
   let browser;
   let passed = false;
-  try { browser = await chromium.launch({ headless: true }); if (!process.argv.includes('--contracts-only') && !process.argv.includes('--lifecycle-only')) await timing(browser); if (!measureOnly) await contracts(browser); passed = true; }
+  try { browser = await chromium.launch({ headless: true }); if (!process.argv.includes('--contracts-only') && !process.argv.includes('--lifecycle-only') && !process.argv.includes('--embedded-only')) await timing(browser); if (!measureOnly) { if (!process.argv.includes('--embedded-only')) await contracts(browser); await embeddedLayout(browser); } passed = true; }
   finally {
     if (browser) await browser.close();
     server.closeAllConnections();
