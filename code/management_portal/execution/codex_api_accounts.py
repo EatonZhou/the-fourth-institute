@@ -169,7 +169,7 @@ def busy_accounts(api_id: str) -> dict[str, dict[str, int]]:
     for row in api_accounts(api_id):
         if row["enabled"]:
             counts = account_busy_counts(row)
-            if any(counts.values()):
+            if counts["execution_count"]:
                 busy[row["account_id"]] = counts
     return busy
 

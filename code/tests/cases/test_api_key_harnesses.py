@@ -182,17 +182,26 @@ def test_api_key_accounts_need_a_model_api_that_speaks_their_harness_protocol(ga
         "config": {"is_default": True, "fallback_account_ids": ["gateway-codex"]}}).code == "instruction.invalid_arguments"
 
 
-def test_a_busy_codex_api_account_holds_back_changes_that_restart_it(gateway, fake_codex, monkeypatch):
-    """Codex API 账号有会话或执行时，会重启它的模型 API 修改被拒绝；删除账号同时删除保存密钥的目录
+def test_a_codex_api_account_holds_back_restarts_only_while_its_work_runs(gateway, fake_codex, monkeypatch):
+    """Codex API 账号有排队或运行中的执行时，会重启它的模型 API 修改被拒绝；只有会话时照常保存
 
-    修改地址、密钥等会改写配置并重启 app-server，账号忙时返回 conflict（account.busy）且不修改登记；只改模型目录不需要重启。删除空闲的 Codex API 账号会停用实例并删除账号目录（auth.json 存有密钥）。
+    修改地址、密钥等会改写配置并重启 app-server：账号有执行时返回 conflict（account.running）且不修改登记；只有已绑定的会话时照常保存并重启，会话在重启后继续。编辑表单连同未改动的字段一起提交、只改模型目录时不重启，执行中也能保存。删除空闲的 Codex API 账号会停用实例并删除账号目录（auth.json 存有密钥）。
     """
     _register("gateway-codex", "codex")
-    monkeypatch.setattr(isa, "account_busy_counts", lambda row: {"session_count": 1, "execution_count": 0})
+    monkeypatch.setattr(isa, "account_busy_counts", lambda row: {"session_count": 1, "execution_count": 1})
     error = _failure(isa.update_model_api, api_id="gateway", changes={"base_url": "https://moved.invalid/v1"})
-    assert (error.code, error.details["reason"]) == ("instruction.conflict", "account.busy")
+    assert (error.code, error.details["reason"]) == ("instruction.conflict", "account.running")
     assert _call(isa.list_model_apis)["apis"][0]["base_url"] == "https://gateway.invalid/v1"
-    _call(isa.update_model_api, api_id="gateway", changes={"models": [{"id": "gpt-test"}]})
+    # The edit form sends every field along with the changed model list.
+    form = {"base_url": "https://gateway.invalid/v1", "default_model": "gpt-test", "provider": "example",
+            "headers": {"X-Team": "lab"}, "secret_file": str(gateway.key_file), "enabled": True,
+            "models": [{"id": "gpt-test", "reasoning_efforts": ["high"]}]}
+    restarts = len(fake_codex.hosting)
+    _call(isa.update_model_api, api_id="gateway", changes=form)
+    assert len(fake_codex.hosting) == restarts
+    monkeypatch.setattr(isa, "account_busy_counts", lambda row: {"session_count": 1, "execution_count": 0})
+    _call(isa.update_model_api, api_id="gateway", changes={**form, "base_url": "https://moved.invalid/v1"})
+    assert fake_codex.hosting[-2:] == [("stop_codex_instance", "gateway-codex"), ("start_codex_instance", "gateway-codex")]
     monkeypatch.setattr(isa, "account_busy_counts", lambda row: {"session_count": 0, "execution_count": 0})
     home = account_home("codex", "gateway-codex")
     assert home.is_dir()
