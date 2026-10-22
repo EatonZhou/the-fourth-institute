@@ -19,7 +19,9 @@ def configuration(record, binding):
 
 def bind_before_execution(record, actor):
     from . import resident_backend
-    from .resident_runtime_domain import _read_resident_runtime_settings, _write_resident_runtime_settings
+    from .resident_runtime_domain import _read_resident_runtime_settings
+    from .resident_settings_contract import stage_runtime_settings
+    from . import resident_conversation_stream
     from management_portal.execution.resident_runtime_settings import merge_settings
     from .resident_workspace_domain import _save_resident_record
     from .resident_lifecycle_domain import _now_iso
@@ -30,7 +32,14 @@ def bind_before_execution(record, actor):
     record.update(backend=configured["backend"], backend_route_id=configured["backend_route_id"])
     # The role was configured separately. Resolve no remote model catalog while
     # the execution caller holds this Resident's state lock.
+    # Imported/unconfigured Residents can retain the source site's model and
+    # effort. Resolve these together with the new account; absent role values
+    # mean the new Provider's defaults, never the source account's settings.
     settings = merge_settings({**current, "backend": configured["backend"]},
-                              configured["runtime_settings"], actor=actor, updated_at=_now_iso())
-    _write_resident_runtime_settings(record, settings)
+                              {"model": "", "reasoning_effort": "", "service_tier": "",
+                               **configured["runtime_settings"]}, actor=actor, updated_at=_now_iso())
+    # Commit the Provider and settings together. The ordinary settings writer
+    # correctly rejects changing backend before the Resident transition commits.
+    stage_runtime_settings(record, settings)
     _save_resident_record(record, commit_configuration=True)
+    resident_conversation_stream.get_repository().execution_settings_changed(record["resident_id"], settings)

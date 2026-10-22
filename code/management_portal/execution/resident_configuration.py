@@ -145,7 +145,9 @@ def validate_api_settings(route: str, current: Mapping[str, Any], updates: Mappi
     from .model_api_protocols import protocol_settings
     capabilities = protocol_settings(entry)
     parameters = options.get("parameters", {})
-    model = result.get("model") or current.get("model") or entry.get("default_model")
+    # An explicitly cleared model selects this API's default, not the old
+    # Resident model. Parameter validation must use the model execution uses.
+    model = result.get("model", current.get("model")) or entry.get("default_model")
     model_entry = next((item for item in entry.get("models", []) if isinstance(item, dict) and item.get("id") == model), {})
     if "supported_parameters" in model_entry and entry["kind"] == "openai_compatible_chat":
         unsupported = set(parameters) - set(capabilities["parameters_by_model"].get(model, []))

@@ -331,7 +331,9 @@ class ApiProfileAccounts:
         return self.accounts()[0]
 
     def catalog(self, account):
-        models = AIProviderRegistry.models(self.entry)
+        # The advanced model list is optional; the registered default is still
+        # a declared model and must be selectable in Resident Settings.
+        models = AIProviderRegistry.harness_models(self.entry)
         default = str(self.entry.get("default_model") or "")
         return {"models": models, "default_model": default, "efforts_by_model": {},
                 "default_efforts_by_model": {}, "service_tiers_by_model": {}}

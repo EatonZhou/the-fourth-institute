@@ -41,6 +41,53 @@ def test_personal_ama_can_precede_default_ai(future_creation_store, monkeypatch)
     assert saved_settings["sandbox"] == "read-only"
 
 
+@pytest.mark.parametrize("role_model", [None, "deepseek-v4-flash"])
+def test_first_api_binding_replaces_source_site_model(future_creation_store, monkeypatch, role_model):
+    """首次绑定角色账号时不沿用源站点 GPT 模型；已绑定后不随站点默认变化。"""
+    from management_portal.execution import account_registrations
+    from management_portal.society_service import resident_default_backend as defaults, resident_runtime_domain as runtime
+    from management_portal.society_service import resident_backend
+    monkeypatch.setattr(account_registrations, "roles", lambda: [])
+    result = principal_hierarchy_domain.ensure_personal_ama("api_user", "api_user")
+    record = resident_catalog.get_catalog().get(result["resident_id"])
+    settings = runtime._read_resident_runtime_settings(record)
+    settings.update(model="gpt-6-luna", reasoning_effort="high", service_tier="priority")
+    runtime._write_resident_runtime_settings(record, settings)
+    role_settings = {"backend_role": "default", **({"model": role_model} if role_model else {})}
+    monkeypatch.setattr(defaults, "role_configuration", lambda _: {
+        "backend": "provider_api", "backend_route_id": "deepseek_api", "runtime_settings": role_settings})
+    monkeypatch.setattr(resident_backend, "session_record", lambda _: {})
+    defaults.bind_before_execution(record, "api_user")
+    saved = resident_catalog.get_catalog().get(result["resident_id"])
+    actual = runtime._read_resident_runtime_settings(saved)
+    assert (saved["backend"], saved["backend_route_id"]) == ("provider_api", "deepseek_api")
+    assert (actual["model"], actual["reasoning_effort"], actual["service_tier"]) == (role_model or "", "", "")
+    monkeypatch.setattr(defaults, "role_configuration", lambda _: pytest.fail("bound Residents must keep their route"))
+    defaults.bind_before_execution(saved, "api_user")
+    assert runtime._read_resident_runtime_settings(saved) == actual
+    # Exercise the production request and API adapter without a real account or
+    # network: both explicit role models and a blank model reach this API.
+    from management_portal.society_service import resident_execution_domain as execution
+    from management_portal.execution.backends import ChatCompletionService
+    from management_portal.execution.contracts import SystemInstructions
+    monkeypatch.setattr(execution, "_resident_system_instructions", lambda *a: SystemInstructions())
+    job = {"actor": "api_user", "user_message_id": "message-test", "raw_message": "hello"}
+    request = execution._build_resident_execution_request(saved, job)
+    payloads = []
+    def transport(provider, endpoint, payload, **kwargs):
+        payloads.append((provider, payload))
+        return {"choices": [{"message": {"content": "reply"}}], "usage": {}}
+    service = ChatCompletionService(SimpleNamespace(get=lambda _: {
+        "id": "deepseek_api", "kind": "openai_compatible_chat", "default_model": "deepseek-v4-flash"},
+        request=transport))
+    service.execute(SimpleNamespace(request=request, attach_system_context=True,
+                                   system_context="fixed instructions", user_prompt="hello"),
+                    SimpleNamespace(is_cancelled=lambda: False, emit=lambda *a: None))
+    assert request.provider == "deepseek_api"
+    assert payloads[0][1]["model"] == "deepseek-v4-flash"
+    assert payloads[0][1]["messages"][-1] == {"role": "user", "content": "hello"}
+
+
 def test_personal_ama_is_created_once_in_the_users_name(future_creation_store):
     """用户的 Ask Me Anything 以本人名义只建一次
 
