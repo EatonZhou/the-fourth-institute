@@ -8,12 +8,14 @@ from __future__ import annotations
 import argparse
 import hashlib
 import http.cookiejar
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
 from pathlib import Path
 import secrets
 import subprocess
 import sys
+import threading
 import time
 from urllib.parse import urlencode
 from urllib.request import HTTPCookieProcessor, ProxyHandler, Request, build_opener
@@ -22,6 +24,70 @@ from urllib.request import HTTPCookieProcessor, ProxyHandler, Request, build_ope
 def check(condition, message):
     if not condition:
         raise RuntimeError(message)
+
+
+class LocalModelApi:
+    """A loopback-only protocol fixture; never a real model or credential."""
+    model = 'deepseek-v4-flash'
+    reply = 'Native API round trip confirmed.'
+
+    def __init__(self):
+        self.models = []
+        owner = self
+        class Handler(BaseHTTPRequestHandler):
+            def log_message(self, *args):
+                pass
+
+            def do_POST(self):
+                payload = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
+                owner.models.append(payload.get('model'))
+                body = json.dumps({'id': 'native-fixture', 'object': 'chat.completion',
+                    'model': owner.model, 'choices': [{'index': 0, 'finish_reason': 'stop',
+                        'message': {'role': 'assistant', 'content': owner.reply}}],
+                    'usage': {'prompt_tokens': 1, 'completion_tokens': 1, 'total_tokens': 2}}).encode()
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Content-Length', str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+        self.server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+        self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+        self.thread.start()
+
+    def register(self, instruction):
+        instruction('CreateModelApi', {'api_id': 'native_api_only', 'provider': 'deepseek',
+            'base_url': f'http://127.0.0.1:{self.server.server_port}/v1',
+            'default_model': self.model, 'secret': 'disposable-native-fixture'})
+        instruction('RegisterProviderAccount', {'account_id': 'native_api_only',
+            'provider': 'provider_api', 'kind': 'api_profile', 'config': {'api_id': 'native_api_only'}})
+        accounts = instruction('ListProviderAccounts', {})['accounts']
+        check(not any(account.get('provider') == 'codex' for account in accounts),
+              'API-only fixture unexpectedly has a Codex account')
+        instruction('UpdateBackendRole', {'backend_role': 'default', 'account_id': 'native_api_only'})
+
+    def chat(self, instruction, resident_id):
+        sent = instruction('DeliverMessage', {'resident_id': resident_id,
+            'message': {'content_parts': [{'type': 'text', 'text': 'Reply with the native test confirmation.'}]}})
+        message_id = sent['message_id']
+        deadline = time.monotonic() + 120
+        while time.monotonic() < deadline:
+            state = instruction('GetInputState', {'resident_id': resident_id, 'message_id': message_id})['input_state']
+            check(state.get('state') not in ('failed', 'cancelled'), 'API chat input failed: ' + str(state.get('error', '')))
+            if state.get('state') == 'completed':
+                break
+            time.sleep(1)
+        else:
+            raise RuntimeError('API chat never completed: ' + str(state.get('state')))
+        conversation = instruction('GetConversation', {'resident_id': resident_id, 'input_message_id': message_id})
+        check(any(self.reply in part.get('text', '') for item in conversation['messages']
+                  if item.get('role') != 'user' for part in item.get('content_parts', [])),
+              'API reply was not projected into Chat')
+        check(self.models and set(self.models) == {self.model}, 'API received an inherited or incorrect model')
+
+    def close(self):
+        self.server.shutdown()
+        self.server.server_close()
+        self.thread.join(timeout=5)
 
 
 def worker(platform, phase):
@@ -53,6 +119,7 @@ def exercise(exe, root, included, evidence):
     check((root / 'windows-package.json').is_file(), 'NSIS did not install the payload')
     state_path = root / 'instance/example_instance/installation.json'
     succeeded = False
+    api = None
     try:
         run_worker(root, 'initialize', log)
         state = json.loads(state_path.read_text(encoding='utf-8'))
@@ -106,6 +173,15 @@ def exercise(exe, root, included, evidence):
                                        ('GetConversation', {'resident_id': ama['resident_id']}),
                                        ('GetConversation', {'resident_id': facade_id})]:
             instruction(name, arguments)
+        api = LocalModelApi()
+        api.register(instruction)
+        instruction('UpdateResidentSettings', {'resident_id': ama['resident_id'],
+                                               'changes': {'agent_harness': {}}})
+        api.chat(instruction, ama['resident_id'])
+        catalog = request('/api/agent-workbench/agent-runtime-catalog?' + urlencode({'resident_id': ama['resident_id']}))
+        check(catalog['backend'] == 'provider_api' and catalog['models'] == [api.model],
+              'Default-only API catalog differs from the executing account')
+        instruction('UpdateResidentSettings', {'resident_id': ama['resident_id'], 'changes': {'model': api.model}})
         marker = root / 'instance/example_instance/data/native-restart-marker.txt'
         marker.write_text('Preserve this installation and its registered user', encoding='utf-8')
         run_worker(root, 'cleanup', log)
@@ -115,6 +191,7 @@ def exercise(exe, root, included, evidence):
         check(marker.is_file(), 'Restart lost user data')
         request('/login', {'username': registered['username'], 'password': password}, form=True)
         check(request('/api/me').get('username') == registered['username'], 'Restart lost the account')
+        api.chat(instruction, ama['resident_id'])
         # Exercise the installed isolated index worker with the actual Chinese
         # path. -I ignores the fixture's PYTHONUTF8 environment setting.
         change_request = {'since': 0, 'files': [str(marker)], 'paths': [str(marker)]}
@@ -136,7 +213,8 @@ def exercise(exe, root, included, evidence):
         succeeded = True
         return {'include_examples': included, 'status': 'passed', 'registration_ama_chat': 'passed',
                 'launcher_exit_service_survival': 'passed', 'unregister_restart_preserves_data': 'passed',
-                'chinese_index_worker': 'passed', 'background_error_check': 'passed'}
+                'chinese_index_worker': 'passed', 'background_error_check': 'passed',
+                'api_only_chat_restart': 'passed', 'api_default_model': api.model}
     except Exception:
         # Distinguish loader failure from initdb's restricted-token re-execution;
         # only public version output and exit codes from this disposable fixture.
@@ -159,6 +237,8 @@ def exercise(exe, root, included, evidence):
                 if succeeded:
                     raise
                 print('Native cleanup also failed; see the component log', file=sys.stderr)
+        if api is not None:
+            api.close()
 
 
 def main():
@@ -180,7 +260,7 @@ def main():
     # Deliberately unreachable proxies make an accidental dependency download fail;
     # local HTTP/RPC owners must bypass them. AI services are never called.
     os.environ.update(HTTP_PROXY='http://127.0.0.1:9', HTTPS_PROXY='http://127.0.0.1:9',
-                      ALL_PROXY='http://127.0.0.1:9', NO_PROXY='', PIP_NO_INDEX='1', PYTHONUTF8='1')
+                      ALL_PROXY='http://127.0.0.1:9', NO_PROXY='127.0.0.1,localhost', PIP_NO_INDEX='1', PYTHONUTF8='1')
     rows = []
     for included in (False, True):
         root = args.work / ('中文 空格 ' + ('Lenia' if included else '基础平台'))
