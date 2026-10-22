@@ -339,12 +339,48 @@
     async function loadMembers(owner) {
       if (owner.members) return owner.members;
       if (owner.kind === "lineage") {
-        owner.members = (owner.record.nodes || []).map(item => ({id: item.id, title: item.title || item.resident_title || item.id, meta: [item.backend, item.status].filter(Boolean).join(" · ")}));
+        owner.members = (owner.record.nodes || []).map(item => ({id: item.id, title: item.title || item.resident_title || item.id, meta: item.backend || ""}));
       } else {
         const result = await run("SearchResources", {resource_type: "lineage", project_id: owner.id, limit: 500});
         owner.members = (result.items || []).map(item => ({id: item.resource_id, title: item.title || item.resource_id, meta: item.summary || ""}));
       }
       return owner.members;
+    }
+
+    function stopMemberStates(owner) {
+      if (!owner) return;
+      owner.memberStateGeneration = (owner.memberStateGeneration || 0) + 1;
+      owner.memberStates?.destroy();
+      owner.memberStates = null;
+    }
+
+    async function observeMemberStates(owner, node, members) {
+      stopMemberStates(owner);
+      if (owner.kind !== "lineage" || !members.length) return;
+      const generation = owner.memberStateGeneration;
+      const currentOwner = () => owner === context && owner.memberStateGeneration === generation;
+      const slots = [...node.querySelectorAll("[data-member-state]")];
+      const paint = update => {
+        if (!currentOwner()) return;
+        for (const slot of slots) {
+          const state = update.states?.[slot.dataset.memberState];
+          // Sidebar records can retain a previous execution's status. Only the
+          // formal state projection may describe work, including Family work.
+          slot.textContent = update.type === "error" ? t("状态读取失败")
+            : state?.work_state ? window.PortalResidentProtocol.stateView(state).display_work_state
+            : t("正在读取状态…");
+        }
+      };
+      try {
+        await Promise.all([
+          window.PortalUIPrimitives.loadAsset("/static/portal_resident_service.js", {ready: () => window.PortalResidentService}),
+          window.PortalUIPrimitives.loadAsset("/static/resident_protocol.js", {ready: () => window.PortalResidentProtocol}),
+        ]);
+        if (!currentOwner()) return;
+        owner.memberStates = window.PortalResidentProtocol.acquireStates(members.map(item => item.id), paint, {
+          force: true, includeViewerState: false,
+        });
+      } catch (error) { paint({type: "error"}); }
     }
 
     async function residentsIn(owner, ids) {
@@ -362,7 +398,7 @@
       const initial = title => esc(Array.from(String(title || "?"))[0]?.toUpperCase() || "?");
       node.innerHTML = window.PortalI18n.html`<div class="scopeMenuMembers">
         <div class="scopeMenuMembersHead"><label class="scopeMenuCheck"><input type="checkbox" data-select-all /><span>全选</span></label><span class="scopeMenuNote">${esc(window.PortalI18n.text`共 ${members.length} 个 ${noun}`)}</span></div>
-        <ul class="scopeMenuMemberList">${members.map(item => `<li><label><input type="checkbox" value="${esc(item.id)}" data-member /><span class="scopeMenuMemberAvatar is-initial" data-member-avatar="${esc(item.id)}" aria-hidden="true">${initial(item.title)}</span><span class="scopeMenuMemberCopy"><strong>${esc(item.title)}</strong><small><code>${esc(item.id)}</code>${item.meta ? ` · ${esc(item.meta)}` : ""}</small></span></label><button class="portalButton is-compact is-quiet" type="button" data-open-member="${esc(item.id)}" aria-label="${esc(window.PortalI18n.text`打开 ${item.title} 的 Menu`)}">Menu ›</button></li>`).join("") || `<li class="scopeMenuEmpty">${esc(t("暂无成员。"))}</li>`}</ul>
+        <ul class="scopeMenuMemberList">${members.map(item => `<li><label><input type="checkbox" value="${esc(item.id)}" data-member /><span class="scopeMenuMemberAvatar is-initial" data-member-avatar="${esc(item.id)}" aria-hidden="true">${initial(item.title)}</span><span class="scopeMenuMemberCopy"><strong>${esc(item.title)}</strong><small><code>${esc(item.id)}</code>${item.meta ? ` · ${esc(item.meta)}` : ""}${owner.kind === "lineage" ? ` · <span data-member-state="${esc(item.id)}">${esc(t("正在读取状态…"))}</span>` : ""}</small></span></label><button class="portalButton is-compact is-quiet" type="button" data-open-member="${esc(item.id)}" aria-label="${esc(window.PortalI18n.text`打开 ${item.title} 的 Menu`)}">Menu ›</button></li>`).join("") || `<li class="scopeMenuEmpty">${esc(t("暂无成员。"))}</li>`}</ul>
         <section class="scopeMenuSection scopeMenuBatch"><h4>批量授予</h4><form data-batch-form>
           <label class="portalField is-wide"><span>方向</span><select name="mode">
             <option value="resource">${esc(window.PortalI18n.text`给一个主体授予对所选 ${noun} 的 A 节点`)}</option>
@@ -392,6 +428,7 @@
       const submit = action => batch(owner, form, boxes.filter(box => box.checked).map(box => box.value), action);
       form.addEventListener("submit", event => { event.preventDefault(); void submit("grant"); });
       form.querySelector('[data-batch="delete"]').addEventListener("click", () => void submit("delete"));
+      void observeMemberStates(owner, node, members);
     }
 
     // A Lineage's Residents and a Project's Lineages show their avatars; a member without one keeps its initial.
@@ -514,7 +551,7 @@
       modal, openClass: "portalDialogOpen", backdropClose: true, escapeClose: true,
       onOpen: () => { modal.hidden = false; },
       beforeClose: () => !busy() && !context?.avatarEditor?.isBusy(),
-      onClose: () => { modal.hidden = true; context?.avatarEditor?.destroy(); context = null; TABS.forEach(tab => panel(tab).replaceChildren()); },
+      onClose: () => { modal.hidden = true; stopMemberStates(context); context?.avatarEditor?.destroy(); context = null; TABS.forEach(tab => panel(tab).replaceChildren()); },
     });
     modal.querySelector("[data-portal-detail-close]").addEventListener("click", () => dialog.close());
     TABS.forEach(tab => tabButton(tab).addEventListener("click", () => void switchTab(tab)));
@@ -531,7 +568,9 @@
       async open(next) {
         if (busy()) { toast(t("权限操作正在处理，请稍后再试。"), "info"); return false; }
         options = next;
+        stopMemberStates(context);
         context?.avatarEditor?.destroy();
+        context = null;
         // With the permission system off the Package tab and batch grants have nothing to show.
         const permissionsOff = await window.PortalIdentity.permissionSystemOff().catch(() => false);
         context = {kind: next.kind, id: next.id, record: next.record, busy: false, members: null, journal: null, permissionsOff};
