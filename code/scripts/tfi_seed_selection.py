@@ -1,7 +1,8 @@
 """Select optional cases from an inventoried, exporter-generated seed.
 
 Only the exporter's literal INSERT format is accepted. DDL and retained rows
-stay byte-for-byte intact; this never connects to an installed database.
+stay byte-for-byte intact, except the selected projects in their aggregate
+registry document; this never connects to an installed database.
 """
 from __future__ import annotations
 
@@ -23,39 +24,45 @@ def decode_string(value, escaped):
     return re.sub(r"\\(.)", lambda m: escapes.get(m[1], m[1]), value, flags=re.S)
 
 
+def _insert_values(text, match):
+    columns = re.findall(r'"([^"]+)"', match[3])
+    values, spans, position = [], [], match.end()
+    while True:
+        token = LITERAL.match(text, position)
+        if token is None:
+            raise ValueError(f"Unsupported seed SQL literal at {position}")
+        if token['scalar'] is not None:
+            value = {"NULL": None, "true": True, "false": False}.get(token['scalar'], token['scalar'])
+        else:
+            value = decode_string(token['escaped'] if token['escaped'] is not None else token['string'],
+                                  token['escaped'] is not None)
+            if value.startswith(('{', '[')):
+                try:
+                    value = json.loads(value)
+                except ValueError:
+                    pass
+        values.append(value)
+        spans.append((position, token.end()))
+        position = token.end()
+        if text[position:position + 2] == ');':
+            position += 2
+            break
+        if text[position:position + 1] != ',':
+            raise ValueError(f"Unsupported seed SQL row at {position}")
+        position += 1
+    if len(columns) != len(values):
+        raise ValueError("Seed SQL columns and values differ")
+    return dict(zip(columns, values)), dict(zip(columns, spans)), position
+
+
 def inserts(text):
     """Parse literal rows while skipping INSERT-looking text inside strings."""
     position = 0
     while match := INSERT.search(text, position):
         if re.search(r'^INSERT\s', text[position:match.start()], re.M):
             raise ValueError('Unsupported seed INSERT format')
-        columns = re.findall(r'"([^"]+)"', match[3])
-        values, position = [], match.end()
-        while True:
-            token = LITERAL.match(text, position)
-            if token is None:
-                raise ValueError(f"Unsupported seed SQL literal at {position}")
-            if token['scalar'] is not None:
-                value = {"NULL": None, "true": True, "false": False}.get(token['scalar'], token['scalar'])
-            else:
-                value = decode_string(token['escaped'] if token['escaped'] is not None else token['string'],
-                                      token['escaped'] is not None)
-                if value.startswith(('{', '[')):
-                    try:
-                        value = json.loads(value)
-                    except ValueError:
-                        pass
-            values.append(value)
-            position = token.end()
-            if text[position:position + 2] == ');':
-                position += 2
-                break
-            if text[position:position + 1] != ',':
-                raise ValueError(f"Unsupported seed SQL row at {position}")
-            position += 1
-        if len(columns) != len(values):
-            raise ValueError("Seed SQL columns and values differ")
-        yield match.start(), position, (match[1], match[2]), dict(zip(columns, values))
+        row, _, position = _insert_values(text, match)
+        yield match.start(), position, (match[1], match[2]), row
     if re.search(r'^INSERT\s', text[position:], re.M):
         raise ValueError('Unsupported seed INSERT format')
 
@@ -102,12 +109,25 @@ def selection(sql, manifest):
                         removed.add(row['document_id'])
         if len(removed) == before:
             break
-    discarded, paths = [], set()
+    edits, paths = [], set()
     for start, end, table, row in rows:
+        if (table == ('resource_registry', 'registry_documents')
+                and row.get('collection') == 'project_registry' and row.get('document_id') == 'projects'):
+            # This row owns all projects, not just the optional case. Dropping
+            # it also hides retained knowledge from the resource index and
+            # makes permission completion mistake those objects for deletions.
+            document = row['document_json']
+            projects = [project for project in document['projects'] if project['id'] not in removed]
+            if projects != document['projects']:
+                _, spans, _ = _insert_values(sql, INSERT.match(sql, start))
+                begin, finish = spans['document_json']
+                literal = json.dumps({**document, 'projects': projects}, ensure_ascii=False).replace("'", "''")
+                edits.append((begin, finish, "'" + literal + "'::jsonb"))
+            continue
         # SQL relationships and JSON declarations are authoritative. Prose
         # mentioning a case is not an ownership edge.
         if any(value in removed for value in strings(row)):
-            discarded.append((start, end))
+            edits.append((start, end, ''))
             if table == ('workspace', 'workspaces'):
                 paths.add(row['path'])
             if table == ('resource_registry', 'registry_documents'):
@@ -133,8 +153,9 @@ def selection(sql, manifest):
                     raise ValueError('Unsafe case file path')
                 relative.add(candidate.as_posix())
     fragments, previous = [], 0
-    for start, end in discarded:
+    for start, end, replacement in edits:
         fragments.append(sql[previous:start])
+        fragments.append(replacement)
         previous = end
     fragments.append(sql[previous:])
     return ''.join(fragments), removed, relative
