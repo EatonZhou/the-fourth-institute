@@ -91,7 +91,7 @@ def test_a_broken_codex_on_path_is_left_alone_while_portal_prepares_its_own(monk
 
     def stage(self, versions):
         root = updates.RUNTIMES / f"codex-cli-{versions[0]}"
-        binary = root / "bin/codex"
+        binary = self.link_target(root)
         binary.parent.mkdir(parents=True)
         binary.write_text(f"#!/bin/sh\necho 'codex-cli {versions[0]}'\n")
         binary.chmod(0o755)
@@ -112,7 +112,7 @@ def test_a_broken_codex_on_path_is_left_alone_while_portal_prepares_its_own(monk
         system.chmod(0o755)
     assert updates.preparation_status("codex")["status"] == "ready"
     managed = updates.RUNTIMES / "codex"
-    assert managed.resolve() == updates.RUNTIMES / "codex-cli-1.2.3/bin/codex"
+    assert managed.resolve() == updates.CodexRuntime().link_target(updates.RUNTIMES / "codex-cli-1.2.3")
     assert updates.CodexRuntime().link() == managed
     assert account_login.provider_binary("codex") == str(managed)
     assert [path.name for path in system.iterdir()] == ["codex"]

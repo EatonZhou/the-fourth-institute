@@ -7,6 +7,9 @@
 import json
 import importlib.util
 from pathlib import Path
+import shutil
+import subprocess
+import sys
 from types import SimpleNamespace
 import pytest
 
@@ -389,6 +392,31 @@ def test_partial_kimi_install_is_repaired_before_activation(monkeypatch, tmp_pat
     assert (root / ".portal-validated").read_text().strip() == "2.2.0"
     updates.KimiRuntime().stage(("2.2.0",))
     assert len(installs) == 1
+
+
+@pytest.mark.skipif(sys.platform != "linux" or not shutil.which("node"), reason="Linux Codex launcher needs node")
+def test_a_staged_codex_runs_with_the_node_that_installed_it(monkeypatch, tmp_path):
+    """Linux 上暂存的 Codex 用安装它的 node 运行，账号服务的 PATH 中没有 node 也能启动"""
+    monkeypatch.setattr(updates, "RUNTIMES", tmp_path)
+    root = tmp_path / "codex-cli-1.2.3"
+    original = updates.run_command
+
+    def command(*args, **kwargs):
+        if args[0:2] == ("npm", "install"):
+            entry = root / "lib/node_modules/@openai/codex/bin/codex.js"
+            entry.parent.mkdir(parents=True)
+            entry.write_text("#!/usr/bin/env node\nconsole.log(`codex-cli 1.2.3 ${process.argv.slice(2).join(' ')}`)\n")
+            (root / "bin").mkdir()
+            (root / "bin/codex").symlink_to(entry)
+            return ""
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(updates, "run_command", command)
+    runtime = updates.CodexRuntime()
+    assert runtime.stage(("1.2.3",)) == root
+    result = subprocess.run([str(runtime.link_target(root)), "app-server", "--help"], env={"PATH": "/nonexistent"},
+                            capture_output=True, text=True, check=True)
+    assert result.stdout.strip() == "codex-cli 1.2.3 app-server --help"
 
 
 def test_claude_runtime_installs_a_requirement_the_daemon_gains(monkeypatch, tmp_path):

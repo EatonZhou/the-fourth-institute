@@ -19,6 +19,7 @@ import ctypes
 import hashlib
 from pathlib import Path
 import re
+import shlex
 import shutil
 import struct
 import subprocess
@@ -168,11 +169,30 @@ class CodexRuntime(ProviderRuntime):
         marker = root / ".portal-validated"
         if not marker.is_file() or not binary.is_file():
             run_command("npm", "install", "--global", "--prefix", str(root), "--omit=dev", f"@openai/codex@{version}")
+        if sys.platform == "linux":
+            binary = self._write_launcher(root, binary)
         if Version(codex_cli_version(run_command(str(binary), "--version", timeout=60))) != Version(version):
             raise RuntimeError("Codex staged version mismatch")
         run_command(str(binary), "app-server", "--help", timeout=60)
         marker.write_text(version + "\n")
         return root
+
+    @staticmethod
+    def _write_launcher(root: Path, entry: Path) -> Path:
+        """npm's entry finds node through PATH. systemd account services do not
+        share Portal's PATH (launchd jobs carry it), so run the entry with the
+        node that installed this runtime."""
+        node = shutil.which("node")
+        if not node:
+            raise RuntimeError("Codex requires node on PATH")
+        launcher = root / "portal-codex"
+        content = f'#!/bin/sh\nexec {shlex.quote(node)} {shlex.quote(str(entry.resolve()))} "$@"\n'
+        if not launcher.is_file() or launcher.read_text() != content:
+            temporary = launcher.with_name(f".{launcher.name}.{os.getpid()}.tmp")
+            temporary.write_text(content)
+            temporary.chmod(0o755)
+            temporary.replace(launcher)
+        return launcher
 
     def link(self) -> Path:
         managed = self.activation_link()
@@ -197,7 +217,9 @@ class CodexRuntime(ProviderRuntime):
         return RUNTIMES / "codex"
 
     def link_target(self, root: Path) -> Path:
-        return root if sys.platform == "win32" else npm_binary(root, "codex")
+        if sys.platform == "win32":
+            return root
+        return root / "portal-codex" if sys.platform == "linux" else npm_binary(root, "codex")
 
 
 class ClaudeRuntime(ProviderRuntime):

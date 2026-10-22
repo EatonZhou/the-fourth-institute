@@ -77,7 +77,7 @@ class InstanceProviderUpdateTests(unittest.TestCase):
         shared.parent.mkdir(parents=True)
         shared.write_text("original shared executable\n")
         staged = self.root / "new-runtime"
-        binary = staged / "bin/codex"
+        binary = updates.CodexRuntime().link_target(staged)
         binary.parent.mkdir(parents=True)
         binary.write_text("new executable\n")
         link = self.context["root"] / "home/.local/bin/codex"
