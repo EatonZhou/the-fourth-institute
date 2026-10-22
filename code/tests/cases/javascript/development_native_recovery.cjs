@@ -93,5 +93,14 @@ test('Test initialization can retry after missing panels, without duplicating st
     await controller.activate();
     assert.ok(window.PortalWorkbench.get('test'));
     assert.equal(T.store.listeners.size, 1);
+    controller.destroy();
+    let identityReady;
+    window.PortalIdentity.load = () => new Promise(resolve => { identityReady = resolve; });
+    const pending = controller.activate();
+    controller.destroy();
+    identityReady({username: 'fixture'});
+    await pending;
+    assert.equal(window.PortalWorkbench.get('test'), null, 'late identity reply cannot remount a disposed view');
+    assert.equal(T.store.listeners.size, 0);
   } finally { controller.destroy(); await harness.cleanup(); }
 });

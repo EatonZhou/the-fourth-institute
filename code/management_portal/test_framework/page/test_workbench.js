@@ -2,6 +2,7 @@
   "use strict";
   const T = window.PortalTest;
   let mountedWorkbench = null, mountedRail = null, unsubscribeSelection = null;
+  let mountRevision = 0;
   const { split, stack } = window.PortalWorkbench.model;
   const layouts = Object.freeze({
     catalog: { id: "catalog", name: window.PortalI18n.t("目录与用例"), layout: split("horizontal", [stack(["test-catalog"]), stack(["test-case"])], [360, 900]), hidden: ["run-console", "tau", "gate-composer", "test-review"] },
@@ -24,10 +25,11 @@
     return { id, type, title: definition?.title || titles[type] || type, icon: definition?.icon || (type === "chat" ? "chat" : "window"), options, minWidth: type === "test-catalog" ? 280 : 360, singleton: true, canHide: true };
   }
 
-  async function init(options) {
+  async function init(options, revision) {
     const panelTypes = ["test-catalog", "test-case", "run-console", "tau", "gate-composer", "test-review"];
     if (panelTypes.some(type => !T.panelDefinitions.has(type))) throw new Error("测试工作台的面板登记不完整。" );
     const identity = await window.PortalIdentity.load().catch(() => window.PortalIdentity.peek());
+    if (revision !== mountRevision) return;
     const username = String(identity?.username || "").trim() || "anonymous";
     const transient = username === "anonymous";
     const scopedStore = (kind) => transient
@@ -90,6 +92,7 @@
     });
     try {
       await T.store.load();
+      if (revision !== mountRevision) return;
       const requestedCase = new URLSearchParams(location.search).get("case");
       T.openCase(T.store.selectedId, { reveal: Boolean(requestedCase && requestedCase !== savedPageState.selectedCaseId) });
       const requestedRun = new URLSearchParams(location.search).get("run");
@@ -98,12 +101,13 @@
         await workbench.invokePanel("run-console", "openRun", requestedRun);
       }
     } catch (error) {
-      T.notify(`测试目录不可用：${error.message}`, "error");
+      if (revision === mountRevision) T.notify(`测试目录不可用：${error.message}`, "error");
     }
   }
 
   let mounting = null;
   function destroy() {
+    ++mountRevision;
     unsubscribeSelection?.(); unsubscribeSelection = null;
     mountedWorkbench?.destroy(); mountedWorkbench = null;
     mountedRail?.destroy(); mountedRail = null;
@@ -114,7 +118,9 @@
   function mount(options = {}) {
     if (!mounting) {
       document.querySelector("#testWorkbenchRoot > [data-test-initialization-error]")?.remove();
-      mounting = init(options).catch(error => {
+      const revision = ++mountRevision;
+      mounting = init(options, revision).catch(error => {
+        if (revision !== mountRevision) throw error;
         destroy();
         document.querySelector("#testWorkbenchRoot").innerHTML = window.PortalI18n.html`<div class="testEmpty" data-test-initialization-error>测试工作台初始化失败：${T.escapeHtml(error.message)}</div>`;
         throw error;
