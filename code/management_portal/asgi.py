@@ -7,6 +7,7 @@ import os
 import tempfile
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 import threading
+import time
 from contextlib import asynccontextmanager, suppress
 from email.message import Message
 from functools import partial, wraps
@@ -163,6 +164,21 @@ def _run_sync_handler(
 async def portal_http(request: Request) -> StreamingResponse:
     body = tempfile.SpooledTemporaryFile(max_size=SPOOL_MEMORY_BYTES)
     total = 0
+    timings = {}
+
+    def execute():
+        started = time.perf_counter()
+        timings["portal_queue"] = (started - submitted) * 1000
+        try:
+            return _run_sync_handler(request, body)
+        finally:
+            # Wall time includes domain RPC/cache waits, not just CPU work.
+            # It excludes receiving the request and streaming the response.
+            timings["portal_handler"] = (time.perf_counter() - started) * 1000
+
+    def timing_header():
+        return ", ".join(f"{name};dur={duration:.3f}" for name, duration in timings.items())
+
     try:
         async for chunk in request.stream():
             total += len(chunk)
@@ -184,19 +200,21 @@ async def portal_http(request: Request) -> StreamingResponse:
             handler_executor = getattr(
                 getattr(app, "state", None), "static_handler_executor", None,
             ) or handler_executor
+        submitted = time.perf_counter()
         if handler_executor is None:
-            capture = await asyncio.to_thread(_run_sync_handler, request, body)
+            capture = await asyncio.to_thread(execute)
         else:
             capture = await asyncio.get_running_loop().run_in_executor(
                 handler_executor,
-                _run_sync_handler,
-                request,
-                body,
+                execute,
             )
     except Exception as exc:
         if portal._is_json_api_path(request.url.path):
             status, payload = exception_http_error(exc)
-            return JSONResponse(payload, status_code=status)
+            response = JSONResponse(payload, status_code=status)
+            if timings:
+                response.headers.append("server-timing", timing_header())
+            return response
         raise
     finally:
         if not body.closed:
@@ -206,6 +224,7 @@ async def portal_http(request: Request) -> StreamingResponse:
         status_code=capture.status,
     )
     response.raw_headers = capture.headers
+    response.headers.append("server-timing", timing_header())
     return response
 
 

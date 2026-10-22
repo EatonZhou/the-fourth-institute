@@ -77,6 +77,43 @@ async def _response_body(response) -> bytes:
     return b"".join([chunk async for chunk in response.body_iterator])
 
 
+@pytest.mark.parametrize('custom_executor', [False, True])
+@pytest.mark.parametrize('handler_error', [False, True])
+def test_bridge_reports_separate_queue_and_handler_timing(custom_executor, handler_error):
+    """每个响应携带 Web 排队和处理墙钟耗时，异常不泄露正文或丢失计时。"""
+    async def exercise():
+        executor = ThreadPoolExecutor(max_workers=1) if custom_executor else None
+        ticks = iter([10.0, 12.0, 12.25])
+        app = SimpleNamespace(state=SimpleNamespace(http_handler_executor=executor))
+
+        def handler(request, body):
+            assert request.url.path == '/api/timing-probe'
+            if handler_error:
+                raise RuntimeError('private-handler-detail')
+            capture = asgi._ResponseCapture()
+            capture.write(b'HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nX-Contract: preserved\r\n\r\n{"ok":true}')
+            capture.finish()
+            return capture
+
+        try:
+            with mock.patch.object(asgi, 'time', SimpleNamespace(perf_counter=lambda: next(ticks))), \
+                 mock.patch.object(asgi, '_run_sync_handler', side_effect=handler):
+                response = await asgi.portal_http(_request('/api/timing-probe', app=app))
+            assert response.headers['server-timing'] == 'portal_queue;dur=2000.000, portal_handler;dur=250.000'
+            if handler_error:
+                assert response.status_code == 500
+                assert b'private-handler-detail' not in response.body
+            else:
+                assert response.status_code == 200
+                assert response.headers['x-contract'] == 'preserved'
+                assert json.loads(await _response_body(response)) == {'ok': True}
+        finally:
+            if executor:
+                executor.shutdown(wait=True)
+
+    asyncio.run(exercise())
+
+
 def test_static_assets_remain_available_when_domain_http_pool_is_busy(isolated_portal_case):
     """业务 HTTP 线程池阻塞时脚本仍能加载，普通 API 保留原执行容量"""
     async def exercise():

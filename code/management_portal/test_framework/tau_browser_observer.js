@@ -188,7 +188,24 @@ async function observeBrowser(context, { evidenceDir }) {
   listen(context, 'request', start);
   listen(context, 'response', response => {
     const record = start(response.request()); record.status = response.status();
-    write({ kind: 'response_received', request_id: record.id, response_status: record.status, timing: requestTiming(record.request) });
+    // Only our two content-free duration metrics may enter evidence. Never
+    // persist arbitrary headers/descriptions or infer database execution time.
+    const metrics = {}, seen = new Set();
+    const header = response.headers?.()['server-timing'];
+    if (typeof header === 'string' && header.length <= 4096) {
+      for (const part of header.split(',')) {
+        const match = part.trim().match(/^(portal_queue|portal_handler);dur=(\d+(?:\.\d+)?)$/);
+        if (!match) continue;
+        const [, name, raw] = match;
+        if (seen.has(name)) { delete metrics[name]; continue; }
+        seen.add(name);
+        const duration = Number(raw);
+        if (Number.isFinite(duration)) metrics[name] = duration;
+      }
+    }
+    record.serverTiming = Object.keys(metrics).length ? metrics : null;
+    write({ kind: 'response_received', request_id: record.id, response_status: record.status,
+      server_timing_ms: record.serverTiming, timing: requestTiming(record.request) });
     if (record.status >= 400 && record.frame) {
       const task = snapshot(record.request.frame()); snapshots.add(task); task.finally(() => snapshots.delete(task));
     }
@@ -199,7 +216,8 @@ async function observeBrowser(context, { evidenceDir }) {
     write({ kind: failed ? 'request_failed' : 'request_finished', request_id: record.id,
       ended_at_ms: Date.now(), response_status: record.status,
       failed_reason: failed ? (/^net::ERR_[A-Z0-9_]+$/.test(rawReason || '') ? rawReason : 'unavailable') : null,
-      cancellation_cause: failed ? 'unknown' : null, timing: requestTiming(request) });
+      cancellation_cause: failed ? 'unknown' : null, server_timing_ms: record.serverTiming || null,
+      timing: requestTiming(request) });
     live.delete(record.id);
     if (failed && record.frame) {
       const task = snapshot(request.frame()); snapshots.add(task); task.finally(() => snapshots.delete(task));
@@ -334,7 +352,7 @@ async function observeBrowser(context, { evidenceDir }) {
   await context.addInitScript({ content: `(${documentObserver.toString()})(${safePath.toString()});` });
   for (const page of context.pages()) pageState(page);
   write({ kind: 'capture_started', clocks: { observed_at_ms: 'node_epoch_ms', resource_values: 'browser_time_origin_plus_relative_ms' },
-    limitations: ['No request bodies, arbitrary headers or query strings are persisted; only Portal EventSource and instruction transport identities are retained', 'Request/document association during navigation can be unconfirmed', 'Document destruction can prevent unload/Portal receipt delivery; absence does not prove no close occurred', 'Portal transport identity is matched only to a unique request in the same frame/document; native reconnects remain ambiguous, ResourceTiming lacks transport identity', 'Browser timing is not backend execution timing', 'Zero browser sizes/phases may reflect reuse, cache or restricted exposure; never infer zero server cost'] });
+    limitations: ['No request bodies, arbitrary headers or query strings are persisted; only Portal EventSource and instruction transport identities are retained', 'Request/document association during navigation can be unconfirmed', 'Document destruction can prevent unload/Portal receipt delivery; absence does not prove no close occurred', 'Portal transport identity is matched only to a unique request in the same frame/document; native reconnects remain ambiguous, ResourceTiming lacks transport identity', 'Browser timing is not backend execution timing', 'server_timing_ms contains only allowlisted response-header durations: portal_queue is Web executor wait; portal_handler includes RPC/cache wait and excludes body upload/response streaming; neither is database CPU time', 'Zero browser sizes/phases may reflect reuse, cache or restricted exposure; never infer zero server cost'] });
   return {
     file,
     requestId(request) { return requests.get(request)?.id || null; },

@@ -258,7 +258,35 @@ async function pendingCapture(observe) {
   }, observe);
 }
 
+async function serverTiming(observe) {
+  await capture('server_timing', async ({ context, observer, main, request, rows, output }) => {
+    const samples = [
+      ['portal_queue;dur=1250.500, portal_handler;dur=32.100, db;desc="private-timing-detail"', {portal_queue:1250.5,portal_handler:32.1}],
+      ['portal_queue;dur=0.000, portal_handler;dur=-1', {portal_queue:0}],
+      ['portal_queue;dur=1, portal_queue;dur=2, portal_queue;dur=3', null],
+      ['portal_handler;dur=NaN, portal_queue;dur=3;desc="private-timing-detail"', null],
+      [undefined, null],
+    ];
+    for (const [header, expected] of samples) {
+      const item = request(main.frame, {url:'/api/agent-conversations'});
+      context.emit('request', item);
+      context.emit('response', {request:()=>item,status:()=>200,
+        headers:()=>({'server-timing':header,'set-cookie':'private-response-cookie'})});
+      context.emit('requestfinished', item);
+      const events=rows().filter(row=>row.request_id===observer.requestId(item)
+        && ['response_received','request_finished'].includes(row.kind));
+      assert.equal(events.length,2);
+      for(const event of events) {
+        assert.deepEqual(event.server_timing_ms,expected);
+        assert.equal(event.timing.server_execution_time,null,'wall time is not backend CPU time');
+      }
+    }
+    excludes(output(),['private-timing-detail','private-response-cookie']);
+  }, observe);
+}
+
 const contracts = {
+  server_timing: serverTiming,
   stream_unique: observe => receiptIdentity('stream', false, observe),
   stream_reused: observe => receiptIdentity('stream', true, observe),
   stream_ready: streamReady,

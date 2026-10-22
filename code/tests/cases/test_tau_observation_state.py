@@ -17,6 +17,11 @@ def _run_contract(name):
     assert result.stdout.strip() == f"contract passed: {name}"
 
 
+def test_server_timing_records_only_known_durations_for_the_exact_request():
+    """只保存当前响应的 Web 耗时白名单；未知、重复或未暴露值不推断。"""
+    _run_contract("server_timing")
+
+
 def test_unique_stream_receipt_matches_its_document_request():
     """事件流关闭回执仅关联唯一的同文档请求
 
