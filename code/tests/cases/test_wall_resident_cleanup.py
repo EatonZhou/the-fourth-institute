@@ -10,7 +10,8 @@ from tests.cases.test_wall import wall_project
 @pytest.fixture
 def allocation(monkeypatch):
     roles, releases = {}, []
-    def release(app, actor, selected, *, retain):
+    def release(app, actor, selected, *, retain, preserve_paths):
+        assert preserve_paths
         released = set(selected.values()) - retain
         releases.append((dict(selected), set(retain)))
         for name, rid in list(roles.items()):

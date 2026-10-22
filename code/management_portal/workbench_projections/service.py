@@ -282,7 +282,8 @@ class ProjectionService:
             dropped.append(role)
         return dropped
 
-    def release_roles(self, app: dict, actor: str, roles: dict[str, str], *, retain: set[str] = frozenset()) -> set[str]:
+    def release_roles(self, app: dict, actor: str, roles: dict[str, str], *, retain: set[str] = frozenset(),
+                      preserve_paths: tuple[str, ...] = ()) -> set[str]:
         """Release exact business slots, deleting identities no other slot uses.
 
         Bindings remain until deletion succeeds, so an interrupted request can
@@ -324,7 +325,8 @@ class ProjectionService:
                     raise ProjectionError('projection.resident_busy', f'Resident 仍在工作，请稍后重试删除：{rid}', 409)
             from management_portal.resident_handoff import release_resident
             for rid, lid in targets.items():
-                release_resident(actor=actor, resident_id=rid, lineage_id=lid, forget_associations=False)
+                release_resident(actor=actor, resident_id=rid, lineage_id=lid, forget_associations=False,
+                                 preserve_paths=preserve_paths)
             was_published = app.get('published_revision') == app['revision']
             for alias, role, _ in selected:
                 del bindings[alias]['residents'][role]

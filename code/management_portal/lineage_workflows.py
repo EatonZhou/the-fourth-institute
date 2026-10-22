@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from pathlib import Path
 
 from . import isa_client
 from .hatg.contracts import InstructionError
@@ -119,7 +120,7 @@ class WorkflowBindings:
     def lineage_lock(self, lineage_id):
         return self.store.lineage_lock(lineage_id)
 
-    def delete_resident(self, *, actor: str, lineage_id: str, resident_id: str):
+    def delete_resident(self, *, actor: str, lineage_id: str, resident_id: str, preserve_paths=()):
         """Remove an identity and its owned workflows in one ordinary graph edit.
 
         The binding records are ownership evidence; a title or an arbitrary
@@ -136,6 +137,26 @@ class WorkflowBindings:
             return isa_client.call(actor, 'DeleteResident', {'lineage_id': lineage_id, 'resident_id': resident_id},
                                    key=f'release:{resident_id}:finalize')
         lineage_id = record['lineage_id']
+        keep = {Path(path).resolve(strict=False) for path in preserve_paths}
+        bindings = record.get('workspaces', [])
+        # A business source must not be inside the system folder being deleted,
+        # or contain that Resident's owned directory. Such a request needs a move.
+        for binding in bindings:
+            if not binding.get('is_owned'):
+                continue
+            owned = Path(binding['path']).resolve(strict=False)
+            if any(path == owned.parent or owned.parent in path.parents or path in owned.parents
+                   for path in keep):
+                raise ValueError('Project source overlaps the Resident folder; move it before releasing this Resident')
+        for binding in bindings:
+            path = Path(binding['path']).resolve(strict=False)
+            if not any(path == root or root in path.parents or path in root.parents for root in keep):
+                continue
+            wid = binding['workspace_id']
+            isa_client.call(actor, 'UnbindWorkspace', {'resident_id': resident_id, 'workspace_id': wid},
+                            key=f'release:{resident_id}:unbind:{wid}')
+        # Unbinding can advance the Lineage revision. Read it only afterwards;
+        # on lost replies a fresh GetResident resumes the remaining bindings.
         with self.lineage_lock(lineage_id):
             graph = lineage_graph(actor, lineage_id)
             flows = self.store.for_resident(lineage_id, resident_id)

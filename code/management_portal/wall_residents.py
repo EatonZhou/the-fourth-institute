@@ -40,4 +40,7 @@ def release(record: dict, actor: str, state: dict, *, blocks: set[str] | None) -
                                  for rid in entry.get('resident_ids', []))
         roles = {role: rid for role, rid in roles.items()
                  if role.split(':')[2] in hashes or rid in removed_residents}
-    return service.release_roles(app, actor, roles, retain=retain)
+    # The engineering root belongs to the project, not to its temporary workers.
+    # Unbind it before ordinary Resident deletion can collect the last reference.
+    return service.release_roles(app, actor, roles, retain=retain,
+                                 preserve_paths=(record['root'],))

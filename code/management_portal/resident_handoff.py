@@ -30,11 +30,12 @@ INVOCATION_ASSOCIATION_NAMESPACE = "resident-invocations"
 
 
 def release_resident(*, actor: str, resident_id: str, lineage_id: str,
-                     forget_associations: bool = True) -> None:
+                     forget_associations: bool = True, preserve_paths: tuple[str, ...] = ()) -> None:
     """Finish deletion before forgetting any invocation scope or creation receipt."""
     from .lineage_workflows import WorkflowBindings
 
-    WorkflowBindings().delete_resident(actor=actor, lineage_id=lineage_id, resident_id=resident_id)
+    WorkflowBindings().delete_resident(actor=actor, lineage_id=lineage_id, resident_id=resident_id,
+                                      preserve_paths=preserve_paths)
     if forget_associations:
         forget_resident_associations(resident_id)
 
