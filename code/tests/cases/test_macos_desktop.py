@@ -250,6 +250,19 @@ class MacDesktop(unittest.TestCase):
 
 @unittest.skipUnless(sys.platform == "darwin", "Requires native codesign")
 class MacAppSignature(unittest.TestCase):
+    def test_brand_icon_is_a_complete_icns(self):
+        from scripts.macos import build
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "tfi.icns"
+            build.build_icon(Path(launcher.__file__).parents[1] / "scripts/windows/branding/logo.png", target)
+            data = target.read_bytes()
+            self.assertEqual(data[:4], b"icns")
+            self.assertEqual(int.from_bytes(data[4:8], "big"), len(data))
+            decoded = Path(tmp) / "decoded.iconset"
+            build.command(["iconutil", "-c", "iconset", "-o", decoded, target])
+            self.assertTrue((decoded / "icon_16x16.png").is_file())
+            self.assertTrue((decoded / "icon_512x512@2x.png").is_file())
+
     def test_complete_bundle_signature_rejects_changed_resource_and_metadata(self):
         import plistlib
         import subprocess
@@ -280,6 +293,18 @@ class MacAppSignature(unittest.TestCase):
 
 @unittest.skipUnless(sys.platform == "darwin", "Validated in the native macOS build")
 class MacDesktopGUI(unittest.TestCase):
+    def test_welcome_displays_existing_brand_artwork(self):
+        import tkinter as tk
+        root = tk.Tk()
+        try:
+            bundle = Path(launcher.__file__).parents[1] / "scripts/windows"
+            label = launcher.welcome_logo(root, root, bundle)
+            root.update()
+            self.assertTrue(label.winfo_ismapped())
+            self.assertLessEqual(label.image.width(), 128)
+        finally:
+            root.destroy()
+
     def test_copy_failure_stays_responsive_and_can_retry(self):
         import tkinter as tk
         from scripts import tfi_windows_launcher as desktop
@@ -335,6 +360,63 @@ class MacDesktopGUI(unittest.TestCase):
                     root.destroy()
                 except tk.TclError:
                     pass
+
+
+@unittest.skipUnless(sys.platform == "darwin", "Requires native launchd and Codex")
+class MacCodexNative(unittest.TestCase):
+    def test_launchd_starts_codex_with_short_and_long_socket_paths(self):
+        from contextlib import ExitStack
+        from management_common import site_config
+        from management_portal.execution import account_hosting
+        from management_portal import codex_app_server_host as host
+        from management_portal.codex_app_server_client import CodexAppServerClient
+        from scripts import portal_service_units as units, portal_instance_storage as storage
+        from scripts import tfi_release_platform_macos as adapter
+        binary = os.environ.get("TFI_TEST_CODEX_BINARY")
+        self.assertTrue(binary and Path(binary).is_file(), "Set TFI_TEST_CODEX_BINARY to the validation-only Codex CLI")
+        with tempfile.TemporaryDirectory(prefix="tfi-codex-check-", dir="/tmp") as tmp:
+            base = Path(tmp).resolve()
+            registry = base / "LaunchAgents"
+            clean = {"PATH": os.environ.get("PATH", os.defpath), "HOME": str(base / "home"),
+                     "TFI_MACOS_SERVICE_DIRECTORY": str(registry), "LANG": "en_US.UTF-8"}
+            site_env = {"PORTAL_NETWORK_CONFIG": str(base / "network.env"),
+                        "PYTHONPATH": str(Path(launcher.__file__).parents[1])}
+            for variant in ("short", "实例" * 40):
+                with self.subTest(variant="short" if variant == "short" else "long"), ExitStack() as stack:
+                    logical = base / variant / "codex.sock"
+                    physical = host.unix_socket_path(logical)
+                    name = base.name + ("-short" if variant == "short" else "-long") + ".service"
+                    stack.enter_context(patch.dict(os.environ, clean, clear=True))
+                    stack.enter_context(patch.object(units, "instance_root", return_value=base))
+                    stack.enter_context(patch.object(units, "_codex_unit", return_value=name))
+                    stack.enter_context(patch.object(site_config, "read_site_config", return_value={
+                        "deployment": {"providers": {"codex_binary": binary}}}))
+                    stack.enter_context(patch.object(storage, "site_environment", return_value=site_env))
+                    stack.enter_context(patch.object(account_hosting, "account_home", return_value=base / "empty-account"))
+                    stack.enter_context(patch.object(account_hosting, "codex_socket_path", return_value=logical))
+                    _, directory, job, content, controller = units._native_codex_service("fixture")
+                    adapter.register_services(directory, {job: content})
+                    client = CodexAppServerClient(logical, request_timeout_seconds=10)
+                    try:
+                        controller.start(job)
+                        deadline = time.monotonic() + 30
+                        while not physical.exists() and time.monotonic() < deadline:
+                            time.sleep(.05)
+                        if not physical.exists():
+                            logs = "\n".join(p.read_text(errors="replace")[-3000:] for p in (base / "logs").glob("*"))
+                            self.fail("launchd did not publish the Codex endpoint: " + logs)
+                        self.assertTrue(client.request("model/list", {})["data"])
+                        self.assertIsNone(client.request("account/read", {}).get("account"))
+                    finally:
+                        client.close()
+                        controller.stop(job)
+                        adapter.unit_path(directory, job).unlink(missing_ok=True)
+                    deadline = time.monotonic() + 10
+                    while physical.exists() and time.monotonic() < deadline:
+                        time.sleep(.05)
+                    self.assertFalse(physical.exists(), "Stopped host left its socket behind")
+                    if physical != logical:
+                        physical.parent.rmdir()
 
 
 if __name__ == "__main__":

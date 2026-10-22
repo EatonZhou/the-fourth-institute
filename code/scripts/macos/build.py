@@ -34,6 +34,20 @@ def verify_app(app):
     command(["codesign", "--verify", "--deep", "--strict", "--verbose=2", app])
 
 
+def build_icon(logo, destination):
+    """Build all Finder/Dock resolutions from the existing TFI artwork."""
+    with tempfile.TemporaryDirectory(prefix="tfi-icon-") as tmp:
+        iconset = Path(tmp) / "tfi.iconset"
+        iconset.mkdir()
+        for points in (16, 32, 128, 256, 512):
+            for scale in (1, 2):
+                pixels = points * scale
+                suffix = "@2x" if scale == 2 else ""
+                target = iconset / f"icon_{points}x{points}{suffix}.png"
+                command(["sips", "-z", str(pixels), str(pixels), logo, "--out", target])
+        command(["iconutil", "-c", "icns", "-o", destination, iconset])
+
+
 def seal_app(app):
     # The linker may sign the executable before Info.plist exists. Seal the
     # complete bundle after assembly; a linker signature is not an app signature.
@@ -210,10 +224,12 @@ with tempfile.TemporaryDirectory() as tmp:
     executables.mkdir()
     command(["cc", "-Wall", "-Wextra", "-O2", "-mmacosx-version-min=15.0",
              repo / "code/scripts/macos/launcher.c", "-o", executables / "TheFourthInstitute"])
+    build_icon(payload / "branding/logo.png", contents / "Resources/tfi.icns")
     info = {
         "CFBundleIdentifier": "org.thefourthinstitute.desktop",
         "CFBundleName": "The Fourth Institute", "CFBundleDisplayName": "The Fourth Institute",
         "CFBundleExecutable": "TheFourthInstitute", "CFBundlePackageType": "APPL",
+        "CFBundleIconFile": "tfi.icns",
         "CFBundleShortVersionString": "0.1.0",
         "CFBundleVersion": json.loads((repo / "code/scripts/macos/release.json").read_text())["tag"].removeprefix("macos-preview-"),
         "LSMinimumSystemVersion": "15.0", "NSHighResolutionCapable": True,
@@ -222,8 +238,10 @@ with tempfile.TemporaryDirectory() as tmp:
     seal_app(contents.parent)
     command([executables / "TheFourthInstitute", "--help"])
     # Drive a real Tk loop through a failed copy and retry before real installs.
-    command([python, repo / "code/tests/cases/test_macos_desktop.py", "MacDesktopGUI", "MacAppSignature"],
-            cwd=payload / "code", env={**env, "PYTHONPATH": str(payload / "code")}, timeout=60)
+    command([python, repo / "code/tests/cases/test_macos_desktop.py",
+             "MacDesktopGUI", "MacAppSignature", "MacCodexNative"],
+            cwd=payload / "code", env={**env, "PYTHONPATH": str(payload / "code")}, timeout=180)
+    receipt["codex_native_smoke"] = "passed: launchd, real Codex initialize/model-list/account-read, short/long socket, cleanup; no authorization or inference"
     # Use the actual app executable, with spaces in its path. Keep destination
     # paths short enough for Darwin's Unix socket limit.
     with tempfile.TemporaryDirectory(prefix="tfi-mac-", dir="/tmp") as tmp:

@@ -2,6 +2,10 @@ name: macOS preview installer
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - code/scripts/macos/release.json
 
 permissions:
   contents: read
@@ -12,9 +16,6 @@ concurrency:
 
 jobs:
   package:
-    # Withdrawn at the user's request. Re-enable only after the reported
-    # installation/account failures are verified and a new release is requested.
-    if: ${{ false }}
     strategy:
       fail-fast: false
       matrix:
@@ -37,7 +38,10 @@ jobs:
       - name: Build, install and validate native DMG
         env:
           PYTHONDONTWRITEBYTECODE: '1'
-        run: python code/scripts/macos/build.py
+        run: |
+          npm install --ignore-scripts --prefix "$RUNNER_TEMP/tfi-codex-check" @openai/codex@0.163.0
+          export TFI_TEST_CODEX_BINARY="$RUNNER_TEMP/tfi-codex-check/node_modules/.bin/codex"
+          python code/scripts/macos/build.py
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: macos-${{ matrix.arch }}

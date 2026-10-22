@@ -23,6 +23,18 @@ def default_platform():
     return (Path.home() / "Library/TFI").resolve()
 
 
+def welcome_logo(root, frame, bundle):
+    import tkinter as tk
+    from tkinter import ttk
+    logo = tk.PhotoImage(master=root, file=str(Path(bundle) / "branding/logo.png"))
+    root.iconphoto(True, logo)
+    logo = logo.subsample(max(1, (logo.width() + 127) // 128))
+    label = ttk.Label(frame, image=logo)
+    label.image = logo  # Tk stores only the image name; retain the Python object.
+    label.pack(pady=(0, 10))
+    return label
+
+
 def materialize(bundle, destination, *, progress=None):
     """An immutable app supplies one recoverable, user-owned platform copy."""
     bundle, destination = Path(bundle).resolve(), Path(destination).absolute()
@@ -197,6 +209,7 @@ def main():
         root.title("The Fourth Institute · macOS 试用版")
         frame = ttk.Frame(root, padding=30)
         frame.pack(fill="both", expand=True)
+        welcome_logo(root, frame, args.bundle)
         ttk.Label(frame, text="欢迎安装 The Fourth Institute", font=("Helvetica", 24, "bold")).pack(pady=10)
         ttk.Label(frame, text="与 AI 一起探索、协作、创造知识。", wraplength=450).pack(pady=10)
         ttk.Label(frame, text="macOS 15+ 试用版，基础安装无需联网。", wraplength=450).pack(pady=10)

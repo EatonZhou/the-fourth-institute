@@ -1,12 +1,18 @@
 # macOS 安装包 · 试用版
 
-macOS 试用安装包已暂时下架，自动构建与发布暂停。待安装和 AI 接入问题修复、验证，
-并收到明确的新版发布要求后再恢复。以下保留开发验证和已有安装的操作说明。
+此试用版包含 Codex 后台启动环境、长路径通信、登录等待提示及应用图标修复。
 目标为 macOS 15 及以上，分别构建 Apple Silicon（arm64）和 Intel（x64）DMG，暂不支持覆盖升级。
 
 打开 DMG，将 **The Fourth Institute.app** 拖到 Applications，弹出磁盘映像，然后打开应用。
 首次启动可以取消勾选“安装 Lenia 预置案例”。不勾选时只解压基础资料，案例相关的
 项目、Resident、工作区、文件和数据库记录均不导入。安装重试保持首次选择。
+
+**已试用过旧版的用户**：暂不支持覆盖旧运行目录。请在 Terminal 使用独立目录启动，
+保留原有资料与账号；新目录需要重新连接 AI 账号：
+
+```sh
+"/Applications/The Fourth Institute.app/Contents/MacOS/TheFourthInstitute" --platform "$HOME/Library/TFI-trial-20261022"
+```
 
 Python 3.12、核心 Python 包、PostgreSQL、NATS、Node.js 已内置，准备基础平台无需联网，
 也不依赖电脑已有的 Python 或 Homebrew。连接 AI Provider、下载其运行工具及使用在线模型
@@ -52,6 +58,8 @@ ad-hoc 试用包的 `spctl` 评估可能拒绝执行；不将完整性校验通�
 
 ```sh
 python3 -m pip install -r code/requirements.txt
+npm install --ignore-scripts --prefix /tmp/tfi-codex-check @openai/codex@0.163.0
+export TFI_TEST_CODEX_BINARY=/tmp/tfi-codex-check/node_modules/.bin/codex
 python3 code/scripts/macos/build.py
 ```
 
@@ -60,6 +68,9 @@ python3 code/scripts/macos/build.py
 完整应用在组装后签名，运行验证后复核签名，成品 DMG 只读挂载并再次核验应用和入口。
 初始化检查经过应用的实际可执行入口；Tk 界面测试覆盖复制过程中的响应与失败重试。
 两种架构都通过后 GitHub Actions 才发布预览版；产物附带 SHA-256 与构建回执。
+构建时还通过 launchd 实际启动验证专用的 Codex，使用空账号检查模型列表和长短通信路径、
+退出清理；不登录、不调用模型，该验证工具不打进安装包。应用图标与欢迎页复用 TFI Logo。
+发布仅由明确的版本号更新或手动运行触发，普通源码提交不重新打包。
 仓库只保留最新完整发布的 macOS 预览版，同版 Apple Silicon 和 Intel 安装包均保留。
 新版完整上传并校验后，自动删除更旧的预览 Release、附件及标签；失败或上传未完成时保留当前可用版。
 这些检查不替代用户设备上的 Gatekeeper、Finder 拖拽和所有业务功能验收。
