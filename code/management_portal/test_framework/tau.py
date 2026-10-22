@@ -139,7 +139,9 @@ def build_prompt(
     assignment: dict[str, Any] | None = None,
 ) -> str:
     runner_prompt = (ROOT / "management_portal/test_framework/config/tau_runner_prompt.md").read_text(encoding="utf-8").strip().replace("<test-actor>", test_actor())
-    task_prompt = str(planned["implementation"].get("task_prompt") or "").strip().replace("<test-actor>", test_actor())
+    task_prompt = (str(planned["implementation"].get("task_prompt") or "").strip()
+        .replace("<test-actor>", test_actor())
+        .replace("<tau-native-forms-fixture>", str(ROOT / "tests/cases/fixtures/tau_mcp_forms.py")))
     from management_portal.test_framework.tau_cleanup import team_marker
 
     marker = team_marker(run_id, str(planned["module"]))

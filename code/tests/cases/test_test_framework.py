@@ -1697,7 +1697,7 @@ def test_tau_prompt_identity_does_not_change_with_normal_dev_build_restart(tmp_p
         "description": "在 DEV 重启后接续同一条 TAU 消息。",
         "module": "operations.test-workbench",
         "aspects": ["ui"],
-        "implementation": {"task_prompt": "检查页面。"},
+        "implementation": {"task_prompt": "检查页面。夹具：<tau-native-forms-fixture>"},
     }
     target = _verified_dev_target()
     restarted = VerifiedDevTarget(
@@ -1712,6 +1712,8 @@ def test_tau_prompt_identity_does_not_change_with_normal_dev_build_restart(tmp_p
     after = build_prompt(planned, _tau_config(storage), tmp_path / "evidence", restarted, "testrun_0000000000000003")
 
     assert before == after
+    assert "<tau-native-forms-fixture>" not in before
+    assert str(ROOT / "tests/cases/fixtures/tau_mcp_forms.py") in before
     assert "dev-current" not in before
     assert "dev-restarted" not in after
     assert "由 TAU preflight 核对，已写入证据目录的 run-context.json" in before
