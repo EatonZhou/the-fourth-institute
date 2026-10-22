@@ -56,7 +56,13 @@ def test_run_process_cleans_inherited_pipe_and_timeout_tree(tmp_path, expire):
     else:
         result = runtime.run_process(command, capture_output=True, timeout=5, text=True)
         assert result.returncode == 0 and result.stdout == "done\n"
-    assert not runtime.process_alive(wait_file(path))
+    pid = wait_file(path)
+    # Windows Job termination is asynchronous; observe the process object's
+    # final signal within a bounded interval, rather than one racing poll.
+    deadline = time.monotonic() + 2
+    while runtime.process_alive(pid) and time.monotonic() < deadline:
+        time.sleep(.01)
+    assert not runtime.process_alive(pid)
 
 
 def test_run_process_preserves_error_and_text_contract():
@@ -139,7 +145,7 @@ def test_windows_assigns_suspended_child_before_resume(monkeypatch):
         _handle = 99
     def popen(*args, **kwargs):
         assert kwargs["creationflags"] & windows.CREATE_SUSPENDED
-        assert kwargs["env"]["SystemRoot"] == "C:/Windows"
+        assert {key.upper(): value for key, value in kwargs["env"].items()}["SYSTEMROOT"] == "C:/Windows"
         assert "SECRET_PROVIDER_KEY" not in kwargs["env"]
         events.append("spawn-suspended")
         return Process()

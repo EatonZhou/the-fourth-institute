@@ -60,6 +60,7 @@ def test_macos_long_service_paths_use_authenticated_local_transport(tmp_path, ow
     assert endpoint.family == socket.AF_INET
 
 
+@pytest.mark.skipif(not hasattr(socket, "AF_UNIX"), reason="POSIX socket family")
 def test_macos_socket_limit_counts_encoded_bytes():
     from pathlib import Path
     short = Path("/tmp/" + "a" * 98)  # 103 bytes plus terminating NUL fits sun_path.
@@ -81,8 +82,11 @@ def test_macos_long_endpoint_roundtrip_restart_and_private_rendezvous(tmp_path):
     old = Owner()
     current = Owner()
     old.server_close()  # A previous generation must not unlink its successor.
-    assert path.exists()
-    assert path.stat().st_mode & 0o777 == 0o600
+    from management_common.local_ipc import rendezvous_path
+    from management_common.file_permissions import assert_private_file
+    record = rendezvous_path(path)
+    assert record.exists()
+    assert_private_file(record)
     thread = threading.Thread(target=current.serve_forever, daemon=True)
     thread.start()
     try:
@@ -95,7 +99,8 @@ def test_macos_long_endpoint_roundtrip_restart_and_private_rendezvous(tmp_path):
         current.shutdown()
         current.server_close()
         thread.join(timeout=2)
-    assert not path.exists()
+    from management_common.local_ipc import rendezvous_path
+    assert not rendezvous_path(path).exists()
 
 
 def test_connect_service_accepts_tcp_endpoint_without_changing_logical_path(tmp_path):
@@ -143,7 +148,8 @@ def test_draining_server_binds_tcp_when_owner_selects_windows_endpoint(tmp_path)
         server.shutdown()
         server.server_close()
         thread.join(timeout=2)
-    assert not path.exists()
+    from management_common.local_ipc import rendezvous_path
+    assert not rendezvous_path(path).exists()
 
 
 def test_windows_rpc_key_is_private_to_installation_in_local_app_data(tmp_path, monkeypatch):

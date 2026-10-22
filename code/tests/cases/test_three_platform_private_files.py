@@ -121,6 +121,17 @@ class PrivateFilesTests(unittest.TestCase):
             with self.subTest(sid=sid), self.assertRaises(private.PrivateFileError):
                 private._validate_windows_acl(current, current, [*aces, (0, 3, 0x1F01FF, sid)])
 
+    def test_admin_group_owner_requires_the_effective_tokens_default_owner(self):
+        private = self.capability()
+        user, admin = "S-1-5-21-1-2-3-1001", "S-1-5-32-544"
+        aces = [(0, 3, 0x1F01FF, sid) for sid in ("S-1-5-18", admin, "S-1-3-4")]
+        private._validate_windows_acl(user, admin, aces, token_owner_sid=admin)
+        for owner, default, grants in ((admin, user, aces), (admin, None, aces),
+                (admin, admin, None), (user + "0", admin, aces),
+                (admin, admin, aces + [(0, 3, 1, "S-1-1-0")])):
+            with self.subTest(owner=owner, default=default), self.assertRaises(private.PrivateFileError):
+                private._validate_windows_acl(user, owner, grants, token_owner_sid=default)
+
     @unittest.skipUnless(os.name == "nt", "Windows DACL integration")
     def test_windows_python_private_directory_supports_secret_roundtrip(self):
         private = self.capability()

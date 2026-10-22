@@ -106,8 +106,12 @@ def assert_private_posix_acl(descriptor: int) -> None:
         library.acl_free(acl)
 
 
-def _validate_windows_acl(current_sid, owner_sid, aces):
-    if owner_sid != current_sid or aces is None:
+def _validate_windows_acl(current_sid, owner_sid, aces, *, token_owner_sid=None):
+    # An elevated Windows token can create objects owned by Administrators.
+    # Accept that owner only when it is this token's verified default owner;
+    # ordinary tokens and all foreign user/group owners remain rejected.
+    own = owner_sid == current_sid or (owner_sid == "S-1-5-32-544" and owner_sid == token_owner_sid)
+    if not own or aces is None:
         raise PrivateFileError("Private object has a foreign owner or NULL DACL")
     # CPython's Windows mkdir(mode=0o700) grants OWNER RIGHTS (OW),
     # which applies to the object's owner already verified above.
@@ -176,7 +180,7 @@ class _WindowsSecurity:
         self.get_ace = bind(self.advapi, "GetAce", [p, w.DWORD, p], w.BOOL)
         self.sd_dacl = bind(self.advapi, "GetSecurityDescriptorDacl", [p, p, p, p], w.BOOL)
         self.sd_owner = bind(self.advapi, "GetSecurityDescriptorOwner", [p, p, p], w.BOOL)
-        self.current_sid = self._current_sid()
+        self.current_sid, self.token_owner_sid = self._current_identity()
 
     @staticmethod
     def checked(ok):
@@ -191,20 +195,23 @@ class _WindowsSecurity:
         finally:
             self.free(text)
 
-    def _current_sid(self):
+    def _current_identity(self):
         token = ctypes.c_void_p()
         if not self.thread_token(self.thread(), 8, True, ctypes.byref(token)):
             if ctypes.get_last_error() != 1008:  # ERROR_NO_TOKEN
                 self.checked(False)
             self.checked(self.process_token(self.process(), 8, ctypes.byref(token)))
         try:
-            size = self.w.DWORD()
-            self.token_info(token, 1, None, 0, ctypes.byref(size))
-            if ctypes.get_last_error() != 122:  # ERROR_INSUFFICIENT_BUFFER
-                self.checked(False)
-            buffer = ctypes.create_string_buffer(size.value)
-            self.checked(self.token_info(token, 1, buffer, size, ctypes.byref(size)))
-            return self.sid_text(ctypes.cast(buffer, ctypes.POINTER(ctypes.c_void_p))[0])
+            identities = []
+            for kind in (1, 4):  # TOKEN_USER, TOKEN_OWNER both begin with PSID.
+                size = self.w.DWORD()
+                self.token_info(token, kind, None, 0, ctypes.byref(size))
+                if ctypes.get_last_error() != 122:  # ERROR_INSUFFICIENT_BUFFER
+                    self.checked(False)
+                buffer = ctypes.create_string_buffer(size.value)
+                self.checked(self.token_info(token, kind, buffer, size, ctypes.byref(size)))
+                identities.append(self.sid_text(ctypes.cast(buffer, ctypes.POINTER(ctypes.c_void_p))[0]))
+            return tuple(identities)
         finally:
             self.close(token)
 
@@ -267,7 +274,8 @@ class _WindowsSecurity:
                         raise PrivateFileError("Private object contains an unsupported ACE")
                     sid = self.sid_text(pointer.value + self.Ace.sid.offset)
                     aces.append((ace.type, ace.flags, ace.mask, sid))
-            _validate_windows_acl(self.current_sid, self.sid_text(owner), aces)
+            _validate_windows_acl(self.current_sid, self.sid_text(owner), aces,
+                                  token_owner_sid=self.token_owner_sid)
 
     def file_descriptor(self, handle, *, writable):
         import msvcrt

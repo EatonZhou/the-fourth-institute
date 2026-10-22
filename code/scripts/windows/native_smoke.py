@@ -46,8 +46,10 @@ def run_worker(platform, phase, log):
 def exercise(exe, root, included, evidence):
     check(not root.exists(), 'Native smoke requires a new directory')
     log = evidence / ('full.log' if included else 'base.log')
-    argv = [str(exe), '/S', *([] if included else ['/NOEXAMPLES']), '/D=' + str(root)]
-    subprocess.run(argv, check=True, timeout=300)
+    argv = [str(exe), '/S', *([] if included else ['/NOEXAMPLES'])]
+    # NSIS requires /D= as an unquoted final command-line tail, including spaces.
+    command = subprocess.list2cmdline(argv) + ' /D=' + str(root)
+    subprocess.run(command, executable=str(exe), check=True, timeout=300)
     check((root / 'windows-package.json').is_file(), 'NSIS did not install the payload')
     state_path = root / 'instance/example_instance/installation.json'
     succeeded = False
