@@ -14,6 +14,7 @@
         messageId: String(new URLSearchParams(window.location.search).get("message") || "").trim(),
       };
       let pendingProgramItemId = openingNavigation.programItemId;
+      let pendingWorkspaceId = openingNavigation.workspaceId;
       const $id = (id) => document.getElementById(id);
       const agentDialogControllers = new Map();
       let agentFloatingMenuOverlay = null;
@@ -5534,15 +5535,17 @@
         });
       }
 
-      async function openWorkspaceResource(workspaceId) {
+      async function openWorkspaceResource(workspaceId, { isCurrent = () => true } = {}) {
         const resolved = await apiGet(`/api/resources/resolve?address=${encodeURIComponent(workspaceId)}`);
+        if (!isCurrent()) return false;
         const path = String(resolved?.record?.attributes?.path || "");
         if (resolved?.resource_type !== "workspace" || !resolved.exists || !path) {
           throw new Error("Workspace 已删除或不可用");
         }
-        setSideView("workspaces", { userInitiated: true });
+        setSideView("workspaces", { userInitiated: true, openingResource: true });
         lineageWorkbench?.focusPanel("navigation");
         await showPersonalWorkspaces().openResource({ workspaceId, title: resolved.record.title, path });
+        return isCurrent();
       }
 
       async function openResourcePreview(context = {}, options = {}) {
@@ -6960,14 +6963,19 @@
               preserveQuery: true,
             });
           }
-          if (loadSeq === 1 && openingNavigation.workspaceId) {
+          if (loadSeq === state.loadAllSeq && pendingWorkspaceId) {
+            const workspaceId = pendingWorkspaceId;
+            const isCurrent = () => loadSeq === state.loadAllSeq && pendingWorkspaceId === workspaceId;
             try {
-              await openWorkspaceResource(openingNavigation.workspaceId);
-              history.replaceState(history.state || {}, "", `/lineage?workspace=${encodeURIComponent(openingNavigation.workspaceId)}`);
+              if (await openWorkspaceResource(workspaceId, { isCurrent })) {
+                pendingWorkspaceId = "";
+                history.replaceState(history.state || {}, "", `/lineage?workspace=${encodeURIComponent(workspaceId)}`);
+              }
             } catch (error) {
-              window.PortalUI.toast(window.PortalI18n.text`打开 Workspace 失败：${error.message || error}`, "error");
+              if (isCurrent()) window.PortalUI.toast(window.PortalI18n.text`打开 Workspace 失败：${error.message || error}`, "error");
             }
           }
+          if (loadSeq !== state.loadAllSeq) return;
           state.loadAllComplete = true;
         } catch (err) {
           if (loadSeq !== state.loadAllSeq) return;
@@ -7574,9 +7582,12 @@
         return personalWorkspaces.controller;
       }
 
-      function setSideView(view, { userInitiated = false } = {}) {
+      function setSideView(view, { userInitiated = false, openingResource = false } = {}) {
         const next = window.PortalNavigation.normalizeLineageView(view);
         if (userInitiated) {
+          // A real navigation supersedes an opening URL; restored panels and
+          // a repeated loadAll must not consume that URL before it is opened.
+          if (!openingResource) pendingWorkspaceId = "";
           state.sideViewInteractionSeq += 1;
           if (!lineageWorkbench?.isPanelExpanded("navigation")) setNavigationPanelVisible(true);
         }
