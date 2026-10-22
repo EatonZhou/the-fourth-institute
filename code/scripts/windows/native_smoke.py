@@ -26,10 +26,10 @@ def check(condition, message):
 
 def worker(platform, phase):
     sys.path.insert(0, str(platform / 'code'))
-    from scripts.tfi_windows_launcher import DesktopStartup, stop_all
+    from scripts.tfi_windows_launcher import DefaultStartup, stop_all
     if phase == 'initialize':
         # Discard the URL: it contains the private first-administrator invitation.
-        DesktopStartup(platform, progress=lambda text: print(text, flush=True)).run()
+        DefaultStartup(platform, progress=lambda text: print(text, flush=True)).run()
     else:
         stop_all(platform, unregister=True)
 
