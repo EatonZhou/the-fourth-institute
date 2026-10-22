@@ -84,11 +84,14 @@ class CodexCompactionRead:
 
 
 def read_codex_turn_messages(
-    path: Path | str, turn_id: str,
+    path: Path | str, turn_id: str, *, thread_id: str = "",
 ) -> tuple[dict[str, Any], ...] | None:
     """Read native message identities, never reconstructed ThreadItem IDs.
 
-    Only complete response records inside the exact task boundary count. A
+    Ordinary messages require the exact task boundary. Inline reviews instead
+    persist outer-turn AgentMessage items between review-mode markers while a
+    nested worker owns task_started. Those require the exact thread/turn IDs,
+    review exit and terminal receipt, never the nested worker's responses. A
     missing/partial/unbounded history is unknown, not an empty successful read.
     No body matching, display-number parsing, or adjacent-turn imports.
     """
@@ -96,6 +99,8 @@ def read_codex_turn_messages(
         return None
     pending: list[dict[str, Any]] = []
     invalid = False
+    review_messages: dict[str, dict[str, Any]] = {}
+    review_terminal = review_exited = review_invalid = False
     try:
         for raw_line in _reverse_lines(Path(path), complete_lines_only=True):
             entry = json.loads(raw_line)
@@ -104,6 +109,48 @@ def read_codex_turn_messages(
             payload = entry.get("payload")
             if not isinstance(payload, dict):
                 continue
+            if entry.get("type") == "event_msg":
+                if _is_rollback_event(payload):
+                    return None
+                if payload.get("turn_id") == turn_id:
+                    if payload.get("type") == "task_complete":
+                        review_terminal = True
+                    elif payload.get("type") == "turn_aborted":
+                        review_invalid = True
+                    elif payload.get("type") == "item_completed":
+                        item = payload.get("item")
+                        if isinstance(item, dict) and item.get("type") in {
+                            "EnteredReviewMode", "ExitedReviewMode", "AgentMessage",
+                        }:
+                            # The rollout can contain nested and neighboring tasks.
+                            # Never promote a display item or match by message body.
+                            if not thread_id or payload.get("thread_id") != thread_id:
+                                review_invalid = True
+                            kind = item["type"]
+                            if kind == "EnteredReviewMode":
+                                if review_invalid or not review_terminal or not review_exited:
+                                    return None
+                                return tuple(reversed(tuple(review_messages.values())))
+                            if kind == "ExitedReviewMode":
+                                review_exited = True
+                            elif kind == "AgentMessage":
+                                identity = item.get("id")
+                                content = item.get("content")
+                                if (not isinstance(identity, str) or not identity.strip()
+                                        or not isinstance(content, list) or review_exited or not review_terminal):
+                                    review_invalid = True
+                                    continue
+                                text = "\n".join(
+                                    part["text"] for part in content
+                                    if isinstance(part, dict) and part.get("type") == "Text"
+                                    and isinstance(part.get("text"), str)
+                                ).strip()
+                                if text:
+                                    message = {"id": identity, "type": "agentMessage", "text": text,
+                                               "phase": "final_answer", "questions": []}
+                                    if identity in review_messages and review_messages[identity] != message:
+                                        review_invalid = True
+                                    review_messages[identity] = message
             if entry.get("type") == "event_msg" and payload.get("type") == "task_started":
                 if payload.get("turn_id") == turn_id:
                     return None if invalid else tuple(reversed(pending))

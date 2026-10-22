@@ -804,7 +804,7 @@ class CodexBackend:
         path = self.account_registry.find_thread_rollout(
             account_id, thread_id, include_archived=True,
         )
-        native = (read_codex_turn_messages(path, str(turn.get("id") or ""))
+        native = (read_codex_turn_messages(path, str(turn.get("id") or ""), thread_id=thread_id)
                   if isinstance(path, (str, Path)) else None)
         if str(turn.get("status") or "").casefold() in {"inprogress", "in_progress"}:
             messages = iter(native or ())

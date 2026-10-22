@@ -47,6 +47,89 @@ def _write(path: Path, records: list[dict]) -> None:
     path.write_text("".join(json.dumps(record) + "\n" for record in records), encoding="utf-8")
 
 
+def _review_item(kind: str, identity: str, **fields) -> dict:
+    return {"type": "event_msg", "payload": {
+        "type": "item_completed", "thread_id": "thread-one", "turn_id": "review-parent",
+        "item": {"type": kind, "id": identity, **fields},
+    }}
+
+
+def _review_records() -> list[dict]:
+    # De-identified shape observed in the native inline-review rollout: the
+    # parent has mode items and a final, while task_started belongs to a child.
+    return [
+        _start("previous"), _message("previous-final", "审查完成", "final_answer"),
+        _review_item("EnteredReviewMode", "review-entered"),
+        _start("review-child"), _message("child-final", "审查完成", "final_answer"),
+        _review_item("ExitedReviewMode", "review-exited", review_output={"findings": []}),
+        _review_item("AgentMessage", "msg_review_native", content=[{"type": "Text", "text": "审查完成"}]),
+        {"type": "event_msg", "payload": {"type": "task_complete", "turn_id": "review-parent"}},
+        _start("next"), _message("next-final", "审查完成", "final_answer"),
+    ]
+
+
+def test_inline_review_replays_only_the_native_outer_message_once(tmp_path):
+    path = tmp_path / "rollout.jsonl"
+    records = _review_records()
+    # Repeated completed receipts retain one native identity, not two Finals.
+    records.insert(7, deepcopy(records[6]))
+    _write(path, records)
+    backend = _backend(path)
+    client = CodexAppServerClient(tmp_path / "unused.sock")
+    events = []
+    client.read_turn = mock.Mock(return_value=_snapshot("review-parent"))
+    waiter = _TurnWaiter(thread_id="thread-one", turn_id="review-parent", event_callback=events.append,
+                        turn_snapshot_transform=lambda turn: backend._canonical_replay_turn("zero", "thread-one", turn))
+    try:
+        for _ in range(2):
+            assert client._read_terminal_turn(waiter)["status"] == "completed"
+        assert [event["params"]["item"]["id"] for event in events] == ["msg_review_native"]
+        outputs = execution_outputs_from_events([
+            {"sequence": index, "execution_id": "execution-" + "1" * 24,
+             "type": "provider_event", "details": event}
+            for index, event in enumerate(events, 1)
+        ])
+        assert len(outputs) == 1
+        assert outputs[0]["text"] == "审查完成"
+        assert events[0]["params"]["item"]["phase"] == "final_answer"
+    finally:
+        client.close()
+
+
+@pytest.mark.parametrize("fault", [
+    "missing-enter", "missing-exit", "missing-terminal", "missing-id", "wrong-thread",
+    "wrong-turn", "partial-message", "conflicting-id", "rollback", "bounded",
+])
+def test_inline_review_without_exact_durable_receipts_defers(tmp_path, monkeypatch, fault):
+    path = tmp_path / "rollout.jsonl"
+    records = _review_records()
+    if fault.startswith("missing-"):
+        index = {"missing-enter": 2, "missing-exit": 5, "missing-terminal": 7}.get(fault)
+        if index is not None:
+            records.pop(index)
+        else:
+            records[6]["payload"]["item"].pop("id")
+    elif fault in {"wrong-thread", "wrong-turn"}:
+        records[6]["payload"]["thread_id" if fault == "wrong-thread" else "turn_id"] = "unrelated"
+    elif fault == "conflicting-id":
+        changed = deepcopy(records[6]); changed["payload"]["item"]["content"][0]["text"] = "冲突内容"
+        records.insert(7, changed)
+    elif fault == "rollback":
+        records.append({"type": "event_msg", "payload": {"type": "thread_rolled_back", "num_turns": 1}})
+    elif fault == "bounded":
+        monkeypatch.setattr("management_portal.execution.codex_rollout_history.MAX_ACTIVE_HISTORY_SCAN_BYTES", 16)
+    if fault == "partial-message":
+        # The last record has no durable newline; no replacement identity may
+        # be inferred from the turn snapshot's display item.
+        _write(path, records[:6])
+        with path.open("a", encoding="utf-8") as stream:
+            stream.write(json.dumps(records[6]))
+    else:
+        _write(path, records)
+    with pytest.raises(ExecutionRecoveryDeferred):
+        _backend(path)._canonical_replay_turn("zero", "thread-one", _snapshot("review-parent"))
+
+
 def test_restarted_worker_replays_native_message_identity_without_text_dedup_contracts(tmp_path, subtests, isolated_portal_case):
     """新 Worker 按原生消息 ID 重放消息，文本相同的消息不被去重
 
