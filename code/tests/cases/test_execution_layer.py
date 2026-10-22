@@ -1680,6 +1680,7 @@ def test_codex_backend_defaults_subagents_off_in_thread_config(
         "agents": {"enabled": False, "interrupt_message": False},
         "compact_prompt": execution_backends._CODEX_COMPACTION_PROMPT,
         "project_doc_max_bytes": 0,
+        "tools": {"update_plan": {"enabled": True}},
         "shell_environment_policy.set": {
             "PORTAL_EXECUTION_CONTEXT_FILE": str(execution_backends.CodexBackend._execution_context_path(request)), "PORTAL_RESIDENT_ID": "resident_0123456789ab",
         },
@@ -1840,6 +1841,7 @@ def test_codex_backend_resumes_an_accepted_turn_after_disconnect() -> None:
             "agents": {"enabled": False, "interrupt_message": False},
             "compact_prompt": execution_backends._CODEX_COMPACTION_PROMPT,
             "project_doc_max_bytes": 0,
+            "tools": {"update_plan": {"enabled": True}},
             "shell_environment_policy.set": {"PORTAL_EXECUTION_CONTEXT_FILE": str(execution_backends.CodexBackend._execution_context_path(request))},
         },
         event_callback=mock.ANY,
@@ -3974,6 +3976,7 @@ def test_codex_backend_forwards_per_session_capability_disables() -> None:
         "agents": {"enabled": False, "interrupt_message": False},
         "compact_prompt": execution_backends._CODEX_COMPACTION_PROMPT,
         "project_doc_max_bytes": 0,
+        "tools": {"update_plan": {"enabled": True}},
     }
 
 
@@ -3992,6 +3995,7 @@ def test_codex_backend_enables_subagents_only_when_explicitly_allowed_contracts(
             "agents": {"enabled": True, "interrupt_message": False},
             "compact_prompt": execution_backends._CODEX_COMPACTION_PROMPT,
             "project_doc_max_bytes": 0,
+            "tools": {"update_plan": {"enabled": True}},
         }
     with subtests.test(contract='test_backend_context_emits_uniform_provider_input_binding'), isolated_portal_case() as case_path:
         events: list[tuple[str, dict]] = []

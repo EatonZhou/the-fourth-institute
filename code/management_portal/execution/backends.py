@@ -953,6 +953,21 @@ class CodexBackend:
         # These do not decrypt opaque reasoning or override explicit choices.
         config.setdefault("show_raw_agent_reasoning", True)
         config.setdefault("model_reasoning_summary", "auto")
+        # Codex no longer registers update_plan by default. Portal projects
+        # its native plan events, so enable it unless this session overrides
+        # the choice (Codex accepts nested and dotted config keys).
+        if "tools.update_plan.enabled" not in config and "tools.update_plan" not in config:
+            raw_tools = config.get("tools")
+            if raw_tools is not None and not isinstance(raw_tools, dict):
+                raise ValueError("Codex config_overrides.tools must be an object")
+            tools = dict(raw_tools or {})
+            raw_plan = tools.get("update_plan")
+            if raw_plan is not None and not isinstance(raw_plan, dict):
+                raise ValueError("Codex config_overrides.tools.update_plan must be an object")
+            plan = dict(raw_plan or {})
+            plan.setdefault("enabled", True)
+            tools["update_plan"] = plan
+            config["tools"] = tools
         raw_agents = config.get("agents")
         if raw_agents is not None and not isinstance(raw_agents, dict):
             raise ValueError("Codex config_overrides.agents must be an object")

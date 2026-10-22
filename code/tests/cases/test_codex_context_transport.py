@@ -10,6 +10,42 @@ from management_portal.execution.backends import CodexBackend
 from management_portal.execution.contracts import ExecutionRequest, SessionOptions
 
 
+def test_native_plan_is_enabled_without_changing_other_tools_or_the_input_config():
+    """默认开启原生计划工具，保留其他工具配置且不改写调用方配置。"""
+    options = {"config_overrides": {"tools": {"web_search": {"enabled": False}}}}
+    original = json.loads(json.dumps(options))
+    config = CodexBackend._thread_config(options)
+    assert config["tools"] == {
+        "web_search": {"enabled": False}, "update_plan": {"enabled": True},
+    }
+    assert options == original
+    assert CodexBackend._thread_config({})["tools"]["update_plan"]["enabled"] is True
+
+
+@pytest.mark.parametrize("overrides", [
+    {"tools": {"update_plan": {"enabled": False}}},
+    {"tools.update_plan.enabled": False},
+    {"tools.update_plan": {"enabled": False}},
+])
+def test_native_plan_respects_explicit_session_disable(overrides):
+    """显式会话关闭不被默认原生计划配置覆盖。"""
+    original = json.loads(json.dumps(overrides))
+    config = CodexBackend._thread_config({"config_overrides": overrides})
+    for key, value in overrides.items():
+        assert config[key] == value
+    assert overrides == original
+    assert not any(config.get(key) for key in ("tools.update_plan.enabled",))
+    if "tools" not in overrides:
+        assert "tools" not in config
+
+
+@pytest.mark.parametrize("overrides", [{"tools": []}, {"tools": {"update_plan": False}}])
+def test_native_plan_rejects_malformed_config_without_overwriting_it(overrides):
+    """错误工具配置直接报错，不用默认值悄悄覆盖。"""
+    with pytest.raises(ValueError, match="config_overrides.tools"):
+        CodexBackend._thread_config({"config_overrides": overrides})
+
+
 def test_thread_configuration_stays_stable_while_the_execution_changes(tmp_path, monkeypatch):
     """执行变化时 codex 线程配置保持不变，执行上下文文件按每次执行写入且只含执行 ID"""
     monkeypatch.setenv('PORTAL_EXECUTION_STATE_ROOT', str(tmp_path))
