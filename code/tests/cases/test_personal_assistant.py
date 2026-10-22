@@ -25,18 +25,32 @@ def personal(future_creation_store, charters):
     return ama, assistant
 
 
-def test_personal_family_can_precede_first_ai_account(future_creation_store, charters, monkeypatch):
+def test_personal_family_can_precede_first_ai_account(future_creation_store, monkeypatch):
     """首次注册完整个人 Family 不依赖 Codex 账号，执行配置留待默认 AI 就绪。"""
-    from management_portal.execution import account_registrations
+    from management_portal.execution import account_registrations, account_adapters
     from management_portal.society_service import resident_registration_domain, resident_runtime_domain
     monkeypatch.setattr(account_registrations, "roles", lambda: [])
     def no_account(*args, **kwargs):
         raise ValueError("No enabled default Codex account")
     monkeypatch.setattr(resident_registration_domain, "resolve_account_configuration", no_account)
+    monkeypatch.setattr(account_adapters.CodexRoutes, "default_for_new_session", no_account)
+    from management_portal import permission_system
+    from management_portal.society_service import resource_client
+    # The isolated resource boundary must expose the real personal-owner
+    # descriptor for deliveries between the newly created Family roles.
+    monkeypatch.setattr(permission_system, "_DESCRIPTORS", SimpleNamespace(get=lambda rid:
+        resource_client._resident_resource_projection(resident_catalog.get_catalog().get(rid))["descriptor"]))
     ama = principal_hierarchy_domain.ensure_personal_ama("newcomer", "newcomer")
     assistant = personal_assistant.ensure("newcomer", ama["resident_id"], "newcomer")
     graph = graphs.get_lineage(assistant["lineage_id"], "newcomer")
     family = graph["function_blocks"][0]["family"]
+    from management_portal.society_service import resident_execution_work
+    steward = resident_catalog.get_catalog().get(family["steward"])
+    job = resident_execution_work.read(steward)
+    assert job["business_ref"] == "duty/family-organization"
+    message = resident_conversation_stream.get_repository().message(
+        family["steward"], job["user_message_id"])
+    assert message["author_id"] == family["facade"]
     for rid in [ama["resident_id"], *(family[r] for r in ("facade", "router", "steward"))]:
         record = resident_catalog.get_catalog().get(rid)
         assert record["backend_route_id"] == ""

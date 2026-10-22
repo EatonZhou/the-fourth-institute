@@ -224,6 +224,11 @@ class CodexOptions(NativeOptions):
     default_permission_preset = "full-access"
 
     def handle_native_command(self, content, settings, **context):
+        # Ordinary messages are admitted before the first AI account exists.
+        # Resolving a Codex route belongs to a native command or execution,
+        # not to deciding whether this message is a command.
+        if not str(content or "").strip().startswith("/"):
+            return {"handled": False}
         from . import codex_runtime_settings
         context["account_id"] = context.pop("account_route")()
         return codex_runtime_settings.handle_codex_native_command(content, settings, **context)
