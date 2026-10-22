@@ -159,7 +159,9 @@ async function observeBrowser(context, { evidenceDir }) {
     const streamValue = request.resourceType() === 'eventsource' && safePath(request.url()) === '/api/events'
       ? new URL(request.url()).searchParams.get('portal_stream_id') : null;
     const streamId = /^[a-z0-9-]{1,96}$/.test(streamValue || '') ? streamValue : null;
-    const transportValue = safePath(request.url()) === '/api/instructions/execute' && request.method() === 'POST'
+    const pdfRequest = request.method() === 'GET'
+      && /^\/api\/articles\/[^/]+\/pdf$/.test(new URL(request.url()).pathname);
+    const transportValue = (safePath(request.url()) === '/api/instructions/execute' && request.method() === 'POST') || pdfRequest
       ? request.headers()['x-portal-request-id'] : null;
     const transportId = /^[a-z0-9-]{1,96}$/.test(transportValue || '') ? transportValue : null;
     const transportKey = streamId ? `stream:${streamId}` : (transportId ? `request:${transportId}` : null);
@@ -237,7 +239,7 @@ async function observeBrowser(context, { evidenceDir }) {
         state.document.confirmed = true;
       }
       write({ kind: data.kind, ...location(state), browser_observed_at_ms: Number.isFinite(data.at) ? data.at : null, time_origin_ms: Number.isFinite(data.time_origin) ? data.time_origin : null });
-    } else if (['beforeunload', 'pagehide', 'portal_connections', 'portal_stream_ready', 'resource_timing', 'resource_timing_buffer_full', 'observer_unavailable'].includes(data.kind)) {
+    } else if (['beforeunload', 'pagehide', 'portal_connections', 'portal_stream_ready', 'pdf_reader_cancelled', 'resource_timing', 'resource_timing_buffer_full', 'observer_unavailable'].includes(data.kind)) {
       const doc = tokens.get(data.token);
       const associated = { ...location(state), document_id: doc?.id || null, document_confirmed: !!doc };
       if (data.kind === 'resource_timing') {
@@ -265,6 +267,20 @@ async function observeBrowser(context, { evidenceDir }) {
           ready_at_ms: Number.isFinite(data.ready_at_ms) ? data.ready_at_ms : null,
           request_id: match?.id || null,
           request_association: match ? 'portal_stream_identity' : 'unavailable_no_unique_transport_identity' });
+      } else if (data.kind === 'pdf_reader_cancelled') {
+        const transportId = /^[a-z0-9-]{1,96}$/.test(data.transport_id || '') ? data.transport_id : null;
+        const path = safePath(data.path);
+        const candidates = (transportRequests.get(transportId ? `request:${transportId}` : null) || [])
+          .filter(request => request.document === doc && request.frame === state
+            && request.request.method() === 'GET'
+            && /^\/api\/articles\/[^/]+\/pdf$/.test(new URL(request.request.url()).pathname)
+            && safePath(request.request.url()) === path);
+        const match = doc && candidates.length === 1 ? candidates[0] : null;
+        write({ kind: 'pdf_reader_cancelled', ...associated, path, transport_id: transportId,
+          reason: data.reason === 'pdf_range_handover' ? data.reason : 'unknown',
+          cancelled_at_ms: Number.isFinite(data.cancelled_at_ms) ? data.cancelled_at_ms : null,
+          request_id: match?.id || null,
+          request_association: match ? 'pdf_fetch_identity' : 'unavailable_no_unique_transport_identity' });
       } else if (data.kind === 'portal_connections') {
         for (const entry of data.entries || []) {
           const reason = /^(subscription_unchanged|subscription_changed|handover_complete|next_stream_closed|closed|stream_error|stale_stream|handover_timeout|next_stream_error|restart|leadership_released|page_closed|retry|caller_aborted|stream_batch_read|first_batch_read|backlog_read|watch_closed|AbortError)$/.test(entry.reason || '') ? entry.reason : 'unknown';
@@ -294,6 +310,43 @@ async function observeBrowser(context, { evidenceDir }) {
     const hex = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
     const token = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
     const emit = data => window.__portalTauObservationRecord({ token, at: Date.now(), ...data }).catch(() => {});
+    // PDF.js cancels its full-body reader when it selects byte ranges. Observe
+    // that actual call, not a nearby navigation or a subsequent successful PDF.
+    // Each same-origin fetch gets its own opaque ID; no content enters evidence.
+    if (typeof window.fetch === 'function') {
+      const nativeFetch = window.fetch.bind(window);
+      let pdfFetchSequence = 0;
+      window.fetch = async (input, init) => {
+        let url;
+        try { url = new URL(typeof input === 'string' || input instanceof URL ? input : input.url, location.href); }
+        catch { return nativeFetch(input, init); }
+        const method = String(init?.method || input?.method || 'GET').toUpperCase();
+        if (url.origin !== location.origin || method !== 'GET'
+          || !/^\/api\/articles\/[^/]+\/pdf$/.test(url.pathname)) return nativeFetch(input, init);
+        const transportId = `${token}-pdf-${++pdfFetchSequence}`;
+        const headers = new Headers(init?.headers || input?.headers);
+        headers.set('X-Portal-Request-ID', transportId);
+        const response = await nativeFetch(input, { ...init, headers });
+        const body = response.body;
+        if (body) {
+          const getReader = body.getReader.bind(body);
+          body.getReader = (...args) => {
+            const reader = getReader(...args);
+            const cancel = reader.cancel.bind(reader);
+            reader.cancel = reason => {
+              const result = cancel(reason);
+              emit({ kind: 'pdf_reader_cancelled', path: sanitize(url.href), transport_id: transportId,
+                reason: response.status === 200 && reason?.name === 'AbortException'
+                  && reason?.message === 'Streaming is disabled.' ? 'pdf_range_handover' : 'unknown',
+                cancelled_at_ms: Date.now() });
+              return result;
+            };
+            return reader;
+          };
+        }
+        return response;
+      };
+    }
     const numeric = value => Number.isFinite(value) && value >= 0 ? value : null;
     const fields = ['startTime','duration','fetchStart','redirectStart','redirectEnd','domainLookupStart','domainLookupEnd','connectStart','connectEnd','secureConnectionStart','requestStart','responseStart','responseEnd','transferSize','encodedBodySize','decodedBodySize'];
     const entries = list => emit({ kind: 'resource_timing', entries: list.map(entry => {

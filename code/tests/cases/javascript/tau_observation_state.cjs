@@ -11,7 +11,7 @@ const { observeBrowser } = require('../../../management_portal/test_framework/ta
 
 const origin = 'http://observation.invalid';
 
-async function capture(name, inspect, observe = observeBrowser) {
+async function capture(name, inspect, observe = observeBrowser, configureWindow = () => {}) {
   const evidenceDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tau-observation-state-'));
   const context = new EventEmitter();
   const page = new EventEmitter();
@@ -33,6 +33,7 @@ async function capture(name, inspect, observe = observeBrowser) {
     for (const [binding, callback] of bindings) {
       dom.window[binding] = data => Promise.resolve(callback({ frame }, data));
     }
+    configureWindow(dom.window);
     // Execute the production addInitScript unchanged. jsdom has no resource
     // timing observer, so production records observer_unavailable itself.
     dom.window.eval(initScript);
@@ -285,7 +286,38 @@ async function serverTiming(observe) {
   }, observe);
 }
 
+async function pdfCancellation(observe) {
+  let dispatch, calls = 0;
+  await capture('pdf_cancellation', async ({ context, observer, main, request, rows, output }) => {
+    const attempts = [];
+    dispatch = async (url, init) => {
+      calls += 1;
+      const item = request(main.frame, {url, headers:Object.fromEntries(new Headers(init?.headers)),
+        failure:{errorText:'net::ERR_ABORTED'}});
+      attempts.push(item);context.emit('request',item);
+      context.emit('response',{request:()=>item,status:()=>200});
+      return new Response(new ReadableStream({cancel(){context.emit('requestfailed',item);}}));
+    };
+    const responses = await Promise.all([1,2].map(()=>main.window.fetch('/api/articles/article_1234/pdf?secret=pdf-query-secret')));
+    await responses[0].body.getReader().cancel({name:'AbortException',message:'Streaming is disabled.'});
+    await responses[1].body.getReader().cancel({name:'Error',message:'private-cancel-reason'});
+    const receipts=rows().filter(r=>r.kind==='pdf_reader_cancelled');
+    assert.equal(receipts.length,2);
+    assert.notEqual(receipts[0].transport_id,receipts[1].transport_id);
+    for(let i=0;i<2;i++) assert.equal(receipts[i].request_id,observer.requestId(attempts[i]));
+    assert.equal(receipts[0].reason,'pdf_range_handover');assert.equal(receipts[1].reason,'unknown');
+    for(const row of rows().filter(r=>r.kind==='request_failed')) assert.equal(row.cancellation_cause,'unknown');
+    await main.window.fetch('https://elsewhere.invalid/api/articles/article_1234/pdf');
+    await main.window.fetch('/api/other');
+    assert.equal(attempts[2].headers()['x-portal-request-id'],undefined);
+    assert.equal(attempts[3].headers()['x-portal-request-id'],undefined);
+    assert.equal(calls,4);
+    excludes(output(),['pdf-query-secret','private-cancel-reason']);
+  }, observe, win=>{win.Headers=Headers;win.fetch=(...args)=>dispatch(...args);});
+}
+
 const contracts = {
+  pdf_cancellation: pdfCancellation,
   server_timing: serverTiming,
   stream_unique: observe => receiptIdentity('stream', false, observe),
   stream_reused: observe => receiptIdentity('stream', true, observe),

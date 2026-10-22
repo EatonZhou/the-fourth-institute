@@ -22,6 +22,11 @@ def test_server_timing_records_only_known_durations_for_the_exact_request():
     _run_contract("server_timing")
 
 
+def test_pdf_reader_cancellation_links_only_its_actual_fetch():
+    """PDF 原始读取切换 range 的取消与真实请求关联；未知原因不猜测。"""
+    _run_contract("pdf_cancellation")
+
+
 def test_unique_stream_receipt_matches_its_document_request():
     """事件流关闭回执仅关联唯一的同文档请求
 
