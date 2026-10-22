@@ -1,4 +1,4 @@
-name: Withdraw unusable macOS preview
+name: Withdraw macOS preview
 
 on:
   workflow_dispatch:
@@ -32,9 +32,12 @@ jobs:
           import urllib.error
           import urllib.request
 
-          tag = 'macos-preview-20261021.10'
-          release_id = 419333979
-          commit = 'beca0a9fe9719642890f15d73cec8ccaeb7015e3'
+          # These exact assets have been preserved and verified in the Resident
+          # workspace for direct test delivery. Do not remove later test builds.
+          tag = 'macos-preview-20261022.2'
+          release_id = 420263328
+          commit = '1aeebc1d547910481186294665f6f1258abf8ea7'
+          build_run = 39713837422
           root = 'https://api.github.com/repos/' + os.environ['GH_REPO']
 
           def api(path, method='GET'):
@@ -74,7 +77,8 @@ jobs:
           page = 1
           while True:
               batch = api('/actions/artifacts?per_page=100&page=' + str(page))['artifacts']
-              artifacts.extend(a for a in batch if a['name'] in ('macos-arm64', 'macos-x64'))
+              artifacts.extend(a for a in batch if a['name'] in ('macos-arm64', 'macos-x64')
+                               and a.get('workflow_run', {}).get('id') == build_run)
               if len(batch) < 100:
                   break
               page += 1
@@ -85,8 +89,9 @@ jobs:
               if run_id not in runs:
                   runs[run_id] = api('/actions/runs/' + str(run_id))
               run = runs[run_id]
-              if run is None or run['workflow_id'] != workflow['id']:
-                  continue
+              if (run is None or run['workflow_id'] != workflow['id']
+                      or run['head_sha'] != commit):
+                  raise RuntimeError('Build archive belongs to another source revision')
               path = '/actions/artifacts/' + str(artifact['id'])
               api(path, 'DELETE')
               if api(path) is not None:

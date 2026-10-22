@@ -2,10 +2,12 @@ name: macOS preview installer
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - code/scripts/macos/release.json
+    inputs:
+      publish_to_github:
+        description: '仅在用户明确要求发布到 GitHub 时勾选；默认只构建测试文件'
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -50,7 +52,9 @@ jobs:
             .build/macos/*.sha256
             .build/macos/*.json
           if-no-files-found: error
+          retention-days: 1
   publish:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_to_github == true }}
     needs: package
     runs-on: ubuntu-24.04
     permissions:
@@ -66,4 +70,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-        run: python3 code/scripts/macos/publish.py --directory .build/macos-release --commit "$GITHUB_SHA"
+        run: python3 code/scripts/macos/publish.py --publish-to-github --directory .build/macos-release --commit "$GITHUB_SHA"

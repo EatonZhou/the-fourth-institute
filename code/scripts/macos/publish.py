@@ -49,7 +49,11 @@ def publish(directory, commit):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--publish-to-github", action="store_true",
+                        help="Publish publicly only after an explicit user request; test builds do not authorize publication")
     parser.add_argument("--directory", type=Path, required=True)
     parser.add_argument("--commit", required=True)
     args = parser.parse_args()
+    if not args.publish_to_github:
+        parser.error("Public release requires --publish-to-github after an explicit user request")
     publish(args.directory, args.commit)
