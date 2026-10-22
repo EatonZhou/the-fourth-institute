@@ -434,7 +434,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     const account = canCreateAccount ? field(options, "AI 账号名称（可选）", "account_id", "", {pattern: "[a-z][a-z0-9_\\-]{0,127}", placeholder: t("留空使用连接名称")}) : null;
     const register = canCreateAccount ? field(options, "同时添加为 AI 账号，继续接入与测试", "register_account", "", {type: "checkbox"}) : null;
     if (register) { register.checked = true; hint(register, "用于 Resident 对话。保存后选择模型并测试，可设为默认 AI；直连模型 API 不提供工具执行。测试会发起模型调用，可能产生费用。"); }
-    const harness = register ? select(form, "运行方式", "harness", []) : null;
+    const harness = register ? select(form, "Agent 运行器", "harness", []) : null;
     if (harness) hint(harness, "Codex、Claude Code、OpenCode 能执行命令、编辑文件和使用工具，需要接口支持对应协议（在高级设置中勾选）；直连只对话。");
     const renderHarnesses = () => {
       if (!harness) return;

@@ -40447,9 +40447,9 @@
     "zh-CN": "Anthropic 认证方式",
     "en": "Anthropic authentication"
   },
-  "运行方式": {
-    "zh-CN": "运行方式",
-    "en": "Run with"
+  "Agent 运行器": {
+    "zh-CN": "Agent 运行器",
+    "en": "Agent runner"
   },
   "Codex、Claude Code、OpenCode 能执行命令、编辑文件和使用工具，需要接口支持对应协议（在高级设置中勾选）；直连只对话。": {
     "zh-CN": "Codex、Claude Code、OpenCode 能执行命令、编辑文件和使用工具，需要接口支持对应协议（在高级设置中勾选）；直连只对话。",
