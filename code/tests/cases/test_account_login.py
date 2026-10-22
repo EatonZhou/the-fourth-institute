@@ -1,10 +1,12 @@
 """:module: execution.providers"""
 from datetime import timedelta
+from pathlib import Path
 from types import SimpleNamespace
 import json
 import os
 import sys
 import time
+import tempfile
 from unittest.mock import Mock
 
 import pytest
@@ -171,7 +173,7 @@ def test_initial_login_probe_failure_is_safe_and_does_not_cache_logged_out(isola
     assert login.get_login_state(registration) == "logged_in"
 
 
-@pytest.mark.parametrize("transport", ["unix", "tcp"])
+@pytest.mark.parametrize("transport", [None, "unix", "tcp"])
 def test_claude_code_submission_is_ephemeral_and_single_session(isolated_login, monkeypatch, capsys, transport):
     """同账号复用活跃登录，另一服务实例提交授权码后由 Provider 确认成功且不回显
 
@@ -179,6 +181,18 @@ def test_claude_code_submission_is_ephemeral_and_single_session(isolated_login, 
     :importance: P1
     """
     store = isolated_login
+    # Explicit Unix coverage must use a genuinely short path, independent of
+    # the harness's long TMPDIR. Default transport deliberately keeps that path
+    # to exercise the automatic authenticated fallback during authorization.
+    with tempfile.TemporaryDirectory(prefix="tfi-login-", dir="/tmp") as ipc_root:
+        return _claude_code_submission(store, monkeypatch, capsys, transport, ipc_root)
+
+
+def _claude_code_submission(store, monkeypatch, capsys, transport, ipc_root):
+    if transport == "unix":
+        monkeypatch.setenv("PORTAL_INSTANCES_ROOT", ipc_root)
+    elif transport is None:
+        monkeypatch.setenv("PORTAL_INSTANCES_ROOT", str(Path(ipc_root) / ("用户资料" * 12)))
     from management_common import local_ipc
     monkeypatch.setattr(login, "LocalListener", lambda path, **kwargs: local_ipc.LocalListener(path, transport=transport, **kwargs))
     monkeypatch.setattr(login, "connect_local", lambda path, **kwargs: local_ipc.connect_local(path, transport=transport, **kwargs))

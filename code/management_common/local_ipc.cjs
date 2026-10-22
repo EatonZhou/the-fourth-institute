@@ -14,7 +14,17 @@ function metadata(operation, logical, record, python) {
   return result ? JSON.parse(result) : undefined;
 }
 
-function listenLocal(server, logical, {python, tcp = process.platform === 'win32'} = {}) {
+// Keep the byte limits and generation-name allowance aligned with
+// local_ipc.py:local_transport. Clients and servers must make the same choice.
+function defaultTCP(logical) {
+  if (process.platform === 'win32') return true;
+  const limit = {darwin: 104, linux: 108}[process.platform];
+  if (!limit) throw new Error('Unsupported local IPC platform: ' + process.platform);
+  const generation = path.join(path.dirname(logical), '.' + '0'.repeat(16));
+  return Math.max(Buffer.byteLength(logical), Buffer.byteLength(generation)) >= limit;
+}
+
+function listenLocal(server, logical, {python, tcp = defaultTCP(logical)} = {}) {
   if (!tcp) {
     // libuv unlinks the path passed to listen() when closing. Give each
     // generation its own socket so retiring one cannot unlink its successor.
@@ -74,7 +84,7 @@ function listenLocal(server, logical, {python, tcp = process.platform === 'win32
   return server;
 }
 
-function connectLocal(logical, ready, {python, tcp = process.platform === 'win32'} = {}) {
+function connectLocal(logical, ready, {python, tcp = defaultTCP(logical)} = {}) {
   if (!tcp) {
     const socket = net.createConnection(logical, () => ready(socket));
     return socket;

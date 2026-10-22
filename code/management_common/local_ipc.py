@@ -67,12 +67,29 @@ def _validate(data: dict) -> dict:
     return data
 
 
-def _tcp_transport(transport):
+def local_transport(path: str | Path, *, platform: str | None = None) -> str:
+    """Choose the same authenticated transport in every local IPC participant.
+
+    sun_path limits count encoded bytes, including a terminating NUL. Reserve
+    space for the Node listener's private generation name as well as the public
+    name, so Python and Node can communicate at either end of the stream.
+    """
+    selected = platform or ("win32" if os.name == "nt" else sys.platform)
+    if selected == "win32":
+        return "tcp"
+    limits = {"darwin": 104, "linux": 108}
+    if selected not in limits:
+        raise NotImplementedError(f"Unsupported local IPC platform: {selected}")
+    logical = Path(path)
+    generation = logical.parent / ("." + "0" * 16)
+    length = max(len(os.fsencode(logical)), len(os.fsencode(generation)))
+    return "tcp" if length >= limits[selected] else "unix"
+
+
+def _tcp_transport(transport, path):
     if transport not in {None, "unix", "tcp"}:
         raise ValueError("Unknown local IPC transport")
-    if transport is None and os.name not in {"nt", "posix"}:
-        raise NotImplementedError("Unsupported local IPC platform")
-    return transport == "tcp" or (transport is None and os.name == "nt")
+    return (transport or local_transport(path)) == "tcp"
 
 
 def _proof(secret: bytes, role: bytes, nonce: bytes) -> bytes:
@@ -91,7 +108,7 @@ def _exact(connection: socket.socket, length: int) -> bytes:
 
 def connect_local(path: str | Path, *, timeout: float | None = None,
                   transport: str | None = None) -> socket.socket:
-    tcp = _tcp_transport(transport)
+    tcp = _tcp_transport(transport, path)
     connection = socket.socket(socket.AF_INET if tcp else socket.AF_UNIX, socket.SOCK_STREAM)
     try:
         connection.settimeout(min(timeout, _HANDSHAKE_TIMEOUT) if timeout is not None else _HANDSHAKE_TIMEOUT)
@@ -117,7 +134,7 @@ class LocalListener:
 
     def __init__(self, path: str | Path, *, backlog: int = 32, mode: int = 0o600,
                  replace: bool = False, transport: str | None = None):
-        self.tcp = _tcp_transport(transport)
+        self.tcp = _tcp_transport(transport, path)
         self.path = rendezvous_path(path) if self.tcp else Path(path)
         self.secret = secrets.token_bytes(32)
         self._identity = None

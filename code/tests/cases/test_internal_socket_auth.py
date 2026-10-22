@@ -110,23 +110,30 @@ def test_execution_peer_request_uses_the_target_socket_key(tmp_path):
     with pytest.raises(PermissionError):
         dev_auth.authenticate("health", {}, signed)
 
-@pytest.fixture(params=['lineage', 'execution', 'web'])
+@pytest.fixture(params=[(owner, long) for owner in ('lineage', 'execution', 'web') for long in (False, True)])
 def receiving_socket(request, tmp_path, monkeypatch):
-    import socket
     from management_portal.hatg import routing
     from management_portal.hatg.contracts import InstructionResult
     from management_portal.society_service.server import _LineageRequestHandler
     from management_portal.execution.service import _ExecutionRequestHandler
     from management_portal.web_instruction_server import _Handler
     handlers = {'lineage': _LineageRequestHandler, 'execution': _ExecutionRequestHandler, 'web': _Handler}
-    owner = request.param
-    path = tmp_path / 'owner.sock'
+    from management_common.service_endpoint import LocalServiceSocketMixin, service_endpoint
+    from management_common.service_shutdown import DrainingStreamServer
+    from management_common.service_socket import connect_service
+    owner, long_path = request.param
+    path = tmp_path / ('试用资料' * 12) / 'owner.sock' if long_path else tmp_path / 'owner.sock'
+    class Receiver(LocalServiceSocketMixin, DrainingStreamServer):
+        def __init__(self):
+            self.endpoint = service_endpoint(path)
+            self.address_family = self.endpoint.family
+            super().__init__(self.endpoint.address, handlers[owner])
     seen = []
     def execute_local(call, context, *, owner):
         seen.append(context.caller)
         return InstructionResult(instruction_id='instruction_111111111111', instruction=call.instruction, status='committed', result={})
     monkeypatch.setattr(routing, 'execute_local', execute_local)
-    with socketserver.ThreadingUnixStreamServer(str(path), handlers[owner]) as server:
+    with Receiver() as server:
         server.rpc_auth = RpcAuthenticator(path)
         def dispatch(method, params):
             seen.append(method)
@@ -136,9 +143,8 @@ def receiving_socket(request, tmp_path, monkeypatch):
         thread = threading.Thread(target=lambda: server.serve_forever(poll_interval=.01), daemon=True)
         thread.start()
         def send(params, auth=None, method='instruction.execute'):
-            with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as connection:
-                connection.settimeout(3)
-                connection.connect(str(path))
+            connection, _ = connect_service(path, timeout=3, restart_wait=0)
+            with connection:
                 connection.sendall(json.dumps({'id':'test', 'method':method, 'params':params, 'auth':auth}).encode()+b'\n')
                 with connection.makefile('rb') as stream:
                     return json.loads(stream.readline())

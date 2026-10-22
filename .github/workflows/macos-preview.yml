@@ -1,6 +1,11 @@
 name: macOS preview installer
 
 on:
+  # Only an explicit test-build request triggers a build from a source push.
+  # The publish job below remains restricted to a manual, opted-in dispatch.
+  push:
+    branches: [main]
+    paths: [code/scripts/macos/test-build.json]
   workflow_dispatch:
     inputs:
       publish_to_github:

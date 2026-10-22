@@ -71,7 +71,7 @@ def verify_dmg_app(dmg):
             command(["hdiutil", "detach", mount])
 
 
-def smoke(executable, destination, included):
+def smoke(executable, destination, included, *, require_long_rpc_path=False):
     """Exercise the shipped native entry, including stop/unregister and restart."""
     argv = [executable, "--platform", destination, "--headless"]
     cleanup = [executable, "--platform", destination, "--unregister"]
@@ -82,6 +82,12 @@ def smoke(executable, destination, included):
         command(argv, timeout=900)
         state_path = destination / "instance/desktop/installation.json"
         before = json.loads(state_path.read_text())
+        if require_long_rpc_path:
+            target = before["target"]
+            web_socket = (Path(target["data_roots"]["instances_root"])
+                          / target.get("runtime_instance", target["service_prefix"]) / "web-service.sock")
+            if len(os.fsencode(web_socket)) < 104:
+                raise ValueError("Native smoke did not exercise an overlength Web RPC address")
         manifest = json.loads((destination / ".build/m/engineering/manifest.json").read_text())
         if manifest["include_examples"] != included:
             raise ValueError("Selected seed was not used")
@@ -315,13 +321,13 @@ with tempfile.TemporaryDirectory() as tmp:
              "MacDesktopGUI", "MacAppSignature", "MacCodexNative"],
             cwd=payload / "code", env={**env, "PYTHONPATH": str(payload / "code")}, timeout=180)
     receipt["codex_native_smoke"] = "passed: launchd, real Codex initialize/model-list/account-read, short/long socket, cleanup; no authorization or inference"
-    # Use the actual app executable, with spaces in its path. Keep destination
-    # paths short enough for Darwin's Unix socket limit.
+    # Exercise real user paths, including Unicode and addresses exceeding
+    # Darwin's sun_path limit. A short /tmp-only install hid this startup bug.
     with tempfile.TemporaryDirectory(prefix="tfi-mac-", dir="/tmp") as tmp:
         for included in (False, True):
-            destination = (Path(tmp) / ("full" if included else "base")).resolve()
-            smoke(executables / "TheFourthInstitute", destination, included)
-    receipt["native_installation_smoke"] = "passed: native entry, base/full, login, repeat start, unregister/restart, compatible update with database row, GUI copy/retry"
+            destination = (Path(tmp) / "独立测试" / ("full" if included else "base")).resolve()
+            smoke(executables / "TheFourthInstitute", destination, included, require_long_rpc_path=True)
+    receipt["native_installation_smoke"] = "passed: native entry, long Unicode path, base/full, login, repeat start, unregister/restart, compatible update with database row, GUI copy/retry"
     verify_app(contents.parent)
     receipt["app_signature_verification"] = "passed"
     (image_root / "Applications").symlink_to("/Applications", target_is_directory=True)

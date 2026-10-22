@@ -6,6 +6,8 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from management_common.local_ipc import local_transport
+
 
 _SERVICE_NAMES = {f"{owner}-service.sock" for owner in ("resource", "execution", "society", "web")}
 
@@ -25,16 +27,16 @@ class ServiceEndpoint:
 def service_endpoint(path: Path | str, *, platform: str | None = None) -> ServiceEndpoint:
     """Resolve an instance's RPC address without changing its signing-key path.
 
-    Windows discovers an ephemeral loopback port through the same private local
-    transport as Provider streams. Identity is the entire installation path.
+    Windows and long POSIX paths discover an ephemeral loopback port through
+    the authenticated local transport. Identity is the entire installation path.
     """
     logical = Path(path)
     selected = platform or sys.platform
-    if selected in {"linux", "darwin"}:
+    if selected in {"linux", "darwin"} and local_transport(logical, platform=selected) == "unix":
         return ServiceEndpoint(logical, socket.AF_UNIX, str(logical))
-    if selected != "win32":
+    if selected not in {"linux", "darwin", "win32"}:
         raise NotImplementedError(f"Unsupported RPC platform: {selected}")
-    if logical.name not in _SERVICE_NAMES:
+    if selected == "win32" and logical.name not in _SERVICE_NAMES:
         raise ValueError(f"No Windows RPC endpoint for {logical}")
     return ServiceEndpoint(logical, socket.AF_INET, ("127.0.0.1", 0), private_local=True)
 

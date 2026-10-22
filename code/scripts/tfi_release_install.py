@@ -149,8 +149,12 @@ def target_plan(target, *, protected_roots=None, allow_missing_native=False):
     adapter = platform_adapter()
     if adapter.__name__.endswith("_windows"):
         adapter.validate_service_mode(target)
-    if not adapter.__name__.endswith("_windows") and len(os.fsencode(root / "runtime/s/society-service.sock")) > 103:
-        raise ValueError("Install root is too long for Unix sockets; use a shorter independent directory")
+    if not adapter.__name__.endswith("_windows"):
+        # Core RPC can use authenticated loopback for long paths. PostgreSQL
+        # still uses its native Unix socket; validate that actual address.
+        limit = 104 if adapter.__name__.endswith("_macos") else 108
+        if len(os.fsencode(root / "runtime/s" / f".s.PGSQL.{ports['postgres']}")) >= limit:
+            raise ValueError("Install root is too long for the PostgreSQL socket; use a shorter independent directory")
     # Keep the venv interpreter's lexical path: resolve() would bypass its venv.
     python = Path(target["python"]).absolute()
     pg_bin = safe_path(target["pg_bin"])

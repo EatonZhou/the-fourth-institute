@@ -1,0 +1,5 @@
+{
+  "request": "20261022.3",
+  "purpose": "macOS long-path startup, offline dependencies and permission fixes",
+  "delivery": "Portal test download; no GitHub Release"
+}

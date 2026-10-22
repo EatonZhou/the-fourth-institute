@@ -16,6 +16,25 @@ from scripts import tfi_release_install as installer
 
 
 class InstallationIsolationTests(unittest.TestCase):
+    def test_postgres_socket_limit_uses_encoded_address_for_each_platform(self):
+        for platform, limit in (("macos", 104), ("linux", 108)):
+            native = installer.importlib.import_module('scripts.tfi_release_platform_' + platform)
+            with self.subTest(platform=platform), patch.object(installer, 'platform_adapter', return_value=native):
+                base = Path('/tmp/tfi-socket-boundary')
+                suffix = '/runtime/s/.s.PGSQL.56432'
+                root = base / ('x' * (limit - 1 - len(os.fsencode(base)) - 1 - len(suffix)))
+                target = copy.deepcopy(self.target)
+                target.update(install_root=str(root), data_roots={key: str(root / 'data' / key) for key in installer.KEYS})
+                self.assertEqual(len(os.fsencode(root)) + len(suffix), limit - 1)
+                # A long core RPC path is now supported, even while PG fits.
+                self.assertGreaterEqual(len(os.fsencode(root / 'runtime/s/society-service.sock')), limit)
+                self.assertEqual(installer.target_plan(target, protected_roots=[])['install_root'], str(root))
+                for extra in ('x', '测'):
+                    longer = Path(str(root) + extra)
+                    target.update(install_root=str(longer), data_roots={key: str(longer / 'data' / key) for key in installer.KEYS})
+                    with self.assertRaisesRegex(ValueError, 'PostgreSQL socket'):
+                        installer.target_plan(target, protected_roots=[])
+
     def test_initialization_helper_keeps_service_transport_but_not_source_home(self):
         from scripts import tfi_release_platform_linux
         target = installer.target_plan(self.target)

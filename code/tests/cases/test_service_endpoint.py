@@ -50,6 +50,54 @@ def test_windows_endpoints_are_loopback_and_separate_by_instance_and_owner(tmp_p
         service_endpoint(tmp_path / "dev" / "unknown.sock", platform="win32")
 
 
+@pytest.mark.parametrize("owner", ["web", "resource", "execution", "society"])
+def test_macos_long_service_paths_use_authenticated_local_transport(tmp_path, owner):
+    # The .2 desktop failed before ASGI startup at this installation length.
+    path = tmp_path / ("installation-" + "x" * 90) / f"{owner}-service.sock"
+    endpoint = service_endpoint(path, platform="darwin")
+    assert endpoint.private_local
+    assert endpoint.logical_path == path
+    assert endpoint.family == socket.AF_INET
+
+
+def test_macos_socket_limit_counts_encoded_bytes():
+    from pathlib import Path
+    short = Path("/tmp/" + "a" * 98)  # 103 bytes plus terminating NUL fits sun_path.
+    assert service_endpoint(short, platform="darwin").is_unix
+    assert service_endpoint(Path(str(short) + "a"), platform="darwin").private_local
+    assert service_endpoint(Path("/tmp/" + "测" * 34), platform="darwin").private_local
+
+
+def test_macos_long_endpoint_roundtrip_restart_and_private_rendezvous(tmp_path):
+    path = tmp_path / ("用户资料" * 12) / "web-service.sock"
+    class Owner(LocalServiceSocketMixin, DrainingStreamServer):
+        def __init__(self):
+            self.endpoint = service_endpoint(path, platform="darwin")
+            self.address_family = self.endpoint.family
+            super().__init__(self.endpoint.address, Handler)
+    class Handler(socketserver.StreamRequestHandler):
+        def handle(self):
+            self.wfile.write(self.rfile.readline())
+    old = Owner()
+    current = Owner()
+    old.server_close()  # A previous generation must not unlink its successor.
+    assert path.exists()
+    assert path.stat().st_mode & 0o777 == 0o600
+    thread = threading.Thread(target=current.serve_forever, daemon=True)
+    thread.start()
+    try:
+        connection, chosen = connect_service(current.endpoint, timeout=2, restart_wait=0)
+        with connection:
+            assert chosen == path
+            connection.sendall(b"local roundtrip\n")
+            assert connection.recv(100) == b"local roundtrip\n"
+    finally:
+        current.shutdown()
+        current.server_close()
+        thread.join(timeout=2)
+    assert not path.exists()
+
+
 def test_connect_service_accepts_tcp_endpoint_without_changing_logical_path(tmp_path):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
         listener.bind(("127.0.0.1", 0))

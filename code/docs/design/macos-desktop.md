@@ -2,7 +2,9 @@
 
 测试构建与公开发布分开授权。“重新打包”“给我试用”仅生成测试文件，保存到
 Workspace 后通过 Portal 直接交付；用户明确要求“发布到 GitHub”才创建公开 Release。
-源码提交和版本号更新均不触发打包或发布。手动工作流默认只构建，临时归档保留一天；
+普通源码提交和版本号更新均不触发打包或发布。用户要求测试包时，可更新
+`code/scripts/macos/test-build.json` 的请求编号并推送到 main，触发双架构测试构建；
+这一入口不能创建 Release。手动工作流默认只构建，临时归档保留一天；
 公开发布须显式开启 publish_to_github，发布脚本也要求 --publish-to-github。
 已交付的 20261022.2 包仍需独立目录复测；兼容升级实现须经过原生构建检查后才随后续测试包交付。
 
@@ -27,7 +29,15 @@ Python、PostgreSQL、NATS、Node.js，以及构建时安装并验证的核心 P
 欢迎页与进度页都显式设置 Tk 图标。Dock 的实际展示仍由 macOS 原生验证确认。
 
 只读应用包首次复制到用户的 `~/Library/TFI` 后运行；代码和依赖共享，实例数据放在
-`instance/desktop`。较短目录用于满足 macOS Unix Socket 的长度限制。后台服务使用
+`instance/desktop`。核心 RPC 与登录 IPC 按地址编码后的字节数选择本地传输；当地址
+超过 macOS Unix Socket 容量时，使用仅监听 loopback 的临时 TCP 端口和私有发现文件。
+服务端与客户端在发送业务数据前相互校验 HMAC；发现文件保持 0600，目录保持 0700，
+并校验当前用户归属和 ACL。完整逻辑路径及 RPC 签名密钥位置保持不变，隔离不同实例。
+Python 与 Node 使用相同选择规则，短路径继续使用 Unix Socket；测试覆盖长中文路径
+及旧监听器关闭后新监听器仍可连接。原生安装验收使用使 Web RPC 超出 Unix 地址容量
+的中文安装目录。PostgreSQL 保留原生 Unix Socket 和本机身份隔离，安装前按其实际
+套接字文件名检查路径容量；超出时明确提示数据库地址过长。
+后台服务使用
 launchd 用户任务，首次初始化的数据库采用 UTF-8 编码及可用的 C locale。
 应用的 HOME 隔离到实例后，通过 `TFI_MACOS_SERVICE_DIRECTORY` 保留操作系统用户的
 LaunchAgents 目录；服务管理器和所有权检查共同使用该目录，不能回退到实例 HOME。

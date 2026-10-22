@@ -181,12 +181,12 @@ def test_async_server_uses_the_same_authenticated_contract(tmp_path):
     asyncio.run(exercise())
 
 
-@pytest.mark.parametrize('tcp', [False, True])
+@pytest.mark.parametrize('tcp', [False, True, None])
 def test_node_client_and_python_server_share_only_application_bytes(tmp_path, tcp):
     if not shutil.which('node'):
         pytest.skip('Node is required for cross-language IPC')
-    endpoint = tmp_path / 'node-client'
-    with LocalListener(endpoint, transport='tcp' if tcp else 'unix') as listener:
+    endpoint = tmp_path / ('资料' * 30) / 'node-client' if tcp is None else tmp_path / 'node-client'
+    with LocalListener(endpoint, transport=None if tcp is None else ('tcp' if tcp else 'unix')) as listener:
         def echo():
             client, _ = listener.accept()
             with client:
@@ -198,7 +198,7 @@ const {connectLocal} = require(process.argv[1]);
 const client = connectLocal(process.argv[2], socket => {
   socket.on('data', data => { process.stdout.write(data); socket.end(); });
   socket.write('business-only');
-}, {python:process.argv[3], tcp:process.argv[4] === 'true'});
+}, {python:process.argv[3], tcp:process.argv[4] === 'none' ? undefined : process.argv[4] === 'true'});
 client.on('error', error => { console.error(error.message); process.exitCode=1; });
 ''', str(NODE_HELPER), str(endpoint), sys.executable, str(tcp).lower()],
             capture_output=True, timeout=10, check=True)
@@ -207,10 +207,11 @@ client.on('error', error => { console.error(error.message); process.exitCode=1; 
         assert not thread.is_alive()
 
 
-def test_python_client_node_server_authentication_and_owned_cleanup(tmp_path):
+@pytest.mark.parametrize('automatic', [False, True])
+def test_python_client_node_server_authentication_and_owned_cleanup(tmp_path, automatic):
     if not shutil.which('node'):
         pytest.skip('Node is required for cross-language IPC')
-    endpoint = tmp_path / 'node-server'
+    endpoint = tmp_path / ('资料' * 30) / 'node-server' if automatic else tmp_path / 'node-server'
     process = subprocess.Popen(['node', '-e', '''
 const net = require('node:net');
 const {listenLocal} = require(process.argv[1]);
@@ -218,15 +219,15 @@ const server = net.createServer(socket => {
   socket.once('data', data => { socket.end(data); server.close(); });
 });
 server.on('error', error => { console.error(error.message); process.exitCode=1; });
-listenLocal(server, process.argv[2], {tcp:true, python:process.argv[3]});
-''', str(NODE_HELPER), str(endpoint), sys.executable], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+listenLocal(server, process.argv[2], {tcp:process.argv[4] === 'True' ? undefined : true, python:process.argv[3]});
+''', str(NODE_HELPER), str(endpoint), sys.executable, str(automatic)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     try:
         deadline = time.monotonic() + 5
         while not endpoint.exists():
             assert process.poll() is None
             assert time.monotonic() < deadline
             time.sleep(.01)
-        with connect_local(endpoint, transport='tcp', timeout=2) as client:
+        with connect_local(endpoint, transport=None if automatic else 'tcp', timeout=2) as client:
             client.sendall(b'authenticated request')
             assert client.recv(64) == b'authenticated request'
         _, stderr = process.communicate(timeout=5)
