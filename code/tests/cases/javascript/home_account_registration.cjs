@@ -27,17 +27,19 @@ w.PortalInstructionClient = {execute: async (name, args) => {
 }};
 const me = {username: 'new-user', access: {permission_system: 'open', allows: {ListProviders: true, RegisterProviderAccount: true}}};
 w.canRegisterAccount = true;
+w.canSetScheduler = false;
 w.accountRegistrationPending = false;
 w.accountDetails = null;
 w.esc = x => String(x ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('"', '&quot;');
 const home = source('home.js');
-const names = new Set(['accountEmptyState', 'openAccountRegistration', 'syncAccountDetailsButtons']);
+const names = new Set(['accountManagementActions', 'accountEmptyState', 'openAccountRegistration', 'syncAccountDetailsButtons']);
 for (const n of babelParse(home, 'home.js').program.body) {
   if (n.type === 'FunctionDeclaration' && names.delete(n.id.name)) vm.runInContext(home.slice(n.start, n.end), context);
 }
 assert.equal(names.size, 0);
 const mountHome = data => {
-  w.document.querySelector('#home').innerHTML = w.accountEmptyState(data);
+  const populated = Boolean(data.accounts?.length);
+  w.document.querySelector('#home').innerHTML = w.accountManagementActions(populated) + (populated ? '' : w.accountEmptyState(data));
   w.syncAccountDetailsButtons();
   return w.document.querySelector('[data-account-register]');
 };
@@ -83,6 +85,21 @@ const flush = async () => { for (let i = 0; i < 10; i++) await new Promise(r => 
   const retry = mountHome({accounts_error: 'unavailable'});
   assert.match(w.document.querySelector('#home').textContent, /Limit data unavailable/);
   retry.click(); await flush(); assert(!retry.disabled); assert.equal(notices.at(-1), 'navigation failed');
+  // Usage failures on existing accounts do not remove management or registration.
+  const existing = {accounts: [{account_id: 'first-ai', status: 'failed'}], accounts_refresh_error: 'usage unavailable'};
+  assert(mountHome(existing));
+  const manage = w.document.querySelector('[data-account-manage]');
+  assert(manage); manage.click(); await flush(); assert.equal(notices.at(-1), 'navigation failed');
+  const opened = [];
+  w.PortalNav.openPermissionManagement = async options => opened.push(options);
+  manage.click(); await flush();
+  assert.equal(opened[0].view, 'backend'); assert.equal(opened[0].accountId, '');
+  w.document.querySelector('[data-account-register]').click(); await flush();
+  assert.equal(opened[1].createAccount, true);
+  w.canRegisterAccount = false; w.canSetScheduler = true;
+  assert.equal(mountHome(existing), null); assert(w.document.querySelector('[data-account-manage]'));
+  w.canSetScheduler = false; mountHome(existing);
+  assert(!w.document.querySelector('[data-account-manage]'));
   const denied = await backend.namespace.mount(w.document.querySelector('main'), {me: {access: {allows: {UpdateProviderAccount: true}}}});
   assert.throws(() => denied.openAccountEditor(), /没有新增/);
   assert(!w.document.querySelector('dialog')); denied.destroy();

@@ -3,7 +3,7 @@ const fs = require('node:fs'), vm = require('node:vm');
 const {JSDOM} = require('jsdom');
 const dom = new JSDOM('<main></main>', {url: 'http://portal.invalid/'});
 const {window} = dom, calls = [];
-let failRegistration = true, apis = [], createFailure = null;
+let failRegistration = true, apis = [], accounts = [], createFailure = null, checkFails = true;
 window.PortalI18n = {t: text => text};
 window.PortalUI = {createDialogController: ({modal, onClose}) => ({
   open: () => modal.setAttribute('open', ''), close: onClose, destroy() {},
@@ -14,13 +14,18 @@ window.PortalInstructionClient = {execute: async (name, args) => {
     case 'ListProviders': return {providers: [
       {provider: 'codex', title: 'Codex', kinds: ['subscription_login']},
       {provider: 'provider_api', title: 'Model API', kinds: ['api_profile']}]};
-    case 'ListProviderAccounts': return {accounts: []};
+    case 'ListProviderAccounts': return {accounts};
     case 'ListBackendRoles': return {roles: []};
     case 'ListModelApis': return {apis};
-    case 'CreateModelApi': if (createFailure) throw createFailure; apis = [{...args}]; return {api: apis[0]};
-    case 'RegisterProviderAccount': if (failRegistration) throw Error('registration unavailable'); return {};
+    case 'CreateModelApi': if (createFailure) throw createFailure; apis.push({...args}); return {api: apis.at(-1)};
+    case 'UpdateModelApi': {
+      const api = apis.find(a => a.api_id === args.api_id); Object.assign(api, args.changes); return {api};
+    }
+    case 'RegisterProviderAccount': if (failRegistration) throw Error('registration unavailable'); accounts.push({...args, registration: {version: 1, enabled: true, config: args.config}}); return {};
     case 'GetProviderAccountSetup': return {setup: {provider: 'provider_api', enabled: true, runtime_ready: true,
       login_state: 'not_applicable', default_model: 'example-model', models: ['example-model']}};
+    case 'CheckProviderAccount': return {execution_id: 'execution_api_check'};
+    case 'GetProviderAccountCheck': return {check: {status: 'completed', passed: !checkFails, model: 'example-model', message: checkFails ? 'HTTP 401' : '测试通过', next_step: '请更换 API Key'}};
     default: throw Error(name);
   }
 }};
@@ -64,6 +69,23 @@ const click = text => {const b = [...window.document.querySelectorAll('button')]
   assert(!('secret' in registration));
   assert(window.document.querySelector('[data-backend-setup-status]'));
   assert(!calls.some(c => ['CompleteChat', 'CheckProviderAccount', 'OpenProviderAccountLogin'].includes(c.name)), 'registration does not spend quota or authorize automatically');
+  click('测试并完成'); await flush();
+  assert.match(window.document.querySelector('[data-backend-setup-status]').textContent, /401/);
+  const beforeRepair = calls.filter(c => ['CreateModelApi', 'RegisterProviderAccount'].includes(c.name)).length;
+  const repairButton = [...window.document.querySelectorAll('dialog button')].find(b => b.textContent === '编辑连接');
+  assert(repairButton && !repairButton.hidden && !repairButton.disabled); repairButton.click();
+  form = window.document.querySelector('dialog form');
+  assert.equal(form.elements.api_id.value, 'example-api');
+  assert.equal(form.elements.secret.value, '');
+  form.elements.secret.value = 'replacement-fixture-key'; submit(); await flush();
+  assert.equal(calls.filter(c => c.name === 'UpdateModelApi').at(-1).args.changes.secret, 'replacement-fixture-key');
+  assert.equal(calls.filter(c => ['CreateModelApi', 'RegisterProviderAccount'].includes(c.name)).length, beforeRepair, 'repair edits the same connection without duplicate accounts');
+  assert(window.document.querySelector('[data-backend-setup-status]'), 'saving an existing connection returns to its test flow');
+  checkFails = false; window.document.querySelector('input[name=use_default]').checked = false;
+  click('测试并完成'); await flush(); assert(!window.document.querySelector('dialog'));
+  const tableEdit = [...window.document.querySelectorAll('[data-backend-account] button')].find(b => b.textContent === '编辑连接');
+  assert(tableEdit && !tableEdit.disabled); tableEdit.click();
+  form = window.document.querySelector('dialog form'); assert.equal(form.elements.api_id.value, 'example-api');
   click('关闭'); click('新增模型 API');
   form = window.document.querySelector('dialog form');
   form.elements.api_id.value = 'api-only'; form.elements.base_url.value = 'https://api.example.com/v1';

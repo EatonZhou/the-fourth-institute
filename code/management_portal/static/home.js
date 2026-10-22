@@ -1030,6 +1030,12 @@ function accountSchedulerSettings(account) {
 let accountDetails = null;
 const accountSchedulerPending = new Set();
 
+function accountManagementActions(hasAccounts) {
+  return window.PortalI18n.html`
+    ${canSetScheduler || canRegisterAccount ? window.PortalI18n.html`<button class="portalButton" type="button" data-account-manage="">管理 AI 连接</button>` : ""}
+    ${hasAccounts && canRegisterAccount ? window.PortalI18n.html`<button class="portalButton is-primary" type="button" data-account-register ${accountRegistrationPending ? "disabled" : ""}>新增 AI 账号</button>` : ""}`;
+}
+
 function accountEmptyState(data) {
   if (data?.status === "loading" || data?.refreshing === true) {
     return window.PortalI18n.html`<div class="agent-status-muted">Loading limits…</div>`;
@@ -1060,11 +1066,12 @@ function syncAccountDetailsButtons() {
   }
   for (const link of document.querySelectorAll("[data-account-manage]:not([data-backend-bound])")) {
     link.dataset.backendBound = "true";
-    link.addEventListener("click", event => {
+    link.addEventListener("click", async event => {
       if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
       event.preventDefault();
       accountDetails?.popover.close();
-      void window.PortalNav.openPermissionManagement({view: "backend", accountId: link.dataset.accountManage});
+      try { await window.PortalNav.openPermissionManagement({view: "backend", accountId: link.dataset.accountManage}); }
+      catch (error) { window.PortalUI.toast(error.message, "error"); }
     });
   }
   for (const button of document.querySelectorAll("[data-account-relogin]:not([data-backend-bound])")) {
@@ -2027,6 +2034,7 @@ function renderAgentStatus(data) {
   if (agentStatusSummaryLoaded) componentHosts["agent-accounts"].innerHTML = window.PortalI18n.html`
       <div class="agent-status-head">
         <div data-agent-status-runboard>${runboardHtml}</div>
+        ${accountManagementActions(accounts.length > 0)}
         <button
           class="agent-status-refresh${statusRefreshing ? " is-refreshing" : ""}"
           type="button"
@@ -2558,7 +2566,7 @@ function connectHomeShell({ context }) {
   context.currentUserReady = window.PortalUI.loadCurrentUser()
     .then(({ username, data }) => {
       portalUsername = username || "anonymous";
-      canSetScheduler = data?.access?.allows?.UpdateProviderAccount === true;
+      canSetScheduler = data?.access?.permission_system === "open" || data?.access?.allows?.UpdateProviderAccount === true;
       canRegisterAccount = data?.access?.permission_system === "open" || data?.access?.allows?.RegisterProviderAccount === true;
       return { username: portalUsername, data };
     });

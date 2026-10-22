@@ -113,13 +113,18 @@ export function openLogin(accountId, {onChanged = () => {}} = {}) {
     const session = result.session || {};
     pending = !session.state || session.state === "pending";
     status.setAttribute("aria-busy", String(pending));
-    status.textContent = pending ? waiting() : t(session.error || loginStates[session.state] || session.state);
-    code.textContent = session.verification_code || "";
-    link.hidden = true; link.removeAttribute("href");
+    const statusText = pending ? waiting() : t(session.error || loginStates[session.state] || session.state);
+    if (status.textContent !== statusText) status.textContent = statusText;
+    const codeText = session.verification_code || "";
+    if (code.textContent !== codeText) code.textContent = codeText;
+    let verificationUrl = "";
     try {
       const url = new URL(session.verification_url);
-      if (["https:", "http:"].includes(url.protocol)) { link.href = url.href; link.hidden = false; }
+      if (["https:", "http:"].includes(url.protocol)) verificationUrl = url.href;
     } catch (_) { /* No authorization URL yet. */ }
+    if (verificationUrl) { if (link.href !== verificationUrl) link.href = verificationUrl; }
+    else if (link.hasAttribute("href")) link.removeAttribute("href");
+    if (link.hidden !== !verificationUrl) link.hidden = !verificationUrl;
     terminal = ["succeeded", "failed", "expired", "cancelled"].includes(session.state);
     if (terminal) clearInterval(progressTimer);
     cancel.disabled = terminal;
@@ -234,7 +239,10 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     showLog.setAttribute("aria-controls", checkLog.id);
     showLog.setAttribute("aria-expanded", "false");
     const capabilities = node("p", "");
-    const model = field(form, "模型", "model", "", {required: true, autocomplete: "off"});
+    const loginHint = node("p", "", {class: "backendHint", "data-backend-login-hint": "", hidden: true});
+    form.append(loginHint);
+    const model = field(form, "模型（可选）", "model", "", {autocomplete: "off", placeholder: t("自动使用账号默认模型")});
+    hint(model, "无需手动填写；授权完成后自动读取默认模型，也可选择其他模型。");
     const choices = node("datalist", undefined, {id: "backend-setup-models"});
     model.setAttribute("list", choices.id); form.append(choices);
     const useDefault = field(form, "用作默认 AI", "use_default", "", {type: "checkbox"});
@@ -244,8 +252,9 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       login = openLogin(accountId, {onChanged: () => { login?.close(); void perform(reload); }});
     }, true);
     const retry = button("重试", () => { preparationRequested = false; void perform(reload); });
+    const linkedApi = () => state.apis.find(api => api.api_id === state.accounts.find(a => a.account_id === accountId)?.config?.api_id);
+    const editConnection = button("编辑连接", () => { const api = linkedApi(); if (api) apiEditor(api, {accountId}); });
     const test = button("测试并完成", () => void perform(async () => {
-      if (!model.value.trim()) { model.reportValidity(); return; }
       nextStep.hidden = checkDetail.hidden = true;
       nextStep.textContent = checkDetail.textContent = "";
       checkLog.hidden = showLog.hidden = true; checkLog.value = "";
@@ -257,7 +266,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
         await pollCheck(receipt.execution_id);
       } catch (error) { checking = false; model.disabled = false; useDefault.disabled = false; throw error; }
     }, "正在启动本地后台并检查连接，请稍候…"), true);
-    form.append(capabilities, status, nextStep, checkDetail, actions(authorize, retry, test, showLog), checkLog);
+    form.append(capabilities, status, nextStep, checkDetail, actions(authorize, retry, editConnection, test, showLog), checkLog);
     form.addEventListener("submit", event => event.preventDefault());
     function setButtons() {
       authorize.hidden = !setup || ["logged_in", "succeeded", "not_applicable"].includes(setup.login_state);
@@ -266,39 +275,55 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
         ["logged_out", "login_expired", "pending", "awaiting_user"].includes(setup?.login_state) || working || checking;
       retry.hidden = !setupFailed;
       retry.disabled = working || checking;
+      editConnection.hidden = !linkedApi();
+      editConnection.disabled = !canWrite || working || checking;
     }
-    async function perform(work, message = "正在检查运行环境与登录状态…") {
+    async function perform(work, message = "正在检查运行环境与登录状态…", quiet = false) {
       if (closed || working) return;
-      working = true; setupFailed = false; setButtons();
-      startedAt = Date.now(); progressMessage = message;
+      working = true; setupFailed = false;
       clearTimeout(timer); clearInterval(progressTimer);
-      status.setAttribute("aria-busy", "true");
-      status.textContent = t(message);
-      progressTimer = setInterval(() => { if (!closed) status.textContent = t(progressMessage) + " " +
-        t("已等待 {p0} 秒", {p0: Math.floor((Date.now() - startedAt) / 1000)}); }, 1000);
+      if (!quiet) {
+        setButtons(); startedAt = Date.now(); progressMessage = message;
+        status.setAttribute("aria-busy", "true");
+        status.textContent = t(message);
+        progressTimer = setInterval(() => { if (!closed) status.textContent = t(progressMessage) + " " +
+          t("已等待 {p0} 秒", {p0: Math.floor((Date.now() - startedAt) / 1000)}); }, 1000);
+      }
       try { await work(); }
       catch (error) { if (!closed) { setupFailed = true; status.textContent = errorText(error); } }
-      finally { working = false; if (!checking) stopProgress(); if (!closed) setButtons(); }
+      finally { working = false; if (!checking && !quiet) stopProgress(); if (!closed) setButtons(); }
     }
     function stopProgress() {
       clearInterval(progressTimer);
       if (!closed) status.setAttribute("aria-busy", "false");
     }
+    let modelChoices = "";
     async function reload() {
       const result = await execute("GetProviderAccountSetup", {account_id: accountId});
       if (closed) return;
       setup = result.setup;
-      choices.replaceChildren(...(setup.models || []).map(item => node("option", undefined,
-        {value: typeof item === "string" ? item : item.id || item.model || ""})));
+      const nextChoices = JSON.stringify(setup.models || []);
+      if (nextChoices !== modelChoices) {
+        modelChoices = nextChoices;
+        choices.replaceChildren(...(setup.models || []).map(item => node("option", undefined,
+          {value: typeof item === "string" ? item : item.id || item.model || ""})));
+      }
       if (!model.value) model.value = setup.default_model || "";
-      capabilities.textContent = t(setup.supports_tools ? "支持对话与工具任务；本次测试验证模型回复。" : "支持对话；此接入方式不提供工具执行。");
-      status.textContent = [t(setup.runtime_ready ? "已就绪" : "正在自动准备运行环境…"),
+      const needsLogin = !["logged_in", "succeeded", "not_applicable"].includes(setup.login_state);
+      loginHint.hidden = !needsLogin;
+      const loginText = t(setup.provider === "codex" ? "先点击登录，获取设备码并在浏览器授权；无需填写模型名称。" : "先点击登录并在浏览器完成授权；无需填写模型名称。");
+      if (loginHint.textContent !== loginText) loginHint.textContent = loginText;
+      model.parentElement.hidden = useDefault.parentElement.hidden = capabilities.hidden = needsLogin;
+      const capabilityText = t(setup.supports_tools ? "支持对话与工具任务；本次测试验证模型回复。" : "支持对话；此接入方式不提供工具执行。");
+      if (capabilities.textContent !== capabilityText) capabilities.textContent = capabilityText;
+      const statusText = [t(setup.runtime_ready ? "已就绪" : "正在自动准备运行环境…"),
         t(loginStates[setup.login_state] || setup.login_state), t(setup.preparation?.message || ""), t(setup.catalog_error || "")].filter(Boolean).join(" · ");
+      if (status.textContent !== statusText) status.textContent = statusText;
       clearTimeout(timer);
       if (!setup.runtime_ready && canWrite) {
         if (["preparing", "pending"].includes(setup.preparation?.status)) {
           preparationRequested = true;
-          timer = setTimeout(() => void perform(reload), 2000);
+          timer = setTimeout(() => void perform(reload, undefined, true), 2000);
         } else if (!preparationRequested) {
           preparationRequested = true;
           progressMessage = "正在自动准备运行环境…";
@@ -308,7 +333,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
             // Another runtime update owns the lock; observe and retry without user action.
             preparationRequested = false;
             status.textContent = t("运行环境正在更新，完成后将自动继续。");
-            timer = setTimeout(() => void perform(reload), 2000);
+            timer = setTimeout(() => void perform(reload, undefined, true), 2000);
           } else {
             await reload();
           }
@@ -316,7 +341,6 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
           throw new Error(setup.preparation?.message || t("运行环境准备未完成，请重试。"));
         }
       }
-      setButtons();
     }
     async function pollCheck(executionId) {
       if (closed) return;
@@ -441,7 +465,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       view.close(); await refresh("accounts");
     }); });
   }
-  function apiEditor(api = null) {
+  function apiEditor(api = null, {accountId: setupAccountId = ""} = {}) {
     const {view, form} = newEditor(api ? "编辑模型 API" : "新增模型 API");
     form.append(node("p", t(api ? "修改连接信息。API Key 留空时保留当前密钥。" : "复制服务商给你的三项信息即可。连接名称和账号关联会自动完成。"), {class: "backendHint"}));
     const url = field(form, "接口基础地址（Base URL）", "base_url", api?.base_url || "", {type: "url", required: true, placeholder: "https://api.example.com/v1"});
@@ -574,6 +598,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
           view.close(); await Promise.all([refresh("apis"), refresh("accounts")]); setupEditor(accountId); return;
         }
         view.close(); await refresh("apis");
+        if (setupAccountId) setupEditor(setupAccountId);
       }, Boolean(changes.secret));
     });
   }
@@ -606,6 +631,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
         [t(a.enabled === false ? "已停用" : "已启用"), a.kind === "subscription_login" ? t(loginStates[a.login_state] || a.login_state || "—") : "",
           isDefault ? t("默认路线") : ""].filter(Boolean).join(" · "),
         actions(button("接入与测试", () => setupEditor(a.account_id), !canWrite), ...(a.kind === "subscription_login" ? [button(a.login_state === "login_expired" ? "重新登录" : "登录", () => { login = openLogin(a.account_id, {onChanged: () => void refresh("accounts")}); }, !canWrite)] : []),
+          ...(api ? [button("编辑连接", () => apiEditor(api, {accountId: a.account_id}), !canWrite)] : []),
           ...(a.provider === "codex" && a.enabled !== false && !isDefault ? [button("设为默认路线", () => void run(async () => {
             await execute("UpdateProviderAccountRegistration", {account_id: a.account_id, changes: {config: {...(a.config || {}), is_default: true}}}, {expectedVersion: a.registration_version});
             await reload(); }), readonly)] : []),

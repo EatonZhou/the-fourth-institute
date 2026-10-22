@@ -1,4 +1,32 @@
 {
+  "管理 AI 连接": {
+    "zh-CN": "管理 AI 连接",
+    "en": "Manage AI connections"
+  },
+  "编辑连接": {
+    "zh-CN": "编辑连接",
+    "en": "Edit connection"
+  },
+  "模型（可选）": {
+    "zh-CN": "模型（可选）",
+    "en": "Model (optional)"
+  },
+  "自动使用账号默认模型": {
+    "zh-CN": "自动使用账号默认模型",
+    "en": "Use the account's default model"
+  },
+  "无需手动填写；授权完成后自动读取默认模型，也可选择其他模型。": {
+    "zh-CN": "无需手动填写；授权完成后自动读取默认模型，也可选择其他模型。",
+    "en": "No need to enter a model manually. After authorization, Portal loads the default model. You can also choose another model."
+  },
+  "先点击登录，获取设备码并在浏览器授权；无需填写模型名称。": {
+    "zh-CN": "先点击登录，获取设备码并在浏览器授权；无需填写模型名称。",
+    "en": "Click Sign in to get a device code and authorize in your browser. No model name is needed."
+  },
+  "先点击登录并在浏览器完成授权；无需填写模型名称。": {
+    "zh-CN": "先点击登录并在浏览器完成授权；无需填写模型名称。",
+    "en": "Click Sign in and authorize in your browser. No model name is needed."
+  },
   "复制服务商给你的三项信息即可。连接名称和账号关联会自动完成。": {
     "zh-CN": "复制服务商给你的三项信息即可。连接名称和账号关联会自动完成。",
     "en": "Copy the three values from your provider. Portal generates the connection name and links the account automatically."

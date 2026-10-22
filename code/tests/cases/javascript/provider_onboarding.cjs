@@ -9,6 +9,7 @@ let queued = false, loginError = false, loginCancelled = false;
 let holdDefault = false, finishDefault;
 let preparation = 'missing', prepareResult = 'ready', loginState = 'logged_in', setupError = false;
 let holdPrepare = false, finishPrepare;
+let provider = 'claude', emptyCatalog = false, holdSetup = false, finishSetup, loginSession;
 const timers = new Map(), intervals = new Map(); let timerId = 0;
 const later = (fn, collection) => { collection.set(++timerId, fn); return timerId; };
 const tick = () => { const [id, fn] = timers.entries().next().value; timers.delete(id); fn(); };
@@ -26,9 +27,10 @@ window.PortalInstructionClient = {execute: async (name, args, options) => {
     case 'ListBackendRoles': return {roles};
     case 'GetProviderAccountSetup':
       if (setupError) throw new Error('暂时无法读取接入状态');
-      return {setup: {provider: 'claude', enabled: true, runtime_ready: !missing,
+      if (holdSetup) await new Promise(resolve => { finishSetup = resolve; });
+      return {setup: {provider, enabled: true, runtime_ready: !missing,
         preparation: {status: missing ? preparation : 'ready', message: preparation === 'failed' ? '环境准备失败' : ''},
-        login_state: loginState, supports_tools: true, models: [{id: 'model'}], default_model: 'model'}};
+        login_state: loginState, supports_tools: true, models: emptyCatalog ? [] : [{id: 'model'}], default_model: emptyCatalog ? '' : 'model'}};
     case 'CheckProviderAccount':
       if (holdCheck) return new Promise(resolve => { finishCheck = resolve; });
       return {execution_id: 'execution_check'};
@@ -36,6 +38,7 @@ window.PortalInstructionClient = {execute: async (name, args, options) => {
     case 'CancelProviderAccountLogin': return {};
     case 'GetProviderAccountLogin':
       if (loginError) throw new Error('暂时无法读取登录状态');
+      if (loginSession) return {session: loginSession};
       return {session: {state: loginCancelled ? 'cancelled' : 'pending'}};
     case 'GetProviderAccountCheck': return {check: {execution_id: 'execution_check', status: queued ? 'queued' : 'completed', passed: !queued && !fail,
       model: 'model', message: queued ? '账号正在处理其他任务，测试排队中。' : fail ? '测试未通过：接口拒绝了身份认证。' : '测试通过',
@@ -82,7 +85,18 @@ const click = text => {
   click('接入与测试'); await flush();
   assert([...window.document.querySelectorAll('button')].find(el => el.textContent === '测试并完成').disabled);
   assert.equal(calls.filter(call => call.name === 'PrepareProviderRuntime').length, 1);
-  tick(); await flush();
+  const preparingStatus = window.document.querySelector('[data-backend-setup-status]');
+  const preparingText = preparingStatus.textContent;
+  const modelOption = window.document.querySelector('datalist option');
+  const draft = window.document.querySelector('input[name=model]');
+  draft.value = 'custom-model'; draft.focus();
+  holdSetup = true; tick(); await flush();
+  assert.equal(preparingStatus.textContent, preparingText, 'background polling must not replace the current status with a loading screen');
+  assert.equal(preparingStatus.getAttribute('aria-busy'), 'false');
+  finishSetup(); holdSetup = false; await flush();
+  assert.equal(window.document.querySelector('datalist option'), modelOption, 'unchanged model options keep their DOM identity');
+  assert.equal(draft.value, 'custom-model'); assert.equal(window.document.activeElement, draft);
+  draft.value = 'model';
   assert.equal(calls.filter(call => call.name === 'PrepareProviderRuntime').length, 1, 'polling must not reinstall');
   missing = false; tick(); await flush();
   click('测试并完成'); await flush(); await flush();
@@ -140,11 +154,34 @@ const click = text => {
   assert.equal(calls.filter(call => call.name === 'GetProviderAccountSetup').length, 1);
   assert.equal(timers.size, 0); assert.equal(intervals.size, 0);
   holdPrepare = false;
-  missing = false; loginState = 'logged_out';
+  missing = false; loginState = 'logged_out'; provider = 'codex'; emptyCatalog = true; calls.length = 0;
   click('接入与测试'); await flush();
   assert.deepEqual(setupActions().map(el => el.textContent), ['登录', '测试并完成']);
   assert(setupActions().find(el => el.textContent === '测试并完成').disabled);
-  click('关闭'); loginState = 'logged_in';
+  assert(window.document.querySelector('input[name=model]').parentElement.hidden);
+  assert(!window.document.querySelector('input[name=model]').required);
+  assert.match(window.document.querySelector('[data-backend-login-hint]').textContent, /设备码/);
+  setupActions().find(el => el.textContent === '登录').click(); await flush();
+  assert(calls.some(call => call.name === 'OpenProviderAccountLogin'));
+  assert(!calls.some(call => call.name === 'CheckProviderAccount'));
+  loginSession = {state: 'awaiting_user', verification_code: 'TEST-CODE', verification_url: 'https://example.com/device'};
+  tick(); await flush();
+  const deviceCode = window.document.querySelector('[data-backend-login-code]');
+  const codeNode = deviceCode.firstChild;
+  const authLink = deviceCode.nextElementSibling;
+  const mutations = [];
+  const observer = new window.MutationObserver(records => mutations.push(...records));
+  observer.observe(authLink, {attributes: true});
+  tick(); await flush(); observer.disconnect();
+  assert.equal(deviceCode.firstChild, codeNode, 'polling must not disrupt copying the device code');
+  assert.equal(mutations.length, 0, 'the authorization link must not hide and reappear on every poll');
+  loginState = 'logged_in'; loginSession = {state: 'succeeded'}; tick(); await flush();
+  assert(!window.document.querySelector('input[name=model]').parentElement.hidden);
+  assert.equal(window.document.querySelector('input[name=model]').value, '');
+  fail = false; click('测试并完成'); await flush(); await flush();
+  assert.equal(calls.filter(call => call.name === 'CheckProviderAccount').at(-1).args.model, '', 'the server may discover the account default after startup');
+  assert.equal(window.document.querySelector('dialog'), null);
+  provider = 'claude'; emptyCatalog = false; loginSession = null;
   holdCheck = true; fail = false;
   click('接入与测试'); await flush();
   click('测试并完成'); await flush();
