@@ -1248,7 +1248,7 @@ def deliver_message_script(message: str, *, endpoint: str = "target", lend_tempo
         f"resident_id={reference('endpoint.' + endpoint)}",
         literal_argument("message", message),
         *(literal_argument(name, value) for name, value in constants.items()),
-        *([f"temporary_credentials={reference('event.payload.temporary_credentials')}"]
+        *([f"temporary_credentials={reference('event.payload.data.temporary_credentials')}"]
           if lend_temporary_credentials else []),
     ])
 
@@ -1281,7 +1281,7 @@ def deliver_script_parts(text: str) -> tuple[str, str, dict[str, Any]] | None:
             endpoint = refs[0].path[1]
         elif (argument.name == "temporary_credentials" and isinstance(value, Word)
               and len(value.parts) == 1 and isinstance(value.parts[0], Ref)
-              and value.parts[0].path == ("event", "payload", "temporary_credentials")):
+              and value.parts[0].path == ("event", "payload", "data", "temporary_credentials")):
             constants["lend_temporary_credentials"] = True
         elif isinstance(value, Word) and value.text is not None:
             if argument.name == "message":

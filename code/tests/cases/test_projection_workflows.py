@@ -39,12 +39,15 @@ def workflow_runtime(tmp_path, monkeypatch):
             return copy.deepcopy(receipts[key])
         calls.append((name, copy.deepcopy(arguments)))
         if name == "CreateComponent":
-            component = {"id": f"component_{len(calls)}", **{field: arguments[field] for field in ("kind", "title", "config")}}
+            component = {"id": f"{arguments['kind']}_{len(calls):012x}", **{field: arguments[field] for field in ("kind", "title", "config")}}
             graph["program"]["components"].append(component)
             graph["revision"] += 1
             result = {"component_id": component["id"], "component": component}
         elif name == "CreateWire":
-            wire = {"id": f"wire_{len(calls)}", **{field: arguments[field] for field in ("kind", "source", "target")}}
+            wire = {"id": f"wire_{len(calls):012x}", **{field: arguments[field] for field in ("kind", "source", "target")}}
+            for field in ("source_port", "target_port"):
+                if field in arguments:
+                    wire[field] = arguments[field]
             if "config" in arguments:
                 wire["config"] = copy.deepcopy(arguments["config"])
             graph["program"]["wires"].append(wire)
@@ -162,6 +165,12 @@ def accept_component_updates(runtime, monkeypatch):
     call = runtime.call
 
     def with_updates(actor, name, arguments=None, **options):
+        if name == "UpdateWire":
+            runtime.calls.append((name, copy.deepcopy(arguments)))
+            wire = next(item for item in runtime.graph["program"]["wires"] if item["id"] == arguments["wire_id"])
+            wire.update(copy.deepcopy(arguments["changes"]))
+            runtime.graph["revision"] += 1
+            return {"wire": copy.deepcopy(wire)}
         if name != "UpdateComponent":
             return call(actor, name, arguments, **options)
         runtime.calls.append((name, copy.deepcopy(arguments)))
@@ -269,6 +278,56 @@ def test_workflow_adds_task_credentials_once_and_preserves_custom_effects(workfl
     assert [name for name, _ in runtime.calls].count("UpdateComponent") == 1
 
 
+@pytest.mark.parametrize("upgrade", [False, True])
+def test_workflow_credentials_survive_manual_event_envelope(workflow_runtime, monkeypatch, upgrade):
+    """真实手动事件封装与 Effect 输入边界仍能转交类型化凭证；旧连线升级保留其他配置。"""
+    from management_portal.society_service import lineage_program_backlog as backlog
+
+    runtime = workflow_runtime
+    accept_component_updates(runtime, monkeypatch)
+    if upgrade:
+        installed(runtime)
+        route = next(w for w in runtime.graph["program"]["wires"] if w["kind"] == "route")
+        route["config"]["queue_limit"] = 17
+    options = dict(actor="owner", lineage_id=LINEAGE, resident_id=RESIDENT,
+                   name="feature", title="Feature", prompt="Fixed prompt", lend_temporary_credentials=True)
+    binding = runtime.bindings.install(**options)
+    route = next(w for w in runtime.graph["program"]["wires"] if w["kind"] == "route")
+    assert route["config"]["include_envelope"] is True
+    assert route["config"]["queue_limit"] == (17 if upgrade else 100)
+    before = len(runtime.calls)
+    assert runtime.bindings.install(**options) == binding
+    assert len(runtime.calls) == before
+    assert sum(name == "UpdateWire" for name, _ in runtime.calls) == int(upgrade)
+
+    captured = []
+    def dispatch(lineage_id, source_id, event, actor, **kwargs):
+        assert (lineage_id, source_id, actor) == (LINEAGE, binding["event_source_id"], "owner")
+        invocation = lineage_program_effect_rules._make_program_effect_invocation(
+            event, source_kind="event", source_wire_id=route["id"],
+            include_envelope=route["config"]["include_envelope"],
+        )
+        effect = next(c for c in runtime.graph["program"]["components"] if c["id"] == binding["effect_id"])
+        definition = {**effect["config"], "endpoints": {"target": RESIDENT}}
+        captured.append(lower_effect_call(LINEAGE, binding["effect_id"], definition, invocation))
+        return {"event": event.to_dict()}
+
+    authority = SimpleNamespace(
+        lineage_scope=lambda _: nullcontext(), read_lineage=lambda *a, **kw: copy.deepcopy(runtime.graph),
+        ensure_manager=lambda graph, actor: None, dispatch_lineage_program_event=dispatch,
+        observe_trigger_path=lambda *a: {}, get_lineage=lambda *a: copy.deepcopy(runtime.graph),
+    )
+    monkeypatch.setattr(backlog, "drain_event_backlog", lambda *a, **kw: {})
+    credentials = [{"a": "@contributor", "resource_id": "workbench_aaaaaaaaaaaa"}]
+    runtime.bindings.trigger(binding, actor="owner", prompt="Generate", request_id="envelope-proof",
+                             temporary_credentials=credentials)
+    arguments = runtime.calls[-1][1]
+    backlog.emit_manual_event(LINEAGE, arguments, "owner", authority=authority)
+    assert captured[0]["arguments"]["temporary_credentials"] == credentials
+    assert captured[0]["arguments"]["resident_id"] == RESIDENT
+    assert captured[0]["arguments"]["message"]["content_parts"] == [{"type": "text", "text": "Fixed prompt\n\nGenerate"}]
+
+
 def test_every_studio_flow_delivers_explicit_task_credentials(monkeypatch):
     """生成、优化、反投影均通过普通消息流程转交凭证，其他业务流程仍默认不转交。"""
     from management_portal.workbench_projections import studio
@@ -277,6 +336,38 @@ def test_every_studio_flow_delivers_explicit_task_credentials(monkeypatch):
     studio.install(None, {"bindings": {"main": {"lineage_id": LINEAGE, "residents": {"designer": RESIDENT}}}}, "owner")
     assert {item["name"] for item in calls} == {"studio:generate", "studio:optimize", "studio:reverse"}
     assert all(item["lend_temporary_credentials"] is True for item in calls)
+
+
+@pytest.mark.parametrize("committed", [False, True])
+def test_credential_route_upgrade_resumes_after_lost_reply(workflow_runtime, monkeypatch, committed):
+    """Effect 已更新而连线回复丢失时继续核对同一连线，不触发任务或改写其他配置。"""
+    runtime = workflow_runtime
+    binding = installed(runtime)
+    accept_component_updates(runtime, monkeypatch)
+    call = isa_client.call
+    attempts = []
+
+    def interrupted(actor, name, arguments=None, **options):
+        if name == "UpdateWire":
+            attempts.append(options["key"])
+            if len(attempts) == 1:
+                if committed:
+                    call(actor, name, arguments, **options)
+                raise TimeoutError("route reply lost")
+        return call(actor, name, arguments, **options)
+
+    monkeypatch.setattr(isa_client, "call", interrupted)
+    options = dict(actor="owner", lineage_id=LINEAGE, resident_id=RESIDENT,
+                   name="feature", title="Feature", prompt="Fixed prompt", lend_temporary_credentials=True)
+    with pytest.raises(TimeoutError, match="route reply lost"):
+        runtime.bindings.install(**options)
+    assert runtime.bindings.install(**options) == binding
+    assert len(attempts) == (1 if committed else 2)
+    assert len(set(attempts)) == 1
+    assert sum(name == "UpdateComponent" for name, _ in runtime.calls) == 1
+    route = next(w for w in runtime.graph["program"]["wires"] if w["kind"] == "route")
+    assert route["config"] == {"include_envelope": True, "unavailable_policy": "queue", "queue_limit": 100}
+    assert not any(name == "TriggerEvent" for name, _ in runtime.calls)
 
 
 @pytest.mark.parametrize("lost_receipt", [False, True])

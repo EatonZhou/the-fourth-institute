@@ -275,7 +275,7 @@ def test_delivery_workflow_preserves_typed_message_credentials():
     """显式启用的流程把本次 Event 的凭证请求原样交给 DeliverMessage，普通流程不借权。"""
     credentials = [{"a": "@contributor", "resource_id": "workbench_aaaaaaaaaaaa"}]
     inputs = {"endpoint": {"target": "resident_aaaaaaaaaaaa"},
-              "event": {"payload": {"temporary_credentials": credentials}}}
+              "event": {"payload": {"data": {"temporary_credentials": credentials}}}}
     script = deliver_message_script("Draft only", lend_temporary_credentials=True)
     assert deliver_script_parts(script) == ("target", "Draft only", {"lend_temporary_credentials": True})
     outcome, calls = run(script, inputs)
