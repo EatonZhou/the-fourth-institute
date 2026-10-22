@@ -1650,6 +1650,15 @@ html:root[data-portal-theme="fire"] .hatgNode[data-status="running"]:not(.draggi
   white-space: nowrap;
 }
 
+/* Resident names often share a long project prefix. Keep their distinguishing
+   ending visible; the graph measures the resulting card height for its edges
+   and layout instead of relying on a hover tooltip for node identity. */
+.hatgNode .nodeTitle {
+  overflow: visible;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
 .nodeFooter {
   display: flex;
   flex-wrap: wrap;
