@@ -152,7 +152,8 @@ def record_login_state(account_id, state, *, observed_at=None):
     login_store().observe(account_id, state, observed_at=observed_at)
 
 
-def login_environment(provider, account_id):
+def local_login_environment(provider, account_id):
+    """The login environment without a network route, for logins that stay on this host."""
     # Do not inherit API keys, cloud credentials, another account's home or session.
     if sys.platform not in {'linux', 'darwin', 'win32'}:
         raise NotImplementedError(f'Unsupported login platform: {sys.platform}')
@@ -168,6 +169,11 @@ def login_environment(provider, account_id):
         env['BROWSER'] = '/bin/true'
     home = account_home(provider, account_id)
     env["CODEX_HOME" if provider == "codex" else "CLAUDE_CONFIG_DIR"] = str(home)
+    return env
+
+
+def login_environment(provider, account_id):
+    env = local_login_environment(provider, account_id)
     managed_proxy = portal_network.saved_proxy_environment()
     if managed_proxy is not None:
         env.update(managed_proxy)
@@ -188,7 +194,8 @@ def login_environment(provider, account_id):
     return env
 
 
-def login_command(provider, *, status=False):
+def provider_binary(provider):
+    """The installed CLI that logs a Provider account in."""
     if provider not in {"codex", "claude"}:
         raise ValueError("Provider does not support subscription login")
     from management_common.site_config import read_site_config
@@ -211,6 +218,11 @@ def login_command(provider, *, status=False):
                                details={"reason": "account.runtime_missing"})
     if not binary:
         raise InstructionError("instruction.failed", "Provider 登录程序未安装", details={"reason": "account.runtime_missing"})
+    return binary
+
+
+def login_command(provider, *, status=False):
+    binary = provider_binary(provider)
     if provider == "codex":
         return [binary, "login", "status" if status else "--device-auth"]
     return [binary, "auth", "status", "--json"] if status else [binary, "auth", "login", "--claudeai"]

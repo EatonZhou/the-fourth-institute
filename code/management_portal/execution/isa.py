@@ -34,6 +34,7 @@ MODEL_API_FIELDS = {
     "models": "models",
     "default_parameters": "default_parameters",
     "routes": "routes",
+    "protocols": "protocols",
 }
 _SERVER: Any = None
 
@@ -67,6 +68,9 @@ def _public_api(item: dict[str, Any], version: int) -> dict[str, Any]:
             result[public] = copy.deepcopy(item[stored])
     result.setdefault("enabled", True)
     result["version"] = version
+    from management_portal.ai_provider_registry import HARNESS_PROTOCOLS, AIProviderRegistry
+    offered = AIProviderRegistry.harness_protocols(item)
+    result["harness_protocols"] = [name for name in HARNESS_PROTOCOLS if name in offered]
     routes = model_api_store.route_bindings(result["api_id"])
     if routes:
         result["routes"] = routes
@@ -88,7 +92,60 @@ def _stored_fields(values: dict[str, Any]) -> dict[str, Any]:
         raise invalid("secret_file 必须是绝对路径")
     if "models" in stored:
         _validate_models(stored["models"])
+    if stored.get("protocols") is not None:
+        _validate_protocols(stored["protocols"])
     return stored
+
+
+def _validate_protocols(protocols: Any) -> None:
+    from management_portal.ai_provider_registry import ANTHROPIC_AUTH, DECLARED_PROTOCOL_OPTIONS
+    if not isinstance(protocols, dict) or set(protocols) - set(DECLARED_PROTOCOL_OPTIONS):
+        raise invalid("protocols 只能声明 " + "、".join(DECLARED_PROTOCOL_OPTIONS))
+    for name, options in protocols.items():
+        if not isinstance(options, dict) or set(options) - DECLARED_PROTOCOL_OPTIONS[name]:
+            raise invalid(f"protocols.{name} 只接受：" + ("、".join(sorted(DECLARED_PROTOCOL_OPTIONS[name])) or "空对象"))
+    anthropic = protocols.get("anthropic_messages") or {}
+    url = anthropic.get("base_url")
+    if url is not None and not (isinstance(url, str) and re.fullmatch(r"https?://\S+", url.strip())):
+        raise invalid("protocols.anthropic_messages.base_url 必须是 http(s) 地址")
+    if anthropic.get("auth", "bearer") not in ANTHROPIC_AUTH:
+        raise invalid("protocols.anthropic_messages.auth 只能是 " + "、".join(ANTHROPIC_AUTH))
+
+
+def _check_api_kind(entry: dict[str, Any]) -> None:
+    # Declared harness protocols describe an OpenAI-compatible endpoint.
+    if entry.get("protocols") and entry.get("kind") != "openai_compatible_chat":
+        raise invalid("只有 openai_compatible_chat 模型接口可以声明 protocols")
+
+
+def _api_users(api_id: str) -> list[dict[str, Any]]:
+    from .account_registrations import registrations
+    return [row for row in registrations() if row["config"].get("api_id") == api_id]
+
+
+def _required_protocol(provider: str) -> tuple[str, str]:
+    from .provider_catalog import AGENT_PROVIDERS
+    definition = AGENT_PROVIDERS.get(provider)
+    return (definition.api_protocol, definition.label) if definition else ("", provider)
+
+
+def _check_api_protocol(provider: str, api_id: str) -> None:
+    """An api_profile account's Model API must speak the protocol its harness uses."""
+    from management_portal.ai_provider_registry import AIProviderRegistry
+    protocol, label = _required_protocol(provider)
+    entry = next((item for item, _version in model_api_store.apis() if item["id"] == api_id), None)
+    if protocol and entry is not None and protocol not in AIProviderRegistry.harness_protocols(entry):
+        raise invalid(f"模型 API {api_id} 没有声明 {label} 需要的 {protocol} 协议")
+
+
+def _check_api_users_keep_protocols(api_id: str, entry: dict[str, Any]) -> None:
+    from management_portal.ai_provider_registry import AIProviderRegistry
+    offered = AIProviderRegistry.harness_protocols(entry)
+    stranded = [row["account_id"] for row in _api_users(api_id)
+                if _required_protocol(row["provider"])[0] not in ("", *offered)]
+    if stranded:
+        raise InstructionError("instruction.conflict", "执行账号仍需要该模型 API 的协议：" + "、".join(stranded),
+                               details={"reason": "account.api_in_use", "account_ids": stranded})
 
 
 def _validate_models(models: Any) -> None:
@@ -118,6 +175,7 @@ def create_model_api(inv: Invocation) -> dict[str, Any]:
         raise invalid("api_id 不能为空")
     values = {name: inv.argument(name) for name in MODEL_API_FIELDS if inv.argument(name) is not None}
     item = {"id": api_id, "kind": "openai_compatible_chat", "enabled": True, **_stored_fields(values)}
+    _check_api_kind(item)
     try:
         created = model_api_store.create_api(item, inv.caller, secret=inv.argument("secret"))
     except InstructionError:
@@ -131,22 +189,43 @@ def create_model_api(inv: Invocation) -> dict[str, Any]:
 
 def update_model_api(inv: Invocation) -> dict[str, Any]:
     api_id = inv.argument("api_id")
+    current = next((item for item, _version in model_api_store.apis() if item["id"] == api_id), None)
+    if current is None:
+        raise not_found(f"模型接口不存在：{api_id}")
     try:
         changes = dict(inv.argument("changes") or {})
         secret = changes.pop("secret", inv.argument("secret"))
-        updated = model_api_store.update_api(api_id, _stored_fields(changes), inv.caller, secret=secret)
+        stored = _stored_fields(changes)
+        _check_api_kind({**current, **stored})
+    except InstructionError:
+        raise
+    except ValueError as exc:
+        raise invalid(str(exc)) from exc
+    _check_api_users_keep_protocols(api_id, {**current, **stored})
+    from . import codex_api_accounts
+    reconfigures = secret is not None or bool(set(stored) & codex_api_accounts.CONFIGURED_FIELDS)
+    if reconfigures:
+        _refuse_busy_codex_api_accounts(api_id)
+    try:
+        updated = model_api_store.update_api(api_id, stored, inv.caller, secret=secret)
     except InstructionError:
         raise
     except ValueError as exc:
         raise invalid(str(exc)) from exc
     if updated is None:
         raise not_found(f"模型接口不存在：{api_id}")
+    if reconfigures:
+        codex_api_accounts.refresh(codex_api_accounts.api_accounts(api_id))
     item, version = updated
     return {"api": _public_api(item, version), "version": version}
 
 
 def delete_model_api(inv: Invocation) -> dict[str, Any]:
     api_id = inv.argument("api_id")
+    users = [row["account_id"] for row in _api_users(api_id)]
+    if users:
+        raise InstructionError("instruction.conflict", "仍有执行账号使用该模型 API：" + "、".join(users),
+                               details={"reason": "account.api_in_use", "account_ids": users})
     if not model_api_store.delete_api(api_id):
         raise not_found(f"模型接口不存在：{api_id}")
     return {"api_id": api_id}
@@ -273,7 +352,7 @@ def _registration_public(row, actor):
             raise
         login_state = "unavailable"
     result = {**row, "login_state": login_state}
-    if row["kind"] == "subscription_login" and permission_system.allows(actor, "UpdateProviderAccount"):
+    if (row["kind"] == "subscription_login" or row["provider"] == "codex") and permission_system.allows(actor, "UpdateProviderAccount"):
         result["home_path"] = str(account_home(row["provider"], row["account_id"]))
         if row["provider"] == "codex":
             result["socket_path"] = str(codex_socket_path(row["account_id"]))
@@ -296,7 +375,9 @@ def list_providers(inv):
                           "kinds": list(kinds), "capabilities": definition.runtime_capabilities() if definition else {},
                           "runtime": runtime_status.get(provider, {"installed_version": "", "available_version": "",
                                                                    "pending_switch": False, "checked_at": "", "check_error": ""}),
-                          "default_route_id": default, "account_count": len(own)})
+                          "default_route_id": default, "account_count": len(own),
+                          # The Model API protocol an api_profile account needs ("" accepts any).
+                          "api_protocol": definition.api_protocol if definition else ""})
         from .provider_updates import preparation_status
         providers[-1]["preparation"] = preparation_status(provider)
     return {"providers": providers}
@@ -326,17 +407,38 @@ def register_provider_account(inv):
         api_id = data["config"]["api_id"]
         if model_api_store.api_version(api_id) is None:
             raise not_found("请先登记 config.api_id 对应的模型 API")
+        _check_api_protocol(data["provider"], api_id)
         if secret is not None:
+            _refuse_busy_codex_api_accounts(api_id)
             model_api_store.update_api(api_id, {}, inv.caller, secret=secret)
     row = store.create_registration(data, inv.caller)
     if row is None:
         raise InstructionError("instruction.conflict", "执行账号已经登记")
+    from .provider_updates import runtime_available
     if row["kind"] == "subscription_login":
         host.ensure_account_home(row["provider"], row["account_id"])
-        from .provider_updates import runtime_available
         if row["provider"] == "codex" and row["enabled"] and runtime_available("codex"):
             host.start_codex_instance(row["account_id"])
+    elif row["provider"] == "codex":
+        from . import codex_api_accounts
+        host.ensure_account_home("codex", row["account_id"])
+        if row["enabled"] and runtime_available("codex"):
+            codex_api_accounts.prepare(row)
+            host.start_codex_instance(row["account_id"])
+    if row["kind"] == "api_profile" and secret is not None:
+        from . import codex_api_accounts
+        codex_api_accounts.refresh([other for other in codex_api_accounts.api_accounts(row["config"]["api_id"])
+                                    if other["account_id"] != row["account_id"]])
     return {"registration": _registration_public(row, inv.caller)}
+
+
+def _refuse_busy_codex_api_accounts(api_id):
+    """Changing what a Codex API account authenticates with restarts its app-server."""
+    from .codex_api_accounts import busy_accounts
+    busy = busy_accounts(api_id)
+    if busy:
+        raise InstructionError("instruction.conflict", "使用该模型 API 的 Codex 账号仍有会话或执行：" + "、".join(busy),
+                               details={"reason": "account.busy", "account_ids": sorted(busy)})
 
 
 def _registration_expected_version(inv, object_id, *, minimum):
@@ -351,11 +453,29 @@ def update_provider_account_registration(inv):
     from . import account_hosting as host
     account_id = inv.argument("account_id")
     previous = _registered_account(account_id)
+    api_id = (inv.argument("changes") or {}).get("config", {}).get("api_id")
+    changed_api = previous["kind"] == "api_profile" and bool(api_id) and api_id != previous["config"].get("api_id")
+    if changed_api:
+        if model_api_store.api_version(api_id) is None:
+            raise not_found("请先登记 config.api_id 对应的模型 API")
+        _check_api_protocol(previous["provider"], api_id)
+        if previous["provider"] == "codex" and any(account_busy_counts(previous).values()):
+            raise InstructionError("instruction.conflict", "账号仍有绑定会话或排队、运行中的执行",
+                                   details={"reason": "account.busy", **account_busy_counts(previous)})
     row = store.update_registration(account_id, dict(inv.argument("changes") or {}),
                                     _registration_expected_version(inv, account_id, minimum=1), inv.caller)
     # Disabled accounts drain through Scheduler admission; existing turns retain
     # their Provider process until explicit deletion or service maintenance.
-    if row["provider"] == "codex" and not previous["enabled"] and row["enabled"]:
+    if row["provider"] == "codex" and row["kind"] == "api_profile":
+        from . import codex_api_accounts
+        if changed_api:
+            codex_api_accounts.refresh([row])
+        elif not previous["enabled"] and row["enabled"]:
+            from .provider_updates import runtime_available
+            if runtime_available("codex"):
+                codex_api_accounts.prepare(row)
+                host.start_codex_instance(account_id)
+    elif row["provider"] == "codex" and not previous["enabled"] and row["enabled"]:
         host.start_codex_instance(account_id)
     return {"registration": _registration_public(row, inv.caller)}
 
@@ -390,7 +510,8 @@ def delete_provider_account(inv):
     if row["provider"] == "codex":
         host.remove_codex_instance(row["account_id"])
     delete_login_data(row["account_id"])
-    if row["kind"] == "subscription_login":
+    # A Codex API account's home holds its key in auth.json.
+    if row["kind"] == "subscription_login" or row["provider"] == "codex":
         host.remove_account_home(row["provider"], row["account_id"])
     store.delete_registration(row["account_id"])
     return {"account_id": row["account_id"]}

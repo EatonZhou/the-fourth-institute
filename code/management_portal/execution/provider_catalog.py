@@ -83,6 +83,10 @@ class AgentProvider:
     # route's catalog may name another (``upstream_provider``), as Claude
     # Code's DeepSeek routes do.
     upstream: str = ""
+    # The Model API wire protocol (``ai_provider_registry.HARNESS_PROTOCOLS``)
+    # an ``api_profile`` account of this Provider speaks; "" when its API-key
+    # routes are fixed to one service.
+    api_protocol: str = ""
     # A session keeps the Portal tools it started with: resuming or forking
     # it cannot add one, so a session started without a required tool needs
     # a new one (``session_tools``).
@@ -132,7 +136,8 @@ class AgentProvider:
         """The service this route sends its model requests to."""
 
         if not self.catalog_module:
-            return self.upstream
+            hook = self._account_hook("route_upstream")
+            return (hook(route) if hook else "") or self.upstream
         try:
             return str(self.catalog(route).get("upstream_provider") or self.upstream)
         except Exception:  # noqa: BLE001 - an unknown route keeps the Provider's own service
@@ -152,11 +157,19 @@ class AgentProvider:
         """Some Backends reach several model routes; not all of them read images."""
 
         if not self.catalog_module:
-            return True
+            hook = self._account_hook("route_takes_images")
+            return hook(route) if hook else True
         try:
             return bool(self.catalog(route)["capabilities"]["media"])
         except Exception:  # noqa: BLE001 - an unknown route offers no image input
             return False
+
+    def _account_hook(self, name: str):
+        """A route-level answer from a Provider without a catalog module, if its account adapter gives one."""
+
+        if not self.account_adapter:
+            return None
+        return getattr(self._adapter_class(self.account_adapter, "management_portal.execution.account_adapters"), name, None)
 
     @staticmethod
     def _adapter_class(path: str, default_module: str):
@@ -213,7 +226,7 @@ AGENT_PROVIDERS = {
                       ("model", "reasoning_effort", "service_tier", "permissions", "collaboration_mode"), media=True, active_turn_input=True, adapter="CodexBackend", account_adapter="CodexAccounts", options_adapter="CodexOptions", native_review=True, native_goals=True, local_catalog=False, seeded_compaction=True,
                       # App-server owns the running turn and its native processes.
                       # Interrupting a follower's handover can abandon those processes.
-                      handover_keeps_turn=True, upstream="openai", session_tools_fixed=True,
+                      handover_keeps_turn=True, upstream="openai", api_protocol="openai_responses", session_tools_fixed=True,
                       system_context_survives_compaction=True,
                       system_instructions_place="thread 的开发者指令，原生压缩后仍保留",
                       credential_globs=(".codex*",), runtime_updater="CodexRuntime",
@@ -232,7 +245,7 @@ AGENT_PROVIDERS = {
                       handover_keeps_turn=True,
                       harness=frozenset({CONTEXT_USAGE_EVENTS, PORTAL_TOOLS, NATIVE_TOOL_EVENTS, AUTO_COMPACT_THRESHOLD, ERROR_CONTINUATION,
                                          SUBAGENTS, SUBAGENT_EVENTS, SUBAGENT_STOP}),
-                      subagents_by_default=True, upstream="anthropic",
+                      subagents_by_default=True, upstream="anthropic", api_protocol="anthropic_messages",
                       system_instructions_place="系统提示，每次进程启动都带；关闭以外的时机效果相同",
                       credential_globs=(".claude*",), runtime_updater="ClaudeRuntime",
                       # Claude Code starts turns by itself (task notifications, messages).
@@ -266,7 +279,7 @@ AGENT_PROVIDERS = {
                       system_context_every_turn=True,
                       system_instructions_place="每轮完整替换运行时系统提示", runtime_updater="DshRuntime"),
         AgentProvider("opencode", "OpenCode", frozenset({"turn", "compact", "release"}),
-                      ("model", "reasoning_effort"), "management_portal.opencode_provider_catalog", "zen_free",
+                      ("model", "reasoning_effort"), "management_portal.opencode_provider_catalog", "zen_free", api_protocol="openai_chat",
                       adapter="management_portal.opencode_backend.OpenCodeBackend", resume_without_session=True,
                       # OpenCode keeps a message's system instructions with that message only.
                       initial_instructions_transport="system_instructions", system_context_every_turn=True,

@@ -40422,5 +40422,45 @@
   "Provider 列表不可用，请刷新后重试。": {
     "zh-CN": "Provider 列表不可用，请刷新后重试。",
     "en": "Providers could not be loaded. Refresh and try again."
+  },
+  "也支持 OpenAI Responses（/responses，Codex 使用）": {
+    "zh-CN": "也支持 OpenAI Responses（/responses，Codex 使用）",
+    "en": "Also supports OpenAI Responses (/responses, used by Codex)"
+  },
+  "也支持 Anthropic Messages（Claude Code 使用）": {
+    "zh-CN": "也支持 Anthropic Messages（Claude Code 使用）",
+    "en": "Also supports Anthropic Messages (used by Claude Code)"
+  },
+  "只勾选接口确实提供的协议；Chat Completions 总是可用。接入测试会实际调用一次。": {
+    "zh-CN": "只勾选接口确实提供的协议；Chat Completions 总是可用。接入测试会实际调用一次。",
+    "en": "Check only the protocols this API really serves; Chat Completions is always available. The connection test makes one real call."
+  },
+  "Anthropic 接口地址（可选）": {
+    "zh-CN": "Anthropic 接口地址（可选）",
+    "en": "Anthropic endpoint (optional)"
+  },
+  "留空使用去掉 /v1 的接口基础地址": {
+    "zh-CN": "留空使用去掉 /v1 的接口基础地址",
+    "en": "Leave empty to use the Base URL without /v1"
+  },
+  "Anthropic 认证方式": {
+    "zh-CN": "Anthropic 认证方式",
+    "en": "Anthropic authentication"
+  },
+  "运行方式": {
+    "zh-CN": "运行方式",
+    "en": "Run with"
+  },
+  "Codex、Claude Code、OpenCode 能执行命令、编辑文件和使用工具，需要接口支持对应协议（在高级设置中勾选）；直连只对话。": {
+    "zh-CN": "Codex、Claude Code、OpenCode 能执行命令、编辑文件和使用工具，需要接口支持对应协议（在高级设置中勾选）；直连只对话。",
+    "en": "Codex, Claude Code and OpenCode can run commands, edit files and use tools, and need the API to support their protocol (checked under Advanced settings); direct calls only chat."
+  },
+  "直连模型（只对话，不执行工具）": {
+    "zh-CN": "直连模型（只对话，不执行工具）",
+    "en": "Direct model calls (chat only, no tools)"
+  },
+  "只列出声明了 {p0} 协议的接口；可在模型 API 的高级设置中勾选。": {
+    "zh-CN": "只列出声明了 {p0} 协议的接口；可在模型 API 的高级设置中勾选。",
+    "en": "Only APIs that declare the {p0} protocol are listed; check it under the Model API's Advanced settings."
   }
 }

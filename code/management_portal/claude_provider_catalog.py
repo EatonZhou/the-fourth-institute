@@ -20,8 +20,13 @@ def is_native(profile: dict[str, Any]) -> bool:
 
 
 def supports_entry(entry: dict[str, Any]) -> bool:
-    return AIProviderRegistry.is_enabled(entry) and (is_native(entry) or (
-        entry.get("kind") == "openai_compatible_chat" and entry.get("provider") == "deepseek"))
+    return AIProviderRegistry.is_enabled(entry) and (
+        is_native(entry) or "anthropic_messages" in AIProviderRegistry.harness_protocols(entry))
+
+
+def is_declared(entry: dict[str, Any]) -> bool:
+    """An API route whose Model API declares its Anthropic endpoint (any gateway, not only DeepSeek)."""
+    return not is_native(entry) and AIProviderRegistry.declares_protocols(entry)
 
 
 def profile(profile_id: str, *, allow_disabled: bool = False) -> dict[str, Any]:
@@ -103,17 +108,28 @@ def _model_aliases(entry: dict[str, Any]) -> dict[str, str]:
     return aliases
 
 
+def _supported_efforts(entry: dict[str, Any], row: dict[str, Any]) -> Any:
+    if "support_efforts" in row or not is_declared(entry):
+        return row.get("support_efforts", [] if is_native(entry) else list(EFFORTS))
+    # A gateway's models offer the efforts their Model API declares, if any.
+    return [value for value in row.get("reasoning_efforts") or [] if value in EFFORTS]
+
+
 def model_catalog(entry: dict[str, Any]) -> dict[str, Any]:
     enabled_models = set(AIProviderRegistry.models(entry))
     models: list[str] = []
     efforts: dict[str, list[str]] = {}
-    for row in entry.get("models") or []:
+    rows = entry.get("models") or []
+    if not rows and is_declared(entry):
+        rows = [{"id": model} for model in AIProviderRegistry.harness_models(entry)]
+        enabled_models = {row["id"] for row in rows}
+    for row in rows:
         if not isinstance(row, dict) or not AIProviderRegistry.is_enabled(row):
             continue
         model = str(row.get("id") or "").strip()
         if model not in enabled_models or model in models:
             raise ValueError("Claude route requires unique, nonempty model IDs")
-        supported = row.get("support_efforts", [] if is_native(entry) else list(EFFORTS))
+        supported = _supported_efforts(entry, row)
         if not isinstance(supported, list) or any(value not in EFFORTS for value in supported):
             raise ValueError(f"Invalid Claude effort capabilities for {model}")
         models.append(model)
@@ -129,7 +145,8 @@ def model_catalog(entry: dict[str, Any]) -> dict[str, Any]:
         "provider_profile": str(entry["id"]),
         "backend_route_id": str(entry["id"]),
         "label": str(entry.get("label") or entry["id"]),
-        "upstream_provider": "anthropic" if is_native(entry) else "deepseek",
+        # A declared gateway is a service Portal has no probe for.
+        "upstream_provider": "anthropic" if is_native(entry) else "model_api" if is_declared(entry) else "deepseek",
         "authentication": "claude_login" if is_native(entry) else "api_key",
         "source": "configured",
         "models": models,
@@ -153,8 +170,15 @@ def catalog(profile_id: str) -> dict[str, Any]:
 
 def routes() -> list[dict[str, Any]]:
     from management_portal.execution.account_registrations import registrations
-    return [catalog(str(row["id"]))
-            for row in ({"id": value["route_id"]} for value in registrations("claude") if value["enabled"])]
+    result = []
+    for value in registrations("claude"):
+        if not value["enabled"]:
+            continue
+        try:
+            result.append(catalog(str(value["route_id"])))
+        except ValueError:  # a route whose Model API is gone or disabled hides only itself
+            continue
+    return result
 
 
 def validate_settings(entry: dict[str, Any], model: str, effort: str = "") -> tuple[str, str]:

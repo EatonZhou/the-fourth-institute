@@ -305,9 +305,11 @@ class Handler(BaseHTTPRequestHandler):
 
 def main() -> None:
     with open(LOG + ".server", "a") as log:
-        log.write(json.dumps({key: os.environ.get(key) for key in (
+        log.write(json.dumps({**{key: os.environ.get(key) for key in (
             "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME", "OPENCODE_DB", "PORTAL_RESIDENT_ID",
-            "PORTAL_DATABASE_URL", "PORTAL_OPENCODE_API_KEY", "OPENROUTER_API_KEY")}) + "\n")
+            "PORTAL_DATABASE_URL", "PORTAL_OPENCODE_API_KEY", "OPENROUTER_API_KEY", "OPENCODE_DISABLE_MODELS_FETCH")},
+            # A custom route's provider definition (``opencode_provider_catalog.provider_config``).
+            "config": {key: CONFIG.get(key) for key in ("provider", "enabled_providers", "small_model")}}) + "\n")
     server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
     server.daemon_threads = True
     threading.Thread(target=connect, daemon=True).start()

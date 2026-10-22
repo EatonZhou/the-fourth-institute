@@ -169,9 +169,12 @@ class OpenCodeClient:
             key = opencode_provider_catalog.api_key(route)
             if key:
                 environment[KEY_VARIABLE] = key
+            service = opencode_provider_catalog.service(route)
             config = {
                 "session_id": session_id, "socket_path": str(transport.socket_path), "state_dir": str(root),
-                "cwd": params["cwd"], "route": route, "service": opencode_provider_catalog.service(route),
+                "cwd": params["cwd"], "route": route, "service": service,
+                # A custom route's provider definition holds no key (``api_key``).
+                "provider": opencode_provider_catalog.provider_config(route),
                 "binary": str(binary),
                 "config_home": str(opencode_provider_catalog.config_home()),
                 "version": opencode_provider_catalog.version(),

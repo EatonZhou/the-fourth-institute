@@ -244,17 +244,30 @@ def _provider_environment(profile_id: str) -> tuple[dict[str, str], dict[str, An
         env = claude_provider_catalog.login_environment(profile)
         return env, profile
     key = AIProviderRegistry.read_secret(AIProviderRegistry.secret_path(profile))
-    base_url = AIProviderRegistry.base_url(profile, protocol="anthropic")
-    return {
+    base_url, auth = AIProviderRegistry.harness_endpoint(profile, "anthropic_messages")
+    env = {
         "ANTHROPIC_BASE_URL": base_url,
-        "ANTHROPIC_AUTH_TOKEN": key,
-        "ANTHROPIC_API_KEY": "",
+        # Bearer goes in Authorization; x-api-key in Anthropic's own header.
+        "ANTHROPIC_AUTH_TOKEN": key if auth == "bearer" else "",
+        "ANTHROPIC_API_KEY": key if auth == "x-api-key" else "",
         "CLAUDE_CODE_OAUTH_TOKEN": "",
         "ANTHROPIC_PROFILE": "",
         "CLAUDE_CODE_USE_BEDROCK": "",
         "CLAUDE_CODE_USE_VERTEX": "",
         "CLAUDE_CODE_USE_FOUNDRY": "",
-    }, profile
+    }
+    if claude_provider_catalog.is_declared(profile):
+        headers = {str(name): str(value).strip() for name, value in (profile.get("default_headers") or {}).items()
+                   if str(value or "").strip()}
+        env["ANTHROPIC_CUSTOM_HEADERS"] = "\n".join(f"{name}: {value}" for name, value in headers.items())
+    return env, profile
+
+
+# A declared gateway serves only its own models; background, title and
+# subagent requests would otherwise ask it for Claude model names.
+GATEWAY_MODEL_VARIABLES = ("ANTHROPIC_MODEL", "ANTHROPIC_SMALL_FAST_MODEL", "ANTHROPIC_DEFAULT_OPUS_MODEL",
+                           "ANTHROPIC_DEFAULT_SONNET_MODEL", "ANTHROPIC_DEFAULT_HAIKU_MODEL",
+                           "ANTHROPIC_DEFAULT_FABLE_MODEL", "CLAUDE_CODE_SUBAGENT_MODEL")
 
 
 def _validated_model(profile: dict[str, Any], requested: str) -> str:
@@ -703,6 +716,8 @@ class ClaudeCodeDaemon:
             model,
             str(params.get("effort") or ""),
         )
+        if claude_provider_catalog.is_declared(profile):
+            provider_env = {**provider_env, **dict.fromkeys(GATEWAY_MODEL_VARIABLES, model)}
         is_owner = bool(params.get("is_owner"))
         permission_mode = str(params.get("permission_mode") or "dontAsk").strip()
         if permission_mode not in {"dontAsk", "bypassPermissions"}:
