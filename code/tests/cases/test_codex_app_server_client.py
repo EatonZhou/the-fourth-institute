@@ -2802,6 +2802,27 @@ class CodexAppServerClientTest(unittest.TestCase):
             self.assertEqual(request.call_count, 3)
         client.close()
 
+    def test_initialize_standard_forms_preserves_thread_approval_policy(self) -> None:
+        """声明标准表单输入能力，同时原样传递线程的 Full Access 策略。"""
+        server = FakeAppServer(self.socket_path)
+        server.start()
+        client = CodexAppServerClient(self.socket_path)
+        try:
+            client.start_thread({
+                "cwd": "/tmp", "ephemeral": False,
+                "threadSource": "user", "approvalPolicy": "never",
+            })
+            initialized = next(item for item in server.requests if item["method"] == "initialize")
+            self.assertEqual(initialized["params"]["capabilities"], {
+                "experimentalApi": True,
+                "extensions": {"openai/standard-form-input": {}},
+            })
+            started = next(item for item in server.requests if item["method"] == "thread/start")
+            self.assertEqual(started["params"]["approvalPolicy"], "never")
+            self.assertEqual(started["params"]["threadSource"], "user")
+        finally:
+            client.close()
+
     def test_thread_lifecycle_requests_share_the_persistent_connection(self) -> None:
         """新建、fork 和压缩线程共用同一持久连接，压缩后报告新的上下文大小"""
         server = FakeAppServer(self.socket_path)

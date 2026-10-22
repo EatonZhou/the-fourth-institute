@@ -608,7 +608,13 @@ class CodexAppServerClient:
                             "title": "TFI Portal",
                             "version": "1",
                         },
-                        "capabilities": {"experimentalApi": True},
+                        "capabilities": {
+                            "experimentalApi": True,
+                            # Full Access still needs real user answers to MCP
+                            # forms. Advertise the input UI implemented by
+                            # user_inputs; this does not grant tool approval.
+                            "extensions": {"openai/standard-form-input": {}},
+                        },
                     },
                     timeout=timeout,
                     cancellation_requested=cancellation_requested,
