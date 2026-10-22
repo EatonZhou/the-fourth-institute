@@ -19,6 +19,7 @@ from management_common.distribution_targets import identify_host
 from scripts.tfi_instance_layout import GENERATED_CODE_DIRECTORIES, source_inventory
 from scripts.windows.build import public_seed, bundle_seed, bundle_native_dependencies, verify_prepared_payload
 from scripts.macos.python_dependencies import bundle as bundle_python_dependencies, cache_directory
+from scripts.macos.native_smoke import InstalledSession, verify_background
 
 
 def command(argv, **kwargs):
@@ -100,6 +101,12 @@ def smoke(executable, destination, included, *, require_long_rpc_path=False):
         after = json.loads(state_path.read_text())
         if before["target"] != after["target"] or before["manifest_sha256"] != after["manifest_sha256"]:
             raise ValueError("Repeated launch changed instance identity")
+        # Upgrade before registration: new personal Family work legitimately
+        # waits for an AI account and must not be discarded to enable an update.
+        if not included:
+            upgrade_smoke(argv, destination)
+        session = InstalledSession(before['target'], included)
+        session.register()
         marker = destination / "instance/desktop/data/restart-check.txt"
         marker.write_text("user data survives unregister and restart")
         command(cleanup, timeout=120)
@@ -109,13 +116,13 @@ def smoke(executable, destination, included, *, require_long_rpc_path=False):
                 or before["manifest_sha256"] != restarted["manifest_sha256"]
                 or marker.read_text() != "user data survives unregister and restart"):
             raise ValueError("Restart after unregister changed instance identity or user data")
-        if not included:
-            upgrade_smoke(argv, destination)
+        session.login_and_check()
+        verify_background(destination, marker)
     except Exception as exc:
         failure = exc
         runtime = destination / "instance/desktop/runtime"
-        for name in ("command-error.log", "resource.error.log", "execution.error.log", "society.error.log",
-                     "worker.error.log", "web.error.log", "dependency-install.log"):
+        for name in ("command-error.log", "resource.log", "resource.error.log", "execution.error.log",
+                     "society.log", "society.error.log", "worker.error.log", "web.error.log", "dependency-install.log"):
             path = runtime / name
             if path.is_file():
                 detail = name + "\n" + path.read_text(errors="replace")[-6000:]
@@ -327,7 +334,7 @@ with tempfile.TemporaryDirectory() as tmp:
         for included in (False, True):
             destination = (Path(tmp) / "独立测试" / ("full" if included else "base")).resolve()
             smoke(executables / "TheFourthInstitute", destination, included, require_long_rpc_path=True)
-    receipt["native_installation_smoke"] = "passed: native entry, long Unicode path, base/full, login, repeat start, unregister/restart, compatible update with database row, GUI copy/retry"
+    receipt["native_installation_smoke"] = "passed: native entry, long Unicode path, base/full, first administrator, AMA/PersonalFamily/project/chat reads, launcher exit survival, unregister/restart with password login, Unicode index worker, background log checks, compatible update with database row, GUI copy/retry"
     verify_app(contents.parent)
     receipt["app_signature_verification"] = "passed"
     (image_root / "Applications").symlink_to("/Applications", target_is_directory=True)
