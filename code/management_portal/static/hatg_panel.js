@@ -1377,10 +1377,13 @@
       issues.push({ ...component, error, at: runtime.at || "", fingerprint: JSON.stringify([component.id, runtime.step_id || runtime.trigger_path_id || runtime.at || "", error]) });
     }
     for (const resident of instanceInnerObjects(instance, "nodes")) {
-      const error = String(resident.error || resident.last_error || resident.last_run?.error || "").slice(0, 2000);
-      if (!error) continue;
-      const at = resident.last_run?.finished_at || resident.last_run?.updated_at || resident.updated_at || "";
-      issues.push({ ...resident, kind: "resident", error, at, fingerprint: JSON.stringify([resident.id, resident.last_run?.message_id || at, error]) });
+      const execution = resident.last_execution || {};
+      if (execution.status !== "failed") continue;
+      const error = String(execution.error || execution.error_code || "执行失败").slice(0, 2000);
+      const at = execution.finished_at || execution.started_at || execution.created_at || "";
+      // A retry may keep the input and error text; it is a new failure only
+      // when the execution identity changes. Layout/title updates are not failures.
+      issues.push({ ...resident, kind: "resident", error, at, fingerprint: JSON.stringify([resident.id, execution.execution_id || execution.message_id || at]) });
     }
     return issues;
   }

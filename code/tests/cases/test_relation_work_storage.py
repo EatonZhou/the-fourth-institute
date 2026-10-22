@@ -65,6 +65,49 @@ def test_latest_execution_is_not_hidden_by_an_older_completion(tmp_path):
     assert store.lineage_snapshot(LINEAGE_ID)[1]["nodes"][resident]["status"] == "idle"
 
 
+@pytest.mark.parametrize('status', ['failed', 'cancelled', 'completed', 'queued'])
+def test_latest_execution_failure_details_are_scoped_to_its_input(tmp_path, status):
+    """最近执行按原输入投影失败详情，取消或新执行不能继承旧错误"""
+    import json
+    from management_portal.society_service.resident_conversation_stream import ResidentConversationRepository
+
+    store = _store(tmp_path)
+    resident = 'resident_111111111111'
+    agent = get_agent_data_store()
+    agent.ensure_agent(resident, actor_ref='CASE-A')
+    agent.reserve_execution(execution_id='current', agent_id=resident, provider='codex',
+                            actor_ref='CASE-A', created_at='2026-10-22T00:00:00Z')
+    execution_inputs.attach(agent, 'current', [{'message_id': 'input-current', 'role': 'primary',
+                                               'accepted_at': '2026-10-22T00:00:00Z'}])
+    agent.queue_execution('current')
+    if status != 'queued':
+        agent.finish_execution('current', status=status, finished_at='2026-10-22T00:00:02Z')
+    with store.database.transaction() as connection:
+        ResidentConversationRepository(store, agent)._ensure_conversation(connection, resident)
+        for message, error in [('unrelated-input', 'wrong error'), ('input-current', 'The read operation timed out')]:
+            connection.execute(
+                'INSERT INTO conversation_input_states(resident_id,message_id,state,error_json,updated_at) '
+                "VALUES(%s,%s,'failed',%s,'2026-10-22T00:00:02Z')",
+                (resident, message, json.dumps({'code': 'timeout', 'message': error})),
+            )
+    result = store.lineage_snapshot(LINEAGE_ID)[1]['nodes'][resident]['last_execution']
+    assert result['execution_id'] == 'current' and result['message_id'] == 'input-current'
+    assert result['status'] == status
+    assert result['error'] == ('The read operation timed out' if status == 'failed' else '')
+    assert result['error_code'] == ('timeout' if status == 'failed' else '')
+    if status == 'failed':
+        # Reusing an input on a new execution must not attribute its previous
+        # failed attempt's error before the new input-state projection arrives.
+        agent.reserve_execution(execution_id='next', agent_id=resident, provider='codex',
+                                actor_ref='CASE-A', created_at='2026-10-22T00:01:00Z')
+        execution_inputs.attach(agent, 'next', [{'message_id': 'input-current', 'role': 'primary',
+                                                'accepted_at': '2026-10-22T00:01:00Z'}])
+        agent.finish_execution('next', status='failed', finished_at='2026-10-22T00:01:02Z')
+        latest = store.lineage_snapshot(LINEAGE_ID)[1]['nodes'][resident]['last_execution']
+        assert latest['execution_id'] == 'next' and latest['status'] == 'failed'
+        assert latest['error'] == '' and latest['error_code'] == ''
+
+
 def test_current_resident_observations_do_not_scan_completed_history(tmp_path):
     """读取 Resident 当前执行状态只检查少量行，不扫描已完成的历史执行
 

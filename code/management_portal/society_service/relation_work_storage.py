@@ -59,16 +59,21 @@ def resident_observations(connection, lineage_id):
     get_agent_data_store()
     table = '"' + _database_schema("agent") + '".executions'
     rows = connection.execute(f"""
-        SELECT n.node_id,e.execution_id,e.status,e.created_at,e.started_at,e.finished_at,i.message_id
+        SELECT n.node_id,e.execution_id,e.status,e.created_at,e.started_at,e.finished_at,i.message_id,
+            CASE WHEN e.status='failed' AND s.state='failed' AND s.updated_at>=e.created_at
+                 THEN LEFT(s.error_json::jsonb->>'message',2000) ELSE '' END AS error,
+            CASE WHEN e.status='failed' AND s.state='failed' AND s.updated_at>=e.created_at
+                 THEN LEFT(s.error_json::jsonb->>'code',120) ELSE '' END AS error_code
         FROM lineage_nodes n JOIN residents r ON r.resident_id=n.node_id AND r.deleted_at IS NULL
         CROSS JOIN LATERAL (
             SELECT execution_id,status,created_at,started_at,finished_at FROM {table} e
             WHERE e.agent_id=n.node_id ORDER BY created_at DESC,execution_id DESC LIMIT 1
         ) e LEFT JOIN "{_database_schema("agent")}".execution_inputs i
             ON i.execution_id=e.execution_id AND i.role='primary'
+        LEFT JOIN conversation_input_states s ON s.resident_id=n.node_id AND s.message_id=i.message_id
         WHERE n.lineage_id=%s
     """, (lineage_id,)).fetchall()
     return {row["node_id"]: {
         "status": row["status"] if row["status"] in {"preparing", "queued", "running"} else "idle",
-        "last_execution": decode_times({key: row[key] for key in ("execution_id", "status", "created_at", "started_at", "finished_at", "message_id")}, {"created_at", "started_at", "finished_at"}),
+        "last_execution": decode_times({key: row[key] for key in ("execution_id", "status", "created_at", "started_at", "finished_at", "message_id", "error", "error_code")}, {"created_at", "started_at", "finished_at"}),
     } for row in rows}
