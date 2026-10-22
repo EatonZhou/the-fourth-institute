@@ -103,6 +103,7 @@ class ExecutionWorker:
         turn_control_lock = threading.Lock()
         receipt_lock = threading.Lock()
         self.scheduler.start(execution_id, claim_token)
+        lease_deadline = time.monotonic() + float(lease_seconds)
         queue_wait_ms = _elapsed_since_iso_ms(str(execution.get("created_at") or ""))
 
         def cancellation_requested() -> bool:
@@ -121,8 +122,8 @@ class ExecutionWorker:
                     turn_controls.put(dict(control))
 
         def heartbeat_loop() -> None:
+            nonlocal lease_deadline
             heartbeat_interval = max(5.0, min(30.0, float(lease_seconds) / 3))
-            lease_deadline = time.monotonic() + float(lease_seconds)
 
             def interrupt_cancelled_turn() -> None:
                 # The cancellation flag records intent, not delivery. A lost
@@ -415,7 +416,23 @@ class ExecutionWorker:
             heartbeat.join(timeout=6)
             raise RuntimeError("execution produced no terminal result")
         try:
-            snapshot = self.scheduler.finish(result, claim_token)
+            while True:
+                try:
+                    snapshot = self.scheduler.finish(result, claim_token)
+                    break
+                except (ExecutionServiceUnavailable, ExecutionResponseUnknown):
+                    # Keep the already-produced result across a rolling socket
+                    # replacement. Retry only this fenced terminal write: never
+                    # execute the accepted Provider input again. A lost reply
+                    # may mean finish committed; its cleared claim then fences
+                    # the next attempt without a second terminal transition.
+                    remaining = lease_deadline - time.monotonic()
+                    if remaining <= 0:
+                        raise
+                    if ownership_lost.wait(min(0.25, remaining)):
+                        raise ExecutionClaimOwnershipLost("execution claim ownership changed")
+                    if time.monotonic() >= lease_deadline:
+                        raise
         except ExecutionClaimOwnershipLost:
             return {
                 "execution_id": execution_id,
