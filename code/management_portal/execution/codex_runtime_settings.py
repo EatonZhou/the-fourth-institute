@@ -195,6 +195,10 @@ def validate_codex_runtime_updates(
 ) -> dict[str, Any]:
     checked = dict(updates)
     candidate = merge_settings(current, checked)
+    if not set(checked).intersection(CODEX_PROVIDER_CONFIGURATION_FIELDS):
+        # Harness and local controls are independent of the selected model.
+        # Keep existing settings until model validation or actual execution.
+        return checked
     before = effective_codex_runtime_settings(current)
     resolved = resolve_codex_runtime_configuration(
         candidate,

@@ -188,9 +188,8 @@ class PortalSlashCommandsTest(unittest.TestCase):
                 {"collaboration_mode": "plan"},
                 account_id="bound-account",
             )
-            self.assertEqual(reconciled["model"], "gpt-6.1-sol")
-            self.assertEqual(reconciled["reasoning_effort"], "xhigh")
-            self.assertEqual(reconciled["service_tier"], "")
+            self.assertEqual(reconciled, {"collaboration_mode": "plan"})
+            service.return_value.runtime_catalog.assert_not_called()
             selected = codex_runtime_settings.validate_codex_runtime_updates(
                 current,
                 {"model": "limited-model"},

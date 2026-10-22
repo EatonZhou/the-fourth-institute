@@ -224,13 +224,16 @@ class CodexOptions(NativeOptions):
     default_permission_preset = "full-access"
 
     def handle_native_command(self, content, settings, **context):
-        # Ordinary messages are admitted before the first AI account exists.
-        # Resolving a Codex route belongs to a native command or execution,
-        # not to deciding whether this message is a command.
-        if not str(content or "").strip().startswith("/"):
+        text = str(content or "").strip()
+        parts = text[1:].split() if text.startswith("/") else []
+        command = parts[0].casefold() if parts else ""
+        if command not in self.slash_commands:
             return {"handled": False}
         from . import codex_runtime_settings
-        context["account_id"] = context.pop("account_route")()
+        # Status, permissions and other local controls work before any AI is
+        # connected. Only the model picker/validator reads an account catalog.
+        account_route = context.pop("account_route")
+        context["account_id"] = account_route() if command == "model" else ""
         return codex_runtime_settings.handle_codex_native_command(content, settings, **context)
 
     def defaults(self, definition, record):

@@ -26,7 +26,8 @@ def personal(future_creation_store, charters):
 
 
 @pytest.mark.empty_execution_registrations
-def test_personal_family_can_precede_first_ai_account(future_creation_store, monkeypatch, capsys):
+@pytest.mark.parametrize("first_default", ["claude", "provider_api"])
+def test_personal_family_can_precede_first_ai_account(future_creation_store, monkeypatch, capsys, first_default):
     """首次注册完整个人 Family 不依赖 Codex 账号，执行配置留待默认 AI 就绪。"""
     from management_portal.execution import account_registrations
     from management_portal.society_service import resident_runtime_domain
@@ -99,12 +100,26 @@ def test_personal_family_can_precede_first_ai_account(future_creation_store, mon
 
     # Configuring the first default AI releases the original organization
     # input, including when the selected provider is not the Codex placeholder.
-    account_registrations.update_role("default", "claude_fixture", "", "", 0, "newcomer")
+    first_account = "claude_fixture"
+    if first_default == "provider_api":
+        account_registrations.create_registration({"account_id": "deepseek_only", "provider": "provider_api",
+            "kind": "api_profile", "config": {"api_id": "deepseek_test"}}, "newcomer")
+        accounts.append({"account_id": "deepseek_only", "provider": "deepseek_test", "backend_route_id": ""})
+        first_account = "deepseek_only"
+    account_registrations.update_role("default", first_account, "", "", 0, "newcomer")
     coordinator._recover_resident(family["steward"])
     assert coordinator.snapshot()["last_error"] == ""
     assert starts[-1][0] == family["steward"]
     assert resident_execution_work.read(steward)["user_message_id"] == job["user_message_id"]
     assert not family_quota.role_migration(steward).get("account_wait")
+    # The worker binds the previously unconfigured role before quota admission.
+    # The API identifier in the Resident is a provider, not a native account route.
+    from management_portal.society_service import resident_default_backend
+    resident_default_backend.bind_before_execution(steward, "newcomer")
+    bound = resident_catalog.get_catalog().get(family["steward"])
+    assert not family_quota.ensure_role_reserve(bound, accounts)
+    assert not family_quota.role_migration(bound).get("account_wait")
+    assert resident_execution_work.read(bound)["user_message_id"] == job["user_message_id"]
 
 
 def test_personal_initialization_is_private_and_resumable(personal):

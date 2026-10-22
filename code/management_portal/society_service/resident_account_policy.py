@@ -84,7 +84,10 @@ def resident_account(record: Mapping[str, Any], accounts: list[dict[str, Any]]) 
 
     provider = resident_backend.execution_provider(record)
     binding = resident_backend.session_record(record)
-    route = str(binding.get("backend_route_id") or record.get("backend_route_id") or "")
+    # For provider_api the Resident route identifies the API provider, while
+    # the Execution account has an empty native route. Keep session pinning
+    # and this provider/account distinction in the shared backend owner.
+    route = resident_backend.execution_account_route(record, binding)
     if not route:
         try:
             configured = resident_backend.execution_account(record, binding)
