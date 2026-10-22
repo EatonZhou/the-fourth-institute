@@ -1579,6 +1579,7 @@ class AgentDataStore:
                 "segment.execution_id, segment.started_at AS segment_started_at, "
                 "segment.finished_at AS segment_finished_at, "
                 "segment.metadata_json::jsonb#>>'{message,message_id}' AS message_id, "
+                "segment.metadata_json::jsonb#>>'{provider_observation,item_id}' AS provider_item_id, "
                 f"{PROVIDER_TURN_SQL} AS provider_turn_id, execution.provider_session_ref, "
                 "session.provider, session.backend_route_id, session.backend_session_id "
                 "FROM sequence_segments member JOIN segments segment USING(segment_id) "

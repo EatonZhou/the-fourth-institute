@@ -183,6 +183,15 @@ def _turn_id(event: Mapping[str, Any]) -> str:
     ).strip()
 
 
+def _provider_observation_metadata(recorded, observed):
+    # Replays preserve immutable history, including an old record's lack of
+    # native evidence. Only first capture records facts from this event.
+    if recorded is not None:
+        metadata = recorded["metadata"]
+        return {"provider_observation": metadata["provider_observation"]} if "provider_observation" in metadata else {}
+    return {"provider_observation": observed} if observed else {}
+
+
 def _tool_status(event: Mapping[str, Any], tool: Mapping[str, Any]) -> str:
     raw = str(tool.get("status") or "").strip().casefold()
     method = str(event.get("method") or "").strip().casefold()
@@ -1039,6 +1048,7 @@ class AgentDataProjector:
                 text=text,
                 phase=phase,
                 item_id=item_id,
+                native_item_id=item_id,
                 created_at=created_at,
                 turn_id=turn_id,
                 request_timing=request_timing,
@@ -1130,6 +1140,7 @@ class AgentDataProjector:
         created_at: str,
         turn_id: str,
         request_timing: object = None,
+        native_item_id: str = "",
     ) -> str:
         normalized_phase = str(phase or "message").strip().casefold()
         segment_id = stable_segment_id(
@@ -1160,6 +1171,7 @@ class AgentDataProjector:
             performed_by_actor_ref=projection.request.identity.principal.id,
             metadata={
                 "role": "assistant",
+                **_provider_observation_metadata(recorded, {"item_id": native_item_id} if native_item_id else {}),
                 "message": {
                     "message_id": model_message_id(projection.request.execution_id, item_id, normalized_phase),
                     "role": "agent", "author_id": projection.request.identity.principal.id,
@@ -1264,6 +1276,18 @@ class AgentDataProjector:
             "external_effect_refs": _json_safe(state.get("external_effect_refs") or []),
         }
         status = str(state.get("status") or "completed")
+        observation = {}
+        if isinstance(state.get("id"), str) and state["id"]:
+            observation["item_id"] = state["id"]
+        if tool_type == "commandExecution":
+            if isinstance(state.get("command"), str):
+                observation["command_sha256"] = hashlib.sha256(state["command"].encode()).hexdigest()
+            if type(state.get("exitCode")) is int:
+                observation["exit_code"] = state["exitCode"]
+        try:
+            recorded = self.store.segment(segment_id)
+        except KeyError:
+            recorded = None
         self._put_output_segment(
             projection,
             segment_id=segment_id,
@@ -1277,6 +1301,7 @@ class AgentDataProjector:
             performed_by_actor_ref=projection.request.identity.principal.id,
             metadata={
                 "tool_name": tool_name,
+                **_provider_observation_metadata(recorded, observation),
                 "tool_namespace": namespace,
                 "source": "provider_tool",
                 "kind": "tool",

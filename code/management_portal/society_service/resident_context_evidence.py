@@ -71,6 +71,13 @@ def _tool_observations(segments):
         row = {key: segment.get(key, "") for key in (
             "segment_id", "execution_id", "status", "started_at", "finished_at", "content_sha256")}
         row.update({key: content.get(key, "") for key in ("call_id", "tool_name", "tool_namespace")})
+        observation = (segment.get("metadata") or {}).get("provider_observation") or {}
+        if isinstance(observation.get("item_id"), str) and observation["item_id"]:
+            row["provider_item_id"] = observation["item_id"]
+        if isinstance(observation.get("command_sha256"), str):
+            row["command_sha256"] = observation["command_sha256"]
+        if type(observation.get("exit_code")) is int:
+            row["observed_exit_code"] = observation["exit_code"]
         if content.get("tool_name") == "clock.sleep":
             arguments = (content.get("input") or {}).get("arguments")
             duration = arguments.get("duration_ms") if isinstance(arguments, dict) else None
@@ -88,10 +95,12 @@ def _trace_positions(snapshot):
         return None
     return {**{key: positions[key] for key in (
                 "schema", "sampled_at", "consistency", "trace_id", "trace_updated_at", "truncated")},
-            "entries": [{key: entry[key] for key in (
+            "entries": [{**{key: entry[key] for key in (
                 "ordinal", "segment_id", "segment_type", "content_sha256", "message_id", "execution_id",
                 "segment_started_at", "segment_finished_at", "provider_session_ref", "provider_turn_id",
-                "provider", "backend_route_id", "backend_session_id")} for entry in positions["entries"]]}
+                "provider", "backend_route_id", "backend_session_id")},
+                **({"provider_item_id": entry["provider_item_id"]} if entry.get("provider_item_id") else {})}
+                for entry in positions["entries"]]}
 
 
 def _transformations(snapshot):
