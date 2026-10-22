@@ -40,7 +40,8 @@ window.PortalInstructionClient = {execute: async (name, args, options) => {
     case 'GetProviderAccountCheck': return {check: {execution_id: 'execution_check', status: queued ? 'queued' : 'completed', passed: !queued && !fail,
       model: 'model', message: queued ? '账号正在处理其他任务，测试排队中。' : fail ? '测试未通过：接口拒绝了身份认证。' : '测试通过',
       next_step: fail ? '请在模型 API 中更换 API Key，然后重新测试。' : '',
-      diagnostic: fail ? {reason: 'authentication', http_status: 401} : null}};
+      diagnostic: fail ? {reason: 'authentication', http_status: 401} : null,
+      log: fail ? 'execution_check\nHTTP 401: [REDACTED]\n<script>not markup</script>' : ''}};
     case 'UpdateBackendRole':
       if (holdDefault) await new Promise(resolve => { finishDefault = resolve; });
       roles = [{role: 'default', account_id: args.account_id, version: (roles[0]?.version || 0) + 1}];
@@ -68,6 +69,7 @@ const click = text => {
   assert.equal(window.document.querySelector('input[name=model]').value, 'model');
   const setupActions = () => [...window.document.querySelectorAll('dialog .backendActions button')].filter(el => !el.hidden);
   assert.deepEqual(setupActions().map(el => el.textContent), ['测试并完成']);
+  assert([...window.document.querySelectorAll('button')].find(el => el.textContent === '显示详细日志').hidden);
   click('测试并完成'); await flush(); await flush();
   assert(calls.some(call => call.name === 'UpdateBackendRole' && call.args.verification_execution_id === 'execution_check'));
   assert(!calls.some(call => ['PrepareProviderRuntime', 'OpenProviderAccountLogin'].includes(call.name)));
@@ -92,6 +94,20 @@ const click = text => {
   assert.match(checkDetail.textContent, /401/);
   assert.match(checkDetail.textContent, /authentication/);
   assert.equal(window.document.querySelector('input[name=model]').value, 'model');
+  const log = window.document.querySelector('[data-backend-check-log]');
+  assert(log.hidden);
+  click('显示详细日志');
+  assert(!log.hidden && log.readOnly);
+  assert.match(log.value, /HTTP 401/);
+  assert.match(log.value, /<script>not markup<\/script>/);
+  assert.equal(window.document.querySelector('dialog script'), null);
+  assert.equal([...window.document.querySelectorAll('button')].find(el => el.textContent === '收起详细日志').getAttribute('aria-expanded'), 'true');
+  click('收起详细日志'); assert(log.hidden);
+  // A new attempt must not present a stale failure log while polling.
+  queued = true; click('测试并完成'); await flush();
+  assert(log.hidden && !log.value);
+  assert([...window.document.querySelectorAll('button')].find(el => el.textContent === '显示详细日志').hidden);
+  queued = false; tick(); await flush(); await flush();
   click('关闭');
   // Failures expose recovery only when needed, rather than permanent manual steps.
   missing = true; preparation = 'missing'; prepareResult = 'failed'; calls.length = 0;

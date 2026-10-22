@@ -221,6 +221,16 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     const status = node("p", "", {role: "status", "data-backend-setup-status": ""});
     const nextStep = node("p", "", {"data-backend-check-next-step": "", hidden: true});
     const checkDetail = node("p", "", {class: "backendHint", "data-backend-check-detail": "", hidden: true});
+    const checkLog = node("textarea", "", {id: "backend-check-log", "data-backend-check-log": "", rows: "12", readOnly: true,
+      "aria-label": t("接入测试日志（已脱敏，可复制）"), hidden: true});
+    const showLog = button("显示详细日志", () => {
+      checkLog.hidden = !checkLog.hidden;
+      showLog.textContent = t(checkLog.hidden ? "显示详细日志" : "收起详细日志");
+      showLog.setAttribute("aria-expanded", String(!checkLog.hidden));
+    });
+    showLog.hidden = true;
+    showLog.setAttribute("aria-controls", checkLog.id);
+    showLog.setAttribute("aria-expanded", "false");
     const capabilities = node("p", "");
     const model = field(form, "模型", "model", "", {required: true, autocomplete: "off"});
     const choices = node("datalist", undefined, {id: "backend-setup-models"});
@@ -236,6 +246,8 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       if (!model.value.trim()) { model.reportValidity(); return; }
       nextStep.hidden = checkDetail.hidden = true;
       nextStep.textContent = checkDetail.textContent = "";
+      checkLog.hidden = showLog.hidden = true; checkLog.value = "";
+      showLog.textContent = t("显示详细日志"); showLog.setAttribute("aria-expanded", "false");
       checking = true; model.disabled = true; useDefault.disabled = true; setButtons();
       try {
         const receipt = await execute("CheckProviderAccount", {account_id: accountId, model: model.value.trim()});
@@ -243,7 +255,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
         await pollCheck(receipt.execution_id);
       } catch (error) { checking = false; model.disabled = false; useDefault.disabled = false; throw error; }
     }, "正在启动本地后台并检查连接，请稍候…"), true);
-    form.append(capabilities, status, nextStep, checkDetail, actions(authorize, retry, test));
+    form.append(capabilities, status, nextStep, checkDetail, actions(authorize, retry, test, showLog), checkLog);
     form.addEventListener("submit", event => event.preventDefault());
     function setButtons() {
       authorize.hidden = !setup || ["logged_in", "succeeded", "not_applicable"].includes(setup.login_state);
@@ -321,6 +333,8 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
           if (result.check.diagnostic?.reason) checkDetail.append(node("span", " · " + t("失败类别") + ": " + result.check.diagnostic.reason));
           if (Number.isInteger(result.check.diagnostic?.http_status)) checkDetail.append(node("span", " · HTTP " + result.check.diagnostic.http_status));
           checkDetail.hidden = false;
+          checkLog.value = result.check.log || t("暂无详细日志，请提供测试编号以便排查。");
+          showLog.hidden = false;
         }
         if (result.check.passed && useDefault.checked) {
           progressMessage = "测试通过，正在设为默认 AI…";

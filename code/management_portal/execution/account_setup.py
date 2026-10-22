@@ -8,6 +8,7 @@ from __future__ import annotations
 import time
 import logging
 import subprocess
+import json
 
 from management_portal.hatg.contracts import InstructionError, invalid, not_found
 from . import account_registrations as registrations, provider_updates
@@ -15,6 +16,7 @@ from .accounts import default_execution_accounts
 from .client import ExecutionClient
 from .contracts import ExecutionRequest, SessionOptions
 from .provider_catalog import AGENT_PROVIDERS
+from .activity_redaction import redact_sensitive_mapping
 from .provider_failures import failure_code, is_egress_block_failure, is_network_failure, is_usage_limit_failure
 from management_portal.provider_transport_diagnostics import sanitize_transport_observation
 
@@ -222,6 +224,24 @@ def _check_failure(snapshot, row):
             "diagnostic": {"reason": reason, "http_status": http_status}}
 
 
+def _check_log(snapshot, row, response):
+    """Bounded diagnostic log from this authorized check, not arbitrary host logs."""
+    result = snapshot.get("result") or {}
+    request = snapshot.get("request") or {}
+    report = redact_sensitive_mapping({
+        "execution_id": snapshot["execution_id"], "account_id": row["account_id"],
+        "runner": row["provider"], "model": response["model"], "status": snapshot.get("status"),
+        "submitted_at": request.get("created_at"),
+        "message": response["message"], "next_step": response["next_step"],
+        "diagnostic": response["diagnostic"],
+        "error_recorded": bool(result.get("error") or result.get("error_code")),
+    })
+    # Provider errors can embed arbitrary response bodies or unlabelled credentials.
+    # Include only the classified failure and allowlisted transport observations.
+    report["transport"] = sanitize_transport_observation((result.get("error_details") or {}).get("provider_transport"))
+    return json.dumps(report, ensure_ascii=False, indent=2)
+
+
 def _check_result(account_id, execution_id, actor):
     row = account(account_id)
     snapshot = ExecutionClient().status(execution_id, actor=actor)
@@ -245,11 +265,13 @@ def _check_result(account_id, execution_id, actor):
     response = {"execution_id": snapshot["execution_id"], "status": status, "passed": bool(passed),
                 "model": checked.get("model", ""), "configuration_current": current,
                 "message": "测试通过" if passed else "配置已变化，请重新测试" if not current else waiting,
-                "queue_reason": queue_reason, "next_step": "", "diagnostic": None}
+                "queue_reason": queue_reason, "next_step": "", "diagnostic": None, "log": ""}
     if not row["enabled"]:
         response["message"] = "账号已停用，请启用后重新测试。"
     elif current and not passed and status in {"completed", "failed", "cancelled"}:
         response.update(_check_failure(snapshot, row))
+    if not passed and status in {"completed", "failed", "cancelled"}:
+        response["log"] = _check_log(snapshot, row, response)
     return response
 
 

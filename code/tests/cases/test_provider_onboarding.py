@@ -284,6 +284,29 @@ def test_connection_proof_cannot_be_reused_for_other_configuration(check_snapsho
         setup.require_verified(invoke(account_id="existing", model="model", verification_execution_id="execution_test"))
 
 
+def test_failed_check_log_keeps_diagnostics_and_transport_but_excludes_credentials(check_snapshot):
+    snapshot, account = check_snapshot
+    snapshot["result"]["error"] = ('HTTP 401: invalid API key sk-syntheticTESTsecret12345; '
+        'Authorization: Bearer synthetic-bearer-secret; '
+        'https://api.invalid/v1?api_key=synthetic-query-secret')
+    snapshot["request"]["prompt"] = "private prompt not for the diagnostic log"
+    snapshot["result"]["output"] = {"response": {"secret": "raw-response-secret"}}
+    snapshot["result"]["error_details"] = {"secret": "arbitrary-error-detail", "provider_transport": {
+        "schema": "tfi.provider-transport.v1", "phase": "opening_response", "outcome": "failed",
+        "error_kind": "http_error", "response": {"http_status": 401}, "durations_ms": {"total": 1234}}}
+    report = setup.check_result(invoke(account_id="existing", execution_id="execution_test"))["check"]["log"]
+    detail = json.loads(report)
+    assert detail["diagnostic"] == {"reason": "login", "http_status": 401}
+    assert detail["error_recorded"] is True and "error" not in detail
+    assert "1234" in report and "opening_response" in report and "execution_test" in report
+    assert all(secret not in report for secret in ["syntheticTESTsecret12345", "synthetic-bearer-secret",
+        "synthetic-query-secret", "private prompt", "raw-response-secret", "arbitrary-error-detail"])
+    snapshot["result"]["error"] = "long failure " * 10000
+    assert len(setup.check_result(invoke(account_id="existing", execution_id="execution_test"))["check"]["log"]) < 12000
+    snapshot.update(status="completed", result={"output": {"message": "hello"}})
+    assert setup.check_result(invoke(account_id="existing", execution_id="execution_test"))["check"]["log"] == ""
+
+
 def test_unmapped_imported_role_uses_default(monkeypatch):
     monkeypatch.setattr(registrations, "roles", lambda: [
         {"role": "coding", "account_id": None}, {"role": "default", "account_id": "existing"}])

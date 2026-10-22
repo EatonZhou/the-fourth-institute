@@ -18,6 +18,7 @@
 .backendDialog > a { display:block; margin:12px 0; }
 .backendDialog [hidden] { display:none !important; }
 .backendForm { display:grid; gap:12px; }
+.backendForm [data-backend-check-log] { box-sizing:border-box; width:100%; min-width:0; resize:vertical; font:12px/1.5 monospace; }
 .backendForm [role=alert] { color:var(--danger, #b3261e); }
 .backendForm [role=alert]:empty { display:none; }
 .backendIntroduction h2, .backendChoice h3 { margin:0; }

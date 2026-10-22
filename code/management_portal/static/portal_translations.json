@@ -40646,5 +40646,21 @@
   "账号已停用，请启用后重新测试。": {
     "zh-CN": "账号已停用，请启用后重新测试。",
     "en": "This account is disabled. Enable it before testing again."
+  },
+  "显示详细日志": {
+    "zh-CN": "显示详细日志",
+    "en": "Show detailed log"
+  },
+  "收起详细日志": {
+    "zh-CN": "收起详细日志",
+    "en": "Hide detailed log"
+  },
+  "接入测试日志（已脱敏，可复制）": {
+    "zh-CN": "接入测试日志（已脱敏，可复制）",
+    "en": "Connection test log (redacted, copyable)"
+  },
+  "暂无详细日志，请提供测试编号以便排查。": {
+    "zh-CN": "暂无详细日志，请提供测试编号以便排查。",
+    "en": "No detailed log is available. Provide the test ID for investigation."
   }
 }
