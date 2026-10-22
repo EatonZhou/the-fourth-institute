@@ -18,6 +18,7 @@ async function main() {
   const w = dom.window, panel = w.document.querySelector('section');
   const timers = new Map();
   let nextTimer = 0, visible = true;
+  let releaseOldRead;
   w.setTimeout = callback => { timers.set(++nextTimer, callback); return nextTimer; };
   w.clearTimeout = id => timers.delete(id);
   const advance = async () => {
@@ -39,9 +40,20 @@ async function main() {
     homeController: {isComponentVisible: () => visible},
     listen: (target, event, callback, signal) => target.addEventListener(event, callback, {signal}),
     homeApi: {get: async url => {
-      assert.match(url, /^\/api\/agent-status\/scheduled-triggered(?:\?refresh=1)?$/);
+      assert.match(url, /^\/api\/agent-status\/scheduled-triggered(?:\?refresh=1(?:&fresh=1)?)?$/);
       record.monitor_reads++;
       record.last_monitor_forced = url.includes('refresh=1');
+      record.last_monitor_fresh = url.includes('fresh=1');
+      if (caseName === 'post_mutation_fresh' && record.monitor_reads === 2) {
+        return new Promise(resolve => { releaseOldRead = () => resolve(plain(monitor)); });
+      }
+      if (caseName === 'post_mutation_fresh' && record.monitor_reads === 3) {
+        assert.equal(record.last_monitor_fresh, true, 'the queued control read must bypass the old plan');
+        const fresh = plain(monitor);
+        fresh.items[0].sources[0].paused = true;
+        fresh.items[0].sources[0].runtime = {state: 'paused', paused: true};
+        return fresh;
+      }
       if (caseName === 'cold_loading' && record.monitor_reads === 1) return {status: 'loading', loaded: false, items: []};
       return plain(monitor);
     }},
@@ -86,7 +98,22 @@ async function main() {
       const button = panel.querySelector(selector); assert.ok(button, selector);
       button.click(); await tick();
     };
-    if (caseName === 'resume_visible_monitor') {
+    if (caseName === 'post_mutation_fresh') {
+      const oldRead = w.loadScheduledTriggeredStatus();
+      await tick();
+      toggle();
+      await act('[data-scheduled-triggered-action="pause_schedule"]');
+      assert.equal(record.instructions.length, 1);
+      assert.equal(record.instructions[0].instruction, 'PauseComponent');
+      assert.match(panel.textContent, /已提交，正在刷新状态/);
+      assert.equal(record.monitor_reads, 2, 'the earlier read is still in flight');
+      releaseOldRead(); await oldRead; await tick();
+      assert.equal(record.monitor_reads, 3);
+      assert.equal(record.last_monitor_fresh, true);
+      assert.match(panel.textContent, /已暂停/);
+      assert.ok(panel.querySelector('[data-scheduled-triggered-action="resume_schedule"]'));
+      assert.equal(record.instructions.length, 1, 'read recovery must not replay the mutation');
+    } else if (caseName === 'resume_visible_monitor') {
       assert.match(row.textContent, /queued/);
       visible = false;
       panel.dispatchEvent(new w.CustomEvent('portal:home-panel-lifecycle', {detail: {phase: 'hide'}}));
@@ -132,6 +159,7 @@ async function main() {
       assert.equal(update.arguments.lineage_id, 'lineage_100000000009'); assert.equal(update.arguments.component_id, 'event_source_daily');
       assert.equal(update.arguments.changes.config.interval_seconds, 120); assert.equal(update.arguments.changes.config.jitter_seconds, 9);
       assert.ok(update.idempotency_key); assert.ok(record.monitor_reads > 1);
+      assert.equal(record.last_monitor_fresh, true);
       await act('[data-scheduled-triggered-action="resume_schedule"]');
       assert.equal(record.instructions[1].instruction, 'PauseComponent');
       assert.deepEqual(record.instructions[1].arguments, {lineage_id: 'lineage_100000000009', component_id: 'event_source_evening', paused: false});

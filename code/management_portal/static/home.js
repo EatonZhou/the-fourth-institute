@@ -2219,7 +2219,8 @@ async function controlScheduledTriggered(button) {
       idempotencyKey: `scheduled-triggered:${window.PortalUIPrimitives.randomUUID()}`,
     });
     committed = true;
-    await loadScheduledTriggeredStatus(agentStatusData, undefined, true);
+    button.textContent = window.PortalI18n.t("已提交，正在刷新状态");
+    await loadScheduledTriggeredStatus(agentStatusData, undefined, true, {afterMutation: true});
     if (!scheduledTriggeredStatusData?.loaded && scheduledTriggeredStatusData?.error) {
       throw new Error(scheduledTriggeredStatusData.error);
     }
@@ -2282,12 +2283,12 @@ function scheduleScheduledTriggeredFollowup(monitor) {
   }, fast ? SCHEDULED_TRIGGERED_FOLLOWUP_MS : SCHEDULED_TRIGGERED_IDLE_REFRESH_MS);
 }
 
-async function loadScheduledTriggeredStatus(data, signal, force = false, { quiet = false } = {}) {
+async function loadScheduledTriggeredStatus(data, signal, force = false, { quiet = false, afterMutation = false } = {}) {
   if (scheduledTriggeredLoadInFlight) {
     if (!force) return scheduledTriggeredLoadInFlight;
     await scheduledTriggeredLoadInFlight;
     if (signal?.aborted) return;
-    return loadScheduledTriggeredStatus(undefined, signal, true, {quiet});
+    return loadScheduledTriggeredStatus(undefined, signal, true, {quiet, afterMutation});
   }
   const previous = scheduledTriggeredStatusData;
   if (!quiet && !previous?.loaded) {
@@ -2296,7 +2297,8 @@ async function loadScheduledTriggeredStatus(data, signal, force = false, { quiet
   }
   const request = (async () => {
     try {
-      const result = await homeApi.get(`/api/agent-status/scheduled-triggered${force ? "?refresh=1" : ""}`, {signal});
+      const query = afterMutation ? "?refresh=1&fresh=1" : force ? "?refresh=1" : "";
+      const result = await homeApi.get(`/api/agent-status/scheduled-triggered${query}`, {signal});
       if (!signal?.aborted) scheduledTriggeredStatusData = {...result, status: result?.status || "ready", loaded: result?.loaded !== false};
       else scheduledTriggeredStatusData = previous;
     } catch (err) {

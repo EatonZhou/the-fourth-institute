@@ -464,7 +464,7 @@ def _cached_agent_status_summary(actor: str) -> dict:
     return agent_status_backend.get_agent_status_summary(str(actor or ""))
 
 
-def _cached_scheduled_triggered_status(actor: str) -> dict:
+def _cached_scheduled_triggered_status(actor: str, *, fresh: bool = False) -> dict:
     context = copy_context()
     def build() -> dict:
         try:
@@ -472,6 +472,13 @@ def _cached_scheduled_triggered_status(actor: str) -> dict:
         except Exception as exc:
             return {"status": "error", "loaded": False, "items": [], "error": str(exc)}
 
+    if fresh:
+        # An explicit post-mutation read must neither return a cached plan nor
+        # join a rebuild that began before the instruction committed.
+        _SCHEDULED_TRIGGERED_READ_CACHE.discard(lambda key: key == str(actor or ""))
+        return _SCHEDULED_TRIGGERED_READ_CACHE.get(
+            str(actor or ""), lambda: context.run(build), allow_stale=False,
+        )
     return _SCHEDULED_TRIGGERED_READ_CACHE.get(
         str(actor or ""),
         lambda: context.run(build),

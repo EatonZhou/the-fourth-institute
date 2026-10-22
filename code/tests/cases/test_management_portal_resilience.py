@@ -200,6 +200,61 @@ def test_schedule_cold_build_survives_refresh_and_preserves_viewer_context(monke
         viewer.reset(token)
 
 
+@pytest.mark.parametrize("warm", [False, True])
+def test_schedule_post_mutation_http_read_waits_for_new_build(monkeypatch, warm) -> None:
+    """A committed control cannot read an old cold or stale monitor rebuild."""
+    from management_portal.http_agent_status import AgentStatusHttp
+
+    cache = portal._CoalescingReadCache(30)
+    monkeypatch.setattr(portal, "_SCHEDULED_TRIGGERED_READ_CACHE", cache)
+    old = {"loaded": True, "items": [{"paused": False}]}
+    new = {"loaded": True, "items": [{"paused": True}]}
+    if warm:
+        cache.get("viewer", lambda: old)
+        cache.expire("viewer")
+    started, release = threading.Event(), threading.Event()
+    fresh_started, fresh_release = threading.Event(), threading.Event()
+    calls = []
+
+    def build(actor):
+        calls.append(actor)
+        if len(calls) == 1:
+            started.set()
+            assert release.wait(timeout=5)
+            return old
+        fresh_started.set()
+        assert fresh_release.wait(timeout=5)
+        return new
+
+    monkeypatch.setattr(portal.scheduled_triggered_monitor, "get_scheduled_triggered_status", build)
+    handler = AgentStatusHttp(
+        respond=lambda request, status, data: (status, data), unavailable=None,
+        resident_api=None, cached_summary=None, cached_active=None,
+        cached_scheduled_triggered=portal._cached_scheduled_triggered_status,
+        invalidate_scheduled_triggered=cache.expire,
+    )
+    pool = ThreadPoolExecutor(max_workers=1)
+    try:
+        portal._cached_scheduled_triggered_status("viewer")
+        assert started.wait(timeout=1)
+        old_refresh = cache._inflight["viewer"]
+        # The actual HTTP adapter must propagate fresh mode after PauseComponent.
+        response = pool.submit(handler.scheduled_triggered, None,
+                               urlparse("/api/agent-status/scheduled-triggered?refresh=1&fresh=1"), "viewer")
+        assert fresh_started.wait(timeout=1)
+        assert not response.done(), "Post-mutation read may not return a loading or stale plan"
+        fresh_release.set()
+        assert response.result(timeout=2) == (200, new)
+        release.set()
+        assert old_refresh.result(timeout=2) == old
+        assert portal._cached_scheduled_triggered_status("viewer") == new
+        assert calls == ["viewer", "viewer"]
+    finally:
+        release.set()
+        fresh_release.set()
+        pool.shutdown(wait=True)
+
+
 def test_schedule_refresh_does_not_publish_a_pre_mutation_rebuild(monkeypatch) -> None:
     """定时任务状态刷新不发布修改前开始的旧重建结果，以修改后的重建为准"""
     cache = portal._CoalescingReadCache(30)

@@ -81,7 +81,7 @@ def test_scheduled_triggered_browser_contract(tmp_path):
     The historical function name preserves the stable case ID.
 
     :design-point:"""
-    for case_name in ("lineage_errors_visible_with_valid_neighbor", "event_schedule_and_identity", "read_only_lineage", "resident_without_timer", "script_effect", "resume_visible_monitor", "cold_loading"):
+    for case_name in ("lineage_errors_visible_with_valid_neighbor", "event_schedule_and_identity", "read_only_lineage", "resident_without_timer", "script_effect", "resume_visible_monitor", "cold_loading", "post_mutation_fresh"):
         payload_file = tmp_path / f"{case_name}.json"
         payload_file.write_text(json.dumps(_monitor(case_name), ensure_ascii=False), encoding="utf-8")
         route_file = tmp_path / f"{case_name}-routes.js"

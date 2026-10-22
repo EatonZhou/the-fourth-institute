@@ -42,7 +42,10 @@ class AgentStatusHttp:
         return self.respond(request, 200, self.cached_active(actor))
 
     def scheduled_triggered(self, request, parsed, actor):
-        if (parse_qs(parsed.query).get("refresh") or [""])[0] == "1":
+        query = parse_qs(parsed.query)
+        if (query.get("fresh") or [""])[0] == "1":
+            return self.respond(request, 200, self.cached_scheduled_triggered(actor, fresh=True))
+        if (query.get("refresh") or [""])[0] == "1":
             self.invalidate_scheduled_triggered(actor)
         return self.respond(request, 200, self.cached_scheduled_triggered(actor))
 
