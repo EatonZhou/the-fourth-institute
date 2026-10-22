@@ -140,11 +140,13 @@ def install(args: argparse.Namespace) -> int:
         report("正在从安装包安装 Portal 核心 Python 依赖，无需联网")
         env = {key: value for key, value in os.environ.items() if not key.upper().startswith('PIP_')}
         env.update(PIP_CONFIG_FILE=os.devnull, PYTHONUTF8='1', PYTHONNOUSERSITE='1')
-        run([str(python), '-I', '-m', 'pip', '--isolated', 'install', '--no-index',
+        # -I ignores PYTHONUTF8; the explicit option also fixes redirected pip
+        # output on English Windows when the installation path contains Chinese.
+        run([str(python), '-I', '-X', 'utf8', '-m', 'pip', '--isolated', 'install', '--no-index',
              '--find-links', str(wheelhouse), '--only-binary=:all:', '--require-hashes',
              '--disable-pip-version-check', '-r', str(wheelhouse / 'requirements.lock')],
             dry_run=args.dry_run, env=env)
-        run([str(python), '-I', '-m', 'pip', '--isolated', 'check', '--disable-pip-version-check'],
+        run([str(python), '-I', '-X', 'utf8', '-m', 'pip', '--isolated', 'check', '--disable-pip-version-check'],
             dry_run=args.dry_run, env=env)
     else:
         report("正在准备 Portal 基础运行环境")

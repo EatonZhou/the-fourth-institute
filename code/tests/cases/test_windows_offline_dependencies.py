@@ -104,6 +104,7 @@ class OfflineDependencies(unittest.TestCase):
         self.assertEqual(options['env']['PIP_CONFIG_FILE'], os.devnull)
         self.assertIn('check', calls[1][0])
         self.assertTrue(all(command[0] == str(python) for command, _ in calls))
+        self.assertTrue(all(command[command.index('-X') + 1] == 'utf8' for command, _ in calls))
         calls.clear()
         def failed(*args, **kwargs):
             calls.append(args[0])

@@ -253,10 +253,16 @@ def _prepare(api, target, entries):
                 source = package_root(tree, entry)
                 (source / receipt.name).write_text(json.dumps({'artifact': entry}, indent=2) + '\n', encoding='utf-8')
                 source.rename(destination)
+        compatibility = {}
+        if entry['name'] == 'postgres' and entry['platform'].startswith('windows/'):
+            from scripts.windows.utf8_manifest import prepare_postgres
+            compatibility = prepare_postgres(destination)
         # Probe before any service registration. A failed probe leaves its
         # receipt for diagnosis/retry and never activates an incomplete install.
         versions = verify(api, target, entry)
         value = {'artifact': entry, 'resolved_versions': versions, 'status': 'verified'}
+        if compatibility:
+            value['windows_compatibility'] = compatibility
         api.write_json(receipt, value)
         receipts.append(value)
     return receipts

@@ -160,6 +160,10 @@ python3 code/scripts/windows/build.py
 保留上游许可证。PostgreSQL、NATS、Node.js 使用 `code/config/release-native-dependencies.json`
 的固定版本和摘要，构建时下载、校验并检查解压目录；归档随包放入共享依赖缓存，
 收据记录每项摘要和大小。用户首次启动无需再次下载这三项。
+
+Windows 准备受管 PostgreSQL 时，为其可执行文件加入进程级 UTF-8 manifest，
+保留原有资源和权限设置，并在本地依赖收据记录派生处理。这避免英文系统的 ANSI
+代码页破坏中文数据库路径；不改变系统语言或全局代码页。上游归档摘要仍按原值校验。
 生成平台声明只影响 Windows 派生工程，公开 seed 原文件保持不变。
 编译安装包前，从实际待打包的代码和 seed 压缩包运行 `prepare_install.py --platform windows`，
 由正式安装器校验生成工程的入口、数据库摘要及全部文件清单；失败时停止构建。

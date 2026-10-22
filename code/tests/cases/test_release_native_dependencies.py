@@ -2,18 +2,57 @@
 import hashlib
 import io
 import json
+import os
 from pathlib import Path
 import subprocess
+import shutil
+import sys
 import tarfile
 import tempfile
 from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 import zipfile
+import xml.etree.ElementTree as ET
 
 from management_common.release_dependencies import declaration
 from scripts import tfi_release_native_dependencies as native
 from scripts import tfi_release_install as installer
+from scripts.windows import utf8_manifest as manifests
+
+
+class WindowsManifestTests(unittest.TestCase):
+    def test_preserves_execution_level_and_existing_dependencies(self):
+        original = b'''<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
+        <dependency><dependentAssembly><assemblyIdentity name="Original"/></dependentAssembly></dependency>
+        <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3"><security><requestedPrivileges>
+        <requestedExecutionLevel level="asInvoker" uiAccess="false"/>
+        </requestedPrivileges></security></trustInfo></assembly>'''
+        updated = manifests.utf8_manifest(original)
+        root = ET.fromstring(updated)
+        self.assertEqual(root.find(f'.//{{{manifests.APP}}}requestedExecutionLevel').get('level'), 'asInvoker')
+        self.assertEqual(root.find(f'.//{{{manifests.ASM}}}assemblyIdentity').get('name'), 'Original')
+        self.assertEqual(root.find(f'.//{{{manifests.SETTINGS}}}activeCodePage').text, 'UTF-8')
+        self.assertEqual(manifests.utf8_manifest(updated), updated)
+
+    def test_missing_and_legacy_code_pages(self):
+        generated = manifests.utf8_manifest(None)
+        legacy = generated.replace(b'UTF-8', b'Legacy')
+        self.assertEqual(manifests.utf8_manifest(legacy), generated)
+        with self.assertRaises(ET.ParseError):
+            manifests.utf8_manifest(b'not a manifest')
+
+    @unittest.skipUnless(os.name == 'nt', 'Native Windows resource APIs')
+    def test_real_pe_resource_update_roundtrip_preserves_languages(self):
+        with tempfile.TemporaryDirectory(prefix='中文 manifest ') as directory:
+            copy = Path(directory) / 'python.exe'
+            shutil.copy2(sys.executable, copy)
+            resources = manifests.Resources()
+            original = resources.read(copy)
+            updated = {language: manifests.utf8_manifest(data) for language, data in original.items()}
+            resources.write(copy, updated)
+            self.assertEqual(resources.read(copy), updated)
+
 
 
 class NativeDependenciesTests(unittest.TestCase):
