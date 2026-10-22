@@ -14,6 +14,8 @@ import shutil
 import tempfile
 import xml.etree.ElementTree as ET
 
+from management_common.file_permissions import prepare_atomic_permissions
+
 ASM = 'urn:schemas-microsoft-com:asm.v1'
 APP = 'urn:schemas-microsoft-com:asm.v3'
 SETTINGS = 'http://schemas.microsoft.com/SMI/2019/WindowsSettings'
@@ -125,6 +127,9 @@ def prepare_postgres(root: Path) -> dict:
         with tempfile.TemporaryDirectory(prefix='.utf8-', dir=path.parent) as temporary:
             copy = Path(temporary) / path.name
             shutil.copy2(path, copy)
+            # A mkdtemp ACL can name the elevated default owner (Administrators).
+            # Keep the original executable's user grant for PG's restricted child.
+            prepare_atomic_permissions(copy, path, 0o755)
             resources.write(copy, updated)
             if resources.read(copy) != updated:
                 raise RuntimeError('PostgreSQL UTF-8 manifest update did not persist')

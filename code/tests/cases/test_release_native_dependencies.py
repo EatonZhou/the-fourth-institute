@@ -22,6 +22,20 @@ from scripts.windows import utf8_manifest as manifests
 
 
 class WindowsManifestTests(unittest.TestCase):
+    @unittest.skipUnless(os.name == 'nt', 'Native Windows ACL inheritance')
+    def test_extracted_tools_grant_actual_user_not_only_elevated_default_owner(self):
+        from management_common.file_permissions import _WindowsSecurity, assert_private_file
+        with tempfile.TemporaryDirectory() as directory:
+            archive = Path(directory) / 'tools.zip'
+            with zipfile.ZipFile(archive, 'w') as out:
+                out.writestr('bin/library.dll', b'fixture')
+            root = Path(directory) / 'contents'
+            native.unpack(archive, root, zipped=True)
+            security = _WindowsSecurity()
+            with security.handle(root, directory=True) as handle, security.security(handle) as (owner, _):
+                self.assertEqual(security.sid_text(owner), security.current_sid)
+            assert_private_file(root / 'bin/library.dll')
+
     def test_preserves_execution_level_and_existing_dependencies(self):
         original = b'''<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
         <dependency><dependentAssembly><assemblyIdentity name="Original"/></dependentAssembly></dependency>

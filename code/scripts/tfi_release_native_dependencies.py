@@ -169,7 +169,14 @@ def download(entry, destination, *, attempts=3, offline=False):
 
 
 def unpack(archive, destination, *, zipped=False):
-    destination.mkdir()
+    if os.name == 'nt':
+        # Python's elevated mkdtemp parent can grant only Administrators. PG's
+        # restricted-token child disables that group, so its DLLs need a grant
+        # to the actual user SID. This new extraction root supplies that ACL.
+        from management_common.file_permissions import ensure_private_directory
+        ensure_private_directory(destination)
+    else:
+        destination.mkdir()
     if zipped:
         with zipfile.ZipFile(archive) as source:
             members = source.infolist()

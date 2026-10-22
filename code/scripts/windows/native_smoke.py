@@ -105,6 +105,19 @@ def exercise(exe, root, included, evidence):
         succeeded = True
         return {'include_examples': included, 'status': 'passed', 'registration_ama_chat': 'passed',
                 'launcher_exit_service_survival': 'passed', 'unregister_restart_preserves_data': 'passed'}
+    except Exception:
+        # Distinguish loader failure from initdb's restricted-token re-execution;
+        # only public version output and exit codes from this disposable fixture.
+        if state_path.exists():
+            failed = json.loads(state_path.read_text(encoding='utf-8'))
+            pg_bin = failed.get('target', {}).get('pg_bin')
+            if pg_bin:
+                for name in ('postgres', 'initdb', 'pg_ctl', 'psql'):
+                    result = subprocess.run([str(Path(pg_bin) / (name + '.exe')), '--version'],
+                                            capture_output=True, timeout=30)
+                    print(name, 'version probe:', result.returncode,
+                          (result.stdout + result.stderr).decode('utf-8', errors='replace'), flush=True)
+        raise
     finally:
         # Never leave the test processes running, including failed installations.
         if state_path.exists():
