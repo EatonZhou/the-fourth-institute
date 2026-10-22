@@ -91,11 +91,13 @@ def exercise(exe, root, included, evidence):
         request('/login', {'username': registered['username'], 'password': password}, form=True)
         me = request('/api/me')
         check(me.get('username') == registered['username'], 'Password login did not persist a session')
-        for instruction, arguments in [('GetLineage', {'lineage_id': ama['lineage_id']}),
+        for instruction, arguments in [('GetProject', {'project_id': 'AI员工'}),
+                                       *([('GetProject', {'project_id': '元胞自动机研究'})] if included else []),
+                                       ('GetLineage', {'lineage_id': ama['lineage_id']}),
                                        ('GetConversation', {'resident_id': ama['resident_id']}),
                                        ('GetConversation', {'resident_id': assistant['resident_id']})]:
             response = request('/api/instructions/execute', {'instruction': instruction, 'arguments': arguments})
-            check(not response.get('error') and response.get('status') != 'failed', instruction + ' failed')
+            check(not response.get('error') and response.get('status') == 'committed', instruction + ' failed')
         marker = root / 'instance/example_instance/data/native-restart-marker.txt'
         marker.write_text('Preserve this installation and its registered user', encoding='utf-8')
         run_worker(root, 'cleanup', log)
