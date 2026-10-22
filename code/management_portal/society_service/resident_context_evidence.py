@@ -61,6 +61,25 @@ def _references(segments):
             for item in segments[:1000]]
 
 
+def _tool_observations(segments):
+    """Bounded native identities and outcomes, without arguments or output text."""
+    tools = []
+    for segment in segments:
+        content = segment.get("content")
+        if segment.get("segment_type") != "tool" or not isinstance(content, dict) or not content.get("call_id"):
+            continue
+        row = {key: segment.get(key, "") for key in (
+            "segment_id", "execution_id", "status", "started_at", "finished_at", "content_sha256")}
+        row.update({key: content.get(key, "") for key in ("call_id", "tool_name", "tool_namespace")})
+        if content.get("tool_name") == "clock.sleep":
+            arguments = (content.get("input") or {}).get("arguments")
+            duration = arguments.get("duration_ms") if isinstance(arguments, dict) else None
+            if type(duration) is int and duration >= 0:
+                row["observed_duration_ms"] = duration
+        tools.append(row)
+    return {"entries": tools[:200], "truncated": len(tools) > 200}
+
+
 def _trace_positions(snapshot):
     positions = snapshot.get("trace_positions")
     if positions is None:
@@ -91,6 +110,7 @@ def project_context_evidence(snapshot: dict[str, Any]) -> dict[str, Any]:
                  "first_segment_id": segments[0]["segment_id"] if segments else "",
                  "last_segment_id": segments[-1]["segment_id"] if segments else "",
                  "references": _references(segments), "references_truncated": len(segments) > 1000,
+                 "tool_observations": _tool_observations(segments),
                  "compactions": []}
     for segment in segments:
         if segment["segment_type"] == "compaction":

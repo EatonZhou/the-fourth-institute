@@ -330,7 +330,10 @@ class BackendContext:
         backend_session_id: str = "",
         backend_route_id: str = "",
     ) -> None:
-        """Project one raw Provider event into canonical and activity streams."""
+        """Project one Provider event into canonical and activity streams."""
+
+        from .native_tool_events import normalize_native_tool_event
+        event = normalize_native_tool_event(event)
 
         if self._provider_event_observer is not None:
             self._provider_event_observer(

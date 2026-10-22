@@ -39,6 +39,30 @@ def _mapping(value: object) -> Mapping[str, Any]:
     return value if isinstance(value, Mapping) else {}
 
 
+def normalize_native_tool_event(event: Mapping[str, Any]) -> Mapping[str, Any]:
+    """Represent Codex's interruptible sleep item as an observed tool call.
+
+    durationMs is the Provider's observation, not proof that a requested wait
+    elapsed. A started item never supplies a result; only item/completed does.
+    Keep native identities and envelope fields for replay and turn attribution.
+    """
+    method = event.get("method")
+    params = _mapping(event.get("params"))
+    item = _mapping(params.get("item"))
+    if method not in {"item/started", "item/completed"} or item.get("type") != "sleep":
+        return event
+    duration = item.get("durationMs")
+    if not isinstance(item.get("id"), str) or not item["id"] or type(duration) is not int or duration < 0:
+        raise ValueError("Native sleep requires its item identity and nonnegative durationMs")
+    completed = method == "item/completed"
+    normalized = {"type": "dynamicToolCall", "id": item["id"], "tool": "clock.sleep",
+                  "arguments": {"duration_ms": duration},
+                  "status": "completed" if completed else "inProgress"}
+    if completed:
+        normalized["contentItems"] = [{"type": "inputText", "text": json.dumps({"duration_ms": duration})}]
+    return {**event, "params": {**params, "item": normalized}}
+
+
 def _arguments(value: object) -> dict[str, Any]:
     if isinstance(value, Mapping):
         return dict(value)
@@ -184,6 +208,7 @@ class NativeToolEventTranslator:
     def translate(self, event: object) -> list[dict[str, Any]]:
         if not isinstance(event, Mapping):
             return []
+        event = normalize_native_tool_event(event)
         method = str(event.get("method") or "")
         if method == "turn/completed":
             return [dict(event)]
