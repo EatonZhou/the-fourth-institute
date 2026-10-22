@@ -191,6 +191,36 @@ class PrivateFilesTests(unittest.TestCase):
             with self.assertRaises(PermissionError):
                 private.set_created_file_permissions(self.root / "tmp", 0o600)
 
+    def test_windows_handle_can_query_attributes_before_validating_object(self):
+        # Model the Win32 access check at the kernel boundary. Attribute queries
+        # require FILE_READ_ATTRIBUTES even when READ_CONTROL was requested.
+        import ctypes
+        private = self.capability()
+        class TagInfo(ctypes.Structure):
+            _fields_ = [("attributes", ctypes.c_uint32), ("tag", ctypes.c_uint32)]
+        for directory, access in ((False, 0x20000), (True, 0x20000), (False, 0xE0100)):
+            with self.subTest(directory=directory, access=access):
+                native = object.__new__(private._WindowsSecurity)
+                native.TagInfo = TagInfo
+                opened, closed = {}, []
+                def open_file(path, desired_access, share, security, disposition, flags, template):
+                    opened.update(access=desired_access, share=share, flags=flags)
+                    return 42
+                def info(handle, info_class, target, size):
+                    self.assertEqual((handle, info_class, size), (42, 9, ctypes.sizeof(TagInfo)))
+                    if not opened["access"] & (0x80 | 0x80000000 | 0x40000000):
+                        raise PermissionError("FileAttributeTagInfo requires FILE_READ_ATTRIBUTES")
+                    ctypes.cast(target, ctypes.POINTER(TagInfo)).contents.attributes = 0x10 if directory else 0x80
+                    return 1
+                native.open_file, native.info = open_file, info
+                native.kind, native.close = lambda handle: 1, closed.append
+                with native.handle(self.root / "fixture", directory=directory, access=access) as handle:
+                    self.assertEqual(handle, 42)
+                self.assertEqual(closed, [42])
+                self.assertEqual(opened["access"] & access, access)
+                self.assertEqual(opened["share"], 3)  # Still deny delete sharing.
+                self.assertEqual(opened["flags"], 0x02200000)  # Inspect reparse points.
+
     def test_windows_native_permission_policy_uses_protected_copy_and_readonly(self):
         # Simulate Win32 boundaries, not the policy: exercise apply_permissions
         # with real pointer-shaped objects and inspect the resulting descriptor.

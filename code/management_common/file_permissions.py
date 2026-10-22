@@ -197,7 +197,9 @@ class _WindowsSecurity:
                 if directory:
                     self.checked(self.mkdir(str(path), ctypes.byref(attributes)))
             # No FILE_SHARE_DELETE: every ancestor stays pinned while in use.
-            handle = self.open_file(str(path), access, 3, ctypes.byref(attributes) if attributes else None,
+            # FileAttributeTagInfo below requires FILE_READ_ATTRIBUTES in
+            # addition to READ_CONTROL, including for pinned ancestor handles.
+            handle = self.open_file(str(path), access | 0x80, 3, ctypes.byref(attributes) if attributes else None,
                                     1 if create and not directory else 3, 0x02200000, None)
             if handle == ctypes.c_void_p(-1).value:
                 self.checked(False)

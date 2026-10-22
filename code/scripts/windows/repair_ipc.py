@@ -18,9 +18,10 @@ def digest(data):
     return hashlib.sha256(data).hexdigest()
 
 
-def repair(platform, payload, *, extra_payloads=(), versions=(ORIGINAL_COMMIT,), backup_name='ipc-acl'):
+def repair(platform, payload, *, extra_payloads=(), versions=(ORIGINAL_COMMIT,), backup_name='ipc-acl', primary_update=None):
     platform = Path(platform).resolve(strict=True)
-    updates = [('management_common/local_ipc.py', payload, ORIGINAL_SHA256, REPAIRED_SHA256), *extra_payloads]
+    relative, old_hash, new_hash = primary_update or ('management_common/local_ipc.py', ORIGINAL_SHA256, REPAIRED_SHA256)
+    updates = [(relative, payload, old_hash, new_hash), *extra_payloads]
     prepared = []
     for relative, source, old_hash, new_hash in updates:
         data = Path(source).read_bytes()
