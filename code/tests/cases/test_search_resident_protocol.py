@@ -142,6 +142,45 @@ def test_concurrent_retry_and_lost_ack_publish_only_one_input(runtime):
     assert len(runtime.submitted) == 1
 
 
+def test_scoped_snapshot_keeps_intermediate_replies_without_other_inputs(runtime):
+    """单输入快照在运行中保留中间消息，结束后仍按身份保留同文回复。"""
+    repo = runtime.repo
+    mid = 'msg_live_scope'
+    resident_input_scope.register(resident_id=RID, message_id=mid, actor='alice', profile={})
+    repo.commit_user_message(RID, dict(message_id=mid, role='user', author_id='alice',
+                                     created_at='2026-10-22T00:00:00Z',
+                                     content_parts=[{'type': 'text', 'text': 'alice task'}]))
+    repo.set_input_state(RID, mid, 'running')
+
+    def reply(identity, text, at):
+        repo.append_message(RID, dict(message_id=identity, role='agent', reply_to_message_id=mid,
+                                     created_at=at, content_parts=[{'type': 'text', 'text': text}]))
+
+    reply('msg_live_first', 'same text', '2026-10-22T00:00:01Z')
+    # A newer unrelated turn must not hide or leak into this input's snapshot.
+    run('bob', prompt='bob private')
+    snapshot = resident_protocol.get_resident_conversation_snapshot(
+        RID, 'alice', input_message_id=mid, history_limit=1)
+    assert [m['message_id'] for m in snapshot['messages']] == [mid, 'msg_live_first']
+    assert snapshot['input_states'][0]['state'] == 'running'
+    assert snapshot['input_states'][0]['reply_message_ids'] == []
+    assert 'bob private' not in str(snapshot['messages'])
+
+    reply('msg_live_second', 'same text', '2026-10-22T00:00:02Z')
+    reply('msg_live_final', 'final text', '2026-10-22T00:00:03Z')
+    repo.set_input_state(RID, mid, 'completed')
+    snapshot = resident_protocol.get_resident_conversation_snapshot(RID, 'alice', input_message_id=mid)
+    assert [m['message_id'] for m in snapshot['messages']] == [
+        mid, 'msg_live_first', 'msg_live_second', 'msg_live_final']
+    assert snapshot['input_states'][0]['reply_message_ids'] == ['msg_live_final']
+    assert 'bob private' not in str(snapshot['messages'])
+    limited = resident_protocol.get_resident_conversation_snapshot(
+        RID, 'alice', input_message_id=mid, history_limit=1)
+    assert [m['message_id'] for m in limited['messages']] == [mid, 'msg_live_final']
+    with pytest.raises(PermissionError):
+        resident_protocol.get_resident_conversation_snapshot(RID, 'bob', input_message_id=mid)
+
+
 def test_provider_resident_receives_only_current_input_from_its_own_configuration(runtime):
     """Provider Resident 只收到本次检索输入和自身配置的系统提示词"""
     a = run('alice', prompt='current query')

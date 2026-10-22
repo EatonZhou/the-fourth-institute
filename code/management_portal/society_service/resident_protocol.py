@@ -803,7 +803,10 @@ def get_resident_conversation_snapshot(
         history_limit=history_limit,
     )
     if input_message_id:
-        snapshot = resident_input_scope.select_snapshot(snapshot, input_message_id, resident_conversation_stream.get_repository(), resident_id)
+        snapshot = resident_input_scope.select_snapshot(
+            snapshot, input_message_id, resident_conversation_stream.get_repository(), resident_id,
+            history_limit=history_limit,
+        )
     snapshot.pop("resident_id", None)
     if family_facade.is_facade(target.record):
         # Infos show with the facade's next request, as on any Resident.

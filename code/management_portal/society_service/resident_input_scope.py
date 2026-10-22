@@ -62,11 +62,22 @@ def permits_message(repository, resident_id: str, actor: str, message_id: str) -
     return bool(input_id) and permits(resident_id, actor, input_id)
 
 
-def select_snapshot(snapshot: dict, message_id: str, repository, resident_id: str) -> dict:
+def select_snapshot(snapshot: dict, message_id: str, repository, resident_id: str, *, history_limit: int = 200) -> dict:
+    from .resident_conversation_stream import DEFAULT_HISTORY_LIMIT, MAX_HISTORY_LIMIT
+
     value = copy.deepcopy(snapshot)
     state = repository.input_state(resident_id, message_id)
-    ids = [message_id, *state.get("reply_message_ids", [])]
-    value["messages"] = [repository.public_message(resident_id, mid) for mid in ids]
+    final_ids = state.get("reply_message_ids", [])
+    # Input state records terminal replies only. Query the durable reply relation
+    # so live intermediate messages remain visible even outside the latest page.
+    replies = repository.replies(
+        resident_id, message_id,
+        until_message_id=final_ids[-1] if final_ids else "",
+        limit=max(1, min(int(history_limit or DEFAULT_HISTORY_LIMIT), MAX_HISTORY_LIMIT)),
+    )
+    seen = {item["message_id"] for item in replies}
+    replies.extend(repository.public_message(resident_id, mid) for mid in final_ids if mid not in seen)
+    value["messages"] = [repository.public_message(resident_id, message_id), *replies]
     value["input_states"] = [state]
     value["activities"] = []
     value["queue"]["items"] = [item for item in value["queue"].get("items", []) if item.get("message_id") == message_id]
