@@ -1797,11 +1797,29 @@
     });
   }
 
+  function revealUnfamilizedMember(lineageId, result) {
+    const retained = new Set(result?.member_resident_ids || []);
+    if (!retained.size) return;
+    const controller = state.graphController;
+    window.requestAnimationFrame(() => {
+      if (state.lineage?.lineage_id !== lineageId || state.graphController !== controller
+        || state.graphViewMode !== "context") return;
+      const node = graphVisibleModel().nodes.find(item => retained.has(nodeResidentId(item)));
+      if (!node) return;
+      // The removed facade may have been the only card in view. Reveal a
+      // surviving member (including a nested facade), without selecting it or
+      // moving the stored graph. A card already in view keeps the camera.
+      controller?.refresh?.({ measureNodes: true });
+      controller?.ensureNodeVisible?.(node.id);
+    });
+  }
+
   async function removeFamilyInstance(instanceId, action = "unfamilize") {
     const instance = functionBlockInstanceById(instanceId);
     if (!instance) return;
+    const lineageId = state.lineage.lineage_id;
     const response = await window.PortalNav.removeFamily({
-      family: instance, lineageId: state.lineage.lineage_id, action,
+      family: instance, lineageId, action,
       execute: (instruction, args) => applyProgramMutation(
         () => executeHatgInstruction(instruction, args),
         action === "delete" ? "Family 及其内部对象已删除。" : "Family 已解除。",
@@ -1812,6 +1830,7 @@
     if (roles) setFamilyExpanded(roles.facade, false);
     state.selectedProgramObjectId = "";
     programFeature.clearSelection();
+    if (action === "unfamilize") revealUnfamilizedMember(lineageId, response);
     // The removed facade's Chat reports it deleted; the Leader is not opened
     // in its place.
     return response;
@@ -7401,6 +7420,7 @@
         } else if (type === "delete-family" || type === "unfamilize" || type === "family-members") {
           window.PortalResidentProjection?.invalidate?.(residentId);
           applyLineageStructureRefresh(await societyService.loadLineage(lineageId), {notify: false});
+          if (type === "unfamilize") revealUnfamilizedMember(lineageId, result);
         } else if (type === "move") {
           // The moved Resident keeps its identity and conversation, so the
           // canvas follows it into the receiving Lineage and its Chat stays

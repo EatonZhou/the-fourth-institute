@@ -166,7 +166,7 @@ test('Family canvas actions load the Menu owner before confirming and cancellati
   }});
   const options = {family: {id: 'fbi_one', title: 'One'}, lineageId: 'lineage_one', action: 'unfamilize'};
   window.PortalNav = {removeFamily: nav.removeFamily};
-  const graph = owner('hatg_panel.js', ['removeFamilyInstance'], {
+  const graph = owner('hatg_panel.js', ['removeFamilyInstance', 'revealUnfamilizedMember'], {
     window, state: {lineage: {lineage_id: 'lineage_one'}},
     functionBlockInstanceById: () => options.family, familyRoles: () => null,
     applyProgramMutation: request => request(), executeHatgInstruction: window.PortalInstructionClient.execute,
@@ -184,6 +184,70 @@ test('Family canvas actions load the Menu owner before confirming and cancellati
   assert.equal(prompts[2].title, '删除整个 Family？');
   assert.equal(mutations[1][0], 'DeleteFamily');
   assert.deepEqual(loads[0], ['/static/portal_resident_menu.js', 'PortalResidentMenu']);
+});
+
+function unfamilizeViewportFixture() {
+  const frames = [], calls = [];
+  const controller = {
+    refresh: options => calls.push(['measure', options.measureNodes]),
+    ensureNodeVisible: id => calls.push(['reveal', id]),
+  };
+  const state = {lineage: {lineage_id: 'lineage_one'}, graphController: controller,
+    graphViewMode: 'context', selectedNodeId: 'removed_facade'};
+  const receipt = {member_resident_ids: ['hidden_worker', 'retained_inner_facade']};
+  const window = {requestAnimationFrame: callback => frames.push(callback),
+    PortalNav: {removeFamily: async options => options.execute('Unfamilize', {})}};
+  const graph = owner('hatg_panel.js', ['removeFamilyInstance', 'residentMenuHandlers', 'revealUnfamilizedMember'], {
+    window, state, nodeResidentId: node => node.resident_id || node.id,
+    graphVisibleModel: () => ({nodes: [{id: 'unrelated'}, {id: 'inner_card', resident_id: 'retained_inner_facade'}]}),
+    functionBlockInstanceById: () => ({id: 'outer'}), familyRoles: () => null,
+    programFeature: {clearSelection: noop}, applyProgramMutation: request => request(),
+    executeHatgInstruction: async () => receipt,
+    societyService: {loadLineage: async () => {calls.push(['load']); return state.lineage;}},
+    applyLineageStructureRefresh: () => calls.push(['render']),
+  });
+  return {graph, state, frames, calls, receipt};
+}
+
+for (const entry of ['canvas', 'menu']) {
+  test(`Family ${entry} ungroup reveals a retained nested facade after rendering without changing Chat`, async () => {
+    const f = unfamilizeViewportFixture();
+    if (entry === 'canvas') await f.graph.removeFamilyInstance('outer');
+    else await f.graph.residentMenuHandlers().onChanged({type: 'unfamilize', lineageId: 'lineage_one',
+      residentId: 'removed_facade', result: f.receipt});
+    assert.equal(f.calls.some(call => call[0] === 'reveal'), false);
+    assert.equal(f.frames.length, 1);
+    f.frames.shift()();
+    assert.deepEqual(f.calls.slice(-2), [['measure', true], ['reveal', 'inner_card']]);
+    assert.equal(f.state.selectedNodeId, 'removed_facade');
+    assert.deepEqual(f.receipt.member_resident_ids, ['hidden_worker', 'retained_inner_facade']);
+  });
+}
+
+test('Family viewport completion cannot move a newer Lineage, controller or workspace view', () => {
+  for (const change of [
+    state => {state.lineage = {lineage_id: 'lineage_other'};},
+    state => {state.graphController = {};},
+    state => {state.graphViewMode = 'workspace';},
+  ]) {
+    const f = unfamilizeViewportFixture();
+    f.graph.revealUnfamilizedMember('lineage_one', f.receipt);
+    change(f.state);
+    f.frames.shift()();
+    assert.deepEqual(f.calls, []);
+  }
+});
+
+test('Family deletion or non-visible retained members never invent a viewport target', async () => {
+  const f = unfamilizeViewportFixture();
+  await f.graph.residentMenuHandlers().onChanged({type: 'delete-family', lineageId: 'lineage_one',
+    residentId: 'removed_facade', result: f.receipt});
+  assert.equal(f.frames.length, 0);
+  f.graph.revealUnfamilizedMember('lineage_one', {member_resident_ids: []});
+  assert.equal(f.frames.length, 0);
+  f.graph.revealUnfamilizedMember('lineage_one', {member_resident_ids: ['hidden_worker']});
+  f.frames.shift()();
+  assert.equal(f.calls.some(call => call[0] === 'reveal'), false);
 });
 
 test('Family action load failures show one error without opening a confirmation', async () => {
