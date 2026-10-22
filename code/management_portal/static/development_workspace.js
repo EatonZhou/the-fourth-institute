@@ -96,6 +96,7 @@
         if (source.template.dataset.hostClass) views[view].classList.add(source.template.dataset.hostClass);
         // The template's first element is the view itself, which starts hidden.
         views[view].firstElementChild.hidden = false;
+        if (views[view].getAttribute("aria-busy") === "true") showLoading(views[view]);
       }
       await Promise.all(source.assets.styles.map(url => loadAsset(url, true)));
       for (const url of source.assets.scripts) {
@@ -128,6 +129,14 @@
       const button = document.createElement("button"); button.type = "button"; button.textContent = window.PortalI18n.t("重试");
       button.onclick = () => { alert.remove(); void retry(); }; alert.append(button); host.prepend(alert);
     }
+    function showLoading(host) {
+      if (host.querySelector(":scope > [data-development-loading]")) return;
+      const status = document.createElement("p");
+      status.dataset.developmentLoading = "true";
+      status.setAttribute("role", "status");
+      status.textContent = window.PortalI18n.t("正在加载工作区…");
+      host.prepend(status);
+    }
     async function selectView(view, navigate = false) {
       if (disposed) return false;
       const revision = ++generation;
@@ -157,14 +166,22 @@
         history.pushState({}, "", url);
       }
       try {
+        const native = view !== "development" && view !== "packaging";
+        if (native) { views[view].setAttribute("aria-busy", "true"); showLoading(views[view]); }
         await ensure(view);
         if (disposed || revision !== generation) return false;
+        if (native && !controllers.has(view)) throw new Error(window.PortalI18n.t("工作区未能完成初始化，请刷新后重试。"));
         if (view !== "development") await controllers.get(view)?.activate?.({ isVisible: () => !disposed && selected === view });
         syncVisibility();
         return !disposed && revision === generation;
       } catch (error) {
         if (!disposed && revision === generation) showLoadError(views[view], error, () => selectView(view));
         return false;
+      } finally {
+        if (!disposed && revision === generation) {
+          views[view].removeAttribute("aria-busy");
+          views[view].querySelector(":scope > [data-development-loading]")?.remove();
+        }
       }
     }
     const onPopState = () => void selectView(requestedView());

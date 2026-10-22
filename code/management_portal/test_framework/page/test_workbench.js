@@ -1,6 +1,7 @@
 (() => {
   "use strict";
   const T = window.PortalTest;
+  let mountedWorkbench = null, mountedRail = null, unsubscribeSelection = null;
   const { split, stack } = window.PortalWorkbench.model;
   const layouts = Object.freeze({
     catalog: { id: "catalog", name: window.PortalI18n.t("目录与用例"), layout: split("horizontal", [stack(["test-catalog"]), stack(["test-case"])], [360, 900]), hidden: ["run-console", "tau", "gate-composer", "test-review"] },
@@ -55,6 +56,7 @@
       restorePanel: spec => descriptor(spec.id, spec.type, { target: spec.binding || {} }),
       editorTitle: (type, resource) => resource?.title || type,
     });
+    mountedWorkbench = workbench;
     T.setWorkbench(workbench);
     const rail = window.PortalWorkbench.createActivityRail({
       id: "test",
@@ -77,12 +79,13 @@
         T.showPanel(primaryPanelByView[view]);
       },
     });
+    mountedRail = rail;
     // Activity Rail is shared chrome; mount its semantic icons explicitly so
     // every view remains legible even when the asynchronous upgrader is late.
     window.PortalUIPrimitives?.mountIcons?.(rail.root);
     window.PortalTestWorkbench = Object.freeze({ mount, workbench, rail, layouts, primaryPanelByView, openPanel: T.showPanel });
     window.PortalUIPrimitives?.mountIcons?.(document);
-    T.store.subscribe((event, detail) => {
+    unsubscribeSelection = T.store.subscribe((event, detail) => {
       if (event === "selection") pageStateStore.write({ selectedCaseId: String(detail?.caseId || "") });
     });
     try {
@@ -100,17 +103,29 @@
   }
 
   let mounting = null;
+  function destroy() {
+    unsubscribeSelection?.(); unsubscribeSelection = null;
+    mountedWorkbench?.destroy(); mountedWorkbench = null;
+    mountedRail?.destroy(); mountedRail = null;
+    T.setWorkbench(null);
+    mounting = null;
+    window.PortalTestWorkbench = Object.freeze({ mount });
+  }
   function mount(options = {}) {
-    if (!mounting) mounting = init(options).catch(error => {
-      document.querySelector("#testWorkbenchRoot").innerHTML = window.PortalI18n.html`<div class="testEmpty">测试工作台初始化失败：${T.escapeHtml(error.message)}</div>`;
-      throw error;
-    });
+    if (!mounting) {
+      document.querySelector("#testWorkbenchRoot > [data-test-initialization-error]")?.remove();
+      mounting = init(options).catch(error => {
+        destroy();
+        document.querySelector("#testWorkbenchRoot").innerHTML = window.PortalI18n.html`<div class="testEmpty" data-test-initialization-error>测试工作台初始化失败：${T.escapeHtml(error.message)}</div>`;
+        throw error;
+      });
+    }
     return mounting;
   }
   window.PortalTestWorkbench = Object.freeze({ mount });
   window.PortalDevelopmentWorkspace?.registerView("test", {
     activate: mount,
     setVisible: visible => window.PortalTestWorkbench.workbench?.setVisible(visible),
-    destroy() { window.PortalTestWorkbench.workbench?.destroy(); window.PortalTestWorkbench.rail?.destroy(); },
+    destroy,
   });
 })();
