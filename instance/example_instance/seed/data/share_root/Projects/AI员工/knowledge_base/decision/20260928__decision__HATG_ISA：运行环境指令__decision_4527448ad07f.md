@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 50
+  number: 51
   created_at: "2026-09-28T10:45:00Z"
   created_by:
     user: "weihao"
     agent: "resident_2a1fc6cd272d"
-  updated_at: "2026-10-21T18:05:46Z"
+  updated_at: "2026-10-22T08:00:00Z"
   updated_by:
-    user: ""
-    agent: "resident_977d1a613d44"
+    user: "huanyu"
+    agent: ""
 importance: 8
 metaness: 2
 ai_generated: false
@@ -78,6 +78,7 @@ links:
 | `UpdateModelApi` | 是 | 修改一个模型接口的登记 | 对“Portal 运维”有 @admin |
 | `DeleteModelApi` | 是 | 删除一个模型接口的登记 | 对“Portal 运维”有 @admin |
 | `CompleteChat` | 是 | 调用一次模型接口生成文本 | 免检 |
+| `ProbeModelApi` | 是 | 检测模型接口为 Agent Harness 提供哪些协议 | 对“Portal 运维”有 @admin |
 | `ListProviderAccounts` | 否 | 读取执行账号的额度、余额和调度设置 | 对“共享”有 @viewer |
 | `UpdateProviderAccount` | 是 | 修改一个执行账号的调度设置 | 对“共享”有 @admin |
 | `PrepareProviderRuntime` | 是 | 复用已有运行时，缺失时按 Provider 异步准备 | 对“共享”有 @admin |
@@ -265,7 +266,7 @@ Portal 服务指令由 Portal Web 执行。Dev 与 Release 两个实例各有自
 
 **登记一个新的模型接口。**
 
-- 参数：`api_id`、`base_url`、`default_model`、`secret_file`（密钥文件路径）、`secret`（可选，一次性密钥：Portal 原子写入站点密钥目录下的 `<api_id>.key` 并把路径记为 `secret_file`，不回显）、`provider`（可选，Provider 标识）、`routes`（可选，每项明确给出 `backend` 和 `route_id`）、`models`（可选，模型目录；每项含唯一 `id`，可声明 `reasoning_efforts` 与 `enabled`）、`default_parameters`（可选，协议允许的默认生成参数）、`timeout_seconds`（可选）、`retries`（可选）、`headers`（可选，不含密钥）、`enabled`（可选，默认 `true`）。
+- 参数：`api_id`、`base_url`、`default_model`、`secret_file`（密钥文件路径）、`secret`（可选，一次性密钥：Portal 原子写入站点密钥目录下的 `<api_id>.key` 并把路径记为 `secret_file`，不回显）、`provider`（可选，Provider 标识）、`routes`（可选，每项明确给出 `backend` 和 `route_id`）、`models`（可选，模型目录；每项含唯一 `id`，可声明 `reasoning_efforts` 与 `enabled`）、`protocols`（可选，Agent Harness 可用的其他协议：`openai_responses` 为 `{}`，供 Codex；`anthropic_messages` 可含 `base_url` 与 `auth`（`bearer` 或 `x-api-key`），供 Claude Code；Chat Completions 无需声明）、`default_parameters`（可选，协议允许的默认生成参数）、`timeout_seconds`（可选）、`retries`（可选）、`headers`（可选，不含密钥）、`enabled`（可选，默认 `true`）。
 - 结果：登记后的接口信息。
 
 执行后端通过 `routes` 的明确绑定找到模型接口；没有绑定时报告配置缺失，不按登记顺序或启用顺序选择。接口登记与后端路线分别存储，路线通过 `api_id` 关联接口；同一后端路线只能绑定一个接口。
@@ -295,6 +296,15 @@ Portal 服务指令由 Portal Web 执行。Dev 与 Release 两个实例各有自
 - `response_schema` 是回答必须满足的 JSON Schema。Portal 先校验它本身，格式无效时以参数错误拒绝，不调用模型；调用时在消息最前面加一条系统消息，要求只输出满足该 Schema 的 JSON。回答返回后，优先从代码块、其次从正文中取出第一个 JSON 对象或数组，按 Schema 校验后放入 `structured`。回答中没有 JSON 或不满足 Schema 时调用失败，并标记为可重试。
 - 调用者必须明确选择接口，系统不根据调用者或任务自动选择。生成的文本不写入任何 Resident 的对话。
 
+### `ProbeModelApi`
+
+**检测模型接口为 Agent Harness 提供哪些协议。**
+
+- 参数：`api_id`（可选，已登记的接口）、`base_url`、`default_model`、`secret_file`、`secret`（可选，一次性密钥，只用于本次检测，不保存）、`headers`（可选，不含密钥）、`anthropic_base_url`（可选）。提供 `api_id` 时，其余参数覆盖它的登记值，用于在保存修改前检测；不提供时须给出 `base_url` 与 `default_model`。
+- 结果：检测所用的模型，以及 `openai_chat`、`openai_responses`、`anthropic_messages` 各自的结果：`status`（`supported`、`unsupported`、`auth_failed`、`rejected`、`error` 或 `unreachable`）、`http_status` 与截断的 `message`；`anthropic_messages` 支持时另有可用的 `auth`。
+- 每种协议向 Agent Harness 实际使用的地址发一次很短的非流式请求：`<base_url>/chat/completions`、`<base_url>/responses` 与 `<anthropic_base_url 或去掉 /v1 的 base_url>/v1/messages`。Anthropic 先以 Bearer 认证，被拒绝时再以 `x-api-key` 认证。返回 2xx 且内容符合该协议的格式才算支持；部分网关对未知路径返回网页，按不支持处理。
+- 检测会调用模型，可能产生少量费用。它不修改登记；密钥不进入结果和日志，`message` 中出现的密钥替换为 `***`。
+
 ## 参数名契约
 
 下表列出 arguments 内的顶层参数名；必填条件、类型和枚举以 GetInstructionSchema 为准。调用信封中的 expected_version、idempotency_key 与 wait_seconds 不列入 arguments。
@@ -310,10 +320,11 @@ Portal 服务指令由 Portal Web 执行。Dev 与 Release 两个实例各有自
 | `GetDeviceStatus` | `kind`、`device_id`、`refresh` |
 | `OpenTerminal` | `device_id`、`cwd`、`cols`、`rows` |
 | `ListModelApis` | 无 |
-| `CreateModelApi` | `api_id`、`base_url`、`default_model`、`secret_file`、`secret`、`provider`、`routes`、`models`、`default_parameters`、`timeout_seconds`、`retries`、`headers`、`enabled` |
+| `CreateModelApi` | `api_id`、`base_url`、`default_model`、`secret_file`、`secret`、`provider`、`routes`、`models`、`protocols`、`default_parameters`、`timeout_seconds`、`retries`、`headers`、`enabled` |
 | `UpdateModelApi` | `api_id`、`changes`、`secret` |
 | `DeleteModelApi` | `api_id` |
 | `CompleteChat` | `api_id`、`model`、`messages`、`options`、`response_schema` |
+| `ProbeModelApi` | `api_id`、`base_url`、`default_model`、`secret_file`、`secret`、`headers`、`anthropic_base_url` |
 | `ListProviderAccounts` | `account_id`、`refresh` |
 | `GetProviderUsageEvents` | `account_id`、`since`、`until`、`cursor`、`limit` |
 | `UpdateProviderAccount` | `account_id`、`max_concurrency`、`dispatch_interval_min_seconds`、`dispatch_interval_max_seconds`、`close_threshold_percent`、`close_threshold_amount` |

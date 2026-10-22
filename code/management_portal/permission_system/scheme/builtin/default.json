@@ -688,6 +688,10 @@
     "PreviewPromptInjection": {
       "a": "@viewer"
     },
+    "ProbeModelApi": {
+      "a": "@admin",
+      "r": "@operations"
+    },
     "PromoteSeed": {
       "a": "@contributor"
     },

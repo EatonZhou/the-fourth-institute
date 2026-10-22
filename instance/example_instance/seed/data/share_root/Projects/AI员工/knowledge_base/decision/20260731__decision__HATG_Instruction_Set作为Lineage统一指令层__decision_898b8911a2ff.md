@@ -272,6 +272,7 @@ Python 入口将失败的指令结果转为业务异常时，保留外层回执�
 | `Prepare` | 生成待确认的草稿，不提交 | `PrepareWorkspaceHandoff` |
 | `Preview` | 读取将要产生的结果，不提交 | `PreviewPromptInjection` |
 | `Promote` | 把种子提升为正式对象 | `PromoteSeed` |
+| `Probe` | 发起实际请求，检测外部接口支持的能力；可能产生外部调用费用，不保存检测配置 | `ProbeModelApi` |
 | `Publish` | 发布到更大的可见范围，或撤回发布 | `PublishRelease`、`PublishPulseItem` |
 | `Read` | 读取对象的内容 | `ReadResource` |
 | `Register` | 把已存在的外部对象登记为资源 | `RegisterResource` |

@@ -11,6 +11,7 @@ the kernel's authorization path as well as the catalog.
 
 from __future__ import annotations
 
+import os
 import re
 from pathlib import Path
 
@@ -19,7 +20,10 @@ import pytest
 from management_portal.hatg.catalog import instruction_catalog
 
 
-DECISIONS = Path("/share/Projects/AI员工/knowledge_base/decision")
+DECISIONS = Path(os.environ.get(
+    "TFI_SPEC_DECISIONS",
+    str(Path(__file__).resolve().parents[3] / "instance/example_instance/seed/data/share_root/Projects/AI员工/knowledge_base/decision"),
+))
 
 # One object has one parameter name in every instruction.
 OBJECT_NAMES = {"username": "user_id", "account": "account_id", "project": "project_id",
