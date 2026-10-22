@@ -88,7 +88,7 @@ def plan(raw_target, manifest, *, host=None):
     return target, entries
 
 
-def download(entry, destination, *, attempts=3):
+def download(entry, destination, *, attempts=3, offline=False):
     """Resume owned archive caches; publish only a complete pinned artifact."""
     destination = Path(destination)
     if os.path.normcase(str(destination.absolute())) != os.path.normcase(str(destination.resolve())):
@@ -109,6 +109,8 @@ def download(entry, destination, *, attempts=3):
     if partial.exists() and checksum(partial) == entry['sha256']:
         partial.replace(destination)
         return destination
+    if offline:
+        raise RuntimeError('安装包缺少内置依赖 ' + name + '，请重新获取完整安装包。')
     for attempt in range(1, attempts + 1):
         size = partial.stat().st_size if partial.exists() else 0
         report(f'正在准备 {name}，已下载 {size / 1048576:.1f} MB（尝试 {attempt}/{attempts}）')
@@ -244,7 +246,7 @@ def _prepare(api, target, entries):
             with tempfile.TemporaryDirectory(prefix='.prepare-', dir=destination.parent) as temporary:
                 temporary = Path(temporary)
                 archive = native_dependencies_root(target) / 'archives' / artifact_name(entry)
-                download(entry, archive)
+                download(entry, archive, **({'offline': True} if target.get('offline_dependencies') else {}))
                 report('正在解压并校验 ' + DISPLAY_NAMES.get(entry['name'], entry['name']))
                 tree = temporary / 'contents'
                 unpack(archive, tree, zipped=entry['url'].endswith('.zip'))

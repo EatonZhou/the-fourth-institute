@@ -31,6 +31,8 @@ def environment_key(target, selected):
     files += [path for path in (source / "package.json",
               source / "management_portal/test_framework/tau_runtime/package.json",
               source / "management_portal/dsh_runtime/package.json") if path.is_file()]
+    if target.get('bundled_python_dependencies'):
+        files.append(source / 'scripts/windows/requirements-core.lock')
     digest = hashlib.sha256(json.dumps(sorted(selected)).encode())
     for path in files:
         digest.update(path.relative_to(source).as_posix().encode())
@@ -76,15 +78,20 @@ def _prepare(api, state, manifest):
     inventory = doctor(python)
     source = 'verified-existing-installation'
     if inventory is None:
-        if target.get('offline_dependencies'):
-            raise RuntimeError('Bundled Python dependencies failed verification; reinstall the macOS application package')
-        report('正在准备 Portal 核心 Python 依赖；可选浏览器、排版与测试工具不参与首次安装')
+        wheelhouse = dependencies_root(target) / 'python-wheels' if target.get('bundled_python_dependencies') else None
+        if wheelhouse and not (wheelhouse / 'requirements.lock').is_file():
+            raise RuntimeError('安装包缺少离线 Python 依赖，请重新获取完整安装包。')
+        if target.get('offline_dependencies') and wheelhouse is None:
+            raise RuntimeError('Bundled Python dependencies failed verification; reinstall the application package')
+        report('正在从安装包准备 Portal 核心 Python 依赖，无需联网' if wheelhouse else
+               '正在准备 Portal 核心 Python 依赖；可选浏览器、排版与测试工具不参与首次安装')
         environment.parent.mkdir(parents=True, exist_ok=True)
         # Never pip-install into the operator's supplied/shared interpreter.
         log = root / 'runtime/dependency-install.log'
         with log.open('a', encoding='utf-8') as stream, relay_log_progress(log):
             result = api.run_process([target['python'], str(script), 'install', *required,
-                '--venv', str(environment)], env=api.clean_environment(target), cwd=code_root(target),
+                '--venv', str(environment), *(['--wheelhouse', str(wheelhouse)] if wheelhouse else [])],
+                env=api.clean_environment(target), cwd=code_root(target),
                 stdout=stream, stderr=stream, text=True, timeout=10800)
         if result.returncode:
             raise RuntimeError('Dependency preparation failed; inspect runtime/dependency-install.log and retry installation')
@@ -92,7 +99,8 @@ def _prepare(api, state, manifest):
         inventory = doctor(python)
         if inventory is None:
             raise RuntimeError('Prepared core dependencies failed verification; services were not started')
-        source = 'shared-platform-bootstrap' if target.get('shared_code_root') else 'instance-owned-bootstrap'
+        source = ('bundled-offline-wheels' if wheelhouse else
+                  'shared-platform-bootstrap' if target.get('shared_code_root') else 'instance-owned-bootstrap')
     state['dependencies'] = {'status': 'verified', 'manifest_sha256': state['manifest_sha256'],
         'profiles': required, 'declared_profiles': selected,
         'optional_profiles': optional, 'optional_policy': 'user-managed; checked on use',

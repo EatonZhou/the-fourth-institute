@@ -100,10 +100,10 @@ def node_major() -> int | None:
         return None
 
 
-def run(command: list[str], *, cwd: Path = ROOT, dry_run: bool = False) -> None:
+def run(command: list[str], *, cwd: Path = ROOT, dry_run: bool = False, env=None) -> None:
     print(f"[{cwd}] {' '.join(command)}", flush=True)
     if not dry_run:
-        run_process(command, cwd=cwd, check=True)
+        run_process(command, cwd=cwd, check=True, **({'env': env} if env is not None else {}))
 
 
 def pip_install_command(python: Path, requirements: str, *, only_binary: bool) -> list[str]:
@@ -115,6 +115,11 @@ def pip_install_command(python: Path, requirements: str, *, only_binary: bool) -
 
 def install(args: argparse.Namespace) -> int:
     profiles = selected_profiles(args.profiles)
+    wheelhouse = getattr(args, 'wheelhouse', None)
+    if wheelhouse:
+        wheelhouse = wheelhouse.resolve(strict=True)
+        if profiles != ['core'] or not (wheelhouse / 'requirements.lock').is_file():
+            raise ValueError('Offline wheelhouse requires the core profile and its bundled lock file')
     directory = args.venv.resolve()
     python = venv_python(directory)
     version = interpreter_version(python) if python.is_file() else sys.version_info[:3]
@@ -131,9 +136,20 @@ def install(args: argparse.Namespace) -> int:
     if not python.is_file():
         run([sys.executable, "-m", "venv", str(directory)], dry_run=args.dry_run)
     only_binary = platform.system() in {"Windows", "Darwin"} and not args.allow_source_builds
-    report("正在准备 Portal 基础运行环境")
-    run(pip_install_command(python, "requirements.txt", only_binary=only_binary),
-        dry_run=args.dry_run)
+    if wheelhouse:
+        report("正在从安装包安装 Portal 核心 Python 依赖，无需联网")
+        env = {key: value for key, value in os.environ.items() if not key.upper().startswith('PIP_')}
+        env.update(PIP_CONFIG_FILE=os.devnull, PYTHONUTF8='1', PYTHONNOUSERSITE='1')
+        run([str(python), '-I', '-m', 'pip', '--isolated', 'install', '--no-index',
+             '--find-links', str(wheelhouse), '--only-binary=:all:', '--require-hashes',
+             '--disable-pip-version-check', '-r', str(wheelhouse / 'requirements.lock')],
+            dry_run=args.dry_run, env=env)
+        run([str(python), '-I', '-m', 'pip', '--isolated', 'check', '--disable-pip-version-check'],
+            dry_run=args.dry_run, env=env)
+    else:
+        report("正在准备 Portal 基础运行环境")
+        run(pip_install_command(python, "requirements.txt", only_binary=only_binary),
+            dry_run=args.dry_run)
 
     if "test" in profiles:
         report("正在准备测试工具")
@@ -262,6 +278,8 @@ def main(argv: list[str] | None = None) -> int:
         sub.add_argument("--venv", type=Path, default=ROOT / ".venv")
         if command == "install":
             sub.add_argument("--dry-run", action="store_true")
+            sub.add_argument("--wheelhouse", type=Path,
+                             help="Install core only from bundled locked wheels, without network access")
             sub.add_argument("--allow-source-builds", action="store_true",
                              help="Allow compiling Python dependencies from source on Windows/macOS")
         else:

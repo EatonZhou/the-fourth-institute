@@ -21,14 +21,17 @@ Windows 版目前仍是试用版，完整 Windows 真机流程尚待进一步验
 注册或登录入口，不再重复启动和检查服务。启动检查的等待上限调整为约 2 分钟；
 服务退出或同一 HTTP 应用错误连续出现时更早显示具体原因。
 
-Python、PostgreSQL、NATS 和 Node.js 已内置，首次准备核心 Python 包仍需联网。
+Python、PostgreSQL、NATS、Node.js 和完整核心 Python 依赖已内置，首次基础安装无需联网。
+Python 包版本及摘要在构建时锁定，并检查 Windows 专属依赖和完整依赖闭包；
+用户机器只从安装包内的 wheels 安装，缺件时明确报错，不回退网络下载。
 TeX、浏览器自动化和测试工具按需自行安装。安装包尚未签名，尚不支持覆盖旧版升级。
 已有实例请先备份，不能把重新运行 Setup 当作数据迁移。
 
 Windows remains a preview/trial release. Full validation on physical Windows machines
 is pending. Use a new, empty installation directory and choose whether to include
-the Lenia example. Python and native services are bundled; first use still requires
-internet access for core Python packages. Optional tools are not installed automatically.
+the Lenia example. Python, native services and all core Python packages are bundled;
+initial setup works offline. Online AI providers and optional tool downloads still need
+their respective network connections. Optional tools are not installed automatically.
 This unsigned installer does not provide an in-place upgrade of an existing instance.
 
 Process-record readers allow shared deletion on Windows; atomic replacement retries

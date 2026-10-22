@@ -20,6 +20,7 @@ from prepare_install import digest, inventory
 from scripts.tfi_instance_layout import GENERATED_CODE_DIRECTORIES, source_inventory
 from scripts.tfi_release_native_dependencies import artifact_name, download, unpack, package_root
 from scripts.tfi_seed_selection import plan
+from scripts.windows.python_dependencies import bundle as bundle_python_dependencies
 
 
 def public_seed(repo):
@@ -107,7 +108,7 @@ def bundle_native_dependencies(repo, destination, native_cache, *, target="windo
     return bundled
 
 
-def stage(repo, destination, archive, *, source_commit=None, source_dirty=None, native_cache=None):
+def stage(repo, destination, archive, *, source_commit=None, source_dirty=None, native_cache=None, python_cache=None):
     if destination.exists():
         raise ValueError("Use a new staging directory")
     seed = public_seed(repo)
@@ -136,6 +137,8 @@ def stage(repo, destination, archive, *, source_commit=None, source_dirty=None, 
             raise ValueError("Incomplete Python runtime: " + relative)
     native_cache = native_cache or repo / ".build/windows/native-cache"
     bundled = bundle_native_dependencies(repo, destination, native_cache)
+    python_packages = bundle_python_dependencies(repo, destination,
+        python_cache or repo / '.build/windows/python-cache')
     receipt = {
         "schema": "tfi.windows-package.v1", "target": "windows/x86_64",
         "native_verification": "not_run", "signed": False,
@@ -148,7 +151,8 @@ def stage(repo, destination, archive, *, source_commit=None, source_dirty=None, 
         "engineering_sha256": digest(destination / "example-engineering.zip"),
         "base_engineering_sha256": digest(destination / "base-engineering.zip"),
         "engineering_prepared_at_build": True,
-        "initialization_requires_network": True,
+        "initialization_requires_network": False,
+        "bundled_python_dependencies": python_packages,
         "bundled_native_dependencies": bundled,
         "native_preparation_requires_network": False,
         "prepared_engineering_validation": "passed",

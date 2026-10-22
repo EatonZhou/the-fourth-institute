@@ -50,7 +50,7 @@ def make_target(platform, name, manifest, *, lan=False, ports=None):
     name = instance_name(name)
     root = platform / "instance" / name
     token = __import__("hashlib").sha256(str(root).casefold().encode()).hexdigest()[:12]
-    return {
+    target = {
         "install_root": str(root), "shared_code_root": str(platform / "code"),
         "run_id": manifest["run_id"], "supervisor_resident_id": manifest.get("supervisor_resident_id", ""),
         "service_prefix": "tfi-" + token, "database_name": "tfi_" + token,
@@ -61,6 +61,12 @@ def make_target(platform, name, manifest, *, lan=False, ports=None):
             ("share_root", "share"), ("staging_root", "staging"),
             ("instances_root", "instances"), ("accounts_root", "accounts"), ("secrets_dir", "secrets"))},
     }
+    receipt_path = platform / 'windows-package.json'
+    if receipt_path.is_file():
+        receipt = json.loads(receipt_path.read_text(encoding='utf-8'))
+        if receipt.get('initialization_requires_network') is False:
+            target.update(offline_dependencies=True, bundled_python_dependencies=True)
+    return target
 
 
 def instances(platform):
@@ -421,7 +427,7 @@ class DefaultStartup:
             target = make_target(self.platform, "example_instance", manifest, ports=choose_ports(ports))
             target_path.parent.mkdir(parents=True, exist_ok=True)
             target_path.write_text(json.dumps(target, ensure_ascii=False, indent=2), encoding="utf-8")
-        self.progress("正在安装环境并初始化 Portal\n首次使用需要联网，可能需要几分钟")
+        self.progress("正在安装环境并初始化 Portal")
         self.execute(command(self.platform, "install", "--manifest", bundle, "--target", target_path,
                              '--skip-file-verification'))
 

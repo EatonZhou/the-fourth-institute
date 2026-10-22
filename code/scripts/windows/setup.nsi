@@ -34,7 +34,7 @@ VIAddVersionKey /LANG=1033 "LegalCopyright" "The Fourth Institute contributors"
 !insertmacro MUI_PAGE_DIRECTORY
 Page custom ExampleOptions ExampleOptionsLeave
 !insertmacro MUI_PAGE_INSTFILES
-!define MUI_FINISHPAGE_TEXT "Portal will now prepare your research space and open your browser. First use needs an Internet connection and can take several minutes."
+!define MUI_FINISHPAGE_TEXT "Portal will now prepare your research space and open your browser. All dependencies for initial setup are included."
 !insertmacro MUI_PAGE_FINISH
 !insertmacro MUI_UNPAGE_CONFIRM
 UninstPage custom un.InstanceOptions un.InstanceOptionsLeave
@@ -44,8 +44,8 @@ UninstPage custom un.InstanceOptions un.InstanceOptionsLeave
 
 LangString WelcomeTitle ${LANG_ENGLISH} "Welcome to The Fourth Institute"
 LangString WelcomeTitle ${LANG_SIMPCHINESE} "欢迎安装 The Fourth Institute"
-LangString WelcomeText ${LANG_ENGLISH} "Explore, collaborate, and create knowledge with AI.$\r$\n$\r$\nWindows 11 x64 preview. First launch requires an internet connection."
-LangString WelcomeText ${LANG_SIMPCHINESE} "与 AI 一起探索、协作、创造知识。$\r$\n$\r$\nWindows 11 x64 试用版，首次启动需联网。"
+LangString WelcomeText ${LANG_ENGLISH} "Explore, collaborate, and create knowledge with AI.$\r$\n$\r$\nWindows 11 x64 preview. Initial setup works offline."
+LangString WelcomeText ${LANG_SIMPCHINESE} "与 AI 一起探索、协作、创造知识。$\r$\n$\r$\nWindows 11 x64 试用版，基础安装无需联网。"
 
 Function un.onInit
   StrCpy $RemoveInstances ${BST_UNCHECKED}
