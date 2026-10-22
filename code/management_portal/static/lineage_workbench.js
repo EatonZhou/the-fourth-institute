@@ -4906,16 +4906,18 @@
         state.watchboardMutationInFlight = true;
         renderChatExtensionMenu();
         try {
-          const payload = await residentService.updateWatchboard(action, {
+          await residentService.updateWatchboard(action, {
             resident_id: residentId,
           });
           if (residentId !== selectedResidentId()) return;
-          const watchboard = payload?.watchboard || { enabled: action === "add" };
-          state.detail = {
-            ...(state.detail || {}),
-            watchboard,
-            watchboard_capabilities: payload?.watchboard_capabilities || state.detail?.watchboard_capabilities || {},
-          };
+          // The Chat panel owns the Resident projection used by the extension
+          // menu and subsequent conversation updates. Invalidate older reads
+          // before obtaining the committed installation, then update that owner.
+          const panel = agentChatPanel;
+          window.PortalResidentProjection.invalidate(residentId);
+          const detail = await window.PortalResidentProjection.load(residentId, { force: true });
+          if (residentId !== selectedResidentId() || panel !== agentChatPanel) return;
+          panel.applyDetail(detail);
           state.watchboardHiddenResidents.delete(residentId);
           writeLineageUiState({ watchboardHiddenResidents: [...state.watchboardHiddenResidents] });
           closeChatExtensionMenu();

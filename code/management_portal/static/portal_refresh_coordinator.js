@@ -170,7 +170,9 @@
     const scheduleRepair = () => {
       clearRepairTimer();
       if (stopped || !streamCleanup || document.hidden || options.repairInterval === false) return;
-      const delay = Math.max(120000, Number(options.repairInterval || 300000));
+      // Owners with a stricter freshness contract may request a shorter repair
+      // interval even while their event subscription is connected.
+      const delay = Math.max(250, Number(options.repairInterval || 300000));
       repairTimer = setTimeout(() => {
         repairTimer = null;
         refresh()

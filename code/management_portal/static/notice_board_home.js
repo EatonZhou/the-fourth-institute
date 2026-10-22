@@ -254,6 +254,7 @@ function ensureNoticeBoardRefresh() {
     key: () => `notice-board:${portalUsername || "anonymous"}`,
     interval: 60000,
     initialDelay: 60000,
+    repairInterval: 60000,
     fetch: () => noticeBoardInstruction("ListPosts"),
     apply: renderNoticeBoard,
     subscribe: window.PortalRefreshCoordinator.portalSubscription({

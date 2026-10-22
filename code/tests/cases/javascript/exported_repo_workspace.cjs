@@ -31,18 +31,21 @@ const root = path.resolve(__dirname, '../../..');
       };
       window.PortalResourceDetail = {
         createDetailHistory: () => ({push: history('pushState'), replace: history('replaceState')}),
-        createGuest: () => ({setResource: noop, ready: noop, failed: noop}),
+        createGuest: () => ({setResource: noop, ready: noop, failed: noop, changed: noop}),
       };
       window.PortalComponentRecovery = {create: ({onReady}) => ({run: onReady, guard: fn => fn(), isUnavailable: () => false})};
       window.PortalFormControls = {
         bindFilterDropdown: () => ({open: noop, close: noop}),
         bindFilterSummary: () => ({sync: noop}),
       };
-      window.PortalAPI = {get: async url => {
-        const response = await fetch(url); const data = await response.json();
+      const requestJson = async (url, options = {}) => {
+        const response = await fetch(url, options); const data = await response.json();
         if (!response.ok) throw Error(data.error || `HTTP ${response.status}`);
         return data;
-      }};
+      };
+      window.PortalAPI = {get: requestJson, post: (url, data) => requestJson(url, {
+        method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data),
+      })};
       window.PortalUI = {
         createDialogController: () => ({open: noop, close: noop}), toast: noop,
         formatDateTime: value => String(value || ''), formatBytes: value => String(value || 0),
@@ -92,6 +95,32 @@ const root = path.resolve(__dirname, '../../..');
     await workspace.locator('.repoTreeRow[data-open-file="README.txt"]').click();
     await workspace.locator('[data-file-history]').waitFor();
     assert.equal(await workspace.locator('[data-edit-file]').count(), 1);
+    // Exercise the real local confirmation and busy-button owner before the
+    // real HTTP mutation; a page-wide submit interceptor must not swallow it.
+    await page.evaluate(() => {
+      delete window.PortalUI;
+      delete window.PortalUIPrimitives;
+      window.PortalI18n.message = String;
+      document.addEventListener('submit', event => {
+        event.preventDefault(); event.stopImmediatePropagation();
+      }, true);
+    });
+    for (const file of ['portal_state.js', 'portal_ui_primitives.js', 'portal_overlay.js', 'portal_ui.js']) {
+      await page.addScriptTag({url: `${base}/static/${file}`});
+    }
+    await workspace.locator('[data-repo-discard]').click();
+    const confirmation = page.locator('[data-portal-confirmation]:visible');
+    await confirmation.locator('.portalDetailFooter [data-portal-confirm-cancel]').click();
+    assert.equal(requests.filter(url => url.endsWith('/workspace/discard')).length, 0);
+    await workspace.locator('[data-repo-discard]').click();
+    const discarded = page.waitForResponse(response => response.url().endsWith('/workspace/discard') && response.request().method() === 'POST');
+    await confirmation.locator('[data-portal-confirm-accept]').click();
+    const response = await discarded;
+    assert.equal(response.status(), 200);
+    assert.equal((await response.json()).workspace.status.changes.length, 0);
+    await workspace.locator('[data-open-file="README.txt"]').first().click();
+    await page.waitForFunction(() => document.querySelector('#repoFilePreviewHost')?.textContent === 'Git fixture\n');
+    assert.equal(requests.filter(url => url.endsWith('/workspace/discard')).length, 1);
     assert.deepEqual(errors, []);
     console.log(JSON.stringify({status:'passed',scope:'isolated Chromium + real Repo HTTP backend',source_navigation:true,git_controls_hidden:true,stale_git_tabs:4,plain_git:true,requests}));
   } finally { await browser.close(); }

@@ -162,12 +162,27 @@ def test_exported_workspace_browser_navigation(tmp_path):
     subprocess.run(["git", "-C", str(git_root), "add", "."], check=True)
     subprocess.run(["git", "-C", str(git_root), "-c", "user.name=Test", "-c", "user.email=test@example.invalid", "commit", "-qm", "Initial"], check=True)
     git_record = resource_identity_backend.register_repo_checkout(git_root)
+    (git_root / "README.txt").write_text("Git fixture\nUncommitted line\n")
+    (git_root / "untracked.txt").write_text("Discard fixture\n")
     repo_root = Path(__file__).resolve().parents[2]
     http = _workspace_http()
 
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_args):
             pass
+
+        def do_POST(self):
+            parsed = urlparse(self.path)
+            match = re.fullmatch(r"/api/repos/(repo_[0-9a-f]{12})/workspace/(\w+)", parsed.path)
+            if match:
+                payload = json.loads(self.rfile.read(int(self.headers.get("Content-Length", "0"))))
+                status, data = http.workspace_post(payload, parsed, "", {"repo_id": match[1], "action": match[2]})
+            else:
+                status, data = 404, {}
+            self.send_response(status)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(data).encode())
 
         def do_GET(self):
             parsed = urlparse(self.path)
@@ -200,6 +215,9 @@ def test_exported_workspace_browser_navigation(tmp_path):
     try:
         result = subprocess.run(["node", str(repo_root / "tests/cases/javascript/exported_repo_workspace.cjs"), f"http://127.0.0.1:{server.server_port}", record["id"], git_record["id"]], text=True, capture_output=True, timeout=90)
         assert result.returncode == 0, result.stdout + result.stderr
+        assert (git_root / "README.txt").read_text() == "Git fixture\n"
+        assert not (git_root / "untracked.txt").exists()
+        assert not subprocess.check_output(["git", "-C", str(git_root), "status", "--porcelain"])
         print(result.stdout)
     finally:
         server.shutdown()

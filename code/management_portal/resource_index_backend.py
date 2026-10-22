@@ -1565,17 +1565,36 @@ class AdapterLayer:
         """
         owners = [adapter for adapter in self.adapters.values()
                   if resource_type in adapter.resource_types]
-        if len(owners) != 1:
-            raise ValueError(f"unregistration has no unique index adapter: {resource_type}")
-        adapter = owners[0]
-        result = self.store.apply(ChangeSet(
-            adapter.name, deletes=(resource_id,),
-            source_state=self.store.adapter_source_state(adapter.name),
-        ), direct=True)
-        self._completed_refresh(adapter.name, {
-            **result, "changed": True, "scanned": False, "incremental": True,
-        }, forced=True, emit=True)
-        return result
+        if not owners:
+            raise ValueError(f"unregistration has no index adapter: {resource_type}")
+        try:
+            record = self.store.internal_get(resource_id)
+        except KeyError:
+            record = None
+        if record is not None:
+            owner = record["source"]["adapter"]
+            if record["resource_type"] != resource_type or owner not in {a.name for a in owners}:
+                raise ValueError(f"unregistration index ownership mismatch: {resource_id}")
+            # A type may have several sources (Knowledge and Paper reviews).
+            # Delete through the recorded owner before fencing the other sources;
+            # adapters must never delete a record belonging to another adapter.
+            owners.sort(key=lambda adapter: adapter.name != owner)
+        results = []
+        for adapter in owners:
+            result = self.store.apply(ChangeSet(
+                adapter.name, deletes=(resource_id,),
+                source_state=self.store.adapter_source_state(adapter.name),
+            ), direct=True)
+            self._completed_refresh(adapter.name, {
+                **result, "changed": True, "scanned": False, "incremental": True,
+            }, forced=True, emit=True)
+            results.append(result)
+        return {
+            **results[0],
+            "adapters": [adapter.name for adapter in owners],
+            "deleted": sum(result["deleted"] for result in results),
+            "deleted_ids": sorted({rid for result in results for rid in result["deleted_ids"]}),
+        }
 
     def refresh_now(
         self,

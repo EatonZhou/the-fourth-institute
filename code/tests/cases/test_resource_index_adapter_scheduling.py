@@ -234,3 +234,44 @@ def test_unregistration_fences_an_inflight_scan_even_before_first_indexing(isola
                     store.internal_get(rid)
             finally:
                 layer.stop()
+
+
+def test_unregistration_of_type_with_multiple_sources(isolated_portal_case):
+    """两种 Review 来源都能注销；各来源的旧扫描不能使身份复活。"""
+    import pytest
+
+    class Reviews:
+        resource_types = ("review",)
+        def __init__(self, name):
+            self.name = name
+
+    for indexed_owner in (None, "project_knowledge", "paper_review"):
+        with isolated_portal_case():
+            store = backend.IndexStore()
+            adapters = [Reviews("project_knowledge"), Reviews("paper_review")]
+            layer = backend.AdapterLayer(store, adapters, start_worker=False)
+            rid, other_id = "review_123456789abc", "review_987654321abc"
+            try:
+                if indexed_owner:
+                    store.apply(backend.ChangeSet(indexed_owner, upserts=(
+                        _record(rid, "review", adapter=indexed_owner),
+                    )))
+                store.apply(backend.ChangeSet("project_knowledge", upserts=(
+                    _record(other_id, "review", adapter="project_knowledge"),
+                )))
+                generation = store.generation()
+                result = layer.project_unregistered("review", rid)
+                assert result["deleted"] == bool(indexed_owner)
+                for adapter in adapters:
+                    # Model a scan that captured the source before the deletion,
+                    # including a source whose first projection was still pending.
+                    result = store.apply(backend.ChangeSet(adapter.name, upserts=(
+                        _record(rid, "review", adapter=adapter.name),
+                    )), scan_started_generation=generation)
+                    assert result["upserted"] == 0
+                    assert result["resource_error_count"] == 0
+                with pytest.raises(KeyError):
+                    store.internal_get(rid)
+                assert store.internal_get(other_id)["resource_id"] == other_id
+            finally:
+                layer.stop()
