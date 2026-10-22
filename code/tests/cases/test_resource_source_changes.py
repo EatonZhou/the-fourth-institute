@@ -5,6 +5,8 @@ from management_portal.paper_resource_index import PaperManifestAdapter, PaperRe
 
 import json
 import os
+import subprocess
+import sys
 import time
 from pathlib import Path
 from unittest import mock
@@ -85,6 +87,30 @@ def test_change_finder_reports_what_changed_since_a_moment(tmp_path: Path) -> No
 
     reviews.write_text("[{}]", encoding="utf-8")
     assert str(reviews) in resource_source_changes.find_changes(request)["changed"]
+
+
+def test_change_finder_pipe_is_utf8_with_windows_default_encoding(tmp_path):
+    """中文路径的变更结果不依赖 Windows 控制台或隔离进程的默认编码。"""
+    root = tmp_path / "中文 空格"
+    root.mkdir()
+    existing = root / "知识.md"
+    existing.write_text("knowledge", encoding="utf-8")
+    missing = root / "已删除.md"
+    request = {"since": 0, "files": [str(existing)],
+               "paths": [str(existing), str(missing)]}
+    result = subprocess.run(
+        [sys.executable, "-I", "-c",
+         "import runpy,sys; sys.stdout.reconfigure(encoding='cp1252'); "
+         "runpy.run_path(sys.argv[1], run_name='__main__')",
+         str(Path(resource_source_changes.__file__))],
+        input=json.dumps(request, ensure_ascii=False).encode("utf-8"),
+        capture_output=True, timeout=15,
+    )
+    assert result.returncode == 0, result.stderr.decode("utf-8", errors="replace")
+    found = json.loads(result.stdout.decode("utf-8"))
+    assert found["changed"] == [str(existing)]
+    assert found["missing"] == [str(missing)]
+    assert found["resolved"] == {str(p): os.path.realpath(p) for p in (existing, missing)}
 
 
 class _TrackedAdapter:

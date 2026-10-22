@@ -104,7 +104,9 @@ def find_changes(request: dict[str, Any]) -> dict[str, Any]:
 
 def main() -> int:
     request = json.loads(sys.stdin.buffer.read() or b"{}")
-    sys.stdout.write(json.dumps(find_changes(request), ensure_ascii=False))
+    # The parent speaks UTF-8 bytes. Isolated Python ignores PYTHONUTF8 and
+    # Windows redirected stdout may otherwise use a legacy ANSI code page.
+    sys.stdout.buffer.write(json.dumps(find_changes(request), ensure_ascii=False).encode("utf-8"))
     return 0
 
 

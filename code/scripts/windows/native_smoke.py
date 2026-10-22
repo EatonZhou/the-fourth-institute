@@ -115,9 +115,28 @@ def exercise(exe, root, included, evidence):
         check(marker.is_file(), 'Restart lost user data')
         request('/login', {'username': registered['username'], 'password': password}, form=True)
         check(request('/api/me').get('username') == registered['username'], 'Restart lost the account')
+        # Exercise the installed isolated index worker with the actual Chinese
+        # path. -I ignores the fixture's PYTHONUTF8 environment setting.
+        change_request = {'since': 0, 'files': [str(marker)], 'paths': [str(marker)]}
+        changed = subprocess.run(
+            [str(root / 'dependencies/python/python.exe'), '-I',
+             str(root / 'code/management_portal/resource_source_changes.py')],
+            input=json.dumps(change_request, ensure_ascii=False).encode('utf-8'),
+            capture_output=True, timeout=30, check=True,
+        )
+        check(json.loads(changed.stdout)['changed'] == [str(marker)],
+              'Installed index worker did not preserve a Chinese path')
+        for component in ('resource', 'society', 'web'):
+            component_log = state_path.parent / 'runtime' / (component + '.log')
+            check(component_log.is_file(), component + ' did not write a runtime log')
+            content = component_log.read_text(encoding='utf-8', errors='replace')
+            for error in ('resource index refresh failed:', 'SocietyService coordinator failed:',
+                          'TooManyRemoved', 'UnicodeEncodeError'):
+                check(error not in content, component + ' background error: ' + error)
         succeeded = True
         return {'include_examples': included, 'status': 'passed', 'registration_ama_chat': 'passed',
-                'launcher_exit_service_survival': 'passed', 'unregister_restart_preserves_data': 'passed'}
+                'launcher_exit_service_survival': 'passed', 'unregister_restart_preserves_data': 'passed',
+                'chinese_index_worker': 'passed', 'background_error_check': 'passed'}
     except Exception:
         # Distinguish loader failure from initdb's restricted-token re-execution;
         # only public version output and exit codes from this disposable fixture.
