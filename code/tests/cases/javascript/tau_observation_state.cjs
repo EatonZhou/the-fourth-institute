@@ -316,7 +316,51 @@ async function pdfCancellation(observe) {
   }, observe, win=>{win.Headers=Headers;win.fetch=(...args)=>dispatch(...args);});
 }
 
+async function documentErrors(observe) {
+  await capture('document_errors', async ({ page, main, newFrame, openDocument, rows, output }) => {
+    const child = newFrame(main.frame);
+    const starts = rows().filter(row => row.kind === 'document_started');
+    const fireError = (win, error) => win.dispatchEvent(new win.ErrorEvent('error', {
+      error, message: 'private-error-message', filename: 'https://private.invalid/secret.js?token=private-query',
+      lineno: 17, colno: 9, cancelable: true,
+    }));
+    assert.equal(fireError(main.window, new main.window.TypeError('private-main-error')), true);
+    assert.equal(fireError(child.window, new child.window.ReferenceError('private-frame-error')), true);
+    const renewed = openDocument(main.frame);
+    const latest = rows().filter(row => row.kind === 'document_started').at(-1);
+    // A late receipt belongs to its original document, even after navigation.
+    fireError(main.window, new main.window.RangeError('private-old-document'));
+    const rejection = new renewed.window.Event('unhandledrejection', {cancelable: true});
+    rejection.reason = {name:'private-error-name',message:'private-rejection',stack:'private-stack'};
+    assert.equal(renewed.window.dispatchEvent(rejection), true);
+    const hostile = new renewed.window.Event('unhandledrejection');
+    Object.defineProperty(hostile, 'reason', {get() {throw new Error('private-getter')}});
+    renewed.window.dispatchEvent(hostile);
+    page.emit('pageerror', new TypeError('private-native-error'));
+    const records = rows().filter(row => row.kind === 'document_error');
+    assert.equal(records.length,5);
+    assert.deepEqual(records.map(row=>row.name),['TypeError','ReferenceError','RangeError','Error','Error']);
+    assert.deepEqual(records.map(row=>row.document_id),[starts[0].document_id,starts[1].document_id,starts[0].document_id,latest.document_id,latest.document_id]);
+    assert.notEqual(latest.document_id,starts[0].document_id);
+    assert.equal(records[0].frame_id,records[2].frame_id);
+    assert.notEqual(records[0].frame_id,records[1].frame_id);
+    for (const row of records) {
+      assert.equal(row.document_confirmed,true);
+      assert.equal(row.page_error_association,'unavailable_no_shared_event_identity');
+      assert.equal(row.details_omitted,true);
+      assert.deepEqual(row.stack_frames,[]);
+    }
+    assert.equal(records[0].line,17);assert.equal(records[0].column,9);
+    assert.equal(records[3].line,null);assert.equal(records[3].event_type,'unhandledrejection');
+    const native=rows().filter(row=>row.kind==='page_error');
+    assert.equal(native.length,1);assert.equal(native[0].document_id,null);assert.equal(native[0].frame_id,null);
+    excludes(output(),['private-error-message','private.invalid','private-query','private-main-error',
+      'private-frame-error','private-old-document','private-error-name','private-rejection','private-stack','private-getter','private-native-error']);
+  },observe);
+}
+
 const contracts = {
+  document_errors: documentErrors,
   pdf_cancellation: pdfCancellation,
   server_timing: serverTiming,
   stream_unique: observe => receiptIdentity('stream', false, observe),

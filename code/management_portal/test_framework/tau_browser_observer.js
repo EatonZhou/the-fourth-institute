@@ -239,10 +239,20 @@ async function observeBrowser(context, { evidenceDir }) {
         state.document.confirmed = true;
       }
       write({ kind: data.kind, ...location(state), browser_observed_at_ms: Number.isFinite(data.at) ? data.at : null, time_origin_ms: Number.isFinite(data.time_origin) ? data.time_origin : null });
-    } else if (['beforeunload', 'pagehide', 'portal_connections', 'portal_stream_ready', 'pdf_reader_cancelled', 'resource_timing', 'resource_timing_buffer_full', 'observer_unavailable'].includes(data.kind)) {
+    } else if (['beforeunload', 'pagehide', 'document_error', 'portal_connections', 'portal_stream_ready', 'pdf_reader_cancelled', 'resource_timing', 'resource_timing_buffer_full', 'observer_unavailable'].includes(data.kind)) {
       const doc = tokens.get(data.token);
       const associated = { ...location(state), document_id: doc?.id || null, document_confirmed: !!doc };
-      if (data.kind === 'resource_timing') {
+      if (data.kind === 'document_error') {
+        // This is a separate document-owned receipt, not a time-based match to
+        // Playwright's pageerror (which exposes no frame). Keep both facts.
+        write({ kind: data.kind, ...associated,
+          event_type: ['error', 'unhandledrejection'].includes(data.event_type) ? data.event_type : 'unknown',
+          browser_observed_at_ms: Number.isFinite(data.at) ? data.at : null,
+          ...safeError({ name: data.error_name }),
+          line: Number.isSafeInteger(data.line) && data.line > 0 ? data.line : null,
+          column: Number.isSafeInteger(data.column) && data.column > 0 ? data.column : null,
+          page_error_association: 'unavailable_no_shared_event_identity' });
+      } else if (data.kind === 'resource_timing') {
         for (const entry of data.entries || []) {
           const numericFields = ['startTime','duration','fetchStart','redirectStart','redirectEnd','domainLookupStart','domainLookupEnd','connectStart','connectEnd','secureConnectionStart','requestStart','responseStart','responseEnd','transferSize','encodedBodySize','decodedBodySize'];
           const values = {}, unavailable = {};
@@ -393,6 +403,19 @@ async function observeBrowser(context, { evidenceDir }) {
     };
     window.__portalTauObservation = { flush };
     emit({ kind: 'document_started', time_origin: performance.timeOrigin });
+    for (const eventType of ['error', 'unhandledrejection']) window.addEventListener(eventType, event => {
+      // No error message, arbitrary rejection value, filename or stack crosses
+      // the binding. Do not preventDefault: native diagnostics must survive.
+      let name;
+      try {
+        const value = eventType === 'error' ? event.error : event.reason;
+        const candidate = value?.name;
+        if (typeof candidate === 'string' && candidate.length <= 32) name = candidate;
+      } catch { /* A rejection may have a throwing name getter. */ }
+      emit({ kind: 'document_error', event_type: eventType, error_name: name,
+        line: eventType === 'error' && Number.isSafeInteger(event.lineno) ? event.lineno : null,
+        column: eventType === 'error' && Number.isSafeInteger(event.colno) ? event.colno : null });
+    });
     window.addEventListener('pageshow', () => emit({ kind: 'pageshow', time_origin: performance.timeOrigin }));
     for (const kind of ['beforeunload', 'pagehide']) window.addEventListener(kind, event => {
       emit({ kind, persisted: event.persisted }); flush();
