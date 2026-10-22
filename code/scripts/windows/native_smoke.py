@@ -142,6 +142,8 @@ def main():
         worker(args.platform.resolve(), args.phase)
         return
     check(all((args.installer, args.work, args.evidence)), 'Installer, work and evidence paths are required')
+    import ctypes
+    check(not ctypes.windll.shell32.IsUserAnAdmin(), 'Desktop smoke must run as a non-elevated user')
     args.evidence.mkdir(parents=True, exist_ok=True)
     # Deliberately unreachable proxies make an accidental dependency download fail;
     # local HTTP/RPC owners must bypass them. AI services are never called.
@@ -154,6 +156,7 @@ def main():
     with args.installer.open('rb') as stream:
         digest = hashlib.file_digest(stream, 'sha256').hexdigest()
     receipt = {'schema': 'tfi.windows-native-smoke.v1', 'status': 'passed', 'exe_sha256': digest,
+               'process_elevated': False,
                'source_commit': os.environ.get('GITHUB_SHA', ''), 'cases': rows,
                'network_check': 'invalid outbound proxies; local-only initialization',
                'ai_inference': 'not_requested'}

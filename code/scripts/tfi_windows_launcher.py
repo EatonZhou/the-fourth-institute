@@ -20,6 +20,13 @@ PLATFORM = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PLATFORM / "code"))
 
 
+def is_elevated_process():
+    if sys.platform != 'win32':
+        return False
+    import ctypes
+    return bool(ctypes.windll.shell32.IsUserAnAdmin())
+
+
 def instance_name(value):
     if not re.fullmatch(r"[a-z][a-z0-9_]{2,31}", value):
         raise ValueError("实例名称使用 3–32 位小写字母、数字、下划线，以字母开头。")
@@ -440,6 +447,9 @@ class DefaultStartup:
 
     def run(self):
         from scripts.tfi_release_install import start_blocker
+        if is_elevated_process():
+            raise RuntimeError("请关闭此窗口，直接双击桌面图标启动 Portal；不要选择“以管理员身份运行”。"
+                               "当前用户模式的数据库不能在提升的管理员进程中启动。")
         if self.root.is_symlink():
             raise ValueError("实例目录不能是符号链接")
         initialized = not (self.root / "installation.json").is_file() or bool(start_blocker(self.state()))

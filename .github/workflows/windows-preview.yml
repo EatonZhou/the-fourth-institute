@@ -74,11 +74,7 @@ jobs:
       - name: Install EXE, register, open AMA and restart with blocked download proxies
         if: ${{ !cancelled() }}
         run: |
-          New-Item -ItemType Directory -Force .build/windows-native | Out-Null
-          python code/scripts/windows/native_smoke.py --installer .build/windows/TheFourthInstitute-Setup-x64.exe --work "$env:RUNNER_TEMP/TFI native" --evidence .build/windows-native *> .build/windows-native/smoke.log
-          $result = $LASTEXITCODE
-          Get-Content .build/windows-native/smoke.log -Encoding utf8
-          exit $result
+          ./code/scripts/windows/native_user_smoke.ps1 -Installer .build/windows/TheFourthInstitute-Setup-x64.exe -Evidence .build/windows-native
       - name: Show failure diagnostics
         if: failure()
         shell: pwsh

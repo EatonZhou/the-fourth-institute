@@ -21,6 +21,17 @@ from scripts import tfi_release_install as installer
 
 
 class DesktopStartup(unittest.TestCase):
+    def test_elevated_launch_stops_before_initializing_or_touching_existing_state(self):
+        flow = launcher.DefaultStartup(Path('/unused'))
+        with patch.object(launcher, 'is_elevated_process', return_value=True), \
+                patch.object(flow, 'initialize') as initialize, \
+                patch.object(flow, 'state') as state, patch.object(flow, 'execute') as execute:
+            with self.assertRaisesRegex(RuntimeError, '不要选择“以管理员身份运行”'):
+                flow.run()
+        initialize.assert_not_called()
+        state.assert_not_called()
+        execute.assert_not_called()
+
     def setup_flow(self, platform):
         flow = launcher.DefaultStartup(platform)
         bundle = platform / ".build/w/engineering/manifest.json"
