@@ -447,7 +447,7 @@ def _native_codex_service(account_id: str):
         entry = Path(configured).expanduser()
         binary = str(resolve_directory(str(entry.parent)) / entry.name)
     else:
-        binary = shutil.which("codex") or str(CodexRuntime().link())
+        binary = str(CodexRuntime().link())
     if sys.platform == "win32":
         # Keep the SCM definition stable across Provider version switches.
         from management_portal.execution.provider_updates import CodexRuntime

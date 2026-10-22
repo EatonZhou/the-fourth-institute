@@ -36,6 +36,8 @@ def _isolated(monkeypatch, tmp_path):
     monkeypatch.setattr(updates, "pypi_version", lambda package: "0.2.162")
     for runtime, versions in INSTALLED.items():
         monkeypatch.setattr(runtime, "installed", lambda self, versions=versions: versions)
+    # These passes update a Codex Portal installed, whatever the host's PATH holds.
+    monkeypatch.setattr(updates.CodexRuntime, "link", updates.CodexRuntime.activation_link)
 
 
 def _stage_into(monkeypatch, staged, root):
@@ -234,6 +236,24 @@ def test_check_refreshes_pending_version_before_activation(monkeypatch, tmp_path
     assert json.loads(state_path.read_text())["pending"]["codex"].endswith("codex-0.160.0")
     assert ("codex", tmp_path / "codex-old") not in attempts
     assert result["errors"] == {}
+
+
+def test_update_pass_leaves_a_reused_codex_to_its_installer(monkeypatch, tmp_path):
+    """复用 PATH 上的 Codex 时，更新检查只记录新版本，不准备也不替换它"""
+    _isolated(monkeypatch, tmp_path)
+    monkeypatch.setattr(updates, "_PROVIDER_DEPLOYMENT", {})
+    monkeypatch.setattr(updates.CodexRuntime, "link", lambda self: tmp_path / "system-bin/codex")
+    original = updates.npm_version
+    monkeypatch.setattr(updates, "npm_version", lambda package, tag: (
+        "0.160.0" if package == "@openai/codex" else original(package, tag)
+    ))
+    staged, attempts = [], []
+    _stage_into(monkeypatch, staged, lambda name, versions: tmp_path / f"{name}-{versions[0]}")
+    monkeypatch.setattr(updates, "_activate", lambda provider, runtime, root: attempts.append(provider) or True)
+    result = updates.run_update_pass()
+    assert result["checked"]["codex"] == {"installed": "0.159.2", "available": "0.160.0"}
+    assert "codex" not in [name for name, _ in staged] and "codex" not in attempts
+    assert result["errors"] == {} and "codex" not in result["pending"]
 
 
 def test_failed_refresh_preserves_pending_runtime(monkeypatch, tmp_path):
