@@ -353,7 +353,7 @@
                 <label class="portalField">选择团队<input id="targetLineage" placeholder="输入或选择团队" list="lineageOptions"></label>
                 <datalist id="lineageOptions"></datalist>
                 <button class="portalButton is-quiet" id="inspect">读取团队</button>
-                <div id="teamInfo" class="projectionStatus" hidden></div>
+                <div id="teamInfo" class="projectionStatus" aria-live="polite" hidden></div>
                 <label class="portalField">你希望怎样工作？<textarea id="requirements" rows="6" placeholder="例如：把项目进展与团队讨论放在一起，方便我每天了解工作。"></textarea></label>
                 <button id="generate" class="portalButton is-primary">交给设计师实现</button>
               </div>
@@ -390,6 +390,13 @@
         </section>
       </div>`);
     element("targetLineage").value = params.get("lineage") || "";
+    let teamReadRevision = 0;
+    element("targetLineage").addEventListener("input", () => {
+      teamReadRevision += 1;
+      const team = element("teamInfo");
+      team.replaceChildren(); team.hidden = true;
+      team.removeAttribute("data-lineage-id"); team.removeAttribute("aria-busy");
+    });
     element("reverseAnalyze").onclick = event => busy(event.currentTarget, async () => {
       if (!app) throw new Error("请先创建或选择工作台");
       if (Object.entries(fields()).some(([key, value]) => JSON.stringify(value) !== JSON.stringify(app[key]))) throw new Error("请先保存当前页面，再按此版本分析");
@@ -398,9 +405,43 @@
     });
     element("inspect").onclick = event => busy(event.currentTarget, async () => {
       const target = element("targetLineage").value.trim();
-      const graph = await societyService.loadLineage(target);
-      const team = element("teamInfo"); team.hidden = false; team.textContent = window.PortalI18n.text`${graph.title} · ${graph.nodes.length} 位成员 / 节点`;
-      if (!element("appTitle").value) element("appTitle").value = `${graph.title}工作台`;
+      if (!target) throw new Error(window.PortalI18n.t("请选择团队"));
+      const revision = ++teamReadRevision;
+      const team = element("teamInfo");
+      const current = () => !disposed && revision === teamReadRevision && element("targetLineage").value.trim() === target;
+      team.hidden = false; team.textContent = window.PortalI18n.t("正在读取团队…");
+      team.removeAttribute("data-lineage-id"); team.setAttribute("aria-busy", "true");
+      try {
+        const graph = await societyService.loadLineage(target);
+        if (!current()) return;
+        const nodes = graph.nodes || [];
+        const heading = document.createElement("p");
+        heading.textContent = window.PortalI18n.text`${graph.title} · ${nodes.length} 位成员`;
+        const list = document.createElement("ul");
+        list.className = "projectionTeamMembers";
+        list.setAttribute("aria-label", window.PortalI18n.t("团队成员"));
+        list.tabIndex = 0;
+        for (const node of nodes) {
+          const member = document.createElement("li");
+          member.dataset.residentId = node.id;
+          const title = document.createElement("span"); title.textContent = node.title || node.id;
+          const identity = document.createElement("code"); identity.textContent = node.id;
+          member.append(title, identity); list.append(member);
+        }
+        if (nodes.length) team.replaceChildren(heading, list);
+        else {
+          const empty = document.createElement("p"); empty.textContent = window.PortalI18n.t("团队暂无成员");
+          team.replaceChildren(heading, empty);
+        }
+        team.dataset.lineageId = target;
+        if (!element("appTitle").value) element("appTitle").value = `${graph.title}工作台`;
+      } catch (error) {
+        if (!current()) return;
+        team.textContent = window.PortalI18n.t("团队读取失败，请重试。");
+        throw error;
+      } finally {
+        if (current()) team.setAttribute("aria-busy", "false");
+      }
     });
     async function loadTeamOptions() {
       try {

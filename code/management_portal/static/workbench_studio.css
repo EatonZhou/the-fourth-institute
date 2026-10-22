@@ -14,6 +14,9 @@
 .projectionPreview { min-width: 0; }
 .projectionStatus { padding: 12px; border-radius: var(--portal-control-radius); background: var(--panel-2); margin: 12px 0; overflow-wrap: anywhere; }
 .projectionStatus a, .projectionBindings a { color: var(--accent); }
+.projectionTeamMembers { max-height: 15rem; overflow: auto; margin: 8px 0 0; padding: 0; list-style: none; }
+.projectionTeamMembers li { display: grid; gap: 2px; padding: 6px 0; border-top: 1px solid var(--border); overflow-wrap: anywhere; }
+.projectionTeamMembers code { color: var(--muted); font-size: 12px; }
 .projectionDesignerReply { box-sizing: border-box; width: 100%; min-height: 10em; resize: vertical; }
 .projectionPlanSteps { padding-left: 20px; }
 .projectionPlanSteps li { margin: 12px 0; }
