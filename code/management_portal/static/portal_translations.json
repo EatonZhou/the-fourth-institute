@@ -40486,5 +40486,165 @@
   "只列出声明了 {p0} 协议的接口；可在模型 API 的高级设置中勾选。": {
     "zh-CN": "只列出声明了 {p0} 协议的接口；可在模型 API 的高级设置中勾选。",
     "en": "Only APIs that declare the {p0} protocol are listed; check it under the Model API's Advanced settings."
+  },
+  "测试未通过：服务商拒绝了身份认证。": {
+    "zh-CN": "测试未通过：服务商拒绝了身份认证。",
+    "en": "Connection test failed: the provider rejected authentication."
+  },
+  "请编辑已登记的模型 API，核对 API Key 与 Base URL 是否属于同一服务商，再重新测试；无需重新注册。": {
+    "zh-CN": "请编辑已登记的模型 API，核对 API Key 与 Base URL 是否属于同一服务商，再重新测试；无需重新注册。",
+    "en": "Edit the saved Model API and check that the API Key and Base URL belong to the same provider, then test again. You do not need to register again."
+  },
+  "测试未通过：服务商拒绝了账号授权。": {
+    "zh-CN": "测试未通过：服务商拒绝了账号授权。",
+    "en": "Connection test failed: the provider rejected account authorization."
+  },
+  "请重新登录该订阅账号，再测试连接。": {
+    "zh-CN": "请重新登录该订阅账号，再测试连接。",
+    "en": "Sign in to this subscription account again, then test the connection."
+  },
+  "测试未通过：服务商拒绝访问。": {
+    "zh-CN": "测试未通过：服务商拒绝访问。",
+    "en": "Connection test failed: the provider denied access."
+  },
+  "请在服务商控制台检查模型权限和访问限制；此结果不能单独判定 API Key 无效。": {
+    "zh-CN": "请在服务商控制台检查模型权限和访问限制；此结果不能单独判定 API Key 无效。",
+    "en": "Check model permissions and access restrictions in the provider console. This result alone does not mean the API Key is invalid."
+  },
+  "测试未通过：服务商未找到请求的接口或模型。": {
+    "zh-CN": "测试未通过：服务商未找到请求的接口或模型。",
+    "en": "Connection test failed: the provider could not find the endpoint or model."
+  },
+  "请核对 Base URL、模型名称和所选 Agent 运行器需要的协议；Base URL 不要包含 /chat/completions。": {
+    "zh-CN": "请核对 Base URL、模型名称和所选 Agent 运行器需要的协议；Base URL 不要包含 /chat/completions。",
+    "en": "Check the Base URL, model name, and protocol required by the selected Agent runner. Do not include /chat/completions in the Base URL."
+  },
+  "测试未通过：服务商无法提供所选模型。": {
+    "zh-CN": "测试未通过：服务商无法提供所选模型。",
+    "en": "Connection test failed: the provider cannot serve the selected model."
+  },
+  "请核对模型名称，并在服务商控制台确认该账号具有模型权限。": {
+    "zh-CN": "请核对模型名称，并在服务商控制台确认该账号具有模型权限。",
+    "en": "Check the model name and confirm that this account has access to it in the provider console."
+  },
+  "测试未通过：服务商报告账号额度不足。": {
+    "zh-CN": "测试未通过：服务商报告账号额度不足。",
+    "en": "Connection test failed: the provider reported insufficient quota."
+  },
+  "请在服务商控制台查看余额或套餐额度，恢复额度后重新测试。": {
+    "zh-CN": "请在服务商控制台查看余额或套餐额度，恢复额度后重新测试。",
+    "en": "Check your balance or plan quota in the provider console, then test again after restoring quota."
+  },
+  "测试未通过：服务商限制了此次请求。": {
+    "zh-CN": "测试未通过：服务商限制了此次请求。",
+    "en": "Connection test failed: the provider limited this request."
+  },
+  "请稍后重试；若持续出现，请在服务商控制台查看请求频率限制和账号额度。": {
+    "zh-CN": "请稍后重试；若持续出现，请在服务商控制台查看请求频率限制和账号额度。",
+    "en": "Try again later. If this persists, check request rate limits and account quota in the provider console."
+  },
+  "测试未通过：服务商或网关暂时不可用。": {
+    "zh-CN": "测试未通过：服务商或网关暂时不可用。",
+    "en": "Connection test failed: the provider or gateway is temporarily unavailable."
+  },
+  "请稍后重试；若持续出现，请联系接口服务商并提供下方 HTTP 状态码。": {
+    "zh-CN": "请稍后重试；若持续出现，请联系接口服务商并提供下方 HTTP 状态码。",
+    "en": "Try again later. If this persists, contact the API provider with the HTTP status code below."
+  },
+  "测试未通过：服务商不接受本次请求。": {
+    "zh-CN": "测试未通过：服务商不接受本次请求。",
+    "en": "Connection test failed: the provider rejected the request."
+  },
+  "请核对模型名称和接口协议是否匹配所选 Agent 运行器；不要仅因此更换 API Key。": {
+    "zh-CN": "请核对模型名称和接口协议是否匹配所选 Agent 运行器；不要仅因此更换 API Key。",
+    "en": "Check that the model name and API protocol match the selected Agent runner. This alone is not a reason to change your API Key."
+  },
+  "测试未通过：等待服务商响应超时。": {
+    "zh-CN": "测试未通过：等待服务商响应超时。",
+    "en": "Connection test failed: the provider response timed out."
+  },
+  "请检查运行 Portal 的电脑能否连接服务商、网络代理是否正常，再重试。": {
+    "zh-CN": "请检查运行 Portal 的电脑能否连接服务商、网络代理是否正常，再重试。",
+    "en": "Check that the computer running Portal can reach the provider and that its network proxy works, then retry."
+  },
+  "测试未通过：无法建立安全连接。": {
+    "zh-CN": "测试未通过：无法建立安全连接。",
+    "en": "Connection test failed: a secure connection could not be established."
+  },
+  "请检查运行 Portal 的电脑的系统时间、证书与代理配置，不要关闭证书校验。": {
+    "zh-CN": "请检查运行 Portal 的电脑的系统时间、证书与代理配置，不要关闭证书校验。",
+    "en": "Check the system time, certificates, and proxy settings on the computer running Portal. Do not disable certificate verification."
+  },
+  "测试未通过：Portal 无法连接服务商。": {
+    "zh-CN": "测试未通过：Portal 无法连接服务商。",
+    "en": "Connection test failed: Portal cannot reach the provider."
+  },
+  "请检查运行 Portal 的电脑的网络、Base URL 和代理配置，再重试。": {
+    "zh-CN": "请检查运行 Portal 的电脑的网络、Base URL 和代理配置，再重试。",
+    "en": "Check the network, Base URL, and proxy settings on the computer running Portal, then retry."
+  },
+  "测试未通过：接口返回了无法解析的响应。": {
+    "zh-CN": "测试未通过：接口返回了无法解析的响应。",
+    "en": "Connection test failed: the API returned an unreadable response."
+  },
+  "请确认 Base URL 指向模型 API，接口协议与所选运行器匹配，而非网页或登录页。": {
+    "zh-CN": "请确认 Base URL 指向模型 API，接口协议与所选运行器匹配，而非网页或登录页。",
+    "en": "Confirm that the Base URL points to a model API with a protocol supported by the selected runner, not a web page or sign-in page."
+  },
+  "模型已返回内容，但未按测试要求回复。": {
+    "zh-CN": "模型已返回内容，但未按测试要求回复。",
+    "en": "The model replied, but did not follow the test instructions."
+  },
+  "请确认模型支持普通文本对话后重试；这不等同于密钥或授权失败。": {
+    "zh-CN": "请确认模型支持普通文本对话后重试；这不等同于密钥或授权失败。",
+    "en": "Confirm that the model supports ordinary text conversations and retry. This does not mean the key or authorization failed."
+  },
+  "接口调用已完成，但没有返回可用的文本回复。": {
+    "zh-CN": "接口调用已完成，但没有返回可用的文本回复。",
+    "en": "The API call completed without a usable text reply."
+  },
+  "请确认接口协议和模型名称正确，模型支持文本回复后重试。": {
+    "zh-CN": "请确认接口协议和模型名称正确，模型支持文本回复后重试。",
+    "en": "Check the API protocol and model name, and confirm that the model supports text replies before retrying."
+  },
+  "本次接入测试已取消。": {
+    "zh-CN": "本次接入测试已取消。",
+    "en": "The connection test was cancelled."
+  },
+  "登记仍然保留。请点击“测试并完成”重新测试。": {
+    "zh-CN": "登记仍然保留。请点击“测试并完成”重新测试。",
+    "en": "Your registration is still saved. Click “Test and finish” to run the test again."
+  },
+  "测试未通过：Agent 运行器未能恢复执行。": {
+    "zh-CN": "测试未通过：Agent 运行器未能恢复执行。",
+    "en": "Connection test failed: the Agent runner could not recover execution."
+  },
+  "请重试；若仍失败，请提供下方测试编号以检查运行器后台日志。": {
+    "zh-CN": "请重试；若仍失败，请提供下方测试编号以检查运行器后台日志。",
+    "en": "Retry. If it still fails, provide the test ID below so the runner logs can be checked."
+  },
+  "测试失败，现有诊断尚不能确定原因。": {
+    "zh-CN": "测试失败，现有诊断尚不能确定原因。",
+    "en": "The test failed, but the available diagnostics cannot determine why."
+  },
+  "请复制下方测试编号和失败类别交给管理员排查；无需重新注册或再次发送 API Key。": {
+    "zh-CN": "请复制下方测试编号和失败类别交给管理员排查；无需重新注册或再次发送 API Key。",
+    "en": "Copy the test ID and failure category below for an administrator to investigate. You do not need to register again or resend your API Key."
+  },
+  "测试编号": {
+    "zh-CN": "测试编号",
+    "en": "Test ID"
+  },
+  "失败类别": {
+    "zh-CN": "失败类别",
+    "en": "Failure category"
+  },
+  "请复制下方测试编号交给管理员排查；无需重新注册或再次发送 API Key。": {
+    "zh-CN": "请复制下方测试编号交给管理员排查；无需重新注册或再次发送 API Key。",
+    "en": "Copy the test ID below for an administrator to investigate. You do not need to register again or resend your API Key."
+  },
+  "账号已停用，请启用后重新测试。": {
+    "zh-CN": "账号已停用，请启用后重新测试。",
+    "en": "This account is disabled. Enable it before testing again."
   }
 }

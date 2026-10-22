@@ -38,7 +38,9 @@ window.PortalInstructionClient = {execute: async (name, args, options) => {
       if (loginError) throw new Error('暂时无法读取登录状态');
       return {session: {state: loginCancelled ? 'cancelled' : 'pending'}};
     case 'GetProviderAccountCheck': return {check: {execution_id: 'execution_check', status: queued ? 'queued' : 'completed', passed: !queued && !fail,
-      model: 'model', message: queued ? '账号正在处理其他任务，测试排队中。' : fail ? '测试未通过' : '测试通过'}};
+      model: 'model', message: queued ? '账号正在处理其他任务，测试排队中。' : fail ? '测试未通过：接口拒绝了身份认证。' : '测试通过',
+      next_step: fail ? '请在模型 API 中更换 API Key，然后重新测试。' : '',
+      diagnostic: fail ? {reason: 'authentication', http_status: 401} : null}};
     case 'UpdateBackendRole':
       if (holdDefault) await new Promise(resolve => { finishDefault = resolve; });
       roles = [{role: 'default', account_id: args.account_id, version: (roles[0]?.version || 0) + 1}];
@@ -84,6 +86,12 @@ const click = text => {
   click('测试并完成'); await flush(); await flush();
   assert(!calls.some(call => call.name === 'UpdateBackendRole'));
   assert.match(window.document.querySelector('[data-backend-setup-status]').textContent, /未通过/);
+  assert.match(window.document.querySelector('[data-backend-check-next-step]').textContent, /更换 API Key/);
+  const checkDetail = window.document.querySelector('[data-backend-check-detail]');
+  assert.match(checkDetail.textContent, /execution_check/);
+  assert.match(checkDetail.textContent, /401/);
+  assert.match(checkDetail.textContent, /authentication/);
+  assert.equal(window.document.querySelector('input[name=model]').value, 'model');
   click('关闭');
   // Failures expose recovery only when needed, rather than permanent manual steps.
   missing = true; preparation = 'missing'; prepareResult = 'failed'; calls.length = 0;

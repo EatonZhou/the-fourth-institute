@@ -219,6 +219,8 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     const {view, form} = newEditor("接入并启用 AI", () => { closed = true; clearTimeout(timer); clearInterval(progressTimer); });
     form.append(node("p", accountId));
     const status = node("p", "", {role: "status", "data-backend-setup-status": ""});
+    const nextStep = node("p", "", {"data-backend-check-next-step": "", hidden: true});
+    const checkDetail = node("p", "", {class: "backendHint", "data-backend-check-detail": "", hidden: true});
     const capabilities = node("p", "");
     const model = field(form, "模型", "model", "", {required: true, autocomplete: "off"});
     const choices = node("datalist", undefined, {id: "backend-setup-models"});
@@ -232,6 +234,8 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     const retry = button("重试", () => { preparationRequested = false; void perform(reload); });
     const test = button("测试并完成", () => void perform(async () => {
       if (!model.value.trim()) { model.reportValidity(); return; }
+      nextStep.hidden = checkDetail.hidden = true;
+      nextStep.textContent = checkDetail.textContent = "";
       checking = true; model.disabled = true; useDefault.disabled = true; setButtons();
       try {
         const receipt = await execute("CheckProviderAccount", {account_id: accountId, model: model.value.trim()});
@@ -239,7 +243,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
         await pollCheck(receipt.execution_id);
       } catch (error) { checking = false; model.disabled = false; useDefault.disabled = false; throw error; }
     }, "正在启动本地后台并检查连接，请稍候…"), true);
-    form.append(capabilities, status, actions(authorize, retry, test));
+    form.append(capabilities, status, nextStep, checkDetail, actions(authorize, retry, test));
     form.addEventListener("submit", event => event.preventDefault());
     function setButtons() {
       authorize.hidden = !setup || ["logged_in", "succeeded", "not_applicable"].includes(setup.login_state);
@@ -309,6 +313,14 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
         if (!["completed", "failed", "cancelled"].includes(result.check.status)) {
           progressMessage = result.check.message;
           timer = setTimeout(() => void pollCheck(executionId), 2000); return;
+        }
+        if (!result.check.passed) {
+          nextStep.textContent = t(result.check.next_step || "请复制下方测试编号交给管理员排查；无需重新注册或再次发送 API Key。");
+          nextStep.hidden = false;
+          checkDetail.replaceChildren(node("span", t("测试编号") + ": "), node("code", executionId));
+          if (result.check.diagnostic?.reason) checkDetail.append(node("span", " · " + t("失败类别") + ": " + result.check.diagnostic.reason));
+          if (Number.isInteger(result.check.diagnostic?.http_status)) checkDetail.append(node("span", " · HTTP " + result.check.diagnostic.http_status));
+          checkDetail.hidden = false;
         }
         if (result.check.passed && useDefault.checked) {
           progressMessage = "测试通过，正在设为默认 AI…";

@@ -150,6 +150,8 @@ def test_default_requires_successful_current_account_check(monkeypatch):
         setup.require_verified(args)
     account["version"] = 1
     snapshot["result"]["output"]["message"] = "Unable to reply PORTAL_PROVIDER_OK"
+    setup.require_verified(args)
+    account["enabled"] = False
     with pytest.raises(InstructionError):
         setup.require_verified(args)
 
@@ -171,6 +173,115 @@ def test_failed_codex_service_reports_recovery_without_submitting(monkeypatch, s
     assert "private" not in str(error.value)
     assert error.value.retryable
     client.assert_not_called()
+
+
+@pytest.fixture
+def check_snapshot(monkeypatch):
+    account = row()
+    snapshot = {"execution_id": "execution_test", "status": "failed", "request": {"metadata": {
+        "provider_account_check": {"account_id": "existing", "model": "model", "registration_version": 1}}},
+        "result": {"error": "private synthetic credential and provider response", "output": {}}}
+    monkeypatch.setattr(setup, "account", lambda _: account)
+    monkeypatch.setattr(setup, "signature", lambda r: {"registration_version": r["version"]})
+    monkeypatch.setattr(setup, "ExecutionClient", lambda: SimpleNamespace(status=lambda *a, **k: snapshot))
+    return snapshot, account
+
+
+@pytest.mark.parametrize("http_status,kind,reason,action", [
+    (401, "http_error", "authentication", "API Key"),
+    (403, "http_error", "access_denied", "权限"),
+    (404, "http_error", "not_found", "Base URL"),
+    (429, "http_error", "rate_limit", "额度"),
+    (502, "http_error", "provider_unavailable", "稍后"),
+    (400, "http_error", "request_rejected", "协议"),
+    (None, "timeout", "timeout", "网络"),
+    (None, "read_timeout", "timeout", "网络"),
+    (None, "tls_error", "tls", "证书"),
+    (None, "url_error", "network", "代理"),
+    (200, "invalid_json", "invalid_response", "协议"),
+])
+def test_check_failure_explains_recorded_transport_without_exposing_secrets(check_snapshot, http_status, kind, reason, action):
+    snapshot, account = check_snapshot
+    account.update(provider="provider_api", kind="api_profile")
+    snapshot["result"]["error_details"] = {"provider_transport": {
+        "schema": "tfi.provider-transport.v1", "phase": "opening_response", "outcome": "failed",
+        "error_kind": kind, "response": {"http_status": http_status},
+        "headers": {"Authorization": "private synthetic credential"}}}
+    result = setup.check_result(invoke(account_id="existing", execution_id="execution_test"))["check"]
+    assert not result["passed"]
+    assert result["diagnostic"]["reason"] == reason
+    assert result["diagnostic"]["http_status"] == http_status
+    assert action in result["next_step"]
+    assert result["execution_id"] == "execution_test"
+    assert "private" not in json.dumps(result)
+
+
+@pytest.mark.parametrize("status,output,error,reason", [
+    ("completed", {}, "", "empty_reply"),
+    ("cancelled", {}, "private cancellation detail", "cancelled"),
+    ("failed", {}, "insufficient_quota private credential", "quota"),
+    ("failed", {}, "connection refused private endpoint", "network"),
+    ("failed", {}, "private unknown failure", "unknown"),
+])
+def test_check_failure_distinguishes_outcomes_and_keeps_default_guard(check_snapshot, status, output, error, reason):
+    snapshot, _ = check_snapshot
+    snapshot.update(status=status, result={"output": output, "error": error,
+                                         "error_code": "private-invalid-code" if error else ""})
+    result = setup.check_result(invoke(account_id="existing", execution_id="execution_test"))["check"]
+    assert result["diagnostic"]["reason"] == reason
+    assert result["next_step"]
+    assert "private" not in json.dumps(result)
+    with pytest.raises(InstructionError):
+        setup.require_verified(invoke(account_id="existing", model="model", verification_execution_id="execution_test"))
+
+
+@pytest.mark.parametrize("field", ["message", "text", "output_text"])
+@pytest.mark.parametrize("reply", ["你好！", "PORTAL_PROVIDER_OK.", "Hello!\nI can respond.",
+                                  "Unable to reply PORTAL_PROVIDER_OK"])
+def test_connection_accepts_successful_text_without_exact_format(check_snapshot, field, reply):
+    snapshot, _ = check_snapshot
+    snapshot.update(status="completed", result={"status": "completed", "output": {field: reply}})
+    result = setup._check_result("existing", "execution_test", "alice")
+    assert result["passed"] and result["message"] == "测试通过"
+    assert result["diagnostic"] is None
+    setup.require_verified(invoke(account_id="existing", model="model", verification_execution_id="execution_test"))
+
+
+@pytest.mark.parametrize("output", [{}, {"message": " \n"}, {"message": None}, {"message": 123},
+                                    {"message": {"error": "no reply"}}, ["not a text response"]])
+def test_empty_or_nontext_result_does_not_verify_connection(check_snapshot, output):
+    snapshot, _ = check_snapshot
+    snapshot.update(status="completed", result={"output": output})
+    result = setup._check_result("existing", "execution_test", "alice")
+    assert not result["passed"] and result["diagnostic"]["reason"] == "empty_reply"
+
+
+@pytest.mark.parametrize("status", ["failed", "cancelled", "running", "queued"])
+def test_partial_reply_does_not_verify_unfinished_or_failed_execution(check_snapshot, status):
+    snapshot, _ = check_snapshot
+    snapshot.update(status=status, result={"output": {"message": "Hello!"}})
+    assert not setup._check_result("existing", "execution_test", "alice")["passed"]
+
+
+@pytest.mark.parametrize("failure", [{"error": "private provider error"}, {"error_code": "provider_error"},
+                                     {"status": "failed"}, {"status": "cancelled"}])
+def test_execution_error_with_text_cannot_verify_default(check_snapshot, failure):
+    snapshot, _ = check_snapshot
+    snapshot.update(status="completed", result={"output": {"message": "Hello!"}, **failure})
+    result = setup._check_result("existing", "execution_test", "alice")
+    assert not result["passed"] and "private" not in json.dumps(result)
+    assert result["diagnostic"]["reason"] != "empty_reply"
+    with pytest.raises(InstructionError):
+        setup.require_verified(invoke(account_id="existing", model="model", verification_execution_id="execution_test"))
+
+
+@pytest.mark.parametrize("changed", [{"account_id": "another"}, {"model": "another"}, {"registration_version": 2}])
+def test_connection_proof_cannot_be_reused_for_other_configuration(check_snapshot, changed):
+    snapshot, _ = check_snapshot
+    snapshot.update(status="completed", result={"output": {"message": "Hello!"}})
+    snapshot["request"]["metadata"]["provider_account_check"].update(changed)
+    with pytest.raises(InstructionError):
+        setup.require_verified(invoke(account_id="existing", model="model", verification_execution_id="execution_test"))
 
 
 def test_unmapped_imported_role_uses_default(monkeypatch):
