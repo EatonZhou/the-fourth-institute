@@ -18,6 +18,7 @@ from management_common import cpu_profile
 
 SHUTDOWN_SECONDS = 30.0
 SLOW_SHUTDOWN_SECONDS = 3.0
+REQUEST_DRAIN_SECONDS = 5.0
 _request_stop: ContextVar[threading.Event | None] = ContextVar("request_stop", default=None)
 
 
@@ -59,6 +60,7 @@ class DrainingStreamServer(socketserver.ThreadingTCPServer):
     def __init__(self, *args, **kwargs):
         self.stopping = threading.Event()
         self._requests_lock = threading.Lock()
+        self._requests_drained = threading.Condition(self._requests_lock)
         self._requests: set[socket.socket] = set()
         super().__init__(*args, **kwargs)
 
@@ -75,10 +77,29 @@ class DrainingStreamServer(socketserver.ThreadingTCPServer):
             _request_stop.reset(token)
             with self._requests_lock:
                 self._requests.discard(request)
+                self._requests_drained.notify_all()
 
-    def begin_shutdown(self):
-        self.stopping.set()
+    def begin_shutdown(self, *, drain_seconds: float = REQUEST_DRAIN_SECONDS):
+        with self._requests_lock:
+            if self.stopping.is_set():
+                return
+            self.stopping.set()
+            requests = list(self._requests)
         self.socket.close()
+        # Wake idle readers and watches, while allowing an accepted operation
+        # to send its result before pools and domain services are dismantled.
+        for request in requests:
+            try:
+                request.shutdown(socket.SHUT_RD)
+            except OSError:
+                pass
+        deadline = time.monotonic() + max(0.0, drain_seconds)
+        with self._requests_drained:
+            while self._requests:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    break
+                self._requests_drained.wait(remaining)
         with self._requests_lock:
             requests = list(self._requests)
         for request in requests:

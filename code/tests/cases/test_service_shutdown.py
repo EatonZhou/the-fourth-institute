@@ -14,7 +14,66 @@ from types import SimpleNamespace
 import pytest
 
 from management_common.service_shutdown import stop_workers
+from management_common.service_socket import connect_service
 from management_portal.society_service.server import LineageReadProcessPool
+
+
+@pytest.mark.parametrize("finishes", [True, False])
+def test_shutdown_drains_accepted_reply_but_bounds_unfinished_work(finishes):
+    """停止时保留已接纳请求的回执通道；空闲读立即唤醒，超时请求按界限断开。"""
+    import socketserver
+    from concurrent.futures import ThreadPoolExecutor
+    from management_common.service_shutdown import DrainingStreamServer
+
+    entered = threading.Event()
+    accepted = threading.Event()
+    release = threading.Event()
+    idle_finished = threading.Event()
+
+    class Handler(socketserver.StreamRequestHandler):
+        def handle(self):
+            entered.set()
+            if not self.rfile.readline():
+                idle_finished.set()
+                return
+            accepted.set()
+            release.wait(2)
+            if finishes:
+                self.wfile.write(b"committed\n")
+                self.wfile.flush()
+
+    class Owner(DrainingStreamServer):
+        address_family = socket.AF_INET
+
+    server = Owner(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=lambda: server.serve_forever(poll_interval=.01), daemon=True)
+    thread.start()
+    try:
+        with socket.create_connection(server.server_address, timeout=1) as client:
+            client.sendall(b"mutation\n")
+            assert accepted.wait(1)
+            entered.clear()
+            with socket.create_connection(server.server_address, timeout=1) as idle, ThreadPoolExecutor(1) as pool:
+                assert entered.wait(1)
+                started = time.monotonic()
+                stopped = pool.submit(server.begin_shutdown, drain_seconds=.2)
+                assert server.stopping.wait(1)
+                assert idle.recv(100) == b"" and idle_finished.wait(1)
+                if finishes:
+                    release.set()
+                    assert client.recv(100) == b"committed\n"
+                else:
+                    assert client.recv(100) == b""
+                stopped.result(timeout=1)
+                assert time.monotonic() - started < 1
+                before = time.monotonic()
+                server.begin_shutdown()
+                assert time.monotonic() - before < .1
+    finally:
+        release.set()
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=1)
 
 
 def _line(process, timeout=20):
@@ -32,6 +91,7 @@ def test_owner_sigterm_closes_subscription_and_listener(tmp_path, owner):
 import socketserver, sys, threading
 from types import SimpleNamespace
 from management_common.service_shutdown import DrainingStreamServer, wait_for_shutdown
+from management_common.service_endpoint import LocalServiceSocketMixin, service_endpoint
 from management_portal.society_service import server as lineage
 from management_portal.resources import server as resource
 reported = threading.Event()
@@ -41,9 +101,11 @@ class Handler(socketserver.StreamRequestHandler):
         assert wait_for_shutdown(120)
         print("stream_cancelled", flush=True)
         reported.set()
-class Owner(DrainingStreamServer):
+class Owner(LocalServiceSocketMixin, DrainingStreamServer):
     def __init__(self, path, **kwargs):
-        super().__init__(str(path), Handler)
+        self.endpoint = service_endpoint(path)
+        self.address_family = self.endpoint.family
+        super().__init__(self.endpoint.address, Handler)
     def serve_forever(self):
         print("ready", flush=True)
         super().serve_forever(poll_interval=.01)
@@ -61,9 +123,8 @@ module.main()
                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     try:
         assert _line(process) == "ready"
-        with socket.socket(socket.AF_UNIX) as client:
-            client.settimeout(3)
-            client.connect(str(socket_path))
+        connection, _ = connect_service(socket_path, timeout=3, restart_wait=0)
+        with connection as client:
             assert client.recv(100) == b"watching\n"
             started = time.monotonic()
             process.send_signal(signal.SIGTERM)
@@ -71,9 +132,8 @@ module.main()
             assert process.wait(timeout=4) == 0
             assert time.monotonic() - started < 4
             assert "stream_cancelled" in process.stdout.read()
-        with socket.socket(socket.AF_UNIX) as client:
-            with pytest.raises(OSError):
-                client.connect(str(socket_path))
+        with pytest.raises(OSError):
+            connect_service(socket_path, timeout=1, restart_wait=0)
     finally:
         if process.poll() is None:
             process.kill()
@@ -91,6 +151,7 @@ def test_shutdown_deadline_includes_executor_exit_and_preserves_durable_work(tmp
 import os, socketserver, sys, threading
 import psycopg
 from management_common.service_shutdown import DrainingStreamServer, serve_until_stopped
+from management_common.service_endpoint import LocalServiceSocketMixin, service_endpoint
 from management_portal.society_service.coordinator import LineageCoordinator
 gate = threading.Event()
 def work():
@@ -100,7 +161,11 @@ def work():
         gate.wait(120)
     return {}
 coordinator = LineageCoordinator(resume_residents=work, resume_resident=lambda _: {}, reconcile_all=lambda: {}, reconcile_lineage=lambda _: {})
-class Owner(DrainingStreamServer):
+class Owner(LocalServiceSocketMixin, DrainingStreamServer):
+    def __init__(self, path, handler):
+        self.endpoint = service_endpoint(path)
+        self.address_family = self.endpoint.family
+        super().__init__(self.endpoint.address, handler)
     def serve_forever(self):
         coordinator.start()
         super().serve_forever(poll_interval=.01)
