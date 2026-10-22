@@ -23,8 +23,9 @@ from management_portal.hatg.contracts import InstructionError
 
 PROTOCOL = "openai_responses"
 PROVIDER_ID = "portal_api"
-# Reasoning efforts the app-server accepts; a Model API may declare others.
-EFFORTS = ("none", "minimal", "low", "medium", "high", "xhigh")
+# Reasoning efforts the app-server sends as given; it replaces any other value
+# (e.g. "ultra") with its default effort, so those are not offered.
+EFFORTS = ("none", "minimal", "low", "medium", "high", "xhigh", "max")
 # Model API fields that change what the app-server process is configured with.
 CONFIGURED_FIELDS = frozenset({"base_url", "protocols", "default_headers", "max_retries", "timeout_s", "label",
                                "default_model", "api_key_file", "enabled"})

@@ -58,7 +58,7 @@ def gateway(tmp_path):
     key.chmod(0o600)
     entry = {"api_id": "gateway", "base_url": "https://gateway.invalid/v1", "default_model": "gpt-test",
              "secret_file": str(key), "provider": "example", "headers": {"X-Team": "lab"},
-             "models": [{"id": "gpt-test", "reasoning_efforts": ["low", "high", "max"], "context_window": 200000},
+             "models": [{"id": "gpt-test", "reasoning_efforts": ["low", "high", "max", "ultra"], "context_window": 200000},
                         {"id": "gpt-mini"}],
              "protocols": {"openai_responses": {}, "anthropic_messages": {"auth": "x-api-key"}}}
     _call(isa.create_model_api, **entry)
@@ -153,7 +153,7 @@ def test_a_codex_api_account_is_billed_by_its_model_api_and_lists_its_declared_m
     assert not _subscription(api) and _subscription(subscription)
     catalog = adapter.catalog(api)
     assert catalog["models"] == ["gpt-test", "gpt-mini"] and catalog["default_model"] == "gpt-test"
-    assert catalog["efforts_by_model"] == {"gpt-test": ["low", "high"], "gpt-mini": []}
+    assert catalog["efforts_by_model"] == {"gpt-test": ["low", "high", "max"], "gpt-mini": []}
     assert catalog["default_reasoning_effort"] == "high"
     assert adapter.observe(api) == {"status": "ok", "rate_limits": []}
     codex = AGENT_PROVIDERS["codex"]
