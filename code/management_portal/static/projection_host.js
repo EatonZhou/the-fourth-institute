@@ -109,20 +109,21 @@
     if (encoded.length > limit) throw fail("feedback_context", `${field} 编码后超过 ${limit} 个 UTF-16 码元，请缩减内容后重新确认`);
     return encoded;
   }
-  function cancelFeedback(record) {
+  function cancelFeedback(record, message = "当前功能区已取消反馈，请重新检查后发送") {
     const pending = record.pendingFeedback;
     if (!pending || pending.controller.signal.aborted) return false;
+    pending.cancellationMessage = message;
     pending.controller.abort();
     return true;
   }
   function checkFeedback(record, pending) {
     if (record.pendingFeedback !== pending || pending.controller.signal.aborted || record.destroyed
         || !record.visible || record.page.snapshot().revision !== pending.revision) {
-      throw fail("cancelled", "反馈依据或当前对象已变化，请重新检查后发送");
+      throw fail("cancelled", pending.cancellationMessage || "反馈依据或当前对象已变化，请重新检查后发送");
     }
   }
   const post = (record, type, detail) => {
-    if (type === "change") cancelFeedback(record);
+    if (type === "change") cancelFeedback(record, "对象观察结果已更新，请重新检查后发送");
     if (!record.destroyed) record.frame.contentWindow?.postMessage({ type: `portal-projection-${type}`, channel: record.channel, ...detail }, "*");
   };
   const OBSERVE_BATCH_SIZE = 128;
@@ -168,7 +169,7 @@
   }
   function setObservationVisibility(record, visible) {
     record.visible = visible;
-    if (!visible) { cancelFeedback(record); invalidateObservation(record); }
+    if (!visible) { cancelFeedback(record, "反馈功能区已隐藏，请返回并重新检查后发送"); invalidateObservation(record); }
     post(record, "visibility", { visible });
     if (visible) void observe(record);
   }
@@ -187,7 +188,7 @@
     for (const record of active.values()) {
       if (!record.visible || !record.refs?.length) continue;
       if (!snapshot && !record.references?.some(item => targets.has(item.root_id))) continue;
-      cancelFeedback(record);
+      cancelFeedback(record, snapshot ? "资源观察需要重新核对，请等待更新后再发送" : "所观察资源收到更新通知，请重新检查后发送");
       clearTimeout(record.refreshTimer);
       record.refreshTimer = setTimeout(() => observe(record), 150);
     }
@@ -353,7 +354,7 @@
     frame.addEventListener("load", () => post(record, "visibility", { visible: record.visible }));
     return {
       setVisible(visible) { record.panelVisible = visible; setObservationVisibility(record, visible && record.page?.visible !== false); },
-      destroy() { cancelFeedback(record); record.destroyed = true; invalidateObservation(record); active.delete(channel); surface.remove(); },
+      destroy() { cancelFeedback(record, "反馈功能区已关闭，请重新打开后发送"); record.destroyed = true; invalidateObservation(record); active.delete(channel); surface.remove(); },
     };
   }
   function createContentPanel({ root, app, projectionId, preview, panelId, page, source, regionTitle }) {
@@ -468,7 +469,7 @@
       async focus(record, object) {
         if (!channel?.publishers.includes(record.panelId)) throw fail("context_forbidden", "此功能区没有发布 focus 的权限");
         const sequence = ++focusRequest;
-        for (const target of active.values()) if (target.page === api) cancelFeedback(target);
+        for (const target of active.values()) if (target.page === api) cancelFeedback(target, "讨论对象已重新选择，请核对当前对象后发送");
         const checked = await readObject(object);
         // Request order belongs to the whole page, before asynchronous authorization.
         // A late result must not change either the registry or the shared revision.
@@ -740,9 +741,9 @@
           checkFeedback(record, pending);
           post(record, "confirmation", { requestId: message.requestId, phase: "pending" });
           const accepted = await confirmOperation({ instruction: "feedback", object, arguments: feedbackPayload }, pending.controller.signal, presentation);
-          if (!accepted || record.destroyed) throw fail("cancelled", "操作已取消");
           const guard = () => checkFeedback(record, pending);
           guard();
+          if (!accepted) throw fail("cancelled", "已取消确认，反馈尚未发送");
           reply.result = await record.page.feedback(record, feedbackPayload, guard);
         } finally {
           if (record.pendingFeedback === pending) record.pendingFeedback = null;

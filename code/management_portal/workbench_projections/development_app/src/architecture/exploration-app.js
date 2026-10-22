@@ -213,7 +213,7 @@ export async function mountExploration(root, context, { delivery, candidate = nu
         const receipt = await context.sdk.feedback({ ref: object.ref, subject: target.title, anchor: target.id,
           scene: { region: 'architecture', mode: bundle.mode, exploration: before.scene }, text: draft.text.trim() });
         draft.result = receipt?.cancelled ? '已取消，草稿保留。' : '回执已交原生对话；请在对话区查看后续回复。';
-      } catch (error) { draft.result = (error.code === 'projection.cancelled' ? '已取消' : error.message) + '；草稿保留，不自动重发。'; }
+      } catch (error) { draft.result = (error.message || '反馈未完成') + '；草稿保留，不自动重发。'; }
       finally { draft.sending = false; submit.disabled = false; result.textContent = draft.result; }
     }); input.focus();
   }
