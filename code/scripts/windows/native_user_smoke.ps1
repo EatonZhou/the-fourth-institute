@@ -30,6 +30,7 @@ Set-Location `$PSScriptRoot
 `$env:USERPROFILE = [Environment]::GetFolderPath('UserProfile')
 `$env:LOCALAPPDATA = [Environment]::GetFolderPath('LocalApplicationData')
 `$env:APPDATA = [Environment]::GetFolderPath('ApplicationData')
+`$OutputEncoding = [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new(`$false)
 `$env:TEMP = Join-Path `$env:LOCALAPPDATA 'Temp'
 `$env:TMP = `$env:TEMP
 New-Item -ItemType Directory -Force `$env:TEMP | Out-Null
@@ -48,16 +49,24 @@ exit `$code
     $entry = Join-Path $fixture 'run.ps1'
     Set-Content $entry $script -Encoding utf8
     $credential = [PSCredential]::new("$env:COMPUTERNAME\$username", $password)
-    $process = Start-Process (Get-Command pwsh).Source `
+    $process = Start-Process "$env:SystemRoot/System32/WindowsPowerShell/v1.0/powershell.exe" `
         -Credential $credential -LoadUserProfile -WorkingDirectory $fixture `
-        -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', ('"' + $entry + '"')) -PassThru
+        -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', ('"' + $entry + '"')) `
+        -RedirectStandardOutput "$fixture/bootstrap.log" -RedirectStandardError "$fixture/bootstrap-error.log" -PassThru
     if (-not $process.WaitForExit(1500000)) { throw 'Standard-user native smoke exceeded 25 minutes' }
     $result = $process.ExitCode
+    if ($null -eq $result) { throw 'Native test process has no exit code' }
+} catch {
+    $_.ToString() | Set-Content (Join-Path $evidencePath 'fixture-error.log') -Encoding utf8
+    throw
 } finally {
     if (Test-Path "$fixture/evidence") {
         Copy-Item "$fixture/evidence/*" $evidencePath -Force
     }
+    Get-ChildItem "$fixture/bootstrap*.log" -ErrorAction SilentlyContinue | Copy-Item -Destination $evidencePath -Force
     Remove-LocalUser -Name $username
 }
-Get-Content (Join-Path $evidencePath 'smoke.log') -Encoding utf8
+if (Test-Path (Join-Path $evidencePath 'smoke.log')) {
+    Get-Content (Join-Path $evidencePath 'smoke.log') -Encoding utf8
+} else { throw "Native smoke did not produce a log (process exit $result); see bootstrap diagnostics" }
 exit $result
