@@ -1139,7 +1139,12 @@
         display: inline-flex;
         align-items: center;
         gap: 4px;
-        max-width: 180px;
+        min-width: 0;
+        max-width: min(180px, 100%);
+      }
+      .agent-status-legend-label {
+        min-width: 0;
+        overflow-wrap: anywhere;
       }
       .agent-status-swatch {
         width: 8px;

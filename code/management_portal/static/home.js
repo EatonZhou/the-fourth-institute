@@ -1828,7 +1828,7 @@ function renderUsageAttribution() {
   // read; everything else in it is current.
   const statusNote = tokenUsage?.status === "partial" && data.warning ? data.warning : usageChartNote(tokenUsage);
   const legend = [...legendMap.entries()].map(([key, label], index) => window.PortalI18n.html`
-    <span class="agent-status-legend-item"><span class="agent-status-swatch agent-status-segment-color" style="--agent-status-segment-color:${agentStatusColor(key, index, colorMap)}"></span>${esc(label)}</span>
+    <span class="agent-status-legend-item"><span class="agent-status-swatch agent-status-segment-color" style="--agent-status-segment-color:${agentStatusColor(key, index, colorMap)}"></span><span class="agent-status-legend-label">${esc(label)}</span></span>
   `).join("");
   componentHosts["usage-attribution"].innerHTML = window.PortalI18n.html`
       <div class="agent-status-section">
