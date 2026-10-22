@@ -1,0 +1,112 @@
+'use strict';
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const { JSDOM } = require('jsdom');
+const root = process.env.SOURCE_ROOT || path.resolve(__dirname, '../../..');
+const tick = () => new Promise(resolve => setImmediate(resolve));
+const ids = Array.from({length: 105}, (_, index) => `resident_${index.toString(16).padStart(12, '0')}`);
+
+function fixture(t) {
+  const dom = new JSDOM('', {url: 'https://states.fixture.invalid', runScripts: 'outside-only'});
+  const w = dom.window, calls = [], subscriptions = new Set();
+  w.PortalI18n = {t: s => s};
+  w.PortalIdentity = {load: async () => {}, username: () => 'fixture'};
+  w.PortalEvents = {watchResident: () => () => {}};
+  w.PortalResidentService = {loadStates: async (wanted, options) => {
+    calls.push({ids: [...wanted], options});
+    assert.ok(calls.length <= 3,
+      `settling one batch must not recursively issue more batches: ${calls.map(call => call.ids.length)}`);
+    return response(wanted, options);
+  }};
+  w.eval(fs.readFileSync(path.join(root, 'management_portal/static/resident_protocol.js'), 'utf8'));
+  t.after(() => { for (const sub of subscriptions) sub.destroy(); dom.window.close(); });
+  return {w, p: w.PortalResidentProtocol, calls, acquire(wanted, options = {}, listener = () => {}) {
+    const sub = w.PortalResidentProtocol.acquireStates(wanted, listener, {load: false, ...options});
+    subscriptions.add(sub); return sub;
+  }};
+}
+function response(wanted, options = {}) {
+  return {states: wanted.map(resident_id => ({resident_id, cursor: 7,
+    state: {work_state: 'idle'}, controls: {can_send: true},
+    ...(options.includeViewerState === false ? {} : {viewer_state: {unread: true}}),
+  }))};
+}
+
+test('a subscribed batch larger than the idle cache keeps every state and unread projection', async t => {
+  const f = fixture(t), sub = f.acquire(ids);
+  await sub.load();
+  assert.equal(f.calls.length, 1);
+  for (const id of ids) assert.equal(f.p.stateSnapshot(id).viewer_state.unread, true);
+  await sub.load();
+  assert.equal(f.calls.length, 1);
+});
+
+test('an unsubscribed in-flight batch settles once after the Mailbox list is replaced', async t => {
+  const f = fixture(t), sub = f.acquire(ids);
+  const original = f.w.PortalResidentService.loadStates;
+  let complete;
+  f.w.PortalResidentService.loadStates = (...args) => {
+    if (complete) return original(...args);
+    f.calls.push({ids: [...args[0]], options: args[1]});
+    return new Promise(resolve => { complete = () => resolve(response(...args)); });
+  };
+  const read = sub.load();
+  await tick(); sub.destroy();
+  f.acquire(ids.slice(0, 32));
+  complete();
+  const states = await read;
+  assert.equal(Object.keys(states).length, ids.length);
+  assert.equal(f.calls.length, 1);
+  await f.acquire(['resident_replacement']).load();
+  assert.equal(f.calls.length, 2);
+  assert.deepEqual(f.calls[1].ids, ['resident_replacement']);
+  assert.equal(ids.filter(id => f.p.stateSnapshot(id).ready).length, 32,
+    'released read pins must not turn the idle cache into permanent retention');
+});
+
+test('an old-actor batch cannot restore unread after identity changes during release', async t => {
+  const f = fixture(t), sub = f.acquire(ids);
+  let complete;
+  f.w.PortalResidentService.loadStates = wanted => new Promise(resolve => {
+    complete = () => resolve(response(wanted));
+  });
+  const read = sub.load(); await tick(); sub.destroy();
+  f.w.dispatchEvent(new f.w.Event('portal:identity-changed'));
+  complete();
+  await assert.rejects(read, {name: 'AbortError'});
+  for (const id of ids) assert.equal(f.p.stateSnapshot(id).viewer_state, null);
+});
+
+test('a viewer subscriber joins a state-only batch and fetches unread once after release', async t => {
+  const f = fixture(t), stateOnly = f.acquire(ids, {includeViewerState: false});
+  const original = f.w.PortalResidentService.loadStates;
+  let complete;
+  f.w.PortalResidentService.loadStates = (...args) => {
+    if (complete) return original(...args);
+    f.calls.push({ids: [...args[0]], options: args[1]});
+    return new Promise(resolve => { complete = () => resolve(response(...args)); });
+  };
+  const stateRead = stateOnly.load(); await tick();
+  const viewer = f.acquire(ids), viewerRead = viewer.load(); await tick();
+  stateOnly.destroy(); viewer.destroy(); complete();
+  await Promise.all([stateRead, viewerRead]);
+  assert.equal(f.calls.length, 2);
+  assert.equal(f.calls[0].options.includeViewerState, false);
+  assert.equal(f.calls[1].options.includeViewerState, true);
+});
+
+test('a failed released read does not retain its batch or retry without subscribers', async t => {
+  const f = fixture(t), sub = f.acquire(ids);
+  let fail;
+  f.w.PortalResidentService.loadStates = () => new Promise((_, reject) => {fail = reject;});
+  const read = sub.load(); await tick(); sub.destroy();
+  fail(new Error('fixture read failure'));
+  await assert.rejects(read, /fixture read failure/);
+  assert.equal(ids.filter(id => f.p.stateSnapshot(id).ready).length, 0);
+  f.w.PortalResidentService.loadStates = async wanted => response(wanted);
+  const next = f.acquire(ids);
+  await next.load();
+  assert.equal(Object.keys(next.states()).length, ids.length);
+});

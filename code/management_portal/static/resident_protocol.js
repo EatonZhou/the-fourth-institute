@@ -19,9 +19,14 @@
   function touchStore(store) {
     stores.delete(store.residentId);
     stores.set(store.residentId, store);
+    trimStores(store);
+  }
+
+  function trimStores(retainedStore = null) {
     while (stores.size > MAX_CACHED_RESIDENTS) {
       const candidate = [...stores.values()].find(item => (
-        item.refCount === 0 && item.stateRefCount === 0 && !item.loading && !item.submissions.size
+        item !== retainedStore && item.refCount === 0 && item.stateRefCount === 0
+          && !item.stateReadCount && !item.stateLoading && !item.loading && !item.submissions.size
       ));
       if (!candidate) break;
       candidate.dispose();
@@ -346,6 +351,7 @@
       this.pendingStateEvents = [];
       this.stateSnapshotLoaded = false;
       this.stateLoading = null;
+      this.stateReadCount = 0;
       this.submissions = new Map();
       this.submissionTimer = null;
     }
@@ -1169,61 +1175,75 @@
     await window.PortalIdentity?.load?.();
     const requestActorRevision = actorRevision;
     const ids = [...new Set((residentIds || []).map(String).map(value => value.trim()).filter(Boolean))];
-    const waits = new Set();
-    const missing = [];
-    for (const residentId of ids) {
+    // A list can replace/destroy its subscription while the read is in flight.
+    // Retain this batch's stores until its result (including unread) is consumed;
+    // the idle LRU must not turn that result into another missing-state request.
+    const selected = new Map(ids.map(residentId => {
       const store = residentStore(residentId);
-      if (store.stateLoading) {
-        waits.add(store.stateLoading);
-      } else if (force || !store.stateSnapshotLoaded || (includeViewerState && !store.viewerState)) {
-        missing.push(residentId);
+      store.stateReadCount += 1;
+      return [residentId, store];
+    }));
+    try {
+      const waits = new Set();
+      const missing = [];
+      for (const residentId of ids) {
+        const store = selected.get(residentId);
+        if (store.stateLoading) {
+          waits.add(store.stateLoading);
+        } else if (force || !store.stateSnapshotLoaded || (includeViewerState && !store.viewerState)) {
+          missing.push(residentId);
+        }
       }
-    }
-    if (missing.length) {
-      const request = window.PortalResidentService.loadStates(missing, { includeViewerState })
-        .then(response => {
-          if (requestActorRevision !== actorRevision) throw new DOMException("Resident identity changed", "AbortError");
-          if (!Array.isArray(response?.states)) {
-            throw new Error("Resident State Snapshot states are invalid");
-          }
-          const received = new Set();
-          for (const item of response.states) {
-            const residentId = String(item?.resident_id || "").trim();
-            if (!missing.includes(residentId)) continue;
-            if (!item?.state || typeof item.state !== "object") {
-              throw new Error("Resident State Snapshot state is invalid");
+      if (missing.length) {
+        const request = window.PortalResidentService.loadStates(missing, { includeViewerState })
+          .then(response => {
+            if (requestActorRevision !== actorRevision) throw new DOMException("Resident identity changed", "AbortError");
+            if (!Array.isArray(response?.states)) {
+              throw new Error("Resident State Snapshot states are invalid");
             }
-            if (includeViewerState && typeof item?.viewer_state?.unread !== "boolean") {
-              throw new Error("Resident State Snapshot viewer state is invalid");
+            const received = new Set();
+            for (const item of response.states) {
+              const residentId = String(item?.resident_id || "").trim();
+              if (!missing.includes(residentId)) continue;
+              if (!item?.state || typeof item.state !== "object") {
+                throw new Error("Resident State Snapshot state is invalid");
+              }
+              if (includeViewerState && typeof item?.viewer_state?.unread !== "boolean") {
+                throw new Error("Resident State Snapshot viewer state is invalid");
+              }
+              received.add(residentId);
+              selected.get(residentId).acceptStateSnapshot(item.state, Number(item?.cursor || 0), item.viewer_state, item.controls);
             }
-            received.add(residentId);
-            residentStore(residentId).acceptStateSnapshot(item.state, Number(item?.cursor || 0), item.viewer_state, item.controls);
-          }
-          const absent = missing.filter(residentId => !received.has(residentId));
-          if (absent.length) throw new Error(`Resident State Snapshot missing: ${absent.join(", ")}`);
-        })
-        .finally(() => {
-          for (const residentId of missing) {
-            const store = residentStore(residentId);
-            if (store.stateLoading === request) store.stateLoading = null;
-          }
-        });
-      for (const residentId of missing) residentStore(residentId).stateLoading = request;
-      waits.add(request);
-    }
-    await Promise.all([...waits]);
-    // A cheaper state-only batch may have been in flight when an Inbox view
-    // requested unread state. Fetch that missing projection after it settles.
-    if (includeViewerState) {
-      const withoutViewer = ids.filter(residentId => !residentStore(residentId).viewerState);
-      if (withoutViewer.length) {
-        await loadResidentStateSnapshots(withoutViewer, { includeViewerState: true });
+            const absent = missing.filter(residentId => !received.has(residentId));
+            if (absent.length) throw new Error(`Resident State Snapshot missing: ${absent.join(", ")}`);
+          })
+          .finally(() => {
+            for (const residentId of missing) {
+              const store = selected.get(residentId);
+              if (store.stateLoading === request) store.stateLoading = null;
+            }
+          });
+        for (const residentId of missing) selected.get(residentId).stateLoading = request;
+        waits.add(request);
       }
+      await Promise.all([...waits]);
+      if (requestActorRevision !== actorRevision) throw new DOMException("Resident identity changed", "AbortError");
+      // A cheaper state-only batch may have been in flight when an Inbox view
+      // requested unread state. Fetch that missing projection after it settles.
+      if (includeViewerState) {
+        const withoutViewer = ids.filter(residentId => !selected.get(residentId).viewerState);
+        if (withoutViewer.length) {
+          await loadResidentStateSnapshots(withoutViewer, { includeViewerState: true });
+        }
+      }
+      return Object.fromEntries(ids.map(residentId => [
+        residentId,
+        clone(selected.get(residentId).stateProjection || {}),
+      ]));
+    } finally {
+      for (const store of selected.values()) store.stateReadCount -= 1;
+      trimStores();
     }
-    return Object.fromEntries(ids.map(residentId => [
-      residentId,
-      clone(residentStore(residentId).stateProjection || {}),
-    ]));
   }
 
   class ResidentStateProjection {
