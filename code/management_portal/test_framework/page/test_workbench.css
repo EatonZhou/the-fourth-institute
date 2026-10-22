@@ -76,7 +76,7 @@
 .testBadge.is-safe { color: #18794e; background: color-mix(in srgb, #30a46c 13%, var(--panel)); }
 .testBadge.is-undeclared { border: 1px dashed color-mix(in srgb, #b7791f 55%, var(--border)); color: #8a5a12; background: color-mix(in srgb, #f5a623 10%, var(--panel)); }
 .testBadge.is-risk { color: #b42318; background: color-mix(in srgb, #d92d20 10%, var(--panel)); }
-.testEmpty { padding: 18px 12px; border: 1px dashed var(--border, #dfe3e8); border-radius: 8px; color: var(--muted, #68707a); font-size: var(--test-font-meta); text-align: center; }
+.testEmpty { min-width: 0; overflow-wrap: anywhere; padding: 18px 12px; border: 1px dashed var(--border, #dfe3e8); border-radius: 8px; color: var(--muted, #68707a); font-size: var(--test-font-meta); text-align: center; }
 .testCaseHero { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; gap: 6px; margin: 0 2px 11px; padding: 1px 1px 11px; border-bottom: 1px solid var(--border, #dfe3e8); }
 .testCaseHeroTop { display: flex; min-width: 0; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .testCaseHero h3 { min-width: 0; margin: 0; overflow-wrap: anywhere; font-size: 15px; font-weight: 700; line-height: 1.35; }

@@ -4103,6 +4103,14 @@
           return;
         }
         unavailableResidentBindings.add(residentId);
+        // A stale Resident URL must not keep requesting the unavailable Chat
+        // on every reload. Its explicit Lineage remains a separate binding.
+        const location = new URL(window.location.href);
+        if (location.searchParams.get("resident") === residentId) {
+          location.searchParams.delete("resident");
+          location.searchParams.delete("open_chat");
+          history.replaceState(history.state || {}, "", `${location.pathname}${location.search}${location.hash}`);
+        }
         const saved = readLineageUiState().lastChatTarget;
         if (saved?.kind === "resident" && saved.id === residentId) {
           writeLineageUiState({ lastChatTarget: null });
@@ -7503,14 +7511,16 @@
       }
 
       function applyOpeningHatgNavigation() {
-        if (openingNavigation.view !== "hatg" || !openingNavigation.lineageId) return;
-        // Set the captured URL target before showing the restored panel: its
-        // previous binding may belong to a different Lineage. Use the existing
-        // canvas workspace so restored Chat/Preview widths cannot crowd it out.
+        if (!openingNavigation.lineageId) return;
+        // Set the captured URL target before Resident loading: a restored panel
+        // may belong to another Lineage, and the Resident may no longer exist.
         const applied = syncLineageHatgPanel({
           lineageId: openingNavigation.lineageId,
           residentId: openingNavigation.residentId,
         });
+        // Bind the explicit graph before any Resident reads can fail. Ordinary
+        // navigation retains the restored layout, including a hidden canvas.
+        if (openingNavigation.view !== "hatg") return applied;
         lineageWorkbench.applyWorkspace(lineageHatgWorkspace());
         lineageWorkbench.focusPanel("hatg");
         return applied;

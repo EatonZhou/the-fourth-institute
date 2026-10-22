@@ -129,7 +129,8 @@ for (const query of [
   test(`non-canvas entry preserves restored chat and hidden HATG: ${query}`, async () => {
     const page = entry(query);
     await page.open();
-    assert.deepEqual(page.calls, []);
+    assert.deepEqual(page.calls, query.includes('lineage=') ? ['target'] : []);
+    if (query.includes('lineage=')) assert.equal(page.targets[0].lineageId, lineageId);
     assert.equal(page.layout.active, 'chat');
     assert.equal(page.layout.hidden.has('hatg'), true);
   });
@@ -143,4 +144,42 @@ test('opening intent is applied once after identity/layout restore, with the men
   assert(restore >= 0 && reveal > restore);
   assert.match(load.slice(restore, reveal), /if \(loadSeq === 1\) \{/);
   assert.match(owner(source, 'initLineageWorkbench'), /presets: \[[\s\S]*lineageHatgWorkspace\(\)/);
+});
+
+test('unavailable Chat removes only its stale URL target and retains the explicit graph', async () => {
+  const residentId = 'resident_6199a7a36480';
+  const page = entry(`?lineage=${lineageId}&resident=${residentId}&open_chat=1`, {delayed: true});
+  const opened = page.open();
+  assert.equal(page.targets[0].lineageId, lineageId, 'graph binds before Chat settles');
+  assert.equal(page.layout.active, 'chat', 'binding does not steal focus');
+  const location = new URL(`https://portal.invalid/lineage?lineage=${lineageId}&resident=${residentId}&open_chat=1#canvas`);
+  let saved = {lastChatTarget: {kind: 'resident', id: residentId}};
+  const unavailableResidentBindings = new Set();
+  const context = vm.createContext({
+    URL, window: {location}, unavailableResidentBindings,
+    history: {state: {}, replaceState: (_state, _title, url) => { location.href = new URL(url, location).href; }},
+    readLineageUiState: () => saved,
+    writeLineageUiState: patch => { saved = {...saved, ...patch}; },
+  });
+  vm.runInContext(owner(source, 'onLineagePanelBinding'), context);
+  const workbench = {getPanel: () => ({target: () => ({resident_id: residentId})})};
+  context.onLineagePanelBinding({event: 'binding-unavailable', sourcePanelId: 'chat'}, workbench);
+  assert.equal(location.searchParams.get('lineage'), lineageId);
+  assert.equal(location.searchParams.has('resident'), false);
+  assert.equal(location.searchParams.has('open_chat'), false);
+  assert.equal(location.hash, '#canvas');
+  assert.equal(saved.lastChatTarget, null);
+  assert.equal(unavailableResidentBindings.has(residentId), true);
+  page.release();
+  await opened;
+  assert.equal(page.targets[0].lineageId, lineageId);
+
+  // A late unavailable response must not clear a more recent navigation.
+  location.searchParams.set('resident', 'resident_new');
+  location.searchParams.set('open_chat', '1');
+  context.onLineagePanelBinding({event: 'binding-unavailable', sourcePanelId: 'chat'}, workbench);
+  assert.equal(location.searchParams.get('resident'), 'resident_new');
+  assert.equal(location.searchParams.get('open_chat'), '1');
+  context.onLineagePanelBinding({event: 'binding-ready', sourcePanelId: 'chat'}, workbench);
+  assert.equal(unavailableResidentBindings.has(residentId), false);
 });
