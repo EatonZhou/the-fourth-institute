@@ -79,6 +79,36 @@ def unstarted_handoff(connection: Any, execution_id: str, *, actor: str) -> dict
     return json_value(row['data_json'])['receipt']
 
 
+def retarget_preparation(connection: Any, *, execution_id: str, replacement_execution_id: str,
+                         agent_id: str, actor: str, provider: str, at: str) -> bool:
+    """Replace only an unsubmitted preparation; its old provenance stays immutable."""
+    prefix = '"' + _database_schema("agent") + '".'
+    row = connection.execute(
+        f"SELECT agent_id,actor_ref,provider,status FROM {prefix}executions WHERE execution_id=%s FOR UPDATE",
+        (execution_id,),
+    ).fetchone()
+    if row is None:
+        raise KeyError(execution_id)
+    if (row['agent_id'], row['actor_ref']) != (agent_id, actor):
+        raise ValueError("Execution identity refers to different immutable provenance")
+    if row['provider'] == provider:
+        return False
+    admitted = connection.execute(f"SELECT 1 FROM {prefix}agent_operations WHERE operation_id=%s",
+                                  ('execution_submission:' + execution_id,)).fetchone()
+    if row['status'] != 'preparing' or admitted is not None:
+        raise ValueError("An admitted Execution cannot change Provider during default binding")
+    if not replacement_execution_id or replacement_execution_id == execution_id:
+        raise ValueError("Provider binding requires a new preparation identity")
+    connection.execute(f"UPDATE {prefix}executions SET status='cancelled',finished_at=%s WHERE execution_id=%s",
+                       (at, execution_id))
+    reserve(connection, execution_id=replacement_execution_id, agent_id=agent_id,
+            actor=actor, provider=provider, created_at=at)
+    record_unstarted_handoff(connection, agent_id=agent_id, performed_by=actor, at=at,
+        receipt={'execution_id': execution_id, 'replacement_execution_id': replacement_execution_id,
+                 'binding_id': 'resident:' + agent_id, 'operation_id': 'default-binding:' + execution_id})
+    return True
+
+
 def record_unstarted_handoff(connection: Any, *, agent_id: str, receipt: dict,
                              performed_by: str, at: str) -> None:
     from .agent_operations import put_operation

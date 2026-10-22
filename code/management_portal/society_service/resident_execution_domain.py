@@ -610,6 +610,7 @@ def _run_resident_execution_scoped(resident_id: str, continuation_id: str) -> No
                         return
                     from .resident_default_backend import bind_before_execution
                     bind_before_execution(record, str(job.get("actor") or ""))
+                    job = resident_execution_work.read(record)
                     dispatched_at = str(job.get("dispatched_at") or _now_iso())
                     job["dispatched_at"] = dispatched_at
                     current_job = dict(job)
@@ -1116,6 +1117,9 @@ def _prepare_resident_continuation(
             record["updated_at"] = _now_iso()
             _save_resident_record(record)
         return None
+    from .resident_default_backend import bind_before_execution
+    bind_before_execution(record, str(job.get("actor") or ""))
+    job = resident_execution_work.read(record)
     dispatched_at = _now_iso()
     job["dispatched_at"] = dispatched_at
     if not str(job.get("continuation_id") or "").strip():

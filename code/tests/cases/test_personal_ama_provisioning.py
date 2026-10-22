@@ -88,6 +88,47 @@ def test_first_api_binding_replaces_source_site_model(future_creation_store, mon
     assert payloads[0][1]["messages"][-1] == {"role": "user", "content": "hello"}
 
 
+@pytest.mark.empty_execution_registrations
+@pytest.mark.parametrize("configure_before_input", [False, True])
+def test_first_api_binding_preserves_pending_input_provenance(future_creation_store, monkeypatch, configure_before_input):
+    """首个 API 接管待执行输入时保留消息，不能重写旧执行的 Codex 来源。"""
+    from management_portal.execution import account_registrations
+    from management_portal.execution.agent_data_store import get_agent_data_store
+    from management_portal.society_service import (
+        resident_default_backend, resident_domain, resident_intake_domain,
+        resident_execution_work, resident_execution_domain,
+    )
+    monkeypatch.setattr(resident_intake_domain, "_start_resident_continuation", lambda *a: None)
+    ama = principal_hierarchy_domain.ensure_personal_ama("api_user", "api_user")
+    account_registrations.create_registration({"account_id": "deepseek_only", "provider": "provider_api",
+        "kind": "api_profile", "config": {"api_id": "deepseek_test"}}, "api_user")
+    if configure_before_input:
+        account_registrations.update_role("default", "deepseek_only", "", "", 0, "api_user")
+    resident_domain.deliver_resident_message_content(ama["resident_id"], "api_user", "original input")
+    record = resident_catalog.get_catalog().get(ama["resident_id"])
+    original = resident_execution_work.read(record)
+    store = get_agent_data_store()
+    assert store.execution(original["execution_id"])["provider"] == "codex"
+    if not configure_before_input:
+        account_registrations.update_role("default", "deepseek_only", "", "", 0, "api_user")
+    resident_default_backend.bind_before_execution(record, "api_user")
+    current = resident_execution_work.read(record)
+    # The real store reserves on every progress write: this reproduced the
+    # native failure even though registration and binding alone passed.
+    resident_execution_work.write(record, current)
+    assert current["user_message_id"] == original["user_message_id"]
+    assert current["raw_message"] == original["raw_message"]
+    assert current.get("continuation_id") == original.get("continuation_id")
+    assert current["execution_id"] != original["execution_id"]
+    old = store.execution(original["execution_id"])
+    assert (old["provider"], old["status"]) == ("codex", "cancelled")
+    assert store.execution(current["execution_id"])["provider"] == "deepseek_test"
+    request = resident_execution_domain._durable_resident_execution_request(record, current,
+        lambda: resident_execution_domain._build_resident_execution_request(record, current))
+    assert request.provider == "deepseek_test"
+    assert request.execution_id == current["execution_id"]
+
+
 def test_personal_ama_is_created_once_in_the_users_name(future_creation_store):
     """用户的 Ask Me Anything 以本人名义只建一次
 
