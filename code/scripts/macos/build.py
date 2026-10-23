@@ -79,8 +79,13 @@ def smoke(executable, destination, included, *, require_long_rpc_path=False):
     if not included:
         argv.append("--without-examples")
     failure = None
+    session = None
+    offline_env = {**os.environ, 'HTTP_PROXY': 'http://127.0.0.1:9', 'HTTPS_PROXY': 'http://127.0.0.1:9',
+                   'ALL_PROXY': 'http://127.0.0.1:9', 'NO_PROXY': '127.0.0.1,localhost',
+                   'http_proxy': 'http://127.0.0.1:9', 'https_proxy': 'http://127.0.0.1:9',
+                   'all_proxy': 'http://127.0.0.1:9', 'no_proxy': '127.0.0.1,localhost'}
     try:
-        command(argv, timeout=900)
+        command(argv, timeout=900, env=offline_env)
         state_path = destination / "instance/desktop/installation.json"
         before = json.loads(state_path.read_text())
         if require_long_rpc_path:
@@ -97,7 +102,7 @@ def smoke(executable, destination, included, *, require_long_rpc_path=False):
         if before['platform_preflight']['file_verification'] != 'skipped_by_operator':
             raise ValueError("Desktop performed duplicate file verification")
         # Second launch must preserve DB identity and data, not reimport seed.
-        command(argv, timeout=240)
+        command(argv, timeout=240, env=offline_env)
         after = json.loads(state_path.read_text())
         if before["target"] != after["target"] or before["manifest_sha256"] != after["manifest_sha256"]:
             raise ValueError("Repeated launch changed instance identity")
@@ -107,16 +112,18 @@ def smoke(executable, destination, included, *, require_long_rpc_path=False):
             upgrade_smoke(argv, destination)
         session = InstalledSession(before['target'], included)
         session.register()
+        session.connect_and_chat()
         marker = destination / "instance/desktop/data/restart-check.txt"
         marker.write_text("user data survives unregister and restart")
         command(cleanup, timeout=120)
-        command(argv, timeout=240)
+        command(argv, timeout=240, env=offline_env)
         restarted = json.loads(state_path.read_text())
         if (before["target"] != restarted["target"]
                 or before["manifest_sha256"] != restarted["manifest_sha256"]
                 or marker.read_text() != "user data survives unregister and restart"):
             raise ValueError("Restart after unregister changed instance identity or user data")
         session.login_and_check()
+        session.chat()
         verify_background(destination, marker)
     except Exception as exc:
         failure = exc
@@ -131,6 +138,8 @@ def smoke(executable, destination, included, *, require_long_rpc_path=False):
                 print("::error title=macOS runtime diagnostic::" + annotation, flush=True)
         raise
     finally:
+        if session is not None:
+            session.close()
         if destination.exists():
             # Logs have instance-local paths but never contain invitation tokens.
             try:
@@ -335,6 +344,7 @@ with tempfile.TemporaryDirectory() as tmp:
             destination = (Path(tmp) / "独立测试" / ("full" if included else "base")).resolve()
             smoke(executables / "TheFourthInstitute", destination, included, require_long_rpc_path=True)
     receipt["native_installation_smoke"] = "passed: native entry, long Unicode path, base/full, first administrator, AMA/PersonalFamily/project/chat reads, launcher exit survival, unregister/restart with password login, Unicode index worker, background log checks, compatible update with database row, GUI copy/retry"
+    receipt["api_only_chat_smoke"] = "passed: loopback fixture only, no Codex account, Harness-only settings, default-model API chat, model catalog/save, persisted chat after service restart; no real model or key"
     verify_app(contents.parent)
     receipt["app_signature_verification"] = "passed"
     (image_root / "Applications").symlink_to("/Applications", target_is_directory=True)

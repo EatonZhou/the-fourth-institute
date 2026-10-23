@@ -1,5 +1,5 @@
 {
-  "request": "20261022.4",
-  "purpose": "macOS offline installation, first administrator, permissions, personal Family and empty-account recovery acceptance",
+  "request": "20261023.1",
+  "purpose": "macOS onboarding recovery and API-only first binding/chat/restart acceptance with a loopback fixture; no real credentials or inference",
   "delivery": "Portal test download; no GitHub Release"
 }

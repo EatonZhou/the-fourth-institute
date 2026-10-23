@@ -8,6 +8,8 @@ import time
 from urllib.parse import urlencode
 from urllib.request import HTTPCookieProcessor, ProxyHandler, Request, build_opener
 
+from scripts.windows.native_smoke import LocalModelApi
+
 
 def check(condition, message):
     if not condition:
@@ -20,6 +22,7 @@ class InstalledSession:
         self.included = included
         self.base = f"http://127.0.0.1:{target['ports']['web']}"
         self.client = build_opener(ProxyHandler({}), HTTPCookieProcessor(http.cookiejar.CookieJar()))
+        self.model_api = None
 
     def request(self, path, payload=None, *, form=False):
         data = None if payload is None else (urlencode(payload) if form else json.dumps(payload)).encode('utf-8')
@@ -65,6 +68,28 @@ class InstalledSession:
             self.instruction('GetProject', {'project_id': project})
         for resident in (self.ama['resident_id'], families[0]['facade']):
             self.instruction('GetConversation', {'resident_id': resident})
+
+    def connect_and_chat(self):
+        # Reuse the same loopback protocol fixture as Windows acceptance.
+        # Only this disposable API account exists; no Codex fallback can mask a bug.
+        self.model_api = LocalModelApi()
+        self.model_api.register(self.instruction)
+        self.instruction('UpdateResidentSettings', {'resident_id': self.ama['resident_id'],
+                                                   'changes': {'agent_harness': {}}})
+        self.chat()
+        catalog = self.request('/api/agent-workbench/agent-runtime-catalog?' +
+                               urlencode({'resident_id': self.ama['resident_id']}))
+        check(catalog['backend'] == 'provider_api' and catalog['models'] == [self.model_api.model],
+              'Default-only API catalog differs from the executing account')
+        self.instruction('UpdateResidentSettings', {'resident_id': self.ama['resident_id'],
+                                                   'changes': {'model': self.model_api.model}})
+
+    def chat(self):
+        self.model_api.chat(self.instruction, self.ama['resident_id'])
+
+    def close(self):
+        if self.model_api is not None:
+            self.model_api.close()
 
 
 def verify_background(destination, marker):
