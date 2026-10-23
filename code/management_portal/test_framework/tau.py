@@ -271,14 +271,20 @@ APIRequestContext 的请求不属于页面 frame/document。重试保持业务�
 `portal.inputState(residentId, messageId)` 已解包 GetInputState 的 result.input_state；返回对象的
 `message_id`、`state`、`reply_message_ids` 是顶层字段。直接读取 `input.state`，没有 `input.current`
 或第二层 `input.input_state`。`waitForInput` 返回同一形状；先核对精确 message_id 再判断终态。
+读取触发记录使用 `portal.triggerPath(lineageId, triggerPathId)`，两个 ID 均从本轮原受理回执取得；
+它只读 GetTriggerPath 并核对返回的 path 身份，不会再次触发业务。返回整个 result，状态在
+`result.path.status`，steps、edges、execution_links、executions 各自保留 items 与 next_offset；
+需要完整列表时按正式 Schema 继续翻页，不把首分页当全量。此辅助读取不替代 UI ready 条件，
+须放在原动作 callback 内完成该动作要求的核对；失败后继续读取原 ID，不能重发已接纳输入。
 直接使用其他工具或原始 request 的调用仍需现场采样；中断后的缺失终点不补造。
 指令失败日志保留规范错误码、HTTP 状态和安全网络诊断，不保存错误消息或 details 正文。
 部署、断线或页面恢复后，继续操作前调用 `await portal.verifyIdentity()`；以当前浏览器身份
 重新读取 /api/me，实际身份、build、HTTP 状态及起止耗时追加到 tau-browser-identity.jsonl。
 身份校验失败即抛错，不继续业务动作；初始 build 保留，合法变化追加到 build_observations。
 框架自动保留原回执，后续采样不能补造此前恢复时的证据。
-每个 UI 业务动作使用 `portal.action('static-step-name', async () => {{ /* 操作并等待实际 ready */ }})`，
-其他标签页传第三参数 `{{ page: targetPage }}`。助手在原动作开始与结束记录 action、frame/document
+每个 UI 业务动作使用 `portal.action('static-step-name', async page => {{ /* 在 page 操作并等待实际 ready */ }})`，
+其他标签页传第三参数 `{{ page: targetPage }}`，callback 的 page 就是该标签页；不要在 callback 中
+捕获并操作另一个默认标签页。助手在原动作开始与结束记录 action、frame/document
 及作用域内实际 request ID；没有请求的动作保留空数组。callback 必须包含实际就绪检查，不能在点击后
 立即结束计时。同一页面不嵌套或并行 action。作用域内可能包含后台请求，这种关联不证明请求由动作触发，
 也不能据此豁免取消或失败；跨页面、Helper 指令请求和 Harness RTT 仍需分别保存原始证据。

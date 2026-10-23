@@ -65,6 +65,25 @@ class _Portal(BaseHTTPRequestHandler):
                 "code": "authorization.denied", "message": "private-error-message",
                 "details": {"secret": "private-error-details"}}}).encode())
             return
+        if call['instruction'] == 'GetTriggerPath':
+            args = call['arguments']
+            type(self).trigger_requests.append(args)
+            valid = args.get('lineage_id') == 'lineage_fixture' and args.get('trigger_path_id')
+            body = {'status': 'failed', 'error': {'code': 'fixture.missing_identity'}}
+            if valid:
+                body = {'status': 'committed', 'result': {
+                    'path': {'trigger_path_id': 'unexpected' if args['trigger_path_id'] == 'path_mismatch'
+                             else args['trigger_path_id'], 'status': 'running'},
+                    'steps': {'items': [{'step_id': 'step_a'}], 'next_offset': 1},
+                    'edges': {'items': [], 'next_offset': None},
+                    'execution_links': {'items': [], 'next_offset': None},
+                    'executions': {'items': [{'execution_id': 'exec_a', 'status': 'running'}], 'next_offset': None},
+                }}
+            self.send_response(200 if valid else 400)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps(body).encode())
+            return
         reads = type(self).input_reads = getattr(type(self), "input_reads", 0) + 1
         state = "running" if reads <= 2 else "completed"
         body = json.dumps({"status": "committed", "result": {"input_state": {
@@ -82,6 +101,7 @@ class _Portal(BaseHTTPRequestHandler):
 def portal():
     _Portal.input_reads = 0
     _Portal.requests = []
+    _Portal.trigger_requests = []
     server = ThreadingHTTPServer(("127.0.0.1", 0), _Portal)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     yield f"http://127.0.0.1:{server.server_address[1]}"
@@ -359,6 +379,73 @@ def test_the_bootstrap_waits_for_one_message_by_its_own_input_state(tmp_path, po
     assert all(r['status'] == 'completed' and r['duration_ms'] > 0 for r in ends.values())
     assert all(starts[key]['at'] <= ends[key]['at'] for key in starts)
     assert 'resident_111111111111' not in text and 'msg_a' not in text
+
+
+def test_trigger_path_read_keeps_both_identities_and_pagination_without_retriggering(tmp_path, portal):
+    """触发记录辅助读取核对原身份、保留分页，并记录实际只读调用而不重新触发业务。"""
+    result = _open(tmp_path, portal, 'test-actor', body=(
+        "const assert = require('node:assert/strict');"
+        " await assert.rejects(() => p.triggerPath(undefined, 'path_fixture'), TypeError);"
+        " await assert.rejects(() => p.triggerPath('lineage_fixture', ''), TypeError);"
+        " const read = await p.triggerPath('lineage_fixture', 'path_fixture',"
+        " {offset:0,limit:1,artifact_activation_key:'activation_fixture'});"
+        " assert.equal(read.path.trigger_path_id, 'path_fixture');"
+        " assert.equal(read.path.status, 'running');"
+        " assert.deepEqual(read.steps, {items:[{step_id:'step_a'}],next_offset:1});"
+        " assert.equal(read.executions.items[0].status, 'running');"
+        " await assert.rejects(() => p.triggerPath('lineage_fixture', 'path_mismatch'),"
+        " /different or missing path identity/);"
+    ))
+    assert result.returncode == 0, result.stderr
+    assert _Portal.trigger_requests == [
+        {'lineage_id': 'lineage_fixture', 'trigger_path_id': 'path_fixture', 'offset': 0,
+         'limit': 1, 'artifact_activation_key': 'activation_fixture'},
+        {'lineage_id': 'lineage_fixture', 'trigger_path_id': 'path_mismatch'},
+    ]
+    assert all(r['instruction'] == 'GetTriggerPath' for r in _Portal.requests)
+    text = (tmp_path / 'evidence/tau-helper-calls.jsonl').read_text()
+    rows = [json.loads(line) for line in text.splitlines()]
+    starts = {r['request_id'] for r in rows if r['kind'] == 'request_started'}
+    ends = {r['request_id'] for r in rows if r['kind'] == 'request_finished'}
+    assert starts == ends == {r['request_id'] for r in _Portal.requests}
+    assert len(starts) == 2
+    assert all(value not in text for value in ('lineage_fixture', 'path_fixture', 'activation_fixture'))
+
+
+def test_action_callback_uses_the_observed_tab_and_retains_failed_action(tmp_path, portal):
+    """跨标签页动作回调收到被观察的页面，原始请求归属与失败证据保持分离。"""
+    result = _open(tmp_path, portal, 'test-actor', body=(
+        "const assert = require('node:assert/strict');"
+        " const other = await p.context.newPage();"
+        " await p.action('tab-b', async target => {"
+        " assert.strictEqual(target, other);"
+        f" await target.goto({json.dumps(portal + '/page-b')});"
+        " assert.match(await target.locator('body').innerText(), /test-actor/);"
+        " }, {page:other});"
+        " assert.equal(p.page.url(), 'about:blank');"
+        " await p.action('tab-a', async target => {"
+        " assert.strictEqual(target, p.page);"
+        f" await target.goto({json.dumps(portal + '/page-a')});"
+        " assert.match(await target.locator('body').innerText(), /test-actor/);"
+        " });"
+        " await assert.rejects(p.action('tab-b-failed', async target => {"
+        " assert.strictEqual(target, other); throw new Error('private-helper-error');"
+        " }, {page:other}), /private-helper-error/);"
+    ))
+    assert result.returncode == 0, result.stderr
+    text = (tmp_path / 'evidence/tau-browser-observations.jsonl').read_text()
+    rows = [json.loads(line) for line in text.splitlines()]
+    actions = {r['name']: r for r in rows if r['kind'] == 'action_finished'}
+    a, b, failed = (actions[name] for name in ('tab-a', 'tab-b', 'tab-b-failed'))
+    assert a['page_id'] != b['page_id'] == failed['page_id']
+    assert a['status'] == b['status'] == 'completed'
+    assert failed['status'] == 'failed' and failed['request_ids'] == []
+    requests = {r['request_id']: r for r in rows if r['kind'] == 'request_started'}
+    for action in (a, b):
+        assert action['request_ids']
+        assert all(requests[rid]['page_id'] == action['page_id'] for rid in action['request_ids'])
+    assert not set(a['request_ids']).intersection(b['request_ids'])
+    assert 'private-helper-error' not in text
 
 
 @pytest.mark.parametrize("scenario", ["summary", "reloaded_detail", "completed_only", "other_page", "other_page_closed_default", "tool_summary", "tool_detail", "completed_tool"])

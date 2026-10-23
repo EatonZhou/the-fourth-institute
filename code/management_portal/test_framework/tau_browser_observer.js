@@ -531,7 +531,7 @@ async function observeBrowser(context, { evidenceDir }) {
       write({ kind: 'action_started', action_id: action.id, name, ...location(frameState(page.mainFrame())) });
       let status = 'failed', error;
       try {
-        const result = await operation();
+        const result = await operation(page);
         status = 'completed';
         return result;
       } catch (caught) {

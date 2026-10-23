@@ -33,6 +33,11 @@
 // records the actual action, frame/document and observed requests together.
 // Pass `{ page: otherPage }` for another tab. This observation scope does not
 // prove request causality or explain cancellations; retain those limits.
+// The callback receives that exact page; use its argument instead of a captured
+// default page when the case operates multiple tabs.
+// `portal.triggerPath(lineageId, triggerPathId, { offset, limit })` reads the
+// original path with both required identities. It returns the entire GetTriggerPath
+// result, including paginated steps/edges/executions; it never triggers work.
 
 const fs = require("fs");
 const path = require("path");
@@ -270,6 +275,22 @@ async function openPortal({ evidenceDir, storageState, origin, pythonExecutable,
     return (await instruction("GetInputState", { resident_id: residentId, message_id: messageId })).input_state || {};
   }
 
+  async function triggerPath(lineageId, triggerPathId, { offset, limit, artifact_activation_key } = {}) {
+    if (typeof lineageId !== 'string' || !lineageId.trim() ||
+        typeof triggerPathId !== 'string' || !triggerPathId.trim()) {
+      throw new TypeError('triggerPath requires both lineageId and triggerPathId');
+    }
+    const args = { lineage_id: lineageId, trigger_path_id: triggerPathId };
+    if (offset !== undefined) args.offset = offset;
+    if (limit !== undefined) args.limit = limit;
+    if (artifact_activation_key !== undefined) args.artifact_activation_key = artifact_activation_key;
+    const result = await instruction('GetTriggerPath', args);
+    if (result.path?.trigger_path_id !== triggerPathId) {
+      throw new Error('GetTriggerPath returned a different or missing path identity');
+    }
+    return result;
+  }
+
   async function waitForInput(residentId, messageId, { states = ["completed", "failed", "cancelled"], timeoutMs = 600_000, intervalMs = 1000 } = {}) {
     const deadline = Date.now() + timeoutMs;
     for (;;) {
@@ -343,7 +364,7 @@ async function openPortal({ evidenceDir, storageState, origin, pythonExecutable,
   return { browser, context, page, actor: launch.actor, buildId: launch.build_id,
     verifyIdentity: () => checkIdentity('explicit_recovery'),
     action: (name, operation, { page: target = page } = {}) => observer.action(target, name, operation),
-    requestId: request => observer.requestId(request), instruction, inputState, waitForInput, waitForRunningActivity, close };
+    requestId: request => observer.requestId(request), instruction, inputState, triggerPath, waitForInput, waitForRunningActivity, close };
 }
 
 module.exports = { EXPECTED_ACTOR, openPortal, safeError };
