@@ -2,6 +2,8 @@
 import asyncio
 import json
 import os
+import subprocess
+import sys
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
 
@@ -72,6 +74,28 @@ def test_shell_human_does_not_inherit_identity_or_database(monkeypatch):
     assert shell.resident_process_environment({}) == ({}, {})
     with pytest.raises(ValueError, match='requires Resident identity'):
         shell.resident_process_environment({'inherit_portal_database': True})
+
+
+def test_native_child_preserves_windows_profile_without_ambient_credentials(monkeypatch):
+    # The real Windows OpenCode bridge resolves its authenticated IPC directory
+    # from LOCALAPPDATA, and pathlib.home() needs USERPROFILE (not POSIX HOME).
+    profile = r'C:\Users\测试 用户'
+    values = {'USERPROFILE': profile, 'LOCALAPPDATA': profile + r'\AppData\Local',
+              'APPDATA': profile + r'\AppData\Roaming', 'HOMEDRIVE': 'C:',
+              'HOMEPATH': r'\Users\测试 用户'}
+    for key, value in {**values, 'OPENAI_API_KEY': 'unrelated-secret',
+                       'PORTAL_DATABASE_URL': 'postgresql://not-authorized'}.items():
+        monkeypatch.setenv(key, value)
+    env, identity = shell.resident_process_environment({})
+    child = subprocess.run([sys.executable, '-I', '-c',
+        'import json,ntpath,os; print(json.dumps({"home":ntpath.expanduser("~"),"env":dict(os.environ)}))'],
+        env=env, capture_output=True, text=True, check=True, timeout=10)
+    result = json.loads(child.stdout)
+    assert result['home'] == profile
+    assert {key: result['env'].get(key) for key in values} == values
+    assert 'OPENAI_API_KEY' not in result['env']
+    assert 'PORTAL_DATABASE_URL' not in result['env']
+    assert identity == {}
 
 
 def test_database_permission_gate_and_file_fallback_are_unchanged(monkeypatch, tmp_path):
