@@ -83,14 +83,27 @@ def test_registration_rejects_invalid_identity_and_sensitive_config():
     assert store.registrations() == []
 
 
-def test_role_blocks_account_deletion():
+def test_role_blocks_account_deletion(monkeypatch):
     """仍被 Backend 角色使用的账号不能删除。"""
     from management_portal.execution import account_registrations as store
     store.create_registration({"account_id": "claude_test", "provider": "claude", "kind": "subscription_login"}, "alice")
     store.update_role("default", "claude_test", "model", "", 0, "alice")
+    store.update_role("router_fast", "claude_test", "model", "", 0, "alice")
     with pytest.raises(InstructionError) as error:
         store.delete_registration("claude_test")
     assert (error.value.code, error.value.details["reason"]) == ("instruction.conflict", "account.role_in_use")
+    assert error.value.details["roles"] == ["default", "router_fast"]
+    from management_portal.execution import isa, account_login, account_hosting
+    def unexpected(*args, **kwargs):
+        pytest.fail("A referenced account must not lose login data or its home")
+    monkeypatch.setattr(isa, "account_busy_counts", lambda _: {"session_count": 0, "execution_count": 0})
+    monkeypatch.setattr(account_login, "delete_login_data", unexpected)
+    monkeypatch.setattr(account_hosting, "remove_account_home", unexpected)
+    with pytest.raises(InstructionError) as refused:
+        isa.delete_provider_account(SimpleNamespace(argument={"account_id": "claude_test"}.get))
+    assert refused.value.details == error.value.details
+    assert store.registration("claude_test") is not None
+    assert [row["role"] for row in store.roles()] == ["default", "router_fast"]
 
 
 def test_delete_checks_real_session_bindings_and_scheduler_work():

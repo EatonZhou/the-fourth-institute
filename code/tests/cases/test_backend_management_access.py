@@ -5,7 +5,8 @@ from management_portal.http_portal_session import PortalSessionHttp
 
 
 @pytest.mark.parametrize("register", [False, True])
-def test_backend_viewer_identity_exposes_read_flags_without_management_write(monkeypatch, register):
+@pytest.mark.parametrize("deletion", [None, "DeleteProviderAccount", "DeleteModelApi"])
+def test_backend_viewer_identity_exposes_read_flags_without_management_write(monkeypatch, register, deletion):
     """AI Backend 共享查看者可以发现管理入口，且不获得运维写权限。
 
     :module: execution.providers
@@ -17,6 +18,8 @@ def test_backend_viewer_identity_exposes_read_flags_without_management_write(mon
     permitted = {"ListProviders", "ListProviderAccounts"}
     if register:
         permitted.add("RegisterProviderAccount")
+    if deletion:
+        permitted.add(deletion)
     monkeypatch.setattr(permission_system, "allows", lambda actor, instruction, arguments=None: instruction in permitted)
     monkeypatch.setattr(permission_system, "user_category", lambda actor: "member")
     monkeypatch.setattr(permission_system, "mode", lambda: "par")
@@ -32,3 +35,5 @@ def test_backend_viewer_identity_exposes_read_flags_without_management_write(mon
     assert flags["UpdateProviderAccount"] is False
     assert flags["CreateUser"] is False
     assert flags["RegisterProviderAccount"] is register
+    assert flags["DeleteProviderAccount"] is (deletion == "DeleteProviderAccount")
+    assert flags["DeleteModelApi"] is (deletion == "DeleteModelApi")

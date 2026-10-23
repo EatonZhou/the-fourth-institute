@@ -21,6 +21,8 @@
 .backendForm [data-backend-check-log] { box-sizing:border-box; width:100%; min-width:0; resize:vertical; font:12px/1.5 monospace; }
 .backendForm [role=alert] { color:var(--danger, #b3261e); }
 .backendForm [role=alert]:empty { display:none; }
+.backendDelete { max-width:32rem; }
+.backendDelete [role=alert] { color:var(--danger, #b3261e); white-space:normal; overflow-wrap:anywhere; }
 .backendIntroduction h2, .backendChoice h3 { margin:0; }
 .backendIntroduction p, .backendHint { color:var(--muted); font-size:13px; line-height:1.5; }
 .backendChoices { display:grid; grid-template-columns:repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap:12px; }

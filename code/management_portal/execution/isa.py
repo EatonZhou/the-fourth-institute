@@ -546,8 +546,7 @@ def delete_provider_account(inv):
     if any(busy.values()):
         raise InstructionError("instruction.conflict", "账号仍有绑定会话或排队、运行中的执行",
                                details={"reason": "account.busy", **busy})
-    if any(r["account_id"] == row["account_id"] for r in store.roles()):
-        raise InstructionError("instruction.conflict", "请先修改引用该账号的 Backend 角色", details={"reason": "account.role_in_use"})
+    store.require_no_role_references(row["account_id"])
     if row["provider"] == "codex":
         host.remove_codex_instance(row["account_id"])
     delete_login_data(row["account_id"])

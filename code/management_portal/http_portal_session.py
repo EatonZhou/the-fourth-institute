@@ -15,7 +15,8 @@ from management_portal.resources.errors import resource_error_http_response
 # Portal 管理员 (decision_b820faf42218 §3.1).
 PAGE_INSTRUCTIONS = ("CreateUser", "GetExecutionSettings", "UpdateExecutionSettings", "ActivatePermissionScheme",
                      "UpdateProviderAccount", "OpenTerminal", "ListResourceTypes", "UpdateResourceType",
-                     "ListProviders", "ListProviderAccounts", "RegisterProviderAccount")
+                     "ListProviders", "ListProviderAccounts", "RegisterProviderAccount",
+                     "DeleteProviderAccount", "DeleteModelApi")
 PAGE_ARGUMENTS = {"UpdateExecutionSettings": {"permission_system_enabled": True}}
 
 

@@ -49,8 +49,13 @@ function loadStyle() {
     {rel: "stylesheet", href: "/static/portal_management_backend.css", "data-backend-style": ""}));
 }
 function errorText(error) {
-  if (error.details?.reason === "account.busy") return t("账号仍绑定 {p0} 个会话、{p1} 个执行；请先迁移会话。", {
+  if (error.details?.reason === "account.busy") return t("账号仍关联 {p0} 个会话、{p1} 个排队或运行中的执行。请先迁移会话并等待或取消执行；也可先停用账号。", {
     p0: error.details?.session_count ?? "—", p1: error.details?.execution_count ?? "—"});
+  if (error.details?.reason === "account.role_in_use") return error.details.roles?.length
+    ? t("无法删除：Backend 角色 {p0} 仍引用该账号。请先将这些角色改用其他已启用账号。", {p0: error.details.roles.join("、")})
+    : t("请先修改引用该账号的 Backend 角色");
+  if (error.details?.reason === "account.api_in_use") return t("无法删除：执行账号 {p0} 仍使用此模型 API。请先处理这些账号的引用，再删除接口。", {
+    p0: (error.details.account_ids || []).join("、") || "—"});
   return error.message ? t(error.message) : t("操作失败，请重试。");
 }
 function secretSubmissionError(error) {
@@ -150,6 +155,8 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
   const abort = new AbortController();
   const canWrite = me.access?.permission_system === "open" || me.access?.allows?.UpdateProviderAccount === true;
   const canRegister = me.access?.permission_system === "open" || me.access?.allows?.RegisterProviderAccount === true;
+  const canDeleteAccount = me.access?.permission_system === "open" || me.access?.allows?.DeleteProviderAccount === true;
+  const canDeleteApi = me.access?.permission_system === "open" || me.access?.allows?.DeleteModelApi === true;
   const execute = (name, args = {}, options = {}) => call(name, args, {...options, signal: abort.signal});
   const state = {providers: [], accounts: [], apis: [], roles: []};
   let providersReady = false;
@@ -183,16 +190,19 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     if (key === "accounts") root.insertBefore(section, management.parentElement); else management.append(section);
     sections[key] = {output, actions};
   }
-  const run = async (work, secret = false) => {
+  const run = async (work, secret = false, {success = "已保存", errorTarget = null, onError = null} = {}) => {
     if (busy || destroyed) return;
     busy = true; notice.textContent = t("正在处理…");
     const buttons = [...root.querySelectorAll("button"), ...(editor ? editor.el.querySelectorAll("button") : [])];
     const disabled = buttons.map(el => el.disabled); buttons.forEach(el => el.disabled = true);
-    try { const completed = await work(); if (!destroyed && completed !== false) notice.textContent = t("已保存"); }
+    try { const completed = await work(); if (!destroyed && completed !== false) notice.textContent = t(success); }
     catch (error) { if (!destroyed) {
       const message = secret ? secretSubmissionError(error) : errorText(error);
       notice.textContent = message;
-      const alert = editor?.el.querySelector('[role="alert"]'); if (alert) alert.textContent = message;
+      const alert = errorTarget || editor?.el.querySelector('[role="alert"]');
+      if (alert) { alert.textContent = message; alert.hidden = false; }
+      onError?.(error);
+      if (errorTarget?.isConnected) { errorTarget.scrollIntoView?.({block: "nearest"}); errorTarget.focus(); }
     } }
     finally { busy = false; buttons.forEach((el, i) => { if (el.isConnected) el.disabled = disabled[i]; }); syncAccountButton(); }
   };
@@ -211,6 +221,32 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
   };
   const actions = (...buttons) => { const el = node("div", undefined, {class: "backendActions"}); el.append(...buttons); return el; };
   const confirm = (title, id) => window.PortalUI.confirm({title: t(title), message: id, confirmLabel: t("删除"), tone: "danger"});
+  function deleteControl(title, id, instruction, argument, reload, disabled, disabledReason = "当前身份没有删除权限。") {
+    const control = node("div", undefined, {class: "backendDelete"});
+    const feedback = node("p", "", {role: "alert", tabindex: "-1", hidden: true});
+    const recovery = button("查看 Backend 角色", () => {
+      const target = sections[recovery.dataset.section].output.parentElement;
+      const details = target.closest("details"); if (details) details.open = true;
+      target.tabIndex = -1; target.scrollIntoView?.({block: "nearest"}); target.focus();
+    });
+    recovery.hidden = true;
+    const remove = button("删除", () => void run(async () => {
+      feedback.hidden = true; feedback.textContent = ""; recovery.hidden = true;
+      if (!await confirm(title, id)) { notice.textContent = t("已取消删除"); return false; }
+      await execute(instruction, {[argument]: id}); await reload();
+    }, false, {success: "已删除", errorTarget: feedback, onError: error => {
+      const section = error.details?.reason === "account.role_in_use" ? "roles"
+        : error.details?.reason === "account.api_in_use" ? "accounts" : "";
+      if (section) {
+        recovery.dataset.section = section;
+        recovery.textContent = t(section === "roles" ? "查看 Backend 角色" : "查看已接入的 AI");
+        recovery.hidden = false;
+        void refresh(section);
+      }
+    }}), disabled);
+    if (disabled) remove.title = t(disabledReason);
+    control.append(remove, feedback, recovery); return control;
+  }
   function newEditor(title, onClose = () => {}) {
     editor?.close();
     const view = dialog(t(title), () => { onClose(); view.el.querySelectorAll('[type="password"]').forEach(el => el.value = ""); if (editor === view) editor = null; });
@@ -637,7 +673,8 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
             await reload(); }), readonly)] : []),
           button(a.enabled === false ? "启用" : "停用", () => void run(async () => { await execute("UpdateProviderAccountRegistration", {account_id: a.account_id, changes: {enabled: a.enabled === false}}, {expectedVersion: a.registration_version}); await reload(); }), readonly),
           button("编辑初始并发", () => concurrencyEditor(a), readonly),
-          button("删除", () => void run(async () => { if (await confirm("删除执行账号？", a.account_id)) { await execute("DeleteProviderAccount", {account_id: a.account_id}); await reload(); } }), readonly))]};
+          deleteControl("删除执行账号？", a.account_id, "DeleteProviderAccount", "account_id", reload, !canDeleteAccount || a.kind === "service",
+            a.kind === "service" ? "服务账号由 Provider 管理，不能在此删除。" : "当前身份没有删除权限。"))]};
     })),
     apis: () => table("apis", ["连接名称", "服务商", "接口地址", "默认模型", "状态", "操作"], state.apis.map(api => {
       const result = node("span", "", {role: "status"});
@@ -649,7 +686,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       }, !canWrite || api.enabled === false);
       return {cells: [api.api_id, api.provider, api.base_url, api.default_model, t(api.enabled === false ? "已停用" : "已启用"), actions(
         button("编辑", () => apiEditor(api), !canWrite), test, result,
-        button("删除", () => void run(async () => { if (await confirm("删除模型 API？", api.api_id)) { await execute("DeleteModelApi", {api_id: api.api_id}); await refresh("apis"); } }), !canWrite))]};
+        deleteControl("删除模型 API？", api.api_id, "DeleteModelApi", "api_id", () => refresh("apis"), !canDeleteApi))]};
     })),
     roles: () => table("roles", ["角色", "执行账号", "模型", "推理强度", "版本", "操作"],
       (state.roles.some(r => r.role === "default") ? state.roles : [{role: "default", version: 0}, ...state.roles]).map(role => ({cells: [role.role, role.account_id || t("必须设置默认账号"), role.model || "—", role.reasoning_effort || "—", role.version,

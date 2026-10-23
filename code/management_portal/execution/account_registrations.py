@@ -170,10 +170,20 @@ def _check_relationships(c, row):
         raise InstructionError("instruction.conflict", "Codex 已有默认账号，请先取消原默认标记")
 
 
+def require_no_role_references(account_id, connection=None):
+    if connection is None:
+        with database().read() as c:
+            return require_no_role_references(account_id, c)
+    names = [row["role"] for row in connection.execute(
+        "SELECT role FROM backend_roles WHERE account_id=%s ORDER BY role", (account_id,))]
+    if names:
+        raise InstructionError("instruction.conflict", "请先修改引用该账号的 Backend 角色",
+                               details={"reason": "account.role_in_use", "roles": names})
+
+
 def delete_registration(account_id):
     with database().transaction("registrations") as c:
-        if c.execute("SELECT 1 FROM backend_roles WHERE account_id=%s", (account_id,)).fetchone():
-            raise InstructionError("instruction.conflict", "请先修改引用该账号的 Backend 角色", details={"reason": "account.role_in_use"})
+        require_no_role_references(account_id, c)
         return bool(c.execute("DELETE FROM registrations WHERE account_id=%s", (account_id,)).rowcount)
 
 

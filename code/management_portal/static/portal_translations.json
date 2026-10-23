@@ -40714,5 +40714,41 @@
   "设为默认路线": {
     "zh-CN": "设为默认路线",
     "en": "Make default route"
+  },
+  "已删除": {
+    "en": "Deleted",
+    "zh-CN": "已删除"
+  },
+  "已取消删除": {
+    "en": "Deletion cancelled",
+    "zh-CN": "已取消删除"
+  },
+  "当前身份没有删除权限。": {
+    "en": "Your current identity does not have permission to delete this item.",
+    "zh-CN": "当前身份没有删除权限。"
+  },
+  "无法删除：Backend 角色 {p0} 仍引用该账号。请先将这些角色改用其他已启用账号。": {
+    "en": "Cannot delete: backend roles {p0} still reference this account. Assign these roles to another enabled account first.",
+    "zh-CN": "无法删除：Backend 角色 {p0} 仍引用该账号。请先将这些角色改用其他已启用账号。"
+  },
+  "无法删除：执行账号 {p0} 仍使用此模型 API。请先处理这些账号的引用，再删除接口。": {
+    "en": "Cannot delete: execution accounts {p0} still use this model API. Resolve these account references before deleting the API.",
+    "zh-CN": "无法删除：执行账号 {p0} 仍使用此模型 API。请先处理这些账号的引用，再删除接口。"
+  },
+  "服务账号由 Provider 管理，不能在此删除。": {
+    "en": "This service account is managed by its provider and cannot be deleted here.",
+    "zh-CN": "服务账号由 Provider 管理，不能在此删除。"
+  },
+  "查看 Backend 角色": {
+    "en": "View backend roles",
+    "zh-CN": "查看 Backend 角色"
+  },
+  "查看已接入的 AI": {
+    "en": "View connected AI accounts",
+    "zh-CN": "查看已接入的 AI"
+  },
+  "账号仍关联 {p0} 个会话、{p1} 个排队或运行中的执行。请先迁移会话并等待或取消执行；也可先停用账号。": {
+    "en": "This account still has {p0} bound sessions and {p1} queued or running executions. Move the sessions and wait for or cancel the executions first. You can also disable the account.",
+    "zh-CN": "账号仍关联 {p0} 个会话、{p1} 个排队或运行中的执行。请先迁移会话并等待或取消执行；也可先停用账号。"
   }
 }
