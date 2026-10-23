@@ -6,12 +6,12 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const vm = require('node:vm');
-const { randomUUID } = require('node:crypto');
+const { randomUUID, webcrypto } = require('node:crypto');
 const { observeBrowser } = require('../../../management_portal/test_framework/tau_browser_observer');
 
 const origin = 'http://observer.invalid';
 
-async function capture(inputs, inspect, observe = observeBrowser) {
+async function capture(inputs, inspect, observe = observeBrowser, injected = false) {
   const evidenceDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tau-request-contract-'));
   const context = new EventEmitter();
   const page = new EventEmitter();
@@ -41,15 +41,20 @@ async function capture(inputs, inspect, observe = observeBrowser) {
     assert.equal(typeof receive, 'function', 'production binding registered');
     // This is an input at the browser binding boundary, not a manufactured
     // request/document association. The production observer creates that ID.
-    await receive({ frame }, {
-      kind: 'document_started', token: randomUUID(), at: 1, time_origin: 1000,
-    });
+    let probe;
+    if (injected) {
+      probe = documentProbe(scripts[0].content, data => receive({ frame }, data));
+    } else {
+      await receive({ frame }, {
+        kind: 'document_started', token: randomUUID(), at: 1, time_origin: 1000,
+      });
+    }
     const requests = inputs.map(input => ({
       url: () => new URL(input.url, origin).href,
       method: () => input.method || 'GET',
       postDataJSON: () => input.body,
-      headers: () => ({ authorization: 'Bearer private-header' }),
-      resourceType: () => 'fetch',
+      headers: () => ({ authorization: 'Bearer private-header', ...input.headers }),
+      resourceType: () => input.resourceType || 'fetch',
       frame: () => frame,
       redirectedFrom: () => null,
       isNavigationRequest: () => false,
@@ -57,6 +62,7 @@ async function capture(inputs, inspect, observe = observeBrowser) {
       timing: () => ({ startTime: 1000, requestStart: 1, responseStart: 2, responseEnd: 3 }),
     }));
     for (const request of requests) context.emit('request', request);
+    if (probe) await probe.exercise();
     // Responses deliberately arrive in a different order. Status and payload
     // are fixed fixture inputs; no scope, digest or expected join is computed.
     for (const request of [...requests].reverse()) {
@@ -100,6 +106,70 @@ async function capture(inputs, inspect, observe = observeBrowser) {
     observer?.stop();
     fs.rmSync(evidenceDir, { recursive: true, force: true });
   }
+}
+
+// Execute the exact production init script in a separate realm, as a browser
+// does. The fixture supplies DOM/Performance events, not sanitized paths or
+// manufactured transport associations. Real browser delivery remains UI TAU.
+function documentProbe(content, receive) {
+  const listeners = new Map(), pending = [];
+  let performanceCallback;
+  const window = {
+    __portalTauObservationRecord: data => {
+      const promise = Promise.resolve(receive(data)); pending.push(promise); return promise;
+    },
+    addEventListener: (name, listener) => listeners.set(name, listener),
+  };
+  vm.runInNewContext(content, {
+    window, URL, crypto: webcrypto, queueMicrotask,
+    performance: { timeOrigin: 1000, addEventListener() {} },
+    PerformanceObserver: class {
+      constructor(callback) { performanceCallback = callback; }
+      observe() {}
+      takeRecords() { return []; }
+    },
+  });
+  const dispatch = (name, detail) => listeners.get(name)({ detail });
+  return { async exercise() {
+    for (const stream_id of ['unique-stream', 'reconnected-stream', 'unknown-stream']) {
+      const detail = { url: `${origin}/api/events?portal_stream_id=${stream_id}&token=query-secret`, stream_id,
+        at: '2026-10-23T00:00:00Z', reason: 'page_closed' };
+      dispatch('portal:connection-ready', detail);
+      dispatch('portal:connection-closed', detail);
+    }
+    dispatch('portal:connection-closed', { url: `${origin}/api/instructions/execute?token=query-secret`,
+      transport_id: 'unique-request', at: '2026-10-23T00:00:00Z', reason: 'caller_aborted' });
+    performanceCallback({ getEntries: () => [
+      { name: `${origin}/api/agent-workbench/residents/projection?id=private-resident&token=query-secret`, initiatorType: 'fetch' },
+      { name: `${origin}/api/private-name?token=query-secret`, initiatorType: 'fetch' },
+    ] });
+    await Promise.all(pending);
+  } };
+}
+
+async function injectedContract(observe) {
+  await capture([
+    { url: '/api/events?portal_stream_id=unique-stream', resourceType: 'eventsource' },
+    { url: '/api/events?portal_stream_id=reconnected-stream', resourceType: 'eventsource' },
+    { url: '/api/events?portal_stream_id=reconnected-stream', resourceType: 'eventsource' },
+    { url: '/api/instructions/execute', method: 'POST', headers: { 'x-portal-request-id': 'unique-request' } },
+  ], ({ rows, starts, output }) => {
+    const ready = rows.filter(row => row.kind === 'portal_stream_ready');
+    const closed = rows.filter(row => row.kind === 'portal_connection_closed');
+    assert.equal(ready.length, 3); assert.equal(closed.length, 4);
+    assert.equal(ready[0].path, '/api/events');
+    assert.equal(ready[0].request_id, starts[0].request_id);
+    assert.equal(closed[0].request_id, starts[0].request_id);
+    assert.equal(closed[3].path, '/api/instructions/execute');
+    assert.equal(closed[3].request_id, starts[3].request_id);
+    for (const row of [...ready.slice(1), ...closed.slice(1, 3)]) {
+      assert.equal(row.request_id, null, 'duplicate and missing identities remain unknown');
+      assert.equal(row.request_association, 'unavailable_no_unique_transport_identity');
+    }
+    assert.deepEqual(rows.filter(row => row.kind === 'resource_timing').map(row => row.path),
+      ['/api/agent-workbench/residents/projection', '/api/[segment]']);
+    excludes(output, ['query-secret', 'private-name', 'private-resident', 'private-header']);
+  }, observe, true);
 }
 
 function excludes(output, secrets) {
@@ -197,9 +267,9 @@ async function residentContract(observe) {
   }, observe);
 }
 
-module.exports = { resourceContract, residentContract };
+module.exports = { resourceContract, residentContract, injectedContract };
 if (require.main === module) {
-  const contracts = { resource: resourceContract, resident: residentContract };
+  const contracts = { resource: resourceContract, resident: residentContract, injected: injectedContract };
   const name = process.argv[2];
   assert.ok(Object.hasOwn(contracts, name), 'choose an explicit contract');
   contracts[name]().then(() => console.log(`contract passed: ${name}`)).catch(error => {

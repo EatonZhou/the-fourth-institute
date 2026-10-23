@@ -17,25 +17,29 @@ const residentReadRoutes = new Map([
 
 // Unknown path components may contain names or credentials. Keep only public
 // endpoint vocabulary; identity is carried by request/frame/document IDs.
-function safePath(value) {
-  const words = new Set('api instructions execute events agent-workbench residents session-restart-options initialize paper papers session lineage lineages home test chat resource resources file files static assets me health shared-agents account accounts usage catalog search suggest workspace workspaces deployments login notifications inbox viewer pdf entry'.split(' '));
-  try {
-    const u = new URL(value, 'http://observation.invalid');
-    if (!['http:', 'https:'].includes(u.protocol)) return '[non-http]';
-    if (residentReadRoutes.has(u.pathname)) return u.pathname;
-    // These are complete public routes, not a vocabulary allowance for
-    // arbitrary nested paths. Query values remain excluded in both Node and
-    // the injected ResourceTiming observer.
-    if (['/api/agent-conversations', '/api/scheduled-triggered', '/api/resources/resolve', '/api/resources/reference', '/api/resources/content',
-      '/api/agent-workbench/link-file', '/api/agent-workbench/link-file-raw',
-      '/test/api/preview', '/test/api/catalog/case'].includes(u.pathname)) return u.pathname;
-    return u.pathname.split('/').map(part => {
-      if (!part || words.has(part) || /^(home|lineage|test|paper|chat|hatg-panel)\.html$/.test(part)) return part;
-      const extension = part.match(/\.(pdf|js|css|png|jpg|jpeg|svg|woff2?)$/i)?.[1];
-      return extension ? `[file].${extension.toLowerCase()}` : '[segment]';
-    }).join('/');
-  } catch { return '[unavailable]'; }
+function createPathSanitizer(residentPaths) {
+  const routes = new Set(residentPaths);
+  return function safePath(value) {
+    const words = new Set('api instructions execute events agent-workbench residents session-restart-options initialize paper papers session lineage lineages home test chat resource resources file files static assets me health shared-agents account accounts usage catalog search suggest workspace workspaces deployments login notifications inbox viewer pdf entry'.split(' '));
+    try {
+      const u = new URL(value, 'http://observation.invalid');
+      if (!['http:', 'https:'].includes(u.protocol)) return '[non-http]';
+      if (routes.has(u.pathname)) return u.pathname;
+      // These are complete public routes, not a vocabulary allowance for
+      // arbitrary nested paths. Query values remain excluded in both Node and
+      // the injected ResourceTiming observer.
+      if (['/api/agent-conversations', '/api/scheduled-triggered', '/api/resources/resolve', '/api/resources/reference', '/api/resources/content',
+        '/api/agent-workbench/link-file', '/api/agent-workbench/link-file-raw',
+        '/test/api/preview', '/test/api/catalog/case'].includes(u.pathname)) return u.pathname;
+      return u.pathname.split('/').map(part => {
+        if (!part || words.has(part) || /^(home|lineage|test|paper|chat|hatg-panel)\.html$/.test(part)) return part;
+        const extension = part.match(/\.(pdf|js|css|png|jpg|jpeg|svg|woff2?)$/i)?.[1];
+        return extension ? `[file].${extension.toLowerCase()}` : '[segment]';
+      }).join('/');
+    } catch { return '[unavailable]'; }
+  };
 }
+const safePath = createPathSanitizer([...residentReadRoutes.keys()]);
 
 // Identify repeated reads of the same resource without recording its address,
 // filename, query string or contents. A probe is not a user opening a file.
@@ -444,7 +448,9 @@ async function observeBrowser(context, { evidenceDir }) {
     });
     performance.addEventListener('resourcetimingbufferfull', () => emit({ kind: 'resource_timing_buffer_full' }));
   }
-  await context.addInitScript({ content: `(${documentObserver.toString()})(${safePath.toString()});` });
+  // Serialize the factory with its explicit public configuration. Serializing
+  // a closure alone loses Node-side dependencies inside the page's realm.
+  await context.addInitScript({ content: `(${documentObserver.toString()})((${createPathSanitizer.toString()})(${JSON.stringify([...residentReadRoutes.keys()])}));` });
   for (const page of context.pages()) pageState(page);
   write({ kind: 'capture_started', clocks: { observed_at_ms: 'node_epoch_ms', resource_values: 'browser_time_origin_plus_relative_ms' },
     limitations: ['No request bodies, arbitrary headers or query strings are persisted; only Portal EventSource and instruction transport identities are retained', 'Request/document association during navigation can be unconfirmed', 'Document destruction can prevent unload/Portal receipt delivery; absence does not prove no close occurred', 'Portal transport identity is matched only to a unique request in the same frame/document; native reconnects remain ambiguous, ResourceTiming lacks transport identity', 'Browser timing is not backend execution timing', 'server_timing_ms contains only allowlisted response-header durations: portal_queue is Web executor wait; portal_handler includes RPC/cache wait and excludes body upload/response streaming; neither is database CPU time', 'Zero browser sizes/phases may reflect reuse, cache or restricted exposure; never infer zero server cost'] });

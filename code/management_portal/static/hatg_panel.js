@@ -1800,7 +1800,7 @@
     renderLineageSurface();
     window.requestAnimationFrame(() => {
       state.graphController?.refresh?.({ measureNodes: true });
-      state.graphController?.fit?.({ duration: 220, minScale: 0.65, maxScale: 1, padding: 40 });
+      state.graphController?.fit?.({ duration: 220, maxScale: 1, padding: 40 });
     });
   }
 

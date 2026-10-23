@@ -5,11 +5,21 @@ const { chromium } = require('../../../management_portal/test_framework/tau_runt
 const { babelParse, traverse } = require('./babel_parse.cjs');
 const root = path.resolve(__dirname, '../../../management_portal/static');
 const source = fs.readFileSync(path.join(root, 'hatg_panel.js'), 'utf8');
-let options;
+let options, familyOptions;
 traverse(babelParse(source, 'hatg_panel.js'), { VariableDeclarator(p) {
   if (p.node.id.name === 'AUTO_LAYOUT_VIEW') options = source.slice(p.node.init.start, p.node.init.end);
 } });
+traverse(babelParse(source, 'hatg_panel.js'), { FunctionDeclaration(p) {
+  if (p.node.id.name !== 'showFamilyAlone') return;
+  p.traverse({ OptionalCallExpression(call) {
+    if (call.node.callee.property?.name === 'fit') {
+      const argument = call.node.arguments[0];
+      familyOptions = source.slice(argument.start, argument.end);
+    }
+  } });
+} });
 assert.ok(options, 'production arrange camera policy');
+assert.ok(familyOptions, 'production Family camera policy');
 (async () => {
   const browser = await chromium.launch({ headless: true });
   try {
@@ -21,7 +31,7 @@ assert.ok(options, 'production arrange camera policy');
       return route.fulfill({ contentType: 'text/html', body: '<!doctype html><html><body><div class="portalHatgPanelComponent"><div id="canvas" class="hatgCanvas" style="width:720px;height:420px"><div id="world" class="hatgWorld"><svg id="edges"></svg><svg id="effects"></svg><div id="labels"></div><div id="nodes"></div></div><div id="toolbar" style="position:absolute;top:0;left:0;right:0;height:64px;background:white;z-index:50">Arrange</div></div></div></body></html>' });
     });
     await page.goto('http://hatg-arrange.fixture.invalid');
-    for (const name of ['portal_design_system', 'portal_themes', 'hatg_panel']) await page.addStyleTag({ url: '/static/' + name + '.css' });
+    for (const name of ['portal_design_system', 'portal_themes', 'hatg_panel', 'lineage_function_blocks']) await page.addStyleTag({ url: '/static/' + name + '.css' });
     for (const name of ['portal_text', 'portal_state', 'portal_translations', 'portal_i18n', 'portal_ui_primitives', 'projection_libraries/portal-graph/1.0.0/geometry', 'vendor/d3/d3.v7.9.0.min', 'lineage_graph']) await page.addScriptTag({ url: '/static/' + name + '.js' });
     assert.deepEqual(errors, [], 'production dependencies loaded');
     await page.evaluate(options => {
@@ -47,6 +57,42 @@ assert.ok(options, 'production arrange camera policy');
       assert.deepEqual(clipped, [], `arranged cards must fit the usable ${width}x${height} canvas`);
       assert.equal(await page.locator('#nodes [data-node-id]').count(), 8);
     }
+    // Family isolation uses its own production policy. A fixed lower zoom
+    // bound previously clipped members on a narrow, docked HATG panel.
+    await page.evaluate(policy => {
+      window.familyOptions = eval('(' + policy + ')');
+      document.getElementById('canvas').style.width = '418px';
+      graph.fit({ ...familyOptions, duration: 0 });
+    }, familyOptions);
+    async function assertVisible(label) {
+      await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      const clipped = await page.evaluate(() => {
+        const canvas = document.getElementById('canvas').getBoundingClientRect(), toolbar = document.getElementById('toolbar').getBoundingClientRect();
+        return [...document.querySelectorAll('#nodes [data-node-id], #nodes .functionBlockBoundary')].filter(node => {
+          const r = node.getBoundingClientRect();
+          return r.left < canvas.left || r.right > canvas.right || r.top < toolbar.bottom || r.bottom > canvas.bottom;
+        }).map(node => ({ id: node.dataset.nodeId || 'block',
+          bounds: node.getBoundingClientRect().toJSON(), canvas: canvas.toJSON(), toolbar: toolbar.toJSON() }));
+      });
+      assert.deepEqual(clipped, [], label);
+    }
+    await assertVisible('Family isolation fits every card');
+    await page.evaluate(() => {
+      document.documentElement.style.zoom = '1.25';
+      document.getElementById('canvas').style.width = '350px';
+    });
+    await assertVisible('fitted Family stays visible after panel resize and zoom');
+    await page.evaluate(() => {
+      window.nodes = [{ id: 'left', kind: 'agent', title: 'Left member', x: 15, y: 30 },
+        { id: 'right', kind: 'agent', title: 'Right member', x: 75, y: 55 }];
+      graph.render({ nodes, edges: [], functionBlockBoundaries: [{ id: 'block', title: 'Expanded block', member_ids: ['left', 'right'] }] });
+    });
+    await page.waitForFunction(() => document.querySelectorAll('#nodes .hatgNode').length === 2);
+    await page.evaluate(() => {
+      graph.refresh({ measureNodes: true });
+      graph.focusNode('left', { duration: 0 });
+    });
+    await assertVisible('focus includes the complete asymmetric block boundary');
     assert.deepEqual(errors, []);
     await page.evaluate(() => graph.destroy());
   } finally { await browser.close(); }

@@ -4296,7 +4296,6 @@
       if (!node) return;
       const viewport = currentViewportSize();
       viewportSize = viewport;
-      const position = nodePosition(node);
       const insets = currentViewportInsets(viewport);
       const availableWidth = Math.max(1, viewport.width - insets.left - insets.right);
       const availableHeight = Math.max(1, viewport.height - insets.top - insets.bottom);
@@ -4308,8 +4307,8 @@
       ), scaleExtent[0], scaleExtent[1]);
       const target = d3.zoomIdentity
         .translate(
-          insets.left + (viewport.width - insets.left - insets.right) / 2 - position.x / 100 * worldSize.width * targetScale,
-          insets.top + (viewport.height - insets.top - insets.bottom) / 2 - position.y / 100 * worldSize.height * targetScale,
+          insets.left + availableWidth / 2 - (bounds.minX + bounds.maxX) / 2 * targetScale,
+          insets.top + availableHeight / 2 - (bounds.minY + bounds.maxY) / 2 * targetScale,
         )
         .scale(targetScale);
       animateTransform(target, number(options.duration, 240), options.persist === true, options.compositor === true);

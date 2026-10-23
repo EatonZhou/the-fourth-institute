@@ -38,3 +38,13 @@ def test_resident_lifecycle_failures_correlate_without_business_content():
     :profiles: local.fixture
     """
     _run_contract("resident")
+
+
+def test_injected_observer_preserves_routes_and_unique_transport_identity():
+    """注入观察器在独立环境中保持路由脱敏与唯一传输关联
+
+    :design: decision_c953eab654cd
+    :risk: no-external-side-effects
+    :profiles: local.fixture
+    """
+    _run_contract("injected")
