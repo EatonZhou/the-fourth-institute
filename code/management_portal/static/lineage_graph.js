@@ -4314,9 +4314,14 @@
       animateTransform(target, number(options.duration, 240), options.persist === true, options.compositor === true);
     }
 
-    function ensureNodeVisible(nodeId) {
+    function ensureNodeVisible(nodeId, options = {}) {
       if (!nodeMap.has(nodeId)) return;
-      if (graphFitsViewport(transform, currentViewportSize(), 10, [nodeId])) return;
+      if (graphFitsViewport(transform, currentViewportSize(), 10, [nodeId])) {
+        // Structural changes may already have fitted the new graph. Save that
+        // view when requested, even if revealing the retained card needn't pan.
+        if (options.persist) persistTransform();
+        return;
+      }
       // Placement may avoid an occupied position outside the current viewport.
       // Reveal the committed card without changing coordinates or zooming in.
       focusNode(nodeId, { scale: transform.k, duration: 0, persist: true });

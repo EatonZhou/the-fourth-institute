@@ -38,6 +38,8 @@ assert.ok(familyOptions, 'production Family camera policy');
     await page.evaluate(options => {
       window.arrangeOptions = eval(options);
       window.graph = PortalHatgGraph.createGraph({ root: '#canvas', world: '#world', edgeLayer: '#edges', effectLayer: '#effects', labelLayer: '#labels', nodeLayer: '#nodes', scaleExtent: [.05, 3.2],
+        readViewport: () => window.savedViewport,
+        onViewportChange: (_id, view) => window.savedViewport = view,
         viewportInsets: () => ({ top: document.getElementById('toolbar').clientHeight + 10, bottom: 10 }) });
       window.nodes = Array.from({ length: 8 }, (_, i) => ({ id: 'node_' + i, kind: 'agent', title: 'Arrange ' + i, x: 15 + i * 10, y: 15 + i * 9 }));
       graph.render({ nodes, edges: [] });
@@ -106,6 +108,19 @@ assert.ok(familyOptions, 'production Family camera policy');
     assert.deepEqual(scroll, { x: 0, y: 0 }, 'the canvas has exactly one camera');
     await page.evaluate(() => graph.focusNode('left', { duration: 0 }));
     await assertVisible('native scroll attempts cannot displace a focused block');
+    const persisted = await page.evaluate(() => {
+      graph.setContext('lineage_fixture');
+      // Emulate structural repair fitting the survivors, with an older stored
+      // camera. The retained card is already visible and needs no extra pan.
+      graph.fit({ duration: 0 });
+      const expected = graph.getTransform();
+      graph.ensureNodeVisible('left', { persist: true });
+      graph.setContext('lineage_fixture');
+      return { expected, restored: graph.getTransform() };
+    });
+    for (const axis of ['x', 'y', 'k']) assert.ok(Math.abs(persisted.expected[axis] - persisted.restored[axis]) < .001,
+      `structurally revealed view survives reload: ${axis}`);
+    await assertVisible('restored survivor view remains inside canvas');
     // Compare server fallback placement with actual CSS card rectangles, not
     // an assertion that repeats the server's size estimate.
     const placementPath = path.resolve(root, '../society_service/lineage_placement.py');

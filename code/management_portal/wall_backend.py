@@ -877,7 +877,9 @@ def _task_prompt(record: dict[str, Any], job: dict[str, Any], point: dict[str, A
         + "\nPlan优先使用知识库plan资源并在IMPROVE.md索引；普通工程也可在.wall/plans/中创建一改进一文件，再由IMPROVE.md链接。Plan使用一级标题和完整叙述，Block地址为来源#plan，细节不拆卡片。Design、方向、不一致及Dev结果仍可分别在.wall/design.md、directions.md、inconsistencies.md、dev.md中使用一级列表，一项一个完整点；wall注释可附kind、importance、related、recommendation，蓝色结果附status:dev。metaness写在来源文档YAML头部，缺省合法，显式值为1..10整数，不按重要度猜测。"
         + "\n本次任务的蓝色成果默认由WALL收到完成结果后写入，你负责代码、Design和Plan的更新。如你已经撰写或更新了对应的蓝色成果，在最后的WALL_RESULT中给出dev_block_id（该成果的来源#局部key），WALL会复用它。"
         + "\n知识库资源仍通过当前Resident受认证Resource工具读取/更新，不自报其他身份。方向文档和关联也都是Markdown。"
-        + "\n授权中不含擅自扩大权限或操作无关工程。每完成一个获授权的功能或修复并通过定向验证，就发布对应改动及必要依赖；工程没有发布入口时只在结果中说明未发布，已完成并验证的工作仍返回completed，不因缺少发布入口返回blocked；用户明确暂缓发布时遵从用户要求。WALL不是唯一发布通道。只运行测试或只讨论不隐式触发发布。"
+        + ("\n发布任务只有实际发布成功才返回completed，并附完整publication_commit和实际发布入口、验证结果。没有发布入口、未发布或无法验证时必须返回blocked，保留Dev成果；不能以功能实现或验证完成代替发布完成。"
+           if job["action"] in {"publish", "publish-all"} else
+           "\n授权中不含擅自扩大权限或操作无关工程。每完成一个获授权的功能或修复并通过定向验证，就发布对应改动及必要依赖；工程没有发布入口时只在结果中说明未发布，已完成并验证的工作仍返回completed，不因缺少发布入口返回blocked；用户明确暂缓发布时遵从用户要求。WALL不是唯一发布通道。只运行测试或只讨论不隐式触发发布。")
         + "\n完成后最后一行返回 WALL_RESULT: {\"status\":\"completed\",\"summary\":\"实际完成与验证结果\"}。尚未完成、验证不通过或需要用户决策时返回status:blocked和具体原因，不能误报完成。"
         + "如成果关联仍存在的设计点或方向，可在结果中附related地址列表；没有关联时留空，不指向已删除的Plan条目。"
         + "\n工作输入：\n" + json.dumps(source, ensure_ascii=False)
@@ -956,6 +958,11 @@ def _finish_locked(record: dict[str, Any], job: dict[str, Any], result: dict[str
         _patch_job(job["id"], status="blocked", error=str(result.get("summary") or "需要处理"))
         return
     name = job["action"]
+    if (name in {"publish", "publish-all"} and record["id"] != "portal"
+            and not re.fullmatch(r"[0-9a-f]{40}", str(result.get("publication_commit") or ""))):
+        _patch_job(job["id"], status="blocked", error="发布结果缺少完整 publication_commit；尚未确认实际发布，保留 Dev 成果。")
+        invalidate(record["id"])
+        return
     creates_dev = name in {"implement", "align-code", "retire", "approve-direction"}
     existing_dev = str(result.get("dev_block_id") or "").strip()
     if creates_dev and existing_dev:

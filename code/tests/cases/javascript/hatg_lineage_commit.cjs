@@ -27,6 +27,8 @@ const BOUNDARIES = {
   }`,
   reconcileGraphInteractionState: 'function reconcileGraphInteractionState() {}',
   templateController: 'const templateController = { render() {} };',
+  setBusy: 'function setBusy() {}',
+  syncManualProgramEventInspectorBusy: 'function syncManualProgramEventInspectorBusy() {}',
 };
 
 function runtimeSource(entries) {
@@ -64,7 +66,7 @@ function resident(id, extra = {}) {
   return { id, kind: 'resident', title: id, status: 'idle', x: 20, y: 20, ...extra };
 }
 
-function fixture() {
+function fixture(entries = []) {
   const draws = [], toasts = [], bindings = [];
   const context = vm.createContext({
     document: { querySelector: () => null, getElementById: () => null },
@@ -93,7 +95,7 @@ function fixture() {
     const program = file === 'portal_state.js' ? babelParse(source, file).program.body[0] : null;
     vm.runInContext(program ? source.slice(program.start, program.end) : source, context, { filename: file });
   }
-  vm.runInContext(runtimeSource(['applyLineageEventProjection', 'graphVisibleModel', 'commitLineage']), context,
+  vm.runInContext(runtimeSource(['applyLineageEventProjection', 'graphVisibleModel', 'commitLineage', ...entries]), context,
     { filename: panelPath });
   const hatg = context.window.__hatg;
   hatg.state.lineage = {
@@ -105,7 +107,7 @@ function fixture() {
     ],
     edges: [], function_blocks: [], program: { components: [], wires: [] },
   };
-  return { ...hatg, draws, toasts, bindings };
+  return { ...hatg, draws, toasts, bindings, context };
 }
 
 const read = (f, change) => {
@@ -114,6 +116,35 @@ const read = (f, change) => {
   return lineage;
 };
 const shown = (f, id) => f.graphVisibleModel().nodes.find(node => node.id === id);
+
+test('手动 Event 成功提交只显示真实投递结果，不把成功误报为失败或重复提交', async () => {
+  for (const delivery of [
+    { matched_count: 1, results: [{ status: 'completed' }] },
+    { matched_count: 1, results: [{ status: 'queued' }] },
+    { matched_count: 1, results: [{ status: 'dropped' }] },
+    { matched_count: 0, results: [] },
+  ]) {
+    const f = fixture(['emitManualProgramEvent']);
+    f.state.lineage.program.components.push({
+      id: 'event_source', kind: 'event_source', config: { event_type: 'manual.triggered' },
+    });
+    let calls = 0;
+    f.context.PortalUI.prompt = async () => 'one input';
+    f.context.PortalInstructionClient.execute = async name => {
+      if (name === 'TriggerEvent') calls += 1;
+      else assert.equal(name, 'GetLineage');
+      return { lineage: read(f, lineage => {
+        lineage.revision += 1;
+        lineage.nodes.push(resident('resident_cccccccccccc'));
+      }), delivery };
+    };
+    await f.emitManualProgramEvent('event_source');
+    assert.equal(calls, 1);
+    assert.ok(shown(f, 'resident_cccccccccccc'));
+    assert.ok(f.toasts.at(-1).startsWith('Event 已'), f.toasts.at(-1));
+    assert.ok(!f.toasts.some(value => value.includes('触发失败')), f.toasts.join('\n'));
+  }
+});
 
 test('同一版本读到的新执行结果会更新画布节点，不沿用此前的投影缓存', () => {
   const f = fixture();

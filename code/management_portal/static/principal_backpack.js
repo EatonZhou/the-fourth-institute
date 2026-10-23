@@ -9,6 +9,7 @@
   let titleController = new AbortController();
   const titleCache = new Map();
   let entryCard = null;
+  let releasePrincipalEvents = null;
   const root = document.createElement("div");
   root.className = container ? "backpackEmbedded" : "portalDetailOverlay backpackOverlay";
   root.dataset.backpackMode = mode;
@@ -59,6 +60,8 @@
   function destroy() {
     if (lifetime.signal.aborted) return;
     lifetime.abort();
+    releasePrincipalEvents?.();
+    releasePrincipalEvents = null;
     closeEntryCard();
     window.PortalButtonTooltips.hide();
     titleController.abort(); titleCache.clear();
@@ -283,13 +286,18 @@
       if (!state.requestedPrincipal) await loadDetail(result.principal);
     } catch (error) { if (!lifetime.signal.aborted && sequence === state.catalogRequest) { notice("backpackStatus", error.message, true); $("backpackRetry").hidden = false; } }
   }
-  async function loadDetail(principal) {
+  async function loadDetail(principal, { force = false } = {}) {
     if (lifetime.signal.aborted) return false;
-    if (state.requestedPrincipal === principal && state.detailReady) return true;
+    if (!force && state.requestedPrincipal === principal && state.detailReady) return true;
+    if (state.requestedPrincipal !== principal) {
+      releasePrincipalEvents?.();
+      releasePrincipalEvents = String(principal || "").startsWith("resident_")
+        ? window.PortalEvents?.watchResident?.(principal) : null;
+      state.packageCategory = "";
+    }
     resetResourceTitles();
     state.permissionRows = null;
     state.possessions = [];
-    state.packageCategory = "";
     state.requestedPrincipal = principal;
     state.detailReady = false;
     const sequence = ++state.detailRequest;
@@ -382,10 +390,17 @@
   async function refresh({ principalId = state.requestedPrincipal } = {}) {
     if (lifetime.signal.aborted) return false;
     const id = String(principalId || state.requestedPrincipal).trim();
-    if (id !== state.requestedPrincipal) return loadDetail(id);
-    if (!state.detailReady) return loadDetail(id);
-    return await loadPermissions(id, state.detailRequest) === true;
+    return loadDetail(id, { force: true });
   }
+  window.addEventListener("portal:change", event => {
+    const detail = event.detail || {};
+    const scopes = detail.resident_changes?.[state.requestedPrincipal] || [];
+    if (state.requestedPrincipal && (detail.snapshot_required
+        || scopes.includes("identity") || scopes.includes("workspace"))) void refresh();
+  }, { signal: lifetime.signal });
+  window.addEventListener("portal:events-ready", event => {
+    if (state.requestedPrincipal && event.detail?.reconnected) void refresh();
+  }, { signal: lifetime.signal });
   return { root, mode, managementView, dialog, destroy, getPrincipalId: () => state.requestedPrincipal, setPrincipalId: principalId => {
     const id = String(principalId || "").trim();
     return id ? loadDetail(id) : Promise.resolve(false);

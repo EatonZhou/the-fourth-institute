@@ -1814,7 +1814,7 @@
       // surviving member (including a nested facade), without selecting it or
       // moving the stored graph. A card already in view keeps the camera.
       controller?.refresh?.({ measureNodes: true });
-      controller?.ensureNodeVisible?.(node.id);
+      controller?.ensureNodeVisible?.(node.id, { persist: true });
     });
   }
 
@@ -6288,9 +6288,7 @@
         status => ["dropped", "queue_full"].includes(status),
       ).length;
       toast(
-        createdResidentIds.length
-          ? window.PortalI18n.text`Event 已创建普通 Resident：${createdResidentIds.join("、")}`
-          : retainedCount
+        retainedCount
           ? window.PortalI18n.text`Event 已触发；${retainedCount} 条边暂存了事件，接收方可消费后会继续投递。`
           : discardedCount
             ? window.PortalI18n.text`Event 已触发；${discardedCount} 条边按各自策略丢弃了事件。`

@@ -1413,6 +1413,25 @@ def test_wall_other_project_publish_never_borrows_portal_entrypoint(wall_project
     prompt = wall._task_prompt(record, {"action": "publish-all", "actor": "owner"}, None)
     assert "publish_portal_release" not in prompt
     assert "没有全量发布能力" in prompt
+    for action in ("publish", "publish-all"):
+        prompt = wall._task_prompt(record, {"action": action, "actor": "owner"}, None)
+        assert "不因缺少发布入口返回blocked" not in prompt
+        assert "未发布或无法验证时必须返回blocked" in prompt
+
+
+@pytest.mark.parametrize("action", ["publish", "publish-all"])
+def test_other_project_publication_without_commit_preserves_dev(wall_project, monkeypatch, action):
+    """缺少实际发布结果时不能因模型返回 completed 移除 Dev 成果。"""
+    record = {**wall.project("portal", "owner"), "id": "other"}
+    job = {"id": "wall-unpublished", "action": action, "actor": "owner", "block": ".wall/dev.md#kept"}
+    wall._change(lambda data: data["jobs"].__setitem__(job["id"], job))
+    removed = []
+    monkeypatch.setattr(wall, "_remove_point", lambda *args: removed.append(args))
+    wall._finish(record, job, {"status": "completed", "summary": "没有发布入口，未同步 Release。"})
+    assert removed == []
+    finished = wall._read_state()["jobs"][job["id"]]
+    assert finished["status"] == "blocked"
+    assert "publication_commit" in finished["error"]
 
 
 def test_an_analysis_that_records_a_defect_it_found_is_completed(wall_project):
