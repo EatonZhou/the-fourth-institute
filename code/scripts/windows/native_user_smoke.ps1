@@ -82,11 +82,19 @@ exit `$code
     # A CI runner's enclosing Job forbids CREATE_BREAKAWAY_FROM_JOB. A real
     # user service starts outside it. Task Scheduler gives the disposable
     # standard user that same context, without changing product ownership rules.
-    $action = New-ScheduledTaskAction -Execute "$env:SystemRoot/System32/WindowsPowerShell/v1.0/powershell.exe" `
-        -Argument ('-NoProfile -ExecutionPolicy Bypass -File "' + $entry + '"') -WorkingDirectory $fixture
-    $settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 40)
+    # Capture errors before PowerShell can start its own transcript (including
+    # script parse or process-start errors), using only the disposable fixture.
+    $entryCmd = Join-Path $fixture 'run.cmd'
+    @('@echo off',
+        ('"' + $env:SystemRoot + '\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File "%~dp0run.ps1" >"%~dp0bootstrap-launch.log" 2>&1'),
+        'exit /b %errorlevel%') | Set-Content $entryCmd -Encoding ascii
+    $action = New-ScheduledTaskAction -Execute "$env:SystemRoot/System32/cmd.exe" `
+        -Argument ('/d /s /c ""' + $entryCmd + '""') -WorkingDirectory $fixture
+    $settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 40) `
+        -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
     Register-ScheduledTask -TaskName $taskName -Action $action -Settings $settings -RunLevel Limited `
         -User $credential.UserName -Password ($credential.GetNetworkCredential().Password) | Out-Null
+    Export-ScheduledTask -TaskName $taskName | Set-Content (Join-Path $evidencePath 'task-definition.xml') -Encoding utf8
     $started = Get-Date
     Start-ScheduledTask -TaskName $taskName
     $nextProgress = $started
@@ -102,6 +110,9 @@ exit `$code
             Write-Host ('Native task: ' + ($progress | ConvertTo-Json -Compress))
             $nextProgress = (Get-Date).AddSeconds(30)
         }
+        if ((Get-Date) -gt $started.AddSeconds(120) -and -not (Test-Path (Join-Path $fixture 'bootstrap-launch.log'))) {
+            throw ('Standard-user task did not launch: state=' + $task.State + ', result=' + $info.LastTaskResult)
+        }
         if ((Get-Date) -gt $started.AddMinutes(40)) { throw 'Standard-user native smoke exceeded 40 minutes' }
     } while ($task.State -eq 'Running' -or $info.LastRunTime -lt $started.AddSeconds(-2))
     $result = $info.LastTaskResult
@@ -110,6 +121,8 @@ exit `$code
     throw
 } finally {
     if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) {
+        Get-ScheduledTaskInfo -TaskName $taskName | Select-Object LastRunTime, LastTaskResult, NextRunTime |
+            ConvertTo-Json | Set-Content (Join-Path $evidencePath 'task-final.json') -Encoding utf8
         Stop-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
         Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
     }
