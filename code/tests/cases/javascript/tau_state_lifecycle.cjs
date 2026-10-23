@@ -68,6 +68,20 @@ function deletionFixture() {
   return {ctx, target, state, removal, historyRead, calls, notices, primary, secondary, other, location};
 }
 
+test('a locally retired Resident detaches Chat and does not suggest waiting for service recovery', () => {
+  const f = deletionFixture();
+  const panel = f.primary;
+  const error = Object.assign(new Error('Resident has been deleted'), {code:'resident.deleted'});
+  assert.equal(panel.rejectUnavailableTarget(error), true);
+  assert.equal(error.status, undefined, 'a local lifecycle error is not a fabricated HTTP 404');
+  assert.equal(panel.protocol, null);
+  assert.equal(panel.contract.subtitle, 'Resident 不可用');
+  assert.equal(panel.contract.composer.meta, '请打开其他 Resident。');
+  assert.equal(panel.contract.composer.can_send, false);
+  assert.equal(panel.contract.composer.can_edit, false);
+  assert.equal(f.other.contract, undefined);
+});
+
 test('history for a deleted Resident uses the unavailable Chat state instead of a global error', async () => {
   const f = deletionFixture();
   const pending = f.primary.loadInputHistory(f.target.id);

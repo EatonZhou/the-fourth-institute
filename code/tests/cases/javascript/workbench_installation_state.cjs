@@ -124,17 +124,17 @@ test('Society opening URL overrides restored constructor binding as well as stat
   assert.equal(config.restorePanel({id:'sibling', type:'chat', binding:{resident_id:'valid'}}).resource.resident_id, 'valid');
 });
 
-test('Resident owner quarantines only 404, not permission or temporary failures', () => {
+test('Resident owner quarantines confirmed deletion and 404, not permission or temporary failures', () => {
   const chatSource = source('portal_chat_workspace.js');
   const method = expression(chatSource, n => n.type === 'ClassMethod' && n.key.name === 'rejectUnavailableTarget');
   const ctx = vm.createContext({window: {PortalI18n: {t: s => s}}, residentSessionScope: () => 'scope'});
   const reject = vm.runInContext(`({${method}}).rejectUnavailableTarget`, ctx);
-  for (const status of [404, 403, 429, 500, 0]) {
+  for (const error of [{code:'resident.deleted'}, ...[404, 403, 429, 500, 0].map(status => ({status}))]) {
     const events = [];
     const panel = {options: {emit: e => events.push(e)}, questions: {reset: noop},
       workspace: {target: () => ({resident_id:'fixture'})}, targetRevision: 0, showError: noop};
-    reject.call(panel, {status});
-    assert.deepEqual(events, status === 404 ? ['binding-unavailable'] : []);
+    reject.call(panel, error);
+    assert.deepEqual(events, error.code === 'resident.deleted' || error.status === 404 ? ['binding-unavailable'] : []);
   }
 });
 
@@ -158,7 +158,10 @@ test('404 quarantine also removes page last-selection fallback without erasing d
   const functions = names.map(name => expression(lineageSource, n => n.type === 'FunctionDeclaration' && n.id.name === name)).join('\n');
   const stale = {kind:'resident', id:'missing', key:'resident:missing'};
   let saved = {lastChatTarget: stale, draft:'never erase'};
-  const ctx = vm.createContext({unavailableResidentBindings:new Set(), state:{chatTarget:stale},
+  const location = new URL('https://portal.test/lineage?resident=missing&lineage=kept&open_chat=1');
+  const ctx = vm.createContext({URL, window:{location},
+    history:{state:{},replaceState:(_state,_title,url) => {location.href=new URL(url,location).href;}},
+    unavailableResidentBindings:new Set(), state:{chatTarget:stale},
     isResidentChatSelection: s => s?.kind === 'resident',
     readLineageUiState: () => saved, writeLineageUiState: patch => {saved = {...saved, ...patch};}});
   vm.runInContext(functions, ctx);
@@ -167,6 +170,9 @@ test('404 quarantine also removes page last-selection fallback without erasing d
   ctx.writeLastSelection();
   assert.equal(saved.lastChatTarget, null);
   assert.equal(saved.draft, 'never erase');
+  assert.equal(location.searchParams.get('resident'), null);
+  assert.equal(location.searchParams.get('open_chat'), null);
+  assert.equal(location.searchParams.get('lineage'), 'kept');
   ctx.onLineagePanelBinding({event:'binding-ready', sourcePanelId:'chat'}, wb);
   ctx.writeLastSelection();
   assert.equal(saved.lastChatTarget.id, 'missing');

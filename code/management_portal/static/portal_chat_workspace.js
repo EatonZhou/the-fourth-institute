@@ -12222,8 +12222,9 @@
 
     rejectUnavailableTarget(error) {
       const status = Number(error?.status || 0);
-      if (status !== 404 && status !== 403) return false;
-      if (status === 404) this.options.emit?.("binding-unavailable");
+      const deleted = error?.code === "resident.deleted";
+      if (!deleted && status !== 404 && status !== 403) return false;
+      if (deleted || status === 404) this.options.emit?.("binding-unavailable");
       this.questions.reset();
       const target = this.workspace.target();
       window.PortalConversationStore?.discardResident?.(target.resident_id);
@@ -12242,12 +12243,12 @@
       this.detail = null;
       this.residentProjection = null;
       this.showError(
-        status === 404 ? window.PortalI18n.t("该 Resident 已删除或不存在。") : window.PortalI18n.t("没有查看这个 Resident 的权限。"),
+        deleted || status === 404 ? window.PortalI18n.t("该 Resident 已删除或不存在。") : window.PortalI18n.t("没有查看这个 Resident 的权限。"),
         {
           title,
           subtitle: window.PortalI18n.t("Resident 不可用"),
           placeholder: window.PortalI18n.t("Resident 不可用"),
-          meta: window.PortalI18n.t("请打开其他 Resident，或刷新后重试。"),
+          meta: window.PortalI18n.t(deleted ? "请打开其他 Resident。" : "请打开其他 Resident，或刷新后重试。"),
           historyScope: residentSessionScope(target),
         },
       );
