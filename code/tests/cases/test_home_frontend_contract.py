@@ -7,6 +7,12 @@ ROOT = Path(__file__).resolve().parents[2]
 PORTAL_ROOT = ROOT / "management_portal"
 
 
+def test_balance_distinguishes_unsupported_queries_from_zero_and_failed_reads():
+    """余额未提供、查询失败与真实零余额有不同展示，旧金额保持过期标识。"""
+    script = Path(__file__).with_name("javascript") / "home_balance_capability.cjs"
+    subprocess.run(["node", str(script)], cwd=ROOT, check=True)
+
+
 def test_credits_show_their_own_sample_time_and_failed_read_state() -> None:
     """Credits 详情使用自身采样时间，过期保留旧值，未知时间不借用账号检查时间。"""
     script = Path(__file__).with_name("javascript") / "home_account_freshness.cjs"

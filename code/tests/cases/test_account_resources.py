@@ -1,4 +1,9 @@
 from datetime import datetime, timedelta, timezone
+import json
+import urllib.error
+from unittest.mock import Mock
+
+import pytest
 
 from management_portal.execution.account_resources import with_account_resources
 from management_portal.execution import provider_balance_adapters as native
@@ -93,3 +98,55 @@ def test_exchange_rate_snapshot_does_not_wait_for_network_refresh(monkeypatch):
             release.set()
         observing.result(timeout=2)
     assert observations.exchange_rates_snapshot() == {"sample": "new"}
+
+
+def test_generic_api_balance_is_unsupported_without_using_its_key(monkeypatch):
+    """通用代理的余额能力未知时不读取密钥、不请求原生计费接口，也不推断聊天失败。"""
+    entry = {'id': 'proxy', 'provider': 'openai', 'enabled': True, 'base_url': 'https://proxy.invalid/v1'}
+    monkeypatch.setattr(native.shared_ai_provider_registry, 'entries', lambda: [entry])
+    secret = Mock(side_effect=AssertionError('No billing protocol declared'))
+    monkeypatch.setattr(native.shared_ai_provider_registry, 'secret_path', secret)
+    from management_portal.execution import account_exchange_rates as fx
+    monkeypatch.setattr(fx, 'collect', lambda *a: {})
+    observed = native.BillingObservations().observe('proxy')
+    assert observed['status'] == 'not_supported'
+    assert observed['reason'] == 'unsupported_provider'
+    assert 'amount' not in observed and 'is_available' not in observed
+    account = with_account_resources([{'status': 'ok', 'balance': observed}], {})[0]
+    assert account['status'] == 'ok'
+    assert account['balance']['reason'] == 'unsupported_provider'
+    secret.assert_not_called()
+
+
+@pytest.mark.parametrize('code,reason', [(404, 'unsupported_endpoint'), (405, 'unsupported_endpoint'),
+                                       (401, 'unauthorized'), (403, 'unauthorized'), (503, 'unavailable')])
+def test_billing_failure_preserves_previous_amount_and_sanitizes_error(monkeypatch, code, reason):
+    """余额接口缺失、无授权和暂时故障分别反馈，保留旧读数但不暴露上游正文。"""
+    from management_portal.execution import account_exchange_rates as fx
+    monkeypatch.setattr(fx, 'collect', lambda *a: {})
+    monkeypatch.setattr(native, 'entries', lambda: [{'id': 'api'}])
+    def fail(entry):
+        raise urllib.error.HTTPError('https://private.invalid/?key=SECRET', code, 'SECRET BODY', {}, None)
+    monkeypatch.setattr(native, '_fetch_provider_balance', fail)
+    billing = native.BillingObservations()
+    billing._samples['api'] = ({'id': 'api', 'status': 'ok', 'amount': 12, 'display': '12 CNY',
+                                'currency': 'CNY', 'updated_at': '2026-10-22T00:00:00Z'}, -1000)
+    result = billing.observe('api')
+    assert result['reason'] == reason and result['http_status'] == code
+    assert result['stale'] and result['status'] == 'unavailable' and result['amount'] == 12
+    assert result['updated_at'] == '2026-10-22T00:00:00Z'
+    assert 'SECRET' not in json.dumps(result)
+
+
+def test_deepseek_proxy_non_balance_response_is_not_a_successful_zero(monkeypatch):
+    """HTTP 200 的代理错误对象不能被当成余额为零或成功的余额观察。"""
+    from management_portal.execution import account_exchange_rates as fx
+    entry = {'id': 'api', 'provider': 'deepseek', 'base_url': 'https://proxy.invalid/v1'}
+    monkeypatch.setattr(native, 'entries', lambda: [entry])
+    monkeypatch.setattr(native.shared_ai_provider_registry, 'secret_path', lambda item: 'fixture')
+    monkeypatch.setattr(native.shared_ai_provider_registry, 'read_secret', lambda path: 'fixture')
+    monkeypatch.setattr(native, '_read_json_response', lambda *a: {'error': 'SECRET upstream response'})
+    monkeypatch.setattr(fx, 'collect', lambda *a: {})
+    result = native.BillingObservations().observe('api')
+    assert result['reason'] == 'invalid_response' and result['status'] == 'unavailable'
+    assert 'amount' not in result and 'SECRET' not in json.dumps(result)

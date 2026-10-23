@@ -4,6 +4,7 @@ import json
 import math
 import os
 import urllib.request
+import urllib.error
 from datetime import datetime, timezone
 from typing import Any
 from management_portal.ai_provider_registry import shared_ai_provider_registry
@@ -22,12 +23,16 @@ BILLING = {
 }
 
 def metadata(item):
-    kind, url = BILLING[str(item.get("provider") or "").lower()]
+    kind, url = BILLING.get(str(item.get("provider") or "").lower(), ("balance", ""))
     return {"id": item["id"], "provider": item["provider"], "metric_kind": kind, "billing_url": url}
 
 def entries():
     return [item for item in shared_ai_provider_registry.entries()
-            if item.get("enabled") is True and item.get("provider") in BILLING]
+            if item.get("enabled") is True]
+
+
+class BalanceResponseError(ValueError):
+    """The connection returned no usable billing observation."""
 
 def _read_json_response(url: str, headers: dict[str, str], timeout: float) -> dict[str, Any]:
     req = urllib.request.Request(url, headers=headers, method="GET")
@@ -132,6 +137,9 @@ def _first_balance_display(balances: list[dict[str, str]]) -> str:
 def _fetch_provider_balance(item: dict[str, Any]) -> dict[str, Any]:
     provider = str(item.get("provider") or "").strip().lower()
     base_url = str(item.get("base_url") or "").strip()
+    if provider not in BILLING:
+        return {**metadata(item), "status": "not_supported", "reason": "unsupported_provider",
+                "error": "此连接未提供余额查询；请在实际服务商控制台查看。"}
     key_path = shared_ai_provider_registry.secret_path(item)
     if not provider or not base_url or not key_path:
         raise ValueError("missing provider metadata")
@@ -192,6 +200,9 @@ def _fetch_provider_balance(item: dict[str, Any]) -> dict[str, Any]:
         }
     elif provider not in {"google", "gemini", "typesafe"}:
         raise ValueError("unsupported provider")
+    if normalized.get("metric_kind") == "balance" and (
+            normalized.get("amount") is None or not normalized.get("currency")):
+        raise BalanceResponseError("No recognized amount and currency")
     return {
         **metadata(item),
         "status": "ok",
@@ -225,9 +236,17 @@ class BillingObservations:
             try:
                 entry = next(item for item in entries() if item["id"] == account_id)
                 sample = _fetch_provider_balance(entry)
-            except Exception:
+            except Exception as exc:
+                http_status = exc.code if isinstance(exc, urllib.error.HTTPError) else None
+                reason, message = "unavailable", "余额暂不可读取；这不表示余额为零或聊天接口不可用。"
+                if http_status in {404, 405, 501}:
+                    reason, message = "unsupported_endpoint", "此连接未提供余额查询；请在实际服务商控制台查看。"
+                elif http_status in {401, 403}:
+                    reason, message = "unauthorized", "余额查询未获授权；请在实际服务商控制台查看。"
+                elif isinstance(exc, (BalanceResponseError, json.JSONDecodeError)):
+                    reason, message = "invalid_response", "余额接口返回了无法识别的数据；请在实际服务商控制台查看。"
                 sample = {**previous, "id": account_id, "status": "unavailable", "stale": True,
-                          "error": "余额暂不可读取"}
+                          "reason": reason, "http_status": http_status, "error": message}
             from .account_exchange_rates import collect
             with self._rates_collect_lock:
                 rates = collect({sample.get("currency")}, self.exchange_rates_snapshot())

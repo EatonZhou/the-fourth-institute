@@ -10,7 +10,7 @@ def with_account_resources(accounts, exchange_rates):
         key = str(account.get("billing_account_id") or "")
         if isinstance(source, dict) and source.get("id"):
             balance = {name: source.get(name) for name in (
-                "status", "metric_kind", "display", "amount", "currency", "updated_at", "billing_url", "error")}
+                "status", "metric_kind", "display", "amount", "currency", "updated_at", "billing_url", "error", "reason", "http_status")}
             balance.update(comparison(source, exchange_rates))
             # A balance goes stale only when its read fails, never with age.
             balance.update(source_account_id=source["id"], stale=bool(source.get("stale")))

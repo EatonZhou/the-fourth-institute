@@ -186,6 +186,42 @@ Windows 准备受管 PostgreSQL 时，为其可执行文件加入进程级 UTF-8
 
 ## 开发验证
 
+### 连接实际 Windows 机器验收
+
+CI 的普通用户验收用于确认可重复的安装和协议行为；使用者机器上的代理设置、
+CLI 授权、终端环境和模型权限需要在那台机器上另外验收。建议新建专用测试实例，
+保留它的安装包 SHA、源码提交、Windows 版本和实例目录。先在本机浏览器确认
+Portal 的实际地址，例如 `http://127.0.0.1:19400`，并在这台 Windows 上完成
+要测试的 Provider 授权。原生 CLI 版本、Portal 受管运行时及其账号目录分别记录；
+不把终端里已经登录过视为 Portal 的隔离账号已经完成授权。
+
+由 Windows 主动连接测试服务器的 SSH 反向隧道，只转发该实例的 Web 端口。
+测试服务器必须是测试执行环境能够访问的机器；服务端保持 `GatewayPorts no`
+并允许该测试 SSH 账号监听指定的回环端口。核实服务器 SSH 主机指纹后，在
+Windows PowerShell 中运行（把占位参数和两个端口换成实际值）：
+
+```powershell
+ssh.exe -N -T -a -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -R 127.0.0.1:19490:127.0.0.1:19400 -i "$env:USERPROFILE\.ssh\portal_test" testuser@test-server
+```
+
+测试服务器上的 `http://127.0.0.1:19490` 此时通往 Windows Portal。这里只提供
+Web 访问，不提供 Windows Shell；需要读取服务日志时由 Windows 侧收集指定日志。
+测试结束按 Ctrl+C 关闭隧道，撤销临时测试访问凭据。
+端口转发语义见 [OpenSSH ssh(1)](https://man.openbsd.org/ssh.1)。
+
+网络连通与 Portal 授权分别准备：Windows 实例为测试执行者签发限时、限测试项目的
+访问权限，不能把另一个实例的 Resident 身份或令牌套到这里。账号管理验收需要
+该测试实例明确授予管理权限；普通用户权限测试另用无管理权限的测试身份。
+真实 Provider 的密钥/订阅授权留在 Windows 本机，测试回执只记录账号 ID、版本、
+操作、结果和脱敏错误类别。
+
+验收从浏览器实际按钮和网络回执进入，覆盖注册、AMA/Lineage 打开、添加/编辑/
+测试/停用/删除账号、运行时模型保存回读、消息发送与流式回复、Stop、刷新恢复、
+会话绑定和权限拒绝。每条 CLI 路线再验证进程启动、中文空格目录、失败反馈及
+本机已授权模型的最小一轮回复。最后由 Windows 侧重启 Portal/注销再登录，
+核对后台服务存活、账号与消息保存，以及 `web.log`、`society.log`、`execution.log`
+中的对应测试时间段。提交逐项结果和失败复现，不把模拟模型测试记为真实授权推理。
+
 Windows 安装、启动与卸载用例位于 `code/tests/cases/`，沿用 Portal 的
 `code/pytest.ini`、Test Catalog 和测试工作台。没有单独的 Windows 测试框架。
 在 `code/` 下运行 `python -m management_portal.test_framework.tools.sync_catalog`

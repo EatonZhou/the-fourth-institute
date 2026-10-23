@@ -935,8 +935,11 @@ function accountBalanceHtml(account) {
   const fresh = balance.status === "ok" && !balance.stale;
   const available = balance.metric_kind === "availability";
   const hasValue = balance.display !== undefined && balance.display !== null && String(balance.display) !== "";
+  const missing = balance.status === "not_supported" || balance.reason === "unsupported_endpoint"
+    ? "此连接未提供余额查询" : balance.reason === "unauthorized" ? "余额查询未获授权"
+    : balance.reason === "invalid_response" ? "余额返回格式无法识别" : "余额暂不可用";
   const value = available ? (balance.status === "ok" ? "API 可用 · 余额未提供" : "API 状态不可用 · 余额未提供")
-    : balance.status === "loading" ? "正在读取余额…" : hasValue ? `${balance.display}${fresh ? "" : "（上次记录）"}` : "余额暂不可用";
+    : balance.status === "loading" ? "正在读取余额…" : hasValue ? `${balance.display}${fresh ? "" : "（上次记录）"}` : missing;
   const amount = balance.comparison_amount;
   const coinUnits = !available && hasValue && balance.comparison_currency === "CNY" && typeof amount === "number" && Number.isFinite(amount) && amount > 0
     ? Math.min(24, Math.max(1, 2 * Math.log2(1 + amount))) : 0;
