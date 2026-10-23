@@ -33,6 +33,7 @@ async function registeredPackageContract(options) {
           restore(snapshot) { count = snapshot.count; lifecycle.push(['restore', count]); },
           setContext(context) { lifecycle.push(['context', context.scope]); },
           snapshot() { return { count }; },
+          change(value) { count = value; options.emit('persistence-change'); },
           canClose() { return closeDecision.promise; },
           show() { lifecycle.push(['show']); }, hide() { lifecycle.push(['hide']); },
           ping(value) { return `pong:${value}`; },
@@ -79,6 +80,8 @@ async function registeredPackageContract(options) {
     wb.showPanel('automatic');
     assert.deepEqual(lifecycle.filter(item => item[0] === 'context').at(-1), ['context', 'updated'], 'context propagated');
     assert.deepEqual(stored.panelStates.automatic, snapshot, 'package snapshot envelope persisted');
+    wb.invokePanel('automatic', 'change', 8);
+    assert.equal(stored.panelStates.automatic.value.count, 8, 'runtime commits save without a layout change');
     assert.equal(shows, 2, 'show callback is not reentered after reopen');
     assert.equal(root.querySelector('[data-portal-workbench-panel="automatic"]'), panel, 'hide/show retains original root');
 

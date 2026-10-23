@@ -1045,6 +1045,7 @@
           else unavailableBindings.delete(payload.sourcePanelId);
           if (controller) persist();
         }
+        if (payload.event === "persistence-change" && controller) persist();
         const selectionChannel = ({
           "inspect": "inspectionTarget",
           "inspection-change": "inspectionTarget",

@@ -476,6 +476,20 @@
     const selectionControllers = new Set();
     const previewHostDisposers = new Set();
     let restoredTabSnapshots = [];
+    let destroyed = false;
+    let persistenceScheduled = false;
+    const notifyPersistence = () => {
+      if (destroyed || persistenceScheduled) return;
+      persistenceScheduled = true;
+      // Tab callbacks run before activation renders the document. Snapshot
+      // after those synchronous callbacks, without waiting for a layout edit.
+      Promise.resolve().then(() => {
+        persistenceScheduled = false;
+        if (!destroyed && ![...tabControllers].some(tabs => tabs.isRestoring())) {
+          options.emit?.("persistence-change");
+        }
+      });
+    };
     const ownDocumentSession = session => {
       if (documentSessions.has(session)) return session;
       documentSessions.add(session);
@@ -498,6 +512,10 @@
             clearPreview();
           }
           config?.onChange?.(snapshot, reason, meta);
+          if (reason !== "open-create" && reason !== "destroy"
+            && !meta?.request?.__portalPreviewRestoreToken
+            && !meta?.result?.error && !meta?.result?.stale
+            && meta?.result?.accepted !== false) notifyPersistence();
         },
         createDocument: request => {
           const documentState = createDocument?.(request) || {};
@@ -716,13 +734,13 @@
       surface.setPath("");
       previewRoot.textContent = String(config.emptyText || options.emptyText || window.PortalI18n.t("选择文件后显示内容。"));
       updateBackAction();
+      notifyPersistence();
       return null;
     };
     const openResource = async (resource, navigation = {}) => {
       if (!hasPreviewTarget(resource)) return clearPreview();
       const previousBinding = binding;
       const revision = ++requestRevision;
-      binding = { ...(resource || {}) };
       surface.setState(window.PortalI18n.t("加载中…"));
       try {
         const embedded = resource?.document || resource?.payload;
@@ -735,9 +753,11 @@
         if (revision !== requestRevision) return null;
         const rendered = await renderDocument(document);
         if (revision !== requestRevision) return null;
+        binding = { ...(resource || {}) };
         focusInitialPreviewLine(resource);
         if (navigation.recordHistory !== false) rememberPreviousResource(previousBinding, resource);
         updateBackAction();
+        notifyPersistence();
         return rendered;
       } catch (error) {
         if (revision !== requestRevision) return null;
@@ -760,7 +780,10 @@
       try {
         const resource = await restoreNavigationResource(target);
         const rendered = await openResource(resource, { recordHistory: false });
-        if (rendered) navigationHistory.pop();
+        if (rendered) {
+          navigationHistory.pop();
+          notifyPersistence();
+        }
         return rendered;
       } finally {
         navigationBusy = false;
@@ -867,6 +890,7 @@
       show() {},
       hide() {},
       async destroy() {
+        destroyed = true;
         requestRevision += 1;
         window.PortalPreview.dispose(previewRoot);
         previewHostDisposers.forEach(dispose => dispose());
@@ -1374,6 +1398,7 @@
     let tabs = [];
     let activeKey = "";
     let restoreSequence = 0;
+    let restoringSequence = 0;
     const restoreToken = Symbol("portal-preview-tab-restore");
 
     const orderedDocuments = () => tabs
@@ -1640,6 +1665,7 @@
         ? persisted.documents
         : [];
       const sequence = ++restoreSequence;
+      restoringSequence = sequence;
       orderedDocuments().forEach(documentState => documentState.session?.destroy?.());
       documents.clear();
       tabs = [];
@@ -1676,6 +1702,7 @@
         if (sequence !== restoreSequence) return snapshot();
       }
       const restoredActiveKey = String(persisted.activeKey || "");
+      restoringSequence = 0;
       if (documents.has(restoredActiveKey)) {
         activate(restoredActiveKey, { reason: "restore" });
       } else if (tabs.length) {
@@ -1710,6 +1737,7 @@
       isActive,
       open,
       persistenceSnapshot,
+      isRestoring: () => restoringSequence > 0 && restoringSequence === restoreSequence,
       render,
       restorePersistence,
       snapshot,

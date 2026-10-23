@@ -176,10 +176,14 @@ test('explicit parent fallback works and a post-delete refresh failure never reb
   }
 });
 
-function previewFixture() {
-  const emptySnapshots = [], rendered = [];
+function previewFixture({restoreDocument} = {}) {
+  const emptySnapshots = [], rendered = [], saved = [];
   const ctx = vm.createContext({window: {PortalI18n: i18n, PortalPreview: {dispose: noop}}, console,
-    options: {}, tabControllers: new Set(), restoredTabSnapshots: [], ownDocumentSession: x => x,
+    options: {emit: event => {
+      assert.equal(event, 'persistence-change');
+      saved.push({binding: {...ctx.binding}, tabs: JSON.parse(JSON.stringify(tabs.persistenceSnapshot()))});
+    }}, destroyed: false, persistenceScheduled: false,
+    tabControllers: new Set(), restoredTabSnapshots: [], ownDocumentSession: x => x,
     resolveRoot: () => null, previewRoot: {textContent: ''}, requestRevision: 0, binding: {},
     documentValue: null, navigationHistory: [], pendingBindingRestore: {path: 'old'}, previewRender: null,
     surface: {setDocumentStatistics: noop, setDownload: noop, setPath: noop, setState: noop},
@@ -187,7 +191,7 @@ function previewFixture() {
     focusInitialPreviewLine: noop, rememberPreviousResource: noop,
     renderDocument: async doc => {ctx.documentValue = doc; rendered.push(doc); return doc;},
   });
-  vm.runInContext(declarations('portal_workspace_surface.js', ['createDocumentSession', 'createDocumentTabsController', 'createOwnedTabsController', 'clearPreview', 'openResource']), ctx);
+  vm.runInContext(declarations('portal_workspace_surface.js', ['createDocumentSession', 'createDocumentTabsController', 'createOwnedTabsController', 'clearPreview', 'openResource', 'notifyPersistence']), ctx);
   let dirty = false;
   const errors = [];
   const tabs = ctx.createOwnedTabsController({
@@ -201,10 +205,61 @@ function previewFixture() {
     onActivate: (document, snapshot) => {if (snapshot.payload) void ctx.openResource({path: document.path, document: snapshot.payload});},
     onError: error => errors.push(error.message),
     serializeDocument: doc => ({path: doc.path}),
+    restoreDocument,
     onChange: snapshot => {if (!snapshot.documents.length) emptySnapshots.push({...ctx.binding});},
   });
-  return {ctx, tabs, rendered, emptySnapshots, errors, setDirty: value => {dirty = value;}};
+  return {ctx, tabs, rendered, emptySnapshots, errors, saved, setDirty: value => {dirty = value;}};
 }
+
+test('Preview commits, tab choices and closes save locators without a layout edit', async () => {
+  const f = previewFixture();
+  const settle = () => new Promise(resolve => setImmediate(resolve));
+  await f.tabs.open({key: 'A', path: '/A', document: {path: '/A', content: 'private body'}});
+  await settle();
+  assert.equal(f.saved.at(-1).binding.path, '/A');
+  f.tabs.togglePin();
+  await settle();
+  assert.equal(f.saved.at(-1).tabs.documents[0].pinned, true);
+  await f.tabs.open({key: 'B', path: '/B', document: {path: '/B'}, mode: 'new-tab'});
+  f.tabs.activate('A');
+  await settle();
+  assert.equal(f.saved.at(-1).tabs.activeKey, 'A');
+  assert.equal(f.saved.at(-1).binding.path, '/A');
+  const saved = f.saved.length;
+  f.setDirty(true);
+  assert.equal(await f.tabs.close('A'), false);
+  await settle();
+  assert.equal(f.saved.length, saved, 'cancelled close does not save a new locator');
+  f.setDirty(false);
+  await f.tabs.close('A');
+  await f.tabs.close('B');
+  await settle();
+  assert.equal(f.saved.at(-1).tabs.documents.length, 0);
+  assert.deepEqual(f.saved.at(-1).binding, {});
+  assert.equal(JSON.stringify(f.saved.map(value => value.tabs)).includes('private body'), false);
+});
+
+test('Preview restoration never saves a partially restored tab collection', async () => {
+  const read = deferred();
+  const f = previewFixture({restoreDocument: value => ({
+    key: value.path, path: value.path,
+    load: () => value.path === '/B' ? read.promise : Promise.resolve({path: value.path}),
+  })});
+  const pending = f.tabs.restorePersistence({schemaVersion: 1, activeKey: '/A', documents: [
+    {key: '/A', pinned: true, value: {path: '/A'}},
+    {key: '/B', pinned: true, value: {path: '/B'}},
+  ]});
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(f.tabs.isRestoring(), true);
+  assert.equal(f.ctx.binding.path, '/A');
+  assert.equal(f.saved.length, 0, 'restored first file must not replace the full saved set');
+  read.resolve({path: '/B'});
+  await pending;
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(f.tabs.isRestoring(), false);
+  assert.equal(f.saved.at(-1).binding.path, '/A');
+  assert.deepEqual(f.saved.at(-1).tabs.documents.map(d => d.value.path), ['/A', '/B']);
+});
 
 test('last Preview tab clears its persistent binding before observers run; cancelled closes keep it', async () => {
   const f = previewFixture();
