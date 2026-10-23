@@ -25,6 +25,7 @@ from starlette.routing import Route
 from . import serve_management_portal as portal
 from . import portal_features, resident_sidebar_backend
 from .http_errors import exception_http_error, normalize_json_error
+from .http_timing import capture_timings
 from .knowledge_archive_projection import (
     ensure_knowledge_archive_projection_watcher,
 )
@@ -170,7 +171,8 @@ async def portal_http(request: Request) -> StreamingResponse:
         started = time.perf_counter()
         timings["portal_queue"] = (started - submitted) * 1000
         try:
-            return _run_sync_handler(request, body)
+            with capture_timings(timings):
+                return _run_sync_handler(request, body)
         finally:
             # Wall time includes domain RPC/cache waits, not just CPU work.
             # It excludes receiving the request and streaming the response.

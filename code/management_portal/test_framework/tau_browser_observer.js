@@ -213,13 +213,13 @@ async function observeBrowser(context, { evidenceDir }) {
   listen(context, 'request', start);
   listen(context, 'response', response => {
     const record = start(response.request()); record.status = response.status();
-    // Only our two content-free duration metrics may enter evidence. Never
+    // Only fixed, content-free Portal duration metrics may enter evidence. Never
     // persist arbitrary headers/descriptions or infer database execution time.
     const metrics = {}, seen = new Set();
     const header = response.headers?.()['server-timing'];
     if (typeof header === 'string' && header.length <= 4096) {
       for (const part of header.split(',')) {
-        const match = part.trim().match(/^(portal_queue|portal_handler);dur=(\d+(?:\.\d+)?)$/);
+        const match = part.trim().match(/^(portal_queue|portal_handler|portal_conv_(?:read_state|identity|cursor|entries|decorate|summary));dur=(\d+(?:\.\d+)?)$/);
         if (!match) continue;
         const [, name, raw] = match;
         if (seen.has(name)) { delete metrics[name]; continue; }
@@ -515,7 +515,7 @@ async function observeBrowser(context, { evidenceDir }) {
   await context.addInitScript({ content: `(${documentObserver.toString()})((${createPathSanitizer.toString()})(${JSON.stringify([...residentReadRoutes.keys()])}));` });
   for (const page of context.pages()) pageState(page);
   write({ kind: 'capture_started', clocks: { observed_at_ms: 'node_epoch_ms', resource_values: 'browser_time_origin_plus_relative_ms' },
-    limitations: ['No request bodies, arbitrary headers or query strings are persisted; only Portal EventSource and instruction transport identities are retained', 'Request/document association during navigation can be unconfirmed', 'Document destruction can prevent unload/Portal receipt delivery; absence does not prove no close occurred', 'Portal transport identity is matched only to a unique request in the same frame/document; native reconnects remain ambiguous, ResourceTiming lacks transport identity', 'Browser timing is not backend execution timing', 'server_timing_ms contains only allowlisted response-header durations: portal_queue is Web executor wait; portal_handler includes RPC/cache wait and excludes body upload/response streaming; neither is database CPU time', 'Zero browser sizes/phases may reflect reuse, cache or restricted exposure; never infer zero server cost'] });
+    limitations: ['No request bodies, arbitrary headers or query strings are persisted; only Portal EventSource and instruction transport identities are retained', 'Request/document association during navigation can be unconfirmed', 'Document destruction can prevent unload/Portal receipt delivery; absence does not prove no close occurred', 'Portal transport identity is matched only to a unique request in the same frame/document; native reconnects remain ambiguous, ResourceTiming lacks transport identity', 'Browser timing is not backend execution timing', 'server_timing_ms contains only allowlisted response-header durations: portal_queue is Web executor wait; portal_handler includes RPC/cache wait and excludes body upload/response streaming; portal_conv_* stages are request-local conversation read durations including RPC/cache waits, not database CPU time', 'Zero browser sizes/phases may reflect reuse, cache or restricted exposure; never infer zero server cost'] });
   return {
     file,
     requestId(request) { return requests.get(request)?.id || null; },

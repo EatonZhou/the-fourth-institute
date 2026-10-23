@@ -14,7 +14,7 @@ import pytest
 
 from starlette.requests import Request
 
-from management_portal import asgi, http_ui_state
+from management_portal import asgi, http_ui_state, http_timing
 from management_portal import permission_system
 from management_portal.notifications import AsyncNotificationFanout, NotificationHub
 
@@ -88,6 +88,7 @@ def test_bridge_reports_separate_queue_and_handler_timing(custom_executor, handl
 
         def handler(request, body):
             assert request.url.path == '/api/timing-probe'
+            assert http_timing.timed_call('portal_conv_identity', lambda: 'authorized') == 'authorized'
             if handler_error:
                 raise RuntimeError('private-handler-detail')
             capture = asgi._ResponseCapture()
@@ -97,9 +98,10 @@ def test_bridge_reports_separate_queue_and_handler_timing(custom_executor, handl
 
         try:
             with mock.patch.object(asgi, 'time', SimpleNamespace(perf_counter=lambda: next(ticks))), \
+                 mock.patch.object(http_timing, 'perf_counter', side_effect=[20.0, 20.125]), \
                  mock.patch.object(asgi, '_run_sync_handler', side_effect=handler):
                 response = await asgi.portal_http(_request('/api/timing-probe', app=app))
-            assert response.headers['server-timing'] == 'portal_queue;dur=2000.000, portal_handler;dur=250.000'
+            assert response.headers['server-timing'] == 'portal_queue;dur=2000.000, portal_conv_identity;dur=125.000, portal_handler;dur=250.000'
             if handler_error:
                 assert response.status_code == 500
                 assert b'private-handler-detail' not in response.body

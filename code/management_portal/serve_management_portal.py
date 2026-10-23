@@ -2,6 +2,7 @@
 from __future__ import annotations
 from management_common.portal_paths import path as portal_path
 from management_portal.runtime_identity_headers import runtime_identity_header
+from management_portal.http_timing import timed_call
 
 
 import base64
@@ -930,15 +931,15 @@ def _agent_conversation_payload(
     page_token: str = "",
 ) -> dict:
     actor_id = str(actor or "").strip()
-    read_state = conversation_read_state.load(actor_id)
+    read_state = timed_call("portal_conv_read_state", conversation_read_state.load, actor_id)
     target_ids = [resident_id] if resident_id else None
     target_state = ""
     resident_cursor = 0
     if resident_id:
         try:
-            resident_api.resolve_resident_identity(resident_id, actor_id)
+            timed_call("portal_conv_identity", resident_api.resolve_resident_identity, resident_id, actor_id)
             target_state = "present"
-            resident_cursor = agent_conversation_index_backend.canonical_resident_cursor(
+            resident_cursor = timed_call("portal_conv_cursor", agent_conversation_index_backend.canonical_resident_cursor,
                 actor_id,
                 resident_id,
             )
@@ -947,7 +948,7 @@ def _agent_conversation_payload(
         except PermissionError:
             target_state = "forbidden"
     page = (
-        agent_conversation_index_backend.build_entries_page(
+        timed_call("portal_conv_entries", agent_conversation_index_backend.build_entries_page,
             actor_id, page_size=page_size, page_token=page_token,
         )
         if not resident_id else {}
@@ -956,7 +957,7 @@ def _agent_conversation_payload(
         # The features' items (Notice Board mentions, Chatrooms) are not Resident
         # activity pages; the first page carries all of them so each reaches the Inbox once.
         page["entries"] = agent_conversation_index_backend.normalized_entries(
-            [*page["entries"], *_mailbox_source_entries(actor_id)]
+            [*page["entries"], *timed_call("portal_conv_entries", _mailbox_source_entries, actor_id)]
         )
         pinned_keys = set(read_state.get("pinned_keys") or [])
         if pinned_keys:
@@ -965,19 +966,19 @@ def _agent_conversation_payload(
             page_keys = {entry["key"] for entry in page["entries"]}
             pinned_residents = [key.removeprefix("resident:") for key in pinned_keys
                                 if key.startswith("resident:") and key not in page_keys]
-            pinned_entries = _agent_conversation_entries(actor_id, pinned_residents) if pinned_residents else []
+            pinned_entries = timed_call("portal_conv_entries", _agent_conversation_entries, actor_id, pinned_residents) if pinned_residents else []
             page["entries"] = agent_conversation_index_backend.normalized_entries([*page["entries"], *pinned_entries])
             available_keys = {entry["key"] for entry in page["entries"]}
-            read_state = conversation_read_state.retain_pins(actor_id, available_keys)
+            read_state = timed_call("portal_conv_read_state", conversation_read_state.retain_pins, actor_id, available_keys)
     elif page and page_token:
         # Pinned targets were already returned on page one, even when old.
         pinned_keys = set(read_state.get("pinned_keys") or [])
         page["entries"] = [entry for entry in page["entries"] if entry["key"] not in pinned_keys]
     entries = page["entries"] if page else (
-        _agent_conversation_entries(actor_id, target_ids)
+        timed_call("portal_conv_entries", _agent_conversation_entries, actor_id, target_ids)
         if target_state == "present" else []
     )
-    payload = agent_conversation_index_backend.decorate_entries(
+    payload = timed_call("portal_conv_decorate", agent_conversation_index_backend.decorate_entries,
         entries,
         read_state,
     )
@@ -1000,10 +1001,10 @@ def _agent_conversation_payload(
     if not resident_id and not page_token:
         # Use the same viewer receipts and head entries for rows and badges.
         # Older pages contribute only unread markers; never hydrate their states.
-        summary = {item["key"]: item for item in agent_conversation_index_backend.unread_resident_entries(actor_id, read_state)}
+        summary = {item["key"]: item for item in timed_call("portal_conv_summary", agent_conversation_index_backend.unread_resident_entries, actor_id, read_state)}
         for item in payload["entries"]:
             summary[item["key"]] = item
-        payload["mailbox_summary"] = agent_conversation_index_backend.mailbox_summary(list(summary.values()))
+        payload["mailbox_summary"] = timed_call("portal_conv_summary", agent_conversation_index_backend.mailbox_summary, list(summary.values()))
         payload["unread_count"] = payload["mailbox_summary"]["unread_count"]
     payload.update({"ready": True, "refreshing": False, "error": ""})
     return payload

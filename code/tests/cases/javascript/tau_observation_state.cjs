@@ -266,6 +266,9 @@ async function serverTiming(observe) {
       ['portal_queue;dur=0.000, portal_handler;dur=-1', {portal_queue:0}],
       ['portal_queue;dur=1, portal_queue;dur=2, portal_queue;dur=3', null],
       ['portal_handler;dur=NaN, portal_queue;dur=3;desc="private-timing-detail"', null],
+      ['portal_conv_identity;dur=125.5, portal_conv_entries;dur=800, portal_conv_private;dur=7', {portal_conv_identity:125.5,portal_conv_entries:800}],
+      ['portal_conv_summary;dur=1, portal_conv_summary;dur=2, portal_conv_summary;dur=3', null],
+      ['portal_conv_cursor;dur=4;desc="private-timing-detail", portal_conv_decorate;dur=-1', null],
       [undefined, null],
     ];
     for (const [header, expected] of samples) {
