@@ -313,8 +313,8 @@
 .functionBlockMenuPanel > .functionBlockInstanceInspector {
   padding: 4px 2px 12px;
 }
-.functionBlockMenuIdentity { display:grid; gap:3px; margin:0 0 16px; }
-.functionBlockMenuIdentity strong { font-size:20px; line-height:1.3; }
+.functionBlockMenuIdentity { display:grid; min-width:0; gap:3px; margin:0 0 16px; }
+.functionBlockMenuIdentity strong { font-size:20px; line-height:1.3; white-space:normal; overflow-wrap:anywhere; }
 .functionBlockMenuIdentity code { color:var(--muted); font-size:11px; overflow-wrap:anywhere; }
 .functionBlockMenuPanel .functionBlockInstanceInspector > p { margin:0 0 14px; color:var(--muted); font-size:12px; line-height:1.5; }
 .functionBlockMenuPanel .functionBlockIssue { margin-bottom:12px; font-size:13px; }
@@ -403,7 +403,7 @@
 }
 .functionBlockBoundary > header { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; gap: 12px; }
 .functionBlockBoundary button { pointer-events: auto; border: 0; background: var(--panel); border-radius: 6px; padding: 3px 8px; color: var(--text); }
-.functionBlockBoundaryTitle { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+.functionBlockBoundaryTitle { min-width:0; white-space:normal; overflow-wrap:anywhere; text-align:left; font-weight:700; }
 .functionBlockBoundaryCollapse { flex: none; font-size: 18px; }
 .functionBlockElementList dd { white-space: normal; overflow-wrap: anywhere; }
 .functionBlockElementList dd small { display: block; font: 9px var(--mono); color: var(--muted); margin-top: 3px; }

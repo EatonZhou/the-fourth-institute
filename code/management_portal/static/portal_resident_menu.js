@@ -977,6 +977,9 @@
           }) || null;
           window.PortalUIPrimitives.mountIcons($id("nodeMenuGroupPanel"));
           dialog.open();
+          // A reused dialog may still be scrolled from another block or tab.
+          // Start at its identity before the user begins editing.
+          $id("nodeMenuGroupPanel").closest(".nodeSettingsBody").scrollTop = 0;
           return true;
         }
         await openNodeSettingsModal(next.node, next.tab || "display");

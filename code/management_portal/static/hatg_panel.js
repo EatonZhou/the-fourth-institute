@@ -9448,7 +9448,6 @@
     // Reserve its measured block size without forcing synchronous layout reads.
     const graphControlSizes = new Map([
       [$id("graphNavigationBar"), "--hatg-navigation-height"],
-      [$id("programWireHint"), "--hatg-wire-hint-height"],
     ]);
     const observedViewport = $id("hatgViewport");
     graphControlObserver = new ResizeObserver(entries => {

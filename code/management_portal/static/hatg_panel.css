@@ -287,25 +287,18 @@
 
 .programWireHint {
   --program-wire-tone: var(--hatg-program-event-color);
-  position: absolute;
-  z-index: 36;
-  top: var(--hatg-navigation-bottom);
-  left: calc((100% - var(--hatg-inspector-reserved-width)) / 2);
-  width: min(360px, calc(100% - var(--hatg-inspector-reserved-width) - 28px));
+  position: relative;
+  flex: 0 0 auto;
   min-width: 0;
-  max-width: calc(100% - var(--hatg-inspector-reserved-width) - 28px);
   display: grid;
   grid-template-columns: 18px minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
   border: 1px solid color-mix(in srgb, var(--program-wire-tone) 48%, var(--border));
-  border-radius: 10px;
+  border-radius: 0;
   background: color-mix(in srgb, var(--panel) 93%, transparent);
-  box-shadow: 0 12px 28px color-mix(in srgb, #101725 18%, transparent);
   color: var(--text);
   padding: 7px 8px 7px 10px;
-  transform: translateX(-50%);
-  backdrop-filter: blur(12px);
 }
 
 .programWireHint[hidden] { display: none; }
@@ -338,17 +331,16 @@
 .programWireHintCopy { min-width: 0; display: grid; gap: 2px; }
 .programWireHintCopy small {
   color: var(--program-wire-tone);
-  font: 850 6.5px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  font: 850 10px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
   letter-spacing: .11em;
   text-transform: uppercase;
 }
 .programWireHintCopy strong {
-  overflow: hidden;
+  overflow-wrap: anywhere;
   color: var(--text);
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.25;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .programWireHint button {
@@ -978,13 +970,12 @@
   [data-node-kind="reducer"],
   [data-node-kind="effect"]
 ) > strong {
-  display: -webkit-box;
-  overflow: hidden;
+  display: block;
+  overflow: visible;
   overflow-wrap: anywhere;
-  font-size: 10px;
+  white-space: normal;
+  font-size: 12px;
   line-height: 1.25;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
 }
 .programNodeDetail {
   display: -webkit-box;
@@ -2735,7 +2726,7 @@ html:root[data-portal-theme="fire"] .hatgNode[data-status="running"]:not(.draggi
 @container lineage-hatg-viewport (min-width: 721px) {
   /* Limit this container rule to its consumers; a universal subject also makes
      unrelated Chat descendants candidates during streamed-message layout. */
-  .hatgViewport:has(> .programInspectorPanel:not([hidden])) > :is(.hatgCanvas, .graphNavigationBar, .programWireHint) {
+  .hatgViewport:has(> .programInspectorPanel:not([hidden])) > :is(.hatgCanvas, .graphNavigationBar) {
     --hatg-inspector-reserved-width: min(clamp(278px, 40cqw, 362px), calc(100% - 74px));
   }
 
@@ -2753,7 +2744,7 @@ html:root[data-portal-theme="fire"] .hatgNode[data-status="running"]:not(.draggi
 
 @container lineage-hatg-viewport (max-width: 720px) {
   .hatgViewport:has(> .programInspectorPanel:not([hidden])) > .programInspectorPanel {
-    top: calc(var(--hatg-navigation-bottom) + var(--hatg-wire-hint-height, 0px) + var(--hatg-navigation-inset));
+    top: calc(var(--hatg-navigation-bottom) + var(--hatg-navigation-inset));
   }
 }
 
@@ -3965,7 +3956,6 @@ body:has(.hatgPrimitiveCard.dragging) .programInspectorPanel {
   .programInspectorPanel { width: min(300px, calc(100% - 74px)); max-width: none; }
   .relationInspectorFacts { grid-template-columns: 74px minmax(0, 1fr); }
   .hatgNodeControl { width: 24px; height: 24px; }
-  .programWireHint { min-width: calc(100% - 24px); }
   .programWireHint button span { display: none; }
 }
 
@@ -3973,7 +3963,7 @@ body:has(.hatgPrimitiveCard.dragging) .programInspectorPanel {
   .hatgViewport:has(> .programInspectorPanel:not([hidden])) > .programInspectorPanel {
     width: 100%;
     /* Keep a graph strip above the form instead of squeezing both side by side. */
-    top: calc(var(--hatg-navigation-bottom) + var(--hatg-wire-hint-height, 0px) + var(--hatg-navigation-inset) + min(120px, 20%));
+    top: calc(var(--hatg-navigation-bottom) + var(--hatg-navigation-inset) + min(120px, 20%));
     border-left: 0;
     border-top: 1px solid color-mix(in srgb, var(--program-inspector-tone) 28%, var(--border));
   }
@@ -4517,7 +4507,7 @@ body:has(.hatgPrimitiveCard.dragging) .programInspectorPanel {
 .programInspectorForm textarea.programEffectScript {
   min-height: 150px;
   font-family: var(--mono);
-  font-size: 8.5px;
+  font-size: 13px;
   line-height: 1.55;
   tab-size: 2;
   white-space: pre;
@@ -4528,7 +4518,7 @@ body:has(.hatgPrimitiveCard.dragging) .programInspectorPanel {
 .programEffectDiagnostics {
   border-left: 2px solid var(--border);
   padding: 7px 9px;
-  font-size: 7.5px;
+  font-size: 12px;
   line-height: 1.5;
   color: var(--muted);
 }

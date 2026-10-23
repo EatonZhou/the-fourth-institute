@@ -2928,16 +2928,23 @@
         return { left: x - 12100 / worldSize.width, right: x + 12100 / worldSize.width,
           top: y - 5000 / worldSize.height, bottom: y + 5000 / worldSize.height };
       }
+      const left = Math.min(...boxes.map(box => box.left)) - 1600 / worldSize.width;
+      const right = Math.max(...boxes.map(box => box.right)) + 1600 / worldSize.width;
+      const boundary = layers.nodes.node()?.querySelector(`[data-function-block-boundary="${CSS.escape(block.id)}"]`);
+      // Long identities wrap. Reserve their actual unscaled header height so
+      // nested blocks and member ports remain below the title at every zoom.
+      if (boundary) boundary.style.width = `${right - left}%`;
+      const headerHeight = Math.max(42, (boundary?.querySelector("header")?.offsetHeight || 0) + 12);
       return {
-        left: Math.min(...boxes.map(box => box.left)) - 1600 / worldSize.width,
-        right: Math.max(...boxes.map(box => box.right)) + 1600 / worldSize.width,
-        top: Math.min(...boxes.map(box => box.top)) - 4200 / worldSize.height,
+        left,
+        right,
+        top: Math.min(...boxes.map(box => box.top)) - headerHeight * 100 / worldSize.height,
         bottom: Math.max(...boxes.map(box => box.bottom)) + 1600 / worldSize.height,
       };
     }
 
     function renderFunctionBlockBoundaries() {
-      layers.nodes.selectAll("section.functionBlockBoundary")
+      const boundaries = layers.nodes.selectAll("section.functionBlockBoundary")
         .data(model.functionBlockBoundaries || [], block => block.id)
         .join(enter => {
           const boundary = enter.append("section").attr("class", "functionBlockBoundary");
@@ -2946,8 +2953,10 @@
           header.append("button").attr("type", "button").attr("class", "functionBlockBoundaryCollapse");
           return boundary;
         })
-        .attr("data-function-block-boundary", block => block.id)
-        .each(function positionBoundary(block) {
+        .attr("data-function-block-boundary", block => block.id);
+      boundaries.select(".functionBlockBoundaryTitle").text(block => block.title || "Function Block");
+      boundaries.select(".functionBlockBoundaryCollapse").text("−");
+      boundaries.each(function positionBoundary(block) {
           const bounds = functionBlockBoundaryBounds(block);
           this.hidden = !bounds;
           if (!bounds) return;

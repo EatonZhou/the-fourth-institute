@@ -52,6 +52,27 @@
         </div>
 
         <div class="lineageLoadError" id="lineageLoadError" role="alert" hidden></div>
+          <div
+            class="programWireHint"
+            id="programWireHint"
+            data-testid="program-wire-hint"
+            role="status"
+            aria-live="polite"
+            hidden
+          >
+            <span class="programWireHintPulse" aria-hidden="true"></span>
+            <span class="programWireHintCopy">
+              <small id="programWireHintEyebrow"><!--portal-i18n:"正在连接"-->正在连接</small>
+              <strong id="programWireHintText"><!--portal-i18n:"请选择一个兼容的输入端口"-->请选择一个兼容的输入端口</strong>
+            </span>
+            <button
+              id="cancelProgramWireBtn"
+              data-program-wire-cancel
+              type="button"
+              aria-label="取消当前原语连线"
+              title="取消连线（Esc）"
+             data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;取消当前原语连线&quot;, &quot;title&quot;: &quot;取消连线（Esc）&quot;}"><span><!--portal-i18n:"取消"-->取消</span><kbd><!--portal-i18n:"Esc"-->Esc</kbd></button>
+          </div>
         <div class="hatgViewport" id="hatgViewport">
           <div class="hatgCanvas" id="hatgCanvas" tabindex="0" aria-label="HATG 图编辑画布；按住 Shift 点击或拖出选框可多选节点" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;HATG 图编辑画布；按住 Shift 点击或拖出选框可多选节点&quot;}">
             <div class="hatgWorld" id="hatgWorld" data-hatg-engine="d3">
@@ -94,27 +115,6 @@
             aria-hidden="true"
             hidden
            data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;HATG 编程对象设置&quot;}"></aside>
-          <div
-            class="programWireHint"
-            id="programWireHint"
-            data-testid="program-wire-hint"
-            role="status"
-            aria-live="polite"
-            hidden
-          >
-            <span class="programWireHintPulse" aria-hidden="true"></span>
-            <span class="programWireHintCopy">
-              <small id="programWireHintEyebrow"><!--portal-i18n:"正在连接"-->正在连接</small>
-              <strong id="programWireHintText"><!--portal-i18n:"请选择一个兼容的输入端口"-->请选择一个兼容的输入端口</strong>
-            </span>
-            <button
-              id="cancelProgramWireBtn"
-              data-program-wire-cancel
-              type="button"
-              aria-label="取消当前原语连线"
-              title="取消连线（Esc）"
-             data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;取消当前原语连线&quot;, &quot;title&quot;: &quot;取消连线（Esc）&quot;}"><span><!--portal-i18n:"取消"-->取消</span><kbd><!--portal-i18n:"Esc"-->Esc</kbd></button>
-          </div>
           <div class="workspaceViewLoading" id="workspaceViewLoading" role="status" aria-live="polite" hidden>
             <span class="workspaceViewLoadingSpinner" aria-hidden="true"></span>
             <span class="workspaceViewLoadingCopy">
