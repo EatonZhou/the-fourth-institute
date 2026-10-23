@@ -20,6 +20,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Cannot grant the CI Python runtime to the test user' }
     Copy-Item $Installer (Join-Path $fixture 'Setup.exe')
     Copy-Item "$PSScriptRoot/native_smoke.py" (Join-Path $fixture 'native_smoke.py')
+    Copy-Item "$PSScriptRoot/native_cli_smoke.py" (Join-Path $fixture 'native_cli_smoke.py')
     $quotedPython = $python.Replace("'", "''")
     $sha = $env:GITHUB_SHA
     $packageSha = (Get-Content (Join-Path (Split-Path $Installer) 'receipt.json') -Raw | ConvertFrom-Json).source_commit
@@ -45,6 +46,11 @@ New-Item -ItemType Directory evidence | Out-Null
 `$ErrorActionPreference = 'Continue'
 & '$quotedPython' native_smoke.py --installer Setup.exe --work installations --evidence evidence 2>&1 | Out-File evidence/smoke.log -Encoding utf8
 `$code = `$LASTEXITCODE
+if (`$code -eq 0) {
+    `$installedCode = Get-ChildItem installations -Directory | Select-Object -First 1 | ForEach-Object { Join-Path `$_.FullName 'code' }
+    & '$quotedPython' native_cli_smoke.py --code `$installedCode --work 'CLI 中文 空格' --evidence evidence 2>&1 | Out-File evidence/native-cli.log -Encoding utf8
+    `$code = `$LASTEXITCODE
+}
 Get-ChildItem installations -Filter *.log -Recurse -ErrorAction SilentlyContinue |
     Where-Object { `$_.Directory.Name -eq 'runtime' } | ForEach-Object {
         `$case = if (`$_.FullName -match 'Lenia') { 'full' } else { 'base' }
@@ -60,7 +66,7 @@ exit `$code
         -Credential $credential -LoadUserProfile -WorkingDirectory $fixture `
         -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', ('"' + $entry + '"')) `
         -RedirectStandardOutput "$fixture/bootstrap.log" -RedirectStandardError "$fixture/bootstrap-error.log" -PassThru
-    if (-not $process.WaitForExit(1500000)) { throw 'Standard-user native smoke exceeded 25 minutes' }
+    if (-not $process.WaitForExit(2400000)) { throw 'Standard-user native smoke exceeded 40 minutes' }
     $result = $process.ExitCode
     if ($null -eq $result) { throw 'Native test process has no exit code' }
 } catch {

@@ -68,7 +68,7 @@ jobs:
   native:
     needs: package
     runs-on: windows-2025
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
       PYTHONUTF8: '1'
       PYTHONDONTWRITEBYTECODE: '1'

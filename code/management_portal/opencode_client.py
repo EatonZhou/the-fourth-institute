@@ -38,6 +38,14 @@ SUBAGENT_TOOL = "task"
 KEY_VARIABLE = "PORTAL_OPENCODE_API_KEY"
 
 
+class OpenCodeStartupError(NativeAgentUnavailable):
+    """A local runtime failure; safe classification survives the Execution boundary."""
+
+    def __init__(self, message: str, code: str):
+        super().__init__(message)
+        self.error_code = code
+
+
 def credential_paths() -> tuple[Path, ...]:
     """OpenCode's session stores: isolated test groups hide them."""
 
@@ -161,7 +169,8 @@ class OpenCodeClient:
                 pass
             binary = opencode_provider_catalog.binary()
             if not binary.is_file():
-                raise RuntimeError("OpenCode runtime missing; install a validated shared OpenCode runtime")
+                raise OpenCodeStartupError("OpenCode runtime missing; install a validated shared OpenCode runtime",
+                                           "provider_runtime_missing")
             # The environment goes to the process only: it may hold the Portal database's address
             # and the route's key, which the bridge hands to OpenCode (``KEY_VARIABLE``).
             environment, identity = resident_process_environment(params)
@@ -189,19 +198,22 @@ class OpenCodeClient:
             log_path = root / "runtime.log"
             with log_path.open("ab") as log:
                 os.chmod(log_path, 0o600)
-                process = spawn_process([sys.executable, "-I", str(BRIDGE), str(launch)], cwd=params["cwd"], env=environment,
+                try:
+                    process = spawn_process([sys.executable, "-I", str(BRIDGE), str(launch)], cwd=params["cwd"], env=environment,
                                            stdin=subprocess.DEVNULL, stdout=log, stderr=log, kill_on_owner_exit=False)
+                except (OSError, ValueError) as exc:
+                    raise OpenCodeStartupError("OpenCode bridge could not be launched", "provider_runtime_launch_failed") from exc
             try:
                 deadline = time.monotonic() + 180
                 while time.monotonic() < deadline:
                     if process.poll() is not None:
-                        raise NativeAgentUnavailable(f"OpenCode startup failed; inspect {log_path}")
+                        raise OpenCodeStartupError(f"OpenCode startup failed; inspect {log_path}", "provider_runtime_startup_failed")
                     try:
                         transport._request("health", response_timeout=3)
                         return transport
                     except NativeAgentUnavailable:
                         time.sleep(.2)
-                raise NativeAgentUnavailable(f"OpenCode startup timed out; inspect {log_path}")
+                raise OpenCodeStartupError(f"OpenCode startup timed out; inspect {log_path}", "provider_runtime_startup_timeout")
             except BaseException:
                 terminate_process_tree(process, force=True)
                 raise

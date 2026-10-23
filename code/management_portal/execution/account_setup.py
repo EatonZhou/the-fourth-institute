@@ -215,7 +215,8 @@ def _check_failure(snapshot, row):
         reason = "network"
     elif kind == "invalid_json":
         reason = "invalid_response"
-    elif code == "provider_recovery_exhausted":
+    elif code in {"provider_recovery_exhausted", "provider_runtime_missing",
+                  "provider_runtime_launch_failed", "provider_runtime_startup_failed", "provider_runtime_startup_timeout"}:
         reason = "runtime"
     else:
         reason = "unknown"
@@ -227,11 +228,11 @@ def _check_failure(snapshot, row):
 def _check_log(snapshot, row, response):
     """Bounded diagnostic log from this authorized check, not arbitrary host logs."""
     result = snapshot.get("result") or {}
-    request = snapshot.get("request") or {}
+    scheduler = snapshot.get("scheduler") or {}
     report = redact_sensitive_mapping({
         "execution_id": snapshot["execution_id"], "account_id": row["account_id"],
         "runner": row["provider"], "model": response["model"], "status": snapshot.get("status"),
-        "submitted_at": request.get("created_at"),
+        "submitted_at": scheduler.get("created_at") or None,
         "message": response["message"], "next_step": response["next_step"],
         "diagnostic": response["diagnostic"],
         "error_recorded": bool(result.get("error") or result.get("error_code")),
@@ -239,6 +240,10 @@ def _check_log(snapshot, row, response):
     # Provider errors can embed arbitrary response bodies or unlabelled credentials.
     # Include only the classified failure and allowlisted transport observations.
     report["transport"] = sanitize_transport_observation((result.get("error_details") or {}).get("provider_transport"))
+    code = failure_code(result)
+    if code in {"provider_runtime_missing", "provider_runtime_launch_failed",
+                "provider_runtime_startup_failed", "provider_runtime_startup_timeout"}:
+        report["runtime_failure"] = code
     return json.dumps(report, ensure_ascii=False, indent=2)
 
 

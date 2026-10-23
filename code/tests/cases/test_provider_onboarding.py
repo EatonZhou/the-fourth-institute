@@ -361,6 +361,20 @@ def test_failed_check_log_keeps_diagnostics_and_transport_but_excludes_credentia
     assert setup.check_result(invoke(account_id="existing", execution_id="execution_test"))["check"]["log"] == ""
 
 
+@pytest.mark.parametrize("code", ["provider_runtime_missing", "provider_runtime_launch_failed",
+                                 "provider_runtime_startup_failed", "provider_runtime_startup_timeout"])
+def test_local_runtime_failure_reports_scheduler_submission_without_disclosing_exception(check_snapshot, code):
+    snapshot, _account = check_snapshot
+    snapshot["scheduler"] = {"created_at": "2026-10-23T01:00:00Z"}
+    snapshot["result"]["error_code"] = code
+    check = setup.check_result(invoke(account_id="existing", execution_id="execution_test"))["check"]
+    report = json.loads(check["log"])
+    assert report["submitted_at"] == "2026-10-23T01:00:00Z"
+    assert report["runtime_failure"] == code
+    assert check["diagnostic"]["reason"] == "runtime"
+    assert "private synthetic" not in check["log"]
+
+
 def test_unmapped_imported_role_uses_default(monkeypatch):
     monkeypatch.setattr(registrations, "roles", lambda: [
         {"role": "coding", "account_id": None}, {"role": "default", "account_id": "existing"}])

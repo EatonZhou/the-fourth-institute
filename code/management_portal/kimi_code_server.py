@@ -9,6 +9,7 @@ import tomllib
 from pathlib import Path
 
 from management_common.postgres_database import close_all_database_pools
+from management_common.process_runtime import run_process
 from management_common.portal_paths import resolve_directory
 from management_common.site_config import read_site_config
 from management_portal import kimi_portal_tools
@@ -162,9 +163,7 @@ def main() -> int:
         "KIMI_CODE_AGENT_SWARM_MAX_CONCURRENCY": os.getenv("PORTAL_KIMI_CODE_SWARM_MAX_CONCURRENCY", "3"),
         "KIMI_SUBAGENT_TIMEOUT_MS": os.getenv("PORTAL_KIMI_CODE_SUBAGENT_TIMEOUT_MS", "2147000000"),
     })
-    os.execvpe(
-        str(binary),
-        [
+    command = [
             str(binary),
             "web",
             "--no-open",
@@ -173,9 +172,12 @@ def main() -> int:
             "--port",
             str(port),
             "--dangerous-bypass-auth",
-        ],
-        env,
-    )
+        ]
+    if sys.platform == "win32":
+        # npm installs a .cmd shim. Windows execvpe/CreateProcess cannot run it
+        # directly; the shared process owner resolves it and owns its full tree.
+        return run_process(command, env=env).returncode
+    os.execvpe(str(binary), command, env)
     return 0
 
 

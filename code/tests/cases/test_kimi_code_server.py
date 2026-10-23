@@ -9,6 +9,7 @@ import tempfile
 import tomllib
 import unittest
 import pytest
+from types import SimpleNamespace
 from pathlib import Path
 from unittest import mock
 
@@ -71,6 +72,26 @@ class KimiCodeServerTest(unittest.TestCase):
         self.assertEqual(payload["providers"]["portal_kimi"]["base_url"], 'https://kimi.invalid/v1')
         self.assertEqual(execvpe.call_args.args[0], str(binary))
         self.assertNotIn("PORTAL_DATABASE_URL", execvpe.call_args.args[2])
+
+    def test_windows_server_runs_npm_shim_through_the_process_owner(self):
+        from management_portal import kimi_code_server as server
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            binary, secret = root / 'kimi.cmd', root / 'key'
+            binary.write_text('')
+            secret.write_text('fixture-key')
+            register_apis({'id': 'windows_kimi', 'kind': 'openai_compatible_chat',
+                           'base_url': 'https://kimi.invalid/v1', 'api_key_file': str(secret)})
+            with mock.patch.dict(os.environ, {'PORTAL_KIMI_CODE_PROVIDER_PROFILE': 'windows_kimi',
+                    'PORTAL_KIMI_CODE_BINARY': str(binary), 'PORTAL_KIMI_CODE_HOME': str(root / 'home')}), \
+                    mock.patch.object(server, 'sys', SimpleNamespace(platform='win32')), \
+                    mock.patch.object(server.kimi_portal_tools, 'install'), \
+                    mock.patch.object(server, 'run_process', return_value=SimpleNamespace(returncode=7)) as run, \
+                    mock.patch.object(server.os, 'execvpe') as execute:
+                assert server.main() == 7
+            execute.assert_not_called()
+            assert run.call_args.args[0][:2] == [str(binary), 'web']
+            assert 'PORTAL_DATABASE_URL' not in run.call_args.kwargs['env']
 
 
 if __name__ == "__main__":
