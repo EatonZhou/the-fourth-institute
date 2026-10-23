@@ -12,6 +12,16 @@ $password = ConvertTo-SecureString (([Guid]::NewGuid().ToString('N')) + 'aA9!') 
 $user = New-LocalUser -Name $username -Password $password -AccountNeverExpires
 $result = 1
 $taskName = 'TFI-native-cli-' + $env:GITHUB_RUN_ID + '-' + $env:GITHUB_RUN_ATTEMPT
+function Save-FixtureProgress {
+    # Preserve partial evidence while the task is running, even if Actions later
+    # terminates the parent before its finally block can execute.
+    if (Test-Path "$fixture/evidence") {
+        Get-ChildItem "$fixture/evidence" -File -ErrorAction SilentlyContinue |
+            Copy-Item -Destination $evidencePath -Force -ErrorAction Continue
+    }
+    Get-ChildItem "$fixture/bootstrap*.log" -ErrorAction SilentlyContinue |
+        Copy-Item -Destination $evidencePath -Force -ErrorAction Continue
+}
 try {
     Add-LocalGroupMember -SID 'S-1-5-32-545' -Member $user
     $sid = $user.SID.Value
@@ -79,10 +89,19 @@ exit `$code
         -User $credential.UserName -Password ($credential.GetNetworkCredential().Password) | Out-Null
     $started = Get-Date
     Start-ScheduledTask -TaskName $taskName
+    $nextProgress = $started
     do {
         Start-Sleep -Seconds 2
         $task = Get-ScheduledTask -TaskName $taskName
         $info = Get-ScheduledTaskInfo -TaskName $taskName
+        if ((Get-Date) -ge $nextProgress) {
+            Save-FixtureProgress
+            $progress = @{ state = [string]$task.State; last_run_time = $info.LastRunTime.ToString('o');
+                last_result = $info.LastTaskResult; elapsed_seconds = [int]((Get-Date) - $started).TotalSeconds }
+            $progress | ConvertTo-Json | Set-Content (Join-Path $evidencePath 'task-progress.json') -Encoding utf8
+            Write-Host ('Native task: ' + ($progress | ConvertTo-Json -Compress))
+            $nextProgress = (Get-Date).AddSeconds(30)
+        }
         if ((Get-Date) -gt $started.AddMinutes(40)) { throw 'Standard-user native smoke exceeded 40 minutes' }
     } while ($task.State -eq 'Running' -or $info.LastRunTime -lt $started.AddSeconds(-2))
     $result = $info.LastTaskResult
