@@ -60,6 +60,30 @@ def test_open_intake_open_false_closes_one_resident(monkeypatch):
     assert transitions == [(resident_id, "close"), (resident_id, "open")]
 
 
+def test_open_intake_receipt_matches_published_schema(monkeypatch):
+    """单人接单开关声明字符串状态，切换与幂等回执均可直接驱动下一次操作"""
+    from management_portal.hatg.catalog import instruction_catalog
+
+    fields = {field.name: field.schema() for field in instruction_catalog()["OpenIntake"].result}
+    resident_id = "resident_123456789abc"
+    execution, transitions = _intake_fakes(monkeypatch, {resident_id: "open"})
+    for opening, expected in [(False, "closed"), (False, "closed"), (True, "open"), (True, "open")]:
+        inv = SimpleNamespace(argument={"resident_id": resident_id, "open": opening}.get,
+                              caller="sample_admin", entry="web")
+        result = execution.open_intake(inv)
+        for name in ("previous", "current"):
+            assert fields[name]["type"] == "string"
+            assert isinstance(result[name], str)
+            assert result[name] in fields[name]["enum"]
+        assert result["current"] == expected
+        assert result["changed"] is (result["previous"] != result["current"])
+        if "state" in result:
+            assert fields["state"]["type"] == "object"
+            assert result["state"]["intake_state"] == result["current"]
+    # A manual close still records the manual policy; an already-open switch is idempotent.
+    assert transitions == [(resident_id, "close"), (resident_id, "close"), (resident_id, "open")]
+
+
 def test_open_intake_open_false_closes_a_resident_ids_batch(monkeypatch):
     """OpenIntake open=false 按 resident_ids 批量关闭接单并报告变化与未变化的 Resident"""
     first, second = "resident_aaaaaaaaaaaa", "resident_bbbbbbbbbbbb"

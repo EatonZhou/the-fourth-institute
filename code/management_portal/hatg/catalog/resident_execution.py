@@ -17,9 +17,10 @@ INTAKE_TARGETS = (
       items={"type": "string"}),
 )
 INTAKE_RESULT = (
-    P("previous", "object", "单个 Resident 时：变化前的状态"),
-    P("current", "object", "单个 Resident 时：当前状态"),
+    P("previous", "string", "单个 Resident 时：变化前的接单状态", enum=("open", "closed")),
+    P("current", "string", "单个 Resident 时：当前接单状态", enum=("open", "closed")),
     P("changed", "boolean", "单个 Resident 时：本次是否发生变化"),
+    P("state", "object", "单个 Resident 实际执行切换时的提交回执；intake_state 是接单状态，不代表执行额度已恢复"),
     P("changed_resident_ids", "array", "批量时：发生变化的 Resident"),
     P("unchanged_resident_ids", "array", "批量时：本来就处于目标状态、未改变的 Resident"),
     P("failed", "array", "批量时：失败的 Resident 与原因"),
