@@ -2200,7 +2200,7 @@ def _new_lineage_node_position(
             (node for node in nodes if node.get("id") == lineage.get("leader_resident_id")),
             nodes[0] if nodes else {"x": 20, "y": 35},
         )
-    return lineage_placement.node_position(lineage, anchor, payload)
+    return lineage_placement.node_position(lineage, anchor, payload, child=payload)
 
 
 def initialize_resident_lineage(
@@ -4362,7 +4362,9 @@ def create_lineage_branch(
             f"{source.get('title') or source_resident_id} · 分支",
             120,
         )
-        child_x, child_y = lineage_placement.node_position(previous, source, payload)
+        child_x, child_y = lineage_placement.node_position(
+            previous, source, payload, child={"title": requested_title},
+        )
         creation = _create_derived_resident(
             source,
             {**payload, "mode": mode, "title": requested_title},

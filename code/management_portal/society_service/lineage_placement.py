@@ -28,7 +28,7 @@ def _size(value: Any) -> tuple[float, float]:
     return width, height
 
 
-def _default_size(node: dict[str, Any]) -> tuple[float, float]:
+def _default_size(node: dict[str, Any], *, estimate_title: bool = True) -> tuple[float, float]:
     kind = node.get("kind")
     if kind == "seed":
         width, height = 74, 74
@@ -38,6 +38,14 @@ def _default_size(node: dict[str, Any]) -> tuple[float, float]:
         width, height = 176, 84
     else:
         width, height = 154, 94
+        if estimate_title:
+            # Native/Effect creation has no browser measurements. Resident
+            # titles wrap without a line clamp. Reserve a conservative row
+            # per ten glyphs (including wide glyphs) at the 14px line height;
+            # the normal card has at least 132px of content width.
+            title = str(node.get("title") or "")
+            rows = sum(max(1, math.ceil(len(line) / 10)) for line in title.split("\n"))
+            height += max(0, rows - 1) * 14
     return width / WORLD_WIDTH * 100, height / WORLD_HEIGHT * 100
 
 
@@ -73,7 +81,9 @@ def node_position(
     if not isinstance(raw_sizes, dict):
         raise ValueError("node_sizes 必须按节点 ID 提供尺寸")
     sizes = {node_id: _size(value) for node_id, value in raw_sizes.items()}
-    default_width, default_height = _default_size(child or {})
+    default_width, default_height = _default_size(
+        child or {}, estimate_title="child_size" not in geometry,
+    )
     child_size = (
         _size(geometry["child_size"])
         if "child_size" in geometry
@@ -111,7 +121,7 @@ def node_position(
             continue
         if (node.get("operator_executor") or {}).get("component_id"):
             continue
-        default_width, default_height = _default_size(node)
+        default_width, default_height = _default_size(node, estimate_title=node.get("id") not in sizes)
         measured_width, measured_height = sizes.get(node.get("id"), (default_width, default_height))
         width, height = max(default_width, measured_width), max(default_height, measured_height)
         center_x = _number(node.get("x") if node.get("x") is not None else 50)

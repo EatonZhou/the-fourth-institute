@@ -411,7 +411,9 @@
   min-width: 0;
   min-height: 0;
   outline: none;
-  overflow: hidden;
+  /* D3 owns the camera. Native focus/scrollIntoView must not add a second,
+     invisible scroll offset to the transformed world. */
+  overflow: clip;
   background-image:
     linear-gradient(color-mix(in srgb, var(--border) 31%, transparent) 1px, transparent 1px),
     linear-gradient(90deg, color-mix(in srgb, var(--border) 31%, transparent) 1px, transparent 1px);

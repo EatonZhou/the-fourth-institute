@@ -1,6 +1,7 @@
 'use strict';
 // Actual HATG fit options and D3 renderer, without live graph mutations.
 const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path');
+const { execFileSync } = require('node:child_process');
 const { chromium } = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
 const { babelParse, traverse } = require('./babel_parse.cjs');
 const root = path.resolve(__dirname, '../../../management_portal/static');
@@ -93,6 +94,49 @@ assert.ok(familyOptions, 'production Family camera policy');
       graph.focusNode('left', { duration: 0 });
     });
     await assertVisible('focus includes the complete asymmetric block boundary');
+    // A native scroll offset used to survive camera fit/focus, clipping the
+    // facade even though D3's transform itself was within the viewport.
+    const scroll = await page.evaluate(() => {
+      const canvas = document.getElementById('canvas');
+      canvas.scrollLeft = 102;
+      canvas.scrollTop = 80;
+      document.querySelector('#nodes .hatgNode').scrollIntoView();
+      return { x: canvas.scrollLeft, y: canvas.scrollTop };
+    });
+    assert.deepEqual(scroll, { x: 0, y: 0 }, 'the canvas has exactly one camera');
+    await page.evaluate(() => graph.focusNode('left', { duration: 0 }));
+    await assertVisible('native scroll attempts cannot displace a focused block');
+    // Compare server fallback placement with actual CSS card rectangles, not
+    // an assertion that repeats the server's size estimate.
+    const placementPath = path.resolve(root, '../society_service/lineage_placement.py');
+    for (const title of ['[TAU:testrun_443b3903add10916:lineage.hatg] Source F0', 'W'.repeat(100), '宽名称'.repeat(30)]) {
+      const positions = JSON.parse(execFileSync('python3', ['-c', `
+import importlib.util,json,sys
+spec=importlib.util.spec_from_file_location('placement',sys.argv[1]); p=importlib.util.module_from_spec(spec);spec.loader.exec_module(p)
+source={'id':'source','title':sys.argv[2],'x':50,'y':50}
+child={'id':'child','title':sys.argv[2]+' Fork'}
+child['x'],child['y']=p.node_position({'nodes':[source]},source,{},child=child)
+print(json.dumps([source,child]))
+`, placementPath, title], { encoding: 'utf8' }));
+      await page.evaluate(nodes => {
+        graph.destroy();
+        for (const id of ['nodes', 'edges', 'effects', 'labels']) document.getElementById(id).replaceChildren();
+        document.documentElement.style.zoom = '1';
+        document.getElementById('canvas').style.width = '418px';
+        window.graph = PortalHatgGraph.createGraph({ root: '#canvas', world: '#world', edgeLayer: '#edges', effectLayer: '#effects', labelLayer: '#labels', nodeLayer: '#nodes', scaleExtent: [.05, 3.2],
+          viewportInsets: () => ({ top: 74, bottom: 10 }),
+          nodeContent: node => `<span class="nodeTopline"><span class="nodeIdentity">resident_123456789012</span></span><strong class="nodeTitle">${node.title}</strong><span class="nodeFooter"><span class="nodeTypePill">resident</span><span class="nodeMessageCount">0</span><span class="nodeFooterState">idle</span></span>` });
+        graph.render({ nodes: nodes.map(node => ({ ...node, kind: 'agent' })), edges: [] });
+        graph.refresh({ measureNodes: true });
+        graph.fit({ ...arrangeOptions, duration: 0 });
+      }, positions);
+      await assertVisible('long title Fork cards fit');
+      const overlap = await page.evaluate(() => {
+        const [a, b] = [...document.querySelectorAll('#nodes .hatgNode')].map(n => n.getBoundingClientRect());
+        return Math.min(a.right, b.right) > Math.max(a.left, b.left) && Math.min(a.bottom, b.bottom) > Math.max(a.top, b.top);
+      });
+      assert.equal(overlap, false, 'native Fork placement leaves long title cards separate');
+    }
     assert.deepEqual(errors, []);
     await page.evaluate(() => graph.destroy());
   } finally { await browser.close(); }
