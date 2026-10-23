@@ -325,32 +325,50 @@
       .filter(item => item && (!item.builtin || item.workbenchId));
   }
 
-  function linkAttrs(item, activeId) {
-    const active = item.id === activeId;
-    const attrs = [
-      `class="portalModuleLink${active ? " active" : ""}"`,
-      `data-portal-path="${esc(item.href)}"`,
-      `data-module-link="${esc(item.id)}"`,
-      `href="${esc(item.href)}"`,
-    ];
-    if (active) attrs.push('aria-current="page"');
-    if (secondaryNav(item.id)) {
-      attrs.push(
-        'aria-haspopup="true"',
-        'aria-expanded="false"',
-        `aria-controls="${SECONDARY_NAV_POPOVER_ID}"`,
-        `data-portal-secondary-trigger="${esc(item.id)}"`,
-      );
-    }
-    return attrs.join(" ");
-  }
-
   function render(root) {
     if (!root) return;
     const activeId = activeIdFor(root);
-    root.innerHTML = orderedItems().map(item => (
-      window.PortalI18n.html`<a ${linkAttrs(item, activeId)}><span class="portalModuleLinkLabel">${esc(item.label)}</span></a>`
-    )).join("");
+    const links = new Map(navLinks(root).map(link => [link.dataset.moduleLink, link]));
+    const items = orderedItems();
+    // Catalog/category reads can settle between pointerdown and pointerup.
+    // Keep each entry and label mounted, including their focus and native click.
+    items.forEach(item => {
+      let link = links.get(item.id);
+      if (!link) {
+        link = document.createElement("a");
+        link.className = "portalModuleLink";
+        link.dataset.moduleLink = item.id;
+        const label = document.createElement("span");
+        label.className = "portalModuleLinkLabel";
+        link.appendChild(label);
+        root.appendChild(link);
+      }
+      links.delete(item.id);
+      link.dataset.portalPath = item.href;
+      link.setAttribute("href", item.href);
+      link.draggable = true;
+      const active = item.id === activeId;
+      link.classList.toggle("active", active);
+      if (active) link.setAttribute("aria-current", "page");
+      else link.removeAttribute("aria-current");
+      const label = link.querySelector(".portalModuleLinkLabel");
+      if (label.textContent !== item.label) label.textContent = item.label;
+      if (secondaryNav(item.id)) {
+        link.dataset.portalSecondaryTrigger = item.id;
+        link.setAttribute("aria-haspopup", "true");
+        link.setAttribute("aria-controls", SECONDARY_NAV_POPOVER_ID);
+        link.setAttribute("aria-expanded", String(secondaryTrigger === link && !secondaryPopover?.hidden));
+      } else {
+        if (secondaryTrigger === link) closeSecondaryNav();
+        delete link.dataset.portalSecondaryTrigger;
+        ["aria-haspopup", "aria-controls", "aria-expanded"].forEach(name => link.removeAttribute(name));
+      }
+    });
+    links.forEach(link => {
+      if (secondaryTrigger === link) closeSecondaryNav();
+      link.remove();
+    });
+    applyItemOrder(root, items.map(item => item.id));
     bindNavScrolling(root);
     bindNavOrdering(root);
     bindSecondaryNav(root);
@@ -370,9 +388,12 @@
     root.scrollLeft += offset;
   }
 
+  const navScrollLinks = new WeakSet();
   function bindNavScrolling(root) {
     bindNavOverflow(root);
     navLinks(root).forEach(link => {
+      if (navScrollLinks.has(link)) return;
+      navScrollLinks.add(link);
       link.addEventListener("focus", () => {
         requestAnimationFrame(() => {
           if (document.activeElement !== link) return;
@@ -473,11 +494,17 @@
 
   function applyItemOrder(root, value) {
     if (!root) return;
+    const focused = root.contains(document.activeElement) ? document.activeElement : null;
     const links = new Map(navLinks(root).map(link => [String(link.dataset.moduleLink || ""), link]));
+    let position = root.firstElementChild;
     normalizedItemOrder(value).forEach(id => {
       const link = links.get(id);
-      if (link) root.appendChild(link);
+      if (!link) return;
+      // Even moving a focused node to its existing position can discard focus.
+      if (link !== position) root.insertBefore(link, position);
+      position = link.nextElementSibling;
     });
+    if (focused?.isConnected && document.activeElement !== focused) focused.focus({ preventScroll: true });
   }
 
   function syncMountedNavOrder(value) {
@@ -506,7 +533,10 @@
     syncMountedNavOrder(saved.itemOrder);
   }
 
+  const navOrderingRoots = new WeakSet();
   function bindNavOrdering(root) {
+    if (navOrderingRoots.has(root)) return;
+    navOrderingRoots.add(root);
     let draggedLink = null;
     let dropTarget = null;
     let dropAfter = false;
@@ -518,72 +548,87 @@
       dropAfter = false;
     };
 
-    navLinks(root).forEach(link => {
-      link.draggable = true;
-      link.addEventListener("click", event => {
-        if (performance.now() >= suppressClickUntil) return;
-        event.preventDefault();
-        event.stopImmediatePropagation();
-      }, true);
-      link.addEventListener("dragstart", event => {
-        draggedLink = link;
-        link.classList.add("portalNavDragging");
-        link.setAttribute("aria-grabbed", "true");
-        if (event.dataTransfer) {
-          event.dataTransfer.effectAllowed = "move";
-          event.dataTransfer.setData(window.PortalCompatibility.identifier("nav_transfer"), link.dataset.moduleLink || "");
-          event.dataTransfer.setData("text/plain", link.textContent || "");
-        }
+    const eventLink = event => {
+      const link = event.target.closest?.(".portalModuleLink[data-module-link]");
+      return link?.parentElement === root ? link : null;
+    };
+    root.addEventListener("click", event => {
+      if (!eventLink(event)) return;
+      if (performance.now() >= suppressClickUntil) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }, true);
+    root.addEventListener("dragstart", event => {
+      const link = eventLink(event);
+      if (!link) return;
+      draggedLink = link;
+      link.classList.add("portalNavDragging");
+      link.setAttribute("aria-grabbed", "true");
+      if (event.dataTransfer) {
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData(window.PortalCompatibility.identifier("nav_transfer"), link.dataset.moduleLink || "");
+        event.dataTransfer.setData("text/plain", link.textContent || "");
+      }
+    });
+    root.addEventListener("dragover", event => {
+      const link = eventLink(event);
+      if (!link) return;
+      if (draggedLink?.parentElement !== root || draggedLink === link) return;
+      event.preventDefault();
+      if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+      const rect = link.getBoundingClientRect();
+      const after = event.clientX >= rect.left + rect.width / 2;
+      if (dropTarget === link && dropAfter === after) return;
+      clearDropTarget();
+      dropTarget = link;
+      dropAfter = after;
+      link.classList.add(after ? "portalNavDropAfter" : "portalNavDropBefore");
+    });
+    root.addEventListener("dragleave", event => {
+      const link = eventLink(event);
+      if (!link) return;
+      if (event.relatedTarget instanceof Node && link.contains(event.relatedTarget)) return;
+      if (dropTarget === link) clearDropTarget();
+    });
+    root.addEventListener("drop", event => {
+      if (draggedLink?.parentElement !== root || dropTarget?.parentElement !== root) return;
+      event.preventDefault();
+      const reference = dropAfter ? dropTarget.nextElementSibling : dropTarget;
+      root.insertBefore(draggedLink, reference);
+      currentItemOrder = navLinks(root).map(item => String(item.dataset.moduleLink || "")).filter(Boolean);
+      navOrderInteracted = true;
+      suppressClickUntil = performance.now() + 250;
+      document.querySelectorAll("[data-portal-nav]").forEach(other => {
+        if (other !== root) applyItemOrder(other, currentItemOrder);
       });
-      link.addEventListener("dragover", event => {
-        if (!draggedLink || draggedLink === link) return;
-        event.preventDefault();
-        if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
-        const rect = link.getBoundingClientRect();
-        const after = event.clientX >= rect.left + rect.width / 2;
-        if (dropTarget === link && dropAfter === after) return;
-        clearDropTarget();
-        dropTarget = link;
-        dropAfter = after;
-        link.classList.add(after ? "portalNavDropAfter" : "portalNavDropBefore");
-      });
-      link.addEventListener("dragleave", event => {
-        if (event.relatedTarget instanceof Node && link.contains(event.relatedTarget)) return;
-        if (dropTarget === link) clearDropTarget();
-      });
-      link.addEventListener("drop", event => {
-        if (!draggedLink || !dropTarget) return;
-        event.preventDefault();
-        const reference = dropAfter ? dropTarget.nextElementSibling : dropTarget;
-        root.insertBefore(draggedLink, reference);
-        currentItemOrder = navLinks(root).map(item => String(item.dataset.moduleLink || "")).filter(Boolean);
-        navOrderInteracted = true;
-        suppressClickUntil = performance.now() + 250;
-        document.querySelectorAll("[data-portal-nav]").forEach(other => {
-          if (other !== root) applyItemOrder(other, currentItemOrder);
-        });
-        persistItemOrder();
-        clearDropTarget();
-      });
-      link.addEventListener("dragend", () => {
-        link.classList.remove("portalNavDragging");
-        link.removeAttribute("aria-grabbed");
-        draggedLink = null;
-        clearDropTarget();
-      });
+      persistItemOrder();
+      clearDropTarget();
+    });
+    root.addEventListener("dragend", event => {
+      const link = eventLink(event);
+      if (!link) return;
+      link.classList.remove("portalNavDragging");
+      link.removeAttribute("aria-grabbed");
+      draggedLink = null;
+      clearDropTarget();
     });
   }
 
+  const secondaryNavLinks = new WeakSet();
   function bindSecondaryNav(root) {
     navLinks(root).forEach(link => {
-      const moduleId = String(link.dataset.portalSecondaryTrigger || "").trim();
-      if (!moduleId || link.dataset.portalSecondaryBound === "1") return;
-      link.dataset.portalSecondaryBound = "1";
-      link.addEventListener("mouseenter", () => scheduleSecondaryOpen(link, moduleId));
+      if (secondaryNavLinks.has(link)) return;
+      secondaryNavLinks.add(link);
+      const moduleId = () => String(link.dataset.portalSecondaryTrigger || "").trim();
+      link.addEventListener("mouseenter", () => {
+        if (moduleId()) scheduleSecondaryOpen(link, moduleId());
+        else scheduleSecondaryClose();
+      });
       link.addEventListener("mouseleave", scheduleSecondaryClose);
       link.addEventListener("focus", () => {
         if (link.dataset.portalSecondaryRestoringFocus === "1") return;
-        openSecondaryNav(link, moduleId);
+        if (moduleId()) openSecondaryNav(link, moduleId());
+        else closeSecondaryNav();
       });
       link.addEventListener("blur", () => {
         window.setTimeout(() => {
@@ -592,15 +637,11 @@
         }, 0);
       });
       link.addEventListener("keydown", event => {
-        if (event.key !== "ArrowDown") return;
+        if (event.key !== "ArrowDown" || !moduleId()) return;
         event.preventDefault();
-        openSecondaryNav(link, moduleId);
+        openSecondaryNav(link, moduleId());
         secondaryPopover?.querySelector(".portalSecondaryNavItem")?.focus({ preventScroll: true });
       });
-    });
-    navLinks(root).filter(link => !link.dataset.portalSecondaryTrigger).forEach(link => {
-      link.addEventListener("mouseenter", scheduleSecondaryClose);
-      link.addEventListener("focus", closeSecondaryNav);
     });
   }
 
