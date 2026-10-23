@@ -3,6 +3,16 @@ from pathlib import Path
 import subprocess
 
 
+def test_arrange_uses_measured_card_sizes():
+    """HATG 紧凑及舒展整理容纳长标题卡片，重载后保持无重叠。
+
+    :module: lineage.hatg
+    """
+    script = Path(__file__).with_name("javascript") / "hatg_measured_layout.cjs"
+    result = subprocess.run(["node", str(script)], capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 def test_hatg_arrange_fits_nodes_below_toolbar():
     """HATG 自动整理后完整显示节点，不被工具栏和窄面板裁切
 

@@ -12719,7 +12719,8 @@
         page = await window.PortalResidentService.inputHistory(residentId, { pageToken });
       } catch (error) {
         if (!isCurrent()) return null;
-        if (Number(error?.status) === 404 && this.rejectUnavailableTarget(error)) return null;
+        if ((error?.code === "resident.deleted" || Number(error?.status) === 404)
+          && this.rejectUnavailableTarget(error)) return null;
         throw error;
       }
       if (!isCurrent()) return null;

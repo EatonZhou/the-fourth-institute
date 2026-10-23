@@ -95,19 +95,33 @@ test('history for a deleted Resident uses the unavailable Chat state instead of 
 });
 
 test('late history results cannot affect a new Chat binding, including a reload of the same Resident', async () => {
-  for (const outcome of ['missing', 'success']) {
+  for (const outcome of ['missing', 'retired', 'success']) {
     for (const sameResident of [true, false]) {
       const f = deletionFixture();
       const pending = f.primary.loadInputHistory(f.target.id);
       f.primary.targetRevision++;
       if (!sameResident) f.primary.target().resident_id = 'resident_other';
       if (outcome === 'missing') f.historyRead.reject(Object.assign(Error('resident not found'), {status: 404}));
+      else if (outcome === 'retired') f.historyRead.reject(Object.assign(Error('Resident has been deleted'), {code: 'resident.deleted'}));
       else f.historyRead.resolve({messages: [{message_id: 'old-message'}]});
       assert.equal(await pending, null);
       assert.equal(f.primary.contract, undefined);
       assert.ok(f.primary.protocol);
     }
   }
+});
+
+test('history rejected by local deletion retires only its current Chat binding', async () => {
+  const f = deletionFixture();
+  const pending = f.primary.loadInputHistory(f.target.id);
+  const error = Object.assign(Error('Resident has been deleted'), {code: 'resident.deleted'});
+  f.historyRead.reject(error);
+  assert.equal(await pending, null);
+  assert.equal(error.status, undefined);
+  assert.equal(f.primary.contract.subtitle, 'Resident 不可用');
+  assert.equal(f.primary.contract.composer.can_send, false);
+  assert.equal(f.primary.protocol, null);
+  assert.equal(f.other.contract, undefined);
 });
 
 test('history-specific permission and service errors still reach the error handler', async () => {

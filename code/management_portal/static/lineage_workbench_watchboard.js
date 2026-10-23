@@ -503,7 +503,7 @@
       }
 
       function openWatchboardRunOutput(dashboard, scriptRunId) {
-        showWatchboardModal("输出", window.PortalI18n.html`${["stdout", "stderr"].map(stream => window.PortalI18n.html`<h4>${stream}</h4><pre data-watchboard-output="${stream}"></pre><button type="button" data-watchboard-output-more="${stream}">读取日志</button>`).join("")}`, {
+        showWatchboardModal("输出", window.PortalI18n.html`${["stdout", "stderr"].map(stream => window.PortalI18n.html`<h4>${stream}</h4><pre class="watchboardTextPreview" data-watchboard-output="${stream}"></pre><button type="button" class="portalButton is-compact watchboardCommandBtn" data-watchboard-output-more="${stream}">读取日志</button>`).join("")}`, {
           onBind: overlay => {
             for (const stream of ["stdout", "stderr"]) {
               let offset = 0;

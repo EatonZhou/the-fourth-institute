@@ -943,7 +943,16 @@
       }
       .watchboardModalBody {
         display: grid;
+        grid-template-columns: minmax(0, 1fr);
         gap: 10px;
+      }
+      .watchboardModalBody [data-watchboard-output] {
+        min-width: 0;
+        font-size: 12px;
+        color: var(--text);
+      }
+      .watchboardModalBody [data-watchboard-output-more] {
+        justify-self: start;
       }
       .watchboardModalTextarea {
         width: 100%;

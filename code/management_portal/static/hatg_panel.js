@@ -5687,11 +5687,12 @@
           if (!lineageEditQueue.isCurrent(intent)) return null;
           if (draftForm?.isConnected) draftForm.dataset.programDraftDirty = "false";
           commitLineage(response.lineage);
-          if (response.facade_resident_id) {
+          const createdNodeId = response.facade_resident_id || response.function_block_id;
+          if (createdNodeId) {
             await new Promise(resolve => window.requestAnimationFrame(resolve));
             if (lineageEditQueue.isCurrent(intent)) {
-              state.graphController?.ensureNodeVisible?.(response.facade_resident_id, { persist: true });
-              // The Family is already committed. A preference failure gets
+              state.graphController?.ensureNodeVisible?.(createdNodeId, { persist: true });
+              // The structure is already committed. A preference failure gets
               // its own notice, never an invitation to submit the creation again.
               await flushHatgViewPreferenceSave(lineageId).catch(() => {});
             }
@@ -8381,7 +8382,15 @@
   }
 
   function readableAutoLayoutOptions(items = [], density = "comfortable") {
-    const metrics = AUTO_LAYOUT_METRICS.agent;
+    const measured = state.graphController?.getNodeSizes?.() || {};
+    // Titles and runtime labels wrap. The layout engine uses uniform cells,
+    // so each cell must accommodate the largest card actually being arranged.
+    const metrics = { ...AUTO_LAYOUT_METRICS.agent };
+    items.forEach(item => {
+      const size = measured[item.id];
+      if (size?.width > 0) metrics.width = Math.max(metrics.width, size.width / 100 * HATG_WORLD_SIZE.width);
+      if (size?.height > 0) metrics.height = Math.max(metrics.height, size.height / 100 * HATG_WORLD_SIZE.height);
+    });
     const compact = density === "compact";
     const horizontalPitch = metrics.width + (compact ? 32 : metrics.columnGap);
     const verticalPitch = metrics.height + (compact ? 12 : metrics.rowGap);

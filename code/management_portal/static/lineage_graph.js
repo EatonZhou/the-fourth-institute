@@ -1849,15 +1849,18 @@
       return nodeExtentMap.get(node?.id) || { x: 7, y: 5 };
     }
 
-    function getPlacementGeometry(child) {
+    function getNodeSizes() {
       const nodeSizes = {};
-      const measure = element => ({
-        width: element.offsetWidth / worldSize.width * 100,
-        height: element.offsetHeight / worldSize.height * 100,
-      });
       layers.nodes.selectAll(".hatgNode").each(function measureNode(node) {
-        if (this.offsetWidth && this.offsetHeight) nodeSizes[node.id] = measure(this);
+        if (node?.id && this.offsetWidth && this.offsetHeight) nodeSizes[node.id] = {
+          width: this.offsetWidth / worldSize.width * 100,
+          height: this.offsetHeight / worldSize.height * 100,
+        };
       });
+      return nodeSizes;
+    }
+
+    function getPlacementGeometry(child) {
       const probe = document.createElement("button");
       probe.className = "hatgNode";
       probe.dataset.nodeKind = primitiveNodeKind(child);
@@ -1870,7 +1873,10 @@
       probe.innerHTML = String(options.nodeContent?.(child, "idle") || "");
       nodeLayer.appendChild(probe);
       try {
-        return { node_sizes: nodeSizes, child_size: measure(probe) };
+        return { node_sizes: getNodeSizes(), child_size: {
+          width: probe.offsetWidth / worldSize.width * 100,
+          height: probe.offsetHeight / worldSize.height * 100,
+        } };
       } finally {
         probe.remove();
       }
@@ -4545,6 +4551,7 @@
         return visibleWorldBounds(transform, viewport, currentViewportInsets(viewport));
       },
       getPlacementGeometry,
+      getNodeSizes,
       destroy() {
         cancelWireGesture();
         wirePreview.remove();
