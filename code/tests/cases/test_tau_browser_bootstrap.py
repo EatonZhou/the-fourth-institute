@@ -39,6 +39,21 @@ class _Portal(BaseHTTPRequestHandler):
     def do_POST(self):  # noqa: N802 - http.server API
         # GetInputState: the message runs for two reads, then completes.
         call = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)) or b"{}")
+        type(self).requests.append({
+            'instruction': call['instruction'], 'key': call.get('idempotency_key'),
+            'request_id': self.headers.get('X-Portal-Request-ID'),
+        })
+        if call['instruction'] == 'PendingOnce':
+            attempt = sum(r['instruction'] == 'PendingOnce' for r in type(self).requests)
+            body = {'instruction_id': 'inst_fixture_pending', 'replayed': attempt > 1,
+                    'status': 'committed' if attempt > 1 else 'failed',
+                    'result': {'accepted': True},
+                    'error': {'code': 'instruction.projection_pending'}}
+            self.send_response(200 if attempt > 1 else 503)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps(body).encode())
+            return
         if call["instruction"] == "Disconnect":
             self.close_connection = True
             return
@@ -66,6 +81,7 @@ class _Portal(BaseHTTPRequestHandler):
 @pytest.fixture
 def portal():
     _Portal.input_reads = 0
+    _Portal.requests = []
     server = ThreadingHTTPServer(("127.0.0.1", 0), _Portal)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     yield f"http://127.0.0.1:{server.server_address[1]}"
@@ -279,15 +295,41 @@ def test_api_transport_failure_never_exposes_authenticated_call_logs(tmp_path, p
     helper_log = tmp_path / 'evidence/tau-helper-calls.jsonl'
     if stage == 'instruction':
         rows = [json.loads(line) for line in helper_log.read_text().splitlines()]
-        assert len(rows) == 2
-        assert rows[0]['call_id'] == rows[1]['call_id']
-        assert rows[1]['status'] == 'failed'
-        assert rows[1]['duration_ms'] > 0
-        assert rows[1]['error']['code'] == 'tau.transport_failed'
-        assert rows[1]['error']['http_status'] is None
+        assert [r['kind'] for r in rows] == ['call_started', 'request_started', 'request_finished', 'call_finished']
+        assert len({r['call_id'] for r in rows}) == 1
+        assert rows[1]['request_id'] == rows[2]['request_id'] == _Portal.requests[0]['request_id']
+        assert rows[2]['http_status'] is None
+        assert rows[-1]['status'] == 'failed'
+        assert rows[-1]['duration_ms'] > 0
+        assert rows[-1]['error']['code'] == 'tau.transport_failed'
+        assert rows[-1]['error']['http_status'] is None
         receipts += helper_log.read_text()
     for secret in ("identity-cookie-secret", "instruction-cookie-secret", "db_session", "Cookie:", "Call log:"):
         assert secret not in result.stdout + result.stderr + receipts
+
+
+def test_instruction_attempts_keep_transport_identity_separate_from_idempotency(tmp_path, portal):
+    """同一 ISA 调用重试保留业务幂等键，每次实际 HTTP 的 ID、状态、原始时延独立可对账。"""
+    result = _open(tmp_path, portal, 'test-actor', body=(
+        "await p.instruction('PendingOnce', {}, {key:'private-idempotency-key',attempts:2});"
+        " await Promise.all(['msg_b','msg_c'].map(id => p.inputState('resident_111111111111',id)));"
+    ))
+    assert result.returncode == 0, result.stderr
+    text = (tmp_path / 'evidence/tau-helper-calls.jsonl').read_text()
+    rows = [json.loads(line) for line in text.splitlines()]
+    starts = {r['request_id']: r for r in rows if r['kind'] == 'request_started'}
+    ends = {r['request_id']: r for r in rows if r['kind'] == 'request_finished'}
+    assert starts.keys() == ends.keys() == {r['request_id'] for r in _Portal.requests}
+    assert len(starts) == 4
+    pending = [r for r in ends.values() if r['tool'] == 'PendingOnce']
+    assert [r['attempt'] for r in pending] == [1, 2]
+    assert len({r['call_id'] for r in pending}) == 1
+    assert [r['http_status'] for r in pending] == [503, 200]
+    assert [r['replayed'] for r in pending] == [False, True]
+    assert all(r['instruction_id'] == 'inst_fixture_pending' for r in pending)
+    assert [r['key'] for r in _Portal.requests[:2]] == ['private-idempotency-key'] * 2
+    assert all(r['duration_ms'] > 0 and starts[k]['at'] <= r['at'] for k, r in ends.items())
+    assert 'private-idempotency-key' not in text and 'resident_111111111111' not in text
 
 
 def test_the_bootstrap_waits_for_one_message_by_its_own_input_state(tmp_path, portal):

@@ -265,6 +265,9 @@ DeleteLineage 回收例外独立团队，核对归属、运行状态和删除结
 共享助手自动在 `tau-helper-calls.jsonl` 记录每次 `portal.instruction` 的原调用起止、成功/失败及耗时，
 包括 `inputState` 与 `waitForInput` 每次独立的 GetInputState。并行调用分别计时，框架保留该文件；
 这些调用无需人工重复包装。耗时包括同一幂等指令内部等待与重试，不能当作单次 HTTP 延迟。
+同一日志另记录每次实际 HTTP 尝试的 request_id、attempt、原始起止和耗时、HTTP 状态及规范指令回执身份；
+APIRequestContext 的请求不属于页面 frame/document。重试保持业务幂等键但采用新的传输 ID，
+不得用 call_id 代替某次 HTTP，也不得把后续成功覆盖首次失败；参数、正文及幂等键不进入公共日志。
 `portal.inputState(residentId, messageId)` 已解包 GetInputState 的 result.input_state；返回对象的
 `message_id`、`state`、`reply_message_ids` 是顶层字段。直接读取 `input.state`，没有 `input.current`
 或第二层 `input.input_state`。`waitForInput` 返回同一形状；先核对精确 message_id 再判断终态。

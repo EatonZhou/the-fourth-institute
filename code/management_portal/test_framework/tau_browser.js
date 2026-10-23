@@ -214,7 +214,7 @@ async function openPortal({ evidenceDir, storageState, origin, pythonExecutable,
     let status = 'failed';
     let failure;
     try {
-      const result = await executeInstruction(name, args, { key, attempts });
+      const result = await executeInstruction(name, args, { key, attempts, append });
       status = 'completed';
       return result;
     } catch (error) {
@@ -226,13 +226,35 @@ async function openPortal({ evidenceDir, storageState, origin, pythonExecutable,
     }
   }
 
-  async function executeInstruction(name, args, { key, attempts }) {
+  async function executeInstruction(name, args, { key, attempts, append }) {
     const call = { schema: "tfi.hatg-instruction.v2", instruction: name, arguments: args };
     if (key) call.idempotency_key = key;
     for (let attempt = 1; ; attempt += 1) {
-      const response = await safeTransport('instruction', () => context.request.post("/api/instructions/execute", { data: call, headers: { Origin: origin } }));
+      // APIRequestContext does not emit the page's request events. Preserve
+      // each actual HTTP attempt separately from the idempotent ISA call.
+      const requestId = randomUUID();
+      const started = performance.now();
+      const request = { attempt, request_id: requestId, transport: 'api_request_context',
+        method: 'POST', path: '/api/instructions/execute' };
+      append({ ...request, kind: 'request_started', at: new Date().toISOString() });
+      let response;
       let body = {};
-      try { body = await response.json(); } catch (_error) { body = {}; }
+      let failure;
+      try {
+        response = await safeTransport('instruction', () => context.request.post("/api/instructions/execute", {
+          data: call, headers: { Origin: origin, 'X-Portal-Request-ID': requestId } }));
+        try { body = await response.json(); } catch (_error) { body = {}; }
+      } catch (error) {
+        failure = instructionFailure(error);
+        throw error;
+      } finally {
+        append({ ...request, kind: 'request_finished', at: new Date().toISOString(),
+          duration_ms: performance.now() - started, http_status: response?.status() ?? null,
+          instruction_id: /^inst_[a-zA-Z0-9_]{1,100}$/.test(body.instruction_id || '') ? body.instruction_id : null,
+          instruction_status: ['committed', 'failed', 'running'].includes(body.status) ? body.status : null,
+          replayed: typeof body.replayed === 'boolean' ? body.replayed : null,
+          ...(failure ? { error: failure } : {}) });
+      }
       if (response.ok() && body.status === "committed") return body.result || {};
       const error = body.error || {};
       if (key && ["instruction.projection_pending", "instruction.in_progress"].includes(error.code) && attempt < attempts) {
