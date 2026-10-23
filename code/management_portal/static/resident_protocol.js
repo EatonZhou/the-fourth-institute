@@ -1405,6 +1405,19 @@
     };
   }
 
+  // Inspect existing consumers without acquiring a subscription, loading data,
+  // or keeping an otherwise idle Resident store alive.
+  function subscriptionSnapshot(residentId) {
+    const id = String(residentId || "").trim();
+    const store = stores.get(id);
+    return Object.freeze({
+      resident_id: id,
+      conversation_consumers: store?.refCount || 0,
+      state_consumers: store?.stateRefCount || 0,
+      stream_active: Boolean(store?.streamStarted),
+    });
+  }
+
   function invalidateViewerState(residentId) {
     stores.get(String(residentId || "").trim())?.invalidateState("viewer-state");
   }
@@ -1530,6 +1543,7 @@
     stateView,
     executionGateView,
     stateSnapshot,
+    subscriptionSnapshot,
     invalidateViewerState,
     watchInputState,
   });

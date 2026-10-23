@@ -262,10 +262,14 @@ async function observeBrowser(context, { evidenceDir }) {
         state.document.confirmed = true;
       }
       write({ kind: data.kind, ...location(state), browser_observed_at_ms: Number.isFinite(data.at) ? data.at : null, time_origin_ms: Number.isFinite(data.time_origin) ? data.time_origin : null });
-    } else if (['beforeunload', 'pagehide', 'document_error', 'portal_connections', 'portal_stream_ready', 'pdf_reader_cancelled', 'resource_timing', 'resource_timing_buffer_full', 'observer_unavailable'].includes(data.kind)) {
+    } else if (['beforeunload', 'pagehide', 'focus', 'blur', 'visibilitychange', 'document_error', 'portal_connections', 'portal_stream_ready', 'pdf_reader_cancelled', 'resource_timing', 'resource_timing_buffer_full', 'observer_unavailable'].includes(data.kind)) {
       const doc = tokens.get(data.token);
       const associated = { ...location(state), document_id: doc?.id || null, document_confirmed: !!doc };
-      if (data.kind === 'document_error') {
+      if (['focus', 'blur', 'visibilitychange'].includes(data.kind)) {
+        write({ kind: data.kind, ...associated,
+          browser_observed_at_ms: Number.isFinite(data.at) ? data.at : null,
+          hidden: typeof data.hidden === 'boolean' ? data.hidden : null });
+      } else if (data.kind === 'document_error') {
         // This is a separate document-owned receipt, not a time-based match to
         // Playwright's pageerror (which exposes no frame). Keep both facts.
         write({ kind: data.kind, ...associated,
@@ -440,6 +444,12 @@ async function observeBrowser(context, { evidenceDir }) {
         column: eventType === 'error' && Number.isSafeInteger(event.colno) ? event.colno : null });
     });
     window.addEventListener('pageshow', () => emit({ kind: 'pageshow', time_origin: performance.timeOrigin }));
+    for (const kind of ['focus', 'blur']) window.addEventListener(kind, () => {
+      emit({ kind, hidden: document.hidden });
+    });
+    document.addEventListener('visibilitychange', () => {
+      emit({ kind: 'visibilitychange', hidden: document.hidden });
+    });
     for (const kind of ['beforeunload', 'pagehide']) window.addEventListener(kind, event => {
       emit({ kind, persisted: event.persisted }); flush();
       // The product's later pagehide handler may close connections. Capture its

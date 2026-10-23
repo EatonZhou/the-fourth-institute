@@ -113,6 +113,11 @@ async function capture(inputs, inspect, observe = observeBrowser, injected = fal
 // manufactured transport associations. Real browser delivery remains UI TAU.
 function documentProbe(content, receive) {
   const listeners = new Map(), pending = [];
+  const documentListeners = new Map();
+  const document = {
+    hidden: false,
+    addEventListener: (name, listener) => documentListeners.set(name, listener),
+  };
   let performanceCallback;
   const window = {
     __portalTauObservationRecord: data => {
@@ -121,7 +126,7 @@ function documentProbe(content, receive) {
     addEventListener: (name, listener) => listeners.set(name, listener),
   };
   vm.runInNewContext(content, {
-    window, URL, crypto: webcrypto, queueMicrotask,
+    window, document, URL, crypto: webcrypto, queueMicrotask,
     performance: { timeOrigin: 1000, addEventListener() {} },
     PerformanceObserver: class {
       constructor(callback) { performanceCallback = callback; }
@@ -131,6 +136,10 @@ function documentProbe(content, receive) {
   });
   const dispatch = (name, detail) => listeners.get(name)({ detail });
   return { async exercise() {
+    dispatch('focus', { private: 'focus-private-content' });
+    dispatch('blur', { private: 'focus-private-content' });
+    document.hidden = true;
+    documentListeners.get('visibilitychange')({ detail: 'focus-private-content' });
     for (const stream_id of ['unique-stream', 'reconnected-stream', 'unknown-stream']) {
       const detail = { url: `${origin}/api/events?portal_stream_id=${stream_id}&token=query-secret`, stream_id,
         at: '2026-10-23T00:00:00Z', reason: 'page_closed' };
@@ -168,7 +177,17 @@ async function injectedContract(observe) {
     }
     assert.deepEqual(rows.filter(row => row.kind === 'resource_timing').map(row => row.path),
       ['/api/agent-workbench/residents/projection', '/api/[segment]']);
-    excludes(output, ['query-secret', 'private-name', 'private-resident', 'private-header']);
+    const lifecycle = rows.filter(row => ['focus', 'blur', 'visibilitychange'].includes(row.kind));
+    assert.deepEqual(lifecycle.map(row => [row.kind, row.hidden]),
+      [['focus', false], ['blur', false], ['visibilitychange', true]]);
+    const document = rows.find(row => row.kind === 'document_started');
+    for (const event of lifecycle) {
+      assert.equal(event.document_id, document.document_id);
+      assert.equal(event.document_confirmed, true);
+      assert.equal(typeof event.browser_observed_at_ms, 'number');
+      assert.equal(event.request_id, undefined, 'a lifecycle event alone does not prove request causation');
+    }
+    excludes(output, ['query-secret', 'private-name', 'private-resident', 'private-header', 'focus-private-content']);
   }, observe, true);
 }
 

@@ -34,6 +34,28 @@ function response(wanted, options = {}) {
   }))};
 }
 
+test('subscription inspection is passive and exposes an unreleased state consumer', t => {
+  const f = fixture(t), id = ids[0];
+  const empty = f.p.subscriptionSnapshot(id);
+  assert.equal(empty.state_consumers, 0);
+  assert.equal(empty.stream_active, false);
+  const mailbox = f.acquire([id]);
+  const background = f.acquire([id]);
+  assert.equal(f.p.subscriptionSnapshot(id).state_consumers, 2);
+  background.destroy();
+  const onlyMailbox = f.p.subscriptionSnapshot(id);
+  assert.equal(onlyMailbox.state_consumers, 1);
+  assert.equal(onlyMailbox.conversation_consumers, 0);
+  mailbox.destroy();
+  const released = f.p.subscriptionSnapshot(id);
+  assert.equal(released.state_consumers, 0);
+  assert.equal(released.stream_active, false);
+  assert.equal(onlyMailbox.state_consumers, 1, 'a captured observation is not a live mutable store');
+  assert.ok(Object.isFrozen(onlyMailbox));
+  assert.equal(empty.state_consumers, 0);
+  assert.equal(f.calls.length, 0, 'inspection must never create a state read');
+});
+
 test('a subscribed batch larger than the idle cache keeps every state and unread projection', async t => {
   const f = fixture(t), sub = f.acquire(ids);
   await sub.load();
