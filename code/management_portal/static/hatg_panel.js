@@ -1463,6 +1463,7 @@
       if (expanded) {
         const boundary = graphVisibleModel().functionBlockBoundaries.find(block => block.id === id);
         if (!boundary) return;
+        separateGraphObject(id).catch(() => {});
         // Fit visible members together with their enclosing block boundaries.
         state.graphController?.fit?.({ nodeIds: boundary.member_ids, duration: 220, maxScale: 1.15 });
       } else {
@@ -2544,6 +2545,25 @@
     target.x = x;
     target.y = y;
     return true;
+  }
+
+  function separateGraphObject(id) {
+    if (state.graphViewMode !== "context" || state.graphFocusMode) return Promise.resolve(null);
+    const offset = state.graphController?.getObjectSeparation?.(id);
+    if (!offset) return Promise.resolve(null);
+    const block = functionBlockInstanceById(id);
+    const ids = new Set([id, ...(block ? functionBlockElements(block).map(element => element.id) : [])]);
+    const moved = [];
+    for (const objectId of ids) {
+      const item = graphItemById(objectId);
+      if (!item || !Number.isFinite(item.x) || !Number.isFinite(item.y)) continue;
+      item.x += offset.x;
+      item.y += offset.y;
+      moved.push(item);
+    }
+    if (!moved.length) return Promise.resolve(null);
+    renderGraph();
+    return saveLineageLayout(moved);
   }
 
   function initHatgGraph() {
@@ -5676,6 +5696,7 @@
     if (!state.lineage) return Promise.resolve(null);
     const lineageId = state.lineage.lineage_id;
     const intent = lineageEditQueue.capture(lineageId);
+    let placementSave = null;
     const run = lineageEditQueue.enqueue(intent, async () => {
         programFeature.beginMutation();
         renderProgramInspector();
@@ -5687,6 +5708,16 @@
           if (!lineageEditQueue.isCurrent(intent)) return null;
           if (draftForm?.isConnected) draftForm.dataset.programDraftDirty = "false";
           commitLineage(response.lineage);
+          const resizedObjectId = response.component_id || response.component?.id
+            || response.function_block_id || response.function_block?.id;
+          if (resizedObjectId) {
+            await new Promise(resolve => window.requestAnimationFrame(resolve));
+            if (lineageEditQueue.isCurrent(intent)) {
+              // Layout uses the same edit queue. Await it after this definition
+              // edit completes, and never retry a committed mutation on failure.
+              placementSave = separateGraphObject(resizedObjectId).catch(() => null);
+            }
+          }
           const createdNodeId = response.facade_resident_id || response.function_block_id;
           if (createdNodeId) {
             await new Promise(resolve => window.requestAnimationFrame(resolve));
@@ -5706,7 +5737,10 @@
           }
         }
       });
-    return run.catch(error => {
+    return run.then(async response => {
+      if (placementSave) await placementSave;
+      return response;
+    }).catch(error => {
       if (lineageEditQueue.isCurrent(intent)) toast(`${failure}：${error.message || error}`, "error", 6200);
       throw error;
     });

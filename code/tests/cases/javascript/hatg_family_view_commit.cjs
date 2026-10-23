@@ -18,6 +18,7 @@ function harness(resultField = 'facade_resident_id') {
   const timers = new Map(); let timer = 0;
   const state = {lineage: {lineage_id: 'lineage_a'}};
   const context = vm.createContext({state, HATG_VIEW_UI_NAMESPACE: 'lineage.hatg-view',
+    separateGraphObject: () => Promise.resolve(null),
     hatgViewPreferences: new Map(), hatgViewSaveTimers: new Map(), hatgViewSaveRequests: new Map(),
     console: {warn() {}}, toast() {}, renderProgramInspector() {}, renderLineageSurface() {},
     commitLineage(lineage) {state.lineage = lineage;},

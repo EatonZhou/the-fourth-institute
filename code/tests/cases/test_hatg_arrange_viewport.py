@@ -3,6 +3,16 @@ from pathlib import Path
 import subprocess
 
 
+def test_hatg_expansion_and_title_edit_separate_measured_objects():
+    """HATG 展开及长标题编辑避让同级对象，保存后重载保持可读。
+
+    :module: lineage.hatg
+    """
+    script = Path(__file__).with_name("javascript") / "hatg_object_separation.cjs"
+    result = subprocess.run(["node", str(script)], capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 def test_arrange_uses_measured_card_sizes():
     """HATG 紧凑及舒展整理容纳长标题卡片，重载后保持无重叠。
 
