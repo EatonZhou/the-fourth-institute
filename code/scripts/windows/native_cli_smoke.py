@@ -6,6 +6,7 @@ used. Run as the same ordinary user as the installed EXE smoke, against its code
 from __future__ import annotations
 
 import argparse
+from contextlib import suppress
 import json
 import os
 from pathlib import Path
@@ -124,6 +125,10 @@ def opencode_probe(binary, root, version):
     entry = {'id': 'native', 'kind': 'openai_compatible_chat', 'enabled': True, 'provider': 'deepseek',
              'base_url': fixture.url + '/v1', 'default_model': fixture.model, 'models': [{'id': fixture.model}]}
     runner = client.OpenCodeClient()
+    request = client.NativeAgentClient._request
+    def bounded_request(transport, method, *args, **kwargs):
+        kwargs.setdefault('response_timeout', 120 if method == 'turn/run' else 15)
+        return request(transport, method, *args, **kwargs)
     work = root / '工作目录 空格'
     work.mkdir()
     try:
@@ -131,11 +136,19 @@ def opencode_probe(binary, root, version):
                 patch.object(catalog, 'api_key', return_value='disposable-fixture'), \
                 patch.object(catalog, 'config_home', return_value=root / 'opencode-config'), \
                 patch.object(catalog, 'version', return_value=version), \
-                patch.object(client, 'STATE', root / 'opencode-state'), patch.object(client, 'SOCKETS', root / 'sockets'):
-            result = runner.run_turn(session_key='native', session_id='', prompt='Say hello.', cwd=str(work),
-                provider_profile=route, model=fixture.model, effort='', is_owner=True, permission_profile='owner',
-                system_prompt_append='', turn_id='windows-native-cli', tools=[], resident_environment={},
-                inherit_portal_database=False, allow_subagents=False, event_callback=lambda event: None, tool_callback=None)
+                patch.object(client, 'STATE', root / 'opencode-state'), patch.object(client, 'SOCKETS', root / 'sockets'), \
+                patch.object(client.NativeAgentClient, '_request', bounded_request):
+            try:
+                deadline = time.monotonic() + 180
+                result = runner.run_turn(session_key='native', session_id='', prompt='Say hello.', cwd=str(work),
+                    provider_profile=route, model=fixture.model, effort='', is_owner=True, permission_profile='owner',
+                    system_prompt_append='', turn_id='windows-native-cli', tools=[], resident_environment={},
+                    inherit_portal_database=False, allow_subagents=False, event_callback=lambda event: None, tool_callback=None,
+                    detach_requested=lambda: time.monotonic() >= deadline)
+            except BaseException:
+                with suppress(Exception):
+                    runner.close_session('', client.session_for_turn('windows-native-cli'))
+                raise
             try:
                 assert fixture.reply in result.response, result.response
                 assert fixture.calls and {x['model'] for x in fixture.calls} == {fixture.model}, fixture.calls
@@ -240,14 +253,20 @@ def main():
     receipt = {'schema': 'tfi.windows-native-cli.v1', 'source_commit': os.environ.get('TFI_PACKAGE_SHA', ''),
                'process_elevated': False, 'inherited_host_job': False,
                'real_credentials': False, 'external_inference': False, 'providers': {}}
+    args.evidence.mkdir(parents=True, exist_ok=True)
+    def checkpoint():
+        (args.evidence / 'native-cli.json').write_text(json.dumps(receipt, indent=2), encoding='utf-8')
     for name, runtime in [('codex', updates.CodexRuntime()), ('claude', updates.ClaudeRuntime()),
                           ('kimi', updates.KimiRuntime()), ('opencode', OpenCodeRuntime())]:
         row = receipt['providers'][name] = {'status': 'failed', 'stage': 'download_and_validate'}
+        checkpoint()
         try:
             versions = runtime.available()
             row['versions'] = versions
+            checkpoint()
             staged = runtime.stage(versions)
             row['stage'] = 'native_protocol'
+            checkpoint()
             if name == 'codex':
                 row.update(codex_probe(updates.npm_binary(staged, 'codex'), root))
             elif name == 'opencode':
@@ -271,8 +290,7 @@ def main():
                 (args.evidence / 'kimi-runtime.log').write_text(
                     (root / 'kimi-runtime.log').read_text(encoding='utf-8', errors='replace')[-24000:], encoding='utf-8')
         print(json.dumps({name: row}), flush=True)
-        args.evidence.mkdir(parents=True, exist_ok=True)
-        (args.evidence / 'native-cli.json').write_text(json.dumps(receipt, indent=2), encoding='utf-8')
+        checkpoint()
     if any(row['status'] != 'passed' for row in receipt['providers'].values()):
         raise SystemExit(1)
 

@@ -12,7 +12,9 @@ permissions:
 
 concurrency:
   group: windows-preview-test
-  cancel-in-progress: false
+  # Only the newest explicit Windows test request is useful. A superseded
+  # test keeps its uploaded package; no public release job exists here.
+  cancel-in-progress: true
 
 jobs:
   package:

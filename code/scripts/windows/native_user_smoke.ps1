@@ -94,6 +94,19 @@ exit `$code
         Stop-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
         Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
     }
+    # Keep the isolated fixture's bridge logs even if the scheduled task times
+    # out before Python can write its final receipt. No real credentials exist.
+    $cli = Join-Path $fixture 'CLI 中文 空格'
+    if (Test-Path $cli) {
+        $index = 0
+        Get-ChildItem (Join-Path $cli 'opencode-state') -Filter runtime.log -Recurse -ErrorAction SilentlyContinue | ForEach-Object {
+            Get-Content $_.FullName -Tail 160 -Encoding utf8 | Set-Content (Join-Path $evidencePath ("opencode-runtime-" + $index + '.log')) -Encoding utf8
+            $index++
+        }
+        if (Test-Path (Join-Path $cli 'kimi-runtime.log')) {
+            Get-Content (Join-Path $cli 'kimi-runtime.log') -Tail 160 -Encoding utf8 | Set-Content (Join-Path $evidencePath 'kimi-runtime.log') -Encoding utf8
+        }
+    }
     if (Test-Path "$fixture/evidence") {
         Copy-Item "$fixture/evidence/*" $evidencePath -Force
     }
