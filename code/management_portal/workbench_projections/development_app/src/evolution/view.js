@@ -1,5 +1,5 @@
 import { renderMarkdown } from '../shared/markdown.js';
-import { lineAnchor, REFS } from './data.js';
+import { lineAnchor, linkedDirections, REFS } from './data.js';
 
 export function el(tag, text, cls) { const node = document.createElement(tag); if (text != null) node.textContent = text; if (cls) node.className = cls; return node; }
 export function btn(text, fn, key, disabled = false) {
@@ -12,6 +12,19 @@ export function input(label, value, fn, key, multiline = false) {
   node.setAttribute('aria-label', label); node.maxLength = multiline ? 4000 : 300; node.oninput = () => fn(node.value); return field(label, node);
 }
 export function disclosure(title, ...children) { const d = el('details'); d.append(el('summary', title), ...children); return d; }
+
+export function moduleFocusView(object, facts) {
+  if (object?.source !== REFS.modules || !object.kind?.startsWith('module:')) return null;
+  const id = object.kind.slice(7), module = facts.modules.find(m => m.id === id);
+  const root = el('section', null, 'evo-module-focus'); root.setAttribute('aria-label', '当前架构情境');
+  root.append(el('strong', `当前模块：${module?.title || id}`), el('p', id, 'evo-source'));
+  const related = linkedDirections(object, facts);
+  const message = !facts.mapMatches ? '架构地图联动已暂停，暂不能确认关联方向。'
+    : !module ? '当前模块不在已读取的架构地图中，暂不能确认关联方向。'
+      : related.length ? `此模块及其组成部分关联 ${related.length} 个方向，已在下方标出。`
+        : '此模块及其组成部分暂无已确认的关联方向，下方仍可浏览全部构想。';
+  root.append(el('p', message)); return root;
+}
 
 export function sourceView(title, ref, version, text) {
   const d = disclosure(title, el('p', ref, 'evo-source'), el('p', `来源版本：${version || '未知'}`, 'evo-source'));

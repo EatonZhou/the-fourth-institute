@@ -1,7 +1,7 @@
 import './style.css';
 import { EvolutionSession } from './session.js';
 import { baselineKey, semanticObject, linkedDirections, feedbackPayload, REFS } from './data.js';
-import { el, btn, input, disclosure, narrative, foundations, replacePreservingFocus } from './view.js';
+import { el, btn, input, disclosure, narrative, foundations, moduleFocusView, replacePreservingFocus } from './view.js';
 import { thumbnail, renderScene } from './scenes.js';
 
 export async function mount(root, context) {
@@ -62,6 +62,7 @@ export async function mount(root, context) {
     }
   }
   function applyFocus(object) {
+    linked = [];
     if (!session.facts || !object) return;
     linked = linkedDirections(object, session.facts);
     if (object.source === REFS.evolution && object.kind?.startsWith('direction:')) {
@@ -136,6 +137,8 @@ export async function mount(root, context) {
       const banner = el('p', session.message || (session.phase === 'checking' ? '正在核对来源…' : session.phase === 'loading' ? '读取未来构想…' : ''), 'evo-banner'); banner.setAttribute('role', 'status'); if (banner.textContent) app.append(banner);
       const facts = session.facts;
       if (!facts || ['loading', 'checking', 'hidden', 'revoked'].includes(session.phase)) return;
+      const focusView = moduleFocusView(incoming, facts);
+      if (focusView) app.append(focusView);
       app.append(gallery(facts));
       if (retired) {
         const retiredView = el('section', null, 'evo-retired'); retiredView.append(el('h2', `${retired.title} · 已退役`), el('p', retired.retired_reason), el('p', '此身份没有语义继承者。请从上方重新选择一个方向。')); app.append(retiredView); return;
