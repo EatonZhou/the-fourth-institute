@@ -22,15 +22,19 @@ const context = vm.createContext({
         if (key === 'lineage_failed') return Promise.reject(Error('isolated failure'));
         return Promise.resolve({});
       },
+      listUIAssociations() {
+        return Promise.resolve({items: saves.map(save => ({key: save.key, value: save.value}))});
+      },
     },
   },
 });
 vm.runInContext(`const HATG_VIEW_UI_NAMESPACE = 'lineage.hatg-view';
   const hatgViewPreferences = new Map(), hatgViewSaveTimers = new Map(), hatgViewSaveRequests = new Map();
   ${preference}
+  ${source.slice(source.indexOf('  async function loadHatgViewPreference'), source.indexOf('  function scheduleHatgViewPreferenceSave'))}
   ${section('scheduleHatgViewPreferenceSave', 'displayedProgram')}
   ${section('syncWorkspaceNodePosition', 'syncGraphNodePosition')}
-  globalThis.api = {normalizeHatgViewPreference, syncWorkspaceNodePosition, scheduleHatgViewPreferenceSave, hatgViewPreferences, hatgViewSaveRequests};`, context);
+  globalThis.api = {normalizeHatgViewPreference, syncWorkspaceNodePosition, scheduleHatgViewPreferenceSave, flushHatgViewPreferenceSave, loadHatgViewPreference, hatgViewPreferences, hatgViewSaveRequests};`, context);
 const api = context.api;
 const flushTimers = () => { const batch = [...timers.values()]; timers.clear(); batch.forEach(fn => fn()); };
 const tick = () => new Promise(resolve => setImmediate(resolve));
@@ -72,5 +76,11 @@ const tick = () => new Promise(resolve => setImmediate(resolve));
   assert.equal(notices.length,1);
   assert.equal(api.hatgViewPreferences.get('lineage_failed').workspace_positions.resident_abc.x,9);
   assert.equal(api.hatgViewPreferences.get(state.lineage.lineage_id).workspace_positions.resident_abc.x,7);
+  api.scheduleHatgViewPreferenceSave('lineage_refresh', {viewport: {centerX: 7, centerY: 8, k: 1.45}});
+  // Reload while the debounce is still pending must first commit this camera.
+  const restored = await api.loadHatgViewPreference('lineage_refresh');
+  assert.equal(restored.viewport.k, 1.45);
+  assert.equal(restored.viewport.centerX, 7);
+  assert.equal(timers.size, 0);
   console.log('Workspace preference normalization, Context exclusion, serialized writes, viewport preservation, failure retention and Lineage isolation passed.');
 })().catch(error => { console.error(error); process.exitCode=1; });

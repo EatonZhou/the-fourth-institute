@@ -4316,6 +4316,10 @@
 
     function ensureNodeVisible(nodeId, options = {}) {
       if (!nodeMap.has(nodeId)) return;
+      // Settle any structural fit before deciding what is visible or saving
+      // its camera. A later animation frame must not replace this reveal.
+      rootSelection.interrupt();
+      cancelFocusAnimation();
       if (graphFitsViewport(transform, currentViewportSize(), 10, [nodeId])) {
         // Structural changes may already have fitted the new graph. Save that
         // view when requested, even if revealing the retained card needn't pan.

@@ -323,6 +323,15 @@ def relay_sender(source: tuple[str, str] | None, message: Mapping[str, Any] | No
 def complete_relay(source: tuple[str, str], member_id: str, member_message_id: str) -> None:
     """Close the facade message and remember which member message carries it; repeatable."""
 
+    from . import invariant_locks
+
+    # A nested facade accepts its input in an after-unlock effect. Do not
+    # publish a link to that input before the earlier admission effect runs:
+    # GetInputState follows the link and must always find the accepted holder.
+    invariant_locks.defer_until_state_unlock(lambda: _complete_relay(source, member_id, member_message_id))
+
+
+def _complete_relay(source: tuple[str, str], member_id: str, member_message_id: str) -> None:
     from .resident_workspace_domain import _find_resident
 
     facade_id, facade_message_id = source

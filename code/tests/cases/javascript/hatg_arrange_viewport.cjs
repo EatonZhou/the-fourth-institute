@@ -121,6 +121,22 @@ assert.ok(familyOptions, 'production Family camera policy');
     for (const axis of ['x', 'y', 'k']) assert.ok(Math.abs(persisted.expected[axis] - persisted.restored[axis]) < .001,
       `structurally revealed view survives reload: ${axis}`);
     await assertVisible('restored survivor view remains inside canvas');
+    const familyReveal = await page.evaluate(async () => {
+      graph.render({ nodes: [{id: 'outer', kind: 'agent', title: 'New outer Family', x: 12, y: 76}], edges: [] });
+      graph.fit({duration: 220, maxScale: 1.45, persist: true});
+      await new Promise(resolve => setTimeout(resolve, 40));
+      graph.ensureNodeVisible('outer', {persist: true});
+      const committed = graph.getTransform();
+      await new Promise(resolve => setTimeout(resolve, 260));
+      const settled = graph.getTransform();
+      graph.setContext('lineage_fixture');
+      return {committed, settled, restored: graph.getTransform()};
+    });
+    for (const view of ['settled', 'restored']) for (const axis of ['x', 'y', 'k']) {
+      assert.ok(Math.abs(familyReveal.committed[axis] - familyReveal[view][axis]) < .001,
+        `Family reveal owns a stable saved camera: ${view}.${axis}`);
+    }
+    await assertVisible('new Family remains visible on immediate reload');
     // Compare server fallback placement with actual CSS card rectangles, not
     // an assertion that repeats the server's size estimate.
     const placementPath = path.resolve(root, '../society_service/lineage_placement.py');

@@ -223,6 +223,7 @@
     const key = String(lineageId || "").trim();
     if (!key) return normalizeHatgViewPreference({});
     try {
+      await flushHatgViewPreferenceSave(key);
       const payload = await window.PortalIdentity.listUIAssociations(HATG_VIEW_UI_NAMESPACE);
       const association = (payload?.items || []).find(item => item?.key === key);
       const preference = normalizeHatgViewPreference(association?.value);
@@ -241,19 +242,29 @@
     hatgViewPreferences.set(key, preference);
     window.clearTimeout(hatgViewSaveTimers.get(key));
     hatgViewSaveTimers.set(key, window.setTimeout(() => {
-      hatgViewSaveTimers.delete(key);
-      // Serialize writes for this Lineage so a slow earlier viewport save cannot
-      // overwrite a newer Workspace drag. Failed edits remain in the local map.
-      const pending = (hatgViewSaveRequests.get(key) || Promise.resolve())
-        .then(() => window.PortalIdentity.putUIAssociation(HATG_VIEW_UI_NAMESPACE, key, preference))
-        .catch(error => {
-          console.warn("HATG personal view save failed", error);
-          toast(window.PortalI18n.t("视图位置保存失败，当前调整仍保留；请再次拖动或整理以重试。"), "error");
-        }).finally(() => {
-          if (hatgViewSaveRequests.get(key) === pending) hatgViewSaveRequests.delete(key);
-        });
-      hatgViewSaveRequests.set(key, pending);
+      flushHatgViewPreferenceSave(key).catch(() => {});
     }, 300));
+  }
+
+  function flushHatgViewPreferenceSave(lineageId) {
+    const key = String(lineageId || "").trim();
+    if (!hatgViewSaveTimers.has(key)) return hatgViewSaveRequests.get(key) || Promise.resolve();
+    window.clearTimeout(hatgViewSaveTimers.get(key));
+    hatgViewSaveTimers.delete(key);
+    const preference = hatgViewPreferences.get(key);
+    // Serialize writes, but let a committed structural edit wait for its
+    // camera before closing its form or reading preferences again.
+    const pending = (hatgViewSaveRequests.get(key) || Promise.resolve()).catch(() => {})
+      .then(() => window.PortalIdentity.putUIAssociation(HATG_VIEW_UI_NAMESPACE, key, preference))
+      .catch(error => {
+        console.warn("HATG personal view save failed", error);
+        toast(window.PortalI18n.t("视图位置保存失败，当前调整仍保留；请再次拖动或整理以重试。"), "error");
+        throw error;
+      }).finally(() => {
+        if (hatgViewSaveRequests.get(key) === pending) hatgViewSaveRequests.delete(key);
+      });
+    hatgViewSaveRequests.set(key, pending);
+    return pending;
   }
 
   function displayedProgram() {
@@ -5676,6 +5687,15 @@
           if (!lineageEditQueue.isCurrent(intent)) return null;
           if (draftForm?.isConnected) draftForm.dataset.programDraftDirty = "false";
           commitLineage(response.lineage);
+          if (response.facade_resident_id) {
+            await new Promise(resolve => window.requestAnimationFrame(resolve));
+            if (lineageEditQueue.isCurrent(intent)) {
+              state.graphController?.ensureNodeVisible?.(response.facade_resident_id, { persist: true });
+              // The Family is already committed. A preference failure gets
+              // its own notice, never an invitation to submit the creation again.
+              await flushHatgViewPreferenceSave(lineageId).catch(() => {});
+            }
+          }
           if (message) toast(message, "success");
           return response;
         } finally {

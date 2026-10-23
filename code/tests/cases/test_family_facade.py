@@ -296,6 +296,49 @@ def test_relay_closes_the_facade_message_and_projects_the_member(facade, monkeyp
     assert snapshot["family_facade"]["family_id"] == "fbi_family0001"
 
 
+@pytest.mark.parametrize("scope_kind", ["lineage_scope", "resident_lock"])
+def test_relay_link_waits_for_the_nested_facades_admission(facade, monkeypatch, scope_kind):
+    """嵌套转交在内层输入可读后才公开链接，原输入始终可查。
+
+    :design: decision_44cf587c1721
+    """
+    from . import family_test_support
+    from management_portal.society_service import invariant_locks, resident_protocol, family_recovery
+
+    outer = facade["resident_id"]
+    original, forwarded = "msg_00000000000000d1", "msg_00000000000000d2"
+    _register_test_member(facade, "Inner facade")
+    family_test_support.set_role(MEMBER, family_id="fbi_inner0001", actor="CASE-A")
+    monkeypatch.setattr(family_recovery, "handle", lambda *a, **kw: None)
+    monkeypatch.setattr(family_facade, "is_relay_target", lambda *a: True)
+    backend.deliver_resident_message_content(outer, "CASE-A", "Nested request", message_id=original)
+    repository = resident_conversation_stream.get_repository()
+
+    def state():
+        return resident_protocol.get_resident_input_state(outer, "CASE-A", original)
+
+    scope_id = facade["lineage_id"] if scope_kind == "lineage_scope" else MEMBER
+    with getattr(invariant_locks, scope_kind)(scope_id):
+        backend.deliver_resident_message_content(
+            MEMBER, "CASE-A", "Nested request", message_id=forwarded,
+            business_ref=family_facade.relay_mark(outer, original),
+        )
+        # Family quota also completes the relay on receipt. Its inner facade
+        # has not yet run accept_for_router under this outer operation scope.
+        family_facade.complete_relay((outer, original), MEMBER, forwarded)
+        assert repository.message(MEMBER, forwarded) is None
+        assert family_facade.relay_links(facade) == {}
+        assert state()["state"] == "queued"
+
+    assert family_facade.relay_links(facade)[original]["message_id"] == forwarded
+    assert state()["state"] == "queued"
+    repository.set_input_state(MEMBER, forwarded, "completed")
+    assert state()["state"] == "completed"
+    assert state()["message_id"] == original
+    with pytest.raises(KeyError):
+        resident_protocol.get_resident_input_state(outer, "CASE-A", "msg_00000000000000d3")
+
+
 def test_only_the_sender_or_owner_can_relay(facade, monkeypatch):
     """只有原发送者、门面或 owner 能转交门面消息
 
