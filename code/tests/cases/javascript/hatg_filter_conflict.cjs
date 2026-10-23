@@ -22,9 +22,9 @@ for (const refreshed of [true, false]) test(`conflict preserves dirty form and $
     window: {PortalI18n: {t: text => text}},
     hatgComponentRoot: panel,
     $id: () => panel, $queryAll: () => [form],
-    mergeLineageStateDomains: (old, next) => ({ ...old, ...next }),
-    programFeature: { setWireDraft() {} }, updateLineageSummary() {}, setSyncStatus() {},
-    renderLineageSurface() { rendered++; },
+    // The refreshed read enters the panel, and redraws it, through commitLineage.
+    commitLineage(next) { state.lineage = { ...state.lineage, ...next }; rendered++; },
+    programFeature: { setWireDraft() {} }, setSyncStatus() {},
   });
   const onConflict = vm.runInContext(`(${callback})`, context);
   const error = new Error('version conflict');

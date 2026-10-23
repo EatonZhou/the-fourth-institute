@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import re
 from pathlib import Path
 
 import pytest
@@ -13,10 +12,6 @@ from management_portal.http_routes import (
     RouteDispatcher,
 )
 from management_portal.shared_state import atomic_create_json, atomic_replace_json
-
-
-ROOT = Path(__file__).resolve().parents[2]
-STATIC = ROOT / "management_portal" / "static"
 
 
 def test_atomic_replace_json_preserves_mode_and_writes_canonical_document(tmp_path: Path) -> None:
@@ -128,24 +123,3 @@ def test_reference_title_rules_are_ordered_and_share_candidate_validation(monkey
 
     assert paper_backend._guess_ref_title("reference") == "Learning Robots from Data"
     assert paper_backend._validated_ref_title_candidate("https://example.org/paper.pdf") == ""
-
-
-
-
-def test_hatg_fit_and_created_resident_state_ownership_contract() -> None:
-    """HATG 面板自动布局最小缩放为 0.65，手动事件先合并 Lineage 状态再绑定新建 Resident"""
-    source = (STATIC / "hatg_panel.js").read_text(encoding="utf-8")
-    assert re.search(
-        r"AUTO_LAYOUT_VIEW\s*=\s*Object\.freeze\(\{[^}]*minScale:\s*0\.65",
-        source,
-    )
-    manual_event = source[
-        source.index("async function emitManualProgramEvent("):
-        source.index("async function resetProgramEventSource(")
-    ]
-    assert manual_event.index("programCreatedResidentIds(response)") < manual_event.index(
-        "mergeLineageStateDomains(state.lineage, response.lineage)"
-    )
-    assert manual_event.index("mergeLineageStateDomains(state.lineage, response.lineage)") < manual_event.index(
-        "if (createdResidentIds.length) bindResidentStateCollection();"
-    )

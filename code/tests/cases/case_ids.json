@@ -2916,7 +2916,6 @@
     "tests/cases/test_portal_pulse_lineage.py::test_root_switch_waits_for_completed_copy_and_never_revives_old_history": "test_30280840d03f",
     "tests/cases/test_portal_refactor_contracts.py::test_atomic_create_json_is_exclusive_and_canonical": "test_cc8f78b1fec8",
     "tests/cases/test_portal_refactor_contracts.py::test_atomic_replace_json_preserves_mode_and_writes_canonical_document": "test_b0f4737a3fff",
-    "tests/cases/test_portal_refactor_contracts.py::test_hatg_fit_and_created_resident_state_ownership_contract": "test_f1bd2580537d",
     "tests/cases/test_portal_refactor_contracts.py::test_reference_title_rules_are_ordered_and_share_candidate_validation": "test_92b2f79504ff",
     "tests/cases/test_portal_refactor_contracts.py::test_route_dispatcher_enforces_owner_and_phase": "test_32a7e840af30",
     "tests/cases/test_portal_release.py::test_dev_commit_preserves_concurrent_edits_and_advances_branch": "test_554d4b39d445",

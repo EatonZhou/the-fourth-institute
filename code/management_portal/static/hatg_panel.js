@@ -42,13 +42,10 @@
         else definitionRevisions.delete(form);
       }));
       if (lineage) {
-        state.lineage = mergeLineageStateDomains(state.lineage, lineage);
-        state.localVersion += 1;
         // Keep the user's fields through this read. Only an explicit save may
         // submit them again against the refreshed definition.
         programFeature.setWireDraft(null);
-        updateLineageSummary();
-        renderLineageSurface();
+        commitLineage(lineage);
       }
       if (retainedDrafts) {
         error.message = window.PortalI18n.t(lineage
@@ -1982,7 +1979,11 @@
       && window.PortalLineageProgram?.projectGraph
     )
       ? (
-          graphProgramProjectionCache?.key === projectionKey
+          // The projection copies the displayed nodes. Every commit installs
+          // a new Lineage object, so a cache entry is reused only for the
+          // object it was built from, whatever changed inside the commit.
+          graphProgramProjectionCache?.lineage === display
+          && graphProgramProjectionCache.key === projectionKey
             ? graphProgramProjectionCache.projection
             : (() => {
                 const program = displayedProgram();
@@ -1994,7 +1995,7 @@
                   },
                   shownNodes,
                 );
-                graphProgramProjectionCache = { key: projectionKey, projection };
+                graphProgramProjectionCache = { lineage: display, key: projectionKey, projection };
                 return projection;
               })()
         )
@@ -3372,69 +3373,6 @@
     );
   }
 
-  function applyLineageStructureRefresh(lineage, options = {}) {
-    const unchanged = {
-      changed: false,
-      structureChanged: false,
-      graphChanged: false,
-      layoutChanged: false,
-      runtimeChanged: false,
-    };
-    if (!lineage || !state.lineage || lineage.lineage_id !== state.lineage.lineage_id) return unchanged;
-    if (state.layoutSaveInFlight) return unchanged;
-    const previousLayoutRevision = Number(state.lineage.layout_revision || 0);
-    const nextLayoutRevision = Number(lineage.layout_revision || 0);
-    const previousRuntimeRevision = Number(state.lineage.runtime_revision || 0);
-    const nextRuntimeRevision = Number(lineage.runtime_revision || 0);
-    const graphChanged = hasNewLineageGraphProjection(state.lineage, lineage);
-    const layoutChanged = nextLayoutRevision > previousLayoutRevision;
-    const runtimeChanged = nextRuntimeRevision > previousRuntimeRevision;
-    if (!graphChanged && !layoutChanged && !runtimeChanged) return unchanged;
-    const structureChanged = graphChanged || layoutChanged;
-    const merged = mergeLineageStateDomains(state.lineage, lineage);
-    const identity = node => nodeResidentId(node);
-    const previousIds = new Set((state.lineage.nodes || []).map(identity));
-    const nextIds = new Set((merged.nodes || []).map(identity));
-    const added = [...nextIds].filter(value => !previousIds.has(value)).length;
-    const removed = [...previousIds].filter(value => !nextIds.has(value)).length;
-    const previousSeedIds = new Set(activeSeeds(state.lineage).map(seed => seed.id));
-    const nextSeedIds = new Set(activeSeeds(merged).map(seed => seed.id));
-    const addedSeeds = [...nextSeedIds].filter(value => !previousSeedIds.has(value)).length;
-    const removedSeeds = [...previousSeedIds].filter(value => !nextSeedIds.has(value)).length;
-    state.lineage = merged;
-    state.localVersion += 1;
-    for (const nodeId of [...state.runtimeStatus.keys()]) {
-      if (!(merged.nodes || []).some(node => node.id === nodeId)) state.runtimeStatus.delete(nodeId);
-    }
-    reconcileGraphInteractionState();
-    if (options.render !== false) {
-      updateLineageSummary();
-      if (structureChanged) renderLineageSurface();
-      else {
-        renderGraph();
-        renderProgramInspector();
-        templateController?.render();
-        renderControls();
-      }
-    }
-    setSyncStatus(`Lineage 已加载 · r${Number(merged.revision || 0)}`, "saved");
-    if (graphChanged && options.notify !== false && (added || removed)) {
-      const changes = [added ? `新增 ${added} 个节点` : "", removed ? `移除 ${removed} 个节点` : ""].filter(Boolean).join("，");
-      toast(window.PortalI18n.text`Lineage 已更新：${changes}。`, "success", 5200);
-    }
-    if (graphChanged && options.notify !== false && (addedSeeds || removedSeeds)) {
-      const changes = [addedSeeds ? `新增 ${addedSeeds} 个候选` : "", removedSeeds ? `收起 ${removedSeeds} 个候选` : ""].filter(Boolean).join("，");
-      toast(window.PortalI18n.text`探索 fork 已同步候选集合：${changes}。`, "success", 5200);
-    }
-    return {
-      changed: true,
-      structureChanged,
-      graphChanged,
-      layoutChanged,
-      runtimeChanged,
-    };
-  }
-
   function lineagePayloadsEqual(left, right) {
     if (left === right) return true;
     try {
@@ -3611,33 +3549,123 @@
         incoming.program_execution_explanations || {},
       );
     }
-    if (Object.hasOwn(incoming, "refresh_signature")) {
-      next.refresh_signature = String(incoming.refresh_signature || "");
-    }
+    // The refresh signature belongs to the graph it was read with; it arrives
+    // with `incoming` only when that graph is taken above.
     return next;
   }
 
-  function applyLineageProjectionRefresh(lineage) {
-    if (!lineage || !state.lineage || lineage.lineage_id !== state.lineage.lineage_id) return false;
-    if (state.layoutSaveInFlight) return false;
+  function displayedResidentIds(lineage) {
+    return new Set(
+      (lineage?.nodes || [])
+        .filter(node => node.accessible !== false)
+        .map(nodeResidentId)
+        .filter(Boolean),
+    );
+  }
+
+  function sameIdSet(left, right) {
+    return left.size === right.size && [...left].every(value => right.has(value));
+  }
+
+  function countSetChanges(previous, next) {
+    return {
+      added: [...next].filter(value => !previous.has(value)).length,
+      removed: [...previous].filter(value => !next.has(value)).length,
+    };
+  }
+
+  function notifyLineageMembershipChange(previous, next) {
+    const nodes = countSetChanges(
+      new Set((previous.nodes || []).map(nodeResidentId)),
+      new Set((next.nodes || []).map(nodeResidentId)),
+    );
+    if (nodes.added || nodes.removed) {
+      const changes = [nodes.added ? `新增 ${nodes.added} 个节点` : "", nodes.removed ? `移除 ${nodes.removed} 个节点` : ""].filter(Boolean).join("，");
+      toast(window.PortalI18n.text`Lineage 已更新：${changes}。`, "success", 5200);
+    }
+    const seeds = countSetChanges(
+      new Set(activeSeeds(previous).map(seed => seed.id)),
+      new Set(activeSeeds(next).map(seed => seed.id)),
+    );
+    if (seeds.added || seeds.removed) {
+      const changes = [seeds.added ? `新增 ${seeds.added} 个候选` : "", seeds.removed ? `收起 ${seeds.removed} 个候选` : ""].filter(Boolean).join("，");
+      toast(window.PortalI18n.text`探索 fork 已同步候选集合：${changes}。`, "success", 5200);
+    }
+  }
+
+  function forgetRemovedLineageMembers(next) {
+    const nodeIds = new Set((next.nodes || []).map(node => String(node?.id || "")));
+    const residentIds = new Set((next.nodes || []).map(nodeResidentId));
+    for (const nodeId of [...state.runtimeStatus.keys()]) {
+      if (!nodeIds.has(nodeId)) state.runtimeStatus.delete(nodeId);
+    }
+    for (const byResident of [
+      state.residentRuntimeById,
+      state.sessionUserMessageCounts,
+      state.sessionContextPressures,
+    ]) {
+      for (const residentId of [...(byResident?.keys?.() || [])]) {
+        if (!residentIds.has(residentId)) byResident.delete(residentId);
+      }
+    }
+  }
+
+  function renderCommittedLineage(change, scope) {
+    if (!scope) return;
+    if (scope === "surface" || change.structureChanged) {
+      updateLineageSummary();
+      renderLineageSurface();
+      return;
+    }
+    updateLineageSummary();
+    renderGraphRuntimePresentation();
+    renderProgramInspector();
+    templateController?.render();
+    renderControls();
+  }
+
+  // Every Lineage read or mutation result for the open Lineage enters the
+  // panel here (opening another Lineage is selectLineage). The merge keeps
+  // each state domain at its newest revision; this function then keeps what
+  // the panel derives from the displayed Lineage in step with it and redraws
+  // what changed:
+  // - `source: "mutation"` (default) is the result of this page's own edit
+  //   and always redraws the surface; `source: "background"` is a refresh
+  //   read: it yields to an edit or layout save in flight, whose own result
+  //   carries the newer state, applies only when something changed, redraws
+  //   only the changed scope and reports added or removed members.
+  // - `render`: "surface", "changes" (runtime scope unless the structure
+  //   changed) or false (the caller keeps an open form or draws itself).
+  // - `afterMerge(lineage)` runs with the merged Lineage in place, before the
+  //   redraw, for selection the redraw must already see.
+  // - `replace: true` installs `incoming` as is (rolling back a local edit).
+  function commitLineage(incoming, options = {}) {
+    const background = options.source === "background";
+    const change = { changed: false, structureChanged: false, runtimeChanged: false, membershipChanged: false };
     const previous = state.lineage;
-    const merged = mergeLineageStateDomains(previous, lineage);
-    const previousProjection = {
-      resident_executions: (previous.nodes || []).map(node => [node.id, node.last_execution || {}]),
-      program_invoke_wire_runtime: previous.program_invoke_wire_runtime || {},
-      program_event_source_runtime: previous.program_event_source_runtime || {},
-      program_effect_runtime: previous.program_effect_runtime || {},
-      program_execution_explanations: previous.program_execution_explanations || {},
-    };
-    const nextProjection = {
-      resident_executions: (merged.nodes || []).map(node => [node.id, node.last_execution || {}]),
-      program_invoke_wire_runtime: merged.program_invoke_wire_runtime || {},
-      program_event_source_runtime: merged.program_event_source_runtime || {},
-      program_effect_runtime: merged.program_effect_runtime || {},
-      program_execution_explanations: merged.program_execution_explanations || {},
-    };
-    state.lineage = merged;
-    return !lineagePayloadsEqual(previousProjection, nextProjection);
+    if (!incoming || !previous || String(incoming.lineage_id || "") !== String(previous.lineage_id || "")) return change;
+    if (background && (state.layoutSaveInFlight || state.structureMutationInFlight)) return change;
+    const next = options.replace ? incoming : mergeLineageStateDomains(previous, incoming);
+    if (background && lineagePayloadsEqual(previous, next)) return change;
+    change.changed = true;
+    change.structureChanged = Boolean(options.replace)
+      || hasNewLineageGraphProjection(previous, incoming)
+      || Number(next.layout_revision || 0) !== Number(previous.layout_revision || 0);
+    change.runtimeChanged = Number(next.runtime_revision || 0) !== Number(previous.runtime_revision || 0);
+    change.membershipChanged = !sameIdSet(displayedResidentIds(previous), displayedResidentIds(next));
+    state.lineage = next;
+    state.localVersion += 1;
+    forgetRemovedLineageMembers(next);
+    options.afterMerge?.(next);
+    reconcileGraphInteractionState();
+    if (change.membershipChanged) bindResidentStateCollection();
+    if (background) {
+      setSyncStatus(`Lineage 已加载 · r${Number(next.revision || 0)}`, "saved");
+      if (change.structureChanged) notifyLineageMembershipChange(previous, next);
+    }
+    const scope = Object.hasOwn(options, "render") ? options.render : (background ? "changes" : "surface");
+    renderCommittedLineage(change, scope);
+    return change;
   }
 
   async function reconcileLineageRuntime(options = {}) {
@@ -3649,11 +3677,7 @@
     // Runtime state reconciles itself in SocietyService; the page re-reads it.
     state.runtimeReconcileInFlight = societyService.loadLineage(lineageId).then(lineage => {
       const response = { lineage };
-      if (lineage && state.lineage?.lineage_id === lineageId) {
-        state.lineage = mergeLineageStateDomains(state.lineage, lineage);
-        updateLineageSummary();
-        renderLineageSurface();
-      }
+      if (lineage && state.lineage?.lineage_id === lineageId) commitLineage(lineage);
       if (options.notify !== false) toast(window.PortalI18n.t("HATG Program 运行状态已核对。"), "success");
       return response;
     }).catch(error => {
@@ -3738,23 +3762,8 @@
   }
 
   function applyLineageEventProjection(lineageId, lineage) {
-    if (state.structureMutationInFlight || lineageId !== state.lineage?.lineage_id) return;
-    const lineageRefresh = applyLineageStructureRefresh(lineage, {
-      notify: true,
-      render: false,
-    });
-    const projectionChanged = applyLineageProjectionRefresh(lineage);
-    if (lineageRefresh.structureChanged) bindResidentStateCollection();
-    if (lineageRefresh.structureChanged) {
-      updateLineageSummary();
-      renderLineageSurface();
-    } else if (lineageRefresh.runtimeChanged || projectionChanged) {
-      updateLineageSummary();
-      renderGraphRuntimePresentation();
-      renderProgramInspector();
-      templateController?.render();
-      renderControls();
-    }
+    if (lineageId !== state.lineage?.lineage_id) return;
+    commitLineage(lineage, { source: "background" });
   }
 
   function bindLineageProjectionSubscription() {
@@ -4318,8 +4327,8 @@
       try {
         const response = await societyService.resetWireDeliveryCount({ lineage_id: lineageId, wire_id: wire.id });
         if (state.lineage?.lineage_id !== lineageId) return;
-        state.lineage = mergeLineageStateDomains(state.lineage, response.lineage);
         // Update only runtime labels so an unsaved limit edit stays in the form.
+        commitLineage(response.lineage, { render: false });
         const runtime = programInvokeWireRuntime(wire);
         form.querySelector("[data-wire-sent-count]").textContent = window.PortalI18n.text`${runtime.sent_count || 0} 条消息已发送`;
         form.querySelector("[data-wire-remaining]").textContent = runtime.max_messages == null ? window.PortalI18n.t("剩余次数：无限次") : window.PortalI18n.text`剩余次数：${runtime.remaining_messages}`;
@@ -5666,10 +5675,7 @@
           }
           if (!lineageEditQueue.isCurrent(intent)) return null;
           if (draftForm?.isConnected) draftForm.dataset.programDraftDirty = "false";
-          state.lineage = mergeLineageStateDomains(state.lineage, response.lineage);
-          state.localVersion += 1;
-          updateLineageSummary();
-          renderLineageSurface();
+          commitLineage(response.lineage);
           if (message) toast(message, "success");
           return response;
         } finally {
@@ -5771,9 +5777,7 @@
       const result = sourceResidentId
         ? await executeHatgInstruction("CreateCandidateFork", { seed_id: seedId, source_resident_id: sourceResidentId })
         : await executeHatgInstruction("DeleteCandidateFork", { seed_id: seedId });
-      state.lineage = mergeLineageStateDomains(state.lineage, result.lineage);
-      state.localVersion += 1;
-      renderLineageSurface();
+      commitLineage(result.lineage);
       setSyncStatus(sourceResidentId ? "候选 Fork 已建立" : "候选 Fork 已删除", "saved");
       toast(sourceResidentId
         ? `“${seedTitle}”的候选 Fork 来自「${source?.title || sourceResidentId}」：采纳时 Fork 它。`
@@ -5795,7 +5799,8 @@
       try {
         const lineage = await societyService.loadLineage(lineageId);
         if (state.lineage?.lineage_id !== lineageId || !form.isConnected) return;
-        state.lineage = mergeLineageStateDomains(state.lineage, lineage);
+        // The save below redraws; this form must survive until then.
+        commitLineage(lineage, { render: false });
         definitionRevisions.set(form, lineage.revision);
       } catch (error) {
         toast(error.message || String(error), "error");
@@ -6225,43 +6230,6 @@
     state.selectedProgramObjectId = "";
   }
 
-  function programCreatedResidentIds(response) {
-    const ids = new Set();
-    const creationInstructions = new Set(["CreateResident", "ForkResident", "PromoteSeed"]);
-    const collect = outputs => {
-      if (!outputs || typeof outputs !== "object" || Array.isArray(outputs)) return;
-      const values = [
-        outputs.resident_id,
-        ...(Array.isArray(outputs.resident_ids) ? outputs.resident_ids : []),
-      ];
-      values.forEach(value => {
-        const residentId = String(value || "").trim();
-        if (/^resident_[a-z0-9]+$/i.test(residentId)) ids.add(residentId);
-      });
-    };
-    const results = response?.delivery?.results || response?.results;
-    (Array.isArray(results) ? results : []).forEach(result => {
-      [result, result?.result].forEach(item => {
-        if (!item || typeof item !== "object") return;
-        // resident_id alone can refer to an existing delivery target. Only
-        // committed creation calls prove a new member, including when the
-        // script's final instruction is DeliverMessage or another operation.
-        (Array.isArray(item.calls) ? item.calls : []).forEach(call => {
-          if (call?.status === "committed" && creationInstructions.has(call.instruction)) {
-            collect(call.business_ids);
-          }
-        });
-        if (creationInstructions.has(item.instruction) && ["executed", "committed"].includes(item.status)) {
-          collect(item.typed_outputs);
-          collect(item.outputs);
-          collect(item.result?.typed_outputs);
-          collect(item.result?.outputs);
-        }
-      });
-    });
-    return [...ids];
-  }
-
   async function emitManualProgramEvent(componentId, button = null) {
     const component = programComponentById(componentId);
     if (
@@ -6306,12 +6274,8 @@
       if (!response?.lineage || response.lineage.lineage_id !== lineageId) {
         throw new Error("Portal 没有返回更新后的 Lineage 状态");
       }
-      const createdResidentIds = programCreatedResidentIds(response);
-      state.lineage = mergeLineageStateDomains(state.lineage, response.lineage);
-      state.localVersion += 1;
-      updateLineageSummary();
-      renderLineageSurface();
-      if (createdResidentIds.length) bindResidentStateCollection();
+      // Residents the Event created join the Resident state subscription here.
+      commitLineage(response.lineage);
       const delivery = response.delivery || {};
       const matchedCount = Number(delivery.matched_count);
       const deliveryStatuses = (delivery.results || [])
@@ -6365,9 +6329,7 @@
       if (!response?.lineage || response.lineage.lineage_id !== lineageId) {
         throw new Error("Portal 没有返回更新后的 Lineage 状态");
       }
-      state.lineage = mergeLineageStateDomains(state.lineage, response.lineage);
-      state.localVersion += 1;
-      renderLineageSurface();
+      commitLineage(response.lineage);
       toast(window.PortalI18n.t("Event 触发次数已清零，重新进入监听状态。"), "success");
     } catch (error) {
       if (state.lineage?.lineage_id === lineageId) {
@@ -7395,11 +7357,10 @@
         placement: residentPlacementGeometry({}, { title }),
         ...(family ? { family_id: family.instance.id } : {}),
       });
-      state.lineage = mergeLineageStateDomains(state.lineage, response.lineage);
+      // Selecting the new node below draws it.
+      commitLineage(response.lineage, { render: false });
       const node = (state.lineage.nodes || []).find(item => item.id === response.resident_id) || { id: response.resident_id, title };
       const record = { resident_id: response.resident_id, lineage_id: state.lineage.lineage_id, title };
-      bindResidentStateCollection();
-      state.localVersion += 1;
       state.residents.unshift(record);
       state.selectedNodeId = node.id;
       closeModal("nodeModal");
@@ -7438,13 +7399,12 @@
       onChanged: async ({type, residentId, lineageId, targetLineageId, result}) => {
         if (state.lineage?.lineage_id !== lineageId) return;
         if (type === "rename") {
-          state.lineage = mergeLineageStateDomains(state.lineage, result.lineage);
-          renderLineageSurface();
+          commitLineage(result.lineage);
         } else if (type === "intake") {
           renderGraph();
         } else if (type === "delete-family" || type === "unfamilize" || type === "family-members") {
           window.PortalResidentProjection?.invalidate?.(residentId);
-          applyLineageStructureRefresh(await societyService.loadLineage(lineageId), {notify: false});
+          commitLineage(await societyService.loadLineage(lineageId));
           if (type === "unfamilize") revealUnfamilizedMember(lineageId, result);
         } else if (type === "move") {
           // The moved Resident keeps its identity and conversation, so the
@@ -7541,13 +7501,8 @@
       if (!response?.lineage || response.lineage.lineage_id !== state.lineage.lineage_id) {
         throw new Error("节点吸收响应缺少 Lineage 状态");
       }
-      state.lineage = mergeLineageStateDomains(state.lineage, response.lineage);
-      state.localVersion += 1;
-      setNodeRuntimeStatus(target.id, "queued");
-      updateLineageSummary();
-      renderLineageSurface();
+      commitLineage(response.lineage, { afterMerge: () => setNodeRuntimeStatus(target.id, "queued") });
       updateNodeAbsorptionModal(source, target, response);
-      bindResidentStateCollection();
       selectNode(target.id, { force: true }).catch(() => {});
       toast(window.PortalI18n.text`${target.title} 已收到包含 ${source.title} 统一 ID 的普通 Prompt。`, "success", 5200);
     } catch (error) {
@@ -7619,18 +7574,13 @@
         if (!result?.lineage || result.lineage.lineage_id !== state.lineage.lineage_id) {
           throw new Error("删除节点的响应缺少 Lineage 状态");
         }
-        state.lineage = mergeLineageStateDomains(state.lineage, result.lineage);
-        state.localVersion += 1;
-        state.runtimeStatus.delete(node.id);
-        state.sessionUserMessageCounts.delete(nodeResidentId(node));
-        state.sessionContextPressures.delete(nodeResidentId(node));
         state.residents = state.residents.filter(item => String(item.resident_id || "") !== nodeResidentId(node));
-        updateLineageSummary();
+        commitLineage(result.lineage, {
+          // The deleted node's Chat reports the deletion; no other node is selected for it.
+          afterMerge: () => { if (state.selectedNodeId === node.id) clearNodeSelection(); },
+        });
         const currentRevision = Number(state.lineage.revision || 0);
         setSyncStatus(currentRevision ? `状态已保存 · revision ${currentRevision}` : "状态已保存", "saved");
-        // The deleted node's Chat reports the deletion; no other node is selected for it.
-        if (state.selectedNodeId === node.id) clearNodeSelection();
-        renderLineageSurface();
         void Promise.allSettled([loadResults()]);
         const reconnected = Number(result.reconnected_edge_count || 0);
         if (!options.quiet) {
@@ -7819,7 +7769,7 @@
       if (!response?.lineage || response.lineage.lineage_id !== state.lineage.lineage_id) {
         throw new Error(`${actionLabel}的响应缺少 Lineage 状态`);
       }
-      applyLineageStructureRefresh(response.lineage, { notify: false });
+      commitLineage(response.lineage);
       const createdResidentId = String(response.resident_id || "");
       const node = state.lineage.nodes.find(item => item.id === createdResidentId);
       if (!node) throw new Error(`${actionLabel}的响应缺少新节点`);
@@ -8297,10 +8247,7 @@
           response = await societyService.executeHandoff({ lineage_id: state.lineage.lineage_id, handoff_id: response.handoff_id });
         }
       }
-      state.lineage = mergeLineageStateDomains(state.lineage, response.lineage);
-      state.localVersion += 1;
-      updateLineageSummary();
-      renderLineageSurface();
+      commitLineage(response.lineage);
       await Promise.all([
         loadWorkspaceGraphBindings(state.lineage),
       ]);
@@ -8313,8 +8260,7 @@
       }
     } catch (error) {
       try {
-        state.lineage = await societyService.loadLineage(state.lineage.lineage_id);
-        renderLineageSurface();
+        commitLineage(await societyService.loadLineage(state.lineage.lineage_id));
       } catch {}
       toast(window.PortalI18n.text`Handoff 未完成：${error.message || error}`, "error", 7200);
     } finally {
@@ -8335,8 +8281,7 @@
     cancelHandoffMode();
     try {
       const response = await societyService.deleteHandoff({ lineage_id: state.lineage.lineage_id, handoff_id: edge.id });
-      state.lineage = mergeLineageStateDomains(state.lineage, response.lineage);
-      renderLineageSurface();
+      commitLineage(response.lineage);
       toast(window.PortalI18n.t("交接已从 Lineage 中移除。"), "warning");
     } catch (error) {
       toast(window.PortalI18n.text`移除交接失败：${error.message || error}`, "error");
@@ -8501,7 +8446,7 @@
     });
     // Layout-only edits precede the server's layout_revision. Rebuild the
     // projected node copies now so rendering and fit use these new positions.
-    graphProgramProjectionCache = null;
+    state.localVersion += 1;
     state.autoLayoutDensityByScope.set(scope, density);
     if (!family) state.graphFocusMode = false;
     if (!changed) {
@@ -8528,10 +8473,10 @@
       if (previousDensity) state.autoLayoutDensityByScope.set(scope, previousDensity);
       else state.autoLayoutDensityByScope.delete(scope);
       if (state.lineage?.lineage_id !== lineageId) return;
-      state.lineage = previousLineage;
-      state.graphFocusMode = previousFocusMode;
-      graphProgramProjectionCache = null;
-      renderLineageSurface();
+      commitLineage(previousLineage, {
+        replace: true,
+        afterMerge: () => { state.graphFocusMode = previousFocusMode; },
+      });
       window.requestAnimationFrame(() => state.graphController?.fit?.({ ...AUTO_LAYOUT_VIEW, duration: 180 }));
       toast(window.PortalI18n.text`自动整理失败：${error.message || error}`, "error");
     } finally {
@@ -8641,12 +8586,9 @@
           toast(`新 Resident 已创建，但任务没有送达：${error.message || error}。请在它的对话中重新发送。`, "error", 9000);
         }
       }
-      state.lineage = mergeLineageStateDomains(state.lineage, result.lineage);
       state.selectedSeedId = "";
-      state.localVersion += 1;
       closeModal("seedPromoteModal");
-      updateLineageSummary();
-      renderLineageSurface();
+      commitLineage(result.lineage);
       await loadResults();
       const child = (state.lineage.nodes || []).find(node => node.id === result.resident_id);
       if (child?.id) await selectNode(child.id, { force: true });
@@ -8696,12 +8638,9 @@
         } },
       });
       if (!result?.lineage) throw new Error("抛弃响应缺少 Lineage 状态");
-      state.lineage = mergeLineageStateDomains(state.lineage, result.lineage);
       state.selectedSeedId = "";
-      state.localVersion += 1;
       closeModal("seedDismissModal");
-      updateLineageSummary();
-      renderLineageSurface();
+      commitLineage(result.lineage);
       if (focusNodeId && nodeById(focusNodeId)) {
         await selectNode(focusNodeId, { force: true });
         if (seed.artifact_path) await loadResultFile(seedPreviewPath(seed)).catch(() => {});
@@ -8805,8 +8744,7 @@
         lineage_id: state.lineage.lineage_id,
         leader_resident_id: leader.id,
       });
-      state.lineage = mergeLineageStateDomains(state.lineage, response.lineage);
-      renderLineageSurface();
+      commitLineage(response.lineage);
       await sendPromptToNode(leader, prompt);
       closeModal("leaderModal");
       toast(window.PortalI18n.t("Leader 已设置；最新快照已发送到左侧 Chat Workspace。"), "success", 6000);
@@ -9145,9 +9083,8 @@
           ...(label ? { label } : {}),
         },
       });
-      state.lineage = mergeLineageStateDomains(state.lineage, response.lineage);
       state.selectedEdgeId = edge.id;
-      renderLineageSurface();
+      commitLineage(response.lineage);
       toast(window.PortalI18n.t("交接关系已保存。"), "success");
     } catch (error) {
       toast(window.PortalI18n.text`保存关系失败：${error.message || error}`, "error", 6200);
@@ -9169,9 +9106,8 @@
     setBusy(button, true, "删除中…");
     try {
       const response = await societyService.deleteHandoff({ lineage_id: state.lineage.lineage_id, handoff_id: edge.id });
-      state.lineage = mergeLineageStateDomains(state.lineage, response.lineage);
       state.selectedEdgeId = "";
-      renderLineageSurface();
+      commitLineage(response.lineage);
       toast(window.PortalI18n.t("交接已删除。"), "warning");
     } catch (error) {
       toast(window.PortalI18n.text`删除交接失败：${error.message || error}`, "error", 6200);
@@ -9253,12 +9189,12 @@
           lineage_id: state.lineage.lineage_id,
           handoff_id: selectedEdge.id,
         });
-        state.lineage = mergeLineageStateDomains(state.lineage, response.lineage);
+        commitLineage(response.lineage, { render: false });
         await loadWorkspaceGraphBindings(state.lineage);
         renderLineageSurface();
         toast(window.PortalI18n.t("Handoff Workspace 已就绪。"), "success");
       } catch (error) {
-        try { state.lineage = await societyService.loadLineage(state.lineage.lineage_id); } catch {}
+        try { commitLineage(await societyService.loadLineage(state.lineage.lineage_id), { render: false }); } catch {}
         renderLineageSurface();
         toast(window.PortalI18n.text`Handoff 重试失败：${error.message || error}`, "error", 7000);
       } finally {
@@ -9392,7 +9328,7 @@
       const detail = event.detail || {};
       if (detail.kind !== "lineage" || detail.id !== state.lineage?.lineage_id) return;
       if (detail.type === "family") {
-        applyLineageStructureRefresh(detail.lineage, { notify: false });
+        commitLineage(detail.lineage);
         return;
       }
       if (detail.type !== "settings") return;
@@ -9766,9 +9702,7 @@
       async applyLineageMutation(lineage) {
         await loadPromise;
         if (state.layoutSaveInFlight) await state.layoutSaveInFlight;
-        const refresh = applyLineageStructureRefresh(lineage, { notify: false });
-        if (refresh.structureChanged) bindResidentStateCollection();
-        return refresh.changed;
+        return commitLineage(lineage).changed;
       },
       async setTarget(next = {}) {
         const requestSeq = ++targetRequestSeq;

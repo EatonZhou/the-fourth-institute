@@ -5,8 +5,15 @@ require("../../../management_portal/static/portal_text.js");
 const input = JSON.parse(fs.readFileSync(0, "utf8"));
 
 const bootstrap = `
-  const state = {lineage: initial, layoutSaveQueue: new Map(), localVersion: 0, residents: []};
+  const state = {lineage: initial, layoutSaveQueue: new Map(), localVersion: 0, residents: [],
+    runtimeStatus: new Map(), residentRuntimeById: new Map(),
+    sessionUserMessageCounts: new Map(), sessionContextPressures: new Map()};
   const programFeature = {beginMutation() {}, endMutation() {}};
+  const reconcileGraphInteractionState = () => {};
+  const bindResidentStateCollection = () => {};
+  const renderGraphRuntimePresentation = () => {};
+  const renderControls = () => {};
+  const templateController = {render() {}};
   const lineageEditQueue = createLineageEditQueue();
   const clone = value => JSON.parse(JSON.stringify(value));
   const toast = (...args) => hooks.toasts.push(args);

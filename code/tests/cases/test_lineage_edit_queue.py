@@ -24,7 +24,9 @@ FUNCTIONS = [
     "createLineageEditQueue", "activateLineageEdits", "flushLineageLayoutSave",
     "saveLineageLayout", "applyProgramMutation",
     "createProgramComponentFromDrop", "hasNewLineageGraphProjection", "mergeLineageStateDomains",
-    "overlayLineageLayout", "lineageItemsById",
+    "overlayLineageLayout", "lineageItemsById", "lineagePayloadsEqual", "nodeResidentId",
+    "commitLineage", "displayedResidentIds", "sameIdSet", "forgetRemovedLineageMembers",
+    "renderCommittedLineage",
 ]
 DRIVER = ROOT / "tests/cases/javascript/lineage_edit_queue.cjs"
 

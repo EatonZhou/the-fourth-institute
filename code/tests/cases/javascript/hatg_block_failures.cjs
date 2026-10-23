@@ -60,7 +60,8 @@ test('authoritative failed status remains visible before error details arrive', 
 
 function projectionHarness() {
   const wanted = new Set(['mergeLineageStateDomains', 'hasNewLineageGraphProjection',
-    'lineageItemsById', 'lineagePayloadsEqual', 'applyLineageProjectionRefresh',
+    'lineageItemsById', 'lineagePayloadsEqual', 'commitLineage', 'displayedResidentIds',
+    'sameIdSet', 'forgetRemovedLineageMembers', 'renderCommittedLineage',
     'selectedLineageChangeMatches', ...names]);
   const owners = [];
   traverse(babelParse(source, 'hatg_panel.js'), {FunctionDeclaration(p) {
@@ -68,20 +69,27 @@ function projectionHarness() {
   }});
   assert.equal(owners.length, wanted.size);
   let saved = {};
-  const state = {lineage: {lineage_id: 'lineage_one', revision: 3, layout_revision: 2,
+  const draws = {surface: 0, runtime: 0};
+  const state = {localVersion: 0, runtimeStatus: new Map(), residentRuntimeById: new Map(),
+    sessionUserMessageCounts: new Map(), sessionContextPressures: new Map(),
+    lineage: {lineage_id: 'lineage_one', revision: 3, layout_revision: 2,
     runtime_revision: 1, nodes: [{id: 'resident_one', title: 'Member', x: 0.25,
       last_execution: {execution_id: 'run_one', message_id: 'input_one', status: 'running'}}], edges: []}};
   const context = vm.createContext({state, clone: value => JSON.parse(JSON.stringify(value)),
     nodeResidentId: node => node.id,
     instanceInnerObjects: (_, kind) => kind === 'nodes' ? state.lineage.nodes : [],
     pageStateController: {read: () => saved, write: value => {saved = value;}},
-    renderLineageSurface() {},
+    reconcileGraphInteractionState() {}, bindResidentStateCollection() {}, setSyncStatus() {},
+    updateLineageSummary() {}, renderProgramInspector() {}, renderControls() {},
+    templateController: {render() {}},
+    renderLineageSurface() { draws.surface += 1; },
+    renderGraphRuntimePresentation() { draws.runtime += 1; },
   });
   vm.runInContext(owners.join('\n'), context);
-  return {context, state, update(execution) {
+  return {context, state, draws, update(execution) {
     const incoming = JSON.parse(JSON.stringify(state.lineage));
     incoming.nodes[0].last_execution = execution;
-    return context.applyLineageProjectionRefresh(incoming);
+    return context.commitLineage(incoming, {source: 'background'}).changed;
   }};
 }
 
@@ -103,6 +111,9 @@ test('same-revision server reads update Resident failure identity, reminder and 
   assert.equal(h.state.lineage.revision, 3);
   assert.equal(h.state.lineage.runtime_revision, 1);
   assert.equal(h.state.lineage.nodes[0].x, 0.25);
+  // The one surface redraw is the acknowledgement's own; the four changed
+  // observations redraw only the runtime presentation.
+  assert.deepEqual(h.draws, {surface: 1, runtime: 4}, 'same-revision observations redraw only the runtime presentation');
 });
 
 test('only committed terminal inputs of displayed Residents invalidate the graph observation', () => {

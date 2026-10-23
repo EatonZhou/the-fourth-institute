@@ -67,14 +67,17 @@ function controllerSource(mutation) {
       && node.expression.left.type === 'MemberExpression'
       && node.expression.left.object.name === 'state'
       && node.expression.left.property.name === field;
+    const callTo = (node, callee) => node.type === 'ExpressionStatement'
+      && node.expression.type === 'CallExpression'
+      && node.expression.callee.name === callee;
     const candidates = {
-      'drop-position-rollback': attempt.handler.body.body.filter(node => assignmentTo(node, 'lineage')),
+      // The rollback commits the saved Lineage back; the commit redraws it.
+      'drop-position-rollback': attempt.handler.body.body.filter(node => callTo(node, 'commitLineage')),
       'drop-density-rollback': attempt.handler.body.body.filter(node =>
         node.type === 'IfStatement' && node.test.type === 'Identifier' && node.test.name === 'previousDensity'),
       'drop-busy-reset': attempt.finalizer.body.filter(node => assignmentTo(node, 'autoLayoutInFlight')),
-      'drop-rollback-paint': attempt.handler.body.body.filter(node =>
-        node.type === 'ExpressionStatement' && node.expression.type === 'CallExpression'
-        && node.expression.callee.name === 'renderLineageSurface'),
+      'drop-rollback-paint': bindings.commitLineage.path.node.body.body.filter(node =>
+        callTo(node, 'renderCommittedLineage')),
     };
     assert.equal(candidates[mutation]?.length, 1, `Mutation must address exactly one AST statement: ${mutation}`);
     [changed] = candidates[mutation];

@@ -204,7 +204,7 @@ function unfamilizeViewportFixture() {
     programFeature: {clearSelection: noop}, applyProgramMutation: request => request(),
     executeHatgInstruction: async () => receipt,
     societyService: {loadLineage: async () => {calls.push(['load']); return state.lineage;}},
-    applyLineageStructureRefresh: () => calls.push(['render']),
+    commitLineage: () => calls.push(['render']),
   });
   return {graph, state, frames, calls, receipt};
 }
