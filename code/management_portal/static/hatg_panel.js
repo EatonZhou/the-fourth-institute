@@ -3578,6 +3578,16 @@
     } else if (currentRuntime > incomingRuntime && takesIncomingGraph) {
       overlayLineageRuntime(next, current);
     }
+    // Executions belong to Agent history, not the Lineage relation-work
+    // revision. A new failed/cancelled turn can leave every graph revision
+    // unchanged; take its observation from the latest serialized read.
+    const observedResidents = lineageItemsById(incoming.nodes);
+    for (const node of next.nodes || []) {
+      const observed = observedResidents.get(String(node?.id || ""));
+      if (observed && Object.hasOwn(observed, "last_execution")) {
+        node.last_execution = clone(observed.last_execution || {});
+      }
+    }
     // Invoke-wire backlog is a volatile delivery projection. It changes
     // without mutating the authored graph or the Resident runtime revision,
     // so the newest server response must always win independently.
@@ -3613,12 +3623,14 @@
     const previous = state.lineage;
     const merged = mergeLineageStateDomains(previous, lineage);
     const previousProjection = {
+      resident_executions: (previous.nodes || []).map(node => [node.id, node.last_execution || {}]),
       program_invoke_wire_runtime: previous.program_invoke_wire_runtime || {},
       program_event_source_runtime: previous.program_event_source_runtime || {},
       program_effect_runtime: previous.program_effect_runtime || {},
       program_execution_explanations: previous.program_execution_explanations || {},
     };
     const nextProjection = {
+      resident_executions: (merged.nodes || []).map(node => [node.id, node.last_execution || {}]),
       program_invoke_wire_runtime: merged.program_invoke_wire_runtime || {},
       program_event_source_runtime: merged.program_event_source_runtime || {},
       program_effect_runtime: merged.program_effect_runtime || {},
@@ -3665,10 +3677,16 @@
     // Their identity notification must revalidate the displayed membership,
     // even when no readable Lineage-domain notification accompanies it.
     const residentIds = new Set((state.lineage.nodes || []).map(nodeResidentId));
-    return Object.entries(detail?.resident_changes || {}).some(([residentId, scopes]) => (
+    if (Object.entries(detail?.resident_changes || {}).some(([residentId, scopes]) => (
       residentIds.has(residentId)
       && Array.isArray(scopes)
       && scopes.includes("identity")
+    ))) return true;
+    return (detail?.resident_events || []).some(event => (
+      residentIds.has(String(event?.resident_id || ""))
+      && event.live !== true
+      && event.event_type === "resident.input.state.changed"
+      && ["completed", "failed", "cancelled"].includes(event.payload?.input_state?.state)
     ));
   }
 
