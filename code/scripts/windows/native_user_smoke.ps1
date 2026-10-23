@@ -123,12 +123,25 @@ exit `$code
     # XML contains no password. Keep it in the log artifact allowlist.
     Export-ScheduledTask -TaskName $taskName | Set-Content (Join-Path $evidencePath 'task-definition.log') -Encoding utf8
     $started = Get-Date
-    $scheduler = New-Object -ComObject Schedule.Service
-    $scheduler.Connect()
-    $registered = $scheduler.GetFolder('\').GetTask($taskName)
-    $running = $registered.Run($null)
-    @{ instance_guid = $running.InstanceGuid; state = $running.State } | ConvertTo-Json |
+    # A direct Schedule.Service COM Run call can block before the polling
+    # deadline even starts. Use a separate, bounded control process so a VM
+    # scheduling failure still reaches finally and preserves the event log.
+    @{ stage = 'requesting_start'; at = $started.ToString('o') } | ConvertTo-Json |
         Set-Content (Join-Path $evidencePath 'task-start.json') -Encoding utf8
+    $taskControl = Join-Path $env:SystemRoot 'System32\schtasks.exe'
+    $launcher = Start-Process -FilePath $taskControl -ArgumentList @('/Run', '/TN', $taskName) `
+        -NoNewWindow -PassThru -RedirectStandardOutput (Join-Path $evidencePath 'task-start-stdout.log') `
+        -RedirectStandardError (Join-Path $evidencePath 'task-start-stderr.log')
+    if (-not $launcher.WaitForExit(60000)) {
+        $launcher.Kill()
+        $launcher.WaitForExit(5000) | Out-Null
+        @{ stage = 'start_request_timeout'; process_id = $launcher.Id } | ConvertTo-Json |
+            Set-Content (Join-Path $evidencePath 'task-start.json') -Encoding utf8
+        throw 'Task Scheduler start request did not return within 60 seconds'
+    }
+    @{ stage = 'start_request_returned'; exit_code = $launcher.ExitCode } | ConvertTo-Json |
+        Set-Content (Join-Path $evidencePath 'task-start.json') -Encoding utf8
+    if ($launcher.ExitCode -ne 0) { throw ('Task Scheduler start request failed: ' + $launcher.ExitCode) }
     $nextProgress = $started
     do {
         Start-Sleep -Seconds 2
