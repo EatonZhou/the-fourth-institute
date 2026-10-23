@@ -19,6 +19,37 @@ def observe(store, agent):
     return evidence.project_context_evidence(store.context_evidence_snapshot(agent))
 
 
+def test_actual_provider_rpc_receipt_is_durable_private_and_not_inferred():
+    """实际 RPC 回执留在操作记录中；轮次接纳和重放不补造方法证明"""
+    store, agent = AgentDataStore(), "resident_rpc_receipt"
+    req = ExecutionRequest.new(actor="test-actor", agent_id=agent, provider="codex",
+        service_type="agent_session", operation="turn", prompt="private-input")
+    projector = AgentDataProjector(store)
+    projector.begin(req, RuntimeSession(mode="stateless", binding_id="", backend_session_id="thread-rpc",
+                                       is_new_backend_session=False))
+    kwargs = dict(provider="codex", backend_route_id="one", backend_session_id="thread-rpc",
+                  execution_id=req.execution_id)
+    projector.observe(**kwargs, event={"method": "turn/started", "params": {"turn": {"id": "turn-rpc"}}})
+    from management_portal.execution.agent_data_projection import stable_segment_id
+    receipt_id = stable_segment_id("provider-request", req.execution_id, "thread-rpc", "turn-rpc", "review/start")
+    with pytest.raises(KeyError):
+        store.operation_record(receipt_id)
+    before = store.sequence_segment_ids(store.trace_sequence_id(agent))
+    event = {"method": "portal/provider_request_accepted", "params": {
+        "threadId": "thread-rpc", "turnId": "turn-rpc", "rpcMethod": "review/start",
+        "target": "private-diff", "authorization": "private-token"}}
+    projector.observe(**kwargs, event=event)
+    original = AgentDataStore().operation_record(receipt_id)
+    assert original["execution_id"] == req.execution_id
+    assert original["created_by_agent_id"] == agent
+    assert original["content"] == {"type": "provider_request_receipt", "provider": "codex",
+        "method": "review/start", "backend_session_id": "thread-rpc", "provider_turn_id": "turn-rpc"}
+    assert "private-" not in json.dumps(original)
+    projector.observe(**kwargs, event=event)
+    assert store.operation_record(receipt_id) == original
+    assert store.sequence_segment_ids(store.trace_sequence_id(agent)) == before
+
+
 def transform(store, agent, sources, target="segment_prepared"):
     return store.transform_agent_segments(agent, sources, segment_id=target, content="private-prepared",
         actor_ref="test-actor", operation_id="execution_prepare", operation_type="agent_harness.prepare_invocation")

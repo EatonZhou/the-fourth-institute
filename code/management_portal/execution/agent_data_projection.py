@@ -940,6 +940,29 @@ class AgentDataProjector:
                     )
             return
 
+        if method == "portal/provider_request_accepted":
+            rpc_method = str(params.get("rpcMethod") or "")
+            thread_id = str(params.get("threadId") or "")
+            if provider != "codex" or rpc_method not in {"turn/start", "review/start"} or not thread_id or not turn_id:
+                return
+            receipt_id = stable_segment_id("provider-request", execution_id, thread_id, turn_id, rpc_method)
+            try:
+                self.store.operation_record(receipt_id)
+            except KeyError:
+                self.store.put_operation_record(
+                    segment_id=receipt_id, segment_type="artifact",
+                    content={"type": "provider_request_receipt", "provider": provider,
+                             "method": rpc_method, "backend_session_id": thread_id,
+                             "provider_turn_id": turn_id},
+                    content_type="application/json", created_at=created_at,
+                    status="completed", created_by_agent_id=projection.agent_id,
+                    created_by_actor_ref=projection.request.identity.principal.id,
+                    performed_by_actor_ref=projection.request.identity.principal.id,
+                    execution_id=execution_id,
+                    metadata={"kind": "provider_request_receipt"},
+                )
+            return
+
         if method == SUBAGENT_PROGRESS_METHOD:
             # A running subagent's card is live activity only; its steps are in its own trace.
             return

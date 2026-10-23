@@ -2435,6 +2435,15 @@ class CodexAppServerClient:
                             else {}
                         )
                         self._bind_turn_waiter(waiter, str(turn.get("id") or "").strip())
+                        if waiter.turn_id and waiter.event_callback:
+                            # This is a local receipt of the actual successful
+                            # RPC, not a native item or an inference on replay.
+                            waiter.event_callback({
+                                "method": "portal/provider_request_accepted",
+                                "params": {"threadId": resumed_thread_id,
+                                           "turnId": waiter.turn_id,
+                                           "rpcMethod": start_method},
+                            })
                     with self._state_lock:
                         self._unmaterialized_threads.discard(
                             resumed_thread_id

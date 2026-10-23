@@ -941,6 +941,13 @@ class CodexAppServerClientTest(unittest.TestCase):
             self.assertEqual(result.response, "finished")
             self.assertIn("review/start", server.methods)
             self.assertNotIn("turn/start", server.methods)
+            receipts = [event for event in events if event["method"] == "portal/provider_request_accepted"]
+            self.assertEqual(len(receipts), 1)
+            self.assertEqual(receipts[0]["params"], {
+                "threadId": "019f0000-0000-7000-8000-000000000200",
+                "turnId": result.turn_id, "rpcMethod": "review/start",
+            })
+            self.assertNotIn("Review captured diff", json.dumps(receipts))
             self.assertEqual(events[-1]["method"], "turn/completed")
         finally:
             client.close()
@@ -982,6 +989,8 @@ class CodexAppServerClientTest(unittest.TestCase):
                     self.assertEqual(result.turn_id, parent)
                     self.assertEqual(result.response, result_item["text"])
                     self.assertEqual(starts, [parent])
+                    receipts = [e for e in events if e["method"] == "portal/provider_request_accepted"]
+                    self.assertEqual(len(receipts), 0 if resume else 1)
                     self.assertTrue(all(e["params"].get("turnId", parent) == parent for e in events))
                 finally:
                     client.close()
