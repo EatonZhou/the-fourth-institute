@@ -262,10 +262,28 @@ async function observeBrowser(context, { evidenceDir }) {
         state.document.confirmed = true;
       }
       write({ kind: data.kind, ...location(state), browser_observed_at_ms: Number.isFinite(data.at) ? data.at : null, time_origin_ms: Number.isFinite(data.time_origin) ? data.time_origin : null });
-    } else if (['beforeunload', 'pagehide', 'focus', 'blur', 'visibilitychange', 'document_error', 'portal_connections', 'portal_stream_ready', 'pdf_reader_cancelled', 'resource_timing', 'resource_timing_buffer_full', 'observer_unavailable'].includes(data.kind)) {
+    } else if (['beforeunload', 'pagehide', 'focus', 'blur', 'visibilitychange', 'click_observed', 'document_error', 'portal_connections', 'portal_stream_ready', 'pdf_reader_cancelled', 'resource_timing', 'resource_timing_buffer_full', 'observer_unavailable'].includes(data.kind)) {
       const doc = tokens.get(data.token);
       const associated = { ...location(state), document_id: doc?.id || null, document_confirmed: !!doc };
-      if (['focus', 'blur', 'visibilitychange'].includes(data.kind)) {
+      if (data.kind === 'click_observed') {
+        if (!Number.isSafeInteger(data.sequence) || data.sequence < 1) return;
+        const tags = new Set('a button input select option textarea label span div svg path use img li ul nav header main body html'.split(' '));
+        const action = actions.get(frame.page());
+        write({ kind: data.kind, ...associated, click_id: `${doc?.id || data.token}:click:${data.sequence}`,
+          stage: ['capture', 'after_dispatch', 'beforeunload', 'pagehide'].includes(data.stage) ? data.stage : 'unknown',
+          browser_observed_at_ms: Number.isFinite(data.at) ? data.at : null,
+          target_tag: tags.has(data.target_tag) ? data.target_tag : 'other',
+          control_tag: tags.has(data.control_tag) ? data.control_tag : null,
+          target_indices: Array.isArray(data.target_indices) ? data.target_indices.slice(0, 16).map(index => Number.isSafeInteger(index) && index >= 0 ? index : null) : [],
+          link_path: typeof data.link_path === 'string' ? safePath(data.link_path) : null,
+          default_prevented: typeof data.default_prevented === 'boolean' ? data.default_prevented : null,
+          is_trusted: data.is_trusted === true,
+          button: Number.isSafeInteger(data.button) ? data.button : null,
+          client_x: Number.isFinite(data.client_x) ? data.client_x : null,
+          client_y: Number.isFinite(data.client_y) ? data.client_y : null,
+          action_id: action?.id || null,
+          action_association: action ? 'observed_in_explicit_page_action_scope' : null });
+      } else if (['focus', 'blur', 'visibilitychange'].includes(data.kind)) {
         write({ kind: data.kind, ...associated,
           browser_observed_at_ms: Number.isFinite(data.at) ? data.at : null,
           hidden: typeof data.hidden === 'boolean' ? data.hidden : null });
@@ -347,6 +365,40 @@ async function observeBrowser(context, { evidenceDir }) {
     const hex = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
     const token = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
     const emit = data => window.__portalTauObservationRecord({ token, at: Date.now(), ...data }).catch(() => {});
+    // Capture all hit targets, including a nested icon and non-interactive
+    // overlays. No labels, IDs, text, values or raw URLs enter the evidence.
+    const pendingClicks = new Map();
+    let clickSequence = 0;
+    const finishClick = (sequence, stage) => {
+      const pending = pendingClicks.get(sequence);
+      if (!pending) return;
+      pendingClicks.delete(sequence);
+      clearTimeout(pending.timer);
+      emit({ ...pending.record, stage, default_prevented: pending.event.defaultPrevented });
+    };
+    window.addEventListener('click', event => {
+      const target = event.composedPath()[0];
+      const control = target?.closest?.('a,button,input,select,textarea');
+      const link = target?.closest?.('a[href]');
+      const indices = [];
+      for (let node = target; node?.parentElement && indices.length < 16; node = node.parentElement) {
+        indices.push(Array.prototype.indexOf.call(node.parentElement.children, node));
+      }
+      const sequence = ++clickSequence;
+      const record = { kind: 'click_observed', sequence,
+        target_tag: target?.localName, control_tag: control?.localName,
+        target_indices: indices, link_path: link ? sanitize(link.href) : null,
+        default_prevented: event.defaultPrevented, is_trusted: event.isTrusted,
+        button: event.button, client_x: event.clientX, client_y: event.clientY };
+      emit({ ...record, stage: 'capture' });
+      // A microtask can run between native event listeners. Sample after the
+      // dispatch task, or at unload, so later preventDefault is not missed.
+      const timer = setTimeout(() => finishClick(sequence, 'after_dispatch'), 0);
+      pendingClicks.set(sequence, { event, record, timer });
+    }, { capture: true, passive: true });
+    for (const stage of ['beforeunload', 'pagehide']) window.addEventListener(stage, () => {
+      for (const sequence of pendingClicks.keys()) finishClick(sequence, stage);
+    }, { capture: true, passive: true });
     // PDF.js cancels its full-body reader when it selects byte ranges. Observe
     // that actual call, not a nearby navigation or a subsequent successful PDF.
     // Each same-origin fetch gets its own opaque ID; no content enters evidence.

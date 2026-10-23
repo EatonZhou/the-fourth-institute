@@ -15,6 +15,58 @@ from tests.cases.test_paper_figure_transactions import figure_store
 RESULT_SCHEMA = 'tfi.paper.figure-explanation.result.v1'
 
 
+@pytest.mark.parametrize('dpi', [120, 180])
+def test_heading_chart_keeps_unprefixed_footer_source_pixels(tmp_path, monkeypatch, dpi):
+    """保留原图的无前缀完整句图注，包括数值、坐标和解释，不带入后续正文。
+
+    :importance: P1
+    :design: decision_e37f240e186d
+    :design-point:
+    """
+    source = Path(__file__).parent / 'fixtures' / 'paper-synthetic-counts.pdf'
+    assert hashlib.sha256(source.read_bytes()).hexdigest() == (
+        'eac5fe85f2b77c8f8e78fe41ddc5397614fc19ab0883a9b9ee0b0130f8b7debf'
+    )
+    caption = next(item for item in paper_backend._prepare_figure_caption_blocks(
+        paper_backend._extract_figure_caption_blocks(source)) if item['page'] == 2)
+    rendered = paper_backend._render_pdf_page_png(source, 2, tmp_path / 'page', dpi=dpi)
+    with Image.open(rendered) as opened:
+        page = opened.convert('RGB')
+    origins = {id(page): (0, 0)}
+    tracked = [page]
+    original_crop = Image.Image.crop
+
+    def crop_with_origin(image, box, *args, **kwargs):
+        result = original_crop(image, box, *args, **kwargs)
+        if id(image) in origins:
+            left, top = origins[id(image)]
+            origins[id(result)] = (left + box[0], top + box[1])
+            tracked.append(result)
+        return result
+
+    monkeypatch.setattr(Image.Image, 'crop', crop_with_origin)
+    result = paper_backend._crop_figure_above_caption(page, caption)
+    assert result is not None
+    left, top = origins[id(result)]
+    right, bottom = left + result.width, top + result.height
+    scale_x, scale_y = page.width / caption['page_width'], page.height / caption['page_height']
+    figure_lines = [line for line in caption['page_lines'] if 336 <= line['y_min'] <= 707]
+    assert {
+        'Difference = 6 markers; relative increase = 50%.',
+        'Numbers are not empirical performance claims.', 'Baseline', 'Treatment', '12', '18',
+    } <= {line['text'] for line in figure_lines}
+    for line in figure_lines:
+        box = (int(line['x_min'] * scale_x), int(line['y_min'] * scale_y),
+               int(line['x_max'] * scale_x) + 1, int(line['y_max'] * scale_y) + 1)
+        assert left <= box[0] < box[2] <= right, line['text']
+        assert top <= box[1] < box[3] <= bottom, line['text']
+        assert result.crop((box[0] - left, box[1] - top,
+                            box[2] - left, box[3] - top)).tobytes() == page.crop(box).tobytes()
+    # The preceding limitations and following full-width text are not figure annotations.
+    assert top > 223 * scale_y
+    assert bottom < 741 * scale_y
+
+
 @pytest.mark.parametrize('scale', [1, 2])
 def test_heading_chart_keeps_title_and_explicit_footer_without_body(scale):
     """标题在上方的图表裁剪保留标题、图例和图注，排除其后的正文"""

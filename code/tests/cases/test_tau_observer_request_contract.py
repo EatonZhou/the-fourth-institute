@@ -48,3 +48,15 @@ def test_injected_observer_preserves_routes_and_unique_transport_identity():
     :profiles: local.fixture
     """
     _run_contract("injected")
+
+
+def test_browser_click_observation_preserves_actual_hit_and_default_prevention():
+    """实际浏览器点击记录命中、文档和阻止默认行为，不采集正文或改变导航
+
+    :design: decision_c953eab654cd
+    :risk: no-external-side-effects
+    :profiles: local.fixture
+    """
+    script = Path(__file__).with_name("javascript") / "tau_observer_clicks.cjs"
+    result = subprocess.run(["node", str(script)], capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stdout + result.stderr

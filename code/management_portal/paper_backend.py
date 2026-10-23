@@ -7098,9 +7098,9 @@ def _crop_figure_below_heading(page_image: Image.Image, caption: dict[str, Any])
         included_bounds[1] = min(included_bounds[1], line_bounds[1])
         included_bounds[2] = max(included_bounds[2], line_bounds[2])
         included_bounds[3] = max(included_bounds[3], line_bounds[3])
-    # Explicit figure notes can follow the axis labels and contain full
-    # sentences. Admit them relative to the complete chart, with bounded gaps;
-    # ordinary body paragraphs still do not extend the crop.
+    # Footer annotations can contain full sentences without a "Note:" prefix.
+    # A compact block aligned within the plot belongs with its nearby labels;
+    # full-width body prose and separated sections must not extend the crop.
     note_left = None
     note_continues = False
     for line in sorted(lines, key=lambda item: float(item.get("y_min") or 0)):
@@ -7111,10 +7111,17 @@ def _crop_figure_below_heading(page_image: Image.Image, caption: dict[str, Any])
         height = max(1.0, y1 - y0)
         explicit_note = re.match(r"^(?:Caption|Notes?|Disclaimer)\s*[:：]", text, flags=re.I)
         continuation = note_continues and note_left is not None and abs(x0 - note_left) <= height
-        if not (explicit_note or continuation):
+        inset_tolerance = max(12.0, 2 * min(height, label_height))
+        compact_note = (
+            len(text) >= 20 and re.search(r"[.!?。！？]$", text)
+            and included_bounds[0] - inset_tolerance <= x0
+            and x1 <= graphic_bounds[2] + inset_tolerance
+            and (note_left is None or abs(x0 - note_left) <= height)
+        )
+        if not (explicit_note or continuation or compact_note):
             note_continues = False
             continue
-        gap_limit = max(24.0, 2 * min(height, label_height)) if explicit_note else 1.5 * height
+        gap_limit = max(24.0, 2 * min(height, label_height)) if explicit_note or compact_note else 1.5 * height
         if y0 - included_bounds[3] > gap_limit or x1 < graphic_bounds[0] or x0 > graphic_bounds[2]:
             note_continues = False
             continue
