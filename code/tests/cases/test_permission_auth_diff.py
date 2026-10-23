@@ -211,6 +211,42 @@ def test_moved_place_and_via_elements_count_only_what_they_can_judge(off):
     assert judged == {LINEAGE: ("tightening", 1), OTHER_LINEAGE: ("tightening", 1)}
 
 
+def test_a_moved_place_slot_counts_only_the_class_nodes_a_registerable_type_lands_at(off):
+    """移动的 place 槽只计可登记类型实际会落下的分类节点
+
+    没有 Project 的新资源按它的类型落到分类节点：知识与 Workbench 落在“公共内容”，Project 落在“全部 Project”，
+    设备落在“共享”。论文不能登记，“论文库”不计入；个人 AMA 的落点“个人”也不计入。
+    去掉“全员可管理公共内容”后，全员在这些节点上只有查看，把 RegisterResource 放到 @viewer 才在其中有变化。
+    """
+    call("CreatePermissionScheme", scheme_id="team", rules=rules("team", without={"everyone_manages_public"}))
+    moved = rules("team", without={"everyone_manages_public"})
+    moved["instructions"]["RegisterResource"] = {"a": "@viewer"}
+    report = call("UpdatePermissionScheme", scheme_id="team", rules=moved, dry_run=True, diff_limit=100)["auth_diff"]
+    counted = {item["r"]["node"]: (item["kind"], item["resources"]) for item in report["groups"]["items"]
+               if item["element"] == "RegisterResource"}
+    assert counted == {TEAM: ("loosening", 1), OTHER: ("loosening", 1), "@public": ("loosening", 1),
+                       "@projects": ("loosening", 1), "@shared": ("loosening", 1)}
+    landed = next(item for item in report["groups"]["items"] if item["r"]["node"] == "@public")
+    assert landed["r"]["title"] == "公共内容" and "kinds" not in landed["r"]
+
+
+def test_a_moved_slot_naming_any_node_counts_the_class_nodes(off):
+    """参数槽或 via 字段不限类型时，可以指向分类节点，移动这样的元素也计入分类节点
+
+    表项的 r 可以是任何 R 节点：把 UpdatePermissionEntry:entry_id 从 @admin 放到 @viewer，全员在“共享”下
+    能查看却不能管理的分类节点（共享、Portal 运维、全部 Project）各算一个资源；全员本就能管理的“公共内容”不变。
+    """
+    call("CreatePermissionScheme", scheme_id="team", rules=rules("team"))
+    moved = rules("team")
+    moved["instructions"]["UpdatePermissionEntry:entry_id"] = {"a": "@viewer"}
+    report = call("UpdatePermissionScheme", scheme_id="team", rules=moved, dry_run=True, diff_limit=100)["auth_diff"]
+    nodes = {item["r"]["node"] for item in report["groups"]["items"]
+             if item["element"] == "UpdatePermissionEntry:entry_id" and item["resources"] == 1}
+    assert {"@shared", "@operations", "@projects"} <= nodes
+    assert not {"@public", "@papers"} & nodes
+    assert report["kind"] == "loosening"
+
+
 def test_the_startup_merge_records_its_report_in_the_last_merge(off, monkeypatch):
     """发布改变内置规则后，启动时的自动合并把授权差写进 last_merge
 

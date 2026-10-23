@@ -33,13 +33,14 @@ bounds).  It only reports; nothing is refused.  Which intents changed
 from __future__ import annotations
 
 import time
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
+from itertools import combinations
 from typing import Any
 
 from .engine.model import DENY
 from .scheme.compiler import CompiledScheme
-from .scheme.vocabulary import RECORDS
+from .scheme.vocabulary import RECORDS, REGISTERABLE_TYPES
 
 BUDGET = 2.0
 EXCEPT_LIMIT = 10
@@ -230,8 +231,10 @@ def compare(before: View, after: View, *, limit: int, budget: float = BUDGET) ->
                 break
 
     moved_cells: dict[tuple[int, bool, int], list[int]] = {}
+    landed: list[tuple[tuple, tuple, list[str]]] = []
     if moves and complete:
-        complete = _moved_cells(moves, before, after, p_classes, r_classes, kinds, landing, deadline, moved_cells)
+        complete = _moved_cells(moves, before, after, p_classes, r_classes, kinds, landing, deadline, moved_cells,
+                                landed)
 
     groups: dict[tuple[tuple[int, ...], int, int], list[int]] = {}
     for (r_index, a, b), p_indexes in cells.items():
@@ -272,24 +275,30 @@ def compare(before: View, after: View, *, limit: int, budget: float = BUDGET) ->
             }
         summed.append((p_count * len(r_members) * (plus + minus), (0, p_indexes, tuple(r_indexes)), item))
 
-    moved_groups: dict[tuple[int, bool, tuple[int, ...]], list[int]] = {}
+    # A class node a place slot lands at is a group of its own (its own r class index), named by that node.
+    moved_groups: dict[tuple[int, bool, tuple[int, ...], int], list[int]] = {}
     for (position, gaining, r_index), p_indexes in moved_cells.items():
-        moved_groups.setdefault((position, gaining, tuple(p_indexes)), []).append(r_index)
-    for (position, gaining, p_indexes), r_indexes in moved_groups.items():
+        own = r_index if r_index >= len(r_classes) else -1
+        moved_groups.setdefault((position, gaining, tuple(p_indexes), own), []).append(r_index)
+    for (position, gaining, p_indexes, own), r_indexes in moved_groups.items():
         name, was, slot = moves[position]
         p_count = sum(len(p_classes[index][2]) for index in p_indexes)
         both_fixed = bool(slot.resource and was.resource)
-        r_members = [] if both_fixed else [member for index in r_indexes
-                                           for member in _typed(r_classes[index][2], was if slot.resource else slot, kinds, landing)]
+        lands = landed[own - len(r_classes)][2][0] if own >= 0 else ""
+        r_members = [] if both_fixed else [lands] if lands else [
+            member for index in r_indexes
+            for member in _typed(r_classes[index][2], was if slot.resource else slot, kinds, landing)]
         r_count = len(r_members) or 1
-        counted(gained if gaining else lost, p_count * r_count, p_indexes, r_members)
+        # Class nodes, like a fixed slot's R node, are not among the report's resources.
+        counted(gained if gaining else lost, p_count * r_count, p_indexes, [] if lands else r_members)
 
         def item(name=name, was=was, slot=slot, gaining=gaining, p_indexes=p_indexes, r_members=r_members,
-                 p_count=p_count, r_count=r_count, both_fixed=both_fixed):
+                 p_count=p_count, r_count=r_count, both_fixed=both_fixed, lands=lands):
             found = {
                 "kind": LOOSENING if gaining else TIGHTENING, "element": slot.element, "instruction": name,
                 "p": names.describe("P", p_members(p_indexes)),
-                "r": names.node("R", slot.resource) if both_fixed else names.describe("R", r_members),
+                "r": names.node("R", slot.resource if both_fixed else lands) if both_fixed or lands
+                else names.describe("R", r_members),
                 "a": {"before": was.a, "after": slot.a},
                 "before": [] if gaining else [slot.element], "after": [slot.element] if gaining else [],
                 "gained": [slot.element] if gaining else [], "lost": [] if gaining else [slot.element],
@@ -299,7 +308,7 @@ def compare(before: View, after: View, *, limit: int, budget: float = BUDGET) ->
                 # "" on a side where the slot judges the object its argument names.
                 found["resource"] = {"before": was.resource, "after": slot.resource}
             return found
-        summed.append((p_count * r_count, (1, slot.element, gaining, p_indexes), item))
+        summed.append((p_count * r_count, (1, slot.element, gaining, p_indexes, lands), item))
     summed.sort(key=lambda entry: (-entry[0], entry[1]))
 
     def totals(found):
@@ -312,41 +321,80 @@ def compare(before: View, after: View, *, limit: int, budget: float = BUDGET) ->
                    len(summed), items, remapped(before.scheme, after.scheme, limit))
 
 
-def _landing(*schemes: CompiledScheme) -> frozenset[str]:
-    """The R class nodes a new object can be placed at when it has no related object (``CompiledScheme.placement``)."""
-    return frozenset({scheme.trees["R"].default_parent for scheme in schemes}
-                     | {pattern.fallback for scheme in schemes for patterns in scheme.patterns["R"].values()
-                        for pattern in patterns if pattern.fallback})
+def _landing(before: CompiledScheme, after: CompiledScheme) -> Callable[[tuple], tuple[frozenset[str], frozenset]]:
+    """Where a place slot can put a new object: ``place -> (related types, landings)``.
+
+    The new object has a registerable type, and each scheme places it as the
+    request does (``CompiledScheme.placement``) for every choice of related
+    objects the call may give: under the related object when its type's
+    placement follows that relation, else at a class node.  A related type
+    counts when some registerable type sits under it on either side; the
+    related objects are resources of the instance.  ``landings`` are the
+    ``(old class node, new class node)`` pairs where a new object lands
+    otherwise, one resource each.  A type a release moves between a related
+    object and a class node counts only on the related side.
+    """
+    found: dict[tuple, tuple[frozenset[str], frozenset]] = {}
+
+    def landing(place: tuple) -> tuple[frozenset[str], frozenset]:
+        if place not in found:
+            names = [name for name, _paths in place]
+            related, landings = set(), set()
+            for size in range(len(names) + 1):
+                for given in combinations(names, size):
+                    owners = {name: _GIVEN + name for name in given}
+                    for kind in REGISTERABLE_TYPES:
+                        sides = tuple(scheme.placement("R", kind, owners) for scheme in (before, after))
+                        under = {node[len(_GIVEN):] for node in sides if node.startswith(_GIVEN)}
+                        related |= under
+                        if not under:
+                            landings.add(sides)
+            found[place] = (frozenset(related), frozenset(landings))
+        return found[place]
+
+    return landing
 
 
-def _typed(members: list[str], slot, kinds: Mapping[tuple[str, str], str], landing: frozenset[str]) -> list[str]:
+# Stands for the related object a call names, so a placement under it is told from a class node.
+_GIVEN = "\0"
+
+
+def _typed(members: list[str], slot, kinds: Mapping[tuple[str, str], str], landing) -> list[str]:
     """The resources an argument slot can name: those of its declared types.
 
-    A place slot judges where the new object will sit: its related object, else a class node it lands at.  A via
-    slot judges what the record's field names: objects of the field's types, or any node when it declares none.
+    A place slot judges where the new object will sit: here its related objects (``_landing``).  A via slot judges
+    what the record's field names: objects of the field's types, or any node when it declares none.  The class
+    nodes a slot can name are decided apart (``_moved_cells``).
     """
     if slot.place:
-        related = {name for name, _paths in slot.place}
-        return [member for member in members if kinds.get(("R", member)) in related or member in landing]
+        related, _landings = landing(slot.place)
+        return [member for member in members if kinds.get(("R", member)) in related]
+    types = _named_types(slot)
+    return [member for member in members if kinds.get(("R", member)) in types] if types else members
+
+
+def _named_types(slot) -> tuple[str, ...]:
+    """The R object types an argument slot names: declared, or its via field's; none means any R node."""
     if slot.via:
         record, field = slot.via.split(".", 1)
-        types = RECORDS.get(record, {}).get("fields", {}).get(field, {}).get("types")
-        return [member for member in members if kinds.get(("R", member)) in types] if types else members
-    if not slot.types:
-        return members
-    return [member for member in members if kinds.get(("R", member)) in slot.types]
+        return tuple(RECORDS.get(record, {}).get("fields", {}).get(field, {}).get("types") or ())
+    return tuple(slot.types)
 
 
 def _moved_cells(moves, before: View, after: View, p_classes, r_classes, kinds, landing, deadline: float,
-                 cells: dict[tuple[int, bool, int], list[int]]) -> bool:
+                 cells: dict[tuple[int, bool, int], list[int]], landed: list) -> bool:
     """Decide each moved element at its old place on the old side and its new place on the new side.
 
     Fills ``cells`` with ``(move, gained, r class or -1 for a fixed slot) -> P classes`` and says whether it finished.
+    The class nodes moved place slots land at follow ``r_classes`` as classes of their own, appended to ``landed``.
     """
     elements = [slot.element for _name, _was, slot in moves]
     old, new = _Side(before, elements), _Side(after, elements)
 
     def path(view, side, node):
+        # A class node one side's tree lacks can't be named there: no rows reach it.
+        if node.startswith("@") and node not in view.scheme.trees["R"].nodes:
+            return ()
         return tuple(found for found in view.scheme.trees["R"].element_path(node) if found in side.r_named)
 
     # A slot fixed on one side and an argument slot on the other (a release changed its kind)
@@ -371,6 +419,25 @@ def _moved_cells(moves, before: View, after: View, p_classes, r_classes, kinds, 
     reach = [sum(1 << position for position, (_name, was, slot) in enumerate(moves)
                  if arguments >> position & 1 and _typed(members, was if slot.resource else slot, kinds, landing))
              for _was, _now, members in r_classes]
+    # Class nodes are resources too: one per (old node, new node), for the argument sides that can name them.
+    every = {(node, node) for view in (before, after) for node in view.scheme.trees["R"].nodes}
+
+    def class_targets(side):
+        if side.resource:
+            return set()
+        if side.place:
+            return landing(side.place)[1]
+        return set() if _named_types(side) else every
+
+    lands: dict[tuple[str, str], int] = {}
+    for position, (_name, was, slot) in enumerate(moves):
+        if arguments >> position & 1:
+            for pair in class_targets(was) | class_targets(slot):
+                lands[pair] = lands.get(pair, 0) | 1 << position
+    for (was_node, now_node), bits in lands.items():
+        landed.append((path(before, old, was_node), path(after, new, now_node), [now_node]))
+        reach.append(bits)
+    classes = [*r_classes, *landed]
     checked = 0
     for p_index, (was, now, _members) in enumerate(p_classes):
         if time.monotonic() > deadline:
@@ -383,7 +450,7 @@ def _moved_cells(moves, before: View, after: View, p_classes, r_classes, kinds, 
         if not arguments:
             continue
         old_at, new_at = at_fixed(old_grants, old_fixed), at_fixed(new_grants, new_fixed)
-        for r_index, (r_was, r_now, _resources) in enumerate(r_classes):
+        for r_index, (r_was, r_now, _resources) in enumerate(classes):
             a = _allowed(old_grants, r_was) & ~old_mask | old_at
             b = _allowed(new_grants, r_now) & ~new_mask | new_at
             changed = (a ^ b) & reach[r_index]

@@ -19,6 +19,9 @@ NAMED_TYPES = ("user", "project")
 PERSONAL_SPACE = "personal_space"
 
 RESOURCE_TYPES = frozenset(get_resource_type_registry().types) | frozenset(NAMED_TYPES)
+# The types a new object may have: a place slot's argument names one of them (RegisterResource).
+REGISTERABLE_TYPES = frozenset(kind for kind, declaration in get_resource_type_registry().declarations.items()
+                               if declaration.get("registerable"))
 
 OBJECT_TYPES = {
     # Principals are Users and Residents; Projects and Lineages group Residents.
