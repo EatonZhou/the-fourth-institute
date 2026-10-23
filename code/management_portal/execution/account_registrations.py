@@ -17,7 +17,7 @@ from management_portal.model_api_store import now
 
 PROVIDER_KINDS = {
     "codex": ("subscription_login", "api_profile"), "claude": ("subscription_login", "api_profile"),
-    "kimi": ("service",), "dsh": ("api_profile",),
+    "kimi": ("service", "api_profile"), "dsh": ("api_profile",),
     "opencode": ("service", "api_profile"), "provider_api": ("api_profile",),
 }
 IDENTIFIER = re.compile(r"^[a-z][a-z0-9_-]{0,127}$")
@@ -116,7 +116,8 @@ def _validate(data):
 
 def create_registration(data, actor):
     data = dict(data)
-    if not data.get("route_id") and data.get("provider") not in {"provider_api", "kimi"}:
+    if not data.get("route_id") and data.get("provider") != "provider_api" and not (
+            data.get("provider") == "kimi" and data.get("kind") == "service"):
         data["route_id"] = str(data.get("account_id") or "").removeprefix("codex_") if data.get("provider") == "codex" else data.get("account_id", "")
     _validate(data)
     with database().transaction("registrations") as c:

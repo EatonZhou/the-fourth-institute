@@ -289,7 +289,8 @@ class KimiOptions(NativeOptions):
     default_permission_preset = "full-access"
 
     def defaults(self, definition, record):
-        return super().defaults(definition, {**record, "model": record.get("model") or definition.catalog("")["default_model"]})
+        return super().defaults(definition, {**record, "model": record.get("model") or definition.catalog(
+            record.get("backend_route_id") or "")["default_model"]})
 
     def prepare(self, invocation):
         options = dict(invocation.request.runtime_options)
@@ -302,8 +303,9 @@ class KimiOptions(NativeOptions):
         from .provider_catalog import AGENT_PROVIDERS
         if not AGENT_PROVIDERS["kimi"].allows_subagents(options):
             tools = [tool for tool in tools if tool not in KIMI_SUBAGENT_TOOLS]
-        model, _ = AGENT_PROVIDERS["kimi"].validate_settings("", settings.get("model", ""), "")
-        options.update(model=model, permission_mode=self.native_permission_mode(settings),
+        route = invocation.session.backend_route_id or options.get("provider_profile") or ""
+        model, _ = AGENT_PROVIDERS["kimi"].validate_settings(route, settings.get("model", ""), "")
+        options.update(model=model, provider_profile=route, permission_mode=self.native_permission_mode(settings),
                        tools=list(tools))
         return replace(invocation, request=replace(invocation.request, runtime_options=options))
 

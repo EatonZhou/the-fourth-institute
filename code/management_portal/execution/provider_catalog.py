@@ -251,7 +251,7 @@ AGENT_PROVIDERS = {
                       # Claude Code starts turns by itself (task notifications, messages).
                       self_started_usage="management_portal.execution.unattributed_usage.record_self_started_claude_usage"),
         AgentProvider("kimi", "Kimi Code", frozenset({"create", "turn", "fork", "compact", "release"}),
-                      ("model", "permissions"), media=True, adapter="KimiBackend", account_adapter="KimiAccounts", options_adapter="KimiOptions", accepts_routes=False,
+                      ("model", "permissions"), media=True, adapter="KimiBackend", account_adapter="KimiAccounts", options_adapter="KimiOptions", api_protocol="openai_chat",
                       # Kimi Code steers a prompt queued during a turn into the running one.
                       active_turn_input=True,
                       # The Kimi Code server runs the prompt; a Worker only follows it.
@@ -274,7 +274,7 @@ AGENT_PROVIDERS = {
                       # A subagent is an agent of its own, which the bridge cancels alone.
                       harness=frozenset({CONTEXT_USAGE_EVENTS, PORTAL_TOOLS, NATIVE_TOOL_EVENTS, AUTO_COMPACT_THRESHOLD, ERROR_CONTINUATION,
                                          SUBAGENTS, SUBAGENT_EVENTS, SUBAGENT_STOP}),
-                      subagents_by_default=True, upstream="deepseek",
+                      subagents_by_default=True, upstream="deepseek", api_protocol="anthropic_messages",
                       credential_paths_provider="management_portal.dsh_client.credential_paths",
                       system_context_every_turn=True,
                       system_instructions_place="每轮完整替换运行时系统提示", runtime_updater="DshRuntime"),

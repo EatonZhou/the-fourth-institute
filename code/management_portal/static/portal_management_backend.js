@@ -547,8 +547,8 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
           ...(secret.value ? {secret: secret.value} : {}), ...(path.value.trim() ? {secret_file: path.value.trim()} : {}),
           ...(anthropicUrl.value.trim() ? {anthropic_base_url: anthropicUrl.value.trim()} : {})};
         const {results} = await execute("ProbeModelApi", args);
-        probeResults.replaceChildren(...[["openai_chat", "Chat Completions（OpenCode、直连）"], ["openai_responses", "OpenAI Responses（Codex）"],
-          ["anthropic_messages", "Anthropic Messages（Claude Code）"]].map(([name, label]) => {
+        probeResults.replaceChildren(...[["openai_chat", "Chat Completions（OpenCode、Kimi Code、直连）"], ["openai_responses", "OpenAI Responses（Codex）"],
+          ["anthropic_messages", "Anthropic Messages（Claude Code、DeepSeek Harness）"]].map(([name, label]) => {
           const result = results[name] || {};
           const detail = [result.http_status ? `HTTP ${result.http_status}` : "", result.message ? t(result.message) : ""].filter(Boolean).join(" · ");
           return node("li", `${t(label)}：${t(probeStates[result.status] || result.status || "—")}${detail ? `（${detail}）` : ""}`,
@@ -572,16 +572,21 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     const register = canCreateAccount ? field(options, "同时添加为 AI 账号，继续接入与测试", "register_account", "", {type: "checkbox"}) : null;
     if (register) { register.checked = true; hint(register, "用于 Resident 对话。保存后选择模型并测试，可设为默认 AI；直连模型 API 不提供工具执行。测试会发起模型调用，可能产生费用。"); }
     const harness = register ? select(form, "Agent 运行器", "harness", []) : null;
-    if (harness) hint(harness, "Codex、Claude Code、OpenCode 能执行命令、编辑文件和使用工具，需要接口支持对应协议（在高级设置中勾选）；直连只对话。");
+    if (harness) hint(harness, "Agent 运行器能执行命令、编辑文件和使用工具；请在高级设置中声明或测试接口支持的协议。直连只对话。模型还需支持工具调用。");
     const renderHarnesses = () => {
       if (!harness) return;
       const protocols = new Set(["openai_chat", ...(responses.checked ? ["openai_responses"] : []),
         ...(anthropic.checked ? ["anthropic_messages"] : [])]);
       const previous = harness.value;
       harness.replaceChildren(node("option", t("直连模型（只对话，不执行工具）"), {value: "provider_api"}),
-        ...state.providers.filter(p => p.api_protocol && p.kinds.includes("api_profile") && protocols.has(p.api_protocol))
-          .map(p => node("option", p.title || p.provider, {value: p.provider})));
-      harness.value = [...harness.options].some(option => option.value === previous) ? previous : "provider_api";
+        ...state.providers.filter(p => p.api_protocol && p.kinds.includes("api_profile"))
+          .map(p => {
+            const supported = protocols.has(p.api_protocol);
+            const protocol = {openai_chat: "Chat Completions", openai_responses: "OpenAI Responses", anthropic_messages: "Anthropic Messages"}[p.api_protocol] || p.api_protocol;
+            return node("option", (p.title || p.provider) + (supported ? "" : ` — ${t("需要协议")} ${protocol}`),
+              {value: p.provider, disabled: !supported});
+          }));
+      harness.value = [...harness.options].some(option => option.value === previous && !option.disabled) ? previous : "provider_api";
     };
     renderHarnesses();
     responses.addEventListener("change", renderHarnesses);

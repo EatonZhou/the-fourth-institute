@@ -25,7 +25,8 @@ from .kimi_code_server import DEFAULT_MODEL, DEFAULT_HOME
 
 
 def credential_paths() -> tuple[Path, ...]:
-    return (Path(os.getenv("PORTAL_KIMI_CODE_HOME", str(DEFAULT_HOME))).expanduser(),)
+    from .kimi_account_runtime import root
+    return (Path(os.getenv("PORTAL_KIMI_CODE_HOME", str(DEFAULT_HOME))).expanduser(), root())
 
 
 class KimiCodeError(RuntimeError):
@@ -121,11 +122,12 @@ class KimiCodeClient:
         base_url: str = DEFAULT_BASE_URL,
         poll_seconds: float = DEFAULT_POLL_SECONDS,
         events_root: str | Path | None = None,
+        home: str | Path | None = None,
     ) -> None:
         self.base_url = str(base_url or DEFAULT_BASE_URL).rstrip("/")
         self.poll_seconds = max(0.2, float(poll_seconds or DEFAULT_POLL_SECONDS))
-        home = Path(os.getenv("PORTAL_KIMI_CODE_HOME", str(DEFAULT_HOME))).expanduser()
-        self.events_root = Path(events_root).expanduser() if events_root is not None else home / "server" / "events"
+        self.home = Path(home or os.getenv("PORTAL_KIMI_CODE_HOME", str(DEFAULT_HOME))).expanduser()
+        self.events_root = Path(events_root).expanduser() if events_root is not None else self.home / "server" / "events"
 
     def _request(
         self,
@@ -310,7 +312,7 @@ class KimiCodeClient:
         **options,
     ) -> dict[str, Any]:
         from .execution.native_session_compaction import kimi_wire_path, read_kimi_latest_compaction
-        path = kimi_wire_path(credential_paths()[0], session_id)
+        path = kimi_wire_path(self.home, session_id)
         before = read_kimi_latest_compaction(path) if path else None
 
         def check_control() -> None:
@@ -342,7 +344,7 @@ class KimiCodeClient:
                 idle_samples += 1
             if idle_samples < 2:
                 time.sleep(self.poll_seconds)
-        path = kimi_wire_path(credential_paths()[0], session_id)
+        path = kimi_wire_path(self.home, session_id)
         after = read_kimi_latest_compaction(path) if path else None
         compacted = after is not None and (before is None or before.ref != after.ref)
         return {"session_id": session_id, "compacted": compacted,

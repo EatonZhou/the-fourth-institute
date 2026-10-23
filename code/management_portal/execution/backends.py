@@ -3665,6 +3665,14 @@ class KimiBackend(NativeSocketBackend):
     provider_id = "kimi"
     scopes_item_ids = False
 
+    def __init__(self, client=None):
+        self._account_client = client
+        if client is not None:
+            self.client_factory = lambda: client
+
+    def account_home(self):
+        return self._account_client.home if self._account_client is not None else _kimi_home()
+
     @staticmethod
     def client_factory():
         return shared_kimi_client()
@@ -3675,6 +3683,14 @@ class KimiBackend(NativeSocketBackend):
 
     def execute(self, invocation, context):
         request, session = invocation.request, invocation.session
+        route = str(request.runtime_options.get("provider_profile") or session.backend_route_id or "")
+        if session.backend_route_id and session.backend_route_id != route:
+            raise ValueError("Provider route changes require a session migration")
+        if route and self._account_client is None:
+            from management_portal.kimi_account_runtime import client_for_route, remember_session
+            result = KimiBackend(client_for_route(route)).execute(invocation, context)
+            remember_session(result.backend_session_id, route)
+            return result
         if not session.backend_session_id and request.operation in {"create", "turn"}:
             options = request.runtime_options
             created = self.client_factory().create_session(
@@ -3687,16 +3703,34 @@ class KimiBackend(NativeSocketBackend):
             session_id = str(created.get("id") or "")
             if not session_id:
                 raise RuntimeError("Kimi session creation returned no session id")
+            if route:
+                from management_portal.kimi_account_runtime import remember_session
+                remember_session(session_id, route)
             session = replace(session, backend_session_id=session_id)
             invocation = replace(invocation, session=session)
         if request.operation == "create":
             context.set_interrupt_target(session.backend_session_id)
             return BackendResult(output={"message": "", "provider": self.provider_id, "operation": "create"},
-                                 backend_session_id=session.backend_session_id)
+                                 backend_session_id=session.backend_session_id, backend_route_id=route)
         return super().execute(invocation, context)
 
+    def deliver_turn_input(self, **kwargs):
+        if self._account_client is None:
+            from management_portal.kimi_account_runtime import client_for_route, session_route
+            route = session_route(kwargs["session_id"])
+            if route:
+                return KimiBackend(client_for_route(route, for_control=True)).deliver_turn_input(**kwargs)
+        return super().deliver_turn_input(**kwargs)
+
+    def interrupt(self, **kwargs):
+        route = kwargs["backend_route_id"] or kwargs["runtime_options"].get("provider_profile")
+        if route and self._account_client is None:
+            from management_portal.kimi_account_runtime import client_for_route
+            return KimiBackend(client_for_route(route, for_control=True)).interrupt(**kwargs)
+        return super().interrupt(**kwargs)
+
     def prepare_turn_tools(self, invocation, context):
-        return self.offer_portal_tools(invocation, context)
+        return self.offer_portal_tools(invocation, context, home=self.account_home())
 
     def turn_scope(self, session_id, catalog, dispatch):
         return KimiToolGateway(session_id, dispatch if catalog else None)
@@ -3708,7 +3742,7 @@ class KimiBackend(NativeSocketBackend):
         profile = {"tools": tools, "permission_mode": str(options.get("permission_mode") or invocation.request.permission_profile),
                    "model": str(options.get("model") or "")}
         disabled = self.settle_portal_tools(invocation.session.backend_session_id, catalog,
-                                           profile=profile, cancelled=context.is_cancelled)
+                                           profile=profile, cancelled=context.is_cancelled, client=self.client_factory())
         if not AGENT_PROVIDERS[self.provider_id].allows_subagents(dict(options)):
             disabled += sorted(KIMI_SUBAGENT_TOOLS)
         return {"native_tools": tools, "disabled_tools": disabled, "cancelled": context.is_cancelled,
@@ -3728,10 +3762,11 @@ class KimiBackend(NativeSocketBackend):
             raise ExecutionRecoveryDeferred("Worker handover: Kimi compaction keeps running") from exc
 
     def latest_compaction(self, session_id, config_dir):
-        return kimi_latest_compaction(session_id)
+        path = kimi_wire_path(self.account_home(), session_id)
+        return read_kimi_latest_compaction(path) if path else None
 
     def read_turn_usage(self, session_id, config_dir, since):
-        path = _kimi_wire(session_id)
+        path = kimi_wire_path(self.account_home(), session_id)
         observed = read_kimi_turn_usage(path, since_ms=epoch_ms(since)) if path else None
         if observed is None:
             return None
@@ -3745,6 +3780,7 @@ class KimiBackend(NativeSocketBackend):
     def offer_portal_tools(
         invocation: BackendInvocation,
         context: BackendContext,
+        *, home=None,
     ) -> tuple[list[dict[str, Any]], Callable[[dict[str, Any]], dict[str, Any]] | None]:
         """List this turn's Portal tools in the catalog Kimi Code reads.
 
@@ -3757,14 +3793,15 @@ class KimiBackend(NativeSocketBackend):
 
         if not getattr(invocation, "harness_tools", ()):
             return [], None
-        if not kimi_portal_tools.service_ready(_kimi_home()):
+        home = home if home is not None else _kimi_home()
+        if not kimi_portal_tools.service_ready(home):
             # Without the hook Portal cannot tell which session makes a call.
             LOGGER.warning("The Kimi Code service runs without Portal's tool server and hook; restart it to offer Portal tools")
             return [], None
         try:
             catalog, dispatch = prepare_tools(invocation, context)
             # Kimi Code connects again, and lists the tools again, when the catalog grew.
-            publish_catalog(catalog, _kimi_home())
+            publish_catalog(catalog, home)
         except Exception:  # noqa: BLE001 - Portal tools are an addition to the turn
             LOGGER.warning("Portal tools could not be offered to Kimi Code", exc_info=True)
             return [], None
@@ -3777,6 +3814,7 @@ class KimiBackend(NativeSocketBackend):
         *,
         profile: dict[str, Any],
         cancelled: Callable[[], bool],
+        client=None,
     ) -> list[str]:
         """The tools to switch off for the session's next prompt.
 
@@ -3789,7 +3827,7 @@ class KimiBackend(NativeSocketBackend):
         prefix = kimi_portal_tools.TOOL_NAME_PREFIX
         everything = [f"{prefix}*"]
         wanted = {f"{prefix}{tool['name']}" for tool in catalog}
-        client = shared_kimi_client()
+        client = client if client is not None else shared_kimi_client()
         try:
             # A session is listed with its tools only once Kimi Code has loaded it.
             client.update_session_profile(session_id, **profile)

@@ -351,19 +351,22 @@ class KimiAccounts:
         from management_portal.kimi_code_server import provider_profile_id
         profile = provider_profile_id()
         return tuple(ExecutionAccount(row["account_id"], self.provider, row["route_id"], f"account:{row['account_id']}",
-                                      row["max_concurrency"], billing_account_id=profile) for row in self.entries)
+                                      row["max_concurrency"], billing_account_id=row["config"].get("api_id", profile),
+                                      kind=row["kind"]) for row in self.entries)
 
     def resolve(self, route_id, options, *, bound=False):
-        # The single Kimi account has no route; callers may also name it by
-        # the account ID that the account list shows.
-        account = self.accounts()[0]
-        if route_id and route_id != account.account_id:
-            raise ValueError("Unknown Kimi account route")
-        return account
+        route_id = route_id or str(options.get("provider_profile") or "")
+        for account in self.accounts():
+            if route_id in {account.account_id, account.route_id}:
+                return account
+        raise ValueError("Unknown Kimi account route")
+
+    def route_options(self, account, options):
+        return {**options, "provider_profile": account.route_id}
 
     def catalog(self, account):
-        from management_portal.kimi_code_server import model_catalog
-        return model_catalog()
+        from management_portal.kimi_provider_catalog import catalog
+        return catalog(next(row for row in self.entries if row["account_id"] == account.account_id))
 
     def observe(self, account, *, force=False):
         return {"status": "ok", "rate_limits": []}

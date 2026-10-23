@@ -549,6 +549,9 @@ def delete_provider_account(inv):
     store.require_no_role_references(row["account_id"])
     if row["provider"] == "codex":
         host.remove_codex_instance(row["account_id"])
+    if row["provider"] == "kimi":
+        from management_portal.kimi_account_runtime import remove_account
+        remove_account(row)
     delete_login_data(row["account_id"])
     # A Codex API account's home holds its key in auth.json.
     if row["kind"] == "subscription_login" or row["provider"] == "codex":

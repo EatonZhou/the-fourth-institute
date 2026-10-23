@@ -140,10 +140,11 @@ class DshClient:
             row = dsh_provider_catalog.profile(params["provider_profile"])
             credential = shared_ai_provider_registry.read_secret(shared_ai_provider_registry.secret_path(row))
             env, identity = resident_process_environment(params)
-            base_url = shared_ai_provider_registry.base_url(row, protocol="anthropic")
+            base_url, auth = shared_ai_provider_registry.harness_endpoint(row, "anthropic_messages")
             # Web search is a request of its own to the route's Messages endpoint, with the route's key.
             env.update(DSH_HOME=str(root), DEEPSEEK_API_KEY=credential, DEEPSEEK_BASE_URL=base_url,
-                       DEEPSEEK_SEARCH_BASE_URL=base_url + "/v1")
+                       DEEPSEEK_SEARCH_BASE_URL=base_url + "/v1",
+                       PORTAL_DSH_API_HEADERS=json.dumps(row.get("default_headers") or {}))
             profile = root / "profiles" / "portal-resident"
             profile.mkdir(parents=True, exist_ok=True)
             (profile / "package.json").write_text(json.dumps({"name": "portal-resident", "private": True,
@@ -153,6 +154,7 @@ class DshClient:
             bridge = profile / "bridge.mjs"
             shutil.copyfile(Path(__file__).parent / "dsh_runtime/bridge.mjs", bridge)
             shutil.copyfile(Path(__file__).parent / "dsh_runtime/request_timing.mjs", profile / "request_timing.mjs")
+            shutil.copyfile(Path(__file__).parent / "dsh_runtime/api_provider.mjs", profile / "api_provider.mjs")
             ipc_module = Path(__file__).resolve().parents[1] / "management_common/local_ipc.cjs"
             (profile / "local_ipc.cjs").write_text("module.exports = require(" + json.dumps(str(ipc_module)) + ");\n", encoding="utf-8")
             rows = []
@@ -161,7 +163,17 @@ class DshClient:
             for name in ("cordis-plugin-timer", "dsh-llm", "dsh-session", "dsh-session-projection", "dsh-tools", "dsh-agent"):
                 plugin(name)
             plugin("dsh-system-prompt", {"includeHarnessIdentity": False, "includeRuntimeContext": False})
-            plugin("dsh-llm-deepseek-api-key", {"apiKeyEnv": "DEEPSEEK_API_KEY", "streamIdleTimeoutMs": 360000})
+            models = []
+            for model in shared_ai_provider_registry.harness_models(row):
+                declared = shared_ai_provider_registry.model_entry(row, model)
+                entry = {"id": model}
+                if declared.get("context_window"):
+                    entry["contextWindow"] = int(declared["context_window"])
+                if declared.get("max_output_tokens"):
+                    entry["maxTokens"] = int(declared["max_output_tokens"])
+                models.append(entry)
+            rows.append({"id": "portal-api", "name": str(profile / "api_provider.mjs"), "config": {
+                "baseURL": base_url, "auth": auth, "models": models, "streamIdleTimeoutMs": 360000}})
             plugin("dsh-session-persistence-jsonl", {"root": str(root / "sessions"), "compression": "none"})
             # Without a compaction backend a DSH session only grows until the
             # model refuses it.  The ratio is fixed when the process starts.
@@ -174,6 +186,7 @@ class DshClient:
             subagents = params.get("allow_subagents") is not False
             (root / "launch.json").write_text(json.dumps({"threshold_ratio": ratio, "subagents": subagents}))
             plugin("dsh-session-checkpoint-policy")
+            plugin("dsh-working-directory", {"defaultDirectory": params["cwd"]})
             plugin("dsh-sandbox-local")
             plugin("dsh-sandbox-policy", {"mode": "danger-full-access", "workspaceRoot": params["cwd"]})
             plugin("dsh-subprocess-local")
@@ -186,10 +199,12 @@ class DshClient:
             # files: file search, a todo list, web search and fetch.
             plugin("dsh-tool-fs-search", {"sampleOverCapGlobResults": False})
             plugin("dsh-tool-todo", {"allowParallelInProgress": True})
-            plugin("dsh-web", {"searchProvider": "deepseek-official", "fetchProvider": "http"})
-            plugin("dsh-web-search-deepseek", {"apiKeyEnv": "DEEPSEEK_API_KEY"})
+            deepseek_search = row.get("provider") == "deepseek"
+            plugin("dsh-web", {"fetchProvider": "http", **({"searchProvider": "deepseek-official"} if deepseek_search else {})})
+            if deepseek_search:
+                plugin("dsh-web-search-deepseek", {"apiKeyEnv": "DEEPSEEK_API_KEY"})
             plugin("dsh-web-fetch-http")
-            plugin("dsh-tool-web", {"fetch": True, "searchTimeoutMs": 180000})
+            plugin("dsh-tool-web", {"fetch": True, "search": deepseek_search, "searchTimeoutMs": 180000})
             if subagents:
                 plugin("dsh-subagent")
                 plugin("dsh-subagent-spawn-in-process", {"providerName": "spawn"})

@@ -88,7 +88,9 @@ def _launch(monkeypatch, tmp_path, params: dict) -> tuple[dict, dict, dict]:
     monkeypatch.setattr(dsh_client, "RUNTIME", runtime)
     monkeypatch.setattr(dsh_client, "STATE", tmp_path / "state")
     monkeypatch.setattr(dsh_client, "SOCKETS", tmp_path / "sockets")
-    monkeypatch.setattr(dsh_client.dsh_provider_catalog, "profile", lambda route: {"base_url": "https://api.deepseek.com"})
+    monkeypatch.setattr(dsh_client.dsh_provider_catalog, "profile", lambda route: {
+        "base_url": "https://api.deepseek.com", "provider": "deepseek", "kind": "openai_compatible_chat",
+        "default_model": "deepseek-v4-flash"})
     monkeypatch.setattr(dsh_client.shared_ai_provider_registry, "secret_path", lambda row: str(key))
     launched = {}
 
@@ -121,6 +123,7 @@ def test_a_dsh_session_has_the_file_search_todo_and_web_tools_of_the_other_provi
     # Portal composes DSH's plugins itself; with the shell and file tools alone
     # its model had no file search, todo list or web, which every other Provider's has.
     plugins, launched, _ = _launch(monkeypatch, tmp_path, {})
+    assert plugins["dsh-working-directory"]["config"]["defaultDirectory"] == str(tmp_path)
     assert {"dsh-tool-fs-search", "dsh-tool-todo", "dsh-tool-web", "dsh-web-search-deepseek", "dsh-web-fetch-http"} <= set(plugins)
     assert list(plugins).index("dsh-web") < list(plugins).index("dsh-tool-web")
     # A search is a request to the route's own endpoint, with the route's key.
@@ -183,6 +186,7 @@ def test_catalogs_use_common_account_adapter_without_exposing_secrets(monkeypatc
     assert not {"api_key", "api_key_file", "api_key_env"} & result.keys()
 
 
+@pytest.mark.empty_execution_registrations
 def test_the_dsh_route_uses_its_explicit_api_and_never_falls_back():
     """dsh 路线只用显式绑定的模型 API，停用或解绑后不回退到其他 API"""
     from management_portal import dsh_provider_catalog

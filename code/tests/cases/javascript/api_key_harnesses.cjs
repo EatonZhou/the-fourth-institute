@@ -17,7 +17,8 @@ window.PortalInstructionClient = {execute: async (name, args) => {
       {provider: 'codex', title: 'Codex', kinds: ['subscription_login', 'api_profile'], api_protocol: 'openai_responses'},
       {provider: 'claude', title: 'Claude Code', kinds: ['subscription_login', 'api_profile'], api_protocol: 'anthropic_messages'},
       {provider: 'opencode', title: 'OpenCode', kinds: ['service', 'api_profile'], api_protocol: 'openai_chat'},
-      {provider: 'dsh', title: 'DeepSeek Harness', kinds: ['api_profile'], api_protocol: ''},
+      {provider: 'kimi', title: 'Kimi Code', kinds: ['service', 'api_profile'], api_protocol: 'openai_chat'},
+      {provider: 'dsh', title: 'DeepSeek Harness', kinds: ['api_profile'], api_protocol: 'anthropic_messages'},
       {provider: 'provider_api', title: 'Model API', kinds: ['api_profile'], api_protocol: ''}]};
     case 'ListProviderAccounts': return {accounts: []};
     case 'ListBackendRoles': return {roles: []};
@@ -44,6 +45,7 @@ const click = text => {const b = [...window.document.querySelectorAll('button')]
 const submit = form => form.dispatchEvent(new window.Event('submit', {bubbles: true, cancelable: true}));
 const toggle = input => { input.checked = !input.checked; input.dispatchEvent(new window.Event('change')); };
 const choices = select => [...select.options].map(option => option.value);
+const enabledChoices = select => [...select.options].filter(option => !option.disabled).map(option => option.value);
 const last = name => calls.filter(c => c.name === name).at(-1).args;
 (async () => {
   const panel = await context.mount(window.document.querySelector('main'), {me: {access: {permission_system: 'open'}}});
@@ -51,12 +53,18 @@ const last = name => calls.filter(c => c.name === name).at(-1).args;
   let form = window.document.querySelector('dialog form');
   form.elements.api_id.value = 'gateway'; form.elements.base_url.value = 'https://gateway.invalid/v1';
   form.elements.default_model.value = 'gpt-test';
-  // Chat Completions alone admits direct calls and OpenCode.
-  assert.deepEqual(choices(form.elements.harness), ['provider_api', 'opencode']);
+  // Unsupported runners stay visible with the missing protocol explained.
+  assert.deepEqual(enabledChoices(form.elements.harness), ['provider_api', 'opencode', 'kimi']);
+  assert.match([...form.elements.harness.options].find(x => x.value === 'dsh').textContent, /Anthropic Messages/);
   assert.equal(form.elements.harness.value, 'provider_api', 'direct calls stay the default');
   assert(form.elements.anthropic_base_url.parentElement.hidden);
   toggle(form.elements.protocol_openai_responses);
-  assert.deepEqual(choices(form.elements.harness), ['provider_api', 'codex', 'opencode']);
+  assert.deepEqual(enabledChoices(form.elements.harness), ['provider_api', 'codex', 'opencode', 'kimi']);
+  toggle(form.elements.protocol_anthropic_messages);
+  assert.deepEqual(enabledChoices(form.elements.harness), ['provider_api', 'codex', 'claude', 'opencode', 'kimi', 'dsh']);
+  form.elements.harness.value = 'dsh';
+  toggle(form.elements.protocol_anthropic_messages);
+  assert.equal(form.elements.harness.value, 'provider_api', 'removing a protocol clears the incompatible selection');
   form.elements.harness.value = 'codex';
   submit(form); await flush();
   assert.deepEqual(last('CreateModelApi').protocols, {openai_responses: {}});
