@@ -145,6 +145,8 @@
       onReady: config.onReady,
       onFallback: config.onFallback,
       onError: config.onError,
+      loadingMessage: String(config.loadingMessage || ""),
+      errorMessage: String(config.errorMessage || ""),
     };
     cancel(root);
     const active = {
@@ -165,7 +167,7 @@
     activeByRoot.set(root, active);
     root.style.overflowAnchor = "none";
     root.dataset.pdfStatus = "loading";
-    root.innerHTML = window.PortalI18n.html`<div class="${escapeHtml(options.statusClass)}" data-portal-pdf-status>Loading PDF…</div>`;
+    root.innerHTML = window.PortalI18n.html`<div class="${escapeHtml(options.statusClass)}" data-portal-pdf-status>${escapeHtml(options.loadingMessage || window.PortalI18n.t("Loading PDF…"))}</div>`;
 
     const promise = (async () => {
       if (!url) throw new Error("PDF URL is required");
@@ -393,7 +395,12 @@
       return pdf;
     })().catch(error => {
       if (active.cancelled) return null;
-      iframeFallback(root, options, `PDF.js could not load this PDF: ${error?.message || error}`);
+      if (options.errorMessage) {
+        root.dataset.pdfStatus = "error";
+        root.innerHTML = window.PortalI18n.html`<div class="${escapeHtml(options.statusClass)}" role="alert">${escapeHtml(options.errorMessage)}</div>`;
+      } else {
+        iframeFallback(root, options, `PDF.js could not load this PDF: ${error?.message || error}`);
+      }
       options.onError?.(error);
       return null;
     });

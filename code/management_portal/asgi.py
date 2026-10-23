@@ -19,7 +19,7 @@ from starlette.applications import Starlette
 from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException
 from starlette.requests import Request
-from starlette.responses import JSONResponse, PlainTextResponse, RedirectResponse, Response, StreamingResponse
+from starlette.responses import FileResponse, JSONResponse, PlainTextResponse, RedirectResponse, Response, StreamingResponse
 from starlette.routing import Route
 
 from . import serve_management_portal as portal
@@ -562,6 +562,17 @@ async def upload_content(request: Request):
         return JSONResponse(payload, status_code=status)
     if not meta.get("ready") or not await asyncio.to_thread(_upload_readable, meta, caller):
         return _json_error(404, "上传不存在")
+    if request.query_params.get("preview") == "pdf" and request.query_params.get("download") != "1":
+        from .presentation_preview import presentation_pdf, read_presentation, PresentationPreviewError
+        try:
+            data = await asyncio.to_thread(read_presentation, Path(str(meta.get("path") or "")))
+            converted = await asyncio.to_thread(presentation_pdf, data, str(meta.get("file_name") or ""))
+            return FileResponse(converted, media_type="application/pdf",
+                                headers={"Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff"})
+        except PresentationPreviewError as exc:
+            return _json_error(422, str(exc))
+        except OSError:
+            return _json_error(404, "上传不存在")
     try:
         data = await asyncio.to_thread(Path(str(meta.get("path") or "")).read_bytes)
     except OSError:

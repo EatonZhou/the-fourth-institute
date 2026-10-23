@@ -145,6 +145,12 @@ class ResourceHttp:
             return self.respond(request, 400, {'error': 'address required'})
         try:
             resource_service = self.resource_service()
+            if not download and (qs.get('preview') or [''])[0] == 'pdf':
+                from .presentation_preview import MAX_SOURCE_BYTES, presentation_pdf
+                data, _media_type, resolved = resource_service.read_content(
+                    address, actor=actor, max_bytes=MAX_SOURCE_BYTES)
+                converted = presentation_pdf(data, resolved.get('filename') or address)
+                return self.media_file(request, converted, 'application/pdf')
             opened = resource_service.open_content(address, actor=actor)
             if isinstance(opened, tuple):
                 data, content_type, content_resolution = opened

@@ -73,12 +73,35 @@
 
   function normalizeKind(document = {}) {
     const explicit = String(document.contentKind || document.kind || "").trim().toLowerCase();
+    // File metadata uses binary for unparsed Office containers, not a format decision.
+    if ((!explicit || explicit === "binary") && isPresentation(document)) return "office";
     if (explicit === "directory" || explicit === "remote-link" || explicit === "office" || explicit === "binary") return explicit;
     if (["xml", "yaml", "yml"].includes(explicit)) return "code";
     if (mediaKinds.has(explicit) || textKinds.has(explicit)) return explicit;
     return kindFromMediaType(document.mediaType || document.mime_type || document.content_type)
       || kindFromPath(document.path || document.rel_path || document.rawUrl || document.raw_url)
       || (document.binary ? "binary" : "text");
+  }
+
+  function isPresentation(document = {}) {
+    const mediaType = String(document.mediaType || document.mime_type || document.content_type || "").split(";", 1)[0].trim().toLowerCase();
+    return ["application/vnd.ms-powerpoint", "application/vnd.openxmlformats-officedocument.presentationml.presentation"].includes(mediaType)
+      || [document.filename, document.name, document.path, document.rel_path, document.title].some(value => [".ppt", ".pptx"].includes(extension(value)));
+  }
+
+  function presentationUrl(input) {
+    if (!isPresentation(input)) return "";
+    const raw = input.rawUrl || input.raw_url || input.content_url;
+    if (!raw) return "";
+    let url;
+    try { url = new URL(raw, window.location.href); } catch (_error) { return ""; }
+    if (url.origin !== window.location.origin || !(
+      ["/api/resources/content", "/api/agent-workbench/link-file-raw"].includes(url.pathname)
+      || /^\/api\/uploads\/upload_[a-f0-9]+$/.test(url.pathname)
+    )) return "";
+    url.searchParams.delete("download");
+    url.searchParams.set("preview", "pdf");
+    return url.pathname + url.search;
   }
 
   function normalizeDocument(input = {}) {
@@ -115,7 +138,7 @@
       kind: contentKind,
       content: input.content == null ? "" : String(input.content),
       rawUrl: String(input.rawUrl || input.raw_url || "").trim(),
-      previewUrl: String(input.previewUrl || input.preview_url || "").trim(),
+      previewUrl: String(input.previewUrl || input.preview_url || (contentKind === "office" ? presentationUrl(input) : "")).trim(),
       downloadUrl: String(input.downloadUrl || input.download_url || "").trim(),
       version: String(input.version || input.etag || input.mtime_ns || input.entry?.mtime_ns || input.entry?.mtime || ""),
       capabilities,
@@ -166,6 +189,7 @@
     hasFileShape,
     kindFromPath,
     isTextDocument,
+    isPresentation,
     normalizeDocument,
     normalizeKind,
     normalizeRequest,

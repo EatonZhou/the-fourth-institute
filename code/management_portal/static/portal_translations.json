@@ -1,4 +1,12 @@
 {
+  "正在转换演示文稿，首次打开可能需要一些时间…": {
+    "zh-CN": "正在转换演示文稿，首次打开可能需要一些时间…",
+    "en": "Preparing presentation preview. The first conversion may take a moment…"
+  },
+  "演示文稿预览失败，请稍后重试或下载原文件查看。": {
+    "zh-CN": "演示文稿预览失败，请稍后重试或下载原文件查看。",
+    "en": "Presentation preview failed. Try again later or download the original file."
+  },
   "运行环境正在更新，完成后将自动继续。": {
     "zh-CN": "运行环境正在更新，完成后将自动继续。",
     "en": "The runtime is being updated. Setup will continue automatically."
