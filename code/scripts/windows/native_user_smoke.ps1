@@ -30,6 +30,22 @@ try {
         Set-Content (Join-Path $evidencePath 'task-service.json') -Encoding utf8
     Add-LocalGroupMember -SID 'S-1-5-32-545' -Member $user
     $sid = $user.SID.Value
+    # A new ordinary user on the Actions image does not have batch-logon rights
+    # (Task Scheduler event 104 / ERROR_LOGON_TYPE_NOT_GRANTED). Grant only that
+    # right to this disposable user, preserving the existing policy subjects.
+    $policy = Join-Path $fixture 'existing-rights.inf'
+    & secedit /export /cfg $policy /areas USER_RIGHTS /quiet
+    if ($LASTEXITCODE -ne 0) { throw 'Cannot read disposable VM logon policy' }
+    $batchLine = Get-Content $policy | Where-Object { $_ -match '^SeBatchLogonRight\s*=' } | Select-Object -First 1
+    $subjects = @()
+    if ($batchLine) { $subjects = @(($batchLine -split '=', 2)[1].Trim() -split ',' | Where-Object { $_ }) }
+    $subjects = @($subjects + "*$sid" | Select-Object -Unique)
+    $grant = Join-Path $fixture 'batch-logon.inf'
+    @('[Unicode]', 'Unicode=yes', '[Version]', 'signature="$CHICAGO$"', 'Revision=1',
+        '[Privilege Rights]', ('SeBatchLogonRight = ' + ($subjects -join ','))) |
+        Set-Content $grant -Encoding unicode
+    & secedit /configure /db (Join-Path $fixture 'batch-logon.sdb') /cfg $grant /areas USER_RIGHTS /quiet
+    if ($LASTEXITCODE -ne 0) { throw 'Cannot grant batch logon to the disposable standard user' }
     & icacls $fixture /grant "*${sid}:(OI)(CI)M" /Q | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'Cannot grant the fixture to the test user' }
     & icacls (Split-Path $python) /grant "*${sid}:(OI)(CI)RX" /T /Q | Out-Null
