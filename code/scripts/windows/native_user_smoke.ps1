@@ -11,6 +11,7 @@ New-Item -ItemType Directory $fixture | Out-Null
 $password = ConvertTo-SecureString (([Guid]::NewGuid().ToString('N')) + 'aA9!') -AsPlainText -Force
 $user = New-LocalUser -Name $username -Password $password -AccountNeverExpires
 $result = 1
+$taskName = 'TFI-native-cli-' + $env:GITHUB_RUN_ID + '-' + $env:GITHUB_RUN_ATTEMPT
 try {
     Add-LocalGroupMember -SID 'S-1-5-32-545' -Member $user
     $sid = $user.SID.Value
@@ -27,7 +28,9 @@ try {
     if ($packageSha -notmatch '^[0-9a-f]{40}$') { throw 'Missing package source commit' }
     $script = @"
 `$ErrorActionPreference = 'Stop'
+try {
 Set-Location `$PSScriptRoot
+Start-Transcript -Path bootstrap.log -Force | Out-Null
 `$env:PYTHONUTF8 = '1'
 `$env:GITHUB_SHA = '$sha'
 `$env:TFI_PACKAGE_SHA = '$packageSha'
@@ -58,21 +61,39 @@ Get-ChildItem installations -Filter *.log -Recurse -ErrorAction SilentlyContinue
             Set-Content (Join-Path 'evidence' (`$case + '-component-' + `$_.Name)) -Encoding utf8
     }
 exit `$code
+} catch {
+    `$_.ToString() | Set-Content (Join-Path `$PSScriptRoot 'bootstrap-error.log') -Encoding utf8
+    exit 1
+}
 "@
     $entry = Join-Path $fixture 'run.ps1'
     Set-Content $entry $script -Encoding utf8
     $credential = [PSCredential]::new("$env:COMPUTERNAME\$username", $password)
-    $process = Start-Process "$env:SystemRoot/System32/WindowsPowerShell/v1.0/powershell.exe" `
-        -Credential $credential -LoadUserProfile -WorkingDirectory $fixture `
-        -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', ('"' + $entry + '"')) `
-        -RedirectStandardOutput "$fixture/bootstrap.log" -RedirectStandardError "$fixture/bootstrap-error.log" -PassThru
-    if (-not $process.WaitForExit(2400000)) { throw 'Standard-user native smoke exceeded 40 minutes' }
-    $result = $process.ExitCode
-    if ($null -eq $result) { throw 'Native test process has no exit code' }
+    # A CI runner's enclosing Job forbids CREATE_BREAKAWAY_FROM_JOB. A real
+    # user service starts outside it. Task Scheduler gives the disposable
+    # standard user that same context, without changing product ownership rules.
+    $action = New-ScheduledTaskAction -Execute "$env:SystemRoot/System32/WindowsPowerShell/v1.0/powershell.exe" `
+        -Argument ('-NoProfile -ExecutionPolicy Bypass -File "' + $entry + '"') -WorkingDirectory $fixture
+    $settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 40)
+    Register-ScheduledTask -TaskName $taskName -Action $action -Settings $settings -RunLevel Limited `
+        -User $credential.UserName -Password ($credential.GetNetworkCredential().Password) | Out-Null
+    $started = Get-Date
+    Start-ScheduledTask -TaskName $taskName
+    do {
+        Start-Sleep -Seconds 2
+        $task = Get-ScheduledTask -TaskName $taskName
+        $info = Get-ScheduledTaskInfo -TaskName $taskName
+        if ((Get-Date) -gt $started.AddMinutes(40)) { throw 'Standard-user native smoke exceeded 40 minutes' }
+    } while ($task.State -eq 'Running' -or $info.LastRunTime -lt $started.AddSeconds(-2))
+    $result = $info.LastTaskResult
 } catch {
     $_.ToString() | Set-Content (Join-Path $evidencePath 'fixture-error.log') -Encoding utf8
     throw
 } finally {
+    if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) {
+        Stop-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+        Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
+    }
     if (Test-Path "$fixture/evidence") {
         Copy-Item "$fixture/evidence/*" $evidencePath -Force
     }

@@ -10,6 +10,7 @@ import json
 import os
 from pathlib import Path
 import queue
+import socket
 import subprocess
 import sys
 import threading
@@ -166,6 +167,57 @@ def claude_probe(binary, root):
         fixture.close()
 
 
+def kimi_probe(binary, root):
+    from management_common.process_runtime import spawn_process, terminate_process_tree
+    from management_portal.kimi_code_client import KimiCodeClient
+    from management_portal.kimi_code_server import _write_runtime_config, DEFAULT_CONFIG_TEMPLATE
+    fixture = ModelFixture()
+    fixture.model = 'kimi-k2.7-code'
+    home = root / 'kimi-home'
+    home.mkdir()
+    _write_runtime_config(home, DEFAULT_CONFIG_TEMPLATE,
+        {'base_url': fixture.url + '/v1'}, 'disposable-fixture', fixture.model)
+    with socket.socket() as reservation:
+        reservation.bind(('127.0.0.1', 0))
+        port = reservation.getsockname()[1]
+    process = None
+    try:
+        with (root / 'kimi-runtime.log').open('w', encoding='utf-8') as log:
+            process = spawn_process([str(binary), 'web', '--no-open', '--host', '127.0.0.1',
+                '--port', str(port), '--dangerous-bypass-auth'], cwd=root,
+                env={**os.environ, 'KIMI_CODE_HOME': str(home)}, stdout=log, stderr=log)
+        client = KimiCodeClient(base_url=f'http://127.0.0.1:{port}/api/v1', events_root=home / 'events')
+        deadline = time.monotonic() + 60
+        while True:
+            assert process.poll() is None, 'Kimi web exited before readiness'
+            try:
+                client._request('GET', 'sessions', timeout=2)
+                break
+            except Exception:
+                if time.monotonic() >= deadline:
+                    raise
+                time.sleep(.5)
+        session = client.create_session(cwd=str(root), title='Native CLI fixture', tools=[], model=fixture.model)
+        outcome = queue.Queue()
+        def turn():
+            try:
+                outcome.put(client.run_turn(session_id=session['id'], prompt='Say hello.', tools=[], model=fixture.model))
+            except Exception as exc:
+                outcome.put(exc)
+        threading.Thread(target=turn, daemon=True).start()
+        result = outcome.get(timeout=120)
+        if isinstance(result, Exception):
+            raise result
+        assert fixture.reply in result.response, result.response
+        assert fixture.calls and {x['model'] for x in fixture.calls} == {fixture.model}, fixture.calls
+        client.close_session('', session['id'])
+        return {'web_session': 'passed', 'streamed_reply': 'passed', 'model': fixture.model}
+    finally:
+        if process is not None:
+            terminate_process_tree(process, force=True)
+        fixture.close()
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--code', type=Path, required=True)
@@ -175,6 +227,9 @@ def main():
     assert sys.platform == 'win32', 'Windows only'
     import ctypes
     assert not ctypes.windll.shell32.IsUserAnAdmin(), 'Use a standard user'
+    inherited_job = ctypes.c_int()
+    assert ctypes.windll.kernel32.IsProcessInJob(ctypes.c_void_p(-1), None, ctypes.byref(inherited_job))
+    assert not inherited_job.value, 'Run from the standard-user task, outside the CI runner Job'
     root = args.work.resolve()
     root.mkdir(parents=True)
     sys.path.insert(0, str(args.code.resolve()))
@@ -183,7 +238,8 @@ def main():
     updates.RUNTIMES = root / 'runtimes'
     updates.RUNTIMES.mkdir()
     receipt = {'schema': 'tfi.windows-native-cli.v1', 'source_commit': os.environ.get('TFI_PACKAGE_SHA', ''),
-               'process_elevated': False, 'real_credentials': False, 'external_inference': False, 'providers': {}}
+               'process_elevated': False, 'inherited_host_job': False,
+               'real_credentials': False, 'external_inference': False, 'providers': {}}
     for name, runtime in [('codex', updates.CodexRuntime()), ('claude', updates.ClaudeRuntime()),
                           ('kimi', updates.KimiRuntime()), ('opencode', OpenCodeRuntime())]:
         row = receipt['providers'][name] = {'status': 'failed', 'stage': 'download_and_validate'}
@@ -201,13 +257,19 @@ def main():
                     'from pathlib import Path; import claude_agent_sdk as s; print(Path(s.__file__).parent/"_bundled"/"claude.exe")')
                 row.update(claude_probe(Path(binary), root))
             else:
-                row['version_and_web_contract'] = 'passed'
-                row['model_inference'] = 'not_tested'
+                row.update(kimi_probe(updates.npm_binary(staged, 'kimi'), root))
             row['status'] = 'passed'
         except Exception as exc:
             row['error_type'] = type(exc).__name__
             # This test user has only fixture credentials, never production ones.
             traceback.print_exc()
+            args.evidence.mkdir(parents=True, exist_ok=True)
+            for index, log in enumerate((root / 'opencode-state').glob('*/runtime.log')):
+                (args.evidence / f'opencode-runtime-{index}.log').write_text(
+                    log.read_text(encoding='utf-8', errors='replace')[-24000:], encoding='utf-8')
+            if (root / 'kimi-runtime.log').is_file():
+                (args.evidence / 'kimi-runtime.log').write_text(
+                    (root / 'kimi-runtime.log').read_text(encoding='utf-8', errors='replace')[-24000:], encoding='utf-8')
         print(json.dumps({name: row}), flush=True)
         args.evidence.mkdir(parents=True, exist_ok=True)
         (args.evidence / 'native-cli.json').write_text(json.dumps(receipt, indent=2), encoding='utf-8')
