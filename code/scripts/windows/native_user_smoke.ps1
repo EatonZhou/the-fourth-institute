@@ -12,6 +12,7 @@ $password = ConvertTo-SecureString (([Guid]::NewGuid().ToString('N')) + 'aA9!') 
 $user = New-LocalUser -Name $username -Password $password -AccountNeverExpires
 $result = 1
 $taskName = 'TFI-native-cli-' + $env:GITHUB_RUN_ID + '-' + $env:GITHUB_RUN_ATTEMPT
+$diagnosticStart = Get-Date
 function Save-FixtureProgress {
     # Preserve partial evidence while the task is running, even if Actions later
     # terminates the parent before its finally block can execute.
@@ -23,6 +24,10 @@ function Save-FixtureProgress {
         Copy-Item -Destination $evidencePath -Force -ErrorAction Continue
 }
 try {
+    & wevtutil sl Microsoft-Windows-TaskScheduler/Operational /e:true
+    if ($LASTEXITCODE -ne 0) { throw 'Cannot enable disposable task diagnostics' }
+    Get-Service Schedule | Select-Object Name, Status, StartType | ConvertTo-Json |
+        Set-Content (Join-Path $evidencePath 'task-service.json') -Encoding utf8
     Add-LocalGroupMember -SID 'S-1-5-32-545' -Member $user
     $sid = $user.SID.Value
     & icacls $fixture /grant "*${sid}:(OI)(CI)M" /Q | Out-Null
@@ -92,11 +97,19 @@ exit `$code
         -Argument ('/d /s /c ""' + $entryCmd + '""') -WorkingDirectory $fixture
     $settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 40) `
         -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
-    Register-ScheduledTask -TaskName $taskName -Action $action -Settings $settings -RunLevel Limited `
+    $principal = New-ScheduledTaskPrincipal -UserId $credential.UserName -LogonType Password -RunLevel Limited
+    $definition = New-ScheduledTask -Action $action -Settings $settings -Principal $principal
+    Register-ScheduledTask -TaskName $taskName -InputObject $definition `
         -User $credential.UserName -Password ($credential.GetNetworkCredential().Password) | Out-Null
-    Export-ScheduledTask -TaskName $taskName | Set-Content (Join-Path $evidencePath 'task-definition.xml') -Encoding utf8
+    # XML contains no password. Keep it in the log artifact allowlist.
+    Export-ScheduledTask -TaskName $taskName | Set-Content (Join-Path $evidencePath 'task-definition.log') -Encoding utf8
     $started = Get-Date
-    Start-ScheduledTask -TaskName $taskName
+    $scheduler = New-Object -ComObject Schedule.Service
+    $scheduler.Connect()
+    $registered = $scheduler.GetFolder('\').GetTask($taskName)
+    $running = $registered.Run($null)
+    @{ instance_guid = $running.InstanceGuid; state = $running.State } | ConvertTo-Json |
+        Set-Content (Join-Path $evidencePath 'task-start.json') -Encoding utf8
     $nextProgress = $started
     do {
         Start-Sleep -Seconds 2
@@ -120,6 +133,10 @@ exit `$code
     $_.ToString() | Set-Content (Join-Path $evidencePath 'fixture-error.log') -Encoding utf8
     throw
 } finally {
+    Get-WinEvent -FilterHashtable @{ LogName = 'Microsoft-Windows-TaskScheduler/Operational'; StartTime = $diagnosticStart } -ErrorAction SilentlyContinue |
+        Where-Object { $_.Message -like ('*' + $taskName + '*') } |
+        Select-Object TimeCreated, Id, LevelDisplayName, Message | ConvertTo-Json -Depth 4 |
+        Set-Content (Join-Path $evidencePath 'task-events.json') -Encoding utf8
     if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) {
         Get-ScheduledTaskInfo -TaskName $taskName | Select-Object LastRunTime, LastTaskResult, NextRunTime |
             ConvertTo-Json | Set-Content (Join-Path $evidencePath 'task-final.json') -Encoding utf8
