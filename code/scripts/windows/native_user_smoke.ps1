@@ -98,19 +98,22 @@ exit `$code
 }
 "@
     $entry = Join-Path $fixture 'run.ps1'
-    Set-Content $entry $script -Encoding utf8
+    # Windows PowerShell 5 reads a UTF-8 script containing Chinese paths only
+    # reliably with its BOM; the caller here is PowerShell 7.
+    Set-Content $entry $script -Encoding utf8BOM
     $credential = [PSCredential]::new("$env:COMPUTERNAME\$username", $password)
     # A CI runner's enclosing Job forbids CREATE_BREAKAWAY_FROM_JOB. A real
     # user service starts outside it. Task Scheduler gives the disposable
     # standard user that same context, without changing product ownership rules.
-    # Capture errors before PowerShell can start its own transcript (including
-    # script parse or process-start errors), using only the disposable fixture.
-    $entryCmd = Join-Path $fixture 'run.cmd'
-    @('@echo off',
-        ('"' + $env:SystemRoot + '\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File "%~dp0run.ps1" >"%~dp0bootstrap-launch.log" 2>&1'),
-        'exit /b %errorlevel%') | Set-Content $entryCmd -Encoding ascii
-    $action = New-ScheduledTaskAction -Execute "$env:SystemRoot/System32/cmd.exe" `
-        -Argument ('/d /s /c ""' + $entryCmd + '""') -WorkingDirectory $fixture
+    # Capture script parse errors before its transcript starts. Use a native
+    # executable path and encoded PowerShell arguments, without cmd quoting.
+    $quotedEntry = $entry.Replace("'", "''")
+    $quotedLaunch = (Join-Path $fixture 'bootstrap-launch.log').Replace("'", "''")
+    $wrapper = "'PowerShell started' | Set-Content '$quotedLaunch'; try { & '$quotedEntry' *>> '$quotedLaunch'; exit `$LASTEXITCODE } catch { `$_ | Out-String | Add-Content '$quotedLaunch'; exit 1 }"
+    $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($wrapper))
+    $powershellExe = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+    $action = New-ScheduledTaskAction -Execute $powershellExe `
+        -Argument ("-NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand " + $encoded) -WorkingDirectory $fixture
     $settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 40) `
         -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
     $principal = New-ScheduledTaskPrincipal -UserId $credential.UserName -LogonType Password -RunLevel Limited
