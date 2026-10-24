@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import time
 from copy import deepcopy
 from pathlib import Path
 from unittest import mock
@@ -92,6 +93,165 @@ def test_inline_review_replays_only_the_native_outer_message_once(tmp_path):
         assert len(outputs) == 1
         assert outputs[0]["text"] == "审查完成"
         assert events[0]["params"]["item"]["phase"] == "final_answer"
+    finally:
+        client.close()
+
+
+def _live_review(tmp_path, callback=None):
+    path = tmp_path / "live-review.jsonl"
+    _write(path, _review_records())
+    backend = _backend(path)
+    client = CodexAppServerClient(tmp_path / "unused.sock")
+    events = []
+    waiter = _TurnWaiter("thread-one", turn_id="review-parent",
+                        event_callback=callback or events.append,
+                        turn_snapshot_transform=lambda turn: backend._canonical_replay_turn("zero", "thread-one", turn))
+    client._turn_waiters[waiter.thread_id] = waiter
+    return path, client, waiter, events
+
+
+def _notify_review_message(client, **identity):
+    client._dispatch_notification("item/completed", {
+        "threadId": "thread-one", "turnId": "review-parent",
+        "item": {"id": "msg_review_native", "type": "agentMessage", "text": "审查完成"}, **identity,
+    })
+
+
+def _finish_live_review(client, waiter):
+    return client._follow_turn(waiter, turn_started_callback=None, cancellation_requested=None,
+                              detach_requested=None, turn_control_provider=None,
+                              turn_control_result_callback=None, deadline=time.monotonic() + 2)
+
+
+@pytest.mark.parametrize("snapshot_kind", ["empty", "native", "display", "poll-before-terminal"])
+def test_live_unphased_review_uses_one_canonical_final_before_completion(tmp_path, snapshot_kind):
+    path, client, waiter, events = _live_review(tmp_path)
+    try:
+        _notify_review_message(client)
+        _notify_review_message(client)
+        assert events == [] and waiter.completed_item_ids == set()
+        turn = {"id": waiter.turn_id, "status": "completed", "items": []}
+        if snapshot_kind in {"native", "display"}:
+            turn["items"] = [{"id": "msg_review_native" if snapshot_kind == "native" else "item-45",
+                              "type": "agentMessage", "text": "审查完成"}]
+        if snapshot_kind == "poll-before-terminal":
+            client.read_turn = mock.Mock(return_value={**_snapshot(waiter.turn_id), "status": "inProgress"})
+            assert client._read_terminal_turn(waiter) is None
+        client._dispatch_notification("turn/completed", {"threadId": waiter.thread_id, "turn": turn})
+        result = _finish_live_review(client, waiter)
+        assert result.response == "审查完成"
+        messages = [event["params"]["item"] for event in events if event["method"] == "item/completed"]
+        assert [(item["id"], item["phase"]) for item in messages] == [("msg_review_native", "final_answer")]
+        assert events[-1]["method"] == "turn/completed"
+        assert events[-1]["params"]["turn"]["items"][-1]["id"] == "msg_review_native"
+        assert not waiter.unphased_items
+        # A late duplicate of the original unphased receipt cannot create a
+        # commentary segment after canonical replay or reopen pending work.
+        _notify_review_message(client)
+        assert len(events) == 2 and not waiter.unphased_items
+    finally:
+        client.close()
+
+
+@pytest.mark.parametrize("missing", ["terminal", "exit", "identity", "wrong-thread", "wrong-turn"])
+def test_live_review_cannot_acknowledge_or_resend_without_native_boundaries(tmp_path, missing):
+    path, client, waiter, events = _live_review(tmp_path)
+    try:
+        records = _review_records()
+        if missing == "terminal": records.pop(7)
+        elif missing == "exit": records.pop(5)
+        elif missing == "identity": records[6]["payload"]["item"].pop("id")
+        else: records[6]["payload"]["thread_id" if missing == "wrong-thread" else "turn_id"] = "unrelated"
+        _write(path, records)
+        client.request = mock.Mock(side_effect=AssertionError("must not send another provider request"))
+        _notify_review_message(client)
+        client._dispatch_notification("turn/completed", {"threadId": waiter.thread_id,
+            "turn": {"id": waiter.turn_id, "status": "completed", "items": []}})
+        with pytest.raises(ExecutionRecoveryDeferred):
+            _finish_live_review(client, waiter)
+        assert events == [] and waiter.unphased_items and waiter.completed_item_ids == set()
+        client.request.assert_not_called()
+    finally:
+        client.close()
+
+
+def test_live_review_projection_failure_retries_same_identity_without_final_fallback(tmp_path):
+    captured = []
+    def observe(event):
+        if event["method"] == "item/completed" and not captured:
+            captured.append("failed-first-projection")
+            raise RuntimeError("temporary projection failure")
+        captured.append(event)
+    path, client, waiter, _ = _live_review(tmp_path, observe)
+    client._wait_for_turn_signal = mock.Mock(return_value=True)
+    try:
+        _notify_review_message(client)
+        client._dispatch_notification("turn/completed", {"threadId": waiter.thread_id,
+            "turn": {"id": waiter.turn_id, "status": "completed", "items": []}})
+        assert _finish_live_review(client, waiter).response == "审查完成"
+        assert [event["method"] for event in captured[1:]] == ["item/completed", "turn/completed"]
+        assert waiter.agent_messages == ["审查完成"] and not waiter.unphased_items
+    finally:
+        client.close()
+
+
+def test_live_review_projection_completion_has_no_synthetic_second_message(tmp_path, isolated_portal_case):
+    with isolated_portal_case() as case_path:
+        request, session = _request_session()
+        store = AgentDataStore()
+        projector = AgentDataProjector(store)
+        projector.begin(request, session, created_at="2026-09-07T04:19:52.738Z")
+        def observe(event):
+            projector.observe(provider="codex", backend_route_id="zero", backend_session_id="thread-one",
+                              execution_id=request.execution_id, event=event)
+        path, client, waiter, _ = _live_review(case_path, observe)
+        try:
+            _notify_review_message(client)
+            client._dispatch_notification("turn/completed", {"threadId": waiter.thread_id,
+                "turn": {"id": waiter.turn_id, "status": "completed", "items": []}})
+            result = _finish_live_review(client, waiter)
+            final = projector.complete(execution_id=request.execution_id, backend_session_id="thread-one",
+                                       backend_route_id="zero", turn_id=waiter.turn_id, response=result.response)
+            from management_portal.execution.agent_data_store import stable_segment_id
+            expected = stable_segment_id("provider-model", request.execution_id, "msg_review_native", "final_answer")
+            assert final == expected
+            assert store.segment(expected)["content"] == "审查完成"
+            with pytest.raises(KeyError):
+                store.segment(stable_segment_id("provider-model", request.execution_id, "final", "final"))
+            with pytest.raises(KeyError):
+                store.segment(stable_segment_id("provider-model", request.execution_id, "msg_review_native", "message"))
+            # Conversation delivery consumes the one captured native segment.
+            from tests.cases.test_agent_data_projection import _deliver_captured_message
+            _deliver_captured_message(store, request.agent_id, expected)
+            messages = [store.segment(identity) for identity in
+                        store.sequence_segment_ids(store.trace_sequence_id(request.agent_id))]
+            assert [message["segment_id"] for message in messages if message["segment_type"] == "model"] == [expected]
+        finally:
+            client.close()
+
+
+def test_live_unphased_ordinary_messages_preserve_distinct_ids_and_explicit_phases(tmp_path):
+    path, client, waiter, events = _live_review(tmp_path)
+    try:
+        _write(path, [_start(waiter.turn_id), _message("one", "same"), _message("two", "same"),
+                      _message("final", "done", "final_answer")])
+        for identity in ["one", "two"]:
+            client._dispatch_notification("item/completed", {"threadId": waiter.thread_id,
+                "turnId": waiter.turn_id, "item": {"id": identity, "type": "agentMessage", "text": "same"}})
+        _notify_review_message(client, threadId="unrelated")
+        _notify_review_message(client, turnId="unrelated")
+        assert set(waiter.unphased_items) == {"one", "two"} and events == []
+        # Real phased progress is still immediate and needs no reconciliation.
+        client._dispatch_notification("item/completed", {"threadId": waiter.thread_id,
+            "turnId": waiter.turn_id, "item": {"id": "progress", "type": "agentMessage",
+                                                "text": "progress", "phase": "commentary"}})
+        assert len(events) == 1 and events[0]["params"]["item"]["id"] == "progress"
+        client._dispatch_notification("turn/completed", {"threadId": waiter.thread_id,
+            "turn": {"id": waiter.turn_id, "status": "completed", "items": []}})
+        assert _finish_live_review(client, waiter).response == "done"
+        assert [(event["params"]["item"]["id"], event["params"]["item"]["phase"])
+                for event in events if event["method"] == "item/completed"] == [
+                    ("progress", "commentary"), ("one", "commentary"), ("two", "commentary"), ("final", "final_answer")]
     finally:
         client.close()
 

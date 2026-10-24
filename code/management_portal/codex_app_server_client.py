@@ -328,6 +328,8 @@ class _TurnWaiter:
     final_answer_items: dict[str, dict[str, Any]] = field(default_factory=dict)
     final_answer_seen: bool = False
     completed_item_ids: set[str] = field(default_factory=set)
+    unphased_items: dict[str, dict[str, Any]] = field(default_factory=dict)
+    completion_deferred: bool = False
     turn_snapshot_transform: Callable[[dict[str, Any]], dict[str, Any]] | None = None
     interrupt_requests: dict[str, _PendingRequest] = field(default_factory=dict)
 
@@ -1431,11 +1433,30 @@ class CodexAppServerClient:
                 else {}
             )
             item_id = str(item.get("id") or "").strip()
+            # Inline review can complete an outer AgentMessage without phase.
+            # Resolve it from the same durable turn before immutable fan-out;
+            # persisting it now as commentary creates a second synthetic Final.
+            if (waiter.turn_snapshot_transform is not None and waiter.event_callback is not None
+                    and item.get("type") == "agentMessage"
+                    and not str(item.get("phase") or "").strip()
+                    and (str(item.get("text") or "").strip() or item.get("questions"))):
+                with self._state_lock:
+                    if item_id not in waiter.completed_item_ids:
+                        waiter.unphased_items[item_id] = dict(item)
+                        waiter.next_reconcile_at = 0
+                return
             if item_id:
                 with self._state_lock:
                     if item_id in waiter.completed_item_ids:
                         return
                     waiter.completed_item_ids.add(item_id)
+        if method == "turn/completed" and waiter.unphased_items:
+            # The reader must not block on history or acknowledge an unverified
+            # final response. The accepted-turn follower performs reconciliation.
+            waiter.completion_deferred = True
+            waiter.completed = params
+            waiter.event.set()
+            return
         if method == "turn/completed" and waiter.final_answer_items:
             completed_turn = params.get("turn") or {}
             if not any(isinstance(item, dict) and item.get("phase") == "final_answer"
@@ -1553,6 +1574,7 @@ class CodexAppServerClient:
                 ).hexdigest()
             with self._state_lock:
                 if item_id in waiter.completed_item_ids:
+                    waiter.unphased_items.pop(item_id, None)
                     continue
                 waiter.completed_item_ids.add(item_id)
             event = {
@@ -1575,6 +1597,8 @@ class CodexAppServerClient:
                     waiter.thread_id, waiter.turn_id, item_id, type(error).__name__,
                 )
                 continue
+            with self._state_lock:
+                waiter.unphased_items.pop(item_id, None)
             if _collect_agent_message(waiter, item):
                 if (
                     str(item.get("phase") or "").strip().casefold()
@@ -1610,12 +1634,27 @@ class CodexAppServerClient:
         # Active snapshots can contain reconstructed display IDs too. Normalize
         # message identity before replay so polling and live notifications share
         # the same deduplication key throughout the turn.
-        if waiter.turn_snapshot_transform is not None:
-            turn = waiter.turn_snapshot_transform(turn)
+        turn = self._canonical_turn(waiter, turn)
         self._replay_completed_items(waiter, turn)
         if str(turn.get("status") or "") == "inProgress":
             return None
         return turn
+
+    def _canonical_turn(self, waiter: _TurnWaiter, turn: dict[str, Any]) -> dict[str, Any]:
+        if waiter.turn_snapshot_transform is None:
+            return turn
+        # Completion notifications sometimes omit items. Retain original pending
+        # identities as candidates for the existing exact-turn history resolver.
+        with self._state_lock:
+            pending = list(waiter.unphased_items.values())
+        if pending:
+            items = list(turn.get("items") or [])
+            # Snapshot message IDs may be reconstructed display IDs. Do not
+            # count those and the pending native item as two expected replies.
+            if not any(isinstance(item, dict) and item.get("type") == "agentMessage" for item in items):
+                items.extend(pending)
+            turn = {**turn, "items": items}
+        return waiter.turn_snapshot_transform(turn)
 
     def read_turn(self, thread_id: str, turn_id: str) -> dict[str, Any] | None:
         """Read one exact turn snapshot without starting or resuming work."""
@@ -2579,6 +2618,16 @@ class CodexAppServerClient:
                 continue
             if str(terminal.get("status") or "") != "completed" or terminal.get("error"):
                 raise _terminal_turn_error(thread_id, terminal)
+            if waiter.completion_deferred:
+                terminal = self._canonical_turn(waiter, terminal)
+                self._replay_completed_items(waiter, terminal)
+                if waiter.unphased_items:
+                    # Failed projection remains retryable by its native identity.
+                    waiter.event.clear()
+                    self._wait_for_turn_signal(waiter, turn_control_provider is not None)
+                    continue
+                waiter.completed = None
+                waiter.completion_deferred = False
             response = codex_final_agent_response(terminal, waiter.agent_messages)
             if not response and waiter.completed:
                 # Completion notifications may precede the final item snapshot.
