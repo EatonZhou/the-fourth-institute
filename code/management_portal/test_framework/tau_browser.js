@@ -38,8 +38,10 @@
 // `portal.triggerPath(lineageId, triggerPathId, { offset, limit })` reads the
 // original path with both required identities. It returns the entire GetTriggerPath
 // result, including paginated steps/edges/executions; it never triggers work.
-// `portal.sendThenStop({ send, stop })` accepts two exact, already discovered
-// button locators. It prepares passive timing, then clicks Send and Stop without
+// `portal.sendThenStop({ send, stop, stopSelector })` accepts two exact button
+// locators. If Stop mounts only after Send, supply its exact panel-scoped CSS
+// selector for passive observation; do not wait for a Stop element first.
+// It prepares passive timing, then clicks Send and Stop without
 // intervening helper reads. Call inside one portal.action. Original click timing
 // and failures are retained in tau-send-stop.jsonl; this does not prove cancellation.
 

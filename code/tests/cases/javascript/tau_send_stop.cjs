@@ -39,8 +39,22 @@ const { sendThenStop } = require('../../../management_portal/test_framework/tau_
     assert.equal(timeout.sendStopMeasurement.stop_click_count, 0);
     assert.equal(timeout.sendStopMeasurement.send_to_stop_ms, null);
     assert.deepEqual(await page.evaluate(() => [submissions, stops]), [1, 0], 'no replay or forced Stop');
+    await page.setContent(`<div id="chat"><button id="send">Send</button></div><button id="other">Stop</button>
+      <script>window.submissions=0;window.stops=0;document.querySelector('#send').onclick=()=>{
+        submissions++;const button=document.createElement('button');button.id='stop';button.textContent='Stop';
+        button.onclick=()=>{stops++;button.remove();};document.querySelector('#chat').append(button);
+      };</script>`);
+    const mounted = await sendThenStop({send:page.locator('#send'),stop:page.locator('#chat #stop'),stopSelector:'#chat #stop',evidenceDir});
+    assert.equal(mounted.send_click_count,1);assert.equal(mounted.stop_click_count,1);
+    assert.ok(mounted.stop_dom_ready_ms >= mounted.send_click_ms);
+    assert.ok(mounted.send_to_stop_ms >= 0 && mounted.send_to_stop_ms < 500);
+    assert.deepEqual(await page.evaluate(()=>[submissions,stops]),[1,1]);
+    let absent;
+    try {await sendThenStop({send:page.locator('#absent'),stop:page.locator('#stop'),evidenceDir,timeoutMs:100});}
+    catch(error) {absent=error;}
+    assert.equal(absent?.sendStopMeasurement.observation,'not_started');
     const rows = fs.readFileSync(path.join(evidenceDir, 'tau-send-stop.jsonl'), 'utf8').trim().split('\n').map(JSON.parse);
-    assert.equal(rows.length, 3, 'timeout retains its own original receipt');
+    assert.equal(rows.length, 5, 'pre-click failure and dynamically mounted Stop retain original receipts');
     assert.equal(rows[2].click_error, 'TimeoutError');
     assert.ok(!JSON.stringify(rows).includes('Send</button>'), 'no control content is recorded');
     console.log('send-stop native clicks passed');
