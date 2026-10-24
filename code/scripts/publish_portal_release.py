@@ -46,6 +46,7 @@ LINEAGE_WORKBENCH_RELEASE_UNIT = (
     'management_portal/static/portal_resident_menu.css',
     'management_portal/static/portal_scope_menu.js',
     'management_portal/static/hatg_panel.css',
+    'management_portal/static/hatg_lineage_state.js',
     'management_portal/static/hatg_panel.js',
     'management_portal/static/hatg_panel_features.js',
     'management_portal/static/hatg_panel_state.js',

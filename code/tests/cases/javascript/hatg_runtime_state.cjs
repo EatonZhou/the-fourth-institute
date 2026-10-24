@@ -9,9 +9,15 @@ const vm = require('node:vm');
 const { test } = require('node:test');
 const { randomUUID } = require('node:crypto');
 const { babelParse } = require('./babel_parse.cjs');
+const { hatgModuleFiles, readHatgModule } = require('./hatg_modules.cjs');
 const STATIC = path.resolve(__dirname, '../../../management_portal/static');
 const PANEL = path.join(STATIC, 'hatg_panel.js');
 const raw = fs.readFileSync(PANEL, 'utf8');
+// The runtime and the module scripts it takes its parts from.
+const SOURCES = Object.freeze({
+  'hatg_panel.js': raw,
+  ...Object.fromEntries(hatgModuleFiles().map(file => [file, readHatgModule(file)])),
+});
 const plain = value => JSON.parse(JSON.stringify(value));
 const tick = () => new Promise(resolve => setImmediate(resolve));
 
@@ -34,11 +40,19 @@ function runtimeScope(source) {
 }
 
 // AST-located mutations are in-memory negative controls, never source edits.
-function mutate(source, name, kind) {
-  if (!name) return source;
-  const scope = runtimeScope(source);
+// A function is looked up in the runtime first, then in its module scripts.
+function mutate(sources, name, kind) {
+  if (!name) return sources;
+  let target = '';
   const fn = id => {
-    const node = scope.body.body.find(n => n.type === 'FunctionDeclaration' && n.id?.name === id);
+    const scope = runtimeScope(sources['hatg_panel.js']);
+    let node = scope.body.body.find(n => n.type === 'FunctionDeclaration' && n.id?.name === id);
+    target = 'hatg_panel.js';
+    for (const [file, source] of Object.entries(sources)) {
+      if (node) break;
+      [node] = walk(babelParse(source, file).program, n => n.type === 'FunctionDeclaration' && n.id?.name === id);
+      target = file;
+    }
     assert.ok(node, `production function ${id}`);
     return node;
   };
@@ -85,7 +99,8 @@ function mutate(source, name, kind) {
     replacement = 'false';
   } else throw new Error(`unknown negative control ${name}`);
   assert.equal(nodes.length, 1, `one AST mutation site: ${name}`);
-  return source.slice(0, nodes[0].start) + replacement + source.slice(nodes[0].end);
+  const source = sources[target];
+  return { ...sources, [target]: source.slice(0, nodes[0].start) + replacement + source.slice(nodes[0].end) };
 }
 
 class Control {
@@ -200,23 +215,33 @@ function controller(kind, source, server, environment = null) {
     }
     context.__render = environment.render;
   } else context.window = context;
+  const sources = typeof source === 'string' ? { ...SOURCES, 'hatg_panel.js': source } : source;
+  source = sources['hatg_panel.js'];
   for (const file of ['hatg_panel_features.js', 'hatg_panel_state.js', 'portal_instruction_client.js', 'portal_society_service.js',
     'lineage_program.js', 'lineage_element_fields.js', 'lineage_primitive_inspector.js']) {
     vm.runInContext(fs.readFileSync(path.join(STATIC, file), 'utf8'), context, { filename: file });
   }
+  for (const [file, text] of Object.entries(sources)) {
+    if (file !== 'hatg_panel.js') vm.runInContext(text, context, { filename: file });
+  }
   const scope = runtimeScope(source);
   const returnNode = scope.body.body.find(n => n.type === 'ReturnStatement');
   assert.ok(returnNode, 'production runtime return');
+  const surface = scope.body.body.find(n => n.type === 'FunctionDeclaration' && n.id.name === 'renderLineageSurface');
+  assert.ok(surface, 'production renderLineageSurface');
   // Keep the entire original factory, helpers and their lexical dependencies.
   // Only the broad page redraw effect is replaced; it still calls the real
   // inspector and graph presentation/controller. No state is written by __render.
+  // Module parts receive renderLineageSurface when the runtime starts, so its
+  // body is replaced in the source instead of reassigning the function.
   const hook = `
-    renderLineageSurface = () => window.__render(api);
     const api = { state, activateLineageEdits, renderProgramInspector, graphNodeContent, hatgNodeControl,
       syncProgramComponentSwitch, mergeLineageStateDomains, load: id => societyService.loadLineage(id) };
+    window.__runtimeApi = api;
     return api;
   `;
-  const patched = source.slice(0, returnNode.start) + hook + source.slice(returnNode.end);
+  const patched = source.slice(0, surface.body.start) + '{ window.__render(window.__runtimeApi); }'
+    + source.slice(surface.body.end, returnNode.start) + hook + source.slice(returnNode.end);
   const outer = babelParse(patched, PANEL).program.body[0].expression.callee.body;
   const exposed = patched.slice(0, outer.end - 1) + '\nwindow.__createRuntime = createHatgRuntime;\n' + patched.slice(outer.end - 1);
   vm.runInContext(exposed, context, { filename: PANEL });
@@ -294,7 +319,7 @@ async function scenario(kind, source) {
 }
 
 async function verify(kind) {
-  await scenario(kind, raw);
+  await scenario(kind, SOURCES);
   const controls = ['wrong-pause-value', 'definition-cas', 'lost-runtime-projection', 'draft-overwrite',
     'missing-input-listener', 'missing-click-listener', 'stuck-busy', 'missing-node-badge'];
   if (kind === 'event_source') controls.push('drawer-trigger-enabled', 'canvas-trigger-enabled');
@@ -311,12 +336,12 @@ async function verify(kind) {
     'canvas-trigger-enabled': 'canvas control declares paused disabled',
   };
   for (const name of controls) {
-    await assert.rejects(scenario(kind, mutate(raw, name, kind)), error => error.code === 'ERR_ASSERTION' && error.message.includes(failures[name]),
+    await assert.rejects(scenario(kind, mutate(SOURCES, name, kind)), error => error.code === 'ERR_ASSERTION' && error.message.includes(failures[name]),
       `production regression must be detected: ${kind}/${name}`);
   }
 }
 
-module.exports = { controller, serverFixture, raw, mutate };
+module.exports = { controller, serverFixture, raw, SOURCES, mutate };
 // Importing the shared AST bridge never executes either independent case.
 if (require.main === module) {
   test('event_source runtime switch preserves draft and recovers from reopen failure', () => verify('event_source'));

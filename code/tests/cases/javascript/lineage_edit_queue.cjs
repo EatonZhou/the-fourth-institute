@@ -9,18 +9,10 @@ const bootstrap = `
     runtimeStatus: new Map(), residentRuntimeById: new Map(),
     sessionUserMessageCounts: new Map(), sessionContextPressures: new Map()};
   const programFeature = {beginMutation() {}, endMutation() {}};
-  const reconcileGraphInteractionState = () => {};
-  const bindResidentStateCollection = () => {};
-  const renderGraphRuntimePresentation = () => {};
-  const renderControls = () => {};
-  const templateController = {render() {}};
-  const lineageEditQueue = createLineageEditQueue();
-  const clone = value => JSON.parse(JSON.stringify(value));
   const toast = (...args) => hooks.toasts.push(args);
   const setSyncStatus = (...args) => hooks.statuses.push(args);
   const showProgramMutationStatus = message => hooks.statuses.push([message, "mutation"]);
   const renderProgramInspector = () => {};
-  const updateLineageSummary = () => {};
   const selectNode = async () => {};
   const flushLineageSave = async () => {throw new Error("Unexpected graph save")};
   const renderLineageSurface = () => hooks.render?.(state);
@@ -29,6 +21,15 @@ const bootstrap = `
     updateLayout: body => apiPost("/lineage/api/layout/positions", body),
     createProgramComponent: body => apiPost("/lineage/api/program/components/create", body),
   };
+  // The edit queue, layout save and commit are the production module's.
+  const {lineageEditQueue, activateLineageEdits, saveLineageLayout, flushLineageLayoutSave, commitLineage} =
+    window.PortalHatgLineageState.createLineageState({
+      state, programFeature, toast, setSyncStatus, renderProgramInspector, renderLineageSurface, societyService,
+      nodeResidentId, clone: value => JSON.parse(JSON.stringify(value)), activeSeeds: () => [],
+      reconcileGraphInteractionState: () => {}, bindResidentStateCollection: () => {},
+      renderGraphRuntimePresentation: () => {}, renderControls: () => {}, updateLineageSummary: () => {},
+      currentTemplateController: () => ({render() {}}),
+    });
   activateLineageEdits(initial.lineage_id);
   return {state, lineageEditQueue, activateLineageEdits, saveLineageLayout, flushLineageLayoutSave,
     applyProgramMutation, createProgramComponentFromDrop,
@@ -60,6 +61,7 @@ async function nodeProbe() {
     }
     return {lineage: {...fixture.state.lineage, revision: fixture.state.lineage.revision + 1}};
   };
+  new Function("window", fs.readFileSync(input.root + "/management_portal/static/hatg_lineage_state.js", "utf8"))(window);
   fixture = new Function("initial", "apiPost", "hooks", input.functions + bootstrap)(initial, post, hooks);
   const move = (x = 20) => fixture.saveLineageLayout([{id: "event_source_111111111111", x, y: 60}]);
   const create = () => fixture.applyProgramMutation(() => post("/create", {lineage_id: fixture.state.lineage.lineage_id, expected_revision: fixture.state.lineage.revision}), "");
@@ -144,7 +146,7 @@ async function ownerProbe() {
     url: 'https://lineage.fixture.invalid', runScripts: 'outside-only',
   });
   global.window = dom.window;
-  for (const name of ['portal_text.js', 'portal_state.js', 'lineage_program.js']) {
+  for (const name of ['portal_text.js', 'portal_state.js', 'lineage_program.js', 'hatg_lineage_state.js']) {
     window.eval(fs.readFileSync(input.root + '/management_portal/static/' + name, 'utf8'));
   }
   window.PortalAPI = {get: async () => JSON.parse(fs.readFileSync(

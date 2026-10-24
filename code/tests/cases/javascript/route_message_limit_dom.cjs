@@ -9,6 +9,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { JSDOM, VirtualConsole } = require('jsdom');
 const { babelParse } = require('./babel_parse.cjs');
+const { hatgModuleFiles } = require('./hatg_modules.cjs');
 const STATIC = path.resolve(__dirname, '../../../management_portal/static');
 const plain = value => JSON.parse(JSON.stringify(value));
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -129,7 +130,7 @@ async function documentFixture(boundary, transform = (_name, source) => source) 
       'hatg_panel_features.js', 'hatg_panel_state.js', 'portal_instruction_client.js',
       'portal_society_service.js', 'portal_resident_discovery_service.js',
       'lineage_program.js', 'lineage_element_fields.js', 'lineage_primitive_inspector.js',
-      'lineage_invocation_inspector.js', 'hatg_panel.js']) {
+      'lineage_invocation_inspector.js', ...hatgModuleFiles(), 'hatg_panel.js']) {
       let source = transform(name, fs.readFileSync(path.join(STATIC, name), 'utf8'));
       if (name === 'hatg_panel.js') source = exposeRuntime(source);
       window.eval(source + `\n//# sourceURL=${name}`);

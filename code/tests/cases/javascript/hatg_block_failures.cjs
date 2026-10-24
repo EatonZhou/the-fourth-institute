@@ -4,6 +4,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const {test} = require('node:test');
 const {babelParse, traverse} = require('./babel_parse.cjs');
+const {readHatgModule, createHatgModule} = require('./hatg_modules.cjs');
 const source = fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static/hatg_panel.js'), 'utf8');
 const names = new Set(['functionBlockInstanceFailures', 'functionBlockInstanceUnacknowledgedFailures', 'acknowledgeFunctionBlockFailures']);
 const functions = [];
@@ -59,10 +60,7 @@ test('authoritative failed status remains visible before error details arrive', 
 });
 
 function projectionHarness() {
-  const wanted = new Set(['mergeLineageStateDomains', 'hasNewLineageGraphProjection',
-    'lineageItemsById', 'lineagePayloadsEqual', 'commitLineage', 'displayedResidentIds',
-    'sameIdSet', 'forgetRemovedLineageMembers', 'renderCommittedLineage',
-    'selectedLineageChangeMatches', ...names]);
+  const wanted = new Set(['selectedLineageChangeMatches', ...names]);
   const owners = [];
   traverse(babelParse(source, 'hatg_panel.js'), {FunctionDeclaration(p) {
     if (wanted.has(p.node.id?.name)) owners.push(source.slice(p.node.start, p.node.end));
@@ -75,21 +73,29 @@ function projectionHarness() {
     lineage: {lineage_id: 'lineage_one', revision: 3, layout_revision: 2,
     runtime_revision: 1, nodes: [{id: 'resident_one', title: 'Member', x: 0.25,
       last_execution: {execution_id: 'run_one', message_id: 'input_one', status: 'running'}}], edges: []}};
-  const context = vm.createContext({state, clone: value => JSON.parse(JSON.stringify(value)),
-    nodeResidentId: node => node.id,
-    instanceInnerObjects: (_, kind) => kind === 'nodes' ? state.lineage.nodes : [],
-    pageStateController: {read: () => saved, write: value => {saved = value;}},
-    reconcileGraphInteractionState() {}, bindResidentStateCollection() {}, setSyncStatus() {},
-    updateLineageSummary() {}, renderProgramInspector() {}, renderControls() {},
-    templateController: {render() {}},
+  const surface = {
     renderLineageSurface() { draws.surface += 1; },
     renderGraphRuntimePresentation() { draws.runtime += 1; },
+  };
+  const nodeResidentId = node => node.id;
+  const context = vm.createContext({state, ...surface, nodeResidentId,
+    instanceInnerObjects: (_, kind) => kind === 'nodes' ? state.lineage.nodes : [],
+    pageStateController: {read: () => saved, write: value => {saved = value;}},
   });
+  context.window = context;
   vm.runInContext(owners.join('\n'), context);
+  // Every Lineage read reaches the page through the production commit.
+  vm.runInContext(readHatgModule('hatg_lineage_state.js'), context);
+  const lineageState = createHatgModule(context.PortalHatgLineageState, 'createLineageState', {
+    state, ...surface, clone: value => JSON.parse(JSON.stringify(value)), nodeResidentId,
+    reconcileGraphInteractionState() {}, bindResidentStateCollection() {}, setSyncStatus() {},
+    updateLineageSummary() {}, renderProgramInspector() {}, renderControls() {},
+    currentTemplateController: () => ({render() {}}),
+  });
   return {context, state, draws, update(execution) {
     const incoming = JSON.parse(JSON.stringify(state.lineage));
     incoming.nodes[0].last_execution = execution;
-    return context.commitLineage(incoming, {source: 'background'}).changed;
+    return lineageState.commitLineage(incoming, {source: 'background'}).changed;
   }};
 }
 

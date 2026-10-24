@@ -4,6 +4,7 @@ const path = require('node:path');
 const test = require('node:test');
 const vm = require('node:vm');
 const { babelParse, traverse } = require('./babel_parse.cjs');
+const { hatgModuleFiles, readHatgModule } = require('./hatg_modules.cjs');
 
 const staticRoot = path.resolve(__dirname, '../../../management_portal/static');
 const panelPath = path.join(staticRoot, 'hatg_panel.js');
@@ -60,6 +61,19 @@ function controllerSource(mutation) {
   const auto = bindings.autoLayoutGraph.path;
   const attempt = auto.node.body.body.find(node => node.type === 'TryStatement');
   assert(attempt, 'Production layout save must have rollback/finally');
+  // The runtime takes its Lineage commit from a module script, loaded as is.
+  const modules = Object.fromEntries(hatgModuleFiles().map(file => [file, readHatgModule(file)]));
+  const moduleFunction = name => {
+    for (const [file, text] of Object.entries(modules)) {
+      let found = null;
+      traverse(babelParse(text, file), { FunctionDeclaration(p) {
+        if (p.node.id.name === name) { found = p.node; p.stop(); }
+      } });
+      if (found) return { file, node: found };
+    }
+    return assert.fail(`No module function ${name}`);
+  };
+  const commit = moduleFunction('commitLineage');
   let changed;
   if (mutation) {
     const assignmentTo = (node, field) => node.type === 'ExpressionStatement'
@@ -76,13 +90,19 @@ function controllerSource(mutation) {
       'drop-density-rollback': attempt.handler.body.body.filter(node =>
         node.type === 'IfStatement' && node.test.type === 'Identifier' && node.test.name === 'previousDensity'),
       'drop-busy-reset': attempt.finalizer.body.filter(node => assignmentTo(node, 'autoLayoutInFlight')),
-      'drop-rollback-paint': bindings.commitLineage.path.node.body.body.filter(node =>
-        callTo(node, 'renderCommittedLineage')),
+      'drop-rollback-paint': commit.node.body.body.filter(node => callTo(node, 'renderCommittedLineage')),
     };
     assert.equal(candidates[mutation]?.length, 1, `Mutation must address exactly one AST statement: ${mutation}`);
     [changed] = candidates[mutation];
+    if (mutation === 'drop-rollback-paint') {
+      const text = modules[commit.file];
+      modules[commit.file] = text.slice(0, changed.start) + ';' + text.slice(changed.end);
+      changed = null;
+    }
   }
-  const source = [...selected].sort(([, a], [, b]) => a.node.start - b.node.start)
+  // One destructuring declaration defines every name a module part exports.
+  const declarations = new Map([...selected].map(([name, p]) => [p.node, [name, p]]));
+  const source = [...declarations.values()].sort(([, a], [, b]) => a.node.start - b.node.start)
     .map(([name, p]) => {
       if (boundaries.has(name)) return boundarySource[name];
       const node = p.node;
@@ -92,10 +112,11 @@ function controllerSource(mutation) {
       if (p.isVariableDeclarator()) bytes = `${p.parent.kind} ${bytes};`;
       return bytes;
     }).join('\n');
-  return `(() => { 'use strict'; ${source}
+  const controller = `(() => { 'use strict'; ${source}
     window.__layoutController = { state, autoLayoutGraph, activateLineageEdits,
       renderAutoLayoutControl, renderGraph, graphVisibleModel, autoLayoutScope };
   })();`;
+  return { controller, modules };
 }
 
 function fixture(mutation) {
@@ -145,7 +166,9 @@ function fixture(mutation) {
     const program = file === 'portal_state.js' ? babelParse(source, file).program.body[0] : null;
     vm.runInContext(program ? source.slice(program.start, program.end) : source, context, { filename: file });
   }
-  vm.runInContext(controllerSource(mutation), context, { filename: panelPath });
+  const { controller: controllerScript, modules } = controllerSource(mutation);
+  for (const [file, text] of Object.entries(modules)) vm.runInContext(text, context, { filename: file });
+  vm.runInContext(controllerScript, context, { filename: panelPath });
   const controller = context.window.__layoutController;
   controller.state.lineage = {
     lineage_id: 'lineage_aaaaaaaaaaaa', revision: 7, layout_revision: 0,

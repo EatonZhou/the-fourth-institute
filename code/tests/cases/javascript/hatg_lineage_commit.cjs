@@ -4,6 +4,7 @@ const path = require('node:path');
 const test = require('node:test');
 const vm = require('node:vm');
 const { babelParse, traverse } = require('./babel_parse.cjs');
+const { hatgModuleFiles } = require('./hatg_modules.cjs');
 
 const staticRoot = path.resolve(__dirname, '../../../management_portal/static');
 const panelPath = path.join(staticRoot, 'hatg_panel.js');
@@ -54,7 +55,9 @@ function runtimeSource(entries) {
     } });
   }
   entries.forEach(include);
-  const source = [...selected].sort(([, a], [, b]) => a.node.start - b.node.start)
+  // One destructuring declaration defines every name a module part exports.
+  const declarations = new Map([...selected].map(([name, p]) => [p.node, [name, p]]));
+  const source = [...declarations.values()].sort(([, a], [, b]) => a.node.start - b.node.start)
     .map(([name, p]) => {
       if (Object.hasOwn(BOUNDARIES, name)) return BOUNDARIES[name];
       const bytes = panelSource.slice(p.node.start, p.node.end);
@@ -92,7 +95,7 @@ function fixture(entries = []) {
   for (const file of [
     'portal_state.js', 'hatg_panel_features.js', 'hatg_panel_state.js',
     'projection_libraries/portal-graph/1.0.0/geometry.js', 'lineage_graph.js',
-    'lineage_program.js', 'portal_society_service.js',
+    'lineage_program.js', 'portal_society_service.js', ...hatgModuleFiles(),
   ]) {
     const source = fs.readFileSync(path.join(staticRoot, file), 'utf8');
     const program = file === 'portal_state.js' ? babelParse(source, file).program.body[0] : null;

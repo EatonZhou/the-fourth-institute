@@ -4,7 +4,7 @@ const {babelParse, traverse} = require('./babel_parse.cjs');
 const {chromium} = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
 const root = path.resolve(__dirname, '../../../management_portal/static');
 const source = fs.readFileSync(path.join(root, 'hatg_panel.js'), 'utf8');
-const names = new Set(['separateGraphObject', 'separateGraphObjects', 'setFunctionBlockExpanded', 'applyProgramMutation', 'createLineageEditQueue']);
+const names = new Set(['separateGraphObject', 'separateGraphObjects', 'setFunctionBlockExpanded', 'applyProgramMutation']);
 const parts = [];
 traverse(babelParse(source), {FunctionDeclaration(p) {
   if (names.has(p.node.id?.name)) parts.push(source.slice(p.node.start, p.node.end));
@@ -22,7 +22,7 @@ assert.equal(parts.length, names.size);
     });
     await page.goto('http://object-separation.fixture.invalid');
     for (const n of ['portal_design_system','portal_themes','hatg_panel','lineage_function_blocks']) await page.addStyleTag({url: '/static/'+n+'.css'});
-    for (const n of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min','lineage_graph']) await page.addScriptTag({url:'/static/'+n+'.js'});
+    for (const n of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min','lineage_graph','hatg_lineage_state']) await page.addScriptTag({url:'/static/'+n+'.js'});
     await page.evaluate(parts => {
       window.saved = []; window.failSave = false; window.requestCount = 0;
       const title = '[TAU:testrun_3bb414d982c23e92:lineage.hatg] ';
@@ -52,7 +52,7 @@ assert.equal(parts.length, names.size);
       const renderProgramInspector = ()=>{},toast = ()=>{};
       const commitLineage = () => renderGraph();
       const flushHatgViewPreferenceSave = () => Promise.resolve();
-      eval(parts.join('\n')+'\nwindow.makeQueue = createLineageEditQueue;window.separate = separateGraphObject;window.expand = setFunctionBlockExpanded;window.mutate = applyProgramMutation;');
+      eval(parts.join('\n')+'\nwindow.makeQueue = PortalHatgLineageState.createLineageEditQueue;window.separate = separateGraphObject;window.expand = setFunctionBlockExpanded;window.mutate = applyProgramMutation;');
       const lineageEditQueue = window.makeQueue(), intent = lineageEditQueue.activate('fixture');
       window.resetQueue = () => lineageEditQueue.activate('fixture');
       window.render = renderGraph;
