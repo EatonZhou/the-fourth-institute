@@ -27,6 +27,8 @@
     "/static/hatg_layout.js",
     "/static/hatg_resident_dialogs.js",
     "/static/hatg_lineage_dialogs.js",
+    "/static/hatg_seeds.js",
+    "/static/hatg_leader.js",
     "/static/hatg_panel.js",
   ];
   let assetsPromise = null;
