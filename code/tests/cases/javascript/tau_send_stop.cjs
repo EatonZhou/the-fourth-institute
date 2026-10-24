@@ -1,0 +1,51 @@
+'use strict';
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const { chromium } = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
+const { sendThenStop } = require('../../../management_portal/test_framework/tau_send_stop');
+
+(async () => {
+  const evidenceDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tau-send-stop-'));
+  let browser;
+  try {
+    browser = await chromium.launch({ headless: true });
+    const page = await browser.newPage();
+    async function prepare(delay) {
+      await page.setContent(`<button id="send">Send</button><button id="stop" disabled>Stop</button>
+        <script>window.submissions = 0; window.stops = 0; window.trusted = [];
+        document.querySelector('#send').onclick = e => { submissions++; trusted.push(e.isTrusted);
+          ${delay === null ? '' : `setTimeout(() => document.querySelector('#stop').disabled = false, ${delay});`} };
+        document.querySelector('#stop').onclick = e => { stops++; trusted.push(e.isTrusted); document.querySelector('#stop').disabled = true; };</script>`);
+      return { send: page.locator('#send'), stop: page.locator('#stop'), evidenceDir };
+    }
+    const quick = await sendThenStop(await prepare(0));
+    assert.equal(quick.send_click_count, 1);
+    assert.equal(quick.stop_click_count, 1);
+    assert.ok(quick.stop_dom_ready_ms >= quick.send_click_ms);
+    assert.ok(quick.stop_click_ms >= quick.stop_dom_ready_ms);
+    assert.deepEqual(await page.evaluate(() => [submissions, stops, trusted]), [1, 1, [true, true]]);
+
+    const delayed = await sendThenStop(await prepare(650));
+    assert.ok(delayed.send_to_stop_ms >= 650, 'disabled wait is retained, not subtracted to pass 500ms');
+    assert.equal(delayed.click_error, null);
+
+    let timeout;
+    try { await sendThenStop({ ...await prepare(null), timeoutMs: 300 }); }
+    catch (error) { timeout = error; }
+    assert.equal(timeout?.name, 'TimeoutError');
+    assert.equal(timeout.sendStopMeasurement.send_click_count, 1);
+    assert.equal(timeout.sendStopMeasurement.stop_click_count, 0);
+    assert.equal(timeout.sendStopMeasurement.send_to_stop_ms, null);
+    assert.deepEqual(await page.evaluate(() => [submissions, stops]), [1, 0], 'no replay or forced Stop');
+    const rows = fs.readFileSync(path.join(evidenceDir, 'tau-send-stop.jsonl'), 'utf8').trim().split('\n').map(JSON.parse);
+    assert.equal(rows.length, 3, 'timeout retains its own original receipt');
+    assert.equal(rows[2].click_error, 'TimeoutError');
+    assert.ok(!JSON.stringify(rows).includes('Send</button>'), 'no control content is recorded');
+    console.log('send-stop native clicks passed');
+  } finally {
+    if (browser) await browser.close();
+    fs.rmSync(evidenceDir, { recursive: true, force: true });
+  }
+})().catch(error => { console.error(error); process.exitCode = 1; });

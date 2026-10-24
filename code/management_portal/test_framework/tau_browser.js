@@ -38,6 +38,10 @@
 // `portal.triggerPath(lineageId, triggerPathId, { offset, limit })` reads the
 // original path with both required identities. It returns the entire GetTriggerPath
 // result, including paginated steps/edges/executions; it never triggers work.
+// `portal.sendThenStop({ send, stop })` accepts two exact, already discovered
+// button locators. It prepares passive timing, then clicks Send and Stop without
+// intervening helper reads. Call inside one portal.action. Original click timing
+// and failures are retained in tau-send-stop.jsonl; this does not prove cancellation.
 
 const fs = require("fs");
 const path = require("path");
@@ -46,6 +50,7 @@ const { randomUUID } = require("crypto");
 const { performance } = require("perf_hooks");
 const { observeBrowser } = require("./tau_browser_observer");
 const { safeError, safeTransport } = require("./tau_safe_error");
+const { sendThenStop } = require('./tau_send_stop');
 
 const { chromium } = require(path.join(__dirname, "tau_runtime", "node_modules", "playwright"));
 
@@ -364,7 +369,8 @@ async function openPortal({ evidenceDir, storageState, origin, pythonExecutable,
   return { browser, context, page, actor: launch.actor, buildId: launch.build_id,
     verifyIdentity: () => checkIdentity('explicit_recovery'),
     action: (name, operation, { page: target = page } = {}) => observer.action(target, name, operation),
-    requestId: request => observer.requestId(request), instruction, inputState, triggerPath, waitForInput, waitForRunningActivity, close };
+    requestId: request => observer.requestId(request), instruction, inputState, triggerPath, waitForInput, waitForRunningActivity,
+    sendThenStop: options => sendThenStop({ ...options, evidenceDir: evidence }), close };
 }
 
 module.exports = { EXPECTED_ACTOR, openPortal, safeError };
