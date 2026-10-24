@@ -435,7 +435,7 @@
       const runtime = programInvokeWireRuntime(wire);
       const messageDelivery = programInvokeProfileKey(wire.target) === "agent";
       const budgetHtml = messageDelivery ? window.PortalI18n.html`<section class="programWireBacklogStatus" data-wire-delivery-budget>
-      <div class="programDeliveryQueueHead"><strong data-wire-sent-count>${runtime.sent_count || 0} 条消息已发送</strong><button type="button" data-wire-delivery-reset${readonly ? " disabled" : ""}>重置发送计数</button></div>
+      <div class="programDeliveryQueueHead"><strong data-wire-sent-count>${runtime.sent_count || 0} 条消息已发送</strong><button type="button" class="portalButton is-compact" data-wire-delivery-reset${readonly ? " disabled" : ""}>重置发送计数</button></div>
       <span data-wire-remaining>${runtime.max_messages == null ? window.PortalI18n.t("剩余次数：无限次") : window.PortalI18n.text`剩余次数：${runtime.remaining_messages ?? runtime.max_messages}`}</span>
       <small data-wire-limit-state>${runtime.message_limit_reached ? window.PortalI18n.t("已达到发送上限，新的消息将不再发送。") : window.PortalI18n.t("计数持久保存；重置后继续接收新消息，不补发已丢弃的消息。")}</small>
     </section>` : "";
@@ -443,7 +443,7 @@
       const backlogHtml = window.PortalI18n.html`<section class="programWireBacklogStatus" data-event-wire-backlog data-pending-event-count="${pendingCount}">
         <div class="programDeliveryQueueHead">
           <strong data-delivery-count>${pendingCount} 条投递正在这条边上等待</strong>
-          <button type="button" data-delivery-refresh>刷新队列</button>
+          <button type="button" class="portalButton is-compact" data-delivery-refresh>刷新队列</button>
         </div>
         <span data-delivery-timing>${runtime.oldest_queued_at ? window.PortalI18n.text`最早进入：${esc(formatDate(runtime.oldest_queued_at))}` : window.PortalI18n.t("接收方恢复可消费后，Portal 会按边策略投递。")}${runtime.next_expires_at ? window.PortalI18n.text` · 最近过期：${esc(formatDate(runtime.next_expires_at))}` : ""}</span>
         <small>每条 Prompt 单独保存，仅影响本次调用；删除后不会再次投递。</small>

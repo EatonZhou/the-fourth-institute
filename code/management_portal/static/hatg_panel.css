@@ -3620,13 +3620,14 @@ body:has(.hatgPrimitiveCard.dragging) .programInspectorPanel {
   background: color-mix(in srgb, var(--warn) 7%, var(--panel));
   color: var(--muted);
   padding: 8px 9px;
-  font-size: 7.5px;
+  font-size: 12px;
   line-height: 1.45;
 }
 .programWireBacklogStatus strong {
   color: color-mix(in srgb, var(--warn) 72%, var(--text));
-  font-size: 8px;
+  font-size: inherit;
 }
+.programWireBacklogStatus small { font-size: inherit; }
 
 .programDeliveryQueueHead,
 .programDeliveryQueueActions {
