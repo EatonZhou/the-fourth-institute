@@ -4341,6 +4341,8 @@ button.portalFileLink {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+.nativeApprovalFile { min-width: 0; }
+.nativeApprovalFilePath { font-weight: 600; white-space: pre-wrap; overflow-wrap: anywhere; }
 .nativeTurnCard { gap: 8px; padding: 12px 14px; white-space: normal; }
 .nativeTurnHeader { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
 .nativeTurnIdentity { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; min-width: 0; }

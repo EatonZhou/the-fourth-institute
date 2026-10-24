@@ -10688,6 +10688,32 @@
         details.textContent = JSON.stringify(Object.fromEntries(Object.entries(request).filter(([key]) =>
           ["command", "cwd", "permissions", "grantRoot", "networkApprovalContext", "additionalPermissions", "reason"].includes(key))), null, 2);
         fields.append(details);
+        if (interaction.kind === "file_change") {
+          const scope = interaction.file_change;
+          const changes = scope && scope.thread_id === request.threadId && scope.turn_id === request.turnId
+            && scope.item_id === request.itemId && Array.isArray(scope.changes) ? scope.changes : [];
+          if (!changes.length) {
+            const unavailable = document.createElement("p");
+            unavailable.className = "nativeApprovalScopeMissing";
+            unavailable.textContent = window.PortalI18n.t("Provider 未提供可核对的文件改动详情。");
+            fields.append(unavailable);
+          }
+          for (const change of changes) {
+            const file = document.createElement("section");
+            file.className = "nativeApprovalFile";
+            const heading = document.createElement("div");
+            heading.className = "nativeApprovalFilePath";
+            const kind = change.kind?.type;
+            const operation = { add: "新增", delete: "删除", update: "修改" }[kind];
+            heading.textContent = `${operation ? window.PortalI18n.t(operation) + " · " : ""}${change.path}`;
+            if (change.kind?.move_path) heading.textContent += ` → ${change.kind.move_path}`;
+            const diff = document.createElement("pre");
+            diff.className = "nativeApprovalDetails";
+            diff.textContent = typeof change.diff === "string" ? change.diff : window.PortalI18n.t("Provider 未提供此文件的差异内容。");
+            file.append(heading, diff);
+            fields.append(file);
+          }
+        }
       } else if (request.mode === "url") {
         const link = document.createElement("a");
         link.textContent = window.PortalI18n.t("在新窗口完成工具请求");

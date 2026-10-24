@@ -1360,6 +1360,12 @@ class CodexAppServerClient:
             compact_waiter = self._compact_waiters.get(thread_id)
             if thread_id in self._thread_activity:
                 self._thread_activity[thread_id] = time.monotonic()
+        if method == "item/started" and (
+            goal_waiter is not None or (
+                waiter is not None and (not waiter.turn_id or waiter.turn_id == params.get("turnId"))
+            )
+        ):
+            self.user_inputs.observe_file_change(params)
         if compact_waiter is not None:
             if notification_error is not None:
                 _fail_waiter(compact_waiter, notification_error)

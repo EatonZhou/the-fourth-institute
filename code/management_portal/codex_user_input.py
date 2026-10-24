@@ -15,12 +15,40 @@ class CodexUserInputRequests:
         self._emit = emit
         self._lock = threading.RLock()
         self._pending: dict[str, dict[str, Any]] = {}
+        self._file_changes: dict[tuple[str, str, str], dict[str, Any]] = {}
+
+    def observe_file_change(self, params: dict[str, Any]) -> None:
+        """Keep the original item scope for this connection's matching approval."""
+        item = params.get("item")
+        if not isinstance(item, dict) or item.get("type") != "fileChange":
+            return
+        identity = (params.get("threadId"), params.get("turnId"), item.get("id"))
+        changes = item.get("changes")
+        if not all(isinstance(value, str) and value for value in identity):
+            return
+        if not isinstance(changes, list) or not all(
+            isinstance(change, dict) and isinstance(change.get("path"), str)
+            for change in changes
+        ):
+            return
+        with self._lock:
+            self._file_changes[identity] = {
+                "thread_id": identity[0], "turn_id": identity[1], "item_id": identity[2],
+                "changes": copy.deepcopy(changes),
+            }
 
     def accept(self, wire_id: object, params: dict[str, Any], method: str = "") -> None:
         request = normalize_interaction(method, params) if method else normalize_request(params)
         with self._lock:
             if any(entry["wire_id"] == wire_id for entry in self._pending.values()):
                 raise ValueError("duplicate pending user input request")
+            if method == "item/fileChange/requestApproval":
+                scope = self._file_changes.get((request["threadId"], request["turnId"], request["itemId"]))
+                if scope is not None:
+                    # Keep wire parameters untouched. This separate observation is
+                    # saved in the request Segment, never reconstructed from logs
+                    # or the file's later contents and never added to the answer.
+                    request["interaction"]["file_change"] = copy.deepcopy(scope)
             key = secrets.token_hex(16)
             self._pending[key] = {"wire_id": wire_id, "params": request}
             self._event(key, request, REQUEST_ITEM, {"status": "pending"})
@@ -66,6 +94,10 @@ class CodexUserInputRequests:
 
     def expire(self, thread_id: str = "", *, turn_id: str = "", wire_id: object = None) -> None:
         with self._lock:
+            if wire_id is None:
+                for identity in list(self._file_changes):
+                    if (not thread_id or identity[0] == thread_id) and (not turn_id or identity[1] == turn_id):
+                        self._file_changes.pop(identity)
             for key, entry in list(self._pending.items()):
                 params = entry["params"]
                 if thread_id and params["threadId"] != thread_id:
