@@ -440,18 +440,16 @@ def test_removing_effect_node_settles_only_confirmed_activation(primitive_store,
 
 
 def test_registered_artifact_root_is_explicit_and_can_be_overridden_without_writing(monkeypatch, tmp_path):
-    """Effect 产物存储根目录明确注册且支持绝对路径覆盖
+    """Effect 产物存储根目录属于本安装且支持绝对路径覆盖
 
-    配置注明Lineage所有权与命名空间，环境覆盖须为绝对路径，读取配置不写产物。
+    默认位于本安装 staging_root 的 shared/effect_artifacts，环境覆盖须为绝对路径，确定根目录不写产物。
 
     :design-point:
     """
-    import json
-    from pathlib import Path
+    from management_common.portal_paths import path as portal_path
     monkeypatch.delenv("PORTAL_EFFECT_ARTIFACT_ROOT")
-    configuration = json.loads((Path(__file__).resolve().parents[2] / "config" / "effect_artifacts.json").read_text())
-    assert configuration["owner"] == "lineage" and configuration["namespace"] == "effect-artifacts"
-    assert ArtifactStore().root == Path(configuration["root"])
+    default = portal_path("staging_root") / "shared" / "effect_artifacts"
+    assert ArtifactStore().root == default and not default.exists()
     monkeypatch.setenv("PORTAL_EFFECT_ARTIFACT_ROOT", str(tmp_path))
     assert ArtifactStore().root == tmp_path
     monkeypatch.setenv("PORTAL_EFFECT_ARTIFACT_ROOT", "relative")

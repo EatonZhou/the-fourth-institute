@@ -7,6 +7,7 @@ The caller must already be authorized to read the corresponding Lineage Run.
 from __future__ import annotations
 
 from management_common.format_tags import schema_matches
+from management_common.portal_paths import path as portal_path
 
 import hashlib
 import json
@@ -20,10 +21,10 @@ from typing import Any
 
 class ArtifactStore:
     def __init__(self, root: Path | None = None):
+        # Each installation keeps its Lineages' artifacts in its own staging root.
         configured = os.environ.get("PORTAL_EFFECT_ARTIFACT_ROOT")
         if root is None and configured is None:
-            configuration = Path(__file__).resolve().parents[2] / "config" / "effect_artifacts.json"
-            configured = json.loads(configuration.read_text())["root"]
+            configured = str(portal_path("staging_root") / "shared" / "effect_artifacts")
         self.root = root if root is not None else Path(str(configured or ""))
         if not self.root.is_absolute():
             raise ValueError("Effect artifact root must be an absolute configured directory")
