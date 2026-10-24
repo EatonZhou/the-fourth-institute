@@ -1,15 +1,7 @@
 'use strict';
 const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path');
-const {babelParse, traverse} = require('./babel_parse.cjs');
 const {chromium} = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
 const root = path.resolve(__dirname, '../../../management_portal/static');
-const source = fs.readFileSync(path.join(root, 'hatg_panel.js'), 'utf8');
-const names = new Set(['applyProgramMutation']);
-const parts = [];
-traverse(babelParse(source), {FunctionDeclaration(p) {
-  if (names.has(p.node.id?.name)) parts.push(source.slice(p.node.start, p.node.end));
-}});
-assert.equal(parts.length, names.size);
 (async () => {
   const browser = await chromium.launch({headless: true});
   try {
@@ -22,8 +14,8 @@ assert.equal(parts.length, names.size);
     });
     await page.goto('http://object-separation.fixture.invalid');
     for (const n of ['portal_design_system','portal_themes','hatg_panel','lineage_function_blocks']) await page.addStyleTag({url: '/static/'+n+'.css'});
-    for (const n of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min','lineage_graph','hatg_lineage_state','hatg_family_blocks','hatg_layout']) await page.addScriptTag({url:'/static/'+n+'.js'});
-    await page.evaluate(parts => {
+    for (const n of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min','lineage_graph','hatg_lineage_state','hatg_program_edits','hatg_family_blocks','hatg_layout']) await page.addScriptTag({url:'/static/'+n+'.js'});
+    await page.evaluate(() => {
       window.saved = []; window.failSave = false; window.requestCount = 0;
       const title = '[TAU:testrun_3bb414d982c23e92:lineage.hatg] ';
       const inner = {id:'inner', title:title+'Inner renamed', x:50, y:50, member_ids:['event','resident']};
@@ -52,17 +44,21 @@ assert.equal(parts.length, names.size);
       const renderProgramInspector = ()=>{},toast = ()=>{};
       const commitLineage = () => renderGraph();
       const flushHatgViewPreferenceSave = () => Promise.resolve();
-      // Separation and expansion are the production layout and Function Block
-      // modules'; only the dependencies this page provides are given.
+      // Separation, expansion and the edit that resizes an object are the
+      // production layout, Function Block and program edit modules'; only the
+      // dependencies this page provides are given.
       const create = (module, factory, provided) => module[factory](Object.fromEntries(module.dependencies.map(
         name => [name, provided[name] ?? (() => { throw new Error(`Unexpected use of ${name}`); })])));
       const {separateGraphObject} = create(PortalHatgLayout, 'createLayout', {
         state, graphItemById, functionBlockInstanceById, functionBlockElements, renderGraph, saveLineageLayout});
       window.separate = separateGraphObject;
-      eval(parts.join('\n')+'\nwindow.makeQueue = PortalHatgLineageState.createLineageEditQueue;window.mutate = applyProgramMutation;');
+      const lineageEditQueue = PortalHatgLineageState.createLineageEditQueue(), intent = lineageEditQueue.activate('fixture');
+      window.mutate = create(PortalHatgProgramEdits, 'createProgramEdits', {
+        $id: id => document.getElementById(id), state, programFeature, lineageEditQueue, commitLineage,
+        flushHatgViewPreferenceSave, separateGraphObject, renderLineageSurface, renderProgramInspector, toast,
+      }).applyProgramMutation;
       window.expand = create(PortalHatgFamilyBlocks, 'createFamilyBlocks', {
         state, renderLineageSurface, graphVisibleModel, separateGraphObject}).setFunctionBlockExpanded;
-      const lineageEditQueue = window.makeQueue(), intent = lineageEditQueue.activate('fixture');
       window.resetQueue = () => lineageEditQueue.activate('fixture');
       window.render = renderGraph;
       window.bounds = () => {
@@ -72,7 +68,7 @@ assert.equal(parts.length, names.size);
         return {overlap:intersects(header,card),header:header.toJSON(),card:card.toJSON()};
       };
       renderGraph();graph.fit({duration:0,maxScale:1});
-    }, parts);
+    });
     const before = await page.evaluate(()=>bounds());
     assert.equal(before.overlap, true, 'fixture reproduces a sibling obscuring the expanded title');
     const original = await page.evaluate(()=>nodes.map(({id,x,y})=>({id,x,y})));

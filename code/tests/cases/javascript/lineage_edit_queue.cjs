@@ -11,11 +11,12 @@ const bootstrap = `
   const programFeature = {beginMutation() {}, endMutation() {}};
   const toast = (...args) => hooks.toasts.push(args);
   const setSyncStatus = (...args) => hooks.statuses.push(args);
-  const showProgramMutationStatus = message => hooks.statuses.push([message, "mutation"]);
   const renderProgramInspector = () => {};
-  const selectNode = async () => {};
-  const flushLineageSave = async () => {throw new Error("Unexpected graph save")};
   const renderLineageSurface = () => hooks.render?.(state);
+  // A part gets only the dependencies these cases give; any other fails when used.
+  const create = (module, factory, given) => module[factory](Object.fromEntries(
+    module.dependencies.map(name => [name, Object.hasOwn(given, name)
+      ? given[name] : () => { throw new Error("Unexpected use of " + name); }])));
   const societyService = {
     loadLineage: id => hooks.loadLineage(id),
     updateLayout: body => apiPost("/lineage/api/layout/positions", body),
@@ -31,11 +32,13 @@ const bootstrap = `
       renderGraphRuntimePresentation: () => {}, renderControls: () => {}, updateLineageSummary: () => {},
       currentTemplateController: () => ({render() {}}),
     });
-  // Object separation is the layout module's; dependencies it does not get here fail.
-  const placement = {state, commitLineage, saveLineageLayout, toast};
-  const {separateGraphObject} = window.PortalHatgLayout.createLayout(Object.fromEntries(
-    window.PortalHatgLayout.dependencies.map(name => [name, Object.hasOwn(placement, name)
-      ? placement[name] : () => { throw new Error("Unexpected use of " + name); }])));
+  // Object separation is the layout module's, and the edit and the dropped
+  // component's creation the program edit module's.
+  const {separateGraphObject} = create(window.PortalHatgLayout, "createLayout",
+    {state, commitLineage, saveLineageLayout, toast});
+  const {applyProgramMutation, createProgramComponentFromDrop} = create(window.PortalHatgProgramEdits,
+    "createProgramEdits", {state, programFeature, toast, lineageEditQueue, commitLineage, separateGraphObject,
+      renderLineageSurface, renderProgramInspector, societyService, $id: () => null});
   activateLineageEdits(initial.lineage_id);
   return {state, lineageEditQueue, activateLineageEdits, saveLineageLayout, flushLineageLayoutSave,
     applyProgramMutation, createProgramComponentFromDrop,
@@ -67,10 +70,10 @@ async function nodeProbe() {
     }
     return {lineage: {...fixture.state.lineage, revision: fixture.state.lineage.revision + 1}};
   };
-  for (const name of ["hatg_graph_model.js", "hatg_lineage_state.js", "hatg_layout.js"]) {
+  for (const name of input.modules) {
     new Function("window", fs.readFileSync(input.root + "/management_portal/static/" + name, "utf8"))(window);
   }
-  fixture = new Function("initial", "apiPost", "hooks", input.functions + bootstrap)(initial, post, hooks);
+  fixture = new Function("initial", "apiPost", "hooks", bootstrap)(initial, post, hooks);
   const move = (x = 20) => fixture.saveLineageLayout([{id: "event_source_111111111111", x, y: 60}]);
   const create = () => fixture.applyProgramMutation(() => post("/create", {lineage_id: fixture.state.lineage.lineage_id, expected_revision: fixture.state.lineage.revision}), "");
   const absorb = promise => promise.then(value => ({value}), error => ({error}));
@@ -154,8 +157,7 @@ async function ownerProbe() {
     url: 'https://lineage.fixture.invalid', runScripts: 'outside-only',
   });
   global.window = dom.window;
-  for (const name of ['portal_text.js', 'portal_state.js', 'lineage_program.js', 'hatg_graph_model.js',
-    'hatg_lineage_state.js', 'hatg_layout.js']) {
+  for (const name of ['portal_text.js', 'portal_state.js', 'lineage_program.js', ...input.modules]) {
     window.eval(fs.readFileSync(input.root + '/management_portal/static/' + name, 'utf8'));
   }
   window.PortalAPI = {get: async () => JSON.parse(fs.readFileSync(
@@ -180,7 +182,7 @@ async function ownerProbe() {
   };
   const initial = await request("/state");
   const hooks = {toasts: [], statuses: [], loadLineage: () => request("/state")};
-  const fixture = new Function("initial", "apiPost", "hooks", input.functions + bootstrap)(initial, post, hooks);
+  const fixture = new Function("initial", "apiPost", "hooks", bootstrap)(initial, post, hooks);
   const size = {width: 154 / 1280 * 100, height: 94 / 900 * 100};
   fixture.state.graphController = {
     getPlacementGeometry: () => ({

@@ -4,12 +4,11 @@ const path = require('node:path');
 const vm = require('node:vm');
 const test = require('node:test');
 const { babelParse, traverse } = require('./babel_parse.cjs');
-const source = fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static/hatg_panel.js'), 'utf8');
-let callback, beforeWire;
+const { STATIC, readHatgModule, createHatgModule } = require('./hatg_modules.cjs');
+const source = fs.readFileSync(path.join(STATIC, 'hatg_panel.js'), 'utf8');
+let callback;
 traverse(babelParse(source, 'hatg_panel.js'), { ObjectProperty(p) {
   if (p.node.key.name === 'onConflict') callback = source.slice(p.node.value.start, p.node.value.end);
-}, FunctionDeclaration(p) {
-  if (p.node.id.name === 'saveOpenProgramComponentDraftBeforeWire') beforeWire = source.slice(p.node.start, p.node.end);
 } });
 
 for (const refreshed of [true, false]) test(`conflict preserves dirty form and ${refreshed ? 'rebases to refreshed revision' : 'requires a fresh read before retry'}`, () => {
@@ -40,16 +39,29 @@ for (const refreshed of [true, false]) test(`conflict preserves dirty form and $
   assert.match(error.message, refreshed ? /核对后再次点击保存/ : /先重读，再尝试保存/);
 });
 
+// A port click first saves the open inspector draft; the click is the
+// production program edit module's, with the inspector's save replaced.
 for (const conflict of [true, false]) test(`port interaction ${conflict ? 'blocks a conflicted draft' : 'still saves an ordinary draft'}`, async () => {
   const form = {dataset: {programDraftDirty: 'true', programDraftConflict: String(conflict)}, isConnected: true};
-  const state = {lineage: {revision: 3}};
-  let saves = 0;
-  const context = vm.createContext({state, toast() {}, window: {PortalI18n: {t: text => text}},
-    $id: () => ({dataset: {componentId: 'filter_fixture'}, querySelector: () => form}),
-    programComponentById: () => ({id: 'filter_fixture'}),
+  const filter = {id: 'filter_fixture', kind: 'filter', config: {}};
+  const state = {lineage: {lineage_id: 'lineage_fixture', revision: 3}};
+  let saves = 0, draws = 0;
+  const tag = (strings, ...values) => strings.reduce((out, part, i) => out + part + (values[i] ?? ''), '');
+  const context = vm.createContext({PortalI18n: {t: text => text, text: tag}});
+  context.window = context;
+  vm.runInContext(fs.readFileSync(path.join(STATIC, 'lineage_program.js'), 'utf8'), context);
+  vm.runInContext(readHatgModule('hatg_program_edits.js'), context);
+  const {handleProgramPortClick} = createHatgModule(context.PortalHatgProgramEdits, 'createProgramEdits', {
+    state, toast() {}, renderGraph: () => { draws += 1; },
+    $id: id => (id === 'programInspectorPanel' ? {dataset: {componentId: filter.id}, querySelector: () => form} : null),
+    programComponentById: id => (id === filter.id ? filter : null),
+    displayGraphItemById: id => (id === filter.id ? filter : null),
     saveProgramComponentFromInspector: async () => {saves++; state.lineage.revision++;},
   });
-  const result = await vm.runInContext(`(${beforeWire})()`, context);
-  assert.equal(result, conflict ? 'blocked' : 'saved');
+  const output = context.PortalLineageProgram.portsForNode(filter).find(port => port.direction === 'out');
+  await handleProgramPortClick(output);
   assert.equal(saves, conflict ? 0 : 1);
+  assert.equal(state.programWireDraft?.port_id, conflict ? undefined : 'output',
+    conflict ? 'a conflicted draft blocks the wire' : 'the wire starts from the saved component');
+  assert.equal(draws, conflict ? 0 : 1);
 });

@@ -8,8 +8,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { JSDOM, VirtualConsole } = require('jsdom');
-const { babelParse } = require('./babel_parse.cjs');
-const { hatgModuleFiles } = require('./hatg_modules.cjs');
+const { hatgSources, overrideHatgFunctions, startHatgRuntime } = require('./hatg_modules.cjs');
 const STATIC = path.resolve(__dirname, '../../../management_portal/static');
 const plain = value => JSON.parse(JSON.stringify(value));
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -78,20 +77,6 @@ function serverBoundary() {
   } };
 }
 
-function exposeRuntime(source) {
-  const outer = babelParse(source, 'hatg_panel.js').program.body[0].expression.callee.body;
-  const factory = outer.body.find(node => node.type === 'FunctionDeclaration' && node.id.name === 'createHatgRuntime');
-  assert.ok(factory, 'original factory lexical scope');
-  const returned = factory.body.body.find(node => node.type === 'ReturnStatement');
-  assert.ok(returned, 'original factory return');
-  // Same scoped bridge as the existing HATG DOM harness. The broad page redraw
-  // calls the real inspector; all save/reset/merge/normalization code is intact.
-  const bridge = `renderLineageSurface = () => renderProgramInspector();
-    return { state, activateLineageEdits, renderProgramInspector,
-      load: id => societyService.loadLineage(id) };`;
-  return source.slice(0, returned.start) + bridge + source.slice(returned.end, outer.end - 1)
-    + '\nwindow.__routeRuntime = createHatgRuntime;\n' + source.slice(outer.end - 1);
-}
 
 async function documentFixture(boundary, transform = (_name, source) => source) {
   const errors = [], observers = new Set();
@@ -130,12 +115,20 @@ async function documentFixture(boundary, transform = (_name, source) => source) 
       'hatg_panel_features.js', 'hatg_panel_state.js', 'portal_instruction_client.js',
       'portal_society_service.js', 'portal_resident_discovery_service.js',
       'lineage_program.js', 'lineage_element_fields.js', 'lineage_primitive_inspector.js',
-      'lineage_invocation_inspector.js', ...hatgModuleFiles(), 'hatg_panel.js']) {
-      let source = transform(name, fs.readFileSync(path.join(STATIC, name), 'utf8'));
-      if (name === 'hatg_panel.js') source = exposeRuntime(source);
-      window.eval(source + `\n//# sourceURL=${name}`);
+      'lineage_invocation_inspector.js']) {
+      window.eval(transform(name, fs.readFileSync(path.join(STATIC, name), 'utf8')) + `\n//# sourceURL=${name}`);
     }
-    const api = window.__routeRuntime();
+    // The real runtime and its parts; the broad page redraw calls only the real
+    // inspector. All save/reset/merge/normalization code is intact.
+    const sources = Object.fromEntries(Object.entries(hatgSources()).map(([name, text]) => [name, transform(name, text)]));
+    const runtime = startHatgRuntime(dom.getInternalVMContext(), overrideHatgFunctions(sources, {
+      renderLineageSurface: '() => renderProgramInspector()',
+    }));
+    const api = {
+      state: runtime.state, activateLineageEdits: runtime.get('activateLineageEdits'),
+      renderProgramInspector: runtime.get('renderProgramInspector'),
+      load: id => runtime.get('societyService').loadLineage(id),
+    };
     // New document always reads the persisted fixture through production clients.
     api.state.lineage = await api.load(LINEAGE);
     api.state.selectedProgramObjectId = WIRE;

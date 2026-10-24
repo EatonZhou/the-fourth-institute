@@ -20,26 +20,26 @@ def panel_functions(names):
     return "\n".join(result)
 
 
-# Runtime functions the probe drives. The edit queue, layout save, Lineage
-# commit, object separation and the Resident ID of a node come from the
-# production module scripts the driver loads.
-FUNCTIONS = [
-    "applyProgramMutation", "createProgramComponentFromDrop",
+# The production module scripts the probe drives: the Resident ID of a node,
+# the edit queue, layout save and Lineage commit, program edits and the
+# creation of a dropped component, and object separation.
+MODULES = [
+    "hatg_graph_model.js", "hatg_lineage_state.js", "hatg_program_edits.js", "hatg_layout.js",
 ]
 DRIVER = ROOT / "tests/cases/javascript/lineage_edit_queue.cjs"
 
 
 def run_probe(mode, record_property, **values):
-    source = panel_functions(FUNCTIONS)
+    source = "".join((ROOT / "management_portal/static" / name).read_text() for name in MODULES)
     result = subprocess.run(
         ["node", str(DRIVER)], cwd=ROOT,
-        input=json.dumps({"mode": mode, "root": str(ROOT), "functions": source, **values}),
+        input=json.dumps({"mode": mode, "root": str(ROOT), "modules": MODULES, **values}),
         text=True, capture_output=True, timeout=65,
     )
     assert result.returncode == 0, result.stderr[-6000:]
     proof = json.loads(result.stdout)
     record_property("probe", json.dumps(proof, ensure_ascii=False))
-    record_property("function_bundle_sha256", hashlib.sha256(source.encode()).hexdigest())
+    record_property("module_bundle_sha256", hashlib.sha256(source.encode()).hexdigest())
     return proof
 
 

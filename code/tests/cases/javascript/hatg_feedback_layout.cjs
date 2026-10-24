@@ -1,14 +1,9 @@
 'use strict';
 const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path');
 const { chromium } = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
-const { babelParse, traverse } = require('./babel_parse.cjs');
 const portal = path.resolve(__dirname, '../../../management_portal');
 const source = fs.readFileSync(path.join(portal, 'static/hatg_panel.js'), 'utf8');
-const functions = [];
-traverse(babelParse(source), { FunctionDeclaration(p) {
-  if (['applyProgramMutation', 'showProgramMutationStatus'].includes(p.node.id?.name))
-    functions.push(source.slice(p.node.start, p.node.end));
-} });
+const edits = fs.readFileSync(path.join(portal, 'static/hatg_program_edits.js'), 'utf8');
 const observerStart = source.indexOf('    const graphControlSizes = new Map(');
 const observerEnd = source.indexOf('graphControlSizes.forEach((_, element) => graphControlObserver.observe(element));', observerStart);
 assert.ok(observerStart > 0 && observerEnd > observerStart);
@@ -29,18 +24,26 @@ const observation = source.slice(observerStart, source.indexOf('\n', observerEnd
     for (const name of ['portal_design_system', 'portal_themes', 'hatg_panel'])
       await page.addStyleTag({url: '/static/' + name + '.css'});
     await page.addStyleTag({content: 'html,body {margin:0;height:100%} .portalHatgPanelComponent {height:100vh} #agentLineageShell {height:100%;display:block} #hatgPane {height:100%;display:flex;flex-direction:column}'});
-    await page.evaluate(({functions, observation}) => {
+    await page.addScriptTag({content: edits});
+    await page.evaluate(({observation}) => {
       window.$id = id => document.getElementById(id);
       window.state = {lineage: {lineage_id: 'fixture'}};
       window.toastCalls = []; window.requestCount = 0;
       window.toast = (...args) => toastCalls.push(args);
-      window.lineageEditQueue = {capture: id => id, isCurrent: () => true, enqueue: (_intent, fn) => fn()};
-      window.programFeature = {beginMutation() {}, endMutation() {}};
-      window.renderProgramInspector = window.renderLineageSurface = () => {};
-      window.commitLineage = lineage => {state.lineage = lineage;};
-      window.programMutationStatusTimer = 0; window.graphControlObserver = null;
-      (0, eval)(functions.join('\n') + '\n' + observation);
-    }, {functions, observation});
+      // The edit and its status line are the production program edit module's;
+      // a dependency this page does not give fails when it is used.
+      const given = {
+        $id, state, toast, lineageEditQueue: {capture: id => id, isCurrent: () => true, enqueue: (_intent, fn) => fn()},
+        programFeature: {beginMutation() {}, endMutation() {}},
+        renderProgramInspector: () => {}, renderLineageSurface: () => {},
+        commitLineage: lineage => {state.lineage = lineage;},
+      };
+      window.applyProgramMutation = PortalHatgProgramEdits.createProgramEdits(Object.fromEntries(
+        PortalHatgProgramEdits.dependencies.map(name => [name, given[name] ?? (() => { throw new Error(`Unexpected use of ${name}`); })]),
+      )).applyProgramMutation;
+      window.graphControlObserver = null;
+      (0, eval)(observation);
+    }, {observation});
     await page.evaluate(async () => {
       for (let i = 1; i <= 5; i++) await applyProgramMutation(async () => {
         requestCount++; return {lineage: {lineage_id: 'fixture'}};
