@@ -44,6 +44,47 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     const app = {workbench_id: 'workbench_fixture', title: 'Published app', url: '/workbenches/view?id=workbench_fixture',
       published_revision: 1, navigation: 'top'};
 
+    if (process.argv[2] === 'secondary-pointer') {
+      await setup();
+      await completeCatalog([app, {...app, workbench_id: 'workbench_second', title: 'Second published workbench'},
+        {...app, workbench_id: 'workbench_third', title: 'Third published workbench'}]);
+      await page.waitForFunction(() => PortalNav.secondaryItems('workbenches').length === 4);
+      await page.addStyleTag({url: '/static/wall.css'});
+      await page.evaluate(() => {
+        // WALL's flex host gives an unpositioned fixed popover a static
+        // position at the top of the page, even when appended last.
+        document.body.classList.add('wallPage');
+        window.pointerTargets = [];
+        for (const type of ['pointerdown', 'pointerup', 'click']) {
+          document.addEventListener(type, event => pointerTargets.push({type,
+            module: event.target.closest('[data-module-link]')?.dataset.moduleLink || null,
+            secondary: event.target.closest('[data-portal-secondary-item]')?.dataset.portalSecondaryItem || null}), true);
+        }
+        // Keep the first animation frame pending while a real pointer click
+        // focuses its link. No popup may intercept the release in this interval.
+        window.pendingFrames = [];
+        window.requestAnimationFrame = callback => pendingFrames.push(callback);
+      });
+      const target = page.locator('[data-module-link="workbenches"]');
+      const rect = await target.boundingBox();
+      const x = rect.x + rect.width / 2, y = rect.y + rect.height / 2;
+      await page.mouse.move(x, y);
+      await page.mouse.down();
+      const duringPress = await page.evaluate(({x, y}) => ({
+        hit: document.elementFromPoint(x, y)?.closest('[data-module-link]')?.dataset.moduleLink || null,
+        popover: document.querySelector('#portalSecondaryNavPopover')?.getBoundingClientRect().toJSON(),
+        events: pointerTargets,
+      }), {x, y});
+      await page.mouse.up();
+      assert.ok(duringPress.popover?.width > 0, 'focus opens the hydrated secondary menu');
+      assert.equal(duringPress.hit, 'workbenches', JSON.stringify(duringPress));
+      await page.waitForURL('**/workbenches', {timeout: 2000});
+      assert.equal(clicks.at(-1).module, 'workbenches');
+      assert.deepEqual(errors, []);
+      console.log('secondary navigation stays clear of the native pointer release before the next frame');
+      return;
+    }
+
     if (process.argv[2] === 'ordering') {
       await setup('fixture');
       await completeCatalog([app]);

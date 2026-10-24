@@ -242,10 +242,15 @@
     secondaryModuleId = moduleId;
     const popover = ensureSecondaryPopover();
     popover.innerHTML = secondaryMarkup(moduleId, definition);
+    // Focus can open this menu between pointerdown and pointerup. Keep its
+    // measurable box out of hit testing until it is anchored below the link;
+    // a flex host otherwise places a new fixed popover over the header.
+    popover.style.visibility = "hidden";
     popover.hidden = false;
     secondaryOverlayController?.activate();
     trigger.setAttribute("aria-expanded", "true");
-    window.requestAnimationFrame(positionSecondaryPopover);
+    positionSecondaryPopover();
+    popover.style.visibility = "";
   }
 
   function scheduleSecondaryOpen(trigger, moduleId) {

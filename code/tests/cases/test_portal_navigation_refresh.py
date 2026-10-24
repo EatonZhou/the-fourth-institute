@@ -4,7 +4,7 @@ import subprocess
 import pytest
 
 
-@pytest.mark.parametrize("mode", ["interaction", "ordering"])
+@pytest.mark.parametrize("mode", ["interaction", "ordering", "secondary-pointer"])
 def test_navigation_hydration_preserves_click_and_keyboard_target(mode):
     """导航目录异步返回时保留原生鼠标点击与键盘焦点。
 
