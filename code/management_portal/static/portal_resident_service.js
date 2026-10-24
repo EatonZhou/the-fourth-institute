@@ -684,8 +684,22 @@
           }
           throw error;
         }
+        // ApplyLineageChanges returns affected IDs, not a Lineage snapshot.
+        // Read the committed definition before measuring the newly added cards.
+        // A read failure must not turn an accepted installation into a retry.
+        let lineage = null;
+        let lineageRefreshError = null;
+        if (definition) {
+          try {
+            lineage = (await execute("GetLineage", { lineage_id: plan.lineage_id })).lineage;
+            if (lineage?.lineage_id !== plan.lineage_id) throw new Error("Watchboard graph identity mismatch");
+          } catch (error) {
+            lineage = null;
+            lineageRefreshError = error;
+          }
+        }
         return { ...await client.watchboard(residentId),
-          lineage: definition?.lineage,
+          lineage, lineageRefreshError,
           created_component_ids: action === "add" ? operations
             .filter(operation => operation.op === "create" && operation.kind === "component")
             .map(operation => operation.value.id) : [],

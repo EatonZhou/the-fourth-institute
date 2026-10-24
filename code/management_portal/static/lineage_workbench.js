@@ -4943,6 +4943,9 @@
           // Newly installed cards must be visible when their rendered bounds
           // are measured. Revealing them afterwards leaves their default slots.
           state.watchboardHiddenResidents.delete(residentId);
+          if (result.lineageRefreshError) {
+            window.PortalUI.toast(window.PortalI18n.text`Watchboard 已更新，但图刷新失败；请刷新查看，勿重复安装：${result.lineageRefreshError.message || result.lineageRefreshError}`, "warning");
+          }
           if (result.lineage) {
             try {
               await lineageWorkbench?.getPanel("hatg")?.applyLineageMutation(result.lineage, {

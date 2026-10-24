@@ -55,7 +55,15 @@ assert.equal(Object.keys(parts).length, 6);
       const required = value => value, residentPath = value => value, keyed = () => ({});
       const get = async () => ({watchboard: {installation: {lineage_id: 'fixture', revision: 1, files: [], install: [
         ...added.map(value => ({op: 'create', kind: 'component', value})), {op: 'create', kind: 'wire', value: {id: 'wire'}}], remove: []}}});
-      const execute = async (instruction, args) => {requests.push({instruction, args}); return {lineage: {lineage_id: 'fixture', nodes: [...existing, ...added]}};};
+      let failRead = false;
+      const execute = async (instruction, args) => {
+        requests.push({instruction, args});
+        if (instruction === 'ApplyLineageChanges') return {created_ids: [...added.map(n => n.id), 'wire'], updated_ids: [], deleted_ids: []};
+        assertInstruction(instruction);
+        if (failRead) throw Error('graph read unavailable');
+        return {lineage: {lineage_id: 'fixture', nodes: [...existing, ...added]}};
+      };
+      const assertInstruction = instruction => {if (instruction !== 'GetLineage') throw Error('unexpected instruction');};
       const client = {watchboard: async () => ({watchboard: {installed: true}})};
       const residentService = eval('({' + parts.updateWatchboard + '})');
       const syncGraphNodePosition = eval('(' + parts.syncGraphNodePosition + ')');
@@ -106,6 +114,16 @@ assert.equal(Object.keys(parts).length, 6);
         await window.install('add', 'resident');
         return {requests: requests.length - before, installed: state.detail?.installed, notices};
       };
+      window.checkReadFailure = async () => {
+        failPlacement = false;
+        failRead = true;
+        state.detail = {installed: false};
+        const beforeRequests = requests.length, beforeNotices = notices.length;
+        await window.install('add', 'resident');
+        failRead = false;
+        return {requests: requests.slice(beforeRequests).map(r => r.instruction), installed: state.detail.installed,
+          notices: notices.slice(beforeNotices)};
+      };
       window.checkForkPlacementFailure = async () => {
         const before = requests.length, beforeOpened = opened.length, beforeNotices = notices.length;
         const anchor = added[0];
@@ -119,7 +137,7 @@ assert.equal(Object.keys(parts).length, 6);
     }, parts);
     assert.deepEqual(result.overlaps, [], 'installed long-title cards use their actual rendered rectangles');
     assert.deepEqual(result.existing, result.original, 'installation cannot rearrange existing shared objects');
-    assert.equal(result.requests.length, 1, 'one committed definition, no mutation replay');
+    assert.deepEqual(result.requests.map(r => r.instruction), ['ApplyLineageChanges', 'GetLineage'], 'one committed definition then an authoritative read, no mutation replay');
     assert.equal(result.saves.length, 1, 'all newly installed positions are persisted together');
     assert.ok(result.saves[0].length > 0 && result.saves[0].every(item => item.id.startsWith('added_')));
     assert.equal(result.installed, true); assert.deepEqual(result.notices, []); assert.deepEqual(errors, []);
@@ -132,7 +150,7 @@ assert.equal(Object.keys(parts).length, 6);
     assert.equal(fork.opened[0].id, 'fork');
     assert.equal(fork.opened[0].options.revealInGraph, true);
     const failure = await page.evaluate(() => checkPlacementFailure());
-    assert.equal(failure.requests, 1, 'a failed layout save cannot replay the installation');
+    assert.equal(failure.requests, 2, 'a failed layout save permits only the committed write and read');
     assert.equal(failure.installed, true, 'committed installation still reaches the extension menu');
     assert.equal(failure.notices.length, 1); assert.equal(failure.notices[0][1], 'warning');
     const forkFailure = await page.evaluate(() => checkForkPlacementFailure());
@@ -140,6 +158,10 @@ assert.equal(Object.keys(parts).length, 6);
     assert.equal(forkFailure.requests, 0, 'opening a committed Fork cannot replay its creation');
     assert.equal(forkFailure.opened[0].id, 'fork-failed-layout');
     assert.equal(forkFailure.notices.length, 1); assert.equal(forkFailure.notices[0][1], 'warning');
+    const readFailure = await page.evaluate(() => checkReadFailure());
+    assert.deepEqual(readFailure.requests, ['ApplyLineageChanges', 'GetLineage'], 'failed read never repeats the accepted write');
+    assert.equal(readFailure.installed, true, 'committed installation remains visible when graph refresh fails');
+    assert.equal(readFailure.notices.length, 1); assert.equal(readFailure.notices[0][1], 'warning');
     console.log('Watchboard committed installation separates only new measured cards and persists one layout batch');
   } finally {await browser.close();}
 })().catch(error => {console.error(error); process.exitCode = 1;});
