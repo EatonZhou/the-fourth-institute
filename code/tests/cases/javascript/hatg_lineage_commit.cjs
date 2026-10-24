@@ -88,6 +88,8 @@ function fixture(entries = []) {
       PortalAPI: { get: () => { throw new Error('Unexpected network read'); } },
       PortalInstructionClient: { execute: () => { throw new Error('Unexpected instruction'); } },
       PortalUIPrimitives: { randomUUID: () => 'commit-key' },
+      // The canvas search's server client; these cases never search.
+      PortalResidentDiscoveryService: { createClient: () => ({}) },
       requestAnimationFrame: callback => callback(),
       __draws: draws, __drawn: drawn, __toasts: toasts, __bindings: bindings,
     },

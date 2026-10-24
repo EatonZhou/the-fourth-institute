@@ -143,6 +143,8 @@ function fixture(mutation) {
         execute: (instruction, args) => new Promise((resolve, reject) => requests.push({ instruction, body: plain(args), resolve, reject })),
       },
       PortalUIPrimitives: { randomUUID: () => 'layout-key' },
+      // The canvas search's server client; arranging never searches.
+      PortalResidentDiscoveryService: { createClient: () => ({}) },
       requestAnimationFrame: callback => callback(),
       __paint: model => paints.push(plain(model.nodes.map(({ id, x, y }) => ({ id, x, y })))),
     },
