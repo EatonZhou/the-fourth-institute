@@ -129,4 +129,30 @@ function mailboxResponseMetadata(payload, { residentId, entryKey }) {
       ? { ...counts(summary), unread_membership_count: entries(summary)?.length ?? null, target_entries: target(summary) } : null };
 }
 
-module.exports = { observeMailboxFrames, mailboxResponseMetadata };
+// Only original target Resident events, never message bodies or error details.
+// Missing/null/malformed containers remain distinguishable. This is evidence
+// extraction, not a completion verdict: state events with omitted payloads do
+// not establish input identity, and later responses must not fill these slots.
+function mailboxResidentEventMetadata(events, target) {
+  requireTarget(target);
+  const type = value => value === null ? 'null' : Array.isArray(value) ? 'array' : typeof value;
+  const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+  const fields = (value, names) => {
+    if (!object(value)) return { type: type(value), fields: null };
+    return { type: 'object', fields: Object.fromEntries(names.map(name => {
+      const field = value[name], present = Object.hasOwn(value, name);
+      const scalar = field === null || ['boolean', 'number', 'string'].includes(typeof field);
+      return [name, { present, type: present ? type(field) : 'missing',
+        value: present && scalar ? field : null }];
+    })) };
+  };
+  return { type: type(events), target_events: Array.isArray(events)
+    ? events.filter(event => object(event) && event.resident_id === target.residentId).map(event => ({
+      ...fields(event, ['resident_id', 'event_type', 'cursor', 'version', 'payload_omitted']),
+      payload: fields(event.payload, ['message_id', 'input_message_id', 'completion_id']),
+      input_state: fields(object(event.payload) ? event.payload.input_state : undefined,
+        ['message_id', 'state', 'updated_at']),
+    })) : null };
+}
+
+module.exports = { observeMailboxFrames, mailboxResponseMetadata, mailboxResidentEventMetadata };

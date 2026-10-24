@@ -17,3 +17,15 @@ def test_mailbox_original_frames_and_global_counts():
     script = Path(__file__).with_name('javascript') / 'tau_mailbox_evidence.cjs'
     result = subprocess.run(['node', str(script)], capture_output=True, text=True, timeout=30)
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_mailbox_original_nested_input_identity():
+    """原通知嵌套输入身份不可丢弃，省略、空值和格式错误分别留证。
+
+    :design: decision_c953eab654cd
+    :risk: no-external-side-effects
+    :profiles: local.fixture
+    """
+    script = Path(__file__).with_name('javascript') / 'tau_mailbox_event_evidence.cjs'
+    result = subprocess.run(['node', str(script)], capture_output=True, text=True, timeout=10)
+    assert result.returncode == 0, result.stdout + result.stderr
