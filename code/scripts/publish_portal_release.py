@@ -51,6 +51,7 @@ LINEAGE_WORKBENCH_RELEASE_UNIT = (
     'management_portal/static/hatg_program_edits.js',
     'management_portal/static/hatg_family_blocks.js',
     'management_portal/static/hatg_node_status.js',
+    'management_portal/static/hatg_canvas_selection.js',
     'management_portal/static/hatg_function_block_menu.js',
     'management_portal/static/hatg_program_inspector.js',
     'management_portal/static/hatg_relations.js',

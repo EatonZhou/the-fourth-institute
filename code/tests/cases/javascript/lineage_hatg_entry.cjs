@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const {readHatgModule, createHatgModule} = require('./hatg_modules.cjs');
 
 const staticRoot = path.resolve(__dirname, '../../../management_portal/static');
 const source = fs.readFileSync(path.join(staticRoot, 'lineage_workbench.js'), 'utf8');
@@ -23,17 +24,20 @@ function entry(query, {collapsed = false, hidden = true, delayed = false} = {}) 
   const calls = [], targets = [], reveals = [];
   const layout = {hidden: new Set(hidden ? ['hatg'] : []), collapsed: new Set(collapsed ? ['hatg'] : []), active: 'chat'};
   const graphState = {lineage: {lineage_id: lineageId}, selectedProgramObjectId: ''};
-  const graph = vm.createContext({
+  // Selecting the program object is the production canvas selection module's.
+  const selectionContext = vm.createContext({});
+  selectionContext.window = selectionContext;
+  vm.runInContext(readHatgModule('hatg_canvas_selection.js'), selectionContext);
+  const graph = createHatgModule(selectionContext.PortalHatgCanvasSelection, 'createCanvasSelection', {
     state: graphState,
     displayProgramComponentById: id => id === componentId ? {id} : null,
     displayProgramWireById: () => null,
     functionBlockInstanceById: id => id === familyId ? {id, family: {}} : null,
-    clearCanvasSelection: noop, publishLocation: noop,
+    programFeature: {clearSelection: () => false}, publishLocation: noop,
     renderGraphSelection: () => true, renderGraph: noop,
     renderControls: noop, renderProgramInspector: noop,
     revealSelectedGraphNode: async id => reveals.push(id),
   });
-  vm.runInContext(owner(hatgSource, 'selectProgramObject'), graph);
   let release;
   const ready = delayed ? new Promise(resolve => { release = resolve; }) : Promise.resolve();
   const panel = {
