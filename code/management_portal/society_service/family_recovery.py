@@ -97,17 +97,22 @@ def _select(facade, message, entries):
         if found and found.get("role") == "user" and quoted not in entries and _allowed(facade, found, message["author_id"]):
             return {"request_message_id": quoted}
         return {"status": "unavailable", "error": "引用的消息不是你可以恢复的 Family 请求。"}
-    candidates, waiting = [], []
+    candidates, waiting, seen = [], [], set()
+    completed = None
     # Bare continue only considers the sender's requests, never another user's work.
     for item in reversed(repository.read_messages(facade_id, limit=200)):
         mid = str(item.get("message_id") or "")
         if mid == message["message_id"] or item.get("role") != "user" or not same_actor(item.get("author_id"), message["author_id"]):
             continue
-        if mid in entries:
-            root = entries[mid].get("request_message_id")
-            if root and not candidates and not waiting and request_status(facade, root)["state"] in {"queued", "running", "routing", "completed"}:
-                return {"request_message_id": root}
+        historical = mid in entries
+        if historical:
+            mid = str(entries[mid].get("request_message_id") or "")
+            item = repository.message(facade_id, mid) if mid else None
+            if not item or item.get("role") != "user" or not same_actor(item.get("author_id"), message["author_id"]):
+                continue
+        if mid in seen or mid in entries:
             continue
+        seen.add(mid)
         if any(item.get(key) for key in family_facade.INFO_MARKS):
             continue
         status = request_status(facade, mid)["state"]
@@ -115,12 +120,16 @@ def _select(facade, message, entries):
             candidates.append(item)
         elif status in {"queued", "running", "routing"}:
             waiting.append(item)
+        elif historical and status == "completed" and completed is None:
+            completed = mid
     choices = candidates or waiting
     if len(choices) == 1:
         return {"request_message_id": choices[0]["message_id"]}
     if choices:
         return {"status": "choose", "candidates": [{"message_id": item["message_id"], "author_id": item["author_id"],
                 "text": " ".join(str(p.get("text") or "") for p in item.get("content_parts") or [])[:200]} for item in choices]}
+    if completed:
+        return {"request_message_id": completed}
     return {"status": "unavailable", "error": "没有找到唯一可恢复的请求。请引用原请求后发送 continue。"}
 
 

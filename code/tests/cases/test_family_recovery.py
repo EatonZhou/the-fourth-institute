@@ -263,6 +263,34 @@ def test_ambiguous_failures_require_a_quote_and_retry_failure_is_visible(family)
     assert repository.input_state(family["facade"], chosen)["state"] == "failed"
 
 
+@pytest.mark.parametrize("prior_state,new_state", [
+    ("running", "queued"), ("running", "running"),
+    ("completed", "queued"), ("completed", "failed"), ("running", "failed"),
+])
+def test_historical_continue_does_not_hide_other_original_requests(family, prior_state, new_state):
+    """历史 continue 不跳过同时存在的原请求，失败优先且运行中不重投。"""
+    repository = resident_conversation_stream.get_repository()
+    first = family["ask"]("原请求一")
+    second = family["ask"]("原请求二")
+    links = family_facade.relay_links(_record(family))
+    first_input = links[first]["message_id"]
+    second_input = links[second]["message_id"]
+    repository.set_input_state(family["wrong"], first_input, prior_state)
+    repository.set_input_state(family["wrong"], second_input, new_state)
+    historical = _send(family, "continue", quote=first)
+    assert _view(family, historical)["original_message_id"] == first
+
+    command = _send(family, "continue")
+    result = _view(family, command)
+    if prior_state == "running" and new_state != "failed":
+        assert result["status"] == "choose"
+        assert {item["message_id"] for item in result["candidates"]} == {first, second}
+    else:
+        assert result["original_message_id"] == second
+    assert repository.input_state(family["wrong"], first_input)["state"] == prior_state
+    assert family_facade.relay_links(_record(family)) == links
+
+
 def test_unavailable_member_checkpoint_reports_error_without_routing_continue(family):
     """Family 缺失原输入检查点时显示恢复失败"""
     from management_portal.society_service import resident_input_recovery

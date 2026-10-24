@@ -1660,6 +1660,7 @@
       if (stack.activePanelId === panelId) {
         focusedStackId = stack.id;
         if (collapsed.has(panelId)) expandPanel(panelId);
+        else persist();
         return;
       }
       stack.activePanelId = panelId;
@@ -1919,8 +1920,10 @@
         focusedStackId = stack.id;
         const descriptor = descriptors.get(String(stack.activePanelId || ""));
         if (descriptor && !descriptor.openSource) {
+          const changed = activeOpenTargetPanelId !== descriptor.id;
           activeOpenTargetPanelId = descriptor.id;
           lastOpenTargetByType.set(descriptor.type, descriptor.id);
+          if (changed) persist();
         }
       });
       const tabs = document.createElement("div");

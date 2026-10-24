@@ -10190,6 +10190,7 @@
       : null;
     return {
       ...base,
+      ...(Object.prototype.hasOwnProperty.call(snapshot, "family_facade") ? { family_facade: snapshot.family_facade } : {}),
       messages,
       runtime_activity: { live, details: activities, phase },
       resident_state: state,
@@ -11351,7 +11352,7 @@
     root.setAttribute("aria-label", window.PortalI18n.t("Family 状态"));
     (container || document.body).append(root);
     const rows = new Map();
-    let accounts = [], family = {}, quotaError = "", disposed = false, loading = false;
+    let accounts = [], family = {}, quotaError = "", disposed = false, loading = false, reloadRequested = false;
 
     const popoverOptions = { trigger: anchor, panel: root, portal: true,
       placement: "bottom-start", ariaHaspopup: "dialog", closeOnOutside: true, closeOnEscape: true,
@@ -11512,7 +11513,13 @@
         }));
         loading = false; render();
       } catch (error) { root.innerHTML = window.PortalI18n.html`<p>${escapeHtml(error.message)}</p>`; }
-      finally { loading = false; }
+      finally {
+        loading = false;
+        if (reloadRequested) {
+          reloadRequested = false;
+          if (!disposed && isOpen()) void load();
+        }
+      }
     };
     root.addEventListener("click", async event => {
       try {
@@ -11542,6 +11549,11 @@
       popover?.destroy(); root.remove();
     }
     return { open() { if (container) root.hidden = false; else popover.open(); if (!loading) void load(); },
+      refresh() {
+        if (disposed || !isOpen()) return;
+        if (loading) reloadRequested = true;
+        else void load();
+      },
       close() { rows.forEach(row => row.runtime?.close()); if (container) root.hidden = true; else popover.close(); }, isOpen, destroy: cleanup };
   }
 
@@ -12623,6 +12635,9 @@
 
     updateFamilyStatus(detail) {
       const family = detail?.family_facade;
+      const roster = value => JSON.stringify([value?.family_id, value?.title,
+        (value?.nodes || value?.members || []).map(node => [node.resident_id, node.title, node.role])]);
+      const changed = roster(this.familyStatusFamily) !== roster(family);
       const residentId = String(detail?.resident?.resident_id || detail?.resident_id || "");
       if (!family?.family_id || !residentId || this.familyStatusResidentId !== residentId) {
         this.familyStatusView?.destroy(); this.familyStatusView = null;
@@ -12630,6 +12645,7 @@
       }
       this.familyStatusFamily = family?.family_id ? family : null;
       this.familyStatusResidentId = this.familyStatusFamily ? residentId : "";
+      if (changed) this.familyStatusView?.refresh();
     }
 
     openFamilyStatus(button) {
@@ -12666,6 +12682,7 @@
         snapshot,
         state: projected.resident_state,
       };
+      this.updateFamilyStatus(this.detail);
       this.workspace.applyContract(chatContract);
       this.questions.render(snapshot);
       this.confirmSubmittedDraft(snapshot);
