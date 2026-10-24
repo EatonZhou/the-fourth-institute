@@ -134,6 +134,45 @@ def test_component_only_batch_does_not_delete_resident_identities(deletion_set, 
     assert {row["resident_id"] for row in store.residents_for_lineage(lineage_id)} == {leader_id, *ids}
 
 
+@pytest.mark.parametrize("entrypoint", ["DeleteResident", "ApplyLineageChanges", "rollback"])
+def test_resident_deletion_removes_only_its_watchboard(deletion_set, monkeypatch, entrypoint):
+    """Resident 删除与自身 Watchboard 图清理原子提交，保留其他面板和普通组件。"""
+    from management_portal.society_service import watchboard_lineage
+
+    lineage_id, leader_id, ids, component_id, store = deletion_set
+    installed = {}
+    for resident_id in ids:
+        record = resident_catalog.get_catalog().get(resident_id)
+        plan = watchboard_lineage.installation_plan(record, store.lineage_definition(lineage_id))
+        result = run("ApplyLineageChanges", {
+            "lineage_id": lineage_id, "operations": plan["install"],
+        }, key="install-" + resident_id)
+        assert result.status == "committed", result
+        installed[resident_id] = {op["value"]["id"] for op in plan["install"]}
+    before = store.lineage_definition(lineage_id)
+    if entrypoint == "rollback":
+        def fail(*_args, **_kwargs):
+            raise RuntimeError("watchboard deletion rollback")
+        monkeypatch.setattr(lineage_domain, "_persist_lineage_state", fail)
+        with pytest.raises(RuntimeError, match="watchboard deletion rollback"):
+            lineage_domain.delete_lineage_graph_objects(lineage_id, {"resident_ids": [ids[0]]}, "sample_admin")
+        assert store.lineage_definition(lineage_id) == before
+        assert resident_catalog.get_catalog().get(ids[0])["resident_id"] == ids[0]
+        return
+    if entrypoint == "DeleteResident":
+        result = run(entrypoint, {"lineage_id": lineage_id, "resident_id": ids[0]}, key="delete-with-board")
+    else:
+        result = _execute(lineage_id, {"resident_ids": [ids[0]]}, key="delete-with-board")
+        assert installed[ids[0]] <= set(result.result["deleted_ids"])
+    assert result.status == "committed", result
+    after = store.lineage_definition(lineage_id)
+    remaining = {item["id"] for field in ("components", "wires") for item in after["program"][field]}
+    assert not installed[ids[0]] & remaining
+    assert installed[ids[1]] | {component_id} <= remaining
+    assert after["revision"] == before["revision"] + 1
+    assert {node["id"] for node in after["nodes"]} == {leader_id, ids[1]}
+
+
 def test_apply_lineage_changes_returns_ids_without_building_full_lineage_view(deletion_set, monkeypatch):
     """ApplyLineageChanges 只返回删除的 ID，不构建完整 Lineage 视图"""
     lineage_id, _leader_id, _ids, component_id, _store = deletion_set

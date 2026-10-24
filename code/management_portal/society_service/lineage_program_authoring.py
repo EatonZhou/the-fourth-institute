@@ -463,72 +463,28 @@ def program_without_resident_references(
         else lineage_program.empty_program()
     )
 
-    # Seeds stay: nothing on a Seed names the Resident that wrote it, and a
-    # Seed whose candidate fork starts from a removed Resident only loses
-    # that relation.  Only components that depend on removed wires go.
-    removed_component_ids: set[str] = set()
+    # Watchboard components belong to the exact Resident encoded by their
+    # stable installation keys. They have no Resident wire endpoints, so
+    # endpoint cleanup alone cannot retire the installed command graph.
+    from . import watchboard_lineage
+
+    removed_component_ids = {
+        str(item["id"])
+        for resident_id in resident_ids
+        for item in watchboard_lineage.components(
+            {"resident_id": resident_id}, {"program": program},
+        )
+    }
     resident_wire_ids = {
         str(wire.get("id") or "")
         for wire in program.get("wires") or []
-        if (
-            isinstance(wire, dict)
-            and resident_ids
-            & {
-                str(wire.get("source") or ""),
-                str(wire.get("target") or ""),
-            }
-        )
+        if resident_ids & {str(wire.get("source") or ""), str(wire.get("target") or "")}
     }
-    while True:
-        removed_related_wire_ids = resident_wire_ids | {
-            str(wire.get("id") or "")
-            for wire in program.get("wires") or []
-            if (
-                isinstance(wire, dict)
-                and removed_component_ids
-                & {
-                    str(wire.get("source") or ""),
-                    str(wire.get("target") or ""),
-                }
-            )
-        }
-        dependent_event_source_ids = {
-            str(wire.get("source") or "")
-            for wire in program.get("wires") or []
-            if isinstance(wire, dict) and wire.get("kind") == "watch"
-            and str(wire.get("target") or "") in removed_component_ids | removed_related_wire_ids
-        }
-        expanded = removed_component_ids | dependent_event_source_ids
-        if expanded == removed_component_ids:
-            break
-        removed_component_ids = expanded
-    program["components"] = [
-        component
-        for component in program.get("components") or []
-        if (
-            isinstance(component, dict)
-            and str(component.get("id") or "")
-            not in removed_component_ids
-        )
-    ]
-    program["wires"] = [
-        item
-        for item in program.get("wires") or []
-        if (
-            isinstance(item, dict)
-            and not resident_ids
-            & {
-                str(item.get("source") or ""),
-                str(item.get("target") or ""),
-            }
-            and not removed_component_ids.intersection(
-                {
-                    str(item.get("source") or ""),
-                    str(item.get("target") or ""),
-                }
-            )
-        )
-    ]
+    # Ordinary Seeds stay; only removed relations and their observer
+    # dependents disappear, using the same closure as component deletion.
+    delete_program_objects_with_observer_dependents(
+        program, component_ids=removed_component_ids, wire_ids=resident_wire_ids,
+    )
     for component in program["components"]:
         config = component.get("config") or {}
         if component.get("kind") in lineage_program.PACKET_OPERATOR_KINDS and config.get("resident_executor_id") in resident_ids:
