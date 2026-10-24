@@ -5282,6 +5282,7 @@ button.messageQuote:focus-visible {
 .familyStatusRuntime { display: flex; margin-top: 0; color: var(--muted); font-weight: 400; white-space: nowrap; text-align: left; }
 .familyStatusPanel td .familyStatusRuntime { font-size: 11px; font-weight: 400; }
 .familyStatusIntake { min-width: 38px; }
+.familyStatusIntakeNote { flex-shrink: 0; margin: 0; padding: 8px 12px; border-top: 1px solid var(--border); color: var(--muted); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
 .familyStatusIntake[aria-checked="true"] { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 30%, var(--border)); background: color-mix(in srgb, var(--accent) 8%, var(--panel)); }
 .familyStatusQuotaValue { display: flex; align-items: center; gap: 5px; font-variant-numeric: tabular-nums; }
 .familyStatusQuotaTrack { display: block; height: 3px; margin-top: 5px; border-radius: 99px; overflow: hidden; background: var(--panel-2); }
