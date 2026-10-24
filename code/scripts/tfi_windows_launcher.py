@@ -13,6 +13,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import time
 import webbrowser
 import zipfile
 
@@ -357,6 +358,28 @@ class DefaultStartup:
         self.root = self.platform / "instance/example_instance"
         self.progress = progress
         self.log_path = self.platform / ".build/windows/logs/example_instance.log"
+        self.timings = []
+
+    def timed(self, stage, action):
+        started = time.monotonic()
+        try:
+            return action()
+        finally:
+            entry = {"stage": stage, "seconds": round(time.monotonic() - started, 3)}
+            self.timings.append(entry)
+            self.log_path.parent.mkdir(parents=True, exist_ok=True)
+            with self.log_path.open("a", encoding="utf-8") as stream:
+                stream.write("[startup] " + json.dumps(entry) + "\n")
+
+    def running_url(self):
+        from scripts.tfi_release_install import owned_state, observed_status
+        # Validate ownership just as the lifecycle CLI does. Never trust a saved
+        # health result, a listening port alone, or another instance's response.
+        state = owned_state(self.root)
+        result = observed_status(state, request_timeout=0.5)
+        if result["status"] == "installed":
+            return result["url"]
+        return None
 
     def command(self, *arguments):
         return command(self.platform, *arguments)
@@ -454,7 +477,7 @@ class DefaultStartup:
             raise ValueError("实例目录不能是符号链接")
         initialized = not (self.root / "installation.json").is_file() or bool(start_blocker(self.state()))
         if initialized:
-            self.initialize()
+            self.timed("initialize", self.initialize)
         state = self.state()
         if start_blocker(state):
             raise RuntimeError("初始化没有完成，尚不能启动 Portal。请查看日志后重试。")
@@ -463,14 +486,17 @@ class DefaultStartup:
             # Never reuse a persisted health result from an earlier launch.
             url = f"http://127.0.0.1:{state['target']['ports']['web']}"
         else:
-            self.progress("正在启动 Portal")
-            self.execute(self.command("start", "--root", self.root))
-            url = self.wait_ready(state)
+            self.progress("正在检查已运行的 Portal")
+            url = self.timed("running_check", self.running_url)
+            if url is None:
+                self.progress("正在启动 Portal")
+                self.timed("start_services", lambda: self.execute(self.command("start", "--root", self.root)))
+                url = self.timed("wait_ready", lambda: self.wait_ready(state))
         self.progress("正在打开你的研究空间")
         # This idempotent setup command uses the instance's own account service.
         # Invitation secrets stay in its private file, never in log output.
-        result = json.loads(self.execute(self.command("first-admin", "--root", self.root,
-                                                "--username", "admin", "--if-needed")))
+        result = json.loads(self.timed("first_admin", lambda: self.execute(self.command(
+            "first-admin", "--root", self.root, "--username", "admin", "--if-needed"))))
         if result.get("status") == "already_configured":
             return url + "/"
         if result.get("status") != "setup_link_created":

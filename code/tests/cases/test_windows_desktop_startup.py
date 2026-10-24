@@ -68,6 +68,7 @@ class DesktopStartup(unittest.TestCase):
                     return '{"status":"setup_link_created"}'
                 return "{}"
             with patch.object(flow, "execute", side_effect=execute), \
+                    patch.object(flow, "running_url", return_value=None), \
                     patch.object(flow, "wait_ready", return_value="http://127.0.0.1:28199") as ready:
                 self.assertEqual(flow.run(), "http://127.0.0.1:28199/join#invite=test-token")
                 self.assertEqual(actions, ["prepare", "install", "first-admin"])
@@ -79,6 +80,39 @@ class DesktopStartup(unittest.TestCase):
                 self.assertEqual(actions, ["start", "first-admin"])
                 ready.assert_called_once()
                 self.assertEqual(before, (flow.root / "installation.json").read_bytes())
+
+    def test_healthy_reopen_does_not_start_services_or_rewrite_installation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            flow = self.setup_flow(Path(tmp))
+            with patch.object(flow, 'execute'):
+                flow.initialize()
+            self.installed(flow)
+            before = (flow.root / 'installation.json').read_bytes()
+            with patch.object(flow, 'running_url', return_value='http://127.0.0.1:28199'), \
+                    patch.object(flow, 'execute', return_value='{"status":"already_configured"}') as execute, \
+                    patch.object(flow, 'wait_ready') as wait:
+                self.assertEqual(flow.run(), 'http://127.0.0.1:28199/')
+            self.assertEqual([c.args[0][2] for c in execute.call_args_list], ['first-admin'])
+            wait.assert_not_called()
+            self.assertEqual(before, (flow.root / 'installation.json').read_bytes())
+            self.assertEqual([t['stage'] for t in flow.timings], ['running_check', 'first_admin'])
+
+    def test_reopen_checks_owned_state_and_fresh_complete_health(self):
+        flow = launcher.DefaultStartup(Path('/unused'))
+        state = {'target': {}}
+        with patch.object(installer, 'owned_state', return_value=state) as owned, \
+                patch.object(installer, 'observed_status') as observe:
+            for status in ['unhealthy', 'installed']:
+                observe.return_value = {'status': status, 'url': 'http://127.0.0.1:28199'}
+                self.assertEqual(flow.running_url(),
+                                 'http://127.0.0.1:28199' if status == 'installed' else None)
+            owned.assert_called_with(flow.root)
+            observe.assert_called_with(state, request_timeout=0.5)
+        with patch.object(installer, 'owned_state', side_effect=ValueError('ownership mismatch')), \
+                patch.object(installer, 'observed_status') as observe:
+            with self.assertRaisesRegex(ValueError, 'ownership mismatch'):
+                flow.running_url()
+            observe.assert_not_called()
 
     def test_failed_install_never_attempts_start_or_opens_missing_state(self):
         """安装与实例回归：failed install never attempts start or opens missing state。"""

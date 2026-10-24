@@ -93,9 +93,18 @@ class LocalModelApi:
 def worker(platform, phase):
     sys.path.insert(0, str(platform / 'code'))
     from scripts.tfi_windows_launcher import DefaultStartup, stop_all
-    if phase == 'initialize':
+    if phase in {'initialize', 'reopen', 'legacy-reopen'}:
         # Discard the URL: it contains the private first-administrator invitation.
-        DefaultStartup(platform, progress=lambda text: print(text, flush=True)).run()
+        flow = DefaultStartup(platform, progress=lambda text: print(text, flush=True))
+        if phase == 'legacy-reopen':
+            # Measure the previous unconditional-start path on the same running
+            # installation, without changing product code or persisted state.
+            flow.running_url = lambda: None
+        started = time.monotonic()
+        flow.run()
+        report = {'phase': phase, 'flow_seconds': round(time.monotonic() - started, 3),
+                  'stages': flow.timings}
+        (flow.log_path.parent / 'startup-last.json').write_text(json.dumps(report), encoding='utf-8')
     else:
         stop_all(platform, unregister=True)
 
@@ -104,9 +113,14 @@ def run_worker(platform, phase, log):
     argv = [platform / 'dependencies/python/python.exe',
             platform / 'code/scripts/windows/native_smoke.py',
             '--platform', platform, '--phase', phase]
+    started = time.monotonic()
     with log.open('a', encoding='utf-8') as output:
         subprocess.run(list(map(str, argv)), stdout=output, stderr=subprocess.STDOUT,
                        timeout=900 if phase == 'initialize' else 180, check=True)
+    if phase != 'cleanup':
+        report = json.loads((platform / '.build/windows/logs/startup-last.json').read_text(encoding='utf-8'))
+        report['process_seconds'] = round(time.monotonic() - started, 3)
+        return report
 
 
 def exercise(exe, root, included, evidence):
@@ -121,7 +135,7 @@ def exercise(exe, root, included, evidence):
     succeeded = False
     api = None
     try:
-        run_worker(root, 'initialize', log)
+        initial_startup = run_worker(root, 'initialize', log)
         state = json.loads(state_path.read_text(encoding='utf-8'))
         manifest = json.loads((root / '.build/w/engineering/manifest.json').read_text(encoding='utf-8'))
         check(manifest['include_examples'] is included, 'NSIS selected the wrong example')
@@ -156,6 +170,18 @@ def exercise(exe, root, included, evidence):
         request('/login', {'username': registered['username'], 'password': password}, form=True)
         me = request('/api/me')
         check(me.get('username') == registered['username'], 'Password login did not persist a session')
+        legacy_startup = run_worker(root, 'legacy-reopen', log)
+        before_reopen = state_path.read_bytes()
+        def process_identity():
+            return {p.name: {k: v for k, v in json.loads(p.read_text(encoding='utf-8')).items()
+                             if k in ('pid', 'created', 'child_pid', 'child_created')}
+                    for p in state_path.parent.glob('runtime/*.process.json')}
+        before_processes = process_identity()
+        warm_startups = [run_worker(root, 'reopen', log) for _ in range(3)]
+        check(all([s['stage'] for s in r['stages']] == ['running_check', 'first_admin']
+                  for r in warm_startups), 'Healthy reopen unexpectedly started services')
+        check(state_path.read_bytes() == before_reopen, 'Healthy reopen rewrote installation state')
+        check(process_identity() == before_processes, 'Healthy reopen replaced a service process')
         def instruction(name, arguments):
             response = request('/api/instructions/execute', {'instruction': name, 'arguments': arguments})
             check(not response.get('error') and response.get('status') == 'committed', name + ' failed')
@@ -185,7 +211,11 @@ def exercise(exe, root, included, evidence):
         marker = root / 'instance/example_instance/data/native-restart-marker.txt'
         marker.write_text('Preserve this installation and its registered user', encoding='utf-8')
         run_worker(root, 'cleanup', log)
-        run_worker(root, 'initialize', log)
+        cold_startup = run_worker(root, 'initialize', log)
+        startup = {'initial_install': initial_startup, 'legacy_reopen': legacy_startup,
+                   'warm_reopens': warm_startups, 'cold_restart': cold_startup}
+        (evidence / ('full-startup.json' if included else 'base-startup.json')).write_text(
+            json.dumps(startup, indent=2), encoding='utf-8')
         restarted = json.loads(state_path.read_text(encoding='utf-8'))
         check(restarted['target'] == target, 'Restart changed instance identity')
         check(marker.is_file(), 'Restart lost user data')
@@ -214,7 +244,8 @@ def exercise(exe, root, included, evidence):
         return {'include_examples': included, 'status': 'passed', 'registration_ama_chat': 'passed',
                 'launcher_exit_service_survival': 'passed', 'unregister_restart_preserves_data': 'passed',
                 'chinese_index_worker': 'passed', 'background_error_check': 'passed',
-                'api_only_chat_restart': 'passed', 'api_default_model': api.model}
+                'api_only_chat_restart': 'passed', 'api_default_model': api.model,
+                'healthy_reopen': 'passed', 'startup_timings': startup}
     except Exception:
         # Distinguish loader failure from initdb's restricted-token re-execution;
         # only public version output and exit codes from this disposable fixture.
@@ -247,7 +278,7 @@ def main():
     parser.add_argument('--work', type=Path)
     parser.add_argument('--evidence', type=Path)
     parser.add_argument('--platform', type=Path)
-    parser.add_argument('--phase', choices=('initialize', 'cleanup'))
+    parser.add_argument('--phase', choices=('initialize', 'cleanup', 'reopen', 'legacy-reopen'))
     args = parser.parse_args()
     check(sys.platform == 'win32', 'Native smoke must run on Windows')
     if args.phase:
