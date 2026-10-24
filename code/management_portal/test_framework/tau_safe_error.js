@@ -51,4 +51,4 @@ async function safeTransport(operation, invoke) {
   }
 }
 
-module.exports = { safeError, safeTransport };
+module.exports = { safeError, safeTransport, errorSourcePaths: [...sources] };

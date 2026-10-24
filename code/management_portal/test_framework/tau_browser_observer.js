@@ -2,7 +2,36 @@
 const fs = require('fs');
 const path = require('path');
 const { randomUUID, createHash } = require('crypto');
-const { safeError } = require('./tau_safe_error');
+const { safeError, errorSourcePaths } = require('./tau_safe_error');
+
+// This same bounded sanitizer runs before the browser binding and at the
+// writer. Only known public script paths and numeric positions cross it.
+function createErrorLocationSanitizer(sourcePaths) {
+  const known = new Set(sourcePaths);
+  const location = (source, line, column) => {
+    let safe = '[source]';
+    if (source === '[anonymous]' || source === '<anonymous>') safe = '[anonymous]';
+    else {
+      try {
+        const url = new URL(source, 'http://observation.invalid');
+        if (['http:', 'https:'].includes(url.protocol) && known.has(url.pathname)) safe = url.pathname;
+      } catch { /* Unknown locations stay anonymous. */ }
+    }
+    return { source: safe,
+      line: Number.isSafeInteger(Number(line)) && Number(line) > 0 ? Number(line) : null,
+      column: Number.isSafeInteger(Number(column)) && Number(column) > 0 ? Number(column) : null };
+  };
+  return (filename, line, column, stack) => {
+    const frames = [];
+    if (typeof stack === 'string') for (const row of stack.slice(0, 16384).split('\n').slice(1, 33)) {
+      if (!/^\s*at\s/.test(row)) continue;
+      const match = row.match(/(https?:\/\/[^\s)]+|<anonymous>):(\d+):(\d+)\)?$/);
+      if (match) frames.push(location(match[1], match[2], match[3]));
+    }
+    return { source_location: filename ? location(filename, line, column) : null, stack_frames: frames };
+  };
+}
+const errorLocations = createErrorLocationSanitizer(errorSourcePaths);
 
 // The current Resident HTTP surface puts identity in a named query field.
 // Keep the complete public route, never arbitrary path/query vocabulary.
@@ -311,6 +340,14 @@ async function observeBrowser(context, { evidenceDir }) {
           event_type: ['error', 'unhandledrejection'].includes(data.event_type) ? data.event_type : 'unknown',
           browser_observed_at_ms: Number.isFinite(data.at) ? data.at : null,
           ...safeError({ name: data.error_name }),
+          source_location: data.source_location && errorLocations(data.source_location.source,
+            data.source_location.line, data.source_location.column).source_location,
+          stack_frames: (Array.isArray(data.stack_frames) ? data.stack_frames : []).slice(0, 32)
+            .filter(frame => frame && typeof frame === 'object')
+            .map(frame => errorLocations(frame.source, frame.line, frame.column).source_location),
+          error_value_kind: ['undefined', 'null', 'string', 'number', 'boolean', 'object', 'function', 'symbol', 'bigint'].includes(data.error_value_kind)
+            ? data.error_value_kind : 'unknown',
+          event_class: ['ErrorEvent', 'PromiseRejectionEvent', 'Event'].includes(data.event_class) ? data.event_class : 'unknown',
           line: Number.isSafeInteger(data.line) && data.line > 0 ? data.line : null,
           column: Number.isSafeInteger(data.column) && data.column > 0 ? data.column : null,
           page_error_association: 'unavailable_no_shared_event_identity' });
@@ -416,7 +453,7 @@ async function observeBrowser(context, { evidenceDir }) {
       } else write({ kind: data.kind, ...associated, browser_observed_at_ms: Number.isFinite(data.at) ? data.at : null, persisted: data.persisted === true });
     }
   });
-  function documentObserver(sanitize) {
+  function documentObserver(sanitize, sanitizeErrorLocation) {
     // getRandomValues also works on the plain HTTP DEV entry and about:blank.
     const bytes = crypto.getRandomValues(new Uint8Array(16));
     bytes[6] = (bytes[6] & 0x0f) | 0x40;
@@ -580,15 +617,21 @@ async function observeBrowser(context, { evidenceDir }) {
     window.__portalTauObservation = { flush };
     emit({ kind: 'document_started', time_origin: performance.timeOrigin });
     for (const eventType of ['error', 'unhandledrejection']) window.addEventListener(eventType, event => {
-      // No error message, arbitrary rejection value, filename or stack crosses
+      // No message, arbitrary rejection value or raw filename/stack crosses
       // the binding. Do not preventDefault: native diagnostics must survive.
-      let name;
+      let name, valueKind = 'unknown', locations = {}, eventClass = 'unknown';
       try {
         const value = eventType === 'error' ? event.error : event.reason;
+        valueKind = value === null ? 'null' : typeof value;
         const candidate = value?.name;
-        if (typeof candidate === 'string' && candidate.length <= 32) name = candidate;
+        if (['Error', 'TypeError', 'ReferenceError', 'SyntaxError', 'RangeError', 'URIError', 'EvalError',
+          'AggregateError', 'TimeoutError', 'AbortError'].includes(candidate)) name = candidate;
+        locations = sanitizeErrorLocation(eventType === 'error' ? event.filename : '', event.lineno, event.colno, value?.stack);
+        const className = event.constructor?.name;
+        if (['ErrorEvent', 'PromiseRejectionEvent', 'Event'].includes(className)) eventClass = className;
       } catch { /* A rejection may have a throwing name getter. */ }
-      emit({ kind: 'document_error', event_type: eventType, error_name: name,
+      emit({ kind: 'document_error', event_type: eventType, error_name: name, ...locations,
+        error_value_kind: valueKind, event_class: eventClass,
         line: eventType === 'error' && Number.isSafeInteger(event.lineno) ? event.lineno : null,
         column: eventType === 'error' && Number.isSafeInteger(event.colno) ? event.colno : null });
     });
@@ -609,7 +652,7 @@ async function observeBrowser(context, { evidenceDir }) {
   }
   // Serialize the factory with its explicit public configuration. Serializing
   // a closure alone loses Node-side dependencies inside the page's realm.
-  await context.addInitScript({ content: `(${documentObserver.toString()})((${createPathSanitizer.toString()})(${JSON.stringify([...residentReadRoutes.keys()])}));` });
+  await context.addInitScript({ content: `(${documentObserver.toString()})((${createPathSanitizer.toString()})(${JSON.stringify([...residentReadRoutes.keys()])}), (${createErrorLocationSanitizer.toString()})(${JSON.stringify(errorSourcePaths)}));` });
   for (const page of context.pages()) pageState(page);
   write({ kind: 'capture_started', clocks: { observed_at_ms: 'node_epoch_ms', resource_values: 'browser_time_origin_plus_relative_ms' },
     limitations: ['No request bodies, arbitrary headers or query strings are persisted; only Portal EventSource and instruction transport identities are retained', 'Request/document association during navigation can be unconfirmed', 'Document destruction can prevent unload/Portal receipt delivery; absence does not prove no close occurred', 'Portal transport identity is matched only to a unique request in the same frame/document; native reconnects remain ambiguous, ResourceTiming lacks transport identity', 'Browser timing is not backend execution timing', 'server_timing_ms contains only allowlisted response-header durations: portal_queue is Web executor wait; portal_handler includes RPC/cache wait and excludes body upload/response streaming; portal_conv_* stages are request-local conversation read durations including RPC/cache waits, not database CPU time', 'Zero browser sizes/phases may reflect reuse, cache or restricted exposure; never infer zero server cost'] });

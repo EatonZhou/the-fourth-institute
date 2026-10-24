@@ -136,6 +136,11 @@ function documentProbe(content, receive) {
   });
   const dispatch = (name, detail) => listeners.get(name)({ detail });
   return { async exercise() {
+    listeners.get('error')({ error: { name: 'TypeError', message: 'private-error-content',
+      stack: 'TypeError: private-error-content\n at privateFunction (http://private-host/static/portal_nav.js?token=query-secret:81:12)\n at privateFunction (http://private-host/private-name.js:3:4)' },
+      filename: 'http://private-host/static/portal_nav.js?token=query-secret', lineno: 81, colno: 12,
+      constructor: { name: 'ErrorEvent' } });
+    listeners.get('unhandledrejection')({ reason: 'private-rejection', constructor: { name: 'PromiseRejectionEvent' } });
     dispatch('focus', { private: 'focus-private-content' });
     dispatch('blur', { private: 'focus-private-content' });
     document.hidden = true;
@@ -209,6 +214,16 @@ async function injectedContract(observe) {
     assert.deepEqual(lifecycle.map(row => [row.kind, row.hidden]),
       [['focus', false], ['blur', false], ['visibilitychange', true]]);
     const document = rows.find(row => row.kind === 'document_started');
+    const errors = rows.filter(row => row.kind === 'document_error');
+    assert.equal(errors.length, 2);
+    assert.equal(errors[0].document_id, document.document_id);
+    assert.deepEqual(errors[0].source_location, { source: '/static/portal_nav.js', line: 81, column: 12 });
+    assert.deepEqual(errors[0].stack_frames, [
+      { source: '/static/portal_nav.js', line: 81, column: 12 }, { source: '[source]', line: 3, column: 4 }]);
+    assert.equal(errors[0].event_class, 'ErrorEvent');
+    assert.equal(errors[1].error_value_kind, 'string');
+    assert.equal(errors[1].source_location, null);
+    assert.equal(errors[0].page_error_association, 'unavailable_no_shared_event_identity');
     for (const event of lifecycle) {
       assert.equal(event.document_id, document.document_id);
       assert.equal(event.document_confirmed, true);
@@ -248,7 +263,8 @@ async function injectedContract(observe) {
     }
     excludes(output, ['query-secret', 'private-name', 'private-resident', 'private-header', 'focus-private-content',
       'private-read-reason', 'private-read-content', 'private-consumer', 'private-reader', 'private-todo-user',
-      'private-conversation-reason', 'private-conversation-error', 'private-conversation-body', 'private-conversation-target']);
+      'private-conversation-reason', 'private-conversation-error', 'private-conversation-body', 'private-conversation-target',
+      'private-error-content', 'private-host', 'privateFunction', 'private-rejection']);
   }, observe, true);
 }
 
