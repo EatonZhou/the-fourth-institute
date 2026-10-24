@@ -16,6 +16,59 @@ from management_portal.execution.codex_history_delivery import CodexHistoryDeliv
 from management_portal.society_service import resident_context_evidence as evidence
 
 
+@pytest.mark.parametrize("encoded", [False, True])
+def test_authorized_context_exposes_only_original_self_state_read(encoded, monkeypatch):
+    """原始工具摘要只披露当前成员的自身状态查询，保持调用和内容摘要关联。"""
+    from management_portal.society_service import execution_client, resident_workspace_domain
+    from management_portal.society_service import resident_conversation_projection_domain
+
+    store, agent = AgentDataStore(), "resident_self_state_evidence"
+    arguments = {"instruction": "ListResidentStates", "arguments": {
+        "resident_ids": [agent], "private-extra": "private-argument-value"}}
+    segment_id = store.put_segment(segment_type="tool", content_type="application/json",
+        content={"call_id": "native-self-read", "tool_name": "hatg_instruction",
+                 "input": {"arguments": json.dumps(arguments) if encoded else arguments},
+                 "result": {"output": "private-output"}})
+    store.append_agent_segments(agent, [segment_id], actor_ref="test-actor")
+    original = store.segment(segment_id)
+    monkeypatch.setattr(resident_conversation_projection_domain, "_can_view_actual_sent_prompts",
+                        lambda actor, target: actor == "reader" and target == agent)
+    monkeypatch.setattr(resident_workspace_domain, "resolve_resident_runtime_target",
+                        lambda *a, **kw: SimpleNamespace(resident_id=agent))
+    monkeypatch.setattr(execution_client, "context_evidence_snapshot", store.context_evidence_snapshot)
+
+    result = evidence.read_context_evidence(agent, "reader")
+    row = result["effective_context"]["tool_observations"]["entries"][0]
+    assert row["call_id"] == "native-self-read"
+    assert row["segment_id"] == segment_id
+    assert row["content_sha256"] == original["content_sha256"]
+    assert row["observed_instruction"] == {"instruction": "ListResidentStates",
+                                          "arguments": {"resident_ids": [agent]}}
+    assert "private-" not in json.dumps(result)
+    assert store.segment(segment_id) == original
+
+
+@pytest.mark.parametrize("tool_name,arguments", [
+    ("functions.exec", {"instruction": "ListResidentStates", "arguments": {"resident_ids": ["self"]}}),
+    ("hatg_instruction", {"instruction": "GetResident", "arguments": {"resident_id": "self"}}),
+    ("hatg_instruction", {"instruction": "ListResidentStates", "arguments": {"resident_ids": ["other"]}}),
+    ("hatg_instruction", {"instruction": "ListResidentStates", "arguments": {"resident_ids": ["self", "other"]}}),
+    ("hatg_instruction", {"instruction": "ListResidentStates", "arguments": {"resident_ids": "self"}}),
+    ("hatg_instruction", {"instruction": "ListResidentStates", "arguments": None}),
+    ("hatg_instruction", 'not JSON: ListResidentStates(self)'),
+    ("hatg_instruction", '{"instruction":"Other","instruction":"ListResidentStates","arguments":{"resident_ids":["self"]}}'),
+    ("hatg_instruction", '[' * 2000),
+    ("hatg_instruction", 'x' * 65537),
+])
+def test_context_does_not_infer_or_leak_unrecognized_tool_arguments(tool_name, arguments):
+    content = {"call_id": "call-original", "tool_name": tool_name,
+               "input": {"arguments": arguments}, "result": {"output": "private-output"}}
+    row = evidence._tool_observations([{"segment_type": "tool", "content": content}], "self")["entries"][0]
+    assert "observed_instruction" not in row
+    assert row["call_id"] == "call-original"
+    assert "private-output" not in json.dumps(row)
+
+
 def test_context_evidence_distinguishes_audit_from_compacted_delivery_without_leaking_content():
     """上下文证据区分完整轨迹与压缩窗口并校验原生导入
 

@@ -61,8 +61,42 @@ def _references(segments):
             for item in segments[:1000]]
 
 
-def _tool_observations(segments):
-    """Bounded native identities and outcomes, without arguments or output text."""
+def _self_state_read(content, resident_id):
+    """Recognize only a recorded direct ISA read of this same Resident.
+
+    Do not interpret wrapper code, model prose, other targets or arbitrary tool
+    arguments. The enclosing observation keeps the original call/content IDs.
+    """
+    if not resident_id or content.get("tool_name") != "hatg_instruction":
+        return None
+    tool_input = content.get("input")
+    args = tool_input.get("arguments") if isinstance(tool_input, dict) else None
+    if isinstance(args, str):
+        if len(args) > 65536:
+            return None
+
+        def unique_keys(pairs):
+            result = {}
+            for key, value in pairs:
+                if key in result:
+                    raise ValueError("ambiguous tool arguments")
+                result[key] = value
+            return result
+
+        try:
+            args = json.loads(args, object_pairs_hook=unique_keys)
+        except (ValueError, RecursionError):
+            return None
+    if not isinstance(args, dict) or args.get("instruction") != "ListResidentStates":
+        return None
+    parameters = args.get("arguments")
+    if not isinstance(parameters, dict) or parameters.get("resident_ids") != [resident_id]:
+        return None
+    return {"instruction": "ListResidentStates", "arguments": {"resident_ids": [resident_id]}}
+
+
+def _tool_observations(segments, resident_id=""):
+    """Bounded native identities and a self-read allowlist; no arbitrary content."""
     tools = []
     for segment in segments:
         content = segment.get("content")
@@ -78,6 +112,9 @@ def _tool_observations(segments):
             row["command_sha256"] = observation["command_sha256"]
         if type(observation.get("exit_code")) is int:
             row["observed_exit_code"] = observation["exit_code"]
+        self_read = _self_state_read(content, resident_id)
+        if self_read is not None:
+            row["observed_instruction"] = self_read
         if content.get("tool_name") == "clock.sleep":
             arguments = (content.get("input") or {}).get("arguments")
             duration = arguments.get("duration_ms") if isinstance(arguments, dict) else None
@@ -112,14 +149,14 @@ def _transformations(snapshot):
             for item in snapshot.get("transformations", [])]
 
 
-def project_context_evidence(snapshot: dict[str, Any]) -> dict[str, Any]:
+def project_context_evidence(snapshot: dict[str, Any], *, resident_id: str = "") -> dict[str, Any]:
     segments = snapshot["segments"]
     effective = {"segment_count": len(segments),
                  "segment_types": dict(Counter(item["segment_type"] for item in segments)),
                  "first_segment_id": segments[0]["segment_id"] if segments else "",
                  "last_segment_id": segments[-1]["segment_id"] if segments else "",
                  "references": _references(segments), "references_truncated": len(segments) > 1000,
-                 "tool_observations": _tool_observations(segments),
+                 "tool_observations": _tool_observations(segments, resident_id),
                  "compactions": []}
     for segment in segments:
         if segment["segment_type"] == "compaction":
@@ -174,4 +211,4 @@ def read_context_evidence(resident_id: str, actor: str) -> dict[str, Any]:
         raise PermissionError("无权读取模型上下文证据")
     target = resolve_resident_runtime_target(resident_id, actor, require_visible=True)
     return {"resident_id": target.resident_id, **project_context_evidence(
-        execution_client.context_evidence_snapshot(target.resident_id))}
+        execution_client.context_evidence_snapshot(target.resident_id), resident_id=target.resident_id)}
