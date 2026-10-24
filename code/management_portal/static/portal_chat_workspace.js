@@ -10626,6 +10626,9 @@
         if (card.form.parentElement !== host) host.append(card.form);
         card.question = question;
         card.canSend = canSend;
+        // A later authoritative terminal result supersedes a delivery/check
+        // error from the original response; it must not invite another answer.
+        if (question.accepted) card.error = "";
         const sending = this.sending.has(`${scope}:${question.key}`);
         card.fields.hidden = question.accepted;
         for (const field of card.form.querySelectorAll("input, select, textarea, button")) field.disabled = !canSend || sending || question.accepted;
@@ -10741,11 +10744,11 @@
           action, content: action === "accept" ? card.content() : null,
         });
         if (!result) return;
-        if (result.status === "expired" || (result.status === "cancelled" && action !== "cancel")) {
-          this.nativeOutcomes.set(card.question.key, { status: "expired", answers: {} });
-        }
-        if (!(result.status === "answered" || (result.status === "cancelled" && action === "cancel"))) throw new Error(result.error || "提交尚未确认；可重试查询，请勿改选后重复提交。");
-        this.nativeOutcomes.set(card.question.key, { status: action === "cancel" ? "cancelled" : action === "decline" ? "declined" : "answered", answers: {} });
+        if (!["answered", "declined", "cancelled", "expired"].includes(result.status)) throw new Error(result.error || "提交尚未确认；可重试查询，请勿改选后重复提交。");
+        const outcome = result.status === "answered"
+          ? (action === "cancel" ? "cancelled" : action === "decline" ? "declined" : "answered")
+          : result.status;
+        this.nativeOutcomes.set(card.question.key, { status: outcome, answers: {} });
         card.question.accepted = true;
         this.panel.protocol?.load?.({ force: true });
       } catch (error) {

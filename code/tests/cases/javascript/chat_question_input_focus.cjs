@@ -137,6 +137,42 @@ function check(name, actual, expected) {
     check('MCP card uses the same stable mount contract', await state(), stable);
     await page.evaluate(() => { snap.messages = []; render(); });
     check('removed question host is actually removed', await page.locator('[data-resident-question]').count(), 0);
+    for (const terminal of ['expired', 'declined', 'cancelled']) {
+      await page.evaluate(status => {
+        window.answerCalls = 0;
+        PortalInstructionClient.execute = async instruction => {
+          if (instruction === 'ListInputHistory') return { entries: [] };
+          if (instruction !== 'AnswerResidentRequest') throw new Error('Unexpected instruction: ' + instruction);
+          answerCalls++; return { status };
+        };
+        snap.messages = [{ message_id: 'approval_' + status, role: 'agent', content_parts: [
+          { type: 'tool_call', tool_name: 'request_approval', request_id: 'approval_' + status,
+            status: 'pending', is_blocking: true,
+            interaction: { kind: 'file_change', request: { reason: 'Inspect fixture scope' } } },
+        ] }]; render();
+      }, terminal);
+      const card = page.locator('.residentQuestionCard');
+      await card.getByRole('button', { name: '拒绝', exact: true }).click();
+      await page.waitForFunction(() => document.querySelector('.residentQuestionCard.answered'));
+      check('terminal ' + terminal + ' has no stale submission error', await card.locator('[role=status]').innerText(),
+        { expired: '请求已失效，不能再提交', declined: '已拒绝', cancelled: '已取消' }[terminal]);
+      check('terminal ' + terminal + ' disables all answers', await card.locator('button:enabled').count(), 0);
+      check('terminal ' + terminal + ' sends once', await page.evaluate(() => answerCalls), 1);
+    }
+    await page.evaluate(() => {
+      PortalInstructionClient.execute = async instruction => {
+        if (instruction === 'ListInputHistory') return { entries: [] };
+        if (instruction !== 'AnswerResidentRequest') throw new Error('Unexpected instruction: ' + instruction);
+        answerCalls++; throw new Error('Original status read failed');
+      };
+      snap.messages[0].message_id = 'approval_late';
+      const part = snap.messages[0].content_parts[0]; part.request_id = 'approval_late'; part.status = 'pending'; render();
+    });
+    await page.locator('.residentQuestionCard').getByRole('button', { name: '拒绝', exact: true }).click();
+    await page.waitForFunction(() => document.querySelector('.residentQuestionStatus')?.textContent === 'Original status read failed');
+    await page.evaluate(() => { snap.messages[0].content_parts[0].status = 'expired'; render(); });
+    check('late authoritative expiry clears earlier transport error', await page.locator('.residentQuestionStatus').innerText(), '请求已失效，不能再提交');
+    check('late expiry never resends answer', await page.evaluate(() => answerCalls), 2);
     check('browser errors', evidence.errors, []);
     console.log('PASS question input focus, node identity, selection, composition, new groups, native and MCP lifecycle');
   } finally {
