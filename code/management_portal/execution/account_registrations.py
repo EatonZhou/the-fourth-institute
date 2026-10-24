@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import os
 import re
+from contextlib import ExitStack
 from functools import lru_cache
 
 from psycopg.types.json import Jsonb
@@ -71,8 +72,8 @@ def config_fields(provider, kind):
     # A Codex API account can be the default route; it never falls back to a subscription.
     if kind == "api_profile":
         return {"api_id", "is_default"} if provider == "codex" else {"api_id"}
-    return {"fallback_account_ids", "is_default"} if provider == "codex" else \
-        {"models", "default_model"} if provider == "claude" else set()
+    return {"fallback_account_ids", "is_default", "reuse_local_login"} if provider == "codex" else \
+        {"models", "default_model", "reuse_local_login"} if provider == "claude" else set()
 
 
 def default_route(rows):
@@ -105,6 +106,8 @@ def _validate(data):
         raise invalid("备用账号不能重复或指向自身")
     if "is_default" in config and type(config["is_default"]) is not bool:
         raise invalid("is_default 必须是 boolean")
+    if "reuse_local_login" in config and type(config["reuse_local_login"]) is not bool:
+        raise invalid("reuse_local_login 必须是 boolean")
     if "models" in config and (not isinstance(config["models"], list) or any(not isinstance(v, (str, dict)) for v in config["models"])):
         raise invalid("models 必须是模型数组")
     limit = data.get("max_concurrency", 8)
@@ -120,10 +123,14 @@ def create_registration(data, actor):
             data.get("provider") == "kimi" and data.get("kind") == "service"):
         data["route_id"] = str(data.get("account_id") or "").removeprefix("codex_") if data.get("provider") == "codex" else data.get("account_id", "")
     _validate(data)
-    with database().transaction("registrations") as c:
+    from .account_local_login import registration_lock
+    with registration_lock(data["provider"], data["account_id"]), ExitStack() as prepared, database().transaction("registrations") as c:
         if c.execute("SELECT 1 FROM registrations WHERE account_id=%s", (data["account_id"],)).fetchone():
             return None
         _check_relationships(c, data)
+        if data.get("config", {}).get("reuse_local_login"):
+            from .account_local_login import registration_home
+            prepared.enter_context(registration_home(data["provider"], data["account_id"]))
         return _decode(c.execute("""INSERT INTO registrations
             (account_id,provider,kind,route_id,config,max_concurrency,enabled,version,created_at,created_by,updated_at,updated_by)
             VALUES (%s,%s,%s,%s,%s,%s,%s,1,%s,%s,%s,%s)

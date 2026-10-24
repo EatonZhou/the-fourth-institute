@@ -66,7 +66,8 @@ class InstanceProviderUpdateTests(unittest.TestCase):
                 link.symlink_to(old)
                 with patch.object(updates, "_active_executions", return_value=0), \
                         patch.object(runtime, "busy", return_value=False), \
-                        patch.object(runtime, "link", return_value=link):
+                        patch.object(runtime, "activation_link" if provider == "claude" else "link",
+                                     return_value=link):
                     self.assertTrue(updates._activate(provider, runtime, new))
                 self.assertIn(["systemctl", "--user", "restart", name], self.commands)
                 self.assertEqual(link.resolve(), new)

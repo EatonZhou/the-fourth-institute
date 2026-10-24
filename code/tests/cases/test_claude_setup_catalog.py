@@ -13,7 +13,7 @@ import pytest
 from management_portal import claude_provider_catalog as catalog
 
 
-@pytest.mark.parametrize("scenario", ["register", "repair", "conflict"])
+@pytest.mark.parametrize("scenario", ["register", "repair", "conflict", "local-register", "local-other"])
 def test_native_claude_catalog_ui(scenario):
     """Registration and repair preserve explicit models and registration CAS.
 

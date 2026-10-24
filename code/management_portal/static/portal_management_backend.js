@@ -487,14 +487,21 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     const extra = node("div", undefined, {class: "backendForm"}); form.append(extra);
     const renderFields = () => {
       extra.replaceChildren();
-      if (kind.value === "subscription_login") extra.append(node("p", t("保存后按页面提示打开浏览器完成授权。不要在这里填写订阅密码或 API Key。"), {class: "backendHint"}));
+      const localLogin = state.providers.find(p => p.provider === provider.value)?.local_login;
+      if (kind.value === "subscription_login") {
+        if (localLogin?.available) {
+          const reuse = field(extra, "复用本机已有登录", "reuse_local_login", "", {type: "checkbox"});
+          reuse.checked = true;
+          hint(reuse, "使用运行 Portal 的 Linux 用户已有授权；保留终端原配置，不导入聊天历史。取消勾选可登录其他账号。");
+        } else extra.append(node("p", t("保存后按页面提示打开浏览器完成授权。不要在这里填写订阅密码或 API Key。"), {class: "backendHint"}));
+      }
       if (kind.value === "service") extra.append(node("p", t("复用 Provider 已有的服务配置和授权。")));
       form.querySelector('[type="submit"]').disabled = false;
       const options = advanced(extra);
       if (kind.value === "subscription_login" && provider.value === "codex") {
         field(options, "备用账号（逗号分隔）", "fallback_account_ids"); field(options, "默认路线", "is_default", "", {type: "checkbox"});
       } else if (kind.value === "subscription_login" && provider.value === "claude") {
-        claudeCatalogFields(extra, {}, options);
+        claudeCatalogFields(extra, localLogin?.available ? {default_model: localLogin.default_model || ""} : {}, options);
       } else if (kind.value === "api_profile") {
         const backend = state.providers.find(p => p.provider === provider.value) || {};
         const compatible = state.apis.filter(item => !backend.api_protocol || (item.harness_protocols || []).includes(backend.api_protocol));
@@ -522,6 +529,9 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       event.preventDefault(); if (busy) return;
       const value = name => form.elements.namedItem(name)?.value || "";
       const config = {};
+      if (kind.value === "subscription_login" && form.elements.reuse_local_login) {
+        config.reuse_local_login = form.elements.reuse_local_login.checked;
+      }
       if (kind.value === "subscription_login" && provider.value === "codex") {
         config.fallback_account_ids = value("fallback_account_ids").split(",").map(v => v.trim()).filter(Boolean);
         config.is_default = form.elements.is_default.checked;

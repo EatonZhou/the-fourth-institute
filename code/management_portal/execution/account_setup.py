@@ -9,6 +9,7 @@ import time
 import logging
 import subprocess
 import json
+import sys
 
 from management_portal.hatg.contracts import InstructionError, invalid, not_found
 from . import account_registrations as registrations, provider_updates
@@ -93,6 +94,29 @@ def _started_codex_catalog(row, *, timeout=30.0):
             time.sleep(min(0.1, remaining))
 
 
+def _started_claude_catalog(row, *, timeout=30.0):
+    from management_common.portal_paths import path
+    from management_portal.claude_code_client import ClaudeCodeClient, ClaudeCodeUnavailable
+
+    # A reusable SDK says nothing about the new instance's listening daemon.
+    # Do not inherit a shell's CLAUDE_CODE_SOCKET from another installation.
+    client = ClaudeCodeClient(path("staging_root") / "portal_locks/claude-code-daemon.sock")
+    deadline = time.monotonic() + timeout
+    while True:
+        try:
+            health = client.health()
+            if health.get("backend") != "claude" or health.get("protocol_version") != 1:
+                raise ClaudeCodeUnavailable("Unexpected Claude daemon protocol")
+            # health's default profile may not be registered on a fresh site.
+            # Validate this account's catalog; the durable check tests its login.
+            return catalog(row)
+        except ClaudeCodeUnavailable:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise
+            time.sleep(min(0.1, remaining))
+
+
 def check(inv):
     row = account(inv.argument("account_id"))
     if not row["enabled"]:
@@ -122,6 +146,22 @@ def check(inv):
         except CodexAppServerUnavailable:
             raise InstructionError("instruction.owner_unavailable",
                 "Codex 本地后台未能在规定时间内就绪。登录授权仍然保留；请重试“测试并完成”，若仍失败请检查该账号的后台服务日志。",
+                details={"reason": "account.service_not_ready"}, retryable=True) from None
+    elif row["provider"] == "claude" and sys.platform.startswith("linux"):
+        from scripts.portal_service_units import start_claude_service
+        from management_portal.claude_code_client import ClaudeCodeUnavailable
+        try:
+            start_claude_service()
+        except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as exc:
+            logger.warning("Claude service start failed for %s (%s)", row["account_id"], type(exc).__name__)
+            raise InstructionError("instruction.owner_unavailable",
+                "Claude 本地后台启动失败。登录授权仍然保留；请重试“测试并完成”，若仍失败请检查本站后台服务日志。",
+                details={"reason": "account.service_start_failed"}, retryable=True) from None
+        try:
+            info = _started_claude_catalog(row)
+        except ClaudeCodeUnavailable:
+            raise InstructionError("instruction.owner_unavailable",
+                "Claude 本地后台未能在规定时间内就绪。登录授权仍然保留；请重试“测试并完成”，若仍失败请检查本站后台服务日志。",
                 details={"reason": "account.service_not_ready"}, retryable=True) from None
     else:
         info = None

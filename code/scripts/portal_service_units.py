@@ -96,11 +96,14 @@ def provider_runtime_services(unit: str) -> tuple[str, ...]:
         return ()
     if path.is_symlink() or not path.is_file():
         raise ValueError("Provider daemon service ownership mismatch")
-    required = {
-        f"Environment=HOME={isolated['root'] / 'home'}",
-        f"Environment=PORTAL_PATHS_CONFIG={isolated['root'] / 'config/paths.json'}",
-    }
-    if not required.issubset(path.read_text().splitlines()):
+    environment = {}
+    for line in path.read_text().splitlines():
+        if line.startswith("Environment="):
+            for value in shlex.split(line.removeprefix("Environment=")):
+                key, _, value = value.partition("=")
+                environment[key] = value.replace("%%", "%")
+    if (environment.get("HOME") != str(isolated['root'] / 'home') or
+            environment.get("PORTAL_PATHS_CONFIG") != str(isolated['root'] / 'config/paths.json')):
         raise ValueError("Provider daemon belongs to another instance")
     observed = _run("systemctl", "--user", "show", name,
                     "--property=FragmentPath,DropInPaths,ActiveState")
@@ -317,6 +320,147 @@ def install_codex_unit_template(*, reload: bool = True) -> Path:
     if reload:
         _run("systemctl", "--user", "daemon-reload")
     return target
+
+
+def _claude_unit_path() -> Path:
+    context = _isolated_provider_context()
+    if context:
+        return context["directory"] / (context["service_prefix"] + "-claude-code.service")
+    return Path(os.environ.get("PORTAL_SYSTEMD_USER_UNIT_ROOT", USER_UNIT_ROOT)) / "portal-claude-code.service"
+
+
+def install_claude_unit(runtime: Path, package: Path) -> Path:
+    """Install the local daemon using a reusable SDK, never another instance's unit."""
+    from management_common.portal_paths import path
+    from scripts.portal_instance_storage import render_unit
+
+    target = _claude_unit_path()
+    isolated = _isolated_provider_context()
+    if isolated:
+        # Check the previous definition and drop-ins before replacing any bytes.
+        provider_runtime_services("portal-claude-code.service")
+        from scripts.tfi_release_install import clean_environment
+        installation = json.loads((isolated["root"] / "installation.json").read_text())
+        env = clean_environment(installation["target"])
+        env["CLAUDE_CODE_SOCKET"] = str(path("staging_root") / "portal_locks/claude-code-daemon.sock")
+        content = "[Unit]\nDescription=Portal Claude Code daemon\n\n[Service]\nType=simple\nUMask=0077\n"
+        # systemd expands percent specifiers even inside quoted assignments.
+        for key, value in env.items():
+            assignment = key + "=" + str(value).replace("%", "%%")
+            content += "Environment=" + json.dumps(assignment, ensure_ascii=False) + "\n"
+        content += ("Restart=always\nRestartSec=2\nTimeoutStopSec=90\n"
+                    "\n[Install]\nWantedBy=default.target\n")
+    else:
+        content = render_unit(SOURCE_ROOT / "systemd/portal-claude-code.service")
+        env_source = SOURCE_ROOT / "systemd/portal-claude-code.env"
+        _install_unit(env_source, instance_root() / "systemd/portal-claude-code.env")
+    # Clear the template command/cwd. Pin the external interpreter or keep the
+    # managed runtime link so later SDK activation retains its restart semantics.
+    content = "\n".join(line for line in content.splitlines()
+                        if not line.startswith(("ExecStart=", "WorkingDirectory="))) + "\n"
+    quote = lambda value: json.dumps(str(value).replace("%", "%%"), ensure_ascii=False)
+    command = f"ExecStart={quote(runtime / 'bin/python')} -m management_portal.claude_code_daemon"
+    command += " --socket " + quote(path("staging_root") / "portal_locks/claude-code-daemon.sock")
+    content = content.replace("[Service]\n", f"[Service]\nWorkingDirectory={quote(package)}\n{command}\n", 1)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if target.is_symlink():
+        raise ValueError("Refusing a symlink Provider service definition")
+    with tempfile.NamedTemporaryFile(mode="w", dir=target.parent, delete=False) as stream:
+        temporary = Path(stream.name)
+        stream.write(content)
+    try:
+        temporary.replace(target)
+    finally:
+        temporary.unlink(missing_ok=True)
+    _run("systemctl", "--user", "daemon-reload")
+    if isolated:
+        provider_runtime_services("portal-claude-code.service")
+    return target
+
+
+def _switch_claude_link(link: Path, target: Path) -> None:
+    if link.exists() and not link.is_symlink():
+        raise ValueError("Refusing to replace non-symlink Claude current path")
+    link.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=link.parent) as temporary:
+        candidate = Path(temporary) / "current"
+        candidate.symlink_to(target)
+        candidate.replace(link)
+
+
+def _install_claude_backend(*, app_server_only: bool) -> Path:
+    from management_portal.execution import provider_updates as updates
+    from scripts.claude_app_server_package import build_package
+
+    provider_runtime_services("portal-claude-code.service")
+    runtime = updates.ClaudeRuntime()
+    runtime_root, versions = runtime.link(), runtime.installed()
+    # Retain the standard installer's explicit current-path override.
+    if os.environ.get("PORTAL_CLAUDE_RUNTIME_CURRENT") and not os.environ.get("PORTAL_CLAUDE_RUNTIME_ROOT"):
+        runtime_root = Path(os.environ["PORTAL_CLAUDE_RUNTIME_CURRENT"])
+        found = updates._claude_sdk(runtime_root / "bin/python")
+        versions = (found[1] if found else "0",)
+    staged = False
+    if versions == ("0",):
+        if app_server_only:
+            raise RuntimeError("Claude Agent SDK runtime is missing")
+        versions = runtime.available()
+        configured = os.environ.get("PORTAL_CLAUDE_RUNTIME_ROOT")
+        runtime_root = runtime.stage(versions, root=Path(configured) if configured else None)
+        staged = True
+    version = (SOURCE_ROOT / "management_portal/claude_app_server_version.txt").read_text().strip()
+    if not re.fullmatch(r"[0-9A-Za-z][0-9A-Za-z._-]{0,63}", version):
+        raise ValueError("Invalid Claude app-server version")
+    package = Path(os.environ.get("PORTAL_CLAUDE_APP_SERVER_ROOT", updates.RUNTIMES / f"claude-app-server-{version}"))
+    current = Path(os.environ.get("PORTAL_CLAUDE_APP_SERVER_CURRENT", updates.RUNTIMES / "claude-app-server-current"))
+    package.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix=".claude-app-server-", dir=package.parent) as temporary:
+        candidate = Path(temporary) / "package"
+        build_package(SOURCE_ROOT, candidate)
+        subprocess.run([str(runtime_root / "bin/python"), "-I", "-B", "-c",
+                        "import sys; sys.path.insert(0, sys.argv[2]); "
+                        "from management_portal import claude_code_daemon as daemon; "
+                        "assert daemon.APP_SERVER_VERSION == sys.argv[1]; "
+                        "assert daemon.APP_SERVER_PROTOCOL_VERSION == 1",
+                        version, str(candidate)], check=True, timeout=30,
+                       env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
+                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        if package.exists():
+            def digest(root):
+                return {str(p.relative_to(root)): hashlib.sha256(p.read_bytes()).hexdigest()
+                        for p in root.rglob("*") if p.is_file()}
+            if digest(candidate) != digest(package):
+                raise ValueError("Refusing to replace immutable Claude app-server runtime; bump APP_SERVER_VERSION")
+        else:
+            candidate.replace(package)
+    if staged:
+        current_sdk = Path(os.environ.get("PORTAL_CLAUDE_RUNTIME_CURRENT", runtime.activation_link()))
+        _switch_claude_link(current_sdk, runtime_root)
+        runtime_root = current_sdk
+    _switch_claude_link(current, package)
+    return install_claude_unit(runtime_root, current)
+
+
+def install_claude_backend(*, app_server_only: bool = False) -> Path:
+    """The standard installer and onboarding share one serialized install owner."""
+    from management_portal.execution.provider_updates import STATE_ROOT
+    STATE_ROOT.mkdir(parents=True, exist_ok=True)
+    with (STATE_ROOT / "claude-backend-install.lock").open("a+") as stream, lock_stream(stream):
+        return _install_claude_backend(app_server_only=app_server_only)
+
+
+def start_claude_service() -> None:
+    from management_portal.execution.provider_updates import STATE_ROOT
+    STATE_ROOT.mkdir(parents=True, exist_ok=True)
+    with (STATE_ROOT / "claude-backend-install.lock").open("a+") as stream, lock_stream(stream):
+        target = _claude_unit_path()
+        active = provider_runtime_services("portal-claude-code.service")
+        if not target.exists():
+            target = _install_claude_backend(app_server_only=True)
+        elif _isolated_provider_context() and active:
+            return
+        # enable --now is idempotent; unlike restart it preserves running turns.
+        _run("systemctl", "--user", "enable", "--now", target.name)
 
 
 def install_ai_socket_relay_unit() -> dict[str, Any]:

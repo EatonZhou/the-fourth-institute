@@ -11,6 +11,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
+from functools import cached_property
 
 import json
 import logging
@@ -95,6 +96,87 @@ def linked_version(link: Path, prefix: str) -> str:
 
     match = re.fullmatch(re.escape(prefix) + r"(.+)", link.resolve().name) if link.exists() else None
     return match.group(1) if match else "0"
+
+
+def _user_programs(name: str):
+    """Find an installed program without changing a service's PATH or HOME.
+
+    A fresh instance deliberately isolates HOME and starts with a small PATH.
+    The OS account, not that instance HOME, owns the user's local executables.
+    Only this account's standard executable directories are considered.
+    """
+    existing = shutil.which(name)
+    if existing:
+        yield Path(existing)
+    if os.name == "posix":
+        import pwd
+        try:
+            home = Path(pwd.getpwuid(os.getuid()).pw_dir)
+        except KeyError:
+            return
+        for directory in (home / ".local/bin", home / "bin"):
+            candidate = directory / name
+            if candidate.is_file() and os.access(candidate, os.X_OK):
+                yield candidate
+
+
+def _user_program(name: str) -> Path | None:
+    return next(_user_programs(name), None)
+
+
+def _claude_sdk(interpreter: Path) -> tuple[Path, str] | None:
+    """Verify a reusable environment, including the daemon's dependencies.
+
+    Probe the environment's own interpreter; resolving its symlink would lose
+    the venv. Isolated mode prevents caller PYTHONPATH from making a broken
+    runtime appear ready. No login, model call or package installation occurs.
+    """
+    if not interpreter.is_file():
+        return None
+    try:
+        value = json.loads(run_command(str(interpreter), "-I", "-c",
+            "import json,sys; from pathlib import Path; "
+            "import claude_agent_sdk as s; import psycopg,psycopg_pool; "
+            "print(json.dumps([sys.prefix,s.__version__,str(Path(s.__file__).parent / "
+            "'_bundled' / ('claude.exe' if sys.platform == 'win32' else 'claude'))]))",
+            timeout=10))
+        prefix, version, bundled = value
+        if not all(isinstance(item, str) for item in value):
+            return None
+        root = Path(prefix)
+        Version(version)
+        if not root.is_absolute() or not venv_python(root).is_file():
+            return None
+        if not Path(bundled).is_file() or not os.access(bundled, os.X_OK):
+            return None
+        if not run_command(bundled, "--version", timeout=10):
+            return None
+        return root, version
+    except (OSError, ValueError, TypeError, subprocess.SubprocessError):
+        return None
+
+
+def _claude_service_python() -> Path | None:
+    """An existing user service is an authoritative runtime location on Linux.
+
+    Read only its command, never its Environment (which may contain secrets).
+    Do not guess a previous installation's directory or scan other users.
+    """
+    if not sys.platform.startswith("linux"):
+        return None
+    try:
+        command = run_command("systemctl", "--user", "show", "portal-claude-code.service",
+                              "--property=ExecStart", "--value", timeout=5)
+        match = re.search(r"\bpath=(.*?)\s*;\s*argv\[\]=(.*?)\s*;", command)
+        if match:
+            binary, argv = match.group(1).strip(), shlex.split(match.group(2))
+            path = Path(binary)
+            if (path.is_absolute() and re.fullmatch(r"python(?:\d+(?:\.\d+)?)?", path.name)
+                    and argv == [binary, "-m", "management_portal.claude_code_daemon"]):
+                return path
+    except (OSError, ValueError, subprocess.SubprocessError):
+        pass
+    return None
 
 
 class ProviderRuntime:
@@ -200,8 +282,7 @@ class CodexRuntime(ProviderRuntime):
             return managed
         # Until Portal activates its own runtime, reuse a Codex found on PATH.
         # Once activated, the managed link stays the program services run.
-        existing = shutil.which("codex")
-        return Path(existing) if existing else managed
+        return _user_program("codex") or managed
 
     def activation_link(self) -> Path:
         if sys.platform == "win32":
@@ -234,7 +315,11 @@ class ClaudeRuntime(ProviderRuntime):
         return (pypi_version("claude-agent-sdk"),)
 
     def installed(self) -> tuple[str, ...]:
-        return (linked_version(self.link(), "claude-agent-sdk-"),)
+        root = self.link()
+        found = self.__dict__.get("_existing_sdk")
+        if not found or found[0] != root:
+            found = _claude_sdk(venv_python(root))
+        return (found[1] if found else "0",)
 
     def stage(self, versions: tuple[str, ...], *, root: Path | None = None) -> Path:
         (version,) = versions
@@ -260,6 +345,35 @@ class ClaudeRuntime(ProviderRuntime):
         return root
 
     def link(self) -> Path:
+        # Preserve the installer's explicit override and an activated runtime.
+        configured = os.environ.get("PORTAL_CLAUDE_RUNTIME_ROOT", "").strip()
+        if configured:
+            return resolve_directory(configured)
+        managed = self.activation_link()
+        if managed.exists() or managed.is_symlink():
+            return managed
+        found = self._existing_sdk
+        return found[0] if found else managed
+
+    @cached_property
+    def _existing_sdk(self) -> tuple[Path, str] | None:
+        # One observation per runtime object/pass, shared by link/installed.
+        # No cross-request cache can hide a newly installed runtime.
+        seen: set[Path] = set()
+        for interpreter in (Path(sys.executable), *_user_programs("python3"), *_user_programs("python")):
+            if interpreter not in seen:
+                seen.add(interpreter)
+                found = _claude_sdk(interpreter)
+                if found:
+                    return found
+        interpreter = _claude_service_python()
+        if interpreter is not None and interpreter not in seen:
+            found = _claude_sdk(interpreter)
+            if found:
+                return found
+        return None
+
+    def activation_link(self) -> Path:
         return RUNTIMES / "claude-agent-sdk-current"
 
     def busy(self) -> bool:

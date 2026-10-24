@@ -416,6 +416,9 @@ def list_providers(inv):
                           "api_protocol": definition.api_protocol if definition else ""})
         from .provider_updates import preparation_status
         providers[-1]["preparation"] = preparation_status(provider)
+        if provider in {"codex", "claude"}:
+            from .account_local_login import describe
+            providers[-1]["local_login"] = describe(provider)
     return {"providers": providers}
 
 

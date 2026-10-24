@@ -6,11 +6,13 @@ const sourcePath = process.argv[2] || path.join(__dirname, '../../../management_
 const source = fs.readFileSync(sourcePath, 'utf8').replaceAll('export ', '');
 const flush = () => new Promise(resolve => setImmediate(resolve));
 const scenario = process.argv[3] || 'register';
+const registering = ['register', 'local-register', 'local-other'].includes(scenario);
+const local = scenario.startsWith('local-');
 
 (async () => {
   const dom = new JSDOM('<main></main>', {url: 'http://portal.invalid/'});
   const {window} = dom, calls = [];
-  let accounts = scenario === 'register' ? [] : [{account_id: 'cc', provider: 'claude',
+  let accounts = registering ? [] : [{account_id: 'cc', provider: 'claude',
     kind: 'subscription_login', enabled: true, registration_version: 7, config: {models: []}}];
   window.PortalI18n = {t: text => text};
   window.PortalUI = {createDialogController: ({modal, onClose}) => ({
@@ -18,7 +20,8 @@ const scenario = process.argv[3] || 'register';
   })};
   window.PortalInstructionClient = {execute: async (name, args, options) => {
     calls.push({name, args: structuredClone(args), options});
-    if (name === 'ListProviders') return {providers: [{provider: 'claude', kinds: ['subscription_login']}]};
+    if (name === 'ListProviders') return {providers: [{provider: 'claude', kinds: ['subscription_login'],
+      ...(local ? {local_login: {available: true, default_model: 'opus-5.5'}} : {})}]};
     if (name === 'ListProviderAccounts') return {accounts};
     if (name === 'ListBackendRoles') return {roles: [{role: 'default', account_id: 'another'}]};
     if (name === 'ListModelApis') return {apis: []};
@@ -51,10 +54,15 @@ const scenario = process.argv[3] || 'register';
     const button = [...scope.querySelectorAll('button')].find(b => b.textContent === label && !b.hidden);
     assert(button && !button.disabled, `available action: ${label}`); button.click();
   };
-  if (scenario === 'register') click('接入订阅账号');
+  if (registering) click('接入订阅账号');
   else { click('接入与测试'); await flush(); click('编辑模型目录'); }
   const form = window.document.querySelector('dialog form');
-  if (scenario === 'register') form.elements.account_id.value = 'cc';
+  if (registering) form.elements.account_id.value = 'cc';
+  if (local) {
+    assert.equal(form.elements.default_model.value, 'opus-5.5');
+    assert.equal(form.elements.reuse_local_login.checked, true);
+    if (scenario === 'local-other') form.elements.reuse_local_login.checked = false;
+  } else assert(!form.elements.reuse_local_login);
   assert(form.elements.default_model, 'Claude registration/repair must collect the default model');
   form.elements.default_model.value = 'opus-5.5';
   const submit = () => form.dispatchEvent(new window.Event('submit', {bubbles: true, cancelable: true}));
@@ -78,6 +86,7 @@ const scenario = process.argv[3] || 'register';
   const config = mutation.args.config || mutation.args.changes.config;
   assert.equal(config.default_model, 'opus-5.5');
   assert.deepEqual(config.models, [{id: 'opus-5.5'}]);
+  if (local) assert.equal(config.reuse_local_login, scenario === 'local-register');
   assert.equal(mutations().length, 1);
   assert(window.document.querySelector('[data-backend-setup-status]'));
   assert(!calls.some(c => c.name === 'CheckProviderAccount'), 'saving config does not start a paid check');
