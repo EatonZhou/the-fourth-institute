@@ -26,7 +26,7 @@ const report = {checks:[], errors:[], ok:false};
     });
     await page.goto('https://hatg-state.fixture.invalid');
     for (const name of ['portal_design_system','portal_themes','hatg_panel']) await page.addStyleTag({url:'/static/'+name+'.css'});
-    for (const name of ['portal_text','portal_translations','portal_i18n','portal_ui_primitives','projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min','resident_protocol','lineage_graph']) await page.addScriptTag({url:'/static/'+name+'.js'});
+    for (const name of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min','resident_protocol','lineage_graph']) await page.addScriptTag({url:'/static/'+name+'.js'});
     await page.evaluate(code => {
       PortalI18n.apply('zh-CN');
       const member='resident_fixture', facade='resident_facade';
