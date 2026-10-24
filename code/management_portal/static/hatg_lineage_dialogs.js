@@ -13,8 +13,6 @@
     "setBusy", "societyService", "state", "toast", "updateLineageSummary",
   ]);
 
-
-
   function createLineageDialogs(dependencies) {
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalHatgLineageDialogs is missing: ${missing.join(", ")}`);

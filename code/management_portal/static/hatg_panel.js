@@ -69,7 +69,6 @@
   const FIT_ALL_VIEW = Object.freeze({ duration: 280, maxScale: 1 });
   const DEFAULT_TEMPLATE_TIMEOUT_MS = 360_000;
 
-
   const stateFactory = window.PortalHatgPanelState;
   if (!stateFactory) throw new Error("PortalHatgPanelState is not loaded.");
   const controllerFactory = window.PortalLineageWorkbenchController;
@@ -97,7 +96,6 @@
   } = hatgModule("PortalHatgGraphModel").createGraphModel({
     esc, state,
   });
-
 
   const {
     clearGraphNodeSearch, bindGraphNodeSearch, refreshGraphNodeSearchResults,
@@ -153,7 +151,6 @@
     // The canvas view is created after this part.
     renderGraph: (...args) => renderGraph(...args),
   });
-
 
   const {
     familyMemberTag, functionBlockInstanceFailures, functionBlockInstanceUnacknowledgedFailures,
@@ -211,7 +208,6 @@
     renderLineageHeader: (...args) => renderLineageHeader(...args),
   });
 
-
   const {
     programEventSourceStatus, syncProgramRunAsGuidance, programComponentPaused,
     programComponentSwitchHtml, syncProgramComponentSwitch, toggleProgramComponent,
@@ -226,7 +222,6 @@
     // The canvas view is created after this part.
     renderGraphRuntimePresentation: (...args) => renderGraphRuntimePresentation(...args),
   });
-
 
   const {
     refreshFunctionBlockMenu, openFunctionBlockMenu, functionBlockSourceTitle,
@@ -257,7 +252,6 @@
     sendPromptToNode: (...args) => sendPromptToNode(...args),
   });
 
-
   const {
     seedTypeLabel, renderSeedInspector, positionSeedInspector, dismissSeedSelection, selectSeed,
     setSeedActionChoice, openSeedPromoteModal, submitSeedPromotion, openSeedDismissModal,
@@ -277,7 +271,6 @@
     renderLineageHeader: (...args) => renderLineageHeader(...args),
     setSyncStatus: (...args) => setSyncStatus(...args),
   });
-
 
   const {
     renderNodeProviderFields, openNodeModal, nextNodePosition, submitNodeForm,
@@ -316,8 +309,6 @@
     updateLineageSummary: (...args) => updateLineageSummary(...args),
   });
 
-
-
   const {
     hatgViewPreferences, HATG_WORLD_SIZE, AUTO_LAYOUT_VIEW, loadHatgViewPreference,
     scheduleHatgViewPreferenceSave, flushHatgViewPreferenceSave, syncWorkspaceNodePosition,
@@ -342,7 +333,6 @@
     selectedFamilyCandidateIds, state, subgraphMoveBusy,
   });
 
-
   const {
     workspaceGraphModel, graphVisibleModel,
   } = hatgModule("PortalHatgGraphProjection").createGraphProjection({
@@ -352,8 +342,6 @@
     functionBlockProjection, graphSelectedId, hatgViewPreferences, programExecutionExplanation,
     readableAutoLayoutOptions, relationFamily, relationVisibleInView, state,
   });
-
-
 
   const {
     renderProgramInspector, effectScriptLabel, setSeedCandidateFork,
@@ -439,7 +427,6 @@
     renderGraph, renderLineageHeader, seedById, state, toast,
   });
 
-
   const {
     reconcileLineageRuntime, bindResidentStateCollection, bindLineageProjectionSubscription,
     stopLineageNode, sendPromptToNode, stopAllRunningNodes,
@@ -451,10 +438,6 @@
     renderGraphRuntimePresentation, renderLineageSurface, runningLineageNodes, selectNode,
     setBusy, setNodeRuntimeStatus, societyService, state, toast, updateLineageSummary,
   });
-
-
-
-
 
   let graphControlObserver = null;
   let seedInspectorObserver = null;
@@ -538,16 +521,12 @@
     lineageDialogController(id)?.close();
   }
 
-
   function publishLocation(lineageId, programItemId = "") {
     return hatgComponentOptions.onLocationChange?.({
       lineageId: String(lineageId || ""),
       programItemId: String(programItemId || ""),
     });
   }
-
-
-
 
   function bindComponentLibraryResize() {
     disposeLibraryResize?.();
@@ -620,8 +599,6 @@
     renderSeedInspector();
   }
 
-
-
   // Templates use the same selection and coordinate system as canvas gestures.
   function templateCanvasTarget(event) {
     const position = state.graphController?.screenToPosition?.(event.clientX, event.clientY) || { x: 50, y: 50 };
@@ -634,7 +611,6 @@
     if (nodeById(id)) return { kind: "resident", resident_ids: [id], ...position };
     return { kind: "canvas", ...position };
   }
-
 
   async function loadLineages() {
     const payload = await societyService.listLineages();
@@ -863,7 +839,6 @@
       if (!state.lineageProjectionSubscription) bindLineageProjectionSubscription();
     }
   }
-
 
   // Templates own their shelf, editor, drag handling and application forms.
   function mountTemplates() {

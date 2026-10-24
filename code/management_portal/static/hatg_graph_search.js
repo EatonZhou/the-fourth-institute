@@ -10,8 +10,6 @@
     "nodeResidentId", "residentDiscovery", "state", "toast", "workspaceGraphModel",
   ]);
 
-
-
   function createGraphSearch(dependencies) {
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalHatgGraphSearch is missing: ${missing.join(", ")}`);
