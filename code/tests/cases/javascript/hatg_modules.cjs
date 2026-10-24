@@ -47,20 +47,40 @@ function createHatgModule(module, factory, replaced = {}) {
   return module[factory](dependencies);
 }
 
-// Module parts receive runtime functions when the runtime starts, so a case
-// that replaces a runtime function rewrites its declaration in the source:
-// every part then calls the replacement. Each replacement is an expression
-// evaluated in the runtime scope at call time.
-function overrideRuntimeFunctions(source, overrides) {
-  const { babelParse } = require('./babel_parse.cjs');
-  const runtime = babelParse(source, 'hatg_panel.js').program.body[0].expression.callee.body.body
-    .find(node => node.type === 'FunctionDeclaration' && node.id.name === 'createHatgRuntime');
-  const edits = Object.entries(overrides).map(([name, replacement]) => {
-    const node = runtime.body.body.find(item => item.type === 'FunctionDeclaration' && item.id.name === name);
-    if (!node) throw new Error(`No runtime function ${name}`);
-    return [node.start, node.end, `function ${name}(...args) { return (${replacement})(...args); }`];
-  }).sort((a, b) => b[0] - a[0]);
-  return edits.reduce((text, [start, end, value]) => text.slice(0, start) + value + text.slice(end), source);
+// The runtime and its module scripts, by file name.
+function hatgSources() {
+  return Object.fromEntries(['hatg_panel.js', ...hatgModuleFiles()].map(file => [file, readHatgModule(file)]));
 }
 
-module.exports = { STATIC, hatgModuleFiles, readHatgModule, createHatgModule, overrideRuntimeFunctions };
+// Module parts receive runtime functions when the runtime starts, so a case
+// that replaces a function rewrites its declaration in the runtime or in the
+// module script that owns it: every caller then reaches the replacement. Each
+// replacement is an expression evaluated in its owner's scope at call time.
+function overrideHatgFunctions(sources, overrides) {
+  const { babelParse, traverse } = require('./babel_parse.cjs');
+  const result = { ...sources };
+  for (const [name, replacement] of Object.entries(overrides)) {
+    let target = null;
+    for (const [file, text] of Object.entries(result)) {
+      const ast = babelParse(text, file);
+      if (file === 'hatg_panel.js') {
+        const runtime = ast.program.body[0].expression.callee.body.body
+          .find(node => node.type === 'FunctionDeclaration' && node.id.name === 'createHatgRuntime');
+        const node = runtime.body.body.find(item => item.type === 'FunctionDeclaration' && item.id.name === name);
+        if (node) target = { file, node };
+      } else {
+        traverse(ast, { FunctionDeclaration(p) {
+          if (p.node.id.name === name) { target = { file, node: p.node }; p.stop(); }
+        } });
+      }
+      if (target) break;
+    }
+    if (!target) throw new Error(`No HATG function ${name}`);
+    const text = result[target.file];
+    result[target.file] = text.slice(0, target.node.start)
+      + `function ${name}(...args) { return (${replacement})(...args); }` + text.slice(target.node.end);
+  }
+  return result;
+}
+
+module.exports = { STATIC, hatgModuleFiles, hatgSources, readHatgModule, createHatgModule, overrideHatgFunctions };

@@ -7,7 +7,7 @@ const vm = require('node:vm');
 const { randomUUID } = require('node:crypto');
 const { JSDOM } = require('jsdom');
 const { babelParse } = require('./babel_parse.cjs');
-const { hatgModuleFiles, overrideRuntimeFunctions } = require('./hatg_modules.cjs');
+const { hatgSources, overrideHatgFunctions } = require('./hatg_modules.cjs');
 const ROOT = path.resolve(__dirname, '../../..');
 const STATIC = path.join(ROOT, 'management_portal/static');
 const read = name => fs.readFileSync(path.join(STATIC, name), 'utf8');
@@ -70,8 +70,8 @@ w.PortalInstructionClient = { execute: async (name, args, controls) => {
   }
   throw new Error(`Unexpected ISA ${name}`);
 } };
-for (const name of ['hatg_panel_features.js', 'hatg_panel_state.js', 'portal_society_service.js', 'lineage_program.js', 'lineage_element_fields.js', 'lineage_primitive_inspector.js', ...hatgModuleFiles()]) vm.runInContext(read(name), context, { filename: name });
-const source = overrideRuntimeFunctions(read('hatg_panel.js'), {
+for (const name of ['hatg_panel_features.js', 'hatg_panel_state.js', 'portal_society_service.js', 'lineage_program.js', 'lineage_element_fields.js', 'lineage_primitive_inspector.js']) vm.runInContext(read(name), context, { filename: name });
+const sources = overrideHatgFunctions(hatgSources(), {
   renderLineageSurface: '() => { if (state.selectedProgramObjectId) renderProgramInspector(); }',
   renderNodeProviderFields: '() => {}',
   renderControls: '() => {}',
@@ -81,6 +81,10 @@ const source = overrideRuntimeFunctions(read('hatg_panel.js'), {
   closeModal: 'id => { $id(id).hidden = true; }',
   selectLineage: 'async id => { state.lineage = await societyService.loadLineage(id); }',
 });
+for (const [name, text] of Object.entries(sources)) {
+  if (name !== 'hatg_panel.js') vm.runInContext(text, context, { filename: name });
+}
+const source = sources['hatg_panel.js'];
 const ast = babelParse(source, 'hatg_panel.js');
 const scope = ast.program.body[0].expression.callee.body.body.find(n => n.type === 'FunctionDeclaration' && n.id.name === 'createHatgRuntime');
 const ret = scope.body.body.find(n => n.type === 'ReturnStatement');

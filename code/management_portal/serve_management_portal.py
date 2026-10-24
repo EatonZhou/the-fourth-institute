@@ -3438,6 +3438,7 @@ def _portal_route_definitions() -> tuple[RouteDefinition, ...]:
                 '/static/hatg_program_inspector.js',
                 '/static/hatg_relations.js',
                 '/static/hatg_layout.js',
+                '/static/hatg_resident_dialogs.js',
                 '/static/hatg_panel.css',
                 '/static/hatg_panel.js',
                 '/static/portal_script_runs.js',

@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const {readHatgModule, createHatgModule} = require('./hatg_modules.cjs');
 const root = path.resolve(__dirname, '../../../management_portal/static');
 const menu = fs.readFileSync(path.join(root, 'portal_resident_menu.js'), 'utf8');
 const hatg = fs.readFileSync(path.join(root, 'hatg_panel.js'), 'utf8');
@@ -96,17 +97,19 @@ test('a deleted Resident cannot finish opening from an older asynchronous read',
 
 test('a committed deletion followed by graph refresh failure reports the committed result', async () => {
   const messages = [];
-  const ctx = vm.createContext({
+  // The production Resident dialogs part, with only these dependencies provided.
+  const window = {PortalI18n: i18n};
+  vm.runInContext(readHatgModule('hatg_resident_dialogs.js'), vm.createContext({window}));
+  const dialogs = createHatgModule(window.PortalHatgResidentDialogs, 'createResidentDialogs', {
     state: {lineage: {lineage_id: 'lineage_one', edges: []}},
     nodeById: () => ({id: 'resident_deleted', title: 'Deleted'}), currentNode: () => null,
     familyForFacade: () => null, nodeResidentId: node => node.id,
-    window: {PortalI18n: i18n}, toast: (...args) => messages.push(args),
+    toast: (...args) => messages.push(args),
     societyService: {deleteNode: async () => { throw Object.assign(new Error('refresh unavailable'), {
       committedMutation: {instruction: 'DeleteResident', result: {resident_id: 'resident_deleted'}},
     }); }},
   });
-  vm.runInContext(owner(hatg, 'removeSelectedNode', 2), ctx);
-  assert.equal(await ctx.removeSelectedNode({nodeId: 'resident_deleted', skipConfirm: true}), true);
+  assert.equal(await dialogs.removeSelectedNode({nodeId: 'resident_deleted', skipConfirm: true}), true);
   assert.equal(messages[0][1], 'warning');
   assert.match(messages[0][0], /Resident 已删除/);
 });

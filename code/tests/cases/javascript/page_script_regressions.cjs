@@ -211,8 +211,9 @@ function unfamilizeViewportFixture() {
     programFeature: {clearSelection: noop}, applyProgramMutation: request => request(),
     executeHatgInstruction: async () => receipt,
   });
-  const menu = owner('hatg_panel.js', ['residentMenuHandlers'], {
-    window, state, revealUnfamilizedMember: blocks.revealUnfamilizedMember,
+  vm.runInContext(readHatgModule('hatg_resident_dialogs.js'), vm.createContext({window, console}));
+  const menu = createHatgModule(window.PortalHatgResidentDialogs, 'createResidentDialogs', {
+    state, revealUnfamilizedMember: blocks.revealUnfamilizedMember,
     societyService: {loadLineage: async () => {calls.push(['load']); return state.lineage;}},
     commitLineage: () => calls.push(['render']),
   });
