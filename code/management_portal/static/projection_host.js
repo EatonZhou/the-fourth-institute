@@ -53,6 +53,7 @@
           details.append(heading, content);
         }
       } else {
+        dialog.setAttribute("aria-label", window.PortalI18n.t("确认工作台操作"));
         dialog.innerHTML = window.PortalI18n.markup('<form method="dialog"><h2>确认工作台操作</h2><p>此操作将交给绑定的 Lineage 执行。</p><pre></pre><div class="projectionActions"><button class="portalButton" value="cancel">取消</button><button value="confirm" class="portalButton is-primary">确认执行</button></div></form>');
         dialog.querySelector("pre").textContent = JSON.stringify({ instruction: payload.instruction, binding: payload.binding || "main", role: payload.role || "", object: payload.object ? displayObject(payload.object) : undefined, arguments: payload.arguments || {} }, null, 2);
       }
