@@ -1344,6 +1344,13 @@ def _persist_lineage_state_transaction(
     if definition_changed:
         from . import system_workflow_switches
         system_workflow_switches.defer_definition_projection(lineage_id, previous, lineage)
+        if domain == lineage_state_domains.GRAPH:
+            from . import family_facade
+            from .changes import resident_changed
+            for facade_id in family_facade.changed_roster_facades(previous, lineage):
+                invariant_locks.defer_until_state_unlock(
+                    lambda facade_id=facade_id: resident_changed(facade_id, scope="projection"),
+                )
     from management_portal.society_service.changes import lineage_changed
 
     runtime_notification = (

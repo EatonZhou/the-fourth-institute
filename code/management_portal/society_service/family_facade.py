@@ -48,6 +48,22 @@ def is_facade(record: Mapping[str, Any] | None) -> bool:
     return ((record or {}).get('family') or {}).get('role') == 'facade'
 
 
+def changed_roster_facades(before: Mapping[str, Any] | None, after: Mapping[str, Any]) -> list[str]:
+    """Chat snapshots subscribe to facade projections, not Lineage graph changes."""
+    def rosters(lineage: Mapping[str, Any]) -> dict[str, tuple]:
+        result = {}
+        for block in lineage.get("function_blocks") or []:
+            family = block.get("family") or {}
+            facade = family.get("facade")
+            if facade:
+                result[facade] = (block["id"], family.get("title"), family.get("router"),
+                                  family.get("steward"), tuple(sorted(family.get("members") or [])))
+        return result
+
+    old, new = rosters(before or {}), rosters(after)
+    return sorted(facade for facade in old.keys() | new.keys() if old.get(facade) != new.get(facade))
+
+
 def is_steward(record: Mapping[str, Any] | None) -> bool:
     return ((record or {}).get('family') or {}).get('role') == 'steward'
 

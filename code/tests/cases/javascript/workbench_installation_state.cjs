@@ -48,6 +48,32 @@ function mount(h, extra = {}) {
     restorePanel: spec => descriptor(spec.id), ...extra});
 }
 
+test('restored editor keeps its locator when the package snapshot stores target separately', async () => {
+  const h = createHarness(); const reload = createHarness();
+  try {
+    install(h, 'binding-roundtrip'); register(h, [], {});
+    const binding = {kind: 'chat', resident_id: 'resident_dynamic', lineage_id: 'lineage_saved'};
+    const key = h.window.PortalWorkbench.storage.userStorageKey('workbench', 'lineage', 'reader');
+    h.window.PortalState.storage.writeJson(key, {
+      schemaVersion: 2, panelIds: ['chat', 'dynamic'],
+      openEditors: [{id: 'dynamic', type: 'binding-fixture', binding}],
+      panelStates: {dynamic: {packageType: 'binding-fixture', packageVersion: 1,
+        schemaVersion: 1, value: {target: binding, draft: 'unsent'}}},
+      layout: h.window.PortalWorkbench.model.stack(['chat', 'dynamic']), hidden: [], collapsed: [],
+    });
+    const wb = mount(h);
+    wb.hidePanel('chat');
+    const saved = h.window.PortalState.storage.readJson(key);
+    assert.deepEqual(plain(saved.openEditors.find(spec => spec.id === 'dynamic').binding), binding);
+    install(reload, 'binding-roundtrip', contents(h)); const reads = []; register(reload, reads, {});
+    const next = mount(reload);
+    next.showPanel('chat');
+    assert.deepEqual(plain(reload.window.PortalState.storage.readJson(key)
+      .openEditors.find(spec => spec.id === 'dynamic').binding), binding);
+    assert.equal(reads.find(([id]) => id === 'dynamic')[1].draft, 'unsent');
+  } finally { await h.cleanup(); await reload.cleanup(); }
+});
+
 test('origin reuse isolates installation state, preserves legacy bytes and same-install drafts/layout', async () => {
   const old = createHarness(); const fresh = createHarness(); const reload = createHarness();
   try {

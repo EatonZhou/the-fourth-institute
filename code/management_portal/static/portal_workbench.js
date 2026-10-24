@@ -1099,6 +1099,9 @@
         if (restored) rawPanels.push({
           ...restored,
           id: String(spec.id || restored.id || ""),
+          // Packages may persist their target in a different snapshot field.
+          // Keep the saved locator across later layout saves and reloads.
+          binding: clone(restored.binding || spec.binding || null),
           closable: true,
           restoreOnReload: true,
         });

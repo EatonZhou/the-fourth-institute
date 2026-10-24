@@ -335,11 +335,18 @@ def test_deleted_members_leave_the_family_and_keep_identity(lineage, charters):
 
     first, second, third = (resident(lineage, name) for name in ("Auth", "Pages", "Docs"))
     family = ok("Familize", {"lineage_id": lineage, "resident_ids": [first, second, third]}, key="familize-delete")
-    ok("DeleteResident", {"lineage_id": lineage, "resident_id": third}, key="delete-third")
+    other = ok("Familize", {"lineage_id": lineage, "resident_ids": [resident(lineage, "Other")]}, key="other-family")
+    from management_portal.society_service.changes import collect_changes
+    with collect_changes() as changes:
+        ok("DeleteResident", {"lineage_id": lineage, "resident_id": third}, key="delete-third")
     assert _family(lineage, family["family_id"])["members"] == sorted([first, second])
+    assert ("resident", family["facade_resident_id"], "projection") in [change[:3] for change in changes]
+    assert ("resident", other["facade_resident_id"], "projection") not in [change[:3] for change in changes]
     assert get_catalog().get_historical(third)["deleted_at"]
     assert not any(node["id"] == third for node in graph(lineage)["nodes"])
-    assert ok("DeleteResident", {"lineage_id": lineage, "resident_id": third}, key="delete-third-again")["resident_id"] == third
+    with collect_changes() as changes:
+        assert ok("DeleteResident", {"lineage_id": lineage, "resident_id": third}, key="delete-third-again")["resident_id"] == third
+    assert not any(change[2] == "projection" for change in changes)
     steward = run("DeleteResident", {"lineage_id": lineage, "resident_id": family["steward_resident_id"]})
     assert steward.error["code"] == "instruction.conflict"
 
