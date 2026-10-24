@@ -212,9 +212,9 @@ def test_native_compact_and_status_do_not_require_online_route():
     ({"backend": "dsh", "provider_profile": "deepseek_primary"}, {"model": "deepseek-v4-flash", "reasoning_effort": "max"},
      ["- Provider: `DeepSeek Harness`", "- Route: `deepseek_primary`", "- Model: `deepseek-v4-flash`",
       "- Reasoning effort: `max`"], ["Permissions"]),
-    # Kimi Code takes no route and no reasoning effort.
+    # Kimi Code now has account routes; it still has no reasoning effort.
     ({"backend": "kimi"}, {"model": "kimi-for-coding", "permission_preset": "default"},
-     ["- Provider: `Kimi Code`", "- Model: `kimi-for-coding`", "- Permissions: `Manual`"], ["Route", "Reasoning effort"]),
+     ["- Provider: `Kimi Code`", "- Model: `kimi-for-coding`", "- Permissions: `Manual`"], ["Reasoning effort"]),
 ], ids=["claude", "dsh", "kimi"])
 def test_native_status_names_the_provider_its_settings_and_the_sessions_tokens(record, settings, expected, absent):
     """原生会话 /status 列出 Provider、设置和 token 统计

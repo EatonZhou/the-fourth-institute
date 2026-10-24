@@ -90,32 +90,33 @@ class ModelFixture:
         self.server.server_close()
 
 
-def codex_probe(binary, root):
-    from management_common.process_runtime import spawn_process, terminate_process_tree
-    home = root / 'codex-home'
-    home.mkdir()
-    process = spawn_process([str(binary), 'app-server'], env={**os.environ, 'CODEX_HOME': str(home)},
-                            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                            text=True, encoding='utf-8')
-    lines = queue.Queue()
-    threading.Thread(target=lambda: [lines.put(line) for line in process.stdout], daemon=True).start()
-    def request(identifier, method, params):
-        process.stdin.write(json.dumps({'id': identifier, 'method': method, 'params': params}) + '\n')
-        process.stdin.flush()
-        deadline = time.monotonic() + 45
-        while time.monotonic() < deadline:
-            value = json.loads(lines.get(timeout=max(.1, deadline - time.monotonic())))
-            if value.get('id') == identifier:
-                assert 'error' not in value, value
-                return value['result']
-        raise TimeoutError(method)
+def agent_branches(provider, python, binary, root, code, evidence):
+    from management_common.process_runtime import run_process
+    work = root / f'{provider}-branches'
+    command = [str(python), str(Path(__file__).with_name('native_agent_branches.py')),
+               '--provider', provider, '--code', str(code.resolve()), '--work', str(work)]
+    if binary:
+        command.extend(['--binary', str(binary)])
+    # These probes own disposable profiles; never inherit provider credentials.
+    allowed = {'PATH', 'SYSTEMROOT', 'WINDIR', 'COMSPEC', 'PATHEXT', 'TEMP', 'TMP',
+               'LOCALAPPDATA', 'APPDATA', 'USERPROFILE', 'PROGRAMFILES', 'PROGRAMFILES(X86)',
+               'PROGRAMDATA', 'LANG', 'LD_LIBRARY_PATH'}
+    env = {key: value for key, value in os.environ.items() if key.upper() in allowed}
+    env.update(PYTHONUTF8='1', PORTAL_NO_SITE_ENV='1', PORTAL_NO_PATHS_ENV='1',
+               PORTAL_ACCOUNTS_ROOT=str(root / 'accounts'),
+               PORTAL_PROVIDER_STAGING_DIR=str(root / 'staging'),
+               PORTAL_SHARE_ROOT=str(root / 'share'))
     try:
-        request(1, 'initialize', {'clientInfo': {'name': 'portal_native_test', 'version': '1'}})
-        result = request(2, 'model/list', {})
-        assert isinstance(result.get('data'), list), 'model/list contract missing'
-        return {'initialize': 'passed', 'model_list': 'passed', 'authenticated_inference': 'not_tested'}
+        with (evidence / f'{provider}-branches.log').open('w', encoding='utf-8') as log:
+            result = run_process(command, env=env, cwd=root, stdout=log, stderr=subprocess.STDOUT,
+                                 timeout=420)
+        receipt = json.loads((work / 'branches.json').read_text(encoding='utf-8'))
+        assert result.returncode == 0 and receipt['ok'], receipt
+        return {'branches': receipt['cases'], 'subscription_login': 'not_tested',
+                'upstream': 'loopback_fixture'}
     finally:
-        terminate_process_tree(process, force=True)
+        if (work / 'branches.json').is_file():
+            (evidence / f'{provider}-branches.json').write_bytes((work / 'branches.json').read_bytes())
 
 
 def opencode_probe(binary, root, version):
@@ -156,26 +157,6 @@ def opencode_probe(binary, root, version):
             finally:
                 runner.close_session('', result.session_id)
         return {'bridge_ipc': 'passed', 'chat_completions': 'passed', 'model': fixture.model}
-    finally:
-        fixture.close()
-
-
-def claude_probe(binary, root):
-    from management_common.process_runtime import run_process
-    fixture = ModelFixture()
-    env = {**os.environ, 'CLAUDE_CONFIG_DIR': str(root / 'claude-config'),
-           'ANTHROPIC_BASE_URL': fixture.url, 'ANTHROPIC_API_KEY': 'disposable-fixture',
-           'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC': '1'}
-    for key in ('ANTHROPIC_MODEL', 'ANTHROPIC_SMALL_FAST_MODEL', 'ANTHROPIC_DEFAULT_OPUS_MODEL',
-                'ANTHROPIC_DEFAULT_SONNET_MODEL', 'ANTHROPIC_DEFAULT_HAIKU_MODEL', 'CLAUDE_CODE_SUBAGENT_MODEL'):
-        env[key] = fixture.model
-    try:
-        result = run_process([str(binary), '-p', 'Say hello.', '--model', fixture.model, '--output-format', 'json'],
-                             env=env, cwd=root, capture_output=True, text=True, encoding='utf-8', timeout=120)
-        assert result.returncode == 0, (result.returncode, result.stderr[-2000:], result.stdout[-2000:])
-        assert fixture.reply in result.stdout, result.stdout[-2000:]
-        assert fixture.calls and {x['model'] for x in fixture.calls} == {fixture.model}, fixture.calls
-        return {'messages_gateway': 'passed', 'subscription_login': 'not_tested', 'model': fixture.model}
     finally:
         fixture.close()
 
@@ -268,13 +249,13 @@ def main():
             row['stage'] = 'native_protocol'
             checkpoint()
             if name == 'codex':
-                row.update(codex_probe(updates.npm_binary(staged, 'codex'), root))
+                row.update(agent_branches(name, sys.executable, updates.npm_binary(staged, 'codex'),
+                                          root, args.code, args.evidence.resolve()))
             elif name == 'opencode':
                 row.update(opencode_probe(updates.npm_binary(staged, 'opencode'), root, versions[0]))
             elif name == 'claude':
-                binary = updates.run_command(str(updates.venv_python(staged)), '-c',
-                    'from pathlib import Path; import claude_agent_sdk as s; print(Path(s.__file__).parent/"_bundled"/"claude.exe")')
-                row.update(claude_probe(Path(binary), root))
+                row.update(agent_branches(name, updates.venv_python(staged), None,
+                                          root, args.code, args.evidence.resolve()))
             else:
                 row.update(kimi_probe(updates.npm_binary(staged, 'kimi'), root))
             row['status'] = 'passed'

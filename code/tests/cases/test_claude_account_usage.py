@@ -5,7 +5,8 @@ import pytest
 from management_portal.claude_account_usage import ClaudeAccountUsage
 
 
-def test_cli_resolution_uses_active_sdk_without_path_fallback(tmp_path, monkeypatch):
+@pytest.mark.parametrize('platform,filename', [('linux', 'claude'), ('darwin', 'claude'), ('win32', 'claude.exe')])
+def test_cli_resolution_uses_active_sdk_without_path_fallback(tmp_path, monkeypatch, platform, filename):
     """Claude 额度查询只用当前 SDK 自带的 CLI
 
     额度与认证查询使用当前激活的 Claude Agent SDK 自带的 CLI，不回落到 PATH 中的其他 claude 可执行文件。
@@ -15,13 +16,15 @@ def test_cli_resolution_uses_active_sdk_without_path_fallback(tmp_path, monkeypa
     """
     import sys
     from types import SimpleNamespace
+    from management_portal import claude_runtime
     from management_portal.claude_runtime import native_cli_path
     sdk = tmp_path / 'claude_agent_sdk'
-    bundled = sdk / '_bundled' / 'claude'
+    bundled = sdk / '_bundled' / filename
     bundled.parent.mkdir(parents=True)
     bundled.write_text('#!/bin/sh\n')
     bundled.chmod(0o700)
     monkeypatch.setitem(sys.modules, 'claude_agent_sdk', SimpleNamespace(__file__=str(sdk / '__init__.py')))
+    monkeypatch.setattr(claude_runtime, 'sys', SimpleNamespace(platform=platform), raising=False)
     monkeypatch.setenv('PATH', '')
     assert native_cli_path() == str(bundled)
     bundled.unlink()

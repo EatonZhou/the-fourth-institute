@@ -91,7 +91,7 @@ jobs:
         working-directory: code
         run: |
           New-Item -ItemType Directory -Force ../.build/windows-native | Out-Null
-          python -m pytest --noconftest -q tests/cases/test_three_platform_private_files.py tests/cases/test_three_platform_file_lock.py tests/cases/test_service_endpoint.py tests/cases/test_windows_rpc_restart.py tests/cases/test_windows_process_records.py tests/cases/test_windows_service_lifecycle_log.py tests/cases/test_windows_login.py tests/cases/test_process_runtime.py tests/cases/test_release_native_dependencies.py::WindowsManifestTests *> ../.build/windows-native/unit.log
+          python -m pytest --noconftest -q tests/cases/test_three_platform_private_files.py tests/cases/test_three_platform_file_lock.py tests/cases/test_service_endpoint.py tests/cases/test_windows_rpc_restart.py tests/cases/test_windows_command.py tests/cases/test_windows_process_records.py tests/cases/test_windows_service_lifecycle_log.py tests/cases/test_windows_login.py tests/cases/test_process_runtime.py tests/cases/test_release_native_dependencies.py::WindowsManifestTests tests/cases/test_claude_account_usage.py::test_cli_resolution_uses_active_sdk_without_path_fallback *> ../.build/windows-native/unit.log
           $result = $LASTEXITCODE
           Get-Content ../.build/windows-native/unit.log -Encoding utf8
           exit $result

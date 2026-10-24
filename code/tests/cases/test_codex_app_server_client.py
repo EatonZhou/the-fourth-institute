@@ -2305,7 +2305,12 @@ class CodexAppServerClientTest(unittest.TestCase):
                     self.assertEqual(result.turn_id, "turn-new")
                     self.assertEqual(accepted, ["turn-new"])
                     self.assertEqual(submitted, [[{"type": "text", "text": "new user input"}]])
-                    self.assertEqual([event["method"] for event in events], ["turn/started", "turn/completed"])
+                    self.assertEqual([event["method"] for event in events], [
+                        "turn/started", "turn/completed", "portal/provider_request_accepted",
+                    ])
+                    self.assertEqual(events[-1]["params"], {
+                        "threadId": "thread-error", "turnId": "turn-new", "rpcMethod": "turn/start",
+                    })
                     self.assertEqual(result.token_usage, {})
                 finally:
                     client.close()

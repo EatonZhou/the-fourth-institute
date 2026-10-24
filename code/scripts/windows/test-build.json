@@ -1,6 +1,5 @@
 {
-  "request": "20261023-windows-native-cli-25",
+  "request": "20261024-windows-codex-claude-branches",
   "delivery": "Portal",
-  "publish_to_github": false,
-  "reuse_package_run": 39898589720
+  "publish_to_github": false
 }

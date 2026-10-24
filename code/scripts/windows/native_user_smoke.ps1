@@ -53,6 +53,7 @@ try {
     Copy-Item $Installer (Join-Path $fixture 'Setup.exe')
     Copy-Item "$PSScriptRoot/native_smoke.py" (Join-Path $fixture 'native_smoke.py')
     Copy-Item "$PSScriptRoot/native_cli_smoke.py" (Join-Path $fixture 'native_cli_smoke.py')
+    Copy-Item "$PSScriptRoot/native_agent_branches.py" (Join-Path $fixture 'native_agent_branches.py')
     $quotedPython = $python.Replace("'", "''")
     $sha = $env:GITHUB_SHA
     $packageSha = (Get-Content (Join-Path (Split-Path $Installer) 'receipt.json') -Raw | ConvertFrom-Json).source_commit
