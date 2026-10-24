@@ -2247,6 +2247,7 @@
       }
       renderFunctionBlockBoundaries();
       invalidateEdgeGeometry();
+      resolveEdgeLabelCollisions(validEdges());
       layers.edges.selectAll("path.hatgEdge")
         .attr("data-routing", edge => edgeGeometry(edge)?.routing || "direct")
         .attr("data-route-axis", edge => edgeGeometry(edge)?.routeAxis || null)
@@ -2390,6 +2391,10 @@
       );
       if (!positionById.size) return;
       updateDraggedGeometry(positionById, { final: true });
+      resolveEdgeLabelCollisions(validEdges());
+      layers.labels.selectAll("button.edgeLabelBtn")
+        .style("left", edge => `${edgeGeometry(edge)?.labelX ?? 50}%`)
+        .style("top", edge => `${edgeGeometry(edge)?.labelY ?? 50}%`);
     }
 
     function updateDraggedMinimapGeometry(movedNodeIds, affectedEdgeIds) {
