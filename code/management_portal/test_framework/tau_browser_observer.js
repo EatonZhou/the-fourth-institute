@@ -348,6 +348,9 @@ async function observeBrowser(context, { evidenceDir }) {
           error_value_kind: ['undefined', 'null', 'string', 'number', 'boolean', 'object', 'function', 'symbol', 'bigint'].includes(data.error_value_kind)
             ? data.error_value_kind : 'unknown',
           event_class: ['ErrorEvent', 'PromiseRejectionEvent', 'Event'].includes(data.event_class) ? data.event_class : 'unknown',
+          message_code: ['resize_observer_undelivered', 'resize_observer_limit', 'opaque_script_error'].includes(data.message_code)
+            ? data.message_code : 'unclassified',
+          is_trusted: typeof data.is_trusted === 'boolean' ? data.is_trusted : null,
           line: Number.isSafeInteger(data.line) && data.line > 0 ? data.line : null,
           column: Number.isSafeInteger(data.column) && data.column > 0 ? data.column : null,
           page_error_association: 'unavailable_no_shared_event_identity' });
@@ -619,7 +622,7 @@ async function observeBrowser(context, { evidenceDir }) {
     for (const eventType of ['error', 'unhandledrejection']) window.addEventListener(eventType, event => {
       // No message, arbitrary rejection value or raw filename/stack crosses
       // the binding. Do not preventDefault: native diagnostics must survive.
-      let name, valueKind = 'unknown', locations = {}, eventClass = 'unknown';
+      let name, valueKind = 'unknown', locations = {}, eventClass = 'unknown', messageCode = 'unclassified';
       try {
         const value = eventType === 'error' ? event.error : event.reason;
         valueKind = value === null ? 'null' : typeof value;
@@ -630,8 +633,22 @@ async function observeBrowser(context, { evidenceDir }) {
         const className = event.constructor?.name;
         if (['ErrorEvent', 'PromiseRejectionEvent', 'Event'].includes(className)) eventClass = className;
       } catch { /* A rejection may have a throwing name getter. */ }
+      // Some browser ErrorEvents have no Error object or source location.
+      // Keep only exact, fixed diagnostic categories; arbitrary messages never
+      // leave the document. A category does not establish cause or waive failure.
+      if (eventType === 'error') {
+        try {
+          const codes = new Map([
+            ['ResizeObserver loop completed with undelivered notifications.', 'resize_observer_undelivered'],
+            ['ResizeObserver loop limit exceeded', 'resize_observer_limit'],
+            ['Script error.', 'opaque_script_error'],
+          ]);
+          messageCode = codes.get(event.message) || 'unclassified';
+        } catch { /* A synthetic event may have a throwing message getter. */ }
+      }
       emit({ kind: 'document_error', event_type: eventType, error_name: name, ...locations,
-        error_value_kind: valueKind, event_class: eventClass,
+        error_value_kind: valueKind, event_class: eventClass, message_code: messageCode,
+        is_trusted: typeof event.isTrusted === 'boolean' ? event.isTrusted : null,
         line: eventType === 'error' && Number.isSafeInteger(event.lineno) ? event.lineno : null,
         column: eventType === 'error' && Number.isSafeInteger(event.colno) ? event.colno : null });
     });

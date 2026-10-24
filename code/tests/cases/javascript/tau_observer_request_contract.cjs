@@ -141,6 +141,13 @@ function documentProbe(content, receive) {
       filename: 'http://private-host/static/portal_nav.js?token=query-secret', lineno: 81, colno: 12,
       constructor: { name: 'ErrorEvent' } });
     listeners.get('unhandledrejection')({ reason: 'private-rejection', constructor: { name: 'PromiseRejectionEvent' } });
+    for (const message of ['ResizeObserver loop completed with undelivered notifications.',
+      'ResizeObserver loop limit exceeded', 'Script error.',
+      'ResizeObserver loop completed with undelivered notifications. private-error-content']) {
+      listeners.get('error')({ message, error: null, isTrusted: true, constructor: { name: 'ErrorEvent' } });
+    }
+    listeners.get('error')({ get message() { throw new Error('private-error-content'); },
+      error: null, isTrusted: false, constructor: { name: 'ErrorEvent' } });
     dispatch('focus', { private: 'focus-private-content' });
     dispatch('blur', { private: 'focus-private-content' });
     document.hidden = true;
@@ -215,7 +222,7 @@ async function injectedContract(observe) {
       [['focus', false], ['blur', false], ['visibilitychange', true]]);
     const document = rows.find(row => row.kind === 'document_started');
     const errors = rows.filter(row => row.kind === 'document_error');
-    assert.equal(errors.length, 2);
+    assert.equal(errors.length, 7);
     assert.equal(errors[0].document_id, document.document_id);
     assert.deepEqual(errors[0].source_location, { source: '/static/portal_nav.js', line: 81, column: 12 });
     assert.deepEqual(errors[0].stack_frames, [
@@ -224,6 +231,14 @@ async function injectedContract(observe) {
     assert.equal(errors[1].error_value_kind, 'string');
     assert.equal(errors[1].source_location, null);
     assert.equal(errors[0].page_error_association, 'unavailable_no_shared_event_identity');
+    assert.deepEqual(errors.map(row => row.message_code), ['unclassified', 'unclassified',
+      'resize_observer_undelivered', 'resize_observer_limit', 'opaque_script_error', 'unclassified', 'unclassified']);
+    assert.deepEqual(errors.map(row => row.is_trusted), [null, null, true, true, true, true, false]);
+    for (const error of errors.slice(2)) {
+      assert.equal(error.document_id, document.document_id);
+      assert.equal(error.page_error_association, 'unavailable_no_shared_event_identity');
+      assert.equal(error.message, undefined, 'classification must not export raw messages');
+    }
     for (const event of lifecycle) {
       assert.equal(event.document_id, document.document_id);
       assert.equal(event.document_confirmed, true);
