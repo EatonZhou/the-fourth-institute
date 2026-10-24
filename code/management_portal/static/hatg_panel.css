@@ -285,6 +285,17 @@
 .graphModeHint[hidden] { display: none; }
 .graphModeHint button { border: 0; background: transparent; color: var(--warn); padding: 2px 5px; font-size: 10px; font-weight: 700; }
 
+.programMutationStatus {
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  background: var(--panel);
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+.programMutationStatus[hidden] { display: none; }
+
 .programWireHint {
   --program-wire-tone: var(--hatg-program-event-color);
   position: relative;
@@ -416,6 +427,11 @@
 }
 
 .hatgCanvas.isViewportMoving { cursor: grabbing; }
+
+/* Navigation has its own strip. Panning/focusing may clip a card at the
+   canvas edge, but must never draw its title behind the toolbar. The panel's
+   ResizeObserver measures the strip, including narrow-screen wrapping. */
+.hatgViewport > .hatgCanvas { top: var(--hatg-navigation-bottom); }
 
 .hatgCanvas.isBoxSelecting {
   cursor: crosshair;

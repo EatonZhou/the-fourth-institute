@@ -5692,6 +5692,19 @@
     });
   }
 
+  let programMutationStatusTimer = 0;
+  function showProgramMutationStatus(message) {
+    const status = $id("programMutationStatus");
+    if (!status) return;
+    window.clearTimeout(programMutationStatusTimer);
+    status.textContent = message;
+    status.hidden = false;
+    programMutationStatusTimer = window.setTimeout(() => {
+      status.hidden = true;
+      programMutationStatusTimer = 0;
+    }, 3600);
+  }
+
   function applyProgramMutation(request, message, { failure = "程序图更新失败", draftForm = null } = {}) {
     if (!state.lineage) return Promise.resolve(null);
     const lineageId = state.lineage.lineage_id;
@@ -5728,7 +5741,7 @@
               await flushHatgViewPreferenceSave(lineageId).catch(() => {});
             }
           }
-          if (message) toast(message, "success");
+          if (message) showProgramMutationStatus(message);
           return response;
         } finally {
           if (lineageEditQueue.isCurrent(intent)) {
