@@ -7139,7 +7139,9 @@ def _crop_figure_below_heading(page_image: Image.Image, caption: dict[str, Any])
                 len(following_text) >= 20 and re.search(r"[.!?。！？]$", following_text)
                 and not _caption_number_from_text(following_text)
                 and abs(nx0 - x0) <= height
-                and x0 >= graphic_bounds[0] - inset_tolerance
+                # Axis labels are part of the figure's horizontal extent too.
+                # Notes aligned with those labels can start left of the plot.
+                and x0 >= included_bounds[0] - inset_tolerance
                 and nx1 <= graphic_bounds[2] + inset_tolerance
                 and 0 <= ny0 - y1 <= max(12.0, 1.5 * height)
                 and 0 < ny1 - ny0 <= 1.5 * height

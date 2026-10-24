@@ -16,17 +16,19 @@ RESULT_SCHEMA = 'tfi.paper.figure-explanation.result.v1'
 
 
 @pytest.mark.parametrize('dpi', [120, 180])
-def test_heading_chart_keeps_unprefixed_footer_source_pixels(tmp_path, monkeypatch, dpi):
+@pytest.mark.parametrize('fixture, digest', [
+    ('paper-synthetic-counts.pdf', 'eac5fe85f2b77c8f8e78fe41ddc5397614fc19ab0883a9b9ee0b0130f8b7debf'),
+    ('paper-synthetic-counts-inset-notes.pdf', '67cf4021f67b1feb60939491a08c0a0b2b9fa469b457e60ee974be69b955fcc3'),
+])
+def test_heading_chart_keeps_unprefixed_footer_source_pixels(tmp_path, monkeypatch, dpi, fixture, digest):
     """保留原图的无前缀完整句图注，包括数值、坐标和解释，不带入后续正文。
 
     :importance: P1
     :design: decision_e37f240e186d
     :design-point:
     """
-    source = Path(__file__).parent / 'fixtures' / 'paper-synthetic-counts.pdf'
-    assert hashlib.sha256(source.read_bytes()).hexdigest() == (
-        'eac5fe85f2b77c8f8e78fe41ddc5397614fc19ab0883a9b9ee0b0130f8b7debf'
-    )
+    source = Path(__file__).parent / 'fixtures' / fixture
+    assert hashlib.sha256(source.read_bytes()).hexdigest() == digest
     caption = next(item for item in paper_backend._prepare_figure_caption_blocks(
         paper_backend._extract_figure_caption_blocks(source)) if item['page'] == 2)
     rendered = paper_backend._render_pdf_page_png(source, 2, tmp_path / 'page', dpi=dpi)
@@ -50,7 +52,10 @@ def test_heading_chart_keeps_unprefixed_footer_source_pixels(tmp_path, monkeypat
     left, top = origins[id(result)]
     right, bottom = left + result.width, top + result.height
     scale_x, scale_y = page.width / caption['page_width'], page.height / caption['page_height']
-    figure_lines = [line for line in caption['page_lines'] if 336 <= line['y_min'] <= 707]
+    note_end = next(line['y_max'] for line in caption['page_lines']
+                    if line['text'] == 'Numbers are not empirical performance claims.')
+    figure_lines = [line for line in caption['page_lines']
+                    if caption['y_min'] <= line['y_min'] and line['y_max'] <= note_end]
     assert {
         'Difference = 6 markers; relative increase = 50%.',
         'Numbers are not empirical performance claims.', 'Baseline', 'Treatment', '12', '18',
@@ -64,7 +69,8 @@ def test_heading_chart_keeps_unprefixed_footer_source_pixels(tmp_path, monkeypat
                             box[2] - left, box[3] - top)).tobytes() == page.crop(box).tobytes()
     # The preceding limitations and following full-width text are not figure annotations.
     assert top > 223 * scale_y
-    assert bottom < 741 * scale_y
+    body_start = min(line['y_min'] for line in caption['page_lines'] if line['y_min'] > note_end)
+    assert bottom < body_start * scale_y
 
 
 @pytest.mark.parametrize('scale', [1, 2])

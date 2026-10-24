@@ -1,0 +1,109 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [4 0 R 6 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 5 0 R >>
+endobj
+5 0 obj
+<< /Length 3304 >>
+stream
+BT /F1 8 Tf 40 812 Td ([TAU:testrun_721b46a26719a91c:workflow.paper] Synthetic Counts Study) Tj ET
+BT /F1 9 Tf 40 770 Td (TAU SYNTHETIC SAMPLE. No human author byline is provided. This document is solely a synthetic) Tj ET
+BT /F1 9 Tf 40 758 Td (fixture for interface acceptance and contains no real scientific finding.) Tj ET
+BT /F1 9 Tf 40 738 Td (Abstract) Tj ET
+BT /F1 9 Tf 40 718 Td (This synthetic acceptance sample asks whether a reading interface can consistently recover two) Tj ET
+BT /F1 9 Tf 40 706 Td (fixed counts from PDF prose, an experimental table, an explanatory chart and saved artifacts. A) Tj ET
+BT /F1 9 Tf 40 694 Td (baseline contains twelve synthetic markers and a treatment contains eighteen synthetic markers.) Tj ET
+BT /F1 9 Tf 40 682 Td (The absolute difference is six markers and the relative increase is fifty percent. These) Tj ET
+BT /F1 9 Tf 40 670 Td (predetermined numbers serve as an interface consistency check, not empirical evidence that a) Tj ET
+BT /F1 9 Tf 40 658 Td (model or system improves. The example uses no private data, real participants, external) Tj ET
+BT /F1 9 Tf 40 646 Td (benchmark or expensive computation. A correct summary should state the narrow question, method,) Tj ET
+BT /F1 9 Tf 40 634 Td (fixed numerical comparison and the limited synthetic provenance.) Tj ET
+BT /F1 9 Tf 40 614 Td (Research question) Tj ET
+BT /F1 9 Tf 40 594 Td (Can the same title, conditions, values and interpretation survive metadata registration,) Tj ET
+BT /F1 9 Tf 40 582 Td (reading, structured review, experiment extraction, figure explanation and an independently) Tj ET
+BT /F1 9 Tf 40 570 Td (reopened authenticated page? This is an interface acceptance goal, not an empirical comparison) Tj ET
+BT /F1 9 Tf 40 558 Td (of model capabilities.) Tj ET
+BT /F1 9 Tf 40 538 Td (Method) Tj ET
+BT /F1 9 Tf 40 518 Td (A fixture generator draws exactly two bars and writes exactly two fixed counts. Baseline) Tj ET
+BT /F1 9 Tf 40 506 Td (represents condition A with twelve markers. Treatment represents condition B with eighteen) Tj ET
+BT /F1 9 Tf 40 494 Td (markers. There are no trained parameters, sampling uncertainties, random seeds or hidden) Tj ET
+BT /F1 9 Tf 40 482 Td (measurements. The terms baseline and treatment are method labels, not authors.) Tj ET
+BT /F1 9 Tf 40 462 Td (Experimental table) Tj ET
+BT /F1 9 Tf 40 442 Td (Condition | Fixed count | Unit | Provenance) Tj ET
+BT /F1 9 Tf 40 424 Td (Baseline | 12 | synthetic markers | predefined fixture) Tj ET
+BT /F1 9 Tf 40 406 Td (Treatment | 18 | synthetic markers | predefined fixture) Tj ET
+BT /F1 9 Tf 40 384 Td (The arithmetic is 18 minus 12 equals 6. Dividing 6 by 12 gives 0.5, or fifty percent. No) Tj ET
+BT /F1 9 Tf 40 372 Td (significance interval is claimed. The two groups are artificial data in this test. They should) Tj ET
+BT /F1 9 Tf 40 360 Td (not be interpreted as a benchmark performance or a claim of generalization.) Tj ET
+BT /F1 9 Tf 40 340 Td (Reading contract: preserve the distinction between a saved business record and a generated) Tj ET
+BT /F1 9 Tf 40 328 Td (answer. A reader should identify this file as a controlled synthetic sample, quote the count) Tj ET
+BT /F1 9 Tf 40 316 Td (values faithfully and point to the actual table and chart rather than repeat invented data.) Tj ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 7 0 R >>
+endobj
+7 0 obj
+<< /Length 2150 >>
+stream
+BT /F1 8 Tf 40 812 Td ([TAU:testrun_721b46a26719a91c:workflow.paper] Synthetic Counts Study) Tj ET
+BT /F1 9 Tf 40 776 Td (TAU SYNTHETIC SAMPLE - continued) Tj ET
+BT /F1 9 Tf 40 750 Td (Interpretation) Tj ET
+BT /F1 9 Tf 40 730 Td (An independent reader should find the same title, the same two conditions and the same) Tj ET
+BT /F1 9 Tf 40 718 Td (arithmetic in prose, table, diagram and saved results. A review can assess the clarity of this) Tj ET
+BT /F1 9 Tf 40 706 Td (contract and identify missing evidence, but cannot infer real accuracy, latency, energy or) Tj ET
+BT /F1 9 Tf 40 694 Td (statistical significance from these fixed numbers.) Tj ET
+BT /F1 9 Tf 40 650 Td (Limitations) Tj ET
+BT /F1 9 Tf 40 630 Td (No dataset, training run, participant, device or scientific benchmark was used. No external) Tj ET
+BT /F1 9 Tf 40 618 Td (download is required to understand the result. The fixture tests registration, visible) Tj ET
+BT /F1 9 Tf 40 606 Td (persistence, binding identity and consistency of explanation. It intentionally contains no) Tj ET
+BT /F1 9 Tf 40 594 Td (assertion that a real intervention improves a real system.) Tj ET
+BT /F1 10 Tf 44 500 Td (Figure 1. Fixed counts in the TAU synthetic sample) Tj ET
+BT /F1 9 Tf 44 484 Td (No real experiment; values are predefined fixture data.) Tj ET
+BT /F1 9 Tf 100 452 Td (Count \(synthetic markers\)) Tj ET
+0.75 G 0.5 w
+100 170 m 520 170 l S
+BT /F1 9 Tf 65 167 Td (0) Tj ET
+100 232.5 m 520 232.5 l S
+BT /F1 9 Tf 65 229.5 Td (6) Tj ET
+100 295 m 520 295 l S
+BT /F1 9 Tf 65 292 Td (12) Tj ET
+100 357.5 m 520 357.5 l S
+BT /F1 9 Tf 65 354.5 Td (18) Tj ET
+100 420 m 520 420 l S
+BT /F1 9 Tf 65 417 Td (24) Tj ET
+0.08 0.46 0.47 rg 160 170 110 125 re f
+0.29 0.65 0.59 rg 340 170 110 187.5 re f
+0 g
+BT /F1 10 Tf 206 310 Td (12) Tj ET
+BT /F1 10 Tf 386 372 Td (18) Tj ET
+BT /F1 10 Tf 183 145 Td (Baseline) Tj ET
+BT /F1 10 Tf 360 145 Td (Treatment) Tj ET
+BT /F1 9 Tf 85 108 Td (Difference = 6 markers; relative increase = 50%.) Tj ET
+BT /F1 9 Tf 85 90 Td (Numbers are not empirical performance claims.) Tj ET
+BT /F1 9 Tf 44 48 Td (Acceptance: preserve all titles, labels, axes and explanations.) Tj ET
+endstream
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000121 00000 n 
+0000000189 00000 n 
+0000000315 00000 n 
+0000003671 00000 n 
+0000003797 00000 n 
+trailer
+<< /Size 8 /Root 1 0 R >>
+startxref
+5999
+%%EOF
