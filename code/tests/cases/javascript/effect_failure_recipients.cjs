@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const {readHatgModule, createHatgModule} = require('./hatg_modules.cjs');
 
 const staticRoot = path.resolve(__dirname, '../../../management_portal/static');
 const source = fs.readFileSync(path.join(staticRoot, 'lineage_element_fields.js'), 'utf8');
@@ -31,10 +32,13 @@ function functions(file, names, dependencies) {
   return scope;
 }
 const {recipientResults} = functions('lineage_element_fields.js', ['recipientResults'], {});
-const graph = functions('hatg_panel.js', [
-  'effectRecipients', 'effectRecipientsState', 'effectRecipientsChipsHtml',
-  'effectRecipientsButtonHtml', 'functionBlockRecipientsSummaryHtml',
-], {window, state: {programMutationInFlight: false}, esc: escapeHtml});
+// The Function Block Menu's recipient presentation, through its module interface.
+vm.runInContext(readHatgModule('hatg_function_block_menu.js'), context);
+const menu = window.PortalHatgFunctionBlockMenu;
+const graph = {
+  effectRecipients: menu.effectRecipients, effectRecipientsState: menu.effectRecipientsState,
+  ...createHatgModule(menu, 'createFunctionBlockMenu', {state: {programMutationInFlight: false}, esc: escapeHtml}),
+};
 const effect = (id, config) => ({id, title: id, kind: 'effect', config});
 
 test('existing missing, explicit closed and new draft states keep distinct labels', () => {

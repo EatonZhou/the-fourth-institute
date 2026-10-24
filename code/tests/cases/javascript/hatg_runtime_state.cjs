@@ -236,7 +236,7 @@ function controller(kind, source, server, environment = null) {
   // body is replaced in the source instead of reassigning the function.
   const hook = `
     const api = { state, activateLineageEdits, renderProgramInspector, graphNodeContent, hatgNodeControl,
-      syncProgramComponentSwitch, mergeLineageStateDomains, load: id => societyService.loadLineage(id) };
+      syncProgramComponentSwitch, load: id => societyService.loadLineage(id) };
     window.__runtimeApi = api;
     return api;
   `;

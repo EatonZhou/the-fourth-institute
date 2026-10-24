@@ -2,27 +2,11 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { JSDOM } = require('jsdom');
-const { babelParse } = require('./babel_parse.cjs');
-const { STATIC, hatgModuleFiles } = require('./hatg_modules.cjs');
-const wanted = new Set(['familyWorkGuidesHtml', 'bindFamilyWorkGuideForms', 'familyTaskExecutionHtml',
-  'functionBlockOverviewWorkflowHtml', 'functionBlockInstanceTriggersHtml', 'functionBlockElementListHtml', 'familyProgressSettingsHtml']);
-const functions = [];
-// The Function Block menu is still in the runtime; its trigger list is in the
-// Function Block module script.
-for (const name of ['hatg_panel.js', ...hatgModuleFiles()]) {
-  const file = path.join(STATIC, name);
-  const source = fs.readFileSync(file, 'utf8');
-  const visit = node => {
-    if (!node || typeof node !== 'object') return;
-    if (node.type === 'FunctionDeclaration' && wanted.has(node.id?.name)) functions.push(source.slice(node.start, node.end));
-    for (const [key, child] of Object.entries(node)) {
-      if (['loc', 'comments', 'tokens'].includes(key)) continue;
-      if (Array.isArray(child)) child.forEach(visit); else if (child && typeof child === 'object') visit(child);
-    }
-  };
-  visit(babelParse(source, file));
-}
-assert.equal(functions.length, wanted.size);
+const { STATIC } = require('./hatg_modules.cjs');
+// The Function Block Menu's overview and its recipient and status rows, with
+// block membership and Family roles from the Function Block module.
+const SCRIPTS = ['lineage_element_fields.js', 'hatg_family_blocks.js', 'hatg_function_block_menu.js']
+  .map(name => fs.readFileSync(path.join(STATIC, name), 'utf8'));
 const tasks = {
   route: { role: 'router', title: '门面收到消息', guide: '判断原请求由哪个当前成员承接；按需读取成员职责，输出 route packet。', prompt: '为原请求选择成员。\n${facts}\n指南：${guide_path}（${guide_version}）' },
   summary: { role: 'steward', title: '摘要达到时间或工作量阈值', guide: '按需读取到期成员的维护视图，归纳阶段与长期摘要，保留未解决事项和资料入口。', prompt: '归纳到期摘要。\n${facts}\n指南：${guide_path}（${guide_version}）' },
@@ -39,23 +23,22 @@ function pageScript() {
     }}}}},
   ] } } };
   return `
-    const state = ${JSON.stringify(state)};
-    const block = {family:{}, elements: [{id:'wire_1', kind:'wire'}, {id:'wire_progress',kind:'wire',key:'request_progress'}] };
-    const drafts = new Map();
-    const expanded = new Set();
-    const familyRoles = value => value.family ? ({router:'router', steward:'steward'}) : null;
-    const instanceInnerObjects = () => state.lineage.program.components;
-    const instanceManualSources = () => state.lineage.program.components.filter(c => c.config?.event_type === 'manual.triggered');
-    const functionBlockElements = () => block.elements;
-    const graphObjectTitle = id => id;
-    const functionBlockRecipientsSummaryHtml = () => '<section class="functionBlockRecipientsSummary">失败通知汇总</section>';
-    const programEventSourceRuntime = () => ({paused:false});
-    const functionBlockObjectStatusHtml = component => '<span class="portalStatus">' + (component.kind === 'event_source' ? '监听中' : '执行成功') + '</span>';
-    const effectRecipientsButtonHtml = component => '<button type="button" class="portalButton" data-block-recipients="' + component.id + '">管理员 · 修改</button>';
     const esc = value => String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
     const tag = (parts, ...values) => parts.reduce((out, part, index) => out + part + (values[index] ?? ''), '');
     window.PortalI18n = {html:tag, text:tag, t:String};
+    window.PortalUIPrimitives = {escapeHtml: esc};
+    ${SCRIPTS.join('\n')}
+    const state = ${JSON.stringify(state)};
+    // A Family whose workflow wires, Events and Effect are its members.
+    const block = {id:'block_1', family:{facade:'facade_1', router:'router', steward:'steward', members:[]},
+      elements: [{id:'wire_1', kind:'wire'}, {id:'wire_progress',kind:'wire',key:'request_progress'},
+        {id:'event_1', kind:'component'}, {id:'effect_1', kind:'component'}, {id:'manual_extra', kind:'component'}] };
+    const drafts = new Map();
+    const expanded = new Set();
     window.calls = []; window.rejectSave = false;
+    // Only the dependencies this page provides are given; any other use fails.
+    const create = (module, factory, provided) => module[factory](Object.fromEntries(module.dependencies.map(name => [
+      name, Object.hasOwn(provided, name) ? provided[name] : () => { throw new Error('Unexpected use of ' + name); }])));
     const executeHatgInstruction = async (instruction, args, options) => {
       window.calls.push({instruction, args, options});
       if (window.rejectSave || options.expectedVersion !== state.lineage.revision) throw Error('版本冲突，请保留草稿并刷新');
@@ -64,11 +47,25 @@ function pageScript() {
       return {ok:true};
     };
     const applyProgramMutation = callback => callback();
-    ${functions.join('\n')}
+    const programEventSourceRuntime = () => ({paused:false});
+    // The block has no Resident members; titles come from the Lineage's objects.
+    const displayNodeById = () => null;
+    const blocks = create(window.PortalHatgFamilyBlocks, 'createFamilyBlocks', {
+      state, esc, displayNodeById, nodeById: () => null,
+      programComponentById: id => state.lineage.program.components.find(component => component.id === id),
+      functionBlockInstanceById: id => (id === block.id ? block : null),
+    });
+    const menu = create(window.PortalHatgFunctionBlockMenu, 'createFunctionBlockMenu', {
+      state, esc, displayNodeById, executeHatgInstruction, applyProgramMutation, programEventSourceRuntime,
+      programEffectRuntime: () => ({status:'executed'}),
+      familyRoles: blocks.familyRoles, instanceInnerObjects: blocks.instanceInnerObjects,
+      functionBlockElements: blocks.functionBlockElements, graphObjectTitle: blocks.graphObjectTitle,
+      functionBlockInstanceTriggersHtml: blocks.functionBlockInstanceTriggersHtml,
+    });
     window.draw = () => {
       const root = document.getElementById('guide');
-      root.innerHTML = functionBlockOverviewWorkflowHtml(block, false, drafts, expanded);
-      bindFamilyWorkGuideForms(root, window.draw, drafts, expanded);
+      root.innerHTML = menu.functionBlockOverviewWorkflowHtml(block, false, drafts, expanded);
+      menu.bindFamilyWorkGuideForms(root, window.draw, drafts, expanded);
     };
     window.showPlain = () => {delete block.family; window.draw();};
     window.saved = () => state.lineage.program.wires[0].config.invoke_profiles.effect.arguments.family_tasks.value;
