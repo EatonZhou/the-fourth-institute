@@ -80,6 +80,26 @@ async function main() {
   healthSnapshot.family_facade.alert_contact.status = 'configured';
   healthSnapshot.family_facade.nodes.pop();
   assert.equal(healthLabel(), '', 'a configured contact and healthy roles clear the notice');
+  // An open facade keeps its projection metadata while roster snapshots change.
+  const rosterMetadata = { chat_workspace: { header: { subtitle_parts: [
+    { identity: 'family', text: 'Family 门面（2 位成员）' },
+    { identity: 'resident', text: FACADE },
+  ] }, composer: {} } };
+  const rosterSnapshot = { ...snapshot, family_facade: { resident_id: FACADE,
+    members: [{ resident_id: MEMBER }, { resident_id: 'resident_333333333333' },
+      { resident_id: 'resident_444444444444' }] } };
+  const rosterParts = () => w.PortalChatWorkspace.projectResidentConversation(rosterMetadata, rosterSnapshot)
+    .chat_workspace.header.subtitle_parts;
+  assert.equal(rosterParts()[0].text, 'Family 门面（3 位成员）', 'new members appear without a page reload');
+  assert.equal(rosterParts()[1].text, FACADE, 'unrelated identity text is retained');
+  rosterSnapshot.family_facade.members.pop();
+  assert.equal(rosterParts()[0].text, 'Family 门面（2 位成员）', 'removal updates the same facade');
+  rosterSnapshot.family_facade.members = [];
+  assert.equal(rosterParts()[0].text, 'Family 门面', 'empty roster follows the initial header contract');
+  delete rosterSnapshot.family_facade.members;
+  assert.equal(rosterParts()[0].text, 'Family 门面（2 位成员）', 'partial snapshots do not invent a zero roster');
+  assert.equal(rosterMetadata.chat_workspace.header.subtitle_parts[0].text, 'Family 门面（2 位成员）',
+    'the cached metadata is not mutated');
   panel.protocol = { snapshot: () => snapshot, load: async () => { refreshes++; return snapshot; }, destroy() {} };
   function render() {
     const projected = w.PortalChatWorkspace.projectResidentConversation({}, snapshot);
