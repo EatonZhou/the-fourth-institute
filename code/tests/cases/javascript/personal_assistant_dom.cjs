@@ -387,6 +387,8 @@ test('Stop survives a delivery-only receipt until the exact input has a control 
   assert.equal(button.getAttribute('aria-label'), button.title, 'accessible name exposes the current pending action');
   inputEvent(app, 2, 'resident.state.changed', { state: { work_state: 'idle', active_message_id: '' }, controls: { can_send: true, can_stop: false } });
   assert.equal(app.panel.workspace.state.composer.can_stop, true, 'an unrelated newer cursor cannot finish this cancellation');
+  assert.equal(app.panel.workspace.els.stop, button, 'pending cancellation retains its disabled control');
+  assert.equal(button.isConnected, true);
   assert.equal(button.disabled, true);
   cancel(); await stopping;
   assert.equal(app.panel.workspace.state.composer.can_stop, false);
@@ -411,6 +413,39 @@ for (const outcome of ['running', 'queued', 'completed']) {
     assert.equal(app.panel.workspace.state.composer.can_stop, outcome === 'running');
   });
 }
+
+test('Stop control stays mounted while a delivery receipt awaits its exact input projection', async t => {
+  const app = chat(t, {
+    GetConversation: () => ({ resident: { resident_id: FACADE, lineage_id: LINEAGE }, messages: [], input_states: [], cursor: 1,
+      state: { work_state: 'idle', active_message_id: '' }, controls: { can_send: true, can_stop: false }, queue: { items: [] } }),
+    DeliverMessage: args => ({ accepted: true, resident_id: FACADE, message_id: args.message.message_id, input_state: {} }),
+    CancelInput: args => ({ resident_id: FACADE, message_id: args.message_id,
+      input_state: { message_id: args.message_id, state: 'cancelled' } }),
+  });
+  await app.load();
+  await app.panel.send({ text: 'keep this stop target', attachments: [], refs: [] });
+  const id = app.requests.find(r => r.instruction === 'DeliverMessage').args.message.message_id;
+  const button = app.panel.workspace.els.stop;
+  button.focus();
+  for (let cursor = 2; cursor < 5; cursor++) {
+    inputEvent(app, cursor, 'resident.state.changed', { state: { work_state: 'idle', active_message_id: '' },
+      controls: { can_send: true, can_stop: false } });
+    assert.equal(app.panel.workspace.els.stop, button, 'unrelated snapshot must not replace an actionable Stop');
+    assert.equal(button.isConnected, true);
+    assert.equal(app.w.document.activeElement, button);
+    assert.equal(button.disabled, false);
+  }
+  app.panel.refreshView();
+  assert.equal(app.panel.workspace.els.stop, button, 'refreshing the view keeps the accepted input control');
+  assert.equal(app.w.document.activeElement, button);
+  inputEvent(app, 5, 'resident.state.changed', { state: { work_state: 'running', active_message_id: id },
+    controls: { can_send: true, can_stop: true } });
+  assert.equal(app.panel.workspace.els.stop, button, 'authoritative handoff keeps the same control');
+  button.click();
+  await drain();
+  assert.equal(app.requests.filter(r => r.instruction === 'CancelInput').length, 1);
+  assert.equal(app.requests.find(r => r.instruction === 'CancelInput').args.message_id, id);
+});
 
 test('a rejected submission cannot leave a local Stop action', async t => {
   const app = chat(t, {

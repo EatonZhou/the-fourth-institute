@@ -12353,7 +12353,14 @@
     projectContract(contract, detail, snapshot = null, update = null) {
       // A capability may present its actor-scoped requests in the same Resident
       // Editor. Identity, permissions, session controls and menus remain native.
-      return this.conversationView()?.project?.(contract, detail, snapshot, update) || contract;
+      const projected = this.conversationView()?.project?.(contract, detail, snapshot, update) || contract;
+      const composer = projected.composer || {};
+      // Reconcile this Editor's accepted input before rendering. Applying an
+      // idle server composer first would remove and recreate an actionable Stop,
+      // losing its focus/pointer target on every unrelated stream update.
+      return { ...projected, composer: { ...composer,
+        can_stop: this.pendingTurnStopCapability(composer, snapshot),
+      } };
     }
 
     async setResident(residentId, options = {}) {
@@ -12955,10 +12962,7 @@
       return [...this.pendingTurnSubmissions.values()].find(pending => pending.scope === residentSessionScope(target)) || null;
     }
 
-    refreshPendingTurnStopCapability() {
-      const composer = this.workspace?.state?.composer;
-      if (!this.workspace?.state?.contract || !composer) return;
-      const snapshot = this.protocol?.snapshot?.() || this.pendingSnapshot;
+    pendingTurnStopCapability(composer, snapshot) {
       const scope = residentSessionScope(this.workspace.target());
       for (const [id, pending] of this.pendingTurnSubmissions) {
         if (!pending.acknowledged || pending.scope !== scope) continue;
@@ -12986,7 +12990,13 @@
       const protocolCanStop = snapshot
         ? snapshot.controls?.can_stop === true
         : Boolean(composer.can_stop);
-      const canStop = stopping || protocolCanStop || Boolean(this.pendingTurnForTarget());
+      return stopping || protocolCanStop || Boolean(this.pendingTurnForTarget());
+    }
+
+    refreshPendingTurnStopCapability() {
+      const composer = this.workspace?.state?.composer;
+      if (!this.workspace?.state?.contract || !composer) return;
+      const canStop = this.pendingTurnStopCapability(composer, this.protocol?.snapshot?.() || this.pendingSnapshot);
       if (Boolean(composer.can_stop) === canStop) {
         this.workspace.updateControls();
         return;
