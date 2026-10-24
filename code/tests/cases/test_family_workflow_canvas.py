@@ -12,19 +12,20 @@ def test_nested_family_workflow_visibility_and_focus():
 
     Family工作流元素的受控归属、生命周期、原业务身份与画布折叠。
     """
-    source = (Path(__file__).parents[2] / "management_portal/static/hatg_panel.js").read_text()
-    names = ("functionBlockElements", "familyRoles", "familyInstances", "familyForFacade",
-             "familyExpanded", "foldedFamilyObjects", "familyObjectIds", "familyMembership")
-    functions = []
-    for name in names:
-        start = source.index("  function " + name + "(")
-        end = source.index("\n  }", start) + len("\n  }")
-        functions.append(source[start:end])
-    script = "\n".join(functions) + r'''
+    helper = Path(__file__).with_name("javascript") / "hatg_modules.cjs"
+    script = f"const HELPER = {json.dumps(str(helper))};" + r'''
 const assert = require('node:assert/strict');
+const vm = require('node:vm');
+const { readHatgModule, createHatgModule } = require(HELPER);
+// The production Family projection, with only its Lineage read replaced.
+const context = vm.createContext({});
+context.window = context;
+vm.runInContext(readHatgModule('hatg_family_blocks.js'), context);
 const state = {lineage: {function_blocks: []}, expandedFamilyFacadeIds: new Set()};
-const functionBlockInstanceById = id => state.lineage.function_blocks.find(b => b.id === id);
-const familyTone = () => 1;
+const { foldedFamilyObjects, familyObjectIds, familyForFacade, familyMembership } = createHatgModule(
+  context.PortalHatgFamilyBlocks, 'createFamilyBlocks', {
+    state, functionBlockInstanceById: id => state.lineage.function_blocks.find(b => b.id === id),
+  });
 const element = (id, kind, key) => ({id, kind, key});
 const child = {id:'child', title:'Child', family:{facade:'child-face', steward:'cs', router:'cr', members:['worker']},
   elements:[element('worker','resident','member:worker'), element('event','component','workflow:event'),

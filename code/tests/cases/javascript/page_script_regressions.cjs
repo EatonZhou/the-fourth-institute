@@ -3,9 +3,16 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const {readHatgModule, createHatgModule} = require('./hatg_modules.cjs');
 
 // Execute production owners with controlled inputs. Page journeys cover their DOM;
 // these cases isolate request ordering and language-dependent presentation.
+// The production Family part of the HATG panel, with the replaced dependencies.
+function familyBlocks(window, replaced) {
+  vm.runInContext(readHatgModule('hatg_family_blocks.js'), vm.createContext({window, console}));
+  return createHatgModule(window.PortalHatgFamilyBlocks, 'createFamilyBlocks', replaced);
+}
+
 function owner(file, names, dependencies) {
   const source = fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static', file), 'utf8');
   const functions = names.map(name => {
@@ -166,9 +173,9 @@ test('Family canvas actions load the Menu owner before confirming and cancellati
   }});
   const options = {family: {id: 'fbi_one', title: 'One'}, lineageId: 'lineage_one', action: 'unfamilize'};
   window.PortalNav = {removeFamily: nav.removeFamily};
-  const graph = owner('hatg_panel.js', ['removeFamilyInstance', 'revealUnfamilizedMember'], {
-    window, state: {lineage: {lineage_id: 'lineage_one'}},
-    functionBlockInstanceById: () => options.family, familyRoles: () => null,
+  const graph = familyBlocks(window, {
+    state: {lineage: {lineage_id: 'lineage_one'}},
+    functionBlockInstanceById: () => options.family,
     applyProgramMutation: request => request(), executeHatgInstruction: window.PortalInstructionClient.execute,
     programFeature: {clearSelection: noop},
   });
@@ -197,15 +204,20 @@ function unfamilizeViewportFixture() {
   const receipt = {member_resident_ids: ['hidden_worker', 'retained_inner_facade']};
   const window = {requestAnimationFrame: callback => frames.push(callback),
     PortalNav: {removeFamily: async options => options.execute('Unfamilize', {})}};
-  const graph = owner('hatg_panel.js', ['removeFamilyInstance', 'residentMenuHandlers', 'revealUnfamilizedMember'], {
-    window, state, nodeResidentId: node => node.resident_id || node.id,
+  const blocks = familyBlocks(window, {
+    state, nodeResidentId: node => node.resident_id || node.id,
     graphVisibleModel: () => ({nodes: [{id: 'unrelated'}, {id: 'inner_card', resident_id: 'retained_inner_facade'}]}),
-    functionBlockInstanceById: () => ({id: 'outer'}), familyRoles: () => null,
+    functionBlockInstanceById: () => ({id: 'outer'}),
     programFeature: {clearSelection: noop}, applyProgramMutation: request => request(),
     executeHatgInstruction: async () => receipt,
+  });
+  const menu = owner('hatg_panel.js', ['residentMenuHandlers'], {
+    window, state, revealUnfamilizedMember: blocks.revealUnfamilizedMember,
     societyService: {loadLineage: async () => {calls.push(['load']); return state.lineage;}},
     commitLineage: () => calls.push(['render']),
   });
+  const graph = {removeFamilyInstance: blocks.removeFamilyInstance,
+    revealUnfamilizedMember: blocks.revealUnfamilizedMember, residentMenuHandlers: menu.residentMenuHandlers};
   return {graph, state, frames, calls, receipt};
 }
 

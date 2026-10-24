@@ -3,20 +3,25 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { JSDOM } = require('jsdom');
 const { babelParse } = require('./babel_parse.cjs');
-const file = path.resolve(__dirname, '../../../management_portal/static/hatg_panel.js');
-const source = fs.readFileSync(file, 'utf8');
+const { STATIC, hatgModuleFiles } = require('./hatg_modules.cjs');
 const wanted = new Set(['familyWorkGuidesHtml', 'bindFamilyWorkGuideForms', 'familyTaskExecutionHtml',
   'functionBlockOverviewWorkflowHtml', 'functionBlockInstanceTriggersHtml', 'functionBlockElementListHtml', 'familyProgressSettingsHtml']);
 const functions = [];
-function visit(node) {
-  if (!node || typeof node !== 'object') return;
-  if (node.type === 'FunctionDeclaration' && wanted.has(node.id?.name)) functions.push(source.slice(node.start, node.end));
-  for (const [key, child] of Object.entries(node)) {
-    if (['loc', 'comments', 'tokens'].includes(key)) continue;
-    if (Array.isArray(child)) child.forEach(visit); else if (child && typeof child === 'object') visit(child);
-  }
+// The Function Block menu is still in the runtime; its trigger list is in the
+// Function Block module script.
+for (const name of ['hatg_panel.js', ...hatgModuleFiles()]) {
+  const file = path.join(STATIC, name);
+  const source = fs.readFileSync(file, 'utf8');
+  const visit = node => {
+    if (!node || typeof node !== 'object') return;
+    if (node.type === 'FunctionDeclaration' && wanted.has(node.id?.name)) functions.push(source.slice(node.start, node.end));
+    for (const [key, child] of Object.entries(node)) {
+      if (['loc', 'comments', 'tokens'].includes(key)) continue;
+      if (Array.isArray(child)) child.forEach(visit); else if (child && typeof child === 'object') visit(child);
+    }
+  };
+  visit(babelParse(source, file));
 }
-visit(babelParse(source, file));
 assert.equal(functions.length, wanted.size);
 const tasks = {
   route: { role: 'router', title: '门面收到消息', guide: '判断原请求由哪个当前成员承接；按需读取成员职责，输出 route packet。', prompt: '为原请求选择成员。\n${facts}\n指南：${guide_path}（${guide_version}）' },

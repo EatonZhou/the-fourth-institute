@@ -4,18 +4,20 @@ const assert = require('node:assert/strict'), fs = require('node:fs'), path = re
 const { execFileSync } = require('node:child_process');
 const { chromium } = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
 const { babelParse, traverse } = require('./babel_parse.cjs');
+const { readHatgModule } = require('./hatg_modules.cjs');
 const root = path.resolve(__dirname, '../../../management_portal/static');
 const source = fs.readFileSync(path.join(root, 'hatg_panel.js'), 'utf8');
+const familySource = readHatgModule('hatg_family_blocks.js');
 let options, familyOptions;
 traverse(babelParse(source, 'hatg_panel.js'), { VariableDeclarator(p) {
   if (p.node.id.name === 'AUTO_LAYOUT_VIEW') options = source.slice(p.node.init.start, p.node.init.end);
 } });
-traverse(babelParse(source, 'hatg_panel.js'), { FunctionDeclaration(p) {
+traverse(babelParse(familySource, 'hatg_family_blocks.js'), { FunctionDeclaration(p) {
   if (p.node.id.name !== 'showFamilyAlone') return;
   p.traverse({ OptionalCallExpression(call) {
     if (call.node.callee.property?.name === 'fit') {
       const argument = call.node.arguments[0];
-      familyOptions = source.slice(argument.start, argument.end);
+      familyOptions = familySource.slice(argument.start, argument.end);
     }
   } });
 } });

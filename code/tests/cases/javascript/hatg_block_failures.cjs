@@ -6,25 +6,28 @@ const {test} = require('node:test');
 const {babelParse, traverse} = require('./babel_parse.cjs');
 const {readHatgModule, createHatgModule} = require('./hatg_modules.cjs');
 const source = fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static/hatg_panel.js'), 'utf8');
-const names = new Set(['functionBlockInstanceFailures', 'functionBlockInstanceUnacknowledgedFailures', 'acknowledgeFunctionBlockFailures']);
-const functions = [];
-traverse(babelParse(source, 'hatg_panel.js'), {FunctionDeclaration(p) {
-  if (names.has(p.node.id?.name)) functions.push(source.slice(p.node.start, p.node.end));
-}});
-assert.equal(functions.length, names.size);
-function harness() {
+// A Function Block whose only member is the Resident under test.
+const block = {id: 'block_one', elements: [{id: 'resident_one', kind: 'resident'}]};
+
+// The production Function Block projection; the viewer's saved
+// acknowledgements and the page redraw are the only replaced parts.
+function familyBlocks(state, renderLineageSurface = () => {}) {
   let saved = {};
-  const member = {id: 'resident_one', title: 'Member', last_execution: {execution_id: 'run_one', message_id: 'input_one', status: 'failed', error: 'The read operation timed out', finished_at: '2026-10-22T12:00:00Z'}};
-  const context = vm.createContext({
-    state: {lineage: {lineage_id: 'lineage_one'}},
-    instanceInnerObjects: (_, kind) => kind === 'nodes' ? [member] : [],
-    pageStateController: {read: () => saved, write: value => {saved = value;}},
-    renderLineageSurface: () => {},
+  const context = vm.createContext({});
+  context.window = context;
+  vm.runInContext(readHatgModule('hatg_family_blocks.js'), context);
+  return createHatgModule(context.PortalHatgFamilyBlocks, 'createFamilyBlocks', {
+    state, renderLineageSurface,
+    currentPageStateController: () => ({read: () => saved, write: value => {saved = value;}}),
   });
-  vm.runInContext(functions.join('\n'), context);
-  return {member, issues: () => context.functionBlockInstanceFailures({}),
-    unread: () => context.functionBlockInstanceUnacknowledgedFailures({}),
-    acknowledge: () => context.acknowledgeFunctionBlockFailures(context.functionBlockInstanceFailures({}))};
+}
+
+function harness() {
+  const member = {id: 'resident_one', title: 'Member', last_execution: {execution_id: 'run_one', message_id: 'input_one', status: 'failed', error: 'The read operation timed out', finished_at: '2026-10-22T12:00:00Z'}};
+  const blocks = familyBlocks({lineage: {lineage_id: 'lineage_one', nodes: [member]}});
+  return {member, issues: () => blocks.functionBlockInstanceFailures(block),
+    unread: () => blocks.functionBlockInstanceUnacknowledgedFailures(block),
+    acknowledge: () => blocks.acknowledgeFunctionBlockFailures(blocks.functionBlockInstanceFailures(block))};
 }
 test('timeout failure is visible and only an explicit acknowledgement clears its reminder', () => {
   const h = harness();
@@ -60,13 +63,11 @@ test('authoritative failed status remains visible before error details arrive', 
 });
 
 function projectionHarness() {
-  const wanted = new Set(['selectedLineageChangeMatches', ...names]);
   const owners = [];
   traverse(babelParse(source, 'hatg_panel.js'), {FunctionDeclaration(p) {
-    if (wanted.has(p.node.id?.name)) owners.push(source.slice(p.node.start, p.node.end));
+    if (p.node.id?.name === 'selectedLineageChangeMatches') owners.push(source.slice(p.node.start, p.node.end));
   }});
-  assert.equal(owners.length, wanted.size);
-  let saved = {};
+  assert.equal(owners.length, 1);
   const draws = {surface: 0, runtime: 0};
   const state = {localVersion: 0, runtimeStatus: new Map(), residentRuntimeById: new Map(),
     sessionUserMessageCounts: new Map(), sessionContextPressures: new Map(),
@@ -78,12 +79,10 @@ function projectionHarness() {
     renderGraphRuntimePresentation() { draws.runtime += 1; },
   };
   const nodeResidentId = node => node.id;
-  const context = vm.createContext({state, ...surface, nodeResidentId,
-    instanceInnerObjects: (_, kind) => kind === 'nodes' ? state.lineage.nodes : [],
-    pageStateController: {read: () => saved, write: value => {saved = value;}},
-  });
+  const context = vm.createContext({state, ...surface, nodeResidentId});
   context.window = context;
   vm.runInContext(owners.join('\n'), context);
+  const blocks = familyBlocks(state, surface.renderLineageSurface);
   // Every Lineage read reaches the page through the production commit.
   vm.runInContext(readHatgModule('hatg_lineage_state.js'), context);
   const lineageState = createHatgModule(context.PortalHatgLineageState, 'createLineageState', {
@@ -92,7 +91,7 @@ function projectionHarness() {
     updateLineageSummary() {}, renderProgramInspector() {}, renderControls() {},
     currentTemplateController: () => ({render() {}}),
   });
-  return {context, state, draws, update(execution) {
+  return {context, blocks, state, draws, update(execution) {
     const incoming = JSON.parse(JSON.stringify(state.lineage));
     incoming.nodes[0].last_execution = execution;
     return lineageState.commitLineage(incoming, {source: 'background'}).changed;
@@ -104,15 +103,15 @@ test('same-revision server reads update Resident failure identity, reminder and 
   const failure = {execution_id: 'run_one', message_id: 'input_one', status: 'failed',
     error: 'The read operation timed out', finished_at: '2026-10-22T12:00:00Z'};
   assert.equal(h.update(failure), true);
-  assert.equal(h.context.functionBlockInstanceFailures({})[0].error, failure.error);
-  assert.equal(h.context.functionBlockInstanceUnacknowledgedFailures({}).length, 1);
-  h.context.acknowledgeFunctionBlockFailures(h.context.functionBlockInstanceFailures({}));
+  assert.equal(h.blocks.functionBlockInstanceFailures(block)[0].error, failure.error);
+  assert.equal(h.blocks.functionBlockInstanceUnacknowledgedFailures(block).length, 1);
+  h.blocks.acknowledgeFunctionBlockFailures(h.blocks.functionBlockInstanceFailures(block));
   assert.equal(h.update({...failure}), false, 'equal reads do not redraw');
-  assert.equal(h.context.functionBlockInstanceUnacknowledgedFailures({}).length, 0);
+  assert.equal(h.blocks.functionBlockInstanceUnacknowledgedFailures(block).length, 0);
   assert.equal(h.update({...failure, execution_id: 'run_two'}), true);
-  assert.equal(h.context.functionBlockInstanceUnacknowledgedFailures({}).length, 1, 'new read does not acknowledge new failure');
+  assert.equal(h.blocks.functionBlockInstanceUnacknowledgedFailures(block).length, 1, 'new read does not acknowledge new failure');
   assert.equal(h.update({execution_id: 'run_three', status: 'cancelled'}), true);
-  assert.equal(h.context.functionBlockInstanceFailures({}).length, 0);
+  assert.equal(h.blocks.functionBlockInstanceFailures(block).length, 0);
   assert.equal(h.update({}), true, 'an authoritative empty observation clears the old result');
   assert.equal(h.state.lineage.revision, 3);
   assert.equal(h.state.lineage.runtime_revision, 1);

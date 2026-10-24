@@ -4,6 +4,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const test = require('node:test');
 const { babelParse, traverse } = require('./babel_parse.cjs');
+const { readHatgModule, createHatgModule } = require('./hatg_modules.cjs');
 const root = path.resolve(__dirname, '../../..');
 const source = fs.readFileSync(path.join(root, 'management_portal/static/hatg_panel.js'), 'utf8');
 const plain = value => JSON.parse(JSON.stringify(value));
@@ -14,8 +15,8 @@ function fixture() {
   const ast = babelParse(source, 'hatg_panel.js');
   const names = new Set(['canvasObjectById', 'currentCanvasSelectionAnchorId', 'applyCanvasSelection',
     'toggleCanvasObjectSelection', 'addCanvasObjectsToSelection', 'reconcileGraphInteractionState',
-    'graphSelectedId', 'graphSelectedEdgeId', 'functionBlockProjection', 'functionBlockElements',
-    'openFunctionalize', 'visibleCanvasObjectIds', 'reconcileCanvasSelection']);
+    'graphSelectedId', 'graphSelectedEdgeId', 'openFunctionalize', 'visibleCanvasObjectIds',
+    'reconcileCanvasSelection']);
   const extracted = [];
   traverse(ast, { FunctionDeclaration(p) {
     if (names.has(p.node.id.name)) extracted.push(source.slice(p.node.start, p.node.end));
@@ -29,19 +30,33 @@ function fixture() {
   const find = collection => id => collection().find(item => item.id === id);
   const byNode = find(() => state.lineage.nodes), byComponent = find(() => state.lineage.program.components);
   const byWire = find(() => state.lineage.program.wires), byBlock = find(() => state.lineage.function_blocks);
+  const isFunctionBlockInstance = node => !!byBlock(node.id);
   const context = vm.createContext({ state, console, Set, Map,
-    window: { PortalI18n: { t: s => s }, PortalUI: { prompt: async () => 'Outer' } },
+    // The viewer's open blocks are the browser preference the module reads.
+    localStorage: { getItem: () => JSON.stringify([...expanded]), setItem() {} },
+    PortalI18n: { t: s => s }, PortalUI: { prompt: async () => 'Outer' },
     nodeById: byNode, displayNodeById: byNode, displaySeedById: () => null,
     programComponentById: byComponent, displayProgramComponentById: byComponent,
     displayProgramWireById: byWire, functionBlockInstanceById: byBlock,
-    displayGraphItemById: byNode,
-    expandedFunctionBlockIds: () => expanded, isFunctionBlockInstance: node => !!byBlock(node.id),
+    displayGraphItemById: byNode, isFunctionBlockInstance,
     renderCanvasSelection: () => {}, clearNodeSelection: () => {},
     clearCanvasSelection: () => context.programFeature.clearSelection(),
     applyProgramMutation: fn => fn(),
     executeHatgInstruction: async (instruction, args) => requests.push({ instruction, ...plain(args) }),
   });
+  context.window = context;
   vm.runInContext(fs.readFileSync(path.join(root, 'management_portal/static/hatg_panel_features.js'), 'utf8'), context);
+  // Block membership and folding come from the production module script.
+  vm.runInContext(readHatgModule('hatg_family_blocks.js'), context);
+  const blocks = createHatgModule(context.PortalHatgFamilyBlocks, 'createFamilyBlocks', {
+    state, nodeById: byNode, displayNodeById: byNode, programComponentById: byComponent,
+    functionBlockInstanceById: byBlock, isFunctionBlockInstance,
+  });
+  Object.assign(context, {
+    functionBlockProjection: blocks.functionBlockProjection,
+    functionBlockElements: blocks.functionBlockElements,
+    expandedFunctionBlockIds: blocks.expandedFunctionBlockIds,
+  });
   const features = context.window.PortalHatgPanelFeatures.createFeatures();
   context.programFeature = features.program;
   context.window.PortalHatgPanelFeatures.attachAliases(state, features);
