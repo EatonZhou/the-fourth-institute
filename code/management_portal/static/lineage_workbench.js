@@ -4917,9 +4917,20 @@
         state.watchboardMutationInFlight = true;
         renderChatExtensionMenu();
         try {
-          await residentService.updateWatchboard(action, {
+          const result = await residentService.updateWatchboard(action, {
             resident_id: residentId,
           });
+          if (result.lineage) {
+            try {
+              await lineageWorkbench?.getPanel("hatg")?.applyLineageMutation(result.lineage, {
+                separateObjectIds: result.created_component_ids,
+              });
+            } catch (error) {
+              // The definition is committed. A failed placement must not
+              // leave the extension menu offering the installation again.
+              window.PortalUI.toast(window.PortalI18n.text`Watchboard 已更新，但画布布局未保存：${error.message || error}`, "warning");
+            }
+          }
           if (residentId !== selectedResidentId()) return;
           // The Chat panel owns the Resident projection used by the extension
           // menu and subsequent conversation updates. Invalidate older reads

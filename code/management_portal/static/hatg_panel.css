@@ -4526,8 +4526,8 @@ body:has(.hatgPrimitiveCard.dragging) .programInspectorPanel {
   font-size: 13px;
   line-height: 1.55;
   tab-size: 2;
-  white-space: pre;
-  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   resize: vertical;
 }
 
@@ -4537,6 +4537,14 @@ body:has(.hatgPrimitiveCard.dragging) .programInspectorPanel {
   font-size: 12px;
   line-height: 1.5;
   color: var(--muted);
+}
+
+.programInspectorPanel > .programEffectDiagnostics {
+  flex: 0 0 auto;
+  max-height: 25%;
+  overflow: auto;
+  overflow-wrap: anywhere;
+  margin: 6px 12px;
 }
 
 .programEffectDiagnostics:empty {

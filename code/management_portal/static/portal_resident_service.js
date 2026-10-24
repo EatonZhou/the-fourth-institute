@@ -666,10 +666,15 @@
           for (const file of plan.files) await execute("UpdateWorkspaceFile", file, keyed({}, "watchboard-file"));
         }
         const operations = action === "add" ? plan.install : plan.remove;
-        if (operations.length) await execute("ApplyLineageChanges", {
+        const definition = operations.length ? await execute("ApplyLineageChanges", {
           lineage_id: plan.lineage_id, near_resident_id: residentId, operations,
-        }, { ...keyed(payload, "watchboard-definition"), expectedVersion: plan.revision });
-        return client.watchboard(residentId);
+        }, { ...keyed(payload, "watchboard-definition"), expectedVersion: plan.revision }) : null;
+        return { ...await client.watchboard(residentId),
+          lineage: definition?.lineage,
+          created_component_ids: action === "add" ? operations
+            .filter(operation => operation.op === "create" && operation.kind === "component")
+            .map(operation => operation.value.id) : [],
+        };
       },
       forwardTargets({ scopeId = "", lineageId = "", residentId = "", preferredLineageId = "" } = {}) {
         return get(residentPath("/forward-targets"), {

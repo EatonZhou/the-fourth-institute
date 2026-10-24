@@ -3,6 +3,26 @@ from pathlib import Path
 import subprocess
 
 
+def test_watchboard_installation_separates_new_cards_only():
+    """Watchboard 安装提交后按实测卡片避让，仅保存新增对象位置。
+
+    :module: resident.conversation
+    """
+    script = Path(__file__).with_name("javascript") / "watchboard_install_layout.cjs"
+    result = subprocess.run(["node", str(script)], capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_hatg_effect_diagnostics_and_script_remain_readable():
+    """Effect 诊断在滚动时保持可见，长脚本软换行而不修改内容。
+
+    :module: lineage.hatg
+    """
+    script = Path(__file__).with_name("javascript") / "hatg_effect_inspector_readability.cjs"
+    result = subprocess.run(["node", str(script)], capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 def test_hatg_mutation_feedback_and_navigation_do_not_cover_canvas():
     """HATG 连续保存状态与宽窄工具栏占独立空间，不遮挡画布标题。
 

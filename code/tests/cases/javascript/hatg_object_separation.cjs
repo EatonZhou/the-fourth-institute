@@ -4,7 +4,7 @@ const {babelParse, traverse} = require('./babel_parse.cjs');
 const {chromium} = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
 const root = path.resolve(__dirname, '../../../management_portal/static');
 const source = fs.readFileSync(path.join(root, 'hatg_panel.js'), 'utf8');
-const names = new Set(['separateGraphObject', 'setFunctionBlockExpanded', 'applyProgramMutation', 'createLineageEditQueue']);
+const names = new Set(['separateGraphObject', 'separateGraphObjects', 'setFunctionBlockExpanded', 'applyProgramMutation', 'createLineageEditQueue']);
 const parts = [];
 traverse(babelParse(source), {FunctionDeclaration(p) {
   if (names.has(p.node.id?.name)) parts.push(source.slice(p.node.start, p.node.end));

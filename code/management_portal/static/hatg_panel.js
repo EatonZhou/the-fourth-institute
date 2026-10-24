@@ -2548,22 +2548,28 @@
   }
 
   function separateGraphObject(id) {
+    return separateGraphObjects([id]);
+  }
+
+  function separateGraphObjects(objectIds) {
     if (state.graphViewMode !== "context" || state.graphFocusMode) return Promise.resolve(null);
-    const offset = state.graphController?.getObjectSeparation?.(id);
-    if (!offset) return Promise.resolve(null);
-    const block = functionBlockInstanceById(id);
-    const ids = new Set([id, ...(block ? functionBlockElements(block).map(element => element.id) : [])]);
-    const moved = [];
-    for (const objectId of ids) {
-      const item = graphItemById(objectId);
-      if (!item || !Number.isFinite(item.x) || !Number.isFinite(item.y)) continue;
-      item.x += offset.x;
-      item.y += offset.y;
-      moved.push(item);
+    const moved = new Map();
+    for (const id of new Set(objectIds)) {
+      const offset = state.graphController?.getObjectSeparation?.(id);
+      if (!offset) continue;
+      const block = functionBlockInstanceById(id);
+      const ids = new Set([id, ...(block ? functionBlockElements(block).map(element => element.id) : [])]);
+      for (const objectId of ids) {
+        const item = graphItemById(objectId);
+        if (!item || !Number.isFinite(item.x) || !Number.isFinite(item.y)) continue;
+        item.x += offset.x;
+        item.y += offset.y;
+        moved.set(objectId, item);
+      }
+      // Measure the next object against this placement before saving the batch.
+      renderGraph();
     }
-    if (!moved.length) return Promise.resolve(null);
-    renderGraph();
-    return saveLineageLayout(moved);
+    return moved.size ? saveLineageLayout([...moved.values()]) : Promise.resolve(null);
   }
 
   function initHatgGraph() {
@@ -5549,12 +5555,12 @@
           <span><em>EFFECT</em><strong>运行指令脚本</strong></span>
           <button type="button" data-program-inspector-close aria-label="关闭原语设置" data-portal-icon="close"></button>
         </div>
+        <div class="programEffectDiagnostics" data-effect-diagnostics aria-live="polite"></div>
         <form class="programInspectorForm" data-program-component-form>
           ${programComponentSwitchHtml(component, readonly)}
           ${programResourceAddressHtml("component", component.id)}
           <label><span>名称</span><input name="title" maxlength="120" value="${esc(component.title || "")}" required${readonly ? " disabled" : ""}></label>
           ${window.PortalLineageElementFields.effectFieldsHtml(config, readonly, { effectId: component.id })}
-          <div class="programEffectDiagnostics" data-effect-diagnostics aria-live="polite"></div>
           ${programExecutionExplanationHtml(component.id)}
           ${programEffectRuntimeHtml(component.id)}
           <div class="programInspectorActions" data-portal-inbox-avoid>
@@ -9772,10 +9778,14 @@
         state.lineages = state.lineages.filter(item => item.lineage_id !== deletedId);
         if (controller.suspendLineage(deletedId)) publishLocation("");
       },
-      async applyLineageMutation(lineage) {
+      async applyLineageMutation(lineage, { separateObjectIds = [] } = {}) {
         await loadPromise;
         if (state.layoutSaveInFlight) await state.layoutSaveInFlight;
-        return commitLineage(lineage).changed;
+        const changed = commitLineage(lineage).changed;
+        if (lineage.lineage_id === state.lineage?.lineage_id && separateObjectIds.length) {
+          await separateGraphObjects(separateObjectIds);
+        }
+        return changed;
       },
       async setTarget(next = {}) {
         const requestSeq = ++targetRequestSeq;
