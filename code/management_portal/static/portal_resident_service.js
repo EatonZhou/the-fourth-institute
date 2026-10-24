@@ -483,11 +483,11 @@
       clearMailbox(payload = {}) {
         return execute("ClearMailbox", { resident_id: required(payload.resident_id, "resident_id") }, keyed(payload, "queue-clear"));
       },
-      loadStates(residentIds, { includeViewerState = true } = {}) {
+      loadStates(residentIds, { includeViewerState = true, readObservation } = {}) {
         return execute("ListResidentStates", {
           resident_ids: ids(residentIds),
           ...(includeViewerState ? {} : { include_viewer_state: false }),
-        });
+        }, { readObservation });
       },
       setIntake(payload = {}) {
         return execute("OpenIntake", {

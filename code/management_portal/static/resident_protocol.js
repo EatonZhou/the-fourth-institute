@@ -189,18 +189,21 @@
 
   let stateReconciliationTimer = null;
 
-  function reconcileSubscribedStates() {
+  function reconcileSubscribedStates(event) {
     if (document.hidden) return;
+    const reason = event?.type === "focus" ? "focus"
+      : event?.type === "visibilitychange" ? "visibilitychange" : "reconciliation_timer";
     const chatOnly = [];
     for (const store of stores.values()) {
       // Preserve state projections' existing grouped refresh and retry contract.
-      if (store.stateRefCount) store.invalidateState("reconciliation");
+      if (store.stateRefCount) store.invalidateState(reason);
       else if (store.refCount) chatOnly.push(store);
     }
     // Quota protection has no conversation cursor/event. Chat-only views also
     // need a formal batch read, without adding per-view quota polling.
     if (chatOnly.length) loadResidentStateSnapshots(chatOnly.map(store => store.residentId), {
       force: true, includeViewerState: false,
+      readObservation: { consumer: "chat", reader_id: "chat-reconciliation", reasons: [reason] },
     }).catch(error => chatOnly.forEach(store => store.emitError(error)));
   }
 
@@ -1171,7 +1174,7 @@
 
   }
 
-  async function loadResidentStateSnapshots(residentIds, { force = false, includeViewerState = true } = {}) {
+  async function loadResidentStateSnapshots(residentIds, { force = false, includeViewerState = true, readObservation } = {}) {
     await window.PortalIdentity?.load?.();
     const requestActorRevision = actorRevision;
     const ids = [...new Set((residentIds || []).map(String).map(value => value.trim()).filter(Boolean))];
@@ -1195,7 +1198,7 @@
         }
       }
       if (missing.length) {
-        const request = window.PortalResidentService.loadStates(missing, { includeViewerState })
+        const request = window.PortalResidentService.loadStates(missing, { includeViewerState, readObservation })
           .then(response => {
             if (requestActorRevision !== actorRevision) throw new DOMException("Resident identity changed", "AbortError");
             if (!Array.isArray(response?.states)) {
@@ -1233,7 +1236,9 @@
       if (includeViewerState) {
         const withoutViewer = ids.filter(residentId => !selected.get(residentId).viewerState);
         if (withoutViewer.length) {
-          await loadResidentStateSnapshots(withoutViewer, { includeViewerState: true });
+          await loadResidentStateSnapshots(withoutViewer, { includeViewerState: true,
+            readObservation: { ...readObservation, reasons: [...(readObservation?.reasons || []), "viewer_followup"] },
+          });
         }
       }
       return Object.fromEntries(ids.map(residentId => [
@@ -1246,8 +1251,9 @@
     }
   }
 
+  let stateReaderSequence = 0;
   class ResidentStateProjection {
-    constructor(residentIds, { includeViewerState = true } = {}) {
+    constructor(residentIds, { includeViewerState = true, consumer = "state_subscription" } = {}) {
       this.residentIds = [...new Set(
         (Array.isArray(residentIds) ? residentIds : [])
           .map(value => String(value || "").trim())
@@ -1255,6 +1261,9 @@
       )];
       this.states = {};
       this.includeViewerState = includeViewerState;
+      this.readConsumer = consumer;
+      this.readerId = `state-${++stateReaderSequence}`;
+      this.reloadReasons = new Set();
       this.loading = null;
       this.loadingForce = false;
       this.reloadRequested = false;
@@ -1273,9 +1282,13 @@
       }
     }
 
-    async load({ force = false } = {}) {
+    async load({ force = false, reasons = ["explicit_read"] } = {}) {
+      reasons = [...new Set(Array.isArray(reasons) ? reasons.slice(0, 32) : ["unknown"])];
       if (this.loading) {
-        if (force && !this.loadingForce) this.reloadRequested = true;
+        if (force && !this.loadingForce) {
+          this.reloadRequested = true;
+          reasons.forEach(reason => this.reloadReasons.add(reason));
+        }
         const loading = this.loading;
         // A forced read queued behind an older snapshot is not finished when
         // that old snapshot settles. Its finally starts the requested refresh.
@@ -1287,6 +1300,7 @@
       this.batching = true;
       const loading = loadResidentStateSnapshots(this.residentIds, {
         force, includeViewerState: this.includeViewerState,
+        readObservation: { consumer: this.readConsumer, reader_id: this.readerId, reasons: [...reasons] },
       })
         .then(states => {
           this.retryDelayMs = 1000;
@@ -1297,7 +1311,7 @@
         }).catch(error => {
           this.batching = false;
           this.emit({ type: "error", error });
-          this.scheduleRetry(error);
+          this.scheduleRetry(error, reasons);
           throw error;
         }).finally(() => {
           if (this.loading !== loading) return;
@@ -1305,19 +1319,21 @@
           this.loadingForce = false;
           if (!this.reloadRequested) return;
           this.reloadRequested = false;
-          if (this.listener) this.load({ force: true }).catch(() => {});
+          const queuedReasons = [...this.reloadReasons];
+          this.reloadReasons.clear();
+          if (this.listener) this.load({ force: true, reasons: queuedReasons }).catch(() => {});
         });
       this.loading = loading;
       this.loadingForce = force;
       return loading;
     }
 
-    scheduleRetry(error) {
+    scheduleRetry(error, reasons) {
       const transient = isTransientSyncError(error);
       if (!this.listener || !transient || this.retryTimer !== null) return;
       this.retryTimer = window.setTimeout(() => {
         this.retryTimer = null;
-        if (this.listener) this.load({ force: true }).catch(() => {});
+        if (this.listener) this.load({ force: true, reasons: [...reasons, "transient_retry"] }).catch(() => {});
       }, this.retryDelayMs);
       this.retryDelayMs = Math.min(this.retryDelayMs * 2, 10000);
     }
@@ -1327,7 +1343,7 @@
       this.subscriptions = this.residentIds.map(residentId => (
         residentStore(residentId).subscribeState(update => this.onStateUpdate(update))
       ));
-      if (options.load !== false) this.load(options).catch(() => {});
+      if (options.load !== false) this.load({ ...options, reasons: ["subscription"] }).catch(() => {});
       return this;
     }
 
@@ -1335,6 +1351,7 @@
       if (this.retryTimer !== null) window.clearTimeout(this.retryTimer);
       this.retryTimer = null;
       this.reloadRequested = false;
+      this.reloadReasons.clear();
       this.subscriptions.forEach(unsubscribe => unsubscribe());
       this.subscriptions = [];
       this.listener = null;
@@ -1343,10 +1360,13 @@
     onStateUpdate(update) {
       if (update?.type === "invalid") {
         if (this.loading) {
-          if (this.batching || !this.loadingForce) this.reloadRequested = true;
+          if (this.batching || !this.loadingForce) {
+            this.reloadRequested = true;
+            this.reloadReasons.add(update.reason || "unknown");
+          }
           return;
         }
-        this.load({ force: true }).catch(() => {});
+        this.load({ force: true, reasons: [update.reason || "unknown"] }).catch(() => {});
         return;
       }
       const residentId = String(update?.resident_id || "");

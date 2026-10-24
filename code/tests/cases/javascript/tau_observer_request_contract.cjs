@@ -148,6 +148,12 @@ function documentProbe(content, receive) {
     }
     dispatch('portal:connection-closed', { url: `${origin}/api/instructions/execute?token=query-secret`,
       transport_id: 'unique-request', at: '2026-10-23T00:00:00Z', reason: 'caller_aborted' });
+    for (const transport_id of ['state-request', 'ambiguous-state', 'unknown-state', 'unique-request']) {
+      dispatch('portal:state-read', { transport_id, consumer: 'inbox', reader_id: 'state-1',
+        reasons: ['focus', 'private-read-reason'], private: 'private-read-content' });
+    }
+    dispatch('portal:state-read', { transport_id: 'state-request', consumer: 'private-consumer',
+      reader_id: 'private-reader', reasons: null });
     performanceCallback({ getEntries: () => [
       { name: `${origin}/api/agent-workbench/residents/projection?id=private-resident&token=query-secret`, initiatorType: 'fetch' },
       { name: `${origin}/api/private-name?token=query-secret`, initiatorType: 'fetch' },
@@ -162,6 +168,10 @@ async function injectedContract(observe) {
     { url: '/api/events?portal_stream_id=reconnected-stream', resourceType: 'eventsource' },
     { url: '/api/events?portal_stream_id=reconnected-stream', resourceType: 'eventsource' },
     { url: '/api/instructions/execute', method: 'POST', headers: { 'x-portal-request-id': 'unique-request' } },
+    ...['state-request', 'ambiguous-state', 'ambiguous-state'].map(transportId => ({
+      url: '/api/instructions/execute', method: 'POST', headers: { 'x-portal-request-id': transportId },
+      body: { instruction: 'ListResidentStates', arguments: { resident_ids: ['private-resident'] } },
+    })),
   ], ({ rows, starts, output }) => {
     const ready = rows.filter(row => row.kind === 'portal_stream_ready');
     const closed = rows.filter(row => row.kind === 'portal_connection_closed');
@@ -187,7 +197,22 @@ async function injectedContract(observe) {
       assert.equal(typeof event.browser_observed_at_ms, 'number');
       assert.equal(event.request_id, undefined, 'a lifecycle event alone does not prove request causation');
     }
-    excludes(output, ['query-secret', 'private-name', 'private-resident', 'private-header', 'focus-private-content']);
+    const reads = rows.filter(row => row.kind === 'portal_state_read');
+    assert.equal(reads.length, 5);
+    assert.equal(reads[0].request_id, starts[4].request_id);
+    assert.equal(reads[0].request_association, 'portal_request_identity');
+    assert.equal(reads[0].consumer, 'inbox');
+    assert.equal(reads[0].reader_id, 'state-1');
+    assert.deepEqual(reads[0].reasons, ['focus', 'unknown']);
+    for (const row of reads.slice(1, 4)) {
+      assert.equal(row.request_id, null, 'missing, ambiguous or different instruction identities are not causal evidence');
+      assert.equal(row.request_association, 'unavailable_no_unique_transport_identity');
+    }
+    assert.equal(reads[4].consumer, 'unknown');
+    assert.equal(reads[4].reader_id, null);
+    assert.deepEqual(reads[4].reasons, ['unknown']);
+    excludes(output, ['query-secret', 'private-name', 'private-resident', 'private-header', 'focus-private-content',
+      'private-read-reason', 'private-read-content', 'private-consumer', 'private-reader']);
   }, observe, true);
 }
 

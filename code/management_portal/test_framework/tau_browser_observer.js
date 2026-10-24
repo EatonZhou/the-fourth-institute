@@ -262,7 +262,7 @@ async function observeBrowser(context, { evidenceDir }) {
         state.document.confirmed = true;
       }
       write({ kind: data.kind, ...location(state), browser_observed_at_ms: Number.isFinite(data.at) ? data.at : null, time_origin_ms: Number.isFinite(data.time_origin) ? data.time_origin : null });
-    } else if (['beforeunload', 'pagehide', 'focus', 'blur', 'visibilitychange', 'click_observed', 'pointer_observed', 'document_error', 'portal_connections', 'portal_stream_ready', 'pdf_reader_cancelled', 'resource_timing', 'resource_timing_buffer_full', 'observer_unavailable'].includes(data.kind)) {
+    } else if (['beforeunload', 'pagehide', 'focus', 'blur', 'visibilitychange', 'click_observed', 'pointer_observed', 'document_error', 'portal_connections', 'portal_stream_ready', 'portal_state_read', 'pdf_reader_cancelled', 'resource_timing', 'resource_timing_buffer_full', 'observer_unavailable'].includes(data.kind)) {
       const doc = tokens.get(data.token);
       const associated = { ...location(state), document_id: doc?.id || null, document_confirmed: !!doc };
       if (['click_observed', 'pointer_observed'].includes(data.kind)) {
@@ -332,6 +332,21 @@ async function observeBrowser(context, { evidenceDir }) {
           ready_at_ms: Number.isFinite(data.ready_at_ms) ? data.ready_at_ms : null,
           request_id: match?.id || null,
           request_association: match ? 'portal_stream_identity' : 'unavailable_no_unique_transport_identity' });
+      } else if (data.kind === 'portal_state_read') {
+        const transportId = /^[a-z0-9-]{1,96}$/.test(data.transport_id || '') ? data.transport_id : null;
+        const candidates = (transportRequests.get(transportId ? `request:${transportId}` : null) || [])
+          .filter(request => request.document === doc && request.frame === state
+            && instructionScope(request.request).instruction === 'ListResidentStates');
+        const match = doc && candidates.length === 1 ? candidates[0] : null;
+        const allowed = new Set('explicit_read subscription projection viewer-state stream_reset completion payload_omitted focus visibilitychange reconciliation_timer viewer_followup transient_retry unknown'.split(' '));
+        write({ kind: 'portal_state_read', ...associated, transport_id: transportId,
+          consumer: ['inbox', 'chat', 'state_subscription'].includes(data.consumer) ? data.consumer : 'unknown',
+          reader_id: /^(state-[1-9][0-9]{0,10}|chat-reconciliation)$/.test(data.reader_id || '') ? data.reader_id : null,
+          reasons: [...new Set((Array.isArray(data.reasons) ? data.reasons : ['unknown']).slice(0, 32)
+            .map(reason => allowed.has(reason) ? reason : 'unknown'))],
+          browser_observed_at_ms: Number.isFinite(data.at) ? data.at : null,
+          request_id: match?.id || null,
+          request_association: match ? 'portal_request_identity' : 'unavailable_no_unique_transport_identity' });
       } else if (data.kind === 'pdf_reader_cancelled') {
         const transportId = /^[a-z0-9-]{1,96}$/.test(data.transport_id || '') ? data.transport_id : null;
         const path = safePath(data.path);
@@ -485,6 +500,18 @@ async function observeBrowser(context, { evidenceDir }) {
     // the actual close receipt synchronously when the owner emits it instead.
     window.addEventListener('portal:connection-closed', event => {
       if (event.detail && typeof event.detail === 'object') connections([event.detail]);
+    });
+    const readReasons = new Set('explicit_read subscription projection viewer-state stream_reset completion payload_omitted focus visibilitychange reconciliation_timer viewer_followup transient_retry unknown'.split(' '));
+    window.addEventListener('portal:state-read', event => {
+      const item = event.detail;
+      if (!item || typeof item !== 'object') return;
+      emit({ kind: 'portal_state_read',
+        transport_id: /^[a-z0-9-]{1,96}$/.test(item.transport_id || '') ? item.transport_id : null,
+        consumer: ['inbox', 'chat', 'state_subscription'].includes(item.consumer) ? item.consumer : 'unknown',
+        reader_id: /^(state-[1-9][0-9]{0,10}|chat-reconciliation)$/.test(item.reader_id || '') ? item.reader_id : null,
+        reasons: [...new Set((Array.isArray(item.reasons) ? item.reasons : ['unknown']).slice(0, 32)
+          .map(reason => readReasons.has(reason) ? reason : 'unknown'))],
+      });
     });
     window.addEventListener('portal:connection-ready', event => {
       const item = event.detail;

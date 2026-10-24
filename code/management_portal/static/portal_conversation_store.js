@@ -219,7 +219,7 @@
         residentStateFrame = 0;
         emit("resident-state");
       });
-    });
+    }, { consumer: "inbox" });
     previousCollection?.destroy();
   }
 
