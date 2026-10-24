@@ -38,7 +38,9 @@ def test_windows_execution_waits_for_restart_and_sends_once(
     old = LocalListener(path, transport="tcp") if stale else None
     if old is not None:
         old.socket.close()  # Simulate a dead process leaving a descriptor.
-    client = ExecutionServiceClient(path, timeout=2, restart_wait=3)
+    # A refused TCP connection can consume its configured connect timeout on
+    # Windows. Bound that separately from the mutating-request restart wait.
+    client = ExecutionServiceClient(path, timeout=.25, restart_wait=3)
     before = time.monotonic()
     with pytest.raises(ExecutionServiceUnavailable):
         client.health()

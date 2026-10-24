@@ -6,6 +6,7 @@ from pathlib import Path
 import runpy
 import subprocess
 import sys
+import time
 from types import SimpleNamespace
 
 import pytest
@@ -236,4 +237,10 @@ def test_native_batch_cleans_descendants_after_exit_or_timeout(tmp_path, expire)
             runtime.run_process([str(wrapper)], env=environment, timeout=3, capture_output=True)
     else:
         runtime.run_process([str(wrapper)], env=environment, timeout=10, capture_output=True, check=True)
-    assert not runtime.process_alive(wait_file(pid_file))
+    pid = wait_file(pid_file)
+    # Job termination is asynchronous: the process object's final signal can
+    # follow its removal from the Job. A surviving child still fails this bound.
+    deadline = time.monotonic() + 2
+    while runtime.process_alive(pid) and time.monotonic() < deadline:
+        time.sleep(.01)
+    assert not runtime.process_alive(pid)

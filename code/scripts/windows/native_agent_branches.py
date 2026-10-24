@@ -119,13 +119,14 @@ class Model:
 
 
 def codex(binary, root, record):
+    from management_common.file_permissions import ensure_private_directory
     from management_common.local_ipc import rendezvous_path
     from management_portal import codex_app_server_host as host
     from management_portal import codex_app_server_client as wire
     from management_common import portal_network
     model = Model()
     home = root / 'codex-home'
-    home.mkdir()
+    ensure_private_directory(home)
     (home / 'config.toml').write_text(
         'model = "gpt-test"\nmodel_provider = "fixture"\n'
         '[model_providers.fixture]\nname = "Fixture"\n'
