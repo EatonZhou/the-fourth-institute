@@ -4,14 +4,6 @@
 const fs = require('node:fs'), path = require('node:path'), assert = require('node:assert/strict');
 const repo = path.resolve(__dirname, '../../..'), root = path.join(repo, 'management_portal/static');
 const {chromium} = require(path.join(repo, 'management_portal/test_framework/tau_runtime/node_modules/playwright'));
-const {babelParse, traverse} = require('./babel_parse.cjs');
-const source = fs.readFileSync(path.join(root, 'hatg_panel.js'), 'utf8');
-const names = new Set(['runtimeStatusFromResidentProjection',
-  'applyResidentStateProjections', 'applyResidentStateCollection']);
-const extracted = [];
-traverse(babelParse(source, 'hatg_panel.js'), {FunctionDeclaration(p) {
-  if (names.has(p.node.id?.name)) extracted.push(source.slice(p.node.start, p.node.end));
-}});
 const report = {checks:[], errors:[], ok:false};
 (async () => {
   const browser = await chromium.launch({headless:true});
@@ -27,8 +19,8 @@ const report = {checks:[], errors:[], ok:false};
     });
     await page.goto('https://hatg-state.fixture.invalid');
     for (const name of ['portal_design_system','portal_themes','hatg_panel']) await page.addStyleTag({url:'/static/'+name+'.css'});
-    for (const name of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min','resident_protocol','lineage_graph','hatg_graph_model','hatg_node_status','hatg_graph_view']) await page.addScriptTag({url:'/static/'+name+'.js'});
-    await page.evaluate(code => {
+    for (const name of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min','resident_protocol','lineage_graph','hatg_graph_model','hatg_node_status','hatg_graph_view','hatg_resident_runtime']) await page.addScriptTag({url:'/static/'+name+'.js'});
+    await page.evaluate(() => {
       PortalI18n.apply('zh-CN');
       const member='resident_fixture', facade='resident_facade';
       window.f={cursor:10,work:{work_state:'queued',work_phase:'',intake_state:'closed',active_message_id:'msg_fixture',execution_gate:{state:'closed',reason:'manual'}},calls:[],patches:0};
@@ -55,16 +47,20 @@ const report = {checks:[], errors:[], ok:false};
       const view=create(PortalHatgGraphView,'createGraphView',{state,esc,compactText,nodeResidentId,effectiveNodeStatus,
         nodeExecutionGate,nodeIntakeState,nodeWorkPresentation,isFunctionBlockInstance,isProgramComponent,nodeIsDerived,
         familyMemberTag,familyForFacade,familyExpanded,nodeMessageCountText,nodeContextHeatBadge,graphVisibleModel});
-      window.renderGraphRuntimePresentation=view.renderGraphRuntimePresentation;
-      eval(code+'\nwindow.applyStates=applyResidentStateCollection;');
+      // The production subscription of the shown Lineage's Residents applies their state.
+      const residents=create(PortalHatgResidentRuntime,'createResidentRuntime',{state,nodeResidentId,effectiveNodeStatus,
+        setNodeRuntimeStatus,nodeExecutionGate,nodeIntakeState,nodeWorkPresentation,updateLineageSummary,renderControls,
+        renderGraphRuntimePresentation:view.renderGraphRuntimePresentation,currentPanelActive:()=>true,
+        currentHatgComponentOptions:()=>hatgComponentOptions});
       state.graphController=PortalHatgGraph.createGraph({root:'#canvas',world:'#world',edgeLayer:'#edges',effectLayer:'#effects',labelLayer:'#labels',nodeLayer:'#nodes',statusForNode:effectiveNodeStatus,nodeContent:view.graphNodeContent});
       const patch=state.graphController.patchRuntimePresentation;
       state.graphController.patchRuntimePresentation=(...args)=>{f.patches++;return patch(...args)};
       window.renderGraph=()=>state.graphController.render(graphVisibleModel());renderGraph();
-      f.sub=PortalResidentProtocol.acquireStates([member,facade],window.applyStates,{load:false});
+      residents.bindResidentStateCollection();
+      f.sub=state.residentStateCollection;
       f.load=()=>f.sub.load({force:true});
       f.event=(work,cursor=++f.cursor)=>{f.work={...f.work,...work};window.dispatchEvent(new CustomEvent('portal:change',{detail:{resident_events:[member,facade].map(resident_id=>({resident_id,cursor,event_type:'resident.state.changed',payload:{state:f.work}}))}}))};
-    }, extracted.join('\n'));
+    });
     await page.evaluate(()=>f.load());
     const badge=page.locator('[data-node-id="resident_fixture"] .nodeStatus');
     assert.equal(await badge.textContent(),'queued');

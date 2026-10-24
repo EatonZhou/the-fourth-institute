@@ -1,11 +1,7 @@
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
 const vm = require('node:vm');
 const {test} = require('node:test');
-const {babelParse, traverse} = require('./babel_parse.cjs');
 const {readHatgModule, createHatgModule} = require('./hatg_modules.cjs');
-const source = fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static/hatg_panel.js'), 'utf8');
 // A Function Block whose only member is the Resident under test.
 const block = {id: 'block_one', elements: [{id: 'resident_one', kind: 'resident'}]};
 
@@ -63,11 +59,6 @@ test('authoritative failed status remains visible before error details arrive', 
 });
 
 function projectionHarness() {
-  const owners = [];
-  traverse(babelParse(source, 'hatg_panel.js'), {FunctionDeclaration(p) {
-    if (p.node.id?.name === 'selectedLineageChangeMatches') owners.push(source.slice(p.node.start, p.node.end));
-  }});
-  assert.equal(owners.length, 1);
   const draws = {surface: 0, runtime: 0};
   const state = {localVersion: 0, runtimeStatus: new Map(), residentRuntimeById: new Map(),
     sessionUserMessageCounts: new Map(), sessionContextPressures: new Map(),
@@ -81,7 +72,17 @@ function projectionHarness() {
   const nodeResidentId = node => node.id;
   const context = vm.createContext({state, ...surface, nodeResidentId});
   context.window = context;
-  vm.runInContext(owners.join('\n'), context);
+  // The Lineage change filter is the one the production subscription hands
+  // to the refresh coordinator; the coordinator itself does not run.
+  const matchers = [];
+  context.PortalRefreshCoordinator = {
+    create: () => ({start() {}, destroy() {}, invalidate() {}}),
+    portalSubscription: options => (matchers.push(options.matches), options),
+  };
+  vm.runInContext(readHatgModule('hatg_resident_runtime.js'), context);
+  createHatgModule(context.PortalHatgResidentRuntime, 'createResidentRuntime', {
+    state, nodeResidentId, currentPanelActive: () => true,
+  }).bindLineageProjectionSubscription();
   const blocks = familyBlocks(state, surface.renderLineageSurface);
   // Every Lineage read reaches the page through the production commit.
   vm.runInContext(readHatgModule('hatg_lineage_state.js'), context);
@@ -91,7 +92,7 @@ function projectionHarness() {
     updateLineageSummary() {}, renderProgramInspector() {}, renderControls() {},
     currentTemplateController: () => ({render() {}}),
   });
-  return {context, blocks, state, draws, update(execution) {
+  return {lineageMatches: matchers[0], blocks, state, draws, update(execution) {
     const incoming = JSON.parse(JSON.stringify(state.lineage));
     incoming.nodes[0].last_execution = execution;
     return lineageState.commitLineage(incoming, {source: 'background'}).changed;
@@ -122,10 +123,10 @@ test('same-revision server reads update Resident failure identity, reminder and 
 });
 
 test('only committed terminal inputs of displayed Residents invalidate the graph observation', () => {
-  const {context} = projectionHarness();
+  const {lineageMatches} = projectionHarness();
   const event = {resident_id: 'resident_one', event_type: 'resident.input.state.changed',
     payload: {input_state: {state: 'failed'}}};
-  const matches = value => context.selectedLineageChangeMatches({resident_events: [value]});
+  const matches = value => lineageMatches({resident_events: [value]});
   for (const state of ['failed', 'completed', 'cancelled']) {
     assert.equal(matches({...event, payload: {input_state: {state}}}), true);
   }
