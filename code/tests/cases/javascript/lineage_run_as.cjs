@@ -19,6 +19,8 @@ const dom = new JSDOM(html, { url: 'https://portal.test/lineage', runScripts: 'o
 const context = dom.getInternalVMContext();
 const w = dom.window;
 const $ = id => w.document.getElementById(id);
+// The run-as identity the Lineage form will submit.
+const runAsInput = () => JSON.parse($('lineageRunAsInput').value || 'null');
 Object.assign(w, {
   CSS: { escape: String }, console,
   PortalUIPrimitives: { randomUUID, escapeHtml: value => String(value ?? '').replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;') },
@@ -89,8 +91,8 @@ const ast = babelParse(source, 'hatg_panel.js');
 const scope = ast.program.body[0].expression.callee.body.body.find(n => n.type === 'FunctionDeclaration' && n.id.name === 'createHatgRuntime');
 const ret = scope.body.body.find(n => n.type === 'ReturnStatement');
 const hook = `
-  return { state, openCreateLineageModal, openEditLineageModal, submitLineageForm, renderLineageRunAsOptions,
-    readLineageRunAsInput, loadLineageAuxiliaryCatalogs, renderProgramInspector, syncProgramComponentSwitch,
+  return { state, openCreateLineageModal, openEditLineageModal, submitLineageForm,
+    loadLineageAuxiliaryCatalogs, renderProgramInspector, syncProgramComponentSwitch,
     programEventSourceStatus, graphNodeContent, activateLineageEdits };
 `;
 vm.runInContext(source.slice(scope.start, ret.start) + hook + source.slice(ret.end, scope.end) + '\nwindow.api = createHatgRuntime();', context);
@@ -115,7 +117,7 @@ const choose = id => { $('lineageRunAsInput').value = id ? JSON.stringify({ kind
 
   api.openEditLineageModal();
   await tick();
-  assert.equal(api.readLineageRunAsInput().id, 'selected-user');
+  assert.equal(runAsInput().id, 'selected-user');
   choose(null);
   await submit();
   assert.equal(calls.find(c => c.name === 'UpdateLineage').args.changes.run_as_principal, null, 'clear is explicit, not omitted');
@@ -130,7 +132,7 @@ const choose = id => { $('lineageRunAsInput').value = id ? JSON.stringify({ kind
   rejection = Object.assign(new Error('Cannot act as selected User'), { code: 'instruction.forbidden' });
   await submit();
   assert.equal($('lineageModal').hidden, false);
-  assert.equal(api.readLineageRunAsInput().id, 'other-user');
+  assert.equal(runAsInput().id, 'other-user');
   assert.equal($('lineageFormError').hidden, false);
   assert.match($('lineageFormError').textContent, /Cannot act as/);
   assert.equal(api.state.lineage.run_as_principal, null);
@@ -154,7 +156,7 @@ const choose = id => { $('lineageRunAsInput').value = id ? JSON.stringify({ kind
   catalogRejection = true;
   api.openEditLineageModal();
   await tick();
-  assert.equal(api.readLineageRunAsInput().id, 'no-longer-listed');
+  assert.equal(runAsInput().id, 'no-longer-listed');
   assert.match($('lineageRunAsCatalogStatus').textContent, /User catalog denied/);
   catalogRejection = false;
 
