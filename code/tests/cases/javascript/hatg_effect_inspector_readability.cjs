@@ -1,22 +1,9 @@
 'use strict';
 const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path');
-const {babelParse, traverse} = require('./babel_parse.cjs');
 const {chromium} = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
 const portal = path.resolve(__dirname, '../../../management_portal');
-const source = fs.readFileSync(path.join(portal, 'static/hatg_panel.js'), 'utf8');
-let markup, diagnostics;
-traverse(babelParse(source), {
-  AssignmentExpression(p) {
-    if (p.node.left.property?.name === 'innerHTML') {
-      const rhs = source.slice(p.node.right.start, p.node.right.end);
-      if (rhs.includes('data-effect-diagnostics') && rhs.includes('effectFieldsHtml')) markup = rhs;
-    }
-  },
-  FunctionDeclaration(p) {
-    if (p.node.id?.name === 'renderEffectDiagnostics') diagnostics = source.slice(p.node.start, p.node.end);
-  },
-});
-assert.ok(markup && diagnostics);
+// The production program inspector draws a saved Effect and reads its
+// diagnostics; only the inspector's listed dependencies are provided.
 (async () => {
   const browser = await chromium.launch({headless: true});
   try {
@@ -29,22 +16,35 @@ assert.ok(markup && diagnostics);
     });
     await page.goto('http://effect-inspector.fixture.invalid');
     for (const name of ['portal_design_system', 'portal_themes', 'hatg_panel']) await page.addStyleTag({url: '/static/' + name + '.css'});
-    for (const name of ['portal_text', 'portal_state', 'portal_translations', 'portal_i18n', 'portal_ui_primitives', 'lineage_element_fields']) await page.addScriptTag({url: '/static/' + name + '.js'});
+    for (const name of ['portal_text', 'portal_state', 'portal_translations', 'portal_i18n', 'portal_ui_primitives', 'lineage_element_fields', 'hatg_program_inspector']) await page.addScriptTag({url: '/static/' + name + '.js'});
     await page.addStyleTag({content: 'html,body{margin:0;height:100%}.portalHatgPanelComponent{height:100vh}#agentLineageShell{height:100%;display:block}#hatgPane{height:100%;display:flex;flex-direction:column}'});
-    await page.evaluate(({markup, diagnostics}) => {
+    await page.evaluate(() => {
+      // The server boundary: the script editor's instruction and user catalogs are empty.
+      window.PortalInstructionClient = {execute: async name => (
+        name === 'ListInstructions' ? {instructions: []} : name === 'ListUsers' ? {users: []} : {})};
       const panel = document.getElementById('programInspectorPanel');
-      panel.hidden = false; panel.dataset.componentId = 'effect';
-      const component = {id: 'effect', title: 'Saved Effect'};
-      const config = {script: 'DeliverMessage resident_id="${endpoint.target}" text="' + 'long-script-value'.repeat(45) + '"'};
-      const readonly = false, esc = PortalUIPrimitives.escapeHtml;
-      const programComponentSwitchHtml = () => '', programResourceAddressHtml = () => '';
-      const programExecutionExplanationHtml = () => '', programEffectRuntimeHtml = () => '';
-      panel.innerHTML = eval(markup);
-      const state = {lineage: {lineage_id: 'fixture'}};
-      const executeHatgInstruction = async () => ({diagnostics: window.diagnosticItems || []});
-      const renderDiagnostics = eval('(' + diagnostics + ')');
-      window.inspectSavedScript = () => renderDiagnostics(panel, component.id);
-    }, {markup, diagnostics});
+      const component = {id: 'effect', kind: 'effect', title: 'Saved Effect',
+        config: {script: 'DeliverMessage resident_id="${endpoint.target}" text="' + 'long-script-value'.repeat(45) + '"'}};
+      const state = {lineage: {lineage_id: 'fixture', program: {components: [component], wires: []}},
+        selectedProgramObjectId: component.id, programMutationInFlight: false};
+      let diagnosticsRead = Promise.resolve();
+      const provided = {
+        state, esc: PortalUIPrimitives.escapeHtml, toast: () => {}, definitionRevisions: new WeakMap(),
+        displayProgramComponentById: id => (id === component.id ? component : null),
+        displayProgramWireById: () => null, refreshFunctionBlockMenu: () => {},
+        programComponentSwitchHtml: () => '', programResourceAddressHtml: () => '',
+        programExecutionExplanationHtml: () => '', programEffectRuntime: () => ({}),
+        executeHatgInstruction: () => (diagnosticsRead = Promise.resolve({diagnostics: window.diagnosticItems || []})),
+      };
+      const module = window.PortalHatgProgramInspector;
+      const inspector = module.createProgramInspector(Object.fromEntries(module.dependencies.map(name => [
+        name, Object.hasOwn(provided, name) ? provided[name] : () => { throw new Error(`Unexpected use of ${name}`); }])));
+      window.inspectSavedScript = async () => {
+        inspector.renderProgramInspector({panel, objectId: component.id});
+        await diagnosticsRead;
+        await new Promise(resolve => setTimeout(resolve));
+      };
+    });
     for (const width of [1440, 600, 420]) {
       await page.setViewportSize({width, height: 900});
       await page.evaluate(() => inspectSavedScript());

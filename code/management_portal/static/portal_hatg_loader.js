@@ -22,6 +22,7 @@
     "/static/hatg_lineage_state.js",
     "/static/hatg_family_blocks.js",
     "/static/hatg_function_block_menu.js",
+    "/static/hatg_program_inspector.js",
     "/static/hatg_panel.js",
   ];
   let assetsPromise = null;

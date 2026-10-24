@@ -21,7 +21,6 @@ const BOUNDARIES = {
     window.__draws.push("graph");
     window.__drawn.push(Object.fromEntries(graphVisibleModel().nodes.map(node => [node.id, [node.x, node.y]])));
   }`,
-  renderProgramInspector: 'function renderProgramInspector() {}',
   renderControls: 'function renderControls() {}',
   updateLineageSummary: 'function updateLineageSummary() {}',
   setSyncStatus: 'function setSyncStatus() {}',
@@ -47,6 +46,9 @@ function runtimeSource(entries) {
     if (selected.has(name)) return;
     const binding = bindings[name];
     assert(binding, `Missing runtime dependency: ${name}`);
+    // A module part's exports share one declaration and cannot be replaced one by one.
+    assert(!Object.hasOwn(BOUNDARIES, name) || binding.path.node.id?.type === 'Identifier',
+      `${name} is a module export; provide it through the module's dependencies`);
     selected.set(name, binding.path);
     if (Object.hasOwn(BOUNDARIES, name)) return;
     binding.path.traverse({ ReferencedIdentifier(reference) {
