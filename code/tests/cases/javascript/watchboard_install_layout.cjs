@@ -8,7 +8,7 @@ for (const file of ['hatg_panel', 'portal_resident_service', 'lineage_workbench'
   const source = fs.readFileSync(path.join(root, file + '.js'), 'utf8');
   traverse(babelParse(source), {
     FunctionDeclaration(p) {
-      if (['separateGraphObjects', 'syncGraphNodePosition', 'updateCurrentResidentWatchboard', 'completeResidentFork'].includes(p.node.id?.name))
+      if (['updateCurrentResidentWatchboard', 'completeResidentFork'].includes(p.node.id?.name))
         parts[p.node.id.name] = source.slice(p.node.start, p.node.end);
     },
     ObjectMethod(p) {
@@ -17,7 +17,7 @@ for (const file of ['hatg_panel', 'portal_resident_service', 'lineage_workbench'
     },
   });
 }
-assert.equal(Object.keys(parts).length, 6);
+assert.equal(Object.keys(parts).length, 4);
 (async () => {
   const browser = await chromium.launch({headless: true});
   try {
@@ -30,7 +30,7 @@ assert.equal(Object.keys(parts).length, 6);
     });
     await page.goto('http://watchboard-install.fixture.invalid');
     for (const n of ['portal_design_system', 'portal_themes', 'hatg_panel', 'lineage_function_blocks']) await page.addStyleTag({url: '/static/' + n + '.css'});
-    for (const n of ['portal_text', 'portal_state', 'portal_translations', 'portal_i18n', 'portal_ui_primitives', 'projection_libraries/portal-graph/1.0.0/geometry', 'vendor/d3/d3.v7.9.0.min', 'lineage_graph']) await page.addScriptTag({url: '/static/' + n + '.js'});
+    for (const n of ['portal_text', 'portal_state', 'portal_translations', 'portal_i18n', 'portal_ui_primitives', 'projection_libraries/portal-graph/1.0.0/geometry', 'vendor/d3/d3.v7.9.0.min', 'lineage_graph', 'hatg_layout']) await page.addScriptTag({url: '/static/' + n + '.js'});
     const result = await page.evaluate(async parts => {
       document.documentElement.style.zoom = '1.25';
       const title = '[TAU:testrun_0b64e9f35d85ff9d:resident.conversation] test_94b17916d4ba Watchboard';
@@ -66,8 +66,10 @@ assert.equal(Object.keys(parts).length, 6);
       const assertInstruction = instruction => {if (instruction !== 'GetLineage') throw Error('unexpected instruction');};
       const client = {watchboard: async () => ({watchboard: {installed: true}})};
       const residentService = eval('({' + parts.updateWatchboard + '})');
-      const syncGraphNodePosition = eval('(' + parts.syncGraphNodePosition + ')');
-      const separateGraphObjects = eval('(' + parts.separateGraphObjects + ')');
+      // Placement is the production layout module's; any dependency not provided here fails.
+      const placement = {state, graphItemById, functionBlockInstanceById, renderGraph, saveLineageLayout};
+      const {separateGraphObjects} = PortalHatgLayout.createLayout(Object.fromEntries(PortalHatgLayout.dependencies.map(name => [
+        name, Object.hasOwn(placement, name) ? placement[name] : () => { throw new Error(`Unexpected use of ${name}`); }])));
       const hatgPanel = eval('({' + parts.applyLineageMutation + '})');
       const lineageWorkbench = {getPanel: () => hatgPanel}, selectedResidentId = () => 'resident';
       const agentChatPanel = {applyDetail(detail) {state.detail = detail;}};

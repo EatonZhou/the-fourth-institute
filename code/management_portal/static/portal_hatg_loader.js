@@ -24,6 +24,7 @@
     "/static/hatg_function_block_menu.js",
     "/static/hatg_program_inspector.js",
     "/static/hatg_relations.js",
+    "/static/hatg_layout.js",
     "/static/hatg_panel.js",
   ];
   let assetsPromise = null;

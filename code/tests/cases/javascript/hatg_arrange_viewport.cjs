@@ -1,17 +1,17 @@
 'use strict';
 // Actual HATG fit options and D3 renderer, without live graph mutations.
-const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path');
+const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path'), vm = require('node:vm');
 const { execFileSync } = require('node:child_process');
 const { chromium } = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
 const { babelParse, traverse } = require('./babel_parse.cjs');
 const { readHatgModule } = require('./hatg_modules.cjs');
 const root = path.resolve(__dirname, '../../../management_portal/static');
-const source = fs.readFileSync(path.join(root, 'hatg_panel.js'), 'utf8');
 const familySource = readHatgModule('hatg_family_blocks.js');
-let options, familyOptions;
-traverse(babelParse(source, 'hatg_panel.js'), { VariableDeclarator(p) {
-  if (p.node.id.name === 'AUTO_LAYOUT_VIEW') options = source.slice(p.node.init.start, p.node.init.end);
-} });
+// The arrange camera policy is the layout module's.
+const layoutContext = vm.createContext({});
+layoutContext.window = layoutContext;
+vm.runInContext(readHatgModule('hatg_layout.js'), layoutContext);
+let options = `(${JSON.stringify(layoutContext.PortalHatgLayout.AUTO_LAYOUT_VIEW)})`, familyOptions;
 traverse(babelParse(familySource, 'hatg_family_blocks.js'), { FunctionDeclaration(p) {
   if (p.node.id.name !== 'showFamilyAlone') return;
   p.traverse({ OptionalCallExpression(call) {

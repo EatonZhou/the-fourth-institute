@@ -1,22 +1,8 @@
 'use strict';
 const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path');
-const {babelParse} = require('./babel_parse.cjs');
 const {chromium} = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
 const root = path.resolve(__dirname, '../../../management_portal/static');
-const source = fs.readFileSync(path.join(root, 'hatg_panel.js'), 'utf8');
-const names = ['readableAutoLayoutOptions', 'AUTO_LAYOUT_METRICS', 'HATG_WORLD_SIZE'];
-const parts = {};
-function visit(node) {
-  if (!node || typeof node !== 'object') return;
-  if (names.includes(node.id?.name)) parts[node.id.name] =
-    (node.type === 'VariableDeclarator' ? 'const ' : '') + source.slice(node.start, node.end) + ';';
-  for (const child of Object.values(node)) {
-    if (Array.isArray(child)) child.forEach(visit);
-    else if (child && typeof child === 'object') visit(child);
-  }
-}
-visit(babelParse(source, 'hatg_panel.js'));
-names.forEach(name => assert.ok(parts[name], name));
+// The arrange cell size is the production layout module's, measured on the actual renderer.
 (async () => {
   const browser = await chromium.launch({headless:true});
   try {
@@ -29,19 +15,20 @@ names.forEach(name => assert.ok(parts[name], name));
     });
     await page.goto('http://measured-layout.fixture.invalid');
     for (const name of ['portal_design_system','portal_themes','hatg_panel','lineage_function_blocks']) await page.addStyleTag({url:'/static/'+name+'.css'});
-    for (const name of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min','lineage_graph']) await page.addScriptTag({url:'/static/'+name+'.js'});
-    await page.evaluate(parts => {
+    for (const name of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min','lineage_graph','hatg_layout']) await page.addScriptTag({url:'/static/'+name+'.js'});
+    await page.evaluate(() => {
       window.graph = PortalHatgGraph.createGraph({root:'#hatgCanvas',world:'#world',edgeLayer:'#edges',effectLayer:'#effects',labelLayer:'#labels',nodeLayer:'#nodes',scaleExtent:[.05,3.2],
         nodeContent: node => `<strong class="nodeTitle">${PortalUIPrimitives.escapeHtml(node.title)}</strong><small>${node.id} — runtime idle</small><small>Context: current input</small><small>Output port: completed</small><small>Input port: event</small>`});
-      const state = {graphController:graph}, $id = id => document.getElementById(id);
-      eval(parts.join('\n')+'\nwindow.layoutOptions = readableAutoLayoutOptions;');
+      const provided = {state: {graphController: graph}, $id: id => document.getElementById(id)};
+      window.layoutOptions = PortalHatgLayout.createLayout(Object.fromEntries(PortalHatgLayout.dependencies.map(name => [
+        name, Object.hasOwn(provided, name) ? provided[name] : () => { throw new Error(`Unexpected use of ${name}`); }]))).readableAutoLayoutOptions;
       window.nodes = Array.from({length:9}, (_,i) => ({id:'node_'+i,kind:['agent','event_source','effect','filter'][i%4],
         title:'[TAU:testrun_3d217e86b7d069b0:lineage.hatg] '+['Resident B','Completion event with a long distinguishable title','Effect A','Final filter'][i%4],x:30+i*3,y:30+i*3}));
       window.edges = [{source:'node_0',target:'node_1'},{source:'node_1',target:'node_2'},{source:'node_1',target:'node_3'},
         {source:'node_2',target:'node_4'},{source:'node_3',target:'node_5'},{source:'node_4',target:'node_0',type:'watch'},
         {source:'node_6',target:'node_7'},{source:'node_7',target:'node_8'}].map((edge,i) => ({id:'edge_'+i,...edge}));
       graph.render({nodes,edges});
-    }, names.map(name => parts[name]));
+    });
     const results = [];
     for (const density of ['comfortable','compact']) {
       const result = await page.evaluate(density => {

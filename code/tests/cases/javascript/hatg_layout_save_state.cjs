@@ -58,10 +58,8 @@ function controllerSource(mutation) {
       ${renderCall('renderLineageSurface', 'renderControls')}
     }`,
   };
-  const auto = bindings.autoLayoutGraph.path;
-  const attempt = auto.node.body.body.find(node => node.type === 'TryStatement');
-  assert(attempt, 'Production layout save must have rollback/finally');
-  // The runtime takes its Lineage commit from a module script, loaded as is.
+  // The runtime takes the arrange action and the Lineage commit from module
+  // scripts, loaded as is; a negative control edits the script that owns it.
   const modules = Object.fromEntries(hatgModuleFiles().map(file => [file, readHatgModule(file)]));
   const moduleFunction = name => {
     for (const [file, text] of Object.entries(modules)) {
@@ -73,8 +71,10 @@ function controllerSource(mutation) {
     }
     return assert.fail(`No module function ${name}`);
   };
+  const auto = moduleFunction('autoLayoutGraph');
+  const attempt = auto.node.body.body.find(node => node.type === 'TryStatement');
+  assert(attempt, 'Production layout save must have rollback/finally');
   const commit = moduleFunction('commitLineage');
-  let changed;
   if (mutation) {
     const assignmentTo = (node, field) => node.type === 'ExpressionStatement'
       && node.expression.type === 'AssignmentExpression'
@@ -93,24 +93,17 @@ function controllerSource(mutation) {
       'drop-rollback-paint': commit.node.body.body.filter(node => callTo(node, 'renderCommittedLineage')),
     };
     assert.equal(candidates[mutation]?.length, 1, `Mutation must address exactly one AST statement: ${mutation}`);
-    [changed] = candidates[mutation];
-    if (mutation === 'drop-rollback-paint') {
-      const text = modules[commit.file];
-      modules[commit.file] = text.slice(0, changed.start) + ';' + text.slice(changed.end);
-      changed = null;
-    }
+    const [changed] = candidates[mutation];
+    const file = mutation === 'drop-rollback-paint' ? commit.file : auto.file;
+    modules[file] = modules[file].slice(0, changed.start) + ';' + modules[file].slice(changed.end);
   }
   // One destructuring declaration defines every name a module part exports.
   const declarations = new Map([...selected].map(([name, p]) => [p.node, [name, p]]));
   const source = [...declarations.values()].sort(([, a], [, b]) => a.node.start - b.node.start)
     .map(([name, p]) => {
       if (boundaries.has(name)) return boundarySource[name];
-      const node = p.node;
-      let bytes = changed && changed.start >= node.start && changed.end <= node.end
-        ? panelSource.slice(node.start, changed.start) + ';' + panelSource.slice(changed.end, node.end)
-        : panelSource.slice(node.start, node.end);
-      if (p.isVariableDeclarator()) bytes = `${p.parent.kind} ${bytes};`;
-      return bytes;
+      const bytes = panelSource.slice(p.node.start, p.node.end);
+      return p.isVariableDeclarator() ? `${p.parent.kind} ${bytes};` : bytes;
     }).join('\n');
   const controller = `(() => { 'use strict'; ${source}
     window.__layoutController = { state, autoLayoutGraph, activateLineageEdits,

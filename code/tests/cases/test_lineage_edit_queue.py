@@ -20,11 +20,11 @@ def panel_functions(names):
     return "\n".join(result)
 
 
-# Runtime functions the probe drives. The edit queue, layout save and Lineage
-# commit come from the production module script the driver loads.
+# Runtime functions the probe drives. The edit queue, layout save, Lineage
+# commit and object separation come from the production module scripts the
+# driver loads.
 FUNCTIONS = [
-    "applyProgramMutation", "separateGraphObject", "separateGraphObjects",
-    "createProgramComponentFromDrop", "nodeResidentId",
+    "applyProgramMutation", "createProgramComponentFromDrop", "nodeResidentId",
 ]
 DRIVER = ROOT / "tests/cases/javascript/lineage_edit_queue.cjs"
 

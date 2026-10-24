@@ -1,9 +1,6 @@
-const fs = require('node:fs');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
-const source = fs.readFileSync('management_portal/static/hatg_panel.js', 'utf8');
-const section = (start, end) => source.slice(source.indexOf('  function ' + start), source.indexOf('  function ' + end));
-const preference = source.slice(source.indexOf('  function normalizeHatgViewPreference'), source.indexOf('  async function loadHatgViewPreference'));
+const { readHatgModule, createHatgModule } = require('./hatg_modules.cjs');
 const saves = [], notices = [], timers = new Map();
 let timerId = 0, releaseFirst;
 const state = { lineage: { lineage_id: 'lineage_aaaaaaaaaaaa' } };
@@ -28,14 +25,13 @@ const context = vm.createContext({
     },
   },
 });
-vm.runInContext(`const HATG_VIEW_UI_NAMESPACE = 'lineage.hatg-view';
-  const hatgViewPreferences = new Map(), hatgViewSaveTimers = new Map(), hatgViewSaveRequests = new Map();
-  ${preference}
-  ${source.slice(source.indexOf('  async function loadHatgViewPreference'), source.indexOf('  function scheduleHatgViewPreferenceSave'))}
-  ${section('scheduleHatgViewPreferenceSave', 'displayedProgram')}
-  ${section('syncWorkspaceNodePosition', 'syncGraphNodePosition')}
-  globalThis.api = {normalizeHatgViewPreference, syncWorkspaceNodePosition, scheduleHatgViewPreferenceSave, flushHatgViewPreferenceSave, loadHatgViewPreference, hatgViewPreferences, hatgViewSaveRequests};`, context);
-const api = context.api;
+// The production layout module keeps each viewer's camera and Workspace positions.
+vm.runInContext(readHatgModule('hatg_layout.js'), context);
+const layout = context.window.PortalHatgLayout;
+const api = {
+  normalizeHatgViewPreference: layout.normalizeHatgViewPreference,
+  ...createHatgModule(layout, 'createLayout', {state, toast: context.toast}),
+};
 const flushTimers = () => { const batch = [...timers.values()]; timers.clear(); batch.forEach(fn => fn()); };
 const tick = () => new Promise(resolve => setImmediate(resolve));
 (async () => {
@@ -69,7 +65,8 @@ const tick = () => new Promise(resolve => setImmediate(resolve));
   assert.deepEqual(saves[1].value.workspace_positions['workspace::workspace_abc'], {x:5,y:6});
   assert.equal(saves[1].value.viewport.k,2);
   assert.equal(saves[1].value.expanded_family_facade_ids[0],'resident_abc');
-  assert.equal(api.hatgViewSaveRequests.size,0);
+  // Finished writes leave no request behind: each flush then starts from nothing.
+  assert.notEqual(api.flushHatgViewPreferenceSave(state.lineage.lineage_id), api.flushHatgViewPreferenceSave(state.lineage.lineage_id));
   assert.deepEqual(JSON.parse(JSON.stringify(api.normalizeHatgViewPreference({}).workspace_positions)),{});
   api.scheduleHatgViewPreferenceSave('lineage_failed', {workspace_positions:{resident_abc:{x:9,y:10}}});
   flushTimers(); await tick(); await tick();
