@@ -8,7 +8,7 @@ for (const file of ['hatg_panel', 'portal_resident_service', 'lineage_workbench'
   const source = fs.readFileSync(path.join(root, file + '.js'), 'utf8');
   traverse(babelParse(source), {
     FunctionDeclaration(p) {
-      if (['separateGraphObjects', 'updateCurrentResidentWatchboard'].includes(p.node.id?.name))
+      if (['separateGraphObjects', 'updateCurrentResidentWatchboard', 'completeResidentFork'].includes(p.node.id?.name))
         parts[p.node.id.name] = source.slice(p.node.start, p.node.end);
     },
     ObjectMethod(p) {
@@ -17,7 +17,7 @@ for (const file of ['hatg_panel', 'portal_resident_service', 'lineage_workbench'
     },
   });
 }
-assert.equal(Object.keys(parts).length, 4);
+assert.equal(Object.keys(parts).length, 5);
 (async () => {
   const browser = await chromium.launch({headless: true});
   try {
@@ -37,11 +37,14 @@ assert.equal(Object.keys(parts).length, 4);
       const existing = [{id: 'resident', kind: 'agent', title, x: 50, y: 50}, {id: 'neighbor', kind: 'agent', title: 'Existing shared Resident', x: 70, y: 50}];
       const added = Array.from({length: 5}, (_, i) => ({id: 'added_' + i, kind: i % 2 ? 'effect' : 'event_source', title: i ? 'Watchboard · status' : 'Watchboard · ' + title, x: 50 + i * 3, y: 52 + i * 3}));
       const original = JSON.parse(JSON.stringify(existing)), requests = [], saves = [], notices = [];
-      const state = {lineage: {lineage_id: 'fixture', nodes: existing}, graphViewMode: 'context', graphFocusMode: false, watchboardHiddenResidents: new Set()};
+      const state = {lineage: {lineage_id: 'fixture', nodes: existing}, graphViewMode: 'context', graphFocusMode: false, watchboardHiddenResidents: new Set(['resident'])};
       let nodes = existing;
       const graph = PortalHatgGraph.createGraph({root: '#canvas', world: '#world', edgeLayer: '#edges', effectLayer: '#effects', labelLayer: '#labels', nodeLayer: '#nodes', nodeContent: n => `<small>${n.kind}</small><strong>${PortalUIPrimitives.escapeHtml(n.title)}</strong><small>Listening · idle</small><small>0 messages</small>`});
       state.graphController = graph;
-      const renderGraph = () => {graph.render({nodes, edges: []}); graph.refresh({measureNodes: true});};
+      const renderGraph = () => {
+        const visible = state.watchboardHiddenResidents.has('resident') ? nodes.filter(n => !n.id.startsWith('added_')) : nodes;
+        graph.render({nodes: visible, edges: []}); graph.refresh({measureNodes: true});
+      };
       const graphItemById = id => nodes.find(n => n.id === id), functionBlockInstanceById = () => null;
       let failPlacement = false;
       const saveLineageLayout = async items => {
@@ -64,6 +67,11 @@ assert.equal(Object.keys(parts).length, 4);
       const renderChatExtensionMenu = () => {}, writeLineageUiState = () => {}, closeChatExtensionMenu = () => {};
       const watchboardController = {render() {}}, loadFolder = async () => {}, refreshResidentSidebarIfDue = async () => {};
       eval(parts.updateCurrentResidentWatchboard + '\nwindow.install = updateCurrentResidentWatchboard;');
+      const rememberResidentShortcutSession = () => {};
+      const opened = [];
+      const selectResident = async (id, options) => { opened.push({id, options}); return true; };
+      const appendChatWorkspaceDraft = () => {};
+      eval(parts.completeResidentFork + '\nwindow.finishFork = completeResidentFork;');
       renderGraph();
       await window.install('add', 'resident');
       graph.fit({duration: 0, maxScale: 1});
@@ -73,12 +81,38 @@ assert.equal(Object.keys(parts).length, 4);
         const a = rectangles[i], b = rectangles[j];
         if (Math.min(a.r.right, b.r.right) > Math.max(a.r.left, b.r.left) + .1 && Math.min(a.r.bottom, b.r.bottom) > Math.max(a.r.top, b.r.top) + .1) overlaps.push([a.id, b.id]);
       }
+      window.checkForkPlacement = async () => {
+        const before = nodes.map(({id, x, y}) => ({id, x, y}));
+        const anchor = added[0];
+        const fork = {id: 'fork', kind: 'agent', title: title + ' · Branch', x: anchor.x, y: anchor.y};
+        const beforeSaves = saves.length;
+        const ready = await window.finishFork({resident_id: 'fork',
+          lineage: {lineage_id: 'fixture', nodes: [...nodes, fork]}}, 'fixture');
+        const target = document.querySelector('[data-node-id="fork"]').getBoundingClientRect();
+        const overlapping = [...document.querySelectorAll('.hatgNode')].filter(el => {
+          if (el.dataset.nodeId === 'fork') return false;
+          const r = el.getBoundingClientRect();
+          return Math.min(target.right, r.right) > Math.max(target.left, r.left) + .1
+            && Math.min(target.bottom, r.bottom) > Math.max(target.top, r.top) + .1;
+        }).map(el => el.dataset.nodeId);
+        return {ready, overlapping, before, after: nodes.filter(n => n.id !== 'fork').map(({id, x, y}) => ({id, x, y})),
+          saves: saves.slice(beforeSaves), opened};
+      };
       window.checkPlacementFailure = async () => {
         for (const node of added) {node.x = 50; node.y = 50;}
         failPlacement = true; state.detail = null;
         const before = requests.length;
         await window.install('add', 'resident');
         return {requests: requests.length - before, installed: state.detail?.installed, notices};
+      };
+      window.checkForkPlacementFailure = async () => {
+        const before = requests.length, beforeOpened = opened.length, beforeNotices = notices.length;
+        const anchor = added[0];
+        const fork = {id: 'fork-failed-layout', kind: 'agent', title: title + ' · Branch', x: anchor.x, y: anchor.y};
+        failPlacement = true;
+        const ready = await window.finishFork({resident_id: fork.id,
+          lineage: {lineage_id: 'fixture', nodes: [...nodes, fork]}}, 'fixture');
+        return {ready, requests: requests.length - before, opened: opened.slice(beforeOpened), notices: notices.slice(beforeNotices)};
       };
       return {overlaps, original, existing, requests, saves, notices, installed: state.detail?.installed};
     }, parts);
@@ -88,10 +122,23 @@ assert.equal(Object.keys(parts).length, 4);
     assert.equal(result.saves.length, 1, 'all newly installed positions are persisted together');
     assert.ok(result.saves[0].length > 0 && result.saves[0].every(item => item.id.startsWith('added_')));
     assert.equal(result.installed, true); assert.deepEqual(result.notices, []); assert.deepEqual(errors, []);
+    const fork = await page.evaluate(() => checkForkPlacement());
+    assert.equal(fork.ready, true);
+    assert.deepEqual(fork.overlapping, [], 'a menu-created Fork clears the measured long Watchboard card');
+    assert.deepEqual(fork.before, fork.after, 'Fork placement leaves every existing card in place');
+    assert.equal(fork.saves.length, 1);
+    assert.deepEqual(fork.saves[0].map(item => item.id), ['fork']);
+    assert.equal(fork.opened[0].id, 'fork');
+    assert.equal(fork.opened[0].options.revealInGraph, true);
     const failure = await page.evaluate(() => checkPlacementFailure());
     assert.equal(failure.requests, 1, 'a failed layout save cannot replay the installation');
     assert.equal(failure.installed, true, 'committed installation still reaches the extension menu');
     assert.equal(failure.notices.length, 1); assert.equal(failure.notices[0][1], 'warning');
+    const forkFailure = await page.evaluate(() => checkForkPlacementFailure());
+    assert.equal(forkFailure.ready, true, 'a layout save failure must still open the already created Fork');
+    assert.equal(forkFailure.requests, 0, 'opening a committed Fork cannot replay its creation');
+    assert.equal(forkFailure.opened[0].id, 'fork-failed-layout');
+    assert.equal(forkFailure.notices.length, 1); assert.equal(forkFailure.notices[0][1], 'warning');
     console.log('Watchboard committed installation separates only new measured cards and persists one layout batch');
   } finally {await browser.close();}
 })().catch(error => {console.error(error); process.exitCode = 1;});

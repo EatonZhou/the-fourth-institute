@@ -4635,7 +4635,13 @@
         }
         try {
           const hatgPanel = lineageWorkbench?.getPanel("hatg");
-          if (hatgPanel) await hatgPanel.applyLineageMutation(lineage);
+          if (hatgPanel) {
+            try {
+              await hatgPanel.applyLineageMutation(lineage, { separateObjectIds: [residentId] });
+            } catch (error) {
+              window.PortalUI.toast(window.PortalI18n.text`分支已创建，但画布布局未保存：${error.message || error}`, "warning");
+            }
+          }
           rememberResidentShortcutSession(residentId);
           const opened = await selectResident(residentId, {
             forceView: true,
@@ -4920,6 +4926,9 @@
           const result = await residentService.updateWatchboard(action, {
             resident_id: residentId,
           });
+          // Newly installed cards must be visible when their rendered bounds
+          // are measured. Revealing them afterwards leaves their default slots.
+          state.watchboardHiddenResidents.delete(residentId);
           if (result.lineage) {
             try {
               await lineageWorkbench?.getPanel("hatg")?.applyLineageMutation(result.lineage, {
@@ -4940,7 +4949,6 @@
           const detail = await window.PortalResidentProjection.load(residentId, { force: true });
           if (residentId !== selectedResidentId() || panel !== agentChatPanel) return;
           panel.applyDetail(detail);
-          state.watchboardHiddenResidents.delete(residentId);
           writeLineageUiState({ watchboardHiddenResidents: [...state.watchboardHiddenResidents] });
           closeChatExtensionMenu();
           watchboardController.render(state.detail);

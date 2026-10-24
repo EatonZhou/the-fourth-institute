@@ -303,6 +303,11 @@ Fork 动作的原 callback 内须以回执 resident_id 验证新节点、目标 
 仅节点出现或截图不能代替 Chat ready，之后再检查也不能补原窗口。脚本保存的原动作须等待
 当前 Effect 的正式保存诊断，并通过正常滚动展示脚本与诊断；执行记录可能是 details 中的文字，
 打开编辑器可能先显示命令菜单，按实际控件发现后再定义就绪检查，不能假设存在链接。
+Watchboard 的原执行动作须按回执 script_run_id 等待对应运行行显示正式终态，不能只等 Output 按钮；
+Mailbox 未读变化的原 ready 回调同时记录目标行的未读标记和样式，稍后的截图不能补首帧。
+ListResidentStates 的 portal_state_read 只归因到凭据中的实际发起 reader，缓存/在途合并的消费者
+不算新请求来源；须按同一 frame/document 和 transport/request ID 核对，缺失仍记 unknown，
+不能从 focus、定时器或 action 的时间接近推断。请求归因不替代原 UI-ready 及性能判断。
 
 测试用例：{planned['case_title']}
 自然语言描述：{planned.get('description') or ''}
