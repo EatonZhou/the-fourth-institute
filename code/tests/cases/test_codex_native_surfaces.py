@@ -77,6 +77,72 @@ def test_mcp_form_correlates_original_wire_request(tmp_path, action):
     assert sent == [{"id": "mcp-wire", "result": {"action": action, "content": content}}]
 
 
+@pytest.mark.parametrize("method", ["item/fileChange/requestApproval", MCP_METHOD])
+@pytest.mark.parametrize("action", ["accept", "decline", "cancel", "expire"])
+@pytest.mark.parametrize("delivery", ["delivered", "queued"])
+def test_native_terminal_outcome_survives_request_query(
+    tmp_path, resident_record, monkeypatch, method, action, delivery,
+):
+    """原生拒绝、取消和过期经过正式回答与查询仍保持区别，不重发已完成请求。"""
+    from management_common.provider_user_input import content_part as input_part
+    from management_portal.society_service import execution_client, resident_access
+
+    resident_id = resident_record["resident_id"]
+    repository = resident_conversation_stream.get_repository()
+    store = repository.agent_data
+    execution_id = "execution-" + "d" * 24
+    client, sent, events = native_client(tmp_path)
+    client._answer_server_request(71, method, form_params() if method == MCP_METHOD else approval_params())
+    part = input_part(events[0]["params"]["item"], execution_id)
+
+    def persist(value):
+        store.put_segment(
+            segment_id=value["segment_id"], segment_type="tool", content=value,
+            content_type="application/json", created_by_agent_id=resident_id,
+            created_by_actor_ref=resident_id, performed_by_actor_ref=resident_id,
+            execution_id=execution_id,
+        )
+
+    persist(part)
+    message_id = "msg_native_terminal_query"
+    repository.append_message(resident_id, {
+        "message_id": message_id, "role": "agent", "created_at": "2026-10-24T00:00:00Z",
+        "content_parts": [part],
+    })
+    monkeypatch.setattr(resident_access, "can_manage_resident", lambda *_args, **_kwargs: True)
+    assert resident_protocol.get_resident_request(resident_id, "CASE-A", message_id)["status"] == "pending"
+    service = Mock()
+
+    def deliver(_execution_id, **kwargs):
+        assert _execution_id == execution_id and kwargs["expected_turn_id"] == "turn-native"
+        if delivery == "delivered":
+            client.user_inputs.respond("thread-native", "turn-native", kwargs["input"][0])
+        return {"status": delivery}
+
+    service.append_input.side_effect = deliver
+    monkeypatch.setattr(execution_client, "service", lambda: service)
+    payload = {"message_id": message_id, "action": action}
+    if method == MCP_METHOD and action == "accept":
+        payload["content"] = {"count": 2, "region": "west"}
+    expected = {"accept": "answered", "decline": "declined", "cancel": "cancelled", "expire": "expired"}[action]
+    if action == "expire":
+        client.user_inputs.expire("thread-native", turn_id="turn-native")
+    else:
+        response = resident_protocol.respond_resident_user_input(resident_id, "CASE-A", payload)
+        assert response["status"] == (expected if delivery == "delivered" else "pending")
+        if delivery == "queued":
+            assert not sent
+            client.user_inputs.respond("thread-native", "turn-native", service.append_input.call_args.kwargs["input"][0])
+    persist(input_part(events[-1]["params"]["item"], execution_id))
+    assert resident_protocol.get_resident_request(resident_id, "CASE-A", message_id)["status"] == expected
+    assert resident_protocol.list_resident_requests([resident_id], "CASE-A") == []
+    assert repository.snapshot(resident_id, history_limit=1)["messages"][0]["content_parts"][0]["status"] == expected
+    before = len(sent)
+    with pytest.raises(ValueError, match="已回答"):
+        resident_protocol.respond_resident_user_input(resident_id, "CASE-A", {"message_id": message_id, "action": "cancel"})
+    assert len(sent) == before == (0 if action == "expire" else 1)
+
+
 @pytest.mark.parametrize("content", [{}, {"count": 5, "region": "east"}, {"count": True, "region": "east"},
                                      {"count": 1, "region": "north"}, {"count": 1, "region": "east", "unexpected": 1}])
 def test_mcp_invalid_form_does_not_consume_request(tmp_path, content):

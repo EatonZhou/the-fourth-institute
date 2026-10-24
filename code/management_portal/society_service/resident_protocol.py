@@ -143,7 +143,7 @@ def respond_resident_user_input(resident_id: str, actor: str, payload: dict[str,
         control_id=control_id,
     )
     control_status = receipt.get("status")
-    status = ("cancelled" if payload.get("action") == "cancel" else "answered") if control_status == "delivered" else (
+    status = {"cancel": "cancelled", "decline": "declined"}.get(response["action"], "answered") if control_status == "delivered" else (
         "pending" if control_status in {"pending", "queued"} else "expired"
     )
     return {"status": status, **({"error": receipt["error"]} if receipt.get("error") else {})}
@@ -163,7 +163,7 @@ def _request_items(resident_id: str, messages: list[dict[str, Any]]) -> list[dic
             if part.get("type") != "tool_call" or part.get("tool_name") not in INTERACTIVE_TOOL_NAMES:
                 continue
             status = str(part.get("status") or "pending")
-            if status not in {"pending", "answered", "cancelled", "expired"}:
+            if status not in {"pending", "answered", "declined", "cancelled", "expired"}:
                 status = "answered" if status in {"completed", "accepted"} else "expired"
             items.append({
                 "resident_id": resident_id,

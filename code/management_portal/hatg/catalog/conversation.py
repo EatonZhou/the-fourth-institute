@@ -186,12 +186,12 @@ DECLARATIONS = (
         R("resident_id", description="发出请求的 Resident"), R("message_id", description="请求所在的消息"),
     ), (
         R("request", "object", "请求：resident_id、message_id、kind（question 或 approval）、questions、status、answers、created_at"),
-        R("status", enum=("pending", "answered", "cancelled", "expired"), description="请求的回答状态，同 request.status"),
+        R("status", enum=("pending", "answered", "declined", "cancelled", "expired"), description="请求的回答状态，同 request.status；declined 表示已拒绝"),
     ), target="resident_id"),
     _d("AnswerResidentRequest", ON_RESIDENT, "回答一个请求，并把回答送回 Resident 正在等待的那一轮工作；对消息中的问题组只能用 action=cancel 关闭，不通知 Resident。", (
         R("resident_id", description="发出请求的 Resident"), R("message_id", description="请求所在的消息"),
         R("answers", "object", "按问题序号给出的回答；批准请求给出批准或拒绝"),
-    ), (R("status", enum=("pending", "answered", "cancelled", "expired"),
-          description="回答后的状态：已送达为 answered 或 cancelled，仍在排队为 pending，没能送达为 expired"),),
+    ), (R("status", enum=("pending", "answered", "declined", "cancelled", "expired"),
+          description="回答后的状态：已送达为 answered、declined 或 cancelled，仍在排队为 pending，没能送达为 expired"),),
        mutates=True, target="resident_id"),
 )
