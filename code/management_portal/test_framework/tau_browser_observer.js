@@ -262,14 +262,24 @@ async function observeBrowser(context, { evidenceDir }) {
         state.document.confirmed = true;
       }
       write({ kind: data.kind, ...location(state), browser_observed_at_ms: Number.isFinite(data.at) ? data.at : null, time_origin_ms: Number.isFinite(data.time_origin) ? data.time_origin : null });
-    } else if (['beforeunload', 'pagehide', 'focus', 'blur', 'visibilitychange', 'click_observed', 'document_error', 'portal_connections', 'portal_stream_ready', 'pdf_reader_cancelled', 'resource_timing', 'resource_timing_buffer_full', 'observer_unavailable'].includes(data.kind)) {
+    } else if (['beforeunload', 'pagehide', 'focus', 'blur', 'visibilitychange', 'click_observed', 'pointer_observed', 'document_error', 'portal_connections', 'portal_stream_ready', 'pdf_reader_cancelled', 'resource_timing', 'resource_timing_buffer_full', 'observer_unavailable'].includes(data.kind)) {
       const doc = tokens.get(data.token);
       const associated = { ...location(state), document_id: doc?.id || null, document_confirmed: !!doc };
-      if (data.kind === 'click_observed') {
+      if (['click_observed', 'pointer_observed'].includes(data.kind)) {
         if (!Number.isSafeInteger(data.sequence) || data.sequence < 1) return;
+        if (data.kind === 'pointer_observed' && !['pointerdown', 'pointerup', 'pointercancel'].includes(data.event_type)) return;
         const tags = new Set('a button input select option textarea label span div svg path use img li ul nav header main body html'.split(' '));
         const action = actions.get(frame.page());
-        write({ kind: data.kind, ...associated, click_id: `${doc?.id || data.token}:click:${data.sequence}`,
+        const nodeId = value => Number.isSafeInteger(value) && value > 0 ? `${doc?.id || data.token}:node:${value}` : null;
+        write({ kind: data.kind, ...associated,
+          ...(data.kind === 'click_observed' ? { click_id: `${doc?.id || data.token}:click:${data.sequence}` }
+            : { pointer_event_id: `${doc?.id || data.token}:pointer:${data.sequence}` }),
+          event_type: data.kind === 'click_observed' ? 'click' : data.event_type,
+          pointer_id: Number.isSafeInteger(data.pointer_id) ? data.pointer_id : null,
+          pointer_type: ['mouse', 'pen', 'touch'].includes(data.pointer_type) ? data.pointer_type : null,
+          target_node_id: nodeId(data.target_node),
+          hit_node_id: nodeId(data.hit_node),
+          target_connected: typeof data.target_connected === 'boolean' ? data.target_connected : null,
           stage: ['capture', 'after_dispatch', 'beforeunload', 'pagehide'].includes(data.stage) ? data.stage : 'unknown',
           browser_observed_at_ms: Number.isFinite(data.at) ? data.at : null,
           target_tag: tags.has(data.target_tag) ? data.target_tag : 'other',
@@ -367,16 +377,22 @@ async function observeBrowser(context, { evidenceDir }) {
     const emit = data => window.__portalTauObservationRecord({ token, at: Date.now(), ...data }).catch(() => {});
     // Capture all hit targets, including a nested icon and non-interactive
     // overlays. No labels, IDs, text, values or raw URLs enter the evidence.
-    const pendingClicks = new Map();
-    let clickSequence = 0;
-    const finishClick = (sequence, stage) => {
-      const pending = pendingClicks.get(sequence);
-      if (!pending) return;
-      pendingClicks.delete(sequence);
-      clearTimeout(pending.timer);
-      emit({ ...pending.record, stage, default_prevented: pending.event.defaultPrevented });
+    const nodes = new WeakMap(), pendingInputs = new Map();
+    let nodeSequence = 0, inputSequence = 0;
+    const nodeId = node => {
+      if (!node || typeof node !== 'object') return null;
+      if (!nodes.has(node)) nodes.set(node, ++nodeSequence);
+      return nodes.get(node);
     };
-    window.addEventListener('click', event => {
+    const finishInput = (sequence, stage) => {
+      const pending = pendingInputs.get(sequence);
+      if (!pending) return;
+      pendingInputs.delete(sequence);
+      clearTimeout(pending.timer);
+      emit({ ...pending.record, stage, default_prevented: pending.event.defaultPrevented,
+        target_connected: pending.target?.isConnected === true });
+    };
+    for (const eventType of ['pointerdown', 'pointerup', 'pointercancel', 'click']) window.addEventListener(eventType, event => {
       const target = event.composedPath()[0];
       const control = target?.closest?.('a,button,input,select,textarea');
       const link = target?.closest?.('a[href]');
@@ -384,8 +400,11 @@ async function observeBrowser(context, { evidenceDir }) {
       for (let node = target; node?.parentElement && indices.length < 16; node = node.parentElement) {
         indices.push(Array.prototype.indexOf.call(node.parentElement.children, node));
       }
-      const sequence = ++clickSequence;
-      const record = { kind: 'click_observed', sequence,
+      const sequence = ++inputSequence;
+      const record = { kind: eventType === 'click' ? 'click_observed' : 'pointer_observed', sequence,
+        event_type: eventType, pointer_id: event.pointerId, pointer_type: event.pointerType,
+        target_node: nodeId(target), hit_node: nodeId(document.elementFromPoint(event.clientX, event.clientY)),
+        target_connected: target?.isConnected === true,
         target_tag: target?.localName, control_tag: control?.localName,
         target_indices: indices, link_path: link ? sanitize(link.href) : null,
         default_prevented: event.defaultPrevented, is_trusted: event.isTrusted,
@@ -393,11 +412,11 @@ async function observeBrowser(context, { evidenceDir }) {
       emit({ ...record, stage: 'capture' });
       // A microtask can run between native event listeners. Sample after the
       // dispatch task, or at unload, so later preventDefault is not missed.
-      const timer = setTimeout(() => finishClick(sequence, 'after_dispatch'), 0);
-      pendingClicks.set(sequence, { event, record, timer });
+      const timer = setTimeout(() => finishInput(sequence, 'after_dispatch'), 0);
+      pendingInputs.set(sequence, { event, target, record, timer });
     }, { capture: true, passive: true });
     for (const stage of ['beforeunload', 'pagehide']) window.addEventListener(stage, () => {
-      for (const sequence of pendingClicks.keys()) finishClick(sequence, stage);
+      for (const sequence of pendingInputs.keys()) finishInput(sequence, stage);
     }, { capture: true, passive: true });
     // PDF.js cancels its full-body reader when it selects byte ranges. Observe
     // that actual call, not a nearby navigation or a subsequent successful PDF.
