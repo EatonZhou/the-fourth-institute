@@ -14,6 +14,58 @@ function pageFunction(name, nextName) {
   return source.slice(start, end);
 }
 
+function requestDetailsRecovery() {
+  function slice(start, end) {
+    const at = source.indexOf(start);
+    const to = source.indexOf(end, at);
+    assert.ok(at >= 0 && to > at);
+    return source.slice(at, to);
+  }
+  let saved;
+  const functions = slice('      function whichResidentDetailsKey(', '      async function openWhichResidentFork(')
+    + slice('      function persistWhichResidentState(', '      const lineageLayoutStore =');
+  function session() {
+    const context = vm.createContext({
+      state: { whichResident: {} }, boundRecommendationCards: new WeakSet(),
+      compactWhichResidentResult: result => result || null,
+      writeLineageUiState: patch => { saved = JSON.parse(JSON.stringify(patch.whichResident)); },
+      writeLineageUiStateSoon() { throw new Error('toggle persistence must finish before refresh'); },
+      window: { setTimeout() {} },
+    });
+    vm.runInContext(functions, context);
+    return context;
+  }
+  function details(context) {
+    const listeners = {};
+    const element = { open: false, isConnected: true, addEventListener: (name, fn) => { listeners[name] = fn; } };
+    const card = { querySelector: selector => selector === '.whichResidentRequestDetails' ? element : null };
+    const root = { querySelector: selector => selector === '.whichResidentPanel' ? card : null, querySelectorAll: () => [] };
+    context.bindWhichResidentControls(root);
+    return { element, toggle(open) { element.open = open; listeners.toggle(); } };
+  }
+  const first = session();
+  first.state.whichResident = { requestId: 'request-original', residentId: 'resident-original', messageId: 'input-original', inputStatus: 'running', busy: true };
+  const original = details(first);
+  original.toggle(true);
+  assert.equal(saved.details_open, true);
+  const refreshed = session();
+  refreshed.restoreWhichResidentState(saved);
+  const restored = details(refreshed);
+  assert.equal(restored.element.open, true, 'reload restores expansion for the same accepted request');
+  restored.toggle(false);
+  const closedRefresh = session();
+  closedRefresh.restoreWhichResidentState(saved);
+  assert.equal(details(closedRefresh).element.open, false, 'explicit collapse also survives refresh');
+  refreshed.state.whichResident.requestId = 'request-new';
+  assert.equal(details(refreshed).element.open, false, 'a new request does not inherit the old expansion');
+  restored.toggle(true);
+  assert.equal(refreshed.state.whichResident.detailsOpen, false, 'late toggle from old request cannot change new request');
+  const legacy = session();
+  legacy.restoreWhichResidentState({ version: 8, request_id: 'request-old' });
+  assert.equal(details(legacy).element.open, false, 'old saved state remains compatible');
+  console.log('PASS request-scoped detail expansion, collapse, reload and stale toggle');
+}
+
 async function main() {
   const failure = {
     status: 'failed', request_id: 'recommendation-too-large',
@@ -61,6 +113,7 @@ async function main() {
     assert.equal(watches, 0, 'restoring a terminal failure never starts polling');
   }
   assert.equal(stopped, 2, 'restoring a failure stops any old observation');
+  requestDetailsRecovery();
   console.log('PASS recommendation terminal failure and refresh recovery');
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

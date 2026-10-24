@@ -2156,20 +2156,24 @@
       }
 
       const boundRecommendationCards = new WeakSet();
-      const recommendationDetailsState = new WeakMap();
+      function whichResidentDetailsKey(finder = state.whichResident) {
+        return finder.requestId ? `request:${finder.requestId}`
+          : finder.residentId && finder.messageId ? `message:${finder.residentId}:${finder.messageId}` : "";
+      }
       function bindWhichResidentControls(root) {
         const card = root.querySelector(".whichResidentPanel");
         if (!card || boundRecommendationCards.has(card)) return;
         boundRecommendationCards.add(card);
         const details = card.querySelector('.whichResidentRequestDetails');
         if (details) {
-          const requestSeq = state.whichResident.requestSeq || 0;
-          const saved = recommendationDetailsState.get(root);
-          if (saved?.requestSeq === requestSeq) details.open = saved.open;
-          recommendationDetailsState.set(root, { requestSeq, open: details.open });
+          const requestKey = whichResidentDetailsKey();
+          details.open = !!requestKey && state.whichResident.detailsRequestKey === requestKey
+            && state.whichResident.detailsOpen === true;
           details.addEventListener('toggle', () => {
-            if (details.isConnected) {
-              recommendationDetailsState.set(root, { requestSeq, open: details.open });
+            if (details.isConnected && requestKey && whichResidentDetailsKey() === requestKey) {
+              state.whichResident.detailsRequestKey = requestKey;
+              state.whichResident.detailsOpen = details.open;
+              persistWhichResidentState({ immediate: true });
             }
           });
         }
@@ -4285,13 +4289,15 @@
       function persistWhichResidentState({ immediate = false } = {}) {
         const finder = state.whichResident || {};
         const payload = {
-          version: 8,
+          version: 9,
           query: String(finder.query || "").slice(0, 4000),
           submitted_query: String(finder.submittedQuery || "").slice(0, 4000),
           result: compactWhichResidentResult(finder.result),
           request_id: String(finder.requestId || ""),
           resident_id: String(finder.residentId || ""),
           message_id: String(finder.messageId || ""),
+          details_request_key: String(finder.detailsRequestKey || ""),
+          details_open: finder.detailsOpen === true,
           input_status: String(finder.inputStatus || ""),
           retry_count: Number(finder.retryCount || 0),
           error: String(finder.error || "").slice(0, 2000),
@@ -4323,6 +4329,8 @@
           error: String(restored.error || "").slice(0, 2000),
           residentId: String(restored.resident_id || ""),
           messageId: String(restored.message_id || ""),
+          detailsRequestKey: String(restored.details_request_key || ""),
+          detailsOpen: restored.details_open === true,
           inputStatus: restoredStatus,
           retryCount: Number(restored.retry_count || 0),
           resultLoading: false,
