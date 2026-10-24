@@ -49,6 +49,7 @@ LINEAGE_WORKBENCH_RELEASE_UNIT = (
     'management_portal/static/hatg_graph_model.js',
     'management_portal/static/hatg_lineage_state.js',
     'management_portal/static/hatg_family_blocks.js',
+    'management_portal/static/hatg_node_status.js',
     'management_portal/static/hatg_function_block_menu.js',
     'management_portal/static/hatg_program_inspector.js',
     'management_portal/static/hatg_relations.js',

@@ -6,8 +6,7 @@ const repo = path.resolve(__dirname, '../../..'), root = path.join(repo, 'manage
 const {chromium} = require(path.join(repo, 'management_portal/test_framework/tau_runtime/node_modules/playwright'));
 const {babelParse, traverse} = require('./babel_parse.cjs');
 const source = fs.readFileSync(path.join(root, 'hatg_panel.js'), 'utf8');
-const names = new Set(['nodeExecutionGate', 'nodeIntakeState', 'nodeWorkPresentation',
-  'graphNodeContent', 'runtimeStatusFromResidentProjection',
+const names = new Set(['graphNodeContent', 'runtimeStatusFromResidentProjection',
   'applyResidentStateProjections', 'applyResidentStateCollection', 'renderGraphRuntimePresentation']);
 const extracted = [];
 traverse(babelParse(source, 'hatg_panel.js'), {FunctionDeclaration(p) {
@@ -26,7 +25,7 @@ const report = {checks:[], errors:[], ok:false};
     });
     await page.goto('https://hatg-state.fixture.invalid');
     for (const name of ['portal_design_system','portal_themes','hatg_panel']) await page.addStyleTag({url:'/static/'+name+'.css'});
-    for (const name of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min','resident_protocol','lineage_graph','hatg_graph_model']) await page.addScriptTag({url:'/static/'+name+'.js'});
+    for (const name of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min','resident_protocol','lineage_graph','hatg_graph_model','hatg_node_status']) await page.addScriptTag({url:'/static/'+name+'.js'});
     await page.evaluate(code => {
       PortalI18n.apply('zh-CN');
       const member='resident_fixture', facade='resident_facade';
@@ -36,9 +35,14 @@ const report = {checks:[], errors:[], ok:false};
       window.PortalResidentService={loadStates:async ids=>{f.calls.push({name:'ListResidentStates',ids});return {states:ids.map(resident_id=>({resident_id,cursor:f.cursor,state:f.work,viewer_state:{unread:false}}))}},loadEvents:async()=>({events:[]})};
       window.state={lineage:{lineage_id:'lineage_fixture',nodes:[{id:member,title:'rviz审查',kind:'agent',x:25,y:30},{id:facade,title:'Family',kind:'agent',x:60,y:30}]},residentRuntimeById:new Map(),runtimeStatus:new Map()};
       window.esc=PortalUIPrimitives.escapeHtml;
-      // A node's Resident, run status and kind are the production lookups.
+      // A node's Resident, run status and kind are the production lookups, and
+      // its work phase and intake the production card status; a dependency
+      // these cases do not give fails when it is used.
+      const create=(module,factory,given)=>module[factory](Object.fromEntries(module.dependencies.map(name=>[name,Object.hasOwn(given,name)?given[name]:()=>{throw new Error('Unexpected use of '+name)}])));
       const model=PortalHatgGraphModel.createGraphModel({esc,state});
       for (const name of ['nodeResidentId','effectiveNodeStatus','setNodeRuntimeStatus','isFunctionBlockInstance','isProgramComponent','nodeIsDerived']) window[name]=model[name];
+      const status=create(PortalHatgNodeStatus,'createNodeStatus',{state,esc,nodeResidentId,effectiveNodeStatus});
+      for (const name of ['nodeExecutionGate','nodeIntakeState','nodeWorkPresentation']) window[name]=status[name];
       window.familyMemberTag=()=>'';
       window.familyForFacade=id=>id===facade?{roles:{members:[member]}}:null;window.familyExpanded=()=>false;
       window.compactText=s=>s;window.nodeMessageCountText=()=> '1 messages';window.nodeContextHeatBadge=()=>'';
