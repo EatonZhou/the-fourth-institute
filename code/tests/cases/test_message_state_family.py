@@ -28,6 +28,11 @@ def test_interleaved_append_preserves_independent_groups():
     _run("interleaved-append")
 
 
+def test_live_family_member_roster_updates_with_header():
+    """Family 成员增删时，空对话名册与人数由同一实时快照更新，无需刷新"""
+    _run("live-roster")
+
+
 def test_status_and_completion_preserve_collapsed_work():
     """Family 请求状态更新或完成时，已折叠的请求组保持折叠
 

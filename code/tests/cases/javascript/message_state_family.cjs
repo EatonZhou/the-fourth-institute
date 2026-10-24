@@ -121,6 +121,36 @@ function mount(routeScript, messages, { older = [], family = true, transform = (
 }
 
 const checks = {
+  async 'live-roster'(routeScript) {
+    const app = mount(routeScript, []);
+    try {
+      const metadata = { chat_workspace: { rendering: { assistant_name: 'Old family', empty_text: 'Stale member roster', user_name: 'Viewer' },
+        header: { subtitle_parts: [{ identity: 'family', text: 'Family facade' }] } } };
+      const snapshot = { messages: [], family_facade: { title: 'Current family', members: [{ resident_id: MEMBER, title: 'First member' }] } };
+      function draw() {
+        const contract = app.window.PortalChatWorkspace.projectResidentConversation(metadata, snapshot).chat_workspace;
+        app.workspace.setMessages(contract.messages, { emptyText: contract.rendering.empty_text });
+        assert.equal(contract.rendering.user_name, 'Viewer', 'other rendering options survive');
+        return contract;
+      }
+      draw();
+      assert.match(app.root.textContent, /First member/);
+      snapshot.family_facade.members.push({ resident_id: NESTED_FACADE, title: 'Second <img> member' });
+      const added = draw();
+      assert.match(added.header.subtitle_parts[0].text, /2/);
+      assert.match(app.root.textContent, /First member、Second <img> member/);
+      assert.equal(app.root.querySelector('img'), null, 'titles remain text, not executable markup');
+      snapshot.family_facade.members.shift();
+      draw();
+      assert.doesNotMatch(app.root.textContent, /First member|Stale member roster/);
+      snapshot.family_facade.members.length = 0;
+      draw();
+      assert.doesNotMatch(app.root.textContent, /Second|成员：/);
+      assert.match(app.root.textContent, /Current family/);
+      const ordinary = app.window.PortalChatWorkspace.projectResidentConversation(metadata, { messages: [] }).chat_workspace;
+      assert.equal(ordinary.rendering.empty_text, 'Stale member roster', 'ordinary chats keep their own introduction');
+    } finally { await app.close(); }
+  },
   async 'interleaved-append'(routeScript, options = {}) {
     const app = mount(routeScript, [request(REQUEST_A), reply('a1', REQUEST_A), request(REQUEST_B), reply('b1', REQUEST_B)], options);
     try {

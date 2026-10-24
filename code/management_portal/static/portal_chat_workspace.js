@@ -10152,6 +10152,13 @@
       ? {
         ...base.chat_workspace,
         messages,
+        ...(facade && familyMembers ? { rendering: {
+          ...(base.chat_workspace.rendering || {}),
+          assistant_name: snapshot.family_facade.title || base.chat_workspace.rendering?.assistant_name || "Family",
+          empty_text: window.PortalI18n.text`这是 Family「${snapshot.family_facade.title || base.chat_workspace.rendering?.assistant_name || "Family"}」的门面。发到这里的消息由 Family Router 交给最合适的成员处理，`
+            + window.PortalI18n.t("成员的回复显示在这里。还没有经过门面的对话；直接发给成员的对话在各成员自己的对话里。")
+            + (familyMembers.length ? window.PortalI18n.text`成员：${familyMembers.map(member => member.title || member.resident_id || "").join("、")}。` : ""),
+        } } : {}),
         ...(facade && (familyMembers || state.family_activity || familyIssueLabel) ? { header: {
           ...(base.chat_workspace.header || {}),
           subtitle_parts: (base.chat_workspace.header?.subtitle_parts || []).map(part => {
