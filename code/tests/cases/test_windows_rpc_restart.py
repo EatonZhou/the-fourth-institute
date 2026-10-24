@@ -38,12 +38,14 @@ def test_windows_execution_waits_for_restart_and_sends_once(
     old = LocalListener(path, transport="tcp") if stale else None
     if old is not None:
         old.socket.close()  # Simulate a dead process leaving a descriptor.
-    # A refused TCP connection can consume its configured connect timeout on
-    # Windows. Bound that separately from the mutating-request restart wait.
-    client = ExecutionServiceClient(path, timeout=.25, restart_wait=3)
+    # Windows may take seconds to report a refused TCP connection. Keep the
+    # bounded health probe separate: its short budget must not turn the restart
+    # request's refusal into a connection timeout (which is not retried).
+    probe = ExecutionServiceClient(path, timeout=.25, restart_wait=5)
+    client = ExecutionServiceClient(path, timeout=5, restart_wait=5)
     before = time.monotonic()
     with pytest.raises(ExecutionServiceUnavailable):
-        client.health()
+        probe.health()
     assert time.monotonic() - before < 1
 
     received, errors = [], []
@@ -54,7 +56,7 @@ def test_windows_execution_waits_for_restart_and_sends_once(
                 if old is not None:
                     old.close()  # Retiring generation cannot delete the new descriptor.
                 assert rendezvous_path(path).is_file()
-                listener.settimeout(3)
+                listener.settimeout(7)
                 connection, _ = listener.accept()
                 with connection, connection.makefile("rb") as stream:
                     payload = json.loads(stream.readline())
@@ -70,7 +72,7 @@ def test_windows_execution_waits_for_restart_and_sends_once(
     try:
         assert client.request("accounts.usage", {}) == {"answered": True}
     finally:
-        thread.join(5)
+        thread.join(9)
         if old is not None:
             old.close()
     assert not thread.is_alive()

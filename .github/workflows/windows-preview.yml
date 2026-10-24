@@ -95,6 +95,14 @@ jobs:
           $result = $LASTEXITCODE
           Get-Content ../.build/windows-native/unit.log -Encoding utf8
           exit $result
+      - name: Archive native unit diagnostics before installer checks
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: windows-unit-evidence
+          path: .build/windows-native/unit.log
+          if-no-files-found: ignore
+          retention-days: 1
       - name: Install EXE, register, open AMA and restart with blocked download proxies
         if: ${{ !cancelled() }}
         run: |
