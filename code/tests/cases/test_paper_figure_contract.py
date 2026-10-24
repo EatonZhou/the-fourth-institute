@@ -68,6 +68,37 @@ def test_heading_chart_keeps_unprefixed_footer_source_pixels(tmp_path, monkeypat
 
 
 @pytest.mark.parametrize('scale', [1, 2])
+@pytest.mark.parametrize('note_gap', [31, 90])
+def test_heading_chart_groups_aligned_footer_sentences_across_label_whitespace(scale, note_gap):
+    """图下留白较大时保留紧凑对齐的双行说明，仍排除远处正文。"""
+    page = Image.new('RGB', (600 * scale, 800 * scale), 'white')
+    draw = ImageDraw.Draw(page)
+    draw.rectangle(tuple(v * scale for v in (100, 200, 450, 400)), fill='teal')
+    note_top = 424 + note_gap
+    lines = [
+        {'text': 'Figure 1. Invented scores', 'x_min': 60, 'x_max': 480, 'y_min': 165, 'y_max': 180},
+        {'text': 'Method A / Method B', 'x_min': 100, 'x_max': 450, 'y_min': 412, 'y_max': 424},
+        {'text': 'Difference = 6 markers; relative increase = 50%.',
+         'x_min': 90, 'x_max': 410, 'y_min': note_top, 'y_max': note_top + 8},
+        {'text': 'Numbers are not empirical performance claims.',
+         'x_min': 90, 'x_max': 395, 'y_min': note_top + 18, 'y_max': note_top + 26},
+        {'text': 'Acceptance: preserve all titles, labels, axes and explanations.',
+         'x_min': 60, 'x_max': 550, 'y_min': note_top + 68, 'y_max': note_top + 80},
+    ]
+    colors = ['black', 'blue', 'green', 'red', 'magenta']
+    for line, color in zip(lines, colors):
+        draw.rectangle(tuple(line[k] * scale for k in ('x_min', 'y_min', 'x_max', 'y_max')), fill=color)
+    caption = {**lines[0], 'caption': lines[0]['text'], 'number': '1',
+               'page_width': 600, 'page_height': 800, 'page_lines': lines}
+    result = paper_backend._crop_figure_above_caption(page, caption)
+    assert result is not None
+    for color in ((0, 128, 0), (255, 0, 0)):
+        expected = list(page.getdata()).count(color) if note_gap == 31 else 0
+        assert list(result.getdata()).count(color) == expected
+    assert (255, 0, 255) not in result.getdata()
+
+
+@pytest.mark.parametrize('scale', [1, 2])
 def test_heading_chart_keeps_title_and_explicit_footer_without_body(scale):
     """标题在上方的图表裁剪保留标题、图例和图注，排除其后的正文"""
     page = Image.new('RGB', (600 * scale, 800 * scale), 'white')

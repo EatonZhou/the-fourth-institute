@@ -7103,7 +7103,9 @@ def _crop_figure_below_heading(page_image: Image.Image, caption: dict[str, Any])
     # full-width body prose and separated sections must not extend the crop.
     note_left = None
     note_continues = False
-    for line in sorted(lines, key=lambda item: float(item.get("y_min") or 0)):
+    footer_lines = sorted(lines, key=lambda item: float(item.get("y_min") or 0))
+    uninterrupted = True
+    for index, line in enumerate(footer_lines):
         text = str(line.get("text") or "").strip()
         x0, y0, x1, y1 = (float(line.get(key) or 0) for key in ("x_min", "y_min", "x_max", "y_max"))
         if y0 < included_bounds[3] or y1 > bottom / scale_y:
@@ -7120,10 +7122,34 @@ def _crop_figure_below_heading(page_image: Image.Image, caption: dict[str, Any])
         )
         if not (explicit_note or continuation or compact_note):
             note_continues = False
+            if text:
+                uninterrupted = False
             continue
         gap_limit = max(24.0, 2 * min(height, label_height)) if explicit_note or compact_note else 1.5 * height
+        if compact_note and uninterrupted and note_left is None and index + 1 < len(footer_lines):
+            following_line = footer_lines[index + 1]
+            following_text = str(following_line.get("text") or "").strip()
+            nx0, ny0, nx1, ny1 = (float(following_line.get(key) or 0)
+                                  for key in ("x_min", "y_min", "x_max", "y_max"))
+            # A pair of compact sentences aligned with the plot provides more
+            # evidence than a lone sentence separated from its axis labels.
+            # Bound the extra whitespace by the plot size, and never cross a
+            # section heading or absorb full-width body text.
+            aligned_pair = (
+                len(following_text) >= 20 and re.search(r"[.!?。！？]$", following_text)
+                and not _caption_number_from_text(following_text)
+                and abs(nx0 - x0) <= height
+                and x0 >= graphic_bounds[0] - inset_tolerance
+                and nx1 <= graphic_bounds[2] + inset_tolerance
+                and 0 <= ny0 - y1 <= max(12.0, 1.5 * height)
+                and 0 < ny1 - ny0 <= 1.5 * height
+                and ny1 <= bottom / scale_y
+            )
+            if aligned_pair:
+                gap_limit = max(gap_limit, min(48.0, 0.2 * (graphic_bounds[3] - graphic_bounds[1])))
         if y0 - included_bounds[3] > gap_limit or x1 < graphic_bounds[0] or x0 > graphic_bounds[2]:
             note_continues = False
+            uninterrupted = False
             continue
         included_bounds[0] = min(included_bounds[0], x0)
         included_bounds[2] = max(included_bounds[2], x1)
