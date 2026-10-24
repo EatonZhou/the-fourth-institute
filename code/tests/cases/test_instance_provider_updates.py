@@ -22,6 +22,12 @@ class InstanceProviderUpdateTests(unittest.TestCase):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name)
+        # These cases also run directly without pytest's site-isolation fixture.
+        # Keep the real activation owner inside this case even if its lookup
+        # changes; mocking only link() previously replaced a live SDK symlink.
+        runtimes = patch.object(updates, "RUNTIMES", self.root / "runtimes")
+        runtimes.start()
+        self.addCleanup(runtimes.stop)
         self.context = {"root": self.root / "instance", "directory": self.root,
                         "service_prefix": "tfi-one"}
         self.context_patch = patch.object(units, "_isolated_provider_context", return_value=self.context)
@@ -62,15 +68,20 @@ class InstanceProviderUpdateTests(unittest.TestCase):
                 new = self.root / (provider + "-new")
                 old.mkdir()
                 new.mkdir()
-                link = self.root / (provider + "-current")
+                link = runtime.activation_link()
+                link.parent.mkdir(parents=True, exist_ok=True)
                 link.symlink_to(old)
                 with patch.object(updates, "_active_executions", return_value=0), \
-                        patch.object(runtime, "busy", return_value=False), \
-                        patch.object(runtime, "activation_link" if provider == "claude" else "link",
-                                     return_value=link):
+                        patch.object(runtime, "busy", return_value=False):
                     self.assertTrue(updates._activate(provider, runtime, new))
                 self.assertIn(["systemctl", "--user", "restart", name], self.commands)
                 self.assertEqual(link.resolve(), new)
+
+    def test_default_activation_links_stay_in_fixture(self):
+        """Direct execution must not inherit the running site's runtime links."""
+        for runtime in (updates.ClaudeRuntime(), updates.KimiRuntime()):
+            with self.subTest(provider=type(runtime).__name__):
+                self.assertTrue(runtime.activation_link().is_relative_to(self.root))
 
     def test_codex_activation_replaces_private_link_without_changing_shared_binary(self):
         """安装与实例回归：codex activation replaces private link without changing shared binary。"""
