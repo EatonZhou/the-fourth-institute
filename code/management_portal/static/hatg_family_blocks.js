@@ -397,7 +397,10 @@
     function familySpotlight() {
       if (state.graphViewMode !== "context" || state.graphFocusMode) return null;
       const family = familyForFacade(graphSelectedId());
-      return family && familyExpanded(family.roles) ? family : null;
+      if (!family || !familyExpanded(family.roles)) return null;
+      // A newly folded parent may hide the selected inner facade. Its saved
+      // selection must not fade the visible parent or the rest of the canvas.
+      return foldedFamilyObjects().residents.has(family.roles.facade) ? null : family;
     }
 
     // A Resident made where an expanded Family is shown joins that Family: on one
