@@ -565,9 +565,18 @@
         const node = state.lineage.nodes.find(item => item.id === createdResidentId);
         if (!node) throw new Error(`${actionLabel}的响应缺少新节点`);
         if (options.closeModalOnSuccess) closeModal("branchModal");
-        // A successful Fork opens the child through the same navigation as a
-        // card click. Creating a blank canvas node only selects its card.
-        selectNode(node.id, { force: true, notifyParent: !fresh }).catch(() => {});
+        // Server placement can be outside a narrow canvas. Reveal the new card
+        // before completing this action; Fork also awaits its Chat navigation.
+        // A blank session keeps the current Chat, as ordinary node creation does.
+        try {
+          await selectNode(node.id, {
+            force: true, notifyParent: !fresh, revealInGraph: true, duration: 0,
+          });
+        } catch (error) {
+          setSyncStatus(`${actionLabel}已完成，页面定位失败`, "error");
+          toast(window.PortalI18n.text`${actionLabel}已完成，请刷新查看，勿重复提交：${error.message || error}`, "warning", 9000);
+          return node;
+        }
         const currentRevision = Number(state.lineage.revision || 0);
         const completedLabel = fresh ? window.PortalI18n.t("空白会话已创建") : window.PortalI18n.t("分支已创建");
         setSyncStatus(currentRevision ? `${completedLabel} · revision ${currentRevision}` : completedLabel, "saved");
