@@ -97,15 +97,19 @@
 .hatgTitleBlock .portalResourceIdentitySeparator,
 .hatgTitleBlock .portalResourceIdentityType { display: none; }
 
+.hatgTitleRow > #activeLineageIdentity {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
 .hatgTitleRow h1 {
   min-width: 0;
   margin: 2px 0 0;
-  overflow: hidden;
+  overflow-wrap: anywhere;
   color: var(--text);
   font-size: 15px;
   line-height: 1.25;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .lineageSettingsBtn {
