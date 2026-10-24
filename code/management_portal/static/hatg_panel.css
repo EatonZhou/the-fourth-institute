@@ -4524,6 +4524,12 @@ body:has(.hatgPrimitiveCard.dragging) .programInspectorPanel {
   white-space: nowrap;
 }
 
+.programInspectorForm .programEffectHelp {
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
 .programInspectorForm textarea.programEffectScript {
   min-height: 150px;
   font-family: var(--mono);

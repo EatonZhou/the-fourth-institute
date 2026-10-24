@@ -107,16 +107,16 @@
 
   // options.effectId: a live Effect, whose recipients the inspector saves on their own.
   function effectFieldsHtml(config = {}, readonly = false, options = {}) {
-    return i18n().html`<p class="programInspectorNote">Effect 被 Event 或 Packet 触发时运行下面的脚本：每行调用一条 HATG ISA 指令，可以用 if、for 把多次调用串联起来。</p>
+    return i18n().html`<p class="programInspectorNote programEffectHelp">Effect 被 Event 或 Packet 触发时运行下面的脚本：每行调用一条 HATG ISA 指令，可以用 if、for 把多次调用串联起来。</p>
       <div class="programEffectScriptInsert">
         <label><span>插入指令</span><select data-effect-instruction${readonly ? " disabled" : ""}>${instructionOptionsHtml("")}</select></label>
-        <button type="button" data-effect-insert${readonly ? " disabled" : ""}>插入调用行</button>
+        <button type="button" class="portalButton is-compact" data-effect-insert${readonly ? " disabled" : ""}>插入调用行</button>
       </div>
-      <div class="programInspectorNote" data-effect-instruction-schema></div>
+      <div class="programInspectorNote programEffectHelp" data-effect-instruction-schema></div>
       <label><span>脚本</span><textarea name="script" rows="12" spellcheck="false" class="programEffectScript" data-effect-script${readonly ? " disabled" : ""}>${esc(config.script || "")}</textarea>
-        <small>每行写成 指令名 参数="文字" 或 参数:=JSON；用 变量=$(指令名 …) 保存结果，用 \${变量.字段} 读取。可读取 \${arguments.名称}、\${event.payload.字段}、\${packet.message.data.字段}、\${endpoint.端点名}。用 if [ … ]; then … fi 与 for x in …; do … done 串联，output 名称=值 设置输出，fail "原因" 以失败结束。</small></label>
+        <small class="programEffectHelp">每行写成 指令名 参数="文字" 或 参数:=JSON；用 变量=$(指令名 …) 保存结果，用 \${变量.字段} 读取。可读取 \${arguments.名称}、\${event.payload.字段}、\${packet.message.data.字段}、\${endpoint.端点名}。用 if [ … ]; then … fi 与 for x in …; do … done 串联，output 名称=值 设置输出，fail "原因" 以失败结束。</small></label>
       <label><span>具名端点</span><input name="endpoints" maxlength="400" value="${esc((config.endpoints || []).join(", "))}"${readonly ? " disabled" : ""}>
-        <small>用逗号分隔；每个端点在卡片上显示为一个 Target 出口，连到调用对象，脚本用 \${endpoint.端点名} 读取它的 ID。</small></label>
+        <small class="programEffectHelp">用逗号分隔；每个端点在卡片上显示为一个 Target 出口，连到调用对象，脚本用 \${endpoint.端点名} 读取它的 ID。</small></label>
       ${effectRecipientsHtml(config, { readonly, effectId: options.effectId || "" })}`;
   }
 
