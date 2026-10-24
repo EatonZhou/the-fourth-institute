@@ -25,7 +25,8 @@ const bootstrap = `
   const {lineageEditQueue, activateLineageEdits, saveLineageLayout, flushLineageLayoutSave, commitLineage} =
     window.PortalHatgLineageState.createLineageState({
       state, programFeature, toast, setSyncStatus, renderProgramInspector, renderLineageSurface, societyService,
-      nodeResidentId, clone: value => JSON.parse(JSON.stringify(value)), activeSeeds: () => [],
+      nodeResidentId: window.PortalHatgGraphModel.nodeResidentId,
+      clone: value => JSON.parse(JSON.stringify(value)), activeSeeds: () => [],
       reconcileGraphInteractionState: () => {}, bindResidentStateCollection: () => {},
       renderGraphRuntimePresentation: () => {}, renderControls: () => {}, updateLineageSummary: () => {},
       currentTemplateController: () => ({render() {}}),
@@ -66,7 +67,7 @@ async function nodeProbe() {
     }
     return {lineage: {...fixture.state.lineage, revision: fixture.state.lineage.revision + 1}};
   };
-  for (const name of ["hatg_lineage_state.js", "hatg_layout.js"]) {
+  for (const name of ["hatg_graph_model.js", "hatg_lineage_state.js", "hatg_layout.js"]) {
     new Function("window", fs.readFileSync(input.root + "/management_portal/static/" + name, "utf8"))(window);
   }
   fixture = new Function("initial", "apiPost", "hooks", input.functions + bootstrap)(initial, post, hooks);
@@ -153,7 +154,8 @@ async function ownerProbe() {
     url: 'https://lineage.fixture.invalid', runScripts: 'outside-only',
   });
   global.window = dom.window;
-  for (const name of ['portal_text.js', 'portal_state.js', 'lineage_program.js', 'hatg_lineage_state.js', 'hatg_layout.js']) {
+  for (const name of ['portal_text.js', 'portal_state.js', 'lineage_program.js', 'hatg_graph_model.js',
+    'hatg_lineage_state.js', 'hatg_layout.js']) {
     window.eval(fs.readFileSync(input.root + '/management_portal/static/' + name, 'utf8'));
   }
   window.PortalAPI = {get: async () => JSON.parse(fs.readFileSync(

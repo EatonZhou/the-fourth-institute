@@ -3433,6 +3433,7 @@ def _portal_route_definitions() -> tuple[RouteDefinition, ...]:
             RouteDefinition("GET", path, _PUBLIC_PAGES_HTTP.static, "portal-public-get", phase="public")
             for path in (
                 '/static/hatg_mailbox_panel.js',
+                '/static/hatg_graph_model.js',
                 '/static/hatg_lineage_state.js',
                 '/static/hatg_family_blocks.js',
                 '/static/hatg_function_block_menu.js',
