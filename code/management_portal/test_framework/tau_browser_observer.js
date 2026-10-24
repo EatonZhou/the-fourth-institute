@@ -189,7 +189,9 @@ async function observeBrowser(context, { evidenceDir }) {
     const streamId = /^[a-z0-9-]{1,96}$/.test(streamValue || '') ? streamValue : null;
     const pdfRequest = request.method() === 'GET'
       && /^\/api\/articles\/[^/]+\/pdf$/.test(new URL(request.url()).pathname);
-    const transportValue = (safePath(request.url()) === '/api/instructions/execute' && request.method() === 'POST') || pdfRequest
+    const conversationRequest = request.method() === 'GET'
+      && new URL(request.url()).pathname === '/api/agent-conversations';
+    const transportValue = (safePath(request.url()) === '/api/instructions/execute' && request.method() === 'POST') || pdfRequest || conversationRequest
       ? request.headers()['x-portal-request-id'] : null;
     const transportId = /^[a-z0-9-]{1,96}$/.test(transportValue || '') ? transportValue : null;
     const transportKey = streamId ? `stream:${streamId}` : (transportId ? `request:${transportId}` : null);
@@ -267,7 +269,7 @@ async function observeBrowser(context, { evidenceDir }) {
         state.document.confirmed = true;
       }
       write({ kind: data.kind, ...location(state), browser_observed_at_ms: Number.isFinite(data.at) ? data.at : null, time_origin_ms: Number.isFinite(data.time_origin) ? data.time_origin : null });
-    } else if (['beforeunload', 'pagehide', 'focus', 'blur', 'visibilitychange', 'click_observed', 'pointer_observed', 'document_error', 'portal_connections', 'portal_stream_ready', 'portal_state_read', 'pdf_reader_cancelled', 'resource_timing', 'resource_timing_buffer_full', 'observer_unavailable'].includes(data.kind)) {
+    } else if (['beforeunload', 'pagehide', 'focus', 'blur', 'visibilitychange', 'click_observed', 'pointer_observed', 'document_error', 'portal_connections', 'portal_stream_ready', 'portal_state_read', 'portal_conversation_read', 'pdf_reader_cancelled', 'resource_timing', 'resource_timing_buffer_full', 'observer_unavailable'].includes(data.kind)) {
       const doc = tokens.get(data.token);
       const associated = { ...location(state), document_id: doc?.id || null, document_confirmed: !!doc };
       if (['click_observed', 'pointer_observed'].includes(data.kind)) {
@@ -337,6 +339,31 @@ async function observeBrowser(context, { evidenceDir }) {
           ready_at_ms: Number.isFinite(data.ready_at_ms) ? data.ready_at_ms : null,
           request_id: match?.id || null,
           request_association: match ? 'portal_stream_identity' : 'unavailable_no_unique_transport_identity' });
+      } else if (data.kind === 'portal_conversation_read') {
+        const reader = ['index', 'page', 'resident', 'pin'].includes(data.reader) ? data.reader : null;
+        const transportId = /^[a-z0-9-]{1,96}$/.test(data.transport_id || '') ? data.transport_id : null;
+        const candidates = (transportRequests.get(transportId ? `request:${transportId}` : null) || [])
+          .filter(request => {
+            if (!reader || request.document !== doc || request.frame !== state || request.request.method() !== 'GET') return false;
+            const url = new URL(request.request.url());
+            if (url.pathname !== '/api/agent-conversations') return false;
+            const resident = Boolean(url.searchParams.get('resident'));
+            const page = Boolean(url.searchParams.get('page_token'));
+            return reader === 'index' ? !resident && !page
+              : reader === 'page' ? page && !resident : resident && !page;
+          });
+        const match = doc && candidates.length === 1 ? candidates[0] : null;
+        const allowed = new Set('index_refresh pagination pin_menu resident_event resident_projection index_projection viewer_state chat_read cursor_reconciliation unknown'.split(' '));
+        write({ kind: 'portal_conversation_read', ...associated, transport_id: transportId,
+          consumer: 'conversation_store', reader,
+          reasons: [...new Set((Array.isArray(data.reasons) ? data.reasons : ['unknown']).slice(0, 32)
+            .map(reason => allowed.has(reason) ? reason : 'unknown'))],
+          outcome: ['returned', 'failed'].includes(data.outcome) ? data.outcome : 'unknown',
+          payload_error: data.payload_error === true,
+          error_status: Number.isInteger(data.error_status) && data.error_status >= 100 && data.error_status <= 599 ? data.error_status : null,
+          browser_observed_at_ms: Number.isFinite(data.at) ? data.at : null,
+          request_id: match?.id || null,
+          request_association: match ? 'portal_request_identity' : 'unavailable_no_unique_transport_identity' });
       } else if (data.kind === 'portal_state_read') {
         const instruction = data.instruction == null ? 'ListResidentStates'
           : ['ListResidentStates', 'ListMailboxTodos'].includes(data.instruction) ? data.instruction : null;
@@ -507,6 +534,21 @@ async function observeBrowser(context, { evidenceDir }) {
     // the actual close receipt synchronously when the owner emits it instead.
     window.addEventListener('portal:connection-closed', event => {
       if (event.detail && typeof event.detail === 'object') connections([event.detail]);
+    });
+    const conversationReadReasons = new Set('index_refresh pagination pin_menu resident_event resident_projection index_projection viewer_state chat_read cursor_reconciliation unknown'.split(' '));
+    window.addEventListener('portal:conversation-read', event => {
+      const item = event.detail;
+      if (!item || typeof item !== 'object') return;
+      emit({ kind: 'portal_conversation_read',
+        transport_id: /^[a-z0-9-]{1,96}$/.test(item.transport_id || '') ? item.transport_id : null,
+        reader: ['index', 'page', 'resident', 'pin'].includes(item.reader) ? item.reader : null,
+        reasons: [...new Set((Array.isArray(item.reasons) ? item.reasons : ['unknown']).slice(0, 32)
+          .map(reason => conversationReadReasons.has(reason) ? reason : 'unknown'))],
+        outcome: ['returned', 'failed'].includes(item.outcome) ? item.outcome : 'unknown',
+        payload_error: item.payload_error === true,
+        error_status: Number.isInteger(item.error_status) && item.error_status >= 100 && item.error_status <= 599 ? item.error_status : null,
+        at: Date.parse(item.at),
+      });
     });
     const readReasons = new Set('explicit_read subscription projection viewer-state stream_reset completion payload_omitted focus visibilitychange reconciliation_timer viewer_followup transient_retry panel_visible refresh_timer identity_changed mutation unknown'.split(' '));
     window.addEventListener('portal:state-read', event => {

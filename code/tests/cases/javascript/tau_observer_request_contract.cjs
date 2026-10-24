@@ -158,6 +158,15 @@ function documentProbe(content, receive) {
       dispatch('portal:state-read', {instruction: 'ListMailboxTodos', transport_id,
         consumer: 'mailbox_todos', reader_id: 'mailbox-todos-1', reasons: ['refresh_timer']});
     }
+    for (const [transport_id, reader] of [
+      ['conversation-request', 'resident'], ['ambiguous-conversation', 'resident'],
+      ['missing-conversation', 'resident'], ['state-request', 'resident'],
+      ['conversation-request', 'index'], ['conversation-request', 'private-reader'],
+    ]) {
+      dispatch('portal:conversation-read', { transport_id, reader,
+        reasons: ['resident_event', 'private-conversation-reason'], outcome: 'failed', error_status: 503,
+        at: '2026-10-24T00:00:00Z', error: 'private-conversation-error', payload: 'private-conversation-body' });
+    }
     performanceCallback({ getEntries: () => [
       { name: `${origin}/api/agent-workbench/residents/projection?id=private-resident&token=query-secret`, initiatorType: 'fetch' },
       { name: `${origin}/api/private-name?token=query-secret`, initiatorType: 'fetch' },
@@ -178,6 +187,9 @@ async function injectedContract(observe) {
     })),
     {url: '/api/instructions/execute', method: 'POST', headers: {'x-portal-request-id': 'todo-request'},
       body: {instruction: 'ListMailboxTodos', arguments: {user_id: 'private-todo-user'}}},
+    ...['conversation-request', 'ambiguous-conversation', 'ambiguous-conversation'].map(transportId => ({
+      url: '/api/agent-conversations?resident=private-conversation-target', headers: {'x-portal-request-id': transportId},
+    })),
   ], ({ rows, starts, output }) => {
     const ready = rows.filter(row => row.kind === 'portal_stream_ready');
     const closed = rows.filter(row => row.kind === 'portal_connection_closed');
@@ -223,8 +235,20 @@ async function injectedContract(observe) {
     assert.equal(reads[5].reader_id, 'mailbox-todos-1');
     assert.deepEqual(reads[5].reasons, ['refresh_timer']);
     assert.equal(reads[6].request_id, null, 'a Todo receipt cannot claim a Resident state request');
+    const conversations = rows.filter(row => row.kind === 'portal_conversation_read');
+    assert.equal(conversations.length, 6);
+    assert.equal(conversations[0].request_id, starts[8].request_id);
+    assert.equal(conversations[0].request_association, 'portal_request_identity');
+    assert.equal(conversations[0].reader, 'resident');
+    assert.equal(conversations[0].error_status, 503);
+    assert.deepEqual(conversations[0].reasons, ['resident_event', 'unknown']);
+    for (const row of conversations.slice(1)) {
+      assert.equal(row.request_id, null, 'missing, ambiguous, wrong endpoint/scope/reader stays unknown');
+      assert.equal(row.request_association, 'unavailable_no_unique_transport_identity');
+    }
     excludes(output, ['query-secret', 'private-name', 'private-resident', 'private-header', 'focus-private-content',
-      'private-read-reason', 'private-read-content', 'private-consumer', 'private-reader', 'private-todo-user']);
+      'private-read-reason', 'private-read-content', 'private-consumer', 'private-reader', 'private-todo-user',
+      'private-conversation-reason', 'private-conversation-error', 'private-conversation-body', 'private-conversation-target']);
   }, observe, true);
 }
 

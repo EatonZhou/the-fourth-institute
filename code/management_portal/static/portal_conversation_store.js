@@ -51,6 +51,7 @@
     residentEventCursors: new Map(),
     targetRequests: new Map(),
     targetWantedCursors: new Map(),
+    targetReadReasons: new Map(),
     targetRetryTimers: new Map(),
     targetRetryAttempts: new Map(),
     residentInvalidations: new Map(),
@@ -452,6 +453,7 @@
     state.unverifiedResidentIds.delete(exact);
     state.residentEventCursors.delete(exact);
     state.targetWantedCursors.delete(exact);
+    state.targetReadReasons.delete(exact);
     state.targetRetryAttempts.delete(exact);
     const timer = state.targetRetryTimers.get(exact);
     if (timer) window.clearTimeout(timer);
@@ -548,9 +550,42 @@
     return payload;
   }
 
+  const readClient = `mailbox-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+  let readSequence = 0;
+  function noteTargetRead(residentId, reason) {
+    const reasons = state.targetReadReasons.get(residentId) || new Set();
+    reasons.add(reason);
+    state.targetReadReasons.set(residentId, reasons);
+  }
+
+  // Content-free provenance of an actual HTTP attempt. Cache joins emit no
+  // receipt; errors keep the same identity and still propagate to their owner.
+  async function readIndexResource(url, reader, reasons) {
+    const transportId = `${readClient}-${++readSequence}`;
+    const record = (outcome, payload, error) => {
+      try {
+        window.dispatchEvent(new CustomEvent("portal:conversation-read", { detail: {
+          transport_id: transportId, reader, reasons,
+          outcome, payload_error: Boolean(payload?.error),
+          error_status: Number.isInteger(error?.status) ? error.status : null,
+          at: new Date().toISOString(),
+        } }));
+      } catch (_) { /* Observation must never change a business result. */ }
+    };
+    try {
+      const payload = await window.PortalAPI.get(url, { headers: { "X-Portal-Request-ID": transportId } });
+      record("returned", payload, null);
+      return payload;
+    } catch (error) {
+      record("failed", null, error);
+      throw error;
+    }
+  }
+
   function fetchIndex() {
-    if (!sharedFetcher) return window.PortalAPI.get(API_URL);
-    return sharedFetcher.fetch("agent-conversations:snapshot", () => window.PortalAPI.get(API_URL), {
+    const fetch = () => readIndexResource(API_URL, "index", ["index_refresh"]);
+    if (!sharedFetcher) return fetch();
+    return sharedFetcher.fetch("agent-conversations:snapshot", fetch, {
       maxAgeMs: 0,
       dedupeWindowMs: 500,
       freshAfter: Date.now(),
@@ -707,7 +742,7 @@
     const pageToken = state.nextPageToken;
     if (!pageToken) return Promise.resolve(null);
     const actorRevision = state.actorRevision;
-    const request = window.PortalAPI.get(`${API_URL}?page_token=${encodeURIComponent(pageToken)}`)
+    const request = readIndexResource(`${API_URL}?page_token=${encodeURIComponent(pageToken)}`, "page", ["pagination"])
       .then(payload => {
         if (actorRevision !== state.actorRevision || pageToken !== state.nextPageToken) return null;
         state.loadedPageTokens.add(pageToken);
@@ -817,6 +852,7 @@
     if (attempt >= TARGET_RETRY_LIMIT) {
       state.targetRetryAttempts.delete(exact);
       state.targetWantedCursors.delete(exact);
+      state.targetReadReasons.delete(exact);
       refresh({ force: true }).catch(() => {});
       return;
     }
@@ -856,8 +892,10 @@
     const actorRevision = state.actorRevision;
     const requiredCursor = Number(state.targetWantedCursors.get(exact) || 0);
     const requestInvalidation = Number(state.residentInvalidations.get(exact) || 0);
+    const reasons = [...(state.targetReadReasons.get(exact) || ["cursor_reconciliation"])];
+    state.targetReadReasons.delete(exact);
     let applied = false;
-    const promise = window.PortalAPI.get(`${API_URL}?resident=${encodeURIComponent(exact)}`)
+    const promise = readIndexResource(`${API_URL}?resident=${encodeURIComponent(exact)}`, "resident", reasons)
       .then(payload => {
         if (actorRevision !== state.actorRevision) {
           applied = true;
@@ -880,8 +918,13 @@
         }
         const wanted = Number(state.targetWantedCursors.get(exact) || 0);
         const current = Number(state.residentEventCursors.get(exact) || 0);
-        if (!applied || wanted > current) scheduleResidentRefresh(exact, wanted);
-        else state.targetWantedCursors.delete(exact);
+        if (!applied || wanted > current) {
+          noteTargetRead(exact, "cursor_reconciliation");
+          scheduleResidentRefresh(exact, wanted);
+        } else {
+          state.targetWantedCursors.delete(exact);
+          state.targetReadReasons.delete(exact);
+        }
         drainResidentRefreshes();
       });
     state.targetRequests.set(exact, promise);
@@ -894,6 +937,7 @@
       const residentId = String(event?.resident_id || "").trim();
       const cursor = Math.max(0, Number(event?.cursor || 0));
       if (!residentId || !cursor || cursor <= Number(state.residentEventCursors.get(residentId) || 0)) continue;
+      noteTargetRead(residentId, "resident_event");
       state.targetWantedCursors.set(residentId, Math.max(cursor, Number(state.targetWantedCursors.get(residentId) || 0)));
       if (!state.request && !document.hidden) scheduleResidentRefresh(residentId, cursor);
     }
@@ -906,6 +950,7 @@
     for (const [residentId, scopes] of Object.entries(changes)) {
       if (!Array.isArray(scopes) || !scopes.includes("projection")) continue;
       if (!state.entries.some(entry => String(entry?.resident_id || "") === residentId)) continue;
+      noteTargetRead(residentId, "resident_projection");
       state.targetWantedCursors.set(residentId, Number(state.targetWantedCursors.get(residentId) || 0));
       if (!state.request && !document.hidden) scheduleResidentRefresh(residentId, 0);
     }
@@ -1011,6 +1056,7 @@
     // A targeted read bypasses the shared snapshot cache. Let any earlier
     // in-flight target read settle before fetching the confirmed state.
     await state.targetRequests.get(exact)?.catch(() => {});
+    noteTargetRead(exact, "chat_read");
     await refreshResident(exact).catch(() => {});
     return payload;
   }
@@ -1021,7 +1067,7 @@
     await window.PortalIdentity?.load?.();
     const actorRevision = state.actorRevision;
     // A node Menu only needs this conversation, not every Mailbox page and badge.
-    const payload = await window.PortalAPI.get(`${API_URL}?resident=${encodeURIComponent(exact)}`);
+    const payload = await readIndexResource(`${API_URL}?resident=${encodeURIComponent(exact)}`, "pin", ["pin_menu"]);
     if (actorRevision !== state.actorRevision) return null;
     if (payload?.error) throw new Error(payload.error);
     if (payload?.target_state !== "present") throw new Error(window.PortalI18n.t("没有访问权限"));
@@ -1146,6 +1192,7 @@
     state.residentEventCursors.clear();
     state.targetRequests.clear();
     state.targetWantedCursors.clear();
+    state.targetReadReasons.clear();
     for (const timer of state.targetRetryTimers.values()) window.clearTimeout(timer);
     state.targetRetryTimers.clear();
     state.targetRetryAttempts.clear();
@@ -1170,6 +1217,10 @@
       ...Object.keys(detail.projection_changes?.["resident-view-state"] || {}).filter(key => /^resident_[0-9a-f]{12}$/.test(key)),
     ]);
     for (const residentId of residents) {
+      if (keys.includes(`resident:${residentId}`)) noteTargetRead(residentId, "index_projection");
+      if (Object.hasOwn(detail.projection_changes?.["resident-view-state"] || {}, residentId)) {
+        noteTargetRead(residentId, "viewer_state");
+      }
       state.targetWantedCursors.set(residentId, Number(state.targetWantedCursors.get(residentId) || 0));
       if (!state.request && !document.hidden) scheduleResidentRefresh(residentId, 0);
     }

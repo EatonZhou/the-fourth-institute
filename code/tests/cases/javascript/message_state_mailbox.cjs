@@ -15,7 +15,7 @@ const payload = { entries: Array.from({ length: 18 }, (_, index) => ({
 })), content_signature: 'loaded', ready: true, unread_count: 0, next_page_token: 'next' };
 
 function mailbox({ connected = false, targetRead, transform = (_name, source) => source } = {}) {
-  const errors = [], reads = [], responses = [];
+  const errors = [], reads = [], responses = [], readAttempts = [], receipts = [];
   const virtualConsole = new VirtualConsole();
   virtualConsole.on('jsdomError', error => errors.push(error.message));
   virtualConsole.on('error', (...args) => errors.push(args.map(String).join(' ')));
@@ -52,8 +52,10 @@ function mailbox({ connected = false, targetRead, transform = (_name, source) =>
   window.PortalIdentity = { username: () => 'playwright', load: async () => ({ username: 'playwright' }), userId: async () => 'playwright' };
   // Pages load portal_nav.js before the Inbox; this viewer has no personal assistant.
   window.PortalNav = { personalAssistantTarget: async () => null };
-  window.PortalAPI = { get(url) {
-    if (url.startsWith('/api/agent-conversations?resident=') && targetRead) return targetRead(url);
+  window.addEventListener('portal:conversation-read', event => receipts.push(JSON.parse(JSON.stringify(event.detail))));
+  window.PortalAPI = { get(url, options) {
+    readAttempts.push({ url, options });
+    if (url.startsWith('/api/agent-conversations?resident=') && targetRead) return targetRead(url, options);
     assert.equal(url, '/api/agent-conversations');
     reads.push(url);
     assert.ok(responses.length, 'Unexpected snapshot request');
@@ -78,7 +80,7 @@ function mailbox({ connected = false, targetRead, transform = (_name, source) =>
     const root = window.document.querySelector('[data-portal-agent-inbox]');
     assert.ok(root, 'production mount creates the actual Inbox');
     const banner = root.querySelector('[data-agent-conversation-error]');
-    return { window, root, reads, banner,
+    return { window, root, reads, banner, readAttempts, receipts,
       queue: value => responses.push(value),
       rows: () => [...root.querySelectorAll('[data-agent-conversation-key]')],
       store: window.PortalConversationStore,
@@ -121,6 +123,54 @@ function mailbox({ connected = false, targetRead, transform = (_name, source) =>
 }
 
 const checks = {
+  async 'read-provenance'() {
+    const pending = [];
+    const resident = 'resident_123456789abc';
+    const app = mailbox({ connected: true, targetRead: () => new Promise((resolve, reject) => pending.push({ resolve, reject })) });
+    const change = cursor => app.window.dispatchEvent(new app.window.CustomEvent('portal:change', { detail: {
+      resident_events: [{ resident_id: resident, cursor, event_type: 'message.created' }],
+      projection_changes: { 'resident-view-state': { [resident]: cursor } },
+    } }));
+    const target = cursor => ({ target_state: 'present', target_present: true, resident_cursor: cursor, projection_cursor: cursor,
+      entries: [{ key: `resident:${resident}`, resident_id: resident, title: 'private-conversation-body',
+        cursor, kind: 'resident-main', section: 'conversation', unread: false }] });
+    try {
+      app.queue(payload);
+      await Promise.all([app.refresh(), app.refresh()]);
+      assert.equal(app.readAttempts.length, 1, 'a joined index refresh makes no extra HTTP attempt');
+      assert.equal(app.receipts.length, 1, 'cache/in-flight joins do not fabricate reader receipts');
+      change(1);
+      await app.advance(80);
+      assert.equal(pending.length, 1, 'two causal event types coalesce into the existing single read');
+      change(2);
+      pending[0].resolve(target(1));
+      await drain();
+      await app.advance(160);
+      assert.equal(pending.length, 2, 'the newer event retains the original follow-up schedule');
+      pending[1].resolve(target(2));
+      await drain();
+      const reads = app.receipts.filter(item => item.reader === 'resident');
+      assert.deepEqual(reads[0].reasons.sort(), ['resident_event', 'viewer_state']);
+      assert.deepEqual(reads[1].reasons.sort(), ['cursor_reconciliation', 'resident_event', 'viewer_state']);
+      assert.equal(app.store.entry(`resident:${resident}`).cursor, 2);
+      const failure = Object.assign(new Error('private-error-content'), { status: 503, code: 'private-error-code' });
+      const pin = app.store.loadPin(resident);
+      await drain();
+      pending[2].reject(failure);
+      await assert.rejects(pin, error => error === failure, 'diagnostics preserve the original failure object');
+      assert.equal(app.receipts.at(-1).reader, 'pin');
+      assert.equal(app.receipts.at(-1).outcome, 'failed');
+      assert.equal(app.receipts.at(-1).error_status, 503);
+      assert.equal(app.receipts.length, app.readAttempts.length);
+      assert.equal(new Set(app.receipts.map(item => item.transport_id)).size, app.receipts.length);
+      for (const [index, attempt] of app.readAttempts.entries()) {
+        assert.equal(app.receipts[index].transport_id, attempt.options.headers['X-Portal-Request-ID']);
+      }
+      assert.doesNotMatch(JSON.stringify(app.receipts), /private-|123456789abc|page_token|entries/);
+      await app.advance(1000);
+      assert.equal(app.readAttempts.length, 4, 'observation schedules no new read after settled work');
+    } finally { await app.close(); }
+  },
   async 'background-index-budget'() {
     const requests = [], active = new Set();
     let peak = 0;
