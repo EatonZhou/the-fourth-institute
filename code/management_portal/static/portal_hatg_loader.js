@@ -27,6 +27,7 @@
     "/static/hatg_program_inspector.js",
     "/static/hatg_relations.js",
     "/static/hatg_layout.js",
+    "/static/hatg_graph_projection.js",
     "/static/hatg_resident_dialogs.js",
     "/static/hatg_lineage_dialogs.js",
     "/static/hatg_seeds.js",
