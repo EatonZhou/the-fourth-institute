@@ -408,6 +408,7 @@
           message: payload.message,
           ...(payload.activation_policy ? { activation_policy: payload.activation_policy } : {}),
           ...(payload.business_ref ? { business_ref: payload.business_ref } : {}),
+          ...(payload.temporary_credentials?.length ? { temporary_credentials: payload.temporary_credentials } : {}),
         }, keyed(payload, "deliver"));
       },
       injectInput(payload = {}) {

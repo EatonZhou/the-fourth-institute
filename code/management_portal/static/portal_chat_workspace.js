@@ -10302,7 +10302,10 @@
               kind: "async", key: part.answer_message_id, source_message_id: message.message_id,
               // A member's set shown on a facade is closed in the member's own conversation.
               closable: !message.family_reply,
-              questions: (part.questions || []).map(question => ({ id: question.question_index, title: question.title, options: question.options || [] })),
+              // Permissions are lent to the Resident this conversation belongs to, never through a facade.
+              lendable: !message.family_reply,
+              questions: (part.questions || []).map(question => ({ id: question.question_index, title: question.title, options: question.options || [],
+                credentials: Array.isArray(question.credentials) ? question.credentials : [] })),
               state: answered ? "answered" : closed.has(part.answer_message_id) ? "closed" : part.state || "open",
               answers: answers.get(message.message_id) || {}, delivery: states.get(part.answer_message_id) || "",
             });
@@ -10431,6 +10434,14 @@
       const question = group.questions[step];
       const chosen = progress.answers[question.id] || "";
       const custom = chosen && !question.options.includes(chosen) ? chosen : "";
+      // A permission request: its fixed options are the server's own words, the
+      // first approves, and only the exact permissions it lists can be lent.
+      const lending = question.credentials?.length > 0;
+      const credentials = lending ? window.PortalI18n.html`<div class="residentQuestionCredentials">
+          <span>${escapeHtml(group.lendable ? window.PortalI18n.t("同意后随这条回答交给 Resident 的权限：") : window.PortalI18n.t("成员在 Family 内提出的权限请求不能经门面交出"))}</span>
+          <ul>${question.credentials.map(item => window.PortalI18n.html`<li><code>${escapeHtml(item.a)}</code> · <code>${escapeHtml(item.resource_id)}</code></li>`).join("")}</ul>
+          <span class="residentQuestionCredentialScope">${escapeHtml(window.PortalI18n.t("只在 Resident 处理这条回答期间有效，处理完即失效。"))}</span>
+        </div>` : "";
       const hint = this.active.error || (sending ? window.PortalI18n.t("正在提交…")
         : group.kind === "native" ? (group.native.is_blocking ? window.PortalI18n.t("Agent 正在等待你的回答") : window.PortalI18n.t("Agent 继续工作；请求结束后将不可回答。"))
         : window.PortalI18n.t("这组问题在回答前一直保留"));
@@ -10444,14 +10455,16 @@
           ${group.kind === "async" && group.closable ? window.PortalI18n.html`<button type="button" class="portalButton is-compact is-quiet" data-question-close>不再回答</button>` : ""}
         </div>
         <div class="residentQuestionTitle">${escapeHtml(question.title)}</div>
-        <div class="residentQuestionChoices">${question.options.map((option, index) => window.PortalI18n.html`<button type="button" class="portalButton residentQuestionChoice" data-question-option="${index}" aria-pressed="${String(option === chosen)}">${index < 9 ? window.PortalI18n.html`<kbd>${index + 1}</kbd>` : ""}<span>${escapeHtml(option)}</span></button>`).join("")}</div>
-        <div class="residentQuestionCustom"><input type="text" data-question-custom value="${escapeHtml(custom)}" placeholder="${escapeHtml(question.options.length ? window.PortalI18n.t("其他回答，按 Enter 确认") : window.PortalI18n.t("输入回答，按 Enter 确认"))}" aria-label="${escapeHtml(window.PortalI18n.text`回答：${question.title}`)}" /><button type="button" class="portalButton is-compact is-primary" data-question-confirm>${escapeHtml(step === group.questions.length - 1 ? window.PortalI18n.t("提交回答") : window.PortalI18n.t("下一题"))}</button></div>`;
+        ${credentials}
+        <div class="residentQuestionChoices">${question.options.map((option, index) => window.PortalI18n.html`<button type="button" class="portalButton residentQuestionChoice" data-question-option="${index}" aria-pressed="${String(option === chosen)}">${index < 9 ? window.PortalI18n.html`<kbd>${index + 1}</kbd>` : ""}<span>${escapeHtml(lending ? window.PortalI18n.t(option) : option)}</span></button>`).join("")}</div>
+        ${lending ? "" : window.PortalI18n.html`<div class="residentQuestionCustom"><input type="text" data-question-custom value="${escapeHtml(custom)}" placeholder="${escapeHtml(question.options.length ? window.PortalI18n.t("其他回答，按 Enter 确认") : window.PortalI18n.t("输入回答，按 Enter 确认"))}" aria-label="${escapeHtml(window.PortalI18n.text`回答：${question.title}`)}" /><button type="button" class="portalButton is-compact is-primary" data-question-confirm>${escapeHtml(step === group.questions.length - 1 ? window.PortalI18n.t("提交回答") : window.PortalI18n.t("下一题"))}</button></div>`}`;
       for (const control of element.querySelectorAll("button, input")) control.disabled = sending;
+      if (lending && !group.lendable) element.querySelector('[data-question-option="0"]').disabled = true;
       element.querySelectorAll("[data-question-option]").forEach(button => button.addEventListener("click", () => {
         this.answer(question.options[Number(button.dataset.questionOption)]);
       }));
       const input = element.querySelector("[data-question-custom]");
-      element.querySelector("[data-question-confirm]").addEventListener("click", () => this.answer(input.value.trim() || chosen));
+      element.querySelector("[data-question-confirm]")?.addEventListener("click", () => this.answer(input.value.trim() || chosen));
       element.querySelector("[data-question-back]")?.addEventListener("click", () => {
         progress.step = step - 1;
         this.saveProgress();
@@ -10513,12 +10526,21 @@
       if (this.sending.has(key)) return;
       const progress = this.progressOf(group);
       const answers = group.questions.map(question => ({ question_index: question.id, answer: progress.answers[question.id] }));
+      // The user lends, as themself, exactly what each approved request lists.
+      const lent = new Map();
+      if (group.lendable) {
+        for (const question of group.questions) {
+          if (!question.credentials?.length || progress.answers[question.id] !== question.options[0]) continue;
+          for (const item of question.credentials) lent.set(`${item.a}\n${item.resource_id}`, { a: item.a, resource_id: item.resource_id });
+        }
+      }
       this.sending.add(key);
       this.render(this.panel.snapshot() || {});
       try {
         const result = await window.PortalResidentProtocol.sendInput({
           resident_id: target.resident_id,
           lineage_id: target.lineage_id,
+          ...(lent.size ? { temporary_credentials: [...lent.values()] } : {}),
           message: {
             message_id: group.key,
             role: "user",

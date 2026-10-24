@@ -127,6 +127,7 @@ def deliver_message(inv: Invocation) -> dict[str, Any]:
             raise invalid("临时凭证只随发给 Resident 的消息签发")
         return deliver_to_user(inv, inv.argument("user_id"), message)
     resident_id = inv.argument("resident_id")
+    _check_answer_credentials(resident_id, message, credentials)
     if credentials:
         _check_lendable(inv, credentials)
     result = deliver(inv, resident_id, message, business_ref=inv.argument("business_ref") or "",
@@ -135,6 +136,28 @@ def deliver_message(inv: Invocation) -> dict[str, Any]:
         # The message exists now and its input is open: the credentials end with that input (decision_b820faf42218 §5.6).
         result["temporary_credentials"] = _lend(inv, result["resident_id"], result["message_id"], credentials)
     return result
+
+
+def _check_answer_credentials(resident_id: object, message: dict[str, Any], credentials: list[dict[str, str]]) -> None:
+    """An answer lends exactly the permissions its approved questions asked for (decision_1e2eb869bc10)."""
+    from management_common.async_questions import ANSWER_PART, approved_credentials, question_set
+    from management_portal.society_service import resident_conversation_stream
+
+    answer = next((part for part in message.get("content_parts") or []
+                   if isinstance(part, dict) and part.get("type") == ANSWER_PART), None)
+    if answer is None:
+        return
+    try:
+        source = resident_conversation_stream.get_repository().message(
+            resident_id, str(answer.get("source_message_id") or "").strip())
+    except ValueError:
+        source = None  # Delivery reports the invalid Resident.
+    questions = question_set(source)
+    requested = {(item["a"], item["resource_id"])
+                 for item in approved_credentials(questions["questions"], answer.get("answers"))} if questions else set()
+    lent = [(item["a"], item["resource_id"]) for item in credentials]
+    if set(lent) != requested or len(set(lent)) != len(lent):
+        raise invalid("回答随消息交出的权限必须正好是所同意的问题请求的权限")
 
 
 def _check_lendable(inv: Invocation, credentials: list[dict[str, str]]) -> None:

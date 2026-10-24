@@ -4223,6 +4223,17 @@ button.portalFileLink {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+.residentQuestionCredentials {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow-wrap: anywhere;
+}
+.residentQuestionCredentials ul { margin: 0; padding-left: 18px; }
+.residentQuestionCredentialScope { font-size: 12px; opacity: .75; }
 .residentQuestionChoices { display: grid; gap: 6px; min-width: 0; }
 .residentQuestionChoice.portalButton {
   justify-content: flex-start;

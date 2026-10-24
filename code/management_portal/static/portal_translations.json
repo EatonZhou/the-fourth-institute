@@ -40774,5 +40774,10 @@
   "已接入的 AI": {"en": "Your AI connections", "zh-CN": "已接入的 AI"},
   "连接名称（可选）": {"en": "Connection name (optional)", "zh-CN": "连接名称（可选）"},
   "留空自动生成，无需从服务商获取": {"en": "Leave blank to generate automatically", "zh-CN": "留空自动生成，无需从服务商获取"},
-  "仅用于在 Portal 中区分连接，留空即可。自定义时以小写字母开头，只用小写字母、数字、下划线或短横线，最多 128 字符。": {"en": "Only used to identify this connection in Portal. You can leave it blank. Custom names start with a lowercase letter and contain lowercase letters, numbers, underscores or hyphens, up to 128 characters.", "zh-CN": "仅用于在 Portal 中区分连接，留空即可。自定义时以小写字母开头，只用小写字母、数字、下划线或短横线，最多 128 字符。"}
+  "仅用于在 Portal 中区分连接，留空即可。自定义时以小写字母开头，只用小写字母、数字、下划线或短横线，最多 128 字符。": {"en": "Only used to identify this connection in Portal. You can leave it blank. Custom names start with a lowercase letter and contain lowercase letters, numbers, underscores or hyphens, up to 128 characters.", "zh-CN": "仅用于在 Portal 中区分连接，留空即可。自定义时以小写字母开头，只用小写字母、数字、下划线或短横线，最多 128 字符。"},
+  "同意交出这些权限": {"en": "Lend these permissions", "zh-CN": "同意交出这些权限"},
+  "不交出": {"en": "Don't lend", "zh-CN": "不交出"},
+  "同意后随这条回答交给 Resident 的权限：": {"en": "Permissions lent to the Resident with this answer if you agree:", "zh-CN": "同意后随这条回答交给 Resident 的权限："},
+  "成员在 Family 内提出的权限请求不能经门面交出": {"en": "A member's permission request inside a Family cannot be granted through its facade", "zh-CN": "成员在 Family 内提出的权限请求不能经门面交出"},
+  "只在 Resident 处理这条回答期间有效，处理完即失效。": {"en": "Valid only while the Resident handles this answer; it ends when the Resident finishes.", "zh-CN": "只在 Resident 处理这条回答期间有效，处理完即失效。"}
 }

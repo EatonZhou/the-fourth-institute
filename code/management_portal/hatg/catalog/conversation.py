@@ -53,7 +53,8 @@ DECLARATIONS = (
           "平台引用门面对它的发件记录，门面把回复交给写它的成员；不和 quote 同用，发给用户和 info 消息不带它"),
         P("temporary_credentials", "array",
           "随这条消息交给收件 Resident 的临时凭证，每项 {a, resource_id}：调用者此刻在该资源上持有的 A 树节点；"
-          "收件 Resident 对这条消息的输入完成、失败或取消时失效，最迟 7 天。只用于发给 Resident",
+          "收件 Resident 对这条消息的输入完成、失败或取消时失效，最迟 7 天。只用于发给 Resident；"
+          "回答问题组时正好是所同意的权限请求问题列出的权限",
           items={"type": "object", "properties": {"a": {"type": "string"}, "resource_id": {"type": "string"}}}),
     ), (
         R("resident_id", description="消息所在的对话：发给 Resident 时是收件 Resident，发给用户时是发出消息的 Resident 或门面"),

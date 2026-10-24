@@ -17,8 +17,37 @@ QUESTION_CONTENT_INSTRUCTIONS = """需要用户做选择或补充信息时，在
 [{"title":"选择检查范围？","options":["定向检查","全部检查"]},{"title":"是否同时更新规范？","options":["更新","暂不更新"]}]
 ```
 同一条回复中的全部问题组成一组。Portal 在这条回复中逐题展示，用户答完整组后一次提交，答案作为一条 user 消息送达。
+需要用户把其持有的权限交给你时（你的身份在某资源上缺少权限），在问题对象中加 credentials，逐项写出 A 树节点 a 与资源 resource_id，title 说明用途，例如
+{"title":"同意把这个工作台的协作权限交给我来发布吗？","credentials":[{"a":"@contributor","resource_id":"workbench_0123456789ab"}]}。
+这类问题的选项固定为“同意交出这些权限”和“不交出”。用户同意时凭证随这条回答签发，只在你处理这条回答期间有效，在这一轮内用完；不要让用户另行签发。
 提问后结束本轮，等待回答，不要继续做依赖这些答案的工作。用户可能先发其他消息；每组问题在回答前一直有效，回答到达时再按回答继续。
 只在真正需要用户回答时使用；展示语法示例时使用外层代码围栏。无需调用接口或工具写消息。"""
+# A question with credentials asks the user to lend those permissions with the
+# answer; its options are fixed and the first one approves (decision_1e2eb869bc10).
+CREDENTIAL_APPROVE = "同意交出这些权限"
+CREDENTIAL_DECLINE = "不交出"
+# DeliverMessage lends at most this many credentials with one message.
+MAX_LENT_CREDENTIALS = 20
+
+
+def _credentials(value: object) -> list[dict[str, str]] | None:
+    """The ``{a, resource_id}`` permissions a question asks to be lent; None when malformed."""
+
+    if not isinstance(value, list) or not value or len(value) > MAX_LENT_CREDENTIALS:
+        return None
+    found: list[dict[str, str]] = []
+    for item in value:
+        if not isinstance(item, dict) or set(item) != {"a", "resource_id"}:
+            return None
+        if not all(isinstance(item[key], str) for key in ("a", "resource_id")):
+            return None
+        entry = {"a": item["a"].strip(), "resource_id": item["resource_id"].strip()}
+        if (not entry["a"] or not entry["resource_id"] or len(entry["a"]) > 120 or len(entry["resource_id"]) > 240
+                or any(character.isspace() for character in entry["a"] + entry["resource_id"])):
+            return None
+        if entry not in found:
+            found.append(entry)
+    return found
 
 
 def _fenced_questions(body: str) -> list[dict[str, Any]] | None:
@@ -33,11 +62,12 @@ def _fenced_questions(body: str) -> list[dict[str, Any]] | None:
     values = value if isinstance(value, list) else [value]
     if not values or not all(
         isinstance(item, dict)
-        and set(item) <= {"title", "options"}
+        and set(item) <= {"title", "options", "credentials"}
         and isinstance(item.get("title"), str)
         and item["title"].strip()
         and isinstance(item.get("options", []), list)
         and all(isinstance(option, str) and option.strip() for option in item.get("options", []))
+        and ("credentials" not in item or _credentials(item["credentials"]) is not None)
         for item in values
     ):
         return None
@@ -131,15 +161,35 @@ def normalize_async_questions(value: object) -> list[dict[str, Any]]:
         if not isinstance(title, str) or not title.strip():
             continue
         options = question.get("options")
-        questions.append({
+        normalized = {
             "question_index": index,
             "title": title.strip(),
             "options": [
                 option for option in options
                 if isinstance(option, str) and option.strip()
             ] if isinstance(options, list) else [],
-        })
+        }
+        if "credentials" in question:
+            credentials = _credentials(question["credentials"])
+            if credentials is None:
+                continue  # Never show a permission request without its exact permissions.
+            normalized.update(options=[CREDENTIAL_APPROVE, CREDENTIAL_DECLINE], credentials=credentials)
+        questions.append(normalized)
     return questions
+
+
+def approved_credentials(questions: list[dict[str, Any]], answers: object) -> list[dict[str, str]]:
+    """The permissions an answer lends: those of the credential questions it approves."""
+
+    chosen = {
+        entry.get("question_index"): entry["answer"].strip()
+        for entry in answers if isinstance(entry, dict) and isinstance(entry.get("answer"), str)
+    } if isinstance(answers, list) else {}
+    lent: list[dict[str, str]] = []
+    for question in questions:
+        if question.get("credentials") and chosen.get(question.get("question_index")) == CREDENTIAL_APPROVE:
+            lent.extend(item for item in question["credentials"] if item not in lent)
+    return lent
 
 
 def question_answer_id(resident_id: str, message_id: str) -> str:
