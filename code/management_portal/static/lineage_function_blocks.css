@@ -117,7 +117,7 @@
 .functionBlockObjectToolbar > .functionBlockSelectAll > input,
 .functionBlockObjectRow > input { flex: none; width: 16px; height: 16px; min-height: 0; margin: 0; padding: 0; accent-color: var(--accent); }
 .functionBlockBulkButtons { display: flex; flex-wrap: wrap; gap: 6px; }
-.functionBlockObjectGroup { --object-columns: 18px minmax(0, 1fr) 84px minmax(150px, 230px) auto; margin-top: 14px; }
+.functionBlockObjectGroup { --object-columns: 18px minmax(0, 1fr) max-content minmax(150px, 230px) auto; margin-top: 14px; }
 .functionBlockObjectGroup > h4 {
   display: grid;
   grid-template-columns: var(--object-columns);
@@ -146,8 +146,10 @@
 .functionBlockObjectRow:last-child { border-bottom: 0; }
 .functionBlockObjectRow[data-selected="true"] { background: color-mix(in srgb, var(--accent) 6%, var(--panel)); }
 .functionBlockObjectMain { display: grid; gap: 2px; min-width: 0; }
-.functionBlockObjectMain strong { overflow: hidden; color: var(--text); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.functionBlockObjectMain strong { color: var(--text); font-size: 12px; overflow-wrap: anywhere; white-space: normal; }
 .functionBlockObjectMain small { overflow: hidden; color: var(--muted); font: 10px/1.4 var(--mono); text-overflow: ellipsis; white-space: nowrap; }
+.functionBlockObjectState { min-width: 0; }
+.functionBlockObjectState .portalStatus { max-width: 11em; white-space: normal; overflow-wrap: anywhere; }
 .functionBlockObjectAction { display: flex; min-width: 0; }
 @media (max-width: 760px) {
   .functionBlockObjectGroup { --object-columns: 18px minmax(0, 1fr) auto; }
