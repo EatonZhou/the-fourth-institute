@@ -5,6 +5,7 @@ import os
 import queue
 import threading
 import time
+from copy import deepcopy
 from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
@@ -102,7 +103,7 @@ class ExecutionWorker:
         seen_turn_controls: set[str] = set()
         turn_control_lock = threading.Lock()
         receipt_lock = threading.Lock()
-        self.scheduler.start(execution_id, claim_token)
+        checkpoint_lock = threading.Lock()
         lease_deadline = time.monotonic() + float(lease_seconds)
         queue_wait_ms = _elapsed_since_iso_ms(str(execution.get("created_at") or ""))
 
@@ -121,6 +122,17 @@ class ExecutionWorker:
                     seen_turn_controls.add(control_id)
                     turn_controls.put(dict(control))
 
+        def fence(*, interrupt_provider: bool = True) -> None:
+            if heartbeat_stop.is_set():
+                return
+            ownership_lost.set()
+            cancelled.set()
+            try:
+                if interrupt_provider:
+                    self.runtime.interrupt(execution_id)
+            except Exception:
+                pass
+
         def heartbeat_loop() -> None:
             nonlocal lease_deadline
             heartbeat_interval = max(5.0, min(30.0, float(lease_seconds) / 3))
@@ -133,17 +145,6 @@ class ExecutionWorker:
                     self.runtime.interrupt(execution_id)
                 except Exception:
                     LOGGER.warning("Cancellation interrupt failed for %s; will retry", execution_id)
-
-            def fence(*, interrupt_provider: bool = True) -> None:
-                if heartbeat_stop.is_set():
-                    return
-                ownership_lost.set()
-                cancelled.set()
-                try:
-                    if interrupt_provider:
-                        self.runtime.interrupt(execution_id)
-                except Exception:
-                    pass
 
             def prepare_handover() -> bool:
                 status = self.scheduler.prepare_handover(execution_id, claim_token)
@@ -215,12 +216,37 @@ class ExecutionWorker:
         )
         heartbeat.start()
 
-        def claim_scoped(call: Any) -> Any:
-            try:
-                return call()
-            except ExecutionClaimOwnershipLost:
-                ownership_lost.set()
-                raise
+        def claim_scoped(call: Any, *, retry_unknown: bool = False) -> Any:
+            # A missing service socket is not a Provider failure. Retain the
+            # operation while the independent heartbeat maintains our lease.
+            # Only idempotent writes may be replayed after a lost response;
+            # an event append, for example, could already have been accepted.
+            while True:
+                if time.monotonic() >= lease_deadline:
+                    fence()
+                if ownership_lost.is_set():
+                    raise ExecutionClaimOwnershipLost("execution claim ownership changed")
+                try:
+                    return call()
+                except ExecutionClaimOwnershipLost:
+                    fence()
+                    raise
+                except ExecutionResponseUnknown:
+                    if not retry_unknown:
+                        raise
+                except ExecutionServiceUnavailable:
+                    pass
+                ownership_lost.wait(max(0.0, min(0.25, lease_deadline - time.monotonic())))
+
+        def checkpoint_provider(checkpoint: dict[str, Any]) -> None:
+            payload = deepcopy(checkpoint)
+            # Keep an interrupted write ahead of subsequent snapshots. A late
+            # retry must not replace a newer checkpoint from another callback.
+            with checkpoint_lock:
+                claim_scoped(
+                    lambda: self.scheduler.checkpoint(execution_id, claim_token, payload),
+                    retry_unknown=True,
+                )
 
         def emit_event(
             event_type: str,
@@ -267,6 +293,7 @@ class ExecutionWorker:
         result: ExecutionResult | None = None
         deferred_reason = ""
         try:
+            claim_scoped(lambda: self.scheduler.start(execution_id, claim_token), retry_unknown=True)
             request = ExecutionRequest.from_payload(execution.get("request"))
             if request.execution_id != execution_id:
                 raise ValueError("claimed execution identity is incomplete")
@@ -293,15 +320,7 @@ class ExecutionWorker:
                             )
                         )
                     ),
-                    checkpoint_provider=lambda checkpoint: (
-                        claim_scoped(
-                            lambda: self.scheduler.checkpoint(
-                                execution_id,
-                                claim_token,
-                                checkpoint,
-                            )
-                        )
-                    ),
+                    checkpoint_provider=checkpoint_provider,
                     recovery_checkpoint=recovery_checkpoint,
                     turn_control_provider=next_turn_control,
                     turn_control_result_callback=(
