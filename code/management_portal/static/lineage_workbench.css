@@ -1212,6 +1212,22 @@
         font-size: 10.5px;
         line-height: 1.35;
       }
+      @container portal-chat-workspace (max-width: 780px) {
+        .watchboardSplitter.open { display: none; }
+        .watchboard.open {
+          flex: 0 0 auto;
+          min-width: 0;
+          max-width: none;
+          max-height: min(50%, 320px);
+          border-left: 0;
+          border-top: 1px solid var(--border);
+        }
+        .watchboard.collapsed {
+          flex-basis: 38px;
+          max-width: none;
+          max-height: 38px;
+        }
+      }
       @media (max-width: 1180px) {
         .watchboard {
           flex-basis: min(38%, 320px);

@@ -1168,6 +1168,7 @@ body.portalBoardShell .filter-active-dot {
 }
 
 .portalChatWorkspaceRoot {
+  container: portal-chat-workspace / inline-size;
   min-height: var(--portal-chat-workspace-min-height, 0);
   min-width: 0;
   display: flex;
@@ -1579,6 +1580,12 @@ body.portalBoardShell .filter-active-dot {
 }
 
 @media (max-width: 780px) {
+  .portalChatWorkspaceRoot .chatWorkspaceBody {
+    flex-direction: column;
+  }
+}
+
+@container portal-chat-workspace (max-width: 780px) {
   .portalChatWorkspaceRoot .chatWorkspaceBody {
     flex-direction: column;
   }
