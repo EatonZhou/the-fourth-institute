@@ -9,7 +9,7 @@ const vm = require('node:vm');
 const { test } = require('node:test');
 const { randomUUID } = require('node:crypto');
 const { babelParse } = require('./babel_parse.cjs');
-const { hatgModuleFiles, readHatgModule } = require('./hatg_modules.cjs');
+const { hatgModuleFiles, readHatgModule, overrideHatgFunctions, startHatgRuntime } = require('./hatg_modules.cjs');
 const STATIC = path.resolve(__dirname, '../../../management_portal/static');
 const PANEL = path.join(STATIC, 'hatg_panel.js');
 const raw = fs.readFileSync(PANEL, 'utf8');
@@ -216,36 +216,23 @@ function controller(kind, source, server, environment = null) {
     context.__render = environment.render;
   } else context.window = context;
   const sources = typeof source === 'string' ? { ...SOURCES, 'hatg_panel.js': source } : source;
-  source = sources['hatg_panel.js'];
   for (const file of ['hatg_panel_features.js', 'hatg_panel_state.js', 'portal_instruction_client.js', 'portal_society_service.js',
     'lineage_program.js', 'lineage_element_fields.js', 'lineage_primitive_inspector.js']) {
     vm.runInContext(fs.readFileSync(path.join(STATIC, file), 'utf8'), context, { filename: file });
   }
-  for (const [file, text] of Object.entries(sources)) {
-    if (file !== 'hatg_panel.js') vm.runInContext(text, context, { filename: file });
-  }
-  const scope = runtimeScope(source);
-  const returnNode = scope.body.body.find(n => n.type === 'ReturnStatement');
-  assert.ok(returnNode, 'production runtime return');
-  const surface = scope.body.body.find(n => n.type === 'FunctionDeclaration' && n.id.name === 'renderLineageSurface');
-  assert.ok(surface, 'production renderLineageSurface');
-  // Keep the entire original factory, helpers and their lexical dependencies.
+  // Keep the entire original runtime, its parts and their lexical dependencies.
   // Only the broad page redraw effect is replaced; it still calls the real
   // inspector and graph presentation/controller. No state is written by __render.
-  // Module parts receive renderLineageSurface when the runtime starts, so its
-  // body is replaced in the source instead of reassigning the function.
-  const hook = `
-    const api = { state, activateLineageEdits, renderProgramInspector, graphNodeContent, hatgNodeControl,
-      syncProgramComponentSwitch, load: id => societyService.loadLineage(id) };
-    window.__runtimeApi = api;
-    return api;
-  `;
-  const patched = source.slice(0, surface.body.start) + '{ window.__render(window.__runtimeApi); }'
-    + source.slice(surface.body.end, returnNode.start) + hook + source.slice(returnNode.end);
-  const outer = babelParse(patched, PANEL).program.body[0].expression.callee.body;
-  const exposed = patched.slice(0, outer.end - 1) + '\nwindow.__createRuntime = createHatgRuntime;\n' + patched.slice(outer.end - 1);
-  vm.runInContext(exposed, context, { filename: PANEL });
-  const api = context.__createRuntime();
+  const exposed = ['activateLineageEdits', 'renderProgramInspector', 'graphNodeContent', 'hatgNodeControl',
+    'syncProgramComponentSwitch'];
+  const runtime = startHatgRuntime(context, overrideHatgFunctions(sources, {
+    renderLineageSurface: '() => window.__render(window.__runtimeApi)',
+  }), exposed);
+  const api = {
+    state: runtime.state, ...Object.fromEntries(exposed.map(name => [name, runtime.get(name)])),
+    load: id => runtime.get('societyService').loadLineage(id),
+  };
+  context.__runtimeApi = api;
   api.state.lineage = plain(environment?.initialLineage || server);
   api.state.selectedProgramObjectId = server.program.components[0].id;
   api.activateLineageEdits(server.lineage_id); context.__render(api);

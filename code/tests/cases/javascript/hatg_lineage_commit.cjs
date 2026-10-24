@@ -3,78 +3,33 @@ const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
 const vm = require('node:vm');
-const { babelParse, traverse } = require('./babel_parse.cjs');
-const { hatgModuleFiles } = require('./hatg_modules.cjs');
+const { babelParse } = require('./babel_parse.cjs');
+const { hatgSources, overrideHatgFunctions, startHatgRuntime } = require('./hatg_modules.cjs');
 
 const staticRoot = path.resolve(__dirname, '../../../management_portal/static');
-const panelPath = path.join(staticRoot, 'hatg_panel.js');
-const panelSource = fs.readFileSync(panelPath, 'utf8');
 const plain = value => JSON.parse(JSON.stringify(value));
 
-// Load the real Lineage entry points, the merge and the canvas projection with
-// their lexical dependencies from the HATG runtime. Only the page effects a
-// commit dispatches are recorded instead of drawn.
-const BOUNDARIES = {
-  renderLineageSurface: 'function renderLineageSurface() { window.__draws.push("surface"); }',
-  renderGraphRuntimePresentation: 'function renderGraphRuntimePresentation() { window.__draws.push("runtime"); }',
-  renderGraph: `function renderGraph() {
+// The real runtime with its parts, unmounted. Only the page effects a commit
+// dispatches are recorded instead of drawn, and the toasts it shows.
+const OVERRIDES = {
+  renderLineageSurface: '() => window.__draws.push("surface")',
+  renderGraphRuntimePresentation: '() => window.__draws.push("runtime")',
+  renderGraph: `() => {
     window.__draws.push("graph");
     window.__drawn.push(Object.fromEntries(graphVisibleModel().nodes.map(node => [node.id, [node.x, node.y]])));
   }`,
-  renderControls: 'function renderControls() {}',
-  updateLineageSummary: 'function updateLineageSummary() {}',
-  setSyncStatus: 'function setSyncStatus() {}',
-  toast: 'function toast(message) { window.__toasts.push(message); }',
-  bindResidentStateCollection: `function bindResidentStateCollection() {
-    window.__bindings.push((state.lineage?.nodes || []).map(node => node.id));
-  }`,
-  reconcileGraphInteractionState: 'function reconcileGraphInteractionState() {}',
-  templateController: 'const templateController = { render() {} };',
-  setBusy: 'function setBusy() {}',
-  syncManualProgramEventInspectorBusy: 'function syncManualProgramEventInspectorBusy() {}',
+  renderControls: '() => {}',
+  toast: 'message => window.__toasts.push(message)',
+  bindResidentStateCollection: '() => window.__bindings.push((state.lineage?.nodes || []).map(node => node.id))',
+  setBusy: '() => {}',
+  syncManualProgramEventInspectorBusy: '() => {}',
 };
-
-function runtimeSource(entries) {
-  let runtime;
-  traverse(babelParse(panelSource, panelPath), { FunctionDeclaration(p) {
-    if (p.node.id.name === 'createHatgRuntime') runtime = p;
-  } });
-  assert(runtime, 'Production HATG runtime must exist');
-  const bindings = runtime.scope.bindings;
-  const selected = new Map();
-  function include(name) {
-    if (selected.has(name)) return;
-    const binding = bindings[name];
-    assert(binding, `Missing runtime dependency: ${name}`);
-    // A module part's exports share one declaration and cannot be replaced one by one.
-    assert(!Object.hasOwn(BOUNDARIES, name) || binding.path.node.id?.type === 'Identifier',
-      `${name} is a module export; provide it through the module's dependencies`);
-    selected.set(name, binding.path);
-    if (Object.hasOwn(BOUNDARIES, name)) return;
-    binding.path.traverse({ ReferencedIdentifier(reference) {
-      const dependency = reference.scope.getBinding(reference.node.name);
-      if (dependency?.scope === runtime.scope) include(reference.node.name);
-    } });
-  }
-  entries.forEach(include);
-  // One destructuring declaration defines every name a module part exports.
-  const declarations = new Map([...selected].map(([name, p]) => [p.node, [name, p]]));
-  const source = [...declarations.values()].sort(([, a], [, b]) => a.node.start - b.node.start)
-    .map(([name, p]) => {
-      if (Object.hasOwn(BOUNDARIES, name)) return BOUNDARIES[name];
-      const bytes = panelSource.slice(p.node.start, p.node.end);
-      return p.isVariableDeclarator() ? `${p.parent.kind} ${bytes};` : bytes;
-    }).join('\n');
-  return `(() => { 'use strict'; ${source}
-    window.__hatg = { state, ${entries.join(', ')} };
-  })();`;
-}
 
 function resident(id, extra = {}) {
   return { id, kind: 'resident', title: id, status: 'idle', x: 20, y: 20, ...extra };
 }
 
-function fixture(entries = []) {
+function fixture() {
   const draws = [], drawn = [], toasts = [], bindings = [];
   const context = vm.createContext({
     document: { querySelector: () => null, getElementById: () => null },
@@ -90,6 +45,7 @@ function fixture(entries = []) {
       PortalUIPrimitives: { randomUUID: () => 'commit-key' },
       // The canvas search's server client; these cases never search.
       PortalResidentDiscoveryService: { createClient: () => ({}) },
+      PortalLineageWorkbenchController: {},
       requestAnimationFrame: callback => callback(),
       __draws: draws, __drawn: drawn, __toasts: toasts, __bindings: bindings,
     },
@@ -99,15 +55,18 @@ function fixture(entries = []) {
   for (const file of [
     'portal_state.js', 'hatg_panel_features.js', 'hatg_panel_state.js',
     'projection_libraries/portal-graph/1.0.0/geometry.js', 'lineage_graph.js',
-    'lineage_program.js', 'portal_society_service.js', ...hatgModuleFiles(),
+    'lineage_program.js', 'portal_society_service.js',
   ]) {
     const source = fs.readFileSync(path.join(staticRoot, file), 'utf8');
     const program = file === 'portal_state.js' ? babelParse(source, file).program.body[0] : null;
     vm.runInContext(program ? source.slice(program.start, program.end) : source, context, { filename: file });
   }
-  vm.runInContext(runtimeSource(['applyLineageEventProjection', 'graphVisibleModel', 'commitLineage', ...entries]), context,
-    { filename: panelPath });
-  const hatg = context.window.__hatg;
+  const { get, state } = startHatgRuntime(context, overrideHatgFunctions(hatgSources(), OVERRIDES));
+  const hatg = Object.fromEntries([
+    'applyLineageEventProjection', 'graphVisibleModel', 'commitLineage', 'emitManualProgramEvent',
+    'syncGraphNodePosition', 'separateGraphObjects', 'lineageEditQueue',
+  ].map(name => [name, get(name)]));
+  hatg.state = state;
   hatg.state.lineage = {
     lineage_id: 'lineage_aaaaaaaaaaaa', revision: 4, layout_revision: 1, runtime_revision: 2,
     refresh_signature: 'sig-4',
@@ -134,7 +93,7 @@ test('手动 Event 成功提交只显示真实投递结果，不把成功误报�
     { matched_count: 1, results: [{ status: 'dropped' }] },
     { matched_count: 0, results: [] },
   ]) {
-    const f = fixture(['emitManualProgramEvent']);
+    const f = fixture();
     f.state.lineage.program.components.push({
       id: 'event_source', kind: 'event_source', config: { event_type: 'manual.triggered' },
     });
@@ -232,7 +191,7 @@ test('任何来源的成员变化都会重新订阅 Resident 状态，并清掉�
 });
 
 test('原地修改的坐标在下一次画布读取时生效，错开多个对象时按前一个的新位置测量', async () => {
-  const f = fixture(['syncGraphNodePosition', 'separateGraphObjects', 'lineageEditQueue']);
+  const f = fixture();
   f.lineageEditQueue.activate('lineage_aaaaaaaaaaaa');
   assert.equal(shown(f, 'resident_bbbbbbbbbbbb').x, 60);
   f.syncGraphNodePosition({ id: 'resident_bbbbbbbbbbbb' }, { x: 300, y: 20 });

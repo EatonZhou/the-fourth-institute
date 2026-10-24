@@ -3,78 +3,42 @@ const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
 const vm = require('node:vm');
-const { babelParse, traverse } = require('./babel_parse.cjs');
-const { hatgModuleFiles, readHatgModule } = require('./hatg_modules.cjs');
+const { babelParse } = require('./babel_parse.cjs');
+const { findHatgFunction, hatgSources, overrideHatgFunctions, startHatgRuntime } = require('./hatg_modules.cjs');
 
 const staticRoot = path.resolve(__dirname, '../../../management_portal/static');
-const panelPath = path.join(staticRoot, 'hatg_panel.js');
-const panelSource = fs.readFileSync(panelPath, 'utf8');
 const plain = value => JSON.parse(JSON.stringify(value));
 
-// Load the actual controller and its transitive lexical dependencies. Only
-// painting unrelated panels and graph DOM is replaced; layout, projection,
-// save queuing, HTTP payload construction, rollback and button writes stay real.
-function controllerSource(mutation) {
-  const ast = babelParse(panelSource, panelPath);
-  let runtime;
-  traverse(ast, { FunctionDeclaration(p) {
-    if (p.node.id.name === 'createHatgRuntime') runtime = p;
-  } });
-  assert(runtime, 'Production HATG runtime must exist');
-  const bindings = runtime.scope.bindings;
-  const selected = new Map();
-  const boundaries = new Set(['renderGraph', 'renderControls', 'renderLineageSurface']);
-  function include(name) {
-    if (selected.has(name)) return;
-    const binding = bindings[name];
-    assert(binding, `Missing controller dependency: ${name}`);
-    const p = binding.path;
-    assert(p.isFunctionDeclaration() || p.isVariableDeclarator(), `Unsupported binding: ${name}`);
-    selected.set(name, p);
-    if (boundaries.has(name)) return;
-    p.traverse({ ReferencedIdentifier(reference) {
-      const dependency = reference.scope.getBinding(reference.node.name);
-      if (dependency?.scope === runtime.scope) include(reference.node.name);
-    } });
-  }
-  ['autoLayoutGraph', 'renderAutoLayoutControl', 'graphVisibleModel', 'activateLineageEdits']
-    .forEach(include);
-
+// The real runtime with its parts, unmounted. Only painting unrelated panels
+// and graph DOM is replaced; layout, projection, save queuing, HTTP payload
+// construction, rollback and button writes stay real.
+function runtimeSources(mutation) {
+  const sources = hatgSources();
   // Keep these orchestration calls from their actual AST, so removing the
-  // production control/surface call fails extraction instead of being healed
-  // by a fixture that invented the same call.
+  // production control/surface call fails here instead of being healed by a
+  // fixture that invented the same call.
   function renderCall(owner, callee) {
-    const statements = bindings[owner].path.node.body.body.filter(node =>
-      node.type === 'ExpressionStatement' && node.expression.type === 'CallExpression'
-      && node.expression.callee.type === 'Identifier' && node.expression.callee.name === callee);
+    const { file, node } = findHatgFunction(sources, owner);
+    const statements = node.body.body.filter(item =>
+      item.type === 'ExpressionStatement' && item.expression.type === 'CallExpression'
+      && item.expression.callee.type === 'Identifier' && item.expression.callee.name === callee);
     assert.equal(statements.length, 1, `${owner} must dispatch ${callee}`);
-    return panelSource.slice(statements[0].start, statements[0].end);
+    return sources[file].slice(statements[0].start, statements[0].end);
   }
-  const boundarySource = {
-    renderGraph: 'function renderGraph() { window.__paint(graphVisibleModel()); }',
-    renderControls: `function renderControls() { ${renderCall('renderControls', 'renderAutoLayoutControl')} }`,
-    renderLineageSurface: `function renderLineageSurface() {
+  const overrides = {
+    renderGraph: '() => window.__paint(graphVisibleModel())',
+    renderControls: `() => { ${renderCall('renderControls', 'renderAutoLayoutControl')} }`,
+    renderLineageSurface: `() => {
       ${renderCall('renderLineageSurface', 'renderGraph')}
       ${renderCall('renderLineageSurface', 'renderControls')}
     }`,
   };
-  // The runtime takes the arrange action and the Lineage commit from module
-  // scripts, loaded as is; a negative control edits the script that owns it.
-  const modules = Object.fromEntries(hatgModuleFiles().map(file => [file, readHatgModule(file)]));
-  const moduleFunction = name => {
-    for (const [file, text] of Object.entries(modules)) {
-      let found = null;
-      traverse(babelParse(text, file), { FunctionDeclaration(p) {
-        if (p.node.id.name === name) { found = p.node; p.stop(); }
-      } });
-      if (found) return { file, node: found };
-    }
-    return assert.fail(`No module function ${name}`);
-  };
-  const auto = moduleFunction('autoLayoutGraph');
+  // A negative control edits the script that owns the arrange action or the
+  // Lineage commit.
+  const auto = findHatgFunction(sources, 'autoLayoutGraph');
   const attempt = auto.node.body.body.find(node => node.type === 'TryStatement');
   assert(attempt, 'Production layout save must have rollback/finally');
-  const commit = moduleFunction('commitLineage');
+  const commit = findHatgFunction(sources, 'commitLineage');
   if (mutation) {
     const assignmentTo = (node, field) => node.type === 'ExpressionStatement'
       && node.expression.type === 'AssignmentExpression'
@@ -95,21 +59,9 @@ function controllerSource(mutation) {
     assert.equal(candidates[mutation]?.length, 1, `Mutation must address exactly one AST statement: ${mutation}`);
     const [changed] = candidates[mutation];
     const file = mutation === 'drop-rollback-paint' ? commit.file : auto.file;
-    modules[file] = modules[file].slice(0, changed.start) + ';' + modules[file].slice(changed.end);
+    sources[file] = sources[file].slice(0, changed.start) + ';' + sources[file].slice(changed.end);
   }
-  // One destructuring declaration defines every name a module part exports.
-  const declarations = new Map([...selected].map(([name, p]) => [p.node, [name, p]]));
-  const source = [...declarations.values()].sort(([, a], [, b]) => a.node.start - b.node.start)
-    .map(([name, p]) => {
-      if (boundaries.has(name)) return boundarySource[name];
-      const bytes = panelSource.slice(p.node.start, p.node.end);
-      return p.isVariableDeclarator() ? `${p.parent.kind} ${bytes};` : bytes;
-    }).join('\n');
-  const controller = `(() => { 'use strict'; ${source}
-    window.__layoutController = { state, autoLayoutGraph, activateLineageEdits,
-      renderAutoLayoutControl, renderGraph, graphVisibleModel, autoLayoutScope };
-  })();`;
-  return { controller, modules };
+  return overrideHatgFunctions(sources, overrides);
 }
 
 function fixture(mutation) {
@@ -145,6 +97,7 @@ function fixture(mutation) {
       PortalUIPrimitives: { randomUUID: () => 'layout-key' },
       // The canvas search's server client; arranging never searches.
       PortalResidentDiscoveryService: { createClient: () => ({}) },
+      PortalLineageWorkbenchController: {},
       requestAnimationFrame: callback => callback(),
       __paint: model => paints.push(plain(model.nodes.map(({ id, x, y }) => ({ id, x, y })))),
     },
@@ -161,10 +114,12 @@ function fixture(mutation) {
     const program = file === 'portal_state.js' ? babelParse(source, file).program.body[0] : null;
     vm.runInContext(program ? source.slice(program.start, program.end) : source, context, { filename: file });
   }
-  const { controller: controllerScript, modules } = controllerSource(mutation);
-  for (const [file, text] of Object.entries(modules)) vm.runInContext(text, context, { filename: file });
-  vm.runInContext(controllerScript, context, { filename: panelPath });
-  const controller = context.window.__layoutController;
+  const { get, state } = startHatgRuntime(context, runtimeSources(mutation));
+  const controller = Object.fromEntries([
+    'autoLayoutGraph', 'activateLineageEdits', 'renderAutoLayoutControl', 'renderGraph',
+    'graphVisibleModel', 'autoLayoutScope',
+  ].map(name => [name, get(name)]));
+  controller.state = state;
   controller.state.lineage = {
     lineage_id: 'lineage_aaaaaaaaaaaa', revision: 7, layout_revision: 0,
     nodes: Array.from({ length: 9 }, (_, index) => ({

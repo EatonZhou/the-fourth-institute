@@ -52,30 +52,35 @@ function hatgSources() {
   return Object.fromEntries(['hatg_panel.js', ...hatgModuleFiles()].map(file => [file, readHatgModule(file)]));
 }
 
+// The declaration of a named function in the runtime or in the module script
+// that owns it.
+function findHatgFunction(sources, name) {
+  const { babelParse, traverse } = require('./babel_parse.cjs');
+  for (const [file, text] of Object.entries(sources)) {
+    const ast = babelParse(text, file);
+    let node = null;
+    if (file === 'hatg_panel.js') {
+      const runtime = ast.program.body[0].expression.callee.body.body
+        .find(item => item.type === 'FunctionDeclaration' && item.id.name === 'createHatgRuntime');
+      node = runtime.body.body.find(item => item.type === 'FunctionDeclaration' && item.id.name === name) || null;
+    } else {
+      traverse(ast, { FunctionDeclaration(p) {
+        if (p.node.id.name === name) { node = p.node; p.stop(); }
+      } });
+    }
+    if (node) return { file, node, source: text.slice(node.start, node.end) };
+  }
+  throw new Error(`No HATG function ${name}`);
+}
+
 // Module parts receive runtime functions when the runtime starts, so a case
 // that replaces a function rewrites its declaration in the runtime or in the
 // module script that owns it: every caller then reaches the replacement. Each
 // replacement is an expression evaluated in its owner's scope at call time.
 function overrideHatgFunctions(sources, overrides) {
-  const { babelParse, traverse } = require('./babel_parse.cjs');
   const result = { ...sources };
   for (const [name, replacement] of Object.entries(overrides)) {
-    let target = null;
-    for (const [file, text] of Object.entries(result)) {
-      const ast = babelParse(text, file);
-      if (file === 'hatg_panel.js') {
-        const runtime = ast.program.body[0].expression.callee.body.body
-          .find(node => node.type === 'FunctionDeclaration' && node.id.name === 'createHatgRuntime');
-        const node = runtime.body.body.find(item => item.type === 'FunctionDeclaration' && item.id.name === name);
-        if (node) target = { file, node };
-      } else {
-        traverse(ast, { FunctionDeclaration(p) {
-          if (p.node.id.name === name) { target = { file, node: p.node }; p.stop(); }
-        } });
-      }
-      if (target) break;
-    }
-    if (!target) throw new Error(`No HATG function ${name}`);
+    const target = findHatgFunction(result, name);
     const text = result[target.file];
     result[target.file] = text.slice(0, target.node.start)
       + `function ${name}(...args) { return (${replacement})(...args); }` + text.slice(target.node.end);
@@ -83,4 +88,60 @@ function overrideHatgFunctions(sources, overrides) {
   return result;
 }
 
-module.exports = { STATIC, hatgModuleFiles, hatgSources, readHatgModule, createHatgModule, overrideHatgFunctions };
+// Create the real runtime in a vm context without mounting it. The context
+// already holds the scripts the panel needs before its own. Each part's factory
+// is wrapped, so the case reaches what the runtime passed to a part and what
+// the part returned: get(name) finds a part's export, or a runtime value that
+// some part depends on, such as state. A value the runtime declares itself and
+// passes to no part is reached when the case lists it in `runtimeNames`; a
+// listed name the runtime does not declare must be a part's export.
+function startHatgRuntime(context, sources = hatgSources(), runtimeNames = []) {
+  const vm = require('node:vm');
+  const { babelParse } = require('./babel_parse.cjs');
+  let runtimeSource = sources['hatg_panel.js'];
+  if (runtimeNames.length) {
+    const runtime = babelParse(runtimeSource, 'hatg_panel.js').program.body[0].expression.callee.body.body
+      .find(node => node.type === 'FunctionDeclaration' && node.id.name === 'createHatgRuntime');
+    const declared = new Set(runtime.body.body.flatMap(node => (
+      node.type === 'FunctionDeclaration' ? [node.id.name]
+        : node.type === 'VariableDeclaration' ? node.declarations.filter(item => item.id.type === 'Identifier').map(item => item.id.name)
+          : []
+    )));
+    const returned = runtime.body.body.find(node => node.type === 'ReturnStatement');
+    runtimeSource = runtimeSource.slice(0, returned.start)
+      + `window.__hatgRuntimeScope = { ${runtimeNames.filter(name => declared.has(name)).join(', ')} };\n`
+      + runtimeSource.slice(returned.start);
+  }
+  const globals = [...new Set([...runtimeSource.matchAll(/hatgModule\("([A-Za-z]+)"\)/g)].map(match => match[1]))];
+  for (const [file, text] of Object.entries(sources)) {
+    if (file !== 'hatg_panel.js') vm.runInContext(text, context, { filename: file });
+  }
+  const parts = {};
+  for (const name of globals) {
+    const module = context[name];
+    if (!module) throw new Error(`${name} is not loaded`);
+    const factory = Object.keys(module).find(key => key.startsWith('create') && typeof module[key] === 'function');
+    context[name] = Object.freeze({ ...module, [factory]: dependencies => {
+      const exports = module[factory](dependencies);
+      parts[name] = { dependencies, exports };
+      return exports;
+    } });
+  }
+  const outer = babelParse(runtimeSource, 'hatg_panel.js').program.body[0].expression.callee.body;
+  vm.runInContext(runtimeSource.slice(0, outer.end - 1) + '\nwindow.__createHatgRuntime = createHatgRuntime;\n'
+    + runtimeSource.slice(outer.end - 1), context, { filename: 'hatg_panel.js' });
+  const runtime = context.__createHatgRuntime();
+  const scope = context.__hatgRuntimeScope || {};
+  const get = name => {
+    for (const part of Object.values(parts)) if (Object.hasOwn(part.exports, name)) return part.exports[name];
+    for (const part of Object.values(parts)) if (Object.hasOwn(part.dependencies, name)) return part.dependencies[name];
+    if (Object.hasOwn(scope, name)) return scope[name];
+    throw new Error(`No HATG part exports or depends on ${name}`);
+  };
+  return { runtime, parts, get, state: get('state') };
+}
+
+module.exports = {
+  STATIC, hatgModuleFiles, hatgSources, readHatgModule, createHatgModule, findHatgFunction,
+  overrideHatgFunctions, startHatgRuntime,
+};
