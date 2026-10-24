@@ -5249,7 +5249,7 @@ button.messageQuote:focus-visible {
 
 .familyStatusPanel {
   flex-direction: column;
-  width: min(520px, calc(100vw - 24px));
+  width: min(780px, calc(100vw - 24px));
   overflow: hidden;
   background: var(--panel);
   color: var(--text);
@@ -5260,24 +5260,24 @@ button.messageQuote:focus-visible {
 .familyStatusPanel:not([hidden]) { display: flex; }
 .familyStatusPanel.is-inline { width: 100%; box-shadow: none; }
 .familyStatusBody { padding: 6px; min-height: 0; max-height: 400px; overflow: auto; overscroll-behavior: contain; }
-.familyStatusPanel table { width: 100%; min-width: 440px; border-collapse: collapse; table-layout: fixed; font-size: 12px; }
+.familyStatusPanel table { width: 100%; min-width: 720px; border-collapse: collapse; table-layout: fixed; font-size: 12px; }
 .familyStatusPanel th, .familyStatusPanel td { text-align: left; padding: 4px 6px; border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent); vertical-align: middle; }
-.familyStatusPanel th { position: sticky; top: -6px; z-index: 1; color: var(--muted); font-size: 11px; font-weight: 500; white-space: normal; overflow-wrap: anywhere; line-height: 1.35; background: var(--panel-2); padding-block: 7px; }
+.familyStatusPanel th { position: sticky; top: -6px; z-index: 1; color: var(--muted); font-size: 11px; font-weight: 500; white-space: normal; overflow-wrap: normal; word-break: normal; line-height: 1.35; background: var(--panel-2); padding-block: 7px; }
 .familyStatusPanel th:first-child { border-radius: 5px 0 0 5px; }
-.familyStatusPanel th:nth-child(2) { width: 68px; }
-.familyStatusPanel th:nth-child(3) { width: 140px; }
-.familyStatusPanel th:nth-child(4) { width: 54px; }
-.familyStatusPanel th:last-child { width: 42px; border-radius: 0 5px 5px 0; }
+.familyStatusPanel th:nth-child(2) { width: 96px; }
+.familyStatusPanel th:nth-child(3) { width: 180px; }
+.familyStatusPanel th:nth-child(4) { width: 92px; }
+.familyStatusPanel th:last-child { width: 76px; border-radius: 0 5px 5px 0; }
 .familyStatusPanel tbody > tr:last-child > td { border-bottom: 0; }
 .familyStatusPanel [data-family-status-row]:hover { background: color-mix(in srgb, var(--accent) 4%, var(--panel)); }
-.familyStatusPanel .familyStatusName { display: block; font-size: 12px; font-weight: 500; line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.familyStatusPanel .familyStatusName { display: block; font-size: 12px; font-weight: 500; line-height: 1.5; white-space: normal; overflow-wrap: anywhere; }
 .familyStatusPanel td .portalButton { min-width: 0; min-height: 24px; max-width: 100%; padding: 2px 3px; font-size: 12px; }
 .familyStatusWork { flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; }
-.familyStatusWork .status-badge { display: block; max-width: 100%; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.familyStatusWork .status-badge { display: block; max-width: 100%; line-height: 1.35; white-space: normal; }
 .familyStatusQueue { color: var(--muted); font-size: 11px; font-weight: 400; }
 .familyStatusPanel td .familyStatusAccount { font-weight: 500; text-align: left; }
 .familyStatusPanel td .familyStatusAccount, .familyStatusPanel td .familyStatusRuntime { min-height: 20px; line-height: 16px; padding-block: 1px; }
-.familyStatusAccount > span:first-child, .familyStatusRuntime > span:first-child { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.familyStatusAccount > span:first-child, .familyStatusRuntime > span:first-child { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
 .familyStatusAccount > span:last-child, .familyStatusRuntime > span:last-child { flex-shrink: 0; }
 .familyStatusRuntime { display: flex; margin-top: 0; color: var(--muted); font-weight: 400; white-space: nowrap; text-align: left; }
 .familyStatusPanel td .familyStatusRuntime { font-size: 11px; font-weight: 400; }
@@ -5295,10 +5295,6 @@ button.messageQuote:focus-visible {
 .familyStatusDetails dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 @media (max-width: 540px) {
   .familyStatusPanel th, .familyStatusPanel td { padding-inline: 4px; }
-  .familyStatusPanel th:nth-child(2) { width: 58px; }
-  .familyStatusPanel th:nth-child(3) { width: 112px; }
-  .familyStatusPanel th:nth-child(4) { width: 48px; }
-  .familyStatusPanel th:last-child { width: 34px; }
 }
 
 .portalLanguagePicker { display:flex; align-items:center; justify-content:space-between; gap:16px; font-size:12px; width:100%; }
