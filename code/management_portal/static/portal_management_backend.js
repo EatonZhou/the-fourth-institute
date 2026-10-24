@@ -255,6 +255,52 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     form.append(node("p", "", {role: "alert"})); view.el.append(form); view.open(); return {view, form};
   }
   const saveButton = form => form.append(node("button", t("保存"), {type: "submit", class: "portalButton is-primary"}));
+  function claudeCatalogFields(host, config = {}, options = null) {
+    const model = field(host, "默认模型", "default_model", config.default_model || "", {required: true, autocomplete: "off"});
+    hint(model, "填写账号实际可用的模型名称；Portal 按原样发送，不自动改写模型名。");
+    const models = field(options || advanced(host), "模型目录（JSON 数组）", "models", JSON.stringify(config.models || [], null, 2), {tag: "textarea", rows: "3"});
+    hint(models, "留空数组时将默认模型登记为唯一模型；填写目录时，默认模型必须在目录中且已启用。");
+  }
+  function readClaudeCatalog(form) {
+    const defaultModel = form.elements.default_model.value.trim();
+    if (!defaultModel) throw new Error(t("请填写 Claude 默认模型。"));
+    let models;
+    try { models = JSON.parse(form.elements.models.value); }
+    catch (_) { throw new Error(t("模型目录必须是 JSON 数组。")); }
+    if (!Array.isArray(models)) throw new Error(t("模型目录必须是 JSON 数组。"));
+    if (!models.length) models = [{id: defaultModel}];
+    const ids = new Set();
+    models = models.map(row => {
+      if (typeof row === "string") row = {id: row};
+      if (!row || typeof row !== "object" || Array.isArray(row) || typeof row.id !== "string" ||
+          !row.id.trim() || ids.has(row.id.trim()) || ("enabled" in row && typeof row.enabled !== "boolean")) {
+        throw new Error(t("模型目录的模型 ID 必须非空且不重复，enabled 必须是 boolean。"));
+      }
+      ids.add(row.id.trim()); return {...row, id: row.id.trim()};
+    });
+    if (!models.some(row => row.id === defaultModel && row.enabled !== false)) {
+      throw new Error(t("Claude 路由的 default_model 必须是已启用的模型"));
+    }
+    return {default_model: defaultModel, models};
+  }
+  function claudeCatalogEditor(account, requestedModel = "") {
+    if (!canWrite || account?.provider !== "claude" || account.kind !== "subscription_login" ||
+        !Number.isInteger(account.registration_version)) return;
+    const {view, form} = newEditor("编辑 Claude 模型目录");
+    claudeCatalogFields(form, {...(account.config || {}), default_model: account.config?.default_model || requestedModel});
+    saveButton(form);
+    form.addEventListener("submit", event => {
+      event.preventDefault();
+      let config;
+      try { config = {...(account.config || {}), ...readClaudeCatalog(form)}; }
+      catch (error) { form.querySelector('[role="alert"]').textContent = errorText(error); return; }
+      void run(async () => {
+        await execute("UpdateProviderAccountRegistration", {account_id: account.account_id, changes: {config}},
+          {expectedVersion: account.registration_version});
+        view.close(); await refresh("accounts"); setupEditor(account.account_id);
+      });
+    });
+  }
   function setupEditor(accountId) {
     let timer, progressTimer, closed = false, checking = false, working = false, setup = null;
     let preparationRequested = false, setupFailed = false;
@@ -290,6 +336,9 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     const retry = button("重试", () => { preparationRequested = false; void perform(reload); });
     const linkedApi = () => state.apis.find(api => api.api_id === state.accounts.find(a => a.account_id === accountId)?.config?.api_id);
     const editConnection = button("编辑连接", () => { const api = linkedApi(); if (api) apiEditor(api, {accountId}); });
+    const nativeClaude = () => state.accounts.find(a => a.account_id === accountId && a.provider === "claude" &&
+      a.kind === "subscription_login" && Number.isInteger(a.registration_version));
+    const editModels = button("编辑模型目录", () => claudeCatalogEditor(nativeClaude(), model.value.trim()));
     const test = button("测试并完成", () => void perform(async () => {
       nextStep.hidden = checkDetail.hidden = true;
       nextStep.textContent = checkDetail.textContent = "";
@@ -302,7 +351,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
         await pollCheck(receipt.execution_id);
       } catch (error) { checking = false; model.disabled = false; useDefault.disabled = false; throw error; }
     }, "正在启动本地后台并检查连接，请稍候…"), true);
-    form.append(capabilities, status, nextStep, checkDetail, actions(authorize, retry, editConnection, test, showLog), checkLog);
+    form.append(capabilities, status, nextStep, checkDetail, actions(authorize, retry, editConnection, editModels, test, showLog), checkLog);
     form.addEventListener("submit", event => event.preventDefault());
     function setButtons() {
       authorize.hidden = !setup || ["logged_in", "succeeded", "not_applicable"].includes(setup.login_state);
@@ -313,6 +362,9 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       retry.disabled = working || checking;
       editConnection.hidden = !linkedApi();
       editConnection.disabled = !canWrite || working || checking;
+      editModels.hidden = !nativeClaude() || setup?.provider !== "claude" ||
+        Boolean(!setup.catalog_error && setup.models?.length && setup.default_model);
+      editModels.disabled = !canWrite || working || checking;
     }
     async function perform(work, message = "正在检查运行环境与登录状态…", quiet = false) {
       if (closed || working) return;
@@ -442,7 +494,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       if (kind.value === "subscription_login" && provider.value === "codex") {
         field(options, "备用账号（逗号分隔）", "fallback_account_ids"); field(options, "默认路线", "is_default", "", {type: "checkbox"});
       } else if (kind.value === "subscription_login" && provider.value === "claude") {
-        field(options, "模型目录（JSON 数组）", "models", "[]", {tag: "textarea", rows: "3"});
+        claudeCatalogFields(extra, {}, options);
       } else if (kind.value === "api_profile") {
         const backend = state.providers.find(p => p.provider === provider.value) || {};
         const compatible = state.apis.filter(item => !backend.api_protocol || (item.harness_protocols || []).includes(backend.api_protocol));
@@ -475,8 +527,8 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
         config.is_default = form.elements.is_default.checked;
       }
       if (kind.value === "subscription_login" && provider.value === "claude") {
-        try { config.models = JSON.parse(value("models")); if (!Array.isArray(config.models)) throw new Error(); }
-        catch (_) { form.querySelector('[role="alert"]').textContent = t("模型目录必须是 JSON 数组。"); return; }
+        try { Object.assign(config, readClaudeCatalog(form)); }
+        catch (error) { form.querySelector('[role="alert"]').textContent = errorText(error); return; }
       }
       if (kind.value === "api_profile") {
         config.api_id = value("api_id");
@@ -673,6 +725,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
           isDefault ? t("默认路线") : ""].filter(Boolean).join(" · "),
         actions(button("接入与测试", () => setupEditor(a.account_id), !canWrite), ...(a.kind === "subscription_login" ? [button(a.login_state === "login_expired" ? "重新登录" : "登录", () => { login = openLogin(a.account_id, {onChanged: () => void refresh("accounts")}); }, !canWrite)] : []),
           ...(api ? [button("编辑连接", () => apiEditor(api, {accountId: a.account_id}), !canWrite)] : []),
+          ...(a.provider === "claude" && a.kind === "subscription_login" ? [button("编辑模型目录", () => claudeCatalogEditor(a), readonly)] : []),
           ...(a.provider === "codex" && a.enabled !== false && !isDefault ? [button("设为默认路线", () => void run(async () => {
             await execute("UpdateProviderAccountRegistration", {account_id: a.account_id, changes: {config: {...(a.config || {}), is_default: true}}}, {expectedVersion: a.registration_version});
             await reload(); }), readonly)] : []),
