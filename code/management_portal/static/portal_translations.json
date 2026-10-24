@@ -4735,6 +4735,10 @@
     "en": "Handoff saved as draft.",
     "zh-CN": "Handoff 已保存为草稿。"
   },
+  "Handoff 已保存，Workspace 准备失败：{p0}": {
+    "en": "Handoff saved, but preparing the Workspace failed: {p0}",
+    "zh-CN": "Handoff 已保存，Workspace 准备失败：{p0}"
+  },
   "Handoff 已停在可恢复状态": {
     "en": "Handoff has stopped in a recoverable state",
     "zh-CN": "Handoff 已停在可恢复状态"

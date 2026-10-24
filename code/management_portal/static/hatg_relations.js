@@ -477,8 +477,15 @@
         ]);
         closeModal("handoffModal");
         cancelHandoffMode();
-        if (response.handoff?.status === "ready") {
+        // A preparation reports its status at the top level, and a failed
+        // preparation is its recorded result; a plain update reports the Handoff.
+        const status = executeNow ? response.status : response.handoff?.status;
+        if (status === "ready") {
           toast(window.PortalI18n.t("Handoff 已就绪，目标 Workspace Binding 已验证。"), "success", 5000);
+        } else if (status === "failed") {
+          toast(window.PortalI18n.text`Handoff 已保存，Workspace 准备失败：${response.error || window.PortalI18n.t("未知错误")}`, "error", 7200);
+        } else if (status === "preparing") {
+          toast(window.PortalI18n.t("正在准备 Workspace"), "success", 5000);
         } else {
           toast(window.PortalI18n.t("Handoff 已保存为草稿。"), "success", 5000);
         }
@@ -617,7 +624,6 @@
       const sourcePath = primaryItem.source?.path || "";
       const targetPath = primaryItem.result?.target_path
         || primaryItem.target?.path
-
         || sourcePath;
       const sameWorkspace = Boolean(sourcePath && targetPath && sourcePath === targetPath);
       const recoverable = ["draft", "failed"].includes(String(edge.status || ""));
@@ -842,14 +848,20 @@
         const button = event.currentTarget;
         setBusy(button, true, "准备中…");
         try {
-          const response = await societyService.executeHandoff( {
+          const response = await societyService.executeHandoff({
             lineage_id: state.lineage.lineage_id,
             handoff_id: selectedEdge.id,
           });
           commitLineage(response.lineage, { render: false });
           await loadWorkspaceGraphBindings(state.lineage);
           renderLineageSurface();
-          toast(window.PortalI18n.t("Handoff Workspace 已就绪。"), "success");
+          if (response.status === "failed") {
+            toast(window.PortalI18n.text`Handoff 重试失败：${response.error || window.PortalI18n.t("未知错误")}`, "error", 7000);
+          } else if (response.status === "preparing") {
+            toast(window.PortalI18n.t("正在准备 Workspace"), "success");
+          } else {
+            toast(window.PortalI18n.t("Handoff Workspace 已就绪。"), "success");
+          }
         } catch (error) {
           try { commitLineage(await societyService.loadLineage(state.lineage.lineage_id), { render: false }); } catch {}
           renderLineageSurface();
