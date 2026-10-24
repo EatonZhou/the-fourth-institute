@@ -5,6 +5,7 @@ import hashlib
 from pathlib import Path
 from typing import Any
 
+from management_common.site_config import portal_project_ids
 from management_portal.resource_index_backend import _PathsAdapter, _timestamp_iso, resource_record
 from management_portal.test_framework.catalog import ROOT
 from management_portal.test_framework.catalog_source import catalog_paths
@@ -29,6 +30,7 @@ class TestCatalogAdapter(_PathsAdapter):
         from management_portal.resources.providers.test import catalog_repository
 
         records: list[dict[str, Any]] = []
+        project_ids = portal_project_ids()
         cases, resource_errors = catalog_repository().projection()
         modified: dict[Path, str] = {}
 
@@ -56,7 +58,7 @@ class TestCatalogAdapter(_PathsAdapter):
                         modified_at=modified[path],
                         facets=["test", *item["aspects"]],
                         attributes={
-                            "project_ids": ["AI员工"],
+                            "project_ids": list(project_ids),
                             "read_scope": "global",
                             "status": item["lifecycle"],
                             "key": item["key"],

@@ -17679,10 +17679,6 @@
     "en": "workspace_root cannot be empty",
     "zh-CN": "workspace_root 不能为空"
   },
-  "workspace_root 只能位于 /share/Agents、/share/Projects、/share/Codes 或 /srv/agent-staging": {
-    "en": "workspace_root must be under /share/Agents, /share/Projects, /share/Codes, or /srv/agent-staging",
-    "zh-CN": "workspace_root 只能位于 /share/Agents、/share/Projects、/share/Codes 或 /srv/agent-staging"
-  },
   "workspace_root 必须是绝对路径": {
     "en": "workspace_root must be an absolute path",
     "zh-CN": "workspace_root 必须是绝对路径"

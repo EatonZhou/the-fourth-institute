@@ -107,12 +107,12 @@ def test_research_package_isolated_build(tmp_path, monkeypatch):
     _source_module("test_build").test_research_package_isolated_build(tmp_path, monkeypatch)
 
 
-def test_migration_patch_uses_workbench_fields_and_preserves_metadata():
+def test_migration_patch_uses_workbench_fields_and_preserves_metadata(tmp_path, monkeypatch):
     """研究工作台迁移字段与原元数据保持
 
-    迁移更新字段遵循Workbench DEFINITION_FIELDS；保留原ID、期望修订及角色绑定，不发送title/description/owner_ids/project_ids/navigation。
+    迁移更新字段遵循Workbench DEFINITION_FIELDS；保留原ID、期望修订及角色绑定，不发送title/description/owner_ids/project_ids/navigation；源码仓库与目录取自本站 development_projection 配置。
 
     :risk: no-external-side-effects
     :profiles: local.fixture
     """
-    _source_module("test_definition").test_migration_patch_uses_workbench_fields_and_preserves_metadata()
+    _source_module("test_definition").test_migration_patch_uses_workbench_fields_and_preserves_metadata(tmp_path, monkeypatch)

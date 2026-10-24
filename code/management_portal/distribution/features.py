@@ -7,6 +7,8 @@ from copy import deepcopy
 import json
 import re
 
+# Releases carry the Portal System Lineage under this ID; installers bind
+# deployment.system_workflow to it. Distribution modules share this one value.
 SYSTEM = 'lineage_ed619225d417'
 SCHEMA = 'tfi.release-feature-states.v1'
 SWITCH_KEYS = {'system:request-timing:enabled': 'model_request_timing',

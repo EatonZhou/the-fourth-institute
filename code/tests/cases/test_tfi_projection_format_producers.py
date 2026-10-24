@@ -53,7 +53,10 @@ def test_new_page_output_and_legacy_validation_preserve_payload(example, monkeyp
         assert application_definition(COMMIT, example=example) == original
 
 
-def test_research_outputs_preserve_historical_source_and_revision():
+def test_research_outputs_preserve_historical_source_and_revision(monkeypatch, tmp_path):
+    site = tmp_path / 'site.json'
+    site.write_text(json.dumps({'deployment': {'development_projection': {'repo_id': 'repo_123456789abc'}}}))
+    monkeypatch.setenv('PORTAL_SITE_CONFIG', str(site))
     source = research.ROOT / "data/legacy-definitions.json"
     before = (source.read_bytes(), source.stat().st_mtime_ns)
     old = json.loads(before[0])["applications"]

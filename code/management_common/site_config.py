@@ -33,6 +33,16 @@ def site_name() -> str:
     return read_site_config().get("site_name", DEFAULT_SITE_NAME)
 
 
+def portal_project_ids() -> list[str]:
+    """Projects that own Portal's own development, such as its test cases and WALL entry."""
+    deployment = read_site_config().get("deployment", {})
+    config = deployment.get("development_projection", {}) if isinstance(deployment, dict) else None
+    projects = config.get("project_ids", []) if isinstance(config, dict) else None
+    if not isinstance(projects, list) or any(not isinstance(p, str) or not p.strip() for p in projects):
+        raise ValueError("deployment.development_projection.project_ids must be a list of nonempty strings")
+    return list(projects)
+
+
 def browser_storage_namespace() -> str:
     """Project stable installation identity, never a build or display name.
 

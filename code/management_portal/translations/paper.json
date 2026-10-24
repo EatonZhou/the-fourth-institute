@@ -1,11 +1,11 @@
 {
-  "/share/.../paper.pdf": {
-    "en": "/share/.../paper.pdf",
-    "zh-CN": "/share/.../paper.pdf"
+  "/absolute/path/to/analysis.md": {
+    "en": "/absolute/path/to/analysis.md",
+    "zh-CN": "/absolute/path/to/analysis.md"
   },
-  "/srv/agent-staging/.../analysis.md": {
-    "en": "/srv/agent-staging/.../analysis.md",
-    "zh-CN": "/srv/agent-staging/.../analysis.md"
+  "/absolute/path/to/paper.pdf": {
+    "en": "/absolute/path/to/paper.pdf",
+    "zh-CN": "/absolute/path/to/paper.pdf"
   },
   "AI Review": {
     "en": "AI Review",

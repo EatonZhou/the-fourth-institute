@@ -99,7 +99,8 @@ def _candidate(operation, arguments):
             return {"types": types}
         if operation == "GetLineage":
             from management_portal.society_service.state_store import get_lineage_data_store
-            identity = arguments.get("lineage_id") or "lineage_ed619225d417"
+            from .features import SYSTEM
+            identity = arguments.get("lineage_id") or SYSTEM
             if identity not in source.read_index(resource_ids=[identity]):
                 raise KeyError('Release Lineage candidate not found')
             return {"lineage": get_lineage_data_store().lineage_definition(identity)}

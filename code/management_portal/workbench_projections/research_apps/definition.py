@@ -9,11 +9,14 @@ import json
 from pathlib import Path
 import re
 
+from management_portal.workbench_projections.development_projection import portal_source
+
 ROOT = Path(__file__).parent
 
 def definitions(commit):
     if not re.fullmatch(r'[0-9a-f]{40}', commit):
         raise ValueError('A full source commit is required')
+    repo_id, directory = portal_source('management_portal/workbench_projections/research_apps')
     original = json.loads((ROOT / 'data/legacy-definitions.json').read_text())['applications']
     result = []
     for entry, old in original.items():
@@ -27,7 +30,7 @@ def definitions(commit):
             manifest={'schema':'tfi.projection.v2', 'chat':{'binding':'main','role':'facade'},
                 'sidebar':[{'id':'research','title':old['title'],'icon':'table','pattern':'comparison','source':'package:'+entry}],
                 'context':[{'channel':'focus','publishers':['research'],'subscribers':['research']}]},
-            application={'repo_id':'repo_5d287fed9c7e', 'directory':'management_portal/workbench_projections/research_apps',
+            application={'repo_id':repo_id, 'directory':directory,
                 'commit':commit,'entries':{entry:entry+'.html'}})
         result.append({'resource_id':old['workbench_id'], 'previous_published_revision':old['published_revision'], 'fields':payload})
     return result

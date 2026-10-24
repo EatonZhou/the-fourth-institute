@@ -1,9 +1,10 @@
 """Freeze only native binding inputs; the native owner validates semantics."""
 from copy import deepcopy
 
+from .features import SYSTEM
+
 NAMES = ('pulse', 'architecture_audit')
 FIELD = 'native_switch_site_config'
-SYSTEM = 'lineage_ed619225d417'
 
 
 def minimal_site_config(site):

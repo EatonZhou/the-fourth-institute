@@ -5,10 +5,10 @@ from copy import deepcopy
 from pathlib import Path
 
 from .content import registered_content_path
+from .features import SYSTEM
 from .sanitize import RESOURCE_ID, prune_permissions, ANONYMIZATION
 from .store import digest
 
-SYSTEM = "lineage_ed619225d417"
 BASE_TYPES = {"user", "project", "lineage", "resident", "family", "workspace", "workbench"}
 DEPENDENCIES = {"tau": {"test_framework"}, "test_view": {"test_framework"}, "wall_scheduling": {"wall"}}
 

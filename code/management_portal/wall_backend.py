@@ -26,6 +26,7 @@ from .wall_documents import (
     document_markdown, remove_index_reference, update_frontmatter, has_point_annotations,
 )
 from management_common.knowledge_metadata import validate_metaness
+from management_common.site_config import portal_project_ids
 from management_common.operation_errors import OperationError, failure_payload
 
 LOG = logging.getLogger(__name__)
@@ -44,7 +45,8 @@ _RUNTIME_THREAD: threading.Thread | None = None
 
 def _default_project() -> dict[str, Any]:
     return {"id": "portal", "title": "TFI Portal", "root": str(PORTAL_ROOT),
-            "project_id": "AI员工", "automation": {"enabled": False, "interval_minutes": 60, "auto_fix": True}}
+            "project_id": next(iter(portal_project_ids()), ""),
+            "automation": {"enabled": False, "interval_minutes": 60, "auto_fix": True}}
 
 
 def _state_store() -> WallState:

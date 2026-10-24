@@ -1,7 +1,7 @@
 """Generate a commit-pinned Portal application definition; installation uses HATG."""
 import re
 
-from management_common.site_config import read_site_config
+from management_common.site_config import portal_project_ids, read_site_config
 
 
 REGIONS = (
@@ -27,10 +27,7 @@ def _configuration(*, example: bool) -> dict:
         value = config.get(key)
         if not isinstance(value, str) or not re.fullmatch(kind + r"_[0-9a-f]{12}", value):
             raise ValueError(f"deployment.development_projection.{key} must be configured with a {kind} ID")
-    projects = config.get("project_ids", [])
-    if not isinstance(projects, list) or any(not isinstance(p, str) or not p.strip() for p in projects):
-        raise ValueError("deployment.development_projection.project_ids must be a list of nonempty strings")
-    return config
+    return {**config, "project_ids": portal_project_ids()}
 
 
 def _application_shell(sidebar, config, *, example):
@@ -43,6 +40,19 @@ def _application_shell(sidebar, config, *, example):
     }
 
 
+def _source_directory(config: dict, relative: str) -> str:
+    prefix = str(config.get("code_directory") or "").strip("/")
+    if prefix and (prefix.startswith(".") or ".." in prefix.split("/")):
+        raise ValueError("development_projection.code_directory must be a repository-relative directory")
+    return "/".join(filter(None, (prefix, relative)))
+
+
+def portal_source(relative: str) -> tuple[str, str]:
+    """The registered Portal repository and the in-repository path of a code-relative path."""
+    config = _configuration(example=True)
+    return config["repo_id"], _source_directory(config, relative)
+
+
 def application_definition(commit: str, *, example: bool = False):
     """Prepare a source reference; saving through HATG builds this exact commit."""
     from .page import validate_application
@@ -51,10 +61,7 @@ def application_definition(commit: str, *, example: bool = False):
     regions = (("example", "D3 与 Worker 平台示例", "activity"),) if example else REGIONS
     sidebar = [{"id": key, "title": title, "icon": icon, "pattern": key, "source": f"package:{key}"}
                for key, title, icon in regions]
-    prefix = str(config.get("code_directory") or "").strip("/")
-    if prefix and (prefix.startswith(".") or ".." in prefix.split("/")):
-        raise ValueError("development_projection.code_directory must be a repository-relative directory")
-    directory = "/".join(filter(None, (prefix, "management_portal/workbench_projections/development_app")))
+    directory = _source_directory(config, "management_portal/workbench_projections/development_app")
     application = {"repo_id": config["repo_id"], "directory": directory,
                    "commit": commit, "entries": {key: f"{key}.html" for key, _, _ in regions}}
     validate_application(application)

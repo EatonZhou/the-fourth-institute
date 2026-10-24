@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING, Any
 
+from management_common.site_config import portal_project_ids
 from management_portal.test_framework.catalog import ROOT, CatalogRepository
 
 from .common import canonical_record, canonical_resolution
@@ -25,7 +26,7 @@ def test_record(case: "TestCase") -> dict[str, Any]:
             "resource_type": "test",
             "title": item["title"],
             "summary": item["description"],
-            "project_ids": ["AI员工"],
+            "project_ids": portal_project_ids(),
             "read_scope": "global",
             "status": item["lifecycle"],
             "key": item["key"],

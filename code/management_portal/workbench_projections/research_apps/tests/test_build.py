@@ -8,6 +8,7 @@ import shutil
 import subprocess
 from types import SimpleNamespace
 
+from management_common.site_config import read_site_config
 from management_portal.workbench_projections import application_build as builder
 from management_portal.workbench_projections.page import validate_application, validate_page
 
@@ -58,6 +59,8 @@ const cacache = require('/usr/lib/node_modules/npm/node_modules/cacache');
         return sandbox_command(project, command, network=False, **kwargs)
     monkeypatch.setattr(builder, '_sandbox_command', cached_network)
     monkeypatch.setenv('PORTAL_PROJECTION_ARTIFACT_ROOT',str(tmp_path/'artifacts'))
+    config=read_site_config();config.setdefault('deployment',{})['development_projection']={'repo_id':'repo_123456789abc'}
+    site=tmp_path/'site.json';site.write_text(json.dumps(config));monkeypatch.setenv('PORTAL_SITE_CONFIG',str(site))
     spec=importlib.util.spec_from_file_location('research_definition',ROOT/'definition.py');module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
     definitions=module.definitions(commit)
     for item in definitions:
@@ -68,7 +71,7 @@ const cacache = require('/usr/lib/node_modules/npm/node_modules/cacache');
     result=builder.build_application(application,actor)
     assert any('--package-lock-only' in command for command in network_requests)
     assert any('ci' in command for command in network_requests)
-    assert calls==[('repo_5d287fed9c7e',actor)]
+    assert calls==[('repo_123456789abc',actor)]
     assert result['status']=='ready' and len(result['files'])==6
     assert result['entries']==application['entries']
     for name in ('semantic','matrix'):

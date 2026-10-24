@@ -18,16 +18,16 @@
 集成者先提交本目录，取得含这些源码的完整 Git SHA，再执行：
 
 ```sh
-python3 management_portal/workbench_projections/research_apps/definition.py --commit <完整源码提交>
+python3 -m management_portal.workbench_projections.research_apps.definition --commit <完整源码提交>
 ```
 
-输出包含两个原资源的完整更新字段和 `expected_revision`，不执行写入。分别使用当前授权身份的 `UpdateResource` 保存，核对构建回执和新修订后另行发布；基线变化必须重新审阅，不能用去掉 expected_revision 的方式覆盖。源码候选、保存修订、发布修订和真实读者验收分别记录。原 v1 HTML 在新定义中为空，旧修订只作为不可变历史保留。
+输出包含两个原资源的完整更新字段和 `expected_revision`，不执行写入。`application` 的仓库与目录取自本站 `deployment.development_projection` 的 `repo_id` 和 `code_directory`，与开发投影使用同一份登记。分别使用当前授权身份的 `UpdateResource` 保存，核对构建回执和新修订后另行发布；基线变化必须重新审阅，不能用去掉 expected_revision 的方式覆盖。源码候选、保存修订、发布修订和真实读者验收分别记录。原 v1 HTML 在新定义中为空，旧修订只作为不可变历史保留。
 
 ## 研究数据和语义对象
 
 原两页的相同报告解析与模型名称归一化函数由 `src/reports.js` 唯一维护，模型目录和方法匹配使用同一名称规则。测量、方法、组合、原始来源及未归属记录继续从原实验和 `information_6d772dbfa65b` 读取。协议迁移不触发实验、不重新评价已有结果、不把历史 NO_GO、候选、受干扰或缺测转换成通过。
 
-`data/semantic-snapshot.json` 是原 revision 7 内嵌的 36 行历史统计及原消息的逐值迁移。它经 `repo_5d287fed9c7e/file/management_portal/workbench_projections/research_apps/data/semantic-snapshot.json` 从 SDK 读取，不打包进可执行脚本。构建时把该文件 SHA256 固定到入口；读取时比对宿主权威 metadata.content_sha256，任何变化均明确失败，不混用新数据和旧程序。此文件属于有日期和原消息 ID 的迁移档案，不充当当前实测结果。页面同时核验原统计成员及团队；源文件、团队或统计成员不可读时撤下历史表格。要更改档案，需要更新来源依据并构建发布新的应用修订。
+`data/semantic-snapshot.json` 是原 revision 7 内嵌的 36 行历史统计及原消息的逐值迁移。它经 `repo_711b6ab6d5c8/file/code/management_portal/workbench_projections/research_apps/data/semantic-snapshot.json` 从 SDK 读取，不打包进可执行脚本。构建时把该文件 SHA256 固定到入口；读取时比对宿主权威 metadata.content_sha256，任何变化均明确失败，不混用新数据和旧程序。此文件属于有日期和原消息 ID 的迁移档案，不充当当前实测结果。页面同时核验原统计成员及团队；源文件、团队或统计成员不可读时撤下历史表格。要更改档案，需要更新来源依据并构建发布新的应用修订。
 
 选中历史格子使用档案的真实行锚点，kind 包含模型及硬件，source 指向原统计成员；选中当前实验使用实际实验资源地址。status=current 表示正在阅读的记录，不声明测量已经独立验收。方法测量用实际来源文件作为 ref，指标 JSON pointer 和来源摘要放入 scene。所有对象保持 `{ref,kind,status,source,observed_at}` 五字段。讨论 subject 仅用于确认标题，不混入对象身份。
 
