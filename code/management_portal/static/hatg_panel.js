@@ -187,7 +187,7 @@
     displayNodeById, displayProgramComponentById, displayProgramWireById, displaySeedById,
     executeHatgInstruction, familyForFacade, familyRoles, foldedFamilyObjects,
     functionBlockInstanceById, graphSelectedId, isFunctionBlockInstance,
-    isPacketOperatorComponent, isProgramComponent, loadResults, nodeById, nodeResidentId,
+    isPacketOperatorComponent, isProgramComponent, nodeById, nodeResidentId,
     programComponentById, programFeature, publishLocation, renderControls, renderLineageHeader,
     renderLineageSurface, setBusy, showFamilyAlone, societyService, state, toast,
     // The canvas projection, the program inspector, Seeds and Resident dialogs
@@ -201,6 +201,8 @@
     renderGraph: (...args) => renderGraph(...args),
     renderGraphSelection: (...args) => renderGraphSelection(...args),
     revealSelectedGraphNode: (...args) => revealSelectedGraphNode(...args),
+    // The Workspace results is created after this part.
+    loadResults: (...args) => loadResults(...args),
   });
 
 
@@ -256,12 +258,15 @@
     submitSeedDismissal,
   } = hatgModule("PortalHatgSeeds").createSeeds({
     $id, $queryAll, closeModal, commitLineage, displayNodeById, displaySeedById, esc,
-    executeHatgInstruction, loadResultFile, loadResults, nodeById, openModal,
-    programComponentById, programFeature, renderControls, renderLineageHeader,
-    renderLineageSurface, seedById, selectNode, setBusy, setSyncStatus, state, toast,
+    executeHatgInstruction, nodeById, openModal, programComponentById, programFeature,
+    renderControls, renderLineageHeader, renderLineageSurface, seedById, selectNode, setBusy,
+    setSyncStatus, state, toast,
     // The canvas view is created after this part.
     renderGraph: (...args) => renderGraph(...args),
     renderGraphSelection: (...args) => renderGraphSelection(...args),
+    // The Workspace results is created after this part.
+    loadResultFile: (...args) => loadResultFile(...args),
+    loadResults: (...args) => loadResults(...args),
   });
 
 
@@ -274,14 +279,16 @@
     $id, clearNodeSelection, clone, closeModal, commitLineage, compactText,
     currentHatgComponentOptions: () => hatgComponentOptions, currentNode, displayedProgram,
     displayNodeById, esc, familyForFacade, familyForNewResident, flushLineageLayoutSave,
-    formatDate, lineageEdgeReferencesResident, loadLineagePageData, loadResults, nodeById,
-    nodeIntakeState, nodeResidentId, openModal, programFeature, removeFamilyInstance,
-    renderLineageSurface, revealUnfamilizedMember, selectLineage, selectNode, setBusy,
-    setNodeRuntimeStatus, setSyncStatus, societyService, state, toast,
+    formatDate, lineageEdgeReferencesResident, loadLineagePageData, nodeById, nodeIntakeState,
+    nodeResidentId, openModal, programFeature, removeFamilyInstance, renderLineageSurface,
+    revealUnfamilizedMember, selectLineage, selectNode, setBusy, setNodeRuntimeStatus,
+    setSyncStatus, societyService, state, toast,
     // The canvas view is created after this part.
     renderGraph: (...args) => renderGraph(...args),
     // The Resident running state is created after this part.
     bindResidentStateCollection: (...args) => bindResidentStateCollection(...args),
+    // The Workspace results is created after this part.
+    loadResults: (...args) => loadResults(...args),
   });
 
   const {
@@ -349,16 +356,18 @@
     removeEditingEdge, selectRelationEdge, closeRelationInspector, renderRelationInspector,
   } = hatgModule("PortalHatgRelations").createRelations({
     $id, clone, closeModal, commitLineage, compactText, displayEdgeById, displayNodeById,
-    edgeById, esc, fillWorkspaceSelect, formatBytes, loadWorkspaceGraphBindings, nodeById,
-    nodeResidentId, openModal, programFeature, publishLocation, RELATION_LABEL, relationFamily,
-    renderControls, renderLineageSurface, renderProgramInspector, renderSeedInspector, seedById,
-    seedTypeLabel, selectedBoundWorkspace, selectNode, selectSeed, setBusy, setSeedCandidateFork,
+    edgeById, esc, fillWorkspaceSelect, formatBytes, nodeById, nodeResidentId, openModal,
+    programFeature, publishLocation, RELATION_LABEL, relationFamily, renderControls,
+    renderLineageSurface, renderProgramInspector, renderSeedInspector, seedById, seedTypeLabel,
+    selectedBoundWorkspace, selectNode, selectSeed, setBusy, setSeedCandidateFork,
     societyService, state, toast, uid,
     // The canvas view is created after this part.
     renderGraph: (...args) => renderGraph(...args),
     renderGraphModeHint: (...args) => renderGraphModeHint(...args),
     renderGraphSelection: (...args) => renderGraphSelection(...args),
     setGraphViewMode: (...args) => setGraphViewMode(...args),
+    // The Workspace results is created after this part.
+    loadWorkspaceGraphBindings: (...args) => loadWorkspaceGraphBindings(...args),
   });
 
   const {
@@ -378,15 +387,15 @@
     functionBlockInstanceUnacknowledgedFailures, functionBlockSourceTitle, graphItemById,
     graphSelectedEdgeId, graphSelectedId, graphVisibleModel, handleHandoffNodeClick,
     handleProgramPortClick, HATG_WORLD_SIZE, hatgNodeControl, hatgNodeHoverActions,
-    hatgViewPreferences, isFunctionBlockInstance, isProgramComponent, loadWorkspaceGraphBindings,
-    nodeById, nodeContextHeatBadge, nodeContextPressure, nodeExecutionGate, nodeIntakeState,
-    nodeIsDerived, nodeMessageCountText, nodeResidentId, nodeWorkPresentation,
-    normalizeOptionalLimit, notifyResidentOpenMenu, notifyResidentSelection,
-    openFunctionBlockMenu, openNodeSettingsModal, openSeedPromoteModal, positionSeedInspector,
-    programComponentPaused, programEventSourceRuntime, programEventSourceStatus,
-    programExecutionExplanation, reconcileCanvasSelection, refreshGraphNodeSearchResults,
-    relationVisibleInView, removeFamilyInstance, renderAutoLayoutControl, renderControls,
-    renderLineageSurface, renderProgramInspector, renderProgramWireHint, renderRelationInspector,
+    hatgViewPreferences, isFunctionBlockInstance, isProgramComponent, nodeById,
+    nodeContextHeatBadge, nodeContextPressure, nodeExecutionGate, nodeIntakeState, nodeIsDerived,
+    nodeMessageCountText, nodeResidentId, nodeWorkPresentation, normalizeOptionalLimit,
+    notifyResidentOpenMenu, notifyResidentSelection, openFunctionBlockMenu,
+    openNodeSettingsModal, openSeedPromoteModal, positionSeedInspector, programComponentPaused,
+    programEventSourceRuntime, programEventSourceStatus, programExecutionExplanation,
+    reconcileCanvasSelection, refreshGraphNodeSearchResults, relationVisibleInView,
+    removeFamilyInstance, renderAutoLayoutControl, renderControls, renderLineageSurface,
+    renderProgramInspector, renderProgramWireHint, renderRelationInspector,
     resetProgramEventSource, residentEditorOpenMenu, saveLineageLayout,
     scheduleHatgViewPreferenceSave, selectedFamilyPigeonId, selectNode, selectProgramComponent,
     selectProgramObject, selectRelationEdge, selectSeed, setFunctionBlockExpanded,
@@ -395,7 +404,17 @@
     workspaceGraphModel,
     // The Resident running state is created after this part.
     stopLineageNode: (...args) => stopLineageNode(...args),
+    // The Workspace results is created after this part.
+    loadWorkspaceGraphBindings: (...args) => loadWorkspaceGraphBindings(...args),
   });
+
+  const {
+    loadResultFile, loadWorkspaceGraphBindings, loadResults,
+  } = hatgModule("PortalHatgWorkspaceResults").createWorkspaceResults({
+    currentHatgComponentOptions: () => hatgComponentOptions, currentNode, displaySeedById,
+    renderGraph, renderLineageHeader, seedById, state, toast,
+  });
+
 
   const {
     reconcileLineageRuntime, bindResidentStateCollection, bindLineageProjectionSubscription,
@@ -1053,133 +1072,6 @@
         ? applyProgramMutation(() => executeHatgInstruction(instruction, args))
         : window.PortalInstructionClient.execute(instruction, args),
     });
-  }
-
-  async function requestUnifiedPreview(request = {}) {
-    const handler = hatgComponentOptions.onPreviewRequest
-      || window.PortalPreview?.request;
-    if (typeof handler !== "function") {
-      throw new Error("统一 Preview 路由尚未初始化。");
-    }
-    await handler(request);
-    return true;
-  }
-
-  function resolveWorkspacePreviewPath(value) {
-    const path = String(value || "").replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
-    if (!path) return "";
-    const workspace = state.resultWorkspace || {};
-    const entries = Array.isArray(workspace.entries) ? workspace.entries : [];
-    const exact = entries.find(entry => String(entry?.path || "") === path);
-    if (exact) return String(exact.path || path);
-
-    const roots = Array.isArray(workspace.roots) ? workspace.roots : [];
-    const directoryIds = new Set(roots.map(root => String(root?.directory_id || "")).filter(Boolean));
-    if (directoryIds.has(path.split("/", 1)[0])) return path;
-
-    const relativeMatches = entries.filter(entry => (
-      String(entry?.rel_path || "") === path
-      && !["directory", "symlink"].includes(String(entry?.type || entry?.kind || ""))
-    ));
-    if (relativeMatches.length === 1) return String(relativeMatches[0].path || path);
-    const lineageMatch = relativeMatches.find(entry => entry?.is_lineage_workspace === true);
-    if (lineageMatch) return String(lineageMatch.path || path);
-    const workspaceMatch = relativeMatches.find(entry => String(entry?.root_kind || "") === "workspace");
-    if (workspaceMatch) return String(workspaceMatch.path || path);
-
-    const selectedSeed = displaySeedById(state.selectedSeedId) || seedById(state.selectedSeedId);
-    const lineageRoot = roots.find(root => root?.is_lineage_workspace === true)
-      ;
-    if (
-      lineageRoot?.directory_id
-      && String(selectedSeed?.artifact_path || "").replace(/^\/+|\/+$/g, "") === path
-    ) {
-      return `${lineageRoot.directory_id}/${path}`;
-    }
-    const defaultRoot = roots.find(root => root?.is_default_cwd === true)
-      || roots.find(root => root?.workspace_usage === "primary");
-    return defaultRoot?.directory_id ? `${defaultRoot.directory_id}/${path}` : path;
-  }
-
-  async function loadResultFile(path, options = {}) {
-    if (!state.lineage || !state.resultWorkspaceNodeId || !path) return false;
-    const lineageId = state.lineage.lineage_id;
-    const residentId = state.resultWorkspaceNodeId;
-    const previewPath = resolveWorkspacePreviewPath(path);
-    state.selectedResultPath = previewPath;
-    return requestUnifiedPreview({
-      locatorKind: "lineage-workspace",
-      lineageId,
-      residentId,
-      path: previewPath,
-      title: previewPath.split("/").pop() || window.PortalI18n.t("Preview"),
-      source: "hatg",
-      reload: options.reload === true,
-    });
-  }
-
-  async function loadWorkspaceGraphBindings(lineage = state.lineage, options = {}) {
-    if (!lineage?.lineage_id) {
-      return { complete: false, failedCount: 0, stale: true };
-    }
-    const render = options.render !== false;
-    const fit = options.fit !== false;
-    const sequence = state.workspaceGraphLoadSeq;
-    const lineageId = lineage.lineage_id;
-    const missingNodes = (lineage.nodes || []).filter(node => !state.workspaceGraphBindings.has(node.id));
-    if (!missingNodes.length) {
-      if (render && state.graphViewMode === "workspace") renderGraph();
-      return { complete: true, failedCount: 0, stale: false };
-    }
-    const results = await Promise.allSettled(missingNodes.map(async node => ({
-      nodeId: node.id,
-      workspace: await window.PortalResidentService.workspaces(node.id),
-    })));
-    if (sequence !== state.workspaceGraphLoadSeq || state.lineage?.lineage_id !== lineageId) {
-      return { complete: false, failedCount: 0, stale: true };
-    }
-    const bindings = new Map(state.workspaceGraphBindings);
-    results.forEach(result => {
-      if (result.status === "fulfilled") bindings.set(result.value.nodeId, result.value.workspace);
-    });
-    state.workspaceGraphBindings = bindings;
-    const failedCount = results.filter(result => result.status === "rejected").length;
-    const complete = failedCount === 0
-      && (lineage.nodes || []).every(node => bindings.has(node.id));
-    if (render && state.graphViewMode === "workspace") {
-      renderGraph();
-      if (fit) {
-        window.requestAnimationFrame(() => state.graphController?.fit?.({ duration: 220, maxScale: 1.15 }));
-      }
-    }
-    return { complete, failedCount, stale: false };
-  }
-
-  async function loadNodeWorkspaces(node = currentNode()) {
-    if (!state.lineage || !node) return null;
-    const sequence = ++state.resultWorkspaceSeq;
-    const lineageId = state.lineage.lineage_id;
-    const nodeId = node.id;
-    const workspace = await window.PortalResidentService.workspaces(nodeId);
-    if (state.lineage?.lineage_id === lineageId) state.workspaceGraphBindings.set(nodeId, workspace);
-    if (sequence !== state.resultWorkspaceSeq || state.lineage?.lineage_id !== lineageId || state.selectedNodeId !== nodeId) return null;
-    state.resultWorkspace = workspace;
-    state.resultWorkspaceNodeId = nodeId;
-    renderLineageHeader();
-    return workspace;
-  }
-
-  async function loadResults() {
-    const node = currentNode();
-    if (!state.lineage || !node) return;
-    try {
-      const workspace = await loadNodeWorkspaces(node);
-      if (workspace && state.selectedResultPath) {
-        await loadResultFile(state.selectedResultPath, { reload: true });
-      }
-    } catch (error) {
-      toast(window.PortalI18n.text`成果列表刷新失败：${error.message || error}`, "error");
-    }
   }
 
   function bindModals() {
