@@ -7,7 +7,7 @@ const vm = require('node:vm');
 const { randomUUID } = require('node:crypto');
 const { JSDOM } = require('jsdom');
 const { babelParse } = require('./babel_parse.cjs');
-const { hatgSources, overrideHatgFunctions } = require('./hatg_modules.cjs');
+const { hatgSources, overrideHatgFunctions, startHatgRuntime } = require('./hatg_modules.cjs');
 const ROOT = path.resolve(__dirname, '../../..');
 const STATIC = path.join(ROOT, 'management_portal/static');
 const read = name => fs.readFileSync(path.join(STATIC, name), 'utf8');
@@ -83,20 +83,11 @@ const sources = overrideHatgFunctions(hatgSources(), {
   closeModal: 'id => { $id(id).hidden = true; }',
   selectLineage: 'async id => { state.lineage = await societyService.loadLineage(id); }',
 });
-for (const [name, text] of Object.entries(sources)) {
-  if (name !== 'hatg_panel.js') vm.runInContext(text, context, { filename: name });
-}
-const source = sources['hatg_panel.js'];
-const ast = babelParse(source, 'hatg_panel.js');
-const scope = ast.program.body[0].expression.callee.body.body.find(n => n.type === 'FunctionDeclaration' && n.id.name === 'createHatgRuntime');
-const ret = scope.body.body.find(n => n.type === 'ReturnStatement');
-const hook = `
-  return { state, openCreateLineageModal, openEditLineageModal, submitLineageForm,
-    loadLineageAuxiliaryCatalogs, renderProgramInspector, syncProgramComponentSwitch,
-    programEventSourceStatus, graphNodeContent, activateLineageEdits };
-`;
-vm.runInContext(source.slice(scope.start, ret.start) + hook + source.slice(ret.end, scope.end) + '\nwindow.api = createHatgRuntime();', context);
-const api = w.api;
+const names = ['openCreateLineageModal', 'openEditLineageModal', 'submitLineageForm',
+  'loadLineageAuxiliaryCatalogs', 'renderProgramInspector', 'syncProgramComponentSwitch',
+  'programEventSourceStatus', 'graphNodeContent', 'activateLineageEdits'];
+const runtime = startHatgRuntime(context, sources, names);
+const api = { state: runtime.state, ...Object.fromEntries(names.map(name => [name, runtime.get(name)])) };
 api.state.lineage = plain(server);
 api.state.projects = [{ id: 'project_test', name: 'Test project' }];
 api.state.lineages = [];

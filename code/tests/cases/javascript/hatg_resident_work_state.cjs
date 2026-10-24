@@ -6,8 +6,8 @@ const repo = path.resolve(__dirname, '../../..'), root = path.join(repo, 'manage
 const {chromium} = require(path.join(repo, 'management_portal/test_framework/tau_runtime/node_modules/playwright'));
 const {babelParse, traverse} = require('./babel_parse.cjs');
 const source = fs.readFileSync(path.join(root, 'hatg_panel.js'), 'utf8');
-const names = new Set(['graphNodeContent', 'runtimeStatusFromResidentProjection',
-  'applyResidentStateProjections', 'applyResidentStateCollection', 'renderGraphRuntimePresentation']);
+const names = new Set(['runtimeStatusFromResidentProjection',
+  'applyResidentStateProjections', 'applyResidentStateCollection']);
 const extracted = [];
 traverse(babelParse(source, 'hatg_panel.js'), {FunctionDeclaration(p) {
   if (names.has(p.node.id?.name)) extracted.push(source.slice(p.node.start, p.node.end));
@@ -18,6 +18,8 @@ const report = {checks:[], errors:[], ok:false};
   try {
     const page = await browser.newPage({viewport:{width:1050,height:600}});
     page.on('pageerror', e => report.errors.push(e.message));
+    // The state subscription reports a failing listener on the console.
+    page.on('console', m => { if (m.type() === 'error') report.errors.push(m.text()); });
     await page.route('**/*', route => {
       const u = new URL(route.request().url());
       if (u.pathname.startsWith('/static/')) return route.fulfill({body:fs.readFileSync(path.join(root, u.pathname.slice(8))),contentType:u.pathname.endsWith('.css')?'text/css':'text/javascript'});
@@ -25,7 +27,7 @@ const report = {checks:[], errors:[], ok:false};
     });
     await page.goto('https://hatg-state.fixture.invalid');
     for (const name of ['portal_design_system','portal_themes','hatg_panel']) await page.addStyleTag({url:'/static/'+name+'.css'});
-    for (const name of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min','resident_protocol','lineage_graph','hatg_graph_model','hatg_node_status']) await page.addScriptTag({url:'/static/'+name+'.js'});
+    for (const name of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min','resident_protocol','lineage_graph','hatg_graph_model','hatg_node_status','hatg_graph_view']) await page.addScriptTag({url:'/static/'+name+'.js'});
     await page.evaluate(code => {
       PortalI18n.apply('zh-CN');
       const member='resident_fixture', facade='resident_facade';
@@ -47,9 +49,15 @@ const report = {checks:[], errors:[], ok:false};
       window.familyForFacade=id=>id===facade?{roles:{members:[member]}}:null;window.familyExpanded=()=>false;
       window.compactText=s=>s;window.nodeMessageCountText=()=> '1 messages';window.nodeContextHeatBadge=()=>'';
       window.updateLineageSummary=()=>{};window.renderControls=()=>{};window.hatgComponentOptions={};
-      window.graphVisibleModel=()=>({nodes:state.lineage.nodes,edges:[]});
-      eval(code+'\nwindow.renderer=graphNodeContent;window.resolveStatus=effectiveNodeStatus;window.applyStates=applyResidentStateCollection;');
-      state.graphController=PortalHatgGraph.createGraph({root:'#canvas',world:'#world',edgeLayer:'#edges',effectLayer:'#effects',labelLayer:'#labels',nodeLayer:'#nodes',statusForNode:window.resolveStatus,nodeContent:window.renderer});
+      // The context projection gives the whole and the shown graph; this fixture shows all of it.
+      window.graphVisibleModel=()=>({nodes:state.lineage.nodes,edges:[],overviewNodes:state.lineage.nodes,overviewEdges:[]});
+      // The card content and the running-state repaint are the production canvas view.
+      const view=create(PortalHatgGraphView,'createGraphView',{state,esc,compactText,nodeResidentId,effectiveNodeStatus,
+        nodeExecutionGate,nodeIntakeState,nodeWorkPresentation,isFunctionBlockInstance,isProgramComponent,nodeIsDerived,
+        familyMemberTag,familyForFacade,familyExpanded,nodeMessageCountText,nodeContextHeatBadge,graphVisibleModel});
+      window.renderGraphRuntimePresentation=view.renderGraphRuntimePresentation;
+      eval(code+'\nwindow.applyStates=applyResidentStateCollection;');
+      state.graphController=PortalHatgGraph.createGraph({root:'#canvas',world:'#world',edgeLayer:'#edges',effectLayer:'#effects',labelLayer:'#labels',nodeLayer:'#nodes',statusForNode:effectiveNodeStatus,nodeContent:view.graphNodeContent});
       const patch=state.graphController.patchRuntimePresentation;
       state.graphController.patchRuntimePresentation=(...args)=>{f.patches++;return patch(...args)};
       window.renderGraph=()=>state.graphController.render(graphVisibleModel());renderGraph();
