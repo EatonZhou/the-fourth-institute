@@ -86,6 +86,11 @@ function instructionScope(request) {
       'GetConversation', 'WatchConversationEvents', 'GetInputState', 'DeleteResident', 'ClearContext',
       'RestartSession', 'GetSessionRestart', 'CancelSessionRestart', 'CancelInput', 'DeliverMessage']);
     if (!operations.has(body?.instruction)) return {};
+    if (body.instruction === 'ListMailboxTodos') {
+      const user = body.arguments?.user_id;
+      return { instruction: body.instruction, resourceScope: typeof user === 'string' && user.length > 0 && user.length <= 256
+        ? {kind: 'user', mode: body.instruction, target_sha256: createHash('sha256').update(user).digest('hex')} : undefined };
+    }
     const target = body.arguments?.resident_id;
     return { instruction: body.instruction, resourceScope: typeof target === 'string' && /^resident_[0-9a-f]{12}$/.test(target)
       ? { kind: 'resident', mode: body.instruction, target_sha256: createHash('sha256').update(target).digest('hex') }
@@ -333,15 +338,17 @@ async function observeBrowser(context, { evidenceDir }) {
           request_id: match?.id || null,
           request_association: match ? 'portal_stream_identity' : 'unavailable_no_unique_transport_identity' });
       } else if (data.kind === 'portal_state_read') {
+        const instruction = data.instruction == null ? 'ListResidentStates'
+          : ['ListResidentStates', 'ListMailboxTodos'].includes(data.instruction) ? data.instruction : null;
         const transportId = /^[a-z0-9-]{1,96}$/.test(data.transport_id || '') ? data.transport_id : null;
         const candidates = (transportRequests.get(transportId ? `request:${transportId}` : null) || [])
-          .filter(request => request.document === doc && request.frame === state
-            && instructionScope(request.request).instruction === 'ListResidentStates');
+          .filter(request => instruction && request.document === doc && request.frame === state
+            && instructionScope(request.request).instruction === instruction);
         const match = doc && candidates.length === 1 ? candidates[0] : null;
-        const allowed = new Set('explicit_read subscription projection viewer-state stream_reset completion payload_omitted focus visibilitychange reconciliation_timer viewer_followup transient_retry unknown'.split(' '));
-        write({ kind: 'portal_state_read', ...associated, transport_id: transportId,
-          consumer: ['inbox', 'chat', 'state_subscription'].includes(data.consumer) ? data.consumer : 'unknown',
-          reader_id: /^(state-[1-9][0-9]{0,10}|chat-reconciliation)$/.test(data.reader_id || '') ? data.reader_id : null,
+        const allowed = new Set('explicit_read subscription projection viewer-state stream_reset completion payload_omitted focus visibilitychange reconciliation_timer viewer_followup transient_retry panel_visible refresh_timer identity_changed mutation unknown'.split(' '));
+        write({ kind: 'portal_state_read', ...associated, instruction, transport_id: transportId,
+          consumer: ['inbox', 'chat', 'state_subscription', 'mailbox_todos'].includes(data.consumer) ? data.consumer : 'unknown',
+          reader_id: /^(state-[1-9][0-9]{0,10}|mailbox-todos-[1-9][0-9]{0,10}|chat-reconciliation)$/.test(data.reader_id || '') ? data.reader_id : null,
           reasons: [...new Set((Array.isArray(data.reasons) ? data.reasons : ['unknown']).slice(0, 32)
             .map(reason => allowed.has(reason) ? reason : 'unknown'))],
           browser_observed_at_ms: Number.isFinite(data.at) ? data.at : null,
@@ -501,14 +508,16 @@ async function observeBrowser(context, { evidenceDir }) {
     window.addEventListener('portal:connection-closed', event => {
       if (event.detail && typeof event.detail === 'object') connections([event.detail]);
     });
-    const readReasons = new Set('explicit_read subscription projection viewer-state stream_reset completion payload_omitted focus visibilitychange reconciliation_timer viewer_followup transient_retry unknown'.split(' '));
+    const readReasons = new Set('explicit_read subscription projection viewer-state stream_reset completion payload_omitted focus visibilitychange reconciliation_timer viewer_followup transient_retry panel_visible refresh_timer identity_changed mutation unknown'.split(' '));
     window.addEventListener('portal:state-read', event => {
       const item = event.detail;
       if (!item || typeof item !== 'object') return;
       emit({ kind: 'portal_state_read',
+        instruction: item.instruction == null ? 'ListResidentStates'
+          : ['ListResidentStates', 'ListMailboxTodos'].includes(item.instruction) ? item.instruction : 'unknown',
         transport_id: /^[a-z0-9-]{1,96}$/.test(item.transport_id || '') ? item.transport_id : null,
-        consumer: ['inbox', 'chat', 'state_subscription'].includes(item.consumer) ? item.consumer : 'unknown',
-        reader_id: /^(state-[1-9][0-9]{0,10}|chat-reconciliation)$/.test(item.reader_id || '') ? item.reader_id : null,
+        consumer: ['inbox', 'chat', 'state_subscription', 'mailbox_todos'].includes(item.consumer) ? item.consumer : 'unknown',
+        reader_id: /^(state-[1-9][0-9]{0,10}|mailbox-todos-[1-9][0-9]{0,10}|chat-reconciliation)$/.test(item.reader_id || '') ? item.reader_id : null,
         reasons: [...new Set((Array.isArray(item.reasons) ? item.reasons : ['unknown']).slice(0, 32)
           .map(reason => readReasons.has(reason) ? reason : 'unknown'))],
       });

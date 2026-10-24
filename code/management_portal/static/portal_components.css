@@ -3653,8 +3653,11 @@ button.portalFileLink {
 }
 
 .portalAgentInboxHeaderSummary {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
+  min-width: 0;
   margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
   color: var(--muted, #64748b);
   font-size: 9px;
   white-space: nowrap;
@@ -3663,6 +3666,7 @@ button.portalFileLink {
 .portalAgentInboxPanel > header button {
   appearance: none;
   display: inline-grid;
+  flex: 0 0 auto;
   width: 28px;
   height: 28px;
   place-items: center;

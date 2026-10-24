@@ -338,6 +338,7 @@
       this.snapshotRetryTimer = null;
       this.snapshotRetryMs = 1000;
       this.listeners = new Set();
+      this.consumerObservations = new Map();
       this.refCount = 0;
       this.reloadRequested = false;
       this.pendingEvents = [];
@@ -1340,9 +1341,12 @@
 
     start(listener, options = {}) {
       this.listener = listener;
-      this.subscriptions = this.residentIds.map(residentId => (
-        residentStore(residentId).subscribeState(update => this.onStateUpdate(update))
-      ));
+      this.subscriptions = this.residentIds.map(residentId => {
+        const store = residentStore(residentId);
+        const unsubscribe = store.subscribeState(update => this.onStateUpdate(update));
+        const releaseObservation = observeConsumer(store, "state", { consumer: this.readConsumer });
+        return () => { releaseObservation(); unsubscribe(); };
+      });
       if (options.load !== false) this.load({ ...options, reasons: ["subscription"] }).catch(() => {});
       return this;
     }
@@ -1388,11 +1392,23 @@
     return store;
   }
 
+  let consumerSequence = 0;
+  function observeConsumer(store, scope, options = {}) {
+    const id = `consumer-${++consumerSequence}`;
+    const consumer = ["chat", "family_member", "inbox", "state_subscription"].includes(options.consumer)
+      ? options.consumer : "unknown";
+    const element = typeof Element !== "undefined" && options.observationRoot instanceof Element
+      ? options.observationRoot : null;
+    store.consumerObservations.set(id, { id, scope, consumer, element });
+    return () => store.consumerObservations.delete(id);
+  }
+
   function acquire(residentId, listener, options = {}) {
     const key = String(residentId || "").trim();
     if (!key) throw new Error("resident_id required");
     const store = residentStore(key);
     const unsubscribe = store.subscribe(listener);
+    const releaseObservation = observeConsumer(store, "conversation", options);
     if (options.load !== false) store.load(options).catch(() => {});
     return {
       residentId: key,
@@ -1400,7 +1416,7 @@
       loadOlder: options => store.loadOlder(options),
       acceptAcknowledgement: value => store.acceptAcknowledgement(value),
       snapshot: () => store.submissionSnapshot(),
-      destroy: unsubscribe,
+      destroy: () => { releaseObservation(); unsubscribe(); },
     };
   }
 
@@ -1435,6 +1451,16 @@
       conversation_consumers: store?.refCount || 0,
       state_consumers: store?.stateRefCount || 0,
       stream_active: Boolean(store?.streamStarted),
+      consumers: Object.freeze([...(store?.consumerObservations.values() || [])].map(item => {
+        const element = item.element;
+        let visible = null;
+        if (element && !element.isConnected) visible = false;
+        else if (element && typeof element.checkVisibility === "function") {
+          visible = element.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true });
+        }
+        return Object.freeze({ id: item.id, scope: item.scope, consumer: item.consumer,
+          connected: element ? element.isConnected : null, visible });
+      })),
     });
   }
 

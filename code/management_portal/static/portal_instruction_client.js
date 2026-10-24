@@ -48,14 +48,15 @@
   // Local, content-free provenance of the reader that actually dispatched an
   // attempt. Joining a cached/in-flight read does not create another receipt.
   // Observation never changes request arguments or the retry/error contract.
-  const stateReadReasons = new Set("explicit_read subscription projection viewer-state stream_reset completion payload_omitted focus visibilitychange reconciliation_timer viewer_followup transient_retry unknown".split(" "));
+  const stateReadReasons = new Set("explicit_read subscription projection viewer-state stream_reset completion payload_omitted focus visibilitychange reconciliation_timer viewer_followup transient_retry panel_visible refresh_timer identity_changed mutation unknown".split(" "));
   function recordStateRead(instruction, observation, transportId) {
-    if (instruction !== "ListResidentStates") return;
+    if (!["ListResidentStates", "ListMailboxTodos"].includes(instruction)) return;
     try {
       const detail = {
         transport_id: transportId,
-        consumer: ["inbox", "chat", "state_subscription"].includes(observation?.consumer) ? observation.consumer : "unknown",
-        reader_id: /^(state-[1-9][0-9]{0,10}|chat-reconciliation)$/.test(observation?.reader_id || "") ? observation.reader_id : null,
+        instruction,
+        consumer: ["inbox", "chat", "state_subscription", "mailbox_todos"].includes(observation?.consumer) ? observation.consumer : "unknown",
+        reader_id: /^(state-[1-9][0-9]{0,10}|mailbox-todos-[1-9][0-9]{0,10}|chat-reconciliation)$/.test(observation?.reader_id || "") ? observation.reader_id : null,
         reasons: [...new Set((Array.isArray(observation?.reasons) ? observation.reasons : ["unknown"])
           .slice(0, 32).map(reason => stateReadReasons.has(reason) ? reason : "unknown"))],
         at: new Date().toISOString(),

@@ -1,8 +1,10 @@
 (function () {
   "use strict";
   if (window.PortalMailboxTodos) return;
+  let readerSequence = 0;
 
   function create(container, { onChange = () => {} } = {}) {
+    const readerId = `mailbox-todos-${++readerSequence}`;
     const controller = new AbortController();
     const { signal } = controller;
     const t = source => window.PortalI18n.t(source);
@@ -96,13 +98,13 @@
       window.PortalUIPrimitives.mountIcons(groups);
       onChange(snapshot());
     }
-    async function refresh(force = false) {
+    async function refresh(force = false, reason = "explicit_read") {
       if (signal.aborted || state.busy || (!force && (state.editing || state.drag))) return;
       if (state.request) return state.request;
       const revision = state.revision;
       const request = window.PortalIdentity.userId().then(userId => window.PortalInstructionClient.execute("ListMailboxTodos", {
         user_id: userId,
-      })).then(payload => {
+      }, { readObservation: { consumer: "mailbox_todos", reader_id: readerId, reasons: [reason] } })).then(payload => {
         if (signal.aborted || revision !== state.revision) return;
         state.items = payload.items || [];
         state.loaded = true;
@@ -127,7 +129,7 @@
         else if (instruction === "DeleteMailboxTodo") state.items = state.items.filter(item => item.todo_id !== args.todo_id);
         state.request = null;
         state.busy = false;
-        await refresh(true);
+        await refresh(true, "mutation");
         return !signal.aborted && revision === state.revision;
       } catch (reason) {
         if (!signal.aborted && revision === state.revision) error(reason.message || t("保存待办失败"));
@@ -298,15 +300,15 @@
     groups.addEventListener("pointercancel", endDrag, { signal });
     groups.addEventListener("lostpointercapture", endDrag, { signal });
     // The tab count is visible whenever Mailbox is open, even on the messages tab.
-    const refreshVisible = () => { if (state.visible && !document.hidden) void refresh(); };
-    window.addEventListener("focus", refreshVisible, { signal });
-    document.addEventListener("visibilitychange", refreshVisible, { signal });
+    const refreshVisible = reason => { if (state.visible && !document.hidden) void refresh(false, reason); };
+    window.addEventListener("focus", () => refreshVisible("focus"), { signal });
+    document.addEventListener("visibilitychange", () => refreshVisible("visibilitychange"), { signal });
     window.addEventListener("portal:identity-changed", () => {
       state.revision += 1;
       Object.assign(state, { request: null, busy: false, items: [], loaded: false, editing: null, saving: null, drag: null, pendingCompletion: new Map() });
-      state.closed.clear(); resetForm(); error(); render(); refreshVisible();
+      state.closed.clear(); resetForm(); error(); render(); refreshVisible("identity_changed");
     }, { signal });
-    const timer = window.setInterval(refreshVisible, 15000);
+    const timer = window.setInterval(() => refreshVisible("refresh_timer"), 15000);
     validate(); render();
     return Object.freeze({
       refresh, snapshot,
@@ -315,7 +317,7 @@
         const finish = state.active && !active;
         state.visible = visible;
         state.active = active;
-        if (refreshNeeded) refreshVisible();
+        if (refreshNeeded) refreshVisible("panel_visible");
         if (finish) void finishEdit();
       },
       destroy() { controller.abort(); window.clearInterval(timer); container.replaceChildren(); },

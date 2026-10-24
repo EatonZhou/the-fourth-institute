@@ -11450,7 +11450,7 @@
             if (!row.subscription) {
               const subscription = window.PortalResidentProtocol.acquire(node.resident_id, update => {
                 if (!disposed && rows.get(node.resident_id) === row && update.snapshot) { row.snapshot = update.snapshot; render(); }
-              }, { historyLimit: 1 });
+              }, { historyLimit: 1, consumer: "family_member", observationRoot: root });
               row.subscription = subscription;
               row.stops.push(() => subscription.destroy());
             }
@@ -12424,7 +12424,7 @@
               stagedSnapshot = update.snapshot;
             }
           },
-          { load: false },
+          { load: false, consumer: "chat", observationRoot: this.workspace.root },
         );
         this.pendingProtocol = stagedProtocol;
         const detailRequest = this.requestDetail(target, options);

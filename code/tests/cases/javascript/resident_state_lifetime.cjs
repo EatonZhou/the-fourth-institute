@@ -65,6 +65,36 @@ test('a subscribed batch larger than the idle cache keeps every state and unread
   assert.equal(f.calls.length, 1);
 });
 
+test('passive consumer identities distinguish retained hidden Chat and release without reading', t => {
+  const f = fixture(t), id = ids[0], root = f.w.document.createElement('section');
+  f.w.document.body.append(root);
+  root.checkVisibility = () => !root.hidden;
+  const mailbox = f.acquire([id], {consumer: 'inbox'});
+  const chat = f.p.acquire(id, () => {}, {load: false, consumer: 'chat', observationRoot: root});
+  const other = f.p.acquire(id, () => {}, {load: false, consumer: 'private unrecognized label'});
+  const first = f.p.subscriptionSnapshot(id);
+  assert.equal(first.consumers.length, 3);
+  assert.equal(new Set(first.consumers.map(c => c.id)).size, 3);
+  const chatRecord = first.consumers.find(c => c.consumer === 'chat');
+  assert.equal(chatRecord.visible, true);
+  assert.equal(chatRecord.connected, true);
+  assert.equal(first.consumers.find(c => c.consumer === 'inbox').scope, 'state');
+  assert.equal(first.consumers.find(c => c.consumer === 'unknown').visible, null);
+  assert.equal(JSON.stringify(first).includes('private'), false);
+  root.hidden = true;
+  const hidden = f.p.subscriptionSnapshot(id).consumers.find(c => c.id === chatRecord.id);
+  assert.equal(hidden.visible, false);
+  assert.equal(hidden.connected, true, 'hidden presentation is not a released subscription');
+  assert.equal(chatRecord.visible, true, 'earlier observations do not mutate');
+  assert.ok(Object.isFrozen(first.consumers) && Object.isFrozen(chatRecord));
+  root.remove();
+  assert.equal(f.p.subscriptionSnapshot(id).consumers.find(c => c.id === chatRecord.id).connected, false);
+  chat.destroy(); chat.destroy(); other.destroy(); mailbox.destroy();
+  assert.equal(f.p.subscriptionSnapshot(id).consumers.length, 0);
+  assert.equal(f.p.subscriptionSnapshot(id).conversation_consumers, 0);
+  assert.equal(f.calls.length, 0, 'observing and hiding a consumer must never issue a read');
+});
+
 test('an unsubscribed in-flight batch settles once after the Mailbox list is replaced', async t => {
   const f = fixture(t), sub = f.acquire(ids);
   const original = f.w.PortalResidentService.loadStates;

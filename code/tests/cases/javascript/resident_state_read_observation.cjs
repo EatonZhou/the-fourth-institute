@@ -67,6 +67,36 @@ test('only the dispatching reader emits provenance; joining and cached reads add
   assert.ok(!JSON.stringify(f.receipts).includes('private-resident'));
 });
 
+test('Mailbox Todo provenance records its own visible/timer reads without extra hidden requests', async t => {
+  const f = fixture(t), w = f.w;
+  w.PortalIdentity.userId = async () => 'private-todo-user';
+  w.PortalI18n.markup = value => value;
+  w.PortalUIPrimitives = {mountIcons() {}, randomUUID: () => 'fixture'};
+  w.eval(fs.readFileSync(path.join(root, 'management_portal/static/portal_mailbox_todos.js'), 'utf8'));
+  const container = w.document.createElement('section');
+  w.document.body.append(container);
+  const todos = w.PortalMailboxTodos.create(container);
+  t.after(() => todos.destroy());
+  const timer = f.intervals.find(item => item.delay === 15000);
+  timer.callback(); await tick();
+  assert.equal(f.calls.length, 0);
+  todos.setView({visible: true, active: false}); await tick();
+  timer.callback(); await tick();
+  assert.equal(f.calls.length, 2);
+  assert.deepEqual(f.receipts.map(r => r.instruction), ['ListMailboxTodos', 'ListMailboxTodos']);
+  assert.deepEqual(f.receipts.map(r => r.reasons), [['panel_visible'], ['refresh_timer']]);
+  for (let i = 0; i < 2; i++) {
+    assert.equal(f.receipts[i].reader_id, 'mailbox-todos-1');
+    assert.equal(f.receipts[i].consumer, 'mailbox_todos');
+    assert.equal(f.receipts[i].transport_id, f.calls[i].headers['X-Portal-Request-ID']);
+    assert.deepEqual(f.calls[i].body.arguments, {user_id: 'private-todo-user'});
+  }
+  todos.setView({visible: false, active: false});
+  timer.callback(); w.dispatchEvent(new w.Event('focus')); await tick();
+  assert.equal(f.calls.length, 2, 'hidden Todo stays idle; instrumentation is not a new poller');
+  assert.equal(JSON.stringify(f.receipts).includes('private-todo-user'), false);
+});
+
 test('queued focus and visibility causes survive the old read; timer has its own cause', async t => {
   const f = fixture(t), sub = f.acquire({consumer: 'inbox'});
   let finish;

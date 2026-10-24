@@ -154,6 +154,10 @@ function documentProbe(content, receive) {
     }
     dispatch('portal:state-read', { transport_id: 'state-request', consumer: 'private-consumer',
       reader_id: 'private-reader', reasons: null });
+    for (const transport_id of ['todo-request', 'state-request']) {
+      dispatch('portal:state-read', {instruction: 'ListMailboxTodos', transport_id,
+        consumer: 'mailbox_todos', reader_id: 'mailbox-todos-1', reasons: ['refresh_timer']});
+    }
     performanceCallback({ getEntries: () => [
       { name: `${origin}/api/agent-workbench/residents/projection?id=private-resident&token=query-secret`, initiatorType: 'fetch' },
       { name: `${origin}/api/private-name?token=query-secret`, initiatorType: 'fetch' },
@@ -172,6 +176,8 @@ async function injectedContract(observe) {
       url: '/api/instructions/execute', method: 'POST', headers: { 'x-portal-request-id': transportId },
       body: { instruction: 'ListResidentStates', arguments: { resident_ids: ['private-resident'] } },
     })),
+    {url: '/api/instructions/execute', method: 'POST', headers: {'x-portal-request-id': 'todo-request'},
+      body: {instruction: 'ListMailboxTodos', arguments: {user_id: 'private-todo-user'}}},
   ], ({ rows, starts, output }) => {
     const ready = rows.filter(row => row.kind === 'portal_stream_ready');
     const closed = rows.filter(row => row.kind === 'portal_connection_closed');
@@ -198,7 +204,7 @@ async function injectedContract(observe) {
       assert.equal(event.request_id, undefined, 'a lifecycle event alone does not prove request causation');
     }
     const reads = rows.filter(row => row.kind === 'portal_state_read');
-    assert.equal(reads.length, 5);
+    assert.equal(reads.length, 7);
     assert.equal(reads[0].request_id, starts[4].request_id);
     assert.equal(reads[0].request_association, 'portal_request_identity');
     assert.equal(reads[0].consumer, 'inbox');
@@ -211,8 +217,14 @@ async function injectedContract(observe) {
     assert.equal(reads[4].consumer, 'unknown');
     assert.equal(reads[4].reader_id, null);
     assert.deepEqual(reads[4].reasons, ['unknown']);
+    assert.equal(reads[5].request_id, starts[7].request_id);
+    assert.equal(reads[5].instruction, 'ListMailboxTodos');
+    assert.equal(reads[5].consumer, 'mailbox_todos');
+    assert.equal(reads[5].reader_id, 'mailbox-todos-1');
+    assert.deepEqual(reads[5].reasons, ['refresh_timer']);
+    assert.equal(reads[6].request_id, null, 'a Todo receipt cannot claim a Resident state request');
     excludes(output, ['query-secret', 'private-name', 'private-resident', 'private-header', 'focus-private-content',
-      'private-read-reason', 'private-read-content', 'private-consumer', 'private-reader']);
+      'private-read-reason', 'private-read-content', 'private-consumer', 'private-reader', 'private-todo-user']);
   }, observe, true);
 }
 
