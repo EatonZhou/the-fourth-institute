@@ -32,6 +32,70 @@ def _view(family, message_id):
     return family_recovery.view(facade, family_recovery.records(facade)[message_id])
 
 
+def test_continue_preserves_the_actual_relayed_input_after_execution(family, monkeypatch):
+    """真实转交的接收封装进入 Conversation 后，失败恢复保留同一输入。"""
+    import copy
+    from types import SimpleNamespace
+    from management_portal.execution import execution_inputs
+    from management_portal.execution.agent_data_store import get_agent_data_store
+    from management_portal.execution.agent_data_projection import AgentDataProjector
+    from management_portal.execution.contracts import ExecutionRequest
+    from management_portal.execution.session_manager import RuntimeSession
+    from management_portal.society_service import resident_input_recovery
+    from management_portal.society_service.domain_ports import execution_port
+
+    root = _send(family, "保留真实转交封装和原始正文")
+    facade_id, member_id = family["facade"], family["wrong"]
+    monkeypatch.setattr(family_facade, "validate_relay", lambda *_: (facade_id, root))
+    monkeypatch.setattr(execution_port, "service", lambda: SimpleNamespace(accounts=lambda: {"accounts": []}))
+    result = run("RelayFamilyMessage", {
+        "resident_id": facade_id, "message_id": root, "member_id": member_id,
+    }, actor="sample_admin").raise_for_error()
+    member_message = result["message_id"]
+    record, repository = _find_resident(member_id), resident_conversation_stream.get_repository()
+    work = resident_execution_work.read(record)
+    candidates = [work, *resident_execution_work.normalized_queue(work)]
+    queued = next(item for item in candidates if item.get("user_message_id") == member_message)
+    original = copy.deepcopy(queued["input_message"])
+    repository.validate_message_identity(member_id, original)
+    resident_execution_work.clear(record)
+    request = ExecutionRequest.new(actor=queued["actor"], agent_id=member_id, provider="codex",
+        service_type="agent_session", operation="turn", prompt="保留真实转交封装和原始正文",
+        metadata={"user_message_id": member_message})
+    job = copy.deepcopy(queued)
+    job.update(execution_id=request.execution_id, queue=[])
+    store = get_agent_data_store()
+    now = datetime.now(timezone.utc).isoformat()
+    store.begin_execution(execution_id=job["execution_id"], agent_id=member_id,
+                          actor_ref=job["actor"], provider="codex", started_at=now)
+    execution_inputs.attach(store, job["execution_id"], [{"message_id": member_message,
+                            "role": "primary", "accepted_at": now}])
+    resident_input_recovery.retain_input_checkpoint(record, job, [])
+    repository.commit_user_message(member_id, {**original, "activated_at": now})
+    projector = AgentDataProjector(store)
+    projector.begin(request, RuntimeSession(mode="stateless", binding_id="", backend_session_id="relay-recovery",
+                                           is_new_backend_session=False), created_at=now)
+    projector.observe_invocation(request.execution_id, SimpleNamespace(request=request,
+        user_prompt="<resident-runtime-identity>test</resident-runtime-identity>\n" + request.prompt))
+    current = repository.validate_message_identity(member_id, original)
+    assert current["content_parts"] != original["content_parts"]
+    repository.set_input_state(member_id, member_message, "running")
+    store.finish_execution(job["execution_id"], status="failed", finished_at=now)
+    repository.set_input_state(member_id, member_message, "failed", error={"message": "provider timeout"})
+
+    command = _send(family, "continue")
+
+    assert _view(family, command)["status"] == "queued", _view(family, command)
+    assert repository.input_state(member_id, member_message)["state"] == "queued"
+    assert repository.message(member_id, member_message)["content_parts"] == current["content_parts"]
+    restored = resident_execution_work.read(record)
+    assert [item["user_message_id"] for item in resident_execution_work.normalized_queue(restored)] == [member_message]
+    assert resident_execution_work.normalized_queue(restored)[0]["input_message"] == original
+    _send(family, "continue")
+    assert [item["user_message_id"] for item in resident_execution_work.normalized_queue(
+        resident_execution_work.read(record))] == [member_message]
+
+
 def test_continue_requeues_failed_member_once_and_keeps_original_link(family):
     """Family continue 恢复原成员输入并保留投影关联"""
     repository = resident_conversation_stream.get_repository()

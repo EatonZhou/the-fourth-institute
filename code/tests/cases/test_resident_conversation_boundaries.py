@@ -60,7 +60,8 @@ def message(index):
     }
 
 
-def test_replayed_input_validates_its_immutable_source_but_shows_current_content(repository):
+@pytest.mark.parametrize("entrypoint", ["append_message", "accept_user_message", "validate_message_identity"])
+def test_replayed_input_validates_its_immutable_source_but_shows_current_content(repository, entrypoint):
     """重放的输入按原始内容校验，显示 Harness 改写后的当前内容，内容不同的重放被拒绝"""
     from management_portal.execution.message_projection import wrap_message
     resident_id = "resident_111111111111"
@@ -73,12 +74,15 @@ def test_replayed_input_validates_its_immutable_source_but_shows_current_content
         operation_id="replace_input", operation_type="agent_harness.prepare_invocation",
     )
     cursor = repository.current_projection(resident_id)["cursor"]
-    replay = repository.append_message(resident_id, original)
+    validate = getattr(repository, entrypoint)
+    replay = validate(resident_id, original)
     assert replay["content_parts"] == [{"type": "text", "text": "current Harness content"}]
     assert repository.current_projection(resident_id)["cursor"] == cursor
     assert repository.agent_data.trace_length(resident_id) == 1
-    with pytest.raises(ValueError, match="different immutable content"):
-        repository.append_message(resident_id, {**original, "content_parts": [{"type": "text", "text": "unrelated replacement"}]})
+    for change in ({"content_parts": [{"type": "text", "text": "unrelated replacement"}]},
+                   {"author_id": "bob"}, {"created_at": "2026-09-07T00:00:00Z"}):
+        with pytest.raises(ValueError, match="different immutable content"):
+            validate(resident_id, {**original, **change})
 
 
 def test_harness_input_notification_uses_the_collected_unwrapped_content(repository):

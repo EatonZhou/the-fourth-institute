@@ -621,12 +621,7 @@ class ResidentConversationRepository:
         else:
             with self._protocol_scope(stream_id):
                 stored, _inserted = self.state_store.mailbox_accept(stream_id, payload)
-        public = _message_from_storage(stored)
-        if _immutable_message_fields(public) != _immutable_message_fields(public_input):
-            raise resident_message_contract.MessageIdentityConflict(
-                "Conversation message identity refers to different immutable content"
-            )
-        return public
+        return self._validate_stored_message_identity(stored, public_input)
 
     def validate_message_identity(
         self,
@@ -639,12 +634,28 @@ class ResidentConversationRepository:
         stored = self._stored_message(resident_id, public_input["message_id"])
         if stored is None:
             raise KeyError(str(public_input["message_id"]))
+        return self._validate_stored_message_identity(stored, public_input)
+
+    def _validate_stored_message_identity(
+        self, stored: Mapping[str, Any], public_input: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        """Check the accepted input's immutable ancestry, returning its current view."""
         public = _message_from_storage(stored)
-        if _immutable_message_fields(public) != _immutable_message_fields(public_input):
-            raise resident_message_contract.MessageIdentityConflict(
-                "Conversation message identity refers to different immutable content"
-            )
-        return public
+        expected = _immutable_message_fields(public_input)
+        if _immutable_message_fields(public) == expected:
+            return public
+        # Harness preparation may replace the displayed input. Acceptance,
+        # read-only validation and delivery must all compare the original
+        # envelope against the same provenance chain, never only the wrapper.
+        if stored.get("segment_id") and public_input["role"] == "user":
+            for ancestor in self.agent_data.chat_message_ancestors(
+                str(stored["segment_id"]), str(public_input["message_id"]),
+            ):
+                if _immutable_message_fields(_message_from_storage(ancestor)) == expected:
+                    return public
+        raise resident_message_contract.MessageIdentityConflict(
+            f"Conversation message identity refers to different immutable content: {public_input['message_id']}"
+        )
 
     def execution_content_parts(
         self,
@@ -709,17 +720,8 @@ class ResidentConversationRepository:
         message_id = str(public_input["message_id"])
 
         def check(stored: Mapping[str, Any] | None) -> None:
-            if stored is not None and (
-                _immutable_message_fields(_message_from_storage(stored))
-                != _immutable_message_fields(public_input)
-            ):
-                if stored.get("segment_id") and public_input["role"] == "user":
-                    for ancestor in self.agent_data.chat_message_ancestors(str(stored["segment_id"]), message_id):
-                        if _immutable_message_fields(_message_from_storage(ancestor)) == _immutable_message_fields(public_input):
-                            return
-                raise resident_message_contract.MessageIdentityConflict(
-                    f"Conversation message identity refers to different immutable content: {message_id}"
-                )
+            if stored is not None:
+                self._validate_stored_message_identity(stored, public_input)
 
         # Fully committed replays are reads, not another protocol transaction.
         # A message without its durable event still enters the single writer
