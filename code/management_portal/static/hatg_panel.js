@@ -440,10 +440,13 @@
   });
 
   let graphControlObserver = null;
+  let graphControlResizeFrame = 0;
   let seedInspectorObserver = null;
   function disconnectGraphObservers() {
     graphControlObserver?.disconnect();
     graphControlObserver = null;
+    window.cancelAnimationFrame(graphControlResizeFrame);
+    graphControlResizeFrame = 0;
     seedInspectorObserver?.disconnect();
     seedInspectorObserver = null;
   }
@@ -988,12 +991,27 @@
       [$id("graphNavigationBar"), "--hatg-navigation-height"],
     ]);
     const observedViewport = $id("hatgViewport");
+    const pendingControlSizes = new Map();
     graphControlObserver = new ResizeObserver(entries => {
       if (!observedViewport.isConnected) return;
       for (const entry of entries) {
         const height = entry.borderBoxSize[0]?.blockSize ?? entry.contentRect.height;
-        observedViewport.style.setProperty(graphControlSizes.get(entry.target), `${height}px`);
+        pendingControlSizes.set(graphControlSizes.get(entry.target), `${height}px`);
       }
+      // The canvas is observed at the same depth as the toolbar. Changing its
+      // inset during ResizeObserver delivery skips that canvas notification.
+      // Apply the latest measurements on the next frame, outside delivery.
+      if (graphControlResizeFrame) return;
+      graphControlResizeFrame = window.requestAnimationFrame(() => {
+        graphControlResizeFrame = 0;
+        if (!observedViewport.isConnected) return;
+        for (const [property, size] of pendingControlSizes) {
+          if (observedViewport.style.getPropertyValue(property) !== size) {
+            observedViewport.style.setProperty(property, size);
+          }
+        }
+        pendingControlSizes.clear();
+      });
     });
     graphControlSizes.forEach((_, element) => graphControlObserver.observe(element));
     $id("seedDismissForm").addEventListener("submit", submitSeedDismissal);
