@@ -18,6 +18,7 @@ const bootstrap = `
   const clone = value => JSON.parse(JSON.stringify(value));
   const toast = (...args) => hooks.toasts.push(args);
   const setSyncStatus = (...args) => hooks.statuses.push(args);
+  const showProgramMutationStatus = message => hooks.statuses.push([message, "mutation"]);
   const renderProgramInspector = () => {};
   const updateLineageSummary = () => {};
   const selectNode = async () => {};

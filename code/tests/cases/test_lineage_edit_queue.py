@@ -22,7 +22,7 @@ def panel_functions(names):
 
 FUNCTIONS = [
     "createLineageEditQueue", "activateLineageEdits", "flushLineageLayoutSave",
-    "saveLineageLayout", "applyProgramMutation",
+    "saveLineageLayout", "applyProgramMutation", "separateGraphObject", "separateGraphObjects",
     "createProgramComponentFromDrop", "hasNewLineageGraphProjection", "mergeLineageStateDomains",
     "overlayLineageLayout", "lineageItemsById", "lineagePayloadsEqual", "nodeResidentId",
     "commitLineage", "displayedResidentIds", "sameIdSet", "forgetRemovedLineageMembers",
