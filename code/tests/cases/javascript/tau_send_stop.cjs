@@ -26,10 +26,27 @@ const { sendThenStop } = require('../../../management_portal/test_framework/tau_
     assert.ok(quick.stop_dom_ready_ms >= quick.send_click_ms);
     assert.ok(quick.stop_click_ms >= quick.stop_dom_ready_ms);
     assert.deepEqual(await page.evaluate(() => [submissions, stops, trusted]), [1, 1, [true, true]]);
+    assert.deepEqual(quick.pointer_events.map(x => [x.type,x.control]), [
+      ['pointerdown','send'],['pointerup','send'],['pointerdown','stop'],['pointerup','stop']]);
+    assert.ok(quick.stop_observations.some(x => x.visible && x.enabled && x.center_hits_stop));
 
     const delayed = await sendThenStop(await prepare(650));
     assert.ok(delayed.send_to_stop_ms >= 650, 'disabled wait is retained, not subtracted to pass 500ms');
     assert.equal(delayed.click_error, null);
+    assert.ok(delayed.stop_observations.some(x => !x.enabled));
+
+    const coveredControls = await prepare(0);
+    await page.evaluate(() => document.querySelector('#send').addEventListener('click', () => {
+      const r = document.querySelector('#stop').getBoundingClientRect();
+      const cover = document.createElement('div'); cover.textContent = 'private fixture content';
+      Object.assign(cover.style, {position:'fixed',zIndex:100,left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px'});
+      document.body.append(cover); setTimeout(() => cover.remove(), 650);
+    }));
+    const covered = await sendThenStop(coveredControls);
+    assert.ok(covered.send_to_stop_ms >= 650, 'hit-target delay remains inside the original timing');
+    assert.ok(covered.stop_observations.some(x => x.visible && x.enabled && !x.center_hits_stop && x.hit_tag === 'DIV'));
+    assert.ok(covered.stop_observations.some(x => x.center_hits_stop));
+    assert.deepEqual(await page.evaluate(() => [submissions, stops]), [1, 1]);
 
     let timeout;
     try { await sendThenStop({ ...await prepare(null), timeoutMs: 300 }); }
@@ -54,9 +71,10 @@ const { sendThenStop } = require('../../../management_portal/test_framework/tau_
     catch(error) {absent=error;}
     assert.equal(absent?.sendStopMeasurement.observation,'not_started');
     const rows = fs.readFileSync(path.join(evidenceDir, 'tau-send-stop.jsonl'), 'utf8').trim().split('\n').map(JSON.parse);
-    assert.equal(rows.length, 5, 'pre-click failure and dynamically mounted Stop retain original receipts');
-    assert.equal(rows[2].click_error, 'TimeoutError');
+    assert.equal(rows.length, 6, 'pre-click failure and dynamically mounted Stop retain original receipts');
+    assert.equal(rows[3].click_error, 'TimeoutError');
     assert.ok(!JSON.stringify(rows).includes('Send</button>'), 'no control content is recorded');
+    assert.ok(!JSON.stringify(rows).includes('private fixture content'), 'no hit-target content is recorded');
     console.log('send-stop native clicks passed');
   } finally {
     if (browser) await browser.close();

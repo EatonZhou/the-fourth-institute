@@ -32,14 +32,42 @@ async function sendThenStop({ send, stop, stopSelector = '', evidenceDir, timeou
       }
       const result = { observation: 'capturing', time_origin_ms: performance.timeOrigin,
         started_ms: performance.now(), send_click_ms: null, stop_click_ms: null,
-        stop_dom_ready_ms: null, send_click_count: 0, stop_click_count: 0 };
+        stop_dom_ready_ms: null, send_click_count: 0, stop_click_count: 0,
+        stop_observations: [], stop_observations_dropped: 0, pointer_events: [] };
+      let previousNode, nodeGeneration = 0, previousRect = '', stableSince = null, previousSample = '';
       function sample() {
-        if (result.send_click_ms === null || result.stop_dom_ready_ms !== null) return;
+        if (result.send_click_ms === null || result.stop_click_ms !== null) return;
+        const now = performance.now();
         const stopNode = findStop();
-        const visible = stopNode?.isConnected && stopNode.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true });
-        if (visible && !stopNode.matches(':disabled') && stopNode.getAttribute('aria-disabled') !== 'true') {
-          result.stop_dom_ready_ms = performance.now();
+        const connected = !!stopNode?.isConnected;
+        const visible = connected && stopNode.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true });
+        const enabled = connected && !stopNode.matches(':disabled') && stopNode.getAttribute('aria-disabled') !== 'true';
+        if (visible && enabled && result.stop_dom_ready_ms === null) result.stop_dom_ready_ms = now;
+        const bounds = connected ? stopNode.getBoundingClientRect() : null;
+        const rect = bounds ? [bounds.x, bounds.y, bounds.width, bounds.height].map(v => Math.round(v * 4) / 4) : null;
+        const rectKey = JSON.stringify(rect);
+        if (stopNode !== previousNode || rectKey !== previousRect) {
+          if (stopNode !== previousNode) nodeGeneration += 1;
+          stableSince = now; previousNode = stopNode; previousRect = rectKey;
         }
+        const hit = visible && bounds ? doc.elementFromPoint(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2) : null;
+        const state = { connected, visible, enabled, rect, node_generation: nodeGeneration,
+          center_hits_stop: !!hit && stopNode.contains(hit), hit_tag: hit?.tagName || null,
+          rect_unchanged_since_ms: stableSince };
+        const key = JSON.stringify(state);
+        if (key === previousSample) return;
+        previousSample = key;
+        if (result.stop_observations.length < 128) result.stop_observations.push({ at_ms: now, ...state });
+        else result.stop_observations_dropped += 1;
+      }
+      function pointer(event) {
+        if (!event.isTrusted || result.pointer_events.length >= 16) return;
+        const stopNode = findStop();
+        const control = sendNode.contains(event.target) ? 'send' : stopNode?.contains(event.target) ? 'stop' : 'other';
+        if (control === 'other' && (result.send_click_ms === null || result.stop_click_ms !== null)) return;
+        sample();
+        result.pointer_events.push({ type: event.type, at_ms: performance.now(), control,
+          target_tag: event.target?.tagName || null, default_prevented_at_capture: event.defaultPrevented });
       }
       function clicked(event) {
         if (!event.isTrusted) return;
@@ -58,6 +86,8 @@ async function sendThenStop({ send, stop, stopSelector = '', evidenceDir, timeou
       const mutations = new MutationObserver(sample);
       mutations.observe(doc.documentElement, { subtree: true, attributes: true, childList: true });
       doc.addEventListener('click', clicked, true);
+      doc.addEventListener('pointerdown', pointer, true);
+      doc.addEventListener('pointerup', pointer, true);
       // CSS changes need not produce a mutation on the observed control itself.
       let frame;
       function tick() { sample(); frame = requestAnimationFrame(tick); }
@@ -65,6 +95,8 @@ async function sendThenStop({ send, stop, stopSelector = '', evidenceDir, timeou
       return { finish() {
         sample(); mutations.disconnect(); cancelAnimationFrame(frame);
         doc.removeEventListener('click', clicked, true);
+        doc.removeEventListener('pointerdown', pointer, true);
+        doc.removeEventListener('pointerup', pointer, true);
         return { ...result, observation: 'complete', ended_ms: performance.now(),
           controls_connected: sendNode.isConnected && !!findStop()?.isConnected,
           send_to_stop_ms: result.send_click_ms !== null && result.stop_click_ms !== null
@@ -84,6 +116,7 @@ async function sendThenStop({ send, stop, stopSelector = '', evidenceDir, timeou
     // DOM readiness is only visibility/enabled observation. The actual click
     // still waits for Playwright actionability, and all that time stays counted.
     measurement.ready_basis = 'observed_visible_and_enabled_not_full_actionability';
+    measurement.observation_basis = 'passive_rect_center_hit_and_trusted_pointer_not_playwright_actionability';
     fs.appendFileSync(path.join(evidenceDir, 'tau-send-stop.jsonl'), JSON.stringify(measurement) + '\n');
     await Promise.allSettled([watch?.dispose(), sendHandle?.dispose(), stopHandle?.dispose()]);
   }
