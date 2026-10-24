@@ -1023,6 +1023,12 @@ def observed_status(state, *, request_timeout=3):
     checks = []
     for route in ("/api/health", "/login"):
         observation = {"route": route}
+        if services[-1]["active"] != "active":
+            # The owned Web process is absent. Do not spend Windows connect
+            # timeouts probing a stopped server (or mistake another listener
+            # for this installation). All readiness requirements still fail.
+            checks.append({**observation, "ok": False, "error": "Web service is not running"})
+            continue
         try:
             from urllib.error import HTTPError
             try:

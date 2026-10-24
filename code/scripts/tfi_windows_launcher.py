@@ -384,6 +384,20 @@ class DefaultStartup:
     def command(self, *arguments):
         return command(self.platform, *arguments)
 
+    def account_configured(self, url, state):
+        from scripts.tfi_release_install import _LOCAL_HTTP
+        try:
+            # A fresh read from UserEnrollment avoids two setup subprocesses on
+            # ordinary opens. Missing/old/error responses fall back to the
+            # existing setup owner; no persistent "already registered" cache.
+            with _LOCAL_HTTP.open(url + "/api/auth/setup-status", timeout=2) as response:
+                result = json.loads(response.read(4096))
+                expected = state["target"].get("runtime_instance", state["target"]["service_prefix"])
+                return (response.status == 200 and isinstance(result, dict)
+                        and result.get("instance") == expected and result.get("configured") is True)
+        except (OSError, ValueError):
+            return False
+
     def state(self):
         path = self.root / "installation.json"
         if not path.is_file():
@@ -493,6 +507,8 @@ class DefaultStartup:
                 self.timed("start_services", lambda: self.execute(self.command("start", "--root", self.root)))
                 url = self.timed("wait_ready", lambda: self.wait_ready(state))
         self.progress("正在打开你的研究空间")
+        if self.timed("account_check", lambda: self.account_configured(url, state)):
+            return url + "/"
         # This idempotent setup command uses the instance's own account service.
         # Invitation secrets stay in its private file, never in log output.
         result = json.loads(self.timed("first_admin", lambda: self.execute(self.command(
@@ -557,7 +573,7 @@ class Launcher:
         ttk.Button(self.failure, text="查看日志", command=self.open_log).pack(side="left", padx=5)
         root.protocol("WM_DELETE_WINDOW", self.close)
         root.after(100, self.poll)
-        root.after(200, self.begin)
+        root.after_idle(self.begin)
 
     def begin(self):
         if self.busy:

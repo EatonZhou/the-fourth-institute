@@ -7,6 +7,42 @@ from urllib.parse import urlsplit
 import subprocess
 
 
+def test_desktop_setup_status_reads_current_authority_without_session(monkeypatch):
+    import json
+    from urllib.request import ProxyHandler, build_opener
+    from management_portal import serve_management_portal as portal
+    from scripts.tfi_windows_launcher import DefaultStartup
+
+    configured = False
+    monkeypatch.setattr(portal, '_USER_ENROLLMENT', SimpleNamespace(has_accounts=lambda: configured))
+    monkeypatch.setattr(portal, '_PORTAL_INSTANCE', 'setup-fixture')
+    class Handler(BaseHTTPRequestHandler):
+        def log_message(self, *args):
+            pass
+        def do_GET(self):
+            parsed = urlsplit(self.path)
+            result = portal._PORTAL_HTTP_ROUTES.dispatch(
+                'GET', parsed.path, self, parsed, '', phase='public')
+            if result is portal.ROUTE_NOT_FOUND:
+                self.send_error(404)
+    server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        base = f'http://127.0.0.1:{server.server_port}'
+        flow = DefaultStartup('/unused')
+        state = {'target': {'service_prefix': 'setup-fixture'}}
+        for configured in (False, True, False):
+            with build_opener(ProxyHandler({})).open(base + '/api/auth/setup-status') as response:
+                assert 'no-store' in response.headers['Cache-Control']
+                assert json.load(response) == {'instance': 'setup-fixture', 'configured': configured}
+            assert flow.account_configured(base, state) is configured
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join()
+
+
 def test_first_admin_page_loads_and_submits_without_a_session(monkeypatch):
     from management_portal import serve_management_portal as portal, personal_ama
 

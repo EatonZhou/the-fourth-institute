@@ -3419,6 +3419,7 @@ def _portal_route_definitions() -> tuple[RouteDefinition, ...]:
         RouteDefinition("GET", "/forgot-password", _PUBLIC_PAGES_HTTP.forgot_password, "portal-public-get", phase="public"),
         RouteDefinition("GET", "/login", _PUBLIC_PAGES_HTTP.login, "portal-public-get", phase="public"),
         RouteDefinition("GET", "/join", http_user_enrollment.join_page, "portal-public-get", phase="public"),
+        RouteDefinition("GET", "/api/auth/setup-status", http_user_enrollment.setup_status, "portal-public-get", phase="public"),
         RouteDefinition("GET", "/guide", http_user_guide.guide_page, "portal-public-get", phase="public", page=True),
         RouteDefinition("GET", "/guide/human.md", http_user_guide.guide_markdown, "portal-public-get", phase="public"),
         RouteDefinition("GET", "/guide/agent.md", http_user_guide.guide_markdown, "portal-public-get", phase="public"),

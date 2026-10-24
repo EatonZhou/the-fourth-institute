@@ -85,6 +85,21 @@ class DesktopHealthTransport(unittest.TestCase):
             saved = json.loads((root / 'runtime/startup-diagnostics.json').read_text())
             self.assertIn('web startup fixture', saved['component_error_log_tails']['web'])
 
+    def test_stopped_web_skips_connection_wait_without_claiming_readiness(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            state = self.state(Path(temporary), 28000)
+            controller = self.controller()
+            web = installer.unit_name(state['target'], 'web')
+            controller.status.side_effect = lambda name: {
+                'service': name, 'active': 'inactive' if name == web else 'active'}
+            with patch.object(installer, 'service_controller', return_value=controller), \
+                    patch.object(installer._LOCAL_HTTP, 'open') as http:
+                result = installer.observed_status(state)
+            http.assert_not_called()
+            self.assertEqual(result['status'], 'unhealthy')
+            self.assertTrue(all(not row['ok'] and 'not running' in row['error']
+                                for row in result['checks'] if row.get('route')))
+
 
 if __name__ == '__main__':
     unittest.main()

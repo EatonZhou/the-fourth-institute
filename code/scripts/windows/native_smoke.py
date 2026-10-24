@@ -97,20 +97,42 @@ def worker(platform, phase):
         # Discard the URL: it contains the private first-administrator invitation.
         flow = DefaultStartup(platform, progress=lambda text: print(text, flush=True))
         if phase == 'legacy-reopen':
-            # Measure the previous unconditional-start path on the same running
-            # installation, without changing product code or persisted state.
-            flow.running_url = lambda: None
+            # Previous release already reused healthy services, but always
+            # spawned setup processes. Compare that path on the same instance.
+            flow.account_configured = lambda *args: False
         started = time.monotonic()
         flow.run()
         report = {'phase': phase, 'flow_seconds': round(time.monotonic() - started, 3),
                   'stages': flow.timings}
+        (flow.log_path.parent / 'startup-last.json').write_text(json.dumps(report), encoding='utf-8')
+    elif phase == 'desktop':
+        # Run the installed pythonw/Tk desktop entry, including its lock, splash,
+        # worker thread, event polling and normal close. Replace only the final
+        # browser handoff; do not open an external browser in the batch session.
+        from scripts import tfi_windows_launcher as launcher
+        flows, opened = [], []
+        class MeasuredStartup(DefaultStartup):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                flows.append(self)
+        launcher.DefaultStartup = MeasuredStartup
+        launcher.webbrowser.open = lambda url: opened.append(url) or True
+        sys.argv = [str(platform / 'code/scripts/tfi_windows_launcher.py')]
+        started = time.monotonic()
+        launcher.main()
+        check(len(flows) == 1 and len(opened) == 1, 'Desktop did not hand off to the browser')
+        flow = flows[0]
+        port = flow.state()['target']['ports']['web']
+        check(opened == [f'http://127.0.0.1:{port}/'], 'Configured desktop opened an unexpected page')
+        report = {'phase': phase, 'flow_seconds': round(time.monotonic() - started, 3),
+                  'stages': flow.timings, 'tk_browser_handoff': 'passed'}
         (flow.log_path.parent / 'startup-last.json').write_text(json.dumps(report), encoding='utf-8')
     else:
         stop_all(platform, unregister=True)
 
 
 def run_worker(platform, phase, log):
-    argv = [platform / 'dependencies/python/python.exe',
+    argv = [platform / ('dependencies/python/pythonw.exe' if phase == 'desktop' else 'dependencies/python/python.exe'),
             platform / 'code/scripts/windows/native_smoke.py',
             '--platform', platform, '--phase', phase]
     started = time.monotonic()
@@ -178,8 +200,11 @@ def exercise(exe, root, included, evidence):
                     for p in state_path.parent.glob('runtime/*.process.json')}
         before_processes = process_identity()
         warm_startups = [run_worker(root, 'reopen', log) for _ in range(3)]
-        check(all([s['stage'] for s in r['stages']] == ['running_check', 'first_admin']
+        check(all([s['stage'] for s in r['stages']] == ['running_check', 'account_check']
                   for r in warm_startups), 'Healthy reopen unexpectedly started services')
+        desktop_startups = [run_worker(root, 'desktop', log) for _ in range(3)]
+        check(all([s['stage'] for s in r['stages']] == ['running_check', 'account_check']
+                  for r in desktop_startups), 'Desktop did not use the healthy reopen path')
         check(state_path.read_bytes() == before_reopen, 'Healthy reopen rewrote installation state')
         check(process_identity() == before_processes, 'Healthy reopen replaced a service process')
         def instruction(name, arguments):
@@ -211,9 +236,10 @@ def exercise(exe, root, included, evidence):
         marker = root / 'instance/example_instance/data/native-restart-marker.txt'
         marker.write_text('Preserve this installation and its registered user', encoding='utf-8')
         run_worker(root, 'cleanup', log)
-        cold_startup = run_worker(root, 'initialize', log)
+        cold_startup = run_worker(root, 'desktop', log)
         startup = {'initial_install': initial_startup, 'legacy_reopen': legacy_startup,
-                   'warm_reopens': warm_startups, 'cold_restart': cold_startup}
+                   'warm_reopens': warm_startups, 'desktop_reopens': desktop_startups,
+                   'cold_restart': cold_startup}
         (evidence / ('full-startup.json' if included else 'base-startup.json')).write_text(
             json.dumps(startup, indent=2), encoding='utf-8')
         restarted = json.loads(state_path.read_text(encoding='utf-8'))
@@ -278,7 +304,7 @@ def main():
     parser.add_argument('--work', type=Path)
     parser.add_argument('--evidence', type=Path)
     parser.add_argument('--platform', type=Path)
-    parser.add_argument('--phase', choices=('initialize', 'cleanup', 'reopen', 'legacy-reopen'))
+    parser.add_argument('--phase', choices=('initialize', 'cleanup', 'reopen', 'legacy-reopen', 'desktop'))
     args = parser.parse_args()
     check(sys.platform == 'win32', 'Native smoke must run on Windows')
     if args.phase:

@@ -2,6 +2,16 @@
 from pathlib import Path
 
 
+def setup_status(request, parsed, actor):
+    """Read the enrollment authority; never create or return an invitation."""
+    from . import serve_management_portal as portal
+
+    return portal._serve_json(request, 200, {
+        "instance": portal._PORTAL_INSTANCE,
+        "configured": portal._USER_ENROLLMENT.has_accounts(),
+    })
+
+
 def join_page(request, parsed, actor):
     from . import serve_management_portal as portal
 

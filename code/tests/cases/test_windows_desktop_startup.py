@@ -34,6 +34,10 @@ class DesktopStartup(unittest.TestCase):
 
     def setup_flow(self, platform):
         flow = launcher.DefaultStartup(platform)
+        # Tests of initialization exercise the authoritative setup fallback.
+        check = patch.object(flow, 'account_configured', return_value=False)
+        check.start()
+        self.addCleanup(check.stop)
         bundle = platform / ".build/w/engineering/manifest.json"
         bundle.parent.mkdir(parents=True)
         bundle.write_text(json.dumps({"run_id": "fixture"}))
@@ -89,13 +93,32 @@ class DesktopStartup(unittest.TestCase):
             self.installed(flow)
             before = (flow.root / 'installation.json').read_bytes()
             with patch.object(flow, 'running_url', return_value='http://127.0.0.1:28199'), \
+                    patch.object(flow, 'account_configured', return_value=True), \
                     patch.object(flow, 'execute', return_value='{"status":"already_configured"}') as execute, \
                     patch.object(flow, 'wait_ready') as wait:
                 self.assertEqual(flow.run(), 'http://127.0.0.1:28199/')
-            self.assertEqual([c.args[0][2] for c in execute.call_args_list], ['first-admin'])
+            execute.assert_not_called()
             wait.assert_not_called()
             self.assertEqual(before, (flow.root / 'installation.json').read_bytes())
-            self.assertEqual([t['stage'] for t in flow.timings], ['running_check', 'first_admin'])
+            self.assertEqual([t['stage'] for t in flow.timings], ['running_check', 'account_check'])
+
+    def test_account_status_requires_positive_current_instance_response(self):
+        flow = launcher.DefaultStartup(Path('/unused'))
+        state = {'target': {'service_prefix': 'expected'}}
+        for payload in [b'not json', b'[]', b'{}',
+                        b'{"instance":"other","configured":true}',
+                        b'{"instance":"expected","configured":"true"}',
+                        b'{"instance":"expected","configured":false}',
+                        b'{"instance":"expected","configured":true}']:
+            with self.subTest(payload=payload):
+                response = Mock(status=200)
+                response.read.return_value = payload
+                context = contextlib.nullcontext(response)
+                with patch.object(installer._LOCAL_HTTP, 'open', return_value=context):
+                    self.assertEqual(flow.account_configured('http://127.0.0.1:28199', state),
+                                     payload == b'{"instance":"expected","configured":true}')
+        with patch.object(installer._LOCAL_HTTP, 'open', side_effect=OSError('offline')):
+            self.assertFalse(flow.account_configured('http://127.0.0.1:28199', state))
 
     def test_reopen_checks_owned_state_and_fresh_complete_health(self):
         flow = launcher.DefaultStartup(Path('/unused'))

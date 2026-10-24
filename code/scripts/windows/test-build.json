@@ -1,5 +1,5 @@
 {
-  "request": "20261024-windows-startup-latency",
+  "request": "20261024-windows-startup-authority-fastpath",
   "delivery": "Portal",
   "publish_to_github": false
 }
