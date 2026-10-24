@@ -8,7 +8,7 @@ for (const file of ['hatg_panel', 'portal_resident_service', 'lineage_workbench'
   const source = fs.readFileSync(path.join(root, file + '.js'), 'utf8');
   traverse(babelParse(source), {
     FunctionDeclaration(p) {
-      if (['separateGraphObjects', 'updateCurrentResidentWatchboard', 'completeResidentFork'].includes(p.node.id?.name))
+      if (['separateGraphObjects', 'syncGraphNodePosition', 'updateCurrentResidentWatchboard', 'completeResidentFork'].includes(p.node.id?.name))
         parts[p.node.id.name] = source.slice(p.node.start, p.node.end);
     },
     ObjectMethod(p) {
@@ -17,7 +17,7 @@ for (const file of ['hatg_panel', 'portal_resident_service', 'lineage_workbench'
     },
   });
 }
-assert.equal(Object.keys(parts).length, 5);
+assert.equal(Object.keys(parts).length, 6);
 (async () => {
   const browser = await chromium.launch({headless: true});
   try {
@@ -37,7 +37,7 @@ assert.equal(Object.keys(parts).length, 5);
       const existing = [{id: 'resident', kind: 'agent', title, x: 50, y: 50}, {id: 'neighbor', kind: 'agent', title: 'Existing shared Resident', x: 70, y: 50}];
       const added = Array.from({length: 5}, (_, i) => ({id: 'added_' + i, kind: i % 2 ? 'effect' : 'event_source', title: i ? 'Watchboard · status' : 'Watchboard · ' + title, x: 50 + i * 3, y: 52 + i * 3}));
       const original = JSON.parse(JSON.stringify(existing)), requests = [], saves = [], notices = [];
-      const state = {lineage: {lineage_id: 'fixture', nodes: existing}, graphViewMode: 'context', graphFocusMode: false, watchboardHiddenResidents: new Set(['resident'])};
+      const state = {lineage: {lineage_id: 'fixture', nodes: existing}, localVersion: 0, graphViewMode: 'context', graphFocusMode: false, watchboardHiddenResidents: new Set(['resident'])};
       let nodes = existing;
       const graph = PortalHatgGraph.createGraph({root: '#canvas', world: '#world', edgeLayer: '#edges', effectLayer: '#effects', labelLayer: '#labels', nodeLayer: '#nodes', nodeContent: n => `<small>${n.kind}</small><strong>${PortalUIPrimitives.escapeHtml(n.title)}</strong><small>Listening · idle</small><small>0 messages</small>`});
       state.graphController = graph;
@@ -58,6 +58,7 @@ assert.equal(Object.keys(parts).length, 5);
       const execute = async (instruction, args) => {requests.push({instruction, args}); return {lineage: {lineage_id: 'fixture', nodes: [...existing, ...added]}};};
       const client = {watchboard: async () => ({watchboard: {installed: true}})};
       const residentService = eval('({' + parts.updateWatchboard + '})');
+      const syncGraphNodePosition = eval('(' + parts.syncGraphNodePosition + ')');
       const separateGraphObjects = eval('(' + parts.separateGraphObjects + ')');
       const hatgPanel = eval('({' + parts.applyLineageMutation + '})');
       const lineageWorkbench = {getPanel: () => hatgPanel}, selectedResidentId = () => 'resident';

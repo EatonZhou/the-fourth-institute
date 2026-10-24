@@ -16,7 +16,10 @@ const plain = value => JSON.parse(JSON.stringify(value));
 const BOUNDARIES = {
   renderLineageSurface: 'function renderLineageSurface() { window.__draws.push("surface"); }',
   renderGraphRuntimePresentation: 'function renderGraphRuntimePresentation() { window.__draws.push("runtime"); }',
-  renderGraph: 'function renderGraph() { window.__draws.push("graph"); }',
+  renderGraph: `function renderGraph() {
+    window.__draws.push("graph");
+    window.__drawn.push(Object.fromEntries(graphVisibleModel().nodes.map(node => [node.id, [node.x, node.y]])));
+  }`,
   renderProgramInspector: 'function renderProgramInspector() {}',
   renderControls: 'function renderControls() {}',
   updateLineageSummary: 'function updateLineageSummary() {}',
@@ -67,7 +70,7 @@ function resident(id, extra = {}) {
 }
 
 function fixture(entries = []) {
-  const draws = [], toasts = [], bindings = [];
+  const draws = [], drawn = [], toasts = [], bindings = [];
   const context = vm.createContext({
     document: { querySelector: () => null, getElementById: () => null },
     CSS: { escape: value => value }, localStorage: { getItem: () => null },
@@ -81,7 +84,7 @@ function fixture(entries = []) {
       PortalInstructionClient: { execute: () => { throw new Error('Unexpected instruction'); } },
       PortalUIPrimitives: { randomUUID: () => 'commit-key' },
       requestAnimationFrame: callback => callback(),
-      __draws: draws, __toasts: toasts, __bindings: bindings,
+      __draws: draws, __drawn: drawn, __toasts: toasts, __bindings: bindings,
     },
   });
   Object.assign(context, context.window);
@@ -107,7 +110,7 @@ function fixture(entries = []) {
     ],
     edges: [], function_blocks: [], program: { components: [], wires: [] },
   };
-  return { ...hatg, draws, toasts, bindings, context };
+  return { ...hatg, draws, drawn, toasts, bindings, context };
 }
 
 const read = (f, change) => {
@@ -219,6 +222,35 @@ test('任何来源的成员变化都会重新订阅 Resident 状态，并清掉�
   assert.deepEqual(plain(f.bindings.at(-1)), ['resident_aaaaaaaaaaaa', 'resident_cccccccccccc'],
     'a member created elsewhere joins the subscription');
   assert.ok(f.toasts.some(message => message.includes('新增 1 个节点')));
+});
+
+test('原地修改的坐标在下一次画布读取时生效，错开多个对象时按前一个的新位置测量', async () => {
+  const f = fixture(['syncGraphNodePosition', 'separateGraphObjects', 'lineageEditQueue']);
+  f.lineageEditQueue.activate('lineage_aaaaaaaaaaaa');
+  assert.equal(shown(f, 'resident_bbbbbbbbbbbb').x, 60);
+  f.syncGraphNodePosition({ id: 'resident_bbbbbbbbbbbb' }, { x: 300, y: 20 });
+  assert.equal(shown(f, 'resident_bbbbbbbbbbbb').x, 300, 'a dragged card keeps its position before the save returns');
+  let saved = null;
+  f.context.PortalInstructionClient.execute = async (name, args) => {
+    assert.equal(name, 'UpdateLineageLayout');
+    saved = plain(args.positions);
+    return { layout_revision: 2 };
+  };
+  const measuredAgainst = [];
+  f.state.graphController = { getObjectSeparation: id => {
+    measuredAgainst.push(plain(f.drawn.at(-1) || null));
+    return id === 'resident_aaaaaaaaaaaa' ? { x: 50, y: 0 } : { x: 0, y: 30 };
+  } };
+  await f.separateGraphObjects(['resident_aaaaaaaaaaaa', 'resident_bbbbbbbbbbbb']);
+  assert.deepEqual(measuredAgainst, [
+    null,
+    { resident_aaaaaaaaaaaa: [70, 20], resident_bbbbbbbbbbbb: [300, 20] },
+  ], 'the second object is measured against the drawn first separation');
+  assert.deepEqual(plain(f.drawn.at(-1)), { resident_aaaaaaaaaaaa: [70, 20], resident_bbbbbbbbbbbb: [300, 50] });
+  assert.deepEqual(saved, [
+    { object_id: 'resident_aaaaaaaaaaaa', x: 70, y: 20 },
+    { object_id: 'resident_bbbbbbbbbbbb', x: 300, y: 50 },
+  ]);
 });
 
 test('回滚本地修改时原样装回保存的 Lineage 并重画', () => {

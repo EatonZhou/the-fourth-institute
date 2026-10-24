@@ -4922,6 +4922,20 @@
         if (!residentId || state.watchboardMutationInFlight) return;
         state.watchboardMutationInFlight = true;
         renderChatExtensionMenu();
+        async function refreshProjection() {
+          if (residentId !== selectedResidentId()) return;
+          // Refresh the Chat owner as well as the graph after a committed
+          // update or a conflicting write. Older reads must not restore it.
+          const panel = agentChatPanel;
+          window.PortalResidentProjection.invalidate(residentId);
+          const detail = await window.PortalResidentProjection.load(residentId, { force: true });
+          if (residentId !== selectedResidentId() || panel !== agentChatPanel) return;
+          panel.applyDetail(detail);
+          writeLineageUiState({ watchboardHiddenResidents: [...state.watchboardHiddenResidents] });
+          closeChatExtensionMenu();
+          watchboardController.render(state.detail);
+          await Promise.allSettled([loadFolder(), refreshResidentSidebarIfDue(true)]);
+        }
         try {
           const result = await residentService.updateWatchboard(action, {
             resident_id: residentId,
@@ -4940,21 +4954,21 @@
               window.PortalUI.toast(window.PortalI18n.text`Watchboard 已更新，但画布布局未保存：${error.message || error}`, "warning");
             }
           }
-          if (residentId !== selectedResidentId()) return;
-          // The Chat panel owns the Resident projection used by the extension
-          // menu and subsequent conversation updates. Invalidate older reads
-          // before obtaining the committed installation, then update that owner.
-          const panel = agentChatPanel;
-          window.PortalResidentProjection.invalidate(residentId);
-          const detail = await window.PortalResidentProjection.load(residentId, { force: true });
-          if (residentId !== selectedResidentId() || panel !== agentChatPanel) return;
-          panel.applyDetail(detail);
-          writeLineageUiState({ watchboardHiddenResidents: [...state.watchboardHiddenResidents] });
-          closeChatExtensionMenu();
-          watchboardController.render(state.detail);
-          await Promise.allSettled([loadFolder(), refreshResidentSidebarIfDue(true)]);
-          renderChatExtensionMenu();
+          await refreshProjection();
         } catch (err) {
+          if (err.watchboardConflict) {
+            let refreshed = !err.watchboardConflict.refreshError;
+            try {
+              if (err.watchboardConflict.lineage) {
+                await lineageWorkbench?.getPanel("hatg")?.applyLineageMutation(err.watchboardConflict.lineage);
+              }
+              await refreshProjection();
+            } catch (_) { refreshed = false; }
+            window.PortalUI.toast(refreshed
+              ? window.PortalI18n.t("图已被其他操作修改，Watchboard 操作未提交。请检查最新状态后重新操作。")
+              : window.PortalI18n.t("Watchboard 操作未提交，最新状态读取失败。请刷新后重新操作。"), "error");
+            return;
+          }
           window.PortalUI.toast(window.PortalI18n.text`更新 Watchboard 失败：${err.message || err}`, "error");
         } finally {
           state.watchboardMutationInFlight = false;

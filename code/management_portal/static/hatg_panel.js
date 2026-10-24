@@ -2544,6 +2544,9 @@
     if (!target || !Number.isFinite(x) || !Number.isFinite(y)) return false;
     target.x = x;
     target.y = y;
+    // The position changes inside the committed Lineage object, so the canvas
+    // projection would keep its copied coordinates without a new local version.
+    state.localVersion += 1;
     return true;
   }
 
@@ -2567,6 +2570,9 @@
         moved.set(objectId, item);
       }
       // Measure the next object against this placement before saving the batch.
+      // The offsets edit the committed Lineage in place, so the canvas needs a
+      // new local version to project them.
+      state.localVersion += 1;
       renderGraph();
     }
     return moved.size ? saveLineageLayout([...moved.values()]) : Promise.resolve(null);

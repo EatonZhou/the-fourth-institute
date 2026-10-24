@@ -666,9 +666,24 @@
           for (const file of plan.files) await execute("UpdateWorkspaceFile", file, keyed({}, "watchboard-file"));
         }
         const operations = action === "add" ? plan.install : plan.remove;
-        const definition = operations.length ? await execute("ApplyLineageChanges", {
-          lineage_id: plan.lineage_id, near_resident_id: residentId, operations,
-        }, { ...keyed(payload, "watchboard-definition"), expectedVersion: plan.revision }) : null;
+        let definition = null;
+        try {
+          definition = operations.length ? await execute("ApplyLineageChanges", {
+            lineage_id: plan.lineage_id, near_resident_id: residentId, operations,
+          }, { ...keyed(payload, "watchboard-definition"), expectedVersion: plan.revision }) : null;
+        } catch (error) {
+          if (["instruction.conflict", "instruction.version_conflict"].includes(error.code)) {
+            // Keep the failed write and its receipt. A fresh definition is for
+            // review only: never replay the older installation/removal plan.
+            error.watchboardConflict = {};
+            try {
+              error.watchboardConflict.lineage = (await execute("GetLineage", { lineage_id: plan.lineage_id })).lineage;
+            } catch (refreshError) {
+              error.watchboardConflict.refreshError = refreshError;
+            }
+          }
+          throw error;
+        }
         return { ...await client.watchboard(residentId),
           lineage: definition?.lineage,
           created_component_ids: action === "add" ? operations

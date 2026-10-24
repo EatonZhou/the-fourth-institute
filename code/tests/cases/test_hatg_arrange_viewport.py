@@ -3,6 +3,16 @@ from pathlib import Path
 import subprocess
 
 
+def test_watchboard_conflict_refreshes_without_replaying_mutation():
+    """Watchboard 冲突保留原失败，刷新图和 Chat，不自动重试旧操作。
+
+    :module: resident.conversation
+    """
+    script = Path(__file__).with_name("javascript") / "watchboard_conflict.cjs"
+    result = subprocess.run(["node", "--test", str(script)], capture_output=True, text=True, timeout=30)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 def test_watchboard_installation_separates_new_cards_only():
     """Watchboard 安装提交后按实测卡片避让，仅保存新增对象位置。
 
