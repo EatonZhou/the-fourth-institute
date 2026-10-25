@@ -34,9 +34,12 @@ jobs:
           $browserPath = Join-Path $env:RUNNER_TEMP 'tau-native-browsers'
           "PLAYWRIGHT_BROWSERS_PATH=$browserPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           $env:PLAYWRIGHT_BROWSERS_PATH = $browserPath
-          npm ci --prefix code/management_portal/test_framework/tau_runtime
+          New-Item -ItemType Directory -Force .build/windows-tau | Out-Null
+          # Match bootstrap_portal: the optional runtime has a pinned package
+          # version, while generated npm lock files are not part of the source.
+          npm install --package-lock=false --no-audit --no-fund --prefix code/management_portal/test_framework/tau_runtime 2>&1 | Tee-Object .build/windows-tau/browser-install.log
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          node code/management_portal/test_framework/tau_runtime/node_modules/playwright/cli.js install chromium
+          node code/management_portal/test_framework/tau_runtime/node_modules/playwright/cli.js install chromium 2>&1 | Tee-Object -Append .build/windows-tau/browser-install.log
           exit $LASTEXITCODE
       - name: Exercise native executor and owned Chromium branches
         shell: pwsh
