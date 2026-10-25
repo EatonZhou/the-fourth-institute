@@ -40,7 +40,30 @@ python3 -m management_portal.workbench_projections.development_projection --comm
 
 功能区可声明自己的 `sidebar[].chat: {binding, role: "facade"}`，连接另一个已绑定团队；未声明的区域继续使用页面 chat。宿主装配独立原生对话面板，`chat-` 前缀保留给这些面板。`await Projection.openChat()` 打开当前分栏对应的对话。分栏对话发送时重新检查绑定，并附带该用户通过 `Projection.state()` 保存的当前分栏状态，因此应只保存本区域需要的清单和请求回执，不保存秘密。分栏反馈同样发给对应门面。绑定失效时明确报错，不退回主门面。
 
-打开已发布页面时，宿主同时读取工作台定义和校验门面绑定；门面校验通过后立即并行加载原生 Resident 投影与会话，不等待工作台详情或应用资产完成。装配 Chat 继续使用原生数据仓库合并中的请求及已加载快照，不另建投影专用聊天缓存。装配前核对已授权目标与本次定义的绑定；并发发布导致目标不同则显示绑定变化错误，不挂载错误的会话。无 Chat 的页面正常装配；读取失败或离开页面会释放预取订阅，晚到结果不能重新装配页面。
+打开已发布页面时，宿主先读取该修订的工作台定义，只为清单明确声明的 Chat 校验绑定、加载原生 Resident 投影和会话；对话加载不等待应用资产完成，继续使用原生数据仓库合并中的请求及已加载快照。装配前核对已授权目标与本次定义的绑定；并发发布导致目标不同则显示绑定变化错误，不挂载错误的会话。未声明主 Chat 时不预取 facade，也不读取其会话；未声明任何 Chat 时不装配对话。读取失败或离开页面会释放预取订阅，晚到结果不能重新装配页面。
+
+## 独立功能页导航（可选）
+
+在 `tfi.projection.v2` 的 manifest 中加入 `"navigation": {"mode": "pages"}`。该字段只接受这个对象；省略时继续使用原有可组合的 Panel 布局。它属于修订内容，随正常保存、构建、发布生效；应用入口、构建器、资产与 SDK 调用无需改变。
+
+```json
+{
+  "schema": "tfi.projection.v2",
+  "navigation": {"mode": "pages"},
+  "sidebar": [
+    {"id": "overview", "title": "概览", "icon": "window", "source": "package:overview"},
+    {"id": "results", "title": "结果", "icon": "chart", "source": "package:results"}
+  ]
+}
+```
+
+原生 Activity Rail 每次显示一个完整功能页。每个 sidebar 项独占一个 Workbench，功能页不能作为组件拖动、隐藏或折叠；工作区内只包含本页和显式声明的本页 Chat。顶层 `chat` 若存在，作为独立 facade 工作区由 Rail 的对话项打开；区域 `chat` 只在该页内装配。删除全部 chat 声明后不会恢复旧 facade，绑定表中残留一个 Resident 本身不构成 Chat 声明。
+
+页面工作区使用稳定的 `projection-<id>-<preview|published>…-pages-<region>` 身份，隔离旧组件模式的多分栏、隐藏和 facade 布局。不会清除旧布局、未发草稿，也不按每次 build 更换保存键。切换只隐藏原工作区、暂停可见性相关观察，返回复用同一个 iframe 与草稿；销毁释放所有页面和共享 context。`Projection.focus/onFocus` 在整个投影共享；`resource/watch` 仍走当前身份的原鉴权接口。
+
+`?region=<id>`、Rail、`Projection.openPanel(id)` 和当前页 `Projection.openPage(...)` 均切换同一页面所有者；图标、原地导航参数与错误合同不变。省略 region 的 `openPage` 仍指向 facade，未声明 Chat 时明确报目标未装配。嵌入预览也保留页导航 Rail；外层提供 `externalRail` 时由外层选区。宿主控制页面容器和生命周期，应用不得访问父 DOM。
+
+宿主集成的 controller 在页面模式提供 `workspaces`（region → 原生 Workbench）、`getPanel(id)`，以及指向当前页的 `workbench`；隐藏/销毁应调用外层 `setVisible`/`destroy`。这些是宿主组合接口，不向 sandbox 暴露 Workbench。
 
 功能区异步装配、尺寸重绘、隐藏恢复和读取保存状态时，必须保持用户当前输入焦点与选区。保存的图节点焦点只代表阅读状态，不授权调用 DOM `focus()`；重绘前应同时核对本 iframe 文档具有焦点且活动元素属于待替换的图节点，满足时才恢复该节点。用户主动点击、键盘导航和关闭详情返回仍按当前操作管理焦点。`Projection.focus()` 是语义对象情境，与键盘输入焦点分别管理。
 

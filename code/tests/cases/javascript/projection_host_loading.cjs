@@ -49,7 +49,7 @@ const server = http.createServer(async (req, res) => {
   let body, type = 'text/plain', status = 200, delay = 0;
   if (url.pathname === '/') {
     type = 'text/html'; body = '<!doctype html><html><head><meta charset="utf-8">' +
-      (s.options.embedded ? styles.map(name => `<link rel="stylesheet" href="/static/${name}">`).join('') : '') + '</head><body><main id="root"></main>' +
+      (s.options.embedded || s.options.pages ? styles.map(name => `<link rel="stylesheet" href="/static/${name}">`).join('') : '') + '</head><body><main id="root"></main>' +
       modules.map(name => `<script src="/static/${name}"></script>`).join('') + '</body></html>';
   } else if (url.pathname.startsWith('/static/')) {
     const name = url.pathname.slice(8);
@@ -58,6 +58,17 @@ const server = http.createServer(async (req, res) => {
     if (name === 'projection_sdk.js' || name.endsWith('.css')) delay = s.options.delays ? 120 : 0;
   } else if (url.pathname === '/api/workbenches/detail') { body = JSON.stringify(s.app); type = 'application/json'; }
   else if (url.pathname === '/api/workbenches/facade') { body = JSON.stringify(s.target || { code: 'projection.resident_unbound', error: 'No chat in fixture' }); type = 'application/json'; status = s.target ? 200 : 404; }
+  else if (url.pathname === '/api/workbenches/object') {
+    let input = ''; for await (const chunk of req) input += chunk;
+    body = JSON.stringify(JSON.parse(input).object); type = 'application/json';
+  }
+  else if (url.pathname === '/api/workbenches/observe') {
+    let input = ''; for await (const chunk of req) input += chunk;
+    body = JSON.stringify({ references: JSON.parse(input).refs.map(ref => ({ ref, version: 1 })), observed_at: '2026-10-26T00:00:00Z' }); type = 'application/json';
+  }
+  else if (url.pathname === '/api/workbenches/resource') {
+    body = JSON.stringify({ readable: true, title: 'Fixture resource', resource_type: 'decision', portal_url: '/r/decision_111111111111' }); type = 'application/json';
+  }
   else if (url.pathname.startsWith('/api/workbenches/assets/')) {
     const prefix = `/api/workbenches/assets/${s.app.workbench_id}/${s.app.revision}/${s.app.application_build.artifact_hash}/`;
     assert.ok(url.pathname.startsWith(prefix), 'exact revision/hash URL');
@@ -92,8 +103,8 @@ async function pageFor(browser, options = {}, name) {
       window.started = performance.now(); window.settled = false;
       window.abort = new AbortController();
       window.openPromise = PortalProjectionHost.open(document.getElementById('root'), 'workbench_111111111111', {
-        signal: abort.signal, ...options, onMounted: controller => { window.controller = controller; window.mountedAt = performance.now(); for (const id of ['architecture', 'progress', 'evolution']) controller.workbench.getPanel(id)?.ready.then(() => { panelReady[id] = performance.now(); }, () => {}); },
-      }).then(() => { window.openedAt = performance.now(); window.settled = true; }, error => {
+        signal: abort.signal, ...options, onMounted: controller => { window.controller = controller; window.mountedAt = performance.now(); for (const id of ['architecture', 'progress', 'evolution']) (controller.getPanel?.(id) || controller.workbench.getPanel(id))?.ready.then(() => { panelReady[id] = performance.now(); }, () => {}); },
+      }).then(result => { window.openResult = result; window.openedAt = performance.now(); window.settled = true; }, error => {
         window.openError = { code: error.code, message: error.message }; window.settled = true;
       });
     };
@@ -244,12 +255,145 @@ async function embeddedLayout(browser) {
     assert.equal(await h.page.getByLabel('Chat draft').inputValue(), 'retain chat draft');
   } finally { await h.close(); }
 }
+async function pagesNavigation(browser) {
+  const h = await pageFor(browser, { pages: true }, 'pages-navigation-old-split-and-chat');
+  h.s.target = { lineage_id: 'lineage_fixture', resident_id: 'resident_fixture' };
+  h.s.app.bindings.team = { lineage_id: h.s.target.lineage_id, residents: { facade: h.s.target.resident_id } };
+  h.s.app.manifest.chat = { binding: 'team', role: 'facade' };
+  try {
+    await h.page.setViewportSize({ width: 1440, height: 900 });
+    await h.page.evaluate(async app => {
+      document.getElementById('root').style.cssText = 'height:850px;width:1400px;position:relative';
+      document.getElementById('root').className = 'projectionPage is-view';
+      window.chatCreated = 0;
+      // The shell's registered-page transport is a fixture; the host's local
+      // target validation and navigation run through the production SDK.
+      window.PortalNav = { async openPage(url, { handleCurrent }) {
+        return { opened: await handleCurrent(new URL(url, location.origin)), mode: 'local', url };
+      } };
+      window.PortalResidentProtocol = { acquire() { throw Error('Undeclared Chat prefetch'); } };
+      window.PortalChatWorkspace = { loadResidentConversation() { throw Error('Undeclared Chat load'); } };
+      PortalWorkbench.registerPanelPackage({ type: 'chat', version: 1, component: 'FixtureChat',
+        presentation: { title: 'Chat', icon: 'chat' }, sizing: { minWidth: 220, minHeight: 180 },
+        instances: 'single', capabilities: [], behavior: {}, context: { channels: [] }, persistence: { schemaVersion: 1 },
+        create({ root }) { chatCreated++; root.innerHTML = '<textarea aria-label="Chat draft"></textarea>'; return { root, show() {}, hide() {}, destroy() {} }; } });
+      const legacy = await PortalProjectionHost.mount(document.getElementById('root'), app);
+      legacy.workbench.applyWorkspace({ name: 'old split', layout: PortalWorkbench.model.split('horizontal',
+        ['architecture', 'progress', 'evolution', 'facade'].map(id => PortalWorkbench.model.stack([id], id))) });
+      window.legacyId = legacy.workbench.id;
+      legacy.destroy(); window.chatCreated = 0; window.loaded = [];
+      window.legacyStorage = Object.fromEntries(Object.entries(localStorage));
+      history.replaceState(null, '', '/?region=progress');
+    }, h.s.app);
+    h.s.app.manifest.navigation = { mode: 'pages' };
+    delete h.s.app.manifest.chat;
+    h.s.app.manifest.context = [{ channel: 'focus', publishers: ['architecture'], subscribers: ['progress'] }];
+    const firstCall = h.s.calls.length;
+    await h.page.evaluate(() => start());
+    await h.page.waitForFunction(() => settled);
+    assert.equal(await h.page.evaluate(() => window.openError), undefined);
+    await h.page.waitForFunction(() => loaded.length === 3);
+    const state = await h.page.evaluate(() => ({ chatCreated,
+      ids: [...controller.workspaces.values()].map(w => w.id),
+      visible: ['architecture', 'progress', 'evolution'].filter(id => controller.getPanel(id).isVisible()),
+      oldUntouched: Object.entries(legacyStorage).every(([key, value]) => localStorage.getItem(key) === value),
+      panels: [...controller.workspaces.values()].map(w => [...w.descriptors.keys()]),
+      draggable: [...document.querySelectorAll('[data-portal-workbench-tab]')].some(el => el.draggable),
+    }));
+    assert.deepEqual(state.visible, ['progress'], 'explicit region selects one whole page');
+    assert.deepEqual(state.panels, [['architecture'], ['progress'], ['evolution']]);
+    assert.equal(state.chatCreated, 0); assert.equal(state.oldUntouched, true); assert.equal(state.draggable, false);
+    assert.equal(new Set(state.ids).size, 3);
+    assert.equal(h.s.calls.slice(firstCall).some(c => c.path === '/api/workbenches/facade'), false, 'undeclared Chat never requests facade');
+    const frames = {};
+    for (const f of h.page.frames().filter(f => f.parentFrame()?.parentFrame())) {
+      frames[await f.evaluate(async () => (await Projection.context()).panel_id)] = f;
+    }
+    // Use the production SDK rather than reaching into the application parent.
+    const progress = frames.progress, architecture = frames.architecture;
+    assert.ok(progress && architecture);
+    await progress.locator('#draft').fill('page draft stays alive');
+    await progress.evaluate(() => { window.focusSeen = []; Projection.onFocus(v => focusSeen.push(v)); });
+    await progress.evaluate(async () => {
+      window.changes = []; window.stopWatching = await Projection.watch(['decision_111111111111'], value => changes.push(value));
+    });
+    assert.equal(await progress.evaluate(async () => (await Projection.resource('resolve', { ref: 'decision_111111111111' })).readable), true);
+    await progress.evaluate(() => Projection.openPanel('architecture'));
+    await h.page.waitForFunction(() => controller.getPanel('architecture').isVisible());
+    const focused = { ref: 'decision_111111111111', kind: 'design', status: 'proposed', source: '', observed_at: '2026-10-26T00:00:00Z' };
+    await architecture.evaluate(obj => Projection.focus(obj), focused);
+    await progress.waitForFunction(ref => focusSeen.at(-1)?.ref === ref, focused.ref);
+    assert.equal(await progress.evaluate(async () => (await Projection.context()).visible), false);
+    await h.page.locator('[data-activity-view="progress"]').click();
+    await progress.waitForFunction(() => changes.length > 0);
+    assert.equal(await progress.locator('#draft').inputValue(), 'page draft stays alive');
+    assert.equal(await progress.evaluate(async () => (await Projection.context()).visible), true);
+    assert.equal(await h.page.evaluate(() => new URL(location.href).searchParams.get('region')), 'progress');
+    assert.equal(await progress.evaluate(async () => (await Projection.openPage('/workbenches/view?id=workbench_111111111111&region=evolution')).opened), true);
+    assert.equal(await h.page.evaluate(() => openResult.workbench === controller.workspaces.get('evolution')), true, 'open returns the live current workspace');
+    assert.equal(await progress.evaluate(async () => { try { await Projection.openPage('/workbenches/view?id=workbench_111111111111'); } catch (error) { return error.code; } }), 'projection.page_target');
+    await h.page.locator('[data-activity-view="progress"]').click();
+    const dimensions = await h.page.evaluate(() => {
+      const r = controller.workbench.root.getBoundingClientRect();
+      const f = controller.workbench.root.querySelector('.projectionFrame').getBoundingClientRect();
+      return { width: f.width, height: f.height, available: r.width };
+    });
+    assert.ok(dimensions.width > dimensions.available - 10 && dimensions.height > 700, JSON.stringify(dimensions));
+    await h.page.evaluate(() => controller.setVisible(false));
+    assert.equal(await progress.evaluate(async () => (await Projection.context()).visible), false);
+    await h.page.evaluate(() => controller.setVisible(true));
+    assert.equal(await progress.evaluate(async () => (await Projection.context()).visible), true);
+    assert.equal(await architecture.evaluate(async () => (await Projection.context()).visible), false);
+    await progress.evaluate(() => stopWatching());
+    if (process.env.PROJECTION_PAGES_SCREENSHOT) await h.page.screenshot({ path: process.env.PROJECTION_PAGES_SCREENSHOT });
+    await h.page.evaluate(() => { controller.destroy(); controller.destroy(); });
+    assert.equal(await h.page.locator('#root iframe').count(), 0);
+    // Reopening retains distinct page stores; the legacy multi-split is untouched.
+    await h.page.evaluate(() => start());
+    await h.page.waitForFunction(() => settled);
+    assert.equal(await h.page.evaluate(() => window.openError), undefined);
+    assert.deepEqual(await h.page.evaluate(() => ['architecture', 'progress', 'evolution'].filter(id => controller.getPanel(id).isVisible())), ['progress']);
+    await h.page.evaluate(() => { controller.destroy(); window.loaded = []; });
+    h.s.app.manifest.chat = { binding: 'team', role: 'facade' };
+    h.s.app.manifest.sidebar[1].chat = { binding: 'team', role: 'facade' };
+    await h.page.evaluate(async app => {
+      window.controller = await PortalProjectionHost.mount(document.getElementById('root'), app, { preview: true, embedded: true });
+      await Promise.all(['architecture', 'progress', 'evolution'].map(id => controller.getPanel(id).ready));
+    }, h.s.app);
+    const chatFrames = {};
+    for (const f of h.page.frames().filter(f => f.parentFrame()?.parentFrame())) chatFrames[await f.evaluate(async () => (await Projection.context()).panel_id)] = f;
+    assert.equal(await h.page.locator('.portalActivityRail').evaluate(el => el.hidden), false, 'page navigation remains reachable in embedded previews');
+    await h.page.locator('[data-activity-view="architecture"]').click();
+    await chatFrames.architecture.evaluate(() => Projection.openChat());
+    assert.deepEqual(await h.page.evaluate(() => [...controller.workspaces].filter(([, w]) => !w.root.hidden).map(([id]) => id)), ['facade']);
+    await h.page.locator('.projectionPageWorkspace:not([hidden]) textarea').fill('global draft');
+    await h.page.locator('[data-activity-view="progress"]').click();
+    await chatFrames.progress.evaluate(() => Projection.openChat());
+    assert.deepEqual(await h.page.evaluate(() => [...controller.workspaces].filter(([, w]) => !w.root.hidden).map(([id]) => id)), ['progress']);
+    assert.deepEqual(await h.page.evaluate(() => [...controller.workbench.descriptors.keys()]), ['progress', 'chat-progress']);
+    await h.page.locator('[data-activity-item="facade"]').click();
+    assert.equal(await h.page.locator('.projectionPageWorkspace:not([hidden]) textarea').inputValue(), 'global draft');
+  } finally { await h.close(); }
+  const failed = await pageFor(browser, { pages: true, deny: 'architecture-0.js' }, 'pages-selected-failure-destroys-all');
+  failed.s.app.manifest.navigation = { mode: 'pages' };
+  try {
+    await failed.page.evaluate(() => start());
+    await failed.page.waitForFunction(() => settled);
+    assert.ok(await failed.page.evaluate(() => openError));
+    await failed.page.waitForTimeout(50);
+    assert.equal(await failed.page.locator('#root iframe').count(), 0);
+  } finally { await failed.close(); }
+}
 (async () => {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   origin = 'http://127.0.0.1:' + server.address().port;
   let browser;
   let passed = false;
-  try { browser = await chromium.launch({ headless: true }); if (!process.argv.includes('--contracts-only') && !process.argv.includes('--lifecycle-only') && !process.argv.includes('--embedded-only')) await timing(browser); if (!measureOnly) { if (!process.argv.includes('--embedded-only')) await contracts(browser); await embeddedLayout(browser); } passed = true; }
+  try { browser = await chromium.launch({ headless: true });
+    if (process.argv.includes('--pages-only')) await pagesNavigation(browser);
+    else { if (!process.argv.includes('--contracts-only') && !process.argv.includes('--lifecycle-only') && !process.argv.includes('--embedded-only')) await timing(browser); if (!measureOnly) { if (!process.argv.includes('--embedded-only')) await contracts(browser); await embeddedLayout(browser); await pagesNavigation(browser); } }
+    passed = true;
+  }
   finally {
     if (browser) await browser.close();
     server.closeAllConnections();

@@ -408,7 +408,8 @@
     };
     let focusRequest = 0;
     const chatId = panelId => app.manifest.sidebar.find(item => item.id === panelId)?.chat ? `chat-${panelId}` : "facade";
-    let workbench, openRegion, feedbackContext = null, feedbackGuard = null;
+    let workbench, openRegion, resolveWorkbench, feedbackContext = null, feedbackGuard = null;
+    const owner = id => resolveWorkbench ? resolveWorkbench(id) : workbench;
     const channel = app.manifest.context?.find(item => item.channel === "focus");
     const api = {
       visible: options.isVisible?.() !== false,
@@ -418,10 +419,11 @@
           setObservationVisibility(record, visible && record.panelVisible === true);
         }
       },
-      attach(value, navigate) { workbench = value; openRegion = navigate; },
+      attach(value, navigate, resolve) { workbench = value; openRegion = navigate; resolveWorkbench = resolve; },
       openChat(panelId) {
         const id = chatId(panelId);
-        if (app.release_scope === "packaging" && panelId === "packaging" && !workbench.getPanel(id)) {
+        const workbench = owner(id);
+        if (app.release_scope === "packaging" && panelId === "packaging" && !workbench?.getPanel(id)) {
           // A release-only entry does not preload ordinary conversation data.
           // Explicit navigation still uses the existing facade authorization.
           return request("facade", { id: app.workbench_id, panel: panelId }).then(target => {
@@ -429,7 +431,8 @@
             return window.PortalNav.openPage(`/lineage?resident=${encodeURIComponent(target.resident_id)}`);
           });
         }
-        if (!workbench.getPanel(id)) throw fail("resident_unbound", "此功能区没有可用的团队对话");
+        if (!workbench?.getPanel(id)) throw fail("resident_unbound", "此功能区没有可用的团队对话");
+        if (resolveWorkbench) openRegion(id === "facade" ? id : panelId);
         const layout = workbench.getLayout();
         const stackFor = (node, target) => node?.type === "stack"
           ? (node.children.some(child => child.panelId === target) ? node : null)
@@ -458,7 +461,7 @@
         }
         const panelId = target.searchParams.get("region") ?? "facade";
         if (panelId !== "facade" && !app.manifest.sidebar.some(item => item.id === panelId)) throw fail("page_target", "体验入口指向未知功能区");
-        if (!workbench.getPanel(panelId)) throw fail("page_target", "体验入口对应的面板未装配");
+        if (!owner(panelId)?.getPanel(panelId)) throw fail("page_target", "体验入口对应的面板未装配");
         return openRegion(panelId);
       },
       current: () => workbench?.contextStore.get("focus"),
@@ -507,7 +510,7 @@
         guard();
         await request("facade", { id: app.workbench_id, preview: !!options.preview, panel: record.panelId });
         guard();
-        const chat = workbench.getPanel(chatId(record.panelId));
+        const chat = owner(chatId(record.panelId))?.getPanel(chatId(record.panelId));
         if (!chat) throw fail("resident_unbound", "工作台没有门面对话");
         feedbackContext = { object, anchor: payload.anchor, scene: payload.scene };
         feedbackGuard = guard;
@@ -532,25 +535,23 @@
     signal?.addEventListener("abort", dispose, { once: true });
     try {
       checkActive();
-      // Binding authorization and page definition are independent reads. Start
-      // Chat as soon as the server has authorized its target, not after detail
-      // or application assets. The native stores own caching and coalescing.
-      const definition = request(`detail?id=${encodeURIComponent(id)}&published=true${options.region === "packaging" ? "&panel=packaging" : ""}`);
-      const facade = (options.region ? Promise.resolve(null) : readFacade(id)).then(result => {
+      // The revision declares whether a conversation exists. Do not preload a
+      // stale facade for a page which has intentionally removed its Chat.
+      const app = await request(`detail?id=${encodeURIComponent(id)}&published=true${options.region === "packaging" ? "&panel=packaging" : ""}`);
+      checkActive();
+      if (app.builtin && !app.manifest && !app.html) return { app, destroy() {} };
+      const facade = (!options.region && app.manifest?.chat ? readFacade(id) : Promise.resolve(null)).then(result => {
         if (!disposed && result?.target) {
           openingConversation = window.PortalResidentProtocol.acquire(result.target.resident_id, () => {}, { load: false });
           void window.PortalChatWorkspace.loadResidentConversation(result.target).catch(() => {});
         }
         return result;
       }).catch(error => ({ error }));
-      const app = await definition;
-      checkActive();
-      if (app.builtin && !app.manifest && !app.html) return { app, destroy() {} };
       const resolved = await facade;
       checkActive();
       const mounted = await mountWorkbench(root, app, options, resolved);
       if (disposed) { mounted.destroy(); checkActive(); }
-      return { ...mounted, app };
+      return Object.assign(mounted, { app });
     } finally {
       // Keep the native snapshot alive until the Chat panel owns a subscription.
       dispose();
@@ -562,11 +563,12 @@
     return mountWorkbench(root, app, options, facade);
   }
   async function mountWorkbench(root, app, options, facade) {
+    const pagesMode = app.manifest?.navigation?.mode === "pages";
     const shell = document.createElement("div"); shell.className = "portalWorkbenchPageLayout portalWorkbenchViewportShell projectionWorkbenchShell";
     const railRoot = document.createElement("aside"); railRoot.className = "portalActivityRail";
     const panelRoot = document.createElement("div"); panelRoot.className = "portalWorkbenchViewportRoot projectionWorkbenchRoot";
     shell.append(railRoot, panelRoot); root.replaceChildren(shell);
-    const showRail = !options.externalRail && !options.embedded;
+    const showRail = !options.externalRail && (!options.embedded || pagesMode);
     if (!showRail) railRoot.hidden = true;
     const id = `projection-${app.workbench_id}-${options.preview ? "preview" : "published"}${options.region ? `-${options.region}` : ""}${options.embedded ? "-embedded" : ""}`;
     const page = app.manifest ? pageController(app, options) : null;
@@ -615,25 +617,69 @@
     const chatIds = editors.filter(item => item.type === "chat").map(item => item.id);
     const selectedChat = chatIds.includes(`chat-${selected}`) ? `chat-${selected}` : chatIds[0];
     const contentLayout = window.PortalWorkbench.model.stack(regions.map(item => item.id), selected);
-    const workbench = window.PortalWorkbench.create({
-      id, root: panelRoot, label: app.title, insets: { top: 0, right: 0, bottom: 0, left: 0 },
-      initialEditors: editors,
-      // An independent Panel uses its host's slot. Keep every region and Chat
-      // available as tabs instead of nesting a second rail and split workspace.
-      defaultLayout: options.embedded ? window.PortalWorkbench.model.stack(editors.map(item => item.id), selected)
-        : chatIds.length ? window.PortalWorkbench.model.split("horizontal", [contentLayout, window.PortalWorkbench.model.stack(chatIds, selectedChat)], [2, 1]) : contentLayout,
-    });
+    const workspaces = new Map(), panelOwners = new Map();
+    const sharedContext = pagesMode ? window.PortalWorkbenchContext.create({ workbenchId: `${id}-pages` }) : null;
+    let activeRegion = requested === "facade" && chatIds.includes("facade") ? "facade" : selected;
+    let hostVisible = options.isVisible?.() !== false;
+    let workbench;
+    if (pagesMode) {
+      panelRoot.classList.add("projectionPagesRoot");
+      const groups = regions.map(item => ({ id: item.id, editors: editors.filter(editor => editor.id === item.id || editor.id === `chat-${item.id}`) }));
+      if (chatIds.includes("facade")) groups.push({ id: "facade", editors: editors.filter(editor => editor.id === "facade") });
+      for (const group of groups) {
+        const workspaceRoot = document.createElement("section");
+        workspaceRoot.className = "projectionPageWorkspace";
+        workspaceRoot.dataset.projectionPage = group.id;
+        workspaceRoot.hidden = group.id !== activeRegion;
+        panelRoot.append(workspaceRoot);
+        const workspace = window.PortalWorkbench.create({
+          // Page stores cannot consume an older multi-region split. Stable IDs
+          // preserve each page's own workspace across application revisions.
+          id: `${id}-pages-${group.id}`, root: workspaceRoot, label: app.title,
+          insets: { top: 0, right: 0, bottom: 0, left: 0 }, contextStore: sharedContext,
+          visible: hostVisible && group.id === activeRegion,
+          initialEditors: group.editors.map(editor => editor.type === "projection-region"
+            ? { ...editor, required: true, canMove: false, canHide: false, canCollapse: false, locked: true } : editor),
+          defaultLayout: group.editors.length === 1 ? window.PortalWorkbench.model.stack([group.id], group.id)
+            : window.PortalWorkbench.model.split("horizontal", group.editors.map(editor => window.PortalWorkbench.model.stack([editor.id], editor.id)), [2, 1]),
+        });
+        workspaces.set(group.id, workspace);
+        for (const editor of group.editors) panelOwners.set(editor.id, workspace);
+      }
+      workbench = workspaces.get(activeRegion);
+    } else {
+      workbench = window.PortalWorkbench.create({
+        id, root: panelRoot, label: app.title, insets: { top: 0, right: 0, bottom: 0, left: 0 },
+        initialEditors: editors,
+        // An independent Panel uses its host's slot. Keep every region and Chat
+        // available as tabs instead of nesting a second rail and split workspace.
+        defaultLayout: options.embedded ? window.PortalWorkbench.model.stack(editors.map(item => item.id), selected)
+          : chatIds.length ? window.PortalWorkbench.model.split("horizontal", [contentLayout, window.PortalWorkbench.model.stack(chatIds, selectedChat)], [2, 1]) : contentLayout,
+      });
+      workspaces.set("workspace", workbench);
+      for (const editor of editors) panelOwners.set(editor.id, workbench);
+    }
+    const getPanel = panelId => panelOwners.get(panelId)?.getPanel(panelId) || null;
     const openRegion = panelId => {
-      if (!workbench.focusPanel(panelId)) return false;
+      if (pagesMode) {
+        const next = workspaces.get(panelId);
+        if (!next) return false;
+        activeRegion = panelId;
+        for (const [regionId, workspace] of workspaces) {
+          workspace.root.hidden = regionId !== activeRegion;
+          workspace.setVisible(hostVisible && regionId === activeRegion);
+        }
+        workbench = next;
+      } else if (!workbench.focusPanel(panelId)) return false;
       const region = regions.find(item => item.id === panelId);
-      if (region && workbench.getPanel(region.chat ? `chat-${panelId}` : "facade")) page.openChat(panelId);
-      if (panelId !== "facade") rail?.setActiveView(panelId);
+      if (!pagesMode && region && workbench.getPanel(region.chat ? `chat-${panelId}` : "facade")) page.openChat(panelId);
+      if (pagesMode || panelId !== "facade") rail?.setActiveView(panelId);
       if (!options.preview && !options.region) { const url = new URL(location.href); url.searchParams.set("region", panelId); history.replaceState(null, "", url); }
       return true;
     };
-    page?.attach(workbench, openRegion);
+    page?.attach(workbench, openRegion, pagesMode ? panelId => panelOwners.get(panelId) : null);
     if (facadeError) { const alert = document.createElement("p"); alert.setAttribute("role", "alert"); alert.textContent = `${facadeError.code || "projection.resident_unbound"}：${facadeError.message}`; root.prepend(alert); }
-    if (showRail) rail = window.PortalWorkbench.createActivityRail({ id, root: railRoot, label: app.title, activeView: selected, itemsLabel: window.PortalI18n.t("门面对话"), onItemSelect: () => workbench.showPanel("facade"), views: regions.map(item => ({ id: item.id, icon: item.icon || "window", label: item.title })), onViewSelect: view => {
+    if (showRail) rail = window.PortalWorkbench.createActivityRail({ id, root: railRoot, label: app.title, activeView: activeRegion, itemsLabel: window.PortalI18n.t("门面对话"), onItemSelect: () => pagesMode ? openRegion("facade") : workbench.showPanel("facade"), views: regions.map(item => ({ id: item.id, icon: item.icon || "window", label: item.title })), onViewSelect: view => {
       openRegion(typeof view === "string" ? view : view.id);
     } });
     if (editors.some(item => item.id === "facade")) updateFacade(facadeDetail);
@@ -643,14 +689,17 @@
       if (destroyed) return;
       destroyed = true;
       options.signal?.removeEventListener("abort", destroy);
-      rail?.destroy(); workbench.destroy(); shell.remove();
+      rail?.destroy();
+      for (const workspace of workspaces.values()) workspace.destroy();
+      sharedContext?.dispose(); shell.remove();
     };
     options.signal?.addEventListener("abort", destroy, { once: true });
     if (options.signal?.aborted) { destroy(); throw fail("cancelled", "工作台已关闭"); }
-    const controller = { workbench, destroy, focusChat: () => options.region ? page.openChat(options.region) : openRegion("facade"),
+    const controller = { get workbench() { return workbench; }, workspaces, getPanel, destroy, focusChat: () => options.region ? page.openChat(options.region) : openRegion("facade"),
       setVisible(visible) {
+        hostVisible = Boolean(visible);
         page?.setVisible(visible);
-        workbench.setVisible(visible);
+        for (const [regionId, workspace] of workspaces) workspace.setVisible(hostVisible && (!pagesMode || regionId === activeRegion));
       },
     };
     options.onMounted?.(controller);
@@ -658,7 +707,7 @@
     // Workbench owns restored tabs, split layouts and outer visibility. Hidden
     // regions keep loading and expose their own ready/error; they must not hold
     // the selected view open or tear it down on a background asset failure.
-    const shown = regions.map(item => workbench.getPanel(item.id)).filter(panel => panel.isVisible());
+    const shown = regions.map(item => getPanel(item.id)).filter(panel => panel.isVisible());
     try { await Promise.all(shown.map(panel => panel.ready)); }
     catch (error) { destroy(); throw error; }
     if (destroyed) throw fail("cancelled", "工作台已关闭");

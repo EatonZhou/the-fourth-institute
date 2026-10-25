@@ -84,6 +84,19 @@ def test_v1_keeps_single_source_round_trip():
     assert app["html"] == "<p>保留</p>"
 
 
+def test_pages_navigation_is_an_optional_strict_revision_contract():
+    value = page()
+    value["manifest"]["navigation"] = {"mode": "pages"}
+    store = Store()
+    store.create(APP, value, "alice")
+    store.publish(APP, "alice", 1)
+    assert store.get(APP, "alice", published=True)["manifest"]["navigation"] == {"mode": "pages"}
+    for invalid in [None, {}, "pages", {"mode": "tabs"}, {"mode": "pages", "extra": True}]:
+        value["manifest"]["navigation"] = invalid
+        with pytest.raises(ProjectionError):
+            validate_manifest(value)
+
+
 def test_semantic_references_require_current_actor_access(monkeypatch):
     """语义引用按当前调用者授权且已验证状态需提供依据"""
     calls = []

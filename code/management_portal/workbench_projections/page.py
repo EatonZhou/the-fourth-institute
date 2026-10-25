@@ -38,7 +38,9 @@ def validate_page(manifest, panels, bindings, application=None):
 
     require(isinstance(manifest, dict), "页面清单必须是对象")
     require(schema_matches(manifest.get("schema"), expected="tfi.projection.v2"), "不支持的投影页面清单版本")
-    require(not set(manifest) - {"schema", "sidebar", "chat", "context"}, "页面清单包含未知字段")
+    require(not set(manifest) - {"schema", "sidebar", "chat", "context", "navigation"}, "页面清单包含未知字段")
+    if "navigation" in manifest:
+        require(manifest["navigation"] == {"mode": "pages"}, "navigation 必须为 {mode: pages}")
     require(isinstance(panels, dict), "面板源码必须按 source 路径保存")
     sidebar = manifest.get("sidebar")
     require(isinstance(sidebar, list) and 1 <= len(sidebar) <= 32, "页面必须包含 1–32 个功能区")
