@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from contextlib import contextmanager
 from functools import lru_cache
 import json
+import hashlib
 import os
 from pathlib import Path
 import re
@@ -108,16 +109,39 @@ def remove_record(path):
 
 
 def validate_definition(value, name):
-    if value.get("name") != name or not re.fullmatch(r"tfi-[a-z0-9-]+", name):
+    codex = value.get("component") == "codex"
+    pattern = r"portal-codex-app-server@[A-Za-z0-9_-]+-[a-f0-9]{10}\.service" if codex else r"tfi-[a-z0-9-]+"
+    if value.get("name") != name or not re.fullmatch(pattern, name):
         raise ValueError("Invalid user service identity")
     if value.get("mode") != "user" or value.get("component") not in (
-            "postgres", "nats", "resource", "execution", "society", "worker", "web"):
+            "postgres", "nats", "resource", "execution", "society", "worker", "web", "codex"):
         raise ValueError("Invalid user service component")
     for key in ("root", "code", "python"):
         path = Path(value[key])
         if not path.is_absolute() or path.is_symlink():
             raise ValueError("User service paths must be absolute and not symlinks")
-    if name != json.loads((Path(value["root"]) / "installation.json").read_text(encoding="utf-8"))["target"]["service_prefix"] + "-" + value["component"]:
+    root = Path(value["root"]).resolve()
+    target = json.loads((root / "installation.json").read_text(encoding="utf-8"))["target"]
+    if codex:
+        from scripts.tfi_instance_layout import code_root
+        from scripts.tfi_release_dependencies import runtime_python
+        command = value.get("command", [])
+        if (target.get("windows_service_mode") != "user"
+                or Path(target["install_root"]).resolve() != root
+                or Path(value["code"]).resolve() != code_root(target).resolve()
+                or Path(value["python"]).resolve() != Path(runtime_python(target)).resolve()
+                or not isinstance(command, list) or len(command) != 9
+                or not all(isinstance(arg, str) and not any(c in arg for c in "\0\r\n") for arg in command)
+                or command[:3] != [value["python"], "-m", "management_portal.codex_app_server_host"]
+                or command[3::2] != ["--socket", "--binary", "--account-home"]
+                or not all(Path(arg).is_absolute() for arg in command[4::2])):
+            raise ValueError("Codex user service ownership mismatch")
+        home = Path(command[-1]).resolve()
+        scope = hashlib.sha256(os.fsencode(Path(target["data_roots"]["instances_root"]).resolve())).hexdigest()[:10]
+        if (home.parent != (Path(target["data_roots"]["accounts_root"]) / "codex").resolve()
+                or name != f"portal-codex-app-server@{home.name}-{scope}.service"):
+            raise ValueError("Codex user service account ownership mismatch")
+    elif name != target["service_prefix"] + "-" + value["component"]:
         raise ValueError("User service does not belong to this installation")
     return value
 
@@ -153,7 +177,8 @@ def process_stamp(pid):
 
 
 def state_path(value):
-    return Path(value["root"]) / "runtime" / (value["component"] + ".process.json")
+    identity = value["name"] if value["component"] == "codex" else value["component"]
+    return Path(value["root"]) / "runtime" / (identity + ".process.json")
 
 
 def register(directory, units):
@@ -189,7 +214,7 @@ class WindowsServiceControl:
         return ServiceControl(platform="windows")
 
     def definition(self, name):
-        if not re.fullmatch(r"[a-zA-Z0-9_-]+", name):
+        if not re.fullmatch(r"[a-zA-Z0-9_@.-]+", name):
             raise ValueError("Invalid service name")
         path = self.directory / (name + ".json")
         if path.is_symlink():
@@ -238,7 +263,7 @@ class WindowsServiceControl:
                     continue
                 if status["pid"]:
                     raise RuntimeError("Wait for the component to stop: " + name)
-                log = Path(value["root"]) / "runtime" / (value["component"] + ".log")
+                log = Path(value["root"]) / "runtime" / ((value["name"] if value["component"] == "codex" else value["component"]) + ".log")
                 with log.open("ab") as output:
                     process = subprocess.Popen(
                         [value["python"], str(Path(value["code"]) / "scripts/tfi_windows_user_services.py"),
@@ -287,7 +312,10 @@ def supervise(path):
     if state.get("migration", {}).get("business_execution_allowed") is False and value["component"] != "postgres":
         raise ValueError("Migration cutover has not been approved")
     target = state["target"]
-    command, env = api.component_command(target, value["component"])
+    if value["component"] == "codex":
+        command, env = value["command"], api.clean_environment(target)
+    else:
+        command, env = api.component_command(target, value["component"])
     # A native Python crash otherwise leaves no traceback in the component log.
     process = spawn_process(command, cwd=value["code"], env={**env, "PYTHONFAULTHANDLER": "1"},
                             stdin=subprocess.DEVNULL, stdout=sys.stdout, stderr=sys.stderr,

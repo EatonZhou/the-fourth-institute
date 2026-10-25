@@ -8,14 +8,16 @@ from scripts import tfi_release_install as api, tfi_windows_user_services as ser
 from management_common import process_runtime
 
 
+@pytest.mark.parametrize("component", ["web", "codex"])
 @pytest.mark.parametrize("outcome", ["crash", "stop", "supervisor_error"])
-def test_supervision_records_exit_without_command_or_environment(tmp_path, monkeypatch, capsys, outcome):
-    value = dict(root=str(tmp_path), code=str(tmp_path), component="web")
+def test_supervision_records_exit_without_command_or_environment(tmp_path, monkeypatch, capsys, outcome, component):
+    value = dict(root=str(tmp_path), code=str(tmp_path), component=component, name="account-one", command=["python", "secret-argument"])
     (tmp_path / "runtime").mkdir()
     definition = tmp_path / "web.json"
     definition.write_text(json.dumps(value))
     monkeypatch.setattr(services, "validate_definition", lambda value, name: value)
     monkeypatch.setattr(api, "owned_state", lambda root: {"target": {}})
+    monkeypatch.setattr(api, "clean_environment", lambda target: {"TOKEN": "secret-value"})
     monkeypatch.setattr(api, "component_command", lambda *args: (["python", "secret-argument"], {"TOKEN": "secret-value"}))
     monkeypatch.setattr(services, "process_stamp", lambda pid: 42)
     monkeypatch.setattr(services.subprocess, "CREATE_NO_WINDOW", 0, raising=False)

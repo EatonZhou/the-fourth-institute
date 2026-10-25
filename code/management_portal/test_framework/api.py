@@ -14,7 +14,7 @@ _LOCK = threading.Lock()
 _SERVICE: TestFrameworkService | None = None
 
 
-def service() -> TestFrameworkService:
+def service(*, refresh_runtime: bool = False) -> TestFrameworkService:
     """The process's Test Framework service, built on first use."""
     global _SERVICE
     with _LOCK:
@@ -27,6 +27,11 @@ def service() -> TestFrameworkService:
                 registry=RunnerRegistry(tau_available=not tau_reason, tau_reason=tau_reason),
                 tau_residents=TauResidentAssignments(root / "tau-residents.json"),
             )
+        elif refresh_runtime:
+            # Dependencies and the test browser login may be provisioned after
+            # Web started. Keep durable runs and their owners; refresh readiness.
+            reason = TauConfig.from_environment().unavailable_reason()
+            _SERVICE.registry.refresh_tau(available=not reason, reason=reason)
         return _SERVICE
 
 
@@ -59,11 +64,11 @@ def set_tau_admission(paused: bool, expected_revision: int, *, actor: str) -> di
 
 
 def query(filters: dict[str, Any] | None = None, *, actor: str = "") -> dict[str, Any]:
-    return service().query(filters, actor=actor)
+    return service(refresh_runtime=True).query(filters, actor=actor)
 
 
 def query_workspace(filters: dict[str, Any] | None = None, *, actor: str = "") -> dict[str, Any]:
-    return service().query_workspace(filters, actor=actor)
+    return service(refresh_runtime=True).query_workspace(filters, actor=actor)
 
 
 def query_case_ids(filters: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -99,11 +104,11 @@ def case_for_design_point(point_ref: str) -> dict[str, Any] | None:
 
 
 def preview(request: dict[str, Any], *, actor: str) -> dict[str, Any]:
-    return service().preview(request, actor=actor)
+    return service(refresh_runtime=True).preview(request, actor=actor)
 
 
 def start(request: dict[str, Any], *, actor: str) -> dict[str, Any]:
-    return service().start(request, actor=actor)
+    return service(refresh_runtime=True).start(request, actor=actor)
 
 
 def get_run(run_id: str, *, actor: str) -> dict[str, Any]:

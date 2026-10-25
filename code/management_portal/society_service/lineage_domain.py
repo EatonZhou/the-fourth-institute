@@ -310,7 +310,9 @@ def _lineage_readme_text(lineage: dict[str, Any]) -> str:
 
 def _ensure_lineage_folder_files(lineage: dict[str, Any]) -> None:
     lineage_id = str(lineage.get("lineage_id") or "")
-    lineage_dir = _lineage_dir(lineage_id)
+    # Resolve the owned canonical alias before private writes. The security
+    # primitive deliberately rejects reparse points in its parent chain.
+    lineage_dir = _lineage_dir(lineage_id).resolve(strict=False)
     lineage_dir.mkdir(parents=True, exist_ok=True)
     (lineage_dir / "residents").mkdir(parents=True, exist_ok=True)
     (lineage_dir / "runtime").mkdir(parents=True, exist_ok=True)

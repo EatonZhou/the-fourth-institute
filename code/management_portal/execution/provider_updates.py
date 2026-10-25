@@ -16,13 +16,12 @@ from functools import cached_property
 import json
 import logging
 import os
-import ctypes
 import hashlib
+from management_common.directory_links import create_windows_junction as _windows_junction
 from pathlib import Path
 import re
 import shlex
 import shutil
-import struct
 import subprocess
 import sys
 import time
@@ -499,45 +498,6 @@ def _link(path: Path, target: Path) -> None:
     finally:
         temporary.unlink(missing_ok=True)
 
-
-def _windows_junction(path: Path, target: Path) -> None:
-    if not target.is_dir():
-        raise ValueError("Windows runtime activation requires a staged directory")
-    if sys.platform != "win32":
-        raise OSError("Windows junctions require Windows")
-    from ctypes import wintypes
-
-    resolved = str(target.resolve())
-    substitute = ("\\??\\UNC\\" + resolved.lstrip("\\") if resolved.startswith("\\\\")
-                  else "\\??\\" + resolved).encode("utf-16-le")
-    display = resolved.encode("utf-16-le")
-    buffer = substitute + b"\x00\x00" + display + b"\x00\x00"
-    reparse = struct.pack("<IHHHHHH", 0xA0000003, 8 + len(buffer), 0,
-                          0, len(substitute), len(substitute) + 2, len(display)) + buffer
-    api = ctypes.WinDLL("kernel32", use_last_error=True)
-    api.CreateFileW.restype = ctypes.c_void_p
-    api.CreateFileW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD,
-                                ctypes.c_void_p, wintypes.DWORD, wintypes.DWORD, ctypes.c_void_p]
-    api.DeviceIoControl.argtypes = [ctypes.c_void_p, wintypes.DWORD, ctypes.c_void_p,
-                                    wintypes.DWORD, ctypes.c_void_p, wintypes.DWORD,
-                                    ctypes.POINTER(wintypes.DWORD), ctypes.c_void_p]
-    api.CloseHandle.argtypes = [ctypes.c_void_p]
-    path.mkdir()
-    try:
-        handle = api.CreateFileW(str(path), 0x40000000, 7, None, 3, 0x02200000, None)
-        if handle == ctypes.c_void_p(-1).value or not handle:
-            raise ctypes.WinError(ctypes.get_last_error())
-        try:
-            data = ctypes.create_string_buffer(reparse)
-            count = wintypes.DWORD()
-            if not api.DeviceIoControl(handle, 0x000900A4, data, len(reparse), None, 0,
-                                       ctypes.byref(count), None):
-                raise ctypes.WinError(ctypes.get_last_error())
-        finally:
-            api.CloseHandle(handle)
-    except Exception:
-        path.rmdir()
-        raise
 
 
 def _remove_windows_link(path: Path) -> None:

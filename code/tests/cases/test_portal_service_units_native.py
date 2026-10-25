@@ -9,8 +9,8 @@ from types import SimpleNamespace
 import pytest
 
 
-@pytest.mark.parametrize("platform", ["darwin", "win32"])
-def test_native_codex_lifecycle_uses_registered_service(tmp_path, monkeypatch, platform):
+@pytest.mark.parametrize("platform,user_mode", [("darwin", False), ("win32", False), ("win32", True)])
+def test_native_codex_lifecycle_uses_registered_service(tmp_path, monkeypatch, platform, user_mode):
     from scripts import portal_service_units as units
     from scripts import portal_service_control
     from scripts import tfi_release_platform_windows, tfi_release_platform_macos
@@ -34,6 +34,17 @@ def test_native_codex_lifecycle_uses_registered_service(tmp_path, monkeypatch, p
     monkeypatch.setattr(portal_paths, "path_values", lambda: {**original_path(), "accounts_root": str(tmp_path / "accounts")})
     monkeypatch.setenv("PORTAL_WINDOWS_SERVICE_ACCOUNT", "local\\portal")
     monkeypatch.setenv("PORTAL_WINDOWS_SERVICE_PASSWORD", "mock-secret")
+    if user_mode:
+        root = tmp_path / "installed"
+        root.mkdir()
+        (root / "runtime").mkdir()
+        (root / "installation.json").write_text(json.dumps({"target": {
+            "install_root": str(root), "shared_code_root": str(units.SOURCE_ROOT),
+            "python": units.sys.executable, "windows_service_mode": "user",
+            "data_roots": {"accounts_root": str(tmp_path / "accounts"), "instances_root": str(units.instance_root())}}}))
+        monkeypatch.setenv("PORTAL_PATHS_CONFIG", str(root / "config/paths.json"))
+        monkeypatch.delenv("PORTAL_WINDOWS_SERVICE_ACCOUNT")
+        monkeypatch.delenv("PORTAL_WINDOWS_SERVICE_PASSWORD")
     monkeypatch.setattr(tfi_release_platform_macos, "unit_directory", lambda: tmp_path / "agents")
     events = []
     definitions = {}
@@ -53,6 +64,13 @@ def test_native_codex_lifecycle_uses_registered_service(tmp_path, monkeypatch, p
 
     controller.label = lambda service: "com.tfi.portal." + service.removesuffix(".service")
     monkeypatch.setattr(portal_service_control, "ServiceControl", controller)
+    if user_mode:
+        from scripts import tfi_windows_user_services as user_services
+        class UserController(Controller):
+            def __init__(self, directory):
+                assert directory == units.instance_root() / "service-units"
+        monkeypatch.setattr(user_services, "WindowsServiceControl", UserController)
+        monkeypatch.setattr(portal_service_control, "ServiceControl", lambda: pytest.fail("user mode reached SCM"))
     adapter = tfi_release_platform_windows if platform == "win32" else tfi_release_platform_macos
 
     def register(directory, units_to_register, **kwargs):
@@ -72,9 +90,19 @@ def test_native_codex_lifecycle_uses_registered_service(tmp_path, monkeypatch, p
     else:
         data = json.loads(definition)
         command = data["command"]
-        assert data["account"] == "local\\portal"
+        if user_mode:
+            from scripts.tfi_windows_user_services import validate_definition, state_path
+            validate_definition(data, name)
+            other = dict(data, name=name.replace("sample-", "other-"))
+            with pytest.raises(ValueError, match="account ownership"):
+                validate_definition(other, other["name"])
+            with pytest.raises(ValueError, match="ownership"):
+                validate_definition(dict(data, code=str(tmp_path / "foreign")), name)
+            assert state_path(data).name == name + ".process.json"
+        else:
+            assert data["account"] == "local\\portal"
+            assert "tfi_release_windows_service.py" in data["binary"]
         assert "mock-secret" not in definition
-        assert "tfi_release_windows_service.py" in data["binary"]
     assert command[:3] == [str(tmp_path / "Python.exe"), "-m", "management_portal.codex_app_server_host"]
     assert command[command.index("--binary") + 1] == str(binary)
     assert command[command.index("--account-home") + 1].endswith("accounts/codex/sample")

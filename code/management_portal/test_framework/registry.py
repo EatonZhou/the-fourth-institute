@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any
 
 from management_portal.test_framework.runner_ids import TAU_RUNNER_ID
@@ -72,6 +72,12 @@ class RunnerRegistry:
             )
         }
         self._profiles = {item.id: item for item in PROFILES}
+
+    def refresh_tau(self, *, available: bool, reason: str) -> None:
+        self._runners[TAU_RUNNER_ID] = replace(
+            self._runners[TAU_RUNNER_ID], available=available,
+            reason="" if available else reason,
+        )
 
     def runner(self, runner_id: str) -> RunnerDescriptor:
         try:

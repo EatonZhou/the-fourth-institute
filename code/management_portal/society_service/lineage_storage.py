@@ -5,6 +5,9 @@ import os
 import re
 import secrets
 from management_common.file_lock import lock_stream
+from management_common.directory_links import (
+    create_directory_link, is_directory_link, remove_directory_link, replace_directory_link,
+)
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -69,7 +72,7 @@ def bind_lineage_folder(
         return canonical
     target_path.mkdir(parents=True, exist_ok=True)
     with _folder_lock(canonical.parent):
-        if canonical.exists() or canonical.is_symlink():
+        if canonical.exists() or is_directory_link(canonical):
             if canonical.resolve(strict=False) != target_path:
                 raise LineageStorageConflictError(
                     f"Lineage canonical entry points elsewhere: {canonical}"
@@ -79,10 +82,10 @@ def bind_lineage_folder(
             f".{canonical.name}.{secrets.token_hex(4)}.tmp"
         )
         try:
-            temporary.symlink_to(target_path, target_is_directory=True)
-            os.replace(temporary, canonical)
+            create_directory_link(temporary, target_path)
+            replace_directory_link(temporary, canonical)
         finally:
-            temporary.unlink(missing_ok=True)
+            remove_directory_link(temporary, missing_ok=True)
     return canonical
 
 
@@ -98,13 +101,13 @@ def relocate_lineage_folder(
     canonical_path = Path(os.path.abspath(canonical.expanduser()))
     target_path = Path(os.path.abspath(Path(target).expanduser()))
     with _folder_lock(canonical.parent):
-        if not canonical.exists() and not canonical.is_symlink():
+        if not canonical.exists() and not is_directory_link(canonical):
             raise FileNotFoundError(f"Lineage folder not found: {canonical}")
         source_path = canonical.resolve(strict=True)
         if target_path == canonical_path:
             if source_path == canonical_path:
                 return canonical
-            if not canonical.is_symlink():
+            if not is_directory_link(canonical):
                 raise LineageStorageConflictError(
                     f"Lineage canonical entry is not a symlink: {canonical}"
                 )
@@ -112,11 +115,11 @@ def relocate_lineage_folder(
                 raise LineageStorageConflictError(
                     "Lineage relocation must stay on one filesystem"
                 )
-            canonical.unlink()
+            remove_directory_link(canonical)
             try:
                 os.replace(source_path, canonical_path)
             except BaseException:
-                canonical.symlink_to(source_path, target_is_directory=True)
+                create_directory_link(canonical, source_path)
                 raise
             return canonical
 
@@ -127,7 +130,7 @@ def relocate_lineage_folder(
             raise LineageStorageConflictError(
                 "Lineage relocation target cannot contain or be contained by the source"
             )
-        if target_path.exists() or target_path.is_symlink():
+        if target_path.exists() or is_directory_link(target_path):
             raise LineageStorageConflictError(
                 f"Lineage target already exists: {target_path}"
             )
@@ -144,10 +147,10 @@ def relocate_lineage_folder(
         try:
             os.replace(source_path, target_path)
             moved = True
-            temporary.symlink_to(target_path, target_is_directory=True)
-            os.replace(temporary, canonical)
+            create_directory_link(temporary, target_path)
+            replace_directory_link(temporary, canonical)
         except BaseException:
-            temporary.unlink(missing_ok=True)
+            remove_directory_link(temporary, missing_ok=True)
             if moved and target_path.exists() and not source_path.exists():
                 os.replace(target_path, source_path)
             raise
@@ -162,7 +165,7 @@ def unbind_lineage_folder(
 ) -> None:
     canonical = canonical_lineage_folder(lineage_id, folder_root=folder_root)
     with _folder_lock(canonical.parent):
-        if not canonical.is_symlink():
+        if not is_directory_link(canonical):
             return
         if expected_target is not None and canonical.resolve(strict=False) != Path(
             expected_target
@@ -170,6 +173,6 @@ def unbind_lineage_folder(
             raise LineageStorageConflictError(
                 f"Lineage canonical entry points elsewhere: {canonical}"
             )
-        canonical.unlink()
+        remove_directory_link(canonical)
 
 

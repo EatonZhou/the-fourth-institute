@@ -232,7 +232,8 @@ def remove_services(directory, names):
                 raise ValueError(f"Refusing to remove symlinked Windows service marker: {name}")
             verify_service(name, path.read_text(encoding="utf-8"))
             if json.loads(path.read_text(encoding="utf-8")).get("mode") == "user":
-                service_controller().stop(name)
+                from scripts.tfi_windows_user_services import WindowsServiceControl
+                WindowsServiceControl(directory).stop(name)
             else:
                 _delete_service(name)
             path.unlink()

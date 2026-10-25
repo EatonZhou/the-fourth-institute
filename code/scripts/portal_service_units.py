@@ -577,7 +577,6 @@ def _native_codex_service(account_id: str):
     from management_portal.execution.account_hosting import account_home, codex_socket_path
     from management_common.site_config import read_site_config
     from management_common.portal_paths import resolve_directory
-    from scripts.portal_service_control import ServiceControl
     if sys.platform == "win32":
         from scripts import tfi_release_platform_windows as adapter
     elif sys.platform == "darwin":
@@ -611,11 +610,21 @@ def _native_codex_service(account_id: str):
     directory = install_codex_unit_template()
     if sys.platform == "win32":
         account = os.environ.get("PORTAL_WINDOWS_SERVICE_ACCOUNT", "")
-        if not account:
-            raise ValueError("PORTAL_WINDOWS_SERVICE_ACCOUNT is required for Codex SCM service")
-        content = adapter.command_unit_text(name, command, account=account,
-                                            cwd=SOURCE_ROOT, log_path=instance_root() / "logs" / f"{name}.log",
-                                            directory=directory)
+        configured_paths = os.environ.get("PORTAL_PATHS_CONFIG")
+        root = Path(configured_paths).resolve().parent.parent if configured_paths else instance_root()
+        installation = root / "installation.json"
+        target = json.loads(installation.read_text(encoding="utf-8"))["target"] if installation.is_file() else {}
+        if target.get("windows_service_mode") == "user":
+            content = json.dumps({"mode": "user", "name": name, "component": "codex",
+                                  "root": str(root), "code": str(SOURCE_ROOT),
+                                  "python": sys.executable, "command": command},
+                                 sort_keys=True, ensure_ascii=False) + "\n"
+        else:
+            if not account:
+                raise ValueError("PORTAL_WINDOWS_SERVICE_ACCOUNT is required for Codex SCM service")
+            content = adapter.command_unit_text(name, command, account=account,
+                                                cwd=SOURCE_ROOT, log_path=instance_root() / "logs" / f"{name}.log",
+                                                directory=directory)
     else:
         from scripts.portal_instance_storage import site_environment
         # launchd does not inherit the installing process's environment. In
@@ -631,7 +640,7 @@ def _native_codex_service(account_id: str):
         log_root.mkdir(parents=True, exist_ok=True)
         content = adapter.command_unit_text(name, command, cwd=SOURCE_ROOT,
                                             log_root=log_root, log_name=name, environment=environment)
-    return adapter, directory, name, content, ServiceControl()
+    return adapter, directory, name, content, _native_codex_controller()
 
 
 def _register_native_codex(adapter, directory, name, content, controller):
@@ -678,10 +687,17 @@ def _register_native_codex(adapter, directory, name, content, controller):
         {"password_env": "PORTAL_WINDOWS_SERVICE_PASSWORD"} if sys.platform == "win32" else {}))
 
 
-def _native_codex_state(account_id: str) -> dict[str, Any]:
+def _native_codex_controller():
+    if sys.platform == "win32":
+        from scripts.tfi_windows_user_services import WindowsServiceControl
+        return WindowsServiceControl(instance_root() / "service-units")
     from scripts.portal_service_control import ServiceControl
+    return ServiceControl()
+
+
+def _native_codex_state(account_id: str) -> dict[str, Any]:
     unit = _codex_unit(account_id)
-    state = ServiceControl().status(unit)
+    state = _native_codex_controller().status(unit)
     return {"unit": unit, "load": state["load"], "active": state["active"],
             "sub": state["sub"], "pid": state["pid"], "enabled": state["load"] == "loaded"}
 
@@ -714,8 +730,7 @@ def start_codex_instance(account_id: str) -> dict[str, Any]:
 
 def stop_codex_instance(account_id: str) -> dict[str, Any]:
     if sys.platform in {"win32", "darwin"}:
-        from scripts.portal_service_control import ServiceControl
-        ServiceControl().stop(_codex_unit(account_id))
+        _native_codex_controller().stop(_codex_unit(account_id))
         return _native_codex_state(account_id)
     _run("systemctl", "--user", "stop", _codex_unit(account_id))
     return codex_instance_state(account_id)
@@ -724,7 +739,6 @@ def stop_codex_instance(account_id: str) -> dict[str, Any]:
 def remove_codex_instance(account_id: str) -> None:
     from management_portal.execution.account_hosting import codex_socket_path
     if sys.platform in {"win32", "darwin"}:
-        from scripts.portal_service_control import ServiceControl
         if sys.platform == "win32":
             from scripts import tfi_release_platform_windows as adapter
             directory = instance_root() / "service-units"
@@ -732,7 +746,7 @@ def remove_codex_instance(account_id: str) -> None:
             from scripts import tfi_release_platform_macos as adapter
             directory = adapter.unit_directory()
         name = _codex_unit(account_id)
-        ServiceControl().stop(name)
+        _native_codex_controller().stop(name)
         adapter.remove_services(directory, [name])
         codex_socket_path(account_id).unlink(missing_ok=True)
         return
