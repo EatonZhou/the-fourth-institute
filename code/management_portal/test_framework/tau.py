@@ -26,9 +26,16 @@ TAU_PLAYWRIGHT = ROOT / "management_portal" / "test_framework" / "tau_runtime" /
 
 
 def executor_runtime_issue() -> str:
-    """The campaign launcher and case-owned helper cleanup are Linux-only today."""
+    """Check the platform's launcher; actual ownership is enforced at spawn."""
+    if platform.system() == "Windows":
+        try:
+            import psutil  # noqa: F401 -- native durable process identities
+            from management_common import process_runtime  # noqa: F401
+        except ImportError:
+            return "TAU 缺少 Windows 进程管理依赖；请运行 bootstrap_portal install tau。"
+        return ""
     if platform.system() != "Linux":
-        return "TAU 执行器仍依赖 Linux systemd-run 和 /proc；Windows/macOS 的执行器与进程清理尚未接入。"
+        return "TAU 在此平台尚未接入原生执行器；当前支持 Windows Job 或 Linux systemd-run。"
     if not shutil.which("systemd-run") or not Path("/proc").is_dir():
         return "TAU 执行器需要 systemd-run 和 /proc。"
     return ""

@@ -1,6 +1,7 @@
 """Test executor: runs one Test run outside the Portal Web process.
 
 ``RunCoordinator`` starts it as a systemd user unit (``tfi-testrun-<id>``)
+on Linux, or as an independent Windows Job with a lifetime launch lock,
 with ``python -m management_portal.test_framework.executor --state-root <dir> <run_id>``. The
 unit is outside the Web cgroup and has a low CPU weight, so tests neither
 compete with Portal on equal terms nor stop when Web restarts. The executor
@@ -89,7 +90,12 @@ def unit_environment(state_root: Path, *, tau: bool) -> dict[str, str]:
 
 
 def launch_unit(run_id: str, state_root: Path, *, tau: bool = False) -> None:
-    """Start the executor for one run as a transient systemd user unit."""
+    """Start one executor outside the Web process's lifecycle."""
+    if sys.platform == "win32":
+        from management_portal.test_framework.native_executor import launch
+
+        launch(run_id, state_root, tau=tau)
+        return
     command = [
         "systemd-run", "--user", "--collect", "--quiet", f"--unit={unit_name(run_id)}",
         # Tests yield to Portal under contention instead of sharing CPU equally.

@@ -5,6 +5,9 @@ on:
     branches: [main]
     paths:
       - code/scripts/windows/tau_preflight.py
+      - code/scripts/windows/native_tau_smoke.ps1
+      - code/management_portal/test_framework/native_executor.py
+      - code/tests/cases/test_windows_tau_executor.py
       - .github/workflows/windows-tau-preflight.yml
   workflow_dispatch:
 
@@ -14,7 +17,7 @@ permissions:
 jobs:
   preflight:
     runs-on: windows-2025
-    timeout-minutes: 10
+    timeout-minutes: 20
     env:
       PYTHONUTF8: '1'
       PYTHONDONTWRITEBYTECODE: '1'
@@ -25,18 +28,39 @@ jobs:
           python-version: '3.12'
       - name: Install probe dependencies
         run: python -m pip install -r code/requirements.txt
+      - name: Install this Windows checkout's TAU browser
+        shell: pwsh
+        run: |
+          $browserPath = Join-Path $env:RUNNER_TEMP 'tau-native-browsers'
+          "PLAYWRIGHT_BROWSERS_PATH=$browserPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          $env:PLAYWRIGHT_BROWSERS_PATH = $browserPath
+          npm ci --prefix code/management_portal/test_framework/tau_runtime
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node code/management_portal/test_framework/tau_runtime/node_modules/playwright/cli.js install chromium
+          exit $LASTEXITCODE
+      - name: Exercise native executor and owned Chromium branches
+        shell: pwsh
+        run: code/scripts/windows/native_tau_smoke.ps1 -Evidence .build/windows-tau
       - name: Check native TAU prerequisites and enumerate active core cases
         shell: pwsh
         run: |
           $env:PORTAL_TEST_FRAMEWORK_STATE_ROOT = Join-Path $env:RUNNER_TEMP 'tau-readiness-state'
           python code/scripts/windows/tau_preflight.py --output .build/windows-tau/readiness.json
-          # Missing prerequisites deliberately fail the gate; zero TAU cases ran.
-          exit $LASTEXITCODE
+          $probeExit = $LASTEXITCODE
+          if ($probeExit -notin @(0, 2)) { exit $probeExit }
+          $receipt = Get-Content .build/windows-tau/readiness.json -Raw | ConvertFrom-Json
+          if (@($receipt.blockers | Where-Object { $_.check -in @('executor', 'browser') }).Count -gt 0) { exit 1 }
+          # No local model account/test login is provisioned on disposable CI.
+          # Preserve blocked status and zero cases; this is only native plumbing.
+          if ($receipt.status -ne 'ready') { Write-Warning 'Formal TAU is not configured or executed on this CI machine.' }
+          exit 0
       - name: Archive readiness and selected cases, including blocked runs
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: windows-tau-readiness
-          path: .build/windows-tau/readiness.json
+          path: |
+            .build/windows-tau/*.json
+            .build/windows-tau/*.log
           if-no-files-found: error
           retention-days: 7
