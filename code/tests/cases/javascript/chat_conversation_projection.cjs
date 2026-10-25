@@ -186,6 +186,8 @@ async function loading() {
 
 (async () => {
   try {
+    // The page's enhancers start once the document has loaded, as on a real page.
+    if (w.document.readyState === 'loading') await new Promise(resolve => w.document.addEventListener('DOMContentLoaded', resolve, { once: true }));
     protocolMessages();
     localSubmissions();
     deliveredInfos();
@@ -193,12 +195,12 @@ async function loading() {
     chatContract();
     queueNotices();
     await loading();
+  } catch (error) {
+    console.error(error);
+    process.exitCode = 1;
   } finally {
     observers.forEach(observer => observer.disconnect());
     await new Promise(resolve => setTimeout(resolve, 0));
     w.close();
   }
-})().catch(error => {
-  console.error(error);
-  process.exitCode = 1;
-});
+})();
