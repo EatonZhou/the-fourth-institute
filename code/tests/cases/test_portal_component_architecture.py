@@ -68,7 +68,8 @@ LAZY_ASSET_LOADERS = (
     "portal_hatg_loader.js",
     "portal_nav.js",
     "settings.js",
-    "portal_chat_workspace.js",
+    "chat_workspace_message_content.js",
+    "chat_workspace_messages.js",
 )
 
 # Resource pages that read record fields with PortalUIPrimitives.objectOf and

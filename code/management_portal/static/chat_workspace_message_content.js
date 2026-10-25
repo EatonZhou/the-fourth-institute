@@ -287,21 +287,14 @@
     async function requireImageEditor() {
       if (window.PortalImageEditor?.open) return window.PortalImageEditor;
       if (!imageEditorLoad) {
-        imageEditorLoad = new Promise((resolve, reject) => {
-          if (!document.querySelector('link[href="/static/portal_image_editor.css"]')) {
-            const style = document.createElement("link");
-            style.rel = "stylesheet";
-            style.href = "/static/portal_image_editor.css";
-            document.head.append(style);
-          }
-          const script = document.createElement("script");
-          script.src = "/static/portal_image_editor.js";
-          script.onload = () => window.PortalImageEditor?.open
-            ? resolve(window.PortalImageEditor)
-            : reject(new Error("图片查看器初始化失败"));
-          script.onerror = () => { script.remove(); reject(new Error("图片查看器加载失败，请重试")); };
-          document.head.append(script);
-        }).catch(error => { imageEditorLoad = null; throw error; });
+        const { loadAsset } = window.PortalUIPrimitives;
+        void loadAsset("/static/portal_image_editor.css").catch(() => {});
+        imageEditorLoad = loadAsset("/static/portal_image_editor.js", { ready: () => window.PortalImageEditor?.open })
+          .then(() => {
+            if (!window.PortalImageEditor?.open) throw new Error("图片查看器初始化失败");
+            return window.PortalImageEditor;
+          }, () => { throw new Error("图片查看器加载失败，请重试"); })
+          .catch(error => { imageEditorLoad = null; throw error; });
       }
       return imageEditorLoad;
     }
