@@ -69,6 +69,13 @@ def _process_snapshot() -> dict[int, HelperProcess]:
         except (psutil.NoSuchProcess, psutil.ZombieProcess):
             continue
         except psutil.AccessDenied as error:
+            if sys.platform == "win32":
+                # Windows cleanup is owned by the recorded Job objects, not
+                # this command-line scan. Even querying the owner of protected
+                # system processes is denied to ordinary users. They provide
+                # no evidence of a helper and must never be signalled. Keep
+                # scanning for readable, unmanaged helpers (rejected below).
+                continue
             # Foreign protected processes cannot be our helper. If even that
             # cannot be established, leave a failed cleanup receipt.
             try:

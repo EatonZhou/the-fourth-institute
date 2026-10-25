@@ -93,6 +93,33 @@ class PlatformContracts(unittest.TestCase):
             self.assertFalse(receipt['complete'])
             self.assertIn('metadata unavailable', receipt['error'])
 
+    def test_windows_protected_process_does_not_block_job_cleanup(self):
+        import psutil
+        protected = Mock(pid=124)
+        protected.oneshot.side_effect = psutil.AccessDenied(124)
+        readable = Mock(pid=200)
+        readable.oneshot.return_value = __import__('contextlib').nullcontext()
+        readable.ppid.return_value = 1
+        readable.cmdline.return_value = ['unrelated']
+        readable.create_time.return_value = 1.0
+        with patch.object(sys, 'platform', 'win32'), \
+                patch.object(psutil, 'process_iter', return_value=[protected, readable]), \
+                patch('management_portal.test_framework.tau_browser_owner.cleanup_browsers', return_value=[99]), \
+                patch.object(process_runtime, 'terminate_process_tree') as terminate:
+            self.assertEqual(runner_adapters._terminate_artifact_helpers(Path.cwd()), [99])
+            terminate.assert_not_called()
+            protected.username.assert_not_called()
+
+    def test_posix_unknown_owner_still_preserves_failure(self):
+        import psutil
+        protected = Mock(pid=124)
+        protected.oneshot.side_effect = psutil.AccessDenied(124)
+        protected.username.side_effect = psutil.AccessDenied(124)
+        with patch.object(sys, 'platform', 'linux'), \
+                patch.object(psutil, 'process_iter', return_value=[protected]):
+            with self.assertRaisesRegex(RuntimeError, '归属'):
+                runner_adapters._process_snapshot()
+
 
 class HelperContracts(unittest.TestCase):
     def snapshot(self, directory):
@@ -104,20 +131,20 @@ class HelperContracts(unittest.TestCase):
                 50: meta(1, ('node', str(directory) + '-other'), 5.0)}
 
     def test_protect_ancestors_and_sibling_prefix(self):
-        directory = Path('/tmp/owned-case')
+        directory = (Path(tempfile.gettempdir()) / 'owned-case').resolve()
         with patch.object(os, 'getpid', return_value=20), patch.object(os, 'getppid', return_value=10), \
                 patch.object(runner_adapters, '_process_snapshot', return_value=self.snapshot(directory)):
             self.assertEqual(runner_adapters._artifact_helper_targets(directory), {30, 40})
 
     def test_orphan_browser_option_path_is_owned(self):
-        directory = Path('/tmp/owned-case')
+        directory = (Path(tempfile.gettempdir()) / 'owned-case').resolve()
         snapshot = {30: runner_adapters.HelperProcess(1, ('chrome', '--user-data-dir=' + str(directory / 'browser')), 3.0),
                     40: runner_adapters.HelperProcess(1, ('chrome', '--user-data-dir=' + str(directory) + '-other'), 4.0)}
         self.assertEqual(runner_adapters._artifact_helper_targets(directory, snapshot), {30})
 
     def test_cleanup_uses_owner_for_verified_roots_only(self):
         import psutil
-        directory = Path('/tmp/owned-case')
+        directory = (Path(tempfile.gettempdir()) / 'owned-case').resolve()
         process = Mock()
         process.create_time.return_value = 3.0
         with patch.object(os, 'getpid', return_value=20), patch.object(os, 'getppid', return_value=10), \
@@ -129,7 +156,7 @@ class HelperContracts(unittest.TestCase):
 
     def test_reused_pid_never_terminated(self):
         import psutil
-        directory = Path('/tmp/owned-case')
+        directory = (Path(tempfile.gettempdir()) / 'owned-case').resolve()
         process = Mock()
         process.create_time.return_value = 999.0
         with patch.object(os, 'getpid', return_value=20), patch.object(os, 'getppid', return_value=10), \
@@ -141,7 +168,7 @@ class HelperContracts(unittest.TestCase):
             terminate.assert_not_called()
 
     def test_windows_unmanaged_helpers_fail_closed(self):
-        directory = Path('/tmp/owned-case')
+        directory = (Path(tempfile.gettempdir()) / 'owned-case').resolve()
         with patch.object(sys, 'platform', 'win32'), \
                 patch.object(os, 'getpid', return_value=20), patch.object(os, 'getppid', return_value=10), \
                 patch.object(runner_adapters, '_process_snapshot', return_value=self.snapshot(directory)), \
