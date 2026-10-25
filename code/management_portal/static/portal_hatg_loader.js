@@ -353,10 +353,10 @@
         if (belongsToDeletedLineage(restoredState)) restoredState = null;
         runtime?.applyLineageDeletion?.(deletedId);
       },
-      applyLineageMutation(lineage) {
-        if (runtime) return runtime.applyLineageMutation?.(lineage) || Promise.resolve(false);
+      applyLineageMutation(lineage, options) {
+        if (runtime) return runtime.applyLineageMutation?.(lineage, options) || Promise.resolve(false);
         if (!active) return Promise.resolve(false);
-        return ensureRuntime().then(panel => panel?.applyLineageMutation?.(lineage) || false);
+        return ensureRuntime().then(panel => panel?.applyLineageMutation?.(lineage, options) || false);
       },
       editLineage(next = {}) {
         return ensureRuntime().then(panel => panel?.editLineage?.(next));

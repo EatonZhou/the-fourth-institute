@@ -91,3 +91,13 @@ def test_hatg_long_identities_and_reopened_menu_remain_readable():
     script = Path(__file__).with_name("javascript") / "hatg_identity_readability.cjs"
     result = subprocess.run(["node", str(script)], capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_watchboard_layout_through_lazy_hatg_loader():
+    """Watchboard 安装与 Fork 的避让参数穿过真实懒加载代理。
+
+    :module: resident.conversation
+    """
+    script = Path(__file__).with_name("javascript") / "watchboard_loader_layout.cjs"
+    result = subprocess.run(["node", str(script)], capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stdout + result.stderr
