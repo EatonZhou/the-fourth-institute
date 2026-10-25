@@ -92,7 +92,11 @@ async function observeMailboxRequests({page, origin, residentId, requestId} = {}
     if (record) { record.response_complete = true; record.response_gap = 'original_request_failed'; }
   };
   cdp.on('Network.requestWillBeSent', initiated);
-  try { await cdp.send('Network.enable'); }
+  try {
+    await cdp.send('Network.enable');
+    await cdp.send('Debugger.enable');
+    await cdp.send('Debugger.setAsyncCallStackDepth', {maxDepth: 16});
+  }
   catch (error) { await cdp.detach(); throw error; }
   const registeredAt = Date.now();
   // Start is awaited before an original click. Requests already in flight do

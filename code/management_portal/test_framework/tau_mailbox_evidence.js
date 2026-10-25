@@ -10,7 +10,7 @@ function requireTarget({ residentId, entryKey }) {
 // manufacture a request. Call with the page which owns the original action.
 // Arm while collapsed, before the native open. A missing/wrong first sample
 // stays missing/wrong even when the UI subsequently converges.
-function createMailboxProbe({ residentId, entryKey, documentId }) {
+function createMailboxProbe({ residentId, entryKey, documentId, sampleBinding = null }) {
   const number = value => typeof value === 'number' && Number.isFinite(value) ? value : null;
   const bool = value => typeof value === 'boolean' ? value : null;
   const visible = element => !!element?.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true });
@@ -75,6 +75,9 @@ function createMailboxProbe({ residentId, entryKey, documentId }) {
   mutations.observe(document.documentElement, { subtree: true, childList: true, attributes: true, characterData: true });
   function tick() { observe('animation_frame'); frame = requestAnimationFrame(tick); }
   frame = requestAnimationFrame(tick);
+  const report = () => { if (sampleBinding) window[sampleBinding](sample()).catch(() => {}); };
+  const interval = sampleBinding ? setInterval(report, 50) : null;
+  report();
   return {
     sample,
     arm(label) {
@@ -87,16 +90,21 @@ function createMailboxProbe({ residentId, entryKey, documentId }) {
       return before;
     },
     take: () => captures,
-    stop() { stopped = true; mutations.disconnect(); cancelAnimationFrame(frame); return captures; },
+    stop() { stopped = true; mutations.disconnect(); cancelAnimationFrame(frame); if (interval !== null) clearInterval(interval); return captures; },
   };
 }
 
-async function observeMailboxFrames(page, { residentId, entryKey, documentId }) {
+async function observeMailboxFrames(page, { residentId, entryKey, documentId, onSample = null }) {
   requireTarget({ residentId, entryKey });
   if (!documentId) {
     throw new Error('Explicit target identity and original observer document ID required');
   }
-  const handle = await page.evaluateHandle(createMailboxProbe, { residentId, entryKey, documentId });
+  if (onSample !== null && typeof onSample !== 'function') throw new TypeError('onSample must be a synchronous record sink');
+  const sampleBinding = onSample ? '__tauMailboxSamples_' + require('node:crypto').randomUUID().replaceAll('-', '') : null;
+  if (sampleBinding) await page.exposeBinding(sampleBinding, (source, row) => {
+    if (source.frame === page.mainFrame()) onSample(row);
+  });
+  const handle = await page.evaluateHandle(createMailboxProbe, { residentId, entryKey, documentId, sampleBinding });
   return {
     sample: () => handle.evaluate(probe => probe.sample()),
     arm: label => handle.evaluate((probe, value) => probe.arm(value), label),

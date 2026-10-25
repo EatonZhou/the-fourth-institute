@@ -180,7 +180,13 @@
     };
     const get = (path, values = null) => {
       const suffix = values ? query(values) : "";
-      const operation = () => transport("get").get(`${path}${suffix ? `?${suffix}` : ""}`, { cache: "no-store" });
+      const operation = () => transport("get").get(`${path}${suffix ? `?${suffix}` : ""}`, {
+        cache: "no-store",
+        // Separate simultaneous reads of the same projection in browser/server
+        // diagnostics. This identifies an HTTP attempt, not a business action.
+        ...(path === "/api/agent-workbench/residents/projection"
+          ? { headers: { "X-Portal-Request-ID": globalThis.PortalUIPrimitives.randomUUID() } } : {}),
+      });
       const residentId = path.startsWith("/api/agent-workbench/residents/") ? values?.id || values?.resident_id
         : path === "/api/agent-workbench/agent-runtime-catalog" ? values?.resident_id : "";
       return residentId ? readResident(residentId, operation) : operation();
