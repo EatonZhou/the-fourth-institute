@@ -240,6 +240,13 @@ source. Their available license, notice and build-metadata files are retained.
 See [native dependency installation](docs/guide/release-native-dependencies.md)
 for versions, supplier distinctions, provenance receipts and platform limits.
 
+Windows packages also include the pinned Microsoft Visual C++ Redistributable
+identified in [msvc-runtime.json](scripts/windows/msvc-runtime.json). Its selected
+CRT DLLs are deployed beside PostgreSQL; Microsoft's original license is retained
+as `Microsoft-Visual-C++-License.rtf` in that directory. These files remain subject
+to Microsoft's license, not Portal's license. The redistributable installer is
+not executed and no global runtime installation is required.
+
 When updating dependencies or replacing distributed assets, update the relevant
 inventory and preserve the original copyright, license and notice files from
 the exact artifacts. Recheck bundled/transitive code when those bytes change;

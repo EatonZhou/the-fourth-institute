@@ -21,6 +21,7 @@ from scripts.tfi_instance_layout import GENERATED_CODE_DIRECTORIES, source_inven
 from scripts.tfi_release_native_dependencies import artifact_name, download, unpack, package_root
 from scripts.tfi_seed_selection import plan
 from scripts.windows.python_dependencies import bundle as bundle_python_dependencies
+from scripts.windows.msvc_runtime import bundle as bundle_msvc_runtime
 
 
 def public_seed(repo):
@@ -137,6 +138,7 @@ def stage(repo, destination, archive, *, source_commit=None, source_dirty=None, 
             raise ValueError("Incomplete Python runtime: " + relative)
     native_cache = native_cache or repo / ".build/windows/native-cache"
     bundled = bundle_native_dependencies(repo, destination, native_cache)
+    bundled.append(bundle_msvc_runtime(destination, native_cache))
     python_packages = bundle_python_dependencies(repo, destination,
         python_cache or repo / '.build/windows/python-cache')
     receipt = {

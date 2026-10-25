@@ -226,7 +226,9 @@ def verify(api, target, entry):
         result = api.run_native(command, target=target, timeout=90)
         version = result.stdout.strip()
         if result.returncode or not version:
-            raise RuntimeError('Native dependency cannot run on this host: ' + name)
+            status = f'0x{result.returncode & 0xffffffff:08X}'
+            detail = ' (required DLL missing)' if status == '0xC0000135' else ''
+            raise RuntimeError(f'Native dependency cannot run on this host: {name}; exit {status}{detail}')
         if name != 'npm' and not re.search(r'(?<![\d.])' + re.escape(entry['version']) + r'(?![\d.])', version):
             raise ValueError('Native dependency version differs from its catalog: ' + name)
         versions[name] = version
@@ -263,7 +265,9 @@ def _prepare(api, target, entries):
         compatibility = {}
         if entry['name'] == 'postgres' and entry['platform'].startswith('windows/'):
             from scripts.windows.utf8_manifest import prepare_postgres
+            from scripts.windows.msvc_runtime import prepare as prepare_crt
             compatibility = prepare_postgres(destination)
+            compatibility['msvc_runtime'] = prepare_crt(api, target, entry)
         # Probe before any service registration. A failed probe leaves its
         # receipt for diagnosis/retry and never activates an incomplete install.
         versions = verify(api, target, entry)
