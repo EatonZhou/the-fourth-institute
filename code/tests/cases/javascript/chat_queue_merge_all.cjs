@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { JSDOM } = require('jsdom');
+const { chatWorkspaceScripts } = require('./chat_workspace_modules.cjs');
 const ROOT = path.resolve(__dirname, '../../..');
 const FACADE = 'resident_111111111111';
 const MEMBER = 'resident_222222222222';
@@ -55,10 +56,8 @@ async function main() {
   for (const name of ['portal_state.js', 'portal_page_state.js', 'portal_ui_primitives.js', 'portal_ui.js',
     'portal_overlay.js', 'portal_resource_chips.js', 'portal_image_editor.js', 'portal_editor_open_service.js',
     'portal_command_registry.js', 'portal_workbench_context.js', 'portal_workbench.js',
-    'portal_resident_service.js', 'resident_protocol.js', 'portal_chat_workspace.js']) {
-    const sourcePath = name === 'portal_chat_workspace.js' && process.env.CHAT_SOURCE
-      ? process.env.CHAT_SOURCE : path.join(ROOT, 'management_portal/static', name);
-    w.eval(fs.readFileSync(sourcePath, 'utf8'));
+    'portal_resident_service.js', 'resident_protocol.js', ...chatWorkspaceScripts()]) {
+    w.eval(fs.readFileSync(path.join(ROOT, 'management_portal/static', name), 'utf8'));
   }
   w.PortalUI.toast = (text, kind) => notices.push({ text, kind });
   const panel = w.PortalChatWorkspace.panelPackage.create({ root: w.document.getElementById('chat'),

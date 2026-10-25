@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { JSDOM } = require('jsdom');
 const { babelParse, traverse } = require('./babel_parse.cjs');
+const { chatWorkspaceSources, findChatWorkspaceFunction, findChatWorkspaceNode } = require('./chat_workspace_modules.cjs');
 const root = path.resolve(__dirname, '../../..');
 const read = name => fs.readFileSync(path.join(root, name), 'utf8');
 
@@ -109,7 +110,7 @@ test('deadline rendering uses English singular/plural through the actual project
 
 test('chat header localizes system prefixes while preserving account and Resident names', async t => {
   const w = await harness(t);
-  w.eval(functionSource('management_portal/static/portal_chat_workspace.js', 'normalizeWorkspaceSubtitleParts') + ';window.auditSubtitle=normalizeWorkspaceSubtitleParts;');
+  w.eval(findChatWorkspaceFunction('normalizeWorkspaceSubtitleParts').source + ';window.auditSubtitle=normalizeWorkspaceSubtitleParts;');
   const parts = w.auditSubtitle([
     { text: '账号 中文账号 {p0}', identity: 'account', copy_value: '中文账号 {p0}' },
     { text: 'Family 门面（7 位成员）', identity: 'family' },
@@ -135,14 +136,9 @@ test('shared busy buttons translate temporary labels and restore the original bu
 
 test('active Family header translates the member label before appending runtime status', async t => {
   const w = await harness(t);
-  const source = read('management_portal/static/portal_chat_workspace.js');
-  let expression;
-  traverse(babelParse(source, 'portal_chat_workspace.js'), { ObjectProperty(p) {
-    if (p.node.key?.name !== 'subtitle_parts') return;
-    const code = source.slice(p.node.value.start, p.node.value.end);
-    if (code.includes('state.family_activity')) expression = code;
-  }});
-  assert.ok(expression);
+  const { node, file } = findChatWorkspaceNode((candidate, code) => candidate.type === 'ObjectProperty'
+    && candidate.key?.name === 'subtitle_parts' && code.includes('state.family_activity'), 'Family header subtitle');
+  const expression = chatWorkspaceSources()[file].slice(node.value.start, node.value.end);
   w.eval('window.auditFamilyHeader = (base, state, familyIssueLabel="") => (' + expression + ');');
   const parts = w.auditFamilyHeader({ chat_workspace: { header: { subtitle_parts: [{ identity: 'family', text: 'Family 门面（7 位成员）' }] } } },
     { family_activity: { running_count: 2 }, display_work_state: 'running' });

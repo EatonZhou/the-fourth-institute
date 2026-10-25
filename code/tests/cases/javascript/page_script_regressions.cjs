@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const {readHatgModule, createHatgModule} = require('./hatg_modules.cjs');
+const {findChatWorkspaceFunction} = require('./chat_workspace_modules.cjs');
 
 // Execute production owners with controlled inputs. Page journeys cover their DOM;
 // these cases isolate request ordering and language-dependent presentation.
@@ -13,9 +14,11 @@ function familyBlocks(window, replaced) {
   return createHatgModule(window.PortalHatgFamilyBlocks, 'createFamilyBlocks', replaced);
 }
 
+// The chat workspace's functions are found in whichever of its scripts holds them.
 function owner(file, names, dependencies) {
   const source = fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static', file), 'utf8');
   const functions = names.map(name => {
+    if (file === 'portal_chat_workspace.js') return findChatWorkspaceFunction(name).source;
     const match = new RegExp(`^( +)(?:async )?function ${name}\\(`, 'm').exec(source);
     if (!match) throw new Error(`Missing request owner ${name}`);
     const end = source.indexOf(`\n${match[1]}}\n`, match.index);

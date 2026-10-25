@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs'), path = require('node:path'), vm = require('node:vm');
 const {babelParse} = require('./babel_parse.cjs');
 const {workbenchModuleFiles} = require('./lineage_workbench_modules.cjs');
+const {chatWorkspaceScripts} = require('./chat_workspace_modules.cjs');
 const noop = () => {};
 const i18n = {t: s => s, text: (parts, ...values) => parts.reduce((s, p, i) => s + p + (values[i] ?? ''), '')};
 // The named declarations in one script, or in any of several scripts.
@@ -39,7 +40,7 @@ function deletionFixture() {
     PortalResidentService: {inputHistory: () => historyRead.promise}}, residentSessionScope: t => t.resident_id,
     residentProtocolMessageToWorkspace: message => message,
     RESIDENT_CHAT_WORKSPACE_SCHEMA: 'portal.chat_workspace.v3', newMessageIdentity: () => 'notice'});
-  vm.runInContext(declarations('portal_chat_workspace.js', ['rejectUnavailableTarget', 'showError', 'loadInputHistory']), shared);
+  vm.runInContext(declarations(chatWorkspaceScripts(), ['rejectUnavailableTarget', 'showError', 'loadInputHistory']), shared);
   function panel(id) {
     const identity = {resident_id: id, title: 'Known title'};
     return {target: () => identity, workspace: {target: () => identity, inputHistoryScope: () => identity.resident_id}, options: {}, questions: {reset: noop},

@@ -1,23 +1,23 @@
-const assert = require('node:assert/strict'), fs = require('node:fs'), vm = require('node:vm');
+const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path');
 const {JSDOM} = require('jsdom');
+const {STATIC, chatWorkspaceScripts} = require('./chat_workspace_modules.cjs');
 const catalog = JSON.parse(fs.readFileSync(0, 'utf8'));
-const dom = new JSDOM('<body></body>'), {window} = dom, errors = [], saved = [];
+const dom = new JSDOM('<body></body>', {runScripts: 'outside-only'}), {window} = dom, errors = [], saved = [];
 const template = (parts, ...values) => parts.reduce((text, part, index) => text + part + (values[index] ?? ''), '');
 window.PortalI18n = {t: text => text, html: template, text: template};
 window.PortalUI = {
   toast: text => errors.push(text), errorMessage: (context, error) => `${context}: ${error.message}`,
   createDialogController: ({modal}) => ({open() {modal.hidden = false;}, close() {modal.hidden = true;}, destroy() {}}),
 };
-const context = vm.createContext({window, document: window.document, Option: window.Option,
-  escapeHtml: text => String(text).replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;'),
-  showResidentBackendNotices() {}, console});
-vm.runInContext(fs.readFileSync('management_portal/static/portal_model_api_settings.js', 'utf8'), context);
-const source = fs.readFileSync('management_portal/static/portal_chat_workspace.js', 'utf8');
-vm.runInContext(source.slice(source.indexOf('  function createRuntimeSettingsDialog('),
-  source.indexOf('  const sessionRestartActive =')), context);
+window.PortalUIPrimitives = {escapeHtml: text => String(text).replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;')};
+window.PortalResourceChips = {};
+// The real model API settings and chat workspace scripts, as a page loads them.
+for (const file of ['portal_model_api_settings.js', ...chatWorkspaceScripts()]) {
+  window.eval(fs.readFileSync(path.join(STATIC, file), 'utf8') + `\n//# sourceURL=${file}`);
+}
 const flush = async () => {for (let i = 0; i < 4; i++) await new Promise(resolve => setImmediate(resolve));};
 (async () => {
-  const dialog = context.createRuntimeSettingsDialog();
+  const dialog = window.PortalChatWorkspace.createRuntimeSettingsDialog();
   for (const selection of ['', 'deepseek-v4-flash']) {
     dialog.open({model: 'gpt-6-luna'}, value => saved.push(value), {catalog});
     const model = window.document.querySelector('[data-runtime-setting=model]');

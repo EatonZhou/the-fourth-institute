@@ -7,6 +7,7 @@ const vm = require('node:vm');
 const parser = require('@babel/parser');
 const traverse = require('@babel/traverse').default;
 const {createHarness: harness, plain} = require('./workbench_visibility_state.cjs');
+const {chatWorkspaceSources, findChatWorkspaceNode} = require('./chat_workspace_modules.cjs');
 const staticRoot = path.resolve(__dirname, '../../../management_portal/static');
 const sourceRoot = process.env.PORTAL_STATE_TEST_SOURCE || staticRoot;
 const source = name => fs.readFileSync(path.join(sourceRoot, name), 'utf8');
@@ -151,8 +152,8 @@ test('Society opening URL overrides restored constructor binding as well as stat
 });
 
 test('Resident owner quarantines confirmed deletion and 404, not permission or temporary failures', () => {
-  const chatSource = source('portal_chat_workspace.js');
-  const method = expression(chatSource, n => n.type === 'ClassMethod' && n.key.name === 'rejectUnavailableTarget');
+  const method = findChatWorkspaceNode(n => n.type === 'ClassMethod' && n.key.name === 'rejectUnavailableTarget',
+    'rejectUnavailableTarget method', chatWorkspaceSources(sourceRoot)).source;
   const ctx = vm.createContext({window: {PortalI18n: {t: s => s}}, residentSessionScope: () => 'scope'});
   const reject = vm.runInContext(`({${method}}).rejectUnavailableTarget`, ctx);
   for (const error of [{code:'resident.deleted'}, ...[404, 403, 429, 500, 0].map(status => ({status}))]) {

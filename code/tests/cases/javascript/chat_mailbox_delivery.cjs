@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { JSDOM } = require('jsdom');
+const { STATIC, chatWorkspaceScripts } = require('./chat_workspace_modules.cjs');
 const input = JSON.parse(fs.readFileSync(0, 'utf8'));
 const dom = new JSDOM('<section id="fixture"></section>', {
   url: 'https://chat.fixture.invalid/lineage', pretendToBeVisual: true, runScripts: 'outside-only',
@@ -20,8 +21,8 @@ w.PortalIdentity = { username: () => 'viewer' };
 w.eval(input.routeScript);
 for (const name of ['portal_state.js', 'portal_page_state.js', 'portal_text.js', 'portal_ui_primitives.js', 'portal_ui.js',
   'portal_overlay.js', 'portal_preview_contract.js', 'portal_file_links.js', 'portal_resource_chips.js', 'portal_image_editor.js', 'portal_editor_open_service.js',
-  'portal_command_registry.js', 'portal_workbench_context.js', 'portal_workbench.js', 'resident_protocol.js', 'portal_chat_workspace.js']) {
-  w.eval(fs.readFileSync(path.resolve(input.staticRoot || path.resolve(__dirname, '../../../management_portal/static'), name), 'utf8'));
+  'portal_command_registry.js', 'portal_workbench_context.js', 'portal_workbench.js', 'resident_protocol.js', ...chatWorkspaceScripts(input.staticRoot || STATIC)]) {
+  w.eval(fs.readFileSync(path.resolve(input.staticRoot || STATIC, name), 'utf8'));
 }
 const workspace = w.PortalChatWorkspace.createWorkspace({ root: w.document.getElementById('fixture'), id: 'chat',
   historyScope: () => 'mailbox-delivery', refs: false, can_attach: false,
