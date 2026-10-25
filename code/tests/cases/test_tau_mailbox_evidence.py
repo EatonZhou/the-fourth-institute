@@ -41,3 +41,15 @@ def test_mailbox_original_event_browser_transport():
     script = Path(__file__).with_name('javascript') / 'tau_mailbox_event_transport.cjs'
     result = subprocess.run(['node', str(script)], capture_output=True, text=True, timeout=30)
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_mailbox_original_read_provenance():
+    """原请求绑定真实刷新来源与状态批次，不增加请求或消除原错误。
+
+    :design: decision_c953eab654cd
+    :risk: no-external-side-effects
+    :profiles: local.fixture
+    """
+    script = Path(__file__).with_name('javascript') / 'tau_mailbox_read_provenance.cjs'
+    result = subprocess.run(['node', str(script)], capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stdout + result.stderr

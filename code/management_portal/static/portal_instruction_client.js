@@ -55,6 +55,7 @@
       const detail = {
         transport_id: transportId,
         instruction,
+        batch_id: /^resident-state-[1-9]\d*$/.test(observation?.batch_id || "") ? observation.batch_id : null,
         consumer: ["inbox", "chat", "state_subscription", "mailbox_todos"].includes(observation?.consumer) ? observation.consumer : "unknown",
         reader_id: /^(state-[1-9][0-9]{0,10}|mailbox-todos-[1-9][0-9]{0,10}|chat-reconciliation)$/.test(observation?.reader_id || "") ? observation.reader_id : null,
         reasons: [...new Set((Array.isArray(observation?.reasons) ? observation.reasons : ["unknown"])

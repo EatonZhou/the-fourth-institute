@@ -7,11 +7,38 @@
   // All clients in this page share the same Resident lifecycle, including
   // clients with their own API adapter and the graph's instruction client.
   const residentReads = new Map();
+  let readSequence = 0;
+  let lifecycleSequence = 0;
+  const projectionReadTriggers = new Set(["explicit_load", "explicit_invalidate", "identity", "session_restart",
+    "unbound_runtime", "snapshot_required", "reconnected", "identity_changed", "subscription", "transient_retry"]);
+  function recordResidentRead(detail) {
+    // Local provenance only: never include results, error text or credentials.
+    try { window.dispatchEvent(new CustomEvent("portal:resident-read", { detail: {
+      ...detail, epoch_ms: Date.now(), browser_ms: performance.now(), time_origin_ms: performance.timeOrigin,
+    } })); } catch (_) { /* Observation cannot change a read or mutation. */ }
+  }
+  function lifecycleOf(state) {
+    return { revision: state.revision || 0, deleted: state.deleted, deletion_pending: Boolean(state.deletion) };
+  }
+  function projectionReadObservation(value) {
+    return {
+      consumer: value?.consumer === "projection_cache" ? "projection_cache" : "direct_service",
+      generation: /^\d+:\d+$/.test(value?.generation || "") ? value.generation : null,
+      notification_id: /^projection-notify-[1-9]\d*$/.test(value?.notification_id || "") ? value.notification_id : null,
+      triggers: (Array.isArray(value?.triggers) ? value.triggers : []).slice(0,32)
+        .map(item => projectionReadTriggers.has(item) ? item : "unknown"),
+      triggers_omitted: Number.isSafeInteger(value?.triggers_omitted) && value.triggers_omitted >= 0 ? value.triggers_omitted : 0,
+    };
+  }
   // Retire a remotely deleted target before ordinary invalidation listeners
   // dispatch refresh reads. Identity changes alone are not deletion evidence.
   window.addEventListener("portal:change", event => {
     for (const [id, scopes] of Object.entries(event?.detail?.resident_changes || {})) {
-      if (Array.isArray(scopes) && scopes.includes("deleted")) readState(id).deleted = true;
+      if (Array.isArray(scopes) && scopes.includes("deleted")) {
+        const state = readState(id);
+        state.deleted = true; state.revision = ++lifecycleSequence;
+        recordResidentRead({ phase: "remote_deleted", resident_id: id, lifecycle: lifecycleOf(state) });
+      }
     }
   }, { capture: true });
   function readState(residentId) {
@@ -52,16 +79,21 @@
     if (state.deleted) return Promise.reject(deletedResidentError(residentId));
     let release;
     state.settled = new Promise(resolve => { release = resolve; });
+    state.revision = ++lifecycleSequence;
+    recordResidentRead({ phase: "local_delete_started", resident_id: residentId,
+      lifecycle: { ...lifecycleOf(state), deletion_pending: true } });
     state.deletion = (async () => {
       try {
         // Let already dispatched reads finish while the Resident still exists.
         // New reads wait for the write outcome instead of racing its commit.
         await Promise.allSettled([...state.reads]);
         const result = await operation();
-        state.deleted = true;
+        state.deleted = true; state.revision = ++lifecycleSequence;
+        recordResidentRead({ phase: "local_delete_committed", resident_id: residentId, lifecycle: lifecycleOf(state) });
         return result;
       } finally {
         state.deletion = null;
+        recordResidentRead({ phase: "local_delete_settled", resident_id: residentId, lifecycle: lifecycleOf(state) });
         release();
         if (!state.deleted && !state.reads.size) residentReads.delete(String(residentId).trim());
       }
@@ -189,18 +221,34 @@
       }
       return params.toString();
     };
-    const get = (path, values = null) => {
+    const get = (path, values = null, readObservation = null) => {
       const suffix = values ? query(values) : "";
-      const operation = () => transport("get").get(`${path}${suffix ? `?${suffix}` : ""}`, {
-        cache: "no-store",
-        // Separate simultaneous reads of the same projection in browser/server
-        // diagnostics. This identifies an HTTP attempt, not a business action.
-        ...(["/api/agent-workbench/residents/projection", "/api/agent-workbench/residents/navigation-target"].includes(path)
-          ? { headers: { "X-Portal-Request-ID": globalThis.PortalUIPrimitives.randomUUID() } } : {}),
-      });
       const residentId = path.startsWith("/api/agent-workbench/residents/") ? values?.id || values?.resident_id
         : path === "/api/agent-workbench/agent-runtime-catalog" ? values?.resident_id : "";
-      return residentId ? readResident(residentId, operation) : operation();
+      const observed = ["/api/agent-workbench/residents/projection", "/api/agent-workbench/residents/navigation-target"].includes(path);
+      const state = observed ? readState(residentId) : null;
+      const attemptId = observed ? `resident-read-${++readSequence}` : null;
+      let transportId = null;
+      const record = (phase, extra = {}) => {
+        if (observed) recordResidentRead({ phase, resident_id: residentId, path, attempt_id: attemptId,
+          transport_id: transportId, observation: projectionReadObservation(readObservation),
+          lifecycle: lifecycleOf(state), ...extra });
+      };
+      const operation = () => {
+        if (observed) { transportId = globalThis.PortalUIPrimitives.randomUUID(); record("request_started"); }
+        return transport("get").get(`${path}${suffix ? `?${suffix}` : ""}`, {
+          cache: "no-store", ...(observed ? { headers: { "X-Portal-Request-ID": transportId } } : {}),
+        });
+      };
+      const result = residentId ? readResident(residentId, operation) : operation();
+      if (!observed) return result;
+      return result.then(value => { record("request_resolved"); return value; }, error => {
+        record(transportId ? "request_rejected" : "read_blocked", {
+          error_code: /^[a-z][a-z0-9_.-]{1,95}$/.test(error?.code || "") ? error.code : null,
+          http_status: Number.isInteger(error?.status) ? error.status : null,
+        });
+        throw error;
+      });
     };
     const post = (path, payload = {}) => transport("post").post(path, payload);
     const residentPath = suffix => `/api/agent-workbench/residents${suffix || ""}`;
@@ -330,11 +378,11 @@
       navigationTarget(residentId) {
         return get(residentPath("/navigation-target"), { id: required(residentId, "resident_id") });
       },
-      projection({ residentId, lineageId = "" } = {}) {
+      projection({ residentId, lineageId = "", readObservation = null } = {}) {
         return get(residentPath("/projection"), {
           id: required(residentId, "resident_id"),
           lineage_id: lineageId,
-        });
+        }, readObservation);
       },
       runtimeAccounts() { return execute("ListProviderAccounts", {}); },
       runtimeSettings(residentId) {
@@ -502,10 +550,23 @@
         return execute("ClearMailbox", { resident_id: required(payload.resident_id, "resident_id") }, keyed(payload, "queue-clear"));
       },
       loadStates(residentIds, { includeViewerState = true, readObservation } = {}) {
+        const selected = ids(residentIds), batchId = `resident-state-${++readSequence}`;
+        const record = (phase, extra = {}) => selected.forEach(residentId => recordResidentRead({
+          phase, resident_id: residentId, batch_id: batchId, ...extra,
+        }));
+        record("state_batch_started");
         return execute("ListResidentStates", {
-          resident_ids: ids(residentIds),
+          resident_ids: selected,
           ...(includeViewerState ? {} : { include_viewer_state: false }),
-        }, { readObservation });
+        }, { readObservation: { ...readObservation, batch_id: batchId } }).then(value => {
+          const received = Array.isArray(value?.states) ? new Set(value.states.map(item => item?.resident_id)) : null;
+          selected.forEach(residentId => recordResidentRead({ phase: "state_batch_resolved", resident_id: residentId,
+            batch_id: batchId, states_array: Boolean(received), target_present: received ? received.has(residentId) : null }));
+          return value;
+        }, error => {
+          record("state_batch_rejected", { error_code: /^[a-z][a-z0-9_.-]{1,95}$/.test(error?.code || "") ? error.code : null });
+          throw error;
+        });
       },
       setIntake(payload = {}) {
         return execute("OpenIntake", {

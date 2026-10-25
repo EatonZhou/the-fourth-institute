@@ -6,7 +6,8 @@
   const entries = new Map();
   const invalidationGenerations = new Map();
   const subscribers = new Map();
-  const pendingNotifications = new Set();
+  const pendingNotifications = new Map();
+  let notificationSequence = 0;
   const retryTimers = new Map();
   const retryDelays = new Map();
   const MAX_CACHED_RESIDENTS = 32;
@@ -71,7 +72,12 @@
     if (!options.force && entry.value) return Promise.resolve(clone(entry.value));
     if (entry.loading) return entry.loading.then(clone);
     const requestGeneration = generationFor(key);
-    const request = window.PortalResidentService.projection({ residentId: key }).then(value => {
+    const request = window.PortalResidentService.projection({ residentId: key, readObservation: {
+      consumer: "projection_cache", generation: requestGeneration,
+      notification_id: options.notification?.id || null,
+      triggers: options.notification?.triggers || ["explicit_load"],
+      triggers_omitted: options.notification?.omitted || 0,
+    } }).then(value => {
       if (String(value?.resident_id || "") !== key) {
         throw new Error("Resident projection target mismatch");
       }
@@ -90,7 +96,7 @@
     return request.then(clone);
   }
 
-  function invalidate(residentId) {
+  function invalidate(residentId, reason = "explicit_invalidate") {
     const key = keyFor(residentId);
     if (key) {
       clearRetry(key);
@@ -101,25 +107,35 @@
         invalidationGenerations.delete(invalidationGenerations.keys().next().value);
       }
       entries.delete(key);
-      scheduleNotification(key);
+      scheduleNotification(key, reason);
     } else {
       for (const retryKey of retryTimers.keys()) clearRetry(retryKey);
       retryDelays.clear();
       globalInvalidationGeneration += 1;
       invalidationGenerations.clear();
       entries.clear();
-      for (const residentKey of subscribers.keys()) scheduleNotification(residentKey);
+      for (const residentKey of subscribers.keys()) scheduleNotification(residentKey, reason);
     }
   }
 
-  function scheduleNotification(key) {
-    if (!subscribers.has(key) || pendingNotifications.has(key)) return;
-    pendingNotifications.add(key);
+  function scheduleNotification(key, reason = "transient_retry") {
+    if (!subscribers.has(key)) return;
+    const allowed = new Set(["explicit_invalidate", "identity", "session_restart", "unbound_runtime",
+      "snapshot_required", "reconnected", "identity_changed", "subscription", "transient_retry"]);
+    const trigger = allowed.has(reason) ? reason : "unknown";
+    const existing = pendingNotifications.get(key);
+    if (existing) {
+      if (existing.triggers.length < 32) existing.triggers.push(trigger);
+      else existing.omitted += 1;
+      return;
+    }
+    const notification = { id: `projection-notify-${++notificationSequence}`, triggers: [trigger], omitted: 0 };
+    pendingNotifications.set(key, notification);
     queueMicrotask(async () => {
       pendingNotifications.delete(key);
       if (!subscribers.has(key)) return;
       let update;
-      try { update = { detail: await load(key) }; }
+      try { update = { detail: await load(key, { notification }) }; }
       catch (error) {
         scheduleRetry(key, error);
         update = { error };
@@ -137,7 +153,7 @@
     if (!subscribers.has(key)) subscribers.set(key, new Set());
     subscribers.get(key).add(listener);
     // Also closes the gap between the initial read and mounting the consumer.
-    scheduleNotification(key);
+    scheduleNotification(key, "subscription");
     return () => {
       const listeners = subscribers.get(key);
       listeners?.delete(listener);
@@ -160,17 +176,18 @@
         || scopes.includes("session_restart")
         || (sessionUnbound && scopes.includes("runtime"))
       ) {
-        invalidate(key);
+        invalidate(key, scopes.includes("identity") ? "identity"
+          : scopes.includes("session_restart") ? "session_restart" : "unbound_runtime");
       }
     }
-    if (detail.snapshot_required) invalidate();
+    if (detail.snapshot_required) invalidate(undefined, "snapshot_required");
   });
   window.addEventListener("portal:events-ready", event => {
-    if (event?.detail?.reconnected) invalidate();
+    if (event?.detail?.reconnected) invalidate(undefined, "reconnected");
   });
   window.addEventListener(
     window.PortalIdentity?.eventName || "portal:identity-changed",
-    () => invalidate(),
+    () => invalidate(undefined, "identity_changed"),
   );
 
   window.PortalResidentProjection = { load, peek, invalidate, subscribe };

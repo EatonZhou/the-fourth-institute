@@ -13,6 +13,54 @@ async function observeMailboxRequests({page, origin, residentId, requestId} = {}
   const cdp = await page.context().newCDPSession(page);
   const captureId = randomUUID(), records = [], native = [], pending = new Set(), index = new WeakMap();
   let stopped = false, sequence = 0;
+  const nativeReads = [];
+  const binding = '__tauResidentRead_' + randomUUID().replaceAll('-', '');
+  await page.exposeBinding(binding, (source, row) => {
+    if (source.frame === page.mainFrame()) nativeReads.push(row);
+  });
+  const nativeHandle = await page.evaluateHandle(({binding, residentId}) => {
+    const batches = new Set();
+    const token = value => typeof value === 'string' && /^[a-z0-9-]{1,96}$/.test(value) ? value : null;
+    const numeric = value => Number.isFinite(value) ? value : null;
+    const phases = new Set(['remote_deleted','local_delete_started','local_delete_committed','local_delete_settled',
+      'request_started','request_resolved','request_rejected','read_blocked',
+      'state_batch_started','state_batch_resolved','state_batch_rejected']);
+    const reasons = new Set(['explicit_load','explicit_invalidate','identity','session_restart','unbound_runtime',
+      'snapshot_required','reconnected','identity_changed','subscription','transient_retry']);
+    const send = row => window[binding]({...row, captured_at_ms:Date.now(), time_origin_ms:performance.timeOrigin,
+      browser_ms:performance.now()}).catch(()=>{});
+    const read = event => {
+      const v = event.detail;
+      if (v?.resident_id !== residentId || !phases.has(v.phase)) return;
+      const batchId = /^resident-state-[1-9]\d*$/.test(v.batch_id || '') ? v.batch_id : null;
+      if (batchId && v.phase === 'state_batch_started') batches.add(batchId);
+      while(batches.size > 256) batches.delete(batches.values().next().value);
+      const o=v.observation,l=v.lifecycle;
+      send({phase:v.phase,resident_id:residentId,attempt_id:token(v.attempt_id),batch_id:batchId,
+        transport_id:token(v.transport_id),
+        path:['/api/agent-workbench/residents/projection','/api/agent-workbench/residents/navigation-target'].includes(v.path)?v.path:null,
+        lifecycle:l?{revision:numeric(l.revision),deleted:typeof l.deleted==='boolean'?l.deleted:null,
+          deletion_pending:typeof l.deletion_pending==='boolean'?l.deletion_pending:null}:null,
+        observation:o?{consumer:['projection_cache','direct_service'].includes(o.consumer)?o.consumer:'unknown',
+          generation:/^\d+:\d+$/.test(o.generation||'')?o.generation:null,notification_id:token(o.notification_id),
+          triggers:(Array.isArray(o.triggers)?o.triggers:[]).slice(0,32).map(x=>reasons.has(x)?x:'unknown'),
+          triggers_omitted:numeric(o.triggers_omitted)}:null,
+        error_code:typeof v.error_code==='string'&&/^[a-z][a-z0-9_.-]{1,95}$/.test(v.error_code)?v.error_code:null,
+        http_status:Number.isInteger(v.http_status)?v.http_status:null,
+        target_present:typeof v.target_present==='boolean'?v.target_present:null,
+        states_array:typeof v.states_array==='boolean'?v.states_array:null,
+        emitted_at_ms:numeric(v.epoch_ms)});
+    };
+    const state = event => {
+      const v=event.detail;
+      if(v?.instruction!=='ListResidentStates'||!batches.has(v.batch_id))return;
+      send({phase:'state_transport',resident_id:residentId,batch_id:v.batch_id,transport_id:token(v.transport_id),
+        reader_id:token(v.reader_id),consumer:['inbox','chat','state_subscription'].includes(v.consumer)?v.consumer:'unknown'});
+    };
+    window.addEventListener('portal:resident-read',read);
+    window.addEventListener('portal:state-read',state);
+    return {stop:()=>{window.removeEventListener('portal:resident-read',read);window.removeEventListener('portal:state-read',state);}};
+  },{binding,residentId});
   const cleanToken = (value, re) => typeof value === 'string' && re.test(value) ? value : null;
   const transport = headers => cleanToken(Object.entries(headers || {}).find(([k]) => k.toLowerCase() === 'x-portal-request-id')?.[1], /^[a-z0-9-]{1,96}$/);
   const metadata = (urlText, method, raw, headers) => {
@@ -28,7 +76,8 @@ async function observeMailboxRequests({page, origin, residentId, requestId} = {}
     const submitted = cleanToken(body?.instruction, /^[A-Z][A-Za-z0-9]{1,63}$/);
     const target = body?.arguments?.resident_id;
     const residentRoute = /^\/api\/agent-workbench\/residents\/(projection|navigation-target)$/.test(url.pathname);
-    const own = target === residentId || (residentRoute && method === 'GET'
+    const own = target === residentId || (submitted === 'ListResidentStates'
+      && Array.isArray(body?.arguments?.resident_ids) && body.arguments.resident_ids.includes(residentId)) || (residentRoute && method === 'GET'
       && url.searchParams.getAll('id').length === 1 && url.searchParams.get('id') === residentId);
     const path = url.pathname === '/api/instructions/execute' || residentRoute ? url.pathname : '/api/[unclassified]';
     const token = transport(headers);
@@ -97,30 +146,39 @@ async function observeMailboxRequests({page, origin, residentId, requestId} = {}
     await cdp.send('Debugger.enable');
     await cdp.send('Debugger.setAsyncCallStackDepth', {maxDepth: 16});
   }
-  catch (error) { await cdp.detach(); throw error; }
+  catch (error) {
+    try { await nativeHandle.evaluate(h=>h.stop()); } finally { await nativeHandle.dispose(); await cdp.detach(); }
+    throw error;
+  }
   const registeredAt = Date.now();
   // Start is awaited before an original click. Requests already in flight do
   // not acquire a Playwright record and cannot be reconstructed afterwards.
   page.on('request', started); page.on('response', received); page.on('requestfailed', failed);
   const snapshot = () => ({capture_id: captureId, registered_at_ms: registeredAt, stopped,
     selected_resident_id: residentId, business_acceptance: false,
+    native_reads: JSON.parse(JSON.stringify(nativeReads)),
     records: records.map(record => {
       const {signature, ...safe} = record;
       const matches = native.filter(x => x.signature === signature && x.observed_at_ms >= registeredAt);
       const unique = matches.length === 1 && records.filter(x => x.signature === signature).length === 1;
       const match = unique ? matches[0] : null;
+      const sources = record.transport_id ? nativeReads.filter(x => x.transport_id === record.transport_id
+        && ['request_started','state_transport'].includes(x.phase)) : [];
+      const source = sources.length === 1 && records.filter(x=>x.transport_id===record.transport_id).length===1 ? sources[0] : null;
       return {...safe, initiator_association: match ? 'unique_original_request_signature' : 'unavailable_or_ambiguous',
         cdp_request_id: match?.cdp_request_id || null, frame_id: match?.frame_id || null,
         loader_id: match?.loader_id || null, initiator_type: match?.initiator_type || null,
         caller_stack: match?.stack.map(x => ({...x})) || [],
-        trigger_reason: 'not_inferred_from_stack_or_time'};
+        native_source_association: source ? 'unique_original_transport' : 'unavailable_or_ambiguous',
+        native_source: source ? JSON.parse(JSON.stringify(source)) : null,
+        trigger_reason: source?.observation ? 'original_native_observation' : 'not_inferred_from_stack_or_time'};
     })});
   return Object.freeze({snapshot, async stop() {
     if (!stopped) {
       stopped = true;
       page.off('request', started); page.off('response', received); page.off('requestfailed', failed);
       cdp.off('Network.requestWillBeSent', initiated);
-      await cdp.detach();
+      try { await nativeHandle.evaluate(h=>h.stop()); } finally { await nativeHandle.dispose(); await cdp.detach(); }
     }
     await Promise.all([...pending]);
     return snapshot();
