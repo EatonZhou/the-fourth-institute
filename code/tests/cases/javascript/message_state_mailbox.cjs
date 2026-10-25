@@ -123,6 +123,36 @@ function mailbox({ connected = false, targetRead, transform = (_name, source) =>
 }
 
 const checks = {
+  async 'resident-context'() {
+    const app = mailbox({ connected: true });
+    const entries = [
+      {...payload.entries[0], subtitle: '科研 <实验>', surface_label: '社群', pinned: true},
+      {...payload.entries[1], subtitle: 'Portal 团队', surface_label: '社群'},
+      {...payload.entries[2], kind: 'resident', subtitle: '科研 <实验>', surface_label: '社群'},
+      {...payload.entries[3], kind: 'chatroom', subtitle: 'alice: hello', surface_label: 'Chatroom'},
+    ];
+    const labels = key => [...app.rows().find(row => row.dataset.agentConversationKey === key)
+      .querySelectorAll('.portalAgentInboxItemBody small > span')].map(span => span.textContent);
+    try {
+      app.queue({...payload, entries, next_page_token: null});
+      await app.advance(300);
+      assert.equal(app.rows().length, 4);
+      assert.deepEqual(labels(entries[0].key), ['科研 <实验>']);
+      assert.deepEqual(labels(entries[1].key), ['Portal 团队']);
+      assert.deepEqual(labels(entries[2].key), ['科研 <实验>']);
+      assert.deepEqual(labels(entries[3].key), ['alice: hello', 'Chatroom']);
+      assert.equal(app.root.querySelectorAll('[data-agent-inbox-pinned]').length, 1);
+      assert.equal(app.root.querySelectorAll('[data-agent-conversation-time]').length, 4);
+      assert.equal(app.root.querySelector('实验'), null, 'context is rendered as text');
+      app.queue({...payload, content_signature: 'renamed', next_page_token: null,
+        entries: entries.map(entry => entry.subtitle === '科研 <实验>' ? {...entry, subtitle: '科研新名称'} : entry)});
+      await app.refresh();
+      await app.advance(40);
+      assert.deepEqual(labels(entries[0].key), ['科研新名称']);
+      assert.deepEqual(labels(entries[2].key), ['科研新名称']);
+      assert.equal(app.root.querySelectorAll('[data-agent-inbox-pinned]').length, 1);
+    } finally { await app.close(); }
+  },
   async 'state-omission'() {
     const ids = ['resident_111111111111', 'resident_222222222222'];
     const app = mailbox({ connected: true, transform: (name, source) =>

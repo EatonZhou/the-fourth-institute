@@ -394,6 +394,7 @@
     const title = String(routed?.title || window.PortalI18n.t("Agent conversation"));
     const subtitle = String(routed?.subtitle || "");
     const source = String(routed?.surface_label || "Portal");
+    const residentConversation = ["resident-main", "resident"].includes(routed?.kind);
     const updatedAt = String(routed?.updated_at || "");
     const status = conversationStatus(routed);
     const closed = String(routed?.intake_state || "").trim().toLowerCase() === "closed";
@@ -414,7 +415,7 @@
         : window.PortalI18n.markup('<span class="portalAgentInboxUnreadDot" aria-label="未读"></span>');
     return window.PortalI18n.html`<button class="portalAgentInboxItem${attention ? " unread" : ""}${issueClass}" type="button" data-agent-conversation-key="${esc(routed?.key || "")}" data-entry-type="${entryType}" data-status="${esc(status)}" title="${esc(title)}">
       <span class="portalAgentInboxItemIcon" data-portal-icon="${entryIcon(routed)}" aria-hidden="true"></span>
-      <span class="portalAgentInboxItemBody"><span class="portalAgentInboxItemTitle"><strong>${esc(title)}</strong>${pinMarkup}</span><small><span>${esc(subtitle || source)}</span>${subtitle && subtitle !== source ? window.PortalI18n.html`<span>${esc(source)}</span>` : ""}<time datetime="${esc(updatedAt)}" data-agent-conversation-time>${esc(relativeTime(updatedAt))}</time></small></span>
+      <span class="portalAgentInboxItemBody"><span class="portalAgentInboxItemTitle"><strong>${esc(title)}</strong>${pinMarkup}</span><small><span>${esc(subtitle || source)}</span>${!residentConversation && subtitle && subtitle !== source ? window.PortalI18n.html`<span>${esc(source)}</span>` : ""}<time datetime="${esc(updatedAt)}" data-agent-conversation-time>${esc(relativeTime(updatedAt))}</time></small></span>
       <span class="portalAgentInboxItemState"><span class="portalAgentInboxItemMeta"><span class="portalAgentInboxItemType">${entryType === "notification" ? window.PortalI18n.t("通知") : window.PortalI18n.t("对话")}</span>${routed.muted ? window.PortalI18n.markup('<span class="chatroomMutedMark" data-portal-icon="bell-off" title="消息免打扰" aria-label="消息免打扰"></span>') : ""}${intakeMarkup}</span><span class="portalAgentInboxItemIndicators">${statusMarkup(routed)}${unreadMarkup}${mentions ? window.PortalI18n.html`<span class="chatroomMentionBadge" title="定位第一条未读 @ 消息">@我 ${mentions}</span>` : ""}</span></span>
     </button>`;
   }

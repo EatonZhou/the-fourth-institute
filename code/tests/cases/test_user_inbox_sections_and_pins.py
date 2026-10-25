@@ -304,6 +304,7 @@ def test_node_menu_can_pin_a_visible_resident_without_conversation_or_read_side_
     """
     from management_portal import conversation_index_projection as projection
     from management_portal import serve_management_portal as portal
+    from management_portal.society_service import resident_protocol
 
     resident_id = "resident_111111111111"
     key = f"resident:{resident_id}"
@@ -316,7 +317,10 @@ def test_node_menu_can_pin_a_visible_resident_without_conversation_or_read_side_
         assert exact == resident_id
         if actor != "CASE-A" or not visible:
             raise PermissionError("not visible")
-        return {"resident_id": exact, "title": "未交谈的节点", "lineage_id": "lineage_222222222222"}
+        return resident_protocol._resident_view(SimpleNamespace(
+            resident_id=exact,
+            record={"resident_id": exact, "title": "未交谈的节点", "lineage_id": "lineage_222222222222", "lineage_title": "科研团队"},
+        ))
 
     def inbox_entry(actor, exact_key):
         return next((entry for entry in index.decorate_entries(
@@ -324,6 +328,8 @@ def test_node_menu_can_pin_a_visible_resident_without_conversation_or_read_side_
         )["entries"] if entry["key"] == exact_key), None)
 
     with isolated_portal_case():
+        monkeypatch.setattr(resident_protocol, "_workspace_views", lambda *_: [])
+        monkeypatch.setattr(resident_protocol.resident_backend, "execution_account_projection", lambda *_: {})
         monkeypatch.setattr(projection, "get_society_service", lambda: SimpleNamespace(resident=SimpleNamespace(
             get_resident=resident,
             get_resident_state=lambda *args: {"cursor": 7, "state": {"status": "idle", "intake_state": "open"}},
@@ -339,6 +345,7 @@ def test_node_menu_can_pin_a_visible_resident_without_conversation_or_read_side_
         pinned = web_isa.pin_inbox_item(invocation(key=key, pinned=True))["item"]
         assert pinned["pinned"] and not pinned["unread"]
         assert pinned["title"] == "未交谈的节点"
+        assert pinned["subtitle"] == "科研团队"
         assert pinned["resident_id"] == resident_id and pinned["cursor"] == 7
         assert "lineage_222222222222" in pinned["url"]
         assert unread_flags("CASE-A") == {key: False}

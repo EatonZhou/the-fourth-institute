@@ -458,6 +458,7 @@ def _resident_view(target: Any) -> dict[str, Any]:
         "resident_id": target.resident_id,
         "title": str(record.get("title") or target.resident_id),
         "lineage_id": resident_lineage.lineage_id(record),
+        "lineage_title": str(record.get("lineage_title") or ""),
         "project_id": str(record.get("project_id") or ""),
         "created_by": str(record.get("created_by") or ""),
         # The values CreateResident takes: a provider_api Resident names its model API as the account.

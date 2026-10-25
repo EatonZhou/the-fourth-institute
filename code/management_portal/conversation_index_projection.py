@@ -229,7 +229,7 @@ def resident_pin_entry(actor: str, resident_id: str) -> dict[str, Any]:
     return _entry(
         key=f"resident:{resident_id}",
         title=resident.get("title") or resident_id,
-        subtitle="Resident",
+        subtitle=resident.get("lineage_title") or resident.get("lineage_id") or "Resident",
         surface="lineage",
         surface_label="Lineage",
         kind="resident-main",
@@ -339,7 +339,7 @@ def resident_entries(
                 _entry(
                     key=f"resident:{resident_id}",
                     title=title,
-                    subtitle="Resident",
+                    subtitle=resident.get("lineage_title") or resident.get("lineage_id") or "Resident",
                     surface="lineage",
                     surface_label="Lineage",
                     kind="resident-main",
@@ -396,7 +396,7 @@ def resident_entries(
                 _entry(
                     key=f"resident:{family_resident_id}",
                     title=family_resident.get("label") or f"{title} derived Resident",
-                    subtitle=title,
+                    subtitle=family_resident.get("lineage_title") or resident.get("lineage_title") or title,
                     surface="lineage",
                     surface_label="Lineage",
                     kind="resident",

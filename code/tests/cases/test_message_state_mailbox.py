@@ -54,3 +54,8 @@ def test_mailbox_read_provenance_preserves_coalescing_errors_and_privacy():
 def test_missing_resident_state_stays_unknown_without_failing_mailbox():
     """A valid omission clears stale per-target state while other native rows remain usable."""
     _run("state-omission")
+
+
+def test_resident_context_names_survive_refresh_without_redundant_source_labels():
+    """Mailbox shows each Resident's Lineage name and keeps other source labels intact."""
+    _run("resident-context")

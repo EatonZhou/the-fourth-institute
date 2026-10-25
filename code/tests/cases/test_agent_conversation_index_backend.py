@@ -102,6 +102,48 @@ def _unread_signature(resident_id: str, actor: str) -> dict:
     return summaries[resident_id]["unread_signature"]
 
 
+def test_resident_mailbox_context_uses_current_authorized_lineage_names(monkeypatch, isolated_portal_case):
+    """Resident identity names survive the activity projection, including derived rows and renames."""
+    records = [
+        {"resident_id": "resident_111111111111", "title": "调度", "lineage_id": "lineage_111111111111", "lineage_title": "科研"},
+        {"resident_id": "resident_222222222222", "title": "开发", "lineage_id": "lineage_222222222222", "lineage_title": "Portal 团队"},
+    ]
+    ids = [record["resident_id"] for record in records]
+
+    def visible(selected, actor, service_actor):
+        assert selected == ids and actor == "CASE-A" and service_actor == "portal"
+        return records
+
+    with isolated_portal_case():
+        monkeypatch.setattr(resident_directory_domain.resident_access, "visible_resident_records", visible)
+        monkeypatch.setattr(resident_directory_domain.resident_backend, "session_routes_for_bindings", lambda _: {})
+        monkeypatch.setattr(lineage_projection, "resident_state_snapshots", lambda *_: {})
+        monkeypatch.setattr(lineage_projection, "get_avatar", lambda *_: {})
+
+        def entries():
+            residents = resident_directory_domain._engaged_conversation_records(ids, "CASE-A")
+            for resident in residents:
+                resident["actor_last_user_message_at"] = "2026-10-25T00:00:00Z"
+            residents[0]["family_residents_preview"] = [{
+                "resident_id": "resident_333333333333", "label": "派生成员",
+                "actor_last_user_message_at": "2026-10-25T00:00:00Z",
+            }]
+            routes = {record["resident_id"]: record["lineage_id"] for record in records}
+            return {entry["resident_id"]: entry for entry in lineage_projection.resident_entries(
+                "CASE-A", {"residents": residents}, routes,
+            )}
+
+        rows = entries()
+        assert rows[ids[0]]["subtitle"] == "科研"
+        assert rows[ids[1]]["subtitle"] == "Portal 团队"
+        assert rows["resident_333333333333"]["subtitle"] == "科研"
+        records[0]["lineage_title"] = "科研新名称"
+        renamed = entries()
+        assert renamed[ids[0]]["subtitle"] == "科研新名称"
+        assert renamed["resident_333333333333"]["subtitle"] == "科研新名称"
+        assert renamed[ids[0]]["url"] == rows[ids[0]]["url"]
+
+
 def test_session_index_exposes_metadata_without_transcript_content_contracts(monkeypatch, subtests, isolated_portal_case):
     """会话索引只暴露元数据，条目保留用户消息时间与最新输入结局，Family 预览不重复列出"""
     with subtests.test(contract='test_session_index_exposes_metadata_without_transcript_content'), isolated_portal_case() as case_path:

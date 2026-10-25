@@ -131,6 +131,7 @@ def _engaged_conversation_records(
                     "resident_id",
                     "title",
                     "lineage_id",
+                    "lineage_title",
                     "created_at",
                     "updated_at",
                 )
