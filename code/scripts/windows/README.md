@@ -119,7 +119,11 @@ Windows TCP 通信目录使用私有目录接口创建，不能用 `mkdir(mode=0
 覆盖已有平台代码，尚不提供跨版本 schema 升级；不要把重新运行 Setup 当作数据迁移。
 本版卸载器只在当前安装仍持有登记时移除公共快捷方式，保留另一个目录中较新安装的入口。
 安装包尚未代码签名，Windows 可能显示未知发布者或信誉提示。
-TAU 执行器当前依赖 Linux；浏览器工具安装成功不代表 Windows TAU 可执行。
+TAU 原生执行器使用独立 Windows Job，浏览器使用受管 Job 与清理回执。
+需在该 Windows 实例安装可选 TAU 依赖、配置测试用户、目标与模块 Resident，
+并接入本机可运行的 Codex 账号，再由它自己的 Test 工作区启动 Campaign。
+原生 CI 的进程/浏览器链路测试不调用模型，不能代替正式 TAU 用例结果；
+具体准备步骤见 `management_portal/test_framework/tau_runtime/README.md`。
 各 AI Provider、Article 编译、Device 与实际 Resident 对话仍需逐项验证。
 
 ## 发布与启动检查

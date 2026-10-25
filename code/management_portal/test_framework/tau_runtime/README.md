@@ -43,7 +43,20 @@ its own database, data and consumers, then select its actual identity and port.
 The same shared code and optional browser runtime can serve several instances;
 each instance keeps its own test identity, target and evidence.
 
-Native TAU Campaign execution currently requires Linux: the executor is started
-through `systemd-run`, and cleanup of case-owned helper processes uses `/proc`.
-Windows and macOS can install the optional browser package, but `doctor tau`
-reports the executor as unavailable until those two integrations are ported.
+Linux starts Campaign executors through `systemd-run`. Windows starts a native
+Python executor in a separate Windows Job, with a lifetime lock per run. It
+survives Web restart; recovery reclaims the original durable run and input IDs.
+The managed TAU browser uses its own Job and lease for verified cleanup. An
+unmanaged Windows helper without a Job receipt still blocks cleanup instead of
+guessing ownership from a PID. macOS Campaign launch remains unavailable.
+
+On Windows, use the installed Portal Python in the commands above (`python`,
+not an unrelated Python installation). Register the Codex account already on
+that Windows machine through its own Portal, configure the TAU application
+Lineage/module Resident, and select core TAU cases in that Portal's Test
+Workbench. Do not copy accounts from another host or use another host's TAU to
+drive this acceptance run. `scripts/windows/tau_preflight.py --output <file>`
+records prerequisite failures and the selected core case manifest; it does not
+start a Campaign. Native CI validates process and browser ownership with
+disposable fixtures, without a real account or model, so its success is not a
+formal TAU result.

@@ -18,6 +18,8 @@ from management_common import process_runtime
 from management_common.file_lock import try_lock_descriptor, unlock_descriptor
 from management_portal.test_framework.catalog import ROOT
 
+LOCAL_RUNTIME_SECONDS = 8 * 60 * 60
+
 
 def run_directory(state_root: Path, run_id: str) -> Path:
     if not re.fullmatch(r"testrun_[0-9a-f]{16}", run_id):
@@ -95,10 +97,20 @@ def main(argv: list[str] | None = None) -> int:
         if not try_lock_descriptor(lock.fileno()):
             sys.stdout.buffer.write(b"busy\n"); sys.stdout.flush()
             return 0
+        timer = None
         try:
             # Import before acknowledging so missing runtime dependencies fail
             # at launch, not as an indefinitely queued Test run.
             from management_portal.test_framework.executor import main as execute
+            from management_portal.test_framework.records import RunRecords, is_tau_run
+
+            record = RunRecords(args.state_root / "runs.json").get(args.run_id)
+            if not is_tau_run(record):
+                # Match Linux RuntimeMaxSec. A dead local executor is closed by
+                # RunRecords recovery; its owned workers observe pipe EOF.
+                timer = threading.Timer(LOCAL_RUNTIME_SECONDS, os._exit, args=(124,))
+                timer.daemon = True
+                timer.start()
 
             sys.stdout.buffer.write(b"ready\n"); sys.stdout.flush()
             with (directory / "executor.log").open("ab", buffering=0) as log:
@@ -106,6 +118,8 @@ def main(argv: list[str] | None = None) -> int:
                 os.dup2(log.fileno(), sys.stderr.fileno())
                 return execute(["--state-root", str(args.state_root), args.run_id])
         finally:
+            if timer is not None:
+                timer.cancel()
             unlock_descriptor(lock.fileno())
 
 

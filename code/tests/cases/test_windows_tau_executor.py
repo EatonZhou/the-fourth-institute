@@ -173,6 +173,21 @@ time.sleep(60)
         finally:
             process_runtime.terminate_process_tree(web,force=True)
 
+    def test_local_run_deadline_closes_as_interrupted(self):
+        self.records.update(self.run_id, {'plan':{'selected':[], 'execution':{'groups':[]}}})
+        command = [sys.executable, '-c',
+                   'from management_portal.test_framework import native_executor; native_executor.LOCAL_RUNTIME_SECONDS=1\n'+WORKLOAD,
+                   '--state-root', str(self.root), self.run_id]
+        environment = native.executor_environment(self.root,tau=False)
+        environment['PYTHONPATH'] = str(ROOT)
+        with patch.object(native,'executor_command',return_value=command), \
+                patch.object(native,'executor_environment',return_value=environment):
+            native.launch(self.run_id,self.root,tau=False)
+        identity = self.started()
+        until(lambda: not process_is_alive(identity))
+        self.records.recover_interrupted([self.run_id])
+        self.assertEqual(self.records.get(self.run_id)['status'], 'error')
+
 
 @unittest.skipUnless(sys.platform == 'win32', 'requires native Windows browser ownership')
 class NativeBrowser(unittest.TestCase):
