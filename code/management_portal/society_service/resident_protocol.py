@@ -818,7 +818,7 @@ def get_resident_conversation_snapshot(
             snapshot = personal_history.prepend(target.record, snapshot, limit=history_limit)
     else:
         snapshot = resident_held_infos.project_snapshot(target.record, snapshot)
-        snapshot = resident_mailbox.project_snapshot(target.record, snapshot)
+        snapshot["messages"] = resident_mailbox.project_messages(target.resident_id, snapshot.get("messages") or [])
     snapshot["resident"] = _resident_view(target)
     snapshot = _with_conversation_controls(snapshot, target.resident_id, actor_id, target=target)
     if (include_inheritance or include_inherited_context) and not input_message_id:
@@ -857,6 +857,8 @@ def get_conversation_messages(
     if facade:
         page["messages"] = family_facade.project_messages(target.record, list(page.get("messages") or []))
         page = personal_history.prepend(target.record, page, limit=limit)
+    else:
+        page["messages"] = resident_mailbox.project_messages(target.resident_id, page.get("messages") or [])
     return page
 
 

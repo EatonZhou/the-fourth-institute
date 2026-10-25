@@ -2228,6 +2228,8 @@ class ResidentConversationRepository:
         take a Snapshot instead.
         """
 
+        from . import resident_mailbox
+
         wanted: dict[str, tuple[set[str], set[str]]] = {}
         for event in events:
             payload = event.get("payload") or {}
@@ -2240,13 +2242,12 @@ class ResidentConversationRepository:
         finals = self.agent_data.chat_final_replies_many(
             {resident_id: sorted(inputs) for resident_id, (_messages, inputs) in wanted.items() if inputs},
         )
-        found: dict[str, tuple[dict[str, dict[str, Any]], dict[str, tuple[str, str]]]] = {
-            resident_id: (
-                self.agent_data.trace_chat_messages(resident_id, sorted(messages)) if messages else {},
-                finals.get(resident_id, {}),
-            )
-            for resident_id, (messages, _inputs) in wanted.items()
-        }
+        found: dict[str, tuple[dict[str, dict[str, Any]], dict[str, tuple[str, str]]]] = {}
+        for resident_id, (message_ids, _inputs) in wanted.items():
+            stored = self.agent_data.trace_chat_messages(resident_id, sorted(message_ids)) if message_ids else {}
+            messages = {message_id: _message_from_storage(message) for message_id, message in stored.items()}
+            resident_mailbox.project_messages(resident_id, list(messages.values()), repository=self)
+            found[resident_id] = (messages, finals.get(resident_id, {}))
         for event in events:
             payload = event.get("payload") or {}
             messages, replies = found.get(str(event["resident_id"]), ({}, {}))
@@ -2256,7 +2257,7 @@ class ResidentConversationRepository:
                     event.pop("payload", None)
                     event["payload_omitted"] = True
                 else:
-                    event["payload"] = {**payload, "message": _message_from_storage(stored)}
+                    event["payload"] = {**payload, "message": copy.deepcopy(stored)}
             elif event["event_type"] == INPUT_STATE_CHANGED and isinstance(payload.get("input_state"), Mapping):
                 state = dict(payload["input_state"])
                 state["reply_message_ids"] = _final_reply(state.get("state"), replies.get(str(state.get("message_id") or "")))

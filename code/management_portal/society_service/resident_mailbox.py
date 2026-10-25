@@ -335,36 +335,38 @@ def project_input_state(record: Mapping[str, Any], message_id: str, state: dict[
     return projected
 
 
-def expanded_members(record: Mapping[str, Any], message: Mapping[str, Any]) -> list[dict[str, Any]]:
-    """Read-only member messages of a group message, in order; never a second copy of their text."""
+def project_messages(
+    resident_id: str,
+    messages: list[dict[str, Any]],
+    *,
+    repository: resident_conversation_stream.ResidentConversationRepository | None = None,
+) -> list[dict[str, Any]]:
+    """Expand group references for snapshots, history and live events, without persisting text copies."""
 
-    resident_id = resident_lineage.resident_id(record)
-    repository = resident_conversation_stream.get_repository()
-    result: list[dict[str, Any]] = []
-    for part in message.get("content_parts") or []:
-        if not isinstance(part, Mapping) or part.get("type") != "mailbox":
+    sources: dict[str, dict[str, Any] | None] = {}
+    for message in messages:
+        parts = [part for part in message.get("content_parts") or []
+                 if isinstance(part, Mapping) and part.get("type") == "mailbox"]
+        if not parts:
             continue
-        for member in part.get("members") or []:
-            stored = repository.message(resident_id, str(member.get("message_id") or ""))
-            if stored is None:
-                continue
-            result.append({
-                key: copy.deepcopy(stored.get(key))
-                for key in ("message_id", "author_id", "origin", "created_at", "content_parts")
-                if key in stored
-            })
-    return result
-
-
-def project_snapshot(record: Mapping[str, Any], snapshot: dict[str, Any]) -> dict[str, Any]:
-    """Attach expanded members to group messages and the group to member messages."""
-
-    for message in snapshot.get("messages") or []:
-        if isinstance(message, dict) and any(
-            isinstance(part, Mapping) and part.get("type") == "mailbox" for part in message.get("content_parts") or []
-        ):
-            message["expanded_members"] = expanded_members(record, message)
-    return snapshot
+        if repository is None:
+            repository = resident_conversation_stream.get_repository()
+        members = []
+        for part in parts:
+            for member in part.get("members") or []:
+                member_id = str(member.get("message_id") or "")
+                if member_id not in sources:
+                    # Delivered members live in the group's source records, outside the linear trace.
+                    sources[member_id] = repository.message(resident_id, member_id)
+                stored = sources[member_id]
+                if stored is not None:
+                    members.append({
+                        key: copy.deepcopy(stored[key])
+                        for key in ("message_id", "author_id", "origin", "created_at", "content_parts")
+                        if key in stored
+                    })
+        message["expanded_members"] = members
+    return messages
 
 
 def ordered_ids(message_ids: Iterable[object]) -> list[str]:

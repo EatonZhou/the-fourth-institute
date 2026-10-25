@@ -5,16 +5,22 @@
 
 from __future__ import annotations
 
+import json
+import subprocess
 import uuid
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 import pytest
 
 from management_portal.society_service import (
     resident_conversation_stream, resident_intake_domain, resident_execution_work, resident_lifecycle_domain, resident_mailbox,
 )
-from management_portal.society_service import resident_workspace_domain
+from management_portal.society_service import resident_protocol, resident_workspace_domain
+from management_portal.resources.portal import portal_route_script
 from tests.cases.test_cross_owner_storage_integration import ACTOR, owners  # noqa: F401 - fixture
 from tests.cases.test_wall04_residual_20260919 import instruction, team  # noqa: F401 - fixture
+
+LOCAL_POPEN = subprocess.Popen
 
 
 def _queue(team, count: int = 4, *, actors: list[str] | None = None) -> tuple[str, list[str]]:
@@ -42,6 +48,66 @@ def _queue(team, count: int = 4, *, actors: list[str] | None = None) -> tuple[st
 
 def _waiting(resident_id: str) -> list[dict]:
     return resident_execution_work.read(resident_workspace_domain._find_resident(resident_id)).get("queue", [])
+
+
+@pytest.mark.parametrize("source", ["events", "history"])
+def test_delivered_mailbox_group_has_original_bodies_before_snapshot_refresh(team, source, monkeypatch):
+    """合并消息的实时追加、更新及历史分页均展开原文、作者和时间，无需刷新完整对话。"""
+    resident_id, (head, a, b, _other) = _queue(team)
+    repository = resident_conversation_stream.get_repository()
+    originals = [repository.message(resident_id, member_id) for member_id in (a, b)]
+    expected = [{key: member[key] for key in (
+        "message_id", "author_id", "origin", "created_at", "content_parts",
+    ) if key in member} for member in originals]
+    merged = instruction(team, "MergeMailboxItems", {"resident_id": resident_id, "message_ids": [a, b]})
+    assert merged.status == "committed"
+    group_id = merged.result["group_message_id"]
+    before = resident_protocol.get_resident_conversation_snapshot(resident_id, ACTOR)
+    group = repository.state_store.mailbox_entry(resident_id, group_id)["message"]
+    repository.append_message(resident_id, group)
+    repository.set_input_state(resident_id, group_id, "running")
+
+    if source == "events":
+        repository.update_message(resident_id, group_id, message={**group, "name": "Mailbox"})
+        events = repository.events_after(resident_id, before["cursor"])["events"]
+        delivered = [event["payload"]["message"] for event in events
+                     if event["event_type"] in {
+                         resident_conversation_stream.MESSAGE_APPENDED, resident_conversation_stream.MESSAGE_UPDATED,
+                     } and event.get("payload", {}).get("message", {}).get("message_id") == group_id]
+        assert len(delivered) == 2  # appended and updated must both keep the body
+    else:
+        tail = resident_intake_domain._message("agent", "后续回复", resident_id)
+        repository.append_message(resident_id, tail)
+        latest = resident_protocol.get_resident_conversation_snapshot(resident_id, ACTOR, history_limit=1)
+        page = resident_protocol.get_conversation_messages(resident_id, ACTOR, latest["next_page_token"])
+        delivered = [message for message in page["messages"] if message["message_id"] == group_id]
+        assert len(delivered) == 1
+
+    for message in delivered:
+        assert message.get("expanded_members") == expected
+        assert message["content_parts"] == group["content_parts"]
+    refreshed = resident_protocol.get_resident_conversation_snapshot(resident_id, ACTOR)
+    assert next(message for message in refreshed["messages"] if message["message_id"] == group_id)["expanded_members"] == expected
+    # Expansion is a read projection; the stored group only references its source members.
+    assert "expanded_members" not in repository.message(resident_id, group_id)
+    assert [message["message_id"] for message in refreshed["messages"]].count(a) == 0
+    assert [message["message_id"] for message in refreshed["messages"]].count(b) == 0
+    plain = repository.message(resident_id, head)
+    command = ["node", str(Path(__file__).with_name("javascript") / "chat_mailbox_delivery.cjs")]
+
+    def local_dom_only(args, *positional, **kwargs):
+        assert args == command, "Only the local Chat DOM fixture may run a subprocess"
+        return LOCAL_POPEN(args, *positional, **kwargs)
+
+    with monkeypatch.context() as browser:
+        browser.setattr(subprocess, "Popen", local_dom_only)
+        result = subprocess.run(
+            command,
+            input=json.dumps({"routeScript": portal_route_script().decode(), "delivered": delivered,
+                              "plain": plain, "expected": expected}),
+            capture_output=True, text=True, timeout=30,
+        )
+    assert result.returncode == 0, result.stdout + result.stderr
 
 
 def test_quiescing_cancels_waiting_group_members(team):
