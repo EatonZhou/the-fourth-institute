@@ -106,7 +106,7 @@ async function main() {
     mailbox.can_organize=false;await click();assert.equal(merges().length,count);assert.match(errors.at(-1),/权限/);
     mailbox.can_organize=true;mailbox.pending=[items[1],{message_id:'msg_info',kind:'info'}];
     await click();assert.equal(merges().length,count,'single group is not remerged');assert.match(notices.at(-1).text,/至少两/);
-    render([items[1]]);assert.equal(button().disabled,true,'single displayed group shows disabled Merge all');
+    render([items[1]]);assert.equal(button(),null,'a single displayed group offers no Merge all');
     render([]);assert.equal(button(),null,'empty queue has no toolbar');
     render(); mailbox.pending=items;
     holdRead=new Promise(resolve=>releaseRead=resolve);button().click();
