@@ -109,9 +109,10 @@ def test_every_discovered_implementation_has_one_explicit_classified_case_contra
         assert all((item.entrypoint.startswith('tau:') for item in implementations if item.runner == 'tau'))
         declared_tau = json.loads((ROOT / 'tests/cases/tau_cases.json').read_text(encoding='utf-8'))['cases']
         compiled = {item.id: item for item in implementations}
+        # The catalog loader drops a prompt's surrounding whitespace; the text in between is kept as declared.
         for case in declared_tau:
             for implementation in case['implementations']:
-                assert compiled[implementation['id']].task_prompt == implementation['task_prompt'], case['id']
+                assert compiled[implementation['id']].task_prompt == implementation['task_prompt'].strip(), case['id']
         assert all((case.title.strip() for case in cases))
         assert all((case.importance in {'P0', 'P1', 'P2', 'P3'} for case in cases))
     with subtests.test(contract='test_tau_prompts_observe_accepted_work_until_terminal_without_fixed_wall_clock_limits'), isolated_portal_case():

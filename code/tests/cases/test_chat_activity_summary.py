@@ -1,6 +1,6 @@
 """Live activity headings and expanded history share the latest event.
 
-:module: interface.conversation
+:module: workbench.chat
 :aspects: ui, behavior
 """
 import json
