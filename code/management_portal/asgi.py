@@ -276,10 +276,16 @@ def _event_subscription_predicate(request: Request, domains: set[str]):
 
 
 async def portal_events(request: Request):
-    actor = portal._get_session_username(
-        SimpleNamespace(headers=_request_headers(request))
-    ) or ""
+    try:
+        actor = await asyncio.to_thread(portal._get_page_api_actor,
+                                       SimpleNamespace(headers=_request_headers(request)))
+    except PermissionError as exc:
+        return _json_error(403, str(exc))
+    except Exception:
+        return _json_error(503, "Page identity verification unavailable")
     if not actor:
+        if request.headers.get("Authorization"):
+            return _json_error(401, "Authentication required")
         return RedirectResponse("/login", status_code=302)
     domains = _requested_domains(request)
     ensure_notification_listener()

@@ -1,5 +1,29 @@
 # Portal Projection SDK v2（兼容 v1）
 
+## Resident 本身份的原生浏览器接入
+
+Resident 可以用自己的 Portal Bearer 与 `X-Portal-Lineage-ID` 打开 `/workbenches`、设置预览和运行页。页面、工作台 API、原生 Chat 的投影读取、宿主身份与偏好、静态依赖和 `/api/events` 均使用当前认证主体；服务验证 Resident 当前属于声明的 Lineage，随后由工作台和目标资源继续检查权限。不得把工作台的创建者或绑定门面当作调用者。`/api/me` 返回 `principal: {kind: "resident", id: "resident_…"}`，`username` 保留同一个 ID 供共享 UI 使用，不创建人类账号或个人 AMA。
+
+自动浏览器可以复用源码中的 `scripts/resident_browser.cjs`。在自己的运行环境中提供 Playwright、本站实际 Web origin 和自己的稳定身份：
+
+```js
+const { chromium } = require("playwright");
+const { openResidentPortal } = require("<Portal code root>/scripts/resident_browser.cjs");
+const portal = await openResidentPortal({
+  chromium, origin: "<Portal origin>",
+  residentId: "<当前 Resident ID>", lineageId: "<当前 Lineage ID>",
+});
+try {
+  await portal.page.goto("<Portal origin>/workbenches?panel=settings&id=<workbench ID>");
+  // 使用真实预览、Activity Rail、Chat 和 iframe 内的 Projection SDK。
+  // 部署或断线恢复后，先 await portal.verifyIdentity() 再继续。
+} finally { await portal.close(); }
+```
+
+启动器从当前 Portal runtime 的凭据引用读取本人的令牌，核对注入身份，建立无登录 Cookie 的独立浏览器，并在导航前校验 `/api/me`。令牌只留在启动器进程与发给指定 Portal 的请求头中，不进入页面脚本、URL、storageState 或产物。使用直接原生 URL：启动器拒绝重定向响应和其他源的请求，其余响应按原样转发；原生通知流直接连接同一 Portal。不要导出请求头、HAR、trace 或凭据内容。用户登录 Cookie 的优先级和同源写入检查保持原有合同；账号安全页面仍要求人类会话。
+
+草稿用设置页预览，已发布版本用 `/workbenches/view?id=…&region=…`。接入成功只证明当前 Resident 的访问结果；业务数据、模型结果、产品发布和其他身份的验收仍分别核验。
+
 ## 工作台定义与多功能区
 
 Portal 开发投影使用 `development_app` 中的应用工程。先提交源码，再在仓库运行以下命令生成固定提交的三区工作台定义：

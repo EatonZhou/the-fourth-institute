@@ -42,7 +42,7 @@
 - [Portal 敏感账户操作的当前凭据再认证](/r/decision_6c3d74a9bc9d)
 - [Portal TOTP 两步验证与恢复码](/r/decision_ad7bdfde49ef)
 - [Portal Passkey 注册与登录协议](/r/decision_626fb02b3894)
-- [Resident Bearer 令牌与机器接口认证](/r/decision_fb910c43ab07)
+- [Resident Bearer 令牌与机器接口认证（含原生工作台浏览器接入）](/r/decision_fb910c43ab07)
 - [Portal Management：用户账号管理](/r/decision_30528aff7035)
 - [Portal 管理页：权限方案编辑器](/r/decision_ea13b85216d0)
 - [Portal 新用户指引与统一入口](/r/decision_3286d4167180)

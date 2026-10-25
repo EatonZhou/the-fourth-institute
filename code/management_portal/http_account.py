@@ -105,6 +105,10 @@ class AccountHttp:
                 return self.respond(request, 200, {"avatar": avatar})
             if not actor:
                 return self.respond(request, 403, {"error": "Authenticated User required"})
+            from management_common.principal import actor_principal
+            if actor_principal(actor).kind == "resident":
+                from management_portal.resident_avatar import get_existing_avatar
+                return self.respond(request, 200, {"avatar": get_existing_avatar(actor), "sprites": []})
             return self.respond(request, 200, {
                 "avatar": store.get(actor),
                 "sprites": [user_avatar.sprite(index) for index in range(len(user_avatar.SPRITE_RARITIES))],

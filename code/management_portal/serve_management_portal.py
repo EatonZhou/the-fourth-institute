@@ -1803,6 +1803,45 @@ def _get_agent_api_auth(handler: SimpleHTTPRequestHandler, *, scope: str = "") -
     return None
 
 
+def _get_page_api_actor(handler: SimpleHTTPRequestHandler) -> str | None:
+    """Authenticate a page caller without converting a Resident into a User."""
+    auth = _get_agent_api_auth(handler)
+    return page_api_auth.authorize(auth) if auth else None
+
+
+def _get_request_actor(handler: SimpleHTTPRequestHandler) -> str | None:
+    """The principal already checked by this request's page entry."""
+    return getattr(handler, "_portal_authenticated_actor", None) or _get_session_username(handler)
+
+
+def _principal_route(method, path, handler, group, **options):
+    """Declare a native surface whose domain supports both User and Resident."""
+    def route(request, parsed, _actor):
+        try:
+            actor = _get_page_api_actor(request)
+        except PermissionError as exc:
+            return _serve_http_error(request, 403, str(exc))
+        except Exception:
+            return _serve_http_error(request, 503, "Page identity verification unavailable")
+        if not actor:
+            if method == "GET" and not _is_json_api_path(parsed.path) and not request.headers.get("Authorization"):
+                request.send_response(302)
+                request.send_header("Location", "/login")
+                request.end_headers()
+                return
+            return _serve_http_error(request, 401, "Authentication required")
+        request._portal_authenticated_actor = actor
+        from management_common.resource_lifecycle import lifecycle_scope
+        try:
+            with lifecycle_scope(request.headers.get("X-Portal-Resource-Lifecycle", ""), actor=actor):
+                return handler(request, parsed, actor)
+        finally:
+            # A keep-alive HTTP handler can serve a different principal next.
+            request._portal_authenticated_actor = None
+
+    return RouteDefinition(method, path, route, group, phase="dual-auth", **options)
+
+
 def _request_scheme(handler: SimpleHTTPRequestHandler) -> str:
     # ASGI/uvicorn owns the trusted proxy boundary.
     asgi_scheme = str(getattr(handler, "_asgi_request_scheme", "") or "").lower()
@@ -2572,14 +2611,14 @@ def _serve_bytes(
 ):
     if content_type.lower().startswith("text/html"):
         from management_portal.localization import normalize_language
-        username = _get_session_username(handler) or ""
+        username = _get_request_actor(handler) or ""
         if username:
             language = normalize_language(_portal_user_preferences(username).get("appearance", {}).get("language"))
             bootstrap = ("<script>window.__PORTAL_LANGUAGE__=" + json.dumps(language) + ";</script>").encode("utf-8")
             data = data.replace(b"<head>", b"<head>" + bootstrap, 1)
         data = _inject_portal_identity_bootstrap(
             data,
-            _get_session_username(handler) or "",
+            _get_request_actor(handler) or "",
         )
         data = _version_static_asset_urls(data)
         from management_portal import frontend_manifest
@@ -3076,6 +3115,13 @@ def _route_workbenches_get(request, parsed, actor: str):
     return handle(request, parsed, actor)
 
 
+def _route_private_static(request, parsed, _actor):
+    static_file = _static_fallback_file(parsed.path)
+    if static_file is None:
+        return _send_empty(request, 404)
+    return _serve_static_file(request, static_file, request.guess_type(str(static_file)))
+
+
 def _route_workbenches_post(request, parsed, actor: str):
     from management_portal.workbench_projections.http import handle
 
@@ -3131,7 +3177,7 @@ _PORTAL_SESSION_HTTP = PortalSessionHttp(
     respond=lambda *args: _serve_json(*args),
     exception_response=lambda *args: _serve_exception_json(*args),
     read_json=lambda request: _read_request_json(request),
-    session_actor=lambda request: _get_session_username(request),
+    session_actor=lambda request: _get_request_actor(request),
     access=lambda: _PORTAL_ACCESS,
     avatar=lambda actor: user_avatar.get_user_avatar(actor),
     instance=_PORTAL_INSTANCE,
@@ -3242,7 +3288,7 @@ _PORTAL_PAGES_HTTP = PortalPagesHttp(
 _AGENT_WORKBENCH_HTTP = AgentWorkbenchHttp(
     respond=lambda *args, **kwargs: _serve_json(*args, **kwargs),
     error=lambda *args, **kwargs: _serve_agent_workbench_error(*args, **kwargs),
-    session_actor=lambda request: _get_session_username(request),
+    session_actor=lambda request: _get_request_actor(request),
     lineage_unavailable=_serve_society_service_unavailable,
     link_permission_denied=_serve_link_file_permission_denied,
     media_file=lambda *args, **kwargs: _serve_media_file(*args, **kwargs),
@@ -3299,7 +3345,7 @@ _LINEAGE_HTTP = LineageHttp(
     respond=lambda *args: _serve_json(*args),
     exception_response=lambda request, exc: _serve_exception_json(request, exc),
     service_unavailable=lambda request, exc: _serve_society_service_unavailable(request, exc),
-    session_actor=lambda request: _get_session_username(request),
+    session_actor=lambda request: _get_request_actor(request),
     service_status=lambda: _society_service_status_payload(),
     lineage=lambda: lineage_domain,
     unavailable_error=SocietyServiceUnavailable,
@@ -3352,25 +3398,25 @@ def _portal_route_definitions() -> tuple[RouteDefinition, ...]:
         RouteDefinition("GET", "/logout", _route_logout_get, "portal-session", phase="public"),
         RouteDefinition("POST", "/logout", _route_logout_post, "portal-session", phase="public"),
         RouteDefinition("GET", "/api/users", _route_users, "portal-overview"),
-        RouteDefinition("GET", "/api/agent-context-options", _route_agent_context_options, "portal-overview"),
+        _principal_route("GET", "/api/agent-context-options", _route_agent_context_options, "portal-overview"),
         RouteDefinition("GET", "/api/config", _route_config, "portal-overview"),
         RouteDefinition("GET", "/api/summary", _route_summary, "portal-overview"),
         RouteDefinition("GET", "/api/daily-news", _route_daily_news, "portal-overview"),
-        RouteDefinition("GET", "/api/workbenches", _route_workbenches_get, "workbenches"),
-        RouteDefinition("GET", "/api/workbenches/", _route_workbenches_get, "workbenches", match="prefix"),
-        RouteDefinition("POST", "/api/workbenches", _route_workbenches_post, "workbenches"),
-        RouteDefinition("POST", "/api/workbenches/", _route_workbenches_post, "workbenches", match="prefix"),
+        _principal_route("GET", "/api/workbenches", _route_workbenches_get, "workbenches"),
+        _principal_route("GET", "/api/workbenches/", _route_workbenches_get, "workbenches", match="prefix"),
+        _principal_route("POST", "/api/workbenches", _route_workbenches_post, "workbenches"),
+        _principal_route("POST", "/api/workbenches/", _route_workbenches_post, "workbenches", match="prefix"),
         RouteDefinition("GET", "/api/agent-workbench/agent-backends", _AGENT_WORKBENCH_HTTP.agent_backends, "agent-workbench-runtime"),
-        RouteDefinition("GET", "/api/agent-workbench/agent-runtime-catalog", _AGENT_WORKBENCH_HTTP.runtime_catalog, "agent-workbench-runtime"),
+        _principal_route("GET", "/api/agent-workbench/agent-runtime-catalog", _AGENT_WORKBENCH_HTTP.runtime_catalog, "agent-workbench-runtime"),
         RouteDefinition("GET", "/api/agent-workbench/favorites", _AGENT_WORKBENCH_HTTP.get_favorites, "agent-workbench-favorites"),
         RouteDefinition("GET", "/api/agent-workbench/residents", _AGENT_WORKBENCH_HTTP.get_residents, "agent-workbench-residents"),
         RouteDefinition("GET", "/api/agent-workbench/residents/shortcuts", _AGENT_WORKBENCH_HTTP.get_resident_shortcuts, "agent-workbench-residents"),
         RouteDefinition("GET", "/api/agent-workbench/residents/navigation-target", _AGENT_WORKBENCH_HTTP.get_residents_navigation_target, "agent-workbench-residents"),
-        RouteDefinition("GET", "/api/agent-workbench/residents/projection", _AGENT_WORKBENCH_HTTP.get_residents_projection, "agent-workbench-residents"),
+        _principal_route("GET", "/api/agent-workbench/residents/projection", _AGENT_WORKBENCH_HTTP.get_residents_projection, "agent-workbench-residents"),
         RouteDefinition("GET", "/api/agent-workbench/residents/watchboard", _AGENT_WORKBENCH_HTTP.get_residents_watchboard, "agent-workbench-residents"),
         RouteDefinition("GET", "/api/agent-workbench/residents/session-restart-options", _AGENT_WORKBENCH_HTTP.get_residents_session_restart_options, "agent-workbench-residents"),
         RouteDefinition("GET", "/api/agent-workbench/residents/forward-targets", _AGENT_WORKBENCH_HTTP.get_residents_forward_targets, "agent-workbench-residents"),
-        RouteDefinition("GET", "/api/agent-workbench/chat-attachments/image", _AGENT_WORKBENCH_HTTP.get_chat_attachments_image, "agent-workbench-chat-attachments"),
+        _principal_route("GET", "/api/agent-workbench/chat-attachments/image", _AGENT_WORKBENCH_HTTP.get_chat_attachments_image, "agent-workbench-chat-attachments"),
         RouteDefinition("GET", "/api/agent-workbench/local-terminal/read", _AGENT_WORKBENCH_HTTP.get_local_terminal_read, "agent-workbench-local-terminal"),
         RouteDefinition("GET", "/api/agent-workbench/link-file", _AGENT_WORKBENCH_HTTP.get_link_file, "agent-workbench-link-file"),
         RouteDefinition("GET", "/api/agent-workbench/link-file-raw", _AGENT_WORKBENCH_HTTP.get_link_file_raw, "agent-workbench-link-file-raw"),
@@ -3386,7 +3432,7 @@ def _portal_route_definitions() -> tuple[RouteDefinition, ...]:
         RouteDefinition("POST", "/api/agent-workbench/local-terminal/control", _AGENT_WORKBENCH_HTTP.post_route(_AGENT_WORKBENCH_HTTP.post_local_terminal_control), "agent-workbench-local-terminal"),
         RouteDefinition("POST", "/api/agent-workbench/residents/watchboard-application", _AGENT_WORKBENCH_HTTP.post_route(_AGENT_WORKBENCH_HTTP.post_residents_watchboard_application), "agent-workbench-residents"),
         RouteDefinition("GET", "/lineage/api/service-status", _LINEAGE_HTTP.get_route(_LINEAGE_HTTP.status), "lineage"),
-        RouteDefinition("GET", "/lineage/api/lineages", _LINEAGE_HTTP.get_route(_LINEAGE_HTTP.lineages), "lineage"),
+        _principal_route("GET", "/lineage/api/lineages", _LINEAGE_HTTP.get_route(_LINEAGE_HTTP.lineages), "lineage"),
         RouteDefinition("GET", "/lineage/api/node-message-counts", _LINEAGE_HTTP.get_route(_LINEAGE_HTTP.node_message_counts), "lineage"),
         RouteDefinition("GET", "/lineage/api/node-metadata", _LINEAGE_HTTP.get_route(_LINEAGE_HTTP.node_metadata), "lineage"),
         RouteDefinition("GET", "/knowledge", _KNOWLEDGE_HTTP.get_home, "knowledge"),
@@ -3564,19 +3610,20 @@ def _portal_route_definitions() -> tuple[RouteDefinition, ...]:
           for path in PUBLIC_SHARED_STATIC_ASSETS),
         RouteDefinition("GET", "/static/assets/", _PUBLIC_PAGES_HTTP.asset, "portal-public-get", match="prefix", phase="public"),
         RouteDefinition("GET", "/static/vendor/", _PUBLIC_PAGES_HTTP.vendor, "portal-public-get", match="prefix", phase="public"),
-        RouteDefinition("GET", "/workbenches/create", _PORTAL_PAGES_HTTP.workbenches_create, "portal-portal-get"),
-        RouteDefinition("GET", "/workbenches/edit", _PORTAL_PAGES_HTTP.workbenches_edit, "portal-portal-get"),
-        RouteDefinition("GET", "/workbenches", _PORTAL_PAGES_HTTP.workbenches, "portal-portal-get", page=True),
-        RouteDefinition("GET", "/workbenches/", _PORTAL_PAGES_HTTP.workbenches, "portal-portal-get", page=True),
-        RouteDefinition("GET", "/workbenches/view", _PORTAL_PAGES_HTTP.workbenches, "portal-portal-get", page=True),
-        RouteDefinition("GET", "/development", _PORTAL_PAGES_HTTP.workbenches, "portal-portal-get", page=True),
-        RouteDefinition("GET", "/development/native-views", _PORTAL_PAGES_HTTP.development_native_views, "portal-portal-get"),
-        RouteDefinition("GET", "/api/account/avatar", _ACCOUNT_HTTP.avatar_get, "portal-portal-get"),
-        RouteDefinition("GET", "/api/account/avatar/image", _ACCOUNT_HTTP.avatar_get, "portal-portal-get"),
+        _principal_route("GET", "/static/", _route_private_static, "portal-static", match="prefix_fallback"),
+        _principal_route("GET", "/workbenches/create", _PORTAL_PAGES_HTTP.workbenches_create, "portal-portal-get"),
+        _principal_route("GET", "/workbenches/edit", _PORTAL_PAGES_HTTP.workbenches_edit, "portal-portal-get"),
+        _principal_route("GET", "/workbenches", _PORTAL_PAGES_HTTP.workbenches, "portal-portal-get", page=True),
+        _principal_route("GET", "/workbenches/", _PORTAL_PAGES_HTTP.workbenches, "portal-portal-get", page=True),
+        _principal_route("GET", "/workbenches/view", _PORTAL_PAGES_HTTP.workbenches, "portal-portal-get", page=True),
+        _principal_route("GET", "/development", _PORTAL_PAGES_HTTP.workbenches, "portal-portal-get", page=True),
+        _principal_route("GET", "/development/native-views", _PORTAL_PAGES_HTTP.development_native_views, "portal-portal-get"),
+        _principal_route("GET", "/api/account/avatar", _ACCOUNT_HTTP.avatar_get, "portal-portal-get"),
+        _principal_route("GET", "/api/account/avatar/image", _ACCOUNT_HTTP.avatar_get, "portal-portal-get"),
         RouteDefinition("GET", "/api/account/security", _ACCOUNT_HTTP.security_get, "portal-portal-get"),
-        RouteDefinition("GET", "/api/me", _PORTAL_SESSION_HTTP.me, "portal-portal-get"),
-        RouteDefinition("GET", "/api/navigation/pages", _route_navigation_pages, "portal-portal-get"),
-        RouteDefinition("GET", "/__portal_router/preference", _PORTAL_SESSION_HTTP.router_preference, "portal-portal-get"),
+        _principal_route("GET", "/api/me", _PORTAL_SESSION_HTTP.me, "portal-portal-get"),
+        _principal_route("GET", "/api/navigation/pages", _route_navigation_pages, "portal-portal-get"),
+        _principal_route("GET", "/__portal_router/preference", _PORTAL_SESSION_HTTP.router_preference, "portal-portal-get"),
         RouteDefinition("GET", "/api/admin/access-control", _ADMIN_HTTP.access_control_get, "portal-portal-get"),
         RouteDefinition("GET", "/api/admin/network", _ADMIN_HTTP.network_get, "portal-portal-get"),
         RouteDefinition("GET", "/api/admin/instances", _ADMIN_HTTP.instances_get, "portal-portal-get"),
@@ -3585,13 +3632,13 @@ def _portal_route_definitions() -> tuple[RouteDefinition, ...]:
         RouteDefinition("GET", "/api/admin/wall-scheduling", _ADMIN_HTTP.wall_scheduling_get, "portal-portal-get"),
         RouteDefinition("GET", "/api/admin/feature-switch", _ADMIN_HTTP.feature_switch_get, "portal-portal-get"),
         RouteDefinition("GET", "/api/admin/paths/migration", _ADMIN_HTTP.paths_status_get, "portal-portal-get"),
-        RouteDefinition("GET", "/api/preferences", _PORTAL_SESSION_HTTP.preferences_get, "portal-portal-get"),
+        _principal_route("GET", "/api/preferences", _PORTAL_SESSION_HTTP.preferences_get, "portal-portal-get"),
         RouteDefinition("GET", "/api/resident-invocations/diagnostics", _PORTAL_SESSION_HTTP.resident_invocations_diagnostics, "portal-portal-get"),
-        RouteDefinition("GET", "/api/ui-state/associations", _UI_STATE_HTTP.list_associations, "portal-ui-state"),
-        RouteDefinition("GET", "/api/agent-conversations", _PORTAL_SESSION_HTTP.conversations_get, "portal-portal-get"),
+        _principal_route("GET", "/api/ui-state/associations", _UI_STATE_HTTP.list_associations, "portal-ui-state"),
+        _principal_route("GET", "/api/agent-conversations", _PORTAL_SESSION_HTTP.conversations_get, "portal-portal-get"),
         RouteDefinition("GET", "/api/terminal/read", _TERMINAL_HTTP.read, "portal-terminal"),
         RouteDefinition("GET", "/api/agent-status/account-residents", _AGENT_STATUS_HTTP.account_residents, "portal-agent-status"),
-        RouteDefinition("GET", "/api/agent-status", _AGENT_STATUS_HTTP.summary, "portal-agent-status"),
+        _principal_route("GET", "/api/agent-status", _AGENT_STATUS_HTTP.summary, "portal-agent-status"),
         RouteDefinition("GET", "/api/agent-status/usage", _AGENT_STATUS_HTTP.usage, "portal-agent-status"),
         RouteDefinition("GET", "/api/agent-status/active-agents", _AGENT_STATUS_HTTP.active_agents, "portal-agent-status"),
         RouteDefinition("GET", "/api/agent-status/scheduled-triggered", _AGENT_STATUS_HTTP.scheduled_triggered, "portal-agent-status"),
@@ -3605,12 +3652,12 @@ def _portal_route_definitions() -> tuple[RouteDefinition, ...]:
         RouteDefinition("GET", "/api/resource-index/suggest", _RESOURCE_HTTP.index_suggest, "portal-catalog-get"),
         RouteDefinition("GET", "/api/resource-index/status", _RESOURCE_HTTP.index_status, "portal-catalog-get"),
         RouteDefinition("GET", "/api/resource-index/resources/{resource_id}", _RESOURCE_HTTP.index_detail, "portal-resource-index", match="template"),
-        RouteDefinition("GET", "/api/resources/capabilities", _RESOURCE_HTTP.capabilities, "portal-resources"),
+        _principal_route("GET", "/api/resources/capabilities", _RESOURCE_HTTP.capabilities, "portal-resources"),
         RouteDefinition("GET", "/api/searches/diagnostics", _PORTAL_SESSION_HTTP.search_diagnostics, "portal-searches"),
-        RouteDefinition("GET", "/api/resources/resolve", _RESOURCE_HTTP.resolve, "portal-resources"),
-        RouteDefinition("GET", "/api/resources/reference", _RESOURCE_HTTP.reference, "portal-resources"),
+        _principal_route("GET", "/api/resources/resolve", _RESOURCE_HTTP.resolve, "portal-resources"),
+        _principal_route("GET", "/api/resources/reference", _RESOURCE_HTTP.reference, "portal-resources"),
         RouteDefinition("GET", "/api/script-runs/artifact", _SCRIPT_RUN_HTTP.artifact, "portal-script-runs"),
-        RouteDefinition("GET", "/api/resources/content", _RESOURCE_HTTP.content, "portal-resources"),
+        _principal_route("GET", "/api/resources/content", _RESOURCE_HTTP.content, "portal-resources"),
         RouteDefinition("GET", "/r/", _PORTAL_PAGES_HTTP.resource_redirect, "portal-pages-get", match="prefix"),
         RouteDefinition("GET", "/resource/knowledge", _RESOURCE_HTTP.knowledge_page, "portal-pages-get", page=True),
         RouteDefinition("GET", "/resource/knowledge/", _RESOURCE_HTTP.knowledge_page, "portal-pages-get", page=True),
@@ -3667,7 +3714,7 @@ def _portal_route_definitions() -> tuple[RouteDefinition, ...]:
         RouteDefinition("POST", "/api/resource-index/refresh", _RESOURCE_HTTP.index_refresh, "portal-resources-post"),
         RouteDefinition("POST", "/api/principal-backpack/catalog", _BACKPACK_HTTP.write_not_allowed, "portal-principal-backpack"),
         RouteDefinition("POST", "/api/principal-backpack/detail", _BACKPACK_HTTP.write_not_allowed, "portal-principal-backpack"),
-        RouteDefinition("POST", "/api/preferences", _PORTAL_SESSION_HTTP.preferences_post, "portal-portal-post"),
+        _principal_route("POST", "/api/preferences", _PORTAL_SESSION_HTTP.preferences_post, "portal-portal-post"),
         RouteDefinition("POST", "/api/admin/network", _ADMIN_HTTP.network_post, "portal-portal-post"),
         RouteDefinition("POST", "/api/admin/instances", _ADMIN_HTTP.instances_post, "portal-portal-post"),
         RouteDefinition("POST", "/api/admin/paths", _ADMIN_HTTP.paths_post, "portal-portal-post"),
@@ -3678,8 +3725,8 @@ def _portal_route_definitions() -> tuple[RouteDefinition, ...]:
         RouteDefinition("POST", "/api/agent-status/refresh", _AGENT_STATUS_HTTP.refresh, "portal-agent-status"),
         RouteDefinition("POST", "/api/agent-status/usage/refresh", _AGENT_STATUS_HTTP.refresh_usage, "portal-agent-status"),
         RouteDefinition("POST", "/chat-workspace/api/prepare", _PORTAL_SESSION_HTTP.chat_workspace_prepare, "portal-portal-post"),
-        RouteDefinition("POST", "/api/ui-state/associations/put", _UI_STATE_HTTP.put, "portal-ui-state"),
-        RouteDefinition("POST", "/api/ui-state/associations/remove", _UI_STATE_HTTP.remove, "portal-ui-state"),
+        _principal_route("POST", "/api/ui-state/associations/put", _UI_STATE_HTTP.put, "portal-ui-state"),
+        _principal_route("POST", "/api/ui-state/associations/remove", _UI_STATE_HTTP.remove, "portal-ui-state"),
         *_feature_route_definitions(),
         RouteDefinition("GET", "/", _actor_method_route("_handle_get_fallback"), "portal-fallback", match="fallback"),
         RouteDefinition("POST", "/", _route_not_found, "portal-fallback", match="fallback"),

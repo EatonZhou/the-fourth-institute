@@ -43,18 +43,27 @@ class PortalSessionHttp:
 
     def me(self, request, _parsed, _actor):
         from management_portal import permission_system, portal_features
+        from management_common.principal import actor_principal
 
         actor = self.session_actor(request) or ""
-        if actor:
+        principal = actor_principal(actor)
+        is_user = principal.kind == "user"
+        if actor and is_user:
             # Every page reads /api/me once; it is where an existing session catches up.
             self.session_opened(actor)
-        access = self.access().user(actor)
+        access = self.access().user(actor) if is_user else {}
+        if is_user:
+            avatar = self.avatar(actor)
+        else:
+            from management_portal.resident_avatar import get_existing_avatar
+            avatar = get_existing_avatar(actor)
         page_arguments = {name: PAGE_ARGUMENTS.get(name) for name in PAGE_INSTRUCTIONS}
         for _feature, instructions in portal_features.contributions("web.page_instructions"):
             page_arguments.update(instructions)
         return self.respond(request, 200, {
             "username": actor,
-            "avatar": self.avatar(actor),
+            "principal": {"kind": principal.kind, "id": actor},
+            "avatar": avatar,
             "portal_instance": self.instance,
             "build_id": self.build_id,
             "built_at": str(self.release_manifest.get("built_at") or ""),
@@ -63,7 +72,7 @@ class PortalSessionHttp:
             "access": {
                 # Page flags, each the answer of the instruction behind it.
                 "allows": {name: permission_system.allows(actor, name, arguments) for name, arguments in page_arguments.items()},
-                "user_category": permission_system.user_category(actor),
+                "user_category": permission_system.user_category(actor) if is_user else "",
                 # "open" while the permission system is off: credential and policy views hide.
                 "permission_system": permission_system.mode(),
                 "status": str(access.get("status") or "active"),

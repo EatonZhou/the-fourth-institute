@@ -172,7 +172,8 @@ def test_chat_context_options_have_an_independent_portal_route(monkeypatch):
     options = {"skills": [], "projects": []}
     monkeypatch.setattr(server.agent_context_selection, "list_options", lambda: options)
     monkeypatch.setattr(server, "_serve_json", lambda request, status, payload: (status, payload))
+    monkeypatch.setattr(server, "_get_page_api_actor", lambda request: "alice")
     parsed = urlparse("/api/agent-context-options")
     assert server._PORTAL_HTTP_ROUTES.dispatch(
-        "GET", parsed.path, SimpleNamespace(headers={}), parsed, "alice", phase="protected",
+        "GET", parsed.path, SimpleNamespace(headers={}), parsed, "", phase="dual-auth",
     ) == (200, options)
