@@ -162,3 +162,78 @@ test('a failed released read does not retain its batch or retry without subscrib
   await next.load();
   assert.equal(Object.keys(next.states()).length, ids.length);
 });
+
+
+test('a valid omitted target stays unknown while visible batch members remain available', async t => {
+  const f = fixture(t), wanted = ids.slice(0, 2), events = [];
+  f.w.PortalResidentService.loadStates = async (selected, options) => {
+    f.calls.push({ids: [...selected], options});
+    return response(selected.filter(id => id !== wanted[0]), options);
+  };
+  const sub = f.acquire(wanted, {}, event => events.push(event));
+  const states = await sub.load();
+  assert.deepEqual(Object.keys(states), [wanted[1]]);
+  const missing = f.p.stateSnapshot(wanted[0]);
+  assert.equal(missing.ready, false);
+  assert.equal(missing.state, null);
+  assert.equal(missing.viewer_state, null);
+  assert.equal(missing.cursor, null);
+  assert.equal(f.p.stateSnapshot(wanted[1]).ready, true);
+  assert.equal(events.some(event => event.type === 'error'), false);
+  await tick();
+  assert.equal(f.calls.length, 1, 'omission neither retries nor recurses for unread');
+});
+
+test('omission clears cached state and unread in every subscriber and a later real read recovers', async t => {
+  const f = fixture(t), wanted = ids.slice(0, 2), sub = f.acquire(wanted), peer = f.acquire(wanted);
+  await sub.load();
+  let visible = false;
+  f.w.PortalResidentService.loadStates = async (selected, options) => {
+    f.calls.push({ids: [...selected], options});
+    return response(selected.filter(id => visible || id !== wanted[0]), options);
+  };
+  await sub.load({force: true});
+  for (const reader of [sub, peer]) assert.deepEqual(Object.keys(reader.states()), [wanted[1]]);
+  assert.equal(f.p.stateSnapshot(wanted[0]).state, null, 'old idle state must not survive');
+  assert.equal(f.p.stateSnapshot(wanted[0]).viewer_state, null, 'old unread must not survive');
+  assert.equal(f.p.stateSnapshot(wanted[1]).viewer_state.unread, true);
+  visible = true;
+  await sub.load();
+  assert.equal(f.calls.length, 3);
+  assert.deepEqual(f.calls[2].ids, [wanted[0]], 'only the unavailable target requires a new read');
+  assert.equal(f.p.stateSnapshot(wanted[0]).ready, true);
+  assert.equal(f.p.stateSnapshot(wanted[0]).viewer_state.unread, true);
+  for (const reader of [sub, peer]) assert.equal(Object.keys(reader.states()).length, 2);
+});
+
+test('viewer joins an omitted state-only batch without recursively querying the unavailable target', async t => {
+  const f = fixture(t), wanted = ids.slice(0, 2), stateOnly = f.acquire(wanted, {includeViewerState: false});
+  let complete;
+  f.w.PortalResidentService.loadStates = (selected, options) => {
+    f.calls.push({ids: [...selected], options});
+    const result = () => response(selected.filter(id => id !== wanted[0]), options);
+    if (!complete) return new Promise(resolve => { complete = () => resolve(result()); });
+    return Promise.resolve(result());
+  };
+  const original = stateOnly.load(); await tick();
+  const viewer = f.acquire(wanted), joined = viewer.load(); await tick();
+  stateOnly.destroy(); complete();
+  await Promise.all([original, joined]);
+  assert.equal(f.calls.length, 2);
+  assert.deepEqual(f.calls[1].ids, [wanted[1]], 'unread follow-up is only for the returned target');
+  assert.equal(f.p.stateSnapshot(wanted[0]).ready, false);
+  assert.equal(f.p.stateSnapshot(wanted[1]).viewer_state.unread, true);
+});
+
+test('malformed state payloads still fail instead of being treated as valid omissions', async t => {
+  const f = fixture(t), id = ids[0], sub = f.acquire([id]);
+  for (const [payload, error] of [
+    [{}, /states are invalid/],
+    [{states: [{resident_id: id}]}, /state is invalid/],
+    [{states: [{resident_id: id, state: {status: 'idle'}}]}, /viewer state is invalid/],
+  ]) {
+    f.w.PortalResidentService.loadStates = async () => payload;
+    await assert.rejects(sub.load({force: true}), error);
+    assert.equal(f.p.stateSnapshot(id).ready, false);
+  }
+});

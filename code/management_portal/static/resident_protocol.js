@@ -354,6 +354,7 @@
       this.stateRefCount = 0;
       this.pendingStateEvents = [];
       this.stateSnapshotLoaded = false;
+      this.stateSnapshotUnavailable = false;
       this.stateLoading = null;
       this.stateReadCount = 0;
       this.submissions = new Map();
@@ -611,6 +612,7 @@
       }
       this.stateCursor = older ? this.stateCursor : nextCursor;
       this.stateSnapshotLoaded = true;
+      this.stateSnapshotUnavailable = false;
       const pending = this.pendingStateEvents;
       this.pendingStateEvents = [];
       for (const event of pending) {
@@ -619,6 +621,18 @@
         this.applyStateEvent(event);
       }
       this.emitState({ type: "snapshot" });
+    }
+
+    acceptUnavailableStateSnapshot() {
+      // ListResidentStates omits targets that are not visible. Absence does not
+      // establish deletion or idle state; clear only this state projection.
+      this.stateSnapshotLoaded = false;
+      this.stateSnapshotUnavailable = true;
+      this.stateProjection = null;
+      this.viewerState = null;
+      this.stateCursor = null;
+      this.pendingStateEvents = [];
+      this.emitState({ type: "unavailable" });
     }
 
     applyStateEvent(event, { emit = true } = {}) {
@@ -1219,7 +1233,7 @@
               selected.get(residentId).acceptStateSnapshot(item.state, Number(item?.cursor || 0), item.viewer_state, item.controls);
             }
             const absent = missing.filter(residentId => !received.has(residentId));
-            if (absent.length) throw new Error(`Resident State Snapshot missing: ${absent.join(", ")}`);
+            for (const residentId of absent) selected.get(residentId).acceptUnavailableStateSnapshot();
           })
           .finally(() => {
             for (const residentId of missing) {
@@ -1235,14 +1249,17 @@
       // A cheaper state-only batch may have been in flight when an Inbox view
       // requested unread state. Fetch that missing projection after it settles.
       if (includeViewerState) {
-        const withoutViewer = ids.filter(residentId => !selected.get(residentId).viewerState);
+        const withoutViewer = ids.filter(residentId => {
+          const store = selected.get(residentId);
+          return !store.stateSnapshotUnavailable && !store.viewerState;
+        });
         if (withoutViewer.length) {
           await loadResidentStateSnapshots(withoutViewer, { includeViewerState: true,
             readObservation: { ...readObservation, reasons: [...(readObservation?.reasons || []), "viewer_followup"] },
           });
         }
       }
-      return Object.fromEntries(ids.map(residentId => [
+      return Object.fromEntries(ids.filter(residentId => !selected.get(residentId).stateSnapshotUnavailable).map(residentId => [
         residentId,
         clone(selected.get(residentId).stateProjection || {}),
       ]));
@@ -1375,7 +1392,8 @@
       }
       const residentId = String(update?.resident_id || "");
       if (!residentId || !this.residentIds.includes(residentId)) return;
-      this.states[residentId] = clone(update?.state || {});
+      if (update.type === "unavailable") delete this.states[residentId];
+      else this.states[residentId] = clone(update?.state || {});
       if (!this.batching) this.emit({ type: update.type, event: clone(update?.event) });
     }
   }
@@ -1491,6 +1509,7 @@
       store.stateLoading = null;
       store.pendingStateEvents = [];
       store.stateSnapshotLoaded = false;
+      store.stateSnapshotUnavailable = false;
     }
     for (const store of activeStores) {
       store.emitState({ type: "invalid", reason: "identity" });

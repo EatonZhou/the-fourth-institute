@@ -49,3 +49,8 @@ def test_background_index_budget_preserves_queued_and_newer_events():
 def test_mailbox_read_provenance_preserves_coalescing_errors_and_privacy():
     """Actual index dispatches retain content-free causal receipts without extra reads."""
     _run("read-provenance")
+
+
+def test_missing_resident_state_stays_unknown_without_failing_mailbox():
+    """A valid omission clears stale per-target state while other native rows remain usable."""
+    _run("state-omission")

@@ -784,6 +784,7 @@
     state.unverifiedResidentIds.delete(residentId);
     const targetPresent = Boolean(payload.target_present);
     if (["deleted", "forbidden"].includes(targetState)) {
+      if (targetState === "deleted") window.PortalResidentService?.acceptDeletedResident?.(residentId);
       discardResident(residentId);
       return true;
     }

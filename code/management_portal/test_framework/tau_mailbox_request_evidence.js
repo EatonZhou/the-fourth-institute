@@ -22,7 +22,7 @@ async function observeMailboxRequests({page, origin, residentId, requestId} = {}
     const batches = new Set();
     const token = value => typeof value === 'string' && /^[a-z0-9-]{1,96}$/.test(value) ? value : null;
     const numeric = value => Number.isFinite(value) ? value : null;
-    const phases = new Set(['remote_deleted','local_delete_started','local_delete_committed','local_delete_settled',
+    const phases = new Set(['remote_deleted','index_deleted','local_delete_started','local_delete_committed','local_delete_settled',
       'request_started','request_resolved','request_rejected','read_blocked',
       'state_batch_started','state_batch_resolved','state_batch_rejected']);
     const reasons = new Set(['explicit_load','explicit_invalidate','identity','session_restart','unbound_runtime',

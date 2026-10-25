@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { JSDOM, VirtualConsole } = require('jsdom');
-const staticRoot = path.resolve(__dirname, '../../../management_portal/static');
+const staticRoot = path.join(process.env.SOURCE_ROOT || path.resolve(__dirname, '../../..'), 'management_portal/static');
 const drain = () => new Promise(resolve => setImmediate(resolve));
 
 // The old browser network fixture, expressed as literal protocol input. The
@@ -123,6 +123,50 @@ function mailbox({ connected = false, targetRead, transform = (_name, source) =>
 }
 
 const checks = {
+  async 'state-omission'() {
+    const ids = ['resident_111111111111', 'resident_222222222222'];
+    const app = mailbox({ connected: true, transform: (name, source) =>
+      name === 'resident_protocol.js' && process.env.STATE_PROTOCOL_SOURCE
+        ? fs.readFileSync(process.env.STATE_PROTOCOL_SOURCE, 'utf8') : source });
+    let missing = false, requests = 0;
+    app.window.PortalResidentService = {loadStates: async selected => {
+      requests += 1;
+      assert.ok(requests <= 3, 'valid omission must not automatically re-read');
+      return {states: selected.filter(id => !missing || id !== ids[0]).map(resident_id => ({
+        resident_id, state: {work_state: 'running'}, viewer_state: {unread: false}, cursor: 1,
+      }))};
+    }};
+    let sub;
+    try {
+      app.queue({...payload, entries: ids.map((resident_id, i) => ({
+        ...payload.entries[i], key: `resident:${resident_id}`, resident_id,
+      })), next_page_token: null});
+      await app.advance(300); // Let the native mount finish its scheduled initial read.
+      assert.equal(app.reads.length, 1);
+      assert.equal(app.banner.hidden, true);
+      assert.equal(app.rows().length, 2);
+      sub = app.window.PortalResidentProtocol.acquireStates(ids, () => {}, {load: false});
+      missing = true;
+      await sub.load({force: true}); await app.advance(40);
+      const entries = app.store.snapshot().entries;
+      const absent = entries.find(e => e.resident_id === ids[0]);
+      const present = entries.find(e => e.resident_id === ids[1]);
+      assert.equal(absent.status, 'unknown');
+      assert.equal(absent.resident_state_ready, false);
+      assert.equal(absent.resident_state, null);
+      assert.equal(present.status, 'running');
+      assert.equal(app.store.snapshot().error, '');
+      assert.equal(app.banner.hidden, true);
+      assert.equal(app.rows().length, 2, 'omission is not deletion');
+      const row = id => app.rows().find(r => r.dataset.agentConversationKey === `resident:${id}`);
+      assert.equal(row(ids[0]).querySelector('.portalAgentInboxStatus.running'), null);
+      assert.ok(row(ids[1]).querySelector('.portalAgentInboxStatus.running'));
+      missing = false;
+      await sub.load(); await app.advance(40);
+      assert.ok(row(ids[0]).querySelector('.portalAgentInboxStatus.running'));
+      assert.equal(requests, 3);
+    } finally { sub?.destroy(); await app.close(); }
+  },
   async 'read-provenance'() {
     const pending = [];
     const resident = 'resident_123456789abc';

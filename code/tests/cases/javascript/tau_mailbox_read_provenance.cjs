@@ -72,9 +72,9 @@ async function scenario(browser,patched){
   missing=true;
   const stateResult=await page.evaluate(async id=>{
    const handle=PortalResidentProtocol.acquireStates([id],()=>{},{load:false,consumer:'inbox'});
-   try{await handle.load({force:true});return 'unexpected-success';}catch(e){return e.message;}finally{handle.destroy();}
+   try{return {states:await handle.load({force:true}),snapshot:PortalResidentProtocol.stateSnapshot(id)};}finally{handle.destroy();}
   },target);
-  assert.match(stateResult,/Resident State Snapshot missing/);missing=false;
+  assert.deepEqual(stateResult.states,{});assert.equal(stateResult.snapshot.ready,false);assert.equal(stateResult.snapshot.state,null);assert.equal(stateResult.snapshot.viewer_state,null);missing=false;
   await page.evaluate(ids=>PortalResidentService.loadStates(ids),[target,foreign]);
   status=404;
   const failure=await page.evaluate(id=>PortalResidentService.projection({residentId:id}).then(()=>null,e=>e.code),target);
@@ -121,7 +121,7 @@ async function scenario(browser,patched){
  const baseline=draft?await scenario(browser,false):null,patched=await scenario(browser,true);
  if(baseline){
   assert.deepEqual(patched.requests,baseline.requests,'telemetry preserves native HTTP behavior');
-  assert.equal(patched.stateResult,baseline.stateResult);assert.equal(patched.failure,baseline.failure);
+  assert.deepEqual(patched.stateResult,baseline.stateResult);assert.equal(patched.failure,baseline.failure);
  }
  console.log(JSON.stringify({status:'passed',formal_acceptance:false,isolated_chromium:true,
    requests_unchanged:baseline?patched.requests.length:null,original_transport_associations:patched.recorded_requests,

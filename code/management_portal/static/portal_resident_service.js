@@ -35,12 +35,18 @@
   window.addEventListener("portal:change", event => {
     for (const [id, scopes] of Object.entries(event?.detail?.resident_changes || {})) {
       if (Array.isArray(scopes) && scopes.includes("deleted")) {
-        const state = readState(id);
-        state.deleted = true; state.revision = ++lifecycleSequence;
-        recordResidentRead({ phase: "remote_deleted", resident_id: id, lifecycle: lifecycleOf(state) });
+        acceptDeletedResident(id, "remote_deleted");
       }
     }
   }, { capture: true });
+  // A targeted index tombstone is also authoritative deletion evidence. It
+  // can reach this document before the remote deletion notification.
+  function acceptDeletedResident(residentId, phase = "index_deleted") {
+    const id = String(residentId || "").trim();
+    const state = readState(id);
+    state.deleted = true; state.revision = ++lifecycleSequence;
+    recordResidentRead({ phase, resident_id: id, lifecycle: lifecycleOf(state) });
+  }
   function readState(residentId) {
     const id = String(residentId || "").trim();
     if (!id) throw new TypeError("resident_id required");
@@ -927,5 +933,5 @@
   }
 
   const defaultClient = createClient();
-  window.PortalResidentService = Object.freeze({ ...defaultClient, createClient, withResidentDeletion });
+  window.PortalResidentService = Object.freeze({ ...defaultClient, createClient, withResidentDeletion, acceptDeletedResident });
 })();
