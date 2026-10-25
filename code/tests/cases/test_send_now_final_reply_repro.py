@@ -499,6 +499,76 @@ def test_send_now_recovers_intent_committed_before_append(
     assert resident_protocol.get_resident_input_state(resident_id, "CASE-A", message_id)["state"] == "queued"
 
 
+@pytest.mark.parametrize("turn_state", ["finished", "held", "stopping"])
+@pytest.mark.parametrize("close_intake", [False, True])
+def test_send_now_without_receiving_turn_keeps_original_for_next_turn(
+    resident_record, queued_send_now, monkeypatch, turn_state, close_intake,
+):
+    """门面状态检查后执行变化时，原消息排到下一轮且不绕过接单门控。"""
+    import copy
+
+    resident_id, message_id, job = queued_send_now
+    original = copy.deepcopy(job["queue"][0])
+    job["user_message_id"] = "msg_" + "b" * 32
+    job["input_message"] = {**original["input_message"], "message_id": job["user_message_id"]}
+    earlier = {**copy.deepcopy(original), "user_message_id": "msg_" + "e" * 32,
+               "execution_id": "job_earlier"}
+    earlier["input_message"]["message_id"] = earlier["user_message_id"]
+    job["queue"].insert(0, earlier)
+    if close_intake or turn_state == "held":
+        resident_protocol.change_resident_state(resident_id, "CASE-A", state_domain="intake", transition="close")
+        job["intake_state"] = "closed"
+    if turn_state == "finished":
+        resident_execution_domain._mark_completion_applied(job, "2026-10-26T00:00:00Z")
+    elif turn_state == "held":
+        job.pop("submitted_at", None)
+    else:
+        job["stop_requested_at"] = "2026-10-26T00:00:00Z"
+    resident_execution_work.write(resident_record, job)
+    service = mock.Mock()
+    monkeypatch.setattr(execution_port, "service", lambda: service)
+    monkeypatch.setattr(resident_intake_domain, "_acknowledge_execution", lambda *_: True)
+    if turn_state == "held":
+        assert resident_execution_work.is_execution_held(resident_execution_work.read(resident_record))
+    elif turn_state == "finished":
+        assert resident_execution_work.completion_applied(resident_execution_work.read(resident_record))
+
+    for _ in range(2):
+        receipt = resident_protocol.inject_queued_input_into_active_turn(resident_id, "CASE-A", message_id)
+        assert receipt["accepted"] is True
+        assert receipt["injected"] is False
+        assert receipt["delivery_status"] == "next_turn"
+        current = resident_execution_work.read(resident_record)
+        assert [item["user_message_id"] for item in current["queue"]] == [message_id, earlier["user_message_id"]]
+        assert current["queue"][0]["input_message"] == original["input_message"]
+        assert current["queue"][0]["actor"] == original["actor"]
+        assert not resident_execution_work.send_now_inputs(current)
+        assert current.get("stop_requested_at") == job.get("stop_requested_at")
+        assert current.get("intake_state") == ("closed" if close_intake or turn_state == "held" else "open")
+    service.append_input.assert_not_called()
+    if turn_state == "finished":
+        assert resident_execution_domain._finalize_applied_execution(resident_id, job["continuation_id"], current)
+        next_job = resident_execution_work.read(resident_record)
+        assert next_job["user_message_id"] == message_id
+        assert resident_execution_work.is_execution_held(next_job) is close_intake
+
+
+def test_send_now_held_queue_head_is_not_lost_or_duplicated(resident_record, queued_send_now):
+    resident_id, message_id, job = queued_send_now
+    resident_protocol.change_resident_state(resident_id, "CASE-A", state_domain="intake", transition="close")
+    job["intake_state"] = "closed"
+    resident_execution_work.promote_queue_item(job, job["queue"][0], [], "2026-10-26T00:00:00Z")
+    resident_execution_work.write(resident_record, job)
+    for _ in range(2):
+        receipt = resident_protocol.inject_queued_input_into_active_turn(resident_id, "CASE-A", message_id)
+        assert receipt["delivery_status"] == "next_turn"
+        assert receipt["injected"] is False
+        current = resident_execution_work.read(resident_record)
+        assert resident_execution_work.is_intake_held(current)
+        assert [item["user_message_id"] for item in resident_execution_work.public_waiting_queue(current)] == [message_id]
+        assert not resident_execution_work.send_now_inputs(current)
+
+
 @pytest.mark.parametrize("close_intake", [False, True])
 def test_send_now_after_execution_finished_falls_back_and_respects_intake(
     resident_record, queued_send_now, monkeypatch, close_intake,

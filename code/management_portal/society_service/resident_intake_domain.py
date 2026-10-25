@@ -2100,10 +2100,13 @@ def _inject_queued_input_into_active_turn(
             invariant_locks.defer_until_state_unlock(lambda: wake(resident_id))
             return _accepted_delivery(resident_id, message_id, injected=False,
                                       already_injected=True, delivery_status="pending")
-        if str(job.get("user_message_id") or "") == message_id and not resident_execution_work.is_execution_held(job):
+        held = resident_execution_work.is_execution_held(job)
+        is_head = str(job.get("user_message_id") or "") == message_id
+        if is_head and not held:
             return _accepted_delivery(resident_id, message_id, injected=True, already_injected=True)
         queue = resident_execution_work.normalized_queue(job)
-        selected = next((item for item in queue if _queue_item_matches(item, message_id)), None)
+        selected = job if is_head and held else next(
+            (item for item in queue if _queue_item_matches(item, message_id)), None)
         repository = resident_conversation_stream.get_repository()
         try:
             state = repository.input_state(resident_id, message_id)
@@ -2116,10 +2119,23 @@ def _inject_queued_input_into_active_turn(
             return _accepted_delivery(resident_id, message_id, injected=True, already_injected=True)
         if selected is None:
             raise KeyError("queue item not found")
-        if not resident_execution_work.is_active(job) or resident_execution_work.is_execution_held(job):
+        if not resident_execution_work.is_active(job):
             raise ValueError("当前 Resident 没有活动 turn，不能插入")
         if not resident_execution_provider.provider_for(record).capabilities.supports_active_turn_input:
             raise ValueError("该 Resident 的执行后端不能在运行中接收新消息；消息保留在队列中按顺序执行")
+        if held or resident_execution_work.completion_applied(job) or job.get("stop_requested_at"):
+            # A facade's state snapshot can precede completion or a manual
+            # intake change. Keep the same input for normal queue admission;
+            # never append to a stopping turn or bypass the intake gate.
+            if not is_head:
+                next_turn = {**selected, "activation_policy": "enqueue_and_trigger"}
+                next_turn.pop("active_turn_input", None)
+                job["queue"] = [next_turn, *(
+                    item for item in queue if not _queue_item_matches(item, message_id))]
+            job["updated_at"] = _now_iso()
+            resident_execution_work.write(record, job, delivery_message_id=message_id)
+            return _accepted_delivery(resident_id, message_id, injected=False,
+                                      scheduled_next_turn=True, delivery_status="next_turn")
         selected = dict(selected)
         selected["activation_policy"] = "enqueue_and_trigger"
         selected["active_turn_input"] = {

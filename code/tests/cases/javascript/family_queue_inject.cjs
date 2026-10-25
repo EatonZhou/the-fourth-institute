@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { JSDOM } = require('jsdom');
+const { chatWorkspaceScripts } = require('./chat_workspace_modules.cjs');
 const ROOT = path.resolve(__dirname, '../../..');
 const FACADE = 'resident_111111111111';
 const MEMBER = 'resident_222222222222';
@@ -21,7 +22,7 @@ async function main() {
   w.MutationObserver = class extends Observer { constructor(callback) { super(callback); observers.push(this); } };
   const calls = [], errors = [], notices = [];
   let supported = true, workState = 'running', activeMessageId = 'msg_current', workPhase = '';
-  let rejectInjection = false, holdState = null;
+  let rejectInjection = false, holdState = null, injectionStatus = 'pending';
   w.CSS = { escape: value => String(value).replace(/[^a-zA-Z0-9_-]/g, c => `\\${c}`) };
   w.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} };
   w.matchMedia = media => Object.assign(new w.EventTarget(), { media, matches: false });
@@ -47,7 +48,7 @@ async function main() {
     }
     if (instruction === 'InjectMailboxItem') {
       if (rejectInjection) throw new Error('fixture: 当前请求已经离开队列');
-      return { resident_id: args.resident_id, accepted: true, injected: false, status: 'pending', delivery_status: 'pending' };
+      return { resident_id: args.resident_id, accepted: true, injected: injectionStatus === 'delivered', status: injectionStatus, delivery_status: injectionStatus };
     }
     if (instruction === 'CancelInput') return { cancelled: true };
     throw new Error(`Unexpected instruction: ${instruction}`);
@@ -55,10 +56,8 @@ async function main() {
   for (const name of ['portal_state.js', 'portal_page_state.js', 'portal_ui_primitives.js', 'portal_ui.js',
     'portal_overlay.js', 'portal_resource_chips.js', 'portal_image_editor.js', 'portal_editor_open_service.js',
     'portal_command_registry.js', 'portal_workbench_context.js', 'portal_workbench.js',
-    'portal_resident_service.js', 'resident_protocol.js', 'portal_chat_workspace.js']) {
-    const sourcePath = name === 'portal_chat_workspace.js' && process.env.CHAT_SOURCE
-      ? process.env.CHAT_SOURCE : path.join(ROOT, 'management_portal/static', name);
-    w.eval(fs.readFileSync(sourcePath, 'utf8'));
+    'portal_resident_service.js', 'resident_protocol.js', ...chatWorkspaceScripts()]) {
+    w.eval(fs.readFileSync(path.join(ROOT, 'management_portal/static', name), 'utf8'));
   }
   w.PortalUI.toast = (text, kind) => notices.push({ text, kind });
   const panel = w.PortalChatWorkspace.panelPackage.create({ root: w.document.getElementById('chat'),
@@ -131,26 +130,30 @@ async function main() {
     supported = undefined; button().click(); await tick();
     assert.equal(injections().length, 1);
     assert.match(errors.at(-1), /无法确认/);
-    supported = true; workState = 'idle'; button().click(); await tick();
-    assert.equal(injections().length, 1);
-    assert.match(errors.at(-1), /正在进行|活动|当前.*工作/);
+    supported = true; workState = 'idle'; injectionStatus = 'next_turn';
+    const idleErrors = errors.length;
+    button().click(); await tick();
+    assert.equal(injections().length, 2, 'idle member state must not block the authoritative injection request');
+    assert.equal(errors.length, idleErrors);
+    assert.match(notices.at(-1).text, /下一轮/);
+    injectionStatus = 'pending';
     workState = 'running'; rejectInjection = true; button().click(); await tick();
-    assert.equal(injections().length, 2);
+    assert.equal(injections().length, 3);
     assert.match(errors.at(-1), /已经离开队列/);
     assert.ok(button(), 'failed injection leaves request and retry control visible');
     rejectInjection = false; button().click(); await tick();
-    assert.equal(injections().length, 3, 'retry after failure succeeds');
+    assert.equal(injections().length, 4, 'retry after failure succeeds');
 
     holdState = new Promise(resolve => { release = resolve; });
     button().click();
     message.relay = { ...message.relay, message_id: 'msg_new_member_copy' }; render();
     release(); holdState = null; await tick();
-    assert.equal(injections().length, 3, 'reroute during preflight never injects stale copy');
+    assert.equal(injections().length, 4, 'reroute during preflight never injects stale copy');
     message.relay.message_id = COPY;
     render(); holdState = new Promise(resolve => { release = resolve; });
     button().click(); panel.targetRevision++;
     release(); holdState = null; await tick();
-    assert.equal(injections().length, 3, 'conversation change cancels pending preflight');
+    assert.equal(injections().length, 4, 'conversation change cancels pending preflight');
     for (const state of ['routing', 'delivering', 'running', 'completed']) {
       message.relay.state = state; render();
       assert.equal(button(), null, `${state} is not a queued injection action`);
@@ -162,7 +165,7 @@ async function main() {
     assert.ok(!readonly.includes('family-request-inject'), 'read-only chatroom progress has no injection action');
 
     // A created turn can be queued while binding or awaiting execution capacity.
-    // Its durable input remains injectable; idle/held queues have no active ID.
+    // Admission and fallback are decided by the service, even without an active ID.
     workState = 'queued';
     for (const phase of ['starting_session', 'waiting_capacity', 'waiting_dispatch', 'waiting_quota']) {
       workPhase = phase;
@@ -175,13 +178,16 @@ async function main() {
       assert.equal(notices.at(-1).kind, 'success');
       assert.match(notices.at(-1).text, /等待.*接收/, 'acceptance remains pending, not delivered');
     }
-    const beforeUnavailable = injections().length;
+    injectionStatus = 'next_turn';
     for (const [state, active] of [['queued', ''], ['idle', ''], ['stopping', 'msg_current'], ['running', '']]) {
       workState = state; activeMessageId = active;
+      const before = injections().length;
       const errorCount = errors.length;
       button().click(); await tick();
-      assert.equal(injections().length, beforeUnavailable, `${state}/${active} cannot inject`);
-      assert.equal(errors.length, errorCount + 1);
+      assert.equal(injections().length, before + 1, `${state}/${active} defers admission to the service`);
+      assert.equal(errors.length, errorCount);
+      assert.match(notices.at(-1).text, /下一轮/);
+      assert.equal(notices.at(-1).kind, 'success');
     }
 
     snapshot = { messages: [], controls: { active_turn_input: true } };

@@ -11214,7 +11214,7 @@
       // Disputing the Router's choice names the member that should take it, and why.
       actions = button("family-request-inject", "立即注入",
         status.resident_id && status.message_id ? "" : "等待确认承接成员的排队消息",
-        "交给承接成员当前正在进行的工作；成员需要支持运行中接收消息")
+        "当前工作可接收时立即注入，否则排到下一轮；暂停接单时仍会等待")
         + button("family-request-correct", "纠正 Router") + button("family-request-withdraw", "撤回");
     } else if (state === "running") {
       label = stopping ? `${member} · ${RUNTIME_PHASE_STATUS.stopping.label}` : phaseLabel ? `${member} · ${phaseLabel}` : `${member} 运行中`;
@@ -11973,18 +11973,14 @@
         if (member.controls?.active_turn_input !== true) {
           throw new Error(window.PortalI18n.t("承接成员不支持运行中接收消息；消息保留在队列中"));
         }
-        // An admitted turn stays queued while starting or awaiting capacity.
-        // The active input distinguishes it from an idle/held Mailbox queue;
-        // injection admission and delivery remain authoritative on the server.
-        if (!["queued", "running"].includes(member.state?.work_state) || !member.state?.active_message_id) {
-          throw new Error(window.PortalI18n.t("承接成员当前没有可接收消息的工作；消息保留在队列中"));
-        }
+        // A state snapshot can lag completion, stopping or queue promotion.
+        // The service decides current-turn delivery versus next-turn admission.
         const receipt = await window.PortalResidentProtocol.injectInput({ resident_id: residentId, message_id: messageId });
         if (revision !== this.targetRevision) return receipt;
         const delivered = receipt.injected === true || receipt.status === "delivered";
         const nextTurn = receipt.scheduled_next_turn === true || receipt.status === "next_turn";
         window.PortalUI?.toast?.(window.PortalI18n.t(delivered ? "已交给承接成员当前的工作"
-          : nextTurn ? "当前工作已结束，消息将于下一轮处理" : "已提交注入请求，等待承接成员当前的工作接收"), "success");
+          : nextTurn ? "消息已排到下一轮；暂停接单时会等待恢复" : "已提交注入请求，等待承接成员当前的工作接收"), "success");
         await this.protocol?.load({ force: true });
         return receipt;
       });
