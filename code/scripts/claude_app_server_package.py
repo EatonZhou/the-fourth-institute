@@ -10,7 +10,7 @@ MODULES = {
         "claude_account_usage", "claude_runtime", "ai_provider_registry", "model_api_store",
         "provider_transport_diagnostics", "resident_shell_environment", "provider_timing", "jev_provider",
     ),
-    "management_portal/execution": ("account_registrations", "account_hosting", "model_api_protocols"),
+    "management_portal/execution": ("account_registrations", "account_hosting", "model_api_protocols", "provider_failures"),
     "management_portal/hatg": ("contracts",),
     "management_common": (
         "provider_subagent_runs", "domain_database", "portal_database", "postgres_database",

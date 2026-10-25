@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+import re
 
 
 _USAGE_LIMIT_CODES = frozenset({
@@ -108,3 +109,17 @@ def is_network_failure(error: object) -> bool:
 
     message = failure_message(error).casefold()
     return any(marker in message for marker in _NETWORK_FAILURE_MARKERS)
+
+
+def is_authentication_failure(error: object, *, provider: str = "") -> bool:
+    """Recognize explicit credential failures, not network or regional denial."""
+    if getattr(error, "error_code", "") == "provider_authentication_failed" or failure_code(error) == "provider_authentication_failed":
+        return True
+    if is_egress_block_failure(error) or is_network_failure(error):
+        return False
+    message = failure_message(error).casefold()
+    markers = ("provider_authentication_failed", "authentication_error", "unauthorized",
+               "access token could not be refreshed", "authentication token is expired",
+               "please run /login", "please log in", "not logged in", "login expired",
+               "authentication failed", "oauth session expired")
+    return any(marker in message for marker in markers) or provider == "claude" and bool(re.search(r"\b401\b", message))

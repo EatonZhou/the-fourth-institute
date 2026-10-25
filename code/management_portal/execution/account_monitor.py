@@ -3,9 +3,9 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
+from datetime import datetime
 import json
 import logging
-import re
 import sys
 import threading
 import time
@@ -14,6 +14,7 @@ from .account_quota import POLL_SECONDS
 from .activity_redaction import redact_sensitive_text
 from .account_usage_store import AccountUsageStore
 from .account_login import login_store, now as login_now
+from .provider_failures import is_authentication_failure
 
 
 logger = logging.getLogger(__name__)
@@ -23,16 +24,6 @@ def _subscription(account):
     kind = getattr(account, "kind", "")
     return kind == "subscription_login" if kind else (
         account.provider == "codex" or account.provider == "claude" and account.quota_policy == "reserve")
-
-
-def _authentication_failure(provider, error):
-    if getattr(error, "error_code", "") == "provider_authentication_failed":
-        return True
-    text = str(error).casefold()
-    markers = ("provider_authentication_failed", "authentication_error", "unauthorized", "access token could not be refreshed",
-               "authentication token is expired", "please run /login", "please log in", "not logged in",
-               "login expired", "authentication failed")
-    return any(marker in text for marker in markers) or provider == "claude" and bool(re.search(r"\b401\b", text))
 
 
 class AccountMonitor:
@@ -67,12 +58,19 @@ class AccountMonitor:
             sample = self.accounts.observe(account, force=force)
             sample["checked_at"] = time.time()
             if _subscription(account):
-                if _authentication_failure(account.provider, sample.get("error_code") or sample.get("error", "")):
+                if "login_observation" in sample:
+                    state = sample["login_observation"]
+                    try:
+                        source_time = datetime.fromisoformat(sample.get("login_observed_at") or "")
+                    except (TypeError, ValueError):
+                        source_time = None
+                    if state in {"logged_in", "login_expired"} and source_time is not None and source_time.tzinfo is not None:
+                        self._login_store.observe(account.account_id, state, observed_at=source_time)
+                elif is_authentication_failure(sample.get("error_code") or sample.get("error", ""), provider=account.provider):
                     self._login_store.observe(account.account_id, "login_expired", observed_at=observed_at)
                 elif sample.get("status") in {"ok", "available"}:
                     self._login_store.observe(account.account_id, "logged_in", observed_at=observed_at)
             if account.billing_account_id and account.quota_policy != "reserve":
-                from datetime import datetime
                 from .account_quota import finite_number
                 balance = self.billing.observe(account.billing_account_id)
                 sample["balance"] = balance
@@ -89,7 +87,7 @@ class AccountMonitor:
             with self._lock:
                 self._samples[account.account_id] = sample
         except Exception as error:
-            if _authentication_failure(account.provider, error):
+            if is_authentication_failure(error, provider=account.provider):
                 error_code, message = "provider_authentication_failed", "登录凭据失效，请重新登录"
                 if _subscription(account):
                     self._login_store.observe(account.account_id, "login_expired", observed_at=observed_at)

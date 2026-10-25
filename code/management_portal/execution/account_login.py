@@ -234,14 +234,17 @@ def login_command(provider, *, status=False):
 def provider_logged_in(provider, account_id):
     result = run_process(login_command(provider, status=True), env=login_environment(provider, account_id),
                             stdin=subprocess.DEVNULL, capture_output=True, timeout=60)
-    if result.returncode:
-        return False
     if provider == "codex":
-        return True
+        return result.returncode == 0
     try:
-        return json.loads(result.stdout).get("loggedIn") is True
-    except (ValueError, AttributeError):
-        return False
+        state = json.loads(result.stdout)
+    except (ValueError, TypeError):
+        raise ValueError("Claude 登录状态查询未返回有效结果") from None
+    if not isinstance(state, dict) or not isinstance(state.get("loggedIn"), bool):
+        raise ValueError("Claude 登录状态查询未返回有效结果")
+    if state["loggedIn"] and result.returncode:
+        raise ValueError("Claude 登录状态查询未成功")
+    return state["loggedIn"]
 
 
 class LoginOutputParser:

@@ -7,6 +7,7 @@ import logging
 import time
 import os
 import re
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -289,13 +290,38 @@ class ClaudeAccounts:
         if account.quota_policy == "none":
             return {"status": "ok", "rate_limits": []}
         snapshot = shared_client().account_usage(account.route_id, force_refresh=force)
+        error_code = snapshot.get("quota_error_code", "")
+        error = snapshot.get("quota_error", "")
+        login_observation, login_observed_at = None, None
+        if error_code == "provider_authentication_failed":
+            login_observation = "login_expired"
+            login_observed_at = snapshot.get("quota_error_observed_at")
+        elif error:
+            # /usage can return local token totals even when logged out. Missing
+            # quota rows alone say nothing about auth; ask the native login owner.
+            from .account_login import now, provider_logged_in
+            started = now().isoformat()
+            try:
+                logged_in = provider_logged_in("claude", account.account_id)
+            except (OSError, ValueError, TimeoutError, subprocess.TimeoutExpired):
+                logged_in = None
+            if logged_in is False:
+                error_code, error = "provider_authentication_failed", "Claude 登录凭据失效，请重新登录"
+            if logged_in is not None:
+                login_observation = "logged_in" if logged_in else "login_expired"
+                login_observed_at = started
         windows = snapshot.get("rate_limits") or []
+        if not error and snapshot.get("quota_status") == "available":
+            login_observation = "logged_in"
+            login_observed_at = min((w["observed_at"] for w in windows if w.get("observed_at")), default=None)
         found = {window["id"] for window in windows}
         windows = [*windows, *({"id": key, "label": label, "remaining_percent": None, "stale": False} for key, label in (("five_hour", "5 小时"), ("seven_day", "每周")) if key not in found)]
         known = [window for window in windows if isinstance(window.get("remaining_percent"), (int, float)) and not window.get("stale")]
         remaining = min((window["remaining_percent"] for window in known), default=None)
         return {"status": snapshot.get("quota_status", "unknown"),
-                "error": snapshot.get("quota_error", ""), "refreshing": bool(snapshot.get("quota_refreshing")),
+                "login_observation": login_observation, "login_observed_at": login_observed_at,
+                "error_code": error_code,
+                "error": error, "refreshing": bool(snapshot.get("quota_refreshing")),
                 "rate_limits": windows,
                 "quota": {"observed_at": min((w.get("observed_at_unix", 0) for w in known), default=0), "max_age_seconds": 300,
                           "valid_until": min((w.get("fresh_until", 0) for w in known), default=0),

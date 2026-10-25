@@ -16,6 +16,7 @@ from typing import Any
 
 from management_portal.claude_provider_catalog import login_environment
 from management_portal.claude_runtime import native_cli_path
+from management_portal.execution.provider_failures import is_authentication_failure
 
 
 WINDOWS = {
@@ -30,6 +31,13 @@ MAX_AGE_SECONDS = 300
 # The CLI's /usage alone takes 7-12 s and 12-20 s end to end on a loaded host;
 # the read runs in the background, so the bound only catches a hung process.
 NATIVE_USAGE_TIMEOUT_SECONDS = 180
+
+
+class ClaudeUsageAuthenticationError(ValueError):
+    error_code = "provider_authentication_failed"
+
+    def __init__(self) -> None:
+        super().__init__("Claude 登录凭据失效，请重新登录")
 
 
 def _number(value: Any) -> float | None:
@@ -48,6 +56,8 @@ class ClaudeAccountUsage:
         self._refreshes: dict[tuple[str, str], asyncio.Task] = {}
         self._attempts: dict[tuple[str, str], float] = {}
         self._errors: dict[tuple[str, str], str] = {}
+        self._error_codes: dict[tuple[str, str], str] = {}
+        self._error_observed_at: dict[tuple[str, str], str] = {}
 
     def request_refresh(self, profile: dict[str, Any], *, force: bool = False) -> None:
         key = (profile["id"], str(profile["config_dir"]))
@@ -59,16 +69,26 @@ class ClaudeAccountUsage:
         self._refreshes[key] = asyncio.create_task(self._refresh(profile, key))
 
     async def _refresh(self, profile: dict[str, Any], key: tuple[str, str]) -> None:
+        observed_at = datetime.now(timezone.utc).isoformat()
         try:
             windows = await read_native_usage(profile)
             # A complete CLI result replaces removed model-specific windows too.
             self._accounts[key] = {}
             self.observe(*key, {"unifiedWindows": windows}, source="claude_cli_usage")
             self._errors.pop(key, None)
+            self._error_codes.pop(key, None)
+            self._error_observed_at.pop(key, None)
         except TimeoutError:
             self._errors[key] = "Claude 用量查询超时，请稍后刷新"
+            self._error_codes.pop(key, None)
+            self._error_observed_at[key] = observed_at
         except Exception as exc:
             self._errors[key] = str(exc) if isinstance(exc, ValueError) else "Claude 用量查询暂不可用"
+            self._error_observed_at[key] = observed_at
+            if isinstance(exc, ClaudeUsageAuthenticationError):
+                self._error_codes[key] = exc.error_code
+            else:
+                self._error_codes.pop(key, None)
 
     def observe(self, route: str, config_dir: str, info: dict[str, Any], *, now: float | None = None, source: str = "claude_sdk_events") -> None:
         if not isinstance(info, dict):
@@ -121,6 +141,8 @@ class ClaudeAccountUsage:
         usable = any(not w["stale"] and w["used_percent"] is not None for w in windows)
         task = self._refreshes.get(key)
         return {"quota_refreshing": bool(task and not task.done()), "quota_error": self._errors.get(key, ""),
+                "quota_error_code": self._error_codes.get(key, ""),
+                "quota_error_observed_at": self._error_observed_at.get(key),
                 "quota_status": "available" if usable else "stale" if windows and all(w["stale"] for w in windows) else "unavailable",
                 "rate_limits": windows, "quota_source": "claude_cli_usage" if any(w.get("source") == "claude_cli_usage" for w in windows) else "claude_sdk_events"}
 
@@ -185,6 +207,10 @@ async def read_native_usage(profile: dict[str, Any]) -> dict[str, Any]:
         result = json.loads(stdout)
     except (ValueError, TypeError):
         raise ValueError("Claude 用量查询返回格式异常") from None
+    # Classify only the local /usage response. Never expose arbitrary CLI text
+    # or treat a paid model reply containing login instructions as auth evidence.
+    if isinstance(result, dict) and result.get("total_cost_usd", 0) == 0 and is_authentication_failure(result.get("result", ""), provider="claude"):
+        raise ClaudeUsageAuthenticationError()
     if process.returncode or not isinstance(result, dict) or result.get("is_error") or not isinstance(result.get("result"), str):
         raise ValueError("Claude 用量查询失败，请稍后刷新")
     # /usage is a local CLI command; model output is never accepted as quota data.
