@@ -13,3 +13,16 @@ def test_canvas_fork_reveals_created_node():
     script = Path(__file__).with_name('javascript') / 'hatg_fork_visibility.cjs'
     result = subprocess.run(['node', str(script)], capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_hatg_quick_fork_layout():
+    """Committed quick Fork cards are separated by actual rendered bounds.
+
+    :risk: no-external-side-effects
+    :profiles: local.fixture
+    """
+    result = subprocess.run(
+        ["node", str(Path(__file__).with_name("javascript") / "hatg_quick_fork_layout.cjs")],
+        capture_output=True, text=True, timeout=60,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr

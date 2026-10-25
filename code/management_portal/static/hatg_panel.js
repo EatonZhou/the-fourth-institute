@@ -287,6 +287,8 @@
     societyService, state, toast,
     // The canvas view is created after this part.
     renderGraph: (...args) => renderGraph(...args),
+    // Layout is initialized after the Resident dialogs.
+    separateGraphObject: (...args) => separateGraphObject(...args),
     // The Resident running state is created after this part.
     bindResidentStateCollection: (...args) => bindResidentStateCollection(...args),
     // The Workspace results is created after this part.

@@ -61,10 +61,12 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
         });
         const service = async payload => {calls.push({kind: 'create', payload}); return {resident_id: child.id,
           lineage: {lineage_id: 'lineage_fixture', nodes: [source, child], revision: 2}};};
+        const assertNoOverlap = id => { if (graph.getObjectSeparation(id)) throw Error('Unexpected overlap in visibility fixture'); };
         const dialogs = create(PortalHatgResidentDialogs, {
           state, nodeById, familyForFacade: () => null, familyForNewResident: () => null,
           flushLineageLayoutSave: async () => {}, societyService: {branchNode: service, createNode: service},
           commitLineage: lineage => {state.lineage = lineage; renderGraph();}, renderGraph,
+          separateGraphObject: async id => { assertNoOverlap(id); },
           selectNode: selection.selectNode, setSyncStatus: (...args) => notices.push(args),
           toast: (...args) => notices.push(args), bindResidentStateCollection() {},
         });

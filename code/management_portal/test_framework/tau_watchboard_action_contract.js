@@ -45,4 +45,42 @@ async function readWorkbenchPanelBinding(panel, {domId} = {}) {
   }, domId);
 }
 
-module.exports = {matchesWatchboardRemoval, readWorkbenchPanelBinding};
+// Observe the original finite response before inspecting its requested graph.
+// Return failure details for the caller to save before asserting readiness.
+async function readWatchboardInstallationReceipt(response, observer, {lineageId, residentId} = {}) {
+  if (!/^lineage_[a-zA-Z0-9]+$/.test(lineageId || '') || !/^resident_[a-zA-Z0-9]+$/.test(residentId || '')) {
+    throw new TypeError('Exact original Lineage and Resident required');
+  }
+  const original = await observer.original(response);
+  const request = response.request().postDataJSON();
+  const args = request?.arguments || {}, body = original.body || {}, result = body.result || {};
+  const issues = [];
+  if (request?.instruction !== 'ApplyLineageChanges' || args.lineage_id !== lineageId || args.near_resident_id !== residentId) issues.push('original_target_mismatch');
+  if (!original.request_id || original.body_status !== 'read' || original.http_status !== 200 || body.status !== 'committed' || body.replayed !== false || !body.instruction_id) issues.push('original_commit_missing');
+  const operations = Array.isArray(args.operations) ? args.operations : [];
+  const created = Array.isArray(result.created_ids) ? result.created_ids : [];
+  const graph = operations.map(op => ({op: op?.op ?? null, kind: op?.kind ?? null, id: op?.value?.id ?? null,
+    ...(op?.kind === 'component' ? {client_key: op.value?.client_key ?? null} : {}),
+    ...(op?.kind === 'wire' ? {source: op.value?.source ?? null, target: op.value?.target ?? null} : {})}));
+  if (!graph.length || graph.some(op => op.op !== 'create' || !['component','wire'].includes(op.kind) || typeof op.id !== 'string' || !op.id)
+      || !graph.some(op => op.kind === 'component') || !graph.some(op => op.kind === 'wire')
+      || new Set(graph.map(op => op.id)).size !== graph.length) issues.push('invalid_original_create_operations');
+  const requestedIds = graph.map(op => op.id), wanted = new Set(requestedIds);
+  const missing = requestedIds.filter(id => !created.includes(id)), unexpected = created.filter(id => !wanted.has(id));
+  if (!Array.isArray(result.created_ids) || created.some(id => typeof id !== 'string' || !id)
+      || new Set(created).size !== created.length || missing.length || unexpected.length) issues.push('created_ids_mismatch');
+  if (!Array.isArray(result.updated_ids) || result.updated_ids.length || !Array.isArray(result.deleted_ids) || result.deleted_ids.length) issues.push('unexpected_original_changes');
+  const components = new Set(graph.filter(op => op.kind === 'component').map(op => op.id));
+  const prefix = 'watchboard.' + residentId + '.';
+  if (graph.some(op => op.kind === 'component' && (typeof op.client_key !== 'string' || !op.client_key.startsWith(prefix)))
+      || graph.some(op => op.kind === 'wire' && (!components.has(op.source) || !components.has(op.target)))) issues.push('graph_ownership_mismatch');
+  return {request_id: original.request_id, http_status: original.http_status, body_status: original.body_status,
+    instruction_id: body.instruction_id ?? null, status: body.status ?? null, replayed: body.replayed ?? null,
+    lineage_id: args.lineage_id ?? null, near_resident_id: args.near_resident_id ?? null,
+    operations: graph, created_ids: Array.isArray(result.created_ids) ? result.created_ids : null,
+    updated_ids: Array.isArray(result.updated_ids) ? result.updated_ids : null,
+    deleted_ids: Array.isArray(result.deleted_ids) ? result.deleted_ids : null,
+    missing_ids: missing, unexpected_ids: unexpected, issues, ready: issues.length === 0};
+}
+
+module.exports = {matchesWatchboardRemoval, readWorkbenchPanelBinding, readWatchboardInstallationReceipt};

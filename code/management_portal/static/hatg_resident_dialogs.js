@@ -13,7 +13,7 @@
     "flushLineageLayoutSave", "formatDate", "lineageEdgeReferencesResident",
     "loadLineagePageData", "loadResults", "nodeById", "nodeIntakeState", "nodeResidentId",
     "openModal", "programFeature", "removeFamilyInstance", "renderGraph", "renderLineageSurface",
-    "revealUnfamilizedMember", "selectLineage", "selectNode", "setBusy", "setNodeRuntimeStatus",
+    "revealUnfamilizedMember", "separateGraphObject", "selectLineage", "selectNode", "setBusy", "setNodeRuntimeStatus",
     "setSyncStatus", "societyService", "state", "toast",
   ]);
 
@@ -34,7 +34,7 @@
       esc, familyForFacade, familyForNewResident, flushLineageLayoutSave, formatDate,
       lineageEdgeReferencesResident, loadLineagePageData, loadResults, nodeById, nodeIntakeState,
       nodeResidentId, openModal, programFeature, removeFamilyInstance, renderGraph,
-      renderLineageSurface, revealUnfamilizedMember, selectLineage, selectNode, setBusy,
+      renderLineageSurface, revealUnfamilizedMember, separateGraphObject, selectLineage, selectNode, setBusy,
       setNodeRuntimeStatus, setSyncStatus, societyService, state, toast,
     } = dependencies;
 
@@ -565,6 +565,14 @@
         const node = state.lineage.nodes.find(item => item.id === createdResidentId);
         if (!node) throw new Error(`${actionLabel}的响应缺少新节点`);
         if (options.closeModalOnSuccess) closeModal("branchModal");
+        // The committed card includes runtime/Family content absent from the
+        // placement probe. Correct overlap using its rendered bounds, moving
+        // only this new node. A failed layout save must never replay creation.
+        try {
+          await separateGraphObject(createdResidentId);
+        } catch (error) {
+          toast(window.PortalI18n.text`${actionLabel}已完成，但画布布局未保存：${error.message || error}`, "warning", 9000);
+        }
         // Server placement can be outside a narrow canvas. Reveal the new card
         // before completing this action; Fork also awaits its Chat navigation.
         // A blank session keeps the current Chat, as ordinary node creation does.
