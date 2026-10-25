@@ -56,7 +56,7 @@ def test_non_empty_hides_projects_without_any_lineage():
 
 def test_lineages_pane_passes_its_filters_to_my_projects():
     """Lineage 面板向项目导航传递筛选条件"""
-    source = (ROOT / "management_portal/static/lineage_workbench.js").read_text(encoding="utf-8")
+    source = (ROOT / "management_portal/static/lineage_workbench_sidebar.js").read_text(encoding="utf-8")
     start = source.index("function residentGroups()")
     body = source[start:source.index("function residentSidebarPendingText(", start)]
     assert "projectFilter: state.projectFilter" in body

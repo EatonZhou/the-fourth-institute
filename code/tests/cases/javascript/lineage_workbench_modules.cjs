@@ -101,9 +101,14 @@ function startWorkbenchPage({ answers = {}, instructions = {}, url = 'https://po
     let body = init.body ?? null;
     try { body = typeof body === 'string' ? JSON.parse(body) : body; } catch { /* keep the raw body */ }
     requests.push({ method: init.method || 'GET', path: at.pathname, search: at.search, body });
-    const result = at.pathname === '/api/instructions/execute'
-      ? { status: 'committed', result: instructions[body.instruction]?.(body.arguments) ?? {} }
-      : (typeof answers[at.pathname] === 'function' ? answers[at.pathname](at, body) : answers[at.pathname]) ?? {};
+    let result;
+    if (at.pathname === '/api/instructions/execute') {
+      // An instruction that throws fails as the server reports a failed instruction.
+      try { result = { status: 'committed', result: instructions[body.instruction]?.(body.arguments) ?? {} }; }
+      catch (error) { result = { status: 'failed', error: { code: error.code || 'instruction.failed', message: error.message } }; }
+    } else {
+      result = (typeof answers[at.pathname] === 'function' ? answers[at.pathname](at, body) : answers[at.pathname]) ?? {};
+    }
     return new Response(JSON.stringify(result), { status: 200, headers: { 'Content-Type': 'application/json' } });
   };
   // The server publishes the resource route contract as a generated script.

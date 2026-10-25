@@ -227,84 +227,8 @@ test("a new page draws the assistant next to Mailbox from the last confirmed tar
   await app.answer(null);
 });
 
-// Workbench functions are scoped inside its page bootstrap. Execute those exact
-// functions (as in resident_recommendation_state.cjs), not copies of their policy.
-// Other sidebar sections are empty fixture data; actual shortcut/card rendering,
-// both list renderers, async refresh and the Lineage change listener are retained.
-function section(name, start, end) {
-  const text = source(name), begin = text.indexOf(start), finish = text.indexOf(end, begin + start.length);
-  assert.ok(begin >= 0 && finish > begin, `Production section ${start}`);
-  return text.slice(begin, finish);
-}
-
-test("navigation omits the AMA shortcut, retains Which and the primary facade in both lists, and refreshes its current title", async t => {
-  const { w } = chat(t);
-  w.document.body.insertAdjacentHTML("beforeend", '<div id="agentList"></div><div id="favoriteAgentList"></div>');
-  const state = { title: "我的私人助手", available: true, denied: false, resident_id: FACADE };
-  const associations = [], navigations = [];
-  w.PortalIdentity.listUIAssociations = async namespace => {
-    associations.push(namespace);
-    return { items: state.available ? [{ key: "primary", value: { resident_id: state.resident_id, lineage_id: LINEAGE,
-      family_id: "family_444444444444", presentation: { kind: "personal-assistant" } } }] : [] };
-  };
-  w.PortalResidentService = { navigationTarget: async id => { navigations.push(id); return { resident_id: id, lineage_id: LINEAGE }; } };
-  w.PortalInstructionClient = { execute: async (instruction, args) => {
-    assert.equal(instruction, "GetLineage"); assert.equal(args.lineage_id, LINEAGE);
-    if (state.denied) throw new Error("permission.denied");
-    return { lineage: { title: state.title, lineage_id: LINEAGE } };
-  } };
-  w.eval(section("portal_nav.js", "  let personalAssistantRequest = null;", "  // Lazy loading")
-    + "\nwindow.PortalNav = { personalAssistantTarget };\n");
-  Object.assign(w, {
-    state: { residents: [{ resident_id: AMA, title: "Ask Me Anything", lineage_id: LINEAGE }], personalAmaResidentId: AMA },
-    $id: id => w.document.getElementById(id), esc: w.PortalUIPrimitives.escapeHtml,
-    whichResidentCardHtml: () => "Which Resident",
-    residentSelectionId: item => `resident:${item.resident_id}`,
-    isPersonalAmaResident: item => item.resident_id === AMA,
-    lineageFavoriteSelectionId: () => "", isFavoriteLineageSidebarItem: () => false,
-    lineageIdForResident: item => item.lineage_id, lineageSidebarResidentsForItem: () => [],
-    selectedResidentId: () => "", activeChatTargetId: () => "", residentGroups: () => [], favoriteResidentGroups: () => [],
-    lineageStateController: { listen: (_scope, target, type, callback) => target.addEventListener(type, callback) },
-    previewChangeMatches: () => false,
-  });
-  for (const name of ["renderProjectFilterOptions", "syncAgentTools", "renderActivityRecentRail", "bindAgentCardControls",
-    "bindWhichResidentControls", "refreshRecommendationChats", "renderAgentFloatingMenu", "renderResidentGroup", "renderFavoriteResidentGroup"]) w[name] = () => {};
-  w.eval("let personalAssistantRead = 0;\n"
-    + section("lineage_workbench.js", "      function renderRegisteredResidentItem(", "      function ")
-    + section("lineage_workbench.js", "      async function refreshPersonalAssistantShortcut(", "      // A conversation selection")
-    + section("lineage_workbench.js", "      function renderFavoriteList(", "      function residentByMenuId(")
-    + section("lineage_workbench.js", '      lineageStateController.listen("page", window, "portal:change",', '      lineageStateController.listen("page", window, "portal:events-ready",')
-    + "\nwindow.refreshAssistantShortcut = refreshPersonalAssistantShortcut;\n");
-  await w.refreshAssistantShortcut();
-  const assertLists = () => {
-    for (const id of ["agentList", "favoriteAgentList"]) {
-      const list = w.document.getElementById(id).firstElementChild;
-      assert.deepEqual([...list.children].map(node => node.className), ["whichResidentWrap", "personalAssistantResident"]);
-      const assistant = list.querySelector(".personalAssistantResident");
-      assert.equal(assistant.querySelector("[data-resident-select]").dataset.residentSelect, FACADE);
-      assert.equal(assistant.querySelector(".agentTitle").textContent, state.title);
-      assert.equal(list.querySelector(`[data-resident-select="${AMA}"]`), null);
-    }
-  };
-  assertLists();
-  assert.equal(w.state.personalAssistant.family_id, "family_444444444444");
-  assert.deepEqual(associations, ["lineage-workbench.personal-assistant"]);
-  assert.deepEqual(navigations, [FACADE]);
-  state.title = "改名后的个人空间";
-  w.dispatchEvent(new w.CustomEvent("portal:change", { detail: { changed: { lineage: [LINEAGE] } } }));
-  await drain(); assertLists();
-  for (const unavailable of [{ available: false }, { available: true, denied: true }, { denied: false, resident_id: "resident_invalid" }]) {
-    Object.assign(state, unavailable);
-    await w.refreshAssistantShortcut();
-    assert.equal(w.document.querySelectorAll(".personalAssistantResident").length, 0);
-    for (const id of ["agentList", "favoriteAgentList"]) {
-      const list = w.document.getElementById(id);
-      assert.equal(list.querySelector(`[data-resident-select="${AMA}"]`), null);
-      assert.ok(list.querySelector(".whichResidentWrap"));
-    }
-  }
-});
-
+// The navigation lists' shortcuts run on the real lineage page in
+// lineage_workbench_sidebar.cjs.
 
 test("a pending host draft moves into the Resident and never returns after send", async t => {
   const app = chat(t, {
