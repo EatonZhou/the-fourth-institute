@@ -5356,8 +5356,15 @@
       bodySuffixHtml: options.bodySuffixHtml || "",
       afterBodyHtml: options.afterBodyHtml || "",
     });
-    root.setAttribute("aria-labelledby", dom.titleId);
-    root.removeAttribute("aria-label");
+    // A tabpanel belongs to its host tab; preserve that accessible name.
+    const hostLabelledBy = (root.getAttribute("aria-labelledby") || "").trim().split(/\s+/)
+      .some(labelId => root.ownerDocument.getElementById(labelId));
+    const hostNamesTabPanel = root.getAttribute("role") === "tabpanel"
+      && (hostLabelledBy || root.getAttribute("aria-label")?.trim());
+    if (!hostNamesTabPanel) {
+      root.setAttribute("aria-labelledby", dom.titleId);
+      root.removeAttribute("aria-label");
+    }
     const composer = root.querySelector(`#${CSS.escape(dom.composerId)}`);
     let refsControlBinding = null;
     let conversationSearch = null;
