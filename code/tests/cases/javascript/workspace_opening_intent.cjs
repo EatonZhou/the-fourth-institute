@@ -16,7 +16,7 @@ function page({identity, resolveResource, readRoot} = {}) {
   const nodes = new Map();
   const context = {
     URLSearchParams, performance: {getEntriesByType: () => []},
-    state, usernameLabel: null, agentChatPanel: null, lineageActivityRail: null,
+    state, usernameLabel: null, agentChatPanel: null, currentLineageActivityRail: () => null,
     PERSONAL_AMA_UI_NAMESPACE: 'personal-ama',
     document: {querySelector: () => null, querySelectorAll: () => []},
     unavailableResidentBindings: new Set(),
