@@ -5,7 +5,8 @@
 
   // What the HATG header and toolbar show for the shown Lineage: the sync status,
   // the Lineage's entry in the Lineage list, its title and ID, and which actions
-  // are available and visible in the current view and selection.
+  // are available and visible in the current view and selection; and the canvas
+  // space the toolbar takes as it wraps.
   const DEPENDENCIES = Object.freeze([
     "$id", "activeSeeds", "canvasObjectCanDelete", "currentNode", "displayNodeById",
     "effectiveNodeStatus", "familyForFacade", "renderAutoLayoutControl", "runningLineageNodes",
@@ -241,7 +242,37 @@
     });
   }
 
+  // The canvas toolbar can wrap as docks resize or translated labels change.
+  // Keep its measured height on the viewport as --hatg-navigation-height, which
+  // places the canvas below it, without forcing synchronous layout reads.
+  // Returns the function that stops measuring and drops an unapplied height.
+  function observeNavigationHeight(viewport, toolbar) {
+    let height = "";
+    let frame = 0;
+    const observer = new ResizeObserver(entries => {
+      if (!viewport.isConnected) return;
+      const entry = entries.at(-1);
+      height = `${entry.borderBoxSize[0]?.blockSize ?? entry.contentRect.height}px`;
+      // The canvas is observed at the same depth as the toolbar. Changing its
+      // inset during ResizeObserver delivery skips that canvas notification.
+      // Apply the latest measurement on the next frame, outside delivery.
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        if (viewport.isConnected && viewport.style.getPropertyValue("--hatg-navigation-height") !== height) {
+          viewport.style.setProperty("--hatg-navigation-height", height);
+        }
+      });
+    });
+    observer.observe(toolbar);
+    return () => {
+      observer.disconnect();
+      window.cancelAnimationFrame(frame);
+      frame = 0;
+    };
+  }
+
   window.PortalHatgToolbar = Object.freeze({
-    createToolbar, dependencies: DEPENDENCIES,
+    createToolbar, dependencies: DEPENDENCIES, observeNavigationHeight,
   });
 })();

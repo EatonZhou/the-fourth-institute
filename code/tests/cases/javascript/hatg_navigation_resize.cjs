@@ -4,13 +4,6 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs'), path = require('node:path');
 const { chromium } = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
 const root = path.resolve(__dirname, '../../../management_portal');
-const panel = fs.readFileSync(path.join(root, 'static/hatg_panel.js'), 'utf8');
-const start = panel.indexOf('    const graphControlSizes = new Map(');
-const endText = '    graphControlSizes.forEach((_, element) => graphControlObserver.observe(element));';
-const end = panel.indexOf(endText, start);
-assert.ok(start > 0 && end > start);
-const binding = panel.slice(start, end + endText.length);
-const disconnect = panel.slice(panel.indexOf('  function disconnectGraphObservers()'), panel.indexOf('  let disposeLibraryResize'));
 (async () => {
   const browser = await chromium.launch({ headless: true });
   try {
@@ -28,15 +21,14 @@ const disconnect = panel.slice(panel.indexOf('  function disconnectGraphObserver
     }, fs.readFileSync(path.join(root, 'hatg-panel.html'), 'utf8'));
     for (const name of ['portal_design_system', 'portal_themes', 'hatg_panel'])
       await page.addStyleTag({ path: path.join(root, 'static', name + '.css') });
-    for (const name of ['portal_text', 'portal_state', 'portal_translations', 'portal_i18n', 'portal_ui_primitives', 'projection_libraries/portal-graph/1.0.0/geometry', 'vendor/d3/d3.v7.9.0.min', 'lineage_graph'])
+    for (const name of ['portal_text', 'portal_state', 'portal_translations', 'portal_i18n', 'portal_ui_primitives', 'projection_libraries/portal-graph/1.0.0/geometry', 'vendor/d3/d3.v7.9.0.min', 'lineage_graph', 'hatg_toolbar'])
       await page.addScriptTag({ path: path.join(root, 'static', name + '.js') });
-    await page.evaluate(({ binding, disconnect }) => {
+    await page.evaluate(() => {
       window.graph = PortalHatgGraph.createGraph({ root: '#hatgCanvas', world: '#world', edgeLayer: '#edges', effectLayer: '#effects', labelLayer: '#labels', nodeLayer: '#nodes' });
       graph.render({ nodes: [], edges: [] });
-      const $id = id => document.getElementById(id);
-      let graphControlObserver, graphControlResizeFrame = 0, seedInspectorObserver = null;
-      eval(binding + '\n' + disconnect + '\nwindow.stopNavigation = disconnectGraphObservers;');
-    }, { binding, disconnect });
+      window.stopNavigation = PortalHatgToolbar.observeNavigationHeight(
+        document.getElementById('hatgViewport'), document.getElementById('graphNavigationBar'));
+    });
     const samples = [];
     for (const width of [1000, 340, 700]) {
       await page.evaluate(width => { document.getElementById('hatgViewport').style.width = width + 'px'; }, width);
@@ -65,7 +57,13 @@ const disconnect = panel.slice(panel.indexOf('  function disconnectGraphObserver
       sentinel.observe(nav); nav.style.minHeight = '120px';
     }));
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-    assert.equal(await page.evaluate(() => parseFloat(document.getElementById('hatgViewport').style.getPropertyValue('--hatg-navigation-height'))), beforeStop, 'destroy cancels a pending measured layout write');
+    const reserved = () => page.evaluate(() => parseFloat(document.getElementById('hatgViewport').style.getPropertyValue('--hatg-navigation-height')));
+    assert.equal(await reserved(), beforeStop, 'destroy cancels a pending measured layout write');
+    await page.evaluate(() => new Promise(resolve => {
+      document.getElementById('graphNavigationBar').style.minHeight = '160px';
+      let frames = 0; const sample = () => ++frames === 5 ? resolve() : requestAnimationFrame(sample); requestAnimationFrame(sample);
+    }));
+    assert.equal(await reserved(), beforeStop, 'destroy stops measuring the toolbar');
     await page.evaluate(() => graph.destroy());
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

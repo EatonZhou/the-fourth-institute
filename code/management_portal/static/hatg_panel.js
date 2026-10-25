@@ -441,14 +441,11 @@
     setBusy, setNodeRuntimeStatus, societyService, state, toast, updateLineageSummary,
   });
 
-  let graphControlObserver = null;
-  let graphControlResizeFrame = 0;
+  let stopNavigationMeasurement = null;
   let seedInspectorObserver = null;
   function disconnectGraphObservers() {
-    graphControlObserver?.disconnect();
-    graphControlObserver = null;
-    window.cancelAnimationFrame(graphControlResizeFrame);
-    graphControlResizeFrame = 0;
+    stopNavigationMeasurement?.();
+    stopNavigationMeasurement = null;
     seedInspectorObserver?.disconnect();
     seedInspectorObserver = null;
   }
@@ -987,35 +984,9 @@
       if (observedCanvas.isConnected) positionSeedInspector();
     });
     seedInspectorObserver.observe(observedCanvas);
-    // The navigation can wrap as docks resize or translated labels change.
-    // Reserve its measured block size without forcing synchronous layout reads.
-    const graphControlSizes = new Map([
-      [$id("graphNavigationBar"), "--hatg-navigation-height"],
-    ]);
-    const observedViewport = $id("hatgViewport");
-    const pendingControlSizes = new Map();
-    graphControlObserver = new ResizeObserver(entries => {
-      if (!observedViewport.isConnected) return;
-      for (const entry of entries) {
-        const height = entry.borderBoxSize[0]?.blockSize ?? entry.contentRect.height;
-        pendingControlSizes.set(graphControlSizes.get(entry.target), `${height}px`);
-      }
-      // The canvas is observed at the same depth as the toolbar. Changing its
-      // inset during ResizeObserver delivery skips that canvas notification.
-      // Apply the latest measurements on the next frame, outside delivery.
-      if (graphControlResizeFrame) return;
-      graphControlResizeFrame = window.requestAnimationFrame(() => {
-        graphControlResizeFrame = 0;
-        if (!observedViewport.isConnected) return;
-        for (const [property, size] of pendingControlSizes) {
-          if (observedViewport.style.getPropertyValue(property) !== size) {
-            observedViewport.style.setProperty(property, size);
-          }
-        }
-        pendingControlSizes.clear();
-      });
-    });
-    graphControlSizes.forEach((_, element) => graphControlObserver.observe(element));
+    stopNavigationMeasurement = hatgModule("PortalHatgToolbar").observeNavigationHeight(
+      $id("hatgViewport"), $id("graphNavigationBar"),
+    );
     $id("seedDismissForm").addEventListener("submit", submitSeedDismissal);
     $queryAll("[data-seed-promote-action]").forEach(button => {
       button.addEventListener("click", () => openSeedPromoteModal(state.selectedSeedId, button.dataset.seedPromoteAction || "custom"));

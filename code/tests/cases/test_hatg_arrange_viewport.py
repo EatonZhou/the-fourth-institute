@@ -13,6 +13,16 @@ def test_hatg_navigation_resize_preserves_canvas_delivery():
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+def test_mounted_hatg_measures_toolbar_until_destroyed():
+    """挂载的 HATG 面板按实测工具栏高度留出画布空间，销毁后停止测量。
+
+    :module: lineage.hatg
+    """
+    script = Path(__file__).with_name("javascript") / "hatg_mount_layout.cjs"
+    result = subprocess.run(["node", "--test", str(script)], capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 def test_watchboard_conflict_refreshes_without_replaying_mutation():
     """Watchboard 冲突保留原失败，刷新图和 Chat，不自动重试旧操作。
 

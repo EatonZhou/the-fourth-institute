@@ -2,12 +2,6 @@
 const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path');
 const { chromium } = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
 const portal = path.resolve(__dirname, '../../../management_portal');
-const source = fs.readFileSync(path.join(portal, 'static/hatg_panel.js'), 'utf8');
-const edits = fs.readFileSync(path.join(portal, 'static/hatg_program_edits.js'), 'utf8');
-const observerStart = source.indexOf('    const graphControlSizes = new Map(');
-const observerEnd = source.indexOf('graphControlSizes.forEach((_, element) => graphControlObserver.observe(element));', observerStart);
-assert.ok(observerStart > 0 && observerEnd > observerStart);
-const observation = source.slice(observerStart, source.indexOf('\n', observerEnd));
 
 (async () => {
   const browser = await chromium.launch({headless: true});
@@ -24,8 +18,9 @@ const observation = source.slice(observerStart, source.indexOf('\n', observerEnd
     for (const name of ['portal_design_system', 'portal_themes', 'hatg_panel'])
       await page.addStyleTag({url: '/static/' + name + '.css'});
     await page.addStyleTag({content: 'html,body {margin:0;height:100%} .portalHatgPanelComponent {height:100vh} #agentLineageShell {height:100%;display:block} #hatgPane {height:100%;display:flex;flex-direction:column}'});
-    await page.addScriptTag({content: edits});
-    await page.evaluate(({observation}) => {
+    for (const name of ['hatg_program_edits', 'hatg_toolbar'])
+      await page.addScriptTag({path: path.join(portal, 'static', name + '.js')});
+    await page.evaluate(() => {
       window.$id = id => document.getElementById(id);
       window.state = {lineage: {lineage_id: 'fixture'}};
       window.toastCalls = []; window.requestCount = 0;
@@ -41,9 +36,8 @@ const observation = source.slice(observerStart, source.indexOf('\n', observerEnd
       window.applyProgramMutation = PortalHatgProgramEdits.createProgramEdits(Object.fromEntries(
         PortalHatgProgramEdits.dependencies.map(name => [name, given[name] ?? (() => { throw new Error(`Unexpected use of ${name}`); })]),
       )).applyProgramMutation;
-      window.graphControlObserver = null;
-      (0, eval)(observation);
-    }, {observation});
+      PortalHatgToolbar.observeNavigationHeight($id('hatgViewport'), $id('graphNavigationBar'));
+    });
     await page.evaluate(async () => {
       for (let i = 1; i <= 5; i++) await applyProgramMutation(async () => {
         requestCount++; return {lineage: {lineage_id: 'fixture'}};
