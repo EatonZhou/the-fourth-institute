@@ -5,19 +5,45 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { JSDOM } = require('jsdom');
 const { babelParse, traverse } = require('./babel_parse.cjs');
-const { chatWorkspaceSources, findChatWorkspaceFunction, findChatWorkspaceNode } = require('./chat_workspace_modules.cjs');
+const { execFileSync } = require('node:child_process');
+const { chatWorkspaceScripts } = require('./chat_workspace_modules.cjs');
 const root = path.resolve(__dirname, '../../..');
 const read = name => fs.readFileSync(path.join(root, name), 'utf8');
 
-async function harness(t) {
-  const dom = new JSDOM('<main id="host"></main>', { url: 'https://portal.example/', runScripts: 'outside-only' });
-  t.after(() => dom.window.close());
+async function harness(t, { visual = false } = {}) {
+  const dom = new JSDOM('<main id="host"></main>', { url: 'https://portal.example/', runScripts: 'outside-only', pretendToBeVisual: visual });
+  const observers = new Set();
+  const NativeMutationObserver = dom.window.MutationObserver;
+  dom.window.MutationObserver = class extends NativeMutationObserver {
+    constructor(callback) { super(callback); observers.add(this); }
+  };
+  t.after(() => { for (const observer of observers) observer.disconnect(); dom.window.close(); });
   const w = dom.window;
   w.PortalCompatibility = { identifier: name => `portal-${name}` };
   w.__PORTAL_LANGUAGE__ = 'en';
   w.PortalIdentity = { passwordRequirements: 'Password requirements' };
   for (const file of ['portal_text.js', 'portal_translations.js', 'portal_i18n.js']) w.eval(read(`management_portal/static/${file}`));
   await new Promise(resolve => setImmediate(resolve));
+  return w;
+}
+
+// The English page with the chat workspace loaded as lineage.html loads it.
+let routeScript = null;
+async function chatHarness(t) {
+  const w = await harness(t, { visual: true });
+  routeScript ??= execFileSync(process.env.TFI_TEST_PYTHON || 'python3',
+    ['-c', 'from management_portal.resources.portal import portal_route_script; print(portal_route_script().decode())'],
+    { cwd: root, encoding: 'utf8' });
+  w.matchMedia = query => Object.assign(new w.EventTarget(), { media: query, matches: false });
+  w.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} };
+  w.CSS = { escape: value => String(value).replace(/[^a-zA-Z0-9_-]/g, char => `\\${char}`) };
+  w.PortalIdentity.username = () => 'sample_admin';
+  w.eval(routeScript);
+  for (const file of ['portal_state.js', 'portal_page_state.js', 'portal_ui_primitives.js', 'portal_ui.js', 'portal_overlay.js',
+    'portal_resource_chips.js', 'portal_image_editor.js', 'portal_editor_open_service.js', 'portal_command_registry.js',
+    'portal_workbench_context.js', 'portal_workbench.js', 'resident_protocol.js', ...chatWorkspaceScripts()]) {
+    w.eval(read(`management_portal/static/${file}`));
+  }
   return w;
 }
 
@@ -109,16 +135,19 @@ test('deadline rendering uses English singular/plural through the actual project
 });
 
 test('chat header localizes system prefixes while preserving account and Resident names', async t => {
-  const w = await harness(t);
-  w.eval(findChatWorkspaceFunction('normalizeWorkspaceSubtitleParts').source + ';window.auditSubtitle=normalizeWorkspaceSubtitleParts;');
-  const parts = w.auditSubtitle([
+  const w = await chatHarness(t);
+  const workspace = w.PortalChatWorkspace.createWorkspace({
+    root: w.document.getElementById('host'), id: 'chat',
+    contract: { schema: 'portal.chat_workspace.v3', messages: [], composer: { can_send: true, queue: { items: [] } } },
+  });
+  workspace.setSubtitle('', [
     { text: '账号 中文账号 {p0}', identity: 'account', copy_value: '中文账号 {p0}' },
     { text: 'Family 门面（7 位成员）', identity: 'family' },
     { text: '取消', identity: 'resident' },
   ]);
-  assert.equal(parts[0].text, 'Account 中文账号 {p0}');
-  assert.equal(parts[1].text, 'Family facade (7 members)');
-  assert.equal(parts[2].text, '取消');
+  const parts = [...w.document.querySelectorAll('[data-workspace-status] [data-workspace-identity]')].map(part => part.textContent);
+  workspace.destroy();
+  assert.deepEqual(parts, ['Account 中文账号 {p0}', 'Family facade (7 members)', '取消']);
 });
 
 test('shared busy buttons translate temporary labels and restore the original button', async t => {
@@ -135,13 +164,15 @@ test('shared busy buttons translate temporary labels and restore the original bu
 });
 
 test('active Family header translates the member label before appending runtime status', async t => {
-  const w = await harness(t);
-  const { node, file } = findChatWorkspaceNode((candidate, code) => candidate.type === 'ObjectProperty'
-    && candidate.key?.name === 'subtitle_parts' && code.includes('state.family_activity'), 'Family header subtitle');
-  const expression = chatWorkspaceSources()[file].slice(node.value.start, node.value.end);
-  w.eval('window.auditFamilyHeader = (base, state, familyIssueLabel="") => (' + expression + ');');
-  const parts = w.auditFamilyHeader({ chat_workspace: { header: { subtitle_parts: [{ identity: 'family', text: 'Family 门面（7 位成员）' }] } } },
-    { family_activity: { running_count: 2 }, display_work_state: 'running' });
-  assert.match(parts[0].text, /^Family facade \(7 members\) · /);
+  const w = await chatHarness(t);
+  const header = { subtitle_parts: [{ identity: 'family', text: 'Family 门面（7 位成员）' }] };
+  const project = (familyFacade, familyActivity) => w.PortalChatWorkspace.projectResidentConversation(
+    { chat_workspace: { header } },
+    { family_facade: familyFacade, state: { work_state: 'running', family_activity: familyActivity }, messages: [] },
+  ).chat_workspace.header.subtitle_parts;
+  const parts = project({ title: 'Fixture' }, { work_state: 'running', running_count: 2 });
+  assert.equal(parts[0].text, 'Family facade (7 members) · Running (2 nodes)', 'the server label is translated before the status is appended');
+  assert.equal(project({ title: 'Fixture', members: [{ title: 'Router' }, { title: 'Steward' }] }, { work_state: 'queued', running_count: 1 })[0].text,
+    'Family facade (2 members) · Queuing', 'a known member list gives the count');
   assert.ok(!/[\u3400-\u9fff]/.test(parts[0].text), parts[0].text);
 });
