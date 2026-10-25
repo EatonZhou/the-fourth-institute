@@ -2,26 +2,30 @@ const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs'), path = require('node:path'), vm = require('node:vm');
 const {babelParse} = require('./babel_parse.cjs');
+const {workbenchModuleFiles} = require('./lineage_workbench_modules.cjs');
 const noop = () => {};
 const i18n = {t: s => s, text: (parts, ...values) => parts.reduce((s, p, i) => s + p + (values[i] ?? ''), '')};
-function declarations(file, names) {
-  const source = fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static', file), 'utf8');
+// The named declarations in one script, or in any of several scripts.
+function declarations(files, names) {
   const found = {};
-  function visit(node) {
-    if (!node || typeof node !== 'object') return;
-    const name = node.type === 'ClassMethod' ? node.key?.name : node.id?.name;
-    if (names.includes(name)) {
-      const fragment = source.slice(node.start, node.end);
-      found[name] = node.type === 'VariableDeclarator' ? `const ${fragment};`
-        : node.type === 'ClassMethod' ? `const ${name} = ({${fragment}}).${name};` : fragment;
-    }
-    for (const child of Object.values(node)) {
-      if (Array.isArray(child)) child.forEach(visit);
-      else if (child && typeof child === 'object') visit(child);
-    }
+  for (const file of [].concat(files)) {
+    const source = fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static', file), 'utf8');
+    const visit = node => {
+      if (!node || typeof node !== 'object') return;
+      const name = node.type === 'ClassMethod' ? node.key?.name : node.id?.name;
+      if (names.includes(name)) {
+        const fragment = source.slice(node.start, node.end);
+        found[name] = node.type === 'VariableDeclarator' ? `const ${fragment};`
+          : node.type === 'ClassMethod' ? `const ${name} = ({${fragment}}).${name};` : fragment;
+      }
+      for (const child of Object.values(node)) {
+        if (Array.isArray(child)) child.forEach(visit);
+        else if (child && typeof child === 'object') visit(child);
+      }
+    };
+    visit(babelParse(source, file));
   }
-  visit(babelParse(source, file));
-  return names.map(name => {assert.ok(found[name], `${file}: ${name}`); return found[name];}).join('\n')
+  return names.map(name => {assert.ok(found[name], `${files}: ${name}`); return found[name];}).join('\n')
     + '\n' + names.map(name => `this.${name} = ${name};`).join('\n');
 }
 function deferred() {let resolve, reject; const promise = new Promise((a, b) => {resolve = a; reject = b;}); return {promise, resolve, reject};}
@@ -52,7 +56,8 @@ function deletionFixture() {
     URL, history: {state: {}, replaceState: (_a, _b, url) => {location.href = new URL(url, location).href;}},
     state, pendingResidentDeletions: new Set(), unavailableResidentBindings: new Set(),
     agentFloatingMenuOverlay: null, agentChatPanel: primary,
-    lineageWorkbench: {getPanelsByType: () => [primary, secondary, other]}, previewTabsController: null,
+    lineageWorkbench: {getPanelsByType: () => [primary, secondary, other]},
+    currentPreviewTabsController: () => null, currentPersonalWorkspaces: () => null,
     residentService: {remove: () => {calls.push(['remove']); return removal.promise;}, folder: () => {throw Error('deleted folder read');}},
     currentChatTarget: () => state.chatTarget, selectedResidentId: () => state.chatTarget?.id || '',
     currentResident: () => state.residents.find(r => r.resident_id === state.chatTarget?.id),
@@ -63,7 +68,7 @@ function deletionFixture() {
     activeChatTargetId: () => state.chatTarget?.key, activeLineageId: () => 'lineage_one',
     writeLastSelection: noop, syncChatTargetLocation: noop, stopPreviewRefresh: noop,
   });
-  vm.runInContext(declarations('lineage_workbench.js', ['deleteResidentFromWorkbench', 'retireDeletedResidentSurfaces',
+  vm.runInContext(declarations(['lineage_workbench.js', ...workbenchModuleFiles()], ['deleteResidentFromWorkbench', 'retireDeletedResidentSurfaces',
     'clearDeletedResidentLocation', 'loadDetail', 'loadFolder']), ctx);
   return {ctx, target, state, removal, historyRead, calls, notices, primary, secondary, other, location};
 }

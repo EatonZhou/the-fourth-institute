@@ -1,16 +1,9 @@
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
 const vm = require('node:vm');
 
-const source = fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static/lineage_workbench.js'), 'utf8');
-function owner(name) {
-  const start = new RegExp(`^( +)(?:async )?function ${name}\\(`, 'm').exec(source);
-  assert(start, name);
-  const end = source.indexOf(`\n${start[1]}}\n`, start.index);
-  return source.slice(start.index, end + start[1].length + 3);
-}
+const {findWorkbenchFunction} = require('./lineage_workbench_modules.cjs');
+const owner = name => findWorkbenchFunction(name).source;
 const deferred = () => {
   let resolve, reject;
   const promise = new Promise((yes, no) => { resolve = yes; reject = no; });
@@ -53,6 +46,7 @@ function page({identity, resolveResource, readRoot} = {}) {
     residentSidebarRefreshCoordinator: {start() {}},
     societyServiceRecovery: {isUnavailable: () => false},
     lineageWorkbench: {getState: () => ({hidden: []}), focusPanel: id => focus.push(id), isPanelExpanded: () => true},
+    currentLineageWorkbench: () => context.lineageWorkbench,
     showPersonalWorkspaces: () => ({openResource: async resource => { opened.push(resource); await readRoot?.(); }}),
     history: {state: {}, replaceState: (_state, _title, url) => urls.push(url)},
   };
