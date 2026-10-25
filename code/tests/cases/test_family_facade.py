@@ -748,15 +748,17 @@ def test_facade_work_starts_when_a_member_runs_its_relayed_message(facade, monke
 
     facade_id = _relayed(facade, monkeypatch)
     repository = resident_conversation_stream.get_repository()
-    original = type(repository).input_state
+    original = type(repository).input_states_by_id
     states = {"state": "queued"}
 
-    def input_state(self, rid, mid):
-        if rid == MEMBER:
-            return {"message_id": mid, "state": states["state"], "updated_at": "2026-10-02T08:00:00Z"}
-        return original(self, rid, mid)
+    def input_states_by_id(self, requests):
+        found = original(self, requests)
+        found.update({(rid, mid): {"message_id": mid, "state": states["state"],
+                                  "updated_at": "2026-10-02T08:00:00Z"}
+                      for rid, mid in requests if rid == MEMBER})
+        return found
 
-    monkeypatch.setattr(type(repository), "input_state", input_state)
+    monkeypatch.setattr(type(repository), "input_states_by_id", input_states_by_id)
     assert family_facade.relay_activity(facade_id) == {"active": False}
     states["state"] = "running"
     assert family_facade.relay_activity(facade_id) == {
@@ -831,6 +833,7 @@ def test_a_nested_family_follows_the_relay_chain_to_the_member_doing_the_work(mo
             }}
 
     monkeypatch.setattr(resident_conversation_stream, "get_repository", lambda: Repository())
+    monkeypatch.setattr(family_facade.resident_mailbox, "_groups_of", lambda *_: {})
     monkeypatch.setattr(resident_workspace_domain, "_find_resident",
                         lambda resident_id: {"resident_id": resident_id, "title": titles.get(resident_id, "")})
     monkeypatch.setattr(family_facade, "is_facade", lambda record: (record or {}).get("resident_id") in links)
@@ -899,6 +902,7 @@ def test_facade_batches_only_the_page_and_reuses_nested_member_lookups(monkeypat
     monkeypatch.setattr(family_facade, "is_facade", lambda record: record.get("resident_id") in links)
     monkeypatch.setattr(family_facade, "relay_links", relays)
     monkeypatch.setattr(resident_conversation_stream, "get_repository", lambda: SimpleNamespace(reply_rounds=replies))
+    monkeypatch.setattr(family_facade.resident_mailbox, "_groups_of", lambda *_: {})
     messages = [{"message_id": f"outer_{i}", "role": "user"} for i in range(90, 100)]
     shown = family_facade.project_messages({"resident_id": outer}, messages)
     assert rounds == [[(MEMBER, f"input_{i}") for i in range(90, 100)]]
@@ -1027,6 +1031,7 @@ def test_the_facade_conversation_reads_like_a_resident_answering_its_requests(mo
                               + [{"message_id": mid} for mid in queued]}}
 
     monkeypatch.setattr(resident_conversation_stream, "get_repository", lambda: Repository())
+    monkeypatch.setattr(family_facade.resident_mailbox, "_groups_of", lambda *_: {})
     monkeypatch.setattr(resident_workspace_domain, "_find_resident", lambda resident_id: {
         "resident_id": resident_id, "title": {first: "权限内核", second: "admin 页面"}.get(resident_id, "门面"),
     })

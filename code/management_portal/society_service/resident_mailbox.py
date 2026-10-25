@@ -319,12 +319,19 @@ def project_input_state(record: Mapping[str, Any], message_id: str, state: dict[
     group_id = group_of(record, message_id)
     if not group_id:
         return state
-    projected = {**state, "grouped_into_message_id": group_id}
-    if str(state.get("state") or "") in TERMINAL_STATES:
-        return projected
     try:
         group_state = resident_conversation_stream.get_repository().input_state(resident_lineage.resident_id(record), group_id)
     except KeyError:
+        group_state = {}
+    return _project_group_state(state, group_id, group_state)
+
+
+def _project_group_state(state: Mapping[str, Any], group_id: str, group_state: Mapping[str, Any]) -> dict[str, Any]:
+    projected = dict(state)
+    if not group_id:
+        return projected
+    projected["grouped_into_message_id"] = group_id
+    if str(state.get("state") or "") in TERMINAL_STATES:
         return projected
     group_status = str(group_state.get("state") or "")
     if group_status == "running":
@@ -333,6 +340,79 @@ def project_input_state(record: Mapping[str, Any], message_id: str, state: dict[
         projected["state"] = group_status
         projected["reply_message_ids"] = list(group_state.get("reply_message_ids") or [])
     return projected
+
+
+class InputProjection:
+    """Read a selection of original inputs through their current Mailbox groups.
+
+    Group membership is resolved once per Resident, and states/replies once
+    for the entire selection. Original IDs and independent terminal facts
+    remain authoritative; the group supplies progress and shared replies.
+    """
+
+    def __init__(self, requests: Iterable[tuple[str, str]], repository: Any) -> None:
+        self.repository = repository
+        self.requests = list(dict.fromkeys(requests))
+        by_resident: dict[str, list[str]] = {}
+        for resident_id, message_id in self.requests:
+            by_resident.setdefault(resident_id, []).append(message_id)
+        self.groups = {(resident_id, message_id): group_id
+                       for resident_id, message_ids in by_resident.items()
+                       for message_id, group_id in _groups_of(resident_id, message_ids).items()
+                       if group_id}
+        self.read_requests = list(dict.fromkeys([
+            *self.requests, *((resident_id, group_id) for (resident_id, _), group_id in self.groups.items()),
+        ]))
+
+    def states(self) -> dict[tuple[str, str], dict[str, Any]]:
+        states = self.repository.input_states_by_id(self.read_requests)
+        return {key: _project_group_state(state, self.groups.get(key, ""),
+                                          states.get((key[0], self.groups.get(key, "")), {}))
+                for key in self.requests if (state := states.get(key)) is not None}
+
+    def rounds(self, *, limit: int) -> dict[tuple[str, str], dict[str, Any]]:
+        rounds = self.repository.reply_rounds(self.read_requests, limit=limit)
+        sources = self.reply_sources({key: value["input_state"] for key, value in rounds.items()})
+        result = {}
+        for key in self.requests:
+            original = rounds[key]
+            state = original["input_state"]
+            group_id = self.groups.get(key, "")
+            group = rounds.get((key[0], group_id), {})
+            group_state = group.get("input_state") or {}
+            projected = _project_group_state(state, group_id, group_state)
+            selected = rounds[sources[key]]
+            if group_id and sources[key] == key:
+                # Retained final replies can already follow the group in the
+                # repository. An independently finished member keeps only its
+                # own outputs, even when the shared turn later answers.
+                replies = [reply for reply in selected["replies"]
+                           if reply.get("reply_to_message_id") != group_id]
+                excluded = {reply["message_id"] for reply in selected["replies"]
+                            if reply.get("reply_to_message_id") == group_id}
+                projected["reply_message_ids"] = [identity for identity in projected.get("reply_message_ids", [])
+                                                  if identity not in excluded]
+                selected = {**selected, "replies": replies}
+            result[key] = {**selected, "input_state": projected}
+        return result
+
+    def reply_sources(self, states: Mapping[tuple[str, str], Mapping[str, Any]] | None = None) -> dict[tuple[str, str], tuple[str, str]]:
+        if states is None:
+            states = self.repository.input_states_by_id(self.read_requests)
+        result = {}
+        for key in self.requests:
+            state = states.get(key, {})
+            group_key = (key[0], self.groups.get(key, ""))
+            group_state = states.get(group_key, {})
+            # Independent terminal members never acquire the group's outputs.
+            shared_receipt = state.get("state") == group_state.get("state") and (
+                (state.get("error") or {}).get("grouped_into_message_id") == group_key[1]
+                or (state.get("state") == "completed" and bool(state.get("reply_message_ids"))
+                    and state.get("reply_message_ids") == group_state.get("reply_message_ids")))
+            follows_group = (state.get("state") not in TERMINAL_STATES or shared_receipt)
+            result[key] = group_key if (group_state and follows_group
+                                       and (group_state.get("error") or {}).get("code") != SPLIT_REASON) else key
+        return result
 
 
 def project_messages(

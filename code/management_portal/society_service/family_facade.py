@@ -22,7 +22,7 @@ from typing import Any, Mapping
 from management_common.actor_identity import canonical_actor_id, same_actor
 from management_portal.execution.chat_position_index import RELAYED_COPY_PATTERN
 
-from . import family_storage, resident_conversation_stream, resident_lineage
+from . import family_storage, resident_conversation_stream, resident_lineage, resident_mailbox
 from .input_progress import event_input_ids, input_progress
 from .state_store import get_lineage_data_store
 
@@ -543,14 +543,12 @@ def relay_activity(facade_id: str) -> dict[str, Any] | None:
         relay_links(facade).items(), key=lambda item: str(item[1].get("relayed_at") or ""), reverse=True,
     )[:MAX_ACTIVITY_LINKS]
     repository = resident_conversation_stream.get_repository()
-    for facade_message_id, link in links:
-        _, (member_id, member_message_id) = relay_holder(
-            str(link.get("resident_id") or ""), str(link.get("message_id") or ""),
-        )
-        try:
-            state = repository.input_state(member_id, member_message_id)
-        except KeyError:
-            continue
+    batch = _RelayBatch(dict(links))
+    states = resident_mailbox.InputProjection(
+        [holder for _, holder in batch.holders.values()], repository).states()
+    for facade_message_id, (_, holder) in batch.holders.items():
+        member_id, member_message_id = holder
+        state = states.get(holder, {})
         if str(state.get("state") or "") == "running":
             return {
                 "active": True,
@@ -762,13 +760,16 @@ def _project_runtime(
     waiting: tuple[str, str, str] | None = None
     recent = dict(sorted(links.items(), key=lambda item: str(item[1].get("relayed_at") or ""), reverse=True)[:MAX_ACTIVITY_LINKS])
     batch = _RelayBatch(recent)
-    states = repository.input_states_by_id([holder for _, holder in batch.holders.values()])
+    states = resident_mailbox.InputProjection(
+        [holder for _, holder in batch.holders.values()], repository).states()
     member_states: dict[str, dict[str, Any]] = {}
     for facade_message_id in recent:
         _, (member_id, member_message_id) = batch.holders[facade_message_id]
         if (member_id, member_message_id) not in states:
             continue
-        state = str(states[(member_id, member_message_id)].get("state") or "")
+        input_state = states[(member_id, member_message_id)]
+        state = str(input_state.get("state") or "")
+        progress_id = str(input_state.get("grouped_into_message_id") or member_message_id)
         if state not in {"queued", "running"}:
             continue
         try:
@@ -777,7 +778,7 @@ def _project_runtime(
             member_state = member_states[member_id]
         except KeyError:
             continue
-        if state == "running" and member_state.get("active_message_id") == member_message_id:
+        if state == "running" and member_state.get("active_message_id") == progress_id:
             return {
                 "state": {
                     **base,
@@ -852,7 +853,13 @@ def relayed_reply(facade: Mapping[str, Any], message_id: str) -> dict[str, Any] 
         reply = repository.message(worker_id, clean)
         if reply is None or reply.get("role") != "agent":
             continue
-        found = requests.get(str(reply.get("reply_to_message_id") or ""))
+        reply_to = str(reply.get("reply_to_message_id") or "")
+        found = requests.get(reply_to)
+        if found is None:
+            members = resident_mailbox.members_of({"resident_id": worker_id}, reply_to)
+            candidates = [(worker_id, item) for item in requests if item in members]
+            sources = resident_mailbox.InputProjection(candidates, repository).reply_sources()
+            found = next((requests[key[1]] for key, source in sources.items() if source[1] == reply_to), None)
         if found is None:
             continue
         request_id, member_id, via = found
@@ -869,9 +876,15 @@ def projection_targets(event: Mapping[str, Any]) -> list[str]:
         return []
     from . import family_activity
 
+    message_ids = event_input_ids(event)
+    expanded = list(dict.fromkeys([
+        *message_ids,
+        *(member for message_id in message_ids
+          for member in resident_mailbox.members_of({"resident_id": resident_id}, message_id)),
+    ]))
     targets = [
         facade_id
-        for message_id in event_input_ids(event)
+        for message_id in expanded
         if _carries_relay_mark(resident_id, message_id)
         for facade_id, _ in relay_sources_of(resident_id, message_id)
     ]
@@ -906,7 +919,8 @@ def _relay_views(
     if not links:
         return {}
     batch = _RelayBatch(links)
-    rounds = repository.reply_rounds([holder for _, holder in batch.holders.values()], limit=MAX_PROJECTED_REPLIES)
+    rounds = resident_mailbox.InputProjection(
+        [holder for _, holder in batch.holders.values()], repository).rounds(limit=MAX_PROJECTED_REPLIES)
     result = {}
     for message_id, link in links.items():
         via, (member_id, member_message_id) = batch.holders[message_id]
@@ -917,6 +931,9 @@ def _relay_views(
             "message_id": member_message_id, "state": state,
             "relayed_at": str(link.get("relayed_at") or ""),
         }
+        group_id = str(round_["input_state"].get("grouped_into_message_id") or "")
+        if group_id:
+            relay["grouped_into_message_id"] = group_id
         if round_.get("withdrawn"):
             relay["withdrawn"] = True
         if via:
@@ -925,7 +942,7 @@ def _relay_views(
         if moved:
             relay["reassigned_from"] = [{"resident_id": item, **batch.member_view(item)} for item in moved if item]
         if members is not None and state in {"queued", "running"}:
-            relay.update(input_progress(repository, member_id, member_message_id, state, members))
+            relay.update(input_progress(repository, member_id, group_id or member_message_id, state, members))
         result[message_id] = relay, round_["replies"]
     return result
 
