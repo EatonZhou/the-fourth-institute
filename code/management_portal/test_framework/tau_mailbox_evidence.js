@@ -142,7 +142,12 @@ function mailboxResponseMetadata(payload, { residentId, entryKey }) {
 // extraction, not a completion verdict: state events with omitted payloads do
 // not establish input identity, and later responses must not fill these slots.
 function mailboxResidentEventMetadata(events, target) {
-  requireTarget(target);
+  // This extractor crosses the Node/browser boundary by serialization. Keep
+  // its validation local; a module-scope dependency is absent in the document.
+  if (!/^resident_[0-9a-f]+$/.test(target?.residentId || '')
+      || target.entryKey !== 'resident:' + target.residentId) {
+    throw new Error('Explicit target Resident and entry key required');
+  }
   const type = value => value === null ? 'null' : Array.isArray(value) ? 'array' : typeof value;
   const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
   const fields = (value, names) => {

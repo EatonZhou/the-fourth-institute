@@ -1,4 +1,5 @@
 'use strict';
+const { mailboxResidentEventMetadata } = require('./tau_mailbox_evidence');
 
 // Extract the original finite ISA envelope before assertions or readiness.
 // CreateResident has no Mailbox item. An unset target must never match it.
@@ -40,11 +41,14 @@ function mailboxProjectionEventMetadata(detail, { residentId, entryKey }) {
       values: Array.isArray(value) ? value.filter(v => typeof v === 'string' && allowed.includes(v)) : null,
       omitted_count: Array.isArray(value) ? value.filter(v => typeof v !== 'string' || !allowed.includes(v)).length : null};
   };
-  const scope = ['unread', 'read', 'projection', 'identity', 'state', 'session', 'session_restart'];
+  const scope = ['unread', 'read', 'projection', 'identity', 'state', 'runtime', 'session', 'session_restart', 'deleted'];
   const changes = detail?.projection_changes, details = detail?.projection_details;
   return {
     // Absence stays absence; the event often has no read_revision. The exact
     // MarkMailboxItemRead response owns that revision, not this notification.
+    snapshot_required: {present: own(detail, 'snapshot_required'),
+      type: own(detail, 'snapshot_required') ? type(detail.snapshot_required) : 'missing',
+      value: typeof detail?.snapshot_required === 'boolean' ? detail.snapshot_required : null},
     read_revision: field(detail, 'read_revision'), revision: field(detail, 'revision'),
     resident_changes: array(detail?.resident_changes, residentId, scope),
     projection_changes: {
@@ -61,14 +65,25 @@ async function observeMailboxChanges(page, { residentId, entryKey, documentId, r
   if (!documentId || typeof record !== 'function') throw new TypeError('Original document and record sink required');
   const key = '__tauMailboxChanges_' + require('node:crypto').randomUUID().replaceAll('-', '');
   await page.exposeBinding(key, (source, row) => { if (source.frame === page.mainFrame()) record(row); });
-  const handle = await page.evaluateHandle(({key, residentId, entryKey, documentId, source}) => {
+  const handle = await page.evaluateHandle(({key, residentId, entryKey, documentId, source, eventSource}) => {
     const extract = (0, eval)('(' + source + ')');
-    const handler = event => window[key]({document_id: documentId, epoch_ms: Date.now(),
+    const extractEvents = (0, eval)('(' + eventSource + ')');
+    // Verify both serialized extractors in this document before attaching the
+    // original-action listener. Do not dispatch an event or create evidence.
+    extract({}, {residentId, entryKey});
+    extractEvents(undefined, {residentId, entryKey});
+    const handler = event => window[key]({kind: 'portal_change', document_id: documentId, epoch_ms: Date.now(),
       time_origin_ms: performance.timeOrigin, browser_ms: performance.now(),
-      ...extract(event.detail, {residentId, entryKey})}).catch(() => {});
+      ...extract(event.detail, {residentId, entryKey}),
+      resident_events: extractEvents(event.detail?.resident_events, {residentId, entryKey})}).catch(() => {});
+    const ready = event => window[key]({kind: 'events_ready', document_id: documentId,
+      epoch_ms: Date.now(), time_origin_ms: performance.timeOrigin, browser_ms: performance.now(),
+      reconnected: typeof event.detail?.reconnected === 'boolean' ? event.detail.reconnected : null}).catch(() => {});
     window.addEventListener('portal:change', handler);
-    return {stop: () => window.removeEventListener('portal:change', handler)};
-  }, {key, residentId, entryKey, documentId, source: mailboxProjectionEventMetadata.toString()});
+    window.addEventListener('portal:events-ready', ready);
+    return {stop: () => {window.removeEventListener('portal:change', handler);
+      window.removeEventListener('portal:events-ready', ready);}};
+  }, {key, residentId, entryKey, documentId, source: mailboxProjectionEventMetadata.toString(), eventSource: mailboxResidentEventMetadata.toString()});
   return {stop: async () => {try {await handle.evaluate(h => h.stop());} finally {await handle.dispose();}}};
 }
 
