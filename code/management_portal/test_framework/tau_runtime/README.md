@@ -51,11 +51,15 @@ unmanaged Windows helper without a Job receipt still blocks cleanup instead of
 guessing ownership from a PID. macOS Campaign launch remains unavailable.
 
 On Windows, use the installed Portal Python in the commands above (`python`,
-not an unrelated Python installation). Register the Codex account already on
-that Windows machine through its own Portal, configure the TAU application
+not an unrelated Python installation). Register an authorized Codex account
+through that Windows instance's own Portal, configure the TAU application
 Lineage/module Resident, and select core TAU cases in that Portal's Test
-Workbench. Do not copy accounts from another host or use another host's TAU to
-drive this acceptance run. `scripts/windows/tau_preflight.py --output <file>`
+Workbench. The account may be the same account used on another host. Prefer a
+separate login; an explicitly authorized login-cache transfer must use a private
+channel and serialize refresh ownership, without exposing credentials in source,
+logs or artifacts. The TAU executor, browser and model client must all run on
+Windows; another host's TAU must not drive this acceptance run.
+`scripts/windows/tau_preflight.py --output <file>`
 records prerequisite failures and the selected core case manifest; it does not
 start a Campaign. Native CI validates process and browser ownership with
 disposable fixtures, without a real account or model, so its success is not a
