@@ -3524,6 +3524,7 @@ def _portal_route_definitions() -> tuple[RouteDefinition, ...]:
                 '/static/lineage_workbench_preview.js',
                 '/static/lineage_workbench_resident_dialogs.js',
                 '/static/lineage_workbench_state.js',
+                '/static/lineage_workbench_card_menus.js',
                 '/static/lineage_workbench_chatrooms.js',
                 '/static/lineage_workbench_watchboard.js',
                 '/static/lineage_workbench_which_resident.js',
