@@ -1596,6 +1596,8 @@ def _portal_change_payload(
                 parts = subject.split(".")
                 if target_id and len(parts) == 5:
                     resident_changes.setdefault(target_id, set()).add(parts[4])
+                    if parts[4] == "identity" and notification.payload.get("kind") == "deleted":
+                        resident_changes[target_id].add("deleted")
                 event = notification.payload.get("event")
                 if (
                     notification.payload.get("kind") == "conversation_event"

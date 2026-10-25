@@ -7,6 +7,13 @@
   // All clients in this page share the same Resident lifecycle, including
   // clients with their own API adapter and the graph's instruction client.
   const residentReads = new Map();
+  // Retire a remotely deleted target before ordinary invalidation listeners
+  // dispatch refresh reads. Identity changes alone are not deletion evidence.
+  window.addEventListener("portal:change", event => {
+    for (const [id, scopes] of Object.entries(event?.detail?.resident_changes || {})) {
+      if (Array.isArray(scopes) && scopes.includes("deleted")) readState(id).deleted = true;
+    }
+  }, { capture: true });
   function readState(residentId) {
     const id = String(residentId || "").trim();
     if (!id) throw new TypeError("resident_id required");
@@ -28,7 +35,11 @@
     let finish;
     const pending = new Promise(resolve => { finish = resolve; });
     state.reads.add(pending);
-    try { return await operation(); }
+    try {
+      const result = await operation();
+      if (state.deleted) throw deletedResidentError(residentId);
+      return result;
+    }
     finally {
       state.reads.delete(pending);
       finish();
@@ -184,7 +195,7 @@
         cache: "no-store",
         // Separate simultaneous reads of the same projection in browser/server
         // diagnostics. This identifies an HTTP attempt, not a business action.
-        ...(path === "/api/agent-workbench/residents/projection"
+        ...(["/api/agent-workbench/residents/projection", "/api/agent-workbench/residents/navigation-target"].includes(path)
           ? { headers: { "X-Portal-Request-ID": globalThis.PortalUIPrimitives.randomUUID() } } : {}),
       });
       const residentId = path.startsWith("/api/agent-workbench/residents/") ? values?.id || values?.resident_id

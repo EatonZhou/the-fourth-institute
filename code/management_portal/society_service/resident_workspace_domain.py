@@ -710,10 +710,10 @@ def _commit_resident_deletions(
             _lifecycle_operations().enqueue_cleanup(plan["result"]["resident_id"], plan["steps"])
 
     catalog.state_store.transaction(commit)
-    from management_portal.society_service.changes import lineage_changed, resident_changed
+    from management_portal.society_service.changes import lineage_changed, resident_deleted
 
     for resident_id in sorted(deleted_ids):
-        resident_changed(resident_id, scope="identity")
+        resident_deleted(resident_id)
     for lineage_id in {plan["result"]["lineage_id"] for plan in plans}:
         lineage_changed(lineage_id)
     records = [record for plan in plans for record in plan["records"]]

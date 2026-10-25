@@ -102,6 +102,16 @@ def resident_changed(resident_id: object, *, scope: str = "runtime") -> None:
     _record_or_publish("resident", clean_id, str(scope or "runtime"))
 
 
+def resident_deleted(resident_id: object) -> None:
+    """Publish a committed deletion on the existing identity subscription."""
+    clean_id = str(resident_id or "").strip()
+    if not clean_id.startswith("resident_"):
+        return
+    if _COLLECTED_CHANGES.get() is None and not _enabled():
+        return
+    _record_or_publish("resident", clean_id, "identity", {"kind": "deleted"})
+
+
 def lineage_changed(lineage_id: object, *, runtime: bool = False) -> None:
     clean_id = str(lineage_id or "").strip()
     if not clean_id.startswith("lineage_"):
