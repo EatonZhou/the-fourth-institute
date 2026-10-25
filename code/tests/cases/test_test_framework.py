@@ -1824,6 +1824,9 @@ def test_agent_use_adapter_invokes_resident_and_preserves_reviewable_result(
     scratch_base = tmp_path / 'scratch'
     scratch_base.mkdir()
     monkeypatch.setattr(tau_fixture_paths, '_bases', lambda: [scratch_base])
+    # Portal sessions keep TMPDIR inside the Release checkout; only directories this test creates may form a checkout.
+    monkeypatch.setattr(tau_fixture_paths, '_inside_checkout', lambda path: any(
+        (parent / '.git').exists() for parent in (path, *path.parents) if parent.is_relative_to(tmp_path)))
     checkout = tmp_path / 'checkout'
     (checkout / '.git').mkdir(parents=True)
     run_dir = checkout / "evidence"

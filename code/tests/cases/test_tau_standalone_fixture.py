@@ -1,5 +1,6 @@
 """Standalone Git samples retain ownership and domain cleanup boundaries."""
 import json
+import os
 import subprocess
 
 import pytest
@@ -17,15 +18,20 @@ def locations(tmp_path, monkeypatch):
     scratch = tmp_path / 'scratch'
     scratch.mkdir()
     monkeypatch.setattr(tau_fixture_paths, '_bases', lambda: [checkout, scratch])
+    # Portal sessions keep TMPDIR inside the Release checkout; only directories this test creates may form a checkout.
+    monkeypatch.setattr(tau_fixture_paths, '_inside_checkout', lambda path: any(
+        (parent / '.git').exists() for parent in (path, *path.parents) if parent.is_relative_to(tmp_path)))
     return evidence, scratch
 
 
-def test_standalone_fixture_is_outside_checkout_and_reused_on_resume(locations):
+def test_standalone_fixture_is_outside_checkout_and_reused_on_resume(locations, tmp_path):
     """证据在代码树内时仍可准备未初始化 Git 夹具，恢复复用原目录"""
     evidence, scratch = locations
     path = tau_fixture_paths.prepare(evidence)
     assert path.parent == scratch
-    probe = subprocess.run(['git', '-C', str(path), 'rev-parse', '--show-toplevel'], capture_output=True)
+    # Git also stops its search at the test's own tree.
+    probe = subprocess.run(['git', '-C', str(path), 'rev-parse', '--show-toplevel'], capture_output=True,
+                           env={**os.environ, 'GIT_CEILING_DIRECTORIES': str(tmp_path.parent)})
     assert probe.returncode != 0
     (path / 'proof.txt').write_text('retained')
     assert tau_fixture_paths.prepare(evidence) == path
