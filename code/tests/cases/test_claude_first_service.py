@@ -24,6 +24,25 @@ from scripts import portal_service_units as units
 REAL_RUN = subprocess.run
 
 
+@pytest.mark.skipif(not sys.platform.startswith("linux"), reason="Linux service contract")
+@pytest.mark.parametrize("directory", ["package", "package with space %"])
+def test_generated_claude_unit_is_accepted_by_systemd(control, directory):
+    import shutil
+    analyzer = shutil.which("systemd-analyze")
+    if not analyzer:
+        pytest.skip("systemd-analyze is not installed")
+    interpreter = control.sdk / "bin/python"
+    interpreter.unlink()
+    interpreter.symlink_to(sys.executable)
+    package = control.root / directory
+    package.mkdir()
+    target = units.install_claude_unit(control.sdk, package)
+    result = REAL_RUN([analyzer, "--user", "verify", "--man=no", str(target)],
+                      text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                      timeout=15)
+    assert result.returncode == 0, result.stdout
+
+
 @pytest.fixture
 def control(monkeypatch, tmp_path):
     root = tmp_path / "instance"

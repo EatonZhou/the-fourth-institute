@@ -361,7 +361,12 @@ def install_claude_unit(runtime: Path, package: Path) -> Path:
     quote = lambda value: json.dumps(str(value).replace("%", "%%"), ensure_ascii=False)
     command = f"ExecStart={quote(runtime / 'bin/python')} -m management_portal.claude_code_daemon"
     command += " --socket " + quote(path("staging_root") / "portal_locks/claude-code-daemon.sock")
-    content = content.replace("[Service]\n", f"[Service]\nWorkingDirectory={quote(package)}\n{command}\n", 1)
+    # WorkingDirectory is a single path, not an ExecStart argument list; quotes
+    # become literal path characters. Spaces need no quoting, but % is a specifier.
+    directory = str(package).replace("%", "%%")
+    if any(char in directory for char in "\r\n\0"):
+        raise ValueError("Invalid Claude app-server working directory")
+    content = content.replace("[Service]\n", f"[Service]\nWorkingDirectory={directory}\n{command}\n", 1)
     target.parent.mkdir(parents=True, exist_ok=True)
     if target.is_symlink():
         raise ValueError("Refusing a symlink Provider service definition")
