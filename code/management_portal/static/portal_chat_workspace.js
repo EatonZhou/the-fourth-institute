@@ -12316,6 +12316,7 @@
       // Detach this target before rendering its error contract. Late protocol
       // events and metadata responses must not restore the previous capabilities.
       this.targetRevision += 1;
+      this.unavailableTargetRevision = this.targetRevision;
       this.unsubscribeProjection?.();
       this.unsubscribeProjection = null;
       this.pendingProtocol?.destroy?.();
@@ -12806,6 +12807,10 @@
       const residentId = this.workspace.target().resident_id;
       const revision = this.targetRevision;
       if (!residentId || scope !== this.workspace.inputHistoryScope()) return null;
+      // Rendering the unavailable state can refresh input history as the old
+      // messages disappear. Keep its identity without reading that binding again;
+      // an explicit reload or target switch creates a new revision.
+      if (revision === this.unavailableTargetRevision) return null;
       const isCurrent = () => revision === this.targetRevision
         && residentId === this.workspace.target().resident_id
         && scope === this.workspace.inputHistoryScope();
