@@ -1,0 +1,31 @@
+{
+  "resident_id": "resident_123456789abc",
+  "plan": {
+    "lineage_id": "lineage_123456789abc",
+    "revision": 17,
+    "files": [],
+    "install": [],
+    "remove": [
+      {
+        "op": "delete",
+        "kind": "wire",
+        "id": "wire_fixture"
+      },
+      {
+        "op": "delete",
+        "kind": "wire",
+        "id": "wire_external"
+      },
+      {
+        "op": "delete",
+        "kind": "component",
+        "id": "event_source_fixture"
+      },
+      {
+        "op": "delete",
+        "kind": "component",
+        "id": "effect_fixture"
+      }
+    ]
+  }
+}
