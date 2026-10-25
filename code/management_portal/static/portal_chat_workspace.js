@@ -200,15 +200,15 @@
     const items = Array.isArray(details) ? details : [];
     const isLive = !!options.live;
     if (!items.length) return isLive && options.emptyLiveHtml ? String(options.emptyLiveHtml) : "";
-    // While live, name what is running now so it is visible (and stoppable) without expanding.
-    const running = isLive
-      ? [...items].reverse().find(detail => runtimeStatusLabel(detail?.status || "") === "running")
-      : null;
-    const runningExcerpt = running ? String(running.content || "").trim().split("\n")[0].slice(0, 80) : "";
-    const runningLabel = running
-      ? ` · ${running.title || running.kind || window.PortalI18n.t("活动")}${runningExcerpt ? ` ${runningExcerpt}` : ""}`
+    // These are historical events: a start row keeps its original running status.
+    // Summarize the last displayed event, including its status, just like the expanded list.
+    const latest = isLive ? items[items.length - 1] : null;
+    const latestExcerpt = latest ? String(latest.content || "").trim().split("\n")[0].slice(0, 80) : "";
+    const latestStatus = runtimeStatusLabel(latest?.status || "");
+    const latestLabel = latest
+      ? ` · ${latest.title || latest.kind || window.PortalI18n.t("活动")}${latestStatus ? ` · ${latestStatus}` : ""}${latestExcerpt ? ` · ${latestExcerpt}` : ""}`
       : "";
-    const summary = isLive ? window.PortalI18n.text`${options.assistantName || "Agent"} 活动${runningLabel}` : window.PortalI18n.text`活动 · ${items.length}`;
+    const summary = isLive ? window.PortalI18n.text`${options.assistantName || "Agent"} 活动${latestLabel}` : window.PortalI18n.text`活动 · ${items.length}`;
     const rows = items.map((detail) => {
       const title = detail?.title || detail?.kind || window.PortalI18n.t("活动");
       const status = runtimeStatusLabel(detail?.status || "");
