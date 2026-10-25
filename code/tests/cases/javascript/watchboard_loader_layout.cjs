@@ -2,11 +2,12 @@
 const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path');
 const code = process.env.TAU_CODE_ROOT || path.resolve(__dirname, '../../..');
 const {babelParse, traverse} = require(code + '/tests/cases/javascript/babel_parse.cjs');
+const {workbenchModuleFiles} = require(code + '/tests/cases/javascript/lineage_workbench_modules.cjs');
 const {chromium} = require(code + '/management_portal/test_framework/tau_runtime/node_modules/playwright');
 const root = path.join(code, 'management_portal/static');
 const parts = {};
-for (const file of ['hatg_panel', 'portal_resident_service', 'lineage_workbench']) {
-  const source = fs.readFileSync(path.join(root, file + '.js'), 'utf8');
+for (const file of ['hatg_panel.js', 'portal_resident_service.js', 'lineage_workbench.js', ...workbenchModuleFiles()]) {
+  const source = fs.readFileSync(path.join(root, file), 'utf8');
   traverse(babelParse(source), {
     FunctionDeclaration(p) {
       if (['updateCurrentResidentWatchboard', 'completeResidentFork'].includes(p.node.id?.name))
@@ -85,6 +86,7 @@ assert.equal(Object.keys(parts).length, 4);
       // The following first installation enters while assets are still loading.
 
       const lineageWorkbench = {getPanel: () => hatgPanel}, selectedResidentId = () => 'resident';
+      const currentLineageWorkbench = () => lineageWorkbench;
       const agentChatPanel = {applyDetail(detail) {state.detail = detail;}};
       window.PortalResidentProjection = {invalidate() {}, load: async () => ({installed: true})};
       window.PortalUI = {toast: (...args) => notices.push(args), confirm: async () => true};

@@ -42,6 +42,7 @@ LINEAGE_WORKBENCH_RELEASE_UNIT = (
     'management_portal/static/lineage_workbench_controller.js',
     'management_portal/static/lineage_workbench_which_resident.js',
     'management_portal/static/lineage_workbench_chatrooms.js',
+    'management_portal/static/lineage_workbench_resident_dialogs.js',
     'management_portal/static/portal_lineage_catalogs.js',
     'management_portal/static/portal_hatg_loader.js',
     'management_portal/static/portal_resident_menu.js',
