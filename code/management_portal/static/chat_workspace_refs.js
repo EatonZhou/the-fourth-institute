@@ -1,7 +1,7 @@
 (() => {
   if (window.PortalChatWorkspaceRefs) return;
 
-  // The references a message carries: the Skills, Residents and resources a person
+  // The references a message carries: the Skills, Agents and resources a person
   // picks in the composer's reference popover, the count and summary shown beside
   // the composer, and the selection payload sent with the message.
   const DEPENDENCIES = Object.freeze([

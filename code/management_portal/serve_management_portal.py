@@ -3541,6 +3541,7 @@ def _portal_route_definitions() -> tuple[RouteDefinition, ...]:
                 '/static/chat_workspace_message_content.js',
                 '/static/chat_workspace_composer.js',
                 '/static/chat_workspace_refs.js',
+                '/static/chat_workspace_inputs.js',
                 '/static/portal_chat_workspace.js',
                 '/static/portal_resident_avatar.css',
                 '/static/portal_resident_avatar.js',
