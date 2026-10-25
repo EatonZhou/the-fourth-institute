@@ -3,6 +3,7 @@
 // create a part with only the dependencies a case replaces.
 const fs = require('node:fs');
 const path = require('node:path');
+const { createModulePart } = require('./module_parts.cjs');
 
 const STATIC = path.resolve(__dirname, '../../../management_portal/static');
 
@@ -28,23 +29,8 @@ function readHatgModule(file) {
   return fs.readFileSync(path.join(STATIC, file), 'utf8');
 }
 
-// A dependency the case does not replace fails loudly when it is used.
-function unexpected(name) {
-  const fail = () => { throw new Error(`Unexpected use of HATG dependency ${name}`); };
-  return new Proxy(function unexpectedDependency() {}, {
-    apply: fail, construct: fail,
-    get(_target, key) { if (key === Symbol.toPrimitive || key === 'then') return undefined; return fail(); },
-    set: fail,
-  });
-}
-
 function createHatgModule(module, factory, replaced = {}) {
-  const extra = Object.keys(replaced).filter(name => !module.dependencies.includes(name));
-  if (extra.length) throw new Error(`${factory} does not depend on ${extra.join(', ')}`);
-  const dependencies = Object.fromEntries(module.dependencies.map(name => [
-    name, Object.hasOwn(replaced, name) ? replaced[name] : unexpected(name),
-  ]));
-  return module[factory](dependencies);
+  return createModulePart('HATG', module, factory, replaced);
 }
 
 // The runtime and its module scripts, by file name.
