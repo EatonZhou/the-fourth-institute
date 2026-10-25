@@ -7,23 +7,38 @@ const sourceRoot = new URL("../../management_portal/static/", import.meta.url);
 const sources = new Map();
 const spans = [];
 
-function extract(file, name, method = false) {
-  if (!sources.has(file)) {
-    const text = fs.readFileSync(new URL(file, sourceRoot), "utf8");
-    sources.set(file, ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS));
-  }
-  const source = sources.get(file);
+// The lineage workbench and the chat workspace are each an entry script plus
+// module scripts; lineage.html loads all of them, so a declaration is looked
+// up in every script of its part, in page order.
+const PARTS = {
+  lineage: /^lineage_workbench(?:_[a-z_]+)?\.js$/,
+  chat: /^(?:chat_workspace_[a-z_]+|portal_chat_workspace)\.js$/,
+};
+const lineagePage = fs.readFileSync(new URL("../lineage.html", sourceRoot), "utf8");
+const pageScripts = [...lineagePage.matchAll(/<script src="\/static\/([a-z_]+\.js)">/g)].map(match => match[1]);
+
+function extract(part, name, method = false) {
+  const files = pageScripts.filter(file => PARTS[part].test(file));
+  assert.ok(files.length, part);
   const matches = [];
-  function visit(node) {
-    if ((method ? ts.isMethodDeclaration(node) : ts.isFunctionDeclaration(node)) && node.name?.getText(source) === name) {
-      matches.push(node);
+  for (const file of files) {
+    if (!sources.has(file)) {
+      const text = fs.readFileSync(new URL(file, sourceRoot), "utf8");
+      sources.set(file, ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS));
     }
-    ts.forEachChild(node, visit);
+    const source = sources.get(file);
+    function visit(node) {
+      if ((method ? ts.isMethodDeclaration(node) : ts.isFunctionDeclaration(node)) && node.name?.getText(source) === name) {
+        matches.push({ file, source, node });
+      }
+      ts.forEachChild(node, visit);
+    }
+    visit(source);
   }
-  visit(source);
   assert.equal(matches.length, 1, name);
-  spans.push({ file, name, line: source.getLineAndCharacterOfPosition(matches[0].getStart(source)).line + 1 });
-  return matches[0].getText(source);
+  const [{ file, source, node }] = matches;
+  spans.push({ file, name, line: source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1 });
+  return node.getText(source);
 }
 
 const state = { whichResident: { open: true, query: "draft", submittedQuery: "submitted", correctionSearchResults: [] } };
@@ -43,7 +58,7 @@ vm.runInContext(fs.readFileSync(new URL("portal_text.js", sourceRoot), "utf8"), 
 for (const name of ["whichResidentPanelHtml", "whichResidentCorrectionSearchHtml", "compactWhichResidentResult",
   "persistWhichResidentState", "restoreWhichResidentState", "initialResidentIdFromUrl",
   "initialLineageIdFromUrl", "syncChatTargetLocation"]) {
-  vm.runInContext(extract("lineage_workbench.js", name), context);
+  vm.runInContext(extract("lineage", name), context);
 }
 
 const candidate = { resident_id: "resident_111111111111", title: "Target", lineage_id: "lineage_222222222222", reason: "fixture reason", recommended_action: "fork" };
@@ -114,8 +129,8 @@ async function resetCase(failure) {
   const invalidations = [];
   const applied = [];
   context.window.PortalResidentProjection = { invalidate: residentId => invalidations.push(residentId) };
-  const reset = vm.runInContext("({" + extract("portal_chat_workspace.js", "resetConversation", true) + "}).resetConversation", context);
-  const snapshot = vm.runInContext("({" + extract("portal_chat_workspace.js", "applySnapshot", true) + "}).applySnapshot", context);
+  const reset = vm.runInContext("({" + extract("chat", "resetConversation", true) + "}).resetConversation", context);
+  const snapshot = vm.runInContext("({" + extract("chat", "applySnapshot", true) + "}).applySnapshot", context);
   const initial = { messages: ["old"], composer: { can_send: true, can_stop: true } };
   const host = {
     questions: { reset() {} }, options: {}, detail: { chat_workspace: initial },
