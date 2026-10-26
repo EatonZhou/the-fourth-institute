@@ -551,11 +551,18 @@ runpy.run_module('scripts.tfi_release_install', run_name='__main__')
         controller = Mock()
         controller.status.side_effect = lambda name: {"service": name, "load": "loaded", "active": "inactive", "pid": 0}
         with patch.object(installer, "service_controller", return_value=controller), patch.object(installer, "check_available"), \
-             patch('scripts.tfi_release_provider_services.owned_services', return_value=None):
+             patch('scripts.tfi_release_provider_services.owned_services', return_value=None), \
+             patch('scripts.tfi_shutdown.stop_instance', return_value={"ok": True}) as bounded_stop:
             result = installer.lifecycle("stop", root)
         self.assertEqual(result["status"], "stopped")
-        self.assertEqual([c.args[0] for c in controller.stop.call_args_list],
-                         [installer.unit_name(target, c) for c in reversed(installer.COMPONENTS)])
+        if installer.sys.platform.startswith("linux"):
+            bounded_stop.assert_called_once()
+            self.assertEqual(bounded_stop.call_args.args, (root,))
+            self.assertLessEqual(bounded_stop.call_args.kwargs["timeout"], 20)
+            controller.stop.assert_not_called()
+        else:
+            self.assertEqual([c.args[0] for c in controller.stop.call_args_list],
+                             [installer.unit_name(target, c) for c in reversed(installer.COMPONENTS)])
         self.assertEqual((root / "retained").read_text(), "instance data")
 
     def test_cleanup_refuses_when_one_owned_process_is_still_running(self):

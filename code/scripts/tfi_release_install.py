@@ -1099,7 +1099,8 @@ def start_blocker(state):
     return ""
 
 
-def lifecycle(command, root):
+def lifecycle(command, root, *, shutdown_timeout=20.0):
+    lifecycle_started = time.monotonic()
     if command not in {"status", "start", "stop", "cleanup"}:
         raise ValueError("Unsupported installation lifecycle command")
     # A failed download can leave an owned installation with missing managed
@@ -1126,6 +1127,14 @@ def lifecycle(command, root):
                 controller.start(unit_name(target, component))
             save_stage(state, "start", "started")
             return {"status": "started", "installation_root": str(root)}
+        if sys.platform.startswith("linux") and command == "stop":
+            from scripts.tfi_shutdown import stop_instance
+            remaining = shutdown_timeout - (time.monotonic() - lifecycle_started)
+            if remaining <= 0:
+                raise TimeoutError("Instance shutdown deadline elapsed during preparation")
+            result = stop_instance(root, timeout=remaining)
+            save_stage(state, "stop", "stopped")
+            return {"status": "stopped", "installation_root": str(root), **result}
         from scripts.tfi_release_provider_services import owned_services, stop_services, remove_template
         providers = owned_services(target, unit_directory())
         names = [unit_name(target, c) for c in reversed(COMPONENTS)]

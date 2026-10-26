@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 21
+  number: 22
   created_at: '2026-09-03'
   created_by:
     user: ''
     agent: ''
-  updated_at: '2026-10-26T15:04:00Z'
+  updated_at: '2026-10-26T16:00:00Z'
   updated_by:
     user: ''
     agent: resident_8b24fa3ef913
@@ -144,7 +144,11 @@ Worker 在本地记录租约截止时间。与 Scheduler 的连接中断超过�
 
 WorkerManager 让旧 Worker 进入退休流程时，先在 Scheduler 中把它标为 `draining`，由既有领取和控制等待唤醒 Worker，执行持久交接；不向 Provider 后代发送停止信号来代替交接。退出等待默认 180 秒（`PORTAL_EXECUTION_WORKER_DRAIN_TIMEOUT_SECONDS`，最少 1 秒），超时后再给 30 秒宽限（`PORTAL_EXECUTION_WORKER_KILL_GRACE_SECONDS`，最少 1 秒），仍未退出就强制结束所拥有的 Worker 进程树。这个期限只约束遗留任务和卡住的进程，正常的逐项交接不需要等到它。
 
-生命周期控制 RPC（draining、handover、unregister）不等待服务重启：连接不可用立即返回，单次响应等待最多 2 秒；Manager 整体退出时还受同一个剩余退出预算约束，不能在截止之后再发起请求。整站停服应先让 Worker 退出，再停止 ExecutionService，避免退出清理依赖已经关闭的服务。
+生命周期控制 RPC（draining、handover、unregister）不等待服务重启：连接不可用立即返回，单次响应等待最多 2 秒；Manager 整体退出时还受同一个剩余退出预算约束，不能在截止之后再发起请求。整站停服在同一 systemd 事务内提交所有停止任务，按依赖关系先退出 Worker，再停止 ExecutionService，避免退出清理依赖已经关闭的服务。
+
+Linux 整站停止由统一控制器管理一份最多 20 秒的墙钟预算，服务发现、依赖队列、进程退出确认和控制命令都共享其剩余时间，不能给每个服务分别重新计时。实例管理界面的响应投递延迟也计入这份预算。前 15 秒允许正常退出；此后向所有尚存活的服务进程组发送 SIGKILL，包括停止任务仍在排队的服务，并在剩余时间内确认退出。无法确认全部退出必须报告失败，不把停止命令超时当作进程已经结束。强制退出可能中断当前工作，其持久状态由既有租约与恢复协议处理，不声称无损交接。
+
+整站停止包括 Dev/Release Web、公共路由、共享后台和本实例前缀下的 Provider 服务。存储维护使用同一控制器的应用停止模式，保留 PostgreSQL 与 NATS；复制前仍须独立确认没有文件使用者。普通代码发布与 Worker 代际交接不经过整站强制停止流程，继续保留原有交接等待预算。单独直接执行 systemctl stop 的每单元超时并不构成整站时间保证，运维脚本必须调用统一实例停止入口。
 
 Manager 已确认所拥有的全部进程树退出后，不因 Scheduler 暂不可达而一直等待注销。尚未确认的交接、注销及健康记录保留，Manager 健康文件的 `shutdown_pending_recovery` 列出这些 Worker；调度资格仍由原 Scheduler、租约和恢复协议处理，不伪造交接成功或提前释放所有权。仍有未清空进程树时继续报告退出失败。
 

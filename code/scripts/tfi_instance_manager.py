@@ -275,6 +275,7 @@ def enqueue(action, name):
 
 
 def execute(name, identifier):
+    started = time.monotonic()
     # Allow the web server to deliver its response before stopping itself.
     time.sleep(2)
     root, _ = state_for(name)
@@ -285,7 +286,16 @@ def execute(name, identifier):
         record.update(status="running", pid=os.getpid())
         installer.write_json(control_path(root), record)
     try:
-        installer.lifecycle(record["action"], root)
+        if record["action"] == "stop" and sys.platform.startswith("linux"):
+            # The response-delivery delay above is part of the same 20 s
+            # budget, not another grace period before shutdown starts.
+            from scripts.tfi_shutdown import SHUTDOWN_SECONDS
+            remaining = SHUTDOWN_SECONDS - (time.monotonic() - started)
+            if remaining <= 0:
+                raise TimeoutError("Instance shutdown deadline elapsed before dispatch")
+            installer.lifecycle("stop", root, shutdown_timeout=remaining)
+        else:
+            installer.lifecycle(record["action"], root)
         record.update(status="completed")
     except Exception as exc:
         record.update(status="failed", error=str(exc))

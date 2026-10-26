@@ -108,7 +108,11 @@ class InstanceManagementTests(unittest.TestCase):
             job = manager.enqueue("stop", "one")["operation"]
         with patch.object(manager.time, "sleep"), patch.object(manager.installer, "lifecycle") as lifecycle:
             self.assertEqual(manager.execute("one", job["id"])["status"], "completed")
-            lifecycle.assert_called_once_with("stop", self.root)
+            lifecycle.assert_called_once()
+            self.assertEqual(lifecycle.call_args.args, ("stop", self.root))
+            if manager.sys.platform.startswith("linux"):
+                self.assertGreater(lifecycle.call_args.kwargs["shutdown_timeout"], 0)
+                self.assertLessEqual(lifecycle.call_args.kwargs["shutdown_timeout"], 20)
         with patch.object(manager, "launch"):
             job = manager.enqueue("start", "one")["operation"]
         with patch.object(manager.time, "sleep"), patch.object(manager.installer, "lifecycle", side_effect=ValueError("ownership changed")):
