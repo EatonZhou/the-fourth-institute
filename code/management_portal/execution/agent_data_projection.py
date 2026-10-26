@@ -873,10 +873,14 @@ class AgentDataProjector:
                 call = str(params.get("parentToolUseId") or "")
                 if call and call in projection.tools:
                     parent_id = projection.agent_id
-                for candidate in projection.children.values():
-                    if call and call in candidate.tools:
-                        parent_id = self.store.subagent_id(projection.agent_id, candidate.trace_key)
-                        break
+                else:
+                    for candidate in projection.children.values():
+                        # A fork may echo its spawning call in its own trace.
+                        # That copy cannot prove self-parentage or override a
+                        # call observed in the root's own stream.
+                        if candidate.trace_key != key and call and call in candidate.tools:
+                            parent_id = self.store.subagent_id(projection.agent_id, candidate.trace_key)
+                            break
             child_id = self.store.subagent_id(projection.agent_id, key)
             # Missing evidence on reconnect cannot erase an established edge.
             existing = self.store.agent(child_id)
