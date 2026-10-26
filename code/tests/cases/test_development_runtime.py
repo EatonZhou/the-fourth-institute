@@ -54,6 +54,11 @@ class PairedRuntimeTest(unittest.TestCase):
             with self.subTest(prompt_module=module):
                 self.assertEqual(affected([f"code/management_portal/{module}.py"]),
                                  ["society", "web", "dev-web"])
+        # The permission port runs in every service with a HATG kernel, ResourceService included.
+        self.assertEqual(affected(["code/management_portal/permission_system/temporary.py"]),
+                         ["resource", "execution", "society", "web", "dev-web"])
+        self.assertEqual(affected(["code/management_portal/society_service/personal_ama.py"]),
+                         ["resource", "society", "web", "dev-web"])
         all_components = affected(["code/management_common/protocol.py"])
         self.assertIn("worker", all_components)
         self.assertNotIn("postgres", all_components)

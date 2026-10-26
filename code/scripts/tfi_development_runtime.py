@@ -170,6 +170,12 @@ def run(root, mode):
     os.execve(command[0], command, env)
 
 
+# Society modules ResourceService imports itself (visibility, Workspace paths, facts).
+RESOURCE_SOCIETY_MODULES = frozenset(f"management_portal/society_service/{name}.py" for name in (
+    "lineage_access_policy", "personal_ama", "lineage_workspace_files", "lineage_storage", "lineage_program",
+    "business_fact_views"))
+
+
 def affected(paths):
     """Select the responsible processes, including both Web consumers."""
     components = set()
@@ -179,8 +185,15 @@ def affected(paths):
             components.update((*SHARED, "web", "dev-web", "router"))
         elif path.startswith("management_portal/execution/"):
             components.update(("execution", "worker", "web", "dev-web"))
+        elif path.startswith("management_portal/permission_system/"):
+            # Every HATG kernel authorizes through the permission port, and
+            # ResourceService also runs the permission instructions and the
+            # startup merge of built-in schemes.
+            components.update(("resource", "execution", "society", "web", "dev-web"))
         elif path.startswith("management_portal/resources/"):
             components.update(("resource", "web", "dev-web"))
+        elif path in RESOURCE_SOCIETY_MODULES:
+            components.update(("resource", "society", "web", "dev-web"))
         elif path.startswith("management_portal/society_service/") or path in (
             "management_portal/agent_prompt_context.py",
             "management_portal/agent_skill_context.py",
