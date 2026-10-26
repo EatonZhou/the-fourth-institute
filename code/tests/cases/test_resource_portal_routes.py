@@ -356,7 +356,7 @@ def test_resident_reference_reports_society_service_unavailable_contracts(subtes
         resource_service.reference.return_value = {'resource_id': resident_id, 'resource_type': 'resident', 'url': f'/lineage?resident={resident_id}'}
         navigation = mock.Mock(side_effect=serve_management_portal.SocietyServiceUnavailable('socket unavailable'))
         try:
-            with mock.patch.object(serve_management_portal, '_check_session', return_value=True), mock.patch.object(serve_management_portal, 'get_resource_service', return_value=resource_service), mock.patch.object(serve_management_portal.conversation_index_projection, 'get_resident_navigation', navigation):
+            with mock.patch.object(serve_management_portal, '_check_session', return_value=True), mock.patch.object(serve_management_portal, '_get_session_username', return_value='CASE-A'), mock.patch.object(serve_management_portal, 'get_resource_service', return_value=resource_service), mock.patch.object(serve_management_portal.conversation_index_projection, 'get_resident_navigation', navigation):
                 with pytest.raises(urllib.error.HTTPError) as error:
                     urllib.request.urlopen(f'{base}/api/resources/reference?address={resident_id}')
             assert error.value.code == 503
@@ -743,7 +743,7 @@ def test_resource_bridge_routes_do_not_fall_back_to_the_generic_resolver_page_co
         resource_service = mock.Mock()
         resource_service.capabilities.return_value = {'resource_type': 'device', 'indexed': True, 'resolvable': True, 'readable': False, 'registerable': True, 'updatable': False, 'unregisterable': True, 'actions': ['ssh.test']}
         try:
-            with mock.patch.object(serve_management_portal, '_check_session', return_value=True), mock.patch.object(serve_management_portal, 'get_resource_service', return_value=resource_service):
+            with mock.patch.object(serve_management_portal, '_check_session', return_value=True), mock.patch.object(serve_management_portal, '_get_session_username', return_value='CASE-A'), mock.patch.object(serve_management_portal, 'get_resource_service', return_value=resource_service):
                 with urllib.request.urlopen(f'{base}/api/resources/capabilities?resource_type=device') as response:
                     payload = json.loads(response.read().decode('utf-8'))
             assert response.status == 200
