@@ -25,6 +25,9 @@ TERMINAL = {"complete", "restored"}
 
 
 def read(path):
+    if Path(path).name == "installation.json":
+        from management_common.instance_config import read_installation
+        return read_installation(Path(path).parent)
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
@@ -83,6 +86,7 @@ def copy_tree(source, destination, progress, *, excluded=(), label="正在保留
 
 def compatibility(bundle, platform):
     """Only application updates with unchanged bundled runtimes are supported."""
+    from management_common.instance_config import read_installation
     bundle, platform = Path(bundle).resolve(), Path(platform).absolute()
     if platform != platform.resolve() or not platform.is_dir():
         raise ValueError("升级目录必须是原有的实际目录，不能是符号链接。")
@@ -112,7 +116,7 @@ def compatibility(bundle, platform):
             raise ValueError("升级目录包含重定向，未修改已有资料。")
     if any(p.name != "desktop" for p in (platform / "instance").iterdir()):
         raise ValueError("此目录包含其他实例，不能作为单实例桌面升级。")
-    state = read(root / "installation.json")
+    state = read_installation(root)
     target = state["target"]
     if (target.get("install_root") != str(root)
             or target.get("shared_code_root") != str(platform / "code")

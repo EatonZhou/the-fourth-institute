@@ -21,6 +21,10 @@ def read_site_config() -> dict:
         return {}
     if not isinstance(data, dict):
         raise ValueError("Site configuration must be a JSON object")
+    from management_common.instance_config import installed_source_roots
+    deployment_paths = installed_source_roots(path)
+    if deployment_paths:
+        data.setdefault('deployment', {}).update(deployment_paths)
     if "site_name" in data:
         name = data["site_name"]
         if not isinstance(name, str) or not name.strip() or any(ord(c) < 32 or ord(c) == 127 for c in name):

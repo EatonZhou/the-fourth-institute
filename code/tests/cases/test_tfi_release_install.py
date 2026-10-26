@@ -575,6 +575,7 @@ runpy.run_module('scripts.tfi_release_install', run_name='__main__')
         controller = Mock()
         controller.status.return_value = {"load": "loaded", "active": "active", "pid": 1234}
         with patch.object(installer, "service_controller", return_value=controller), patch.object(installer, "check_available"), \
+             patch.object(installer, "unit_directory", return_value=self.base / 'units'), \
              patch('scripts.tfi_release_provider_services.owned_services', return_value=None), self.assertRaisesRegex(RuntimeError, "cleanup refused"):
             installer.lifecycle("cleanup", root)
         self.assertTrue((root / installer.STATE_FILE).is_file())

@@ -9,11 +9,12 @@ from management_common.installation_progress import report, relay_log_progress
 
 
 def runtime_python(target):
+    from management_common.instance_config import read_installation
     import json
     root = Path(target['install_root'])
     state_path = root / 'installation.json'
     if state_path.is_file():
-        state = json.loads(state_path.read_text(encoding='utf-8'))
+        state = read_installation(root)
         record = state.get('dependencies', {})
         if (state.get('target') == target and record.get('status') == 'verified'
                 and record.get('manifest_sha256') == state.get('manifest_sha256')):

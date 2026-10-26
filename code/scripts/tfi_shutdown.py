@@ -22,10 +22,11 @@ GRACE_SECONDS = 15.0
 
 
 def stop_instance(root, *, application_only=False, timeout=SHUTDOWN_SECONDS):
+    from management_common.instance_config import read_installation
     started = time.monotonic()
     from scripts.tfi_instance_manager import supervisor_environment
     from scripts.tfi_release_provider_services import RESTART_RECORD
-    target = json.loads((Path(root) / "installation.json").read_text())["target"]
+    target = read_installation(root)["target"]
     prefix = target["service_prefix"]
     if not isinstance(prefix, str) or not re.fullmatch(r"[A-Za-z0-9_-]+", prefix):
         raise ValueError("Invalid instance service prefix")

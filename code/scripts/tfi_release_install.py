@@ -37,12 +37,14 @@ from management_common.file_lock import try_lock_descriptor
 from management_common.process_runtime import run_process
 from management_common.native_output import decode_native_output, run_native_capture, run_utf8_capture
 from scripts.tfi_instance_layout import code_root, database_root, installer_path, validate_shared_code
+from management_common.instance_config import (STATE_SCHEMA, LEGACY_SCHEMA, read_installation,
+                                              write_installation, configuration_digest)
 
 STATE_FILE = "installation.json"
 # These probes only address this instance on loopback. System proxy settings
 # (including macOS network preferences) must never route them off the machine.
 _LOCAL_HTTP = build_opener(ProxyHandler({}))
-SCHEMA = "tfi.release-installation.v1"
+SCHEMA = STATE_SCHEMA
 COMPONENTS = ("postgres", "nats", "resource", "execution", "society", "worker", "web")
 MODULES = {"resource": "management_portal.resources.server",
            "execution": "management_portal.execution.service",
@@ -77,11 +79,15 @@ def platform_adapter():
 
 
 def read_json(path):
+    if Path(path).name == STATE_FILE:
+        return read_installation(Path(path).parent)
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
 def write_json(path, value):
     path = Path(path)
+    if path.name == STATE_FILE:
+        return write_installation(path.parent, value)
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(path.suffix + ".tmp")
     temporary.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -139,7 +145,10 @@ def target_plan(target, *, protected_roots=None, allow_missing_native=False):
     reserved = [root / part for part in ("code", "runtime", "config", "home")]
     for key, path in resolved.items():
         if key in external and not path.is_relative_to(root):
-            if (len(path.parts) < 4 or overlap(path, root)
+            if (len(path.parts) < 2 or path in {Path(p) for p in
+                    ('/bin', '/boot', '/dev', '/etc', '/lib', '/lib64', '/proc', '/root',
+                     '/run', '/sbin', '/sys', '/tmp', '/usr', '/var', '/home')}
+                    or overlap(path, root)
                     or overlap(path, SOURCE_ROOT.resolve()) or overlap(path, code_root(target).resolve())):
                 raise ValueError(f"{key} external directory overlaps installation or source paths")
         elif path == root or not path.is_relative_to(root):
@@ -202,7 +211,9 @@ def clean_environment(target, *, postgres=False):
     if state_path.is_file():
         local_state = read_json(state_path)
         initialization = local_state.get("feature_initialization", {})
-        if (local_state.get("target") == target and initialization.get("status") == "applied"
+        same_target = (local_state.get('configuration_sha256') == configuration_digest(target)
+                       if local_state.get('schema') == STATE_SCHEMA else local_state.get('target') == target)
+        if (same_target and initialization.get("status") == "applied"
                 and initialization.get("manifest_sha256") == local_state.get("manifest_sha256")):
             timers_enabled = timers_enabled or initialization.get("result", {}).get("lineage_timer_required") is True
     windows = platform_adapter().__name__.endswith("_windows")
@@ -342,10 +353,14 @@ def component_command(target, component):
             env[f"PORTAL_{component.upper()}_SERVICE_PROCESS"] = "1"
     # An optional development pair adds a second Web, not a second instance or
     # database. Its shared components continue to use these same owned services.
-    development = root / "config/development.json"
-    if development.is_file() and component not in {"postgres", "nats"}:
+    development = target.get('development')
+    if development is None and (root / STATE_FILE).is_file():
+        from management_common.instance_config import has_development, read_development
+        if has_development(root):
+            development = read_development(root)
+    if development is not None and component not in {"postgres", "nats"}:
         from scripts.tfi_development_runtime import adapt_component
-        command, env = adapt_component(target, component, command, env, read_json(development))
+        command, env = adapt_component(target, component, command, env, development)
     return command, env
 
 
@@ -388,7 +403,7 @@ def check_available(target, *, existing=False):
 def owned_state(root, *, allow_missing_native=False):
     root = Path(root).resolve()
     state = read_json(root / STATE_FILE)
-    if state.get("schema") != SCHEMA or state["target"]["install_root"] != str(root):
+    if state.get("schema") not in {SCHEMA, LEGACY_SCHEMA} or state["target"]["install_root"] != str(root):
         raise ValueError("Installation identity does not match this root")
     target = target_plan(state["target"], protected_roots=state["protected_roots"], allow_missing_native=allow_missing_native)
     if target != state["target"]:
@@ -459,21 +474,18 @@ def prepare_configuration(target):
     root = Path(target["install_root"])
     for path in [root / "home", root / "runtime/s", root / "config", *map(Path, target["data_roots"].values())]:
         path.mkdir(parents=True, exist_ok=True, mode=0o700)
-    write_json(root / "config/paths.json", target["data_roots"])
     site_path = root / "config/site.json"
-    existing_site = read_json(site_path) if site_path.exists() else {}
-    installation_id = existing_site.get("deployment", {}).get("installation_id") or uuid.uuid4().hex
-    write_json(site_path, {
-        "site_name": "TFI Portal", "deployment": {
-            "installation_id": installation_id,
-            "source_root": str(code_root(target)), "release_root": str(code_root(target)),
-            "auth": {"session_cookie_name": "db_session_" + target["service_prefix"]},
-            "native_shell": {"database_env_file": str(root / "config/postgres.env")},
-            "native_ui": {"test_results_root": str(root / "runtime/test-results")}}})
-    env = clean_environment(target)
-    (root / "config/postgres.env").write_text("PORTAL_DATABASE_URL=" + env["PORTAL_DATABASE_URL"] + "\n")
-    access_mode = "local" if target.get("bind", "127.0.0.1") == "127.0.0.1" else "remote"
-    (root / "config/network.env").write_text(f"PORTAL_ACCESS_MODE={access_mode}\nPORTAL_PORT={target['ports']['web']}\n")
+    site = read_json(site_path) if site_path.exists() else {}
+    site.setdefault("site_name", "TFI Portal")
+    deployment = site.setdefault("deployment", {})
+    deployment.setdefault("installation_id", uuid.uuid4().hex)
+    deployment.setdefault("auth", {}).setdefault("session_cookie_name", "db_session_" + target["service_prefix"])
+    deployment.setdefault("native_shell", {})["database_env_file"] = str(root / "config/postgres.env")
+    deployment.setdefault("native_ui", {})["test_results_root"] = str(root / "runtime/test-results")
+    write_json(site_path, site)
+    from scripts.tfi_instance_config import projections, _write_bytes
+    for name, content in projections(root, target).items():
+        _write_bytes(root / name, content)
     (root / "config/generation.env").write_text("PORTAL_BUILD_ID=" + target["run_id"] + "\n")
     for path in (root / "config").iterdir():
         path.chmod(0o600)

@@ -1,5 +1,7 @@
 # SPEC.md
 
+- [实例部署配置的唯一输入与生成文件](docs/deployment-configuration.md)
+
 - [Dev / Release 双工作树与快速发布](docs/design/local-development.md)
 - [macOS 桌面安装与数据归属](docs/design/macos-desktop.md)
 

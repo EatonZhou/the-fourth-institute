@@ -109,6 +109,7 @@ def remove_record(path):
 
 
 def validate_definition(value, name):
+    from management_common.instance_config import read_installation
     codex = value.get("component") == "codex"
     pattern = r"portal-codex-app-server@[A-Za-z0-9_-]+-[a-f0-9]{10}\.service" if codex else r"tfi-[a-z0-9-]+"
     if value.get("name") != name or not re.fullmatch(pattern, name):
@@ -121,7 +122,7 @@ def validate_definition(value, name):
         if not path.is_absolute() or path.is_symlink():
             raise ValueError("User service paths must be absolute and not symlinks")
     root = Path(value["root"]).resolve()
-    target = json.loads((root / "installation.json").read_text(encoding="utf-8"))["target"]
+    target = read_installation(root)["target"]
     if codex:
         from scripts.tfi_instance_layout import code_root
         from scripts.tfi_release_dependencies import runtime_python

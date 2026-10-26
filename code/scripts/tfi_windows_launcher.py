@@ -89,13 +89,14 @@ def command(platform, *arguments):
 
 
 def stop_all(platform, *, unregister=False):
+    from management_common.instance_config import read_installation
     for name in instances(platform):
         root = platform / "instance" / name
         subprocess.run(command(platform, "stop", "--root", root), check=True)
         if unregister:
             from scripts import tfi_release_platform_windows as adapter
             from scripts.tfi_release_install import COMPONENTS
-            target = json.loads((root / "installation.json").read_text(encoding="utf-8"))["target"]
+            target = read_installation(root)["target"]
             for component in COMPONENTS:
                 service = adapter.unit_name(target, component)
                 marker = adapter.unit_path(adapter.unit_directory(), service)
@@ -399,10 +400,11 @@ class DefaultStartup:
             return False
 
     def state(self):
+        from management_common.instance_config import read_installation
         path = self.root / "installation.json"
         if not path.is_file():
             raise RuntimeError("默认实例尚未完成初始化，请重试准备过程。")
-        return json.loads(path.read_text(encoding="utf-8"))
+        return read_installation(self.root)
 
     def execute(self, argv):
         from management_common.installation_progress import progress_message
@@ -442,6 +444,7 @@ class DefaultStartup:
         return "".join(output)
 
     def initialize(self):
+        from management_common.instance_config import read_installation
         bundle = self.platform / ".build/w/engineering/manifest.json"
         target_path = self.platform / ".build/windows/targets/example_instance.json"
         state_exists = (self.root / "installation.json").exists()
@@ -466,7 +469,7 @@ class DefaultStartup:
             manifest = json.loads(bundle.read_text(encoding="utf-8"))
             ports = []
             for name in instances(self.platform):
-                state = json.loads((self.platform / "instance" / name / "installation.json").read_text(encoding="utf-8"))
+                state = read_installation(self.platform / "instance" / name)
                 ports.extend(state["target"]["ports"].values())
             target = make_target(self.platform, "example_instance", manifest, ports=choose_ports(ports))
             target_path.parent.mkdir(parents=True, exist_ok=True)

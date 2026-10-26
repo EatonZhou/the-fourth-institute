@@ -22,6 +22,15 @@ from scripts.macos.python_dependencies import bundle as bundle_python_dependenci
 from scripts.macos.native_smoke import InstalledSession, verify_background
 
 
+def read_installed_state(root):
+    # The subprocess interpreter belongs to the installed build under test.
+    code = Path(root).parent.parent / "code"
+    probe = "import sys,json;sys.path.insert(0,sys.argv[1]);from management_common.instance_config import read_installation;print(json.dumps(read_installation(sys.argv[2])))"
+    result = subprocess.run([sys.executable, '-c', probe, str(code), str(root)],
+                            capture_output=True, text=True, check=True, timeout=30)
+    return json.loads(result.stdout)
+
+
 def command(argv, **kwargs):
     result = subprocess.run(list(map(str, argv)), stdout=subprocess.PIPE,
                             stderr=subprocess.STDOUT, text=True, errors="replace", **kwargs)
@@ -87,7 +96,7 @@ def smoke(executable, destination, included, *, require_long_rpc_path=False):
     try:
         command(argv, timeout=900, env=offline_env)
         state_path = destination / "instance/desktop/installation.json"
-        before = json.loads(state_path.read_text())
+        before = read_installed_state(state_path.parent)
         if require_long_rpc_path:
             target = before["target"]
             web_socket = (Path(target["data_roots"]["instances_root"])
@@ -103,7 +112,7 @@ def smoke(executable, destination, included, *, require_long_rpc_path=False):
             raise ValueError("Desktop performed duplicate file verification")
         # Second launch must preserve DB identity and data, not reimport seed.
         command(argv, timeout=240, env=offline_env)
-        after = json.loads(state_path.read_text())
+        after = read_installed_state(state_path.parent)
         if before["target"] != after["target"] or before["manifest_sha256"] != after["manifest_sha256"]:
             raise ValueError("Repeated launch changed instance identity")
         # Upgrade before registration: new personal Family work legitimately
@@ -117,7 +126,7 @@ def smoke(executable, destination, included, *, require_long_rpc_path=False):
         marker.write_text("user data survives unregister and restart")
         command(cleanup, timeout=120)
         command(argv, timeout=240, env=offline_env)
-        restarted = json.loads(state_path.read_text())
+        restarted = read_installed_state(state_path.parent)
         if (before["target"] != restarted["target"]
                 or before["manifest_sha256"] != restarted["manifest_sha256"]
                 or marker.read_text() != "user data survives unregister and restart"):
@@ -162,7 +171,7 @@ platform = pathlib.Path(sys.argv[1])
 sys.path.insert(0, str(platform / "code"))
 from scripts import tfi_release_install as api
 import psycopg
-state = json.loads((platform / "instance/desktop/installation.json").read_text())
+state = api.read_json(platform / "instance/desktop/installation.json")
 with psycopg.connect(api.clean_environment(state["target"])["PORTAL_DATABASE_URL"]) as db:
     if sys.argv[2] == "create":
         db.execute("CREATE TABLE public.tfi_desktop_update_probe (value text)")

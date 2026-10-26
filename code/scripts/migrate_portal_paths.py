@@ -130,7 +130,9 @@ def _check_directory_alias_support(current: dict[str, str], resolved: dict[str, 
 
 def queue_migration(target: dict[str, str]) -> dict:
     current, resolved = validate(target)
-    _check_directory_alias_support(current, resolved)
+    from management_common.instance_config import installed_root
+    if installed_root(portal_paths.CONFIG_PATH) is None:
+        _check_directory_alias_support(current, resolved)
     JOBS_DIR.mkdir(parents=True, exist_ok=True)
     try:
         fd = os.open(LOCK_PATH, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
@@ -229,10 +231,62 @@ def _restore_aliases(aliases: list[tuple[Path, Path]]) -> None:
         backup.rename(source)
 
 
+def run_installed(job_id, root):
+    """Installed sites use the deployment owner and never create old-path aliases."""
+    from management_common.instance_config import read_installation, configuration_digest
+    from scripts import tfi_release_install as api
+    from scripts.tfi_release_upgrade import check_quiescent
+    from scripts.tfi_instance_config import apply
+    item = job_status(job_id)
+    state = read_installation(root)
+    original = state['target']
+    if original['data_roots'] != item['source']:
+        raise ValueError('Instance data roots changed after migration was queued')
+    candidate = {**original, 'data_roots': item['target']}
+    # Refuse active work before the bounded shutdown; no execution is cancelled
+    # to make a storage change succeed.
+    stopped = switched = False
+    try:
+        check_quiescent(api, original)
+        _update(job_id, state='stopping')
+        api.lifecycle('stop', root)
+        stopped = True
+        _update(job_id, state='copying')
+        for key in portal_paths.KEYS:
+            source, destination = Path(item['source'][key]), Path(item['target'][key])
+            if source != destination:
+                _copy_and_verify(source, destination)
+        _update(job_id, state='switching')
+        apply(root, candidate, expected_sha256=configuration_digest(original))
+        switched = True
+        _update(job_id, state='restarting')
+        api.lifecycle('start', root)
+        _update(job_id, state='completed', old_directories_retained=True, aliases_created=False)
+    except Exception as exc:
+        # A partially applied configuration has its own durable journal. Do not
+        # start consumers or overwrite it until its explicit recovery completes.
+        journal = Path(root) / 'maintenance/configuration-update.json'
+        interrupted = journal.exists() and json.loads(journal.read_text())['status'] in {'applying', 'interrupted'}
+        if switched:
+            api.lifecycle('stop', root)
+            apply(root, original, expected_sha256=configuration_digest(candidate))
+        if stopped and not interrupted:
+            api.lifecycle('start', root)
+        _update(job_id, state='failed', error=str(exc), configuration_recovery_required=interrupted)
+        raise
+    finally:
+        if LOCK_PATH.exists() and LOCK_PATH.read_text().strip() == job_id:
+            LOCK_PATH.unlink()
+
+
 def run(job_id: str) -> None:
     item = job_status(job_id)
     if LOCK_PATH.read_text(encoding="utf-8") != job_id:
         raise RuntimeError("Migration lock no longer belongs to this job")
+    from management_common.instance_config import installed_root
+    root = installed_root(portal_paths.CONFIG_PATH)
+    if root is not None:
+        return run_installed(job_id, root)
     previous = portal_paths.path_values()
     original_config = portal_paths.CONFIG_PATH.read_bytes() if portal_paths.CONFIG_PATH.exists() else None
     stopped = []

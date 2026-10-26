@@ -21,6 +21,14 @@ from scripts import tfi_release_install as installer
 
 
 class DesktopStartup(unittest.TestCase):
+    def setUp(self):
+        # Startup workflows use simulated services and should not probe the
+        # machine running the test for available TCP ports.
+        ports = patch.object(launcher, 'choose_ports', side_effect=lambda *_: {
+            'web': 28199, 'postgres': 56432, 'nats': 14223})
+        ports.start()
+        self.addCleanup(ports.stop)
+
     def test_elevated_launch_stops_before_initializing_or_touching_existing_state(self):
         flow = launcher.DefaultStartup(Path('/unused'))
         with patch.object(launcher, 'is_elevated_process', return_value=True), \
@@ -47,7 +55,8 @@ class DesktopStartup(unittest.TestCase):
         target = json.loads((flow.platform / ".build/windows/targets/example_instance.json").read_text())
         flow.root.mkdir(parents=True, exist_ok=True)
         state = {"target": target, "completed": ["database"], "stages": [{"status": "installed"}]}
-        (flow.root / "installation.json").write_text(json.dumps(state))
+        from management_common.instance_config import write_installation
+        write_installation(flow.root, state)
         return state
 
     def test_first_launch_initializes_then_opens_registration_and_next_launch_keeps_accounts(self):
@@ -176,7 +185,10 @@ class DesktopStartup(unittest.TestCase):
             with patch.object(flow, "execute"):
                 flow.initialize()
             flow.root.mkdir(parents=True, exist_ok=True)
-            (flow.root / "installation.json").write_text(json.dumps({"completed": [], "stages": []}))
+            state = self.installed(flow)
+            state.update(completed=[], stages=[])
+            from management_common.instance_config import write_installation
+            write_installation(flow.root, state)
             actions = []
             def execute(argv):
                 action = argv[2]

@@ -39,7 +39,7 @@ def snapshot(api, root, destination):
         raise ValueError("Upgrade snapshot already exists; recovery must inspect the existing attempt")
     def ignore(directory, names):
         parent = Path(directory)
-        excluded = {"maintenance", ".install.lock"} if parent == root else set()
+        excluded = {"maintenance", ".install.lock", ".configuration.lock"} if parent == root else set()
         # Service socket inodes are ephemeral; regular files with .sock names
         # and all local data remain in the snapshot.
         return [name for name in names if name in excluded or stat.S_ISSOCK((parent / name).lstat().st_mode)]
@@ -207,7 +207,18 @@ def restore(api, root, journal, *, retain_failed):
         journal["failed_generation_backup"] = str(failed)
     stage(api, root, journal, "restoring")
     for child in root.iterdir():
-        if child.name in {"maintenance", ".install.lock", api.STATE_FILE}:
+        if child.name in {"maintenance", ".install.lock", ".configuration.lock", api.STATE_FILE}:
+            continue
+        if child.name == "config":
+            # Deployment identity now lives here, not in installation.json.
+            # Keep its authority readable throughout a retryable restore.
+            for local in child.iterdir():
+                if local.name == "target.json":
+                    continue
+                if local.is_dir() and not local.is_symlink():
+                    shutil.rmtree(local)
+                else:
+                    local.unlink()
             continue
         if child.is_dir() and not child.is_symlink():
             shutil.rmtree(child)
@@ -220,7 +231,7 @@ def restore(api, root, journal, *, retain_failed):
         if child.is_symlink():
             destination.symlink_to(os.readlink(child))
         elif child.is_dir():
-            shutil.copytree(child, destination, symlinks=True)
+            shutil.copytree(child, destination, symlinks=True, dirs_exist_ok=child.name == "config")
         else:
             shutil.copy2(child, destination)
     # Keep a valid ownership record throughout a crash-interrupted restore.

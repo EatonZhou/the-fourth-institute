@@ -38,7 +38,7 @@ def test_native_codex_lifecycle_uses_registered_service(tmp_path, monkeypatch, p
         root = tmp_path / "installed"
         root.mkdir()
         (root / "runtime").mkdir()
-        (root / "installation.json").write_text(json.dumps({"target": {
+        (root / "installation.json").write_text(json.dumps({"schema": "tfi.release-installation.v1", "target": {
             "install_root": str(root), "shared_code_root": str(units.SOURCE_ROOT),
             "python": units.sys.executable, "windows_service_mode": "user",
             "data_roots": {"accounts_root": str(tmp_path / "accounts"), "instances_root": str(units.instance_root())}}}))

@@ -19,19 +19,20 @@ SHARED = ("resource", "execution", "society", "worker")
 
 def configured_root():
     """Resolve the installed pair from its explicit site or common Git config."""
+    from management_common.instance_config import has_development
     site = os.getenv("PORTAL_SITE_CONFIG")
     if site:
         root = Path(site).resolve().parent.parent
         # An explicit site owns its runtime, including the absence of a pair.
         # Falling back to the source checkout could control a different site.
-        return root if (root / "config/development.json").is_file() else None
+        return root if has_development(root) else None
     from scripts.tfi_dev import configuration
     try:
         value = configuration(Path(__file__).resolve().parents[2]).get("runtime_root")
     except (OSError, ValueError, subprocess.CalledProcessError):
         return None
     root = Path(value) if value else None
-    return root if root and (root / "config/development.json").is_file() else None
+    return root if root and has_development(root) else None
 
 
 def read(path):
@@ -77,13 +78,14 @@ def control(*args):
 
 def configure(root, repo, dev_port, release_port, gateway_unit=None):
     """Prepare a pair inside an existing instance; never install a second DB."""
+    from management_common.instance_config import read_installation
     from scripts.tfi_dev import configuration, git, install_push_hook
     from scripts.tfi_release_install import runtime_python
     if sys.platform != "linux":
         raise ValueError("The paired runtime installer currently supports Linux user services")
     cfg = configuration(repo)
     install_push_hook(Path(cfg["main"]))
-    target = read(root / "installation.json")["target"]
+    target = read_installation(root)["target"]
     if len({dev_port, release_port, target["ports"]["web"]}) != 3:
         raise ValueError("Dev Web, Release Web and public router need distinct ports")
     config = {"schema": "tfi.development-runtime.v1", "dev_code": str(Path(cfg["dev"]) / "code"),
@@ -101,56 +103,21 @@ def configure(root, repo, dev_port, release_port, gateway_unit=None):
     for source in (config["dev_code"], config["release_code"]):
         if not (Path(source) / "management_portal/asgi.py").is_file():
             raise ValueError("Portal source is missing: " + source)
-    write(root / "config/development.json", config)
-    registry = root / "config/deployments.json"
-    write(registry, {"schema": "tfi.portal-deployments.v1", "instances": [
-        {"id": name, "label": name.title(), "kind": name,
-         "origin": f"http://127.0.0.1:{port}", "order": index}
-        for index, (name, port) in enumerate(config["web_ports"].items())]})
+    from scripts.tfi_instance_config import apply
+    from management_common.instance_config import configuration_digest
+    apply(root, {**target, "development": config}, allow_topology=True,
+          expected_sha256=configuration_digest(target))
     cfg["runtime_root"] = str(root)
     common = Path(git(repo, "rev-parse", "--path-format=absolute", "--git-common-dir"))
     write(common / "tfi-development.json", cfg)
-    script = Path(config["release_code"]) / "scripts/tfi_development_runtime.py"
-    # Agent commands inherit the application's private HOME. Register units
-    # beside the installed Web's real user-manager unit, not in that HOME.
-    installed_web_unit = Path(control("show", target["service_prefix"] + "-web.service",
-                                      "--property=FragmentPath", "--value"))
-    if not installed_web_unit.is_file():
-        raise ValueError("The installed Web has no user service unit")
-    unit_root = installed_web_unit.parent
-    for name, mode in (("dev-web", "web"), ("router", "router")):
-        command = [runtime_python(target), str(script), mode, "--root", str(root)]
-        content = (f"[Unit]\nDescription=TFI paired {name}\n"
-                   f"[Service]\nType=simple\nUMask=0077\nWorkingDirectory={config['dev_code']}\n"
-                   f"ExecStart={' '.join(json.dumps(v) for v in command)}\n"
-                   "Restart=on-failure\nRestartSec=3\nTimeoutStopSec=90\n"
-                   "[Install]\nWantedBy=default.target\n")
-        path = unit_root / (target["service_prefix"] + "-" + name + ".service")
-        if path.exists() and "Description=TFI paired " not in path.read_text():
-            raise ValueError("An unrelated service already owns " + str(path))
-        path.write_text(content)
-    if gateway_unit:
-        drop_in = unit_root / (gateway_unit + ".d")
-        drop_in.mkdir(exist_ok=True)
-        path = drop_in / "tfi-development.conf"
-        content = ("# TFI paired runtime\n[Service]\n"
-                   + "Environment=" + json.dumps("PORTAL_DEPLOYMENT_REGISTRY_PATH=" + str(registry)) + "\n"
-                   + "Environment=" + json.dumps("PORTAL_SHARED_SOURCE_ROOT=" + config["dev_code"]) + "\n")
-        if path.exists() and not path.read_text().startswith("# TFI paired runtime"):
-            raise ValueError("An unrelated gateway override already exists")
-        path.write_text(content)
-    site_path = root / "config/site.json"
-    site = read(site_path)
-    site.setdefault("deployment", {}).update(source_root=config["dev_code"], release_root=config["release_code"])
-    write(site_path, site)
-    control("daemon-reload")
     return config
 
 
 def run(root, mode):
+    from management_common.instance_config import read_development, read_installation
     from scripts.tfi_release_install import component_command, runtime_python
-    target = read(root / "installation.json")["target"]
-    config = read(root / "config/development.json")
+    target = read_installation(root)["target"]
+    config = read_development(root)
     command, env = component_command(target, "web")
     if mode == "web":
         command[command.index("--port") + 1] = str(config["web_ports"]["dev"])
@@ -225,8 +192,9 @@ def health(port, expected=None):
 
 
 def status(root, instance="all"):
-    config = read(root / "config/development.json")
-    target = read(root / "installation.json")["target"]
+    from management_common.instance_config import read_development, read_installation
+    config = read_development(root)
+    target = read_installation(root)["target"]
     names = ("dev", "release") if instance == "all" else (instance,)
     states = []
     for name in names:
@@ -257,9 +225,10 @@ def restart_components(instance, components=None):
 
 def request_restart(root, instance, components=None):
     """Run outside the requesting Web cgroup so its restart cannot kill the job."""
+    from management_common.instance_config import read_installation
     from scripts.tfi_release_install import runtime_python
     restart_components(instance, components)  # Validate before accepting the job.
-    target = read(root / "installation.json")["target"]
+    target = read_installation(root)["target"]
     request_id = "tfi-pair-restart-" + uuid.uuid4().hex
     command = ["systemd-run", "--user", "--collect", "--unit=" + request_id,
                runtime_python(target), str(Path(__file__).resolve()), "reload", "--root", str(root),
@@ -273,8 +242,9 @@ def request_restart(root, instance, components=None):
 
 def request_activation(root, paths, commit):
     """Return a receipt before restarting the Web that accepted publication."""
+    from management_common.instance_config import read_installation
     from scripts.tfi_release_install import runtime_python
-    target = read(root / "installation.json")["target"]
+    target = read_installation(root)["target"]
     request_id = "tfi-pair-publish-" + uuid.uuid4().hex
     request = root / "runtime" / (request_id + ".json")
     receipt = root / "runtime" / (request_id + "-result.json")
@@ -287,11 +257,12 @@ def request_activation(root, paths, commit):
 
 
 def apply_request(root, request):
+    from management_common.instance_config import read_development
     from management_common.file_lock import lock_stream
     payload = read(request)
     try:
         with (root / "runtime/development-activation.lock").open("a+") as stream, lock_stream(stream):
-            config = read(root / "config/development.json")
+            config = read_development(root)
             current = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=config["release_code"], text=True).strip()
             result = activate(root, payload["paths"], current)
             result["requested_commit"] = payload["commit"]
@@ -325,7 +296,8 @@ def wait_worker_replacement(root, previous_id, *, requested_at, timeout_seconds=
 
 
 def restart(root, instance, components=None, *, force_worker_restart=True):
-    prefix = read(root / "installation.json")["target"]["service_prefix"]
+    from management_common.instance_config import read_development, read_installation
+    prefix = read_installation(root)["target"]["service_prefix"]
     worker = None
     for component in restart_components(instance, components):
         unit = prefix + "-" + component + ".service"
@@ -342,7 +314,7 @@ def restart(root, instance, components=None, *, force_worker_restart=True):
                 control("kill", "--kill-whom=main", "--signal=HUP", unit)
         else:
             control("restart", unit)
-    config = read(root / "config/development.json")
+    config = read_development(root)
     result = {"ok": True, "instance": instance, "web": health(config["web_ports"][instance], instance)}
     if worker is not None:
         result["execution_worker"] = worker
@@ -350,8 +322,9 @@ def restart(root, instance, components=None, *, force_worker_restart=True):
 
 
 def activate(root, paths, commit, *, initial=False):
-    target = read(root / "installation.json")["target"]
-    config = read(root / "config/development.json")
+    from management_common.instance_config import read_development, read_installation
+    target = read_installation(root)["target"]
+    config = read_development(root)
     components = list((*SHARED, "web", "dev-web", "router")) if initial else affected(paths)
     # Code activation never stops PostgreSQL, NATS or provider account services.
     if components:
@@ -392,7 +365,8 @@ def main():
     if args.action == "configure":
         value = configure(args.root, args.repo, args.dev_port, args.release_port, args.gateway_unit)
     elif args.action == "activate":
-        cfg = read(args.root / "config/development.json")
+        from management_common.instance_config import read_development
+        cfg = read_development(args.root)
         commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=cfg["release_code"], text=True).strip()
         value = activate(args.root, [], commit, initial=True)
     elif args.action == "reload":

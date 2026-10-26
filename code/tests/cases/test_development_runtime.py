@@ -24,6 +24,12 @@ class PairedRuntimeTest(unittest.TestCase):
                     patch('scripts.tfi_dev.configuration', side_effect=AssertionError('another instance discovered')):
                 self.assertIsNone(paired.configured_root())
                 (site.parent / 'development.json').write_text('{}')
+                # A locator alone is not an installed pair. Legacy installations
+                # retain their bounded import contract until adopted.
+                self.assertIsNone(paired.configured_root())
+                (Path(directory) / 'installation.json').write_text(json.dumps({
+                    'schema': 'tfi.release-installation.v1',
+                    'target': {'install_root': directory}}))
                 self.assertEqual(paired.configured_root(), Path(directory))
 
     def test_web_changes_code_and_port_without_changing_shared_state(self):
@@ -75,7 +81,9 @@ class PairedRuntimeTest(unittest.TestCase):
             root = Path(directory)
             (root / "config").mkdir()
             (root / "runtime").mkdir()
-            (root / "installation.json").write_text('{"target":{"service_prefix":"test"}}')
+            from management_common.instance_config import write_installation
+            write_installation(root, {"target": {"install_root": str(root), "service_prefix": "test",
+                                                "development": {"web_ports": {"dev": 19001}}}})
             (root / "config/development.json").write_text('{"web_ports":{"dev":19001}}')
             health_path = root / "runtime/worker-health.json"
             old = {"ok": True, "updated_at": 100, "current": {"worker_id": "old", "build_id": "same"}}
@@ -113,7 +121,9 @@ class PairedRuntimeTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / "config").mkdir()
-            (root / "installation.json").write_text('{"target":{"service_prefix":"test"}}')
+            from management_common.instance_config import write_installation
+            write_installation(root, {"target": {"install_root": str(root), "service_prefix": "test",
+                                                "development": {"web_ports": {"dev": 19001}}}})
             (root / "config/development.json").write_text('{"web_ports":{"dev":19001}}')
             with patch.object(paired, "control") as control, \
                     patch.object(paired, "health", return_value={"ok": True}):

@@ -21,6 +21,15 @@ from urllib.parse import urlencode
 from urllib.request import HTTPCookieProcessor, ProxyHandler, Request, build_opener
 
 
+def read_installed_state(root):
+    # Read with the configuration owner shipped in the installation under test.
+    code = Path(root).parent.parent / 'code'
+    probe = "import sys,json;sys.path.insert(0,sys.argv[1]);from management_common.instance_config import read_installation;print(json.dumps(read_installation(sys.argv[2])))"
+    result = subprocess.run([sys.executable, '-c', probe, str(code), str(root)],
+                            capture_output=True, text=True, check=True, timeout=30)
+    return json.loads(result.stdout)
+
+
 def check(condition, message):
     if not condition:
         raise RuntimeError(message)
@@ -158,7 +167,7 @@ def exercise(exe, root, included, evidence):
     api = None
     try:
         initial_startup = run_worker(root, 'initialize', log)
-        state = json.loads(state_path.read_text(encoding='utf-8'))
+        state = read_installed_state(state_path.parent)
         manifest = json.loads((root / '.build/w/engineering/manifest.json').read_text(encoding='utf-8'))
         check(manifest['include_examples'] is included, 'NSIS selected the wrong example')
         check(state['status'] == 'installed', 'Instance did not become healthy')
@@ -242,7 +251,7 @@ def exercise(exe, root, included, evidence):
                    'cold_restart': cold_startup}
         (evidence / ('full-startup.json' if included else 'base-startup.json')).write_text(
             json.dumps(startup, indent=2), encoding='utf-8')
-        restarted = json.loads(state_path.read_text(encoding='utf-8'))
+        restarted = read_installed_state(state_path.parent)
         check(restarted['target'] == target, 'Restart changed instance identity')
         check(marker.is_file(), 'Restart lost user data')
         request('/login', {'username': registered['username'], 'password': password}, form=True)
@@ -276,7 +285,7 @@ def exercise(exe, root, included, evidence):
         # Distinguish loader failure from initdb's restricted-token re-execution;
         # only public version output and exit codes from this disposable fixture.
         if state_path.exists():
-            failed = json.loads(state_path.read_text(encoding='utf-8'))
+            failed = read_installed_state(state_path.parent)
             pg_bin = failed.get('target', {}).get('pg_bin')
             if pg_bin:
                 for name in ('postgres', 'initdb', 'pg_ctl', 'psql'):

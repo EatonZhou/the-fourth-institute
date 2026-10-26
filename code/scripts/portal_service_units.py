@@ -41,6 +41,7 @@ LEGACY_AI_SOCKET_RELAY_UNIT = compatibility_value('ai_socket_relay_unit', '')
 
 def _isolated_provider_context() -> dict | None:
     """Resolve a release installation's owned Linux Provider service namespace."""
+    from management_common.instance_config import read_installation
     if not sys.platform.startswith("linux"):
         return None
     configured = os.environ.get("PORTAL_PATHS_CONFIG")
@@ -51,7 +52,7 @@ def _isolated_provider_context() -> dict | None:
     state_path = root / "installation.json"
     if not state_path.is_file():
         return None
-    target = json.loads(state_path.read_text())["target"]
+    target = read_installation(root)["target"]
     from scripts.tfi_instance_layout import code_root, validate_shared_code
     validate_shared_code(target)
     prefix = target["service_prefix"]
@@ -331,6 +332,7 @@ def _claude_unit_path() -> Path:
 
 def install_claude_unit(runtime: Path, package: Path) -> Path:
     """Install the local daemon using a reusable SDK, never another instance's unit."""
+    from management_common.instance_config import read_installation
     from management_common.portal_paths import path
     from scripts.portal_instance_storage import render_unit
 
@@ -340,7 +342,7 @@ def install_claude_unit(runtime: Path, package: Path) -> Path:
         # Check the previous definition and drop-ins before replacing any bytes.
         provider_runtime_services("portal-claude-code.service")
         from scripts.tfi_release_install import clean_environment
-        installation = json.loads((isolated["root"] / "installation.json").read_text())
+        installation = read_installation(isolated["root"])
         env = clean_environment(installation["target"])
         env["CLAUDE_CODE_SOCKET"] = str(path("staging_root") / "portal_locks/claude-code-daemon.sock")
         content = "[Unit]\nDescription=Portal Claude Code daemon\n\n[Service]\nType=simple\nUMask=0077\n"
@@ -613,7 +615,8 @@ def _native_codex_service(account_id: str):
         configured_paths = os.environ.get("PORTAL_PATHS_CONFIG")
         root = Path(configured_paths).resolve().parent.parent if configured_paths else instance_root()
         installation = root / "installation.json"
-        target = json.loads(installation.read_text(encoding="utf-8"))["target"] if installation.is_file() else {}
+        from management_common.instance_config import read_installation
+        target = read_installation(root)["target"] if installation.is_file() else {}
         if target.get("windows_service_mode") == "user":
             content = json.dumps({"mode": "user", "name": name, "component": "codex",
                                   "root": str(root), "code": str(SOURCE_ROOT),

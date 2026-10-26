@@ -53,6 +53,15 @@ def read_config() -> dict[str, str]:
         configured = compatibility_value('paths_config')
         if configured is not None:
             source = resolve_directory(configured)
+    from management_common.instance_config import installed_root, read_installation
+    root = installed_root(source)
+    if root is not None:
+        data = read_installation(root)["target"]["data_roots"]
+        if set(data) != set(KEYS):
+            raise ValueError("Invalid instance data roots")
+        for key in KEYS:
+            resolve_directory(data[key])
+        return data
     if not source.exists():
         return {}
     data = json.loads(source.read_text(encoding="utf-8"))
@@ -96,6 +105,9 @@ def path(key: str) -> Path:
 
 
 def write_config(values: dict[str, str]) -> None:
+    from management_common.instance_config import installed_root
+    if installed_root(CONFIG_PATH) is not None:
+        raise ValueError("Installed instance paths are owned by config/target.json; use tfi_instance_config plan/apply")
     if set(values) != set(KEYS):
         raise ValueError("Every Portal data directory must be configured")
     for key in KEYS:
