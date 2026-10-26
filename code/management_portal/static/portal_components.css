@@ -3992,6 +3992,8 @@ button.portalFileLink {
 }
 
 .portalAgentInboxItemPin {
+  display: inline-grid;
+  place-items: center;
   border-radius: 3px;
   background: color-mix(in srgb, var(--accent, #2563eb) 14%, transparent);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #2563eb) 14%, transparent);
