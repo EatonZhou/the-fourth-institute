@@ -40,7 +40,7 @@ def can_resolve(lineage_id: str, key: str, record: dict) -> bool:
 
 
 def resolve(lineage_id: str, key: str, status: str, actor: str, *, note: str = "") -> dict:
-    from . import lineage_program_runtime
+    from . import lineage_program_runtime, trigger_paths
 
     if status not in {"succeeded", "failed"} or not isinstance(note, str) or len(note) > 4000:
         raise invalid("处置结果须为 succeeded 或 failed，说明最长 4000 字符")
@@ -54,6 +54,9 @@ def resolve(lineage_id: str, key: str, status: str, actor: str, *, note: str = "
         if existing.get("status") in journal.FINISHED_STATES:
             if existing.get("disposition", {}).get("status") != status:
                 raise InstructionError("instruction.conflict", "Effect 已终结，不能改写处置结果")
+            # Older dispositions released the queue but left its graph step
+            # waiting. Reconcile that same occurrence without changing evidence.
+            trigger_paths.settle_disposed_delivery(lineage_id, key)
             journal.cleanup(lineage_id, key)
             return existing
         if not has_unknown_calls(existing):
@@ -64,5 +67,6 @@ def resolve(lineage_id: str, key: str, status: str, actor: str, *, note: str = "
         with store.database.transaction():
             journal.finish(lineage_id, key, status=status, outputs={}, disposition=disposition)
             lineage_program_runtime.settle_effect_delivery(lineage_id, existing)
+            trigger_paths.settle_disposed_delivery(lineage_id, key)
         journal.cleanup(lineage_id, key)
         return journal.load(lineage_id, key)

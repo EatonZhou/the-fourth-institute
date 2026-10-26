@@ -169,6 +169,10 @@ def _notify_failed_path(identity: str) -> None:
         if step["status"] != "failed" and not step["execution_failed_at"] and receipt.get("state") != "failed":
             continue
         result = json_value(step["result_json"] or "{}")
+        if result.get("disposition"):
+            # An administrator already handled this occurrence. Preserve its
+            # terminal evidence without emitting another generic failure alert.
+            continue
         failure = (receipt.get("error") if receipt.get("state") == "failed" else None) or result.get("failure") or result
         if not isinstance(failure, dict):
             failure = {"message": str(failure)}
@@ -525,6 +529,57 @@ def effect_settled(lineage_id: str, activation_key: str, record: Mapping[str, An
                                 at=record["finished_at"], result=result)
         _settle(connection, row["trigger_path_id"])
         return True
+
+
+def settle_disposed_delivery(lineage_id: str, activation_key: str) -> None:
+    """Finish only the queued graph delivery of a manually disposed Effect.
+
+    Edges retain the occurrence's wire and predecessor after its queue/journal
+    have gone, so the same operation also repairs an older disposition. A wire
+    name alone is insufficient: other events and branches must stay untouched.
+    """
+    from management_portal.hatg.contracts import InstructionError
+
+    with _store().database.transaction() as connection:
+        effect = connection.execute(
+            "SELECT s.* FROM trigger_path_steps s JOIN trigger_paths p USING(trigger_path_id) "
+            "WHERE p.lineage_id=%s AND s.kind='effect' AND s.activation_key=%s",
+            (lineage_id, activation_key),
+        ).fetchone()
+        if effect is None:
+            raise ValueError("Effect disposition requires its admitted activation")
+        identity = effect["trigger_path_id"]
+        path = storage._lock(connection, identity)
+        # Queued deliveries are rooted at the original Event even when an
+        # intermediate operator becomes the Effect's immediate predecessor.
+        event_root = (storage.step_id(identity, "event", path["root_node_id"], path["occurrence_id"])
+                      if path["root_kind"] == "event" else "")
+        disposition = json_value(effect["result_json"]).get("disposition") or {}
+        status = {"succeeded": "completed", "failed": "failed"}.get(disposition.get("status"))
+        if not status or effect["status"] != status:
+            raise InstructionError("instruction.conflict", "Effect 尚无人工处置终态")
+        deliveries = connection.execute(
+            "SELECT DISTINCT d.* FROM trigger_path_steps d "
+            "JOIN trigger_path_step_edges e ON e.trigger_path_id=d.trigger_path_id "
+            "AND e.target_step_id=%s AND e.wire_id=d.node_id "
+            "WHERE d.trigger_path_id=%s AND d.kind='operator' AND e.wire_id<>'' "
+            "AND (e.source_step_id=d.step_id OR EXISTS ("
+            "SELECT 1 FROM trigger_path_step_edges p WHERE p.trigger_path_id=d.trigger_path_id "
+            "AND p.target_step_id=d.step_id AND p.wire_id=e.wire_id "
+            "AND (p.source_step_id=e.source_step_id OR p.source_step_id=%s)))",
+            (effect["step_id"], identity, event_root),
+        ).fetchall()
+        if len(deliveries) > 1:
+            raise InstructionError("instruction.conflict", "Effect 对应多个连线投递步骤，无法确认本次处置目标")
+        if deliveries and deliveries[0]["status"] not in storage.STEP_TERMINAL:
+            delivery = deliveries[0]
+            if delivery["status"] != "waiting":
+                raise InstructionError("instruction.conflict", "Effect 对应连线投递步骤仍在执行")
+            storage.transition_step(
+                connection, delivery["step_id"], status=status, at=now(),
+                result={**json_value(delivery["result_json"]), "disposition": disposition},
+            )
+        _settle(connection, identity)
 
 
 def delivery_waiting(lineage_id: str, wire_id: str, delivery: Mapping[str, Any]) -> None:
