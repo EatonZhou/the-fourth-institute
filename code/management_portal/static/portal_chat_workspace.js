@@ -490,10 +490,8 @@
       composerSignature: "",
       composerQueueSignature: "",
       composerInputHeight: readStoredComposerInputHeight(),
-      messageRenderSignature: "",
       messageItemSignatures: [],
-      messageRenderContextSignature: "",
-      messageRendererRefs: [],
+      messageRenderContext: { signature: "", renderers: [] },
       messageRenderOptions: {},
       collapsedAgentGroups: new Set(),
       collapsedWorkGroups: new Set(),
@@ -1383,6 +1381,112 @@
       measureMessageFolds(roots);
       revealFinishedSubagents(els.messages, options.onSubagentFinished);
       options.onMessagesRendered?.(els.messages, controller, incremental, roots);
+    };
+    const messageRuntimeSignature = () => JSON.stringify({
+      details: state.runtimeDetails,
+      live: state.runtimeLive,
+      phase: state.runtimePhase,
+    });
+    // Besides the messages, a render of the list depends on this context: its
+    // options except the live runtime (setRuntime patches that in place), the
+    // Chat's Resident, the host's render state, the groups the reader collapsed
+    // or expanded, and the host's render functions, compared by identity. Rows
+    // drawn in another context cannot be kept.
+    const messageRenderContext = renderOptions => ({
+      signature: JSON.stringify({
+        ...renderOptions,
+        chatResidentId: contractResidentId(),
+        messageRenderState: options.messageRenderState?.(),
+        runtimeDetails: undefined,
+        runtimeLive: undefined,
+        runtimePhase: undefined,
+        force: undefined,
+        collapsedAgentGroups: [...state.collapsedAgentGroups].sort(),
+        collapsedWorkGroups: [...state.collapsedWorkGroups].sort(),
+        expandedAgentGroups: [...state.expandedAgentGroups].sort(),
+      }),
+      renderers: [
+        renderOptions.renderMarkdown || options.renderMarkdown,
+        renderOptions.formatTime || options.formatTime,
+        renderOptions.renderMessagePrefix || options.renderMessagePrefix,
+        renderOptions.renderMessageBody || options.renderMessageBody,
+        renderOptions.renderMessageActions || options.renderMessageActions,
+        renderOptions.renderMessageMenuItems || options.renderMessageMenuItems,
+        renderOptions.showMessageActions || options.showMessageActions,
+        renderOptions.messageCopyValue || options.messageCopyValue,
+        renderOptions.renderMessageFooter || options.renderMessageFooter,
+        renderOptions.renderAfterMessage || options.renderAfterMessage,
+        renderOptions.messageClass || options.messageClass,
+        renderOptions.previewUrlForPath || options.previewUrlForPath,
+      ],
+    });
+    const sameMessageRenderContext = (a, b) => a.signature === b.signature
+      && a.renderers.length === b.renderers.length
+      && a.renderers.every((renderer, index) => renderer === b.renderers[index]);
+    // Rows the list draws besides messages: above them the history loader and
+    // the inheritance card, after them the live runtime and the scroll anchor.
+    const MESSAGE_LIST_HEAD_KEYS = ["__history__", "__inheritance__"];
+    const RUNTIME_ROW_KEYS = ["__runtime_phase__", "__subagents__", "__runtime__"];
+    const MESSAGE_LIST_TAIL_KEYS = [...RUNTIME_ROW_KEYS, "__scroll_anchor__"];
+    // A message's rows: its own and the block shown after it.
+    const messageRowKeys = items => items.flatMap(item => [messageInstanceKey(item), messageAfterKey(messageInstanceKey(item))]);
+    // A partial render draws state.messages[start, end) and replaces the rows
+    // named by replacedKeys; the rows around them stay. Older messages loaded
+    // above the shown ones are drawn with the shown rows they change.
+    const prependedMessageRange = (previousMessages, foldChanges) => {
+      const prependedCount = state.messages.length - previousMessages.length;
+      let end = prependedCount;
+      // Loading the first history page introduces a boundary on the existing facade message.
+      if (state.messages[prependedCount - 1]?.family_history && !state.messages[prependedCount]?.family_history) {
+        end = Math.min(state.messages.length, prependedCount + 1);
+      }
+      // Older pages may move a work's header past intervening requests.
+      const nextWorkGroups = familyWorkGroups(state.messages);
+      for (const [id, work] of familyWorkGroups(previousMessages)) {
+        if (nextWorkGroups.get(id)?.headKey === work.headKey) continue;
+        const oldHeadIndex = state.messages.findIndex(item => messageRenderKey(item) === work.headKey);
+        end = Math.max(end, oldHeadIndex + 1);
+      }
+      for (const key of foldChanges) {
+        const index = state.messages.findIndex(item => messageRenderKey(item) === key);
+        end = Math.max(end, index + 1);
+      }
+      // A prepend may join the first retained reply group or change the
+      // compact headers of its first human burst. Stop at a role boundary.
+      while (end < state.messages.length && messageRole(state.messages[end]) === messageRole(state.messages[end - 1])) {
+        end += 1;
+      }
+      return {
+        start: 0,
+        end,
+        replacedKeys: [...messageRowKeys(previousMessages.slice(0, end - prependedCount)), ...MESSAGE_LIST_HEAD_KEYS],
+      };
+    };
+    // Otherwise the list is drawn from the first message that changed; null
+    // when that is the first message, and the whole list is drawn.
+    const changedMessageRange = (previousMessages, previousSignatures, signatures, foldChanges) => {
+      const sharedLength = Math.min(previousSignatures.length, signatures.length);
+      let start = 0;
+      while (start < sharedLength && previousSignatures[start] === signatures[start]) start += 1;
+      for (const key of foldChanges) {
+        const index = state.messages.findIndex(item => messageRenderKey(item) === key);
+        if (index >= 0) start = Math.min(start, index);
+      }
+      // Editing or removing a group's tail changes its preceding members'
+      // disclosure state too. Preserve only the prefix outside that group.
+      if (
+        messageRole(state.messages[start]) === "agent"
+        || messageRole(previousMessages[start]) === "agent"
+        || start === state.messages.length
+      ) {
+        while (start > 0 && messageRole(state.messages[start - 1]) === "agent") start -= 1;
+      }
+      if (!start) return null;
+      return {
+        start,
+        end: state.messages.length,
+        replacedKeys: [...messageRowKeys(previousMessages.slice(start)), ...MESSAGE_LIST_TAIL_KEYS],
+      };
     };
     const historyPreviewUrl = () => state.messageRenderOptions?.previewUrlForPath || options.previewUrlForPath;
     const history = createInputHistory({
@@ -2640,12 +2744,10 @@
           messageIndexOffset: start,
           allMessages: state.messages,
         });
-        const replacedKeys = previous.slice(start).flatMap(item => [messageInstanceKey(item), messageAfterKey(messageInstanceKey(item))]);
-        replacedKeys.push("__runtime_phase__", "__subagents__", "__runtime__", "__scroll_anchor__");
         const changed = reconcileMessageList(els.messages, html, {
           currentStartNode: first,
           prefixNode,
-          replacedKeys,
+          replacedKeys: [...messageRowKeys(previous.slice(start)), ...MESSAGE_LIST_TAIL_KEYS],
         })?.changedRoots || [];
         afterMessagesDrawn(changed, { incremental: true });
         syncMessageScrollMode();
@@ -2654,16 +2756,11 @@
       },
       setMessages(messages, renderOptions = {}) {
         const previousMessages = state.messages;
-        const previousRuntimeSignature = JSON.stringify({
-          details: state.runtimeDetails,
-          live: state.runtimeLive,
-          phase: state.runtimePhase,
-        });
+        const previousSignatures = state.messageItemSignatures;
+        const previousContext = state.messageRenderContext;
+        const previousRuntime = messageRuntimeSignature();
         const previousScrollHeight = Number(els.messages?.scrollHeight || 0);
         const previousScrollTop = Number(els.messages?.scrollTop || 0);
-        const previousItemSignatures = state.messageItemSignatures;
-        const previousRenderContextSignature = state.messageRenderContextSignature;
-        const previousRendererRefs = state.messageRendererRefs;
         const previousDraftScope = String(state.activeDraftScope || "");
         const nextScope = String(historyScope() || "");
         const scopeChanged = state.messageScrollScope === null || state.messageScrollScope !== nextScope;
@@ -2673,90 +2770,33 @@
         state.runtimeDetails = Array.isArray(renderOptions.runtimeDetails) ? renderOptions.runtimeDetails : [];
         state.runtimeLive = !!renderOptions.runtimeLive;
         state.runtimePhase = String(renderOptions.runtimePhase || "");
-        const nextRuntimeSignature = JSON.stringify({
-          details: state.runtimeDetails,
-          live: state.runtimeLive,
-          phase: state.runtimePhase,
-        });
+        const runtimeChanged = messageRuntimeSignature() !== previousRuntime;
         state.messageRenderOptions = { ...renderOptions };
         syncHistory(nextScope);
         const foldChanges = updateMessageFoldDefaults();
-        const nextItemSignatures = state.messages.map(item => JSON.stringify(item));
-        const nextRendererRefs = [
-          renderOptions.renderMarkdown || options.renderMarkdown,
-          renderOptions.formatTime || options.formatTime,
-          renderOptions.renderMessagePrefix || options.renderMessagePrefix,
-          renderOptions.renderMessageBody || options.renderMessageBody,
-          renderOptions.renderMessageActions || options.renderMessageActions,
-          renderOptions.renderMessageMenuItems || options.renderMessageMenuItems,
-          renderOptions.showMessageActions || options.showMessageActions,
-          renderOptions.messageCopyValue || options.messageCopyValue,
-          renderOptions.renderMessageFooter || options.renderMessageFooter,
-          renderOptions.renderAfterMessage || options.renderAfterMessage,
-          renderOptions.messageClass || options.messageClass,
-          renderOptions.previewUrlForPath || options.previewUrlForPath,
-        ];
-        const nextRenderContextSignature = JSON.stringify({
-          ...renderOptions,
-          chatResidentId: contractResidentId(),
-          messageRenderState: options.messageRenderState?.(),
-          runtimeDetails: undefined,
-          runtimeLive: undefined,
-          runtimePhase: undefined,
-          force: undefined,
-          collapsedAgentGroups: [...state.collapsedAgentGroups].sort(),
-          collapsedWorkGroups: [...state.collapsedWorkGroups].sort(),
-          expandedAgentGroups: [...state.expandedAgentGroups].sort(),
-        });
-        const nextRenderSignature = JSON.stringify({
-          emptyText: renderOptions.emptyText || options.emptyText || "",
-          userName: renderOptions.userName || options.userName || "",
-          assistantName: renderOptions.assistantName || options.assistantName || "",
-          autoCollapseAgentGroups: renderOptions.autoCollapseAgentGroups === true,
-          collapsedAgentGroups: [...state.collapsedAgentGroups].sort(),
-          collapsedWorkGroups: [...state.collapsedWorkGroups].sort(),
-          expandedAgentGroups: [...state.expandedAgentGroups].sort(),
-        });
-        const messageItemsUnchanged = previousItemSignatures.length === nextItemSignatures.length
-          && previousItemSignatures.every(
-            (signature, index) => signature === nextItemSignatures[index],
-          );
-        const rendererRefsUnchanged = previousRendererRefs.length === nextRendererRefs.length
-          && nextRendererRefs.every((ref, index) => ref === previousRendererRefs[index]);
-        conversationSearch?.update(!messageItemsUnchanged);
-        if (
-          nextRenderSignature === state.messageRenderSignature
-          && messageItemsUnchanged
-          && previousRenderContextSignature === nextRenderContextSignature
-          && rendererRefsUnchanged
-          && !renderOptions.force
-          && !foldChanges.length
-        ) {
-          if (previousRuntimeSignature !== nextRuntimeSignature) {
-            controller.setRuntime(state.runtimeDetails, state.runtimeLive, renderOptions);
-          }
+        const signatures = state.messages.map(item => JSON.stringify(item));
+        const context = messageRenderContext(renderOptions);
+        const messagesUnchanged = previousSignatures.length === signatures.length
+          && previousSignatures.every((signature, index) => signature === signatures[index]);
+        const contextUnchanged = sameMessageRenderContext(previousContext, context);
+        conversationSearch?.update(!messagesUnchanged);
+        if (messagesUnchanged && contextUnchanged && !renderOptions.force && !foldChanges.length) {
+          // Nothing to draw but perhaps the live runtime, which setRuntime patches.
+          if (runtimeChanged) controller.setRuntime(state.runtimeDetails, state.runtimeLive, renderOptions);
           return;
         }
-        state.messageRenderSignature = nextRenderSignature;
-        const canReconcileSuffix = !renderOptions.force
-          && !scopeChanged
-          && previousMessages.length > 0
-          && state.messages.length > 0
-          && previousRenderContextSignature === nextRenderContextSignature
-          && rendererRefsUnchanged
-          && els.messages.firstElementChild?.classList.contains("messageList")
-          && previousItemSignatures.length === previousMessages.length;
+        // The messages shown before are all still there, below older ones loaded above.
         const prependedCount = state.messages.length - previousMessages.length;
-        const prependOnly = !renderOptions.force
-          && !scopeChanged
-          && prependedCount > 0
-          && previousItemSignatures.length === previousMessages.length
-          && previousItemSignatures.every(
-            (signature, index) => signature === nextItemSignatures[index + prependedCount],
-          );
-        state.messageItemSignatures = nextItemSignatures;
-        state.messageRenderContextSignature = nextRenderContextSignature;
-        state.messageRendererRefs = nextRendererRefs;
+        const prependOnly = !renderOptions.force && !scopeChanged && prependedCount > 0
+          && previousSignatures.length === previousMessages.length
+          && previousSignatures.every((signature, index) => signature === signatures[index + prependedCount]);
+        // Rows already shown may stay when they were drawn in the same context.
+        const rowsReusable = !renderOptions.force && !scopeChanged
+          && previousMessages.length > 0 && state.messages.length > 0 && contextUnchanged
+          && els.messages.firstElementChild?.classList.contains("messageList")
+          && previousSignatures.length === previousMessages.length;
+        state.messageItemSignatures = signatures;
+        state.messageRenderContext = context;
         const renderedStream = normalizeMessageStream(state.messages, { ...options, ...renderOptions });
         state.messageByKey = new Map(renderedStream.messages.map((item) => [
           messageIdentity(item),
@@ -2766,55 +2806,11 @@
         state.messageTailFollowIntent = followTail;
         if (scopeChanged) resetMessageScrollGesture();
         syncMessageScrollMode();
-        let renderStartIndex = 0;
-        let renderEndIndex = state.messages.length;
-        const canReconcilePrepend = canReconcileSuffix && prependOnly
-          && previousRuntimeSignature === nextRuntimeSignature;
-        if (canReconcilePrepend) {
-          renderEndIndex = prependedCount;
-          // Loading the first history page introduces a boundary on the existing facade message.
-          if (state.messages[prependedCount - 1]?.family_history && !state.messages[prependedCount]?.family_history) {
-            renderEndIndex = Math.min(state.messages.length, prependedCount + 1);
-          }
-          // Older pages may move a work's header past intervening requests.
-          const nextWorkGroups = familyWorkGroups(state.messages);
-          for (const [id, work] of familyWorkGroups(previousMessages)) {
-            if (nextWorkGroups.get(id)?.headKey === work.headKey) continue;
-            const oldHeadIndex = state.messages.findIndex(item => messageRenderKey(item) === work.headKey);
-            renderEndIndex = Math.max(renderEndIndex, oldHeadIndex + 1);
-          }
-          for (const key of foldChanges) {
-            const index = state.messages.findIndex(item => messageRenderKey(item) === key);
-            renderEndIndex = Math.max(renderEndIndex, index + 1);
-          }
-          // A prepend may join the first retained reply group or change the
-          // compact headers of its first human burst. Stop at a role boundary.
-          while (renderEndIndex < state.messages.length
-            && messageRole(state.messages[renderEndIndex]) === messageRole(state.messages[renderEndIndex - 1])) {
-            renderEndIndex += 1;
-          }
-        } else if (canReconcileSuffix) {
-          const sharedLength = Math.min(previousItemSignatures.length, nextItemSignatures.length);
-          while (renderStartIndex < sharedLength
-            && previousItemSignatures[renderStartIndex] === nextItemSignatures[renderStartIndex]) {
-            renderStartIndex += 1;
-          }
-          for (const key of foldChanges) {
-            const index = state.messages.findIndex(item => messageRenderKey(item) === key);
-            if (index >= 0) renderStartIndex = Math.min(renderStartIndex, index);
-          }
-          // Editing or removing a group's tail changes its preceding members'
-          // disclosure state too. Preserve only the prefix outside that group.
-          if (
-            messageRole(state.messages[renderStartIndex]) === "agent"
-            || messageRole(previousMessages[renderStartIndex]) === "agent"
-            || renderStartIndex === state.messages.length
-          ) {
-            while (renderStartIndex > 0 && messageRole(state.messages[renderStartIndex - 1]) === "agent") {
-              renderStartIndex -= 1;
-            }
-          }
-        }
+        // Drawing only the older messages leaves the tail as it was, so a
+        // changed live runtime draws from the first changed message instead.
+        const range = !rowsReusable ? null
+          : prependOnly && !runtimeChanged ? prependedMessageRange(previousMessages, foldChanges)
+          : changedMessageRange(previousMessages, previousSignatures, signatures, foldChanges);
         rememberSubagentPlaces(els.messages);
         const messageHtml = messageListHtml(state.messages, {
           ...options,
@@ -2830,22 +2826,17 @@
           expandedAgentGroups: state.expandedAgentGroups,
           messageFoldDefaults: state.messageFoldDefaults,
           messageFoldSizes: state.messageFoldSizes,
-          renderStartIndex,
-          renderEndIndex,
+          renderStartIndex: range ? range.start : 0,
+          renderEndIndex: range ? range.end : state.messages.length,
         });
-        const partialRange = canReconcilePrepend || (canReconcileSuffix && renderStartIndex > 0);
-        const reconciledRange = reconcileMessageList(els.messages, messageHtml, partialRange ? {
-          prefixKey: renderStartIndex > 0 ? messageInstanceKey(state.messages[renderStartIndex - 1]) : "",
-          replacedKeys: [
-            ...previousMessages.slice(renderStartIndex, canReconcilePrepend ? renderEndIndex - prependedCount : undefined)
-              .flatMap(item => [messageInstanceKey(item), messageAfterKey(messageInstanceKey(item))]),
-            ...(canReconcilePrepend ? ["__history__", "__inheritance__"] : ["__runtime_phase__", "__subagents__", "__runtime__", "__scroll_anchor__"]),
-          ],
+        const reconciled = reconcileMessageList(els.messages, messageHtml, range ? {
+          prefixKey: range.start > 0 ? messageInstanceKey(state.messages[range.start - 1]) : "",
+          replacedKeys: range.replacedKeys,
         } : {});
         // Only new/replaced message subtrees need binding and measurement. The
         // host still hears of a whole render, so it redraws what it keeps for
         // the whole conversation, such as a Resident Chat's question cards.
-        afterMessagesDrawn(reconciledRange ? reconciledRange.changedRoots : [els.messages]);
+        afterMessagesDrawn(reconciled ? reconciled.changedRoots : [els.messages]);
         if (followTail && messageViewportMeasurable()) {
           els.messages.scrollTop = els.messages.scrollHeight;
         } else if (prependOnly && messageViewportMeasurable()) {
@@ -2884,7 +2875,7 @@
         );
         const scrollAnchor = list.querySelector("[data-message-scroll-anchor]");
         rememberSubagentPlaces(list);
-        const runtimeKeys = ["__runtime_phase__", "__subagents__", "__runtime__"];
+        const runtimeKeys = RUNTIME_ROW_KEYS;
         runtimeKeys.forEach((key, index) => {
           const current = list.querySelector(`[data-message-key="${key}"]`);
           const next = nextByKey.get(key);
