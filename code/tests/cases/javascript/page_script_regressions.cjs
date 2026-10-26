@@ -4,7 +4,6 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const {readHatgModule, createHatgModule} = require('./hatg_modules.cjs');
-const {findChatWorkspaceFunction} = require('./chat_workspace_modules.cjs');
 
 // Execute production owners with controlled inputs. Page journeys cover their DOM;
 // these cases isolate request ordering and language-dependent presentation.
@@ -14,11 +13,9 @@ function familyBlocks(window, replaced) {
   return createHatgModule(window.PortalHatgFamilyBlocks, 'createFamilyBlocks', replaced);
 }
 
-// The chat workspace's functions are found in whichever of its scripts holds them.
 function owner(file, names, dependencies) {
   const source = fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static', file), 'utf8');
   const functions = names.map(name => {
-    if (file === 'portal_chat_workspace.js') return findChatWorkspaceFunction(name).source;
     const match = new RegExp(`^( +)(?:async )?function ${name}\\(`, 'm').exec(source);
     if (!match) throw new Error(`Missing request owner ${name}`);
     const end = source.indexOf(`\n${match[1]}}\n`, match.index);
@@ -58,7 +55,7 @@ const i18n = {t: value => value, text: (parts, ...values) => parts.reduce((text,
 
 async function familySettingsFixture({runtime = true, restart = true} = {}) {
   const member = 'resident_member', facade = 'resident_facade';
-  const calls = [], dialogs = [], migrations = [], notices = [], listeners = {};
+  const calls = [], settingsDialogs = [], sessionDialogs = [], notices = [], listeners = {};
   const root = {hidden: true, isConnected: true, innerHTML: '', remove: noop, setAttribute: noop,
     closest: () => null, addEventListener: (name, handler) => {listeners[name] = handler;},
     querySelector: selector => selector === '.familyStatusBody' ? {scrollTop: 0} : null};
@@ -83,12 +80,8 @@ async function familySettingsFixture({runtime = true, restart = true} = {}) {
         ? {family_facade: {title: 'Team', nodes: [{resident_id: member, title: 'Worker'}]}} : detail,
       observeSessionRestart: () => noop,
       sessionRestartOptions: async id => {calls.push(['restartOptions', id]); return {accounts: {}};},
-      restartSession: async values => {calls.push(['restart', values]);},
+      restartSession: async values => {calls.push(['restart', values]); return {status: 'accepted'};},
     },
-    PortalInstructionClient: {execute: async (instruction, args) => {
-      calls.push([instruction, args]);
-      return {settings: {...snapshot.runtime_settings, ...args.changes}};
-    }},
   };
   Object.assign(window.PortalResidentService, {
     runtimeSettings: async id => {calls.push(['GetResidentSettings', {resident_id: id}]); return {settings: snapshot.runtime_settings};},
@@ -106,22 +99,21 @@ async function familySettingsFixture({runtime = true, restart = true} = {}) {
   window.PortalResidentRuntimeController = window.PortalResidentRuntimeController.create({
     service: window.PortalResidentService,
     dialogs: {
-      settings: options => ({open: (...args) => dialogs.push(args), close: options.onClose, destroy: noop}),
-      restart: options => ({open: (...args) => migrations.push(args), close: options.onClose, destroy: noop}),
+      settings: options => ({open: (...args) => settingsDialogs.push(args), close: options.onClose, destroy: noop}),
+      restart: options => ({open: (...args) => sessionDialogs.push(args), close: options.onClose, destroy: noop}),
     },
   });
-  const context = owner('portal_chat_workspace.js', ['createFamilyStatusView', 'requestWorkspaceAction'], {
-    window, document: {createElement: () => root, activeElement: null}, CSS: {escape: value => value},
-    PortalUIPrimitives: {randomUUID: () => 'fixture'},
-    escapeHtml: value => String(value ?? ''), footerTime: () => '', sessionRestartActive: () => false,
-    notifyRuntimeSettingsSaved: noop,
-    createRuntimeSettingsDialog: () => ({open: (...args) => dialogs.push(args), destroy: noop}),
-    createSessionRestartDialog: () => ({open: (...args) => migrations.push(args), destroy: noop}),
+  vm.runInNewContext(fs.readFileSync(path.resolve(__dirname,
+    '../../../management_portal/static/chat_workspace_family_status.js'), 'utf8'), {
+    window, URLSearchParams, document: {createElement: () => root, activeElement: null}, CSS: {escape: value => value},
   });
-  const view = context.createFamilyStatusView(facade, null, null, null, {append: noop});
+  const familyStatus = window.PortalChatWorkspaceFamilyStatus.createFamilyStatus({
+    escapeHtml: value => String(value ?? ''), footerTime: () => '', sessionRestartActive: () => false,
+  });
+  const view = familyStatus.createFamilyStatusView(facade, null, null, null, {append: noop});
   view.open();
   await new Promise(resolve => setImmediate(resolve));
-  return {root, view, calls, dialogs, migrations, notices,
+  return {root, view, calls, settingsDialogs, sessionDialogs, notices,
     click: async (entry = 'settings') => { listeners.click({target: {closest: selector =>
       selector === `[data-family-status-${entry}]` ? {dataset: entry === 'settings'
         ? {familyStatusSettings: member} : {familyStatusRuntime: member}} : null}}); await new Promise(resolve => setImmediate(resolve)); }};
@@ -130,38 +122,65 @@ async function familySettingsFixture({runtime = true, restart = true} = {}) {
 test('Family Backend/account entry edits the member live without requesting a restart', async () => {
   const fixture = await familySettingsFixture();
   await fixture.click();
-  const [initial, save, options] = fixture.dialogs[0];
+  assert.deepEqual(fixture.notices, []);
+  assert.equal(fixture.settingsDialogs.length, 0, 'members with Session permission use the unified card');
+  assert.equal(fixture.sessionDialogs.length, 1, 'the member card actually opened');
+  const [config] = fixture.sessionDialogs[0];
+  const {runtime_settings: initial, onSave: save} = config;
+  assert.equal(config.resident_id, 'resident_member');
+  assert.equal(typeof save, 'function', 'the same card exposes live settings');
   assert.equal(initial.reasoning_effort, 'high');
-  assert.match(options.hint, /不会重启/);
   assert.match(fixture.calls.find(call => call[0] === 'get' && call[1].includes('agent-runtime-catalog'))[1], /resident_id=resident_member/);
   await save({...initial, reasoning_effort: 'low', service_tier: 'priority'});
   const update = fixture.calls.find(call => call[0] === 'UpdateResidentSettings');
   assert.deepEqual(JSON.parse(JSON.stringify(update[1])), {
     resident_id: 'resident_member', changes: {reasoning_effort: 'low', service_tier: 'priority'},
   });
-  assert.equal(fixture.calls.some(call => call[0].startsWith('restart')), false);
+  assert.equal(fixture.calls.some(call => call[0] === 'restart'), false, 'reading Session options never submits a restart');
+  assert.equal(fixture.sessionDialogs.length, 1, 'saving stays in the same card');
   assert.match(fixture.root.innerHTML, /low · Fast 开/);
   await fixture.click('settings');
-  assert.equal(fixture.dialogs[1][0].service_tier, 'priority');
+  const [reopened] = fixture.sessionDialogs[1];
+  assert.equal(reopened.runtime_settings.service_tier, 'priority');
   const before = fixture.calls.length;
-  await fixture.dialogs[1][1](fixture.dialogs[1][0]);
+  await reopened.onSave(reopened.runtime_settings);
   assert.equal(fixture.calls.length, before, 'unchanged settings do not write');
-  await options.onSessionRestart();
-  assert.equal(fixture.migrations.length, 1);
-  assert.equal(fixture.calls.some(call => call[0] === 'restart'), false, 'opening restart still requires confirmation');
   fixture.view.destroy();
 });
 
-test('Family live settings remain available without restart permission and read-only providers can migrate', async () => {
+test('Family live settings remain available without restart permission', async () => {
   const live = await familySettingsFixture({restart: false});
   await live.click();
-  assert.equal(live.dialogs[0][2].onSessionRestart, null);
-  assert.equal(live.migrations.length, 0);
+  assert.deepEqual(live.notices, []);
+  assert.equal(live.settingsDialogs.length, 1);
+  assert.equal(live.sessionDialogs.length, 0);
+  const [initial, save, options] = live.settingsDialogs[0];
+  assert.equal(options.residentId, 'resident_member');
+  assert.match(options.hint, /不会重启/);
+  await save({...initial, reasoning_effort: 'low'});
+  assert.deepEqual(JSON.parse(JSON.stringify(live.calls.find(call => call[0] === 'UpdateResidentSettings')[1])), {
+    resident_id: 'resident_member', changes: {reasoning_effort: 'low'},
+  });
+  assert.equal(live.calls.some(call => call[0].startsWith('restart')), false, 'live settings do not request Session options or a restart');
   live.view.destroy();
+});
+
+test('Family read-only providers can migrate only after an explicit Session submission', async () => {
   const migration = await familySettingsFixture({runtime: false});
   await migration.click();
-  assert.equal(migration.dialogs.length, 0);
-  assert.equal(migration.migrations.length, 1);
+  assert.deepEqual(migration.notices, []);
+  assert.equal(migration.settingsDialogs.length, 0);
+  assert.equal(migration.sessionDialogs.length, 1);
+  const [config, submit] = migration.sessionDialogs[0];
+  assert.equal(config.resident_id, 'resident_member');
+  assert.equal(config.onSave, null, 'read-only providers cannot live-save settings');
+  assert.equal(migration.calls.some(call => ['restart', 'UpdateResidentSettings'].includes(call[0])), false);
+  const selected = {target_provider: 'claude', target_account: 'target_account', context_strategy: 'visible'};
+  assert.equal((await submit(selected)).status, 'accepted');
+  const restarts = migration.calls.filter(call => call[0] === 'restart');
+  assert.equal(restarts.length, 1);
+  assert.deepEqual(JSON.parse(JSON.stringify(restarts[0][1])), {...selected, resident_id: 'resident_member'});
+  assert.equal(migration.calls.some(call => call[0] === 'UpdateResidentSettings'), false);
   migration.view.destroy();
 });
 
