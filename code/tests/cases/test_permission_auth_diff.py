@@ -358,6 +358,37 @@ def test_a_release_that_turns_a_fixed_slot_into_an_argument_slot_follows_with_it
         off.schemes.compile(stale)
 
 
+def test_moving_a_personal_ama_in_the_p_tree_alone_changes_nothing(off):
+    """个人 AMA 的 Resident 按主人判定，授权差同样按主人计算：只在 P 树中挪动 AMA 是中性的
+
+    规则把 alice 的 AMA Lineage 放在 alice 名下（旧的“个人 AMA（在所有者名下）”节点），去掉这个节点后 AMA 落到“Resident”下。
+    引擎把 AMA 的 Resident 当作 alice 判定（represents），所以报告是中性；不按主人计算时，同一处挪动会被报成授权变化。
+
+    :design: decision_b820faf42218
+    """
+    ama, member = "lineage_cccccccccccc", "resident_000000000003"
+
+    def ama_facts():
+        return [*facts(), Fact("lineage", ama, {"personal_space": "personal_space:alice", "user": "alice"}),
+                Fact("resident", member, {"lineage": ama})]
+
+    placed = rules("placed")
+    placed["trees"]["P"]["nodes"].append({"id": "@personal_ama", "parent": "@users", "title": "个人 AMA（在所有者名下）",
+                                          "each": "lineage", "under": "user"})
+    permission_system.manage("CreatePermissionScheme", {"scheme_id": "placed", "rules": placed}, actor="alice",
+                             collect_facts=ama_facts)
+    store = off.store.scoped("placed")
+    before = authdiff.View.stored(off.schemes.compiled("placed"), store)
+    assert before.path("P", member) == ("@principals", "@users", "@members", "alice", ama, member)
+    after = authdiff.View.generated(off.schemes.compile(rules("placed")), store,
+                                    permission_system.facts.flatten(ama_facts()))
+    assert after.path("P", member) == ("@principals", "@residents", ama, member)
+
+    judged_as_owner = authdiff.compare(before, after, limit=50, represents=lambda principals: {member: "alice"})
+    assert (judged_as_owner["kind"], judged_as_owner["groups"]["total"]) == ("neutral", 0)
+    assert authdiff.compare(before, after, limit=50, represents=lambda principals: {})["kind"] != "neutral"
+
+
 def test_the_report_stops_at_its_time_budget(off):
     """计算超过时间上限时停止，报告 complete: false"""
     call("CreatePermissionScheme", scheme_id="team", rules=rules("team"))

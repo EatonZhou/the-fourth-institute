@@ -17,7 +17,7 @@ permission system judges the Resident as the owner (decision_b820faf42218 §5.5)
 from __future__ import annotations
 
 import threading
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from typing import Any
 
 _LOCK = threading.Lock()
@@ -57,6 +57,29 @@ def owner_of(principal_id: object) -> str:
             _OWNERS.clear()
         _OWNERS[principal] = owner
     return owner
+
+
+def owners_of(principals: Iterable[object]) -> dict[str, str]:
+    """``{principal: owner}`` for the personal AMA Residents among ``principals``, read together (``owner_of`` for many)."""
+    global _DESCRIPTORS
+    wanted = list(dict.fromkeys(str(item or "").strip() for item in principals))
+    wanted = [item for item in wanted if item.startswith("resident_")]
+    with _LOCK:
+        known = {item: _OWNERS[item] for item in wanted if item in _OWNERS}
+        if _DESCRIPTORS is None:
+            from management_portal.resources.collaboration_registry import CollaborationDescriptorStore
+
+            _DESCRIPTORS = CollaborationDescriptorStore()
+    missing = [item for item in wanted if item not in known]
+    if missing:
+        attributes = _DESCRIPTORS.attributes_for_records(
+            {"resource_type": "resident", "resource_id": item} for item in missing)
+        with _LOCK:
+            if len(_OWNERS) + len(attributes) >= _KEPT:
+                _OWNERS.clear()
+            for item, found in attributes.items():
+                known[item] = _OWNERS[item] = str(found.get("personal_owner_id") or "").strip()
+    return {item: owner for item, owner in known.items() if owner}
 
 
 def forget() -> None:

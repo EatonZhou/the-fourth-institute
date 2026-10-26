@@ -14,7 +14,9 @@ A class nodes (the levels instructions ask for: @viewer, @contributor,
 @admin …); a class whose rows and a class whose path are unchanged on both
 sides need no decision.  Pairs that differ are merged into groups with the
 same change, and each group's principals and resources are named by the
-node holding them in the new trees, with the nodes it leaves out.
+node holding them in the new trees, with the nodes it leaves out.  A
+personal AMA's Resident is judged as its owner (``Engine.represents``), so
+its class reads its owner's P path as well as its own.
 
 An instruction element is an element of the A tree (§14), so a scheme that
 classifies it under another A node — or, for a fixed slot, asks about
@@ -95,14 +97,15 @@ def remapped(before: CompiledScheme, after: CompiledScheme, limit: int) -> dict[
 
 
 def kept(before: CompiledScheme, after: CompiledScheme, store, *, limit: int, connection=None,
-         budget: float = BUDGET) -> dict[str, Any]:
+         budget: float = BUDGET, represents: Callable[[list[str]], Mapping[str, str]] | None = None) -> dict[str, Any]:
     """The report of a change that keeps the instance ``store`` holds: only the elements it moves change Auth."""
     if not _moves(before, after):
         return _report(NEUTRAL, True, {"triples": 0, "principals": 0, "resources": 0},
                        {"triples": 0, "principals": 0, "resources": 0}, 0, [], remapped(before, after, limit))
     with store.read(connection) as connection:
         nodes, entries = store.nodes(connection), store.contents(connection)
-    return compare(View(before, nodes, entries), View(after, nodes, entries), limit=limit, budget=budget)
+    return compare(View(before, nodes, entries), View(after, nodes, entries), limit=limit, budget=budget,
+                   represents=represents)
 
 
 def _moves(before: CompiledScheme, after: CompiledScheme) -> list[tuple[str, Any, Any]]:
@@ -179,17 +182,41 @@ def _allowed(grants: Mapping[str, tuple[int, int]], r_nodes: tuple[str, ...]) ->
     return permit & ~deny
 
 
-def _classes(elements: list[str], tree: str, old: _Side, new: _Side, named_old, named_new) -> list[tuple[tuple, tuple, list[str]]]:
+def _classes(elements: list[str], tree: str, old: _Side, new: _Side, named_old, named_new,
+             owners: Mapping[str, str] | None = None) -> list[tuple[tuple, tuple, list[str]]]:
     found: dict[tuple[tuple, tuple], list[str]] = {}
     for element in elements:
-        key = (tuple(node for node in old.view.path(tree, element) if node in named_old),
-               tuple(node for node in new.view.path(tree, element) if node in named_new))
+        key = (tuple(node for node in _judged(old.view, tree, element, owners) if node in named_old),
+               tuple(node for node in _judged(new.view, tree, element, owners) if node in named_new))
         found.setdefault(key, []).append(element)
     return [(before, after, members) for (before, after), members in found.items()]
 
 
-def compare(before: View, after: View, *, limit: int, budget: float = BUDGET) -> dict[str, Any]:
-    """The authorization difference from ``before`` to ``after`` on the objects ``after`` places."""
+def _judged(view: View, tree: str, element: str, owners: Mapping[str, str] | None) -> tuple[str, ...]:
+    """The path decisions read: a personal AMA's Resident adds its owner's P path, as the engine does (``Engine.represents``)."""
+    path = view.path(tree, element)
+    owner = (owners or {}).get(element, "") if tree == "P" else ""
+    if owner and owner not in path:
+        path = tuple(dict.fromkeys((*path, *view.path("P", owner))))
+    return path
+
+
+def _owners(principals: list[str]) -> Mapping[str, str]:
+    """The owners decisions judge personal AMA Residents as (decision_b820faf42218 §5.5)."""
+    from management_portal.society_service.personal_ama import owners_of
+
+    return owners_of(principals)
+
+
+def compare(before: View, after: View, *, limit: int, budget: float = BUDGET,
+            represents: Callable[[list[str]], Mapping[str, str]] | None = None) -> dict[str, Any]:
+    """The authorization difference from ``before`` to ``after`` on the objects ``after`` places.
+
+    ``represents`` names the owner each personal AMA Resident is judged as
+    (``{principal: owner}`` for a list of principals); a Resident's class
+    reads its owner's path too, so moving an AMA in the P tree alone changes
+    nothing here, as in decisions.
+    """
     deadline = time.monotonic() + budget
     moves = _moves(before.scheme, after.scheme)
     moving = {slot.element for _name, _was, slot in moves}
@@ -207,7 +234,7 @@ def compare(before: View, after: View, *, limit: int, budget: float = BUDGET) ->
         elif tree == "R":
             resources.append(element)
         kinds[(tree, element)] = kind
-    p_classes = _classes(principals, "P", old, new, old.p_named, new.p_named)
+    p_classes = _classes(principals, "P", old, new, old.p_named, new.p_named, (represents or _owners)(principals))
     r_classes = _classes(resources, "R", old, new, old.r_named, new.r_named)
     moved = [index for index, (was, now, _members) in enumerate(r_classes) if was != now]
 
