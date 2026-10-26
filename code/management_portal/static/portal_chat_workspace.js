@@ -23,6 +23,8 @@
   //     right-click menu, copy, links, host actions, handoff asks, folding runs
   //   chat_workspace_message_folds.js  one Workspace's long-body folds: measuring
   //     bodies, which messages start expanded, the reader's toggle
+  //   chat_workspace_composer_attachments.js  one Workspace's composer attachments:
+  //     adding, uploading, retrying, removing and replacing edited images, previews
   //   chat_workspace_runtime_settings.js  the Runtime Settings dialog, notices after
   //     saving, the session restart dialog and its progress
   //   chat_workspace_harness_panel.js  the Agent Harness panel and menu, prompt
@@ -82,7 +84,7 @@
   const {
     COMPOSER_DRAFT_ATTACHMENT_RE, normalizeComposerAttachment, normalizeComposerAttachments,
     createConversationSelectionReference, inputMediaPayload, mediaOnlyCaption, composerPayloadContentParts,
-    composerPreviewReference, composerAttachmentPlaceholder, composerAttachmentTokenOrder,
+    composerAttachmentPlaceholder, composerAttachmentTokenOrder,
     insertComposerAttachmentRef, removeComposerAttachmentRef, moveComposerAttachmentRef,
     refreshComposerAttachmentRefs, syncComposerAttachmentRefs, serializeComposerInput,
     serializeComposerContentParts, renderComposerAttachmentTray, normalizeSlashCommands, slashCommandMatches,
@@ -376,36 +378,7 @@
       .filter(Boolean));
   }
 
-  // Chat attachments are uploads (CreateUpload + its data channel); the
-  // message then refers to the upload ID (decision_ad3e21094f14).
-  async function defaultWorkspaceUpload(file, options = {}) {
-    const kind = String(file?.type || "").toLowerCase().startsWith("image/") ? "image" : "file";
-    // The receiving Resident, or the Chatroom a message is posted to.
-    const target = options.upload_target || options.resident_id || "";
-    const uploaded = await window.PortalInstructionClient.upload(file, {
-      purpose: "conversation_attachment",
-      target,
-      fileName: file.name || (kind === "image" ? "pasted-image.png" : "attachment"),
-      mediaType: file.type || (kind === "image" ? "image/png" : "application/octet-stream"),
-      onProgress: progress => options.workspace?.updateAttachment?.(options.item?.id, { progress }),
-    });
-    options.workspace?.updateAttachment?.(options.item?.id, { progress: 100 });
-    return {
-      upload_id: uploaded.upload_id,
-      filename: uploaded.file_name,
-      content_type: uploaded.media_type,
-      size: uploaded.size,
-      kind,
-    };
-  }
-
-  function defaultWorkspaceDeleteAttachment(item = {}) {
-    const uploadId = String(item.upload_id || "").trim();
-    if (!uploadId) return Promise.resolve({ deleted: false });
-    return window.PortalInstructionClient.execute("DeleteUpload", { upload_id: uploadId }, {
-      idempotencyKey: `upload-delete:${uploadId}`,
-    });
-  }
+  const { defaultWorkspaceUpload } = chatWorkspaceModule("PortalChatWorkspaceComposerAttachments");
 
   let workspaceInstanceSequence = 0;
 
@@ -426,14 +399,6 @@
     root.__portalChatWorkspaceController?.destroy?.();
     const id = workspaceInstanceId(options);
     const refsScope = String(options.refsScope || id);
-    const ownedAttachmentPreviews = new Set();
-    const releaseAttachmentPreview = value => {
-      if (!ownedAttachmentPreviews.delete(value)) return;
-      URL.revokeObjectURL(value);
-    };
-    const releaseAttachmentPreviews = items => {
-      for (const item of items || []) releaseAttachmentPreview(item?.preview_url);
-    };
     const composerResizeEnabled = options.composerResize !== false;
     const composerHeightStorageKey = String(options.composerHeightKey || `portal.workspaceComposerHeight.${id}`);
     const defaultComposerInputHeight = Math.max(56, Number(options.composerInputHeight || 86));
@@ -882,6 +847,24 @@
       return String(optionScope || composerState?.history_scope || id);
     };
     const historyScope = () => configuredHistoryScope();
+
+    const {
+      attachmentPreviewOptions, renderAttachments, renderAttachmentTrayOnly, withoutAttachmentReconcile,
+      setAttachments, updateAttachment, addFiles, addReference, uploadComposerAttachment, removeComposerAttachment,
+      reconcileAttachmentsFromInput, discardComposerAttachments, releaseAttachmentPreviews, reportAttachmentError,
+      destroyComposerAttachments,
+    } = chatWorkspaceModule("PortalChatWorkspaceComposerAttachments").createComposerAttachments({
+      composerAttachmentTokenOrder, composerSelectionSnapshot,
+      createConversationSelectionReference, currentController: () => controller, els, historyScope,
+      insertComposerAttachmentRef, mediaPartPath, normalizeComposerAttachment, normalizeComposerAttachments, options,
+      removeComposerAttachmentRef, renderComposerAttachmentTray, requireImageEditor, restoreComposerSelection, state,
+      syncComposerAttachmentRefs,
+      // Defined later in the Workspace.
+      markComposerUndoAfterSnapshot: (...args) => markComposerUndoAfterSnapshot(...args),
+      pushComposerUndoSnapshot: (...args) => pushComposerUndoSnapshot(...args),
+      saveActiveDraft: (...args) => saveActiveDraft(...args),
+      updateControls: (...args) => updateControls(...args),
+    });
     // One Fork card per conversation: whether its compaction is open, and what was read.
     let inheritanceView = null;
     const inheritanceViewFor = inheritance => {
@@ -917,106 +900,9 @@
       }
       if (inheritanceView === view) renderInheritanceCard();
     };
-    const notifyAttachmentsChange = () => {
-      saveActiveDraft();
-      options.onAttachmentsChange?.(controller.payload(), controller);
-    };
-    const attachmentOriginal = item => {
-      const raw = item && typeof item === "object" ? item : {};
-      return raw.original && typeof raw.original === "object" ? raw.original : {
-        upload_id: String(raw.upload_id || ""),
-        file_id: String(raw.file_id || ""),
-        kind: String(raw.kind || "image"),
-        name: String(raw.name || ""),
-        path: String(raw.path || ""),
-        preview_url: String(raw.preview_url || raw.data_url || ""),
-        content_type: String(raw.content_type || raw.mime || ""),
-        size: Number(raw.size || raw.size_bytes || 0),
-      };
-    };
-    const replaceEditedAttachment = async (context, file, previewUrl) => {
-      const attachmentId = String(context?.attachmentId || "").trim();
-      const current = state.attachments.find(item => String(item?.id || "") === attachmentId);
-      if (!attachmentId || !current) throw new Error("未找到需要替换的图片附件");
-      if (current.uploading) throw new Error("图片还在上传，请稍后编辑。");
-      const previous = { ...current };
-      const scope = historyScope();
-      if (String(previewUrl || "").startsWith("blob:")) ownedAttachmentPreviews.add(previewUrl);
-      controller.updateAttachment(attachmentId, {
-        upload_id: "",
-        file_id: "",
-        original: attachmentOriginal(current),
-        name: file.name,
-        path: "",
-        url: "",
-        preview_url: previewUrl,
-        data_url: "",
-        mime: "image/png",
-        content_type: "image/png",
-        size: file.size,
-        size_bytes: file.size,
-        uploading: true,
-        progress: 0,
-        error: "",
-      });
-      try {
-        const upload = options.uploadAttachment || defaultWorkspaceUpload;
-        const result = await upload(file, {
-          ...attachmentUploadContext(),
-          item: current,
-          workspace: controller,
-          editedAttachmentId: attachmentId,
-        });
-        if (historyScope() !== scope || !state.attachments.some(item => String(item.id || "") === attachmentId)) {
-          await deleteUploadedAttachment({ ...result, kind: "image" });
-          releaseAttachmentPreview(previewUrl);
-          return;
-        }
-        const uploadedPreview = result?.preview_url || result?.data_url || mediaPartPath({ upload_id: result?.upload_id }) || previewUrl;
-        if (uploadedPreview !== previous.preview_url) releaseAttachmentPreview(previous.preview_url);
-        if (uploadedPreview !== previewUrl) releaseAttachmentPreview(previewUrl);
-        controller.updateAttachment(attachmentId, {
-          upload_id: result?.upload_id || "",
-          file_id: result?.file_id || "",
-          original: attachmentOriginal(current),
-          name: result?.filename || file.name,
-          path: result?.path || "",
-          url: result?.url || "",
-          preview_url: uploadedPreview,
-          data_url: result?.data_url || "",
-          mime: result?.mime || result?.content_type || "image/png",
-          content_type: result?.content_type || "image/png",
-          size: Number(result?.size || file.size || 0),
-          size_bytes: Number(result?.size_bytes || result?.size || file.size || 0),
-          uploading: false,
-          progress: 100,
-          error: "",
-          file: null,
-        });
-      } catch (error) {
-        releaseAttachmentPreview(previewUrl);
-        if (historyScope() === scope) controller.updateAttachment(attachmentId, previous);
-        throw error;
-      }
-    };
-    const openComposerAttachmentEditor = async context => {
-      try {
-        await requireImageEditor();
-        const attachment = context?.attachment || {};
-        context.open?.({
-          editable: true,
-          name: attachment.name || context.title || "annotated-image",
-          meta: { attachmentId: context.attachmentId || "" },
-          onSave: ({ file, previewUrl }) => replaceEditedAttachment(context, file, previewUrl),
-        });
-      } catch (error) {
-        if (options.onError) options.onError(error);
-        else window.PortalUI.toast(error.message || error, "error");
-      }
-    };
     const insertEditedMessageImage = async ({ file }) => {
       if (!file) return;
-      await controller.addFiles([file]);
+      await addFiles([file]);
       els.input?.focus?.();
     };
     const openMessageImageEditor = async (src, title = "") => {
@@ -1034,11 +920,6 @@
         else window.PortalUI.toast(error.message || error, "error");
       }
     };
-    const attachmentPreviewOptions = () => ({
-      renderMentions: options.renderMentions,
-      attachmentById: id => state.attachments.find(item => String(item?.id || "") === String(id || "")) || null,
-      onImagePreview: context => openComposerAttachmentEditor({ ...context, workspace: controller }),
-    });
     // Draw the list again from the current messages and live runtime.
     const redrawMessages = () => controller.setMessages(state.messages, {
       ...state.messageRenderOptions,
@@ -1250,23 +1131,6 @@
     };
     let draftPersistenceSuspension = null;
     let draftBaseline = null;
-    const renderAttachments = (renderOptions = {}) => {
-      const selection = document.activeElement === els.input
-        ? composerSelectionSnapshot(els.input)
-        : null;
-      state.attachments = normalizeComposerAttachments(state.attachments);
-      renderComposerAttachmentTray(els.tray, state.attachments, attachmentPreviewOptions());
-      syncComposerAttachmentRefs(els.input, state.attachments, attachmentPreviewOptions());
-      if (selection) restoreComposerSelection(els.input, selection);
-      updateControls();
-      if (renderOptions.notify) notifyAttachmentsChange();
-    };
-    const renderAttachmentTrayOnly = (renderOptions = {}) => {
-      state.attachments = normalizeComposerAttachments(state.attachments);
-      renderComposerAttachmentTray(els.tray, state.attachments, attachmentPreviewOptions());
-      updateControls();
-      if (renderOptions.notify) notifyAttachmentsChange();
-    };
     const canSubmit = () => {
       const uploading = state.attachments.some(item => item.uploading);
       const failed = state.attachments.some(item => item.error);
@@ -1418,26 +1282,6 @@
       window.addEventListener("resize", handleWindowResize);
       applyComposerInputLayout();
     };
-    let suppressAttachmentReconcile = false;
-    const fileSignature = (file) => {
-      const type = String(file?.type || "").toLowerCase();
-      const name = String(file?.name || "").trim();
-      const size = Number(file?.size || 0);
-      const kind = type.startsWith("image/") ? "image" : "file";
-      return kind === "image"
-        ? `image:${type}:${size}:${name}`
-        : `file:${name}:${type}:${size}:${file?.lastModified || 0}`;
-    };
-    const attachmentUploadContext = () => {
-      const configured = typeof options.attachmentUploadContext === "function"
-        ? options.attachmentUploadContext(controller)
-        : options.attachmentUploadContext;
-      const contractContext = state.composer.attachment_upload_context;
-      return {
-        ...(configured && typeof configured === "object" ? configured : {}),
-        ...(contractContext && typeof contractContext === "object" ? contractContext : {}),
-      };
-    };
     const composerSnapshot = () => ({
       inputValue: els.input && "value" in els.input ? String(els.input.value || "") : "",
       inputHtml: els.input && !("value" in els.input) ? String(els.input.innerHTML || "") : "",
@@ -1479,8 +1323,7 @@
     };
     const restoreComposerSnapshot = (snapshot) => {
       if (!snapshot || !els.input) return false;
-      suppressAttachmentReconcile = true;
-      try {
+      return withoutAttachmentReconcile(() => {
         state.attachments = normalizeComposerAttachments(snapshot.attachments || []);
         if ("value" in els.input) els.input.value = String(snapshot.inputValue || "");
         else els.input.innerHTML = String(snapshot.inputHtml || "");
@@ -1490,9 +1333,7 @@
         updateControls();
         options.onInput?.(controller.payload(), controller);
         return true;
-      } finally {
-        suppressAttachmentReconcile = false;
-      }
+      });
     };
     const captureWorkspaceDraft = () => {
       const draft = {
@@ -1550,23 +1391,23 @@
         ? { messageId: draft.submitted_message_id, content: draftContentSignature(draft) }
         : null;
       state.restoringDraft = true;
-      suppressAttachmentReconcile = true;
       try {
-        state.attachments = normalizeComposerAttachments(draft.attachments);
-        state.refs = normalizeRefs(draft.refs);
-        if (draft.input_height > 0) state.composerInputHeight = draft.input_height;
-        setComposerDraftInput(els.input, draft.text, state.attachments, {
-          ...attachmentPreviewOptions(),
-          focus,
+        withoutAttachmentReconcile(() => {
+          state.attachments = normalizeComposerAttachments(draft.attachments);
+          state.refs = normalizeRefs(draft.refs);
+          if (draft.input_height > 0) state.composerInputHeight = draft.input_height;
+          setComposerDraftInput(els.input, draft.text, state.attachments, {
+            ...attachmentPreviewOptions(),
+            focus,
+          });
+          renderAttachmentTrayOnly({ notify: false });
+          refreshSlashCommandMenu();
+          controller.refreshRefs();
+          applyComposerInputLayout();
+          if (focus && draft.selection) restoreComposerSelection(els.input, draft.selection);
+          updateControls();
         });
-        renderAttachmentTrayOnly({ notify: false });
-        refreshSlashCommandMenu();
-        controller.refreshRefs();
-        applyComposerInputLayout();
-        if (focus && draft.selection) restoreComposerSelection(els.input, draft.selection);
-        updateControls();
       } finally {
-        suppressAttachmentReconcile = false;
         state.restoringDraft = false;
       }
       draftBaseline = draftSignatures(captureWorkspaceDraft());
@@ -1591,20 +1432,6 @@
       } finally {
         state.restoringDraft = restoring;
       }
-    };
-    const deleteUploadedAttachment = item => {
-      if (!String(item?.upload_id || "").trim()) return Promise.resolve({ deleted: false });
-      const remove = options.deleteAttachment || defaultWorkspaceDeleteAttachment;
-      return Promise.resolve(remove(item, attachmentUploadContext())).catch(error => {
-        if (options.onError) options.onError(error);
-        else window.PortalUI.toast(error.message || error, "error");
-        return { deleted: false, error };
-      });
-    };
-    const discardComposerAttachments = items => {
-      const removed = Array.isArray(items) ? items.filter(Boolean) : [];
-      releaseAttachmentPreviews(removed);
-      removed.forEach(item => { deleteUploadedAttachment(item); });
     };
     const undoComposerAttachmentInsert = (snapshot) => {
       const ids = new Set((snapshot?.attachmentIds || []).map(id => String(id || "")).filter(Boolean));
@@ -1647,152 +1474,6 @@
       state.undoStack.pop();
       if (snapshot.kind === "attachment-insert") return undoComposerAttachmentInsert(snapshot);
       return restoreComposerSnapshot(snapshot);
-    };
-    const reconcileAttachmentsFromInput = (reconcileOptions = {}) => {
-      if (suppressAttachmentReconcile || !els.input || "value" in els.input || !state.attachments.length) return false;
-      const order = composerAttachmentTokenOrder(els.input);
-      const present = new Set(order);
-      const byId = new Map(state.attachments.map(item => [String(item?.id || ""), item]));
-      const next = order.map(id => byId.get(id)).filter(Boolean);
-      const currentIds = state.attachments.map(item => String(item?.id || ""));
-      const nextIds = next.map(item => String(item?.id || ""));
-      if (next.length === state.attachments.length && nextIds.every((id, idx) => id === currentIds[idx])) return false;
-      discardComposerAttachments(state.attachments.filter(item => !present.has(String(item?.id || ""))));
-      state.attachments = normalizeComposerAttachments(next);
-      renderAttachmentTrayOnly({ notify: reconcileOptions.notify });
-      return true;
-    };
-    const uploadComposerAttachment = async attachmentId => {
-      const target = state.attachments.find(item => String(item.id || "") === String(attachmentId || ""));
-      if (!target?.file) throw new Error("原始附件已不可用，请重新选择文件。");
-      state.attachments = normalizeComposerAttachments(state.attachments.map(item => item.id === target.id ? {
-        ...item,
-        uploading: true,
-        progress: 0,
-        error: "",
-      } : item));
-      renderAttachments({ notify: true });
-      try {
-        const upload = options.uploadAttachment || defaultWorkspaceUpload;
-        const result = await upload(target.file, {
-          ...attachmentUploadContext(),
-          item: target,
-          workspace: controller,
-        });
-        if (!state.attachments.some(item => String(item?.id || "") === String(target.id || ""))) {
-          await deleteUploadedAttachment({ ...target, ...result, kind: target.kind });
-          return;
-        }
-        if (result?.preview_url && result.preview_url !== target.preview_url) {
-          releaseAttachmentPreview(target.preview_url);
-        }
-        state.attachments = normalizeComposerAttachments(state.attachments.map(item => item.id === target.id ? {
-          ...item,
-          upload_id: result?.upload_id || "",
-          file_id: result?.file_id || "",
-          name: result?.filename || item.name,
-          path: result?.path || item.path || "",
-          preview_url: result?.preview_url || item.preview_url || "",
-          data_url: result?.data_url || item.data_url || "",
-          mime: result?.mime || result?.content_type || item.mime || item.content_type || "",
-          content_type: result?.content_type || item.content_type || "",
-          size: Number(result?.size || item.size || 0),
-          size_bytes: Number(result?.size_bytes || result?.size || item.size_bytes || item.size || 0),
-          uploading: false,
-          progress: 100,
-          error: "",
-          file: null,
-        } : item));
-      } catch (error) {
-        state.attachments = normalizeComposerAttachments(state.attachments.map(item => item.id === target.id ? {
-          ...item,
-          uploading: false,
-          error: error.message || String(error || "上传失败"),
-        } : item));
-        throw error;
-      } finally {
-        renderAttachments({ notify: true });
-      }
-    };
-    const addFiles = async (files) => {
-      const now = Date.now();
-      const seen = new Set();
-      const list = Array.from(files || []).filter(file => {
-        if (!file) return false;
-        const signature = fileSignature(file);
-        if (seen.has(signature)) return false;
-        seen.add(signature);
-        const previous = Number(state.recentFileSignatures.get(signature) || 0);
-        if (previous && now - previous < 900) return false;
-        state.recentFileSignatures.set(signature, now);
-        return true;
-      });
-      state.recentFileSignatures.forEach((timestamp, signature) => {
-        if (now - Number(timestamp || 0) > 3000) state.recentFileSignatures.delete(signature);
-      });
-      if (!list.length) return;
-      const maxFileSize = Number(options.maxFileSize || 512 * 1024 * 1024);
-      const tooLarge = list.find(file => Number(file.size || 0) > maxFileSize);
-      if (tooLarge) throw new Error(`文件过大：${tooLarge.name || "attachment"}，上限 ${Math.round(maxFileSize / 1024 / 1024)} MB`);
-      const undoFrame = pushComposerUndoSnapshot();
-      const drafts = list.map(file => {
-        const kind = String(file.type || "").toLowerCase().startsWith("image/") ? "image" : "file";
-        const previewUrl = kind === "image" ? URL.createObjectURL(file) : "";
-        if (previewUrl) ownedAttachmentPreviews.add(previewUrl);
-        return {
-          id: `uploading:${Date.now()}:${Math.random().toString(16).slice(2)}`,
-          kind,
-          name: file.name || (kind === "image" ? window.PortalI18n.t("pasted image") : "attachment"),
-          content_type: file.type || "",
-          size: Number(file.size || 0),
-          preview_url: previewUrl,
-          path: "",
-          uploading: true,
-          progress: 0,
-          error: "",
-          file,
-        };
-      });
-      if (undoFrame) {
-        undoFrame.kind = "attachment-insert";
-        undoFrame.attachmentIds = drafts.map(item => item.id);
-      }
-      state.attachments = normalizeComposerAttachments([...state.attachments, ...drafts]);
-      suppressAttachmentReconcile = true;
-      try {
-        drafts.forEach(item => insertComposerAttachmentRef(els.input, item, { forceDom: true }));
-      } finally {
-        suppressAttachmentReconcile = false;
-      }
-      renderAttachments({ notify: true });
-      markComposerUndoAfterSnapshot(undoFrame);
-      for (const draft of drafts) {
-        try {
-          await uploadComposerAttachment(draft.id);
-        } catch {}
-      }
-    };
-    const addReference = (reference) => {
-      const item = reference?.content_type === "text/x-portal-preview-reference"
-        ? normalizeComposerAttachment(reference)
-        : createConversationSelectionReference(reference);
-      if (!item || !composerPreviewReference(item)) return null;
-      const undoFrame = pushComposerUndoSnapshot();
-      if (undoFrame) {
-        undoFrame.kind = "attachment-insert";
-        undoFrame.attachmentIds = [item.id];
-      }
-      state.attachments = normalizeComposerAttachments([...state.attachments, item]);
-      suppressAttachmentReconcile = true;
-      try {
-        insertComposerAttachmentRef(els.input, item, { forceDom: true });
-      } finally {
-        suppressAttachmentReconcile = false;
-      }
-      renderAttachments({ notify: true });
-      markComposerUndoAfterSnapshot(undoFrame);
-      saveActiveDraft();
-      return item;
     };
     const patchComposerElement = (current, desired) => {
       if (!current || !desired) return;
@@ -1954,10 +1635,7 @@
       },
       attachments: () => state.attachments.slice(),
       messages: () => state.messages.slice(),
-      setAttachments(items) {
-        state.attachments = normalizeComposerAttachments(items);
-        renderAttachments({ notify: true });
-      },
+      setAttachments,
       setTitle(title) {
         const node = root.querySelector(".portalWorkspaceHead .paneTitle");
         if (node) node.textContent = String(title || window.PortalI18n.t("Chat Workspace"));
@@ -2022,12 +1700,7 @@
         if (draftScopeChanged) restoreDraftScope(nextDraftScope, { force: true });
         updateControls();
       },
-      updateAttachment(id, patch = {}) {
-        const target = String(id || "");
-        if (!target) return;
-        state.attachments = normalizeComposerAttachments(state.attachments.map(item => String(item?.id || "") === target ? { ...item, ...patch } : item));
-        renderAttachments({ notify: true });
-      },
+      updateAttachment,
       refs: () => normalizeRefs(state.refs),
       setRefs(refs) {
         state.refs = normalizeRefs(refs);
@@ -2086,15 +1759,12 @@
       },
       setDraftText(value, attachments = null) {
         state.recoveredSubmission = null;
-        suppressAttachmentReconcile = true;
-        try {
+        withoutAttachmentReconcile(() => {
           if (attachments !== null) state.attachments = normalizeComposerAttachments(attachments);
           setComposerDraftInput(els.input, value || "", state.attachments, attachmentPreviewOptions());
           renderAttachments({ notify: true });
           refreshSlashCommandMenu();
-        } finally {
-          suppressAttachmentReconcile = false;
-        }
+        });
         updateControls();
         saveActiveDraft();
       },
@@ -2173,8 +1843,7 @@
           state.undoStack = snapshot.undoStack.slice();
           state.composerInputFocused = snapshot.composerInputFocused;
           state.composerImeActive = snapshot.composerImeActive;
-          suppressAttachmentReconcile = true;
-          try {
+          withoutAttachmentReconcile(() => {
             if (els.input && "value" in els.input) {
               els.input.value = String(snapshot.inputSnapshot.inputValue || "");
             } else if (els.input) {
@@ -2188,9 +1857,7 @@
               els.input?.focus?.({ preventScroll: true });
               restoreComposerSelection(els.input, snapshot.inputSnapshot.selection);
             }
-          } finally {
-            suppressAttachmentReconcile = false;
-          }
+          });
         } finally {
           draftPersistenceSuspension = null;
           draftStore.resume();
@@ -2678,7 +2345,7 @@
         restartUnobserve?.();
         restartProgress.destroy();
         saveActiveDraft({ immediate: true });
-        ownedAttachmentPreviews.forEach(releaseAttachmentPreview);
+        destroyComposerAttachments();
         window.removeEventListener("pagehide", saveDraftBeforePageLeave);
         document.removeEventListener("visibilitychange", saveDraftWhenHidden);
         refsControlBinding?.destroy();
@@ -2812,7 +2479,7 @@
           options.onSend?.(payload, controller);
         },
         onStop: () => options.onStop?.(controller),
-        onFiles: files => addFiles(files).catch(error => options.onError ? options.onError(error) : window.PortalUI.toast(error.message || error, "error")),
+        onFiles: files => addFiles(files).catch(reportAttachmentError),
         onMoveAttachment: (token, event) => {
           const moved = moveComposerAttachmentRef(els.input, token, event);
           if (moved) {
@@ -2847,14 +2514,8 @@
         },
       });
       bindComposerAttachmentActions(els.composer, {
-        onRetry: id => uploadComposerAttachment(id).catch(error => options.onError ? options.onError(error) : window.PortalUI.toast(error.message || error, "error")),
-        onRemove: id => {
-          discardComposerAttachments(state.attachments.filter(item => item.id === id));
-          state.attachments = state.attachments.filter(item => item.id !== id);
-          removeComposerAttachmentRef(els.input, id);
-          renderAttachments({ notify: true });
-          options.onInput?.(controller.payload(), controller);
-        },
+        onRetry: id => uploadComposerAttachment(id).catch(reportAttachmentError),
+        onRemove: removeComposerAttachment,
       });
       controller.refreshRefs();
       bindWorkspaceQueue(els.composer, {
