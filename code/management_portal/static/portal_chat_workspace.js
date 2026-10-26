@@ -19,6 +19,8 @@
   //     the live runtime stream, quoting a selection, reconciling the list
   //   chat_workspace_message_viewport.js  one Workspace's message viewport: reader
   //     scrolls, following the tail, the reading place across Workbench layouts
+  //   chat_workspace_message_actions.js  one Workspace's message actions: the
+  //     right-click menu, copy, links, host actions, handoff asks, folding runs
   //   chat_workspace_runtime_settings.js  the Runtime Settings dialog, notices after
   //     saving, the session restart dialog and its progress
   //   chat_workspace_harness_panel.js  the Agent Harness panel and menu, prompt
@@ -1131,217 +1133,19 @@
       attachmentById: id => state.attachments.find(item => String(item?.id || "") === String(id || "")) || null,
       onImagePreview: context => openComposerAttachmentEditor({ ...context, workspace: controller }),
     });
-    const bindDefaultMessageActions = () => {
-      if (!els.messages || els.messages.dataset.portalMessageActionsBound === "1") return;
-      els.messages.dataset.portalMessageActionsBound = "1";
-      const messageMenuPopovers = new WeakMap();
-      let openMessageMenu = null;
-      let handleMessagesClick = null;
-      const messageMenuPopover = menu => {
-        if (!menu) return null;
-        const existing = messageMenuPopovers.get(menu);
-        if (existing) return existing;
-        const messageItem = menu.closest(".messageItem");
-        if (!messageItem || !window.PortalOverlay) return null;
-        menu.addEventListener("click", event => {
-          if (menu.parentNode !== document.body) return;
-          event.stopPropagation();
-          handleMessagesClick?.(event);
-        });
-        const popover = window.PortalOverlay.bindPopover({
-          trigger: messageItem,
-          panel: menu,
-          placement: "bottom-end",
-          closeOnEscape: true,
-          closeOnOutside: true,
-          closeOnTrigger: true,
-          portal: true,
-          onOpen: () => {
-            openMessageMenu = menu;
-            messageItem?.classList.add("menuOpen");
-            options.onInteractionChange?.(true, menu);
-          },
-          onClose: () => {
-            if (openMessageMenu === menu) openMessageMenu = null;
-            messageItem?.classList.remove("menuOpen");
-            options.onInteractionChange?.(false, menu);
-          },
-        });
-        messageMenuPopovers.set(menu, popover);
-        return popover;
-      };
-      const setMessageMenuOpen = (menu, open, context) => {
-        if (!menu) return;
-        bindMessageSubmenus(menu);
-        closeMessageSubmenus(menu);
-        const popover = messageMenuPopover(menu);
-        if (popover) {
-          if (open) popover.open(context);
-          else popover.close();
-          return;
-        }
-        menu.hidden = !open;
-      };
-      const closeMessageMenus = (except = null) => {
-        if (openMessageMenu && openMessageMenu !== except) setMessageMenuOpen(openMessageMenu, false);
-        els.messages.querySelectorAll("[data-portal-message-menu]").forEach(menu => {
-          if (menu !== except) setMessageMenuOpen(menu, false);
-        });
-      };
-      handleMessagesClick = event => {
-        const workToggle = event.target.closest("[data-portal-work-group-toggle]");
-        if (workToggle) {
-          event.preventDefault();
-          event.stopPropagation();
-          const groupId = workToggle.dataset.portalWorkGroupToggle;
-          if (state.collapsedWorkGroups.has(groupId)) state.collapsedWorkGroups.delete(groupId);
-          else state.collapsedWorkGroups.add(groupId);
-          controller.setMessages(state.messages, {
-            ...state.messageRenderOptions, runtimeDetails: state.runtimeDetails,
-            runtimeLive: state.runtimeLive, runtimePhase: state.runtimePhase, force: true,
-          });
-          els.messages.querySelector(`[data-portal-work-group-toggle="${CSS.escape(groupId)}"]`)?.focus({ preventScroll: true });
-          return;
-        }
-        const foldToggle = event.target.closest("[data-message-fold-toggle]");
-        if (foldToggle) {
-          event.preventDefault();
-          event.stopPropagation();
-          toggleMessageFold(foldToggle);
-          return;
-        }
-        const groupToggle = event.target.closest("[data-portal-agent-group-toggle]");
-        if (groupToggle) {
-          event.preventDefault();
-          event.stopPropagation();
-          const groupId = String(groupToggle.dataset.portalAgentGroupToggle || "").trim();
-          if (!groupId) return;
-          if (state.messageRenderOptions?.autoCollapseAgentGroups === true) {
-            if (state.expandedAgentGroups.has(groupId)) state.expandedAgentGroups.delete(groupId);
-            else state.expandedAgentGroups.add(groupId);
-          } else if (state.collapsedAgentGroups.has(groupId)) state.collapsedAgentGroups.delete(groupId);
-          else state.collapsedAgentGroups.add(groupId);
-          controller.setMessages(state.messages, {
-            ...state.messageRenderOptions,
-            runtimeDetails: state.runtimeDetails,
-            runtimeLive: state.runtimeLive,
-            runtimePhase: state.runtimePhase,
-            force: true,
-          });
-          return;
-        }
-        const openLinkButton = event.target.closest("[data-portal-message-open-link]");
-        if (openLinkButton) {
-          event.preventDefault();
-          setMessageMenuOpen(openLinkButton.closest("[data-portal-message-menu]"), false);
-          window.open(openLinkButton.dataset.portalMessageOpenLink, "_blank", window.PortalI18n.t("noopener,noreferrer"));
-          return;
-        }
-        const actionButton = event.target.closest("[data-portal-message-action]");
-        if (actionButton) {
-          const menu = actionButton.closest("[data-portal-message-menu]");
-          const article = actionButton.closest("[data-message-key]");
-          const key = String(menu?.dataset.portalMessageKey || article?.dataset.messageAfterOf || article?.dataset.messageKey || "");
-          const item = state.messageByKey.get(key);
-          const action = String(actionButton.dataset.portalMessageAction || "");
-          setMessageMenuOpen(menu, false);
-          if (action === "resident-handoff-ask") {
-            const card = residentHandoffCards(actionButton.dataset.handoffCard)[0];
-            if (!card?.ask_message || actionButton.disabled || !options.onSend || state.composer.can_send === false) return;
-            actionButton.disabled = true;
-            // This explicit action owns its payload; an unfinished draft remains in the composer.
-            Promise.resolve(options.onSend({ text: `替我问一下 ${card.title}（${card.resident_id}）：${card.ask_message}`, refs: [], attachments: [] }, controller,
-              { clear: false, focus: false, quote: false, includeContext: false, clearRefsOnSuccess: false }))
-              .catch(error => options.onError ? options.onError(error) : window.PortalUI.toast(error.message || String(error), "error"))
-              .finally(() => { actionButton.disabled = false; });
-            return;
-          }
-          const handler = state.messageRenderOptions?.onMessageAction || options.onMessageAction;
-          if (handler && item && action) {
-            Promise.resolve(handler({ action, key, item, button: actionButton, workspace: controller }))
-              .catch(error => options.onError?.(error));
-          }
-          return;
-        }
-        const copyButton = event.target.closest("[data-portal-message-copy]");
-        if (!copyButton) return;
-        const menu = copyButton.closest("[data-portal-message-menu]");
-        const key = String(menu?.dataset.portalMessageKey || "");
-        const item = state.messageByKey.get(key);
-        if (!item) return;
-        let items = [item];
-        if (copyButton.dataset.portalMessageCopyScope === "replies") {
-          if (messageRole(item) !== "agent") return;
-          const index = state.messages.findIndex(message => messageRenderKey(message) === key);
-          const group = consecutiveAgentGroups(state.messages).get(index);
-          if (group) items = state.messages.slice(group.start, group.end + 1);
-        }
-        const format = copyButton.dataset.portalMessageCopy === "markdown" ? "markdown" : "text";
-        const valueResolver = state.messageRenderOptions?.messageCopyValue || options.messageCopyValue;
-        Promise.all(items.map(item => {
-          const key = messageRenderKey(item);
-          const article = els.messages.querySelector(`[data-message-key="${CSS.escape(key)}"]`);
-          const raw = String(item?.content || "");
-          return valueResolver
-            ? valueResolver({ format, item, key, article, workspace: controller })
-            : (format === "markdown" ? raw : messageCopyText(article, raw));
-        }))
-          .then(values => window.PortalUI.copyText(values.map(value => String(value ?? "")).join("\n\n"), window.PortalI18n.t("消息")))
-          .catch(error => options.onError?.(error));
-        setMessageMenuOpen(menu, false);
-      };
-      els.messages.addEventListener("click", handleMessagesClick);
-      els.messages.addEventListener("contextmenu", event => {
-        if (event.target.closest("input, textarea, select") || event.target.isContentEditable) return;
-        // The reading pane owns its context menu, including blank space and
-        // status blocks. Only an actual message may supply message actions.
-        event.preventDefault();
-        event.stopPropagation();
-        let article = event.target.closest(".messageItem[data-message-key]");
-        const list = event.target;
-        if (!article && list.matches(".messageList") && list.parentElement === els.messages) {
-          // The flex gap after a message belongs to that message, up to the
-          // next visible message. Do not claim side gutters, history controls,
-          // runtime cards, or the empty space before/after the conversation.
-          let previous = null;
-          for (const row of list.children) {
-            if (!row.getClientRects().length) continue;
-            const bounds = row.getBoundingClientRect();
-            if (bounds.top > event.clientY) {
-              if (previous?.matches(".messageItem[data-message-key]")
-                && row.matches(".messageItem[data-message-key]")
-                && state.messageByKey.has(row.dataset.messageKey)) {
-                const before = previous.getBoundingClientRect();
-                if (event.clientY >= before.bottom && event.clientX >= before.left && event.clientX <= before.right) article = previous;
-              }
-              break;
-            }
-            previous = row;
-          }
-        }
-        const key = article && els.messages.contains(article) ? article.dataset.messageKey : "";
-        const menu = key && state.messageByKey.has(key)
-          ? article.querySelector("[data-portal-message-menu]")
-            || (openMessageMenu?.dataset.portalMessageKey === key ? openMessageMenu : null)
-          : null;
-        if (!menu) {
-          closeMessageMenus();
-          return;
-        }
-        menu.querySelector("[data-portal-message-open-link]")?.remove();
-        const link = event.target.closest("a[href]");
-        if (link && article.contains(link) && ["http:", "https:"].includes(link.protocol)) {
-          const button = document.createElement("button");
-          button.type = "button";
-          button.dataset.portalMessageOpenLink = link.href;
-          button.textContent = window.PortalI18n.t("打开链接");
-          button.title = window.PortalI18n.t("在新标签页打开这个网页链接");
-          menu.insertBefore(button, menu.querySelector("[data-portal-message-copy]"));
-        }
-        closeMessageMenus(menu);
-        setMessageMenuOpen(menu, true, { point: { x: event.clientX, y: event.clientY } });
-      });
-    };
+    // Draw the list again from the current messages and live runtime.
+    const redrawMessages = () => controller.setMessages(state.messages, {
+      ...state.messageRenderOptions,
+      runtimeDetails: state.runtimeDetails,
+      runtimeLive: state.runtimeLive,
+      runtimePhase: state.runtimePhase,
+      force: true,
+    });
+    const { destroyMessageActions } = chatWorkspaceModule("PortalChatWorkspaceMessageActions").createMessageActions({
+      bindMessageSubmenus, closeMessageSubmenus, consecutiveAgentGroups, currentController: () => controller, els,
+      messageCopyText, messageRenderKey, messageRole, options, redrawMessages, residentHandoffCards,
+      state, toggleMessageFold,
+    });
     // A message's attachment opens a file in the Workspace preview and an image
     // in the image editor; an image without a preview URL has its path copied.
     const openMessageAttachment = (renderOptions, kind, path, node) => {
@@ -1364,7 +1168,6 @@
     // is appended; otherwise it treats the whole list as drawn again.
     const afterMessagesDrawn = (roots, { incremental = false } = {}) => {
       const renderOptions = state.messageRenderOptions;
-      bindDefaultMessageActions();
       for (const root of roots) {
         bindAttachmentRefs(root, {
           previewUrlForPath: renderOptions.previewUrlForPath || options.previewUrlForPath,
@@ -2855,13 +2658,7 @@
         // An empty Chat has no list to patch. setMessages would find the
         // runtime it was just given unchanged, so it is told to draw.
         if (!list?.classList.contains("messageList")) {
-          controller.setMessages(state.messages, {
-            ...state.messageRenderOptions,
-            runtimeDetails: state.runtimeDetails,
-            runtimeLive: state.runtimeLive,
-            runtimePhase: state.runtimePhase,
-            force: true,
-          });
+          redrawMessages();
           return;
         }
         const template = document.createElement("template");
@@ -3002,6 +2799,7 @@
         refsControlBinding?.destroy();
         refsControlBinding = null;
         destroyMessageViewport();
+        destroyMessageActions();
         els.messages?.removeEventListener("load", measureLoadedMessageImage, true);
         messageFoldObserver?.disconnect();
         window.removeEventListener("resize", handleWindowResize);

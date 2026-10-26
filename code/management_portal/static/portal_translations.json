@@ -14967,10 +14967,6 @@
     "en": "none is absence of a grant; revoke an existing credential",
     "zh-CN": "none 表示没有授权；请撤销现有凭据"
   },
-  "noopener,noreferrer": {
-    "en": "noopener,noreferrer",
-    "zh-CN": "noopener,noreferrer"
-  },
   "not a device address: {p0}": {
     "en": "not a device address: {p0}",
     "zh-CN": "不是设备地址：{p0}"
