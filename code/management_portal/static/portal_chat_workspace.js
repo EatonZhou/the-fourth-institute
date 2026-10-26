@@ -21,6 +21,8 @@
   //     scrolls, following the tail, the reading place across Workbench layouts
   //   chat_workspace_message_actions.js  one Workspace's message actions: the
   //     right-click menu, copy, links, host actions, handoff asks, folding runs
+  //   chat_workspace_message_folds.js  one Workspace's long-body folds: measuring
+  //     bodies, which messages start expanded, the reader's toggle
   //   chat_workspace_runtime_settings.js  the Runtime Settings dialog, notices after
   //     saving, the session restart dialog and its progress
   //   chat_workspace_harness_panel.js  the Agent Harness panel and menu, prompt
@@ -129,7 +131,7 @@
     messageTitle, messageAuthorHeaderHtml, bindMessageAvatars, messageContextRefsHtml, messageAttachmentsHtml,
     messageSubmenuHtml, closeMessageSubmenus, bindMessageSubmenus, commonMessageActionsHtml,
     messageQuoteExcerpt, messageQuotable, messageQuoteHtml, composerQuoteHtml, messageCopyText,
-    MESSAGE_FOLD_MIN_LINES, messageFoldChoices, messageFoldReply, messageFoldDefaults, messageFoldBodyHtml,
+    MESSAGE_FOLD_MIN_LINES, messageFoldChoices, messageFoldDefaults, messageFoldBodyHtml,
     applyMessageFold, normalizeMessageStream, messageRenderKey, messageInstanceKey, messageNodeKey,
     messageInstanceSelector, messageAfterKey, messageSenderIdentity,
   } = chatWorkspaceModule("PortalChatWorkspaceMessages").createMessages({
@@ -500,8 +502,6 @@
       expandedAgentGroups: new Set(),
       messageFoldDefaults: new Set(),
       messageFoldSizes: new Map(),
-      latestFoldReplyKey: "",
-      latestFoldReplyAt: -Infinity,
       undoStack: [],
       recentFileSignatures: new Map(),
       composerInputFocused: false,
@@ -848,107 +848,13 @@
       els, messageInstanceSelector, messageNodeKey, messageViewportAtTail, root, state,
     });
 
-    // A body folds by its rendered height: measured after each render, when the list
-    // changes width or becomes visible, and when an image in it loads.
-    const measureMessageFolds = (roots = [els.messages], { reading = false } = {}) => {
-      const bodies = roots.flatMap(node => node ? [
-        ...(node.matches?.(".messageContent[data-message-fold]") ? [node] : []),
-        ...(node.querySelectorAll?.(".messageContent[data-message-fold]") || []),
-      ] : []);
-      const viewport = reading ? els.messages.getBoundingClientRect() : null;
-      // Read every height before writing any, so the list lays out once.
-      const measured = bodies.map(body => {
-        if (!body.getClientRects().length) return null;
-        const lineHeight = Number.parseFloat(getComputedStyle(body).lineHeight) || 21;
-        const box = viewport ? body.getBoundingClientRect() : null;
-        return {
-          size: body.scrollHeight > lineHeight * MESSAGE_FOLD_MIN_LINES + 1 ? "long" : "short",
-          inView: !!box && box.bottom > viewport.top && box.top < viewport.bottom,
-        };
-      });
-      bodies.forEach((body, index) => {
-        const key = body.closest("[data-message-key]")?.dataset.messageKey || "";
-        const result = measured[index];
-        if (!result || !key) return;
-        // A body that grows long while the reader looks at it stays open.
-        if (result.inView && result.size === "long" && body.dataset.messageFoldSize !== "long"
-          && body.dataset.messageFold === "collapsed" && !messageFoldChoices.has(key)) {
-          messageFoldChoices.set(key, "expanded");
-          applyMessageFold(body.nextElementSibling, true);
-        }
-        state.messageFoldSizes.set(key, result.size);
-        if (body.dataset.messageFoldSize !== result.size) body.dataset.messageFoldSize = result.size;
-      });
-    };
-    const firstVisibleMessageRow = () => {
-      const top = els.messages.getBoundingClientRect().top + 1;
-      const rows = [...els.messages.querySelectorAll(".messageList > [data-message-key]")];
-      return rows.find(row => row.getBoundingClientRect().top >= top)
-        || rows.find(row => row.getBoundingClientRect().bottom >= top) || null;
-    };
-    let messageFoldWidth = 0;
-    const messageFoldObserver = els.messages && typeof ResizeObserver === "function"
-      ? new ResizeObserver(() => {
-        const width = els.messages.clientWidth;
-        if (width === messageFoldWidth) return;
-        messageFoldWidth = width;
-        if (!width) return;
-        // While the user reads history, the first message starting in view keeps its place.
-        const reading = !state.messageTailFollowIntent && messageViewportMeasurable();
-        const anchor = reading ? firstVisibleMessageRow() : null;
-        const before = anchor?.getBoundingClientRect().top;
-        measureMessageFolds([els.messages], { reading });
-        if (anchor) els.messages.scrollTop += anchor.getBoundingClientRect().top - before;
-      })
-      : null;
-    messageFoldObserver?.observe(els.messages);
-    const measureLoadedMessageImage = event => {
-      const body = event.target?.tagName === "IMG" ? event.target.closest(".messageContent[data-message-fold]") : null;
-      if (body) measureMessageFolds([body]);
-    };
-    els.messages?.addEventListener("load", measureLoadedMessageImage, true);
-    // A newer reply or the end of a turn changes which messages start expanded. A message
-    // the user is reading stays open, so its text is not pulled away.
-    const updateMessageFoldDefaults = () => {
-      const previous = state.messageFoldDefaults;
-      const next = messageFoldDefaults(state.messages, {
-        runtimeLive: state.runtimeLive,
-        onLatestReply: (item, at) => {
-          state.latestFoldReplyKey = item ? messageRenderKey(item) : "";
-          state.latestFoldReplyAt = at;
-        },
-      });
-      state.messageFoldDefaults = next;
-      const shown = new Set(state.messages.map(messageRenderKey));
-      const changed = [...previous].filter(key => !next.has(key))
-        .concat([...next].filter(key => !previous.has(key)))
-        .filter(key => shown.has(key) && !messageFoldChoices.has(key));
-      if (changed.length && !state.messageTailFollowIntent && messageViewportMeasurable()) {
-        const viewport = els.messages.getBoundingClientRect();
-        for (const key of changed) {
-          if (next.has(key)) continue;
-          const box = els.messages.querySelector(`[data-message-key="${CSS.escape(key)}"]`)?.getBoundingClientRect();
-          if (box && box.bottom > viewport.top && box.top < viewport.bottom) messageFoldChoices.set(key, "expanded");
-        }
-      }
-      return changed.filter(key => !messageFoldChoices.has(key));
-    };
-    const toggleMessageFold = button => {
-      const key = String(button.dataset.messageFoldToggle || "");
-      const body = button.previousElementSibling;
-      if (!key || !body?.dataset.messageFold) return;
-      const expanded = body.dataset.messageFold !== "expanded";
-      messageFoldChoices.set(key, expanded ? "expanded" : "collapsed");
-      // Opening keeps the text in place to read on; closing keeps the button under the pointer.
-      const anchor = expanded ? body : button;
-      const before = anchor.getBoundingClientRect().top;
-      document.querySelectorAll(`[data-message-fold-toggle="${CSS.escape(key)}"]`)
-        .forEach(other => applyMessageFold(other, expanded));
-      if (!messageViewportMeasurable()) return;
-      els.messages.scrollTop += anchor.getBoundingClientRect().top - before;
-      state.messageTailFollowIntent = messageViewportAtTail(els.messages);
-      syncMessageScrollMode();
-    };
+    const {
+      measureMessageFolds, updateMessageFoldDefaults, showMessageFoldDefaults, toggleMessageFold,
+      destroyMessageFolds,
+    } = chatWorkspaceModule("PortalChatWorkspaceMessageFolds").createMessageFolds({
+      MESSAGE_FOLD_MIN_LINES, applyMessageFold, els, messageFoldChoices, messageFoldDefaults,
+      messageRenderKey, messageViewportAtTail, messageViewportMeasurable, state, syncMessageScrollMode,
+    });
     const markComposerInputActivity = (activity = {}) => {
       state.composerInputFocused = !!activity.focused;
       state.composerImeActive = !!activity.composing;
@@ -2493,41 +2399,20 @@
           || state.messageItemSignatures.length !== previous.length
           || state.messageScrollScope !== String(historyScope() || "")
           || (state.runtimeLive && messageRole(message) !== "agent")) return false;
-        const role = messageRole(message);
         let start = previous.length - 1;
         while (start > 0 && messageRole(previous[start - 1]) === messageRole(previous[start])) start -= 1;
         const first = list.querySelector(messageInstanceSelector(messageInstanceKey(previous[start])));
         if (!first) return false;
         const prefixNode = first.previousElementSibling;
         const wasFollowing = state.messageTailFollowIntent;
-        const oldLatest = state.latestFoldReplyKey;
         state.messages = [...previous, message];
         state.contract = { ...state.contract, messages: state.messages };
         syncHistory();
         state.messageItemSignatures.push(JSON.stringify(message));
         state.messageByKey.set(messageIdentity(message), message);
-        const key = messageRenderKey(message);
-        if (message.pending || message.live_output || (state.runtimeLive && role === "agent")) {
-          state.messageFoldDefaults.add(key);
-        }
-        if (messageFoldReply(message)) {
-          const at = Date.parse(String(message.created_at || ""));
-          if (!(at < state.latestFoldReplyAt)) {
-            state.latestFoldReplyKey = key;
-            if (Number.isFinite(at)) state.latestFoldReplyAt = at;
-            state.messageFoldDefaults.add(key);
-            if (oldLatest && oldLatest !== key && !state.runtimeLive) {
-              const oldMessage = state.messageByKey.get(oldLatest);
-              if (!oldMessage?.pending && !oldMessage?.live_output) {
-                state.messageFoldDefaults.delete(oldLatest);
-                if (!messageFoldChoices.has(oldLatest)) {
-                  const oldNode = list.querySelector(`[data-message-key="${CSS.escape(oldLatest)}"]`);
-                  applyMessageFold(oldNode?.querySelector("[data-message-fold-toggle]"), false);
-                }
-              }
-            }
-          }
-        }
+        // The same fold rules as a whole render; the rows kept above the redrawn
+        // ones change in place.
+        showMessageFoldDefaults(updateMessageFoldDefaults());
         conversationSearch?.update(true);
         const renderOptions = state.messageRenderOptions;
         const html = messageListHtml(state.messages.slice(start), {
@@ -2800,8 +2685,7 @@
         refsControlBinding = null;
         destroyMessageViewport();
         destroyMessageActions();
-        els.messages?.removeEventListener("load", measureLoadedMessageImage, true);
-        messageFoldObserver?.disconnect();
+        destroyMessageFolds();
         window.removeEventListener("resize", handleWindowResize);
         if (root.__portalChatWorkspaceController === controller) {
           delete root.__portalChatWorkspaceController;

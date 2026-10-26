@@ -486,9 +486,13 @@ def restart_resident_session(
     selected_account = resolve_account_configuration(requested_route if target_provider == "provider_api" else target_provider, requested_route)
     target_route = requested_route if target_provider == "provider_api" else str(selected_account.get("backend_route_id") or "")
     current_settings = _read_resident_runtime_settings(record) if source_provider == target_provider and source_route == target_route else {}
+    native_fields = ("collaboration_mode", "service_tier", "permission_preset")
+    native_updates = {key: body[key] for key in native_fields if key in body}
     if target_provider == "provider_api":
         from .resident_runtime_domain import _resident_runtime_settings_from_register_payload
         from management_portal.execution.resident_configuration import API_RUNTIME_SETTINGS
+        if native_updates:
+            raise ValueError("Model API 不支持原生会话的 Mode、Speed 或 Permissions")
         if body.get("reasoning_effort"):
             raise ValueError("Model API 推理参数应放在 backend_options.parameters 中")
         settings = {key: value for key, value in current_settings.items() if key in API_RUNTIME_SETTINGS}
@@ -509,6 +513,9 @@ def restart_resident_session(
         if "reasoning_effort" in body:
             requested_settings["reasoning_effort"] = effort
         target_runtime_settings = definition.runtime_adapter().reconcile(definition, target_route, requested_settings)
+    if definition and native_updates:
+        checked = definition.runtime_adapter().validate_updates(definition, target_route, target_runtime_settings, native_updates)
+        target_runtime_settings = definition.runtime_adapter().reconcile(definition, target_route, {**target_runtime_settings, **checked})
 
     same_native_route = (
         source_provider == target_provider
@@ -547,8 +554,8 @@ def restart_resident_session(
         "source_generation": source["generation"], "target_provider": target_provider,
         "target_account": target_route, "context_strategy": strategy, "active_execution_policy": active_execution_policy,
         "resume_failed_input": body.get("resume_failed_input", True),
-        **({"runtime_settings": {key: body[key] for key in ("model", "reasoning_effort", "prompt_context", "backend_options") if key in body}}
-           if any(key in body for key in ("model", "reasoning_effort", "prompt_context", "backend_options")) else {}),
+        **({"runtime_settings": {key: body[key] for key in ("model", "reasoning_effort", "collaboration_mode", "service_tier", "permission_preset", "prompt_context", "backend_options") if key in body}}
+           if any(key in body for key in ("model", "reasoning_effort", "collaboration_mode", "service_tier", "permission_preset", "prompt_context", "backend_options")) else {}),
     }
     if not isinstance(intent["resume_failed_input"], bool):
         raise ValueError("resume_failed_input 必须是 boolean")

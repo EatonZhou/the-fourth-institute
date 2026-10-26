@@ -2555,7 +2555,10 @@ button.messageSourceChip.path:hover {
 .portalRuntimeSettingsField select { min-width: 0; min-height: 34px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); color: var(--text); padding: 0 9px; font: inherit; font-weight: 500; }
 .portalRuntimeSettingsField select:focus { border-color: var(--accent); outline: 2px solid color-mix(in srgb, var(--accent) 18%, transparent); outline-offset: 1px; }
 .portalRuntimeSettingsHint { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
-.portalRuntimeSettingsForm > [data-runtime-settings-restart] { justify-self: start; min-height: 28px; margin-top: -4px; padding-inline: 4px; }
+.portalRuntimeSettingsEditor { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: 10px; }
+.portalRuntimeSettingsEditor[hidden] { display: none; }
+.portalRuntimeSectionTitle { margin: 6px 0 0; padding-top: 12px; border-top: 1px solid var(--border); font-size: 13px; }
+.portalRuntimeSettingsForm .portalDetailFooter { flex-wrap: wrap; }
 .portalSessionBindingSnapshot summary { cursor: pointer; }
 .portalSessionBindingSnapshot dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 12px; }
 .portalSessionBindingSnapshot dd { min-width: 0; margin: 0; overflow-wrap: anywhere; font-family: var(--font-mono, ui-monospace, monospace); }

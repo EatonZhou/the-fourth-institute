@@ -150,11 +150,18 @@
             accountId: e.detail.execution_account?.account_id,
             title: window.PortalI18n.t("Runtime Settings"),
             hint: window.PortalI18n.t("保存不会重启 Session，设置从下一轮生效。"),
-            onSessionRestart: e.detail.allows?.RestartSession === true ? () => open("restart", focusTarget) : null,
           });
         } else {
           let submission = null;
-          b.dialog.open({ ...config, runtime_settings: config.runtime_settings || e.settings, resident_id: id, choose_runtime_settings: true }, values => {
+          const initial = clone(e.settings);
+          b.dialog.open({ ...config, runtime_settings: initial, runtime_catalog: e.catalog,
+            resident_id: id, choose_runtime_settings: true,
+            onSave: mayEdit(e.detail) ? async selected => {
+              const result = await save(selected, initial, token, identity, route);
+              Object.assign(initial, result?.settings || selected);
+              return result;
+            } : null,
+          }, values => {
             if (submission) return submission;
             submission = (async () => {
               await freshDetail(token, identity, route, "restart");
@@ -173,7 +180,7 @@
       async function open(kind, focusTarget) {
         // Progress remains readable during migration; settings and conflicting
         // submissions stay locked, and cancellation retains its own validation.
-        if (b.disposed || e.opening || e.saving || (kind !== "restart" && active(e.restart))) return;
+        if (b.disposed || e.opening || e.saving) return;
         const previous = e.presentation;
         previous?.dialog?.close?.(); previous?.dialog?.destroy?.();
         if (previous) previous.dialog = null;
@@ -182,11 +189,13 @@
         e.opening = (async () => {
           // Re-check permissions and current Provider even when another entry primed the cache.
           e.valid = false; await load(e);
-          if (!live(token) || identity !== identityRevision || (kind !== "restart" && active(e.restart))) return;
-          if (kind === "settings" && !mayEdit(e.detail)) kind = "restart";
+          if (!live(token) || identity !== identityRevision) return;
+          if (kind === "restart" && e.detail?.allows?.RestartSession !== true) throw denied();
+          kind = e.detail?.allows?.RestartSession === true ? "restart" : "settings";
+          if (kind === "settings" && !mayEdit(e.detail)) throw denied();
           if (kind === "restart" && e.detail?.allows?.RestartSession !== true) throw denied();
           const config = kind === "restart" ? await service().sessionRestartOptions(id) : null;
-          if (!live(token) || identity !== identityRevision || (kind !== "restart" && active(e.restart))) return;
+          if (!live(token) || identity !== identityRevision) return;
           present(kind, token, focusTarget, config);
         })();
         notify(e);

@@ -963,6 +963,7 @@ def test_restart_submission_rejection_is_terminal_and_retains_old_binding_contra
 
 @pytest.mark.parametrize("provider,settings", [
     ("claude", {"model": "selected-model", "reasoning_effort": "high"}),
+    ("codex", {"model": "selected-model", "reasoning_effort": "high", "collaboration_mode": "plan", "service_tier": "", "permission_preset": ""}),
     ("provider_api", {"model": "api-model", "prompt_context": {"history": {"enabled": False}},
                       "backend_options": {"parameters": {}, "timeout_seconds": 45}}),
 ])
@@ -1101,7 +1102,7 @@ def test_migration_validates_target_model_and_effort_before_changing_configurati
         }
         monkeypatch.setattr(codex_runtime_settings, "codex_runtime_catalog", lambda *, account_id: target_catalog)
         monkeypatch.setattr(CodexAccounts, "catalog", lambda self, account: target_catalog)
-        body = {"target_provider": "codex", "target_account": "one", "model": model, "reasoning_effort": effort}
+        body = {"target_provider": "codex", "target_account": "one", "model": model, "reasoning_effort": effort, "collaboration_mode": "plan", "service_tier": "", "permission_preset": "auto-review"}
         if not valid:
             with pytest.raises(ValueError):
                 resident_domain.restart_resident_session(record["resident_id"], "alice", body)
@@ -1111,6 +1112,10 @@ def test_migration_validates_target_model_and_effort_before_changing_configurati
             assert result["configuration_only"] is True
             assert runtime_settings_from_parts(saved[-1]["execution_settings"], saved[-1]["harness_config"])["model"] == model
             assert runtime_settings_from_parts(saved[-1]["execution_settings"], saved[-1]["harness_config"])["reasoning_effort"] == effort
+            settings = runtime_settings_from_parts(saved[-1]["execution_settings"], saved[-1]["harness_config"])
+            assert settings["collaboration_mode"] == "plan"
+            assert settings["service_tier"] == ""
+            assert settings["permission_preset"] == "auto-review"
 
 
 def test_restart_configuration_owner_commits_only_after_binding_promotion(monkeypatch):

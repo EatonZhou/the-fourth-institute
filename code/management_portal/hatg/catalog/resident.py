@@ -249,6 +249,9 @@ DECLARATIONS = (
         P("account_id", description="目标 Provider 的账号"),
         P("model", description="目标账号支持的模型；省略时按目标账号配置选择"),
         P("reasoning_effort", description="目标模型支持的推理强度"),
+        P("collaboration_mode", description="目标原生会话的协作模式；切换成功后生效", enum=("default", "plan")),
+        P("service_tier", description="目标模型的服务等级；空字符串使用默认等级"),
+        P("permission_preset", description="目标 Provider 的权限预设；切换成功后生效"),
         P("prompt_context", "object", "仅 Model API：固定上下文和 history 设置"),
         P("backend_options", "object", "仅 Model API：协议参数、超时和重试"),
         P("context_strategy", description="上下文迁移方式，默认 smart（能原生 Fork 时 native，否则 compact）；"

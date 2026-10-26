@@ -399,7 +399,6 @@
         }
       }
       if (latest) expanded.add(messageRenderKey(latest));
-      options.onLatestReply?.(latest, latestAt);
       return expanded;
     }
 
@@ -425,7 +424,7 @@
       messageContextRefsHtml, messageAttachmentsHtml, messageSubmenuHtml, closeMessageSubmenus,
       bindMessageSubmenus, commonMessageActionsHtml, messageQuoteExcerpt, messageQuotable,
       messageQuoteHtml, composerQuoteHtml, messageCopyText, MESSAGE_FOLD_MIN_LINES,
-      messageFoldChoices, messageFoldReply, messageFoldDefaults, messageFoldBodyHtml,
+      messageFoldChoices, messageFoldDefaults, messageFoldBodyHtml,
       applyMessageFold, normalizeMessageStream, messageRenderKey, messageInstanceKey,
       messageNodeKey, messageInstanceSelector, messageAfterKey, messageSenderIdentity,
     });

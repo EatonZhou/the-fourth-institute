@@ -6,7 +6,7 @@ vm.runInNewContext(fs.readFileSync(src,'utf8'),{window,console,JSON,Map,Set,Prom
 const calls=[],settings={a:{model:'m',prompt_context:{history:{enabled:true}}},b:{model:'m'}},permissions={a:{edit:true,restart:true},b:{edit:true,restart:true}},watch={};let pending,hold;let runtime,restart;
 const detail=id=>({resident:{resident_id:id,backend:'codex'},allows:{RestartSession:permissions[id].restart},execution_account:{account_id:'acct'},chat_workspace:{actions:permissions[id].edit?{runtime_settings:{instruction:'UpdateResidentSettings'}}:{}}});
 const service={projection:async({residentId:id})=>{calls.push(['projection',id]);if(hold)await hold;return detail(id)},runtimeSettings:async id=>{calls.push(['read',id]);return {settings:settings[id]}},runtimeCatalog:async()=>({models:['m'],default_model:'m'}),updateRuntimeSettings:async(id,changes)=>{calls.push(['save',id,changes]);settings[id]={...settings[id],...changes};return {settings:settings[id]}},sessionRestartOptions:async id=>({resident_id:id,accounts:{},source:{provider:'codex'}}),observeSessionRestart:(id,fn)=>{watch[id]=fn;return()=>delete watch[id]},restartSession:async values=>{calls.push(['restart',values]);return {status:'accepted'}},cancelSessionRestart:async values=>calls.push(['cancel',values])};
-const dialogs={settings:options=>({open:(...a)=>runtime={args:a,options},close:()=>options.onClose(),destroy(){}}),restart:options=>({open:(...a)=>restart={args:a,options},close:()=>options.onClose(),destroy(){}})};
+const dialogs={settings:options=>({open:(...a)=>runtime={args:a,options},close:()=>options.onClose(),destroy(){}}),restart:options=>({open:(...a)=>{restart={args:a,options};runtime={args:[a[0].runtime_settings,a[0].onSave,{residentId:a[0].resident_id}],options};},close:()=>options.onClose(),destroy(){}})};
 const ctrl=window.PortalResidentRuntimeController.create({service,dialogs});
 async function runtimeSubmissionRegressions() {
   const cases = [
@@ -57,7 +57,7 @@ async function runtimeSubmissionRegressions() {
     };
     const dialog = options => {
       dialogOptions = options;
-      return {open: (_config, submit) => {callback = submit;}, close: () => options.onClose(), destroy() {}};
+      return {open: (config, submit) => {callback = scenario.kind === "settings" ? config.onSave : submit;}, close: () => options.onClose(), destroy() {}};
     };
     const testController = testWindow.PortalResidentRuntimeController.create({service: testService, dialogs: {settings: dialog, restart: dialog}});
     const handle = testController.bind('a');
@@ -99,8 +99,8 @@ async function migrationProgressRegressions() {
   const cases = ['accepted', 'submitting', 'confirming', 'cancelling'].flatMap(status =>
     ['before open', 'during projection', 'during options'].map(at => ({name: `${status} progress ${at}`, status, at})));
   cases.push(
-    {name: 'active migration blocks settings', settings: true},
-    {name: 'migration arriving during options blocks settings', settings: true, at: 'during projection'},
+    {name: 'settings entry opens active migration progress', settings: true},
+    {name: 'settings entry opens progress arriving during projection', settings: true, at: 'during projection'},
     {name: 'fresh permission denies progress', denied: true},
     {name: 'closing while options load discards progress', closeAt: 'during options'},
     {name: 'destroying while projection loads discards progress', destroyAt: 'during projection'},
@@ -170,7 +170,7 @@ async function migrationProgressRegressions() {
         const first = open();
         await (scenario.duplicate ? Promise.all([first, open()]) : first);
       }
-      const blocked = scenario.settings || scenario.denied || scenario.closeAt || scenario.destroyAt || scenario.identityAt;
+      const blocked = scenario.denied || scenario.closeAt || scenario.destroyAt || scenario.identityAt;
       assert.equal(opened, blocked ? 0 : 1, 'progress presentation must remain available while mutations are locked');
       if (!blocked) {
         assert(reads >= 2, 'opening progress must refresh permission and route');

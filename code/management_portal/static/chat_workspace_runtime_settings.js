@@ -1,9 +1,8 @@
 (() => {
   if (window.PortalChatWorkspaceRuntimeSettings) return;
 
-  // A Resident's runtime controls: the Runtime Settings dialog (account, model,
-  // mode, effort, speed, permissions), the notices shown after saving, and the
-  // session restart dialog with its progress.
+  // A single Resident runtime and Session card, with a shared parameter editor
+  // also used by workspaces that expose settings without Session operations.
   const DEPENDENCIES = Object.freeze([
     "escapeHtml",
   ]);
@@ -118,21 +117,10 @@
       return window.PortalI18n.html`<button class="paneNote composerMeta composerRuntimeBtn" type="button" ${escapeHtml(attribute)} aria-haspopup="dialog" title="${escapeHtml(`${title}：${label}`)}"><span class="composerRuntimeLabel">${escapeHtml(label)}</span></button>`;
     }
 
-    function createRuntimeSettingsDialog(options = {}) {
-      const id = String(options.id || `portalRuntimeSettings_${Math.random().toString(16).slice(2)}`);
-      const overlay = document.createElement("div");
-      overlay.className = "portalDetailOverlay portalRuntimeSettingsOverlay";
-      overlay.hidden = true;
-      overlay.setAttribute("aria-hidden", "true");
-      overlay.dataset.portalDetailOverlay = "1";
-      overlay.innerHTML = window.PortalI18n.html`<div class="portalDetailSurface portalRuntimeSettingsSurface" data-portal-detail-surface role="dialog" aria-modal="true" aria-labelledby="${escapeHtml(id)}Title">
-      <div class="portalDetailHeader" data-portal-detail-header>
-        <div class="portalRuntimeSettingsTitle" id="${escapeHtml(id)}Title">Runtime Settings</div>
-        <button class="portalDetailClose" data-portal-icon="close" data-runtime-settings-close type="button" aria-label="关闭 runtime 设置" title="关闭"></button>
-      </div>
-      <form class="portalDetailForm portalRuntimeSettingsForm" data-runtime-settings-form>
-        <div data-resident-backend-notices role="status" hidden></div>
-        <div class="portalRuntimeSettingsGrid">
+    function createRuntimeSettingsEditor() {
+      const element = document.createElement("fieldset");
+      element.className = "portalRuntimeSettingsEditor";
+      element.innerHTML = window.PortalI18n.html`        <div class="portalRuntimeSettingsGrid">
           <label class="portalRuntimeSettingsField" hidden><span>API 账号</span><select data-runtime-setting="backend_route_id"></select></label>
           <label class="portalRuntimeSettingsField"><span>Model</span><select data-runtime-setting="model"></select></label>
           <label class="portalRuntimeSettingsField"><span>Mode</span><select data-runtime-setting="collaboration_mode"><option value="default">Default · 默认执行</option><option value="plan">Plan · 先制定计划</option></select></label>
@@ -141,25 +129,16 @@
           <label class="portalRuntimeSettingsField"><span>Permissions</span><select data-runtime-setting="permission_preset"><option value="">Full Access (default)</option><option value="default">Ask</option><option value="auto-review">Auto-review</option><option value="full-access">Full Access</option></select></label>
         </div>
         <p class="portalRuntimeSettingsHint" data-runtime-settings-hint>设置从下一轮生效。</p>
-        <button class="portalButton is-quiet" data-runtime-settings-restart type="button" hidden>切换 Backend／账号或重启…</button>
-        <div class="portalDetailFooter" data-portal-detail-footer>
-          <button class="portalButton" data-runtime-settings-close type="button">取消</button>
-          <button class="portalButton is-primary" data-runtime-settings-submit type="submit">保存</button>
-        </div>
-      </form>
-    </div>`;
-      document.body.appendChild(overlay);
-      const form = overlay.querySelector("[data-runtime-settings-form]");
-      const submit = overlay.querySelector("[data-runtime-settings-submit]");
+`;
       const apiFields = window.PortalModelApiSettings.create();
-      form.querySelector(".portalRuntimeSettingsGrid").after(apiFields.element);
-      const model = overlay.querySelector('[data-runtime-setting="model"]');
-      const apiAccount = overlay.querySelector('[data-runtime-setting="backend_route_id"]');
+      element.querySelector(".portalRuntimeSettingsGrid").after(apiFields.element);
+      const model = element.querySelector('[data-runtime-setting="model"]');
+      const apiAccount = element.querySelector('[data-runtime-setting="backend_route_id"]');
       let apiRoutes = [], initialApiRoute = "";
-      const mode = overlay.querySelector('[data-runtime-setting="collaboration_mode"]');
-      const effort = overlay.querySelector('[data-runtime-setting="reasoning_effort"]');
-      const tier = overlay.querySelector('[data-runtime-setting="service_tier"]');
-      const permissions = overlay.querySelector('[data-runtime-setting="permission_preset"]');
+      const mode = element.querySelector('[data-runtime-setting="collaboration_mode"]');
+      const effort = element.querySelector('[data-runtime-setting="reasoning_effort"]');
+      const tier = element.querySelector('[data-runtime-setting="service_tier"]');
+      const permissions = element.querySelector('[data-runtime-setting="permission_preset"]');
       const setOptions = (select, values, current, defaultLabel) => {
         const choices = [...new Set(["", ...values, current].filter(value => value !== undefined && value !== null).map(value => String(value)))];
         select.innerHTML = choices.map(value => window.PortalI18n.html`<option value="${escapeHtml(value)}">${escapeHtml(value || defaultLabel)}</option>`).join("");
@@ -180,7 +159,7 @@
         for (const option of effort.options) {
           if (!efforts.includes(option.value || defaultEffort)) option.title = knownModel ? window.PortalI18n.t("Provider 未声明此模型支持该 Effort") : window.PortalI18n.t("Provider 目录未返回此模型的能力信息");
         }
-        effort.closest(".portalRuntimeSettingsField").hidden = knownModel && !efforts.length && !currentEffort;
+        effort.closest(".portalRuntimeSettingsField").hidden = !providerCatalog.runtime_capabilities?.settings?.includes("reasoning_effort") || (knownModel && !efforts.length && !currentEffort);
         const tiers = providerCatalog.service_tiers_by_model?.[selectedModel] || [];
         const tierIds = tiers.map(item => typeof item === "string" ? item : item.id).filter(Boolean);
         const currentTier = String(currentSettings.service_tier || "").toLowerCase() === "priority"
@@ -192,7 +171,7 @@
           if (option.value === "priority") option.textContent = tierIds.includes("priority") ? "Fast" : window.PortalI18n.t("Fast (saved; unavailable)");
         }
         tier.disabled = !tierIds.length;
-        tierField.hidden = !tierIds.length;
+        tierField.hidden = !providerCatalog.runtime_capabilities?.settings?.includes("service_tier") || !tierIds.length;
         tierField.title = tierIds.length
           ? ""
           : knownModel
@@ -216,34 +195,9 @@
         apiFields.open(currentSettings, route);
         syncModelControls();
       });
-      let save = null;
-      let restartSession = null;
-      const dialog = window.PortalUI.createDialogController({
-        modal: overlay,
-        manageHidden: true,
-        escapeClose: true,
-        backdropClose: true,
-        initialFocus: () => model,
-        onClose: context => options.onClose?.(context),
-      });
-      const close = context => dialog?.close?.(context);
-      const restartButton = overlay.querySelector("[data-runtime-settings-restart]");
-      restartButton.addEventListener("click", async () => {
-        if (!restartSession || submit.disabled) return;
-        const restart = restartSession;
-        close({ source: "session-restart" });
-        try { await restart(); }
-        catch (error) { window.PortalUI.toast(error.message, "error"); }
-      });
-      overlay.querySelectorAll("[data-runtime-settings-close]").forEach(button => {
-        button.addEventListener("click", () => close({ source: "button" }));
-      });
-      form.addEventListener("submit", async event => {
-        event.preventDefault();
-        if (!save || submit.disabled) return;
-        submit.disabled = true;
-        submit.textContent = window.PortalI18n.t("保存中");
-        try {
+      return {
+        element, model,
+        read({complete = false} = {}) {
           const selected = { model: String(model.value || "").trim() };
           const modelChanged = selected.model !== String(initialSettings.model || "");
           const effortChanged = effort.value !== String(initialSettings.reasoning_effort || "");
@@ -255,7 +209,7 @@
           }
           {
             if (!permissions.closest(".portalRuntimeSettingsField").hidden
-              && permissions.value !== String(initialSettings.permission_preset || "")) {
+              && (complete || permissions.value !== String(initialSettings.permission_preset || ""))) {
               selected.permission_preset = String(permissions.value || "").trim();
             }
             if (providerCatalog && (modelChanged || effortChanged)) {
@@ -272,34 +226,19 @@
           }
           Object.assign(selected, apiFields.read());
           if (initialApiRoute && apiAccount.value !== initialApiRoute) selected.backend_route_id = apiAccount.value;
-          await save(selected);
-          close({ accepted: true });
-        } catch (error) {
-          window.PortalUI.toast(window.PortalUI.errorMessage(window.PortalI18n.t("保存 runtime 设置"), error), "error");
-        } finally {
-          submit.disabled = false;
-          submit.textContent = window.PortalI18n.t("保存");
-        }
-      });
-      return {
-        open(settings = {}, onSave = null, dialogOptions = {}) {
+          return selected;
+        },
+        open(settings = {}, dialogOptions = {}) {
           currentSettings = settings && typeof settings === "object" ? settings : {};
           initialSettings = { ...currentSettings };
-          void showResidentBackendNotices(overlay.querySelector("[data-resident-backend-notices]"), dialogOptions.residentId, {
-            settings: dialogOptions.residentSettings, accountId: dialogOptions.accountId,
-          });
-          overlay.querySelector(".portalRuntimeSettingsTitle").textContent = dialogOptions.title || window.PortalI18n.t("Runtime Settings");
           providerCatalog = dialogOptions.catalog || null;
           apiFields.open(currentSettings, providerCatalog);
           apiRoutes = providerCatalog?.api_settings ? providerCatalog.api_routes || [providerCatalog] : [];
           initialApiRoute = providerCatalog?.api_settings ? providerCatalog.backend_route_id || providerCatalog.account_id : "";
-          apiAccount.closest(".portalRuntimeSettingsField").hidden = !apiRoutes.length;
+          apiAccount.closest(".portalRuntimeSettingsField").hidden = dialogOptions.showApiAccount === false || !apiRoutes.length;
           apiAccount.replaceChildren(...apiRoutes.map(route => new Option(route.account_id || route.backend_route_id, route.backend_route_id || route.account_id)));
           apiAccount.value = initialApiRoute;
           model.title = "";
-          save = onSave;
-          restartSession = dialogOptions.onSessionRestart || null;
-          restartButton.hidden = !restartSession;
           const models = Array.isArray(dialogOptions.models) && dialogOptions.models.length
             ? dialogOptions.models.map(item => Array.isArray(item) ? item[0] : item)
             : providerCatalog?.models || [];
@@ -325,14 +264,48 @@
               || control === tier && !(providerCatalog?.service_tiers_by_model?.[model.value || providerCatalog?.default_model] || []).length;
             control.closest(".portalRuntimeSettingsField").hidden = !fields.includes(field) || modelUnavailable;
           }
-          overlay.querySelector("[data-runtime-settings-hint]").textContent = dialogOptions.hint || window.PortalI18n.t("设置从下一轮生效。");
-          dialog?.open?.({ focusTarget: model });
+          element.querySelector("[data-runtime-settings-hint]").textContent = dialogOptions.hint ?? window.PortalI18n.t("设置从下一轮生效。");
         },
-        close,
-        destroy() {
-          dialog?.destroy?.();
-          overlay.remove();
-        },
+      };
+    }
+
+    function createRuntimeSettingsDialog(options = {}) {
+      const id = String(options.id || `portalRuntimeSettings_${Math.random().toString(16).slice(2)}`);
+      const overlay = document.createElement("div");
+      overlay.className = "portalDetailOverlay portalRuntimeSettingsOverlay";
+      overlay.hidden = true;
+      overlay.dataset.portalDetailOverlay = "1";
+      overlay.innerHTML = window.PortalI18n.html`<div class="portalDetailSurface portalRuntimeSettingsSurface" data-portal-detail-surface role="dialog" aria-modal="true" aria-labelledby="${escapeHtml(id)}Title">
+        <div class="portalDetailHeader" data-portal-detail-header><div class="portalRuntimeSettingsTitle" id="${escapeHtml(id)}Title">Runtime Settings</div><button class="portalDetailClose" data-portal-icon="close" data-runtime-settings-close type="button" aria-label="关闭运行设置"></button></div>
+        <form class="portalDetailForm portalRuntimeSettingsForm" data-runtime-settings-form>
+          <div data-resident-backend-notices role="status" hidden></div>
+          <div class="portalDetailFooter" data-portal-detail-footer><button class="portalButton" data-runtime-settings-close type="button">取消</button><button class="portalButton is-primary" data-runtime-settings-submit type="submit">保存</button></div>
+        </form></div>`;
+      document.body.append(overlay);
+      const editor = createRuntimeSettingsEditor();
+      const form = overlay.querySelector("form"), submit = overlay.querySelector("[data-runtime-settings-submit]");
+      form.querySelector(".portalDetailFooter").before(editor.element);
+      let save;
+      const dialog = window.PortalUI.createDialogController({modal: overlay, manageHidden: true, escapeClose: true, backdropClose: true,
+        initialFocus: () => editor.model, onClose: context => options.onClose?.(context)});
+      const close = context => dialog?.close?.(context);
+      overlay.querySelectorAll("[data-runtime-settings-close]").forEach(button => button.addEventListener("click", () => close({source: "button"})));
+      form.addEventListener("submit", async event => {
+        event.preventDefault();
+        if (!save || submit.disabled) return;
+        submit.disabled = true;
+        try { const selected = editor.read(); editor.element.disabled = true; await save(selected); close({accepted: true}); }
+        catch (error) { window.PortalUI.toast(window.PortalUI.errorMessage("保存运行参数", error), "error"); }
+        finally { submit.disabled = false; editor.element.disabled = false; }
+      });
+      return {
+        open(settings = {}, onSave = null, dialogOptions = {}) {
+          save = onSave; editor.open(settings, dialogOptions);
+          overlay.querySelector(".portalRuntimeSettingsTitle").textContent = dialogOptions.title || "Runtime Settings";
+          void showResidentBackendNotices(overlay.querySelector("[data-resident-backend-notices]"), dialogOptions.residentId, {settings: dialogOptions.residentSettings, accountId: dialogOptions.accountId});
+          dialog.open({focusTarget: editor.model});
+        }, close,
+        destroy() { dialog.destroy(); overlay.remove(); },
       };
     }
 
@@ -464,28 +437,32 @@
       overlay.dataset.portalDetailOverlay = "1";
       overlay.innerHTML = window.PortalI18n.html`<div class="portalDetailSurface portalRuntimeSettingsSurface" data-portal-detail-surface role="dialog" aria-modal="true" aria-labelledby="${escapeHtml(id)}Title">
       <div class="portalDetailHeader" data-portal-detail-header>
-        <div class="portalRuntimeSettingsTitle" id="${escapeHtml(id)}Title">Session 操作</div>
-        <button class="portalDetailClose" data-portal-icon="close" data-session-restart-close type="button" aria-label="关闭 Session 操作" title="关闭"></button>
+        <div class="portalRuntimeSettingsTitle" id="${escapeHtml(id)}Title">运行与 Session</div>
+        <button class="portalDetailClose" data-portal-icon="close" data-session-restart-close type="button" aria-label="关闭运行与 Session" title="关闭"></button>
       </div>
       <form class="portalDetailForm portalRuntimeSettingsForm" data-session-restart-form>
         <p class="portalRuntimeSettingsHint" data-session-restart-source></p>
         <div data-resident-backend-notices role="status" hidden></div>
         <details class="portalSessionBindingSnapshot" data-session-binding-snapshot><summary>当前会话绑定快照</summary><dl data-session-binding-fields></dl><p class="portalRuntimeSettingsHint">状态版本（Generation）用于核验此会话绑定是否变化，不是 Worker 进程代际；这里展示打开弹窗时的权威快照。</p></details>
         <div class="portalRuntimeSettingsGrid">
-          <label class="portalRuntimeSettingsField"><span>目标 Provider</span><select data-session-restart="provider"></select></label>
+          <label class="portalRuntimeSettingsField"><span>Provider</span><select data-session-restart="provider"></select></label>
           <label class="portalRuntimeSettingsField" data-session-restart-account-field><span>Account / Route</span><select data-session-restart="account"></select></label>
-          <label class="portalRuntimeSettingsField" data-session-restart-model-field hidden><span>目标模型</span><select data-session-restart="model"></select></label>
-          <label class="portalRuntimeSettingsField" data-session-restart-effort-field hidden><span>推理强度</span><select data-session-restart="effort"></select></label>
+        </div>
+        <div data-runtime-editor-host></div>
+        <h3 class="portalRuntimeSectionTitle">切换或重启 Session</h3>
+        <div class="portalRuntimeSettingsGrid">
           <label class="portalRuntimeSettingsField"><span>上下文方案</span><select data-session-restart="strategy"></select></label>
           <label class="portalRuntimeSettingsField"><span>正在运行的工作</span><select data-session-restart="active-execution"><option value="wait">等待完成</option><option value="cancel">取消后重启</option></select></label>
           <label class="portalRuntimeSettingsField"><span>失败的工作</span><span><input type="checkbox" data-session-restart="resume-failed" checked> 切换成功后继续最近的失败输入</span></label>
         </div>
         <p class="portalRuntimeSettingsHint" data-session-restart-hint></p>
+        <p class="portalRuntimeSettingsHint" data-runtime-save-hint role="status"></p>
         <div class="portalDetailFooter" data-portal-detail-footer>
           <button class="portalButton" data-session-reload type="button">只刷新数据</button>
           <button class="portalButton is-danger" data-session-restart-cancel type="button" hidden>取消迁移</button>
           <button class="portalButton" data-session-restart-close type="button">关闭</button>
-          <button class="portalButton is-primary" data-session-restart-submit type="submit">重启 Session</button>
+          <button class="portalButton is-primary" data-runtime-settings-submit type="button">保存运行参数</button>
+          <button class="portalButton" data-session-restart-submit type="submit">重启 Session</button>
         </div>
       </form>
     </div>`;
@@ -495,10 +472,10 @@
       const cancelMigration = overlay.querySelector("[data-session-restart-cancel]");
       const provider = overlay.querySelector('[data-session-restart="provider"]');
       const account = overlay.querySelector('[data-session-restart="account"]');
-      const model = overlay.querySelector('[data-session-restart="model"]');
-      const effort = overlay.querySelector('[data-session-restart="effort"]');
-      const modelField = overlay.querySelector('[data-session-restart-model-field]');
-      const effortField = overlay.querySelector('[data-session-restart-effort-field]');
+      const editor = createRuntimeSettingsEditor();
+      overlay.querySelector("[data-runtime-editor-host]").replaceWith(editor.element);
+      const saveButton = overlay.querySelector("[data-runtime-settings-submit]");
+      const saveHint = overlay.querySelector("[data-runtime-save-hint]");
       const strategy = overlay.querySelector('[data-session-restart="strategy"]');
       const activeExecution = overlay.querySelector('[data-session-restart="active-execution"]');
       const resumeFailed = overlay.querySelector('[data-session-restart="resume-failed"]');
@@ -506,8 +483,6 @@
       const source = overlay.querySelector("[data-session-restart-source]");
       const bindingFields = overlay.querySelector("[data-session-binding-fields]");
       const hint = overlay.querySelector("[data-session-restart-hint]");
-      const apiFields = window.PortalModelApiSettings.create();
-      hint.before(apiFields.element);
       let restart = null;
       let cancelRestart = null;
       let reload = null;
@@ -518,6 +493,14 @@
       let restartView = {};
       let unobserve = null;
       let modelCatalog = null, catalogLoading = false, catalogRevision = 0;
+      let savedMessage = "", loadedRoute = "";
+      const drafts = new Map();
+      const routeKey = () => JSON.stringify([provider.value, account.value]);
+      const sameRoute = () => provider.value === current.source?.provider && account.value === String(current.source?.account_id || "");
+      const rememberDraft = () => {
+        if (!modelCatalog || !loadedRoute) return;
+        try { drafts.set(loadedRoute, editor.read({complete: true})); } catch (_) { /* keep the last valid draft */ }
+      };
       const createRequestKey = () => `portal-session-restart:${globalThis.PortalUIPrimitives.randomUUID()}`;
       const restartService = window.PortalResidentService;
       const progress = createSessionRestartProgress();
@@ -528,7 +511,7 @@
         escapeClose: true,
         backdropClose: true,
         initialFocus: () => provider,
-        onClose: context => { unobserve?.(); unobserve = null; options.onClose?.(context); },
+        onClose: context => { catalogRevision++; unobserve?.(); unobserve = null; options.onClose?.(context); },
       });
       const close = context => dialog?.close?.(context);
       const optionsHtml = (items, fallback = []) => {
@@ -555,16 +538,22 @@
         account.disabled = !routed || locked;
         strategy.disabled = (!hasSession && current.source?.provider !== "provider_api" && provider.value !== "provider_api") || locked;
         activeExecution.disabled = locked;
-        model.disabled = locked || catalogLoading;
-        effort.disabled = locked || catalogLoading;
+        editor.element.disabled = locked || catalogLoading;
+        resumeFailed.disabled = locked;
+        saveButton.hidden = !current.onSave;
+        saveButton.disabled = locked || catalogLoading || !modelCatalog || !sameRoute();
+        saveButton.textContent = window.PortalI18n.t("保存运行参数");
+        saveHint.textContent = !sameRoute()
+          ? window.PortalI18n.t("Provider / 账号已改变，请使用切换操作；新运行参数随切换成功后生效，准备期间保留当前配置。")
+          : savedMessage || window.PortalI18n.t("保存运行参数：不重启 Session，从下一轮生效。重启 Session：使用上方参数与下方上下文方案建立新会话。");
         submit.disabled = submitting || catalogLoading || !restart || (tracking && !retry) || (routed && !account.value)
-          || (provider.value === "provider_api" && !modelCatalog);
+          || ((current.choose_runtime_settings || provider.value === "provider_api") && !modelCatalog);
         cancelMigration.hidden = !tracking;
         cancelMigration.disabled = submitting || restartView.restart?.status === "cancelling";
         submit.textContent = retry && !submitting ? window.PortalI18n.t("重试同一请求") : tracking && !submitting ? window.PortalI18n.t("查看上方迁移状态") : submitting
           ? (hasSession || apiMigration ? window.PortalI18n.t("正在切换…") : window.PortalI18n.t("正在保存…"))
           : apiMigration ? window.PortalI18n.t("迁移 Backend")
-          : (hasSession ? restartView.restart?.status === "failed" ? window.PortalI18n.t("重新迁移") : window.PortalI18n.t("重启 Session") : routed ? window.PortalI18n.t("保存账号设置") : window.PortalI18n.t("保存 Provider"));
+          : (hasSession ? restartView.restart?.status === "failed" ? window.PortalI18n.t("重新迁移") : (sameRoute() ? window.PortalI18n.t("重启 Session") : window.PortalI18n.t("切换 Session")) : routed ? window.PortalI18n.t("保存账号设置") : window.PortalI18n.t("保存 Provider"));
         const selectedStrategy = strategy.value || "smart";
         hint.textContent = provider.value === "provider_api"
           ? window.PortalI18n.t("切换到直接调用模型 API，不创建原生 Session。按下方历史设置发送上下文；选择全新上下文时从切换后开始积累历史，页面旧对话仍保留。")
@@ -587,57 +576,46 @@
         account.innerHTML = optionsHtml(current.accounts?.[provider.value], [{ id: "", label: window.PortalI18n.t("自动选择") }]);
         if ([...account.options].some(option => option.value === selected)) account.value = selected;
       };
-      const populateEfforts = (selected = "") => {
-        const values = modelCatalog?.efforts_by_model?.[model.value] || [];
-        effort.innerHTML = optionsHtml(values, [{ id: "", label: window.PortalI18n.t("默认") }]);
-        effort.value = values.includes(selected) ? selected : modelCatalog?.default_efforts_by_model?.[model.value] || values[0] || "";
-        effortField.hidden = !modelCatalog || !values.length;
-      };
       const loadModelCatalog = async () => {
         const revision = ++catalogRevision;
-        modelCatalog = null; modelField.hidden = true; effortField.hidden = true;
-        apiFields.open({}, {});
-        if (!current.choose_runtime_settings && provider.value !== "provider_api") { catalogLoading = false; return; }
+        const key = routeKey();
+        modelCatalog = null;
+        editor.element.hidden = !current.choose_runtime_settings && provider.value !== "provider_api";
+        if (editor.element.hidden) { catalogLoading = false; update(); return; }
         catalogLoading = true; update();
         const route = current.accounts?.[provider.value]?.find(row => row.id === account.value);
-        const query = new URLSearchParams({ backend: provider.value });
-        if (provider.value === "provider_api") query.set("account_id", account.value);
-        else if (route?.account_id) query.set("account_id", route.account_id);
         try {
-          const catalog = await window.PortalResidentService.runtimeCatalog({
-            backend: query.get("backend"), accountId: query.get("account_id") || "",
-          });
-          if (revision !== catalogRevision) return;
-          modelCatalog = catalog;
-          model.innerHTML = optionsHtml(catalog.models);
-          const saved = current.runtime_settings || {};
-          model.value = catalog.models?.includes(saved.model) ? saved.model : catalog.default_model || model.options[0]?.value || "";
-          modelField.hidden = !model.value;
-          populateEfforts(saved.reasoning_effort);
-          if (catalog.api_settings) {
-            const sameRoute = current.source?.provider === "provider_api" && account.value === current.source?.account_id;
-            apiFields.open(sameRoute ? saved : {model: model.value, prompt_context: {history: {
-              enabled: catalog.api_settings.default_history, max_tokens: catalog.api_settings.history_max_tokens,
-            }}}, catalog);
-          }
+          const catalog = sameRoute() && current.runtime_catalog ? current.runtime_catalog
+            : await window.PortalResidentService.runtimeCatalog({backend: provider.value,
+              accountId: provider.value === "provider_api" ? account.value : route?.account_id || ""});
+          if (revision !== catalogRevision || overlay.hidden) return;
+          modelCatalog = catalog; loadedRoute = key;
+          const settings = drafts.get(key) || (sameRoute() ? current.runtime_settings || {} : {});
+          editor.open(settings, {catalog, showApiAccount: false, hint: ""});
         } catch (error) {
-          if (revision === catalogRevision) window.PortalUI.toast(provider.value === "provider_api"
-            ? window.PortalI18n.text`无法读取目标模型，请重新选择账号后重试：${error.message}`
-            : window.PortalI18n.text`无法读取目标模型，迁移将使用目标账号默认设置：${error.message}`, "error");
+          if (revision === catalogRevision && !overlay.hidden) window.PortalUI.toast(window.PortalI18n.text`无法读取目标运行参数，请重新选择账号后重试：${error.message}`, "error");
         } finally {
           if (revision === catalogRevision) { catalogLoading = false; update(); }
         }
       };
-      provider.addEventListener("change", () => {
-        populateAccounts();
-        void loadModelCatalog();
-        update();
+      provider.addEventListener("change", () => { rememberDraft(); savedMessage = ""; populateAccounts(); void loadModelCatalog(); });
+      account.addEventListener("change", () => { rememberDraft(); savedMessage = ""; void loadModelCatalog(); });
+      editor.element.addEventListener("change", () => { savedMessage = ""; update(); });
+      saveButton.addEventListener("click", async () => {
+        if (saveButton.disabled || !current.onSave) return;
+        try {
+          const selected = editor.read(); submitting = true; update();
+          saveButton.textContent = window.PortalI18n.t("保存中…");
+          const result = await current.onSave(selected);
+          current.runtime_settings = {...current.runtime_settings, ...selected, ...(result?.settings || {})};
+          drafts.set(routeKey(), current.runtime_settings);
+          editor.open(current.runtime_settings, {catalog: modelCatalog, showApiAccount: false, hint: ""});
+          savedMessage = window.PortalI18n.t("运行参数已保存，从下一轮生效；Session 未重启。");
+        } catch (error) { window.PortalUI.toast(window.PortalUI.errorMessage("保存运行参数", error), "error"); }
+        finally { submitting = false; update(); }
       });
-      account.addEventListener("change", () => { void loadModelCatalog(); });
-      model.addEventListener("change", () => { populateEfforts(); apiFields.syncModel(model.value); });
       strategy.addEventListener("change", update);
       overlay.querySelector("[data-session-reload]").addEventListener("click", async () => {
-        close({ source: "reload" });
         await reload?.();
       });
       cancelMigration.addEventListener("click", async () => {
@@ -676,8 +654,7 @@
             context_strategy: strategy.value || "smart",
             active_execution_policy: activeExecution.value || "wait",
             resume_failed_input: resumeFailed.checked,
-            ...apiFields.read(),
-            ...(modelCatalog && model.value ? { model: model.value, ...(effort.value ? { reasoning_effort: effort.value } : {}) } : {}),
+            ...(modelCatalog ? editor.read({complete: true}) : {}),
             idempotency_key: requestKey,
           });
           current.restart = result;
@@ -695,7 +672,8 @@
       });
       return {
         open(config = {}, onRestart = null, onReload = null, onCancel = null) {
-          current = config && typeof config === "object" ? config : {};
+          current = config && typeof config === "object" ? { ...config } : {};
+          savedMessage = ""; loadedRoute = ""; drafts.clear();
           void showResidentBackendNotices(overlay.querySelector("[data-resident-backend-notices]"), current.resident_id, {
             accountId: current.source?.account_id, settings: current.runtime_settings || {},
           });

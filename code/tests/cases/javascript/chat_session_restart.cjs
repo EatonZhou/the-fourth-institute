@@ -51,6 +51,8 @@ w.PortalResidentService = {
     return {
       models: ['model-a', 'model-b'], default_model: 'model-a',
       efforts_by_model: { 'model-a': ['low', 'medium'], 'model-b': ['low', 'high'] }, default_efforts_by_model: { 'model-a': 'low' },
+      runtime_capabilities: {settings: ['model', 'reasoning_effort', 'collaboration_mode', 'service_tier', 'permissions'], permission_presets: ['default', 'full-access']},
+      service_tiers_by_model: {'model-a': ['priority'], 'model-b': ['priority']},
     };
   },
   observeSessionRestart(residentId, listener) {
@@ -97,10 +99,10 @@ function dialogParts() {
     hint: find('[data-session-restart-hint]'),
     binding: find('[data-session-binding-fields]'),
     accountField: find('[data-session-restart-account-field]'),
-    modelField: find('[data-session-restart-model-field]'),
-    effortField: find('[data-session-restart-effort-field]'),
+    modelField: find('[data-runtime-setting=model]').closest('.portalRuntimeSettingsField'),
+    effortField: find('[data-runtime-setting=reasoning_effort]').closest('.portalRuntimeSettingsField'),
     progress: find('.portalSessionRestartProgress'),
-    provider: field('provider'), account: field('account'), model: field('model'), effort: field('effort'),
+    provider: field('provider'), account: field('account'), model: find('[data-runtime-setting=model]'), effort: find('[data-runtime-setting=reasoning_effort]'),
     strategy: field('strategy'), activeExecution: field('active-execution'), resumeFailed: field('resume-failed'),
   };
 }
@@ -254,7 +256,7 @@ async function failuresRetryAndReload() {
 
     w.document.querySelector('.portalSessionRestartOverlay [data-session-reload]').click();
     await settle();
-    assert.equal(ui.overlay.hidden, true, 'reloading closes the dialog');
+    assert.equal(ui.overlay.hidden, false, 'refresh keeps the shared card and edits');
     assert.deepEqual(reloads, ['reload']);
 
     // A failed migration opens on its own target and offers to migrate again.
@@ -312,7 +314,7 @@ async function noSessionAndTargetModel() {
       async values => { requests.push(values); return { status: 'accepted' }; });
     await settle();
     assert.equal(ui.submit.disabled, true, 'the target model is read before submitting');
-    assert.equal(ui.model.disabled, true);
+    assert.equal(ui.model.closest('fieldset').disabled, true);
     catalog.resolve();
     await settle();
     service.runtimeCatalog = loaded;
@@ -321,10 +323,10 @@ async function noSessionAndTargetModel() {
     assert.equal(ui.modelField.hidden, false);
     assert.equal(ui.model.value, 'model-b', 'the saved model is selected');
     assert.equal(ui.effortField.hidden, false);
-    assert.deepEqual([...ui.effort.options].map(option => option.value), ['low', 'high']);
+    assert.deepEqual([...ui.effort.options].map(option => option.value), ['', 'low', 'high']);
     assert.equal(ui.effort.value, 'high');
     choose(ui.model, 'model-a');
-    assert.equal(ui.effort.value, 'low', 'another model takes its own default effort');
+    assert.equal(ui.effort.value, 'high', 'changing models preserves the explicit effort until the user selects another');
     choose(ui.model, 'model-b');
     choose(ui.effort, 'high');
     submitForm(ui.form);
@@ -334,6 +336,56 @@ async function noSessionAndTargetModel() {
   } finally {
     dialog.destroy();
   }
+}
+
+async function unifiedRuntimeCard() {
+  const dialog = w.PortalChatWorkspace.createSessionRestartDialog({id: 'unifiedRuntime'});
+  const ui = dialogParts(), saved = [], restarts = [];
+  const saveButton = ui.overlay.querySelector('[data-runtime-settings-submit]');
+  const field = name => ui.overlay.querySelector(`[data-runtime-setting="${name}"]`);
+  let rejectSave = false;
+  const config = withSession({choose_runtime_settings: true, runtime_settings: {model: 'model-a', reasoning_effort: 'low'},
+    onSave: async values => {if (rejectSave) throw new Error('save rejected'); saved.push(values); return {settings: values};}});
+  try {
+    dialog.open(config, async values => {restarts.push(values); return {status: 'accepted', restart_id: 'unified_1'};});
+    await settle();
+    assert.equal(w.document.querySelectorAll('[role=dialog]').length, 1, 'one card owns the full editor');
+    assert.equal(ui.overlay.querySelector('[data-runtime-settings-restart]'), null, 'there is no jump to another card');
+    assert.equal(ui.overlay.querySelectorAll('[data-runtime-setting=model]').length, 1);
+    choose(ui.model, 'model-b'); choose(ui.effort, 'high');
+    choose(field('collaboration_mode'), 'plan'); choose(field('service_tier'), 'priority');
+    choose(field('permission_preset'), 'full-access');
+    rejectSave = true; saveButton.click(); await settle();
+    assert.equal(saved.length, 0); assert.equal(ui.model.value, 'model-b', 'failed save keeps the edit');
+    rejectSave = false; saveButton.click(); await settle();
+    assert.equal(saved.length, 1); assert.equal(restarts.length, 0, 'saving never restarts');
+    assert.equal(saved[0].collaboration_mode, 'plan'); assert.equal(saved[0].service_tier, 'priority');
+    assert.equal(saved[0].permission_preset, 'full-access');
+    assert.equal(ui.overlay.hidden, false, 'saving stays in the same card');
+    assert.match(text(ui.overlay.querySelector('[data-runtime-save-hint]')), /已保存.*下一轮.*未重启/);
+    choose(ui.model, 'model-a'); choose(ui.effort, 'low');
+    choose(ui.account, 'route_b'); await settle();
+    assert.equal(saveButton.disabled, true, 'a changed account needs the explicit switch');
+    assert.equal(text(ui.submit), '切换 Session');
+    choose(ui.account, 'route_a'); await settle();
+    assert.equal(ui.model.value, 'model-a', 'returning to the account preserves its unsaved draft');
+    choose(ui.account, 'route_b'); await settle();
+    choose(ui.model, 'model-b'); choose(ui.effort, 'high');
+    choose(field('collaboration_mode'), 'plan'); choose(field('service_tier'), 'priority');
+    choose(field('permission_preset'), 'default');
+    choose(ui.account, 'route_a'); await settle();
+    choose(ui.account, 'route_b'); await settle();
+    assert.equal(field('permission_preset').value, 'default', 'target permission draft survives switching away and back');
+    submitForm(ui.form); await settle();
+    assert.equal(saved.length, 1, 'switch does not pre-save current runtime parameters');
+    assert.equal(restarts.length, 1);
+    for (const [key, value] of Object.entries({target_account: 'route_b', model: 'model-b', reasoning_effort: 'high', collaboration_mode: 'plan', service_tier: 'priority', permission_preset: 'default'})) assert.equal(restarts[0][key], value);
+    notify({restart: {status: 'cancelled', restart_id: 'unified_1'}});
+    dialog.open(config, async values => restarts.push(values)); await settle();
+    choose(ui.model, 'model-b');
+    ui.overlay.querySelector('[data-session-restart-close]').click();
+    assert.equal(saved.length, 1); assert.equal(restarts.length, 1, 'closing discards edits without mutation');
+  } finally { dialog.destroy(); }
 }
 
 async function compactProgress() {
@@ -392,6 +444,7 @@ async function compactProgress() {
     await failuresRetryAndReload();
     await noSessionAndTargetModel();
     await compactProgress();
+    await unifiedRuntimeCard();
   } finally {
     observers.forEach(observer => observer.disconnect());
     await settle();
