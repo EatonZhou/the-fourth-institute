@@ -39,13 +39,16 @@ def stop_instance(root, *, application_only=False, timeout=SHUTDOWN_SECONDS):
 
 
 def stop_units(prefix, *, application_only=False, timeout=SHUTDOWN_SECONDS,
-               env=None, runner=subprocess.run, restart_record=None):
+               env=None, runner=subprocess.run, restart_record=None, extra_units=()):
     if not sys.platform.startswith("linux"):
         raise NotImplementedError("Bounded instance shutdown currently requires systemd")
     if not 0 < timeout <= SHUTDOWN_SECONDS:
         raise ValueError("Shutdown deadline must be between 0 and 20 seconds")
     if not isinstance(prefix, str) or not re.fullmatch(r"[A-Za-z0-9_-]+", prefix):
         raise ValueError("Invalid instance service prefix")
+    if any(not isinstance(unit, str) or not re.fullmatch(r"[A-Za-z0-9_@.:-]+\.service", unit)
+           for unit in extra_units):
+        raise ValueError("Extra shutdown services must be explicit service unit names")
     started = time.monotonic()
     deadline = started + timeout
     grace_deadline = started + min(GRACE_SECONDS, timeout * 0.75)
@@ -64,9 +67,10 @@ def stop_units(prefix, *, application_only=False, timeout=SHUTDOWN_SECONDS,
         return result.stdout
 
     rows = json.loads(control("list-units", "--all", "--output=json", "--plain",
-                              prefix + "-*.service"))
+                              prefix + "-*.service", *extra_units))
     units = sorted({row["unit"] for row in rows
-                    if row["unit"].startswith(prefix + "-") and row["unit"].endswith(".service")})
+                    if (row["unit"].startswith(prefix + "-") and row["unit"].endswith(".service"))
+                    or row["unit"] in extra_units})
     if application_only:
         units = [unit for unit in units if unit not in
                  {prefix + "-postgres.service", prefix + "-nats.service"}]

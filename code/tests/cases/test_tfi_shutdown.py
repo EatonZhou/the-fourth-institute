@@ -118,6 +118,22 @@ def test_missing_unit_observation_cannot_report_success():
         shutdown.stop_units("tfi-test", runner=run)
 
 
+def test_explicit_extra_service_shares_the_same_stop_transaction():
+    units = ["tfi-test-web.service", "aclink-standalone.service"]
+    calls = []
+    def run(argv, **kw):
+        calls.append(argv)
+        output = json.dumps([{"unit": unit} for unit in units]) if "list-units" in argv else ""
+        if "show" in argv:
+            output = "\n\n".join(f"Id={unit}\nActiveState=inactive\nMainPID=0\nControlPID=0" for unit in units)
+        return subprocess.CompletedProcess(argv, 0, output, "")
+    assert shutdown.stop_units("tfi-test", extra_units=[units[1]], runner=run)["ok"]
+    stops = [argv for argv in calls if "stop" in argv]
+    assert len(stops) == 1 and set(stops[0][-2:]) == set(units)
+    with pytest.raises(ValueError, match="explicit service"):
+        shutdown.stop_units("tfi-test", extra_units=["foreign-*.service"], runner=run)
+
+
 @pytest.mark.skipif(os.getenv("PORTAL_TEST_SYSTEMD_SHUTDOWN") != "1",
                     reason="Opt-in isolated user-systemd services; no Portal units touched")
 def test_real_ordered_services_with_270_second_timeouts_stop_with_one_budget(tmp_path):
