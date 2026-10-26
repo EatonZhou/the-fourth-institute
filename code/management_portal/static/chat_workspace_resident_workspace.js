@@ -130,9 +130,6 @@
       setInputText(value) { return this.controller?.setInputText?.(value); }
       setDraftText(value, attachments) { return this.controller?.setDraftText?.(value, attachments); }
       draftScope() { return this.controller?.draftScope?.() || ""; }
-      suspendDraftPersistence() { return this.controller?.suspendDraftPersistence?.() || false; }
-      resumeDraftPersistence() { return this.controller?.resumeDraftPersistence?.() || false; }
-      draftPersistenceSuspended() { return this.controller?.draftPersistenceSuspended?.() || false; }
       saveDraft(options) { return this.controller?.saveDraft?.(options); }
       restoreDraft(scope, options) { return this.controller?.restoreDraft?.(scope, options); }
       clearDraft(scope, expected) { return this.controller?.clearDraft?.(scope, expected); }

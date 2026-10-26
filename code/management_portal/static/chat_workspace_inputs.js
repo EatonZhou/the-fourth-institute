@@ -376,18 +376,12 @@
           .join(":");
       };
       const pending = new Map();
-      const suspendedValues = new Map();
       let timer = null;
-      let suspensionDepth = 0;
       const armTimer = () => {
-        if (timer || suspensionDepth || !pending.size) return;
+        if (timer || !pending.size) return;
         timer = setTimeout(() => flush(), Math.max(0, Number(options.delay || 180)));
       };
       const read = scope => {
-        const pendingKey = String(scope || "");
-        if (suspensionDepth) {
-          return normalizeWorkspaceDraft(suspendedValues.get(pendingKey) || {});
-        }
         const key = storageKey(scope);
         if (!key) return normalizeWorkspaceDraft({});
         if (pendingWorkspaceDrafts.has(key)) return normalizeWorkspaceDraft(pendingWorkspaceDrafts.get(key).value);
@@ -400,10 +394,6 @@
       const write = (scope, draft) => {
         const pendingKey = String(scope || "");
         const value = normalizeWorkspaceDraft({ ...draft, updated_at: new Date().toISOString() });
-        if (suspensionDepth) {
-          suspendedValues.set(pendingKey, value);
-          return;
-        }
         pending.delete(pendingKey);
         const key = storageKey(pendingKey);
         if (!key) return;
@@ -415,7 +405,6 @@
         }
       };
       const flush = scope => {
-        if (suspensionDepth) return;
         const entries = scope === undefined
           ? [...pending.entries()]
           : [[String(scope || ""), pending.get(String(scope || ""))]];
@@ -434,10 +423,6 @@
       const schedule = (scope, draft) => {
         const key = String(scope || "");
         if (!key) return;
-        if (suspensionDepth) {
-          suspendedValues.set(key, normalizeWorkspaceDraft(draft));
-          return;
-        }
         const entry = {
           storageKey: storageKey(key),
           value: normalizeWorkspaceDraft({ ...draft, updated_at: new Date().toISOString() }),
@@ -451,34 +436,11 @@
       };
       const clear = scope => {
         const key = String(scope || "");
-        if (suspensionDepth) {
-          suspendedValues.set(key, normalizeWorkspaceDraft({}));
-          return;
-        }
         pending.delete(key);
         const storage = storageKey(key);
         if (!storage) return;
         pendingWorkspaceDrafts.delete(storage);
         window.PortalState.storage.remove(storage);
-      };
-      const suspend = (seed = []) => {
-        suspensionDepth += 1;
-        if (suspensionDepth > 1) return suspensionDepth;
-        if (timer) clearTimeout(timer);
-        timer = null;
-        suspendedValues.clear();
-        for (const [scope, draft] of seed || []) {
-          suspendedValues.set(String(scope || ""), normalizeWorkspaceDraft(draft));
-        }
-        return suspensionDepth;
-      };
-      const resume = () => {
-        if (!suspensionDepth) return false;
-        suspensionDepth -= 1;
-        if (suspensionDepth) return true;
-        suspendedValues.clear();
-        armTimer();
-        return true;
       };
       return {
         read,
@@ -487,9 +449,6 @@
         flush,
         clear,
         storageKey,
-        suspend,
-        resume,
-        isSuspended: () => suspensionDepth > 0,
       };
     }
 

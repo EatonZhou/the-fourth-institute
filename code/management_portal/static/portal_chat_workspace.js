@@ -25,6 +25,8 @@
   //     bodies, which messages start expanded, the reader's toggle
   //   chat_workspace_composer_attachments.js  one Workspace's composer attachments:
   //     adding, uploading, retrying, removing and replacing edited images, previews
+  //   chat_workspace_composer_drafts.js  one Workspace's drafts: when the message
+  //     being written is saved per conversation, and a failed send kept as a draft
   //   chat_workspace_runtime_settings.js  the Runtime Settings dialog, notices after
   //     saving, the session restart dialog and its progress
   //   chat_workspace_harness_panel.js  the Agent Harness panel and menu, prompt
@@ -849,6 +851,14 @@
     const historyScope = () => configuredHistoryScope();
 
     const {
+      captureWorkspaceDraft, saveActiveDraft, markDraftSaved, openDraftScope, clearActiveDraft, clearDraft,
+      recoverSubmission, keepSubmissionDraft, forgetConfirmedSubmission, destroyComposerDrafts,
+    } = chatWorkspaceModule("PortalChatWorkspaceComposerDrafts").createComposerDrafts({
+      composerSelectionSnapshot, createDraftStore, els, id, normalizeWorkspaceDraft, options,
+      persistedDraftAttachments, refsPayload, serializeComposerInput, state, workspaceDraftHasContent,
+    });
+
+    const {
       attachmentPreviewOptions, renderAttachments, renderAttachmentTrayOnly, withoutAttachmentReconcile,
       setAttachments, updateAttachment, addFiles, addReference, uploadComposerAttachment, removeComposerAttachment,
       reconcileAttachmentsFromInput, discardComposerAttachments, releaseAttachmentPreviews, reportAttachmentError,
@@ -857,12 +867,11 @@
       composerAttachmentTokenOrder, composerSelectionSnapshot,
       createConversationSelectionReference, currentController: () => controller, els, historyScope,
       insertComposerAttachmentRef, mediaPartPath, normalizeComposerAttachment, normalizeComposerAttachments, options,
-      removeComposerAttachmentRef, renderComposerAttachmentTray, requireImageEditor, restoreComposerSelection, state,
-      syncComposerAttachmentRefs,
+      removeComposerAttachmentRef, renderComposerAttachmentTray, requireImageEditor, restoreComposerSelection,
+      saveActiveDraft, state, syncComposerAttachmentRefs,
       // Defined later in the Workspace.
       markComposerUndoAfterSnapshot: (...args) => markComposerUndoAfterSnapshot(...args),
       pushComposerUndoSnapshot: (...args) => pushComposerUndoSnapshot(...args),
-      saveActiveDraft: (...args) => saveActiveDraft(...args),
       updateControls: (...args) => updateControls(...args),
     });
     // One Fork card per conversation: whether its compaction is open, and what was read.
@@ -1102,11 +1111,6 @@
         renderAttachmentTrayOnly({ notify: true });
       },
     });
-    const draftStore = options.draftStore || createDraftStore({
-      namespace: String(options.draftNamespace || id),
-      owner: options.draftOwner || "anonymous",
-      delay: options.draftSaveDelay || 180,
-    });
     // Keep the input history with the conversation shown: this person's inputs
     // still queued for a turn come first, and when the Chat
     // shows a new input of theirs, from here or another browser, the history
@@ -1129,8 +1133,6 @@
       if (previous !== undefined && previous !== latest) history.refresh(scopeKey);
       else history.prepare(scopeKey);
     };
-    let draftPersistenceSuspension = null;
-    let draftBaseline = null;
     const canSubmit = () => {
       const uploading = state.attachments.some(item => item.uploading);
       const failed = state.attachments.some(item => item.error);
@@ -1335,61 +1337,13 @@
         return true;
       });
     };
-    const captureWorkspaceDraft = () => {
-      const draft = {
-        text: serializeComposerInput(els.input, state.attachments, { mode: "draft" }),
-        attachments: persistedDraftAttachments(state.attachments),
-        refs: refsPayload(state.refs),
-        selection: composerSelectionSnapshot(els.input),
-        input_height: state.composerInputHeight,
-      };
-      if (state.recoveredSubmission?.content !== draftContentSignature(draft)) {
-        state.recoveredSubmission = null;
-      }
-      return { ...draft, submitted_message_id: state.recoveredSubmission?.messageId || "" };
-    };
-    const draftContentSignature = draft => JSON.stringify({
-      text: draft.text,
-      attachments: draft.attachments,
-      refs: draft.refs,
-    });
-    const draftSignatures = draft => ({
-      content: draftContentSignature(draft),
-      submission: draft.submitted_message_id || "",
-      view: JSON.stringify({ selection: draft.selection, input_height: draft.input_height }),
-    });
-    const saveActiveDraft = ({ immediate = false } = {}) => {
-      if (state.restoringDraft || !state.activeDraftScope) return;
-      const draft = captureWorkspaceDraft();
-      const signature = draftSignatures(draft);
-      // Loading, hiding and destroying an untouched composition are not edits.
-      // Selection/layout changes may only update the draft they belong to.
-      if (
-        signature.content !== draftBaseline?.content
-        || signature.submission !== draftBaseline?.submission
-        || (signature.view !== draftBaseline?.view
-          && signature.content === draftContentSignature(draftStore.read(state.activeDraftScope)))
-      ) {
-        draftStore.schedule(state.activeDraftScope, draft);
-      }
-      draftBaseline = signature;
-      if (immediate) draftStore.flush(state.activeDraftScope);
-    };
-    const saveDraftBeforePageLeave = () => saveActiveDraft({ immediate: true });
-    const saveDraftWhenHidden = () => {
-      if (document.visibilityState === "hidden") saveDraftBeforePageLeave();
-    };
+    // Show the draft of a conversation in the composer.
     const restoreDraftScope = (scope, { force = false, focus = document.activeElement === els.input } = {}) => {
       const nextScope = String(scope || "").trim();
       if (!nextScope || !els.input) return false;
       if (!force && state.activeDraftScope === nextScope) return false;
       closeMentionMenu();
-      if (state.activeDraftScope && state.activeDraftScope !== nextScope) saveActiveDraft({ immediate: true });
-      state.activeDraftScope = nextScope;
-      const draft = draftStore.read(nextScope);
-      state.recoveredSubmission = draft.submitted_message_id
-        ? { messageId: draft.submitted_message_id, content: draftContentSignature(draft) }
-        : null;
+      const draft = openDraftScope(nextScope);
       state.restoringDraft = true;
       try {
         withoutAttachmentReconcile(() => {
@@ -1410,12 +1364,8 @@
       } finally {
         state.restoringDraft = false;
       }
-      draftBaseline = draftSignatures(captureWorkspaceDraft());
+      markDraftSaved();
       return true;
-    };
-    const clearActiveDraft = () => {
-      if (state.activeDraftScope) draftStore.clear(state.activeDraftScope);
-      draftBaseline = draftSignatures(captureWorkspaceDraft());
     };
     const clearComposerInput = ({ notify = true, focus = true } = {}) => {
       const restoring = state.restoringDraft;
@@ -1742,7 +1692,7 @@
         if (preserveDraft) saveActiveDraft({ immediate: true });
         clearComposerInput({ notify: !preserveDraft });
         if (!preserveDraft) clearActiveDraft();
-        else draftBaseline = draftSignatures(captureWorkspaceDraft());
+        else markDraftSaved();
       },
       inputText() {
         return serializeComposerInput(els.input, state.attachments, { mode: "plain" });
@@ -1771,102 +1721,6 @@
       draftScope() {
         return state.activeDraftScope || historyScope();
       },
-      suspendDraftPersistence() {
-        if (
-          typeof draftStore.suspend !== "function"
-          || typeof draftStore.resume !== "function"
-        ) {
-          throw new Error("Chat Workspace draft store cannot enter ephemeral mode");
-        }
-        if (draftPersistenceSuspension) {
-          draftPersistenceSuspension.depth += 1;
-          draftStore.suspend();
-          return false;
-        }
-        const activeDraftScope = state.activeDraftScope || historyScope();
-        const inputSnapshot = composerSnapshot();
-        const draftSnapshot = captureWorkspaceDraft();
-        draftPersistenceSuspension = {
-          depth: 1,
-          snapshot: {
-            activeDraftScope,
-            recoveredSubmission: state.recoveredSubmission,
-            draftBaseline,
-            composer: {
-              ...state.composer,
-              capabilities: Array.isArray(state.composer.capabilities)
-                ? [...state.composer.capabilities]
-                : [],
-            },
-            composerImeActive: state.composerImeActive,
-            composerInputFocused: state.composerInputFocused,
-            composerInputHeight: state.composerInputHeight,
-            composerQueueSignature: state.composerQueueSignature,
-            composerSignature: state.composerSignature,
-            inputFocused: document.activeElement === els.input,
-            inputSnapshot,
-            refs: normalizeRefs(state.refs),
-            refsCollapsed: { ...(state.refsCollapsed || {}) },
-            undoStack: state.undoStack.slice(),
-          },
-        };
-        draftStore.suspend([[activeDraftScope, draftSnapshot]]);
-        return true;
-      },
-      resumeDraftPersistence() {
-        const suspension = draftPersistenceSuspension;
-        if (!suspension) return false;
-        if (suspension.depth > 1) {
-          suspension.depth -= 1;
-          draftStore.resume();
-          return false;
-        }
-        const snapshot = suspension.snapshot;
-        try {
-          const restoredComposer = {
-            ...snapshot.composer,
-            capabilities: Array.isArray(snapshot.composer?.capabilities)
-              ? [...snapshot.composer.capabilities]
-              : [],
-          };
-          renderComposerNow(restoredComposer, snapshot.composerSignature);
-          state.activeDraftScope = snapshot.activeDraftScope;
-          draftBaseline = snapshot.draftBaseline;
-          state.recoveredSubmission = snapshot.recoveredSubmission;
-          state.attachments = normalizeComposerAttachments(
-            snapshot.inputSnapshot.attachments || [],
-          );
-          state.refs = normalizeRefs(snapshot.refs);
-          state.refsCollapsed = { ...(snapshot.refsCollapsed || {}) };
-          state.composerInputHeight = snapshot.composerInputHeight;
-          state.composerQueueSignature = snapshot.composerQueueSignature;
-          state.undoStack = snapshot.undoStack.slice();
-          state.composerInputFocused = snapshot.composerInputFocused;
-          state.composerImeActive = snapshot.composerImeActive;
-          withoutAttachmentReconcile(() => {
-            if (els.input && "value" in els.input) {
-              els.input.value = String(snapshot.inputSnapshot.inputValue || "");
-            } else if (els.input) {
-              els.input.innerHTML = String(snapshot.inputSnapshot.inputHtml || "");
-            }
-            renderAttachmentTrayOnly({ notify: false });
-            controller.refreshRefs();
-            applyComposerInputLayout();
-            updateControls();
-            if (snapshot.inputFocused) {
-              els.input?.focus?.({ preventScroll: true });
-              restoreComposerSelection(els.input, snapshot.inputSnapshot.selection);
-            }
-          });
-        } finally {
-          draftPersistenceSuspension = null;
-          draftStore.resume();
-        }
-        return true;
-      },
-      draftPersistenceSuspended() {
-        return !!draftPersistenceSuspension;
-      },
       saveDraft(saveOptions = {}) {
         saveActiveDraft({ immediate: saveOptions.immediate !== false });
       },
@@ -1874,24 +1728,15 @@
         return restoreDraftScope(scope, { force: restoreOptions.force !== false });
       },
       clearDraft(scope = state.activeDraftScope || historyScope(), expected = null) {
-        if (expected && draftContentSignature(draftStore.read(scope)) !== draftContentSignature(normalizeWorkspaceDraft(expected))) return false;
-        draftStore.clear(scope);
-        if (scope === state.activeDraftScope) draftBaseline = draftSignatures(captureWorkspaceDraft());
-        return true;
+        return clearDraft(scope, expected);
       },
       confirmSubmittedMessages(messageIds, scope = state.activeDraftScope || historyScope()) {
-        const accepted = new Set((messageIds || []).filter(Boolean));
-        if (!accepted.size) return;
-        const storedDraft = draftStore.read(scope);
-        if (accepted.has(storedDraft.submitted_message_id)) draftStore.clear(scope);
-        if (state.activeDraftScope !== scope) return;
-        const draft = captureWorkspaceDraft();
-        if (!accepted.has(draft.submitted_message_id)) return;
+        if (!forgetConfirmedSubmission(messageIds, scope)) return;
         // Clear only this unedited recovery, leaving a newer shared draft intact.
         clearComposerInput({ focus: false });
         state.refs = normalizeRefs({});
         controller.refreshRefs();
-        draftBaseline = draftSignatures(captureWorkspaceDraft());
+        markDraftSaved();
       },
       quote: () => composerQuote(),
       setQuote(quote) {
@@ -2023,15 +1868,9 @@
             restoreComposerSnapshot(snapshot);
             state.refs = normalizeRefs(refsSnapshot);
             controller.refreshRefs();
-            state.recoveredSubmission = {
-              messageId: context.messageIdentity,
-              content: draftContentSignature(captureWorkspaceDraft()),
-            };
-            saveActiveDraft({ immediate: true });
+            recoverSubmission(context.messageIdentity);
           } else if (!committed && !optimistic && submitOptions.clear !== false && !sameScope) {
-            if (!workspaceDraftHasContent(draftStore.read(scope))) {
-              draftStore.write(scope, { ...draftSnapshot, submitted_message_id: context.messageIdentity });
-            }
+            keepSubmissionDraft(scope, draftSnapshot, context.messageIdentity);
           }
           if (!committed) await submitOptions.onRollback?.(error, context);
           else await submitOptions.onSuccessError?.(error, context);
@@ -2344,10 +2183,8 @@
         destroyMentionMenu();
         restartUnobserve?.();
         restartProgress.destroy();
-        saveActiveDraft({ immediate: true });
+        destroyComposerDrafts();
         destroyComposerAttachments();
-        window.removeEventListener("pagehide", saveDraftBeforePageLeave);
-        document.removeEventListener("visibilitychange", saveDraftWhenHidden);
         refsControlBinding?.destroy();
         refsControlBinding = null;
         destroyMessageViewport();
@@ -2646,8 +2483,6 @@
     if (options.contract && typeof options.contract === "object") {
       controller.applyContract(options.contract, options.renderOptions || {});
     }
-    window.addEventListener("pagehide", saveDraftBeforePageLeave);
-    document.addEventListener("visibilitychange", saveDraftWhenHidden);
     return controller;
   }
 
