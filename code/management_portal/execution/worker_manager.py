@@ -20,6 +20,9 @@ from management_common import process_runtime
 from management_portal.shared_state import atomic_replace_json
 
 
+RETIREMENT_RPC_TIMEOUT_SECONDS = 2.0
+
+
 @dataclass
 class WorkerProcess:
     process: subprocess.Popen[bytes]
@@ -167,6 +170,7 @@ class ExecutionWorkerManager:
         self._reload = threading.Event()
         self._explicit_restart = threading.Event()
         self._stopping = threading.Event()
+        self._shutdown_deadline: float | None = None
         self._restart_requested = False
         self._sequence = 0
         self._current: WorkerProcess | None = None
@@ -500,8 +504,19 @@ class ExecutionWorkerManager:
             worker.draining_started_at = time.time()
         self._request_worker_stop(worker)
 
-    @staticmethod
-    def _request_worker_stop(worker: WorkerProcess) -> None:
+    def _retirement_request(self, method: str, params: dict[str, Any]) -> Any:
+        # Lifecycle cleanup is not a business request waiting for a restart.
+        # A stopped service must fail immediately, and a stuck response must
+        # not move the Manager's shutdown deadline forward.
+        timeout = RETIREMENT_RPC_TIMEOUT_SECONDS
+        if self._shutdown_deadline is not None:
+            remaining = self._shutdown_deadline - time.monotonic()
+            if remaining < 0.1:
+                raise TimeoutError("Worker Manager shutdown deadline reached")
+            timeout = min(timeout, remaining)
+        return ExecutionServiceClient(timeout=timeout, restart_wait=0).request(method, params)
+
+    def _request_worker_stop(self, worker: WorkerProcess) -> None:
         """Wake the Worker's existing durable handover path on every platform.
 
         Windows Popen.terminate is a hard kill, not a graceful shutdown.
@@ -512,7 +527,7 @@ class ExecutionWorkerManager:
         if worker.terminate_sent_at:
             return
         try:
-            ExecutionServiceClient().request(
+            self._retirement_request(
                 "scheduler.worker.state",
                 {"worker_id": worker.worker_id, "state": "draining"},
             )
@@ -537,10 +552,9 @@ class ExecutionWorkerManager:
         worker.tree_stopped = True
         worker.cleanup_error = ""
 
-    @staticmethod
-    def _handover(worker: WorkerProcess) -> dict[str, Any] | None:
+    def _handover(self, worker: WorkerProcess) -> dict[str, Any] | None:
         try:
-            result = ExecutionServiceClient().request(
+            result = self._retirement_request(
                 "scheduler.worker.handover",
                 {"worker_id": worker.worker_id},
             )
@@ -589,7 +603,7 @@ class ExecutionWorkerManager:
 
     def _unregister(self, worker_id: str) -> bool:
         try:
-            ExecutionServiceClient().request(
+            self._retirement_request(
                 "scheduler.worker.unregister",
                 {"worker_id": worker_id},
             )
@@ -747,6 +761,10 @@ class ExecutionWorkerManager:
             ),
             "current": self._worker_payload(current) if current else None,
             "draining": [self._worker_payload(item) for item in self._draining],
+            "shutdown_pending_recovery": [
+                item.worker_id for item in self._draining
+                if self._stopping.is_set() and item.tree_stopped
+            ],
             "recovery": {
                 "consecutive_failures": self._consecutive_failures,
                 "last_error": self._last_error,
@@ -862,6 +880,9 @@ class ExecutionWorkerManager:
                     else:
                         self._next_retry_monotonic = 0.0
         finally:
+            # Include initial draining RPCs in the same budget as reaping.
+            deadline = time.monotonic() + self.drain_timeout + self.kill_grace
+            self._shutdown_deadline = deadline
             workers = [
                 item
                 for item in [self._current, *self._draining]
@@ -873,11 +894,13 @@ class ExecutionWorkerManager:
             self._draining = list(
                 {worker.worker_id: worker for worker in workers}.values()
             )
-            deadline = (
-                time.monotonic() + self.drain_timeout + self.kill_grace
-            )
             while self._draining and time.monotonic() < deadline:
                 self._reap()
+                if all(worker.tree_stopped for worker in self._draining):
+                    # The process owner can leave after proving every tree
+                    # empty. Retain unacknowledged Scheduler cleanup in health;
+                    # leases/recovery, not fictitious successful RPCs, own it.
+                    break
                 if self._draining:
                     time.sleep(0.25)
             for worker in self._draining:
@@ -894,6 +917,12 @@ class ExecutionWorkerManager:
             uncleared = [worker.worker_id for worker in self._draining if not worker.tree_stopped]
             if uncleared:
                 raise RuntimeError(f"Worker process trees did not stop: {', '.join(uncleared)}")
+            if self._draining:
+                print(
+                    "ExecutionWorkerManager stopped; Scheduler cleanup pending "
+                    f"for {len(self._draining)} exited worker(s); health records retained",
+                    file=sys.stderr, flush=True,
+                )
         return 75 if self._restart_requested else 0
 
 

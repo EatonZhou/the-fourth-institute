@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 20
+  number: 21
   created_at: '2026-09-03'
   created_by:
     user: ''
     agent: ''
-  updated_at: '2026-10-19T19:59:40Z'
+  updated_at: '2026-10-26T15:04:00Z'
   updated_by:
-    user: tfi-exported-user
-    agent: resident_865c3c24f251
+    user: ''
+    agent: resident_8b24fa3ef913
 importance: 8
 metaness: 2
 ai_generated: false
@@ -142,7 +142,11 @@ Worker 在本地记录租约截止时间。与 Scheduler 的连接中断超过�
 
 ## 进程退出与故障兜底
 
-WorkerManager 让旧 Worker 进入退休流程时，先在 Scheduler 中把它标为 `draining`，再向它发送 SIGTERM，Worker 据此执行有限时长的退出流程。退出等待默认 60 秒（`PORTAL_EXECUTION_WORKER_DRAIN_TIMEOUT_SECONDS`，最少 1 秒），超时后再给 10 秒宽限（`PORTAL_EXECUTION_WORKER_KILL_GRACE_SECONDS`，最少 1 秒），仍未退出就强制结束。这个期限只约束遗留任务和卡住的进程，正常的逐项交接不需要等到它。
+WorkerManager 让旧 Worker 进入退休流程时，先在 Scheduler 中把它标为 `draining`，由既有领取和控制等待唤醒 Worker，执行持久交接；不向 Provider 后代发送停止信号来代替交接。退出等待默认 180 秒（`PORTAL_EXECUTION_WORKER_DRAIN_TIMEOUT_SECONDS`，最少 1 秒），超时后再给 30 秒宽限（`PORTAL_EXECUTION_WORKER_KILL_GRACE_SECONDS`，最少 1 秒），仍未退出就强制结束所拥有的 Worker 进程树。这个期限只约束遗留任务和卡住的进程，正常的逐项交接不需要等到它。
+
+生命周期控制 RPC（draining、handover、unregister）不等待服务重启：连接不可用立即返回，单次响应等待最多 2 秒；Manager 整体退出时还受同一个剩余退出预算约束，不能在截止之后再发起请求。整站停服应先让 Worker 退出，再停止 ExecutionService，避免退出清理依赖已经关闭的服务。
+
+Manager 已确认所拥有的全部进程树退出后，不因 Scheduler 暂不可达而一直等待注销。尚未确认的交接、注销及健康记录保留，Manager 健康文件的 `shutdown_pending_recovery` 列出这些 Worker；调度资格仍由原 Scheduler、租约和恢复协议处理，不伪造交接成功或提前释放所有权。仍有未清空进程树时继续报告退出失败。
 
 旧进程退出后，WorkerManager 调用 `scheduler.worker.handover` 处理没有释放的资格：已领取但未开始的执行回到队列；运行中的执行需要可以恢复的恢复点，并保留交接信息。不能安全移交的执行作为“无法移交”返回，由相应的失败或租约恢复路径处理，不会被描述成无损成功；这时 WorkerManager 保留这个旧 Worker 的记录并在后续循环重试交接，直到其遗留资格已经收敛。全部移交后，WorkerManager 注销旧 Worker，删除它的健康文件。每次成功激活新 Worker 后，它还会注销本前缀下其他已经 `offline` 的登记。
 

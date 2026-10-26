@@ -4,7 +4,10 @@ from __future__ import annotations
 import os
 import signal
 import socket
+import subprocess
 import sys
+import tempfile
+import textwrap
 import threading
 import time
 from types import SimpleNamespace
@@ -40,7 +43,7 @@ def manager(monkeypatch, tmp_path):
     instance.kill_grace = .2
     instance.drain_timeout = 1
     instance.calls = []
-    monkeypatch.setattr(worker_manager, "ExecutionServiceClient", lambda: SimpleNamespace(
+    monkeypatch.setattr(worker_manager, "ExecutionServiceClient", lambda **kw: SimpleNamespace(
         request=lambda method, args: instance.calls.append((method, args)) or {},
     ))
     monkeypatch.setattr(instance, "_handover", lambda item: instance.calls.append("handover") or {})
@@ -68,7 +71,7 @@ def test_failed_drain_request_is_retried(manager, monkeypatch, tmp_path):
         if len(calls) == 1:
             raise OSError("connection unavailable")
         return {}
-    monkeypatch.setattr(worker_manager, "ExecutionServiceClient", lambda: SimpleNamespace(request=request))
+    monkeypatch.setattr(worker_manager, "ExecutionServiceClient", lambda **kw: SimpleNamespace(request=request))
     manager._mark_draining(item)
     assert not item.terminate_sent_at
     manager._request_worker_stop(item)
@@ -139,6 +142,81 @@ def test_shutdown_includes_exited_current_and_reports_cleanup_failure(manager, m
         manager.run()
     assert manager._draining == [item] and item.health_path.exists()
     assert "handover" not in manager.calls
+
+
+def test_idle_manager_exits_when_execution_service_is_stopped(tmp_path):
+    """An exited worker needs no live service to finish stopping its manager."""
+    program = textwrap.dedent('''
+        import json, os, sys, tempfile
+        from pathlib import Path
+        from types import SimpleNamespace
+        from management_portal.execution import worker_manager as wm
+        from management_portal.execution.transport import ExecutionServiceClient
+
+        root = Path(sys.argv[1])
+        os.environ['PORTAL_EXECUTION_WORKER_HEALTH_PATH'] = str(root / 'manager.json')
+        with tempfile.TemporaryDirectory(prefix='worker-stop-') as sockets:
+            wm.ExecutionServiceClient = lambda **kw: ExecutionServiceClient(
+                socket_path=Path(sockets) / 'missing.sock', **kw)
+            # No synthetic PID can reach the OS process-control boundary.
+            wm.process_runtime.terminate_process_tree = lambda process, **kw: None
+            manager = wm.ExecutionWorkerManager()
+            health = root / 'retired-worker.json'
+            health.write_text('{"active_executions": []}')
+            manager._current = wm.WorkerProcess(
+                process=SimpleNamespace(pid=12345678, poll=lambda: 0),
+                worker_id='test:retired', build_id='test', health_path=health,
+                started_at=1.0)
+            manager._stopping.set()
+            assert manager.run() == 0
+            payload = json.loads((root / 'manager.json').read_text())
+            assert payload['shutdown_pending_recovery'] == ['test:retired']
+            assert health.exists()  # Unacknowledged Scheduler cleanup remains durable.
+            assert payload['draining'][0]['tree_stopped'] is True
+    ''')
+    subprocess.run([sys.executable, '-c', program, str(tmp_path)], check=True,
+                   capture_output=True, text=True, timeout=4)
+
+
+def test_manager_shutdown_rpc_cannot_start_after_its_deadline(manager, monkeypatch):
+    manager._shutdown_deadline = time.monotonic() - 1
+    def unexpected_client(**kw):
+        raise AssertionError('No RPC may start after the shared deadline')
+    monkeypatch.setattr(worker_manager, 'ExecutionServiceClient', unexpected_client)
+    with pytest.raises(TimeoutError, match='shutdown deadline'):
+        manager._retirement_request('scheduler.worker.handover', {})
+
+
+def test_manager_shutdown_rpc_response_uses_remaining_budget(manager, monkeypatch):
+    from management_common import rpc_auth
+    from management_portal.execution.transport import ExecutionServiceClient, ExecutionResponseUnknown
+    if not hasattr(socket, 'AF_UNIX'):
+        pytest.skip('Unix-domain socket response deadline')
+    finished = threading.Event()
+    def no_response(listener):
+        with listener.accept()[0] as connection:
+            connection.recv(65536)
+            finished.wait(3)
+    with tempfile.TemporaryDirectory(prefix='stop-rpc-') as directory:
+        path = os.path.join(directory, 'service.sock')
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as listener:
+            listener.bind(path)
+            listener.listen(1)
+            thread = threading.Thread(target=no_response, args=(listener,), daemon=True)
+            thread.start()
+            monkeypatch.setattr(rpc_auth, 'request_auth', lambda *args, **kw: {})
+            monkeypatch.setattr(worker_manager, 'ExecutionServiceClient',
+                                lambda **kw: ExecutionServiceClient(socket_path=path, **kw))
+            manager._shutdown_deadline = time.monotonic() + .2
+            started = time.monotonic()
+            try:
+                with pytest.raises(ExecutionResponseUnknown):
+                    manager._retirement_request('scheduler.worker.handover', {})
+                assert time.monotonic() - started < 1.5
+            finally:
+                finished.set()
+                thread.join(2)
+            assert not thread.is_alive()
 
 
 @pytest.mark.parametrize("owner", ["worker", "manager", "service"])

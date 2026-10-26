@@ -46,7 +46,7 @@ def process_boundaries(monkeypatch):
         if process.returncode is None:
             process.returncode = -9
     monkeypatch.setattr(worker_manager.process_runtime, "terminate_process_tree", stop_tree)
-    monkeypatch.setattr(worker_manager, "ExecutionServiceClient", lambda: SimpleNamespace(request=lambda *args: {}))
+    monkeypatch.setattr(worker_manager, "ExecutionServiceClient", lambda **kw: SimpleNamespace(request=lambda *args: {}))
 
 
 def _worker(tmp_path: Path, name: str, pid: int) -> WorkerProcess:
@@ -458,10 +458,10 @@ def test_cleanup_removes_absent_dead_worker_health_but_preserves_live_and_unknow
     manager._draining = []
     for name, pid in (("absent", 2147483647), ("registered", 2147483647), ("live", os.getpid())):
         (tmp_path / (name + ".json")).write_text(json.dumps({"worker_id": manager.worker_id_prefix + ":" + name, "pid": pid}))
-    monkeypatch.setattr(worker_manager, "ExecutionServiceClient", lambda: SimpleNamespace(health=lambda: {}))
+    monkeypatch.setattr(worker_manager, "ExecutionServiceClient", lambda **kw: SimpleNamespace(health=lambda: {}))
     manager._cleanup_offline_registrations()
     assert (tmp_path / "absent.json").exists()
-    monkeypatch.setattr(worker_manager, "ExecutionServiceClient", lambda: SimpleNamespace(health=lambda: {
+    monkeypatch.setattr(worker_manager, "ExecutionServiceClient", lambda **kw: SimpleNamespace(health=lambda: {
         "scheduler": {"workers": [{"worker_id": manager.worker_id_prefix + ":registered", "state": "online"}]}}))
     manager._cleanup_offline_registrations()
     assert not (tmp_path / "absent.json").exists()
