@@ -111,6 +111,8 @@ def _execute_scoped_read_domain_call(params: dict[str, Any]) -> Any:
 # database boundary releases idle read-worker connections immediately.
 DEFAULT_READ_WORKERS = 12
 CONVERSATION_INDEX_WORKERS = 3
+# A restarted read pool holds its lock while the new workers start.
+READ_POOL_START_SECONDS = 60.0
 
 
 def _read_domain_response(params: dict[str, Any]) -> dict[str, Any]:
@@ -158,6 +160,10 @@ class LineageReadProcessPool:
         self._executor: concurrent.futures.ProcessPoolExecutor | None = None
         self._worker_pids: tuple[int, ...] = ()
         self._closed = False
+        # Set before close() takes the lock. A service stop kills the workers,
+        # so a read may be restarting the pool while holding the lock; it gives
+        # up on seeing this instead of keeping close() waiting.
+        self._stopping = threading.Event()
         if self.workers:
             self._start()
 
@@ -170,16 +176,30 @@ class LineageReadProcessPool:
 
     def _start(self) -> None:
         executor = self._new_executor()
-        futures = [
-            executor.submit(_read_worker_identity, 0.05)
-            for _ in range(self.workers)
-        ]
+        try:
+            futures = [
+                executor.submit(_read_worker_identity, 0.05)
+                for _ in range(self.workers)
+            ]
+            deadline = time.monotonic() + READ_POOL_START_SECONDS
+            pending = set(futures)
+            while pending:
+                if self._stopping.is_set():
+                    raise RuntimeError("Lineage read pool is stopping")
+                if time.monotonic() >= deadline:
+                    raise RuntimeError("Lineage read workers did not start")
+                _done, pending = concurrent.futures.wait(pending, timeout=0.1)
+            worker_pids = tuple(sorted({future.result() for future in futures}))
+        except BaseException:
+            # These workers started after any stop signal, so nothing else ends them.
+            _terminate_executor(executor)
+            raise
         self._executor = executor
-        self._worker_pids = tuple(sorted({future.result() for future in futures}))
+        self._worker_pids = worker_pids
 
     def _replace(self, failed: concurrent.futures.ProcessPoolExecutor) -> None:
         with self._lock:
-            if self._closed or self._executor is not failed:
+            if self._closed or self._stopping.is_set() or self._executor is not failed:
                 return
             failed.shutdown(wait=False, cancel_futures=True)
             self._start()
@@ -219,26 +239,31 @@ class LineageReadProcessPool:
         }
 
     def close(self) -> None:
+        self._stopping.set()
         with self._lock:
             self._closed = True
             executor = self._executor
             self._executor = None
         if executor is not None:
-            # Python 3.12 has no public terminate_workers API. These workers
-            # only execute reads, so ending an in-flight read cannot lose a job.
-            processes = list((executor._processes or {}).values())
-            executor.shutdown(wait=False, cancel_futures=True)
-            for process in processes:
-                if process.is_alive():
-                    process.terminate()
-            deadline = time.monotonic() + 3.0
-            for process in processes:
-                process.join(max(0.0, deadline - time.monotonic()))
-            for process in processes:
-                if process.is_alive():
-                    process.kill()
-            for process in processes:
-                process.join(timeout=0.2)
+            _terminate_executor(executor)
+
+
+def _terminate_executor(executor: concurrent.futures.ProcessPoolExecutor) -> None:
+    # Python 3.12 has no public terminate_workers API. These workers
+    # only execute reads, so ending an in-flight read cannot lose a job.
+    processes = list((executor._processes or {}).values())
+    executor.shutdown(wait=False, cancel_futures=True)
+    for process in processes:
+        if process.is_alive():
+            process.terminate()
+    deadline = time.monotonic() + 3.0
+    for process in processes:
+        process.join(max(0.0, deadline - time.monotonic()))
+    for process in processes:
+        if process.is_alive():
+            process.kill()
+    for process in processes:
+        process.join(timeout=0.2)
 
 
 # Identifies this process as the holder of the Lineage timer lease.

@@ -230,6 +230,114 @@ def test_read_pool_cancels_running_read_and_cannot_restart_after_close(tmp_path)
         pool.close()
 
 
+def _never_ready():
+    time.sleep(120)
+
+
+def _hanging_restarts(pool):
+    """Make the pool's restarts spawn workers that never finish starting; return their processes."""
+    from concurrent.futures import ProcessPoolExecutor
+    import multiprocessing
+
+    processes = []
+
+    class Recording(ProcessPoolExecutor):
+        def submit(self, *args, **kwargs):
+            future = super().submit(*args, **kwargs)
+            processes.extend(p for p in (self._processes or {}).values() if p not in processes)
+            return future
+
+    pool._new_executor = lambda: Recording(
+        max_workers=pool.workers, mp_context=multiprocessing.get_context("spawn"), initializer=_never_ready)
+    return processes
+
+
+def _wait_for(processes):
+    deadline = time.monotonic() + 10
+    while not processes and time.monotonic() < deadline:
+        time.sleep(.01)
+    assert processes, "the broken pool must be restarting"
+    return processes
+
+
+def test_read_pool_stopping_during_restart_ends_the_new_workers(tmp_path):
+    """服务停止杀掉读取进程后，正在重建的进程池放弃等待新进程，关闭立即完成并结束新进程"""
+    pool = LineageReadProcessPool(1)
+    original = list(pool._executor._processes.values())
+    restarted = _hanging_restarts(pool)
+    marker = tmp_path / "read-started"
+    errors = []
+
+    def read():
+        try:
+            pool._submit(_blocking_read, str(marker))
+        except Exception as exc:
+            errors.append(exc)
+
+    caller = threading.Thread(target=read, daemon=True)
+    caller.start()
+    try:
+        deadline = time.monotonic() + 5
+        while not marker.exists() and time.monotonic() < deadline:
+            time.sleep(.01)
+        assert marker.exists(), "child must be executing before the stop"
+        # systemd's stop signal reaches the read workers along with the service.
+        for process in original:
+            process.kill()
+        _wait_for(restarted)
+        closer = threading.Thread(target=pool.close, daemon=True)
+        closer.start()
+        closer.join(5)
+        assert not closer.is_alive(), "close waited for the restart"
+        caller.join(5)
+        assert not caller.is_alive() and errors, "the interrupted read must fail"
+        assert not any(process.is_alive() for process in restarted)
+        assert pool._executor is None
+    finally:
+        for process in restarted:
+            process.kill()
+        pool.close()
+
+
+def test_read_pool_does_not_restart_once_stopping():
+    """关闭开始后，等锁的读取遇到坏掉的进程池也不再启动新进程"""
+    pool = LineageReadProcessPool(1)
+    failed = pool._executor
+    restarted = _hanging_restarts(pool)
+    try:
+        for process in list(failed._processes.values()):
+            process.kill()
+        # close() has signalled the stop and is waiting for the lock.
+        pool._stopping.set()
+        pool._replace(failed)
+        assert not restarted
+    finally:
+        for process in restarted:
+            process.kill()
+        pool.close()
+
+
+def test_read_pool_restart_gives_up_when_new_workers_do_not_start(monkeypatch):
+    """新读取进程在启动期限内没有就绪时，重建失败并结束这些进程，下一次读取再重建"""
+    from management_portal.society_service import server
+
+    monkeypatch.setattr(server, "READ_POOL_START_SECONDS", .5)
+    pool = LineageReadProcessPool(1)
+    failed = pool._executor
+    restarted = _hanging_restarts(pool)
+    try:
+        for process in list(failed._processes.values()):
+            process.kill()
+        with pytest.raises(RuntimeError, match="did not start"):
+            pool._replace(failed)
+        assert restarted and not any(process.is_alive() for process in restarted)
+        assert pool._executor is failed
+    finally:
+        for process in restarted:
+            process.kill()
+        pool.close()
+
+
 def test_worker_stops_share_a_single_grace_period():
     """多个工作线程停止时共享同一个宽限期"""
     release = threading.Event()
