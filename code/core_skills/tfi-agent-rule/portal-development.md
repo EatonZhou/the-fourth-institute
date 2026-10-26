@@ -81,6 +81,14 @@ worktree 快进到该提交，从 Release 推送远端，然后通过独立控�
 返回 activation.queued 时读取 activation.receipt，只有回执 ok=true 才能报告激活成功；
 排队回执不是健康验收，Web 自身重启不会终止该控制任务。
 
+一个浏览器页面由 HTML 和多份脚本组成时，这些文件只有来自同一提交才能一起工作。
+`code/scripts/portal_release_units.py` 登记这样的兼容单元：Lineage 工作台一组；
+Chat 工作区的入口脚本 `portal_chat_workspace.js` 与全部 `chat_workspace_*.js` 模块
+一组，Chat 脚本清单与 Release 不同的页面和服务端公开静态文件列表也加入这一组。
+`--path` 选中单元内任一文件时，工具发布整个单元，结果的 `release_unit_paths` 列出
+随行的文件；单元内未修改的文件不增加提交内容。新增 Chat 模块时，在各页面与服务端
+列表中登记它，再发布模块或页面中的任一个即可。
+
 允许选中文件中其他 Agent 未完成的改动、已有暂存内容和祖先提交一起发布；这是
 短周期开发的明确取舍。不要联系或等待其作者，不拆分/重建纯净个人提交，不临时
 还原文件。暂存后产生的新修改继续留在 Dev，发布后工作区变脏不算失败。未涉及

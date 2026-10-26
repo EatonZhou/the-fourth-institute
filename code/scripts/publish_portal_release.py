@@ -23,68 +23,12 @@ from management_common.site_config import read_site_config
 from management_common.file_lock import lock_stream
 from management_common.process_runtime import run_process
 from scripts import portal_release, portal_dev_commit, portal_services, portal_publication_batch as batch
+from scripts import portal_release_units as release_units
 from scripts.portal_source_layout import SHARED_ROOT
 
 ROOT = SHARED_ROOT
 LOG_ROOT = instance_root() / 'release/publication-logs'
 
-# A Lineage page is one browser runtime, even though its implementation is
-# split across an HTML shell and lazily loaded modules. Publishing only one
-# member can leave the Release DOM and JavaScript contracts at different
-# revisions, so selecting any member captures the whole compatibility unit.
-LINEAGE_WORKBENCH_RELEASE_UNIT = (
-    'management_portal/lineage.html',
-    'management_portal/hatg-panel.html',
-    'management_portal/static/lineage_workbench.css',
-    'management_portal/static/lineage_workbench.js',
-    'management_portal/static/lineage_workbench_watchboard.js',
-    'management_portal/static/lineage_workbench_state.js',
-    'management_portal/static/lineage_workbench_controller.js',
-    'management_portal/static/lineage_workbench_which_resident.js',
-    'management_portal/static/lineage_workbench_chatrooms.js',
-    'management_portal/static/lineage_workbench_resident_dialogs.js',
-    'management_portal/static/lineage_workbench_preview.js',
-    'management_portal/static/lineage_workbench_card_menus.js',
-    'management_portal/static/lineage_workbench_sidebar.js',
-    'management_portal/static/lineage_workbench_recent.js',
-    'management_portal/static/portal_lineage_catalogs.js',
-    'management_portal/static/portal_hatg_loader.js',
-    'management_portal/static/portal_resident_menu.js',
-    'management_portal/static/portal_resident_menu.css',
-    'management_portal/static/portal_scope_menu.js',
-    'management_portal/static/hatg_panel.css',
-    'management_portal/static/hatg_graph_model.js',
-    'management_portal/static/hatg_lineage_state.js',
-    'management_portal/static/hatg_program_edits.js',
-    'management_portal/static/hatg_family_blocks.js',
-    'management_portal/static/hatg_node_status.js',
-    'management_portal/static/hatg_canvas_selection.js',
-    'management_portal/static/hatg_function_block_menu.js',
-    'management_portal/static/hatg_program_inspector.js',
-    'management_portal/static/hatg_relations.js',
-    'management_portal/static/hatg_layout.js',
-    'management_portal/static/hatg_toolbar.js',
-    'management_portal/static/hatg_graph_projection.js',
-    'management_portal/static/hatg_graph_view.js',
-    'management_portal/static/hatg_resident_runtime.js',
-    'management_portal/static/hatg_workspace_results.js',
-    'management_portal/static/hatg_resident_dialogs.js',
-    'management_portal/static/hatg_lineage_dialogs.js',
-    'management_portal/static/hatg_seeds.js',
-    'management_portal/static/hatg_leader.js',
-    'management_portal/static/hatg_graph_search.js',
-    'management_portal/static/hatg_panel.js',
-    'management_portal/static/hatg_panel_features.js',
-    'management_portal/static/hatg_panel_state.js',
-    'management_portal/static/lineage_program.js',
-    'management_portal/static/lineage_primitive_definitions.json',
-    'management_portal/static/lineage_primitive_inspector.js',
-    'management_portal/static/lineage_invocation_inspector.js',
-    'management_portal/static/lineage_element_fields.js',
-    'management_portal/static/lineage_graph.js',
-    'management_portal/static/lineage_function_blocks.css',
-)
-RELEASE_PATH_UNITS = (LINEAGE_WORKBENCH_RELEASE_UNIT,)
 
 
 @dataclass(frozen=True)
@@ -100,15 +44,14 @@ class PublishOptions:
 def expand_release_unit_paths(paths: tuple[str, ...]) -> tuple[str, ...]:
     """Close explicitly selected paths over browser compatibility units."""
 
-    expanded = {str(Path(path).as_posix()).rstrip('/') for path in paths}
-    for unit in RELEASE_PATH_UNITS:
-        if any(
-            member == selected or member.startswith(selected + '/')
-            for selected in expanded
-            for member in unit
-        ):
-            expanded.update(member for member in unit if (ROOT / member).is_file())
-    return tuple(sorted(expanded))
+    base = base_commit()
+
+    def released_text(name: str) -> str | None:
+        shown = subprocess.run(['git', 'show', f'{base}:./{name}'], cwd=ROOT,
+                               capture_output=True, text=True, check=False)
+        return shown.stdout if shown.returncode == 0 else None
+
+    return release_units.expand_release_unit_paths(paths, ROOT, released_text)
 
 
 @contextmanager
@@ -177,9 +120,9 @@ def push_remotes(root: Path, commit: str) -> dict:
 
 def publish(options: PublishOptions) -> dict:
     if ROOT.name == "code" and (ROOT.parent / ".git").exists():
+        # tfi_dev closes the selected paths over the compatibility units itself.
         from scripts.tfi_dev import publish as publish_worktrees
-        expanded = options.paths if options.all_files else expand_release_unit_paths(options.paths)
-        return publish_worktrees(ROOT.parent, options.message, paths=tuple('code/' + p for p in expanded),
+        return publish_worktrees(ROOT.parent, options.message, paths=tuple('code/' + p for p in options.paths),
                                  all_files=options.all_files)
     if not options.message.strip():
         raise ValueError('A short description of the change is required')

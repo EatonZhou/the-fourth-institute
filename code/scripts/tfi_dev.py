@@ -6,7 +6,7 @@ import argparse
 from contextlib import contextmanager
 import json
 import shlex
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import subprocess
 import sys
 
@@ -107,6 +107,27 @@ def sync(root):
     return cfg
 
 
+def release_unit_paths(dev, cfg, base, paths):
+    """Add the rest of each browser compatibility unit a selected path belongs to."""
+    prefix = cfg.get("code_directory", "code")
+    code = dev / prefix
+    if not paths or not code.is_dir():
+        return tuple(paths)
+    from scripts.portal_release_units import expand_release_unit_paths
+
+    def released_text(name):
+        shown = subprocess.run(["git", "show", f"{base}:{prefix}/{name}"], cwd=dev,
+                               capture_output=True, text=True)
+        return shown.stdout if shown.returncode == 0 else None
+
+    requested = {PurePosixPath(path).as_posix() for path in paths}
+    inside = [path[len(prefix) + 1:] for path in requested if path.startswith(prefix + "/")]
+    if not inside:
+        return tuple(paths)
+    added = [f"{prefix}/{path}" for path in expand_release_unit_paths(inside, code, released_text)]
+    return (*paths, *(path for path in added if path not in requested))
+
+
 def publish(root, message, check=None, push=True, *, paths=(), all_files=False, activate=True):
     """Commit selected live Dev paths and fast-forward the Release worktree."""
     cfg = configuration(root)
@@ -120,9 +141,10 @@ def publish(root, message, check=None, push=True, *, paths=(), all_files=False, 
         git(dev, "merge-base", "--is-ancestor", base, "HEAD")
         if check:
             subprocess.run(check, cwd=dev, check=True)
-        if paths or all_files:
+        selected = tuple(paths) if all_files else release_unit_paths(dev, cfg, base, paths)
+        if selected or all_files:
             from scripts.portal_dev_commit import commit as commit_paths
-            source = commit_paths(dev, tuple(paths), message, all_files=all_files)
+            source = commit_paths(dev, selected, message, all_files=all_files)
         else:
             # A caller that already committed its changes can publish that head.
             source = git(dev, "rev-parse", "HEAD")
@@ -135,7 +157,8 @@ def publish(root, message, check=None, push=True, *, paths=(), all_files=False, 
             git(main, "push", cfg["remote"], "main:main")
         result = {"ok": True, "status": "published", "commit": commit, "source": source, "pushed": push,
                   "paths": changed, "push": {"ok": push, "remote": cfg["remote"]},
-                  "changed_paths": changed, "activation_required": bool(changed)}
+                  "changed_paths": changed, "activation_required": bool(changed),
+                  "release_unit_paths": sorted(set(selected) - set(paths))}
     if activate and cfg.get("runtime_root"):
         from scripts.tfi_development_runtime import request_activation
         result["activation"] = request_activation(Path(cfg["runtime_root"]), changed, commit)

@@ -10,6 +10,7 @@ import pytest
 
 from scripts import portal_dev_restart_requests as requests
 from scripts import portal_dev_source_reloader as reloader
+from scripts import portal_release_units as release_units
 from scripts import portal_services as services
 from scripts import publish_portal_release as publisher
 
@@ -60,13 +61,12 @@ def test_maintenance_blocks_restart_before_any_systemctl(tmp_path, monkeypatch, 
 
 
 
-def test_removed_implicit_release_member_does_not_block_existing_paths(tmp_path, monkeypatch):
+def test_removed_implicit_release_member_does_not_block_existing_paths(tmp_path):
     """发布单元中已删除的隐含成员不阻止发布仍存在的路径"""
-    monkeypatch.setattr(publisher, 'ROOT', tmp_path)
-    monkeypatch.setattr(publisher, 'RELEASE_PATH_UNITS', (('page.js', 'removed.js'),))
+    units = (('page.js', 'removed.js'),)
     (tmp_path / 'page.js').write_text('current')
-    assert publisher.expand_release_unit_paths(('page.js',)) == ('page.js',)
-    assert publisher.expand_release_unit_paths(('removed.js',)) == ('page.js', 'removed.js')
+    assert release_units.expand_release_unit_paths(('page.js',), tmp_path, units=units) == ('page.js',)
+    assert release_units.expand_release_unit_paths(('removed.js',), tmp_path, units=units) == ('page.js', 'removed.js')
 
 
 def test_detached_publication_keeps_json_stdout_separate_from_diagnostics(tmp_path, monkeypatch, capsys):
