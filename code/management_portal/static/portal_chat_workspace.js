@@ -27,6 +27,8 @@
   //     adding, uploading, retrying, removing and replacing edited images, previews
   //   chat_workspace_composer_drafts.js  one Workspace's drafts: when the message
   //     being written is saved per conversation, and a failed send kept as a draft
+  //   chat_workspace_composer_undo.js  one Workspace's composer undo: Ctrl/⌘+Z
+  //     takes back its own pastes and inserted attachments
   //   chat_workspace_runtime_settings.js  the Runtime Settings dialog, notices after
   //     saving, the session restart dialog and its progress
   //   chat_workspace_harness_panel.js  the Agent Harness panel and menu, prompt
@@ -469,7 +471,6 @@
       expandedAgentGroups: new Set(),
       messageFoldDefaults: new Set(),
       messageFoldSizes: new Map(),
-      undoStack: [],
       recentFileSignatures: new Map(),
       composerInputFocused: false,
       composerImeActive: false,
@@ -869,10 +870,20 @@
       insertComposerAttachmentRef, mediaPartPath, normalizeComposerAttachment, normalizeComposerAttachments, options,
       removeComposerAttachmentRef, renderComposerAttachmentTray, requireImageEditor, restoreComposerSelection,
       saveActiveDraft, state, syncComposerAttachmentRefs,
-      // Defined later in the Workspace.
+      // Made below: the undo takes back these attachments, so it comes after them.
       markComposerUndoAfterSnapshot: (...args) => markComposerUndoAfterSnapshot(...args),
       pushComposerUndoSnapshot: (...args) => pushComposerUndoSnapshot(...args),
+      // Defined later in the Workspace.
       updateControls: (...args) => updateControls(...args),
+    });
+
+    const {
+      composerSnapshot, composerMutationSignature, pushComposerUndoSnapshot, dropComposerUndoSnapshot,
+      markComposerUndoAfterSnapshot, forgetComposerUndo, restoreComposerSnapshot, undoComposerMutation,
+    } = chatWorkspaceModule("PortalChatWorkspaceComposerUndo").createComposerUndo({
+      composerSelectionSnapshot, currentController: () => controller, discardComposerAttachments, els,
+      normalizeComposerAttachments, options, refsPayload, renderAttachmentTrayOnly, renderAttachments,
+      restoreComposerSelection, serializeComposerInput, state, withoutAttachmentReconcile,
     });
     // One Fork card per conversation: whether its compaction is open, and what was read.
     let inheritanceView = null;
@@ -1284,59 +1295,6 @@
       window.addEventListener("resize", handleWindowResize);
       applyComposerInputLayout();
     };
-    const composerSnapshot = () => ({
-      inputValue: els.input && "value" in els.input ? String(els.input.value || "") : "",
-      inputHtml: els.input && !("value" in els.input) ? String(els.input.innerHTML || "") : "",
-      plainText: serializeComposerInput(els.input, state.attachments, { mode: "plain" }),
-      selection: composerSelectionSnapshot(els.input),
-      attachments: state.attachments.map(item => ({ ...item })),
-    });
-    const composerMutationSignature = () => JSON.stringify({
-      draftText: serializeComposerInput(els.input, state.attachments, { mode: "draft" }),
-      attachmentIds: state.attachments.map(item => String(item?.id || "")),
-      refs: refsPayload(state.refs),
-    });
-    const pushComposerUndoSnapshot = () => {
-      if (!els.input) return null;
-      const snapshot = composerSnapshot();
-      const previous = state.undoStack[state.undoStack.length - 1];
-      const signature = JSON.stringify({
-        inputValue: snapshot.inputValue,
-        inputHtml: snapshot.inputHtml,
-        attachments: snapshot.attachments.map(item => [item.id, item.path, item.preview_url, item.uploading, item.error]),
-      });
-      if (previous?.signature === signature) return previous;
-      const frame = { ...snapshot, signature, afterSignature: "" };
-      state.undoStack.push(frame);
-      state.undoStack = state.undoStack.slice(-20);
-      return frame;
-    };
-    const dropComposerUndoSnapshot = (frame) => {
-      if (!frame) return;
-      if (state.undoStack[state.undoStack.length - 1] === frame) {
-        state.undoStack.pop();
-        return;
-      }
-      state.undoStack = state.undoStack.filter(item => item !== frame);
-    };
-    const markComposerUndoAfterSnapshot = (frame) => {
-      if (!frame || !els.input) return;
-      frame.afterSignature = composerMutationSignature();
-    };
-    const restoreComposerSnapshot = (snapshot) => {
-      if (!snapshot || !els.input) return false;
-      return withoutAttachmentReconcile(() => {
-        state.attachments = normalizeComposerAttachments(snapshot.attachments || []);
-        if ("value" in els.input) els.input.value = String(snapshot.inputValue || "");
-        else els.input.innerHTML = String(snapshot.inputHtml || "");
-        restoreComposerSelection(els.input, snapshot.selection);
-        renderAttachmentTrayOnly({ notify: true });
-        bindImagePreview(els.input, attachmentPreviewOptions());
-        updateControls();
-        options.onInput?.(controller.payload(), controller);
-        return true;
-      });
-    };
     // Show the draft of a conversation in the composer.
     const restoreDraftScope = (scope, { force = false, focus = document.activeElement === els.input } = {}) => {
       const nextScope = String(scope || "").trim();
@@ -1375,55 +1333,13 @@
         setInputText(els.input, "", { focus });
         releaseAttachmentPreviews(state.attachments);
         state.attachments = [];
-        state.undoStack = [];
+        forgetComposerUndo();
         renderAttachments({ notify });
         closeSlashCommandMenu();
         closeMentionMenu();
       } finally {
         state.restoringDraft = restoring;
       }
-    };
-    const undoComposerAttachmentInsert = (snapshot) => {
-      const ids = new Set((snapshot?.attachmentIds || []).map(id => String(id || "")).filter(Boolean));
-      if (!ids.size || !els.input) return false;
-      let removed = false;
-      for (const id of ids) {
-        els.input.querySelectorAll(`[data-portal-composer-attachment-token="${CSS.escape(id)}"]`).forEach(node => {
-          const next = node.nextSibling;
-          const previous = node.previousSibling;
-          if (next?.nodeType === Node.TEXT_NODE && !String(next.textContent || "").trim()) next.remove();
-          else if (previous?.nodeType === Node.TEXT_NODE && !String(previous.textContent || "").trim()) previous.remove();
-          node.remove();
-          removed = true;
-        });
-      }
-      if (!/\s$/.test(String(snapshot?.plainText || ""))) {
-        let node = els.input.lastChild;
-        while (node?.nodeType === Node.TEXT_NODE && !String(node.textContent || "").trim()) {
-          const previous = node.previousSibling;
-          node.remove();
-          node = previous;
-        }
-        if (node?.nodeType === Node.TEXT_NODE) {
-          node.textContent = String(node.textContent || "").replace(/\s+$/g, "");
-        }
-      }
-      const removedItems = state.attachments.filter(item => ids.has(String(item?.id || "")));
-      discardComposerAttachments(removedItems);
-      state.attachments = state.attachments.filter(item => !ids.has(String(item?.id || "")));
-      renderAttachmentTrayOnly({ notify: true });
-      bindImagePreview(els.input, attachmentPreviewOptions());
-      updateControls();
-      if (removed) els.input.dispatchEvent?.(new Event("input", { bubbles: true }));
-      return true;
-    };
-    const undoComposerMutation = () => {
-      const snapshot = state.undoStack[state.undoStack.length - 1];
-      if (!snapshot) return false;
-      if (snapshot.afterSignature && composerMutationSignature() !== snapshot.afterSignature) return false;
-      state.undoStack.pop();
-      if (snapshot.kind === "attachment-insert") return undoComposerAttachmentInsert(snapshot);
-      return restoreComposerSnapshot(snapshot);
     };
     const patchComposerElement = (current, desired) => {
       if (!current || !desired) return;

@@ -3550,6 +3550,7 @@ def _portal_route_definitions() -> tuple[RouteDefinition, ...]:
                 '/static/chat_workspace_message_folds.js',
                 '/static/chat_workspace_composer_attachments.js',
                 '/static/chat_workspace_composer_drafts.js',
+                '/static/chat_workspace_composer_undo.js',
                 '/static/chat_workspace_runtime_settings.js',
                 '/static/chat_workspace_harness_panel.js',
                 '/static/chat_workspace_subagents.js',
