@@ -2,7 +2,7 @@
   "schema": "tfi.permission-scheme.v2",
   "scheme_id": "default",
   "title": "默认方案",
-  "description": "Portal 的分级权限规则（decision_600ae27b0538）：树按 Portal 对象的自然归属分层，User 按分类（Portal 管理员、一般用户、实习用户）放在 P 树对应节点下，Portal 管理员与全员可读写在“共享”节点上，一般用户管理全部 Project，个人空间天然私有，个人 AMA 放在所有者之下、与所有者权限相同；受保护指令按参数要求 A 树节点：查看 @viewer、协作 @contributor、管理 @admin，或给 Resident 发消息 @message。",
+  "description": "Portal 的分级权限规则（decision_600ae27b0538）：树按 Portal 对象的自然归属分层，User 按分类（Portal 管理员、一般用户、实习用户）放在 P 树对应节点下，Portal 管理员与全员可读写在“共享”节点上，一般用户管理全部 Project，个人空间天然私有，个人 AMA 放在所有者的个人空间下，其中的 Resident 由引擎按所有者判定；受保护指令按参数要求 A 树节点：查看 @viewer、协作 @contributor、管理 @admin，或给 Resident 发消息 @message。",
   "trees": {
     "P": {
       "root": "@principals",
@@ -61,13 +61,6 @@
           "each": "resident",
           "under": "lineage",
           "otherwise": "@residents"
-        },
-        {
-          "id": "@personal_ama",
-          "parent": "@users",
-          "title": "个人 AMA（在所有者名下）",
-          "each": "lineage",
-          "under": "user"
         }
       ]
     },

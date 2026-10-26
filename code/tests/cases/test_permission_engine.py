@@ -291,12 +291,14 @@ def test_steward_follows_the_family_record(store, default):
 
 
 def test_personal_ama_holds_its_owners_permissions(store, default):
-    """个人 AMA 的 Lineage 与 Resident 拥有所有者的权限，位置由方案规则决定
+    """个人 AMA 的 Resident 拥有所有者的权限，位置由方案规则决定
 
-    个人 AMA 的 Lineage 只把所有者 User 和其个人空间作为归属，不属于任何 Project；默认方案的“个人 AMA”规则节点按所有者关系把它放在 P 树中所有者 User 之下
-    （under user）、R 树中所有者的个人空间下（under personal_space），Resident 随 Lineage。AMA 的 Resident 与所有者一样管理全部 Project，并管理整个 AMA，
-    管理员和其他 User 对 AMA 没有权限；AMA 的 steward 也有自己的 steward 表项；所有者的账号记录改为实习用户后 AMA 的 Resident 随之只能读 Project；
-    所有者尚未登记时 AMA 按规则节点的兜底位置放在 P 树“User”、R 树“个人”下，权限系统不替它放置所有者；重新生成与增量同步结果一致。
+    个人 AMA 的 Lineage 只把所有者 User 和其个人空间作为归属，不属于任何 Project；默认方案在 R 树中把它放在所有者的个人空间下（under personal_space），
+    P 树中按没有 Project 的 Lineage 放在“Resident”下，Resident 随 Lineage。引擎按登记的所有者判定 AMA 的 Resident（represents），所以它与所有者一样管理全部 Project，
+    并管理整个 AMA，管理员和其他 User 对 AMA 没有权限；AMA 的 steward 也有自己的 steward 表项；所有者的账号记录改为实习用户后 AMA 的 Resident 随之只能读 Project；
+    所有者尚未登记时 AMA 在 R 树按规则节点的兜底位置放在“个人”下，权限系统不替它放置所有者；重新生成与增量同步结果一致。
+
+    :design: decision_b820faf42218, decision_600ae27b0538
     """
     record = {"resource_id": "lineage_555555555555", "attributes": {"lineage_membership": "personal", "created_by": "carol",
                                                                     "project_id": PROJECT}}
@@ -307,10 +309,12 @@ def test_personal_ama_holds_its_owners_permissions(store, default):
     facts = [*portal_facts(), user_fact("carol"), ama, member, steward,
              Fact("family", "family_555555555555", {"lineage": ama.id}, steward=steward.id)]
     instance = build(default, store, facts, administrators=["bob"])
-    engine = engine_for(default, store)
+    # The registered owners (personal_owner_id), as par.represents reads them.
+    owners = {member.id: "carol", steward.id: "carol", "resident_777777777777": "dave"}
+    engine = engine_for(default, store, represents=lambda principal: owners.get(principal, ""))
     placed = {"P": store.paths("P", [ama.id, member.id]), "R": store.paths("R", [ama.id, member.id])}
-    assert placed["P"] == {ama.id: ["@principals", "@users", "@members", "carol", ama.id],
-                           member.id: ["@principals", "@users", "@members", "carol", ama.id, member.id]}
+    assert placed["P"] == {ama.id: ["@principals", "@residents", ama.id],
+                           member.id: ["@principals", "@residents", ama.id, member.id]}
     assert placed["R"][ama.id] == ["@portal", "@personal", "personal_space:carol", ama.id]
     for resource in (PROJECT, LINEAGE, OTHER, ama.id, member.id):
         assert levels(engine, default, member.id, resource) == "admin", resource
@@ -326,11 +330,11 @@ def test_personal_ama_holds_its_owners_permissions(store, default):
 
     orphan = Fact("lineage", "lineage_888888888888", {"personal_space": "personal_space:erin", "user": "erin"})
     instance.sync([orphan])
-    assert store.paths("P", ["erin", orphan.id]) == {orphan.id: ["@principals", "@users", orphan.id]}
+    assert store.paths("P", ["erin", orphan.id]) == {orphan.id: ["@principals", "@residents", orphan.id]}
     assert store.paths("R", [orphan.id])[orphan.id] == ["@portal", "@personal", orphan.id]
     later = Fact("lineage", "lineage_777777777777", {"personal_space": "personal_space:dave", "user": "dave"})
     instance.sync([user_fact("dave"), later, Fact("resident", "resident_777777777777", {"lineage": later.id})])
-    assert store.paths("P", [later.id])[later.id] == ["@principals", "@users", "@members", "dave", later.id]
+    assert store.paths("P", [later.id])[later.id] == ["@principals", "@residents", later.id]
     assert store.paths("R", [later.id])[later.id] == ["@portal", "@personal", "personal_space:dave", later.id]
     assert levels(engine, default, "resident_777777777777", PROJECT) == "admin"
 

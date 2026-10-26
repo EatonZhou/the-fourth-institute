@@ -97,7 +97,7 @@ Before an upgrade, verify the existing environment file, service identities, and
 
 ### Enable or disable checks
 
-The permission-system switch is in Execution settings. When disabled, authenticated Users and Residents can view, use, change, and delete objects, including terminal access. Personal AMA remains private to its owner. When enabled, Portal reconciles the active scheme's instances with current objects before evaluating calls. Schemes and entries can be edited while checks are off and take effect when enabled.
+The permission-system switch is in Execution settings. When disabled, authenticated Users and Residents can view, use, change, and delete objects, including terminal access. Personal AMA remains private to its owner: this is AMA's own rule, not part of the permission system, and holds with the switch on or off. Anyone may message someone else's AMA but cannot read its conversation. When enabled, Portal reconciles the active scheme's instances with current objects before evaluating calls. Schemes and entries can be edited while checks are off and take effect when enabled.
 
 ### Permission schemes
 
@@ -105,10 +105,10 @@ A scheme contains rules and persisted instances: trees for principals (P), actio
 
 The default scheme provides:
 
-- Shared-content reading and messaging, and management of public content.
+- Shared-content reading, messaging any Resident (including other users' AMAs), and management of public content.
 - Project Residents managing resources within their Project.
 - Members managing Projects, while interns need entries to collaborate beyond reading; an intern's newly created Project is managed by its creator.
-- Users managing their accounts and personal spaces; AMA belongs to its owner.
+- Users managing their accounts and personal spaces; AMA belongs to its owner, and its Residents are judged as the owner in every permission decision.
 - Family stewards managing their Lineage; chatroom members posting in their rooms.
 - Portal administrators managing shared content and terminals. Publishing, restarting, host scripts, and Model API registration require admin on Portal operations, granted to administrators by default.
 

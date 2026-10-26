@@ -57,7 +57,7 @@ def test_the_rule_answers_a_personal_ama_by_its_owner_without_the_permission_por
 def test_with_the_switch_on_the_rule_holds_and_the_scheme_judges_the_rest(monkeypatch):
     """权限系统开启时，规定照样独立生效，规定放行的再由方案判定
 
-    默认方案把个人 AMA 放在所有者名下：所有者和 AMA 里的 Resident 通过，管理员和其他 User 都不通过；Project 里的 Lineage 管理员照常通过。
+    默认方案把个人 AMA 放在所有者的个人空间下：所有者和按所有者判定的 AMA Resident 通过，管理员和其他 User 都不通过；Project 里的 Lineage 管理员照常通过。
     即使方案给了管理员这个 AMA 的权限，规定仍让它看不到。
     """
     from tests.cases.permission_test_support import Fact
