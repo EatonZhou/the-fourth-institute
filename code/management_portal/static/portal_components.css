@@ -3988,7 +3988,19 @@ button.portalFileLink {
   flex: 0 0 auto;
   width: 11px;
   height: 11px;
-  color: var(--muted, #64748b);
+  color: var(--accent, #2563eb);
+}
+
+.portalAgentInboxItemPin {
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--accent, #2563eb) 14%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #2563eb) 14%, transparent);
+}
+
+.portalAgentInboxItemPin .portalIcon {
+  fill: currentColor;
+  stroke-width: 2.2;
+  transform: scale(1.15);
 }
 
 .portalAgentInboxItemBody > small {
