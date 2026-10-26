@@ -132,10 +132,20 @@ def target_plan(target, *, protected_roots=None, allow_missing_native=False):
     if set(roots) != set(KEYS):
         raise ValueError("All five data_roots must be explicit")
     resolved = {key: safe_path(value) for key, value in roots.items()}
+    external = target.get("external_data_roots", [])
+    if (not isinstance(external, list) or any(not isinstance(key, str) or key not in KEYS for key in external)
+            or len(set(external)) != len(external)):
+        raise ValueError("external_data_roots must list unique data root keys")
     reserved = [root / part for part in ("code", "runtime", "config", "home")]
     for key, path in resolved.items():
-        if path == root or not path.is_relative_to(root) or any(overlap(path, p) for p in reserved):
+        if key in external and not path.is_relative_to(root):
+            if (len(path.parts) < 4 or overlap(path, root)
+                    or overlap(path, SOURCE_ROOT.resolve()) or overlap(path, code_root(target).resolve())):
+                raise ValueError(f"{key} external directory overlaps installation or source paths")
+        elif path == root or not path.is_relative_to(root):
             raise ValueError(f"{key} must be an independent directory inside install_root")
+        if any(overlap(path, p) for p in reserved):
+            raise ValueError(f"{key} overlaps a reserved installation directory")
         if any(overlap(path, other) for name, other in resolved.items() if name != key):
             raise ValueError("The five data roots must not overlap")
     ports = target["ports"]
