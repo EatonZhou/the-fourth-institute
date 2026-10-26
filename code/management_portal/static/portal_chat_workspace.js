@@ -1344,6 +1344,46 @@
         setMessageMenuOpen(menu, true, { point: { x: event.clientX, y: event.clientY } });
       });
     };
+    // A message's attachment opens a file in the Workspace preview and an image
+    // in the image editor; an image without a preview URL has its path copied.
+    const openMessageAttachment = (renderOptions, kind, path, node) => {
+      const attachmentPath = String(path || "").trim();
+      if (String(kind || "") === "file" && window.PortalFileLinks?.kindForPath(path) !== "image") {
+        const descriptor = window.PortalFileLinks?.describe(attachmentPath) || { path: attachmentPath };
+        const request = { ...descriptor, href: descriptor.path, title: node?.textContent?.trim() || attachmentPath, node, source: "chat", target: els.messages };
+        const open = renderOptions.onLinkPreview || options.onLinkPreview || requestWorkspacePreview;
+        Promise.resolve().then(() => open(request)).catch(error => options.onError ? options.onError(error) : window.PortalUI.toast(error.message || String(error), "error"));
+        return;
+      }
+      const previewUrlForPath = renderOptions.previewUrlForPath || options.previewUrlForPath;
+      const previewUrl = previewUrlForPath ? previewUrlForPath(attachmentPath) : "";
+      if (previewUrl) openMessageImageEditor(previewUrl, attachmentPath);
+      else void window.PortalUI.copyText(attachmentPath, window.PortalI18n.t("附件路径"));
+    };
+    // Every render of the message list ends here. What was drawn gets its
+    // buttons and previews bound and its folds measured, then the host is told.
+    // `incremental` tells the host that only `roots` changed, as when one message
+    // is appended; otherwise it treats the whole list as drawn again.
+    const afterMessagesDrawn = (roots, { incremental = false } = {}) => {
+      const renderOptions = state.messageRenderOptions;
+      bindDefaultMessageActions();
+      for (const root of roots) {
+        bindAttachmentRefs(root, {
+          previewUrlForPath: renderOptions.previewUrlForPath || options.previewUrlForPath,
+          onOpen: (kind, path, node) => openMessageAttachment(renderOptions, kind, path, node),
+          onImagePreview: context => openMessageImageEditor(context?.src, context?.title),
+        });
+        bindResponseSourcePaths(root, { onLinkPreview: renderOptions.onLinkPreview || options.onLinkPreview });
+        bindResourceChips(root, { onResourcePreview: renderOptions.onResourcePreview || options.onResourcePreview });
+        bindMessageAvatars(root);
+        if (options.enableLinkPreview || renderOptions.enableLinkPreview) {
+          bindLinkPreview(root, { onLinkPreview: renderOptions.onLinkPreview || options.onLinkPreview });
+        }
+      }
+      measureMessageFolds(roots);
+      revealFinishedSubagents(els.messages, options.onSubagentFinished);
+      options.onMessagesRendered?.(els.messages, controller, incremental, roots);
+    };
     const historyPreviewUrl = () => state.messageRenderOptions?.previewUrlForPath || options.previewUrlForPath;
     const history = createInputHistory({
       // The host reads the person's inputs from the server (ListInputHistory with
@@ -2607,37 +2647,7 @@
           prefixNode,
           replacedKeys,
         })?.changedRoots || [];
-        bindDefaultMessageActions();
-        for (const root of changed) {
-          bindAttachmentRefs(root, {
-            previewUrlForPath: renderOptions.previewUrlForPath || options.previewUrlForPath,
-            onOpen: (kind, path, node) => {
-              const attachmentKind = String(kind || "") === "file" && window.PortalFileLinks?.kindForPath(path) !== "image" ? "file" : "image";
-              const attachmentPath = String(path || "").trim();
-              if (attachmentKind === "file") {
-                const descriptor = window.PortalFileLinks?.describe(attachmentPath) || { path: attachmentPath };
-                const request = { ...descriptor, href: descriptor.path, title: node?.textContent?.trim() || attachmentPath, node, source: "chat", target: els.messages };
-                const open = renderOptions.onLinkPreview || options.onLinkPreview || requestWorkspacePreview;
-                Promise.resolve().then(() => open(request)).catch(error => options.onError ? options.onError(error) : window.PortalUI.toast(error.message || String(error), "error"));
-                return;
-              }
-              const previewUrl = attachmentKind === "image" && (renderOptions.previewUrlForPath || options.previewUrlForPath)
-                ? (renderOptions.previewUrlForPath || options.previewUrlForPath)(attachmentPath) : "";
-              if (previewUrl) openMessageImageEditor(previewUrl, attachmentPath);
-              else void window.PortalUI.copyText(attachmentPath, window.PortalI18n.t("附件路径"));
-            },
-            onImagePreview: context => openMessageImageEditor(context?.src, context?.title),
-          });
-          bindResponseSourcePaths(root, { onLinkPreview: renderOptions.onLinkPreview || options.onLinkPreview });
-          bindResourceChips(root, { onResourcePreview: renderOptions.onResourcePreview || options.onResourcePreview });
-          bindMessageAvatars(root);
-          if (options.enableLinkPreview || renderOptions.enableLinkPreview) {
-            bindLinkPreview(root, { onLinkPreview: renderOptions.onLinkPreview || options.onLinkPreview });
-          }
-        }
-        measureMessageFolds(changed);
-        revealFinishedSubagents(els.messages, options.onSubagentFinished);
-        options.onMessagesRendered?.(els.messages, controller, true, changed);
+        afterMessagesDrawn(changed, { incremental: true });
         syncMessageScrollMode();
         if (wasFollowing && messageViewportMeasurable()) els.messages.scrollTop = els.messages.scrollHeight;
         return true;
@@ -2832,48 +2842,10 @@
             ...(canReconcilePrepend ? ["__history__", "__inheritance__"] : ["__runtime_phase__", "__subagents__", "__runtime__", "__scroll_anchor__"]),
           ],
         } : {});
-        bindDefaultMessageActions();
-        const previewUrlForPath = renderOptions.previewUrlForPath || options.previewUrlForPath;
-        // Only new/replaced message subtrees need binding and measurement.
-        const bindingRoots = reconciledRange ? reconciledRange.changedRoots : [els.messages];
-        for (const bindingRoot of bindingRoots) {
-          bindAttachmentRefs(bindingRoot, {
-            previewUrlForPath,
-            onOpen: (kind, path, node) => {
-              const attachmentKind = String(kind || "") === "file" && window.PortalFileLinks?.kindForPath(path) !== "image" ? "file" : "image";
-              const attachmentPath = String(path || "").trim();
-              if (attachmentKind === "file") {
-                const descriptor = window.PortalFileLinks?.describe(attachmentPath) || { path: attachmentPath };
-                const request = { ...descriptor, href: descriptor.path, title: node?.textContent?.trim() || attachmentPath, node, source: "chat", target: els.messages };
-                const open = renderOptions.onLinkPreview || options.onLinkPreview || requestWorkspacePreview;
-                Promise.resolve().then(() => open(request)).catch(error => options.onError ? options.onError(error) : window.PortalUI.toast(error.message || String(error), "error"));
-                return;
-              }
-              const previewUrl = attachmentKind === "image" && previewUrlForPath
-                ? previewUrlForPath(attachmentPath)
-                : "";
-              if (previewUrl) {
-                openMessageImageEditor(previewUrl, attachmentPath);
-                return;
-              }
-              void window.PortalUI.copyText(attachmentPath, window.PortalI18n.t("附件路径"));
-            },
-            onImagePreview: context => openMessageImageEditor(context?.src, context?.title),
-          });
-          bindResponseSourcePaths(bindingRoot, {
-            onLinkPreview: renderOptions.onLinkPreview || options.onLinkPreview,
-          });
-          bindResourceChips(bindingRoot, {
-            onResourcePreview: renderOptions.onResourcePreview || options.onResourcePreview,
-          });
-          bindMessageAvatars(bindingRoot);
-          if (options.enableLinkPreview || renderOptions.enableLinkPreview) {
-            bindLinkPreview(bindingRoot, { onLinkPreview: renderOptions.onLinkPreview || options.onLinkPreview });
-          }
-        }
-        measureMessageFolds(bindingRoots);
-        revealFinishedSubagents(els.messages, options.onSubagentFinished);
-        options.onMessagesRendered?.(els.messages, controller);
+        // Only new/replaced message subtrees need binding and measurement. The
+        // host still hears of a whole render, so it redraws what it keeps for
+        // the whole conversation, such as a Resident Chat's question cards.
+        afterMessagesDrawn(reconciledRange ? reconciledRange.changedRoots : [els.messages]);
         if (followTail && messageViewportMeasurable()) {
           els.messages.scrollTop = els.messages.scrollHeight;
         } else if (prependOnly && messageViewportMeasurable()) {
