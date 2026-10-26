@@ -36,7 +36,7 @@ def test_run_as_requires_an_explicit_user_object(value):
 
 def test_owner_creator_and_attribution_cannot_authorize_another_user(accounts, monkeypatch):
     """Lineage 的创建者或发起人身份都不能把运行身份设为其他用户"""
-    monkeypatch.setattr(identity.permission_system, "permitted_ids", lambda actor, instruction, parameter, ids, owners=None: set())
+    monkeypatch.setattr(identity.permission_system, "permitted_ids", lambda actor, instruction, parameter, ids: set())
     before = {"created_by": "sample_admin"}
     with operation_identity_scope(OperationIdentity.for_actor(RESIDENT, initiated_by="sample_admin")):
         for caller in ("alice", RESIDENT):
@@ -47,7 +47,7 @@ def test_owner_creator_and_attribution_cannot_authorize_another_user(accounts, m
 
 def test_active_user_is_required_even_when_no_instruction_is_protected(accounts, monkeypatch):
     """run_as_principal 指向停用或不存在的用户时，管理员也不能设置"""
-    monkeypatch.setattr(identity.permission_system, "permitted_ids", lambda actor, instruction, parameter, ids, owners=None: set(ids))
+    monkeypatch.setattr(identity.permission_system, "permitted_ids", lambda actor, instruction, parameter, ids: set(ids))
     for user in ("disabled", "missing"):
         with pytest.raises(PermissionError, match="unavailable or inactive"):
             identity.requested({"run_as_principal": {"kind": "user", "id": user}}, {}, RESIDENT)
@@ -126,7 +126,7 @@ def test_concurrent_graph_merge_never_uses_creator_to_reauthorize_identity(primi
     # A current editor may select their own active User, regardless of creator.
     # A concurrent rename must survive, and must not re-authorize as sample_admin.
     calls = []
-    def no_admin(actor, instruction, parameter, ids, owners=None):
+    def no_admin(actor, instruction, parameter, ids):
         calls.append(actor)
         return set()
     monkeypatch.setattr(identity.permission_system, "permitted_ids", no_admin)

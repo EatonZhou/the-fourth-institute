@@ -64,7 +64,7 @@ def test_resource_discussion_routes_by_registered_type_without_changing_identity
     graph = {"lineage_id": "lineage_111111111111", "revision": 5, "nodes": [{"id": "resident_111111111111"}]}
     # Each management check asks the permission system once; queued answers model a revocation in between.
     answers = []
-    monkeypatch.setattr(permission_system, "permitted", lambda actor, instruction, parameter, ids, owners=None, batch=500: [
+    monkeypatch.setattr(permission_system, "permitted", lambda actor, instruction, parameter, ids, batch=500: [
         (resource_id, answers.pop(0) if answers else True) for resource_id in ids])
     lineage = Mock()
     lineage.get_lineage.return_value = graph

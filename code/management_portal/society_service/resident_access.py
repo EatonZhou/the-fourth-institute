@@ -8,27 +8,23 @@ from management_common.actor_identity import canonical_actor_id
 from management_common.principal import actor_principal
 from management_portal.portal_access_control import get_portal_access_store
 
-from . import resident_catalog, resident_lineage
+from . import personal_ama, resident_catalog, resident_lineage
 from .domain_ports import resident_lineage_host_port
 
 
 def can_manage_resident(record: dict[str, Any], actor: str, *, operation: str = "manage") -> bool:
-    """A User, a Resident or the authenticated internal Portal service; the permission system is the only other check.
+    """A User, a Resident or the authenticated internal Portal service the personal AMA rule lets through.
 
-    ``operation`` says which question the caller asks (``read`` or ``manage``);
-    a personal AMA answers both alike.  With the permission system off it and
-    its branches stay private to their owner and the Residents representing
-    the owner (decision_bd5217d08c09); with it on, whoever GetResident on it
-    would refuse does not see it.
+    ``operation`` says which question the caller asks (``read`` or ``manage``).
+    A personal AMA's Residents and branches are known only to their owner and
+    the owner's AMA Residents (``personal_ama``, decision_bd5217d08c09), with
+    the permission system on or off; reading also asks GetResident.
     """
 
     if not actor_can_manage_residents(actor):
         return False
-    if str(record.get("personal_owner_id") or "").strip():
-        from .lineage_access_policy import private_reaches
-
-        return private_reaches(actor, record.get("personal_owner_id"), "GetResident", "resident_id",
-                               record.get("resident_id"))
+    if not personal_ama.reaches(actor, record.get("personal_owner_id")):
+        return False
     if operation == "read":
         from management_portal import permission_system
 
@@ -45,6 +41,17 @@ def may_change_resident(record: dict[str, Any], actor: str) -> bool:
         actor, {resident_id: record.get("personal_owner_id") or ""}, "UpdateResidentSettings", "resident_id")
 
 
+def resident_deliverable_to_actor(record: dict[str, Any], actor: str) -> bool:
+    """Whether ``actor`` may deliver a message to the Resident: anyone may message a personal AMA, otherwise as reading.
+
+    Delivery to someone else's AMA opens nothing else: its Conversation, state
+    and queue stay unknown to the sender (``personal_ama``).
+    """
+    if str(record.get("personal_owner_id") or "").strip():
+        return actor_can_manage_residents(actor)
+    return resident_visible_to_actor(record, actor)
+
+
 RESIDENT_ACTIONS = ("DeliverMessage", "UpdateResidentSettings", "OpenIntake", "RestartSession",
                     "CancelInput", "UpdateResident", "DeleteResident", "ForkResident")
 
@@ -55,19 +62,21 @@ def resident_allows(record: dict[str, Any], actor: str) -> dict[str, bool]:
 
     resident_id = str(record.get("resident_id") or "").strip()
     if not resident_id or not can_manage_resident(record, actor):
-        return dict.fromkeys(RESIDENT_ACTIONS, False)
+        allowed = dict.fromkeys(RESIDENT_ACTIONS, False)
+        if resident_id and resident_deliverable_to_actor(record, actor):
+            allowed["DeliverMessage"] = permission_system.allows(actor, "DeliverMessage", {"resident_id": resident_id})
+        return allowed
     # ForkResident is asked for a fork in this Resident's own Lineage.
     arguments = {"resident_id": resident_id, "lineage_id": str(record.get("lineage_id") or "").strip(),
                  "source_resident_id": resident_id}
     return permission_system.allows_each(actor, RESIDENT_ACTIONS, arguments)
 
 
-def manage_denial(record: dict[str, Any], action: str) -> str:
-    """Why ``can_manage_resident`` refused: a personal AMA's privacy, or no valid identity."""
-    owner = str(record.get("personal_owner_id") or "").strip()
-    if owner:
-        return f"{str(record.get('resident_id') or '').strip()} 属于 {owner} 的个人 AMA，只有 {owner} 本人可以{action}"
-    return "需要有效的 Portal 登录身份"
+def manage_refusal(record: dict[str, Any]) -> Exception:
+    """What to raise when ``can_manage_resident`` refused: someone else's personal AMA is not found."""
+    if str(record.get("personal_owner_id") or "").strip():
+        return personal_ama.NotFound(record.get("resident_id"))
+    return PermissionError("需要有效的 Portal 登录身份")
 
 
 def actor_can_manage_residents(actor: str) -> bool:

@@ -537,7 +537,7 @@ def _relocate_lineage_for_project(
 
 def _ensure_manager(lineage: dict[str, Any], actor: str) -> None:
     if not _actor_can_manage_lineage(lineage, actor):
-        raise PermissionError(lineage_access_policy.lineage_denial(lineage, "修改"))
+        raise lineage_access_policy.lineage_refusal(lineage)
 
 
 def require_lineage_manager(lineage_id: str, actor: str) -> str:
@@ -552,7 +552,7 @@ def _ensure_visible(lineage: dict[str, Any], actor: str) -> None:
     """Authorize reading the full Lineage surface."""
 
     if not _actor_can_manage_lineage(lineage, actor, operation="read"):
-        raise PermissionError(lineage_access_policy.lineage_denial(lineage, "访问"))
+        raise lineage_access_policy.lineage_refusal(lineage)
 
 
 def lineage_access_projection(lineage_id: str) -> dict[str, Any]:

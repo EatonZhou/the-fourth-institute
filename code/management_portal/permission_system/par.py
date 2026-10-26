@@ -22,7 +22,7 @@ from .requests import RecordNotFound, Request, Unresolved, requests
 from .scheme.compiler import CompiledScheme
 from .scheme.repository import SchemeNotFound, Schemes, source_digest
 
-PROMPT_RULE = ("权限按当前权限方案判定，只看你自己的权限，不借用消息发起者的权限；"
+PROMPT_RULE = ("权限按当前权限方案判定，只看你自己的权限，不借用消息发起者的权限（个人 AMA 的 Resident 按其主人判定）；"
                "需要别人的权限时，请持有者给你签发临时凭证：随消息签发的凭证在你处理完那条消息时失效，"
                "按时长签发的到期失效，两种最长 7 天；用完可以用 RevokeTemporaryCredential 交还。"
                "你也可以把自己持有的权限随 DeliverMessage 的 temporary_credentials 交给收件 Resident。以自己的 Resident 身份调用。")
@@ -33,6 +33,13 @@ LOGGER = logging.getLogger(__name__)
 def _is_portal(actor: Any) -> bool:
     principal = _principal(actor)
     return principal is not None and principal.kind == "service" and principal.id == "portal"
+
+
+def represents(principal: str) -> str:
+    """The owner User a personal AMA's Resident is judged as, with every scheme (decision_b820faf42218 §5.5)."""
+    from management_portal.society_service.personal_ama import owner_of
+
+    return owner_of(principal)
 
 
 class PARPermissions:
@@ -58,7 +65,7 @@ class PARPermissions:
                 scheme = self.schemes.compiled(DEFAULT_SCHEME)
             # Rules a release changed keep working on the saved instance until it is generated again.
             store = self.store.scoped(scheme.scheme_id)
-            engine = Engine(scheme.trees, store)
+            engine = Engine(scheme.trees, store, represents=represents)
             self._loaded = (active, scheme, engine, Instance(scheme, store))
             return scheme, engine, self._loaded[3]
 

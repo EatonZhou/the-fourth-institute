@@ -373,7 +373,23 @@ def deliver_resident_input(
         ) or {}
     if resident_input_scope.permits(resident_id, actor, message_id):
         return {key: result[key] for key in ("resident_id", "message_id", "message", "input_state", "cursor") if key in result}
+    if not _reads_resident(resident_id, actor):
+        # Someone else's personal AMA: the sender learns what became of its own message, nothing of the Conversation.
+        return {key: result[key] for key in SENDER_RECEIPT if key in result}
     return _with_conversation_controls(result, resident_id, actor)
+
+
+# What a delivery tells a sender that cannot read the recipient: its own message and its fate.
+SENDER_RECEIPT = ("resident_id", "message_id", "message", "input_state", "accepted", "activation_policy",
+                  "injected", "already_injected", "scheduled_next_turn", "delivery_status")
+
+
+def _reads_resident(resident_id: str, actor: str) -> bool:
+    try:
+        record = resident_catalog.get_catalog().get(resident_id)
+    except KeyError:
+        return False
+    return resident_access.resident_visible_to_actor(dict(record), canonical_actor_id(actor))
 
 
 def _forward_item_speaker(item: Mapping[str, Any]) -> str:
@@ -433,7 +449,9 @@ def prepare_resident_forward(
     ).strip()
     if not target_resident_id:
         raise ValueError("target_resident_id required")
-    target = _target(target_resident_id, actor_id)
+    # Forwarding delivers a message: anyone may forward to a personal AMA.
+    target = resident_workspace_domain.resolve_resident_runtime_target(
+        target_resident_id, actor_id, require_visible=True, delivery=True)
     return {
         "lineage_id": resident_lineage.lineage_id(target.record),
         "resident_id": target.resident_id,

@@ -48,6 +48,10 @@ class Management:
             from .categories import categories
 
             result["user_category"] = categories().of(principal)
+        owner = engine.represents(principal) if engine.represents is not None else ""
+        if owner:
+            # A personal AMA's Resident holds its owner's rows too; ``path`` lists both.
+            result["represents"] = owner
         return result
 
     def check(self, actor: str, arguments: Mapping[str, Any]) -> dict[str, Any]:

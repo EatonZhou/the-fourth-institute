@@ -17,7 +17,7 @@ from .domain_ports import execution_port
 from .resident_access import (
     can_manage_resident as _can_manage_resident,
     ensure_resident_visible_to_actor,
-    manage_denial,
+    manage_refusal,
 )
 from management_common.actor_identity import canonical_actor_id
 from management_portal.execution.provider_catalog import AGENT_PROVIDERS
@@ -561,7 +561,7 @@ def create_resident_fork_from_message(
                 raise KeyError("target resident not found")
             ensure_resident_visible_to_actor(target_record, actor_id)
             if not _can_manage(target_record, actor_id):
-                raise PermissionError(manage_denial(target_record, "把新 Resident 加入它的 Lineage"))
+                raise manage_refusal(target_record)
             target_registry = resident_lineage.snapshot(target_record)
         target_owner = _can_manage(target_record, actor_id)
         derived_residents = _managed_derived_residents(

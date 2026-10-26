@@ -25,11 +25,15 @@ __all__ = ["Coverage", "DENY", "Decision", "Engine", "Entry", "Grants", "Node", 
 
 
 class Engine:
+    """``represents`` names the principal another one stands for ("" for none): its rows apply to both."""
+
     def __init__(self, trees: Mapping[str, Tree], store: Store, *,
-                 clock: Callable[[], float] = time.time, cache_size: int = 4096) -> None:
+                 clock: Callable[[], float] = time.time, cache_size: int = 4096,
+                 represents: Callable[[str], str] | None = None) -> None:
         self.trees = dict(trees)
         self.store = store
         self.clock = clock
+        self.represents = represents
         self._cache: OrderedDict[str, tuple[tuple[str, ...], Grants]] = OrderedDict()
         self._cache_size = cache_size
         self._version: int | None = None
@@ -76,12 +80,18 @@ class Engine:
                snapshot: Snapshot | None = None) -> tuple[tuple[str, ...], Grants, dict[str, tuple[str, ...]]]:
         """The principal's path and Grants, plus the current paths of ``resources``, from one read.
 
-        ``snapshot`` is that read when the caller already made it.
+        ``snapshot`` is that read when the caller already made it.  A
+        principal standing for another (``represents``) also holds the rows
+        on that one's path, read in a second statement only when its own path
+        does not pass through it.
         """
         resources = list(dict.fromkeys(resources))
         if snapshot is None:
             snapshot = self.snapshot(principal, resources)
         path = self.path("P", principal, snapshot.principal)
+        other = self.represents(principal) if self.represents is not None else ""
+        if other and other not in path:
+            path = tuple(dict.fromkeys((*path, *self.path("P", other, self.store.paths("P", [other]).get(other)))))
         grants = self._grants(principal, path, snapshot.version)
         return path, grants, {item: self.path("R", item, snapshot.resources.get(item)) for item in resources}
 

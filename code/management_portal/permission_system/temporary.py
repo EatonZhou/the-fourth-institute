@@ -18,6 +18,13 @@ A credential lasts for a task or for a time:
 Either way it ends no later than seven days after it was issued.  Expired
 rows decide nothing and the daily maintenance deletes them.  The issuer takes
 one back and the recipient hands it back; nobody else revokes it.
+
+A personal AMA's Resident and its owner User are one party (§5.5).  The row
+names whoever called: an AMA Resident issuing is the issuer, and a
+credential lent to it is its own.  A credential lent to the owner holds for
+the owner's AMA Residents too (the engine judges them as the owner), so one
+is never lent between them; and either of them may renew or take back what
+the other issued, or hand back what the other received.
 """
 from __future__ import annotations
 
@@ -39,6 +46,13 @@ class LoanRefused(PermissionError):
     pass
 
 
+def _party(principal: str) -> str:
+    """Who ``principal`` acts as: the owner of a personal AMA's Resident, otherwise itself."""
+    from management_portal.society_service.personal_ama import party
+
+    return party(principal).casefold()
+
+
 def _seconds(value: Any) -> int:
     if not isinstance(value, int) or isinstance(value, bool) or not 60 <= value <= MAX_SECONDS:
         raise ValueError(f"有效期为 60 至 {MAX_SECONDS} 秒")
@@ -58,6 +72,8 @@ def issue(engine: Engine, scheme: CompiledScheme, *, issuer: str, recipient: str
         raise ValueError(f"{a} 不是 A 树的节点")
     if recipient == issuer:
         raise ValueError("不能给自己签发临时凭证")
+    if _party(recipient) == _party(issuer):
+        raise ValueError("个人 AMA 的 Resident 与其主人是同一身份，主人的权限它已经拥有，不能在两者之间签发临时凭证")
     if message_id and not recipient.startswith("resident_"):
         raise ValueError("随消息签发的临时凭证只能交给收到这条消息的 Resident")
     lasting = MAX_SECONDS if message_id and seconds is None else _seconds(DEFAULT_SECONDS if seconds is None else seconds)
@@ -98,7 +114,7 @@ def renew(store: Store, credential_id: str, *, actor: str, seconds: Any) -> dict
     now = time.time()
     with store.transaction() as connection:
         loan = _loan(store, connection, credential_id)
-        if actor != loan.issued_by:
+        if _party(actor) != _party(loan.issued_by):
             raise PermissionError("只有签发者可以续期临时凭证")
         if loan.message_id:
             raise ValueError("随消息签发的临时凭证在任务结束时失效，不能续期")
@@ -118,19 +134,22 @@ def revoke(store: Store, credential_id: str, *, actor: str) -> dict[str, Any]:
     """The issuer takes a credential back and the recipient hands it back; nobody else revokes it."""
     with store.transaction() as connection:
         loan = _loan(store, connection, credential_id)
-        if actor not in {loan.issued_by, loan.p}:
+        if _party(actor) not in {_party(loan.issued_by), _party(loan.p)}:
             raise PermissionError("只有签发者或接收者可以撤销临时凭证")
         store.delete(connection, where="entry_id = %s", parameters=(credential_id,))
     return {"revoked": credential_id}
 
 
 def listing(store: Store, principal: str) -> list[dict[str, Any]]:
-    """Live credentials the principal issued or received."""
+    """Live credentials the principal issued or received; a personal AMA's Resident also sees its owner's."""
+    from management_portal.society_service.personal_ama import owner_of
+
+    names = list(dict.fromkeys(item for item in (principal, owner_of(principal)) if item))
     with store.read() as connection:
         loans = store.entries(
-            connection, where="expires_at IS NOT NULL AND (p_node = %s OR issued_by = %s) AND expires_at > now()",
-            parameters=(principal, principal))
-    return [{**credential(loan), "direction": "received" if loan.p == principal else "issued"} for loan in loans]
+            connection, where="expires_at IS NOT NULL AND (p_node = ANY(%s) OR issued_by = ANY(%s)) AND expires_at > now()",
+            parameters=(names, names))
+    return [{**credential(loan), "direction": "received" if loan.p in names else "issued"} for loan in loans]
 
 
 def expire(store: Store) -> int:

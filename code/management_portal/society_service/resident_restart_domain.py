@@ -12,7 +12,7 @@ from . import (
     resident_state,
 )
 from .domain_ports import execution_port
-from .resident_access import manage_denial
+from .resident_access import manage_refusal
 from .resident_lifecycle import LifecycleStepPending
 from management_common.actor_identity import canonical_actor_id
 from management_portal.execution.accounts import (
@@ -367,7 +367,7 @@ def get_resident_restart_options(
     actor_id = canonical_actor_id(actor)
     record = target.record
     if not _can_manage(record, actor_id):
-        raise PermissionError(manage_denial(record, "重启 session"))
+        raise manage_refusal(record)
     source = resident_backend.session_record(record)
     catalog = runtime_configuration_catalog()["backends"]
     return {
@@ -446,7 +446,7 @@ def restart_resident_session(
     )
     record = target.record
     if not portal_reason and not _can_manage(record, actor_id):
-        raise PermissionError(manage_denial(record, "重启 session"))
+        raise manage_refusal(record)
     if resident_backend.execution_backend(record) != "provider_api" and not resident_execution_provider.provider_for(
         record
     ).capabilities.supports_session_restart:
@@ -455,7 +455,7 @@ def restart_resident_session(
     with _state_lock(resident_id):
         record = copy.deepcopy(_find_resident(resident_id) or record)
         if not portal_reason and not _can_manage(record, actor_id):
-            raise PermissionError(manage_denial(record, "重启 session"))
+            raise manage_refusal(record)
         previous_restart = record.get("session_restart") or {}
         from .resident_deferred_restart import pending as deferred_restart
         deferred = deferred_restart(record)
@@ -624,7 +624,7 @@ def restart_resident_session(
             if not current:
                 raise KeyError("resident not found")
             if not portal_reason and not _can_manage(current, actor_id):
-                raise PermissionError(manage_denial(current, "修改 Provider / 账号"))
+                raise manage_refusal(current)
             previous = current.get("session_restart") or {}
             if request_id and previous.get("request_id") == request_id:
                 return copy.deepcopy(previous)
@@ -1116,7 +1116,7 @@ def cancel_resident_session_restart(
         raise ValueError("需要登录后取消 Session 迁移")
     target = resolve_resident_runtime_target(resident_id, actor_id, require_visible=True)
     if not _can_manage(target.record, actor_id):
-        raise PermissionError(manage_denial(target.record, "取消 Session 迁移"))
+        raise manage_refusal(target.record)
     return _cancel_session_restart(target.resident_id, actor_id, restart_id)
 
 
@@ -1139,7 +1139,7 @@ def _cancel_session_restart(
         if not current:
             raise KeyError("resident not found")
         if not _can_manage(current, actor_id):
-            raise PermissionError(manage_denial(current, "取消 Session 迁移"))
+            raise manage_refusal(current)
         state = copy.deepcopy(current.get("session_restart") or {})
         if state.get("restart_id") != expected_restart_id:
             raise ResidentSessionConflictError(

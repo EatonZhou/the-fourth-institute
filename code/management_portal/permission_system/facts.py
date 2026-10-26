@@ -32,10 +32,11 @@ when a Resident created it while working on a User's input, that User in
 
 A personal AMA Lineage has its owner User and that User's personal space as
 related objects, and no Project.  Where it goes is the scheme's: the default
-scheme places Lineages under each personal space (R) and under the owner
-User (P), so its Residents hold every permission the owner holds and the
-owner's personal-space permission covers the whole AMA.  Nothing here places
-a personal AMA by itself (decision_b820faf42218 §5.5).
+scheme places Lineages under each personal space (R), so the owner's
+personal-space permission covers the whole AMA, and under the owner User
+(P).  Its Residents hold every permission the owner holds under any scheme:
+the engine judges them as the owner (``par.represents``).  Nothing here
+places a personal AMA by itself (decision_b820faf42218 §5.5).
 """
 from __future__ import annotations
 

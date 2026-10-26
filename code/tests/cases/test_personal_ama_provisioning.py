@@ -159,14 +159,13 @@ def test_personal_ama_is_created_once_in_the_users_name(future_creation_store):
 def test_personal_ama_and_nested_forks_represent_the_registered_owner(future_creation_store, monkeypatch):
     """个人 AMA 及其多层 fork 代表登记的所有者
 
-    别人不能 fork 某用户的 AMA；所有者 fork 出的多层 Resident 都登记同一个 personal_owner_id，权限端口据此把它们当作所有者的代表：对该 AMA 的资源得到 admin，其他用户为 none。
+    别人不能 fork 某用户的 AMA；所有者 fork 出的多层 Resident 都登记同一个 personal_owner_id，AMA 的私有规定据此把它们当作所有者：都能管理该 AMA，其他用户管理不了。
 
     :module: platform.core
     :importance: P2
     :design: decision_bd5217d08c09, decision_b820faf42218
     """
-    from management_portal import permission_system
-    from management_portal.society_service import resident_domain, resource_client
+    from management_portal.society_service import lineage_access_policy, personal_ama, resident_domain, resource_client
 
     first = principal_hierarchy_domain.ensure_personal_ama('newcomer', 'newcomer')
     residents = [first['resident_id']]
@@ -176,19 +175,20 @@ def test_personal_ama_and_nested_forks_represent_the_registered_owner(future_cre
     for _ in range(2):
         child = resident_domain.create_resident_full_context_fork(residents[-1], 'newcomer')
         residents.append(child['resident_id'])
-    # Use the actual descriptor producer and the port's consumer together.
+    # Use the actual descriptor producer and the rule's consumer together.
     descriptors = {}
     for rid in residents:
         record = resident_catalog.get_catalog().get(rid)
         assert record['personal_owner_id'] == 'newcomer'
         descriptors[rid] = resource_client._resident_resource_projection(record)['descriptor']
-    monkeypatch.setattr(permission_system, '_DESCRIPTORS', SimpleNamespace(get=lambda rid: descriptors[rid]))
+    monkeypatch.setattr(personal_ama, '_DESCRIPTORS', SimpleNamespace(get=lambda rid: descriptors[rid]))
+    monkeypatch.setattr(personal_ama, '_OWNERS', {})
     lineage = first['lineage_id']
     owners = {lineage: 'newcomer'}
     for rid in residents:
-        assert permission_system._represented_owner(rid) == 'newcomer'
-        assert permission_system.permitted_ids(rid, 'DeleteLineage', 'lineage_id', [lineage], owners=owners) == {lineage}
-    assert permission_system.permitted_ids('neighbour', 'DeleteLineage', 'lineage_id', [lineage], owners=owners) == set()
+        assert personal_ama.owner_of(rid) == 'newcomer'
+        assert lineage_access_policy.changeable_ids(rid, owners, 'DeleteLineage', 'lineage_id') == {lineage}
+    assert lineage_access_policy.changeable_ids('neighbour', owners, 'DeleteLineage', 'lineage_id') == set()
 
 
 def test_a_deleted_users_personal_ama_goes_with_the_account(future_creation_store, monkeypatch):

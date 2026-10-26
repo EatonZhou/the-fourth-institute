@@ -15,7 +15,8 @@ from .domain_ports import resident_lineage_host_port, resource_port
 from .resident_access import (
     actor_can_manage_residents,
     ensure_resident_visible_to_actor,
-    manage_denial,
+    manage_refusal,
+    resident_deliverable_to_actor as _resident_deliverable_to_actor,
     resident_visible_to_actor as _resident_visible_to_actor,
 )
 from management_common.actor_identity import canonical_actor_id
@@ -119,14 +120,18 @@ def _find_resident_for_admission(resident_id: str) -> dict | None:
         return None
 
 
-def resolve_resident_admission_target(resident_id: str, actor: str = "", *, require_visible: bool = False) -> ResidentRuntimeTarget:
+def resolve_resident_admission_target(
+    resident_id: str, actor: str = "", *, require_visible: bool = False, delivery: bool = False,
+) -> ResidentRuntimeTarget:
+    """The Resident an input is for; ``delivery`` asks only that the actor may deliver to it, not read it."""
     from .resident_registration_domain import _require_resident_registration_ready
     exact_id = str(resident_id or "").strip()
     record = _find_resident_for_admission(exact_id)
     if not record:
         raise KeyError("resident not found")
     if require_visible:
-        if not _resident_visible_to_actor(record, canonical_actor_id(actor)):
+        reaches = _resident_deliverable_to_actor if delivery else _resident_visible_to_actor
+        if not reaches(record, canonical_actor_id(actor)):
             if not actor_can_manage_residents(canonical_actor_id(actor)):
                 raise PermissionError("需要已登录的 User 或 Resident")
             raise KeyError("resident not found")
@@ -167,13 +172,16 @@ def resolve_resident_runtime_target(
     actor: str = "",
     *,
     require_visible: bool = False,
+    delivery: bool = False,
 ) -> ResidentRuntimeTarget:
+    """The Resident ``resident_id`` names; ``delivery`` asks only that the actor may deliver to it, not read it."""
     from .resident_registration_domain import _require_resident_registration_ready
     exact_id = str(resident_id or "").strip()
     exact = _find_resident(exact_id)
     if not exact or exact.get("deleted_at"):
         raise KeyError("resident not found") from None
-    if require_visible and not _resident_visible_to_actor(
+    reaches = _resident_deliverable_to_actor if delivery else _resident_visible_to_actor
+    if require_visible and not reaches(
         exact,
         canonical_actor_id(actor),
     ):
@@ -915,7 +923,7 @@ def _update_resident_record(resident_id: str, payload: dict, actor: str) -> dict
         if not record or record.get("deleted_at"):
             raise KeyError("resident not found")
         if not _can_manage(record, actor_id):
-            raise PermissionError(manage_denial(record, "编辑这个 Resident"))
+            raise manage_refusal(record)
 
         title = str(payload.get("title") or record.get("title") or "").strip()
         if not title:
@@ -1043,7 +1051,7 @@ def add_resident_reference_workspace(
         if not record or record.get("deleted_at"):
             raise KeyError("resident not found")
         if not _can_manage(record, actor_id):
-            raise PermissionError(manage_denial(record, "增加 Workspace"))
+            raise manage_refusal(record)
 
         resolved_text = canonical_path(resolved_path)
         existing_root = next(
@@ -1134,7 +1142,7 @@ def remove_resident_reference_workspace(
         if not record or record.get("deleted_at"):
             raise KeyError("resident not found")
         if not _can_manage(record, actor_id):
-            raise PermissionError(manage_denial(record, "解除 Workspace 绑定"))
+            raise manage_refusal(record)
         bindings = [
             copy.deepcopy(item)
             for item in record.get("workspace_bindings") or []

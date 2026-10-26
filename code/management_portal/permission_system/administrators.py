@@ -15,9 +15,10 @@ the port answers these before the scheme, and no scheme can take them back:
   with UpdateUser's own check.  Every administrator is a User; a Resident
   never is.
 
+A personal AMA's Resident acts as its owner (§5.5): an administrator's AMA
+passes as the administrator does, and it never takes its owner off the list.
 The list is the account records' ``category`` (``portal_admin``), the same
-field the scheme places Users by.  The other judgement outside schemes is
-that a personal AMA stays its owner's while the system is off.
+field the scheme places Users by.
 
 Nothing here imports the PAR implementation.
 """
@@ -41,12 +42,17 @@ REQUIREMENTS = {
 
 
 def _user(actor: Any) -> str:
+    """The User ``actor`` acts as: itself, or the owner of a personal AMA's Resident (§5.5)."""
     from management_common.principal import actor_principal
 
     try:
         principal = actor_principal(str(actor or "").strip())
     except ValueError:
         return ""
+    if principal.kind == "resident":
+        from management_portal.society_service.personal_ama import owner_of
+
+        return owner_of(principal.id)
     return principal.id if principal.kind == "user" else ""
 
 
@@ -57,7 +63,7 @@ def _account(username: str) -> Mapping[str, Any]:
 
 
 def is_administrator(actor: Any) -> bool:
-    """An active User account in the Portal 管理员 category."""
+    """An active User account in the Portal 管理员 category, or a personal AMA's Resident of one."""
     account = _account(_user(actor))
     return bool(account.get("configured")) and account.get("status") == "active" and account.get("category") == ADMINISTRATOR
 

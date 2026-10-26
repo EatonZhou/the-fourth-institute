@@ -291,7 +291,7 @@ def test_a_builtin_scheme_is_used_as_it_is_and_a_release_keeps_its_edits(off, mo
     [disabled] = call("ListPermissionEntries", scheme_id="default", p="@members", a="@admin", r="@projects")["entries"]
     assert disabled["allows"] == {"UpdatePermissionEntry": True, "DeletePermissionEntry": True}
     call("UpdatePermissionEntry", scheme_id="default", entry_id=disabled["entry_id"], expected_version=1, disabled=True)
-    [deleted] = call("ListPermissionEntries", scheme_id="default", p="@principals", a="@message", r="@shared")["entries"]
+    [deleted] = call("ListPermissionEntries", scheme_id="default", p="@principals", a="@message", r="@portal")["entries"]
     call("DeletePermissionEntry", scheme_id="default", entry_id=deleted["entry_id"])
     loan = call("IssueTemporaryCredential", principal_id="carol", a="@viewer", resource_id=LINEAGE, expires_in_seconds=3600)
     call("CreatePermissionScheme", scheme_id="team", source_scheme_id="default")
@@ -307,12 +307,12 @@ def test_a_builtin_scheme_is_used_as_it_is_and_a_release_keeps_its_edits(off, mo
     monkeypatch.setattr(repository, "builtin_documents", lambda: copy.deepcopy(released))
     report = ResourceService.ensure_permission_instance(service)["default"]
     assert (report["source_scheme_id"], report["unrestored"], report["conflicts"]) == ("default", [], [])
-    assert report["deleted_again"] == [{"effect": "permit", "p": "@principals", "a": "@message", "r": "@shared"}]
+    assert report["deleted_again"] == [{"effect": "permit", "p": "@principals", "a": "@message", "r": "@portal"}]
     # These facts hold no public object, so taking the public rule away changes no decision.
     assert report["auth_diff"]["kind"] == "neutral"
     rows = {item["entry_id"]: item for item in call("ListPermissionEntries", scheme_id="default", **EVERYTHING, limit=500)["entries"]}
     assert ("permit", "@principals", "@admin", "@public") not in contents("default")
-    assert ("permit", "@principals", "@message", "@shared") not in contents("default")
+    assert ("permit", "@principals", "@message", "@portal") not in contents("default")
     assert rows[added["entry_id"]]["r"] == "@operations" and rows[disabled["entry_id"]]["disabled"] is True
     assert loan["credential_id"] in rows
     merged = call("GetPermissionScheme", scheme_id="default")["last_merge"]
@@ -505,7 +505,7 @@ def test_startup_merges_a_builtin_release_into_its_copy_and_keeps_hand_rows(off,
     lost = call("CreatePermissionEntry", p="carol", a="@admin", r="@papers")["entry"]
     [reads] = call("ListPermissionEntries", p="@principals", a="@viewer", r="@shared")["entries"]
     disabled = call("UpdatePermissionEntry", entry_id=reads["entry_id"], disabled=True)["entry"]
-    [messages] = call("ListPermissionEntries", p="@principals", a="@message", r="@shared")["entries"]
+    [messages] = call("ListPermissionEntries", p="@principals", a="@message", r="@portal")["entries"]
     call("DeletePermissionEntry", entry_id=messages["entry_id"])
     store = off.store.scoped("team")
     loans = [Entry(new_entry_id(), PERMIT, "carol", "@viewer", resource, issued_by="alice", issued_at=1.0, expires_at=4102444800.0)
@@ -538,14 +538,14 @@ def test_startup_merges_a_builtin_release_into_its_copy_and_keeps_hand_rows(off,
     last = rules_now["source"]["last_merge"]
     assert [conflict["key"] for conflict in last["conflicts"]] == ["instruction|ListPosts"] and last["regenerated"] is True
     assert {item["entry_id"] for item in last["unrestored"]} == {lost["entry_id"], loans[1].entry_id}
-    message_row = {"effect": "permit", "p": "@principals", "a": "@message", "r": "@shared"}
+    message_row = {"effect": "permit", "p": "@principals", "a": "@message", "r": "@portal"}
     assert report["deleted_again"] == last["deleted_again"] == [message_row] and last["merged_by"] == "portal"
 
     rows = {item["entry_id"]: item for item in call("ListPermissionEntries", scheme_id="team", limit=500, **EVERYTHING)["entries"]}
     assert all(entry["entry_id"] in rows for entry in kept) and lost["entry_id"] not in rows
     assert rows[disabled["entry_id"]]["disabled"] is True and rows[disabled["entry_id"]]["version"] == disabled["version"]
     assert ("permit", "@members", "@viewer", "@public") in contents("team")
-    assert ("permit", "@principals", "@message", "@shared") not in contents("team")
+    assert ("permit", "@principals", "@message", "@portal") not in contents("team")
     with store.read() as connection:
         remaining = {entry.entry_id for entry in store.entries(connection, where="expires_at IS NOT NULL")}
     assert remaining == {loans[0].entry_id}
@@ -567,7 +567,7 @@ def test_a_merge_saved_in_the_editor_keeps_hand_rows_like_an_automatic_one(off):
     lost = call("CreatePermissionEntry", scheme_id="team", p="carol", a="@admin", r="@papers")["entry"]
     [reads] = call("ListPermissionEntries", scheme_id="team", p="@principals", a="@viewer", r="@shared")["entries"]
     disabled = call("UpdatePermissionEntry", scheme_id="team", entry_id=reads["entry_id"], disabled=True)["entry"]
-    [messages] = call("ListPermissionEntries", scheme_id="team", p="@principals", a="@message", r="@shared")["entries"]
+    [messages] = call("ListPermissionEntries", scheme_id="team", p="@principals", a="@message", r="@portal")["entries"]
     call("DeletePermissionEntry", scheme_id="team", entry_id=messages["entry_id"])
 
     changed = rules("base")
@@ -581,7 +581,7 @@ def test_a_merge_saved_in_the_editor_keeps_hand_rows_like_an_automatic_one(off):
     merged, conflicts = merge(found["source"]["rules"], call("GetPermissionScheme", scheme_id="base")["rules"], found["rules"])
     assert conflicts == []
     arguments = {"scheme_id": "team", "rules": merged, "source_digest": found["source"]["current_digest"]}
-    message_row = {"effect": "permit", "p": "@principals", "a": "@message", "r": "@shared"}
+    message_row = {"effect": "permit", "p": "@principals", "a": "@message", "r": "@portal"}
 
     before = call("ListPermissionEntries", scheme_id="team", limit=500, **EVERYTHING)["entries"]
     preview = call("UpdatePermissionScheme", dry_run=True, **arguments)
@@ -598,7 +598,7 @@ def test_a_merge_saved_in_the_editor_keeps_hand_rows_like_an_automatic_one(off):
     assert kept["entry_id"] in rows and lost["entry_id"] not in rows
     assert rows[disabled["entry_id"]]["disabled"] is True and rows[disabled["entry_id"]]["version"] == disabled["version"]
     assert ("permit", "@members", "@viewer", "@public") in contents("team")
-    assert ("permit", "@principals", "@message", "@shared") not in contents("team")
+    assert ("permit", "@principals", "@message", "@portal") not in contents("team")
     last = call("GetPermissionScheme", scheme_id="team")["source"]["last_merge"]
     assert (last["merged_by"], last["conflicts"], last["deleted_again"]) == ("alice", [], [message_row])
     assert [item["entry_id"] for item in last["unrestored"]] == [lost["entry_id"]]

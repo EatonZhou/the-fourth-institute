@@ -21,6 +21,7 @@ from . import (
 from .domain_ports import execution_port, resident_lineage_host_port
 from .resident_access import (
     ensure_resident_visible_to_actor,
+    resident_deliverable_to_actor as _resident_deliverable_to_actor,
     resident_visible_to_actor as _resident_visible_to_actor,
 )
 from contextlib import ExitStack
@@ -588,7 +589,8 @@ def _send_synchronous_provider_message(
             current = _find_resident(str(record.get("resident_id") or ""))
             if not current:
                 raise KeyError("resident not found")
-            ensure_resident_visible_to_actor(current, actor_id)
+            if not _resident_deliverable_to_actor(current, actor_id):
+                raise KeyError("resident not found")
             if not resident_execution_provider.provider_for(
                 current
             ).capabilities.synchronous_delivery:
@@ -1288,7 +1290,7 @@ def _persist_resident_input(
                     inject = False
             if inject:
                 return {
-                    **_inject_queued_input_into_active_turn(resident_id, actor_id, message_id),
+                    **_inject_queued_input_into_active_turn(resident_id, actor_id, message_id, delivered=True),
                     "activation_policy": activation,
                 }
         result = (_accepted_delivery(resident_id, message_id) if deferred_delivery else
@@ -1337,8 +1339,8 @@ def _persist_resident_input(
         record = _find_resident(resident_id)
         if not record:
             raise KeyError("resident not found")
-        if not isolated_input and not delegated_relay:
-            ensure_resident_visible_to_actor(record, actor_id)
+        if not isolated_input and not delegated_relay and not _resident_deliverable_to_actor(record, actor_id):
+            raise KeyError("resident not found")
         if record.get("deleted_at"):
             raise ValueError("该 Resident 已删除，不能接收消息")
         from .resident_questions import prepare_question_answer
@@ -1593,8 +1595,8 @@ def _persist_resident_input(
         record = _find_resident(resident_id)
         if not record:
             raise KeyError("resident not found")
-        if not isolated_input and not delegated_relay:
-            ensure_resident_visible_to_actor(record, actor_id)
+        if not isolated_input and not delegated_relay and not _resident_deliverable_to_actor(record, actor_id):
+            raise KeyError("resident not found")
 
         if environment is not None:
             # Keep current admission facts, adding only the prepared filesystem view.
@@ -2076,9 +2078,13 @@ def _queued_active_turn_input(selected: Mapping[str, Any]) -> list[dict[str, Any
 
 
 def _inject_queued_input_into_active_turn(
-    resident_id: str, actor: str, queue_item_id: str,
+    resident_id: str, actor: str, queue_item_id: str, *, delivered: bool = False,
 ) -> dict:
-    """Durably request injection; prompt preparation and provider IO belong to recovery."""
+    """Durably request injection; prompt preparation and provider IO belong to recovery.
+
+    ``delivered`` is a delivery injecting the input it has just queued: the
+    sender needs only to be able to deliver to the Resident, not to read it.
+    """
     from .resident_lifecycle_domain import _now_iso, _state_lock
     from .resident_workspace_domain import _find_resident_for_admission
     actor_id = canonical_actor_id(actor)
@@ -2091,7 +2097,10 @@ def _inject_queued_input_into_active_turn(
         record = _find_resident_for_admission(resident_id)
         if not record:
             raise KeyError("resident not found")
-        ensure_resident_visible_to_actor(record, actor_id)
+        if not delivered:
+            ensure_resident_visible_to_actor(record, actor_id)
+        elif not _resident_deliverable_to_actor(record, actor_id):
+            raise KeyError("resident not found")
         job = resident_execution_work.read(record)
         existing = next((item for item in resident_execution_work.send_now_inputs(job)
                          if _queue_item_matches(item, message_id)), None)

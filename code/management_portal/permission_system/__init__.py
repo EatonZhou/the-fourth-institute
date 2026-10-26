@@ -7,8 +7,7 @@ switch in 执行设置 says whether there is a permission system:
 - on (``par``), the PAR engine answers on the instance of the active
   permission scheme (its rules plus the instance saved with it);
 - off (``open``), there is none: every signed-in User and Resident may do
-  everything, and a personal AMA stays its owner's (``permitted`` with
-  ``owners``), and only a Portal 管理员 changes the administrator list;
+  everything, and only a Portal 管理员 changes the administrator list;
   nothing else is asked, no scheme and no table.  Permission instructions still work —
   schemes and their rows stay editable, checks and temporary credentials
   answer under the active scheme — and nothing asks whether their caller may.
@@ -24,8 +23,10 @@ Lineage" is ``permitted(actor, "UpdateLineage", "lineage_id", [lineage])``, a
 list filter asks the list's read instruction, a button asks the instruction
 it calls.
 
-With the switch on, a personal AMA is private by where the scheme places it
-(decision_b820faf42218 §5.5); with it off, by ``owners``.  In both modes and
+A personal AMA's Resident is judged as its owner User, in both modes and
+under every scheme (decision_b820faf42218 §5.5).  That a personal AMA is
+known only to its owner is a rule of personal AMAs, kept by Society
+(``society_service.personal_ama``), not asked here.  In both modes and
 under every scheme, a Portal 管理员 may turn the switch and activate a scheme,
 and only a Portal 管理员 changes the administrator list
 (``administrators.py``, §3.1).  Every User has a
@@ -53,15 +54,14 @@ OPEN = "open"
 # reaches all Portal services within seconds and without a restart.
 MODE_REFRESH_SECONDS = 3.0
 
-PROMPT_RULE_OFF = ("权限系统已关闭：已登录的 User 与 Resident 可以查看、使用、修改和删除所有对象；"
-                   "个人 AMA 仍只属于它的所有者。以自己的 Resident 身份调用。")
+PROMPT_RULE_OFF = ("权限系统已关闭：已登录的 User 与 Resident 可以查看、使用、修改和删除所有对象。"
+                   "以自己的 Resident 身份调用。")
 
 LOGGER = logging.getLogger(__name__)
 _LOCK = threading.Lock()
 _IMPLEMENTATION: Any = None
 _SETTINGS: Any = None
 _MODE: tuple[str, float] | None = None
-_DESCRIPTORS: Any = None
 
 
 def configured_mode() -> str:
@@ -193,85 +193,28 @@ def allows_each(actor: str, instructions: Iterable[str], arguments: Mapping[str,
     return {name: allows(actor, name, arguments) for name in dict.fromkeys(instructions)}
 
 
-def _represented_owner(principal_id: str) -> str:
-    """The User a Resident of a personal AMA represents (its registered ``personal_owner_id``)."""
-    global _DESCRIPTORS
-    if not principal_id.startswith("resident_"):
-        return ""
-    with _LOCK:
-        if _DESCRIPTORS is None:
-            from management_portal.resources.collaboration_registry import CollaborationDescriptorStore
-
-            _DESCRIPTORS = CollaborationDescriptorStore()
-    try:
-        record = _DESCRIPTORS.get(principal_id)
-    except (KeyError, ValueError):
-        return ""
-    return str((record.get("attributes") or {}).get("personal_owner_id") or "").strip()
-
-
-def acts_for(actor: str, owner: str) -> bool:
-    """Whether ``actor`` is the User ``owner``, a Resident representing that User, or the Portal itself."""
-    actor_id, owner = str(actor or "").strip(), str(owner or "").strip().casefold()
-    if actor_id == "portal":
-        return True
-    return bool(owner) and owner in {actor_id.casefold(), _represented_owner(actor_id).casefold()}
-
-
-def private_reaches(actor: str, owner: str, instruction: str, parameter: str, resource_id: str) -> bool:
-    """Whether the personal AMA resource ``resource_id`` of ``owner`` is open to ``actor``.
-
-    With the switch off this is the one rule kept: only the owner and the
-    Residents representing the owner.  With it on, the scheme decides by
-    where it places personal AMAs: the exact read ``instruction`` with
-    ``parameter`` naming the resource must pass, so lists and searches leave
-    out what that read would refuse.
-    """
-    if _off() or str(actor or "").strip() == "portal":
-        return acts_for(actor, owner)
-    return str(resource_id) in readable_ids(instruction, parameter, [resource_id], actor=actor)
-
-
-def hidden_private(actor: str, owners: Mapping[str, str]) -> set[str]:
-    """Of the personal AMA resources ``owners`` (ID -> owner User), those kept from ``actor``.
-
-    Off: all but the owner's own.  On: those ResolveResource would refuse,
-    as the scheme places personal AMAs.
-    """
-    if _off():
-        reaches = {owner: acts_for(actor, owner) for owner in set(owners.values())}
-        return {resource_id for resource_id, owner in owners.items() if not reaches[owner]}
-    return set(owners) - readable_ids("ResolveResource", "address", owners, actor=actor)
-
-
 def permitted(
-    actor: str, instruction: str, parameter: str, resource_ids: Iterable[str], *,
-    owners: Mapping[str, str] | None = None, batch: int = 500,
+    actor: str, instruction: str, parameter: str, resource_ids: Iterable[str], *, batch: int = 500,
 ) -> Iterator[tuple[str, bool]]:
     """``(resource_id, allowed)`` in order: whether ``instruction`` would pass with ``parameter`` naming each resource.
 
     The requirements the scheme maps to ``parameter`` are decided (their
     resource types are not checked), together with its requirements on fixed
     R nodes; an instruction the scheme does not map asks its unmapped
-    request, and requirements on other parameters pass.  ``owners`` names the
-    registered owner of each resource that belongs to a personal AMA; with
-    the switch off only ``acts_for`` that owner passes.  Callers that need
+    request, and requirements on other parameters pass.  Callers that need
     only the first answer stop iterating early.
     """
     if _off():
-        owners = {key: str(value or "").strip() for key, value in (owners or {}).items() if str(value or "").strip()}
         signed_in = _signed_in(actor)
         for resource_id in resource_ids:
-            yield resource_id, acts_for(actor, owners[resource_id]) if resource_id in owners else signed_in
+            yield resource_id, signed_in
         return
     yield from active().permitted(actor, instruction, parameter, list(resource_ids), batch=batch)
 
 
-def permitted_ids(actor: str, instruction: str, parameter: str, resource_ids: Iterable[str], *,
-                  owners: Mapping[str, str] | None = None) -> set[str]:
+def permitted_ids(actor: str, instruction: str, parameter: str, resource_ids: Iterable[str]) -> set[str]:
     """The resources among ``resource_ids`` on which ``permitted`` answers yes."""
-    return {resource_id for resource_id, allowed in permitted(actor, instruction, parameter, resource_ids, owners=owners)
-            if allowed}
+    return {resource_id for resource_id, allowed in permitted(actor, instruction, parameter, resource_ids) if allowed}
 
 
 def owners_only() -> bool:

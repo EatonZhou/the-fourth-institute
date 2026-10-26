@@ -20,7 +20,7 @@ from . import (
     resident_message_contract,
 )
 from .domain_ports import execution_port, resident_terminal_port
-from .resident_access import can_manage_resident as _can_manage_resident, manage_denial
+from .resident_access import can_manage_resident as _can_manage_resident, manage_refusal
 from .resident_fork_context import (
     initial_context_compaction_completed as _initial_context_compaction_completed,
     requires_initial_context_compaction as _requires_initial_context_compaction,
@@ -167,7 +167,7 @@ def change_resident_runtime_settings(resident_id: str, actor: str = "", payload:
             )
             record = target.record
             if not _has_resident_workspace_authority(record, actor_id):
-                raise PermissionError(manage_denial(record, "修改 Resident runtime 设置"))
+                raise manage_refusal(record)
             validation_record = copy.deepcopy(record)
             validation_current = _read_resident_runtime_settings(record)
             validation_key = _runtime_settings_validation_key(record)
@@ -195,7 +195,7 @@ def change_resident_runtime_settings(resident_id: str, actor: str = "", payload:
             )
             record = target.record
             if not _has_resident_workspace_authority(record, actor_id):
-                raise PermissionError(manage_denial(record, "修改 Resident runtime 设置"))
+                raise manage_refusal(record)
             current = _read_resident_runtime_settings(record)
             if (
                 current != validation_current
@@ -301,6 +301,7 @@ def deliver_resident_message_content(
         resident_id,
         actor,
         require_visible=not resident_input_scope.permits(resident_id, actor, options.get("message_id", "")),
+        delivery=True,
     )
     result = _persist_resident_input(
         target.resident_id,

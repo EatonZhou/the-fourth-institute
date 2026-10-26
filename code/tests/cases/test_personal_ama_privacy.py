@@ -1,18 +1,23 @@
 """A personal AMA belongs to its owner, administrators included (sample_admin 2026-10-12, decision_bd5217d08c09).
 
-With the permission system on, the scheme says so by where it places a
-personal AMA (decision_b820faf42218 §5.5): the default scheme puts it under
-its owner, and the engine decides like for anything else.  With the system
-off, the permission port keeps this one rule itself: a personal AMA's
-resources answer to their registered owner.  Either way its owner and the
-Residents representing the owner reach it; nobody else does.
+That is a rule of personal AMAs, kept by Society (``personal_ama``), not a
+permission: it holds with the permission system on or off, asks nothing of
+the permission port and reports what it keeps as not found.  With the
+system on, the scheme judges what the rule lets through, like anything
+else.  The owner and the owner's AMA Residents reach the AMA; nobody else
+does, except to deliver it a message (weihao 2026-10-26).
 """
 from __future__ import annotations
+
+import json
 
 import pytest
 
 from management_portal import permission_system
+from management_portal.society_service import personal_ama
 from tests.cases import permission_test_support
+from tests.cases.test_resident_delivery_receipts import delivery_resident  # noqa: F401 - fixture
+from tests.cases.test_resident_folder_creation_contract import future_creation_store  # noqa: F401 - fixture
 
 AMA_LINEAGE = 'lineage_aaaaaaaaaaaa'
 AMA = 'resident_aaaaaaaaaaaa'
@@ -23,28 +28,41 @@ SIBLING = 'resident_cccccccccccc'
 SHARED = 'workspace_bbbbbbbbbbbb'
 
 
-def test_the_port_answers_a_personal_ama_by_its_owner_while_off(monkeypatch):
-    """权限系统关闭时，权限端口按登记所有者回答个人 AMA，管理员也不例外
+def test_the_rule_answers_a_personal_ama_by_its_owner_without_the_permission_port(monkeypatch):
+    """个人 AMA 只对所有者开放是 Society 的规定：开关开或关都生效，不经过权限端口
 
-    所有者和代表所有者的 Resident 通过任何指令，其他人（包括管理员）都不通过；其他资源对已登录主体放行。
+    所有者、所有者的 AMA Resident 和 Portal 通过，其他人（包括管理员）都不通过；没有所有者的对象不受这条规定影响。
+    规定拒绝的对象不交给权限系统判定，权限端口也不再接受 owners。
     """
-    owners = {AMA: 'owner', AMA_LINEAGE: 'owner'}
+    from management_portal.society_service import lineage_access_policy
+
     representative = 'resident_dddddddddddd'
-    monkeypatch.setattr(permission_system, '_represented_owner', lambda principal: 'owner' if principal == representative else '')
-    for actor, expected in (('owner', True), (representative, True), ('admin', False), ('someone', False), ('portal', True)):
-        assert dict(permission_system.permitted(actor, 'DeleteLineage', 'lineage_id', [AMA, AMA_LINEAGE], owners=owners)) \
-            == {AMA: expected, AMA_LINEAGE: expected}
-    shared = dict(permission_system.permitted('admin', 'DeleteLineage', 'lineage_id', [TEAM, AMA], owners=owners))
-    assert shared == {AMA: False, TEAM: True}
+    monkeypatch.setattr(personal_ama, 'owner_of', lambda principal: 'owner' if principal == representative else '')
+    asked = []
+    monkeypatch.setattr(permission_system, 'permitted_ids',
+                        lambda actor, instruction, parameter, ids: asked.append(set(ids)) or set(ids))
+    for actor, expected in (('owner', True), ('OWNER', True), (representative, True), ('admin', False), ('someone', False),
+                            ('portal', True)):
+        assert personal_ama.reaches(actor, 'owner') is expected, actor
+        assert (personal_ama.hidden(actor, {AMA: 'owner', TEAM: ''}) == set()) is expected, actor
+        changeable = lineage_access_policy.changeable_ids(actor, {AMA_LINEAGE: 'owner', TEAM: ''}, 'DeleteLineage', 'lineage_id')
+        assert changeable == ({AMA_LINEAGE, TEAM} if expected else {TEAM}), actor
+        # What the rule keeps is never asked of the permission system.
+        assert asked.pop() == changeable, actor
+    with pytest.raises(TypeError):
+        permission_system.permitted('owner', 'DeleteLineage', 'lineage_id', [AMA_LINEAGE], owners={AMA_LINEAGE: 'owner'})
+    assert not hasattr(permission_system, 'hidden_private') and not hasattr(permission_system, 'private_reaches')
 
 
-def test_the_scheme_keeps_a_personal_ama_with_its_owner_while_on(monkeypatch):
-    """权限系统开启时，个人 AMA 由默认方案放在所有者名下，引擎像判定其他资源一样判定它
+def test_with_the_switch_on_the_rule_holds_and_the_scheme_judges_the_rest(monkeypatch):
+    """权限系统开启时，规定照样独立生效，规定放行的再由方案判定
 
-    端口不再拦截：owners 参数不起作用。所有者和 AMA 里的 Resident 通过，管理员和其他 User 都不通过；Project 里的 Lineage 管理员照常通过。
+    默认方案把个人 AMA 放在所有者名下：所有者和 AMA 里的 Resident 通过，管理员和其他 User 都不通过；Project 里的 Lineage 管理员照常通过。
+    即使方案给了管理员这个 AMA 的权限，规定仍让它看不到。
     """
     from tests.cases.permission_test_support import Fact
 
+    monkeypatch.setattr(personal_ama, 'owner_of', lambda principal: 'owner' if principal == AMA else '')
     permissions = permission_test_support.enable(monkeypatch)
     try:
         permissions.users('owner', 'someone', 'admin')
@@ -52,15 +70,11 @@ def test_the_scheme_keeps_a_personal_ama_with_its_owner_while_on(monkeypatch):
         permissions.place(Fact('lineage', AMA_LINEAGE, {'personal_space': 'personal_space:owner', 'user': 'owner'}),
                           Fact('resident', AMA, {'lineage': AMA_LINEAGE}),
                           Fact('project', 'Team'), Fact('lineage', TEAM, {'project': 'Team'}))
-        owners = {AMA: 'someone', AMA_LINEAGE: 'someone'}
         for actor, expected in (('owner', True), (AMA, True), ('admin', False), ('someone', False), ('portal', True)):
-            assert dict(permission_system.permitted(actor, 'DeleteLineage', 'lineage_id', [AMA_LINEAGE], owners=owners)) \
+            assert dict(permission_system.permitted(actor, 'DeleteLineage', 'lineage_id', [AMA_LINEAGE])) \
                 == {AMA_LINEAGE: expected}, actor
         assert dict(permission_system.permitted('admin', 'DeleteLineage', 'lineage_id', [TEAM, AMA_LINEAGE])) \
             == {AMA_LINEAGE: False, TEAM: True}
-        assert permission_system.hidden_private('admin', {AMA_LINEAGE: 'owner'}) == {AMA_LINEAGE}
-        assert permission_system.hidden_private('owner', {AMA_LINEAGE: 'owner'}) == set()
-        # Lists filter by the domain's read rule, which asks the exact read: an administrator's lists leave others' AMAs out.
         from management_portal.society_service import lineage_access_policy, resident_access
 
         monkeypatch.setattr(resident_access, 'actor_can_manage_residents', lambda actor: True)
@@ -70,6 +84,103 @@ def test_the_scheme_keeps_a_personal_ama_with_its_owner_while_on(monkeypatch):
         for actor, expected in (('owner', True), ('admin', False), ('someone', False), ('portal', True)):
             assert lineage_access_policy.actor_can_manage_lineage(lineage, actor, operation='read') is expected, actor
             assert resident_access.resident_visible_to_actor(ama, actor) is expected, actor
+        # A row giving the administrator the AMA does not get past the rule.
+        permissions.grant('admin', AMA_LINEAGE, '@admin')
+        permissions.grant('admin', AMA, '@admin')
+        assert permission_system.permitted_ids('admin', 'GetLineage', 'lineage_id', [AMA_LINEAGE]) == {AMA_LINEAGE}
+        assert not lineage_access_policy.actor_can_manage_lineage(lineage, 'admin', operation='read')
+        assert not resident_access.resident_visible_to_actor(ama, 'admin')
+        assert lineage_access_policy.changeable_ids('admin', {AMA_LINEAGE: 'owner'}, 'GetLineage', 'lineage_id') == set()
+        # And the scheme still judges the owner: a deny row on the owner refuses the AMA to it too.
+        permissions.deny('owner', AMA_LINEAGE, '@viewer')
+        assert not lineage_access_policy.actor_can_manage_lineage(lineage, 'owner', operation='read')
+    finally:
+        permission_system.forget_implementation()
+
+
+def test_an_ama_resident_is_judged_as_its_owner_under_any_scheme(monkeypatch):
+    """个人 AMA 的 Resident 在权限判定中等同于其主人：主人能做的它都能做，与方案怎样放置它无关
+
+    主人的表项、分类和临时凭证都对它生效；主人的 deny 同样约束它。方案没有把它放在主人名下时也是如此。
+    """
+    from tests.cases.permission_test_support import Fact
+
+    monkeypatch.setattr(personal_ama, 'owner_of', lambda principal: 'owner' if principal == AMA else '')
+    permissions = permission_test_support.enable(monkeypatch)
+    try:
+        permissions.users('owner', 'someone', category='intern')
+        # A scheme that places the AMA's Lineage in a Project: its P path does not pass through the owner.
+        permissions.place(Fact('project', 'Team'), Fact('project', 'Other'),
+                          Fact('lineage', AMA_LINEAGE, {'project': 'Team'}), Fact('resident', AMA, {'lineage': AMA_LINEAGE}),
+                          Fact('lineage', TEAM, {'project': 'Other'}), Fact('resident', SIBLING, {'lineage': AMA_LINEAGE}))
+        assert not permissions.holds(AMA, '@admin', TEAM)
+        permissions.grant('owner', TEAM, '@admin')
+        assert permissions.holds('owner', '@admin', TEAM) and permissions.holds(AMA, '@admin', TEAM)
+        # Another Resident in the same place is not the owner's.
+        assert not permissions.holds(SIBLING, '@admin', TEAM)
+        permissions.deny('owner', TEAM, '@viewer')
+        assert not permissions.holds(AMA, '@viewer', TEAM)
+        effective = permission_system.manage('GetEffectivePermissions', {'principal_id': AMA}, actor='portal')
+        assert effective['represents'] == 'owner' and 'owner' in effective['path']
+    finally:
+        permission_system.forget_implementation()
+
+
+def test_an_administrators_ama_passes_the_administrator_guarantee_but_never_on_its_owner(monkeypatch):
+    """管理员的 AMA 同样享有 Portal 管理员保底（开关、启用方案、管理员名单），但不能取消、停用或删除主人自己
+
+    「不能对自己做」把 AMA 当作主人本人；名单里仍只有 User。
+    """
+    from management_portal.permission_system import administrators
+
+    monkeypatch.setattr(personal_ama, 'owner_of', lambda principal: {AMA: 'chief', WORKER: 'member'}.get(principal, ''))
+    accounts = {'chief': {'configured': True, 'status': 'active', 'category': 'portal_admin'},
+                'deputy': {'configured': True, 'status': 'active', 'category': 'portal_admin'},
+                'member': {'configured': True, 'status': 'active', 'category': 'member'}}
+    monkeypatch.setattr(administrators, '_account', lambda username: accounts.get(username, {}))
+    assert administrators.is_administrator(AMA) and not administrators.is_administrator(WORKER)
+    assert administrators.passes(AMA, 'UpdateExecutionSettings', {'permission_system_enabled': True})
+    assert administrators.passes(AMA, 'ActivatePermissionScheme', {'scheme_id': 'default'})
+    assert not administrators.passes(SIBLING, 'ActivatePermissionScheme', {'scheme_id': 'default'})
+    assert administrators.check_change(AMA, 'deputy', category='member') is True
+    for change in ({'category': 'member'}, {'status': 'disabled'}, {'delete': True}):
+        with pytest.raises(ValueError, match='自己'):
+            administrators.check_change(AMA, 'chief', **change)
+    with pytest.raises(PermissionError):
+        administrators.check_change(WORKER, 'member', category='portal_admin')
+
+
+def test_temporary_credentials_count_an_ama_and_its_owner_as_one_party(monkeypatch):
+    """临时凭证把 AMA 与主人算作同一方
+
+    两者之间不能互相签发；AMA 签发时记录 AMA 自己为签发者；主人签发的凭证 AMA 可以续期、收回，主人收到的凭证对 AMA 也生效。
+    """
+    from management_portal.permission_system import temporary
+    from tests.cases.permission_test_support import Fact
+
+    monkeypatch.setattr(personal_ama, 'owner_of', lambda principal: 'owner' if principal == AMA else '')
+    permissions = permission_test_support.enable(monkeypatch)
+    try:
+        permissions.users('owner', 'lender', 'someone', category='intern')
+        permissions.place(Fact('project', 'Team'), Fact('lineage', TEAM, {'project': 'Team'}),
+                          Fact('lineage', AMA_LINEAGE, {'personal_space': 'personal_space:owner', 'user': 'owner'}),
+                          Fact('resident', AMA, {'lineage': AMA_LINEAGE}))
+        permissions.grant('owner', TEAM, '@admin')
+        permissions.grant('lender', 'Team', '@admin')
+        scheme, engine, _instance = permissions.implementation.current()
+        for issuer, recipient in (('owner', AMA), (AMA, 'owner')):
+            with pytest.raises(ValueError, match='同一身份'):
+                temporary.issue(engine, scheme, issuer=issuer, recipient=recipient, a='@admin', resource=TEAM)
+        lent = temporary.issue(engine, scheme, issuer=AMA, recipient='someone', a='@admin', resource=TEAM)
+        assert lent['issued_by'] == AMA
+        assert temporary.renew(engine.store, lent['credential_id'], actor='owner', seconds=600)['credential_id'] == lent['credential_id']
+        to_owner = temporary.issue(engine, scheme, issuer='lender', recipient='owner', a='@admin', resource='Team')
+        assert permissions.holds(AMA, '@admin', 'Team')
+        assert to_owner['credential_id'] in {item['credential_id'] for item in temporary.listing(engine.store, AMA)}
+        with pytest.raises(PermissionError):
+            temporary.revoke(engine.store, to_owner['credential_id'], actor='someone')
+        temporary.revoke(engine.store, to_owner['credential_id'], actor=AMA)
+        assert not permissions.holds(AMA, '@admin', 'Team')
     finally:
         permission_system.forget_implementation()
 
@@ -166,13 +277,16 @@ def test_domain_access_of_a_personal_ama_follows_its_owner(monkeypatch):
         assert lineage_access_policy.actor_can_manage_lineage(lineage, actor) is allowed
     assert resident_access.can_manage_resident({'resident_id': WORKER}, 'admin')
     assert lineage_access_policy.actor_can_manage_lineage({'lineage_id': TEAM, 'lineage_membership': 'shared'}, 'admin')
-    # The buttons of someone else's AMA Resident are all off; its owner's are on.
-    assert not any(resident_access.resident_allows(ama, 'admin').values())
+    # Of someone else's AMA Resident only sending a message is on; its owner's buttons are all on.
+    others = resident_access.resident_allows(ama, 'admin')
+    assert others.pop('DeliverMessage') is True and not any(others.values())
     assert all(resident_access.resident_allows(ama, 'owner').values())
     # Forking from the message menu asks ForkResident like every other button.
     assert {'DeliverMessage', 'ForkResident'} <= set(resident_access.resident_allows(ama, 'owner'))
-    # The refusal names the AMA's owner, so a User signed in under another account sees why.
-    assert lineage_access_policy.lineage_denial(lineage, '访问') == f'{AMA_LINEAGE} 是 owner 的个人 AMA，只有 owner 本人可以访问'
+    # The rule's refusal is not a permission problem: someone else's AMA is not found.
+    for refusal in (lineage_access_policy.lineage_refusal(lineage), resident_access.manage_refusal(ama)):
+        assert isinstance(refusal, KeyError) and not isinstance(refusal, PermissionError)
+    assert isinstance(resident_access.manage_refusal({'resident_id': WORKER}), PermissionError)
 
 
 def test_resource_search_and_identity_reads_hide_a_personal_ama_like_its_domain(isolated_portal_case):
@@ -284,3 +398,64 @@ def test_a_personal_ama_folder_answers_only_to_that_ama(monkeypatch, isolated_po
         rendered = agent_context_selection.prompt_references({'agents': [{'id': AMA_LINEAGE}, {'id': 'team-agent'}]},
                                                              item_char_limit=100, total_char_limit=1000)
         assert AMA_LINEAGE not in rendered and 'id="team-agent"' in rendered
+
+
+@pytest.mark.parametrize('switch', ['off', 'on'])
+def test_any_resident_delivers_to_someone_elses_ama_and_learns_nothing_of_it(delivery_resident, monkeypatch, switch):
+    """任何 Resident 都能给其他用户的个人 AMA 发消息，开关开或关都一样，但读不到、搜不到它的对话
+
+    投递回执只说自己那条消息的去向，不带 AMA 的状态、队列或对话；所有者的消息不会回显给发送方。
+    只开放投递：GetConversation 和 GetResident 都当它不存在，SearchMessages 搜不到它的消息。
+
+    :design: decision_bd5217d08c09, decision_b820faf42218
+    """
+    from management_portal.society_service import principal_hierarchy_domain, resident_conversation_stream, resident_protocol
+    from tests.cases.isa_test_support import run
+    from tests.cases.permission_test_support import Fact, Permissions
+    from tests.cases.test_resident_delivery_receipts import REAL_DELIVER_RESIDENT_INPUT
+
+    monkeypatch.setattr(resident_protocol, 'deliver_resident_input', REAL_DELIVER_RESIDENT_INPUT)
+    Permissions.account('et')
+    ama = principal_hierarchy_domain.ensure_personal_ama('et', 'et')
+    target = ama['resident_id']
+    resident_protocol.change_resident_state(target, 'et', state_domain='intake', transition='close')
+    sender = delivery_resident['resident_id']
+    secret = 'ET 交给 AMA 的私事'
+    run('DeliverMessage', {'resident_id': target, 'message': {'content_parts': [{'type': 'text', 'text': secret}]}},
+        actor='et', key='owner-first').raise_for_error()
+    if switch == 'on':
+        permissions = permission_test_support.enable(monkeypatch)
+        permissions.users('et', 'sample_admin')
+        permissions.place(Fact('lineage', ama['lineage_id'], {'personal_space': 'personal_space:et', 'user': 'et'}),
+                          Fact('resident', target, {'lineage': ama['lineage_id']}),
+                          Fact('project', 'project_test'),
+                          Fact('lineage', delivery_resident['lineage_id'], {'project': 'project_test'}),
+                          Fact('resident', sender, {'lineage': delivery_resident['lineage_id']}))
+    try:
+        receipt = run('DeliverMessage', {'resident_id': target, 'message': {
+            'content_parts': [{'type': 'text', 'text': '任务做完了，结果在 workspace 里'}]}},
+            actor=sender, key='report-back').raise_for_error()
+        assert receipt['resident_id'] == target and receipt['message_id']
+        assert not {'state', 'queue', 'cursor', 'controls'} & set(receipt)
+        assert secret not in json.dumps(receipt, ensure_ascii=False)
+        delivered = resident_conversation_stream.get_repository().message(target, receipt['message_id'])
+        assert delivered['author_id'] == sender
+        # Delivering opens nothing else of the AMA.
+        for instruction, arguments in (('GetConversation', {'resident_id': target}),
+                                       ('GetResident', {'resident_id': target})):
+            result = run(instruction, arguments, actor=sender)
+            assert result.error and result.error['code'] == 'instruction.not_found', (instruction, result.error)
+            assert secret not in json.dumps(result.error, ensure_ascii=False)
+        # Search skips Residents the caller cannot see; with the switch on the scheme refuses it as missing first.
+        found = run('SearchMessages', {'resident_ids': [target], 'query': '私事'}, actor=sender)
+        if switch == 'on':
+            assert found.error and found.error['code'] == 'instruction.not_found', found.error
+        else:
+            assert found.error is None and found.result['results'] == [], found.error
+        assert secret not in json.dumps([found.result, found.error], ensure_ascii=False)
+        # The owner reads both messages.
+        texts = json.dumps(run('GetConversation', {'resident_id': target}, actor='et').raise_for_error(), ensure_ascii=False)
+        assert secret in texts and '任务做完了' in texts
+    finally:
+        if switch == 'on':
+            permission_system.forget_implementation()

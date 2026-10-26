@@ -1,7 +1,8 @@
 """Lineage ownership and authored-item authorization rules.
 
-This module decides permissions from the caller and current records. It does not
-read or write the Lineage aggregate, so callers choose their own state scope.
+This module answers from the caller and current records: the personal AMA
+rule (``personal_ama``) first, then the permission system. It does not read
+or write the Lineage aggregate, so callers choose their own state scope.
 """
 
 from __future__ import annotations
@@ -12,17 +13,18 @@ from management_common.principal import actor_principal, is_user_or_resident
 
 from typing import Any, Mapping
 
-from . import identity_contract, resident_catalog
+from . import identity_contract, personal_ama, resident_catalog
 from .lineage_values import _safe_actor, _text
 
 
 def actor_can_manage_lineage(
     lineage: Mapping[str, Any], actor: object, *, operation: str = "manage",
 ) -> bool:
+    """A valid identity the personal AMA rule lets through; reading also asks GetLineage."""
     if not actor_can_manage_lineages(actor):
         return False
-    if is_personal_lineage(lineage):
-        return private_reaches(actor, lineage.get("created_by"), "GetLineage", "lineage_id", lineage.get("lineage_id"))
+    if is_personal_lineage(lineage) and not personal_ama.reaches(actor, lineage.get("created_by")):
+        return False
     if operation == "read":
         from management_portal import permission_system
 
@@ -30,64 +32,41 @@ def actor_can_manage_lineage(
     return True
 
 
-def lineage_denial(lineage: Mapping[str, Any], action: str) -> str:
-    """Why ``actor_can_manage_lineage`` refused: a personal AMA's privacy, or no valid identity."""
+def lineage_refusal(lineage: Mapping[str, Any]) -> Exception:
+    """What to raise when ``actor_can_manage_lineage`` refused: someone else's personal AMA is not found."""
     if is_personal_lineage(lineage):
-        owner = _text(lineage.get("created_by"), 120)
-        return f"{_text(lineage.get('lineage_id'), 80)} 是 {owner} 的个人 AMA，只有 {owner} 本人可以{action}"
-    return "需要有效的 Portal 登录身份"
-
-
-def personal_owner(actor: object, owner: object) -> bool:
-    """Whether the actor is the User a personal AMA belongs to, answered from the record alone."""
-    owner_id = str(owner or "").strip()
-    return bool(owner_id) and str(actor or "").strip().casefold() == owner_id.casefold()
+        return personal_ama.NotFound(lineage.get("lineage_id"))
+    return PermissionError("需要有效的 Portal 登录身份")
 
 
 def is_personal_lineage(lineage: Mapping[str, Any]) -> bool:
     return str(lineage.get("lineage_membership") or "").strip().lower() == "personal"
 
 
-def private_reaches(actor: object, owner: object, instruction: str, parameter: str, resource_id: object) -> bool:
-    """Whether the actor may reach ``resource_id``, a resource of the personal AMA ``owner`` has.
-
-    With the permission system off a personal AMA (its Lineage and every
-    Resident carrying its owner) is private to the owner and the Residents
-    representing the owner, administrators included.
-    With it on the scheme places personal AMAs (decision_b820faf42218 §5.5):
-    the read ``instruction`` naming the resource decides, so lists hide what
-    that read refuses.
-    """
-    from management_portal import permission_system
-
-    return permission_system.private_reaches(
-        str(actor or ""), _text(owner, 120), instruction, parameter, _text(resource_id, 80))
-
-
 def changeable_ids(actor: object, owners_by_id: Mapping[str, object], instruction: str, parameter: str) -> set[str]:
     """The resources (ID -> personal AMA owner or "") on which ``instruction`` would pass with ``parameter`` naming them.
 
     Read payloads report this as ``can_manage`` so pages offer only the
-    changes the permission system will accept; with it off, everyone may.
+    changes that will be accepted: the personal AMA rule, then the
+    permission system (with it off, everyone may).
     """
     from management_portal import permission_system
 
-    ids = [str(resource_id) for resource_id in owners_by_id if resource_id]
-    owners = {str(key): _text(value, 120) for key, value in owners_by_id.items() if _text(value, 120)}
-    return permission_system.permitted_ids(actor, instruction, parameter, ids, owners=owners)
+    ids = [str(resource_id) for resource_id, owner in owners_by_id.items()
+           if resource_id and personal_ama.reaches(actor, _text(owner, 120))]
+    return permission_system.permitted_ids(actor, instruction, parameter, ids)
 
 
 def hidden_private_ids(actor: object, records) -> set[str]:
-    """The resource records a personal AMA keeps from the actor.
+    """The resource records the personal AMA rule keeps from the actor.
 
     Resource search and identity reads apply the same rule as the domain: a
     personal Lineage, a Resident with a registered owner, and a Workspace
-    inside a personal Lineage's folder are readable by that owner and the
-    Residents representing the owner, and unknown to everyone else, with the
-    permission system off.  With it on, those records are hidden from whoever
-    ResolveResource would refuse.  Other records are not affected.
+    inside a personal Lineage's folder are known to that owner and the
+    owner's AMA Residents, and unknown to everyone else, with the permission
+    system on or off.  Other records are not affected; the permission system
+    judges the records shown, all alike.
     """
-    from management_portal import permission_system
     from management_portal.resources import timing
 
     mark = time.perf_counter()
@@ -109,12 +88,11 @@ def hidden_private_ids(actor: object, records) -> set[str]:
             owner = area[2]
         else:
             continue
-        if not personal_owner(actor, owner):
-            owners[resource_id] = _text(owner, 120)
+        owners[resource_id] = _text(owner, 120)
     mark = timing.lap("private_detect", mark)
-    if not owners or not str(actor or "").strip():
-        return set(owners)
-    hidden = permission_system.hidden_private(str(actor), owners)
+    if not owners:
+        return set()
+    hidden = personal_ama.hidden(actor, owners)
     timing.lap("private_owners", mark)
     return hidden
 
@@ -130,17 +108,16 @@ def file_reaches(actor: object, resource_id: str, *, write: bool, owner: str = "
     ``resource_id`` is a Workspace, a personal AMA Lineage whose folder holds
     the file, or an unregistered shared folder (its path, which the scheme
     places under its R default node).  ``owner`` is the personal AMA owner
-    of a file inside a personal AMA's folder: with the permission system off
-    only that owner and the Residents representing the owner may.
+    of a file inside a personal AMA's folder: only that owner and the
+    owner's AMA Residents reach it (``personal_ama``).
     """
     from management_portal import permission_system
 
     actor_id = str(actor or "").strip()
-    if not actor_id or not resource_id:
+    if not actor_id or not resource_id or not personal_ama.reaches(actor_id, owner):
         return False
     instruction, parameter = FILE_WRITE if write else FILE_READ
-    return resource_id in permission_system.permitted_ids(
-        actor_id, instruction, parameter, [resource_id], owners={resource_id: owner} if owner else None)
+    return resource_id in permission_system.permitted_ids(actor_id, instruction, parameter, [resource_id])
 
 
 def workspace_reaches(actor: object, workspace_id: str, *, write: bool, path: str = "") -> bool:

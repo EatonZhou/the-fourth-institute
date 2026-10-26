@@ -17,7 +17,7 @@ from . import (
     resource_client,
 )
 from .domain_ports import project_domain_port, resident_lineage_host_port
-from .resident_access import can_manage_resident as _can_manage_resident, manage_denial
+from .resident_access import can_manage_resident as _can_manage_resident, manage_refusal
 from .resident_fork_domain import initialize_resident_context_from_source
 from contextlib import ExitStack
 from management_common.actor_identity import canonical_actor_id, same_actor as _same_actor
@@ -366,7 +366,7 @@ def confirm_resident_registration(resident_id: str, actor: str) -> dict[str, Any
     if record.get("deleted_at"):
         raise KeyError(resident_id)
     if not _can_manage_resident(record, actor):
-        raise PermissionError(manage_denial(record, "确认 Resident 注册"))
+        raise manage_refusal(record)
     resident_catalog.get_catalog().state_store.ensure_resident_registration_projection(resident_id)
     _confirm_registered_resident_resources(record)
     return resident_catalog.get_catalog().get(resident_id)

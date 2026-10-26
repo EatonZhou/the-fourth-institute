@@ -104,11 +104,11 @@ def deliver_resident_message(
 
 def _manages_lineage(graph: Mapping[str, Any], actor: str) -> bool:
     """Whether UpdateLineage would pass on the Lineage; a personal AMA is its owner's."""
-    from management_portal import permission_system
+    from management_portal.society_service.lineage_access_policy import changeable_ids
 
     lineage_id = str(graph.get("lineage_id") or "")
-    owners = {lineage_id: str(graph.get("created_by") or "")} if graph.get("lineage_membership") == "personal" else None
-    return lineage_id in permission_system.permitted_ids(actor, "UpdateLineage", "lineage_id", [lineage_id], owners=owners)
+    owner = str(graph.get("created_by") or "") if graph.get("lineage_membership") == "personal" else ""
+    return lineage_id in changeable_ids(actor, {lineage_id: owner}, "UpdateLineage", "lineage_id")
 
 
 def diagnose_lineage_invocations(*, actor: str, lineage_id: str) -> dict[str, Any]:

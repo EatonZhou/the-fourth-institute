@@ -431,9 +431,14 @@ def deliver_to_resident(
     target = _find(recipient_id)
     if not target:
         raise KeyError("resident not found")
-    resident_access.ensure_resident_visible_to_actor(target, sender_id)
-    if not resident_access.can_manage_resident(target, sender_id):
-        raise PermissionError(resident_access.manage_denial(target, "向它发送消息"))
+    if str(target.get("personal_owner_id") or "").strip():
+        # Anyone may message a personal AMA; nothing else of it opens (decision_bd5217d08c09).
+        if not resident_access.resident_deliverable_to_actor(target, sender_id):
+            raise KeyError("resident not found")
+    else:
+        resident_access.ensure_resident_visible_to_actor(target, sender_id)
+        if not resident_access.can_manage_resident(target, sender_id):
+            raise resident_access.manage_refusal(target)
     with _speaking_for(speaker, sender_id):
         result = resident_protocol.deliver_resident_input(dict(payload), speaker, delivery_context=delivery_context)
     delivered = resident_conversation_stream.get_repository().message(recipient_id, message_id) or {}

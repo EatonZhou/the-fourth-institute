@@ -375,8 +375,8 @@
       "effect": "permit",
       "p": "@principals",
       "a": "@message",
-      "r": "@shared",
-      "title": "全员可给 Resident 发消息"
+      "r": "@portal",
+      "title": "全员可给 Resident 发消息（含个人 AMA）"
     }
   ],
   "instructions": {

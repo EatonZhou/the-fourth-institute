@@ -1,8 +1,8 @@
 """The permission system switch in 执行设置 (decision_b820faf42218 §3.1).
 
 Off, there is no permission system: every signed-in User and Resident may do
-everything and a personal AMA stays its owner's; nothing else is asked and
-the PAR implementation is not loaded.  Permission instructions still run,
+everything; nothing else is asked and the PAR implementation is not loaded.
+A personal AMA stays its owner's by Society's own rule, not a permission.  Permission instructions still run,
 unchecked.  Turned back on, the instance is brought up to date first.
 """
 import os
@@ -29,10 +29,10 @@ def open_mode(monkeypatch):
 
 
 def test_open_mode_never_loads_the_permission_system():
-    """权限系统关闭时只看是否登录和个人 AMA，不加载任何权限代码
+    """权限系统关闭时只看是否登录，不加载任何权限代码
 
     在新进程中以关闭模式导入各服务入口并调用权限端口的全部函数（权限指令除外）：已登录主体全部放行，OpenTerminal 等也不例外；
-    个人 AMA 只给所有者；PAR 引擎、方案、适配层、临时凭证和管理模块都不会被加载。
+    个人 AMA 由 Society 自己的规定只给所有者；PAR 引擎、方案、适配层、临时凭证和管理模块都不会被加载。
     """
     code = """
 import sys
@@ -51,10 +51,11 @@ assert ps.instruction_requirement("GetLineage") == {"required": False, "requirem
 assert ps.allows("alice", "UpdatePermissionScheme") and not ps.owners_only()
 assert dict(ps.permitted("alice", "UpdateLineage", "lineage_id", [lineage])) == {lineage: True}
 assert ps.permitted_ids("alice", "GetProject", "project_id", ["AI员工"]) == {"AI员工"}
-# A personal AMA stays its owner's: the one rule kept with the switch off.
-assert ps.permitted_ids("alice", "GetLineage", "lineage_id", [lineage], owners={lineage: "bob"}) == set()
-assert ps.permitted_ids("bob", "GetLineage", "lineage_id", [lineage], owners={lineage: "bob"}) == {lineage}
-assert not ps.private_reaches("alice", "bob", "GetLineage", "lineage_id", lineage) and ps.hidden_private("alice", {lineage: "bob"}) == {lineage}
+# A personal AMA stays its owner's: Society's own rule, which asks nothing of the permission system.
+from management_portal.society_service import lineage_access_policy, personal_ama
+assert lineage_access_policy.changeable_ids("alice", {lineage: "bob"}, "GetLineage", "lineage_id") == set()
+assert lineage_access_policy.changeable_ids("bob", {lineage: "bob"}, "GetLineage", "lineage_id") == {lineage}
+assert not personal_ama.reaches("alice", "bob") and personal_ama.hidden("alice", {lineage: "bob"}) == {lineage}
 assert ps.users_permitted("UpdateLineage", "lineage_id", lineage) is None
 assert ps.sync_resource({"resource_id": lineage}, resource_type="lineage") is False
 assert ps.retire_resources([lineage]) == [] and ps.sync_user("alice") is None
