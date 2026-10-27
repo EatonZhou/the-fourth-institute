@@ -82,12 +82,6 @@ class ExecutionWorkerManager:
                 str(instance_directory / "source-generation.env"),
             )
         )
-        self.component_generations = Path(
-            os.getenv(
-                "PORTAL_EXECUTION_WORKER_COMPONENT_GENERATIONS",
-                str(instance_directory / "component-generations.json"),
-            )
-        )
         self.health_path = Path(
             os.getenv(
                 "PORTAL_EXECUTION_WORKER_HEALTH_PATH",
@@ -298,21 +292,6 @@ class ExecutionWorkerManager:
         return ""
 
     def _build_id(self) -> str:
-        try:
-            component_payload = json.loads(
-                self.component_generations.read_text(encoding="utf-8")
-            )
-        except (OSError, json.JSONDecodeError):
-            component_payload = {}
-        component_values = (
-            component_payload.get("components")
-            if isinstance(component_payload, dict)
-            else {}
-        )
-        if isinstance(component_values, dict):
-            value = str(component_values.get("execution_worker") or "").strip()
-            if value:
-                return value
         value = self._read_env_value(self.generation_env, "PORTAL_BUILD_ID")
         return value or str(os.getenv("PORTAL_BUILD_ID", "development"))
 

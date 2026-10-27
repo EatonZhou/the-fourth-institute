@@ -38,6 +38,21 @@ def _check_inherited(descriptors):
                                   'use the external ServiceControl.restart path')
 
 
+def _successor_environment(descriptors):
+    # The successor reports the build the installer activated last, as a fresh start would.
+    environment = {**os.environ, HANDOVER_ENV: json.dumps(descriptors)}
+    path = os.environ.get('PORTAL_EXECUTION_WORKER_GENERATION_ENV')
+    try:
+        lines = Path(path).read_text(encoding='utf-8').splitlines() if path else ()
+    except OSError:
+        lines = ()
+    for line in lines:
+        name, separator, value = line.partition('=')
+        if separator and name.strip() == 'PORTAL_BUILD_ID' and value.strip():
+            environment['PORTAL_BUILD_ID'] = value.strip()
+    return environment
+
+
 def inherited_descriptors():
     descriptors = json.loads(os.environ.pop(HANDOVER_ENV, '{}'))
     _check_inherited(descriptors)
@@ -109,11 +124,8 @@ class ServiceLifecycle:
         self.server = server
         self.inherited = inherited or {}
         _check_inherited(self.inherited)
-        self.command = command or [
-            sys.executable,
-            str(Path(__file__).resolve().parents[2] / 'scripts/run_portal_shared_component.py'),
-            'execution-service',
-        ]
+        # Same entry, working directory and import path as the unit that started this process.
+        self.command = command or [sys.executable, '-m', 'management_portal.execution.service']
         self.reload = threading.Event()
         self.stop = threading.Event()
         self.relay = None
@@ -151,7 +163,7 @@ class ServiceLifecycle:
         if proxy:
             descriptors['proxy'] = proxy
         fds = [descriptors['rpc'], descriptors['control'], *(proxy or {}).values()]
-        environment = {**os.environ, HANDOVER_ENV: json.dumps(descriptors)}
+        environment = _successor_environment(descriptors)
         process = None
         try:
             process = process_runtime.spawn_process(

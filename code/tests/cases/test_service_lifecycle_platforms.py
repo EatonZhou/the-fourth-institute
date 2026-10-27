@@ -176,10 +176,14 @@ def test_start_failure_closes_server_and_restores_handlers(monkeypatch, value):
 
 
 @pytest.mark.parametrize('ready', [True, False])
-def test_linux_handover_preserves_listener_protocol_and_failure_cleanup(monkeypatch, ready):
+def test_linux_handover_preserves_listener_protocol_and_failure_cleanup(monkeypatch, tmp_path, ready):
     platform(monkeypatch, 'linux')
     inherited = {'rpc': 13, 'control': 14, 'proxy': {'http': 15}}
     monkeypatch.setenv(lifecycle.HANDOVER_ENV, json.dumps(inherited))
+    generation = tmp_path / 'generation.env'
+    generation.write_text('PORTAL_BUILD_ID=portal-activated\n', encoding='utf-8')
+    monkeypatch.setenv('PORTAL_EXECUTION_WORKER_GENERATION_ENV', str(generation))
+    monkeypatch.setenv('PORTAL_BUILD_ID', 'portal-at-start')
     assert lifecycle.inherited_descriptors() == inherited
     server = Server()
     server.timing_proxy = Mock()
@@ -217,6 +221,13 @@ def test_linux_handover_preserves_listener_protocol_and_failure_cleanup(monkeypa
     assert kwargs['pass_fds'] == [13, 14, 15]
     assert kwargs['kill_on_owner_exit'] is False
     assert json.loads(kwargs['env'][lifecycle.HANDOVER_ENV]) == inherited
+    assert kwargs['env']['PORTAL_BUILD_ID'] == 'portal-activated'
+
+
+def test_default_successor_uses_the_unit_entry_module(monkeypatch):
+    platform(monkeypatch, 'linux')
+    owner = lifecycle.ServiceLifecycle(Server())
+    assert owner.command == [sys.executable, '-m', 'management_portal.execution.service']
 
 
 @pytest.mark.parametrize('value', ['win32', 'darwin'])

@@ -190,28 +190,18 @@ def test_worker_rollout_waits_for_new_worker_before_draining_old_contracts(monke
 
             assert not manager._stopping.is_set()
             assert rollouts == ["replace"]
-    with subtests.test(contract='test_worker_manager_uses_component_generation_for_new_child'), isolated_portal_case() as case_path:
+    with subtests.test(contract='test_worker_manager_uses_installed_generation_for_new_child'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
             tmp_path = case_path
             instance_root = tmp_path / "dev"
             instance_root.mkdir()
-            generation_env = instance_root / "source-generation.env"
-            generation_env.write_text("PORTAL_BUILD_ID=global-new\n", encoding="utf-8")
-            components = instance_root / "component-generations.json"
-            components.write_text(
-                json.dumps(
-                    {"components": {"execution_worker": "worker-current"}}
-                ),
-                encoding="utf-8",
-            )
+            generation_env = instance_root / "generation.env"
+            generation_env.write_text("PORTAL_BUILD_ID=worker-current\n", encoding="utf-8")
             monkeypatch.setenv("PORTAL_INSTANCE", "dev")
+            monkeypatch.setenv("PORTAL_BUILD_ID", "started-build")
             monkeypatch.setenv(
                 "PORTAL_EXECUTION_WORKER_GENERATION_ENV",
                 str(generation_env),
-            )
-            monkeypatch.setenv(
-                "PORTAL_EXECUTION_WORKER_COMPONENT_GENERATIONS",
-                str(components),
             )
             monkeypatch.setenv(
                 "PORTAL_EXECUTION_WORKER_HEALTH_PATH",
@@ -243,6 +233,7 @@ def test_worker_rollout_waits_for_new_worker_before_draining_old_contracts(monke
             assert child_environments[1][
                 "PORTAL_EXECUTION_WORKER_FATAL_MODE"
             ] == "silent"
+            assert child_environments[0]["PORTAL_BUILD_ID"] == "worker-current"
     with subtests.test(contract='test_worker_manager_unregisters_exited_generation_before_deleting_health'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
             tmp_path = case_path

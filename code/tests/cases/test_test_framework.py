@@ -1720,8 +1720,8 @@ def test_tau_prompt_identity_does_not_change_with_normal_dev_build_restart(tmp_p
     assert "由 TAU preflight 核对，已写入证据目录的 run-context.json" in before
 
 
-@pytest.mark.parametrize("component_scoped", [False, True])
-def test_agent_use_dev_preflight_verifies_build_page_and_actor(tmp_path: Path, monkeypatch, component_scoped) -> None:
+@pytest.mark.parametrize("registered_build", [False, True])
+def test_agent_use_dev_preflight_verifies_build_page_and_actor(tmp_path: Path, registered_build) -> None:
     """DEV 预检核对构建版本、页面组件指纹、实例和登录身份，构建不符单独归类
 
     :design: decision_c953eab654cd
@@ -1738,6 +1738,7 @@ def test_agent_use_dev_preflight_verifies_build_page_and_actor(tmp_path: Path, m
                 "label": "Dev",
                 "order": 1,
                 "origin": "http://127.0.0.1:18086",
+                **({"build_id": "dev-current"} if registered_build else {}),
             }],
         }),
         encoding="utf-8",
@@ -1760,13 +1761,7 @@ def test_agent_use_dev_preflight_verifies_build_page_and_actor(tmp_path: Path, m
         value = responses[path]
         return value.encode() if isinstance(value, str) else json.dumps(value).encode()
 
-    options = {"build_id": lambda _root: "dev-current"}
-    if component_scoped:
-        monkeypatch.setattr("management_portal.test_framework.dev_target.read_build_id", lambda: "dev-new-lineage")
-        monkeypatch.setattr("management_portal.test_framework.dev_target.read_component_build_ids", lambda: {
-            "web": "dev-current", "society_service": "dev-new-lineage",
-        }, raising=False)
-        options = {}
+    options = {} if registered_build else {"build_id": lambda _root: "dev-current"}
     verifier = DevTargetVerifier(
         registry_path=registry,
         source_root=tmp_path,

@@ -56,26 +56,20 @@ SHARED_ROOT = _CONFIGURED_SHARED_ROOT or resolve_directory(
     read_site_config().get('deployment', {}).get('source_root', str(_INSTALLATION_ROOT)))
 # These packages own shared persisted facts and their RPC contracts. Both Web
 # clients see the same contracts; both service pools execute from SHARED_ROOT.
-COMPONENTS = {
-    'web': {'unit': None, 'build_key': 'web', 'module': 'management_portal.web_server'},
-    'resource': {'unit': 'resource-service', 'build_key': 'resource_service', 'module': 'management_portal.resources.server'},
-    'execution-service': {'unit': 'execution-service', 'build_key': 'execution_service', 'module': 'management_portal.execution.service'},
-    'execution-worker': {'unit': 'execution-worker', 'build_key': 'execution_worker', 'module': 'management_portal.execution.worker_manager'},
-    'lineage': {'unit': 'society-service', 'build_key': 'society_service', 'module': 'management_portal.society_service.server'},
-}
-SHARED_COMPONENTS = tuple(name for name, item in COMPONENTS.items() if item['unit'])
+# Restartable components; the shared ones carry their service unit suffix.
+COMPONENTS = {'web': None, 'resource': 'resource-service', 'execution-service': 'execution-service',
+              'execution-worker': 'execution-worker', 'lineage': 'society-service'}
+SHARED_COMPONENTS = tuple(name for name, unit in COMPONENTS.items() if unit)
 # Unit names of the source-checkout pools; one-time migrations still check them.
 INSTANCE_LAYOUT = {}
 for _instance, _web, _port in (
     ('dev', 'management-portal.service', 18086),
     ('release', 'management-portal-release.service', 18085),
 ):
-    _units = {name: (f'portal-{_instance}-{item["unit"]}.service' if item['unit'] else _web)
-              for name, item in COMPONENTS.items()}
+    _units = {name: (f'portal-{_instance}-{unit}.service' if unit else _web)
+              for name, unit in COMPONENTS.items()}
     INSTANCE_LAYOUT[_instance] = {
         'target': f'portal-{_instance}-execution.target', 'web': _web, 'port': _port,
         'component_units': _units,
         'services': (f'portal-{_instance}-nats.service', *(_units[name] for name in SHARED_COMPONENTS)),
     }
-SHARED_MODULES = {item['unit']: (item['module'], item['build_key'])
-                  for name, item in COMPONENTS.items() if name in SHARED_COMPONENTS}

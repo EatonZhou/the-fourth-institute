@@ -344,7 +344,6 @@ modules:
       - "scripts/tfi_dev.py"
       - "scripts/tfi_development_runtime.py"
       - "scripts/portal_services.py"
-      - "scripts/run_portal_shared_component.py"
     designs: []
     layer: "service"
     entrypoints:
@@ -1007,7 +1006,6 @@ modules:
     code_paths:
       - "scripts/tfi_dev.py"
       - "scripts/tfi_development_runtime.py"
-      - "scripts/run_portal_shared_component.py"
       - "management_portal/runtime_status.py"
       - "management_common/portal_release_events.py"
       - "management_common/service_shutdown.py"
@@ -1035,7 +1033,6 @@ modules:
       - "scripts/migrate_deployment_paths.py"
       - "scripts/portal_release.py"
       - "scripts/portal_dev_commit.py"
-      - "scripts/portal_dev_generation.py"
       - "scripts/portal_services.py"
       - "scripts/portal_source_layout.py"
       - "scripts/portal_instance_storage.py"

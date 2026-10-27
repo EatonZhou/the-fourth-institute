@@ -1,20 +1,8 @@
 """Exercise local writer boundaries without running deployment or migrations."""
 import importlib
-import json
 from contextlib import nullcontext
 
 import pytest
-
-from scripts import portal_dev_generation as generation
-
-
-def test_generation_read_preserves_old_file(tmp_path):
-    path = tmp_path / 'generations.json'
-    old = {'schema': 'archive.portal-component-generations.v1', 'components': {'web': 'retained'}}
-    path.write_text(json.dumps(old))
-    before = (path.read_bytes(), path.stat().st_mtime_ns)
-    assert generation.read_component_build_ids(path) == old['components']
-    assert (path.read_bytes(), path.stat().st_mtime_ns) == before
 
 
 class ReachedMigration(Exception):

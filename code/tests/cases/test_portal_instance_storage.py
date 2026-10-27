@@ -28,14 +28,12 @@ def test_worker_manager_uses_configured_instance_directory(tmp_path, monkeypatch
     monkeypatch.setenv("PORTAL_INSTANCE", "dev")
     for name in (
         "PORTAL_EXECUTION_WORKER_GENERATION_ENV",
-        "PORTAL_EXECUTION_WORKER_COMPONENT_GENERATIONS",
         "PORTAL_EXECUTION_WORKER_HEALTH_PATH",
     ):
         monkeypatch.delenv(name, raising=False)
     manager = ExecutionWorkerManager()
 
     assert manager.generation_env == tmp_path / "dev" / "source-generation.env"
-    assert manager.component_generations == tmp_path / "dev" / "component-generations.json"
     assert manager.health_path == tmp_path / "dev" / "execution-worker-health.json"
 
 

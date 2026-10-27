@@ -15,7 +15,6 @@ from management_common.instance_paths import instance_root
 from management_common.file_lock import lock_stream
 from scripts.portal_source_layout import COMPONENTS
 INSTANCE_ROOT = instance_root()
-COMPONENT_BUILD_KEYS = {name: item['build_key'] for name, item in COMPONENTS.items()}
 UNSUPPORTED = 'Standalone TFI: use install_tfi_release status/cleanup; source Dev/Release control is unsupported'
 
 @contextmanager
@@ -66,10 +65,10 @@ def _parser() -> argparse.ArgumentParser:
     command = commands.add_parser('restart')
     command.add_argument('instance', choices=('dev', 'release'))
     command.add_argument('--generation-only', action='store_true', help='Deploy a generation without forcing a same-build Worker replacement.')
-    command.add_argument('--component', action='append', choices=tuple(COMPONENT_BUILD_KEYS), help='Restart only this component; repeat for more. The default restarts Web and control-plane services, but not ExecutionWorker.')
+    command.add_argument('--component', action='append', choices=tuple(COMPONENTS), help='Restart only this component; repeat for more. The default restarts Web and control-plane services, but not ExecutionWorker.')
     request_restart_parser = commands.add_parser('request-restart', help='Queue a Portal Dev restart that runs outside the requesting Web.')
     request_restart_parser.add_argument('instance', choices=('dev',))
-    request_restart_parser.add_argument('--component', action='append', choices=tuple(COMPONENT_BUILD_KEYS), help='Request only this component; repeat for more. The default restarts Web and control-plane services, but not ExecutionWorker.')
+    request_restart_parser.add_argument('--component', action='append', choices=tuple(COMPONENTS), help='Request only this component; repeat for more. The default restarts Web and control-plane services, but not ExecutionWorker.')
     return parser
 
 def main(argv: list[str] | None=None) -> int:

@@ -10,11 +10,9 @@ from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
 from management_portal.portal_deployment_registry import (
-    DEFAULT_DEPLOYMENT_REGISTRY_PATH,
     PortalDeployment,
     load_portal_deployments,
 )
-from scripts.portal_dev_generation import read_build_id, read_component_build_ids
 from management_portal.test_framework.catalog import ROOT
 
 
@@ -179,9 +177,7 @@ class DevTargetVerifier:
 
     def verify(self, storage_state: Path) -> VerifiedDevTarget:
         deployment = resolve_unique_dev(self.registry_path)
-        expected_build = (self.build_id(self.source_root) if self.build_id else deployment.build_id
-                          or (read_component_build_ids().get("web") or read_build_id()
-                              if self.registry_path is not None else ""))
+        expected_build = self.build_id(self.source_root) if self.build_id else deployment.build_id
         observed: dict[str, str] = {
             "instance": deployment.instance_id,
             "expected_build_id": expected_build,

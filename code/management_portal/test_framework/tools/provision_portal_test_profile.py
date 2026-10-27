@@ -16,10 +16,7 @@ if str(ROOT) not in sys.path:
 
 from management_portal.portal_access_control import get_portal_access_store
 from management_portal.portal_session_auth import session_cookie_name
-from management_portal.portal_deployment_registry import (
-    DEFAULT_DEPLOYMENT_REGISTRY_PATH,
-    PortalDeployment,
-)
+from management_portal.portal_deployment_registry import PortalDeployment
 from management_portal.serve_management_portal import _issue_session_token, _verify_session_token
 from management_portal.test_framework.tau import DEFAULT_STORAGE_STATE
 from management_portal.test_framework.dev_target import resolve_unique_dev

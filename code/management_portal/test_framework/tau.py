@@ -11,7 +11,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
-from management_portal.portal_deployment_registry import DEFAULT_DEPLOYMENT_REGISTRY_PATH
 from management_portal.test_framework.catalog import ROOT
 from management_portal.test_framework.dev_target import VerifiedDevTarget, resolve_unique_dev
 
