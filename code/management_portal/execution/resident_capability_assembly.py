@@ -12,6 +12,8 @@ import hashlib
 import json
 from typing import Any
 
+from .harness import capabilities_of
+
 
 def digest(value: Any) -> str:
     return hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True,
@@ -79,7 +81,7 @@ def prepare(invocation: Any, context: Any) -> Any:
     selected_connections = [item for item in config.get("mcp", [])
                             if item.get("enabled", True) and item.get("tools")]
     if selected_connections:
-        if "portal_tools" not in (invocation.harness_capabilities or ()):
+        if "portal_tools" not in capabilities_of(invocation):
             if any(item.get("required") for item in selected_connections):
                 raise ValueError("required MCP tools unsupported by this Provider")
             observations.extend({"ref": item["ref"], "observation": "unknown", "reason": "provider_tools_unsupported"}
@@ -186,7 +188,7 @@ def observe_delivery(invocation: Any, context: Any, *, completed: bool,
             "ref": tool["ref"], "alias": tool["alias"],
             "delivery": "sent" if (completed and not fixed and invocation.request.operation == "turn"
                                      and tool["alias"] in (available_names or ())
-                                     and "portal_tools" in invocation.harness_capabilities) else "unknown",
+                                     and "portal_tools" in capabilities_of(invocation)) else "unknown",
             "acceptance": "unknown", "evidence": ("adapter_tool_catalog" if completed and available_names is not None
                                                      else "adapter_returned" if completed else "adapter_failed"),
             "backend_session_id": str(invocation.session.backend_session_id or ""),

@@ -188,6 +188,31 @@ def test_required_kimi_tool_cannot_fall_back_to_an_empty_catalog(monkeypatch, tm
         KimiBackend.offer_portal_tools(before, Context(), home=tmp_path)
 
 
+def test_native_provider_without_attached_capabilities_uses_its_declared_contract():
+    context = Context()
+    before = invocation((tool(),), harness_capabilities=None)
+    prepared = assembly.prepare(before, context)
+    assembly.observe_delivery(prepared, context, completed=True, available_names={"hatg_instruction"})
+    assert context.events[-1][1]["delivery"] == "sent"
+
+
+def test_required_mcp_uses_native_capabilities_without_an_attached_override(monkeypatch):
+    from dataclasses import replace
+    from management_portal.execution import resident_mcp
+    native = replace(tool("mcp_lookup"), capability_ref="mcp:resource_test#lookup",
+                     connection_ref="resource_test", local_name="lookup")
+    calls = []
+    def materialize(selected, **kwargs):
+        calls.append(selected)
+        return (native,), []
+    monkeypatch.setattr(resident_mcp, "materialize_mcp_tools", materialize)
+    before = Invocation(harness_capabilities=None, request=Request(runtime_options={
+        "runtime_settings": {"capability_config": {"mcp": [
+            {"ref": "resource_test", "tools": ["lookup"], "required": True}]}}}))
+    result = assembly.prepare(before, Context())
+    assert len(calls) == 1 and result.harness_tools[0].name == "mcp_lookup"
+
+
 @pytest.mark.parametrize("operation", ["create", "fork"])
 def test_empty_session_operations_do_not_claim_they_sent_tools(operation):
     from dataclasses import replace
