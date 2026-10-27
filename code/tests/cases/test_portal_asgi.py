@@ -171,9 +171,8 @@ def test_asgi_errors_use_portal_json_contract():
     async def exercise():
         with mock.patch.object(asgi, "MAX_REQUEST_BODY_BYTES", 2):
             too_large = await asgi.portal_http(_request("/api/upload", method="POST", body=b"abc"))
-        denied = await asgi.publish_restart_notice(
-            _request("/api/internal/restart-notice", method="POST", headers={"x-forwarded-for": "203.0.113.10"})
-        )
+        with mock.patch.object(asgi.portal, "_get_page_api_actor", side_effect=PermissionError("credential revoked")):
+            denied = await asgi.portal_events(_request("/api/events"))
         for response, status, code in (
             (too_large, 413, "operation.too_large"),
             (denied, 403, "operation.forbidden"),
@@ -338,7 +337,10 @@ def test_asgi_bridge_preserves_json_response_contracts(subtests, isolated_portal
                 response = await asgi.portal_events(request)
                 iterator = response.body_iterator
                 assert await anext(iterator) == b'retry: 1500\n\n'
-                assert b'event: portal-ready' in await anext(iterator)
+                ready = await anext(iterator)
+                # Pages compare the Web start time to reload after a restart.
+                assert b'event: portal-ready' in ready
+                assert f'"server_started_at":{asgi.portal._SERVER_STARTED_AT}'.encode() in ready
                 hub.publish('portal.resource.changed.skill.skill-one', {})
                 change = await asyncio.wait_for(anext(iterator), timeout=1)
                 assert b'event: portal-change' in change
@@ -355,14 +357,19 @@ def test_asgi_bridge_preserves_json_response_contracts(subtests, isolated_portal
             executor = ThreadPoolExecutor(max_workers=1)
             app = SimpleNamespace(state=SimpleNamespace(notification_fanout=fanout, sse_payload_executor=executor, realtime_lifecycle=asgi.RealtimeConnectionLifecycle()))
             subscription = fanout.subscribe()
-            request = _request('/api/internal/drain-realtime', method='POST', app=app)
-            response = await asgi.drain_realtime(request)
-            assert response.status_code == 200
+            with mock.patch.object(asgi.portal, '_get_session_username', return_value='alice'), mock.patch.object(asgi, 'ensure_notification_listener'), mock.patch.object(asgi, 'ensure_knowledge_archive_projection_watcher'):
+                open_stream = (await asgi.portal_events(_request('/api/events', app=app))).body_iterator
+                await anext(open_stream)
+                await anext(open_stream)
+                waiting = asyncio.create_task(anext(open_stream))
+                await asyncio.sleep(0)
+                asgi.end_realtime_streams(app.state)
+                with pytest.raises(StopAsyncIteration):
+                    await asyncio.wait_for(waiting, timeout=0.5)
+                rejected = await asgi.portal_events(_request('/api/events', app=app))
             assert app.state.realtime_lifecycle.accepting is False
             batch = await asyncio.wait_for(subscription.wait(10), timeout=0.1)
             assert batch is not None and batch.closed is True
-            with mock.patch.object(asgi.portal, '_get_session_username', return_value='alice'):
-                rejected = await asgi.portal_events(_request('/api/events', app=app))
             assert rejected.status_code == 503
             executor.shutdown(wait=False, cancel_futures=True)
         asyncio.run(exercise())
@@ -376,11 +383,9 @@ def test_asgi_bridge_preserves_json_response_contracts(subtests, isolated_portal
             app = SimpleNamespace(state=SimpleNamespace(notification_fanout=fanout, sse_payload_executor=executor, realtime_lifecycle=lifecycle))
             with mock.patch.object(asgi.portal, '_get_session_username', return_value='alice'), mock.patch.object(asgi, 'ensure_notification_listener'), mock.patch.object(asgi, 'ensure_knowledge_archive_projection_watcher'):
                 response = await asgi.portal_events(_request('/api/events', app=app))
-                drained = await asgi.drain_realtime(_request('/api/internal/drain-realtime', method='POST', app=app))
+                asgi.end_realtime_streams(app.state)
                 with pytest.raises(StopAsyncIteration):
                     await anext(response.body_iterator)
-            assert drained.status_code == 200
-            assert lifecycle.active_connections == 0
             executor.shutdown(wait=False, cancel_futures=True)
         asyncio.run(exercise())
 
@@ -728,49 +733,9 @@ def test_resident_detail_subscription_filters_before_fanout_and_keeps_read_permi
     asyncio.run(exercise())
 
 
-def test_asgi_realtime_drain_does_not_claim_success_with_active_streams_contracts(subtests, isolated_portal_case):
-    """仍有活动连接时实时排空返回 503，重启通知先发布投影并拒绝经 Router 转发的请求"""
-    with subtests.test(contract='test_asgi_realtime_drain_does_not_claim_success_with_active_streams'), isolated_portal_case() as case_path:
-        async def exercise() -> None:
-            hub = NotificationHub(max_items=32)
-            fanout = AsyncNotificationFanout(hub)
-            fanout.start()
-            lifecycle = asgi.RealtimeConnectionLifecycle()
-            connection_id = lifecycle.open_connection()
-            assert connection_id is not None
-            app = SimpleNamespace(state=SimpleNamespace(notification_fanout=fanout, realtime_lifecycle=lifecycle))
-            with mock.patch.object(asgi, 'REALTIME_DRAIN_TIMEOUT_SECONDS', 0.01):
-                response = await asgi.drain_realtime(_request('/api/internal/drain-realtime', method='POST', app=app))
-            payload = json.loads(response.body)
-            assert response.status_code == 503
-            assert payload['drained'] is False
-            assert payload['remaining_realtime_connections'] == 1
-            assert payload['code'] == 'operation.unavailable'
-            assert payload['message'] == payload['error']
-            lifecycle.close_connection(connection_id)
-        asyncio.run(exercise())
-    with subtests.test(contract='test_asgi_restart_notice_publishes_before_realtime_drain'), isolated_portal_case() as case_path:
-        async def exercise() -> None:
-            hub = NotificationHub(max_items=32)
-            fanout = AsyncNotificationFanout(hub)
-            fanout.start()
-            app = SimpleNamespace(state=SimpleNamespace(notification_fanout=fanout, realtime_lifecycle=asgi.RealtimeConnectionLifecycle()))
-            projected = {'active': True, 'notice_id': 'notice-real', 'restart_at': 1005}
-            with mock.patch.object(asgi.portal, '_publish_restart_notice', return_value=projected) as publish:
-                response = await asgi.publish_restart_notice(_request('/api/internal/restart-notice', method='POST', body=json.dumps({'seconds': 5, 'message': 'Restart Dev'}).encode(), app=app))
-            payload = json.loads(response.body)
-            assert response.status_code == 200
-            assert payload['projection_published'] is True
-            assert payload['notice'] == projected
-            publish.assert_called_once_with({'seconds': 5, 'message': 'Restart Dev'}, scheduled_by='local-restart', restart_requested=False)
-            fanout.close()
-        asyncio.run(exercise())
-    with subtests.test(contract='test_asgi_restart_notice_rejects_router_forwarded_request'), isolated_portal_case() as case_path:
-        async def exercise() -> None:
-            response = await asgi.publish_restart_notice(_request('/api/internal/restart-notice', method='POST', body=b'{}', headers={'x-forwarded-for': '203.0.113.10'}))
-            assert response.status_code == 403
-        asyncio.run(exercise())
-    with subtests.test(contract='test_asgi_lifespan_owns_background_services'), isolated_portal_case() as case_path:
+def test_asgi_lifespan_owns_background_services(isolated_portal_case):
+    """Web 的 lifespan 启动各 Feature 的后台工作，停止时结束实时事件流、停止后台工作并关闭通知"""
+    with isolated_portal_case():
         # Features start their background work with Web (``web.lifespan``); a returned stop runs when Web stops.
         feature_stop = mock.Mock()
         with_stop, without_stop = mock.Mock(return_value=feature_stop), mock.Mock(return_value=None)
@@ -788,6 +753,8 @@ def test_asgi_realtime_drain_does_not_claim_success_with_active_streams_contract
                     without_stop.assert_called_once_with()
                     feature_stop.assert_not_called()
                     assert isinstance(asgi.app.state.notification_fanout, AsyncNotificationFanout)
+                    assert asgi.app.state.realtime_lifecycle.accepting
+                assert not asgi.app.state.realtime_lifecycle.accepting
                 feature_stop.assert_called_once_with()
                 close.assert_called_once_with()
         asyncio.run(exercise())
@@ -836,18 +803,8 @@ def test_asgi_realtime_drain_expires_inflight_payload_before_returning_event() -
             pending_change = asyncio.create_task(anext(iterator))
             await asyncio.wait_for(payload_started.wait(), timeout=1)
 
-            drained = await asgi.drain_realtime(
-                _request(
-                    "/api/internal/drain-realtime",
-                    method="POST",
-                    app=app,
-                )
-            )
+            asgi.end_realtime_streams(app.state)
 
-            assert drained.status_code == 200
-            drain_payload = json.loads(drained.body)
-            assert drain_payload["drained"] is True
-            assert drain_payload["remaining_realtime_connections"] == 0
             with pytest.raises(StopAsyncIteration):
                 await asyncio.wait_for(pending_change, timeout=0.2)
             release_payload.set()

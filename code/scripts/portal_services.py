@@ -15,7 +15,6 @@ from management_common.instance_paths import instance_root
 from management_common.file_lock import lock_stream
 from scripts.portal_source_layout import COMPONENTS
 INSTANCE_ROOT = instance_root()
-DEFAULT_RESTART_NOTICE_SECONDS = 5
 COMPONENT_BUILD_KEYS = {name: item['build_key'] for name, item in COMPONENTS.items()}
 UNSUPPORTED = 'Standalone TFI: use install_tfi_release status/cleanup; source Dev/Release control is unsupported'
 
@@ -42,9 +41,7 @@ def status(instance: str='all') -> dict[str, Any]:
         return paired.status(root, instance)
     return {'ok': False, 'supported': False, 'reason': 'Standalone TFI instances use install_tfi_release status/cleanup; source Dev/Release service management is unavailable'}
 
-def restart(instance: str, *, notice_seconds: int, components: tuple[str, ...] | list[str] | None=None, force_worker_restart: bool=False) -> dict[str, Any]:
-    if int(notice_seconds) != DEFAULT_RESTART_NOTICE_SECONDS:
-        raise ValueError('Portal restart countdown is fixed at 5 seconds')
+def restart(instance: str, *, components: tuple[str, ...] | list[str] | None=None, force_worker_restart: bool=False) -> dict[str, Any]:
     from scripts import tfi_development_runtime as paired
     root = paired.configured_root()
     if root:
@@ -58,9 +55,6 @@ def request_restart(instance: str, *, components: tuple[str, ...] | list[str] | 
         return paired.request_restart(root, instance, components)
     raise RuntimeError(UNSUPPORTED)
 
-def _add_notice_argument(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument('--notice', type=int, default=DEFAULT_RESTART_NOTICE_SECONDS, choices=(DEFAULT_RESTART_NOTICE_SECONDS,), help='Browser restart countdown; fixed at 5 seconds.')
-
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog='portal_services', description='Operate Portal Dev and Release services through one safe entry point.')
     commands = parser.add_subparsers(dest='command', required=True)
@@ -71,12 +65,11 @@ def _parser() -> argparse.ArgumentParser:
         status_scope.add_argument('--instance', choices=('dev', 'release'), default='')
     command = commands.add_parser('restart')
     command.add_argument('instance', choices=('dev', 'release'))
-    _add_notice_argument(command)
     command.add_argument('--generation-only', action='store_true', help='Deploy a generation without forcing a same-build Worker replacement.')
     command.add_argument('--component', action='append', choices=tuple(COMPONENT_BUILD_KEYS), help='Restart only this component; repeat for more. The default restarts Web and control-plane services, but not ExecutionWorker.')
-    request_restart_parser = commands.add_parser('request-restart', help='Queue an immediate rolling Portal Dev component deployment.')
+    request_restart_parser = commands.add_parser('request-restart', help='Queue a Portal Dev restart that runs outside the requesting Web.')
     request_restart_parser.add_argument('instance', choices=('dev',))
-    request_restart_parser.add_argument('--component', action='append', choices=tuple(COMPONENT_BUILD_KEYS), help='Request only this component; repeat for more. Without this option, deploy components whose source changed since their last successful deployment.')
+    request_restart_parser.add_argument('--component', action='append', choices=tuple(COMPONENT_BUILD_KEYS), help='Request only this component; repeat for more. The default restarts Web and control-plane services, but not ExecutionWorker.')
     return parser
 
 def main(argv: list[str] | None=None) -> int:
@@ -88,7 +81,7 @@ def main(argv: list[str] | None=None) -> int:
             result = request_restart(args.instance, components=args.component)
         else:
             with operation_lock(_operation_lock_path(args.instance)):
-                result = restart(args.instance, notice_seconds=args.notice, components=args.component, force_worker_restart=not args.generation_only and 'execution-worker' in (args.component or []))
+                result = restart(args.instance, components=args.component, force_worker_restart=not args.generation_only and 'execution-worker' in (args.component or []))
     except Exception as exc:
         print(json.dumps({'ok': False, 'error': str(exc)}, ensure_ascii=False), file=sys.stderr)
         return 1

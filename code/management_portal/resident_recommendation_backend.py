@@ -8,8 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from .resident_discovery_client import ResidentDiscoveryClient, ResidentDiscoveryUnavailable
-from .society_service import get_society_service
-from management_portal.society_service import resident_media_domain
+from .society_service import get_society_service, resident_media_domain
 from .society_service.resident_protocol import WORKING_DIRECTORY_FIELD
 from .portal_ui_state import get_portal_ui_state_store
 from . import system_application_flows

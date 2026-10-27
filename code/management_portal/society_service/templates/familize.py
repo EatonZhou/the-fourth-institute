@@ -778,7 +778,7 @@ def _central_member(lineage: Mapping[str, Any], members: list[str]) -> str:
 
 
 def _stop_roles(lineage_id: str, resident_ids: list[str], actor: str, *, wait_seconds: float | None = None) -> None:
-    from management_portal.society_service import resident_lifecycle_domain
+    from .. import resident_lifecycle_domain
 
     from ..resident_protocol import clear_resident_queue
 

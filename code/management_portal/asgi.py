@@ -44,7 +44,6 @@ SSE_HEARTBEAT_SECONDS = 10.0
 SSE_PAYLOAD_TIMEOUT_SECONDS = 24.0
 SSE_PAYLOAD_WORKERS = 4
 SSE_SUBSCRIBER_QUEUE_SIZE = 64
-REALTIME_DRAIN_TIMEOUT_SECONDS = 6.0
 HTTP_HANDLER_WORKERS = max(
     16,
     int(os.getenv("PORTAL_HTTP_HANDLER_WORKERS", "32")),
@@ -304,14 +303,14 @@ async def portal_events(request: Request):
         return _json_error(503, "Portal realtime notifications are unavailable")
 
     async def events() -> AsyncIterator[bytes]:
-        connection_id = realtime_lifecycle.open_connection()
-        if connection_id is None:
+        if not realtime_lifecycle.accepting:
             return
         subscription = fanout.subscribe(_event_subscription_predicate(request, domains))
         drain_wait = asyncio.create_task(realtime_lifecycle.drain_event.wait())
         try:
             yield b"retry: 1500\n\n"
-            yield _sse("portal-ready", {"snapshot_required": True})
+            # A page that reconnects to a newly started Web reloads to get the new assets.
+            yield _sse("portal-ready", {"snapshot_required": True, "server_started_at": portal._SERVER_STARTED_AT})
             while True:
                 batch = await subscription.wait(SSE_HEARTBEAT_SECONDS)
                 if batch is None:
@@ -375,7 +374,6 @@ async def portal_events(request: Request):
             with suppress(asyncio.CancelledError):
                 await drain_wait
             subscription.close()
-            realtime_lifecycle.close_connection(connection_id)
 
     return StreamingResponse(
         events(),
@@ -641,75 +639,14 @@ async def resource_download(request: Request):
                              headers=headers)
 
 
-def _is_direct_local_request(request: Request) -> bool:
-    client_host = str(request.client.host if request.client else "")
-    return (
-        client_host in {"127.0.0.1", "::1"}
-        and "x-forwarded-for" not in request.headers
-    )
-
-
-async def drain_realtime(request: Request):
-    if not _is_direct_local_request(request):
-        return _json_error(403, "local request required")
-    realtime_lifecycle = getattr(
-        request.app.state, "realtime_lifecycle", None
-    )
-    if not isinstance(realtime_lifecycle, RealtimeConnectionLifecycle):
-        return _json_error(503, "Portal realtime lifecycle is unavailable")
-    started_connections = realtime_lifecycle.begin_drain()
-    fanout = getattr(request.app.state, "notification_fanout", None)
+def end_realtime_streams(state) -> None:
+    """Refuse new event streams and end the open ones: the Web process is stopping."""
+    realtime_lifecycle = getattr(state, "realtime_lifecycle", None)
+    if isinstance(realtime_lifecycle, RealtimeConnectionLifecycle):
+        realtime_lifecycle.begin_drain()
+    fanout = getattr(state, "notification_fanout", None)
     if isinstance(fanout, AsyncNotificationFanout):
         fanout.close()
-    result = await realtime_lifecycle.wait_until_drained(
-        REALTIME_DRAIN_TIMEOUT_SECONDS
-    )
-    payload = {
-        "ok": result.drained,
-        "drained": result.drained,
-        "started_realtime_connections": started_connections,
-        "closed_realtime_connections": (
-            started_connections - result.remaining_connections
-        ),
-        "remaining_realtime_connections": result.remaining_connections,
-        "elapsed_seconds": result.elapsed_seconds,
-    }
-    if not result.drained:
-        return _json_error(503, "Portal realtime drain timed out", **payload)
-    return JSONResponse(payload)
-
-
-async def publish_restart_notice(request: Request):
-    if not _is_direct_local_request(request):
-        return _json_error(403, "local request required")
-    fanout = getattr(request.app.state, "notification_fanout", None)
-    if (
-        not isinstance(
-            getattr(request.app.state, "realtime_lifecycle", None),
-            RealtimeConnectionLifecycle,
-        )
-        or not request.app.state.realtime_lifecycle.accepting
-        or not isinstance(fanout, AsyncNotificationFanout)
-    ):
-        return _json_error(503, "Portal realtime notifications are unavailable")
-    try:
-        payload = await request.json()
-        if not isinstance(payload, dict):
-            raise ValueError("JSON object required")
-        notice = await asyncio.to_thread(
-            portal._publish_restart_notice,
-            payload,
-            scheduled_by="local-restart",
-            restart_requested=False,
-        )
-    except (json.JSONDecodeError, ValueError, TypeError) as exc:
-        return _json_error(400, str(exc))
-    return JSONResponse({
-        "ok": True,
-        "projection_published": True,
-        "subscriber_count": fanout.subscriber_count,
-        "notice": notice,
-    })
 
 
 @asynccontextmanager
@@ -763,14 +700,13 @@ async def lifespan(_app: Starlette):
     try:
         yield
     finally:
-        _app.state.realtime_lifecycle.begin_drain()
+        end_realtime_streams(_app.state)
         if instruction_server is not None:
             await asyncio.to_thread(instruction_server.stop)
         unsubscribe_sidebar_cache()
         resident_sidebar_backend.invalidate_snapshot_cache()
         for stop in reversed(feature_stops):
             await asyncio.to_thread(stop)
-        notification_fanout.close()
         http_handler_executor.shutdown(wait=False, cancel_futures=True)
         static_handler_executor.shutdown(wait=False, cancel_futures=True)
         instruction_executor.shutdown(wait=False, cancel_futures=True)
@@ -819,16 +755,6 @@ app = Starlette(
         Route("/api/uploads/{upload_id}", _independent_api_error_boundary(upload_bytes), methods=["PUT", "POST"]),
         Route("/api/uploads/{upload_id}", _independent_api_error_boundary(upload_content), methods=["GET"]),
         Route("/api/resources/download/{token}", _independent_api_error_boundary(resource_download), methods=["GET"]),
-        Route(
-            "/api/internal/restart-notice",
-            _independent_api_error_boundary(publish_restart_notice),
-            methods=["POST"],
-        ),
-        Route(
-            "/api/internal/drain-realtime",
-            _independent_api_error_boundary(drain_realtime),
-            methods=["POST"],
-        ),
         Route(
             "/{path:path}",
             portal_http,

@@ -1,6 +1,6 @@
 """子 trace 的同名工具回显不能成为自己的父级。
 
-:module: execution.agent-data
+:module: execution.persistence
 :design: decision_b1ab45c4b3ec
 """
 from __future__ import annotations

@@ -1890,29 +1890,6 @@ dialog.portalDetailSurface::backdrop {
   display: none;
 }
 
-/* Portal lifecycle notice; presentation is independent from the active skin. */
-.portalRestartOverlay {
-  place-items: start;
-  padding: 18px;
-  pointer-events: none;
-  background: transparent;
-  backdrop-filter: none;
-}
-
-.portalRestartDialog {
-  --portal-detail-width: 360px;
-  display: block;
-  padding: 18px 20px;
-  pointer-events: auto;
-  background: var(--panel);
-}
-
-.portalRestartTitle { margin: 0 0 8px; font-size: 17px; font-weight: 760; line-height: 1.25; }
-.portalRestartMessage { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
-.portalRestartCountdown { display: flex; align-items: baseline; gap: 7px; margin-top: 14px; color: var(--accent); }
-.portalRestartSeconds { min-width: 2ch; font: 800 30px/1 var(--mono); }
-.portalRestartUnit { color: var(--muted); font-size: 12px; }
-
 /* Layer protocol ---------------------------------------------------------- */
 
 [data-portal-overlay-layer="sticky"] {

@@ -57,7 +57,7 @@ SHARED_ROOT = _CONFIGURED_SHARED_ROOT or resolve_directory(
 # These packages own shared persisted facts and their RPC contracts. Both Web
 # clients see the same contracts; both service pools execute from SHARED_ROOT.
 COMPONENTS = {
-    'web': {'unit': None, 'build_key': 'web', 'module': 'management_portal.asgi'},
+    'web': {'unit': None, 'build_key': 'web', 'module': 'management_portal.web_server'},
     'resource': {'unit': 'resource-service', 'build_key': 'resource_service', 'module': 'management_portal.resources.server'},
     'execution-service': {'unit': 'execution-service', 'build_key': 'execution_service', 'module': 'management_portal.execution.service'},
     'execution-worker': {'unit': 'execution-worker', 'build_key': 'execution_worker', 'module': 'management_portal.execution.worker_manager'},

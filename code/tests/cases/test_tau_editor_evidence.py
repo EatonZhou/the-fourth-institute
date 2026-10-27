@@ -1,6 +1,6 @@
 """Original editor responses and native navigation, without replay.
 
-:module: workbench.studio
+:module: workflow.studio
 :importance: P1
 """
 from pathlib import Path

@@ -331,8 +331,8 @@
 
   function mountToggle() {
     syncThemeScene(readMode());
-    // Appearance and restart observation can initialize even when this
-    // optional control's dependency has not loaded successfully yet.
+    // Appearance can initialize even when this optional control's
+    // dependency has not loaded successfully yet.
     if (!window.PortalOverlay) return;
     if (document.querySelector("[data-portal-theme-toggle]")) {
       applyMode(readMode());
@@ -351,234 +351,15 @@
     if (document.readyState !== "loading") mountToggle();
   });
 
-  const restartState = {
-    noticeId: "",
-    payload: null,
-    timer: null,
-    pollTimer: null,
-    seenActive: false,
-    restartAt: 0,
-    reloading: false,
-    serverStartedAt: 0,
-    recoveryTimer: null,
-    recoveryInFlight: false,
-    overlayController: null,
-    pageHidden: false,
-  };
-
-  function stopRestartCountdown() {
-    if (restartState.timer) clearInterval(restartState.timer);
-    restartState.timer = null;
-  }
-
-  function startRestartCountdown() {
-    stopRestartCountdown();
-    if (!restartState.payload || restartState.pageHidden) return;
-    restartState.timer = setInterval(renderRestartNotice, 1000);
-  }
-
-  function restartNoticeEstimatedNow(payload = null) {
-    const serverNow = Number(payload?.now || 0);
-    const localNowAtFetch = Number(payload?.localNowAtFetch || Date.now() / 1000);
-    return serverNow ? serverNow + (Date.now() / 1000 - localNowAtFetch) : Date.now() / 1000;
-  }
-
-  function waitingForServerRestart(payload = null) {
-    if (restartState.reloading || !restartState.seenActive) return false;
-    const restartAt = Number(restartState.restartAt || 0);
-    return !!restartAt && restartNoticeEstimatedNow(payload) >= restartAt;
-  }
-
-  function ensureRestartOverlay() {
-    let overlay = document.getElementById("portalRestartOverlay");
-    if (overlay) return overlay;
-    overlay = document.createElement("div");
-    overlay.id = "portalRestartOverlay";
-    overlay.className = "portalDetailOverlay portalRestartOverlay";
-    overlay.hidden = true;
-    overlay.dataset.portalOverlayLayer = "critical";
-    overlay.innerHTML = window.PortalI18n.html`
-      <div class="portalDetailSurface portalRestartDialog" data-portal-detail-surface role="alertdialog" aria-live="assertive" aria-labelledby="portalRestartTitle">
-        <h2 class="portalRestartTitle" id="portalRestartTitle">系统即将重启</h2>
-        <p class="portalRestartMessage" id="portalRestartMessage">系统将在倒计时结束后重启。</p>
-        <div class="portalRestartCountdown">
-          <span class="portalRestartSeconds" id="portalRestartSeconds">5</span>
-          <span class="portalRestartUnit" id="portalRestartUnit">秒后重启</span>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-    restartState.overlayController = window.PortalOverlay?.register(overlay, {
-      kind: "critical",
-      closeOnEscape: false,
-      closeOnBackdrop: false,
-    }) || null;
-    return overlay;
-  }
-
-  function renderRestartNotice() {
-    const payload = restartState.payload;
-    const overlay = ensureRestartOverlay();
-    const waiting = waitingForServerRestart(payload);
-    if ((!payload || !payload.active) && !waiting) {
-      stopRestartRecovery();
-      overlay.hidden = true;
-      restartState.overlayController?.deactivate();
-      return;
-    }
-    const restartAt = Number(payload?.restart_at || restartState.restartAt || 0);
-    const remaining = Math.max(0, Math.ceil(restartAt - restartNoticeEstimatedNow(payload)));
-    const message = waiting ? window.PortalI18n.t("请等待后台重启") : window.PortalI18n.message(String(payload?.message || "系统将在倒计时结束后重启。"));
-    const msgEl = document.getElementById("portalRestartMessage");
-    const secondsEl = document.getElementById("portalRestartSeconds");
-    const unitEl = document.getElementById("portalRestartUnit");
-    if (msgEl) msgEl.textContent = message;
-    if (secondsEl) secondsEl.textContent = String(remaining);
-    if (unitEl) unitEl.textContent = waiting ? window.PortalI18n.t("后台重启中") : window.PortalI18n.t("秒后重启");
-    overlay.hidden = false;
-    if (!restartState.overlayController && window.PortalOverlay) {
-      restartState.overlayController = window.PortalOverlay.register(overlay, {
-        kind: "critical",
-        closeOnEscape: false,
-        closeOnBackdrop: false,
-      });
-    }
-    restartState.overlayController?.activate();
-    if (waiting) startRestartRecovery();
-  }
-
-  function setRestartNotice(payload) {
-    const active = !!payload?.active;
-    if (active) {
-      restartState.seenActive = true;
-      restartState.restartAt = Number(payload.restart_at || restartState.restartAt || 0);
-    }
-    restartState.payload = active || waitingForServerRestart(payload)
-      ? { ...payload, localNowAtFetch: Date.now() / 1000 }
-      : null;
-    restartState.noticeId = active ? String(payload.notice_id || "") : "";
-    stopRestartCountdown();
-    renderRestartNotice();
-    startRestartCountdown();
-  }
-
-  function maybeReloadAfterServerRestart(payload) {
-    const serverStartedAt = Number(payload?.server_started_at || 0);
-    if (!serverStartedAt) return false;
-    if (!restartState.serverStartedAt) {
-      restartState.serverStartedAt = serverStartedAt;
-      return false;
-    }
-    if (restartState.reloading || window.location.pathname === "/login") return false;
-    if (serverStartedAt <= restartState.serverStartedAt + 0.001) return false;
-    restartState.reloading = true;
-    window.location.reload();
-    return true;
-  }
-
-  function stopRestartRecovery() {
-    if (restartState.recoveryTimer) clearTimeout(restartState.recoveryTimer);
-    restartState.recoveryTimer = null;
-  }
-
-  function startRestartRecovery() {
-    if (
-      restartState.reloading
-      || restartState.recoveryInFlight
-      || restartState.recoveryTimer
-    ) return;
-    restartState.recoveryTimer = setTimeout(async () => {
-      restartState.recoveryTimer = null;
-      if (!waitingForServerRestart()) return;
-      restartState.recoveryInFlight = true;
-      try {
-        const health = await window.PortalAPI.get(`/api/health?restart_probe=${Date.now()}`);
-        maybeReloadAfterServerRestart({ server_started_at: health?.started_at });
-      } catch {
-        // The expected restart outage ends when the next probe reaches the new Web process.
-      } finally {
-        restartState.recoveryInFlight = false;
-      }
-      if (!restartState.reloading && waitingForServerRestart()) {
-        restartState.recoveryTimer = setTimeout(() => {
-          restartState.recoveryTimer = null;
-          startRestartRecovery();
-        }, 500);
-      }
-    }, 0);
-  }
-
-  async function pollRestartNotice() {
-    if (document.hidden) return;
-    try {
-      const payload = await window.PortalAPI.get("/api/restart-notice");
-      maybeReloadAfterServerRestart(payload);
-      const nextId = payload?.active ? String(payload.notice_id || "") : "";
-      if (nextId !== restartState.noticeId || !!payload?.active !== !!restartState.payload?.active) {
-        setRestartNotice(payload);
-      } else if (payload?.active || waitingForServerRestart(payload)) {
-        restartState.payload = { ...payload, localNowAtFetch: Date.now() / 1000 };
-      }
-    } catch {
-      // Restart notice polling is best-effort and should not disturb the page.
-    }
-  }
-
-  function restartNoticePollDelay() {
-    if (document.hidden || window.PortalEvents?.isConnected?.()) return 300000;
-    return 2000;
-  }
-
-  function scheduleRestartNoticePoll() {
-    if (restartState.pollTimer) clearTimeout(restartState.pollTimer);
-    restartState.pollTimer = null;
-    if (restartState.pageHidden) return;
-    restartState.pollTimer = setTimeout(async () => {
-      await pollRestartNotice();
-      scheduleRestartNoticePoll();
-    }, restartNoticePollDelay());
-  }
-
-  function startRestartNoticePolling() {
-    if (restartState.pollTimer) return;
-    pollRestartNotice();
-    scheduleRestartNoticePoll();
-  }
-
-  document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) pollRestartNotice();
-    scheduleRestartNoticePoll();
-  });
-  window.addEventListener("portal:change", event => {
-    const detail = event?.detail || {};
-    const projection = detail?.projection_details?.["restart-notice"]?.current;
-    const notice = projection?.notice;
-    if (notice && typeof notice === "object") {
-      maybeReloadAfterServerRestart(notice);
-      setRestartNotice(notice);
-      scheduleRestartNoticePoll();
-      return;
-    }
-    const targets = detail?.projections?.["restart-notice"];
-    if (Array.isArray(targets) && targets.includes("current")) pollRestartNotice();
-  });
-  window.addEventListener("portal:events-ready", () => {
-    pollRestartNotice();
-    scheduleRestartNoticePoll();
-  });
-  window.addEventListener("pagehide", () => {
-    restartState.pageHidden = true;
-    stopRestartCountdown();
-    if (restartState.pollTimer) clearTimeout(restartState.pollTimer);
-    restartState.pollTimer = null;
-    stopRestartRecovery();
-  });
-  window.addEventListener("pageshow", event => {
-    if (!event.persisted) return;
-    restartState.pageHidden = false;
-    startRestartCountdown();
-    pollRestartNotice();
-    scheduleRestartNoticePoll();
+  // A publication restarts Web with new assets. When the event stream reaches a
+  // Web process started after the one this page met first, the page reloads.
+  let serverStartedAt = 0;
+  window.addEventListener("portal:events-ready", event => {
+    const startedAt = Number(event?.detail?.server_started_at || 0);
+    if (!startedAt) return;
+    const restarted = serverStartedAt && startedAt > serverStartedAt + 0.001;
+    serverStartedAt = Math.max(serverStartedAt, startedAt);
+    if (restarted && window.location.pathname !== "/login") window.location.reload();
   });
 
   applyMode(readMode());
@@ -592,12 +373,10 @@
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {
       mountToggle();
-      startRestartNoticePolling();
       syncAppearancePreferences();
     });
   } else {
     mountToggle();
-    startRestartNoticePolling();
     syncAppearancePreferences();
   }
 })();

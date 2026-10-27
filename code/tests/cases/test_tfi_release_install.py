@@ -402,6 +402,8 @@ runpy.run_module('scripts.tfi_release_install', run_name='__main__')
             self.assertNotIn("archive_lineage", env["PORTAL_DATABASE_URL"])
         command, _ = installer.component_command(plan, "postgres")
         self.assertIn("listen_addresses=", command)
+        command, _ = installer.component_command(plan, "web")
+        self.assertEqual(command[1:3], ["-m", "management_portal.web_server"])
 
     def bundle(self):
         bundle = self.base / "bundle"

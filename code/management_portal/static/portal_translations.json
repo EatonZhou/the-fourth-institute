@@ -3031,9 +3031,9 @@
     "en": "Dev",
     "zh-CN": "Dev"
   },
-  "Dev 的排队请求 ID 或 Release 的异步启动关联 ID": {
-    "en": "Dev's queued request ID or Release's async launch correlation ID",
-    "zh-CN": "Dev 的排队请求 ID 或 Release 的异步启动关联 ID"
+  "执行这次重启的临时单元 tfi-pair-restart-<id>": {
+    "en": "Transient unit that runs this restart, tfi-pair-restart-<id>",
+    "zh-CN": "执行这次重启的临时单元 tfi-pair-restart-<id>"
   },
   "Device": {
     "en": "Device",
@@ -23407,10 +23407,6 @@
     "en": "Background sub-agent",
     "zh-CN": "后台子 agent"
   },
-  "后台重启中": {
-    "en": "Background restarting",
-    "zh-CN": "后台重启中"
-  },
   "后端": {
     "en": "Backend",
     "zh-CN": "后端"
@@ -32383,10 +32379,6 @@
     "en": "Seed: a candidate in the Program; it will not create a Resident when created",
     "zh-CN": "种子（Seed）：Program 中的候选，不会在创建时产生 Resident"
   },
-  "秒后重启": {
-    "en": "Restart in seconds",
-    "zh-CN": "秒后重启"
-  },
   "移出查找": {
     "en": "Remove from search",
     "zh-CN": "移出查找"
@@ -32859,17 +32851,9 @@
     "en": "Could not read the system-position content: {p0}",
     "zh-CN": "系统位置的内容读取失败：{p0}"
   },
-  "系统即将重启": {
-    "en": "System is about to restart",
-    "zh-CN": "系统即将重启"
-  },
   "系统复制所选范围，排除敏感文件、依赖缓存和符号链接，并记录内容指纹。": {
     "en": "The system copies the selected scope, excluding sensitive files, dependency caches, and symbolic links, and records a content fingerprint.",
     "zh-CN": "系统复制所选范围，排除敏感文件、依赖缓存和符号链接，并记录内容指纹。"
-  },
-  "系统将在倒计时结束后重启。": {
-    "en": "The system will restart when the countdown ends.",
-    "zh-CN": "系统将在倒计时结束后重启。"
   },
   "系统消息": {
     "en": "System message",
@@ -34526,10 +34510,6 @@
   "请稍候。": {
     "en": "Please wait.",
     "zh-CN": "请稍候。"
-  },
-  "请等待后台重启": {
-    "en": "Please wait for the background restart",
-    "zh-CN": "请等待后台重启"
   },
   "请至少添加一个交接项。": {
     "en": "Please add at least one handoff item.",

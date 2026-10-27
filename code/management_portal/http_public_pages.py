@@ -23,7 +23,7 @@ class PublicPagesHttp:
     def __init__(self, *, root, check_session, serve_bytes, serve_static,
                  send_empty, prepare_login, prepare_verify, request_cookie,
                  challenge_cookie, challenge_username, clear_challenge,
-                 route_script, restart_notice, respond, media_content_type):
+                 route_script, respond, media_content_type):
         self.root = root
         self.check_session = check_session
         self.serve_bytes = serve_bytes
@@ -36,7 +36,6 @@ class PublicPagesHttp:
         self.challenge_username = challenge_username
         self.clear_challenge = clear_challenge
         self.route_script = route_script
-        self.restart_notice = restart_notice
         self.respond = respond
         self.media_content_type = media_content_type
 
@@ -73,9 +72,6 @@ class PublicPagesHttp:
 
     def resource_routes(self, request, _parsed, _actor):
         return self.serve_bytes(request, 200, self.route_script(), "text/javascript; charset=utf-8")
-
-    def restart_notice_get(self, request, _parsed, _actor):
-        return self.respond(request, 200, self.restart_notice())
 
     def static(self, request, parsed, _actor):
         filename = Path(parsed.path).name

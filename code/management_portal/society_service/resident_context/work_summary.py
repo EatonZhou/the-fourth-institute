@@ -27,7 +27,7 @@ REMINDER = (
 
 
 def _record(resident_id: str) -> dict:
-    from management_portal.society_service import resident_workspace_domain
+    from .. import resident_workspace_domain
     record = resident_workspace_domain.find_resident(resident_id)
     if not record:
         raise KeyError("Resident 不存在")
@@ -110,7 +110,7 @@ def update_resident_work_summary(actor: str, resident_id: str, expected_revision
 
 def check_resident_work_summary(actor: str, resident_id: str, message_id: str) -> dict:
     from .. import invariant_locks, resident_conversation_stream, resident_held_infos, family_facade
-    from management_portal.society_service import resident_execution_domain
+    from .. import resident_execution_domain
     record = _visible(actor, resident_id)
     if family_facade.is_facade(record):
         return {"status": "facade"}

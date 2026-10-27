@@ -14,10 +14,7 @@ from .bus import (
     publish_local_projection_change,
     publish_projection_change,
 )
-from .realtime_lifecycle import (
-    RealtimeConnectionLifecycle,
-    RealtimeDrainResult,
-)
+from .realtime_lifecycle import RealtimeConnectionLifecycle
 from .subjects import (
     business_projection_subject,
     notification_subject,
@@ -31,7 +28,6 @@ __all__ = [
     "Notification",
     "NotificationHub",
     "RealtimeConnectionLifecycle",
-    "RealtimeDrainResult",
     "business_projection_subject",
     "close_notifications",
     "ensure_notification_listener",

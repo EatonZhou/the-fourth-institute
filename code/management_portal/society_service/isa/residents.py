@@ -226,7 +226,7 @@ def update_resident(inv: Invocation) -> dict[str, Any]:
 
 def delete_resident(inv: Invocation) -> dict[str, Any]:
     resident_id = inv.argument("resident_id")
-    from management_portal.society_service import resident_workspace_domain
+    from .. import resident_workspace_domain
 
     if resident_workspace_domain.retry_deleted_resident(resident_id, inv.caller) is not None:
         return {"resident_id": resident_id}

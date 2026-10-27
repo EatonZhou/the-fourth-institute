@@ -59,10 +59,6 @@ def adapt_component(target, component, command, env, config):
     env["PORTAL_COMPONENT_SOURCE_ROOT"] = source
     if component == "web":
         command[command.index("--port") + 1] = str(config["web_ports"]["release"])
-        # SSE connections are intentionally long lived. Bound their shutdown
-        # wait so a small publication does not wait for systemd's kill timeout.
-        if "--timeout-graceful-shutdown" not in command:
-            command += ["--timeout-graceful-shutdown", "15"]
     return command, env
 
 

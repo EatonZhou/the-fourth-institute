@@ -344,8 +344,8 @@ def component_command(target, component):
     elif component == "nats":
         command = [target["nats_server"], "-a", "127.0.0.1", "-p", str(target["ports"]["nats"])]
     elif component == "web":
-        command = [python, "-m", "uvicorn", "management_portal.asgi:app", "--host", target["bind"],
-                   "--port", str(target["ports"]["web"]), "--workers", "1", "--no-access-log"]
+        command = [python, "-m", "management_portal.web_server", "--host", target["bind"],
+                   "--port", str(target["ports"]["web"])]
     else:
         command = [python, "-m", MODULES[component]]
         if component in {"resource", "society"}:

@@ -26,12 +26,6 @@ blob-report/
 /portal_data/
 /release-manifest.json
 
-# Portal secrets (never commit)
-management_portal/restart_notice.json
-management_portal/restart_notice_request.json
-
-# TODO board runtime task metadata
-
 # Pinned provider dependencies are installed from their lockfile
 management_portal/dsh_runtime/node_modules/
 

@@ -2806,7 +2806,6 @@
     "tests/cases/test_portal_asgi.py::test_asgi_bridge_preserves_proxy_validated_scheme_for_origin_checks_contracts": "test_416dba5c53b8",
     "tests/cases/test_portal_asgi.py::test_asgi_errors_use_portal_json_contract": "test_e25451f05b19",
     "tests/cases/test_portal_asgi.py::test_asgi_events_replace_a_stalled_payload_with_snapshot_recovery": "test_4a76c8c9598b",
-    "tests/cases/test_portal_asgi.py::test_asgi_realtime_drain_does_not_claim_success_with_active_streams_contracts": "test_f8625674e762",
     "tests/cases/test_portal_asgi.py::test_asgi_realtime_drain_expires_inflight_payload_before_returning_event": "test_e77d23c0f717",
     "tests/cases/test_portal_asgi.py::test_independent_api_routes_answer_with_no_store_unless_they_choose_a_policy": "test_bffa6240175f",
     "tests/cases/test_portal_asgi.py::test_instruction_execution_continues_while_http_handlers_are_busy": "test_8fd46d754bae",

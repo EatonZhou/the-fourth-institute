@@ -85,7 +85,7 @@ from management_portal.portal_password_reset import (
     PortalPasswordResetStore,
     PortalSmtpMailer,
 )
-from management_portal.shared_state import atomic_replace_json, exclusive_file_lock
+from management_portal.shared_state import exclusive_file_lock
 from management_portal import presentation_store
 from management_portal.http_routes import (
     ROUTE_NOT_FOUND,
@@ -135,7 +135,7 @@ from management_portal import (
     resource_views,
 )
 from management_portal.page_renderers import render_knowledge_html
-from management_portal.notifications import publish_local_projection_change, publish_projection_change
+from management_portal.notifications import publish_projection_change
 
 # ── Auth / instance identity ───────────────────────────────────────────────────
 def _env_path(name: str, default: Path) -> Path:
@@ -215,7 +215,6 @@ _PORTAL_UPLOADS_ROOT = _env_path(
     "PORTAL_UPLOADS_ROOT",
     (portal_path("staging_root") / "shared" / "portal_uploads"),
 )
-_RESTART_NOTICE_PATH = _env_path("PORTAL_RESTART_NOTICE_PATH", ROOT / "restart_notice.json")
 _SESSION_COOKIE = session_cookie_name()
 _LOGIN_CHALLENGE_COOKIE = login_challenge_cookie_name()
 _SESSION_MAX_AGE = int(os.getenv("MANAGEMENT_PORTAL_SESSION_MAX_AGE", str(30 * 24 * 3600)))
@@ -229,7 +228,6 @@ _AGENT_WORKBENCH_LINEAGE_FAVORITE_RE = re.compile(
     r"^lineage:lineage_[0-9a-f]{12}$"
 )
 _PORTAL_MAX_FAVORITE_LINEAGES = 120
-_RESTART_NOTICE_LOCK = threading.RLock()
 _PORTAL_ACCESS = get_portal_access_store()
 _PORTAL_CREDENTIALS = PortalCredentialStore()
 from management_portal.user_enrollment import UserEnrollment
@@ -1152,51 +1150,6 @@ def _delete_portal_user_personal_data(username: str) -> dict:
     }
 
 
-def _restart_notice_now() -> float:
-    return time.time()
-
-
-def _read_restart_notice_raw() -> dict:
-    try:
-        payload = json.loads(_RESTART_NOTICE_PATH.read_text(encoding="utf-8"))
-    except Exception:
-        return {}
-    return payload if isinstance(payload, dict) else {}
-
-
-def _write_restart_notice(payload: dict) -> None:
-    atomic_replace_json(_RESTART_NOTICE_PATH, payload, indent=2, sort_keys=False)
-
-
-def _restart_notice_public_payload() -> dict:
-    now = _restart_notice_now()
-    with _RESTART_NOTICE_LOCK:
-        payload = _read_restart_notice_raw()
-    restart_at = float(payload.get("restart_at") or 0)
-    expires_at = float(payload.get("expires_at") or 0)
-    active = bool(
-        payload.get("notice_id")
-        and restart_at
-        and restart_at > _SERVER_STARTED_AT
-        and now < restart_at
-        and now <= expires_at
-    )
-    if not active:
-        return {"active": False, "now": now, "server_started_at": _SERVER_STARTED_AT}
-    return {
-        "active": True,
-        "notice_id": str(payload.get("notice_id") or ""),
-        "message": str(payload.get("message") or "系统将在倒计时结束后重启。"),
-        "start_at": float(payload.get("start_at") or now),
-        "restart_at": restart_at,
-        "expires_at": expires_at,
-        "restart_requested": bool(payload.get("restart_requested")),
-        "scheduled_by": str(payload.get("scheduled_by") or ""),
-        "now": now,
-        "server_started_at": _SERVER_STARTED_AT,
-    }
-
-
 def _portal_health_payload(handler: SimpleHTTPRequestHandler | None = None) -> dict:
     port = 0
     if handler is not None:
@@ -1682,38 +1635,6 @@ def _portal_change_payload(
         },
         "snapshot_required": snapshot_required,
     }
-
-
-def _publish_restart_notice(
-    payload: dict,
-    *,
-    scheduled_by: str,
-    restart_requested: bool,
-) -> dict:
-    seconds = int(payload.get("seconds") or 5)
-    seconds = max(3, min(seconds, 300))
-    now = _restart_notice_now()
-    message = str(payload.get("message") or "系统将在倒计时结束后重启。").strip()[:240]
-    notice = {
-        "notice_id": secrets.token_hex(8),
-        "message": message,
-        "start_at": now,
-        "restart_at": now + seconds,
-        "expires_at": now + seconds + 20,
-        "restart_requested": bool(restart_requested),
-        "scheduled_by": str(scheduled_by or "portal"),
-        "created_at": int(now),
-    }
-    with _RESTART_NOTICE_LOCK:
-        _write_restart_notice(notice)
-    public_notice = _restart_notice_public_payload()
-    publish_local_projection_change(
-        "restart-notice",
-        "current",
-        fields=["notice"],
-        details={"notice": public_notice},
-    )
-    return public_notice
 
 
 def _check_session(handler: SimpleHTTPRequestHandler) -> bool:
@@ -3161,7 +3082,6 @@ _PUBLIC_PAGES_HTTP = PublicPagesHttp(
     challenge_username=lambda token: _login_challenge_username(token),
     clear_challenge=lambda request: _clear_login_challenge_cookie(request),
     route_script=lambda: portal_route_script(),
-    restart_notice=lambda: _restart_notice_public_payload(),
     respond=lambda *args: _serve_json(*args),
     media_content_type=lambda path: _media_content_type(path),
 )
@@ -3414,7 +3334,6 @@ def _portal_route_definitions() -> tuple[RouteDefinition, ...]:
         RouteDefinition("POST", "/knowledge/api/archive/delete", _KNOWLEDGE_HTTP.post_route(_KNOWLEDGE_HTTP.post_archive_delete), "knowledge"),
         RouteDefinition("GET", "/skills", _SKILLS_HTTP.home, "skills", page=True),
         RouteDefinition("GET", "/skills/", _SKILLS_HTTP.home, "skills", page=True),
-        RouteDefinition("GET", "/api/restart-notice", _PUBLIC_PAGES_HTTP.restart_notice_get, "portal-public-get", phase="public"),
         RouteDefinition("GET", "/forgot-password", _PUBLIC_PAGES_HTTP.forgot_password, "portal-public-get", phase="public"),
         RouteDefinition("GET", "/login", _PUBLIC_PAGES_HTTP.login, "portal-public-get", phase="public"),
         RouteDefinition("GET", "/join", http_user_enrollment.join_page, "portal-public-get", phase="public"),

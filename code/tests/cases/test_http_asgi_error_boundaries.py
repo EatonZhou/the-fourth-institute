@@ -1,6 +1,7 @@
 """Errors emitted before or around the synchronous Portal HTTP handler."""
 
 import asyncio
+import contextlib
 import json
 from unittest import mock
 
@@ -76,14 +77,19 @@ def test_api_bridge_failure_is_private_json_error():
 
 
 def test_independent_api_failures_use_private_json_error():
-    """events 与内部重启、排空接口出错时同样返回不含内部信息的 JSON 500"""
+    """events、指令和上传接口出错时同样返回不含内部信息的 JSON 500"""
+    failing = mock.Mock(side_effect=RuntimeError("private marker"))
     cases = (
-        ("/api/events", "GET", asgi.portal, "_get_session_username"),
-        ("/api/internal/restart-notice", "POST", asgi, "_is_direct_local_request"),
-        ("/api/internal/drain-realtime", "POST", asgi, "_is_direct_local_request"),
+        # An identity lookup failure is a 503 of its own; the failure comes after it.
+        ("/api/events", "GET", (mock.patch.object(asgi.portal, "_get_page_api_actor", return_value="alice"),
+                                mock.patch.object(asgi, "ensure_notification_listener", failing))),
+        ("/api/instructions/execute", "POST", (mock.patch.object(asgi, "_instruction_principal", failing),)),
+        ("/api/uploads/upload_0123456789ab", "GET", (mock.patch.object(asgi, "_instruction_principal", failing),)),
     )
-    for path, method, owner, attribute in cases:
-        with mock.patch.object(owner, attribute, side_effect=RuntimeError("private marker")):
+    for path, method, patches in cases:
+        with contextlib.ExitStack() as stack:
+            for patch in patches:
+                stack.enter_context(patch)
             status, headers, body = _response(path, method)
         payload = json.loads(body)
         assert status == payload["http_status"] == 500

@@ -36,15 +36,15 @@ DECLARATIONS = (
        mutates=True, owner="lineage"),
     _d("GetPortalStatus", FIXED, "读取 Portal 实例与各组件的运行状态。", (
         P("instance", description="只读取这个实例；省略时读取 dev 和 release", enum=("dev", "release")),
-    ), (R("instances", "array", "组件运行状态与健康检查，Release 同时包含当前发布 manifest"),)),
+    ), (R("instances", "array", "每个实例的 Web 健康检查、源码目录与共享服务单元"),)),
     _d("GetRuntimeCapacity", FIXED, "只读观察共享数据库连接、本机磁盘与 Execution 队列容量；排队总数包含配额等等待。", (),
        (R("capacity", "object", "tfi.runtime-capacity.v1；各来源独立返回 ok 或 unavailable"),)),
     _d("RestartPortal", FIXED, "请求重启一个 Portal 实例，或实例中的指定组件。", (
         R("instance", description="要重启的实例", enum=("dev", "release")),
-        P("components", "array", "Dev 省略时按源码变化选择；Release 省略时重启 web、resource、execution-service、lineage",
+        P("components", "array", "省略时重启 web、resource、execution-service、lineage，不含 execution-worker",
           items={"type": "string", "enum": list(COMPONENTS)}),
-    ), (R("request_id", description="Dev 的排队请求 ID 或 Release 的异步启动关联 ID"),
-        R("components", "array", "请求组件；Dev 空列表表示执行时按源码变化选择")), mutates=True),
+    ), (R("request_id", description="执行这次重启的临时单元 tfi-pair-restart-<id>"),
+        R("components", "array", "请求的组件；空列表表示默认组件")), mutates=True),
     D(name="PublishRelease", category="environment", owner="web", decides=FIXED,
       description="把调用者指定的 Dev 代码同步到 Release，并返回发布提交；只能在 Dev 实例执行。",
       parameters=(
@@ -54,7 +54,7 @@ DECLARATIONS = (
       ),
       result=(R("commit", description="Dev 上的发布提交"),
               R("paths", "array", "Release 相对上次发布改变的文件；合并发布时含同批其他提交的改动"),
-              R("health", "object", "发布后 Release 实例的运行状态与健康检查"),
+              R("health", "object", "激活状态：status 为 pending，receipt 是激活完成后写入健康检查与发布事实的文件"),
               P("push", "object", "把发布提交推送到各 Git 远端的结果")),
       mutates=True, one_of=(("paths",), ("all",))),
     _d("GetDeviceStatus", FIXED, "读取 GPU 或磁盘的当前状态：kind 选择设备种类，省略 device_id 时读取这一种类的全部设备及汇总。", (
