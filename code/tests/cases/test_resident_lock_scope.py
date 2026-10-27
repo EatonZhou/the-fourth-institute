@@ -129,7 +129,6 @@ def test_steward_quota_lookup_runs_before_the_state_scope(resident_record, monke
     checks = []
     monkeypatch.setattr(family_quota, "ensure_role_reserve",
                         lambda record, *args: checks.append(held(resident_id)) or False)
-    monkeypatch.setattr(resident_execution_domain, "_hold_input_for_session_tools", lambda *_args: None)
     monkeypatch.setattr(resident_intake_domain, "_start_resident_continuation", mock.Mock())
     started = resident_execution_domain.resume_resident_execution(resident_id)
     assert started["residents"] == 1

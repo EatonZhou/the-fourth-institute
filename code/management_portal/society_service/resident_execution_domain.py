@@ -1175,7 +1175,6 @@ def _resume_resident_execution_scoped(resident_id: str) -> dict[str, int]:
     target_id = str(resident_id or "").strip()
     started = {"residents": 0, "active": _active_resident_continuations()}
     job: tuple[str, str] | None = None
-    tools_refresh: tuple[dict[str, Any], str] | None = None
     # Most resumes find a waiter already attached. Decide that from committed
     # state; the state scope is taken only to attach one, and re-checks.
     record = _resident_record_for_execution(target_id)
@@ -1194,22 +1193,8 @@ def _resume_resident_execution_scoped(resident_id: str) -> dict[str, int]:
         record = _resident_record_for_execution(target_id)
         if record is None:
             raise KeyError("resident not found")
-        execution_work = resident_execution_work.read(record)
-        tools_refresh = _hold_input_for_session_tools(record, execution_work)
-        if tools_refresh is None:
-            job = _prepare_resident_continuation(record, steward_reserve_checked=True)
-    if tools_refresh is not None:
-        from .resident_restart_domain import refresh_resident_session_tools
-
-        if refresh_resident_session_tools(target_id, *tools_refresh) is not None:
-            return started
-        if ensure_role_reserve(record):
-            return started
-        with _state_lock(resident_id):
-            record = _resident_record_for_execution(target_id)
-            job = _prepare_resident_continuation(
-                record, steward_reserve_checked=True,
-            ) if record is not None else None
+        # Ordinary inputs keep their current session, regardless of tool metadata.
+        job = _prepare_resident_continuation(record, steward_reserve_checked=True)
     if job:
         current_id, continuation_id = job
         _start_resident_continuation(
@@ -1220,29 +1205,6 @@ def _resume_resident_execution_scoped(resident_id: str) -> dict[str, int]:
     # The one continuation owns snapshots and replay; recovery only starts it.
     started["active"] = _active_resident_continuations()
     return started
-
-
-def _hold_input_for_session_tools(
-    record: dict[str, Any], job: dict[str, Any],
-) -> tuple[dict[str, Any], str] | None:
-    """Hold the next input while Portal replaces a session lacking a required tool.
-
-    Codex threads keep the tools they started with; a thread older than
-    hatg_instruction is replaced by a compact handoff before the input runs.
-    """
-    from .resident_lifecycle_domain import _lifecycle_operations
-    from .resident_restart_domain import hold_input_for_session_tools_refresh, session_tools_refresh_due
-
-    resident_id = str(record.get("resident_id") or "")
-    if not resident_execution_work.continuation_needed(record, job) or _lifecycle_operations().pending(resident_id):
-        return None
-    if not resident_execution_provider.provider_for(record).capabilities.supports_session_restart:
-        return None
-    binding = resident_backend.session_record(record)
-    if not session_tools_refresh_due(record, job, binding):
-        return None
-    transition_id = hold_input_for_session_tools_refresh(record, binding)
-    return dict(job), transition_id
 
 
 def resume_pending_resident_executions() -> dict[str, int]:

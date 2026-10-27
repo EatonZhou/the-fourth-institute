@@ -28,9 +28,7 @@ import hashlib
 import json
 import math
 import secrets
-import sys
 import time
-from datetime import datetime, timezone
 
 from .resident_domain_common import ResidentExecutionFailed, ResidentSessionConflictError
 
@@ -423,9 +421,8 @@ def restart_resident_session(
 ) -> dict[str, Any]:
     """Select an unbound Provider/account or admit a durable session replacement.
 
-    ``portal_reason`` marks a restart Portal starts by itself (see
-    ``refresh_resident_session_tools``); it runs for the waiting input's sender
-    without the owner check and is recorded with that reason.
+    ``portal_reason`` preserves the origin when a previously admitted restart
+    resumes. Ordinary inputs do not trigger session replacement for tool metadata.
     """
     from .resident_directory_domain import SESSION_RESTART_ACTIVE_EXECUTION_POLICIES, SESSION_RESTART_STRATEGIES, _can_manage
     from .resident_execution_domain import resume_resident_execution
@@ -828,105 +825,6 @@ def restart_resident_session(
             }, {"kind": "execution_ack", "execution_id": request.execution_id, "actor": actor_id}])
         resident_catalog.get_catalog().state_store.transaction(commit)
     return copy.deepcopy(state)
-
-
-# Portal replaces a session that lacks a required Harness tool by itself.
-SESSION_TOOLS_REFRESH_REASON = "harness_tools"
-# One attempt per session, and at most one a day per Resident: a replacement
-# that still lacks the tools, or a refused one, cannot loop.
-SESSION_TOOLS_REFRESH_INTERVAL_SECONDS = 86_400.0
-
-
-def _iso_seconds(value: object) -> float | None:
-    try:
-        parsed = datetime.fromisoformat(str(value or "").replace("Z", "+00:00"))
-    except ValueError:
-        return None
-    return (parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)).timestamp()
-
-
-def session_tools_refresh_due(
-    record: Mapping[str, Any], job: Mapping[str, Any], binding: Mapping[str, Any],
-) -> bool:
-    """Whether this Resident's next input should start on a new session.
-
-    Only an input that has not reached Execution waits for it; a submitted or
-    recovered execution and a /compact keep their session.
-    """
-    if not resident_execution_work.is_active(job) or resident_execution_work.is_execution_held(job):
-        return False
-    if resident_execution_work.submitted_execution_id(job) or resident_execution_work.is_compact(job):
-        return False
-    if not str(job.get("actor") or "").strip():
-        return False
-    if not session_lacks_required_tools(binding):
-        return False
-    last = record.get("session_tools_refresh") or {}
-    if last.get("source_generation") == _session_restart_source(dict(record), binding)["generation"]:
-        return False
-    attempted = _iso_seconds(last.get("attempted_at"))
-    return attempted is None or time.time() - attempted >= SESSION_TOOLS_REFRESH_INTERVAL_SECONDS
-
-
-def hold_input_for_session_tools_refresh(record: dict[str, Any], binding: Mapping[str, Any]) -> str:
-    """Under the Resident lock: close intake so the next input waits, and note the attempt."""
-    from .resident_intake_domain import _commit_resident_intake_state
-    from .resident_lifecycle_domain import _now_iso
-
-    record["session_tools_refresh"] = {
-        "source_generation": _session_restart_source(record, binding)["generation"],
-        "attempted_at": _now_iso(),
-    }
-    _commit_resident_intake_state(record, resident_state.INTAKE_CLOSED)
-    return str(record.get("intake_transition_id") or "")
-
-
-def refresh_resident_session_tools(
-    resident_id: str, job: Mapping[str, Any], intake_transition_id: str,
-) -> dict[str, Any] | None:
-    """Replace the session of a Resident whose next input is held for it.
-
-    The restart keeps the held input and reopens intake once the new session
-    is in place or the replacement failed; the input then runs.  When the
-    restart is refused, intake reopens here, None is returned and the caller
-    starts the input on the old session, which is not tried again
-    (``session_tools_refresh_due``).
-    """
-    from .resident_intake_domain import _commit_resident_intake_state
-    from .resident_lifecycle_domain import _state_lock
-    from .resident_workspace_domain import _find_resident, _save_resident_record
-
-    try:
-        state = restart_resident_session(resident_id, resident_execution_work.request_actor(job), {
-            "context_strategy": "compact",
-            "active_execution_policy": "wait",
-        }, portal_reason=SESSION_TOOLS_REFRESH_REASON, intake_transition_id=intake_transition_id)
-    except Exception as exc:  # noqa: BLE001 - the input still runs on the old session
-        print(
-            f"Resident session tools refresh refused for {resident_id}: {type(exc).__name__}: {exc}",
-            file=sys.stderr,
-        )
-        with _state_lock(resident_id):
-            current = copy.deepcopy(_find_resident(resident_id) or {})
-            if not current:
-                return None
-            current["session_tools_refresh"] = {
-                **dict(current.get("session_tools_refresh") or {}), "error": str(exc)[:500],
-            }
-            if current.get("intake_transition_id") == intake_transition_id:
-                _commit_resident_intake_state(current, resident_state.INTAKE_OPEN)
-            else:
-                _save_resident_record(current)
-        return None
-    with _state_lock(resident_id):
-        current = copy.deepcopy(_find_resident(resident_id) or {})
-        if current:
-            current["session_tools_refresh"] = {
-                **dict(current.get("session_tools_refresh") or {}),
-                "restart_id": str(state.get("restart_id") or ""),
-            }
-            _save_resident_record(current)
-    return state
 
 
 def _resume_resident_session_restart(step: dict[str, Any]) -> None:

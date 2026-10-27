@@ -4031,7 +4031,6 @@ def test_recovery_attaches_only_the_completion_waiter(
     monkeypatch.setattr(resident_execution_domain, "_project_resident_execution_snapshot", forbidden)
     # An active Job with no attached waiter is what recovery attaches one to.
     resident_execution_work.write(resident_record, {"execution_id": "execution-" + "a" * 24, "actor": "CASE-A", "queue": []})
-    monkeypatch.setattr(resident_execution_domain, "_hold_input_for_session_tools", lambda *_args: None)
     monkeypatch.setattr(resident_execution_domain, "_prepare_resident_continuation", lambda _record, **_kwargs: (resident_id, "waiter"))
     monkeypatch.setattr(resident_intake_domain, "_start_resident_continuation", lambda record, key: attached.append((record["resident_id"], key)))
     assert backend.resume_resident_execution(resident_id)["residents"] == 1
