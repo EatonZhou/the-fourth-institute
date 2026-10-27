@@ -78,9 +78,12 @@ def install_mutation_provider(service: "ResourceService") -> None:
         *,
         actor: str = "",
     ) -> dict[str, Any]:
-        del actor
         operation = str(payload.get("operation") or "set_remote").strip()
-        if operation == "set_remote":
+        if operation == "restore_registration":
+            from ..repo_recovery import restore_registration
+
+            result = restore_registration(service, resource_id, payload, actor=actor)
+        elif operation == "set_remote":
             result = resource_identity_backend.update_repo_remote(
                 resource_id,
                 name=str(payload.get("name") or "origin"),

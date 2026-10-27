@@ -110,7 +110,7 @@
 - [Paper 资源、Library 与基础文件生命周期](/r/decision_528bf9985705)
 - [Paper 后台研究任务与产物协议](/r/decision_e37f240e186d)
 - [投影工坊：页面实现与 Lineage 反向整理流程](/r/decision_4bc03b20c30f)
-- [Repo：代码库登记、工作区与 Git 操作](/r/decision_6476c69b33da)
+- [Repo：代码库登记、迁移身份恢复、工作区与 Git 操作](/r/decision_6476c69b33da)
 - [Article 工作区：按资源地址打开、编辑、构建与协作](/r/decision_956154cd02f6)
 - [Knowledge Resource 的登记、版本与受控修改](/r/decision_3ece26686464)
 - [Skill 资源与 Skill 工作台](/r/decision_f48c2514bf33)
