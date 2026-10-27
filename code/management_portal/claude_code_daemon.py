@@ -1423,11 +1423,15 @@ class ClaudeCodeDaemon:
                             received = True
                             if isinstance(message, UserMessage) and getattr(message, "uuid", None) == prompt_uuid:
                                 prompt_seen = True
-                            if not prompt_seen and not (isinstance(message, ResultMessage) and message.is_error):
-                                continue
                             if isinstance(message, SystemMessage):
                                 data = message.data or {}
-                                await self._attach_session_id(handle, str(data.get("session_id") or ""))
+                                observed_session_id = str(data.get("session_id") or "")
+                                if observed_session_id and observed_session_id != session_id:
+                                    raise ValueError("Claude session identity changed")
+                                await self._attach_session_id(handle, observed_session_id)
+                                # The CLI may emit compact evidence before replaying
+                                # this request's user message. Keep it until the
+                                # matching Result, or discard it with an older Result.
                                 if message.subtype == "compact_boundary":
                                     metadata = data.get("compact_metadata") or {}
                                     outcome.update(
@@ -1438,8 +1442,16 @@ class ClaudeCodeDaemon:
                                         duration_ms=int(metadata.get("duration_ms") or 0),
                                     )
                                 elif data.get("compact_result") == "failed":
-                                    outcome["reason"] = str(data.get("compact_error") or "compaction_failed")
+                                    outcome = {
+                                        "compacted": False,
+                                        "reason": str(data.get("compact_error") or "compaction_failed"),
+                                    }
                             elif isinstance(message, ResultMessage):
+                                if not prompt_seen and not message.is_error:
+                                    outcome = {"compacted": False, "reason": ""}
+                                    continue
+                                if message.session_id and message.session_id != session_id:
+                                    raise ValueError("Claude session identity changed")
                                 result = message
                         if not received:
                             break
