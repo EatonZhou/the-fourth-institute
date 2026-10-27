@@ -335,6 +335,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--ssh-config", default=DEFAULT_SSH_CONFIG)
     parser.add_argument("--host", default=DEFAULT_SSH_HOST)
+    parser.add_argument("--identity-file", default="")
     parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON output.")
     parser.add_argument("--timeout", type=float, default=45.0)
     return parser.parse_args()
@@ -357,10 +358,10 @@ def main() -> int:
         "BatchMode=yes",
         "-o",
         f"ConnectTimeout={max(1, int(args.timeout))}",
-        args.host,
-        "python3",
-        "-",
     ]
+    if args.identity_file:
+        command.extend(["-i", args.identity_file])
+    command.extend([args.host, "python3", "-"])
     try:
         result = subprocess.run(command, input=REMOTE_SCRIPT, text=True, capture_output=True, timeout=args.timeout)
     except subprocess.TimeoutExpired:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import json
 import subprocess
 from unittest import mock
 
@@ -22,6 +23,52 @@ from tests.cases.registry_support import put_registry_document, registry_documen
 SERVER_ID = "device_0123456789ab"
 GPU_ID = "device_abcdef012345"
 GPU_UUID = "GPU-01234567-89ab-cdef-0123-456789abcdef"
+
+
+def test_deployment_ssh_paths_are_shared_by_parent_access_and_gpu_probe(tmp_path, monkeypatch):
+    site_path = tmp_path / "site.json"
+    monkeypatch.setenv("PORTAL_SITE_CONFIG", str(site_path))
+    server = {
+        "device_id": SERVER_ID,
+        "access_methods": {"ssh": {
+            "host": "gpu-test", "config_path": "/retired/ssh-config",
+            "identity_file": "/retired/key",
+        }},
+    }
+    child = {"device_id": GPU_ID, "parent_device_id": SERVER_ID}
+    monkeypatch.setattr(device_identity_backend, "load_device_records", lambda: [server, child])
+    monkeypatch.setattr(device_identity_backend, "has_device_ssh_password", lambda *a, **kw: False)
+    monkeypatch.setattr(agent_status_backend, "_summarize_gpu_status", lambda payload, *a, **kw: payload)
+    site_path.write_text(json.dumps({"deployment": {"device_ssh_paths": {
+        SERVER_ID: {"config_path": "/current/ssh-config", "identity_file": "/current/key"},
+    }}}))
+    inherited = device_identity_backend.effective_ssh_access(GPU_ID)
+    assert inherited["config_path"] == "/current/ssh-config"
+    assert inherited["identity_file"] == "/current/key"
+    assert inherited["via_resource_id"] == SERVER_ID
+    with mock.patch.object(agent_status_backend.subprocess, "run", return_value=subprocess.CompletedProcess([], 0, '{"status":"ok"}')) as run:
+        assert agent_status_backend._read_gpu_status_direct(server)["status"] == "ok"
+    command = run.call_args.args[0]
+    assert command[command.index("--ssh-config") + 1] == inherited["config_path"]
+    assert command[command.index("--identity-file") + 1] == inherited["identity_file"]
+    assert command[command.index("--host") + 1] == "gpu-test"
+    # A fresh read picks up edits, and omitted local paths do not revive old values.
+    site_path.write_text(json.dumps({"deployment": {"device_ssh_paths": {
+        SERVER_ID: {"config_path": "/changed/ssh-config"},
+    }}}))
+    changed = device_identity_backend.effective_ssh_access(GPU_ID)
+    assert changed["config_path"] == "/changed/ssh-config"
+    assert changed["identity_file"] == ""
+    assert server["access_methods"]["ssh"]["config_path"] == "/retired/ssh-config"
+
+
+@pytest.mark.parametrize("value", [None, [], {"config_path": "relative/path"}, {"config_path": 7}, {"password": "unsupported"}])
+def test_deployment_ssh_paths_reject_invalid_config(tmp_path, monkeypatch, value):
+    site_path = tmp_path / "site.json"
+    monkeypatch.setenv("PORTAL_SITE_CONFIG", str(site_path))
+    site_path.write_text(json.dumps({"deployment": {"device_ssh_paths": {SERVER_ID: value}}}))
+    with pytest.raises(ValueError, match="deployment.device_ssh_paths"):
+        device_identity_backend.ssh_access_for_record({"device_id": SERVER_ID})
 
 
 def _write_device(record: dict) -> None:

@@ -3,6 +3,7 @@ from management_common.product_environment import read_product_env, mirror_produ
 
 from management_common.format_tags import schema_matches
 from management_common.portal_paths import path as portal_path
+from management_common.site_config import read_site_config
 
 import copy
 import json
@@ -507,6 +508,27 @@ def unregister_device(
     return {"id": clean_id, "unregistered": True, "name": record["name"]}
 
 
+def ssh_access_for_record(record: dict[str, Any]) -> dict[str, Any]:
+    """Apply installation-local SSH paths to a device's connection metadata."""
+    access_methods = record.get("access_methods") or {}
+    ssh = copy.deepcopy(access_methods.get("ssh") or {})
+    paths_by_device = read_site_config().get("deployment", {}).get("device_ssh_paths", {})
+    if not isinstance(paths_by_device, dict):
+        raise ValueError("deployment.device_ssh_paths must be an object")
+    device_id = record["device_id"]
+    if device_id in paths_by_device:
+        paths = paths_by_device[device_id]
+        fields = {"config_path", "identity_file"}
+        if not isinstance(paths, dict) or set(paths) - fields:
+            raise ValueError(f"deployment.device_ssh_paths.{device_id} must contain only SSH paths")
+        for field in fields:
+            value = paths.get(field, "")
+            if not isinstance(value, str) or (value and not Path(value).is_absolute()):
+                raise ValueError(f"deployment.device_ssh_paths.{device_id}.{field} must be an absolute path or empty")
+            ssh[field] = value
+    return ssh
+
+
 def effective_ssh_access(
     device_id: str,
     *,
@@ -520,13 +542,7 @@ def effective_ssh_access(
     visited: set[str] = set()
     while current and current["device_id"] not in visited:
         visited.add(current["device_id"])
-        access_methods = current.get("access_methods")
-        ssh = (
-            access_methods.get("ssh")
-            if isinstance(access_methods, dict)
-            and isinstance(access_methods.get("ssh"), dict)
-            else {}
-        )
+        ssh = ssh_access_for_record(current)
         if _text(ssh.get("host")):
             via_resource_id = current["device_id"]
             return {

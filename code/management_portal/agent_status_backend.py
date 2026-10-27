@@ -394,20 +394,13 @@ def _read_gpu_status_direct(
     if not GPU_STATUS_SCRIPT.exists():
         raise FileNotFoundError(str(GPU_STATUS_SCRIPT))
     command = [str(GPU_STATUS_SCRIPT)] if os.access(GPU_STATUS_SCRIPT, os.X_OK) else ["python3", str(GPU_STATUS_SCRIPT)]
-    access_methods = (
-        server.get("access_methods")
-        if isinstance(server.get("access_methods"), dict)
-        else {}
-    )
-    ssh = (
-        access_methods.get("ssh")
-        if isinstance(access_methods.get("ssh"), dict)
-        else {}
-    )
+    ssh = device_identity_backend.ssh_access_for_record(server)
     config_path = str(ssh.get("config_path") or "").strip()
     host = str(ssh.get("host") or "").strip()
     if config_path:
         command.extend(["--ssh-config", config_path])
+    if ssh.get("identity_file"):
+        command.extend(["--identity-file", ssh["identity_file"]])
     if host:
         command.extend(["--host", host])
     command.extend(["--timeout", str(max(2, int(GPU_STATUS_TIMEOUT_SECONDS)))])
