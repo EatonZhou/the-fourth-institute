@@ -64,7 +64,7 @@ class AccountMonitor:
                         source_time = datetime.fromisoformat(sample.get("login_observed_at") or "")
                     except (TypeError, ValueError):
                         source_time = None
-                    if state in {"logged_in", "login_expired"} and source_time is not None and source_time.tzinfo is not None:
+                    if state in {"logged_in", "login_expired", "logged_out"} and source_time is not None and source_time.tzinfo is not None:
                         self._login_store.observe(account.account_id, state, observed_at=source_time)
                 elif is_authentication_failure(sample.get("error_code") or sample.get("error", ""), provider=account.provider):
                     self._login_store.observe(account.account_id, "login_expired", observed_at=observed_at)

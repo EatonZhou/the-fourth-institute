@@ -396,7 +396,19 @@ class KimiAccounts:
         return catalog(next(row for row in self.entries if row["account_id"] == account.account_id))
 
     def observe(self, account, *, force=False):
-        return {"status": "ok", "rate_limits": []}
+        if account.kind != "subscription_login":
+            return {"status": "ok", "rate_limits": []}
+        from management_portal.kimi_account_runtime import client_for_route
+        from .account_login import now
+        observed_at = now().isoformat()
+        # Monitoring must neither launch a server nor infer authentication from
+        # process availability. The native managed provider owns this fact.
+        auth = client_for_route(account.route_id, for_control=True)._request("GET", "auth")
+        status = (auth.get("managed_provider") or {}).get("status")
+        state = ("logged_in" if status == "authenticated" else
+                 "login_expired" if status in {"expired", "revoked"} else "logged_out")
+        return {"status": "ok" if state == "logged_in" else "unknown", "rate_limits": [],
+                "login_observation": state, "login_observed_at": observed_at}
 
 
 class ConfiguredAccounts:

@@ -54,7 +54,7 @@ class Store:
         return self.session
     def transition(self, session, state, **kwargs):
         self.session = {**session, "state": state, **kwargs}
-    def observe(self, account, state): self.state = state
+    def observe(self, account, state, **kwargs): self.state = state
     def login_state(self, account): return self.state
 
 
@@ -102,3 +102,30 @@ def test_subscription_hook_patch_never_writes_redacted_credentials(monkeypatch, 
     client = SimpleNamespace(home=tmp_path, _request=request)
     assert runtime._subscription_tools({"kind": "subscription_login"}, client) is client
     assert set(calls[-1][2]) == {"hooks"}
+
+
+@pytest.mark.parametrize("status,expected", [(None, "logged_out"), ("unauthenticated", "logged_out"),
+    ("authenticated", "logged_in"), ("expired", "login_expired"), ("revoked", "login_expired")])
+def test_subscription_monitor_uses_native_auth_not_service_availability(monkeypatch, status, expected):
+    from unittest.mock import Mock
+    from management_portal.execution.accounts import ExecutionAccount
+    from management_portal.execution.account_adapters import KimiAccounts
+    from management_portal.execution.account_monitor import AccountMonitor
+    account = ExecutionAccount("kimi_sub", "kimi", "sub", "account:kimi_sub", kind="subscription_login")
+    client = SimpleNamespace(_request=lambda method, path: {"managed_provider": {"status": status} if status else None})
+    def control(route, *, for_control):
+        assert route == "sub" and for_control is True
+        return client
+    monkeypatch.setattr(runtime, "client_for_route", control)
+    adapter = KimiAccounts.__new__(KimiAccounts)
+    accounts = Mock(adapters={"kimi": adapter})
+    accounts.accounts.return_value = (account,)
+    accounts.observe.side_effect = adapter.observe
+    store = Store()
+    store.state = "logged_in"  # A stale positive observation must be corrected.
+    monitor = AccountMonitor(accounts, Mock(), usage_store=Mock(), login_state_store=store)
+    monitor.refresh_account(account)
+    assert store.state == expected
+    monkeypatch.setattr(runtime, "client_for_route", Mock(side_effect=TimeoutError("unavailable")))
+    monitor.refresh_account(account)
+    assert store.state == expected  # An unreachable server is not an auth result.
