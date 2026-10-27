@@ -57,7 +57,7 @@ def _isolated_provider_context() -> dict | None:
     from scripts.tfi_instance_layout import code_root, validate_shared_code
     validate_shared_code(target)
     prefix = target["service_prefix"]
-    if (config != root / "config/paths.json" or
+    if (config not in {root / 'config/target.json', root / 'config/paths.json'} or
             Path(target["install_root"]).resolve() != root or
             SOURCE_ROOT.resolve() != code_root(target).resolve() or
             not re.fullmatch(r"tfi-[a-z0-9][a-z0-9-]*", prefix)):
@@ -105,7 +105,9 @@ def provider_runtime_services(unit: str) -> tuple[str, ...]:
                 key, _, value = value.partition("=")
                 environment[key] = value.replace("%%", "%")
     if (environment.get("HOME") != str(isolated['root'] / 'home') or
-            environment.get("PORTAL_PATHS_CONFIG") != str(isolated['root'] / 'config/paths.json')):
+            environment.get("PORTAL_PATHS_CONFIG") not in {
+                str(isolated['root'] / 'config/target.json'),
+                str(isolated['root'] / 'config/paths.json')}):
         raise ValueError("Provider daemon belongs to another instance")
     observed = _run("systemctl", "--user", "show", name,
                     "--property=FragmentPath,DropInPaths,ActiveState")

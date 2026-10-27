@@ -6,7 +6,6 @@
 | --- | --- |
 | `config/target.json` | 部署输入，通过配置命令变更 |
 | `installation.json` | 安装状态、已应用配置摘要；v2 不再保存 `target` 副本 |
-| `config/paths.json` | 生成的数据目录定位文件 |
 | `config/development.json` | 生成的 Dev/Release 运行视图 |
 | `config/deployments.json` | 生成的浏览器入口登记 |
 | `config/postgres.env`、`config/network.env` | 生成的连接与网络环境 |
@@ -14,6 +13,10 @@
 | `config/generation.env` | 发布和 Worker 换代状态 |
 
 `management_common.instance_config` 持有部署读取、摘要验证和安装状态格式。运行组件从该接口取得配置，不把生成文件作为另一个可写的权威来源。生成的 `site.json` 部署路径由配置工具更新，其站点名称、认证和业务选项保留。
+
+已安装实例不再生成或需要 `config/paths.json`；数据目录直接读取 `target.json` 的 `data_roots`。新生成服务的 `PORTAL_PATHS_CONFIG` 指向 `config/target.json`。尚未重启的旧进程可以继续携带旧的 `config/paths.json` 定位值：它只用于识别实例目录，不读取该文件，文件不存在也不会改变路径。部署服务定义更新后，旧定位值在下一次正常启动时退出，无需为删除副本重启服务。
+
+没有安装状态的源码运行和测试仍可使用独立的五项路径配置；它不属于已安装实例的配置输出。
 
 配置事务使用稳定的 `.configuration.lock` 协调读取和提交，避免在线导入时读到“新 target、旧状态摘要”的中间组合。旧实例的只读检查不创建文件；首次导入和后续写入建立该锁。代码升级备份和恢复保留当前锁文件的身份。
 

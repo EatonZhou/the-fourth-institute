@@ -27,7 +27,7 @@ class ProviderCleanupTests(unittest.TestCase):
         self.unit = "tfi-one-codex-app-server@account.service"
         self.template.write_text(
             f"Environment=HOME={self.root}/instance/home\n"
-            f"Environment=PORTAL_PATHS_CONFIG={self.root}/instance/config/paths.json\n"
+            f"Environment=PORTAL_PATHS_CONFIG={self.root}/instance/config/target.json\n"
             f"WorkingDirectory={self.root}/instance/accounts/codex/%i\n"
             f"Environment=CODEX_HOME={self.root}/instance/accounts/codex/%i\n")
         self.runner = Mock(side_effect=self.run_systemctl)

@@ -224,7 +224,7 @@ def clean_environment(target, *, postgres=False):
            "HOME": str(root / "home"), "XDG_CONFIG_HOME": str(root / "home/.config"),
            "XDG_CACHE_HOME": str(root / "home/.cache"), "TMPDIR": str(runtime),
            "PYTHONNOUSERSITE": "1", "PYTHONDONTWRITEBYTECODE": "1", "PYTHONUTF8": "1",
-           "PORTAL_PATHS_CONFIG": str(root / "config/paths.json"),
+           "PORTAL_PATHS_CONFIG": str(root / "config/target.json"),
            "PORTAL_SITE_CONFIG": str(root / "config/site.json"),
            "PORTAL_NETWORK_CONFIG": str(root / "config/network.env"),
            "PORTAL_URL": f"http://127.0.0.1:{target['ports']['web']}",

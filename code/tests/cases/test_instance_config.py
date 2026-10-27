@@ -182,9 +182,28 @@ class InstanceConfigurationTests(unittest.TestCase):
             self.assertEqual(portal_paths.read_config(), self.target['data_roots'])
             with self.assertRaisesRegex(ValueError, 'owned by'):
                 portal_paths.write_config(self.target['data_roots'])
-        with self.assertRaisesRegex(ValueError, 'drift'):
-            config.check(self.root)
+        (self.root / 'config/paths.json').unlink()
+        with patch.object(portal_paths, 'CONFIG_PATH', self.root / 'config/paths.json'):
+            self.assertEqual(portal_paths.read_config(), self.target['data_roots'])
+        with patch.object(portal_paths, 'CONFIG_PATH', self.root / owner.TARGET_FILE):
+            self.assertEqual(portal_paths.read_config(), self.target['data_roots'])
+            with self.assertRaisesRegex(ValueError, 'owned by'):
+                portal_paths.write_config(self.target['data_roots'])
         config.apply(self.root)
+        self.assertFalse((self.root / 'config/paths.json').exists())
+        self.assertTrue(config.check(self.root)['ok'])
+
+    def test_existing_service_locator_updates_without_stopping_consumers(self):
+        self.adopt()
+        unit = self.units / (self.target['service_prefix'] + '-claude-code.service')
+        unit.write_text('[Service]\nEnvironment=PORTAL_PATHS_CONFIG=' +
+                        str(self.root / 'config/paths.json') + '\n')
+        with patch.object(config, 'assert_stopped', side_effect=AssertionError('must stay online')):
+            with patch.object(config.subprocess, 'run'):
+                config.apply(self.root)
+        self.assertIn(str(self.root / owner.TARGET_FILE), unit.read_text())
+        self.assertNotIn('config/paths.json', unit.read_text())
+        self.assertFalse((self.root / 'config/paths.json').exists())
         self.assertTrue(config.check(self.root)['ok'])
 
     def test_changed_configuration_requires_source_version_and_stopped_consumers(self):
@@ -214,7 +233,7 @@ class InstanceConfigurationTests(unittest.TestCase):
             config.apply(self.root, changed, expected_sha256=owner.configuration_digest(self.target))
         self.assertIn(new + '/codex/%i', unit.read_text())
         self.assertNotIn(old, unit.read_text())
-        self.assertEqual(owner.read_json(self.root / 'config/paths.json'), changed['data_roots'])
+        self.assertFalse((self.root / 'config/paths.json').exists())
         self.assertEqual(owner.read_installation(self.root)['target'], changed)
         self.assertNotIn('target', owner.read_json(self.root / owner.STATE_FILE))
         run.assert_called_once()

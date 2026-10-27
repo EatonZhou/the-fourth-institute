@@ -170,7 +170,9 @@ def installed_root(paths_config):
     """Identify an installed instance from a supported configuration locator."""
     config = Path(paths_config)
     root = config.parent.parent
-    locators = {root / 'config/paths.json', root / 'config/site.json'}
+    # paths.json is only accepted as the locator inherited by already running
+    # services. No installed reader needs that file to exist or reads its data.
+    locators = {root / TARGET_FILE, root / 'config/site.json', root / 'config/paths.json'}
     return root if config in locators and (root / STATE_FILE).is_file() else None
 
 

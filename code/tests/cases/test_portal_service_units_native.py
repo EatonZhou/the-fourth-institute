@@ -42,7 +42,7 @@ def test_native_codex_lifecycle_uses_registered_service(tmp_path, monkeypatch, p
             "install_root": str(root), "shared_code_root": str(units.SOURCE_ROOT),
             "python": units.sys.executable, "windows_service_mode": "user",
             "data_roots": {"accounts_root": str(tmp_path / "accounts"), "instances_root": str(units.instance_root())}}}))
-        monkeypatch.setenv("PORTAL_PATHS_CONFIG", str(root / "config/paths.json"))
+        monkeypatch.setenv("PORTAL_PATHS_CONFIG", str(root / "config/target.json"))
         monkeypatch.delenv("PORTAL_WINDOWS_SERVICE_ACCOUNT")
         monkeypatch.delenv("PORTAL_WINDOWS_SERVICE_PASSWORD")
     monkeypatch.setattr(tfi_release_platform_macos, "unit_directory", lambda: tmp_path / "agents")

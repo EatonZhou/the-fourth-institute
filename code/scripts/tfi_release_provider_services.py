@@ -41,10 +41,10 @@ def owned_services(target, directory):
             raise ValueError("Provider daemon ownership mismatch")
         lines = set(path.read_text().splitlines())
         root = Path(target["install_root"])
-        if not {
-            f"Environment=HOME={root / 'home'}",
-            f"Environment=PORTAL_PATHS_CONFIG={root / 'config/paths.json'}",
-        }.issubset(lines):
+        locator_lines = {f"Environment=PORTAL_PATHS_CONFIG={root / 'config/target.json'}",
+                         f"Environment=PORTAL_PATHS_CONFIG={root / 'config/paths.json'}"}
+        if (f"Environment=HOME={root / 'home'}" not in lines
+                or not lines.intersection(locator_lines)):
             raise ValueError("Provider daemon belongs to another instance")
         properties = dict(line.split("=", 1) for line in _run(
             "show", name, "--property=FragmentPath,DropInPaths").splitlines() if "=" in line)
@@ -68,11 +68,12 @@ def owned_services(target, directory):
     lines = set(template.read_text().splitlines())
     required = {
         f"Environment=HOME={root / 'home'}",
-        f"Environment=PORTAL_PATHS_CONFIG={root / 'config/paths.json'}",
         f"WorkingDirectory={accounts}/codex/%i",
         f"Environment=CODEX_HOME={accounts}/codex/%i",
     }
-    if not required.issubset(lines):
+    locator_lines = {f"Environment=PORTAL_PATHS_CONFIG={root / 'config/target.json'}",
+                     f"Environment=PORTAL_PATHS_CONFIG={root / 'config/paths.json'}"}
+    if not required.issubset(lines) or not lines.intersection(locator_lines):
         raise ValueError("Provider service belongs to another instance")
     for name in sorted(names):
         if not re.fullmatch(re.escape(prefix) + ACCOUNT_UNIT, name):

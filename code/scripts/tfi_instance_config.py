@@ -68,7 +68,6 @@ def projections(root, target):
     dev = target.get('development')
     deployment.update(source_roots(target))
     result = {
-        'config/paths.json': json_bytes(target['data_roots']),
         'config/site.json': json_bytes(site),
         'config/network.env': (f"PORTAL_ACCESS_MODE={'local' if target.get('bind', '127.0.0.1') == '127.0.0.1' else 'remote'}\n"
                                f"PORTAL_PORT={target['ports']['web']}\n").encode(),
@@ -176,12 +175,16 @@ def unit_changes(root, old, target):
                 continue
             raise ValueError('Service has drop-ins; reconcile before applying: ' + path.name)
         lines = []
+        legacy_locator_found = False
         for line in content.splitlines():
             if line.startswith('Environment='):
                 assignments = []
                 for assignment in shlex.split(line[len('Environment='):]):
                     key, sep, value = assignment.partition('=')
-                    if sep and key in old_env and value.replace('%%', '%') == old_env[key]:
+                    legacy_locator = (key == 'PORTAL_PATHS_CONFIG' and
+                                      value.replace('%%', '%') == str(Path(old['install_root']) / 'config/paths.json'))
+                    legacy_locator_found = legacy_locator_found or legacy_locator
+                    if sep and key in old_env and (value.replace('%%', '%') == old_env[key] or legacy_locator):
                         value = str(new_env[key]).replace('%', '%%')
                     else:
                         value = mapped(value)
@@ -197,6 +200,12 @@ def unit_changes(root, old, target):
         # Avoid gratuitous formatting rewrites on adoption or idempotent apply.
         if old != target and candidate != content:
             changes[str(path)] = candidate.encode()
+        elif legacy_locator_found:
+            # Retire the duplicate-file locator online without reformatting
+            # unrelated commands or changing any effective deployment value.
+            changes[str(path)] = content.replace(
+                str(Path(old['install_root']) / 'config/paths.json'),
+                str(Path(target['install_root']) / TARGET_FILE)).encode()
     changes.update(paired_outputs(Path(root), target, directory))
     return changes
 
@@ -282,7 +291,8 @@ def apply(root, candidate=None, *, adopt=False, allow_topology=False, expected_s
             target = validate(target, state)
             # Import asserts existing projections agree; never choose between
             # conflicting roots, and never change the current live directories.
-            if read_json(root / 'config/paths.json') != target['data_roots']:
+            legacy_paths = root / 'config/paths.json'
+            if legacy_paths.exists() and read_json(legacy_paths) != target['data_roots']:
                 raise ValueError('Existing paths disagree with target; reconcile before import')
             changes = {str(root / TARGET_FILE): json_bytes(target)}
             # All generated deployment projections must agree before importing
