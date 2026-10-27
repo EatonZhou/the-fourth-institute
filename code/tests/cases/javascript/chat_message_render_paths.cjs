@@ -181,9 +181,11 @@ const conversation = ids => ids.map((id, index) => (index % 2 ? reply(id, index)
     // With a preview URL from the render options an image opens in the editor.
     const previewUrlForPath = file => (file.endsWith('.png') ? `https://chat.fixture.invalid/preview${file}` : '');
     const withImage = [...workspace.state.messages, reply('m10', 11)];
+    userScrollTo(maxScroll());
     workspace.setMessages(withImage, { previewUrlForPath });
     await settle();
     lastRender('a render with preview URLs');
+    assert.equal(view.scrollTop, maxScroll(), 'a reader at the tail follows a redrawn list');
     row('m10').querySelector('[data-message-attachment-kind="image"]').click();
     await settle();
     assert.deepEqual(editorOpened, ['https://chat.fixture.invalid/preview/share/images/m10.png'], 'the image opens in the image editor');
