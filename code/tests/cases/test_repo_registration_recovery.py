@@ -121,3 +121,57 @@ def test_recovery_retry_does_not_rewrite_registration_or_duplicate_receipt(tmp_p
     again = service.update(old["id"], changes, actor="tester")
     assert again == first
     assert get_registry_store().snapshots("repo", "repo_registration_recoveries") == before
+
+
+@pytest.mark.parametrize("failure", [None, "missing", "hash", "repo", "commit", "build"])
+def test_recovery_uses_retained_build_when_cached_head_is_obsolete(tmp_path, monkeypatch, failure):
+    """登记HEAD过时时以同原ID成功构建的冻结提交佐证；不允许跳过证明。"""
+    service, old, replacement, current, changes = setup_recovery(tmp_path, monkeypatch)
+    subprocess.run(["git", "-C", str(current), "add", "data.txt"], check=True)
+    subprocess.run(["git", "-C", str(current), "-c", "user.name=Test", "-c",
+                    "user.email=test@example.invalid", "commit", "-qm", "retained"], check=True)
+    commit = subprocess.check_output(["git", "-C", str(current), "rev-parse", "HEAD"], text=True).strip()
+    historical = json.loads(service.read_content.return_value[0])
+    historical["result"]["resource"]["checkouts"][0]["head"] = "a" * 40
+    repo_bytes = json.dumps(historical).encode()
+    changes["evidence_sha256"] = hashlib.sha256(repo_bytes).hexdigest()
+    build = {
+        "schema": "tfi.hatg-instruction-result.v2", "instruction": "ResolveResource",
+        "instruction_id": "inst_res_build", "status": "committed",
+        "result": {"resource": {
+            "resource_id": "workbench_123456789abc",
+            "application": {"repo_id": old["id"], "commit": commit},
+            "application_build": {"status": "ready", "commit": commit},
+        }, "target": {"resource_type": "workbench"}},
+    }
+    if failure == "repo":
+        build["result"]["resource"]["application"]["repo_id"] = replacement["id"]
+    elif failure == "commit":
+        build["result"]["resource"]["application"]["commit"] = "b" * 40
+        build["result"]["resource"]["application_build"]["commit"] = "b" * 40
+    elif failure == "build":
+        build["result"]["resource"]["application_build"]["status"] = "failed"
+    build_bytes = json.dumps(build).encode()
+    changes["revision_evidence"] = {
+        "address": "workspace_123456789abc/file/build.json",
+        "sha256": hashlib.sha256(build_bytes).hexdigest(),
+    }
+    if failure == "hash":
+        changes["revision_evidence"]["sha256"] = "0" * 64
+    elif failure == "missing":
+        changes.pop("revision_evidence")
+    service.read_content.side_effect = lambda address, **kw: (
+        repo_bytes if address == changes["evidence_address"] else build_bytes, "application/json", {})
+    before = get_registry_store().documents("repo")
+    if failure:
+        with pytest.raises(ValueError):
+            service.update(old["id"], changes, actor="tester")
+        assert get_registry_store().documents("repo") == before
+        assert get_registry_store().documents("repo_registration_recoveries") == {}
+    else:
+        result = service.update(old["id"], changes, actor="tester")
+        assert result["resource_id"] == old["id"]
+        assert result["checkouts"][0]["head"] == commit
+        receipt, = get_registry_store().documents("repo_registration_recoveries").values()
+        assert receipt["revision_evidence"]["commit"] == commit
+        assert receipt["unavailable_historical_heads"] == ["a" * 40]

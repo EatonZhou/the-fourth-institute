@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -28,6 +29,33 @@ def _absolute(value: Any) -> str:
     if not isinstance(value, str) or not value or not Path(value).is_absolute() or ".." in Path(value).parts:
         raise ValueError("Checkout move requires an absolute path without traversal")
     return value
+
+
+def _retained_revision(service, resource_id: str, proof: dict, *, actor: str) -> dict:
+    """A successful frozen build can outlive a stale cached registration HEAD."""
+    address = str(proof.get("address") or "")
+    data, _content_type, _metadata = service.read_content(address, actor=actor, max_bytes=1024 * 1024)
+    digest = hashlib.sha256(data).hexdigest()
+    if digest != proof.get("sha256"):
+        raise ValueError("Revision evidence SHA256 changed")
+    evidence = json.loads(data)
+    record = evidence.get("result", {}).get("resource", {})
+    target = evidence.get("result", {}).get("target", {})
+    application = record.get("application") or {}
+    build = record.get("application_build") or {}
+    commit = str(application.get("commit") or "")
+    if (evidence.get("schema") != "tfi.hatg-instruction-result.v2"
+            or evidence.get("instruction") != "ResolveResource"
+            or evidence.get("status") != "committed" or not evidence.get("instruction_id")
+            or (record.get("type") or target.get("resource_type")) != "workbench"
+            or not re.fullmatch(r"workbench_[0-9a-f]{12}", str(record.get("resource_id") or ""))
+            or application.get("repo_id") != resource_id
+            or not re.fullmatch(r"[0-9a-f]{40}", commit)
+            or build.get("status") != "ready" or build.get("commit") != commit):
+        raise ValueError("Revision evidence must bind the original Repo to a successful frozen build")
+    return {"address": address, "sha256": digest, "commit": commit,
+            "source_instruction_id": evidence["instruction_id"],
+            "workbench_id": record["resource_id"]}
 
 
 def restore_registration(service, resource_id: str, payload: dict, *, actor: str) -> dict:
@@ -71,6 +99,15 @@ def restore_registration(service, resource_id: str, payload: dict, *, actor: str
     if len({item["path"] for item in group}) != len(group):
         raise ValueError("Checkout moves must have distinct destinations")
     by_path = {raw: inspected for raw, inspected in zip(mapping.values(), group)}
+    revision_proof = payload.get("revision_evidence")
+    if revision_proof is not None and not isinstance(revision_proof, dict):
+        raise ValueError("revision_evidence must contain address and sha256")
+    revision = (_retained_revision(service, resource_id, revision_proof, actor=actor)
+                if revision_proof is not None else None)
+    if revision:
+        for checkout in group:
+            repos._run_git(Path(checkout["path"]), "cat-file", "-e", revision["commit"] + "^{commit}")
+    unavailable_heads = []
     for old_checkout in previous.get("checkouts") or []:
         current = by_path[mapping[old_checkout["path"]]]
         remote = str(old_checkout.get("identity_remote") or "")
@@ -80,7 +117,12 @@ def restore_registration(service, resource_id: str, payload: dict, *, actor: str
         if head:
             # A retained commit proves common history; detached/new branches
             # need not currently descend from that particular historical head.
-            repos._run_git(Path(current["path"]), "cat-file", "-e", head + "^{commit}")
+            try:
+                repos._run_git(Path(current["path"]), "cat-file", "-e", head + "^{commit}")
+            except ValueError:
+                if not revision:
+                    raise
+                unavailable_heads.append(head)
     if len(repos.group_logical_repos(group)) != 1:
         raise ValueError("Recovery destinations are not one logical Git repository")
     article = portal_features.contribution("resource.article_registration")
@@ -143,6 +185,7 @@ def restore_registration(service, resource_id: str, payload: dict, *, actor: str
                 "source_instruction_id": evidence["instruction_id"], "source_record": source,
                 "checkout_moves": moves, "replaced_records": {rid: records[rid] for rid in expected},
                 "restored_sha256": record_digest(result),
+                "revision_evidence": revision, "unavailable_historical_heads": unavailable_heads,
             }
             # Explicit retirement is stronger than a historical registration.
             # Any error rolls back all replacements and the recovery receipt.
