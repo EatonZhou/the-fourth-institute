@@ -44,9 +44,10 @@
   padding-inline: var(--node-settings-gutter);
 }
 
-/* The embedded member table scrolls with Settings, not inside a second trap. */
-#nodeMenuFamilySettings .familyStatusPanel.is-inline { overflow: visible; }
-#nodeMenuFamilySettings .familyStatusBody { max-height: none; overflow: visible; overscroll-behavior: auto; }
+/* Wide member tables scroll within the content column, never across the rail.
+   Settings still owns vertical scrolling for the whole tab. */
+#nodeDisplayPanel, #nodeMenuFamilySettings { min-width: 0; }
+#nodeMenuFamilySettings .familyStatusBody { max-height: none; overflow-x: auto; overscroll-behavior-x: contain; }
 #nodeMenuStatus { margin: 0 0 12px; font-size: 12px; line-height: 1.5; color: var(--muted); overflow-wrap: anywhere; }
 #nodeMenuStatus[hidden] { display: none; }
 #nodeMenuStatus .portalButton { margin-left: 8px; }
@@ -583,3 +584,13 @@
 @media(max-width:640px) {
   .scopeMenuFields, .scopeMenuFields.is-three, .scopeMenuGrantForm, .scopeMenuBatch form { grid-template-columns:minmax(0,1fr); }
 }
+.portalRuntimePurposeNav { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 20px; border-bottom: 1px solid var(--line, #d5dce5); }
+.portalSessionRestartOverlay .portalRuntimeSettingsSurface { grid-template-rows: auto auto minmax(0, 1fr); }
+.portalRuntimePurposeNav [aria-pressed="true"] { font-weight: 700; outline: 2px solid var(--accent, #3862c5); outline-offset: -2px; }
+.portalCapabilityGroup { margin: 12px 0; padding: 12px; border: 1px solid var(--line, #d5dce5); border-radius: 8px; min-width: 0; }
+.portalCapabilityRow { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 8px 0; }
+.portalCapabilityRow input[type="text"] { min-width: 0; flex: 1 1 220px; }
+.portalCapabilityApplication { display: grid; gap: 8px; padding: 0; list-style: none; }
+.portalCapabilityApplication li { overflow-wrap: anywhere; padding: 8px; background: var(--surface-muted, #f5f7fa); border-radius: 6px; }
+.portalSessionRestartOverlay [data-runtime-panel] { min-width: 0; }
+.portalSessionRestartOverlay [data-runtime-panel] p { overflow-wrap: anywhere; }

@@ -59,11 +59,12 @@
         row.detail?.provider_session?.provider, row.detail?.provider_session?.account_id]);
       const canEditRuntime = row => row.runtime?.state().canEdit === true;
       const runtimeLabel = row => {
-        const settings = row.snapshot?.runtime_settings || {};
+        const settings = row.snapshot?.runtime_settings || row.detail?.runtime_settings || {};
         const catalog = row.catalogKey === runtimeKey(row) ? row.catalog : null;
         const fields = catalog?.runtime_capabilities?.settings
           || row.detail?.backend_capabilities?.runtime_capabilities?.settings || [];
-        return [settings.reasoning_effort || window.PortalI18n.t("默认强度"),
+        return [settings.model || catalog?.default_model || window.PortalI18n.t("Provider default"),
+          settings.reasoning_effort || window.PortalI18n.t("默认强度"),
           fields.includes("service_tier") ? catalog && !(catalog.service_tiers_by_model?.[settings.model || catalog.default_model] || []).length
             ? window.PortalI18n.t("Fast 不支持") : settings.service_tier === "priority" ? window.PortalI18n.t("Fast 开") : window.PortalI18n.t("Fast 关") : ""].filter(Boolean).join(" · ");
       };
@@ -99,9 +100,11 @@
         const focusKey = active?.closest("[data-family-status-row]")?.dataset.familyStatusRow;
         const action = active?.dataset.familyStatusDetail ? "detail" : active?.dataset.familyStatusSettings ? "settings" : active?.dataset.familyStatusIntake ? "intake" : "";
         const scrollTop = root.querySelector(".familyStatusBody")?.scrollTop || 0;
+        const scrollLeft = root.querySelector(".familyStatusBody")?.scrollLeft || 0;
         root.setAttribute("aria-label", window.PortalI18n.text`${family.title || "Family"} · 成员状态`);
         root.innerHTML = window.PortalI18n.html`<div class="familyStatusBody">${quotaError ? window.PortalI18n.html`<p class="paneNote">额度暂不可用：${escapeHtml(quotaError)}</p>` : ""}${rows.size ? table(all) : window.PortalI18n.html`<p>${loading ? window.PortalI18n.t("正在加载…") : window.PortalI18n.t("暂无成员状态")}</p>`}</div>${rows.size ? window.PortalI18n.html`<p class="familyStatusIntakeNote">关闭接单只暂停后续任务，当前工作继续</p>` : ""}`;
         root.querySelector(".familyStatusBody").scrollTop = scrollTop;
+        root.querySelector(".familyStatusBody").scrollLeft = scrollLeft;
         if (focusKey && action) root.querySelector(`[data-family-status-${action}="${CSS.escape(focusKey)}"]`)?.focus({ preventScroll: true });
       };
       let quotaRequest = null;

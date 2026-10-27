@@ -175,6 +175,11 @@ def _restart_domain(
         "title": "Restart target",
         "intake_open": False,
     }
+    history = AgentDataStore()
+    history.append_agent_segments(record['resident_id'], [
+        history.put_segment(segment_type='input', content='old request'),
+        history.put_segment(segment_type='model', content='old result'),
+    ], actor_ref='test')
     runtime_settings = {
         "backend": "codex",
         "model": "gpt-6-astra",
@@ -328,8 +333,9 @@ def _restart_domain(
 
 def test_account_selection_without_session_saves_only_configuration(monkeypatch, subtests, isolated_portal_case):
     """尚无会话时选择账号仅保存配置且保持幂等"""
-    for provider, account, backend in [
-    ('codex', 'one', 'codex'), ('claude', '', 'claude'), ('kimi', '', 'kimi'),
+    for provider, account, backend, model in [
+    ('codex', 'one', 'codex', None), ('claude', '', 'claude', 'deepseek-v4-pro'),
+    ('kimi', '', 'kimi', 'kimi-k2.6'),
 ]:
         with subtests.test(provider=provider, account=account, backend=backend), isolated_portal_case() as case_path:
             with monkeypatch.context() as monkeypatch:
@@ -340,6 +346,8 @@ def test_account_selection_without_session_saves_only_configuration(monkeypatch,
                                     lambda *_args, **_kwargs: pytest.fail('configuration must not read or initialize history'))
                 payload = {'target_provider': provider, 'target_account': account,
                            'context_strategy': 'fresh', 'idempotency_key': 'select-without-session'}
+                if model:
+                    payload['model'] = model
                 result = resident_domain.restart_resident_session(record['resident_id'], 'alice', payload)
                 assert result['status'] == 'completed'
                 assert result['configuration_only'] is True
@@ -531,10 +539,10 @@ def test_restart_options_show_unbound_residents_configured_account_contracts(mon
                 resident_domain.restart_resident_session(record['resident_id'], 'alice', {'active_execution_policy': 'cancel'})
             assert cancellations == [(record['resident_id'], 'alice', 'msg_current')]
             assert operations == []
-    with subtests.test(contract='test_cross_provider_smart_restart_uses_portable_handoff_and_replaces'), isolated_portal_case() as case_path:
+    with subtests.test(contract='test_cross_provider_explicit_handoff_and_replaces'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
             record, operations, saved = _restart_domain(monkeypatch)
-            result = resident_domain.restart_resident_session(record['resident_id'], 'alice', {'target_provider': 'claude', 'context_strategy': 'smart'})
+            result = resident_domain.restart_resident_session(record['resident_id'], 'alice', {'target_provider': 'claude', 'model': 'deepseek-v4-pro', 'context_strategy': 'compact'})
             assert result['status'] == 'accepted'
             assert result['context_strategy'] == 'compact'
             assert operations[0]['backend'] == 'claude'
@@ -558,7 +566,7 @@ def test_fresh_restart_resets_model_context_only_after_success(monkeypatch, outc
                         lambda *a, **kw: pytest.fail("Fresh restart must not read old conversation"))
     result = resident_domain.restart_resident_session(record["resident_id"], "alice", {"context_strategy": "fresh"})
     assert result["status"] == "accepted"
-    assert operations[0]["operation"] == "turn" and not operations[0]["source_binding_id"]
+    assert operations[0]["operation"] == "create" and not operations[0]["source_binding_id"]
     if outcome != "completed":
         monkeypatch.setattr(execution_port, "service", lambda: ExecutionStub(
             resume=lambda *a, **kw: {"status": outcome, "result": {"status": outcome, "error": outcome}},
@@ -601,14 +609,14 @@ def test_send_controls_depend_on_permissions_not_retired_initialization_fields(m
 
 def test_session_initialization_prompt_is_bounded_to_current_task(monkeypatch, subtests, isolated_portal_case):
     """会话初始化限定当前初始化任务且按策略携带历史"""
-    for strategy in ["fresh", "compact", "visible"]:
+    for strategy in ["compact", "visible"]:
         with subtests.test(strategy=strategy), isolated_portal_case() as case_path:
             with monkeypatch.context() as monkeypatch:
                 record, operations, _saved = _restart_domain(monkeypatch)
                 result = resident_domain.restart_resident_session(
                     record["resident_id"],
                     "alice",
-                    {"target_provider": "claude", "context_strategy": strategy},
+                    {"target_provider": "claude", "model": "deepseek-v4-pro", "context_strategy": strategy},
                 )
                 assert result["status"] == "accepted"
                 prompt = operations[0]["prompt"]
@@ -632,7 +640,7 @@ def test_session_initialization_preserves_user_words_contracts(subtests, isolate
         parameters = {parameter.name: parameter for parameter in restart.parameters}
         assert restart.owner == 'lineage' and restart.mutates and restart.target == 'resident_id'
         assert parameters['resident_id'].required is True
-        assert parameters['context_strategy'].enum == ('smart', 'native', 'compact', 'visible', 'fresh')
+        assert parameters['context_strategy'].enum == ('preserve', 'smart', 'native', 'compact', 'visible', 'fresh')
         assert parameters['active_execution_policy'].enum == ('wait', 'cancel')
         assert 'active_job_policy' not in parameters
         cancel = {parameter.name: parameter for parameter in catalog.declaration('CancelSessionRestart').parameters}
@@ -689,29 +697,29 @@ def test_same_provider_smart_restart_uses_native_fork_contracts(monkeypatch, sub
             assert result['context_strategy'] == 'native'
             assert operations[0]['backend'] == 'codex'
             assert operations[0]['operation'] == 'fork'
-    with subtests.test(contract='test_cross_account_smart_restart_uses_portable_handoff'), isolated_portal_case() as case_path:
+    with subtests.test(contract='test_cross_account_smart_restart_preserves_history'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
             record, operations, saved = _restart_domain(monkeypatch)
             result = resident_domain.restart_resident_session(record['resident_id'], 'alice', {'target_provider': 'codex', 'target_account': 'one', 'context_strategy': 'smart'})
             assert result['status'] == 'accepted'
-            assert result['context_strategy'] == 'compact'
+            assert result['context_strategy'] == 'preserve'
             assert operations[0]['backend'] == 'codex'
             assert operations[0]['backend_route_id'] == 'one'
-            assert operations[0]['operation'] == 'turn'
+            assert operations[0]['operation'] == 'create'
             resident_restart_domain.resume_resident_session_restart(operations[0]['step'])
             assert saved[-1]['backend_route_id'] == 'one'
     with subtests.test(contract='test_native_restart_rejects_cross_provider_before_creating_session'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
             record, operations, _saved = _restart_domain(monkeypatch)
             with pytest.raises(ValueError, match='原生 Fork'):
-                resident_domain.restart_resident_session(record['resident_id'], 'alice', {'target_provider': 'kimi', 'context_strategy': 'native'})
+                resident_domain.restart_resident_session(record['resident_id'], 'alice', {'target_provider': 'kimi', 'model': 'kimi-k2.6', 'context_strategy': 'native'})
             assert operations == []
 
 
     with subtests.test(contract='test_business_write_failure_rolls_binding_back'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
             record, _operations, _saved = _restart_domain(monkeypatch)
-            resident_domain.restart_resident_session(record['resident_id'], 'alice', {'target_provider': 'claude', 'context_strategy': 'compact'})
+            resident_domain.restart_resident_session(record['resident_id'], 'alice', {'target_provider': 'claude', 'model': 'deepseek-v4-pro', 'context_strategy': 'compact'})
             restored: list[dict] = []
             monkeypatch.setattr(resident_record_domain, 'save_resident_record', lambda value, **_kwargs: (_ for _ in ()).throw(RuntimeError('catalog unavailable')) if value.get('session_restart', {}).get('status') == 'completed' else None)
             monkeypatch.setattr(resident_backend, 'restore_replaced_session', lambda _record, replacement: restored.append(dict(replacement)))
@@ -722,7 +730,7 @@ def test_same_provider_smart_restart_uses_native_fork_contracts(monkeypatch, sub
         with monkeypatch.context() as monkeypatch:
             record, operations, saved = _restart_domain(monkeypatch)
             monkeypatch.setattr(execution_port, 'service', lambda: pytest.fail('HTTP admission must not invoke Execution'))
-            payload = {'target_provider': 'claude', 'idempotency_key': 'restart-one'}
+            payload = {'target_provider': 'claude', 'model': 'deepseek-v4-pro', 'context_strategy': 'compact', 'idempotency_key': 'restart-one'}
             result = resident_domain.restart_resident_session(record['resident_id'], 'alice', payload)
             step = operations[0]['step']
             assert result['status'] == 'accepted'
@@ -843,7 +851,7 @@ def test_restart_projects_real_progress_without_an_extra_execution_query(monkeyp
     ("queued", "quota_reserve", False, "waiting_quota_reserve"),
     ("queued", "capacity", False, "waiting_capacity"),
     ("claimed", "", False, "creating_session"),
-    ("running", "", True, "initializing"),
+    ("running", "", True, "importing_context"),
 ]:
         with subtests.test(status=status, reason=reason, has_session=has_session, phase=phase), isolated_portal_case() as case_path:
             with monkeypatch.context() as monkeypatch:
@@ -1027,7 +1035,7 @@ def test_deferred_restart_is_durable_idempotent_and_cancellable(monkeypatch):
     record, operations, saved = _restart_domain(monkeypatch)
     monkeypatch.setattr(resident_execution_work, "read", lambda *a: {"status": "running", "execution_id": "already-running"})
     monkeypatch.setattr(resident_execution_work, "is_active", lambda *a: True)
-    payload = {"target_provider": "claude", "context_strategy": "compact", "active_execution_policy": "wait", "idempotency_key": "deferred-once"}
+    payload = {"target_provider": "claude", "model": "deepseek-v4-pro", "context_strategy": "compact", "active_execution_policy": "wait", "idempotency_key": "deferred-once"}
     receipt = resident_domain.restart_resident_session(record["resident_id"], "alice", payload)
     assert receipt["phase"] == "waiting_current_execution" and not operations
     current = saved[-1]
@@ -1050,7 +1058,7 @@ def test_deferred_restart_retains_origin_and_runs_only_after_current_turn(monkey
     monkeypatch.setattr(resident_execution_work, "read", lambda *a: {"status": "running", "execution_id": "already-running"})
     monkeypatch.setattr(resident_execution_work, "is_active", lambda *a: True)
     receipt = resident_restart_domain.restart_resident_session(
-        record["resident_id"], "alice", {"target_provider": "claude", "idempotency_key": "finish-first"},
+        record["resident_id"], "alice", {"target_provider": "claude", "model": "deepseek-v4-pro", "context_strategy": "compact", "idempotency_key": "finish-first"},
         portal_reason=portal_reason,
     )
     assert receipt.get("reason", "") == portal_reason
@@ -1082,7 +1090,7 @@ def test_deferred_restart_does_not_reopen_a_manually_closed_intake(monkeypatch):
     record, operations, saved = _restart_domain(monkeypatch)
     monkeypatch.setattr(resident_execution_work, "read", lambda *a: {"status": "running", "execution_id": "current"})
     monkeypatch.setattr(resident_execution_work, "is_active", lambda *a: True)
-    receipt = resident_domain.restart_resident_session(record["resident_id"], "alice", {"target_provider": "claude", "idempotency_key": "keep-closed"})
+    receipt = resident_domain.restart_resident_session(record["resident_id"], "alice", {"target_provider": "claude", "model": "deepseek-v4-pro", "context_strategy": "compact", "idempotency_key": "keep-closed"})
     current = saved[-1]
     assert current["session_restart"]["deferred"]["intake_before"] == "closed"
     monkeypatch.setattr(resident_input_queue_domain, "commit_resident_intake_state", lambda *a, **k: pytest.fail("manual intake must stay closed"))
@@ -1152,7 +1160,7 @@ def test_restart_configuration_owner_commits_only_after_binding_promotion(monkey
     monkeypatch.setattr(resident_backend, "replace_with_prepared_session", promote)
     monkeypatch.setattr(resident_record_domain, "save_resident_record", save)
     accepted = resident_domain.restart_resident_session(
-        record["resident_id"], "alice", {"target_provider": "claude", "context_strategy": "compact"},
+        record["resident_id"], "alice", {"target_provider": "claude", "model": "deepseek-v4-pro", "context_strategy": "compact"},
     )
     assert accepted["status"] == "accepted"
     assert record["backend"] == "codex"
@@ -1177,7 +1185,7 @@ def test_restart_rechecks_binding_identity_without_rejecting_metadata_refresh(mo
 
     monkeypatch.setattr(resident_backend, "session_record", session_record)
     result = resident_domain.restart_resident_session(
-        record["resident_id"], "alice", {"target_provider": "claude", "context_strategy": "compact"},
+        record["resident_id"], "alice", {"target_provider": "claude", "model": "deepseek-v4-pro", "context_strategy": "compact"},
     )
     assert result["status"] == "accepted"
     assert checks and operations
@@ -1211,7 +1219,7 @@ def test_native_to_model_api_migration_saves_configuration_without_model_call(mo
     options = resident_restart_domain.get_resident_restart_options(record['resident_id'], 'alice')
     assert 'provider_api' in [row['id'] for row in options['providers']]
     questions = {'ready': {'type': 'noul', 'instructions': 'Is it ready?'}}
-    body = {'target_provider': 'provider_api', 'target_account': 'test-api', 'model': 'api-model',
+    body = {'target_provider': 'provider_api', 'target_account': 'test-api', 'model': 'api-model', 'context_strategy': 'fresh',
             'backend_options': {'parameters': {'questions': questions} if protocol == 'typesafe_system_one' else {}, 'max_retries': 0},
             'idempotency_key': 'migrate-model-api'}
     result = resident_domain.restart_resident_session(record['resident_id'], 'alice', body)
@@ -1227,10 +1235,13 @@ def test_native_to_model_api_migration_saves_configuration_without_model_call(mo
 
 def test_model_api_to_native_migration_initializes_with_visible_conversation(monkeypatch):
     """模型 API 迁移到原生后端时用可见会话初始化"""
+    from management_portal.execution.account_adapters import CodexAccounts
     record, operations, saved = _model_api_restart(monkeypatch)
+    monkeypatch.setattr(CodexAccounts, 'catalog', lambda self, account:
+                        codex_runtime_settings.codex_runtime_catalog(account_id=account.account_id))
     record.update(backend='provider_api', backend_route_id='test-api')
     monkeypatch.setattr(resident_backend, 'session_record', lambda *a, **k: {})
-    result = resident_domain.restart_resident_session(record['resident_id'], 'alice', {'target_provider': 'codex', 'target_account': 'zero'})
+    result = resident_domain.restart_resident_session(record['resident_id'], 'alice', {'target_provider': 'codex', 'target_account': 'zero', 'model': 'gpt-6-astra', 'context_strategy': 'visible'})
     assert result['status'] == 'accepted'
     assert result['source']['provider'] == 'provider_api'
     assert operations[0]['backend'] == 'codex'
@@ -1244,7 +1255,7 @@ def test_model_api_migration_validation_and_save_failure_preserve_binding(monkey
     detached, restored = [], []
     monkeypatch.setattr(resident_backend, 'delete_session_identity', lambda *a, **k: detached.append(True))
     monkeypatch.setattr(resident_backend, 'restore_replaced_session', lambda record, replacement: restored.append(replacement))
-    body = {'target_provider': 'provider_api', 'target_account': 'test-api'}
+    body = {'target_provider': 'provider_api', 'target_account': 'test-api', 'model': 'api-model', 'context_strategy': 'fresh'}
     with pytest.raises(ValueError, match='does not offer'):
         resident_domain.restart_resident_session(record['resident_id'], 'alice', {**body, 'model': 'wrong'})
     assert not detached and record['backend'] == 'codex'

@@ -109,6 +109,7 @@ class _ActiveExecution:
     # A recovered attempt runs the same plan, so the Provider gets the same
     # prompt and tools again.
     harness_plan: dict[str, Any] | None = None
+    capability_assembly: dict[str, Any] | None = None
 
 
 class ExecutionRuntime:
@@ -333,6 +334,8 @@ class ExecutionRuntime:
                 )
             if active.harness_plan is not None:
                 payload["harness_plan"] = dict(active.harness_plan)
+            if active.capability_assembly is not None:
+                payload["capability_assembly"] = dict(active.capability_assembly)
             return payload
 
         def set_interrupt_target(
@@ -407,6 +410,20 @@ class ExecutionRuntime:
                 checkpoint = checkpoint_payload(active)
             runtime_context.checkpoint(checkpoint)
 
+        def set_capability_assembly(assembly: dict[str, Any]) -> None:
+            normalized = dict(assembly)
+            with self._lock:
+                active = self._active.get(request.execution_id)
+                if active is None:
+                    raise RuntimeError("Execution ended before capability assembly")
+                if active.capability_assembly == normalized:
+                    return
+                if active.capability_assembly is not None:
+                    raise ValueError("Execution capability assembly is immutable")
+                active.capability_assembly = normalized
+                checkpoint = checkpoint_payload(active)
+            runtime_context.checkpoint(checkpoint)
+
         def set_turn_start_reason(reason: str) -> None:
             with self._lock:
                 active = self._active.get(request.execution_id)
@@ -433,6 +450,8 @@ class ExecutionRuntime:
                     if isinstance(recovery_checkpoint.get("harness_plan"), dict)
                     else None
                 ),
+                capability_assembly=(dict(recovery_checkpoint["capability_assembly"])
+                                     if isinstance(recovery_checkpoint.get("capability_assembly"), dict) else None),
                 checkpoint_target=(
                     str(
                         recovery_checkpoint.get("backend_session_id") or ""
@@ -570,6 +589,7 @@ class ExecutionRuntime:
                             set_provider_recovery_state
                         ),
                         harness_plan_observer=set_harness_plan,
+                        capability_assembly_observer=set_capability_assembly,
                         turn_control_provider=(
                             runtime_context.turn_control_provider
                         ),

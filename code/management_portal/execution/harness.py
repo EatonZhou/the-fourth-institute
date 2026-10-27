@@ -241,6 +241,10 @@ class HarnessTool:
     # The part of a result two identical reads share, without per-call
     # identifiers; None: the whole result.
     stable_result: Callable[[str], str] | None = None
+    # Selection identity is separate from the provider-facing alias.
+    capability_ref: str = ""
+    connection_ref: str = ""
+    local_name: str = ""
 
 
 def stable_json_result(*volatile_keys: str) -> Callable[[str], str]:

@@ -130,6 +130,7 @@
       config: entry.config,
       restart: entry.pending ? {
         status: entry.pending.phase, source: entry.config?.source || {},
+        operation: entry.pending.payload.operation,
         target: { provider: entry.pending.payload.target_provider, account_id: entry.pending.payload.target_account },
         submitted_at: entry.pending.submittedAt,
       } : entry.restart,
@@ -378,6 +379,7 @@
         }, keyed(payload, "resident-request-answer"));
       },
       list(values = {}) { return get(residentPath(""), values); },
+      shortcuts() { return get(residentPath("/shortcuts")); },
       activeAgents() {
         return get("/api/agent-status/active-agents");
       },
@@ -399,9 +401,10 @@
           resident_id: residentId, backend, account_id: accountId,
         });
       },
-      updateRuntimeSettings(residentId, changes, idempotencyKey) {
+      updateRuntimeSettings(residentId, changes, idempotencyKey, expectedRevision) {
         return execute("UpdateResidentSettings", {
           resident_id: required(residentId, "resident_id"), changes,
+          ...(expectedRevision == null ? {} : {expected_revision: expectedRevision}),
         }, { idempotencyKey: idempotencyKey || newKey("resident-settings") });
       },
       snapshot(residentId, { historyLimit = 200 } = {}) {
@@ -661,7 +664,7 @@
         const source = payload && typeof payload === "object" ? payload : {};
         const residentId = source.resident_id;
         const options = Object.fromEntries([
-          "idempotency_key", "target_provider", "target_account",
+          "idempotency_key", "target_provider", "target_account", "operation",
           "context_strategy", "active_execution_policy", "resume_failed_input",
           "model", "reasoning_effort", "collaboration_mode", "service_tier", "permission_preset", "prompt_context", "backend_options",
         ].filter(name => Object.prototype.hasOwnProperty.call(source, name))
@@ -683,6 +686,7 @@
         try {
           const receipt = await execute("RestartSession", {
             resident_id: residentId,
+            ...(options.operation ? {operation: options.operation} : {}),
             ...(options.target_provider ? { provider: options.target_provider } : {}),
             ...(options.target_account ? { account_id: options.target_account } : {}),
             ...(options.context_strategy ? { context_strategy: options.context_strategy } : {}),

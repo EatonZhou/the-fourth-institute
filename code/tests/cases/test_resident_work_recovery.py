@@ -274,14 +274,18 @@ def test_restart_records_recovery_choice_and_only_resumes_after_promotion(monkey
     monkeypatch.setattr(recovery, "resume_after_restart", lambda current, state: calls.append(dict(state)))
     monkeypatch.setattr(recovery, "set_recovery_entry", lambda *args, **kwargs: None)
     state = resident_restart_domain.restart_resident_session(record["resident_id"], "alice", {
-        "target_provider": "claude", "context_strategy": "compact", "resume_failed_input": enabled,
+        "target_provider": "claude", "model": "deepseek-v4-pro",
+        "context_strategy": "compact", "resume_failed_input": enabled,
     }, portal_reason="steward_quota_recovery" if automatic else "")
     assert calls == [] and state["status"] == "accepted"
     assert state["resume_message_id"] == ("msg_original" if enabled else "")
     resident_restart_domain.resume_resident_session_restart(operations[-1]["step"])
     assert record["backend"] == "claude" and record["session_restart"]["status"] == "completed"
-    assert len(calls) == 1 and calls[0]["resume_message_id"] == state["resume_message_id"]
-    assert bool(calls[0].get("reason")) == automatic
+    if enabled:
+        assert len(calls) == 1 and calls[0]["resume_message_id"] == state["resume_message_id"]
+        assert bool(calls[0].get("reason")) == automatic
+    else:
+        assert calls == []
 
 
 @pytest.mark.parametrize("automatic", [True, False])

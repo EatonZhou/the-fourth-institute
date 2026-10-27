@@ -21,7 +21,7 @@
       const capabilities = catalog.runtime_capabilities || {};
       const preset = String(data.permission_preset || "").trim();
       const label = capabilities.permission_labels?.[preset] || capabilities.default_permission_label;
-      if (label) rows.push(["Permissions", label]);
+      if (label) rows.push(["执行沙箱与审批", label]);
     }
     if (fields.includes("collaboration_mode")) rows.push(["Mode", data.collaboration_mode === "plan" ? "Plan" : window.PortalI18n.t("Default")]);
     if (catalog.api_settings) {
@@ -126,7 +126,7 @@
           <label class="portalRuntimeSettingsField"><span>Mode</span><select data-runtime-setting="collaboration_mode"><option value="default">Default · 默认执行</option><option value="plan">Plan · 先制定计划</option></select></label>
           <label class="portalRuntimeSettingsField"><span>Effort</span><select data-runtime-setting="reasoning_effort"></select></label>
           <label class="portalRuntimeSettingsField"><span>Speed</span><select data-runtime-setting="service_tier"><option value="">Standard (default)</option><option value="priority">Fast</option></select></label>
-          <label class="portalRuntimeSettingsField"><span>Permissions</span><select data-runtime-setting="permission_preset"><option value="">Full Access (default)</option><option value="default">Ask</option><option value="auto-review">Auto-review</option><option value="full-access">Full Access</option></select></label>
+          <label class="portalRuntimeSettingsField"><span>执行沙箱与审批</span><select data-runtime-setting="permission_preset"><option value="">Full Access (default)</option><option value="default">Ask</option><option value="auto-review">Auto-review</option><option value="full-access">Full Access</option></select></label>
         </div>
         <p class="portalRuntimeSettingsHint" data-runtime-settings-hint>设置从下一轮生效。</p>
 `;
@@ -269,6 +269,95 @@
       };
     }
 
+    function createCapabilityEditor() {
+      const element = document.createElement("div");
+      element.className = "portalCapabilityEditor";
+      const guidance = document.createElement("p");
+      guidance.textContent = "选择已有的工具、MCP 连接与 Skill；保存不会连接服务、调用模型或自动重建会话。未列出的项目沿用现有默认装配。Prompt 注入与预览继续使用设置中的 Prompt 注入入口。";
+      element.append(guidance);
+      let original = "", application = {};
+      const groups = {};
+      const labels = {tools: "工具", mcp: "MCP 连接", skills: "Skill"};
+      const addRow = (kind, value = {}) => {
+        const row = document.createElement("div"); row.className = "portalCapabilityRow";
+        const ref = document.createElement("input"); ref.type = "text"; ref.value = value.ref || "";
+        ref.placeholder = kind === "tools" ? "portal:hatg_instruction" : "已登记资源的稳定引用";
+        ref.setAttribute("aria-label", labels[kind] + "引用"); ref.dataset.capabilityRef = kind;
+        const choice = document.createElement("select"); choice.setAttribute("aria-label", "已选择状态");
+        choice.append(new Option("启用", "enabled"), new Option("停用", "disabled"));
+        choice.value = value.enabled === false ? "disabled" : "enabled";
+        const requiredLabel = document.createElement("label"), required = document.createElement("input");
+        required.type = "checkbox"; required.checked = value.required === true; required.dataset.capabilityRequired = "1";
+        requiredLabel.append(required, "必需");
+        const remove = document.createElement("button"); remove.type = "button"; remove.className = "portalButton";
+        remove.textContent = "恢复默认"; remove.title = "删除此覆盖项，恢复现有默认装配";
+        remove.addEventListener("click", () => row.remove());
+        row.append(ref, choice, requiredLabel, remove);
+        choice.addEventListener("change", () => {if (choice.value === "disabled") required.checked = false; required.disabled = choice.value === "disabled";});
+        required.disabled = choice.value === "disabled";
+        if (kind === "mcp") {
+          const details = document.createElement("details"), summary = document.createElement("summary"); summary.textContent = "工具名列表（可空）";
+          details.open = true;
+          const names = document.createElement("input"); names.type = "text"; names.dataset.mcpTools = "1";
+          names.setAttribute("aria-label", "MCP 工具名称，逗号分隔"); names.placeholder = "精确工具名，用逗号分隔；留空表示不选任何工具";
+          names.value = (value.tools || []).join(", ");
+          const hint = document.createElement("p"); hint.textContent = "仅使用列表中的工具；留空不选择任何工具。新发现的工具不会自动加入。";
+          details.append(summary, names, hint); row.append(details);
+        }
+        groups[kind].rows.append(row);
+      };
+      for (const [kind, label] of Object.entries(labels)) {
+        const fieldset = document.createElement("fieldset"); fieldset.className = "portalCapabilityGroup";
+        const legend = document.createElement("legend"); legend.textContent = label;
+        const rows = document.createElement("div"), add = document.createElement("button"); add.type = "button"; add.className = "portalButton";
+        add.textContent = "添加" + label; add.dataset.capabilityAdd = kind;
+        add.addEventListener("click", () => addRow(kind));
+        fieldset.append(legend, rows, add); element.append(fieldset); groups[kind] = {rows, fieldset};
+      }
+      const status = document.createElement("ul"); status.className = "portalCapabilityApplication"; status.dataset.capabilityApplication = "1"; element.append(status);
+      const timings = {unknown: "未知", disabled: "已配置停用", next_turn: "下一轮", pending_session: "待显式重新开始会话", pending_compaction_or_session: "下次压缩后或新会话", applied: "已生效", unsupported: "后端不支持", failed: "失败"};
+      const deliveryLabels = {unknown: "未知", not_sent: "未发送", sent: "已发送", accepted: "已接受", rejected: "已拒绝"};
+      const showApplication = value => {
+        application = value || {};
+        const items = application.items || [];
+        status.replaceChildren();
+        for (const item of items.length ? items : [{path: "当前配置", status: "unknown", delivery: "unknown"}]) {
+          const li = document.createElement("li");
+          const observation = item.observation?.status || "unknown";
+          li.textContent = (item.ref || item.path) + " · 已选择：" + (item.enabled === false ? "停用" : item.enabled === true ? "启用" : "沿用现有设置") +
+            " · 当前观察：" + (deliveryLabels[observation] || observation) + " · 交付：" + (deliveryLabels[item.delivery] || item.delivery || "未知") +
+            " · 生效时机：" + (timings[item.status] || item.status || "未知") + (item.reason ? " · " + item.reason : "");
+          status.append(li);
+        }
+      };
+      const read = () => {
+        const value = {schema: "tfi.resident-capabilities.v1"};
+        for (const [kind, group] of Object.entries(groups)) {
+          const seen = new Set();
+          value[kind] = [...group.rows.children].map(row => {
+            const ref = row.querySelector("[data-capability-ref]").value.trim();
+            if (!ref || seen.has(ref)) throw new Error("能力引用不能为空，也不能在同一组重复。");
+            seen.add(ref);
+            const enabled = row.querySelector("select").value === "enabled";
+            const result = {ref, enabled, required: enabled && row.querySelector("[data-capability-required]").checked};
+            if (kind === "mcp") {
+              result.tools = row.querySelector("[data-mcp-tools]").value.split(",").map(s => s.trim()).filter(Boolean);
+            }
+            return result;
+          });
+        }
+        return value;
+      };
+      return {element, showApplication,
+        open(settings = {}, value) {
+          for (const [kind, group] of Object.entries(groups)) {group.rows.replaceChildren(); (settings.capability_config?.[kind] || []).forEach(item => addRow(kind, item));}
+          original = JSON.stringify(read()); showApplication(value);
+        },
+        changes() {const value = read(); return JSON.stringify(value) === original ? {} : {capability_config: value};},
+        disabled(value) {element.querySelectorAll("input, select, button").forEach(control => {control.disabled = value;});},
+      };
+    }
+
     function createRuntimeSettingsDialog(options = {}) {
       const id = String(options.id || `portalRuntimeSettings_${Math.random().toString(16).slice(2)}`);
       const overlay = document.createElement("div");
@@ -283,8 +372,12 @@
         </form></div>`;
       document.body.append(overlay);
       const editor = createRuntimeSettingsEditor();
+      const capabilities = createCapabilityEditor();
+      const details = document.createElement("details");
+      const summary = document.createElement("summary"); summary.textContent = "能力配置与实际交付";
+      details.append(summary, capabilities.element);
       const form = overlay.querySelector("form"), submit = overlay.querySelector("[data-runtime-settings-submit]");
-      form.querySelector(".portalDetailFooter").before(editor.element);
+      form.querySelector(".portalDetailFooter").before(editor.element, details);
       let save;
       const dialog = window.PortalUI.createDialogController({modal: overlay, manageHidden: true, escapeClose: true, backdropClose: true,
         initialFocus: () => editor.model, onClose: context => options.onClose?.(context)});
@@ -294,13 +387,14 @@
         event.preventDefault();
         if (!save || submit.disabled) return;
         submit.disabled = true;
-        try { const selected = editor.read(); editor.element.disabled = true; await save(selected); close({accepted: true}); }
+        try { const selected = {...editor.read(), ...capabilities.changes()}; editor.element.disabled = true; await save(selected); close({accepted: true}); }
         catch (error) { window.PortalUI.toast(window.PortalUI.errorMessage("保存运行参数", error), "error"); }
         finally { submit.disabled = false; editor.element.disabled = false; }
       });
       return {
         open(settings = {}, onSave = null, dialogOptions = {}) {
           save = onSave; editor.open(settings, dialogOptions);
+          capabilities.open(settings, dialogOptions.application);
           overlay.querySelector(".portalRuntimeSettingsTitle").textContent = dialogOptions.title || "Runtime Settings";
           void showResidentBackendNotices(overlay.querySelector("[data-resident-backend-notices]"), dialogOptions.residentId, {settings: dialogOptions.residentSettings, accountId: dialogOptions.accountId});
           dialog.open({focusTarget: editor.model});
@@ -341,7 +435,7 @@
       dismissButton.type = "button";
       dismissButton.className = "portalButton is-compact";
       dismissButton.textContent = window.PortalI18n.t("已知悉");
-      dismissButton.setAttribute("aria-label", window.PortalI18n.t("已知悉，关闭本次迁移失败提示"));
+      dismissButton.setAttribute("aria-label", window.PortalI18n.t("已知悉，关闭本次操作失败提示"));
       dismissButton.dataset.sessionRestartDismiss = "1";
       if (compact) element.append(detailsButton, dismissButton);
       let current = {};
@@ -354,12 +448,13 @@
       };
       const labels = {
         submitting: window.PortalI18n.t("正在提交，等待受理回执"), confirming: window.PortalI18n.t("受理结果待确认，请勿重复提交"),
-        accepted: window.PortalI18n.t("已受理，正在准备"), queued: window.PortalI18n.t("已受理，等待调度"), waiting_current_execution: window.PortalI18n.t("已受理，等待本轮完成后迁移"),
+        accepted: window.PortalI18n.t("已受理，正在准备"), queued: window.PortalI18n.t("已受理，等待调度"), waiting_current_execution: window.PortalI18n.t("等待当前工作完成"),
+        waiting: window.PortalI18n.t("等待当前工作完成"), preparing: window.PortalI18n.t("正在准备会话"), verifying: window.PortalI18n.t("正在核对上下文与能力"), committing: window.PortalI18n.t("正在提交绑定"),
         waiting_quota_reserve: window.PortalI18n.t("已受理，等待额度"), waiting_capacity: window.PortalI18n.t("已受理，等待执行容量"),
         waiting_dispatch_interval: window.PortalI18n.t("已受理，等待调度间隔"), waiting_session_binding: window.PortalI18n.t("已受理，等待 Session 空闲"),
         creating_session: window.PortalI18n.t("正在创建新 Session"), initializing: window.PortalI18n.t("正在初始化交接"),
         switching: window.PortalI18n.t("正在切换绑定"), cancelling: window.PortalI18n.t("正在取消迁移"),
-        completed: window.PortalI18n.t("迁移已完成"), failed: window.PortalI18n.t("迁移失败"), cancelled: window.PortalI18n.t("迁移已取消"),
+        completed: window.PortalI18n.t("已完成"), failed: window.PortalI18n.t("失败"), cancelled: window.PortalI18n.t("已取消"),
       };
       const render = () => {
         const restart = current.restart;
@@ -370,11 +465,15 @@
         element.hidden = !restart?.status || ["completed", "cancelled"].includes(restart.status)
           || !!(failed && restart.restart_id && acknowledged === restart.restart_id);
         if (element.hidden) return;
-        detailsButton.textContent = failed ? window.PortalI18n.t("查看详情") : window.PortalI18n.t("查看迁移进度");
+        detailsButton.textContent = failed ? window.PortalI18n.t("查看详情") : window.PortalI18n.t("查看操作进度");
         dismissButton.hidden = !failed || !key || !restart.restart_id;
         const label = endpoint => endpoint?.account_id || endpoint?.provider || window.PortalI18n.t("当前 Session");
         const phase = restart.status === "accepted" ? restart.phase || "accepted" : restart.status;
-        heading.textContent = `Session：${label(restart.source)} → ${label(restart.target)} · ${labels[phase] || window.PortalI18n.t("迁移进行中")}`;
+        const operation = restart.operation === "switch_account" ? "账号切换" : restart.operation === "restart" ? "重新开始会话" : "会话操作";
+        const endpoints = restart.operation !== "restart" && label(restart.source) !== label(restart.target)
+          ? `${label(restart.source)} → ${label(restart.target)}` : label(restart.source);
+        heading.textContent = `${operation}：${endpoints} · ${labels[phase] || phase || "进行中"}`;
+        if (failed && restart.submitted_at) heading.textContent += ` · ${new Date(restart.submitted_at).toLocaleString()}`;
         const started = Date.parse(restart.submitted_at || "");
         const ended = Date.parse(restart.restarted_at || restart.configured_at || "");
         const end = Number.isFinite(ended) ? ended : sessionRestartActive(restart) ? Date.now() : NaN;
@@ -386,10 +485,10 @@
         }
         message.textContent = failed
           ? (restart.previous_session_retained === true
-            ? window.PortalI18n.t("迁移未完成，原会话已保留。请核对目标设置后重新迁移。")
-            : window.PortalI18n.t("迁移未完成。请核对当前会话与目标设置后重新迁移。"))
+            ? `操作未完成，仍使用 ${label(restart.source)}，原会话已保留。`
+            : window.PortalI18n.t("操作未完成，请在诊断中核对当前绑定和原错误。"))
           : current.error ? window.PortalI18n.t("暂时无法同步迁移状态，请稍后查看；请勿重复提交。") : sessionRestartActive(restart)
-          ? (restart.status === "cancelling" ? window.PortalI18n.t("取消请求已受理，原 Session 将继续保留。") : window.PortalI18n.t("关闭窗口不会取消迁移；需要终止时请使用“取消迁移”。"))
+          ? (restart.status === "cancelling" ? window.PortalI18n.t("取消请求已受理，原会话将继续保留。") : window.PortalI18n.t("关闭窗口不会取消操作；需要终止时请使用“取消操作”。"))
           : restart.configuration_only ? window.PortalI18n.t("账号配置已保存，尚未创建 Session。") : window.PortalI18n.t("迁移已结束。");
         technicalError.textContent = String(restart.error || current.error || "");
         diagnostics.hidden = !technicalError.textContent;
@@ -429,331 +528,226 @@
     }
 
     function createSessionRestartDialog(options = {}) {
-      const id = String(options.id || `portalSessionRestart_${Math.random().toString(16).slice(2)}`);
+      const id = String(options.id || "portalSessionRestart_" + Math.random().toString(16).slice(2));
       const overlay = document.createElement("div");
       overlay.className = "portalDetailOverlay portalRuntimeSettingsOverlay portalSessionRestartOverlay";
       overlay.hidden = true;
-      overlay.setAttribute("aria-hidden", "true");
       overlay.dataset.portalDetailOverlay = "1";
-      overlay.innerHTML = window.PortalI18n.html`<div class="portalDetailSurface portalRuntimeSettingsSurface" data-portal-detail-surface role="dialog" aria-modal="true" aria-labelledby="${escapeHtml(id)}Title">
-      <div class="portalDetailHeader" data-portal-detail-header>
-        <div class="portalRuntimeSettingsTitle" id="${escapeHtml(id)}Title">运行与 Session</div>
-        <button class="portalDetailClose" data-portal-icon="close" data-session-restart-close type="button" aria-label="关闭运行与 Session" title="关闭"></button>
-      </div>
-      <form class="portalDetailForm portalRuntimeSettingsForm" data-session-restart-form>
-        <p class="portalRuntimeSettingsHint" data-session-restart-source></p>
-        <div data-resident-backend-notices role="status" hidden></div>
-        <details class="portalSessionBindingSnapshot" data-session-binding-snapshot><summary>当前会话绑定快照</summary><dl data-session-binding-fields></dl><p class="portalRuntimeSettingsHint">状态版本（Generation）用于核验此会话绑定是否变化，不是 Worker 进程代际；这里展示打开弹窗时的权威快照。</p></details>
-        <div class="portalRuntimeSettingsGrid">
-          <label class="portalRuntimeSettingsField"><span>Provider</span><select data-session-restart="provider"></select></label>
-          <label class="portalRuntimeSettingsField" data-session-restart-account-field><span>Account / Route</span><select data-session-restart="account"></select></label>
-        </div>
-        <div data-runtime-editor-host></div>
-        <h3 class="portalRuntimeSectionTitle">切换或重启 Session</h3>
-        <div class="portalRuntimeSettingsGrid">
-          <label class="portalRuntimeSettingsField"><span>上下文方案</span><select data-session-restart="strategy"></select></label>
-          <label class="portalRuntimeSettingsField"><span>正在运行的工作</span><select data-session-restart="active-execution"><option value="wait">等待完成</option><option value="cancel">取消后重启</option></select></label>
-          <label class="portalRuntimeSettingsField"><span>失败的工作</span><span><input type="checkbox" data-session-restart="resume-failed" checked> 切换成功后继续最近的失败输入</span></label>
-        </div>
-        <p class="portalRuntimeSettingsHint" data-session-restart-hint></p>
-        <p class="portalRuntimeSettingsHint" data-runtime-save-hint role="status"></p>
-        <div class="portalDetailFooter" data-portal-detail-footer>
-          <button class="portalButton" data-session-reload type="button">只刷新数据</button>
-          <button class="portalButton is-danger" data-session-restart-cancel type="button" hidden>取消迁移</button>
-          <button class="portalButton" data-session-restart-close type="button">关闭</button>
-          <button class="portalButton is-primary" data-runtime-settings-submit type="button">保存运行参数</button>
-          <button class="portalButton" data-session-restart-submit type="submit">重启 Session</button>
-        </div>
-      </form>
-    </div>`;
-      document.body.appendChild(overlay);
-      const form = overlay.querySelector("[data-session-restart-form]");
-      const submit = overlay.querySelector("[data-session-restart-submit]");
-      const cancelMigration = overlay.querySelector("[data-session-restart-cancel]");
-      const provider = overlay.querySelector('[data-session-restart="provider"]');
-      const account = overlay.querySelector('[data-session-restart="account"]');
-      const editor = createRuntimeSettingsEditor();
-      overlay.querySelector("[data-runtime-editor-host]").replaceWith(editor.element);
-      const saveButton = overlay.querySelector("[data-runtime-settings-submit]");
-      const saveHint = overlay.querySelector("[data-runtime-save-hint]");
-      const strategy = overlay.querySelector('[data-session-restart="strategy"]');
-      const activeExecution = overlay.querySelector('[data-session-restart="active-execution"]');
-      const resumeFailed = overlay.querySelector('[data-session-restart="resume-failed"]');
-      const accountField = overlay.querySelector("[data-session-restart-account-field]");
-      const source = overlay.querySelector("[data-session-restart-source]");
-      const bindingFields = overlay.querySelector("[data-session-binding-fields]");
-      const hint = overlay.querySelector("[data-session-restart-hint]");
-      let restart = null;
-      let cancelRestart = null;
-      let reload = null;
-      let current = {};
-      let requestKey = "";
-      let submitting = false;
-      let tracking = false;
-      let restartView = {};
-      let unobserve = null;
-      let modelCatalog = null, catalogLoading = false, catalogRevision = 0;
-      let savedMessage = "", loadedRoute = "";
-      const drafts = new Map();
-      const routeKey = () => JSON.stringify([provider.value, account.value]);
-      const sameRoute = () => provider.value === current.source?.provider && account.value === String(current.source?.account_id || "");
-      const rememberDraft = () => {
-        if (!modelCatalog || !loadedRoute) return;
-        try { drafts.set(loadedRoute, editor.read({complete: true})); } catch (_) { /* keep the last valid draft */ }
-      };
-      const createRequestKey = () => `portal-session-restart:${globalThis.PortalUIPrimitives.randomUUID()}`;
-      const restartService = window.PortalResidentService;
+      overlay.innerHTML = '<div class="portalDetailSurface portalRuntimeSettingsSurface" data-portal-detail-surface role="dialog" aria-modal="true" aria-labelledby="' + escapeHtml(id) + 'Title">' +
+        '<div class="portalDetailHeader" data-portal-detail-header><div class="portalRuntimeSettingsTitle" id="' + escapeHtml(id) + 'Title">切换账号</div>' +
+        '<button class="portalDetailClose" data-portal-icon="close" data-session-restart-close type="button" aria-label="关闭"></button></div>' +
+        '<nav class="portalRuntimePurposeNav" aria-label="运行设置">' +
+        '<button type="button" class="portalButton" data-runtime-view="switch_account">切换账号</button>' +
+        '<button type="button" class="portalButton" data-runtime-view="parameters">运行参数</button>' +
+        '<button type="button" class="portalButton" data-runtime-view="capabilities">能力配置</button>' +
+        '<button type="button" class="portalButton" data-runtime-view="restart">重新开始会话</button></nav>' +
+        '<form class="portalDetailForm portalRuntimeSettingsForm" data-session-restart-form>' +
+        '<p class="portalRuntimeSettingsHint" data-session-restart-source></p><div data-resident-backend-notices role="status" hidden></div>' +
+        '<section data-runtime-panel="switch_account"><label class="portalRuntimeSettingsField"><span>目标账号</span><select data-session-target></select></label>' +
+        '<p>保留当前有效上下文，等待正在运行的工作完成。切换失败时继续保留原会话。</p>' +
+        '<div data-target-editor-host hidden><p>请选择目标 Provider 的模型。</p></div></section>' +
+        '<section data-runtime-panel="parameters" hidden><div data-runtime-editor-host></div>' +
+        '<p>保存后从下一轮生效，不会重新开始会话。执行沙箱控制 Provider 的本机执行；Portal 资源访问仍按 Portal 权限检查。</p></section>' +
+        '<section data-runtime-panel="capabilities" hidden><div data-capability-editor-host></div></section>' +
+        '<section data-runtime-panel="restart" hidden><label class="portalRuntimeSettingsField"><span>新会话的上下文</span>' +
+        '<select data-session-restart="strategy"><option value="preserve">保留当前有效上下文</option><option value="fresh">清空上下文，从新任务开始</option></select></label>' +
+        '<p data-session-restart-hint>使用当前账号重新开始会话，等待正在运行的工作完成。旧会话和历史记录保留。</p></section>' +
+        '<p class="portalRuntimeSettingsHint" data-runtime-save-hint role="status"></p>' +
+        '<details class="portalSessionBindingSnapshot" data-session-binding-snapshot><summary>诊断</summary><dl data-session-binding-fields></dl>' +
+        '<button class="portalButton" data-session-reload type="button">刷新状态（保留未保存的选择）</button></details>' +
+        '<div class="portalDetailFooter" data-portal-detail-footer><button class="portalButton is-danger" data-session-restart-cancel type="button" hidden>取消操作</button>' +
+        '<button class="portalButton" data-session-restart-close type="button">取消</button>' +
+        '<button class="portalButton is-primary" data-runtime-settings-submit type="button" hidden>保存参数</button>' +
+        '<button class="portalButton is-primary" data-capability-submit type="button" hidden>保存能力配置</button>' +
+        '<button class="portalButton is-primary" data-session-restart-submit type="submit">切换账号</button></div></form></div>';
+      document.body.append(overlay);
+      const find = selector => overlay.querySelector(selector);
+      const form = find("form"), target = find("[data-session-target]"), strategy = find('[data-session-restart="strategy"]');
+      const submit = find("[data-session-restart-submit]"), cancel = find("[data-session-restart-cancel]");
+      const saveButton = find("[data-runtime-settings-submit]"), capabilityButton = find("[data-capability-submit]");
+      const source = find("[data-session-restart-source]"), saveHint = find("[data-runtime-save-hint]");
+      const editor = createRuntimeSettingsEditor(), targetEditor = createRuntimeSettingsEditor();
+      const capabilities = createCapabilityEditor();
+      find("[data-capability-editor-host]").replaceWith(capabilities.element);
+      find("[data-runtime-editor-host]").replaceWith(editor.element);
+      find("[data-target-editor-host]").append(targetEditor.element);
       const progress = createSessionRestartProgress();
       source.after(progress.element);
-      const dialog = window.PortalUI.createDialogController({
-        modal: overlay,
-        manageHidden: true,
-        escapeClose: true,
-        backdropClose: true,
-        initialFocus: () => provider,
-        onClose: context => { catalogRevision++; unobserve?.(); unobserve = null; options.onClose?.(context); },
-      });
-      const close = context => dialog?.close?.(context);
-      const optionsHtml = (items, fallback = []) => {
-        const values = Array.isArray(items) && items.length ? items : fallback;
-        return values.map(item => {
-          const value = typeof item === "string" ? item : String(item?.id || "");
-          const label = typeof item === "string" ? item : String(item?.label || value);
-          return window.PortalI18n.html`<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`;
-        }).join("");
+      let current = {}, view = "switch_account", restart, reload, cancelRestart, unobserve;
+      let requestKey, submitting = false, tracking = false, restartView = {}, catalogRevision = 0, targetReady = false;
+      const restartService = window.PortalResidentService;
+      const requestId = () => "portal-session-restart:" + globalThis.PortalUIPrimitives.randomUUID();
+      const selected = () => { try { return JSON.parse(target.value); } catch (_) { return []; } };
+      const canonicalAccount = (provider, account) => {
+        const row = current.accounts?.[provider]?.find(item => item.id === account || item.account_id === account);
+        return row?.account_id || account;
       };
+      const sameAccount = () => {
+        const [provider, account] = selected();
+        return provider === current.source?.provider && canonicalAccount(provider, account) === canonicalAccount(provider, current.source?.account_id);
+      };
+      const crossProvider = () => selected()[0] && selected()[0] !== current.source?.provider;
+      const dialog = window.PortalUI.createDialogController({
+        modal: overlay, manageHidden: true, escapeClose: true, backdropClose: true,
+        initialFocus: () => target,
+        onClose: context => {catalogRevision++; unobserve?.(); unobserve = null; options.onClose?.(context);},
+      });
+      const close = context => dialog.close(context);
       const update = () => {
-        const routed = !!current.accounts?.[provider.value]?.some(row => row.id);
-        const selectedDefinition = current.providers?.find(row => row.id === provider.value);
-        const nativeOption = [...strategy.options].find(option => option.value === "native");
-        if (nativeOption) nativeOption.disabled = selectedDefinition?.operations?.includes("fork") === false;
-        if (strategy.value === "native" && nativeOption?.disabled) strategy.value = "smart";
-        const hasSession = !!current.source?.has_session;
-        const apiMigration = current.source?.provider === "provider_api" || provider.value === "provider_api";
         const locked = submitting || tracking;
         const retry = restartView.restart?.status === "confirming";
-        accountField.hidden = !routed;
-        accountField.style.display = routed ? "" : "none";
-        provider.disabled = locked;
-        account.disabled = !routed || locked;
-        strategy.disabled = (!hasSession && current.source?.provider !== "provider_api" && provider.value !== "provider_api") || locked;
-        activeExecution.disabled = locked;
-        editor.element.disabled = locked || catalogLoading;
-        resumeFailed.disabled = locked;
-        saveButton.hidden = !current.onSave;
-        saveButton.disabled = locked || catalogLoading || !modelCatalog || !sameRoute();
-        saveButton.textContent = window.PortalI18n.t("保存运行参数");
-        saveHint.textContent = !sameRoute()
-          ? window.PortalI18n.t("Provider / 账号已改变，请使用切换操作；新运行参数随切换成功后生效，准备期间保留当前配置。")
-          : savedMessage || window.PortalI18n.t("保存运行参数：不重启 Session，从下一轮生效。重启 Session：使用上方参数与下方上下文方案建立新会话。");
-        submit.disabled = submitting || catalogLoading || !restart || (tracking && !retry) || (routed && !account.value)
-          || ((current.choose_runtime_settings || provider.value === "provider_api") && !modelCatalog);
-        cancelMigration.hidden = !tracking;
-        cancelMigration.disabled = submitting || restartView.restart?.status === "cancelling";
-        submit.textContent = retry && !submitting ? window.PortalI18n.t("重试同一请求") : tracking && !submitting ? window.PortalI18n.t("查看上方迁移状态") : submitting
-          ? (hasSession || apiMigration ? window.PortalI18n.t("正在切换…") : window.PortalI18n.t("正在保存…"))
-          : apiMigration ? window.PortalI18n.t("迁移 Backend")
-          : (hasSession ? restartView.restart?.status === "failed" ? window.PortalI18n.t("重新迁移") : (sameRoute() ? window.PortalI18n.t("重启 Session") : window.PortalI18n.t("切换 Session")) : routed ? window.PortalI18n.t("保存账号设置") : window.PortalI18n.t("保存 Provider"));
-        const selectedStrategy = strategy.value || "smart";
-        hint.textContent = provider.value === "provider_api"
-          ? window.PortalI18n.t("切换到直接调用模型 API，不创建原生 Session。按下方历史设置发送上下文；选择全新上下文时从切换后开始积累历史，页面旧对话仍保留。")
-          : !hasSession && current.source?.provider !== "provider_api"
-          ? window.PortalI18n.t("仅保存 Provider / 账号选择，已有对话和 Fork 上下文保持不变；下次运行时使用新配置。")
-          : selectedStrategy === "native"
-          ? window.PortalI18n.t("原生 Fork 仅适用于同一 Provider/Account；旧 session 会保留为只读 generation。")
-          : selectedStrategy === "fresh"
-            ? window.PortalI18n.t("只初始化新的系统上下文，不带入旧对话；旧 session 会保留。")
-            : selectedStrategy === "visible"
-              ? window.PortalI18n.t("把 Portal 当前可见对话作为资料交给新 session，适合跨 Provider 迁移。")
-              : selectedStrategy === "compact"
-                ? window.PortalI18n.t("迁移最近的重要对话与当前工作，适合跨 Provider，开销较小。")
-                : window.PortalI18n.t("系统优先使用同 Provider 原生 Fork，否则使用精简交接。");
+        const purpose = {switch_account: "切换账号", parameters: "运行参数", capabilities: "能力配置", restart: "重新开始会话"};
+        find(".portalRuntimeSettingsTitle").textContent = window.PortalI18n.t(purpose[view]);
+        overlay.querySelectorAll("[data-runtime-panel]").forEach(panel => {panel.hidden = panel.dataset.runtimePanel !== view;});
+        overlay.querySelectorAll("[data-runtime-view]").forEach(button => {
+          button.disabled = locked;
+          button.setAttribute("aria-pressed", String(button.dataset.runtimeView === view));
+          button.hidden = ["parameters", "capabilities"].includes(button.dataset.runtimeView) && !current.onSave;
+        });
+        target.disabled = locked; strategy.disabled = locked;
+        editor.element.disabled = locked; targetEditor.element.disabled = locked;
+        capabilities.disabled(locked);
+        saveButton.hidden = view !== "parameters" || !current.onSave; saveButton.disabled = locked;
+        capabilityButton.hidden = view !== "capabilities" || !current.onSave; capabilityButton.disabled = locked;
+        submit.hidden = !["switch_account", "restart"].includes(view);
+        submit.disabled = submitting || !restart || (tracking && !retry) || (!retry && view === "switch_account" && (!target.value || sameAccount() || (crossProvider() && !targetReady)));
+        submit.textContent = window.PortalI18n.t(retry ? "重试同一请求" : submitting ? "正在提交…" : purpose[view]);
+        cancel.hidden = !tracking; cancel.disabled = submitting || restartView.restart?.status === "cancelling";
       };
-      overlay.querySelectorAll("[data-session-restart-close]").forEach(button => {
-        button.addEventListener("click", () => close({ source: "button" }));
-      });
-      const populateAccounts = (selected = "") => {
-        account.innerHTML = optionsHtml(current.accounts?.[provider.value], [{ id: "", label: window.PortalI18n.t("自动选择") }]);
-        if ([...account.options].some(option => option.value === selected)) account.value = selected;
-      };
-      const loadModelCatalog = async () => {
+      const loadTarget = async () => {
         const revision = ++catalogRevision;
-        const key = routeKey();
-        modelCatalog = null;
-        editor.element.hidden = !current.choose_runtime_settings && provider.value !== "provider_api";
-        if (editor.element.hidden) { catalogLoading = false; update(); return; }
-        catalogLoading = true; update();
-        const route = current.accounts?.[provider.value]?.find(row => row.id === account.value);
+        const cross = crossProvider();
+        find("[data-target-editor-host]").hidden = !cross;
+        targetReady = false; update();
+        if (!cross) return;
+        const [provider, account] = selected();
         try {
-          const catalog = sameRoute() && current.runtime_catalog ? current.runtime_catalog
-            : await window.PortalResidentService.runtimeCatalog({backend: provider.value,
-              accountId: provider.value === "provider_api" ? account.value : route?.account_id || ""});
+          const catalog = await restartService.runtimeCatalog({backend: provider, accountId: canonicalAccount(provider, account)});
           if (revision !== catalogRevision || overlay.hidden) return;
-          modelCatalog = catalog; loadedRoute = key;
-          const settings = drafts.get(key) || (sameRoute() ? current.runtime_settings || {} : {});
-          editor.open(settings, {catalog, showApiAccount: false, hint: ""});
+          targetEditor.open({}, {catalog, showApiAccount: false, hint: "选择目标模型后再切换；不自动压缩或摘要交接。"});
+          targetReady = true;
         } catch (error) {
-          if (revision === catalogRevision && !overlay.hidden) window.PortalUI.toast(window.PortalI18n.text`无法读取目标运行参数，请重新选择账号后重试：${error.message}`, "error");
-        } finally {
-          if (revision === catalogRevision) { catalogLoading = false; update(); }
-        }
+          if (revision === catalogRevision) window.PortalUI.toast(window.PortalUI.errorMessage("读取目标模型", error), "error");
+        } finally { if (revision === catalogRevision) update(); }
       };
-      provider.addEventListener("change", () => { rememberDraft(); savedMessage = ""; populateAccounts(); void loadModelCatalog(); });
-      account.addEventListener("change", () => { rememberDraft(); savedMessage = ""; void loadModelCatalog(); });
-      editor.element.addEventListener("change", () => { savedMessage = ""; update(); });
+      overlay.querySelectorAll("[data-runtime-view]").forEach(button => button.addEventListener("click", () => {
+        if (submitting || tracking) return;
+        view = button.dataset.runtimeView; saveHint.textContent = ""; update();
+      }));
+      overlay.querySelectorAll("[data-session-restart-close]").forEach(button => button.addEventListener("click", () => close({source: "button"})));
+      target.addEventListener("change", () => {requestKey = requestId(); void loadTarget();});
       saveButton.addEventListener("click", async () => {
         if (saveButton.disabled || !current.onSave) return;
         try {
-          const selected = editor.read(); submitting = true; update();
-          saveButton.textContent = window.PortalI18n.t("保存中…");
-          const result = await current.onSave(selected);
-          current.runtime_settings = {...current.runtime_settings, ...selected, ...(result?.settings || {})};
-          drafts.set(routeKey(), current.runtime_settings);
-          editor.open(current.runtime_settings, {catalog: modelCatalog, showApiAccount: false, hint: ""});
-          savedMessage = window.PortalI18n.t("运行参数已保存，从下一轮生效；Session 未重启。");
-        } catch (error) { window.PortalUI.toast(window.PortalUI.errorMessage("保存运行参数", error), "error"); }
-        finally { submitting = false; update(); }
+          const values = editor.read(); submitting = true; update();
+          const result = await current.onSave(values);
+          current.runtime_settings = {...current.runtime_settings, ...values, ...(result?.settings || {})};
+          editor.open(current.runtime_settings, {catalog: current.runtime_catalog, showApiAccount: false});
+          saveHint.textContent = window.PortalI18n.t("运行参数已保存，从下一轮生效。");
+        } catch (error) { window.PortalUI.toast(window.PortalUI.errorMessage("保存参数", error), "error"); }
+        finally {submitting = false; update();}
       });
-      strategy.addEventListener("change", update);
-      overlay.querySelector("[data-session-reload]").addEventListener("click", async () => {
-        await reload?.();
-      });
-      cancelMigration.addEventListener("click", async () => {
-        const restartId = String(restartView.restart?.restart_id || current.restart?.restart_id || "");
-        if (!restartId || !cancelRestart || cancelMigration.disabled) return;
-        submitting = true;
-        update();
+      capabilityButton.addEventListener("click", async () => {
+        if (capabilityButton.disabled || !current.onSave) return;
         try {
-          const result = await cancelRestart({ restart_id: restartId });
-          current.restart = result;
-          restartView.restart = result;
-          tracking = sessionRestartActive(result);
-          window.PortalUI.toast(window.PortalI18n.t("Session 迁移取消请求已受理，原 Session 将保留。"), "success");
-        } catch (error) {
-          window.PortalUI.toast(window.PortalUI.errorMessage(window.PortalI18n.t("取消 Session 迁移"), error), "error");
-        } finally {
-          submitting = false;
-          update();
+          const values = capabilities.changes();
+          if (!Object.keys(values).length) return;
+          submitting = true; update();
+          const result = await current.onSave(values);
+          current.runtime_settings = {...current.runtime_settings, ...values, ...(result?.settings || {})};
+          capabilities.open(current.runtime_settings, result?.application);
+          saveHint.textContent = "能力配置已保存；实际交付与生效时机见下方状态。";
+        } catch (error) {window.PortalUI.toast(window.PortalUI.errorMessage("保存能力配置", error), "error");}
+        finally {submitting = false; update();}
+      });
+      find("[data-session-reload]").addEventListener("click", async () => {
+        try {
+          const refreshed = await reload?.();
+          if (refreshed?.application) capabilities.showApplication(refreshed.application);
+          await restartService.refreshSessionRestart?.(current.resident_id);
         }
+        catch (error) {window.PortalUI.toast(window.PortalUI.errorMessage("刷新状态", error), "error");}
+      });
+      cancel.addEventListener("click", async () => {
+        const restartId = restartView.restart?.restart_id || current.restart?.restart_id;
+        if (!restartId || !cancelRestart || cancel.disabled) return;
+        submitting = true; update();
+        try {
+          const result = await cancelRestart({restart_id: restartId});
+          restartView.restart = result; tracking = sessionRestartActive(result); progress.update(restartView);
+        } catch (error) {window.PortalUI.toast(window.PortalUI.errorMessage("取消操作", error), "error");}
+        finally {submitting = false; update();}
       });
       form.addEventListener("submit", async event => {
         event.preventDefault();
-        if (!restart || submit.disabled) return;
-        submitting = true;
-        tracking = true;
-        update();
-        source.textContent = current.source?.has_session || current.source?.provider === "provider_api"
-          ? window.PortalI18n.t("正在提交迁移请求，请等待后台受理回执；请勿重复操作。")
-          : window.PortalI18n.t("正在保存 Provider / 账号选择，不创建 Session。");
+        if (!restart || submit.disabled || submit.hidden) return;
         try {
+          const isSwitch = view === "switch_account";
+          const [provider, account] = isSwitch ? selected() : [current.source?.provider, current.source?.account_id];
+          if (isSwitch && sameAccount() && restartView.restart?.status !== "confirming") return;
+          const runtime = isSwitch && crossProvider() && restartView.restart?.status !== "confirming" ? targetEditor.read({complete: true}) : {};
+          if (isSwitch && crossProvider() && !runtime.model && restartView.restart?.status !== "confirming") throw new Error("请选择目标 Provider 的模型。");
+          submitting = true; update();
           const result = restartView.restart?.status === "confirming"
             ? await restartService.retrySessionRestart(current.resident_id)
-            : await restart({
-            target_provider: provider.value,
-            target_account: account.value,
-            context_strategy: strategy.value || "smart",
-            active_execution_policy: activeExecution.value || "wait",
-            resume_failed_input: resumeFailed.checked,
-            ...(modelCatalog ? editor.read({complete: true}) : {}),
-            idempotency_key: requestKey,
-          });
-          current.restart = result;
-          if (result?.status === "completed") close({ accepted: true });
+            : await restart({operation: isSwitch ? "switch_account" : "restart",
+              target_provider: provider, target_account: account,
+              context_strategy: isSwitch ? "preserve" : strategy.value,
+              active_execution_policy: "wait", resume_failed_input: false, ...runtime, idempotency_key: requestKey});
+          current.restart = result; restartView.restart = result;
+          tracking = sessionRestartActive(result); progress.update(restartView);
+          if (result?.status === "completed") close({accepted: true});
         } catch (error) {
           tracking = sessionRestartActive(restartView.restart);
-          if (!error.restartPending) {
-            requestKey = createRequestKey();
-            window.PortalUI.toast(window.PortalUI.errorMessage(window.PortalI18n.t("重启 Session"), error), "error");
-          }
-        } finally {
-          submitting = false;
-          update();
-        }
+          if (!error.restartPending) {requestKey = requestId(); window.PortalUI.toast(window.PortalUI.errorMessage("会话操作", error), "error");}
+        } finally {submitting = false; update();}
       });
       return {
         open(config = {}, onRestart = null, onReload = null, onCancel = null) {
-          current = config && typeof config === "object" ? { ...config } : {};
-          savedMessage = ""; loadedRoute = ""; drafts.clear();
-          void showResidentBackendNotices(overlay.querySelector("[data-resident-backend-notices]"), current.resident_id, {
-            accountId: current.source?.account_id, settings: current.runtime_settings || {},
+          current = {...config}; view = config.initial_view || "switch_account";
+          restart = onRestart; reload = onReload; cancelRestart = onCancel; requestKey = requestId();
+          submitting = false; tracking = sessionRestartActive(config.restart); restartView = {restart: config.restart};
+          unobserve?.(); saveHint.textContent = ""; strategy.value = "preserve";
+          const groups = (current.providers || []).map(provider => {
+            const group = document.createElement("optgroup"); group.label = provider.label || provider.id;
+            for (const row of current.accounts?.[provider.id] || []) {
+              const option = document.createElement("option");
+              option.value = JSON.stringify([provider.id, row.id]); option.textContent = row.label || row.account_id || row.id;
+              group.append(option);
+            }
+            return group;
           });
-          submitting = false;
-          tracking = sessionRestartActive(current.restart);
-          restartView = { restart: current.restart };
-          unobserve?.();
-          requestKey = createRequestKey();
-          restart = onRestart;
-          cancelRestart = onCancel;
-          reload = onReload;
-          provider.innerHTML = optionsHtml(current.providers);
-          const sourceProvider = String(current.source?.provider || "");
-          provider.value = sourceProvider;
-          // The server's Provider list names each Provider.
-          const sourceLabel = current.providers?.find(row => row.id === sourceProvider)?.label || sourceProvider;
-          const sourceAccount = String(current.source?.account_id || "");
-          populateAccounts(sourceAccount);
-          strategy.innerHTML = optionsHtml(current.strategies);
-          strategy.value = "smart";
-          activeExecution.value = "wait";
-          resumeFailed.checked = current.restart?.resume_failed_input !== false;
-          if (current.restart?.status === "failed") {
-            const failedTarget = current.restart.target || {};
-            if ([...provider.options].some(option => option.value === failedTarget.provider)) provider.value = failedTarget.provider;
-            populateAccounts(failedTarget.account_id);
-            const requestedStrategy = current.restart.requested_strategy || current.restart.context_strategy;
-            if ([...strategy.options].some(option => option.value === requestedStrategy)) strategy.value = requestedStrategy;
-          }
-          const sourceBinding = current.source || {};
-          const bindingStatus = { current: "当前绑定", unbound: "尚未绑定" }[sourceBinding.binding_status] || "未提供";
-          bindingFields.innerHTML = [
-            ["Provider", sourceLabel],
-            ["账号", sourceAccount || "未提供"],
-            ["绑定状态", bindingStatus],
-            ["Session ID", sourceBinding.backend_session_id || "未绑定或未提供"],
-            ["Provider Session 引用", sourceBinding.provider_session_ref || "未绑定或未提供"],
-            ["状态版本（Generation）", sourceBinding.generation || "未提供"],
-          ].map(([label, value]) => window.PortalI18n.html`<dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd>`).join("");
-          source.textContent = current.source?.has_session
-            ? window.PortalI18n.text`当前：${sourceLabel}${sourceAccount ? ` · ${sourceAccount}` : ""}。切换成功前会继续保留当前 session。`
-            : sourceProvider === "provider_api"
-            ? window.PortalI18n.text`当前：${sourceLabel}${sourceAccount ? ` · ${sourceAccount}` : ""}，通过 API 直接调用。迁移到原生 Backend 时会按上下文方案初始化新 Session，成功后再切换。`
-            : window.PortalI18n.text`尚未创建 Provider session。当前配置：${sourceLabel}${sourceAccount ? ` · ${sourceAccount}` : ""}。可以直接修改，不会启动模型。`;
-          update();
-          dialog?.open?.({ focusTarget: provider });
-          void loadModelCatalog();
+          target.replaceChildren(new Option(window.PortalI18n.t("选择目标账号"), ""), ...groups);
+          const sourceAccount = current.accounts?.[current.source?.provider]?.find(row => row.id === current.source.account_id || row.account_id === current.source.account_id);
+          target.value = sourceAccount ? JSON.stringify([current.source.provider, sourceAccount.id]) : "";
+          const label = current.providers?.find(row => row.id === current.source?.provider)?.label || current.source?.provider || "";
+          source.textContent = "当前：" + label + " · " + (sourceAccount?.label || current.source?.account_id || "未绑定账号");
+          find("[data-session-binding-fields]").innerHTML = [
+            ["Provider", current.source?.provider], ["账号", current.source?.account_id], ["Session ID", current.source?.backend_session_id],
+            ["绑定版本", current.source?.generation],
+          ].map(([name, value]) => "<dt>" + escapeHtml(name) + "</dt><dd>" + escapeHtml(value == null ? "未知" : String(value)) + "</dd>").join("");
+          editor.open(current.runtime_settings || {}, {catalog: current.runtime_catalog, showApiAccount: false});
+          capabilities.open(current.runtime_settings, current.application);
+          void showResidentBackendNotices(find("[data-resident-backend-notices]"), current.resident_id, {accountId: current.source?.account_id, settings: current.runtime_settings || {}});
+          update(); dialog.open({focusTarget: view === "parameters" ? editor.model : target}); void loadTarget();
           if (current.resident_id && restartService) {
-            unobserve = restartService.observeSessionRestart(current.resident_id, view => {
-              restartView = view;
-              const restartState = view.restart || current.restart;
+            unobserve = restartService.observeSessionRestart(current.resident_id, value => {
               const wasTracking = tracking;
-              tracking = sessionRestartActive(restartState);
-              if (tracking && restartState?.target) {
-                provider.value = restartState.target.provider || provider.value;
-                populateAccounts(restartState.target.account_id);
-                source.textContent = restartState.status === "cancelling"
-                  ? window.PortalI18n.t("正在取消已提交的迁移；原 Session 将继续保留。")
-                  : window.PortalI18n.t("正在跟踪已提交的迁移；目标已锁定。关闭窗口不会取消，可使用“取消迁移”终止。");
-              } else if (wasTracking && restartState?.status !== "completed") {
-                source.textContent = window.PortalI18n.t("迁移已结束，请核对当前会话状态后再操作。");
-                if (restartState?.status === "failed") requestKey = createRequestKey();
+              restartView = value; tracking = sessionRestartActive(value.restart);
+              if (tracking && value.restart?.operation) view = value.restart.operation;
+              if (tracking && value.restart?.target) {
+                const endpoint = value.restart.target;
+                const row = current.accounts?.[endpoint.provider]?.find(item => item.id === endpoint.account_id || item.account_id === endpoint.account_id);
+                if (row) target.value = JSON.stringify([endpoint.provider, row.id]);
               }
-              progress.update({ ...view, restart: restartState });
-              update();
-              if (wasTracking && ["completed", "cancelled"].includes(restartState?.status)) close({ accepted: true });
+              progress.update(value); update();
+              if (wasTracking && ["completed", "cancelled"].includes(value.restart?.status)) close({accepted: true});
             });
           }
-        },
-        close,
-        destroy() {
-          catalogRevision += 1;
-          unobserve?.();
-          progress.destroy();
-          dialog?.destroy?.();
-          overlay.remove();
-        },
+        }, close,
+        destroy() {catalogRevision++; unobserve?.(); progress.destroy(); dialog.destroy(); overlay.remove();},
       };
     }
-
     return Object.freeze({
       residentRuntimeSettingRows, residentRuntimeStatusText, residentRuntimeMetaHtml,
       notifyRuntimeSettingsSaved, showResidentBackendNotices, createRuntimeSettingsDialog,

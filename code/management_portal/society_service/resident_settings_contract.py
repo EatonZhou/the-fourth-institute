@@ -14,7 +14,7 @@ EXECUTION_SETTING_FIELDS = frozenset({
     "backend", "model", "reasoning_effort", "service_tier", "collaboration_mode",
     "permissions", "approvals_reviewer", "approval_policy", "sandbox",
     "sandbox_explicit", "profile", "permission_preset",
-    "prompt_injection", "allow_subagents", "updated_at", "updated_by",
+    "prompt_injection", "capability_config", "allow_subagents", "updated_at", "updated_by",
     "prompt_context", "backend_options",
     "backend_role", "backend_role_fallback",
     "runtime_settings_authority", "runtime_settings_authority_at",

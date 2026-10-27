@@ -1,6 +1,8 @@
 """Resident domain responsibilities: execution."""
 from __future__ import annotations
 
+import hashlib
+
 from . import invariant_locks, resident_fork_context, resident_restart_handoff, resident_store
 
 
@@ -54,7 +56,8 @@ def read_resident_runtime_settings(
     actor: str = "",
 ) -> dict[str, Any]:
     from . import resident_access, resident_record_domain, resident_runtime_domain
-    with resident_lineage.access_snapshot_scope():
+    from management_portal.execution.resident_capability_settings import settings_application
+    with resident_record_domain.state_lock(resident_id), resident_lineage.access_snapshot_scope():
         target = resident_record_domain.resolve_resident_runtime_target(
             resident_id,
             actor,
@@ -74,10 +77,15 @@ def read_resident_runtime_settings(
             default_runtime_settings = resident_runtime_settings.read_only_runtime_settings(
                 default_runtime_settings
             )
+        revision = resident_runtime_domain.resident_settings_revision(record, runtime_settings)
         return {
             "resident_id": target.resident_id,
             "runtime_settings": runtime_settings,
             "default_runtime_settings": default_runtime_settings,
+            "settings_revision": revision,
+            "application": settings_application(
+                runtime_settings, backend=str(record.get("backend") or ""), revision=revision,
+            ),
         }
 
 
@@ -85,15 +93,24 @@ def change_resident_runtime_settings(resident_id: str, actor: str = "", payload:
     from . import (
         resident_access,
         resident_domain_common,
-        resident_input_queue_domain,
         resident_record_domain,
         resident_runtime_domain,
     )
     actor_id = canonical_actor_id(actor)
     if not actor_id:
         raise ValueError("需要登录后修改 runtime 设置")
-    data = payload if isinstance(payload, dict) else {}
-    raw_changes = dict(data.get("runtime_settings") if "runtime_settings" in data else data)
+    if not isinstance(payload, dict):
+        raise ValueError("runtime settings payload must be an object")
+    data = dict(payload)
+    expected_revision = data.pop("expected_revision", None)
+    if "expected_revision" in payload and (not isinstance(expected_revision, str) or not expected_revision):
+        raise ValueError("expected_revision must be a nonempty settings revision")
+    if "runtime_settings" in data:
+        if set(data) != {"runtime_settings"} or not isinstance(data["runtime_settings"], dict):
+            raise ValueError("runtime_settings envelope must contain an object and no extra fields")
+        raw_changes = dict(data["runtime_settings"])
+    else:
+        raw_changes = data
     requested_route = raw_changes.pop("backend_route_id", None)
     if requested_route is not None and (not isinstance(requested_route, str) or not requested_route.strip()):
         raise ValueError("backend_route_id must name an enabled Model API account")
@@ -116,6 +133,9 @@ def change_resident_runtime_settings(resident_id: str, actor: str = "", payload:
                 raise manage_refusal(record)
             validation_record = copy.deepcopy(record)
             validation_current = resident_runtime_domain.read_resident_runtime_settings(record)
+            if expected_revision is not None and expected_revision != resident_runtime_domain.resident_settings_revision(record, validation_current):
+                raise LineageConflictError("Resident settings revision changed; read current settings before saving",
+                                           resource="resident_runtime_settings")
             validation_key = runtime_settings_validation_key(record)
 
         # Provider catalogs come from ExecutionService and can perform I/O.
@@ -143,6 +163,9 @@ def change_resident_runtime_settings(resident_id: str, actor: str = "", payload:
             if not resident_access.has_resident_workspace_authority(record, actor_id):
                 raise manage_refusal(record)
             current = resident_runtime_domain.read_resident_runtime_settings(record)
+            if expected_revision is not None and expected_revision != resident_runtime_domain.resident_settings_revision(record, current):
+                raise LineageConflictError("Resident settings revision changed during Provider validation",
+                                           resource="resident_runtime_settings")
             if (
                 current != validation_current
                 or runtime_settings_validation_key(record) != validation_key
@@ -186,36 +209,12 @@ def change_resident_runtime_settings(resident_id: str, actor: str = "", payload:
                 else:
                     resident_record_domain.save_resident_record(record)
             resident_catalog.get_catalog().state_store.transaction(commit_settings)
-            if "service_tier" in changed_settings:
-                try:
-                    active_turn_settings_update = resident_input_queue_domain.submit_active_turn_settings(
-                        record,
-                        actor_id,
-                        control_key=(
-                            f"runtime-settings:{now}:"
-                            f"{changed_settings['service_tier'] or 'default'}"
-                        ),
-                        service_tier=str(changed_settings["service_tier"] or ""),
-                        source="runtime_settings",
-                    )
-                except Exception as exc:
-                    active_turn_settings_update = {
-                        "requested": True,
-                        "status": "failed",
-                        "error": str(exc),
-                    }
-            else:
-                active_turn_settings_update = {
-                    "requested": False,
-                    "status": "next_turn" if changed_settings else "unchanged",
-                }
+            # An admitted turn retains its snapshot. Explicit live controls use
+            # their own operations; saving settings only configures later input.
+            active_turn_settings_update = {"requested": False, "status": "next_turn"}
             result = read_resident_runtime_settings(target.resident_id, actor_id)
             result["active_turn_settings_update"] = active_turn_settings_update
-            result["active_turn_fields"] = (
-                ["service_tier"]
-                if active_turn_settings_update.get("status") in {"pending", "delivered"}
-                else []
-            )
+            result["active_turn_fields"] = []
             result["next_turn_fields"] = [
                 name for name in next_turn_fields if name not in result["active_turn_fields"]
             ]
@@ -1240,12 +1239,14 @@ def resident_system_instructions(
     from management_portal import prompt_injection
     from management_portal.agent_prompt_context import portal_system_instructions, portal_turn_instructions
     from management_portal.execution.contracts import InjectionPart, SystemInstructions
-    from management_common.skill_paths import normalize_additional_skills
     from . import resident_domain_common, resident_runtime_domain
 
-    settings = resident_runtime_domain.read_resident_runtime_settings(record) if settings is None else settings
+    settings = (job.get("_assembly_runtime_settings") or resident_runtime_domain.read_resident_runtime_settings(record)) if settings is None else settings
     choices = prompt_injection.resolve(settings.get("prompt_injection"))
-    additional_skills = normalize_additional_skills(job.get("additional_skills"))
+    from .resident_capability_materials import selected_skills
+    additional_skills, skill_observations = selected_skills(settings, job.get("additional_skills"),
+        resident_id=resident_domain_common.record_resident_id(record))
+    job["_assembly_skill_observations"] = skill_observations
     allow_subagents = _turn_allows_subagents(record, job, settings)
     # An isolated business input is sent as its caller wrote it, without the
     # Resident's identity in front.
@@ -1368,6 +1369,9 @@ def preview_prompt_injection(record: dict[str, Any], actor: str, turn: str = "fi
                 "sent": part.name in plan.attached_parts or (every_start and part.placement == "system"),
                 "chars": len(part.content),
                 "content": part.content,
+                "content_digest": hashlib.sha256(part.content.encode()).hexdigest(),
+                "source": "resident.md" if part.name == "resident_md" else part.name,
+                "observation": "prepared_preview",
             }
             for part in parts
         ],
@@ -1386,6 +1390,7 @@ def resident_execution_runtime_options(
     from . import resident_turn_scope
 
     settings = resident_runtime_domain.read_resident_runtime_settings(record)
+    job["_assembly_runtime_settings"] = copy.deepcopy(settings)
     scope = resident_turn_scope.filesystem_scope(
         record, job, cwd=str(resident_runtime_domain.resident_working_directory(record)),
         resident_folder=str(resident_record_domain.resident_folder_path(record)), bindings=resident_record_domain.resident_workspace_roots(record),
@@ -1407,6 +1412,7 @@ def resident_execution_runtime_options(
     }
     if "agent_harness" in settings:
         options["agent_harness"] = normalize_agent_harness_settings(settings["agent_harness"])
+    options["resident_assembly"] = {"settings_revision": resident_runtime_domain.resident_settings_revision(record, settings)}
     return options
 
 
@@ -1640,6 +1646,15 @@ def durable_resident_execution_request(
     else:
         planned_id = resident_execution_work.ensure_execution_id(job)
         durable_request = replace(request_factory(), execution_id=planned_id).validate()
+        options = dict(durable_request.runtime_options)
+        options["resident_assembly"] = {**dict(options.get("resident_assembly") or {}),
+            "prompt_parts": [{"id": part.name, "timing": part.timing, "placement": part.placement,
+                              "content_digest": hashlib.sha256(part.content.encode()).hexdigest(),
+                              "content_location": {"execution_id": planned_id, "field": "system_instructions.parts", "part_id": part.name},
+                              "source": "resident.md" if part.name == "resident_md" else part.name}
+                             for part in durable_request.system_instructions.parts],
+            "skills": copy.deepcopy(job.get("_assembly_skill_observations") or [])}
+        durable_request = replace(durable_request, runtime_options=options)
     planned_id = durable_request.execution_id
     payload = durable_request.to_payload()
     resident_id = resident_domain_common.record_resident_id(record)
@@ -2252,9 +2267,11 @@ def _build_resident_execution_request(
         from . import resident_runtime_domain
         from management_portal.execution.resident_configuration import normalize_backend_options
         settings = resident_runtime_domain.read_resident_runtime_settings(record)
+        job["_assembly_runtime_settings"] = copy.deepcopy(settings)
         options = normalize_backend_options(settings.get("backend_options", {}), "provider_api")
         options.update(model=settings["model"], runtime_settings=copy.deepcopy(settings),
                        agent_harness=copy.deepcopy(settings.get("agent_harness") or {}))
+        options["resident_assembly"] = {"settings_revision": resident_runtime_domain.resident_settings_revision(record, settings)}
         context = settings.get("prompt_context") or {}
         # Always send this input, even when preset context already has a user
         # message. Presets are context, never a replacement for the new input.

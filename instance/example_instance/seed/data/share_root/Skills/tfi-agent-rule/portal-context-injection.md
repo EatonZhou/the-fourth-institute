@@ -53,9 +53,14 @@ Portal 上游明确选择：
 Execution 根据会话首次注入、各部分时机、压缩位置和恢复检查点计算注入计划；它不得知道
 instructions 属于哪个 Portal role。创建、Fork、显式压缩与释放操作本身不发送系统指令。
 
-Fork 子 Resident 创建自己的 Provider session，在首轮注入自己的身份和规则。
-RestartSession 的初始化轮次按目标 Provider 构造完整注入计划。
-恢复和失败续跑沿用原轮次的计划，不重复附加已经送达的部分。
+Fork 子 Resident 在首条真实输入按自己的身份与规则构造注入计划。
+注册、配置保存与建立空会话不发送“请整理并确认初始化”的模型任务。
+普通账号切换默认 preserve；旧 smart 仅映射 preserve。保留上下文使用可验证原生
+复制或严格 canonical history 导入，不隐式 compact，不额外调用模型整理。
+仅显式 compact/visible 模型交接轮次按目标 Provider 构造完整注入计划；fresh 清空
+有效上下文后由下一条真实输入懒建会话，无空白初始化轮次。完整协议见
+decision_ccbb1cac24aa 与 decision_c47a13e8b962。
+恢复和失败续跑沿用原轮次的计划，不重复附加已经送达的部分；切换账号不自动重试失败输入。
 
 修改规则时同步源码 `code/core_skills/tfi-agent-rule/`、发行 seed 和本站共用目录，
 再用 `PreviewPromptInjection` 检查物化正文与发送时机。文件更新不改写已有 Provider

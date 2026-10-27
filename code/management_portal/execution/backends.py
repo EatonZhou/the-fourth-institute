@@ -273,6 +273,7 @@ class BackendContext:
         harness_plan_observer: (
             Callable[[dict[str, Any]], None] | None
         ) = None,
+        capability_assembly_observer: Callable[[dict[str, Any]], None] | None = None,
         turn_start_reason: str = "initial",
         turn_start_reason_changed: Callable[[str], None] | None = None,
         execution_started_at: str = "",
@@ -297,6 +298,7 @@ class BackendContext:
         self._invocation_observer = invocation_observer
         self._compaction_observer = compaction_observer
         self._harness_plan_observer = harness_plan_observer
+        self._capability_assembly_observer = capability_assembly_observer
         self._turn_start_reason = turn_start_reason or "initial"
         self._turn_start_reason_changed = turn_start_reason_changed
         self._started_turn_reasons: dict[str, str] = {}
@@ -372,6 +374,10 @@ class BackendContext:
 
         if self._harness_plan_observer is not None:
             self._harness_plan_observer(dict(plan))
+
+    def record_capability_assembly(self, assembly: Mapping[str, Any]) -> None:
+        if self._capability_assembly_observer is not None:
+            self._capability_assembly_observer(dict(assembly))
 
     def record_compaction(
         self,
@@ -1603,19 +1609,6 @@ class CodexBackend:
                 },
                 backend_route_id=route.account_id,
             )
-        if operation == "create":
-            return BackendResult(
-                output={
-                    "message": "",
-                    "provider": self.provider_id,
-                    "operation": operation,
-                },
-                backend_session_id=thread_id,
-                backend_route_id=route.account_id,
-                available_harness_tool_names=frozenset(
-                    available_harness_tool_names
-                ),
-            )
         def history_delivery_for(references, *, agent_id=None, store=None):
             return CodexHistoryDelivery(
                 references=references, route_id=route.account_id,
@@ -1627,6 +1620,38 @@ class CodexBackend:
                 ),
             )
 
+        if operation == "create":
+            seed = request.metadata.get("fork_context_input") or {}
+            if seed:
+                if not request.metadata.get("preserve_session_context"):
+                    raise ValueError("Session creation history requires an explicit preservation operation")
+                from .agent_data_store import get_agent_data_store
+                from .session_history_import import validate_codex_preservation
+                store = get_agent_data_store()
+                validate_codex_preservation(store.fork_context_segments(seed["segments"]))
+                history_delivery_for(seed["segments"], store=store,
+                                     agent_id=seed["source_agent_id"]).initialize(thread_id)
+                # create has no turn for the projector to mark. Keep the
+                # acknowledged window attached to this session for later forks.
+                imported_session = store.ensure_provider_session(
+                    provider=self.provider_id, backend_route_id=route.account_id,
+                    backend_session_id=thread_id, agent_id=request.agent_id, actor_ref=request.actor,
+                )
+                store.record_context_received(seed["source_agent_id"], imported_session["provider_session_ref"],
+                    [item["segment_id"] for item in seed["segments"]], actor_ref=request.actor)
+            return BackendResult(
+                output={
+                    "message": "",
+                    "provider": self.provider_id,
+                    "operation": operation,
+                    "context_result": "preserved_import" if seed else "fresh",
+                },
+                backend_session_id=thread_id,
+                backend_route_id=route.account_id,
+                available_harness_tool_names=frozenset(
+                    available_harness_tool_names
+                ),
+            )
         if operation == "fork":
             sandbox, sandbox_policy = self._sandbox_options(options)
             if not sandbox:
@@ -1666,6 +1691,9 @@ class CodexBackend:
                 if not snapshot or not snapshot.get("segments"):
                     raise
                 references = snapshot["segments"]
+                if request.metadata.get("preserve_session_context"):
+                    from .session_history_import import validate_codex_preservation
+                    validate_codex_preservation(references)
                 replacement = self._start_thread(
                     client, request, context.is_cancelled, invocation.harness_tools,
                 )
@@ -3785,18 +3813,21 @@ class KimiBackend(NativeSocketBackend):
         """List this turn's Portal tools in the catalog Kimi Code reads.
 
         Returns the turn's catalog and the dispatcher the tool gateway
-        serves.  A failure leaves the turn without Portal tools; the turn
-        still runs.
+        serves. An optional tool failure leaves the turn without Portal tools;
+        a required capability failure stops before the model turn starts.
         """
 
         from .native_harness_tools import prepare_tools
+        from .resident_capability_assembly import require_offered_tools
 
         if not getattr(invocation, "harness_tools", ()):
+            require_offered_tools(invocation, ())
             return [], None
         home = home if home is not None else _kimi_home()
         if not kimi_portal_tools.service_ready(home):
             # Without the hook Portal cannot tell which session makes a call.
             LOGGER.warning("The Kimi Code service runs without Portal's tool server and hook; restart it to offer Portal tools")
+            require_offered_tools(invocation, ())
             return [], None
         try:
             catalog, dispatch = prepare_tools(invocation, context)
@@ -3804,7 +3835,9 @@ class KimiBackend(NativeSocketBackend):
             publish_catalog(catalog, home)
         except Exception:  # noqa: BLE001 - Portal tools are an addition to the turn
             LOGGER.warning("Portal tools could not be offered to Kimi Code", exc_info=True)
+            require_offered_tools(invocation, ())
             return [], None
+        require_offered_tools(invocation, {tool["name"] for tool in catalog})
         return catalog, dispatch
 
     @staticmethod
@@ -3894,6 +3927,8 @@ class ChatCompletionService:
         invocation: BackendInvocation,
         context: BackendContext,
     ) -> BackendResult:
+        from .resident_capability_assembly import prepare
+        invocation = prepare(invocation, context)
         transport: dict[str, Any] = {}
         try:
             return self._execute(invocation, context, transport)
@@ -4053,10 +4088,17 @@ class AgentSessionService:
             prepared: BackendInvocation,
             backend_context: BackendContext,
         ) -> BackendResult:
-            return provider.execute(
-                prepare_backend_context_seed(provider, prepared),
-                backend_context,
-            )
+            from .resident_capability_assembly import prepare, observe_delivery
+            prepared = prepare(prepared, backend_context)
+            prepared = prepare_backend_context_seed(provider, prepared)
+            try:
+                result = provider.execute(prepared, backend_context)
+            except Exception:
+                observe_delivery(prepared, backend_context, completed=False)
+                raise
+            observe_delivery(prepared, backend_context, completed=True,
+                             available_names=result.available_harness_tool_names)
+            return result
         if not self.harness.should_run(invocation):
             return execute_with_context_seed(invocation, context)
         return self.harness.execute(

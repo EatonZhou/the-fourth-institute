@@ -420,9 +420,15 @@ def _prompt_injection_view(settings: dict[str, Any]) -> dict[str, Any]:
 
 
 def get_resident_settings(inv: Invocation) -> dict[str, Any]:
-    resident_id, settings = _readable_settings(inv)
+    resident_id = inv.argument("resident_id")
+    if _family_role(resident_id) == "facade":
+        resident_id = _facade_router(resident_id)
+    result = protocol().get_resident_runtime_settings(resident_id, inv.caller)
+    settings = result["runtime_settings"]
     # The same settings object UpdateResidentSettings accepts and returns.
-    return {"settings": settings, "prompt_injection": _prompt_injection_view(settings)}
+    return {"settings": settings, "prompt_injection": _prompt_injection_view(settings),
+            "settings_revision": result.get("settings_revision", ""),
+            "application": result.get("application", {})}
 
 
 def _prompt_injection_change(resident_id: str, caller: str, change: Any) -> dict[str, Any]:
@@ -455,13 +461,16 @@ def update_resident_settings(inv: Invocation) -> dict[str, Any]:
         resident_id = _facade_router(resident_id)
     if "prompt_injection" in changes:
         changes["prompt_injection"] = _prompt_injection_change(resident_id, inv.caller, changes["prompt_injection"])
-    result = protocol().update_resident_runtime_settings(
-        resident_id, inv.caller, {"runtime_settings": changes},
-    )
+    payload = {"runtime_settings": changes}
+    if inv.argument("expected_revision") is not None:
+        payload["expected_revision"] = inv.argument("expected_revision")
+    result = protocol().update_resident_runtime_settings(resident_id, inv.caller, payload)
     settings = result["runtime_settings"]
     next_turn = result["next_turn_fields"]
     return {"settings": settings, "next_turn_fields": list(next_turn),
-            "prompt_injection": _prompt_injection_view(dict(settings))}
+            "prompt_injection": _prompt_injection_view(dict(settings)),
+            "settings_revision": result.get("settings_revision", ""),
+            "application": result.get("application", {})}
 
 
 def _readable_settings(inv: Invocation) -> tuple[str, dict[str, Any]]:
@@ -499,7 +508,7 @@ def restart_session(inv: Invocation) -> dict[str, Any]:
         body["target_provider"] = inv.argument("provider")
     if inv.argument("account_id"):
         body["target_account"] = inv.argument("account_id")
-    for name in ("context_strategy", "active_execution_policy", "model", "reasoning_effort"):
+    for name in ("operation", "context_strategy", "active_execution_policy", "model", "reasoning_effort"):
         if inv.argument(name):
             body[name] = inv.argument(name)
     if inv.argument("resume_failed_input") is not None:
@@ -530,6 +539,11 @@ def get_session_restart(inv: Invocation) -> dict[str, Any]:
         "status": str(restart.get("status") or "none"),
         "source_session": restart.get("source") or result.get("source") or {},
         "target_session": restart.get("target") or {},
+        "operation_id": restart.get("operation_id") or restart.get("restart_id", ""),
+        "operation": restart.get("operation", "restart"),
+        "phase": restart.get("phase", ""),
+        "context_result": restart.get("context_result", ""),
+        "actual_binding": result.get("actual_binding") or {},
     }
 
 

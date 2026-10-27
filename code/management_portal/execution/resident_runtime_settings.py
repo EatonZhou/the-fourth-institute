@@ -129,6 +129,9 @@ def normalize_settings(raw: object) -> dict[str, Any]:
     if data.get("prompt_injection") is not None:
         from management_portal import prompt_injection
         out["prompt_injection"] = prompt_injection.normalize(data["prompt_injection"])
+    if "capability_config" in data:
+        from .resident_capability_settings import normalize_capability_config
+        out["capability_config"] = normalize_capability_config(data["capability_config"])
     from .resident_configuration import normalize_configuration_settings
     out.update(normalize_configuration_settings(data, backend))
     raw_harness = data.get("agent_harness")
@@ -183,6 +186,7 @@ def merge_settings(base: object, updates: object, *, actor: str = "", updated_at
         "runtime_settings_authority_at",
         "runtime_settings_authority_by",
         "prompt_injection",
+        "capability_config",
         "allow_subagents",
         "agent_harness",
         "prompt_context",

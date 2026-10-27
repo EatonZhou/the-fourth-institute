@@ -21,7 +21,6 @@ from management_portal.execution.accounts import (
 )
 from management_portal.execution.contracts import ExecutionRequest
 from management_portal.execution.provider_catalog import AGENT_PROVIDERS
-from management_portal.execution.session_tools import session_lacks_required_tools
 from typing import Any, Mapping
 import copy
 import hashlib
@@ -30,10 +29,10 @@ import math
 import secrets
 import time
 
-from . import resident_domain_common
+from . import resident_domain_common, resident_session_preservation as preservation
 
 SESSION_RESTART_STRATEGIES = frozenset(
-    {"smart", "native", "compact", "visible", "fresh"}
+    {"preserve", "smart", "native", "compact", "visible", "fresh"}
 )
 SESSION_RESTART_ACTIVE_EXECUTION_POLICIES = frozenset({"wait", "cancel"})
 
@@ -286,8 +285,13 @@ def _session_restart_runtime_options(
     target_route: str = "",
 ) -> dict[str, Any]:
     from . import resident_record_domain, resident_runtime_domain
+    settings = copy.deepcopy(dict(runtime_settings if runtime_settings is not None
+                                  else resident_runtime_domain.read_resident_runtime_settings(record)))
     return {
-        "runtime_settings": dict(runtime_settings or resident_runtime_domain.read_resident_runtime_settings(record)),
+        "runtime_settings": settings,
+        "resident_assembly": {"settings_revision": resident_runtime_domain.resident_settings_revision(
+            {**record, "backend": provider, "backend_route_id": target_route}, settings,
+        )},
         "provider_profile": target_route,
         # The new session is created where the Resident's turns look for it.
         # Without this a Provider that keeps sessions in a per-binding
@@ -372,14 +376,15 @@ def get_resident_restart_options(
         "restart": copy.deepcopy(record.get("session_restart") or {}),
         "runtime_settings": resident_runtime_domain.read_resident_runtime_settings(record),
         "choose_runtime_settings": True,
+        "preservation_capabilities": preservation.preservation_capabilities(),
         "providers": [{"id": row["provider"], "label": row.get("label", row["provider"]),
                        "operations": row.get("operations", [])} for row in catalog],
         "accounts": {row["provider"]: [{"id": route["backend_route_id"], "account_id": route.get("account_id", ""), "label": route["label"]} for route in row["routes"]]
                      for row in catalog},
         "strategies": [
-            {"id": "smart", "label": "智能选择", "recommended": True},
-            {"id": "compact", "label": "精简交接"},
-            {"id": "visible", "label": "可见对话"},
+            {"id": "preserve", "label": "完整保留上下文", "recommended": True},
+            {"id": "compact", "label": "精简交接（模型操作）"},
+            {"id": "visible", "label": "可见对话交接（模型操作）"},
             {"id": "native", "label": "Provider 原生 Fork"},
             {"id": "fresh", "label": "全新上下文"},
         ],
@@ -406,6 +411,7 @@ def get_resident_session_restart(
             resident_backend.session_record(target.record),
         ),
         "restart": copy.deepcopy(target.record.get("session_restart") or {}),
+        "actual_binding": resident_backend.session_record(target.record),
     }
 
 
@@ -433,6 +439,14 @@ def restart_resident_session(
     )
 
     body = payload if isinstance(payload, dict) else {}
+    operation = str(body.get("operation") or "restart")
+    if operation not in {"switch_account", "restart"}:
+        raise ValueError("operation 必须是 switch_account 或 restart")
+    requested_strategy = str(body.get("context_strategy") or "preserve").strip().lower()
+    if operation == "switch_account" and requested_strategy != "preserve":
+        raise ValueError("switch_account requires context_strategy=preserve")
+    if operation == "switch_account" and body.get("resume_failed_input"):
+        raise ValueError("账号切换不重派失败输入；请对具体输入单独重试")
     actor_id = canonical_actor_id(actor)
     if not actor_id:
         raise ValueError("需要登录后重启 session")
@@ -457,18 +471,24 @@ def restart_resident_session(
         from .resident_deferred_restart import pending as deferred_restart
         deferred = deferred_restart(record)
         if request_id and deferred.get("request_id") == request_id:
+            preservation.check_replay(previous_restart, body)
             return copy.deepcopy(previous_restart)
         if deferred and request_id != (deferred.get("payload") or {}).get("idempotency_key"):
             raise ValueError("已有等待本轮结束的迁移，请先取消原迁移")
         if request_id and previous_restart.get("request_id") == request_id:
+            preservation.check_replay(previous_restart, body)
             return copy.deepcopy(previous_restart)
         source_binding = resident_backend.session_record(record)
+        source_configuration = preservation.configuration_version(record)
     source = _session_restart_source(record, source_binding)
     source_provider = _session_restart_provider(source["provider"])
     target_provider = _session_restart_provider(
         body.get("target_provider") or source_provider
     )
-    requested_strategy = str(body.get("context_strategy") or "smart").strip().lower()
+    if source_provider != target_provider and (
+        not isinstance(body.get("model"), str) or not body["model"].strip()
+    ):
+        raise ValueError("跨 Provider 切换必须明确指定目标 model")
     if requested_strategy not in SESSION_RESTART_STRATEGIES:
         raise ValueError("未知的 session 重启上下文策略")
     active_execution_policy = str(body.get("active_execution_policy") or "wait").strip().lower()
@@ -482,7 +502,18 @@ def restart_resident_session(
         raise ValueError("请选择 Model API 账号")
     selected_account = resolve_account_configuration(requested_route if target_provider == "provider_api" else target_provider, requested_route)
     target_route = requested_route if target_provider == "provider_api" else str(selected_account.get("backend_route_id") or "")
-    current_settings = resident_runtime_domain.read_resident_runtime_settings(record) if source_provider == target_provider and source_route == target_route else {}
+    if operation == "switch_account" and source_provider == target_provider and source_route == target_route:
+        return {"status": "completed", "phase": "unchanged", "no_op": True,
+                "operation": operation, "operation_id": "", "restart_id": "", "resident_id": resident_id,
+                "context_strategy": "preserve", "context_result": "unchanged",
+                "actual_binding": copy.deepcopy(source_binding), "model_operation": False}
+    current_settings = resident_runtime_domain.read_resident_runtime_settings(record)
+    if source_provider != target_provider:
+        # Portal intent survives Provider changes. Provider model/transport
+        # parameters are reconciled independently against the destination.
+        current_settings = {key: copy.deepcopy(current_settings[key]) for key in (
+            "capability_config", "prompt_injection", "agent_harness", "prompt_context", "allow_subagents",
+        ) if key in current_settings}
     native_fields = ("collaboration_mode", "service_tier", "permission_preset")
     native_updates = {key: body[key] for key in native_fields if key in body}
     if target_provider == "provider_api":
@@ -492,7 +523,8 @@ def restart_resident_session(
             raise ValueError("Model API 不支持原生会话的 Mode、Speed 或 Permissions")
         if body.get("reasoning_effort"):
             raise ValueError("Model API 推理参数应放在 backend_options.parameters 中")
-        settings = {key: value for key, value in current_settings.items() if key in API_RUNTIME_SETTINGS}
+        settings = {key: value for key, value in current_settings.items()
+                    if key in {*API_RUNTIME_SETTINGS, "capability_config", "allow_subagents"}}
         settings.update({key: body[key] for key in ("model", "prompt_context", "backend_options") if key in body})
         target_runtime_settings = resident_runtime_domain.resident_runtime_settings_from_register_payload(
             {**record, "backend": target_provider, "backend_route_id": target_route},
@@ -502,6 +534,8 @@ def restart_resident_session(
         if "prompt_context" in body or "backend_options" in body:
             raise ValueError("迁移中的 prompt_context/backend_options 仅适用于 Model API")
         target_runtime_settings = definition.runtime_adapter().reconcile(definition, target_route, current_settings)
+        from management_portal.execution.resident_configuration import normalize_configuration_settings
+        target_runtime_settings.update(normalize_configuration_settings(target_runtime_settings, target_provider))
     if definition and (body.get("model") or body.get("reasoning_effort")):
         model, effort = definition.validate_settings(target_route,
             str(body.get("model") or target_runtime_settings.get("model") or ""),
@@ -532,12 +566,19 @@ def restart_resident_session(
     if target_provider == "provider_api" and strategy == "native":
         raise ValueError("Model API 不支持 Provider 原生 Fork")
     if strategy == "smart":
-        # A native fork keeps the source thread's tools; a session missing a
-        # required tool needs a new thread, so it is handed over compactly.
-        strategy = "native" if (
-            same_native_route and not unbound_previous_session
-            and not session_lacks_required_tools(source_binding)
-        ) else "compact"
+        strategy = "preserve"  # Compatibility never implies a lossy handoff.
+    preserve_context = strategy == "preserve"
+    if preserve_context and (source["has_session"] or unbound_previous_session):
+        if source_provider != target_provider:
+            raise ValueError("Cannot preserve full context across these Providers; original session retained")
+        if same_native_route and source["has_session"]:
+            strategy = "native"
+        elif target_provider == "codex":
+            strategy = "preserve"
+        elif target_provider != "provider_api" or source_route != target_route:
+            raise ValueError("目标账号不支持完整上下文导入，原会话已保留")
+    if target_provider == "provider_api" and strategy in {"compact", "visible"}:
+        raise ValueError("Model API does not support an explicit session handoff operation")
     if source["has_session"] and strategy == "native" and not same_native_route:
         raise ValueError(
             "Provider 原生 Fork 只适用于同一 provider/account；请使用智能选择或精简交接"
@@ -548,17 +589,23 @@ def restart_resident_session(
         )
 
     intent = {
+        "operation": operation,
         "source_generation": source["generation"], "target_provider": target_provider,
         "target_account": target_route, "context_strategy": strategy, "active_execution_policy": active_execution_policy,
-        "resume_failed_input": body.get("resume_failed_input", True),
+        "resume_failed_input": body.get("resume_failed_input", False),
         **({"runtime_settings": {key: body[key] for key in ("model", "reasoning_effort", "collaboration_mode", "service_tier", "permission_preset", "prompt_context", "backend_options") if key in body}}
            if any(key in body for key in ("model", "reasoning_effort", "collaboration_mode", "service_tier", "permission_preset", "prompt_context", "backend_options")) else {}),
     }
     if not isinstance(intent["resume_failed_input"], bool):
         raise ValueError("resume_failed_input 必须是 boolean")
     from .resident_work_recovery import latest_failed_input
+    # An explicit opt-out must also suppress an older automatic recovery choice.
+    # An omitted choice keeps the default non-retry path free of unrelated inputs.
     failed_input = latest_failed_input(record) if (
-        source_provider != target_provider or source_route != target_route
+        body.get("resume_failed_input") is False
+        or intent["resume_failed_input"] and (
+            source_provider != target_provider or source_route != target_route
+        )
     ) else {}
     resume_message_id = str(failed_input.get("message_id") or "") if intent["resume_failed_input"] else ""
     try:
@@ -622,7 +669,10 @@ def restart_resident_session(
     # handoff response. Its public identity must not become a second restart.
     restart_id = str(previous_restart['restart_id']) if deferred else f"restart_{secrets.token_hex(12)}"
     public_request_id = str(deferred['request_id']) if deferred else request_id
-    if target_provider == "provider_api" or (not source["has_session"] and not unbound_previous_session):
+    configuration_only = (target_provider == "provider_api" or
+                          (strategy == "fresh" and (definition is None or "create" not in definition.operations)) or
+                          (not source["has_session"] and not unbound_previous_session))
+    if configuration_only:
         with resident_record_domain.state_lock(resident_id):
             current = copy.deepcopy(resident_record_domain.find_resident(resident_id) or {})
             if not current:
@@ -631,11 +681,14 @@ def restart_resident_session(
                 raise manage_refusal(current)
             previous = current.get("session_restart") or {}
             if request_id and previous.get("request_id") == request_id:
+                preservation.check_replay(previous, body)
                 return copy.deepcopy(previous)
             pending = _admitted_session_restart(current, intent)
             if pending:
                 return pending
             current_binding = resident_backend.session_record(current, expected_binding=source_binding)
+            if preservation.configuration_version(current) != source_configuration:
+                raise ValueError("Resident configuration changed before session preparation")
             if bool(current_binding) != bool(source_binding):
                 raise ValueError("当前 Session 已变化，请刷新后重试")
             active_now = resident_execution_work.read(current)
@@ -661,6 +714,10 @@ def restart_resident_session(
                 runtime_settings=target_runtime_settings,
             )
             state = {
+                "operation": operation, "operation_id": restart_id,
+                "request_signature": preservation.request_signature(body),
+                "context_result": "fresh" if strategy == "fresh" else "preserved",
+                "model_operation": False,
                 "status": "completed", "phase": "completed", "configuration_only": True,
                 "restart_id": restart_id, "request_id": public_request_id,
                 "resident_id": target.resident_id,
@@ -685,7 +742,7 @@ def restart_resident_session(
             current["updated_at"] = state["configured_at"]
             def commit_configuration():
                 resident_record_domain.save_resident_record(current, commit_configuration=True)
-                if target_provider == "provider_api" and strategy == "fresh":
+                if strategy == "fresh":
                     execution_port.reset_provider_context(resident_id, actor_ref=actor_id, reset_at=state["configured_at"])
                 refreshed = current
                 if failed_input:
@@ -693,15 +750,16 @@ def restart_resident_session(
                     if not intent["resume_failed_input"]:
                         set_recovery_entry(current, str(failed_input["message_id"]), disabled=True)
                         resident_record_domain.save_resident_record(current)
-                    resume_after_restart(current, state)
-                    refreshed = resident_record_domain.find_resident(resident_id)
-                    refreshed["session_restart"] = state
-                    resident_record_domain.save_resident_record(refreshed)
+                    else:
+                        resume_after_restart(current, state)
+                        refreshed = resident_record_domain.find_resident(resident_id)
+                        refreshed["session_restart"] = state
+                        resident_record_domain.save_resident_record(refreshed)
                 if intake_transition_id and refreshed.get("intake_transition_id") == intake_transition_id:
                     resident_input_queue_domain.commit_resident_intake_state(refreshed, resident_state.INTAKE_OPEN)
             replacement = None
             try:
-                if target_provider == "provider_api":
+                if target_provider == "provider_api" or strategy == "fresh":
                     if source_binding:
                         resident_backend.delete_session_identity(current, expected_provider_session_ref=str(source_binding.get("provider_session_ref") or ""))
                         replacement = {"previous_binding": source_binding, "current_binding": {
@@ -728,21 +786,16 @@ def restart_resident_session(
             "enabled": True,
         }
     prompt = ""
-    if strategy != "native":
-        prompt = (
-            "[Portal Session Initialization]\n\n"
-            "当前任务仅为同一 Resident 的全新 Provider session 建立空白上下文，"
-            "并确认初始化完成。本次初始化不派发业务任务，也不启动后台目标。"
-            if strategy == "fresh"
-            else _session_restart_handoff_prompt(
+    if strategy in {"compact", "visible"}:
+        prompt = _session_restart_handoff_prompt(
                 record,
                 resident_conversation_stream.get_repository().snapshot(target.resident_id, history_limit=36),
                 strategy=strategy,
             )
-        )
     injection_record = {**record, "backend": target_provider, "backend_route_id": target_route}
     request = resident_session_backend_domain.build_backend_session_operation_request(
-        backend=target_provider, operation="fork" if strategy == "native" else "turn",
+        backend=target_provider, operation=("fork" if strategy == "native" else
+                                           "turn" if strategy in {"compact", "visible"} else "create"),
         actor=actor_id, cwd=resident_runtime_domain.resident_working_directory(record), prompt=prompt,
         binding_id=prepared_binding_id, correlation_id=restart_id,
         source_binding_id=resident_backend.execution_binding_id(record) if strategy == "native" else "",
@@ -756,13 +809,19 @@ def restart_resident_session(
         ),
         # The prepared binding does not name the Resident, and the new thread
         # keeps the tools it starts with: without this it never has hatg_instruction.
-        metadata={"resident_id": target.resident_id},
+        metadata={"resident_id": target.resident_id, "preserve_session_context": strategy in {"native", "preserve"},
+                  "expected_source_binding": copy.deepcopy(source_binding)},
         system_instructions=(
             resident_execution_domain.resident_system_instructions(injection_record, {}, settings=target_runtime_settings)
             if strategy != "native" else None
         ),
     )
     state = {
+        "operation": operation, "operation_id": restart_id,
+        "request_signature": preservation.request_signature(body),
+        "source_configuration": source_configuration,
+        "model_operation": strategy in {"compact", "visible"},
+        "context_result": "pending",
         "status": "accepted", "phase": "accepted", "restart_id": restart_id, "request_id": public_request_id,
         "intent": intent, "execution_id": request.execution_id, "submitted_by": actor_id,
         "resident_id": target.resident_id, "requested_strategy": requested_strategy,
@@ -794,6 +853,8 @@ def restart_resident_session(
         if pending:
             return pending
         current_binding = resident_backend.session_record(current, expected_binding=source_binding)
+        if preservation.configuration_version(current) != source_configuration:
+            raise ValueError("Resident configuration changed before session preparation")
         if bool(current_binding) != bool(source_binding):
             raise ValueError("当前 Session 已变化，请刷新后重试")
         active_now = resident_execution_work.read(current)
@@ -806,6 +867,10 @@ def restart_resident_session(
         )
         if resident_execution_work.is_active(active_now) and not same_held_job:
             raise ValueError("Resident 已开始新的工作，请稍后重试")
+        if strategy == "preserve":
+            from dataclasses import replace
+            request = replace(request, metadata={**request.metadata,
+                "fork_context_input": preservation.canonical_seed(current, source_binding)})
         def commit():
             transition_id = intake_transition_id
             if current.get("intake_open") is not False:
@@ -872,7 +937,7 @@ def resume_resident_session_restart(step: dict[str, Any]) -> None:
         phase = "cancelling" if cancel_requested else "queued"
         if snapshot.get("status") in {"claimed", "running"}:
             prepared = resident_backend.session_record_for_binding(step["prepared_binding_id"])
-            phase = "initializing" if prepared.get("backend_session_id") else "creating_session"
+            phase = ("initializing" if state.get("model_operation") else "importing_context") if prepared.get("backend_session_id") else "creating_session"
         else:
             reason = (snapshot.get("scheduler") or {}).get("queue_reason")
             if reason in {"quota_reserve", "capacity", "dispatch_interval", "session_binding"}:
@@ -900,6 +965,9 @@ def resume_resident_session_restart(step: dict[str, Any]) -> None:
         same_held_job = False
         if not failure and not cancel_requested:
             try:
+                if (state.get("source_configuration") and
+                        preservation.configuration_version(current) != state["source_configuration"]):
+                    raise ValueError("Resident configuration changed while preparing candidate session")
                 active_now = resident_execution_work.read(current)
                 preserved_held_input = state.get("preserved_held_input") or {}
                 same_held_job = bool(
@@ -952,6 +1020,9 @@ def resume_resident_session_restart(step: dict[str, Any]) -> None:
             "phase": "cancelled" if cancel_requested else "failed" if failure else "completed",
             "provider": target_provider, "account_id": target_route,
             "restarted_by": request.actor, "restarted_at": resident_domain_common.now_iso(),
+            "context_result": ("unchanged" if failure or cancel_requested else
+                               "fresh" if state["context_strategy"] == "fresh" else
+                               "summarized" if state.get("model_operation") else "preserved"),
         }
         if cancel_requested:
             next_state["cancelled_by"] = str(current_restart.get("cancelled_by") or request.actor)
@@ -971,10 +1042,11 @@ def resume_resident_session_restart(step: dict[str, Any]) -> None:
                 if state.get("failed_message_id") and state.get("resume_failed_input") is False:
                     set_recovery_entry(current, state["failed_message_id"], disabled=True)
                     resident_record_domain.save_resident_record(current)
-                resume_after_restart(current, next_state)
-                refreshed = resident_record_domain.find_resident(resident_id)
-                refreshed["session_restart"] = next_state
-                resident_record_domain.save_resident_record(refreshed)
+                elif state.get("resume_failed_input"):
+                    resume_after_restart(current, next_state)
+                    refreshed = resident_record_domain.find_resident(resident_id)
+                    refreshed["session_restart"] = next_state
+                    resident_record_domain.save_resident_record(refreshed)
         try:
             resident_catalog.get_catalog().state_store.transaction(commit)
         except Exception:

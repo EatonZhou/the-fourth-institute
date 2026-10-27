@@ -425,6 +425,15 @@ def write_resident_runtime_settings(record: dict, settings: dict[str, Any]) -> d
     return persisted
 
 
+def resident_settings_revision(record: dict[str, Any], settings: dict[str, Any]) -> str:
+    from management_portal.execution.resident_capability_settings import settings_revision
+
+    return settings_revision(
+        settings, backend=str(record.get("backend") or ""),
+        backend_route_id=str(record.get("backend_route_id") or ""),
+    )
+
+
 def reconcile_resident_codex_runtime_configuration(
     record: dict[str, Any],
 ) -> dict[str, Any]:
@@ -465,9 +474,20 @@ def validate_backend_runtime_updates(
     current: object,
     updates: dict[str, Any],
 ) -> dict[str, Any]:
+    # Capability intent belongs to Portal, not the Provider model catalogue.
+    # Saving it must not start a discovery process or a Provider session.
+    from management_portal.execution.resident_capability_settings import normalize_capability_config
+    capability_updates = {}
+    updates = dict(updates)
+    if "capability_config" in updates:
+        capability_updates["capability_config"] = normalize_capability_config(updates.pop("capability_config"))
+    if not updates:
+        return capability_updates
+    current = dict(current or {})
+    current.pop("capability_config", None)
     if resident_backend.execution_backend(record) == "provider_api":
         from management_portal.execution.resident_configuration import validate_api_settings
-        return validate_api_settings(str(record.get("backend_route_id") or ""), current or {}, updates)
+        return {**validate_api_settings(str(record.get("backend_route_id") or ""), current, updates), **capability_updates}
     definition = AGENT_PROVIDERS.get(resident_backend.execution_backend(record))
     if not definition:
         if updates:
@@ -475,7 +495,7 @@ def validate_backend_runtime_updates(
         return {}
     binding = resident_backend.session_record(record) if record.get("resident_id") else {}
     route = str(binding.get("backend_route_id") or record.get("backend_route_id") or definition.default_route)
-    return definition.runtime_adapter().validate_updates(definition, route, current, updates)
+    return {**definition.runtime_adapter().validate_updates(definition, route, current, updates), **capability_updates}
 
 
 def resident_runtime_settings_from_register_payload(record: dict, payload: dict, actor_id: str, now: str) -> dict[str, Any]:

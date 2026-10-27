@@ -25,7 +25,7 @@ def runtime_settings_updates_from_payload(
     allowed = {
         "model", "reasoning_effort", "service_tier",
         "permission_preset", "collaboration_mode", "agent_harness",
-        "prompt_injection", "allow_subagents",
+        "prompt_injection", "capability_config", "allow_subagents",
         "prompt_context", "backend_options",
         "backend_role", "backend_role_fallback",
     }
@@ -73,6 +73,9 @@ def runtime_settings_updates_from_payload(
     if "prompt_injection" in data:
         from management_portal import prompt_injection
         updates["prompt_injection"] = prompt_injection.normalize(data["prompt_injection"])
+    if "capability_config" in data:
+        from management_portal.execution.resident_capability_settings import normalize_capability_config
+        updates["capability_config"] = normalize_capability_config(data["capability_config"])
     if "agent_harness" in data:
         raw_harness = data["agent_harness"]
         if not isinstance(raw_harness, dict):

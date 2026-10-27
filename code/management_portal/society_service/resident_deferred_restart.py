@@ -11,11 +11,13 @@ def pending(record):
 
 def schedule(record, actor, payload, source, intent, *, portal_reason=""):
     from . import resident_domain_common, resident_input_queue_domain, resident_record_domain
+    from .resident_session_preservation import request_signature, check_replay
     rid = record["resident_id"]
     with resident_record_domain.state_lock(rid):
         current = copy.deepcopy(resident_record_domain.find_resident(rid))
         previous = pending(current)
         if previous.get("request_id") == payload.get("idempotency_key") and previous:
+            check_replay(current["session_restart"], payload)
             return copy.deepcopy(current["session_restart"])
         if previous:
             raise ValueError("已有等待本轮结束的迁移，请先取消原迁移")
@@ -25,6 +27,9 @@ def schedule(record, actor, payload, source, intent, *, portal_reason=""):
                  "request_id": request_id, "resident_id": rid, "submitted_by": actor, "submitted_at": resident_domain_common.now_iso(),
                  "source": {"provider": source["provider"], "account_id": source["account_id"]}, "target": {"provider": intent["target_provider"], "account_id": intent["target_account"]},
                  "requested_strategy": intent["context_strategy"], "intent": intent, "previous_session_retained": True}
+        state.update(operation=intent.get("operation", "restart"), operation_id=state["restart_id"],
+                     request_signature=request_signature(payload), context_result="pending",
+                     model_operation=intent["context_strategy"] in {"compact", "visible"})
         if portal_reason:
             state["reason"] = portal_reason
         def commit():
@@ -59,7 +64,7 @@ def cancel(record, restart_id):
         return None
     if deferred.get('handoff') and deferred['handoff'].get('phase') != 'withdrawn':
         raise ValueError('排队执行正在交接，请在回执确认后取消迁移')
-    state = {**state, "status": "cancelled", "phase": "cancelled"}
+    state = {**state, "status": "cancelled", "phase": "cancelled", "context_result": "unchanged"}
     record["session_restart"] = state
     _release(record, deferred)
     return copy.deepcopy(state)

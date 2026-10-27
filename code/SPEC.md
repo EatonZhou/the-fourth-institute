@@ -73,6 +73,7 @@
 - [Ask Me Anything 的个人 Resident 入口关联](/r/decision_bd5217d08c09)
 - [Resident Fork 的上下文继承与 Provider 选择](/r/decision_5bf5bfbd52cb)
 - [Resident Session 重启、账号切换与上下文清空](/r/decision_c47a13e8b962)
+- [Resident 能力配置、会话装配与账号切换协议](/r/decision_ccbb1cac24aa)
 - [Lineage Folder 的聚合布局与节点目录](/r/decision_721c64f9bdcc)
 - [Resident Folder、连续性记录与节点 owned Workspace](/r/decision_ccb99a00eebd)
 - [Resident Watchboard 的脚本、配置、命令与工作台应用](/r/decision_0571f3741e23)

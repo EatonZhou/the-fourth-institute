@@ -721,13 +721,15 @@ def initialize_resident_context_from_source(
     actor: str,
     preparation_id: str = "",
 ) -> None:
+    """Freeze registration's inherited context without starting a Provider.
+
+    The first accepted input owns session creation and context delivery. This
+    path prepares identity/history only; explicit Fork initialization keeps
+    its separate lifecycle and recovery owner.
+    """
     from . import (
-        resident_access,
         resident_domain_common,
-        resident_execution_domain,
         resident_record_domain,
-        resident_runtime_domain,
-        resident_session_backend_domain,
     )
     source_target = resident_record_domain.resolve_resident_runtime_target(
         source_resident_id,
@@ -735,7 +737,6 @@ def initialize_resident_context_from_source(
         require_visible=True,
     )
     source = source_target.record
-    target_backend = resident_backend.execution_backend(record)
     mode = str(context_mode or "full").strip().lower()
     if mode not in {"full", "5", "10"}:
         raise ValueError("context mode 必须是 full、5 或 10")
@@ -749,35 +750,13 @@ def initialize_resident_context_from_source(
     )
     stage_agent_data_fork(record, resident_domain_common.record_resident_id(source),
         segment_ids=[item["segment_id"] for item in segments])
-    definition = AGENT_PROVIDERS[target_backend]
     record.update({
         "source_resident_id": resident_domain_common.record_resident_id(source),
         "context_source_resident_id": resident_domain_common.record_resident_id(source),
         "forked_from_at": resident_domain_common.now_iso(),
     })
     record["fork_mode"] = "full" if mode == "full" else f"recent-{mode}"
-    if not resident_backend.record_session_id(record) and "create" in definition.operations:
-        account = resident_backend.execution_account(record)
-        resident_session_backend_domain.run_backend_session_operation(
-            backend=definition.provider,
-            operation="create",
-            actor=actor,
-            cwd=resident_runtime_domain.resident_working_directory(record),
-            binding_id=resident_backend.execution_binding_id(record),
-            backend_route_id=str(account.get("backend_route_id") or ""),
-            runtime_options=resident_execution_domain.resident_execution_runtime_options(
-                record,
-                {},
-                is_owner=resident_access.has_resident_workspace_authority(record, actor),
-            ),
-            preparation_id=preparation_id,
-        )
-    if not resident_backend.record_session_id(record) and not definition.resume_without_session:
-        raise ValueError(
-            f"{definition.label} cannot create a fresh context-seeded session"
-        )
-    record["session_state"] = "active"
-    record["session_created_via"] = "source_resident_derivation"
+    record["session_state"] = "pending_create"
     record["updated_at"] = resident_domain_common.now_iso()
 
 

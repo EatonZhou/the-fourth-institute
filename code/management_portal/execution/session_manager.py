@@ -252,7 +252,8 @@ class SessionManager:
                 session_context = destination
         if options.context_source_binding_id and not destination_exists:
             source_binding = self.provider_binding(
-                options.context_source_binding_id
+                options.context_source_binding_id,
+                expected_binding=request.metadata.get("expected_source_binding"),
             )
             if not source_binding:
                 raise KeyError(

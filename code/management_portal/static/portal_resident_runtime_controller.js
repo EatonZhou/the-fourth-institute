@@ -26,6 +26,7 @@
       restart: options => window.PortalChatWorkspace.createSessionRestartDialog(options),
     };
     const state = e => ({ residentId: e.id, detail: e.detail, settings: e.settings, catalog: e.catalog,
+      settings_revision: e.settingsRevision, application: e.application,
       canEdit: mayEdit(e.detail), canRestart: e.detail?.allows?.RestartSession === true,
       loading: !!e.loading, busy: !!e.saving || !!e.opening, restart: e.restart, error: e.error });
     const notify = e => e.bindings.forEach(b => b.adapters.onState?.(state(e)));
@@ -61,6 +62,7 @@
         if (e.revision !== revision) return;
         e.detail = detail; e.settings = clone(result.settings || result.runtime_settings || {});
         if (e.pendingSave && Object.entries(e.pendingSave.changes).every(([k, v]) => equal(v, e.settings[k]))) e.pendingSave = null;
+        e.settingsRevision = result.settings_revision; e.application = result.application;
         e.catalog = catalog; e.valid = true; e.error = "";
         if (e.bindings.size) observe(e);
       })();
@@ -110,7 +112,7 @@
           invalidate(id); throw denied();
         }
       };
-      async function save(selected, initial, token, identity, route) {
+      async function save(selected, initial, token, identity, route, version) {
         check(token, identity);
         if (e.saving) return e.saving;
         const changes = Object.fromEntries(Object.entries(selected).filter(([k, v]) => !equal(v, initial[k])));
@@ -118,10 +120,11 @@
         e.saving = (async () => {
           await freshDetail(token, identity, route);
           if (e.pendingSave && !equal(changes, e.pendingSave.changes)) throw stale();
-          e.pendingSave ||= { changes: clone(changes), key: window.PortalUIPrimitives.randomUUID() };
+          e.pendingSave ||= { changes: clone(changes), key: window.PortalUIPrimitives.randomUUID(), revision: version.revision };
           try {
-            const result = await service().updateRuntimeSettings(id, changes, e.pendingSave.key);
+            const result = await service().updateRuntimeSettings(id, changes, e.pendingSave.key, e.pendingSave.revision);
             e.pendingSave = null;
+            version.revision = result.settings_revision;
             invalidate(id); await load(e).catch(() => {}); changed(e, result);
             window.PortalChatWorkspace?.notifyRuntimeSettingsSaved?.(result);
             return result;
@@ -135,6 +138,7 @@
       }
       function present(kind, token, focusTarget, config) {
         const identity = identityRevision, route = routeKey(e.detail);
+        const version = {revision: e.settingsRevision};
         const onClose = () => {
           b.generation++;
           if (e.presentation === b) e.presentation = null;
@@ -145,8 +149,8 @@
         b.dialog = dialogs[kind]({ onClose }); e.presentation = b; adapters.onOpen?.();
         if (kind === "settings") {
           const initial = clone(e.settings);
-          b.dialog.open(initial, selected => save(selected, initial, token, identity, route), {
-            catalog: e.catalog, residentId: id, residentSettings: initial,
+          b.dialog.open(initial, selected => save(selected, initial, token, identity, route, version), {
+            catalog: e.catalog, residentId: id, residentSettings: initial, application: e.application,
             accountId: e.detail.execution_account?.account_id,
             title: window.PortalI18n.t("Runtime Settings"),
             hint: window.PortalI18n.t("保存不会重启 Session，设置从下一轮生效。"),
@@ -155,9 +159,10 @@
           let submission = null;
           const initial = clone(e.settings);
           b.dialog.open({ ...config, runtime_settings: initial, runtime_catalog: e.catalog,
+            settings_revision: e.settingsRevision, application: e.application,
             resident_id: id, choose_runtime_settings: true,
             onSave: mayEdit(e.detail) ? async selected => {
-              const result = await save(selected, initial, token, identity, route);
+              const result = await save(selected, initial, token, identity, route, version);
               Object.assign(initial, result?.settings || selected);
               return result;
             } : null,
@@ -191,10 +196,11 @@
           e.valid = false; await load(e);
           if (!live(token) || identity !== identityRevision) return;
           if (kind === "restart" && e.detail?.allows?.RestartSession !== true) throw denied();
+          const initialView = kind === "settings" ? "parameters" : "switch_account";
           kind = e.detail?.allows?.RestartSession === true ? "restart" : "settings";
           if (kind === "settings" && !mayEdit(e.detail)) throw denied();
           if (kind === "restart" && e.detail?.allows?.RestartSession !== true) throw denied();
-          const config = kind === "restart" ? await service().sessionRestartOptions(id) : null;
+          const config = kind === "restart" ? {...await service().sessionRestartOptions(id), initial_view: initialView} : null;
           if (!live(token) || identity !== identityRevision) return;
           present(kind, token, focusTarget, config);
         })();
