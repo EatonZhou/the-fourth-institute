@@ -275,6 +275,35 @@ def test_wall_index_uses_ids_and_project_relative_links_contracts(tmp_path, subt
         assert point['id'] == parse_points(Source(source.address, 'Plan', 'Old label', 'improvement'), '# Plan\n## 改进点\n- **Improve**. More useful.\n')[0]['id']
 
 
+def test_wall_local_source_addresses_match_markdown_relations_on_all_platforms(tmp_path):
+    """原生文件路径不得改变墙面地址、分类及 Markdown 关联。"""
+    directory = tmp_path / ".wall"
+    (directory / "plans").mkdir(parents=True)
+    (tmp_path / "SPEC.md").write_text("# Spec\n\n[Design](.wall/design.md)\n", encoding="utf-8")
+    (tmp_path / "IMPROVE.md").write_text(
+        "# Improve\n\n[Plan](.wall/plans/fix.md)\n\n[Issue](.wall/inconsistencies.md)\n", encoding="utf-8")
+    (directory / "design.md").write_text(
+        '# Design\n## 设计点\n<!-- wall: {"key":"rule"} -->\n- **Rule**. Exact result.\n', encoding="utf-8")
+    (directory / "inconsistencies.md").write_text(
+        '# Issues\n## 不一致点\n<!-- wall: {"key":"precision"} -->\n- **Precision**. Result differs.\n', encoding="utf-8")
+    # This file is discovered without an index link, covering the fallback scan.
+    (directory / "directions.md").write_text(
+        '# Directions\n## 演化方向\n- **Exact arithmetic**. Preserve precision.\n', encoding="utf-8")
+    (directory / "plans/fix.md").write_text(
+        '<!-- wall: {"related":[".wall/design.md#rule",".wall/inconsistencies.md#precision"]} -->\n'
+        '# Fix precision\n\nPreserve the exact result.\n', encoding="utf-8")
+    sources = index_sources(tmp_path)
+    assert {source.address: source.kind for source in sources} == {
+        ".wall/design.md": "design", ".wall/plans/fix.md": "improvement",
+        ".wall/inconsistencies.md": "inconsistency", ".wall/directions.md": "direction",
+    }
+    points = {point["id"]: point for source in sources
+              for point in parse_points(source, (tmp_path / source.address).read_text(encoding="utf-8"))}
+    plan = points[".wall/plans/fix.md#plan"]
+    assert all(reference in points for reference in plan["related"])
+    assert points[plan["related"][1]]["kind"] == "inconsistency"
+
+
 def test_wall_mutually_linked_indexes_are_not_executable_points(tmp_path, subtests, isolated_portal_case):
     """WALL 相互链接的导航索引不被识别为可执行设计点"""
     for spec_name in ["SPEC.md", "Spec.md"]:

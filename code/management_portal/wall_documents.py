@@ -269,7 +269,8 @@ def _indexed_sources(root: Path, versions: tuple, spec_only: bool = False) -> tu
                         continue
                     if target in index_paths:
                         continue
-                    address = str(target.relative_to(root))
+                    # Markdown references are portable addresses, not OS paths.
+                    address = target.relative_to(root).as_posix()
                     target_kind = wall_sources.get(address, kind)
                     links.append((address, target.stem))
                     # A prose/list entry owns its first Markdown target; later
@@ -297,7 +298,7 @@ def _indexed_sources(root: Path, versions: tuple, spec_only: bool = False) -> tu
     for address, kind in (() if spec_only else wall_sources.items()):
         path = root / address
         if path.is_file():
-            address = str(path.relative_to(root))
+            address = path.relative_to(root).as_posix()
             sources.setdefault(address, Source(address, path.stem, "WALL", kind))
     if issues:
         # lru_cache does not cache exceptions. A bad symlink may be repaired
