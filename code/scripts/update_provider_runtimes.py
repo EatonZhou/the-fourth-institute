@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from management_portal.execution.provider_updates import activate_pending_once, run_update_pass
 from management_common.portal_paths import resolve_directory
 from management_common.site_config import read_site_config
+from scripts.portal_service_units import _isolated_provider_context
 
 
 def _watch_pending() -> int:
@@ -28,7 +29,9 @@ def _watch_pending() -> int:
 
 
 def _start_activation_watch() -> None:
-    unit = "portal-provider-pending-activation"
+    isolated = _isolated_provider_context()
+    prefix = isolated["service_prefix"] if isolated else "portal"
+    unit = f"{prefix}-provider-pending-activation"
     active = subprocess.run(
         ("systemctl", "--user", "is-active", "--quiet", f"{unit}.service"),
         check=False,

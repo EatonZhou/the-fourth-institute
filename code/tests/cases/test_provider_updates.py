@@ -287,6 +287,7 @@ def test_activation_watch_loads_database_environment_file(monkeypatch, tmp_path)
     spec = importlib.util.spec_from_file_location("update_provider_runtimes", path)
     script = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(script)
+    monkeypatch.setattr(script, "_isolated_provider_context", lambda: None)
     env_file = tmp_path / "portal-postgres.env"
     monkeypatch.setenv("PORTAL_POSTGRES_ENV_FILE", str(env_file))
     commands = []
@@ -296,6 +297,19 @@ def test_activation_watch_loads_database_environment_file(monkeypatch, tmp_path)
     script._start_activation_watch()
     assert f"--property=EnvironmentFile={env_file}" in commands[1]
     assert commands[1][-1] == "--activate-pending"
+
+
+def test_activation_watch_uses_installation_namespace(monkeypatch):
+    from scripts import update_provider_runtimes as script
+
+    monkeypatch.setattr(script, "_isolated_provider_context", lambda: {"service_prefix": "tfi-test"})
+    commands = []
+    monkeypatch.setattr(script.subprocess, "run", lambda command, **kwargs: (
+        commands.append(command) or SimpleNamespace(returncode=1 if command[0] == "systemctl" else 0)
+    ))
+    script._start_activation_watch()
+    assert commands[0][-1] == "tfi-test-provider-pending-activation.service"
+    assert "--unit=tfi-test-provider-pending-activation" in commands[1]
 
 
 def test_dsh_llm_prerelease_alone_triggers_upgrade(monkeypatch, tmp_path):
