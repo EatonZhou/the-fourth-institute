@@ -143,6 +143,30 @@ def test_summary_repeated_notification_preserves_first_initiator(configured_fami
     assert original["origin"]["initiated_by"]["id"] == family["steward"]
 
 
+def test_legacy_summary_replay_preserves_original_guide_version(configured_family, monkeypatch):
+    body, block = configured_family
+    family = block["family"]
+    monkeypatch.setattr(resident_execution_domain, "deliver_resident_message_content", deliver_resident_message_content)
+    request = {"resident_id": family["facade"], "trigger": "summary",
+               "message_id": "msg_70000000000000000000000000000077"}
+    ok("DispatchFamilyTask", request, actor=family["steward"])
+    repository = resident_conversation_stream.get_repository()
+    original = copy.deepcopy(repository.message(family["steward"], request["message_id"]))
+    repository.state_store.database.write(lambda connection: connection.execute(
+        "DELETE FROM family_task_dispatches WHERE lineage_id=%s AND message_id=%s",
+        (body["lineage_id"], request["message_id"]),
+    ))
+    wid = next(e["id"] for e in block["elements"] if e["key"] == "request_summary")
+    wire = next(w for w in body["program"]["wires"] if w["id"] == wid)
+    profiles = copy.deepcopy(wire["config"]["invoke_profiles"])
+    profiles["effect"]["arguments"]["family_tasks"]["value"]["summary"]["guide"] += "\nUpdated guide."
+    ok("ApplyLineageChanges", {"lineage_id": body["lineage_id"], "operations": [
+        {"op": "update", "kind": "wire", "id": wid, "changes": {"config.invoke_profiles": profiles}},
+    ]})
+    assert ok("DispatchFamilyTask", request, actor=ACTOR)["message_id"] == request["message_id"]
+    assert repository.message(family["steward"], request["message_id"]) == original
+
+
 @pytest.mark.parametrize("custom_guide,custom_prompt", [(False, False), (True, False), (False, True), (True, True)])
 def test_queue_default_migration_preserves_each_edited_field(configured_family, custom_guide, custom_prompt):
     body, block = configured_family

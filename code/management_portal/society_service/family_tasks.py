@@ -227,7 +227,7 @@ def guide(record: dict, body: dict | None = None, block: dict | None = None) -> 
     return str(path), version, content
 
 
-def render(record: dict, trigger: str, facts: dict) -> str:
+def render(record: dict, trigger: str, facts: dict, *, guide_version: str | None = None) -> str:
     body, block = context(record)
     entries = configured(body, block)
     # Retired automatic reports can still finish an already queued/manual batch.
@@ -237,7 +237,7 @@ def render(record: dict, trigger: str, facts: dict) -> str:
     # Only these three placeholders are interpreted. Message content never becomes a template.
     prompt = entry["prompt"] + ("\n" + entry["guide"] if legacy_progress else "")
     return Template(prompt).substitute(facts=json.dumps(facts, ensure_ascii=False),
-        guide_path=path, guide_version=version)
+        guide_path=path, guide_version=version if guide_version is None else guide_version)
 
 
 def dispatch(facade_id: str, trigger: str, actor: str, *, facts: dict | None = None,

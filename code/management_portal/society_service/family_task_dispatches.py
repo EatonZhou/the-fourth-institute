@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import copy
 import json
+import re
 from string import Template
 
 COLUMNS = {"family_task_dispatches": ("lineage_id", "message_id", "intent_json")}
@@ -37,6 +38,32 @@ def _validate_original(repository, target_id, facade_id, mid, text, business_ref
         candidate.pop("origin", None)
     repository.validate_message_identity(target_id, candidate)
     return original, candidate
+
+
+def _legacy_text(target, trigger, facts, original, text):
+    """Match the known template; only its guide digest may have changed.
+
+    The task facts and every literal/path remain exact. This recognizes a
+    presentation version in a known slot, never extracts facts from a prompt.
+    """
+    from . import family_tasks, resident_message_contract
+
+    body, block = family_tasks.context(target)
+    entry = family_tasks.configured(body, block).get(trigger)
+    identifiers = Template(entry["prompt"]).get_identifiers() if entry else []
+    if "facts" not in identifiers:
+        raise resident_message_contract.MessageIdentityConflict("Legacy Family task has no verifiable request snapshot")
+    parts = original.get("content_parts") or []
+    if "guide_version" not in identifiers or len(parts) != 1 or parts[0].get("type") != "text":
+        return text
+    old_text = parts[0].get("text", "")
+    marker = "__family_legacy_guide_digest__"
+    while marker in text or marker in old_text:
+        marker += "_"
+    pattern = re.escape(family_tasks.render(target, trigger, facts, guide_version=marker))
+    pattern = pattern.replace(re.escape(marker), r"(?P<guide_version>[0-9a-f]{12})", 1)
+    pattern = pattern.replace(re.escape(marker), r"(?P=guide_version)")
+    return old_text if re.fullmatch(pattern, old_text) else text
 
 
 def deliver(facade, target, trigger, facts, actor, *, business_ref, message_id=""):
@@ -70,16 +97,15 @@ def deliver(facade, target, trigger, facts, actor, *, business_ref, message_id="
                 raise resident_message_contract.MessageIdentityConflict("Family task message_id refers to a different request")
         else:
             text = family_tasks.render(target, trigger, facts)
+            prior = repository.message(target_id, mid)
+            if prior is not None:
+                text = _legacy_text(target, trigger, facts, prior, text)
             original, _candidate = _validate_original(repository, target_id, facade_id, mid, text, business_ref)
             initiator = actor
             if original is not None:
                 # Legacy inputs have no structured request snapshot. Adopt only
-                # an exact original-envelope match from a facts-bearing template.
-                # A changed/ambiguous legacy template requires a new task ID.
-                body, block = family_tasks.context(target)
-                entry = family_tasks.configured(body, block).get(trigger)
-                if not entry or "facts" not in Template(entry["prompt"]).get_identifiers():
-                    raise resident_message_contract.MessageIdentityConflict("Legacy Family task has no verifiable request snapshot")
+                # an original-envelope match from the known facts-bearing
+                # template, preserving its historical guide digest as well.
                 initiator = str(((original.get("origin") or {}).get("initiated_by") or {}).get("id") or facade_id)
             intent = {"request": request, "text": text, "initiated_by": initiator}
             # Commit the winning request before attempting admission. A process
