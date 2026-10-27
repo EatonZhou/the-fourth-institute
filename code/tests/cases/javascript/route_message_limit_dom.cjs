@@ -203,5 +203,5 @@ async function contract(transform) {
   } finally { if (h) await h.close(); }
 }
 
-module.exports = { contract };
+module.exports = { contract, documentFixture, serverBoundary };
 if (require.main === module) contract().catch(error => { console.error(error); process.exitCode = 1; });
