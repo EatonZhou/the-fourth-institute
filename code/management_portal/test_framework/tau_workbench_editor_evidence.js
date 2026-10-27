@@ -74,12 +74,13 @@ function requirePublishedEditor(sample, { workbenchId, revision, publishedRevisi
 // Attach before the original UI action. Each phase is appended once; status is
 // retained even when navigation makes the original body unreadable. No request
 // replay, polling, response adoption from before registration, or ready claim.
-function observeEditorResponses(page, { origin, workbenchId, frame = page.mainFrame(), requestId, record }) {
-  if (!workbenchId || typeof requestId !== 'function' || typeof record !== 'function') throw new Error('InvalidEditorObservationOptions');
+function observeEditorResponses(page, { origin, workbenchId, frame = page.mainFrame(), requestId, record, bodyTimeoutMs = 5000 }) {
+  if (!workbenchId || typeof requestId !== 'function' || typeof record !== 'function'
+      || !Number.isInteger(bodyTimeoutMs) || bodyTimeoutMs < 1 || bodyTimeoutMs > 60000) throw new Error('InvalidEditorObservationOptions');
   const site = new URL(origin).origin;
   const allowed = new Set(['update', 'publish', 'delete', 'facade'].map(x => '/api/workbenches/' + x));
   const requests = new Map(), responses = new Map(), pending = new Set();
-  let closed = false, failure = null;
+  let closed = false, failure = null, closePromise;
   const emit = row => {
     const copy = structuredClone(row);
     try {
@@ -109,11 +110,25 @@ function observeEditorResponses(page, { origin, workbenchId, frame = page.mainFr
     if (!row || responses.has(response)) return;
     const header = { ...row, phase: 'response', observed_at: new Date().toISOString(), status: response.status() };
     emit(header);
-    const task = (async () => {
-      const result = { ...header, phase: 'body' };
+    let resolve;
+    const entry = { settled: false, timer: null, promise: new Promise(r => { resolve = r; }) };
+    const finish = result => {
+      if (entry.settled) return;
+      entry.settled = true;
+      clearTimeout(entry.timer); pending.delete(entry);
+      const outcome = { ...header, phase: 'body', ...result, observed_at: new Date().toISOString() };
+      emit(outcome); resolve(outcome);
+    };
+    entry.finish = finish;
+    responses.set(response, entry); pending.add(entry);
+    // These bounds end only evidence collection, never the native request.
+    // A late body must not replace the original timeout/close observation.
+    entry.timer = setTimeout(() => finish({ body_read: 'timeout',
+      error: { name: 'TimeoutError', stage: 'original_response_body', reason: 'observation_deadline' } }), bodyTimeoutMs);
+    Promise.resolve().then(() => response.status() === 204 ? null : response.json()).then(body => {
+      if (entry.settled) return;
+      const result = { body_read: 'success' };
       try {
-        const body = response.status() === 204 ? null : await response.json();
-        result.body_read = 'success';
         if (body && typeof body === 'object' && !Array.isArray(body)) {
           result.identity = {};
           if (typeof body.workbench_id === 'string') result.identity.workbench_id = body.workbench_id;
@@ -129,26 +144,37 @@ function observeEditorResponses(page, { origin, workbenchId, frame = page.mainFr
         result.body_read = 'unavailable';
         result.error = { name: error?.name || 'Error', stage: 'original_response_body' };
       }
-      result.observed_at = new Date().toISOString();
-      emit(result);
-      return result;
-    })();
-    responses.set(response, task); pending.add(task);
-    task.finally(() => pending.delete(task)).catch(error => { failure ||= error; });
+      finish(result);
+    }, error => finish({ body_read: 'unavailable', error: { name: error?.name || 'Error', stage: 'original_response_body' } }));
   };
   page.on('request', onRequest); page.on('response', onResponse);
   return {
     async original(response) {
       if (closed) throw new Error('EditorObserverClosed');
       if (!responses.has(response)) throw new Error('UnobservedOriginalEditorResponse');
-      const row = await responses.get(response);
+      const row = await responses.get(response).promise;
       if (failure) throw failure;
       return structuredClone(row);
     },
-    async close() {
-      if (!closed) { closed = true; page.off('request', onRequest); page.off('response', onResponse); }
-      await Promise.all([...pending]);
-      if (failure) throw failure;
+    close({ drainMs = 1000 } = {}) {
+      if (closePromise) return closePromise;
+      if (!Number.isInteger(drainMs) || drainMs < 0 || drainMs > 60000) throw new Error('InvalidEditorObservationDrainDeadline');
+      closed = true; page.off('request', onRequest); page.off('response', onResponse);
+      closePromise = (async () => {
+        let timer;
+        try {
+          if (pending.size) await Promise.race([
+            Promise.all([...pending].map(entry => entry.promise)),
+            new Promise(resolve => { timer = setTimeout(resolve, drainMs); }),
+          ]);
+        } finally {
+          clearTimeout(timer);
+          for (const entry of [...pending]) entry.finish({ body_read: 'closed',
+            error: { name: 'ObservationClosed', stage: 'original_response_body', reason: 'observer_close_deadline' } });
+        }
+        if (failure) throw failure;
+      })();
+      return closePromise;
     },
   };
 }
