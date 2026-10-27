@@ -25,7 +25,6 @@ import shutil
 import subprocess
 import sys
 import time
-import traceback
 from urllib.request import urlopen
 
 from packaging.version import Version
@@ -36,6 +35,7 @@ from management_common.process_runtime import run_process
 from management_common.portal_paths import path as portal_path, resolve_directory
 from management_common.site_config import read_site_config
 from management_common.provider_runtime_paths import runtime_entry
+from .provider_preparation import phase, diagnosed, PreparationError
 
 LOGGER = logging.getLogger(__name__)
 ROOT = Path(__file__).resolve().parents[2]
@@ -78,6 +78,7 @@ def _service_control():
     return ServiceControl(runner=run)
 
 
+@diagnosed("download")
 def npm_version(package: str, tag: str) -> str:
     value = run_command("npm", "view", package, f"dist-tags.{tag}", "--json", timeout=135)
     version = json.loads(value)
@@ -87,6 +88,7 @@ def npm_version(package: str, tag: str) -> str:
     return version
 
 
+@diagnosed("download")
 def pypi_version(package: str) -> str:
     with urlopen(f"https://pypi.org/pypi/{package}/json", timeout=90) as response:
         version = json.load(response)["info"]["version"]
@@ -168,7 +170,11 @@ def _claude_service_python() -> Path | None:
     if not sys.platform.startswith("linux"):
         return None
     try:
-        command = run_command("systemctl", "--user", "show", "portal-claude-code.service",
+        from scripts.portal_service_units import provider_runtime_services
+        services = provider_runtime_services("portal-claude-code.service")
+        if not services:
+            return None
+        command = run_command("systemctl", "--user", "show", services[0],
                               "--property=ExecStart", "--value", timeout=5)
         match = re.search(r"\bpath=(.*?)\s*;\s*argv\[\]=(.*?)\s*;", command)
         if match:
@@ -219,6 +225,21 @@ class ProviderRuntime:
     def prepare_prerequisites(self) -> None:
         pass
 
+    def service_control(self):
+        return _service_control()
+
+    def ensure_ready(self):
+        """First-use activation; account-scoped hosts start at account login."""
+
+    def ready(self):
+        return True
+
+    def account_processes(self):
+        return ()
+
+    def restart_account_process(self, account_id):
+        raise NotImplementedError
+
     def activation_link(self) -> Path:
         return self.link()
 
@@ -236,6 +257,12 @@ class CodexRuntime(ProviderRuntime):
     # instances are runtime state, not source files or an installation input.
     unit_files = ()
 
+    def service_control(self):
+        if sys.platform in {"win32", "darwin"}:
+            from scripts.portal_service_units import _native_codex_controller
+            return _native_codex_controller()
+        return super().service_control()
+
     @property
     def services(self) -> tuple[str, ...]:
         from .account_registrations import registrations
@@ -243,7 +270,11 @@ class CodexRuntime(ProviderRuntime):
         # Disabled registration can still have an existing live process. Update
         # that process too, while preserving accounts deliberately left stopped.
         states = (codex_instance_state(row["account_id"]) for row in registrations("codex"))
-        return tuple(state["unit"] for state in states if state["active"] == "active")
+        services = tuple(state["unit"] for state in states if state["active"] == "active")
+        if services and sys.platform in {"win32", "darwin"}:
+            from scripts.portal_service_units import verify_native_codex_services
+            verify_native_codex_services(services)
+        return services
 
     def available(self) -> tuple[str, ...]:
         return (npm_version("@openai/codex", "latest"),)
@@ -253,6 +284,7 @@ class CodexRuntime(ProviderRuntime):
             return (linked_version(self.link(), "codex-cli-"),)
         return (codex_cli_version(run_command(str(self.link()), "--version", timeout=45)),)
 
+    @diagnosed("dependency_install")
     def stage(self, versions: tuple[str, ...]) -> Path:
         (version,) = versions
         root = RUNTIMES / f"codex-cli-{version}"
@@ -262,9 +294,10 @@ class CodexRuntime(ProviderRuntime):
             run_command("npm", "install", "--global", "--prefix", str(root), "--omit=dev", f"@openai/codex@{version}")
         if sys.platform == "linux":
             binary = self._write_launcher(root, binary)
-        if Version(codex_cli_version(run_command(str(binary), "--version", timeout=60))) != Version(version):
-            raise RuntimeError("Codex staged version mismatch")
-        run_command(str(binary), "app-server", "--help", timeout=60)
+        with phase("executable_validation"):
+            if Version(codex_cli_version(run_command(str(binary), "--version", timeout=60))) != Version(version):
+                raise RuntimeError("Codex staged version mismatch")
+            run_command(str(binary), "app-server", "--help", timeout=60)
         marker.write_text(version + "\n")
         return root
 
@@ -306,6 +339,31 @@ class CodexRuntime(ProviderRuntime):
 class ClaudeRuntime(ProviderRuntime):
     unit_files = ("portal-claude-code.service",)
 
+    def ready(self):
+        from management_portal.claude_code_client import ClaudeCodeClient, ClaudeCodeUnavailable
+        try:
+            ClaudeCodeClient().health()
+            return True
+        except ClaudeCodeUnavailable:
+            return False
+
+    @diagnosed("service_activation")
+    def ensure_ready(self):
+        from scripts.portal_service_units import start_claude_service
+        if self.ready():
+            return
+        # Reused SDKs stay in place; the native component runner uses the
+        # instance-owned entry rather than an arbitrary PATH interpreter.
+        if sys.platform in {"win32", "darwin"} and not self.activation_link().exists():
+            _link(self.activation_link(), self.link())
+        def wait_ready():
+            deadline = time.monotonic() + 45
+            while not self.ready():
+                if time.monotonic() >= deadline:
+                    raise TimeoutError("Claude daemon did not become ready")
+                time.sleep(.1)
+        start_claude_service(wait_ready=wait_ready)
+
     @property
     def services(self) -> tuple[str, ...]:
         from scripts.portal_service_units import provider_runtime_services
@@ -321,6 +379,7 @@ class ClaudeRuntime(ProviderRuntime):
             found = _claude_sdk(venv_python(root))
         return (found[1] if found else "0",)
 
+    @diagnosed("dependency_install")
     def stage(self, versions: tuple[str, ...], *, root: Path | None = None) -> Path:
         (version,) = versions
         root = root or RUNTIMES / f"claude-agent-sdk-{version}"
@@ -338,9 +397,10 @@ class ClaudeRuntime(ProviderRuntime):
             run_command(sys.executable, "-m", "venv", str(root))
         if not marker.is_file() or marker.read_text() != validated:
             run_command(str(binary), "-m", "pip", "install", *requirements, timeout=3600)
-        run_command(str(binary), "-c", "import claude_agent_sdk as s,sys; assert s.__version__ == sys.argv[1]", version)
-        bundled = run_command(str(binary), "-c", "from pathlib import Path; import sys, claude_agent_sdk as s; print(Path(s.__file__).parent/'_bundled'/('claude.exe' if sys.platform == 'win32' else 'claude'))")
-        run_command(bundled, "--version", timeout=60)
+        with phase("executable_validation"):
+            run_command(str(binary), "-c", "import claude_agent_sdk as s,sys; assert s.__version__ == sys.argv[1]", version)
+            bundled = run_command(str(binary), "-c", "from pathlib import Path; import sys, claude_agent_sdk as s; print(Path(s.__file__).parent/'_bundled'/('claude.exe' if sys.platform == 'win32' else 'claude'))")
+            run_command(bundled, "--version", timeout=60)
         marker.write_text(validated)
         return root
 
@@ -387,6 +447,18 @@ class ClaudeRuntime(ProviderRuntime):
 
 
 class KimiRuntime(ProviderRuntime):
+    def account_processes(self):
+        from management_portal.kimi_account_runtime import running_accounts
+        return tuple(account["account_id"] for account, _, _ in running_accounts())
+
+    def restart_account_process(self, account_id):
+        from management_portal.kimi_account_runtime import restart_account
+        restart_account(account_id)
+
+    def busy(self):
+        from management_portal.kimi_account_runtime import runtime_busy
+        return runtime_busy()
+
     def prerequisites_available(self) -> bool:
         from management_portal.kimi_windows_runtime import available
         return available()
@@ -408,6 +480,7 @@ class KimiRuntime(ProviderRuntime):
     def installed(self) -> tuple[str, ...]:
         return (linked_version(self.link(), "kimi-code-"),)
 
+    @diagnosed("dependency_install")
     def stage(self, versions: tuple[str, ...]) -> Path:
         self.prepare_prerequisites()
         (version,) = versions
@@ -416,11 +489,12 @@ class KimiRuntime(ProviderRuntime):
         marker = root / ".portal-validated"
         if not marker.is_file() or not binary.is_file():
             run_command("npm", "install", "--global", "--prefix", str(root), "--omit=dev", f"@moonshot-ai/kimi-code@{version}")
-        if run_command(str(binary), "--version", timeout=60) != version:
-            raise RuntimeError("Kimi staged version mismatch")
-        help_text = run_command(str(binary), "web", "--help", timeout=60)
-        if "--no-open" not in help_text:
-            raise RuntimeError("Kimi web server contract changed")
+        with phase("executable_validation"):
+            if run_command(str(binary), "--version", timeout=60) != version:
+                raise RuntimeError("Kimi staged version mismatch")
+            help_text = run_command(str(binary), "web", "--help", timeout=60)
+            if "--no-open" not in help_text:
+                raise RuntimeError("Kimi web server contract changed")
         marker.write_text(version + "\n")
         return root
 
@@ -560,11 +634,13 @@ def _active_executions(provider: str) -> int:
         database.close()
 
 
-def _activate(provider: str, runtime: ProviderRuntime, root: Path) -> bool:
+@diagnosed("service_activation")
+def _activate(provider: str, runtime: ProviderRuntime, root: Path, *, prepare=False) -> bool:
     if _active_executions(provider) or runtime.busy():
         return False
     services = runtime.services
-    controller = _service_control()
+    accounts = runtime.account_processes()
+    controller = runtime.service_control()
     link = runtime.activation_link()
     previous = link.resolve() if link.exists() else None
     _link(link, runtime.link_target(root))
@@ -576,20 +652,36 @@ def _activate(provider: str, runtime: ProviderRuntime, root: Path) -> bool:
                 if time.monotonic() >= deadline:
                     raise TimeoutError(f"Provider service did not become active: {service}")
                 time.sleep(.1)
-    except Exception:
+        for account_id in accounts:
+            runtime.restart_account_process(account_id)
+        if prepare:
+            runtime.ensure_ready()
+    except Exception as exc:
+        rollback_failed = False
         if previous is not None:
             _link(link, previous)
             for service in services:
                 try:
                     controller.restart(service)
                 except Exception:
-                    LOGGER.exception("Provider %s rollback restart failed: %s", provider, service)
+                    rollback_failed = True
+                    LOGGER.warning("Provider %s rollback service restart failed", provider)
+            for account_id in accounts:
+                try:
+                    runtime.restart_account_process(account_id)
+                except Exception:
+                    rollback_failed = True
+                    LOGGER.warning("Provider %s rollback account restart failed", provider)
         else:
             if sys.platform == "win32":
                 _remove_windows_link(link)
             else:
                 link.unlink(missing_ok=True)
-        raise
+        failure = exc if isinstance(exc, PreparationError) else PreparationError("service_activation", exc)
+        failure.rollback_failed = rollback_failed
+        if failure is exc:
+            raise
+        raise failure from exc
     LOGGER.info("Activated %s Provider runtime %s", provider, root)
     return True
 
@@ -694,6 +786,15 @@ def preparation_status(provider: str) -> dict:
     return result
 
 
+def _runtime_installed(runtime):
+    try:
+        versions = runtime.installed()
+        return bool(versions and all(v and v != "0" for v in versions) and runtime.link().exists()
+                    and runtime.prerequisites_available())
+    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError):
+        return False
+
+
 def runtime_available(provider: str) -> bool:
     if provider == "provider_api":
         return True
@@ -701,9 +802,7 @@ def runtime_available(provider: str) -> bool:
     if runtime is None:
         return False
     try:
-        versions = runtime.installed()
-        return bool(versions and all(v and v != "0" for v in versions) and runtime.link().exists()
-                    and runtime.prerequisites_available())
+        return _runtime_installed(runtime) and runtime.ready()
     except (OSError, ValueError, RuntimeError, subprocess.SubprocessError):
         return False
 
@@ -739,27 +838,35 @@ def prepare_runtime(provider: str) -> dict:
             state, save = locked
             result = state.setdefault("preparations", {}).setdefault(provider, {})
             try:
-                runtime.prepare_prerequisites()
-                if runtime_available(provider):
+                with phase("prerequisites"):
+                    runtime.prepare_prerequisites()
+                if _runtime_installed(runtime):
+                    with phase("service_activation"):
+                        runtime.ensure_ready()
                     result.update(status="ready", source="existing")
                 else:
-                    versions = runtime.available()
-                    root = runtime.stage(versions)
+                    pending_root = state.get("pending", {}).get(provider)
+                    if pending_root and (Path(pending_root) / ".portal-validated").is_file():
+                        root = Path(pending_root)
+                    else:
+                        with phase("download"):
+                            versions = runtime.available()
+                        with phase("dependency_install"):
+                            root = runtime.stage(versions)
                     state.setdefault("pending", {})[provider] = str(root)
                     save()
-                    if _activate(provider, runtime, root):
+                    if _activate(provider, runtime, root, prepare=True):
                         state["pending"].pop(provider, None)
                         result.update(status="ready", source="installed")
                     else:
                         result.update(status="pending", message="运行环境已准备，等待当前执行结束后启用。")
             except Exception as exc:
-                # Package manager output can contain configured endpoints or
-                # credentials. Record only where preparation stopped.
-                step = next((frame for frame in reversed(traceback.extract_tb(exc.__traceback__))
-                             if frame.filename == __file__), None)
-                LOGGER.warning("Provider %s preparation failed (%s in %s)", provider, type(exc).__name__,
-                               step.name if step else "?")
-                result.update(status="failed", message="环境准备失败，请检查下载网络和运行依赖后重试。")
+                failure = exc if isinstance(exc, PreparationError) else PreparationError("service_activation", exc)
+                result.update(status="failed", **failure.public())
+                LOGGER.warning("Provider %s preparation failed at %s (%s)", provider, failure.phase, failure.kind)
+            if result.get("status") == "ready":
+                for field in ("phase", "diagnostic", "message"):
+                    result.pop(field, None)
             result["updated_at"] = datetime.now(timezone.utc).isoformat()
             save()
     business_tasks.start(task_id, work)
@@ -778,7 +885,8 @@ def run_update_pass() -> dict[str, object]:
         now = time.time()
         for provider, runtime in runtimes().items():
             try:
-                available = runtime.available()
+                with phase("download"):
+                    available = runtime.available()
                 installed = runtime.installed()
                 state.setdefault("observations", {})[provider] = _version_observation(installed, available)
                 result["checked"][provider] = {"installed": " ".join(installed), "available": " ".join(available)}
@@ -790,7 +898,8 @@ def run_update_pass() -> dict[str, object]:
                     # A reused program is updated by whoever installed it.
                     continue
                 RUNTIMES.mkdir(parents=True, exist_ok=True)
-                root = runtime.stage(available)
+                with phase("dependency_install"):
+                    root = runtime.stage(available)
                 pending[provider] = str(root)
                 save()
                 if _activate(provider, runtime, root):
@@ -798,8 +907,9 @@ def run_update_pass() -> dict[str, object]:
                     result["activated"].append(provider)
                     save()
             except Exception as exc:
-                result["errors"][provider] = str(exc)
-                LOGGER.exception("Provider %s update failed; current runtime retained", provider)
+                failure = exc if isinstance(exc, PreparationError) else PreparationError("service_activation", exc)
+                result["errors"][provider] = failure.public()
+                LOGGER.warning("Provider %s update failed at %s", provider, failure.phase)
         state["last_checked_at"] = now
         save()
         result["pending"] = sorted(pending)
@@ -819,12 +929,22 @@ def activate_pending_once() -> dict[str, object]:
             try:
                 if provider not in declared:
                     raise ValueError(f"{provider} declares no runtime Portal installs")
-                if _activate(provider, declared[provider], Path(path)):
+                preparation = state.get("preparations", {}).get(provider, {})
+                preparing = preparation.get("status") in {"pending", "failed"}
+                if _activate(provider, declared[provider], Path(path), **({"prepare": True} if preparing else {})):
                     del pending[provider]
+                    if preparing:
+                        preparation.update(status="ready", source="installed", updated_at=datetime.now(timezone.utc).isoformat())
+                        for field in ("phase", "diagnostic", "message"):
+                            preparation.pop(field, None)
                     result["activated"].append(provider)
             except Exception as exc:
-                result["errors"][provider] = str(exc)
-                LOGGER.exception("Provider %s deferred activation failed", provider)
+                failure = exc if isinstance(exc, PreparationError) else PreparationError("service_activation", exc)
+                result["errors"][provider] = failure.public()
+                preparation = state.get("preparations", {}).get(provider, {})
+                if preparation.get("status") in {"pending", "failed"}:
+                    preparation.update(status="failed", **failure.public())
+                LOGGER.warning("Provider %s deferred activation failed at %s", provider, failure.phase)
         state["pending"] = pending
         save()
         result["pending"] = sorted(pending)

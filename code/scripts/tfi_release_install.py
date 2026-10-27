@@ -50,6 +50,14 @@ MODULES = {"resource": "management_portal.resources.server",
            "execution": "management_portal.execution.service",
            "society": "management_portal.society_service.server",
            "worker": "management_portal.execution.worker_manager"}
+PROVIDER_COMPONENTS = ("claude", "kimi")
+
+
+def registered_components(target):
+    # SCM needs the installer-held account password only at registration. Do
+    # not require an interactive credential again on first Provider onboarding.
+    mode = target.get("windows_service_mode", "scm" if sys.platform == "win32" else "")
+    return COMPONENTS + (PROVIDER_COMPONENTS if mode == "scm" else ())
 
 
 def service_controller():
@@ -334,16 +342,18 @@ def component_command(target, component):
             if os.environ.get(key):
                 env[key] = os.environ[key]
     python = runtime_python(target)
-    if component == "claude" and platform_adapter().__name__.endswith("_windows"):
+    if component == "claude":
         providers = read_json(root / "config/site.json").get("deployment", {}).get("providers", {})
         entry = providers.get("claude_runtime_current") or str(Path(target["data_roots"]["staging_root"]) / "provider-runtimes/claude-agent-sdk-current")
         runtime_root = Path(entry)
         if not runtime_root.is_absolute():
             raise ValueError("Claude runtime must be an absolute deployment path")
-        executable = runtime_root / "Scripts/python.exe"
+        executable = runtime_root / ("Scripts/python.exe" if platform_adapter().__name__.endswith("_windows") else "bin/python")
         if not executable.is_file():
             raise FileNotFoundError("Claude runtime is not prepared")
         return [str(executable), "-m", "management_portal.claude_code_daemon"], env
+    if component == "kimi":
+        return [python, "-m", "management_portal.kimi_code_server"], env
     if component == "postgres":
         windows = platform_adapter().__name__.endswith("_windows")
         command = [str(Path(target["pg_bin"]) / native_tool("postgres")), "-D", str(database_root(target)),
@@ -505,7 +515,7 @@ def prepare_configuration(target):
 
 def register_services(target):
     return platform_adapter().register_services(unit_directory(), {
-        unit_name(target, c): unit_text(target, c) for c in COMPONENTS})
+        unit_name(target, c): unit_text(target, c) for c in registered_components(target)})
 
 
 def initialize_database(state):
@@ -1161,14 +1171,15 @@ def lifecycle(command, root, *, shutdown_timeout=20.0):
             return {"status": "stopped", "installation_root": str(root), **result}
         from scripts.tfi_release_provider_services import owned_services, stop_services, remove_template
         providers = owned_services(target, unit_directory())
-        names = [unit_name(target, c) for c in reversed(COMPONENTS)]
+        # Capture optional daemon/account state before the core is stopped.
+        stop_services(providers, controller)
+        names = [unit_name(target, c) for c in reversed(registered_components(target))]
         for name in names:
             if controller.status(name)["load"] != "not-found":
                 controller.stop(name)
         states = [controller.status(name) for name in names]
         if any(s["active"] not in {"inactive", "failed"} or s["pid"] for s in states):
             raise RuntimeError("Services did not stop; cleanup refused")
-        stop_services(providers, controller)
         if command == "stop":
             save_stage(state, "stop", "stopped")
             return {"status": "stopped", "services": states, "installation_root": str(root)}
@@ -1219,7 +1230,7 @@ def main(argv=None):
     parser.add_argument("--target", type=Path)
     parser.add_argument("--manifest", type=Path)
     parser.add_argument("--root", type=Path)
-    parser.add_argument("--component", choices=COMPONENTS)
+    parser.add_argument("--component", choices=COMPONENTS + PROVIDER_COMPONENTS)
     parser.add_argument("--username")
     parser.add_argument("--if-needed", action="store_true", help="Create the first administrator invitation only before any account exists")
     parser.add_argument("--prepare-only", action="store_true", help="Import the independent DB but leave application services stopped for Resident inspection")

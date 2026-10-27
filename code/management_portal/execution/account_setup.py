@@ -147,7 +147,7 @@ def check(inv):
             raise InstructionError("instruction.owner_unavailable",
                 "Codex 本地后台未能在规定时间内就绪。登录授权仍然保留；请重试“测试并完成”，若仍失败请检查该账号的后台服务日志。",
                 details={"reason": "account.service_not_ready"}, retryable=True) from None
-    elif row["provider"] == "claude" and (sys.platform.startswith("linux") or sys.platform == "win32"):
+    elif row["provider"] == "claude" and (sys.platform.startswith("linux") or sys.platform in {"win32", "darwin"}):
         from scripts.portal_service_units import start_claude_service
         from management_portal.claude_code_client import ClaudeCodeUnavailable
         try:

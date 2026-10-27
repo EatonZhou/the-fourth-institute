@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from types import SimpleNamespace
+import pytest
 
 
 def test_windows_activation_uses_installed_user_service_controller(monkeypatch):
@@ -21,22 +22,23 @@ def test_windows_provider_services_are_instance_scoped(tmp_path, monkeypatch):
     from management_common import instance_config
     monkeypatch.setattr(units, "sys", SimpleNamespace(platform="win32"))
     monkeypatch.setenv("PORTAL_PATHS_CONFIG", str(tmp_path / "config/paths.json"))
-    target = {"service_prefix": "fixture"}
+    target = {"service_prefix": "tfi-fixture", "install_root": str(tmp_path), "shared_code_root": str(units.SOURCE_ROOT), "data_roots": {}}
     monkeypatch.setattr(instance_config, "read_installation", lambda root: {"target": target})
     monkeypatch.setattr(platform, "unit_directory", lambda: tmp_path)
     monkeypatch.setattr(platform, "unit_text", lambda target, component, components:
-                        json.dumps({"name": "fixture-"+component, "root": str(tmp_path)}))
+                        json.dumps({"name": "tfi-fixture-"+component, "root": str(tmp_path)}))
+    monkeypatch.setattr(platform, "service_controller", lambda: SimpleNamespace(status=lambda _: {"active": "active"}))
     checked = []
     monkeypatch.setattr(platform, "verify_service", lambda name, content: checked.append(name))
     for component in ("claude", "kimi"):
-        file = tmp_path / ("fixture-"+component+".json")
+        file = tmp_path / ("tfi-fixture-"+component+".json")
         assert units.provider_runtime_services("portal-"+component+"-code.service") == ()
         file.write_text(platform.unit_text(target, component, (component,)))
-        assert units.provider_runtime_services("portal-"+component+"-code.service") == ("fixture-"+component,)
-        file.write_text(json.dumps({"name": "fixture-"+component, "root": "foreign"}))
+        assert units.provider_runtime_services("portal-"+component+"-code.service") == ("tfi-fixture-"+component,)
+        file.write_text(json.dumps({"name": "tfi-fixture-"+component, "root": "foreign"}))
         with pytest.raises(ValueError, match="another instance"):
             units.provider_runtime_services("portal-"+component+"-code.service")
-    assert checked == ["fixture-claude", "fixture-kimi"]
+    assert checked == ["tfi-fixture-claude", "tfi-fixture-kimi"]
 
 
 def test_windows_npm_and_venv_paths(tmp_path, monkeypatch):
@@ -64,6 +66,7 @@ def test_windows_junction_switch_and_rollback(tmp_path, monkeypatch):
     monkeypatch.setattr(updates, "_windows_junction", lambda path, target: path.symlink_to(target, target_is_directory=True))
     monkeypatch.setattr(updates, "_active_executions", lambda provider: 0)
     monkeypatch.setattr(updates.KimiRuntime, "link", lambda self: link)
+    monkeypatch.setattr(updates.KimiRuntime, "services", property(lambda self: ("owned-kimi",)))
     calls = []
 
     def restart(service):
@@ -74,7 +77,7 @@ def test_windows_junction_switch_and_rollback(tmp_path, monkeypatch):
     monkeypatch.setattr(updates, "_service_control", lambda: SimpleNamespace(
         restart=restart, status=lambda service: {"active": "active"}))
     import pytest
-    with pytest.raises(RuntimeError, match="mock service failure"):
+    with pytest.raises(RuntimeError, match="服务启用失败"):
         updates._activate("kimi", updates.KimiRuntime(), new)
     assert link.resolve() == old
     assert len(calls) == 2
@@ -108,7 +111,7 @@ def test_windows_claude_cold_start_registers_native_service_without_restart(tmp_
     from scripts import portal_service_units as units, tfi_release_platform_windows as adapter
     from management_common import instance_config
     from management_portal.execution import provider_updates as updates
-    target = {"service_prefix": "tfi-test"}
+    target = {"service_prefix": "tfi-test", "install_root": str(tmp_path), "shared_code_root": str(units.SOURCE_ROOT), "data_roots": {}}
     monkeypatch.setattr(units, "sys", SimpleNamespace(platform="win32"))
     monkeypatch.setattr(updates, "STATE_ROOT", tmp_path)
     monkeypatch.setenv("PORTAL_PATHS_CONFIG", str(tmp_path / "config/target.json"))
@@ -117,7 +120,7 @@ def test_windows_claude_cold_start_registers_native_service_without_restart(tmp_
     monkeypatch.setattr(adapter, "unit_text", lambda *args: "owned")
     calls = []
     monkeypatch.setattr(adapter, "register_services", lambda directory, definitions: calls.append(definitions))
-    monkeypatch.setattr(adapter, "service_controller", lambda: SimpleNamespace(start=lambda name: calls.append(name)))
+    monkeypatch.setattr(adapter, "service_controller", lambda: SimpleNamespace(start=lambda name: calls.append(name), status=lambda name: {"active": "inactive"}))
     monkeypatch.setattr(units, "_run", lambda *args: pytest.fail("Windows tried systemctl"))
     units.start_claude_service()
     assert calls == [{"tfi-test-claude": "owned"}, "tfi-test-claude"]

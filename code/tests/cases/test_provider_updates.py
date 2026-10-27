@@ -106,7 +106,7 @@ def test_activation_rollback_keeps_original_dynamic_service_snapshot(monkeypatch
     monkeypatch.setattr(updates, "_service_control", lambda: SimpleNamespace(
         restart=lambda service: command("systemctl", "--user", "restart", service),
         status=lambda service: {"active": "active"}))
-    with pytest.raises(RuntimeError, match="did not start"):
+    with pytest.raises(RuntimeError, match="服务启用失败"):
         updates._activate("codex", DynamicRuntime(), new)
     assert link.resolve() == old
     assert calls == [("systemctl", "--user", "restart", "registered.service")] * 2
@@ -266,7 +266,8 @@ def test_failed_refresh_preserves_pending_runtime(monkeypatch, tmp_path):
     _stage_into(monkeypatch, [], lambda name, versions: tmp_path / "staged")
     monkeypatch.setattr(updates, "_activate", lambda *args: False)
     result = updates.run_update_pass()
-    assert result["errors"]["codex"] == "registry unavailable"
+    assert result["errors"]["codex"]["phase"] == "download"
+    assert "registry unavailable" not in str(result["errors"])
     assert json.loads(state_path.read_text())["pending"]["codex"] == old
 
 
@@ -369,7 +370,7 @@ def test_failed_service_restart_restores_previous_runtime(monkeypatch, tmp_path)
 
     monkeypatch.setattr(updates, "_service_control", lambda: SimpleNamespace(
         restart=lambda service: restart(service), status=lambda service: {"active": "active"}))
-    with pytest.raises(RuntimeError, match="failed to start"):
+    with pytest.raises(RuntimeError, match="服务启用失败"):
         updates._activate("kimi", updates.KimiRuntime(), new)
     assert link.resolve() == old
     assert len(calls) == 2

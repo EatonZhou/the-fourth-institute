@@ -21,11 +21,14 @@ def test_native_codex_lifecycle_uses_registered_service(tmp_path, monkeypatch, p
     binary.write_bytes(b"test")
     monkeypatch.setattr(units, "sys", SimpleNamespace(platform=platform, executable=str(tmp_path / "Python.exe")))
     monkeypatch.setattr(units, "instance_root", lambda: tmp_path / "Portal Instance")
+    from management_portal.execution import account_hosting
+    monkeypatch.setattr(account_hosting, "instance_root", units.instance_root)
     monkeypatch.setattr(site_config, "read_site_config", lambda: {"deployment": {"providers": {"codex_binary": str(binary)}}})
     monkeypatch.setattr(shutil, "which", lambda name: str(binary))
     if platform == "win32":
         from management_portal.execution import provider_updates
         monkeypatch.setattr(provider_updates, "sys", units.sys)
+        monkeypatch.setattr(provider_updates, "_PROVIDER_DEPLOYMENT", {})
         monkeypatch.setattr(provider_updates, "RUNTIMES", tmp_path / "runtimes")
         binary = provider_updates.CodexRuntime().link() / "codex.cmd"
         binary.parent.mkdir(parents=True)

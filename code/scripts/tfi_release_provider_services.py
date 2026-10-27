@@ -24,6 +24,8 @@ def _run(*arguments):
 
 
 def owned_services(target, directory):
+    if sys.platform == "win32":
+        return _windows_owned_services(target, directory)
     if sys.platform == "darwin":
         return _macos_owned_services(target, directory)
     if not sys.platform.startswith("linux"):
@@ -96,7 +98,7 @@ def _macos_owned_services(target, directory):
     accounts = Path(target["data_roots"]["accounts_root"])
     scope = hashlib.sha256(os.fsencode(root)).hexdigest()[:10]
     prefix = ServiceControl.label("portal-codex-app-server@")
-    names = []
+    names = _native_daemons(target, directory, adapter)
     for path in sorted(Path(directory).glob(prefix + "*-" + scope + ".plist")):
         match = re.fullmatch(re.escape(prefix) + r"([A-Za-z0-9][A-Za-z0-9_-]{0,127})-" + scope + r"\.plist", path.name)
         if not match or path.is_symlink() or not path.is_file():
@@ -119,8 +121,85 @@ def _macos_owned_services(target, directory):
             expected["EnvironmentVariables"] = environment
         if definition != expected:
             raise ValueError("Provider launch agent belongs to another instance or has overrides")
+        _check_loaded_agent(adapter, name, path)
         names.append(name)
-    return {"platform": "macos", "template": None, "daemons": [], "names": names} if names else None
+    return _native_plan(target, "macos", names, {})
+
+
+def _check_loaded_agent(adapter, name, path):
+    controller = adapter.service_controller()
+    result = controller.run("launchctl", "print", controller._launch_target(name), check=False)
+    if result.returncode == 0:
+        paths = [line.strip().removeprefix("path = ") for line in result.stdout.splitlines()
+                 if line.strip().startswith("path = ")]
+        if paths != [str(path)]:
+            raise ValueError("Provider has a foreign loaded launch agent")
+
+
+def _native_daemons(target, directory, adapter):
+    names = []
+    for component in ("claude", "kimi"):
+        name = adapter.unit_name(target, component)
+        path = adapter.unit_path(Path(directory), name)
+        if not path.exists() and not path.is_symlink():
+            continue
+        if path.is_symlink() or not path.is_file():
+            raise ValueError("Provider daemon ownership mismatch")
+        content = path.read_text(encoding="utf-8")
+        parser = json.loads if sys.platform == "win32" else lambda value: plistlib.loads(value.encode())
+        if parser(content) != parser(adapter.unit_text(target, component, ())):
+            raise ValueError("Provider daemon belongs to another instance")
+        if sys.platform == "win32":
+            adapter.verify_service(name, content)
+        else:
+            _check_loaded_agent(adapter, name, path)
+        names.append(name)
+    return names
+
+
+def _native_plan(target, platform, names, controllers):
+    return {"platform": platform, "template": None, "daemons": [], "names": names,
+            "accounts": names, "controllers": controllers,
+            "restart_record": Path(target["install_root"]) / "runtime/provider-services-to-restart.json"} if names else None
+
+
+def _windows_owned_services(target, directory):
+    from scripts import tfi_release_platform_windows as adapter
+    from scripts.tfi_windows_user_services import WindowsServiceControl, validate_definition
+    from scripts.tfi_instance_layout import code_root
+    from scripts.tfi_release_dependencies import runtime_python
+    root = Path(target["data_roots"]["instances_root"])
+    scope = hashlib.sha256(os.fsencode(root.resolve())).hexdigest()[:10]
+    names = _native_daemons(target, directory, adapter)
+    controllers = {}
+    account_directory = root / "service-units"
+    for path in sorted(account_directory.glob(f"portal-codex-app-server@*-{scope}.service.json")):
+        name = path.name.removesuffix(".json")
+        if path.is_symlink() or not path.is_file():
+            raise ValueError("Provider service ownership mismatch")
+        content = path.read_text(encoding="utf-8")
+        value = json.loads(content)
+        if value.get("mode") == "user":
+            validate_definition(value, name)
+            if Path(value["root"]).resolve() != Path(target["install_root"]).resolve():
+                raise ValueError("Provider service belongs to another installation")
+        else:
+            command = value.get("command", [])
+            if (len(command) != 9 or command[:3] != [runtime_python(target), "-m", "management_portal.codex_app_server_host"]
+                    or command[3::2] != ["--socket", "--binary", "--account-home"]
+                    or not all(isinstance(arg, str) and Path(arg).is_absolute() for arg in command[4::2])):
+                raise ValueError("Provider SCM command ownership mismatch")
+            home = Path(command[-1])
+            if (home.parent.resolve() != (Path(target["data_roots"]["accounts_root"]) / "codex").resolve()
+                    or Path(command[4]).resolve() != (root / "sockets" / f"codex-{home.name}.sock").resolve()
+                    or name != f"portal-codex-app-server@{home.name}-{scope}.service"
+                    or Path(value.get("cwd", "")).resolve() != code_root(target).resolve()
+                    or value.get("account") != target["windows_service_account"]):
+                raise ValueError("Provider SCM service belongs to another installation")
+        adapter.verify_service(name, content)
+        names.append(name)
+        controllers[name] = WindowsServiceControl(account_directory)
+    return _native_plan(target, "windows", names, controllers)
 
 
 def _recorded(record):
@@ -172,6 +251,19 @@ def start_services(plan, controller):
     accounts that were running when it stopped. A turn never starts one."""
     if plan is None:
         return
+    if plan.get("platform") in {"windows", "macos"}:
+        failed = []
+        for name in _recorded(plan["restart_record"]):
+            if name not in plan["names"]:
+                continue
+            try:
+                plan["controllers"].get(name, controller).start(name)
+            except Exception:
+                failed.append(name)
+        _record(plan["restart_record"], failed)
+        if failed:
+            raise RuntimeError("Owned Provider services did not restart")
+        return
     for path in plan["daemons"]:
         controller.start(path.name)
     record = plan.get("restart_record")
@@ -195,24 +287,29 @@ def stop_services(plan, controller):
     record = plan.get("restart_record")
     if record is not None:
         running = {name for name in plan["accounts"]
-                   if controller.status(name)["active"] in {"active", "activating", "reloading"}}
+                   if plan.get("controllers", {}).get(name, controller).status(name)["active"] in {"active", "activating", "reloading"}}
         # A repeated stop keeps what the first one recorded.
         _record(record, running | set(_recorded(record)))
     for name in plan["names"]:
-        controller.stop(name)
+        plan.get("controllers", {}).get(name, controller).stop(name)
     for name in plan["names"]:
-        state = controller.status(name)
+        state = plan.get("controllers", {}).get(name, controller).status(name)
         if state["pid"] or state["active"] not in {"inactive", "failed"}:
             raise RuntimeError("Provider services did not stop; cleanup refused")
     # Do not let default.target revive account services while their instance
     # is stopped; instance start restores the recorded ones.
-    if plan["names"] and plan.get("platform") != "macos":
+    if plan["names"] and plan.get("platform") not in {"macos", "windows"}:
         _run("disable", *plan["names"])
 
 
 def remove_template(target, directory):
     plan = owned_services(target, directory)
     if plan is not None:
+        if plan.get("platform") == "windows":
+            from scripts.tfi_release_platform_windows import remove_services
+            for name in plan["names"]:
+                remove_services(plan["controllers"][name].directory if name in plan["controllers"] else Path(directory), [name])
+            return
         if plan.get("platform") == "macos":
             from scripts.tfi_release_platform_macos import remove_services
             remove_services(Path(directory), plan["names"])

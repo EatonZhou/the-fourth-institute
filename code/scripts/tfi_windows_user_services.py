@@ -115,7 +115,7 @@ def validate_definition(value, name):
     if value.get("name") != name or not re.fullmatch(pattern, name):
         raise ValueError("Invalid user service identity")
     if value.get("mode") != "user" or value.get("component") not in (
-            "postgres", "nats", "resource", "execution", "society", "worker", "web", "codex", "claude"):
+            "postgres", "nats", "resource", "execution", "society", "worker", "web", "codex", "claude", "kimi"):
         raise ValueError("Invalid user service component")
     for key in ("root", "code", "python"):
         path = Path(value[key])
@@ -140,10 +140,17 @@ def validate_definition(value, name):
         home = Path(command[-1]).resolve()
         scope = hashlib.sha256(os.fsencode(Path(target["data_roots"]["instances_root"]).resolve())).hexdigest()[:10]
         if (home.parent != (Path(target["data_roots"]["accounts_root"]) / "codex").resolve()
+                or Path(command[4]).resolve() != (Path(target["data_roots"]["instances_root"]) / "sockets" / f"codex-{home.name}.sock").resolve()
                 or name != f"portal-codex-app-server@{home.name}-{scope}.service"):
             raise ValueError("Codex user service account ownership mismatch")
-    elif name != target["service_prefix"] + "-" + value["component"]:
-        raise ValueError("User service does not belong to this installation")
+    else:
+        from scripts.tfi_instance_layout import code_root
+        if (name != target["service_prefix"] + "-" + value["component"]
+                or target.get("windows_service_mode") != "user"
+                or Path(target["install_root"]).resolve() != root
+                or Path(value["code"]).resolve() != code_root(target).resolve()
+                or Path(value["python"]).resolve() != Path(target["python"]).resolve()):
+            raise ValueError("User service does not belong to this installation")
     return value
 
 
@@ -224,6 +231,8 @@ class WindowsServiceControl:
             value = json.loads(path.read_text(encoding="utf-8"))
             if value.get("mode") == "user":
                 return validate_definition(value, name)
+            from scripts.tfi_release_platform_windows import verify_service
+            verify_service(name, path.read_text(encoding="utf-8"))
         return None
 
     def status(self, name):
@@ -301,6 +310,10 @@ class WindowsServiceControl:
                 time.sleep(0.2)
             if self.status(name)["pid"]:
                 raise RuntimeError("Component did not stop; data retained: " + name)
+
+    def restart(self, name):
+        self.stop(name)
+        self.start(name)
 
 
 def supervise(path):

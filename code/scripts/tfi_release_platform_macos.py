@@ -25,7 +25,11 @@ def unit_name(target, component):
 
 def unit_directory():
     configured = os.environ.get("TFI_MACOS_SERVICE_DIRECTORY")
-    return safe_path(configured) if configured else Path.home() / "Library" / "LaunchAgents"
+    if configured:
+        return safe_path(configured)
+    # Application HOME is instance-private; launchd belongs to the login user.
+    import pwd
+    return Path(pwd.getpwuid(os.getuid()).pw_dir) / "Library" / "LaunchAgents"
 
 
 def unit_path(directory, name):

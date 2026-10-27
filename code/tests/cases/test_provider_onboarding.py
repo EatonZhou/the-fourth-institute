@@ -126,13 +126,14 @@ def test_missing_runtime_preparation_can_retry(monkeypatch, tmp_path, caplog):
     monkeypatch.setattr(updates, "STATE_ROOT", tmp_path)
     monkeypatch.setattr(updates, "runtimes", lambda: {"claude": runtime})
     installed = []
+    monkeypatch.setattr(updates, "_runtime_installed", lambda runtime: bool(installed))
     monkeypatch.setattr(updates, "runtime_available", lambda name: bool(installed))
-    monkeypatch.setattr(updates, "_activate", lambda *args: installed.append(True) or True)
+    monkeypatch.setattr(updates, "_activate", lambda *args, **kwargs: installed.append(True) or True)
     monkeypatch.setattr(business_tasks, "start", lambda task_id, work: work())
     updates.prepare_runtime("claude")
     failed = updates.preparation_status("claude")
     assert failed["status"] == "failed" and "private" not in str(failed)
-    assert "claude preparation failed (RuntimeError in work)" in caplog.text and "private" not in caplog.text
+    assert "claude preparation failed at dependency_install" in caplog.text and "private" not in caplog.text
     updates.prepare_runtime("claude")
     assert updates.preparation_status("claude")["status"] == "ready"
 
@@ -166,6 +167,12 @@ def test_check_uses_normal_execution_owner(monkeypatch, tmp_path, provider):
     monkeypatch.setattr(setup, "catalog", lambda _row: {"models": ["model"]})
     if provider == "provider_api":
         account.update(kind="api_profile", config={"api_id": "api_existing"})
+        from management_portal.ai_provider_registry import shared_ai_provider_registry
+        monkeypatch.setattr(shared_ai_provider_registry, "get", lambda _: {"kind": "openai"})
+    if provider == "claude":
+        from scripts import portal_service_units
+        monkeypatch.setattr(portal_service_units, "start_claude_service", lambda: None)
+        monkeypatch.setattr(setup, "_started_claude_catalog", lambda _: {"models": ["model"]})
     monkeypatch.setattr(setup, "account", lambda _: account)
     monkeypatch.setattr(setup, "signature", lambda _: {"registration_version": 1})
     monkeypatch.setattr(updates, "STATE_ROOT", tmp_path)

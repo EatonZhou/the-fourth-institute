@@ -16,7 +16,7 @@ import time
 from management_common.file_lock import lock_stream
 from management_common.file_permissions import atomic_write_private_bytes, ensure_private_directory
 from management_common.instance_paths import accounts_root
-from management_common.process_runtime import spawn_process, terminate_process_tree, process_alive
+from management_common.process_runtime import spawn_process, terminate_process_tree
 from management_portal import kimi_provider_catalog, kimi_code_server, kimi_portal_tools, model_api_store, kimi_windows_runtime
 from management_portal.ai_provider_registry import AIProviderRegistry
 from management_portal.execution.account_registrations import registrations
@@ -92,6 +92,85 @@ def _read(path):
         return {}
 
 
+def _owned_process(target, state):
+    """A PID alone never proves ownership, including after an owner restart."""
+    import psutil
+    if not state:
+        return None
+    try:
+        process = psutil.Process(state["pid"])
+        if not process.is_running():
+            return None
+        if state.get("created") is not None and process.create_time() != state["created"]:
+            return None
+        if Path(process.environ().get("KIMI_CODE_HOME", "")).resolve() != target.resolve():
+            raise RuntimeError("Kimi server process ownership mismatch")
+        return process
+    except psutil.NoSuchProcess:
+        return None
+
+
+def _server_busy(client):
+    sessions = client._request("GET", "sessions", timeout=3)
+    rows = sessions.get("items", sessions.get("sessions", [])) if isinstance(sessions, dict) else sessions
+    return any(client.get_status(row["id"]).get("busy") for row in rows or [])
+
+
+def _stop_server(account, target, state):
+    import psutil
+    process = _owned_process(target, state)
+    if process is None:
+        return
+    if _server_busy(_client(target, state["port"])):
+        raise RuntimeError("Kimi account has an active turn; activation deferred")
+    descendants = process.children(recursive=True)
+    terminate_process_tree(state["pid"], tree_id=f"kimi-account-{account['account_id']}")
+    # A detached Windows Job may cease to be reopenable after its original
+    # owner exits. Use the verified psutil handles (PID + creation time), never
+    # an unverified process ID or a blanket taskkill by executable name.
+    for child in reversed([process, *descendants]):
+        try:
+            if child.is_running():
+                child.terminate()
+        except psutil.NoSuchProcess:
+            pass
+    _, alive = psutil.wait_procs([process, *descendants], timeout=15)
+    if alive:
+        raise TimeoutError("Owned Kimi process did not stop")
+    (target / "server.json").unlink(missing_ok=True)
+
+
+def running_accounts():
+    result = []
+    for account in registrations("kimi"):
+        if account["kind"] == "service":
+            continue
+        target = home(account)
+        state = _read(target / "server.json")
+        if _owned_process(target, state) is not None:
+            result.append((account, target, state))
+    return result
+
+
+def runtime_busy():
+    if any(_server_busy(_client(target, state["port"])) for _, target, state in running_accounts()):
+        return True
+    if any(account["kind"] == "service" for account in registrations("kimi")):
+        from scripts.portal_service_units import provider_runtime_services
+        if provider_runtime_services("portal-kimi-code.service"):
+            from .kimi_code_client import shared_client
+            return _server_busy(shared_client())
+    return False
+
+
+def restart_account(account_id):
+    account = account_for_route(account_id)
+    target = home(account)
+    with (target / "launch.lock").open("a+") as stream, lock_stream(stream):
+        _stop_server(account, target, _read(target / "server.json"))
+    client_for_route(account_id)
+
+
 def client_for_route(route, *, for_control=False):
     from .kimi_code_client import shared_client, KimiCodeUnavailable
     account = account_for_route(route)
@@ -105,20 +184,21 @@ def client_for_route(route, *, for_control=False):
         state = _read(marker)
         version = [account["version"], model_api_store.api_version(account["config"]["api_id"])
                    if account["kind"] == "api_profile" else None]
-        if state and process_alive(state["pid"]):
+        binary = Path(os.getenv("PORTAL_KIMI_CODE_BINARY", str(kimi_code_server.DEFAULT_BINARY)))
+        runtime = str(binary.resolve())
+        if _owned_process(target, state) is not None:
             client = _client(target, state["port"])
             # Never start a second daemon or kill a live turn after a failed probe.
             sessions = client._request("GET", "sessions", timeout=3)
-            if for_control or state["version"] == version:
+            if for_control or (state["version"] == version and state.get("runtime") == runtime):
                 return client if for_control else _subscription_tools(account, client)
             rows = sessions.get("items", sessions.get("sessions", [])) if isinstance(sessions, dict) else sessions
             for row in rows or []:
                 if client.get_status(row["id"]).get("busy"):
                     raise RuntimeError("Kimi account configuration changed while a turn is running; retry after it finishes")
-            terminate_process_tree(state["pid"], tree_id=tree_id)
+            _stop_server(account, target, state)
         if for_control:
             raise KimiCodeUnavailable("Kimi account server is not running")
-        binary = Path(os.getenv("PORTAL_KIMI_CODE_BINARY", str(kimi_code_server.DEFAULT_BINARY)))
         if not binary.is_file():
             raise KimiCodeUnavailable("Kimi Code runtime is missing")
         _write_config(account, target)
@@ -138,7 +218,9 @@ def client_for_route(route, *, for_control=False):
             while process.poll() is None:
                 try:
                     client._request("GET", "sessions", timeout=1)
-                    atomic_write_private_bytes(marker, json.dumps({"pid": process.pid, "port": port, "version": version}).encode())
+                    import psutil
+                    atomic_write_private_bytes(marker, json.dumps({"pid": process.pid, "port": port, "version": version,
+                        "created": psutil.Process(process.pid).create_time(), "runtime": runtime}).encode())
                     return _subscription_tools(account, client)
                 except KimiCodeUnavailable:
                     if time.monotonic() >= deadline:
@@ -171,7 +253,5 @@ def remove_account(account):
         return
     with (target / "launch.lock").open("a+") as stream, lock_stream(stream):
         state = _read(target / "server.json")
-        if state and process_alive(state["pid"]):
-            _client(target, state["port"])._request("GET", "sessions", timeout=3)
-            terminate_process_tree(state["pid"], tree_id=f"kimi-account-{account['account_id']}")
+        _stop_server(account, target, state)
     shutil.rmtree(target)

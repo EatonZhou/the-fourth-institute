@@ -66,30 +66,64 @@ def _isolated_codex_context() -> dict | None:
             if context else None)
 
 
+def _native_provider_service(unit):
+    """Resolve and verify the installed daemon, without creating or starting it."""
+    from management_common.instance_config import read_installation
+    from management_common.portal_paths import path as data_path
+    from scripts.tfi_instance_layout import code_root, validate_shared_code
+    if sys.platform == "win32":
+        from scripts import tfi_release_platform_windows as adapter
+    elif sys.platform == "darwin":
+        from scripts import tfi_release_platform_macos as adapter
+    else:
+        raise ValueError("Native Provider service requires Windows or macOS")
+    configured = os.environ.get("PORTAL_PATHS_CONFIG")
+    if not configured:
+        raise ValueError("Provider activation requires an installed instance")
+    config = Path(configured).resolve()
+    root = config.parent.parent
+    target = read_installation(root)["target"]
+    validate_shared_code(target)
+    if (config not in {root / "config/target.json", root / "config/paths.json"}
+            or Path(target["install_root"]).resolve() != root
+            or code_root(target).resolve() != SOURCE_ROOT.resolve()
+            or not re.fullmatch(r"tfi-[a-z0-9][a-z0-9-]*", target["service_prefix"])
+            or any(data_path(key).resolve() != Path(value).resolve()
+                   for key, value in target["data_roots"].items())):
+        raise ValueError("Provider service installation ownership mismatch")
+    component = {"portal-claude-code.service": "claude", "portal-kimi-code.service": "kimi"}[unit]
+    name = adapter.unit_name(target, component)
+    directory = adapter.unit_directory()
+    definition = adapter.unit_path(directory, name)
+    expected = adapter.unit_text(target, component, (component,))
+    if definition.exists() or definition.is_symlink():
+        if definition.is_symlink() or not definition.is_file():
+            raise ValueError("Provider daemon service ownership mismatch")
+        decode = json.loads if sys.platform == "win32" else lambda text: plistlib.loads(text.encode())
+        if decode(definition.read_text(encoding="utf-8")) != decode(expected):
+            raise ValueError("Provider daemon belongs to another instance")
+        if sys.platform == "win32":
+            adapter.verify_service(name, expected)
+        else:
+            # A plist on disk is not proof of the loaded launchd definition.
+            observed = adapter.service_controller().run(
+                "launchctl", "print", adapter.service_controller()._launch_target(name), check=False)
+            if not observed.returncode:
+                match = re.search(r"(?m)^\s*path\s*=\s*(.+)$", observed.stdout or "")
+                if not match or Path(match[1].strip()).resolve() != definition.resolve():
+                    raise ValueError("Provider daemon has a foreign loaded launchd job")
+    return adapter, directory, name, expected
+
+
 def provider_runtime_services(unit: str) -> tuple[str, ...]:
     """Resolve a daemon's running services in this installation only."""
     if unit not in {"portal-claude-code.service", "portal-kimi-code.service"}:
         raise ValueError("Unknown Provider daemon")
-    if sys.platform == "win32":
-        from management_common.instance_config import read_installation
-        from scripts import tfi_release_platform_windows as adapter
-        configured = os.environ.get("PORTAL_PATHS_CONFIG")
-        if not configured:
-            raise ValueError("Windows Provider activation requires an installed instance")
-        root = Path(configured).resolve().parent.parent
-        target = read_installation(root)["target"]
-        component = {"portal-claude-code.service": "claude", "portal-kimi-code.service": "kimi"}[unit]
-        name = adapter.unit_name(target, component)
-        path = adapter.unit_path(adapter.unit_directory(), name)
-        if not path.exists():
+    if sys.platform in {"win32", "darwin"}:
+        adapter, directory, name, _ = _native_provider_service(unit)
+        if not adapter.unit_path(directory, name).exists():
             return ()
-        if path.is_symlink() or not path.is_file():
-            raise ValueError("Provider daemon service ownership mismatch")
-        expected = adapter.unit_text(target, component, (component,))
-        if json.loads(path.read_text(encoding="utf-8")) != json.loads(expected):
-            raise ValueError("Provider daemon belongs to another instance")
-        adapter.verify_service(name, expected)
-        return (name,)
+        return (name,) if adapter.service_controller().status(name)["active"] == "active" else ()
     isolated = _isolated_provider_context()
     if isolated is None:
         return (unit,)
@@ -308,29 +342,43 @@ def install_claude_backend(*, app_server_only: bool = False) -> Path:
         return _install_claude_backend(app_server_only=app_server_only)
 
 
-def start_claude_service() -> None:
+def start_claude_service(*, wait_ready=None) -> None:
     from management_portal.execution.provider_updates import STATE_ROOT
     STATE_ROOT.mkdir(parents=True, exist_ok=True)
     with (STATE_ROOT / "claude-backend-install.lock").open("a+") as stream, lock_stream(stream):
-        if sys.platform == "win32":
-            from management_common.instance_config import read_installation
-            from scripts import tfi_release_platform_windows as adapter
-            configured = os.environ.get("PORTAL_PATHS_CONFIG")
-            if not configured:
-                raise ValueError("Windows Claude requires an installed instance")
-            installation = read_installation(Path(configured).resolve().parent.parent)["target"]
-            name = adapter.unit_name(installation, "claude")
-            adapter.register_services(adapter.unit_directory(), {name: adapter.unit_text(installation, "claude", ("claude",))})
-            adapter.service_controller().start(name)
+        if sys.platform in {"win32", "darwin"}:
+            adapter, directory, name, definition = _native_provider_service("portal-claude-code.service")
+            created = adapter.register_services(directory, {name: definition})
+            controller = adapter.service_controller()
+            was_active = controller.status(name)["active"] == "active"
+            try:
+                controller.start(name)
+                if wait_ready:
+                    wait_ready()
+            except Exception:
+                if not was_active:
+                    controller.stop(name)
+                if created:
+                    adapter.remove_services(directory, created)
+                raise
             return
         target = _claude_unit_path()
         active = provider_runtime_services("portal-claude-code.service")
         if not target.exists():
             target = _install_claude_backend(app_server_only=True)
         elif _isolated_provider_context() and active:
+            if wait_ready:
+                wait_ready()
             return
         # enable --now is idempotent; unlike restart it preserves running turns.
         _run("systemctl", "--user", "enable", "--now", target.name)
+        if wait_ready:
+            try:
+                wait_ready()
+            except Exception:
+                if not active:
+                    _run("systemctl", "--user", "stop", target.name)
+                raise
 
 
 def _codex_unit(account_id: str) -> str:
@@ -388,6 +436,7 @@ def _native_codex_service(account_id: str):
         installation = root / "installation.json"
         from management_common.instance_config import read_installation
         target = read_installation(root)["target"] if installation.is_file() else {}
+        account = account or target.get("windows_service_account", "")
         if target.get("windows_service_mode") == "user":
             content = json.dumps({"mode": "user", "name": name, "component": "codex",
                                   "root": str(root), "code": str(SOURCE_ROOT),
@@ -465,8 +514,8 @@ def _native_codex_controller():
     if sys.platform == "win32":
         from scripts.tfi_windows_user_services import WindowsServiceControl
         return WindowsServiceControl(instance_root() / "service-units")
-    from scripts.portal_service_control import ServiceControl
-    return ServiceControl()
+    from scripts.tfi_release_platform_macos import service_controller
+    return service_controller()
 
 
 def _native_codex_state(account_id: str) -> dict[str, Any]:
@@ -474,6 +523,24 @@ def _native_codex_state(account_id: str) -> dict[str, Any]:
     state = _native_codex_controller().status(unit)
     return {"unit": unit, "load": state["load"], "active": state["active"],
             "sub": state["sub"], "pid": state["pid"], "enabled": state["load"] == "loaded"}
+
+
+def verify_native_codex_services(names):
+    """An active OS label alone cannot authorize a Provider update."""
+    from management_common.instance_config import read_installation
+    from scripts.tfi_release_provider_services import owned_services
+    configured = os.environ.get("PORTAL_PATHS_CONFIG")
+    if not configured:
+        raise ValueError("Native Provider update requires installation metadata")
+    root = Path(configured).resolve().parent.parent
+    target = read_installation(root)["target"]
+    if sys.platform == "win32":
+        from scripts import tfi_release_platform_windows as adapter
+    else:
+        from scripts import tfi_release_platform_macos as adapter
+    plan = owned_services(target, adapter.unit_directory())
+    if not plan or not set(names).issubset(plan["names"]):
+        raise ValueError("Provider host has no owned service definition")
 
 
 def start_codex_instance(account_id: str) -> dict[str, Any]:
