@@ -213,6 +213,34 @@ def test_required_mcp_uses_native_capabilities_without_an_attached_override(monk
     assert len(calls) == 1 and result.harness_tools[0].name == "mcp_lookup"
 
 
+@pytest.mark.parametrize("fails", [False, True])
+def test_delivery_observation_failure_keeps_the_provider_outcome(monkeypatch, fails):
+    from management_portal.execution import backends, native_options
+    reply = SimpleNamespace(available_harness_tool_names=frozenset({"hatg_instruction"}))
+    class Provider:
+        def execute(self, invocation, context):
+            if fails:
+                raise RuntimeError("provider failed")
+            return reply
+    class Harness:
+        def prepare_invocation(self, invocation, provider):
+            return invocation
+        def should_run(self, invocation):
+            return False
+    def broken(*args, **kwargs):
+        raise TypeError("argument of type 'NoneType' is not iterable")
+    monkeypatch.setattr(native_options, "prepare_invocation", lambda invocation: invocation)
+    monkeypatch.setattr(assembly, "prepare", lambda invocation, context: invocation)
+    monkeypatch.setattr(assembly, "observe_delivery", broken)
+    monkeypatch.setattr(backends, "prepare_backend_context_seed", lambda provider, invocation: invocation)
+    service = backends.AgentSessionService(providers={"claude": Provider()}, harness=Harness())
+    if fails:
+        with pytest.raises(RuntimeError, match="provider failed"):
+            service.execute(Invocation(), Context())
+    else:
+        assert service.execute(Invocation(), Context()) is reply
+
+
 @pytest.mark.parametrize("operation", ["create", "fork"])
 def test_empty_session_operations_do_not_claim_they_sent_tools(operation):
     from dataclasses import replace

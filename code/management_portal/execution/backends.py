@@ -4091,13 +4091,19 @@ class AgentSessionService:
             from .resident_capability_assembly import prepare, observe_delivery
             prepared = prepare(prepared, backend_context)
             prepared = prepare_backend_context_seed(provider, prepared)
+            def observe(**values: Any) -> None:
+                # Delivery evidence never fails a turn: a completed reply would be lost.
+                try:
+                    observe_delivery(prepared, backend_context, **values)
+                except Exception:  # noqa: BLE001
+                    LOGGER.warning("Resident capability delivery of %s could not be observed",
+                                   prepared.request.execution_id, exc_info=True)
             try:
                 result = provider.execute(prepared, backend_context)
             except Exception:
-                observe_delivery(prepared, backend_context, completed=False)
+                observe(completed=False)
                 raise
-            observe_delivery(prepared, backend_context, completed=True,
-                             available_names=result.available_harness_tool_names)
+            observe(completed=True, available_names=result.available_harness_tool_names)
             return result
         if not self.harness.should_run(invocation):
             return execute_with_context_seed(invocation, context)
