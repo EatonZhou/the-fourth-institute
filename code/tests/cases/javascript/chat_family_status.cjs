@@ -96,7 +96,8 @@ w.PortalResidentRuntimeController = {
           ...(residentId === 'res_queue' ? { provider_session: { provider: 'claude', account_id: 'route_x' } } : {}),
           allows: { OpenIntake: true },
         },
-        settings: residentId === 'res_run' ? { model: 'model-x', reasoning_effort: 'high' } : {},
+        settings: residentId === 'res_run' ? { model: 'model-x', reasoning_effort: 'high' }
+          : residentId === 'res_stop' ? { model: 'detail-model', reasoning_effort: 'medium' } : {},
       }),
       openSettings: async focus => { runtime.opened.push(focus()); },
       close: () => { runtime.closed += 1; },
@@ -187,8 +188,24 @@ async function membersQuotaAndSummary() {
     const settings = id => cells(root(), id)[2].querySelector('[data-family-status-settings]');
     assert.equal(settings('res_move').disabled, true, 'nor settings while it moves');
     assert.equal(settings('res_idle').disabled, true, 'a member whose runtime cannot be changed has no settings');
-    assert.equal(text(settings('res_run').querySelector('.familyStatusRuntime')), 'high');
-    assert.equal(text(settings('res_lead').querySelector('.familyStatusRuntime')), '默认强度');
+    assert.match(text(settings('res_run').querySelector('.familyStatusRuntime')), /model-x/, 'the member model is visible without expanding details');
+    assert.match(text(settings('res_run').querySelector('.familyStatusRuntime')), /high/);
+    assert.match(text(settings('res_stop').querySelector('.familyStatusRuntime')), /detail-model/, 'a lightweight snapshot without settings retains the loaded runtime model');
+    assert.match(text(settings('res_lead').querySelector('.familyStatusRuntime')), /Provider default/, 'unresolved provider defaults must be explicit');
+    root().querySelector('.familyStatusBody').scrollLeft = 80;
+    runtimes.get('res_lead').handlers.onState({
+      detail: { resident: { backend: 'codex' } }, settings: {},
+      catalog: { default_model: 'catalog-model', runtime_capabilities: { settings: ['model', 'service_tier'] },
+        service_tiers_by_model: { 'catalog-model': ['priority'] } },
+    });
+    assert.match(text(settings('res_lead').querySelector('.familyStatusRuntime')), /catalog-model/, 'the catalog resolves an inherited default model');
+    assert.equal(root().querySelector('.familyStatusBody').scrollLeft, 80, 'a live member refresh preserves the horizontal reading position');
+    assert.match(text(settings('res_lead').querySelector('.familyStatusRuntime')), /Fast 关/);
+    runtimes.get('res_lead').handlers.onState({
+      detail: { resident: { backend: 'claude' } }, settings: { model: 'claude-model', reasoning_effort: 'high' }, catalog: {},
+    });
+    assert.match(text(settings('res_lead').querySelector('.familyStatusRuntime')), /claude-model/, 'a changed backend/model replaces the prior catalog model');
+    assert.doesNotMatch(text(settings('res_lead').querySelector('.familyStatusRuntime')), /catalog-model/);
     settings('res_run').click();
     await settle();
     assert.deepEqual(runtimes.get('res_run').opened, [settings('res_run')], 'settings open for the member with its button to return to');

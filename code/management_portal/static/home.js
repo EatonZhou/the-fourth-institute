@@ -251,10 +251,13 @@ async function loadAgentAccess() {
     root.innerHTML = window.PortalI18n.markup('<div class="agent-access-empty">正在读取个人 Agent…</div>');
   }
   try {
-    const personalAmaRequest = window.PortalIdentity
-      .listUIAssociations("lineage-workbench.personal-ama")
-      .catch(() => ({ items: [] }));
-    let payload = await window.PortalResidentService.list();
+    const [catalog, shortcuts, personalAmaData] = await Promise.all([
+      window.PortalResidentService.list(),
+      window.PortalResidentService.shortcuts(),
+      window.PortalIdentity.listUIAssociations("lineage-workbench.personal-ama")
+        .catch(() => ({ items: [] })),
+    ]);
+    let payload = catalog;
     let retryAfterMs = 250;
     while (payload?.ready === false && loadSeq === agentAccessLoadSeq) {
       await new Promise(resolve => window.setTimeout(resolve, retryAfterMs));
@@ -262,13 +265,20 @@ async function loadAgentAccess() {
       retryAfterMs = Math.min(2000, retryAfterMs * 2);
     }
     if (loadSeq !== agentAccessLoadSeq) return;
-    const personalAmaData = await personalAmaRequest;
-    if (loadSeq !== agentAccessLoadSeq) return;
     const personalAmaAssociation = (Array.isArray(personalAmaData?.items) ? personalAmaData.items : [])
       .find(item => String(item?.key || "") === "primary")
       || (Array.isArray(personalAmaData?.items) ? personalAmaData.items[0] : null);
     personalAmaResidentId = String(personalAmaAssociation?.value?.resident_id || "").trim();
-    agentAccessCatalog = payload;
+    // The navigation directory contains leaders; personal and discovery targets
+    // are resolved by the separate, actor-scoped shortcuts endpoint.
+    agentAccessCatalog = {
+      ...payload,
+      recommendation_resident: shortcuts?.recommendation_resident,
+      residents: [
+        ...(Array.isArray(payload?.residents) ? payload.residents : []),
+        ...(Array.isArray(shortcuts?.residents) ? shortcuts.residents : []),
+      ],
+    };
     const visibleEntries = renderAgentAccess(agentAccessCatalog);
     void loadAgentAccessSummaries(visibleEntries);
   } catch (error) {

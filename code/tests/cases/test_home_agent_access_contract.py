@@ -8,6 +8,14 @@ ROOT = Path(__file__).resolve().parents[2]
 HOME_JS = ROOT / "management_portal" / "static" / "home.js"
 
 
+def test_agent_access_loads_shortcuts_and_renders_navigable_residents() -> None:
+    subprocess.run(
+        ["node", str(ROOT / "tests/cases/javascript/home_agent_access.cjs")],
+        cwd=ROOT,
+        check=True,
+    )
+
+
 def test_recently_used_preserves_distinct_activity_labels() -> None:
     """Home 最近使用列表分别显示排队中、启动中和运行中，已完成的只显示任务摘要"""
     source = HOME_JS.read_text(encoding="utf-8")

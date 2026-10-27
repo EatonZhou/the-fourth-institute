@@ -7,6 +7,8 @@ import json
 from pathlib import Path
 import subprocess
 
+import pytest
+
 from management_portal.resources.portal import portal_route_script
 
 
@@ -18,6 +20,18 @@ def test_family_status_members_quota_intake_and_mounting():
     result = subprocess.run(
         ["node", str(Path(__file__).with_name("javascript") / "chat_family_status.cjs")],
         input=json.dumps({"routeScript": portal_route_script().decode()}),
+        capture_output=True, text=True, timeout=60,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_family_settings_scroll_stays_inside_content_column():
+    """真实菜单外壳和成员表格在窄屏横向滚动、实时刷新时保持菜单边界和阅读位置。"""
+    runtime = Path(__file__).resolve().parents[2] / 'management_portal/test_framework/tau_runtime/node_modules/playwright'
+    if not runtime.is_dir():
+        pytest.skip('requires the Portal browser test runtime')
+    result = subprocess.run(
+        ['node', str(Path(__file__).with_name('javascript') / 'family_settings_layout.browser.cjs')],
         capture_output=True, text=True, timeout=60,
     )
     assert result.returncode == 0, result.stdout + result.stderr
