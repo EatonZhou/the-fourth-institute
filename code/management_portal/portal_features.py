@@ -47,8 +47,10 @@ Hooks:
     a dict with ``id``, ``label``, ``icon``, ``title`` and ``template``, the
     path of an HTML file holding ``<template id="<id>NativeView">`` and a
     ``<script type="application/json" id="<id>NativeViewAssets">`` with the
-    view's ``styles`` and ``scripts``.  The page's activity rail lists the
-    installed views (``http_portal_pages.py``, ``static/development_workspace.js``).
+    view's ``styles`` and ``scripts``; ``{"script-group": <name>}`` among the
+    scripts stands for a group of ``script_groups.json``.  The page's activity
+    rail lists the installed views (``http_portal_pages.py``,
+    ``static/development_workspace.js``).
 ``web.home_panel``
     The path of an HTML fragment with the feature's panel on Home: its
     markup, styles and script.  Home inserts the installed fragments before

@@ -6,6 +6,7 @@
 :risk: no-external-side-effects
 """
 import importlib.util
+import json
 from pathlib import Path
 import subprocess
 import tempfile
@@ -81,21 +82,27 @@ class WorkflowTest(unittest.TestCase):
         self.assertEqual(result["commit"], dev.git(self.work, "rev-parse", "HEAD"))
 
     def test_selected_chat_module_publishes_its_compatibility_unit(self):
-        """选中一个 Chat 模块时一起发布入口脚本、新模块和脚本清单已改变的页面，清单未变的页面和无关文件留在 Dev。"""
+        """选中一个 Chat 模块时一起发布入口脚本、新模块和脚本组清单，页面和无关文件留在 Dev。"""
         static = self.work / "code/management_portal/static"
         static.mkdir(parents=True)
-        page = '<script src="/static/chat_workspace_a.js"></script><script src="/static/portal_chat_workspace.js"></script>\n'
+        groups = static.parent / "script_groups.json"
+        page = '<script data-portal-script-group="chat-workspace"></script>\n'
+
+        def list_group(*modules):
+            sources = [f"/static/chat_workspace_{name}.js" for name in modules] + ["/static/portal_chat_workspace.js"]
+            groups.write_text(json.dumps({"chat-workspace": sources}))
+
         for name in ("portal_chat_workspace.js", "chat_workspace_a.js"):
             (static / name).write_text("base\n")
-        for name in ("wall.html", "index.html"):
-            (static.parent / name).write_text(page)
+        list_group("a")
+        (static.parent / "index.html").write_text(page)
         dev.git(self.work, "add", "code")
         dev.git(self.work, "commit", "-m", "chat")
         dev.publish(self.root, "chat", push=False)
         (static / "chat_workspace_a.js").write_text("calls b\n")
         (static / "portal_chat_workspace.js").write_text("creates b\n")
         (static / "chat_workspace_b.js").write_text("new module\n")
-        (static.parent / "wall.html").write_text(page.replace("</script>", '</script><script src="/static/chat_workspace_b.js"></script>', 1))
+        list_group("a", "b")
         (static.parent / "index.html").write_text(page + "<!-- unrelated -->\n")
         (self.work / "file").write_text("still editing\n")
         result = dev.publish(self.root, "chat module", push=False,
@@ -103,13 +110,13 @@ class WorkflowTest(unittest.TestCase):
         released = self.root / "code/management_portal"
         self.assertEqual((released / "static/portal_chat_workspace.js").read_text(), "creates b\n")
         self.assertEqual((released / "static/chat_workspace_b.js").read_text(), "new module\n")
-        self.assertIn("chat_workspace_b.js", (released / "wall.html").read_text())
+        self.assertIn("/static/chat_workspace_b.js", json.loads((released / "script_groups.json").read_text())["chat-workspace"])
         self.assertEqual((released / "index.html").read_text(), page)
         self.assertEqual((self.root / "file").read_text(), "base\n")
         self.assertEqual(result["release_unit_paths"], [
+            "code/management_portal/script_groups.json",
             "code/management_portal/static/chat_workspace_b.js",
             "code/management_portal/static/portal_chat_workspace.js",
-            "code/management_portal/wall.html",
         ])
 
     def test_unrelated_release_work_is_not_a_clean_tree_gate(self):

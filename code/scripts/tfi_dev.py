@@ -107,7 +107,7 @@ def sync(root):
     return cfg
 
 
-def release_unit_paths(dev, cfg, base, paths):
+def release_unit_paths(dev, cfg, paths):
     """Add the rest of each browser compatibility unit a selected path belongs to."""
     prefix = cfg.get("code_directory", "code")
     code = dev / prefix
@@ -115,16 +115,11 @@ def release_unit_paths(dev, cfg, base, paths):
         return tuple(paths)
     from scripts.portal_release_units import expand_release_unit_paths
 
-    def released_text(name):
-        shown = subprocess.run(["git", "show", f"{base}:{prefix}/{name}"], cwd=dev,
-                               capture_output=True, text=True)
-        return shown.stdout if shown.returncode == 0 else None
-
     requested = {PurePosixPath(path).as_posix() for path in paths}
     inside = [path[len(prefix) + 1:] for path in requested if path.startswith(prefix + "/")]
     if not inside:
         return tuple(paths)
-    added = [f"{prefix}/{path}" for path in expand_release_unit_paths(inside, code, released_text)]
+    added = [f"{prefix}/{path}" for path in expand_release_unit_paths(inside, code)]
     return (*paths, *(path for path in added if path not in requested))
 
 
@@ -141,7 +136,7 @@ def publish(root, message, check=None, push=True, *, paths=(), all_files=False, 
         git(dev, "merge-base", "--is-ancestor", base, "HEAD")
         if check:
             subprocess.run(check, cwd=dev, check=True)
-        selected = tuple(paths) if all_files else release_unit_paths(dev, cfg, base, paths)
+        selected = tuple(paths) if all_files else release_unit_paths(dev, cfg, paths)
         if selected or all_files:
             from scripts.portal_dev_commit import commit as commit_paths
             source = commit_paths(dev, selected, message, all_files=all_files)

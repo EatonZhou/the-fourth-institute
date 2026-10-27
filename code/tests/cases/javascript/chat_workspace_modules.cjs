@@ -8,13 +8,13 @@ const path = require('node:path');
 const STATIC = path.resolve(__dirname, '../../../management_portal/static');
 const ENTRY = 'portal_chat_workspace.js';
 
-// The chat workspace's scripts in lineage.html's order. A case that runs a
-// copy of the code passes that copy's static directory.
+// The chat workspace's scripts in the order pages load them: the
+// "chat-workspace" group of script_groups.json. A case that runs a copy of the
+// code passes that copy's static directory.
 function chatWorkspaceScripts(staticRoot = STATIC) {
-  const page = fs.readFileSync(path.join(staticRoot, '..', 'lineage.html'), 'utf8');
-  const files = [...page.matchAll(/<script src="\/static\/((?:chat_workspace_[a-z_]+|portal_chat_workspace)\.js)">/g)]
-    .map(match => match[1]);
-  if (files.at(-1) !== ENTRY) throw new Error(`lineage.html must load the chat workspace modules before ${ENTRY}`);
+  const groups = JSON.parse(fs.readFileSync(path.join(staticRoot, '..', 'script_groups.json'), 'utf8'));
+  const files = groups['chat-workspace'].map(source => source.replace(/^\/static\//, ''));
+  if (files.at(-1) !== ENTRY) throw new Error(`the chat-workspace script group must load the modules before ${ENTRY}`);
   return files;
 }
 

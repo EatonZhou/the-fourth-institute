@@ -6,7 +6,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlencode
 
 from management_common.operation_errors import OperationError
-from management_portal import portal_features
+from management_portal import portal_features, script_groups
 from management_portal.http_errors import instruction_error_payload
 
 
@@ -76,8 +76,9 @@ class PortalPagesHttp:
         """The installed features' views of the development projection page (``web.native_view``).
 
         Without ``view`` the reply lists them; with ``view`` it carries that
-        view's markup.  Authenticated markup only: domain APIs retain their
-        own authorization.
+        view's markup, with the script groups its assets name expanded
+        (``script_groups.py``).  Authenticated markup only: domain APIs retain
+        their own authorization.
         """
         views = {view["id"]: view for _feature, view in portal_features.contributions("web.native_view")}
         requested = (parse_qs(parsed.query).get("view") or [""])[-1]
@@ -86,7 +87,8 @@ class PortalPagesHttp:
                 {key: view[key] for key in ("id", "label", "icon", "title")} for view in views.values()]})
         if requested not in views:
             return self.respond(request, 404, {"error": f"没有安装视图 {requested}"})
-        return self.respond(request, 200, {"html": Path(views[requested]["template"]).read_text(encoding="utf-8")})
+        template = Path(views[requested]["template"]).read_text(encoding="utf-8")
+        return self.respond(request, 200, {"html": script_groups.expand_document(template)})
 
     def home(self, request, parsed, actor):
         return self.document(request, 200, home_page(self.root))

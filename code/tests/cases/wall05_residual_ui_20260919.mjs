@@ -8,14 +8,17 @@ const sources = new Map();
 const spans = [];
 
 // The lineage workbench and the chat workspace are each an entry script plus
-// module scripts; lineage.html loads all of them, so a declaration is looked
-// up in every script of its part, in page order.
+// module scripts; lineage.html loads all of them, the chat workspace as a
+// script group, so a declaration is looked up in every script of its part,
+// in page order.
 const PARTS = {
   lineage: /^lineage_workbench(?:_[a-z_]+)?\.js$/,
   chat: /^(?:chat_workspace_[a-z_]+|portal_chat_workspace)\.js$/,
 };
 const lineagePage = fs.readFileSync(new URL("../lineage.html", sourceRoot), "utf8");
-const pageScripts = [...lineagePage.matchAll(/<script src="\/static\/([a-z_]+\.js)">/g)].map(match => match[1]);
+const scriptGroups = JSON.parse(fs.readFileSync(new URL("../script_groups.json", sourceRoot), "utf8"));
+const pageScripts = [...lineagePage.matchAll(/<script (?:src="\/static\/([a-z_]+\.js)"|data-portal-script-group="([a-z-]+)")>/g)]
+  .flatMap(([, file, group]) => file ? [file] : scriptGroups[group].map(source => source.replace(/^\/static\//, "")));
 
 function extract(part, name, method = false) {
   const files = pageScripts.filter(file => PARTS[part].test(file));

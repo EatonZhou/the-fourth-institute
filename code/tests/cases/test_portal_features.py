@@ -226,6 +226,16 @@ def test_development_page_lists_the_installed_native_views(monkeypatch):
     assert '<template id="wallNativeView"' in wall[1]["html"] and "testNativeView" not in wall[1]["html"]
     assert '<template id="testNativeView">' in test[1]["html"] and "wallNativeView" not in test[1]["html"]
     assert missing[0] == 404
+    # The views name the chat workspace as a script group; the reply lists its scripts.
+    import re
+    from management_portal import script_groups
+
+    for view, (_status, payload) in (("wall", wall), ("test", test)):
+        assets = re.search(rf'id="{view}NativeViewAssets"[^>]*>(.*?)</script>', payload["html"], re.S)
+        scripts = json.loads(assets[1])["scripts"]
+        chat = list(script_groups.scripts("chat-workspace"))
+        start = scripts.index(chat[0])
+        assert scripts[start:start + len(chat)] == chat, view
 
 
 def test_pages_carry_the_installed_features_navigation_and_workbenches():

@@ -70,3 +70,22 @@ def test_html_response_injects_after_versioning_without_changing_identity_or_cac
     assert options["cache_control"] == "private, no-cache"
     args, _ = portal._serve_bytes(None, 200, b'{}', "application/json")
     assert args[2] == b'{}'
+
+
+def test_html_response_expands_script_groups_before_versioning(monkeypatch):
+    """HTML 响应先展开页面写的脚本组，组内脚本与其他脚本一样带版本号并列入启动清单"""
+    from management_portal import script_groups, serve_management_portal as portal
+
+    monkeypatch.setattr(portal, "_PORTAL_BUILD_ID", "group-contract")
+    monkeypatch.setattr(portal, "_get_session_username", lambda handler: "playwright")
+    monkeypatch.setattr(portal, "_portal_user_preferences", lambda username: {})
+    monkeypatch.setattr(portal, "_serve_payload", lambda *args, **kwargs: (args, kwargs))
+    html = b'''<html><head><script src="/static/portal_theme.js"></script>
+      <script data-portal-script-group="chat-workspace"></script></head>
+      <body><header data-portal-site-header></header></body></html>'''
+    args, _ = portal._serve_bytes(None, 200, html, "text/html")
+    result = args[2].decode()
+    config = json.loads(re.search(r'\}\s*\)\((\{.*?\})\);</script>', result).group(1))
+    assert config["assets"] == [f"{source}?portal_v=group-contract" for source in (
+        "/static/portal_theme.js", *script_groups.scripts("chat-workspace"))]
+    assert "data-portal-script-group" not in result

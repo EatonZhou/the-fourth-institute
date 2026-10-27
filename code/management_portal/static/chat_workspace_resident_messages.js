@@ -77,6 +77,21 @@
       subagentRunCard, turnArtifactDisplay,
     } = dependencies;
 
+    function nativePlanLiveHtml(details, messages = []) {
+      const finalIds = new Set(messages.filter(item => item.content_parts?.some(part => part.type === "native_turn"))
+        .map(item => String(item.id)));
+      const cards = details.flatMap(detail => {
+        const part = detail.native_plan;
+        if (detail.kind !== "plan" || detail.status !== "running" || part?.type !== "native_turn"
+          || !detail.execution_id || part.execution_id !== detail.execution_id
+          || !part.thread_id || !part.turn_id || !part.message_id || part.diff
+          || finalIds.has(String(part.message_id))) return [];
+        const item = { id: part.message_id, role: "agent", content_parts: [part] };
+        return [`<article class="messageItem agent nativePlanLive" data-message-key="${escapeHtml(item.id)}" aria-live="polite">${residentMessageBody(item, { livePlan: true })}</article>`];
+      });
+      return cards.length ? `<div class="nativePlansLive" data-message-key="__plans__">${cards.join("")}</div>` : "";
+    }
+
     function residentMessageBody(item, context = {}) {
       const subagent = item.content_parts?.find(part => part.type === "subagent_run");
       if (subagent && messageRole(item) !== "human") return subagentRunCard(item, subagent, context);
@@ -86,7 +101,7 @@
         if (!display.hasContent) return window.PortalI18n.html`<small class="nativeTurnEmpty">${escapeHtml(display.title)}</small>`;
         const labels = { pending: window.PortalI18n.t("待处理"), inProgress: window.PortalI18n.t("进行中"), completed: window.PortalI18n.t("已完成") };
         return window.PortalI18n.html`<section class="residentQuestionCard nativeTurnCard chatSystemCard" data-native-turn="${escapeHtml(item.id)}">
-        <header class="nativeTurnHeader"><div class="nativeTurnIdentity"><div class="residentQuestionTitle">${escapeHtml(display.title)}</div><span class="messageSystemBadge">执行记录</span></div>${turn.diff ? window.PortalI18n.html`<button type="button" class="portalButton" data-turn-review title="审查本轮全部修改">审查这些修改</button>` : ""}</header>
+        <header class="nativeTurnHeader"><div class="nativeTurnIdentity"><div class="residentQuestionTitle">${escapeHtml(display.title)}</div><span class="messageSystemBadge">${context.livePlan ? window.PortalI18n.t("当前计划") : window.PortalI18n.t("执行记录")}</span></div>${turn.diff ? window.PortalI18n.html`<button type="button" class="portalButton" data-turn-review title="审查本轮全部修改">审查这些修改</button>` : ""}</header>
         ${turn.type === "resource_changes" ? window.PortalI18n.html`<ul class="resourceTurnChanges">${(turn.changes || []).map(change => {
           const version = snapshot => snapshot?.number ? `v${snapshot.number}` : "";
           const before = version(change.before_version) || String(change.before_sha256 || "").slice(0, 8);
@@ -341,7 +356,7 @@
     }
 
     return Object.freeze({
-      residentMessageBody, familyExecution, familyReassignMenuItems, residentMessageFooter,
+      residentMessageBody, nativePlanLiveHtml, familyExecution, familyReassignMenuItems, residentMessageFooter,
       residentMessageAfter, requestProgressHtml, formatTokenCount,
     });
   }

@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 from typing import Any
 
+from management_portal import script_groups
 from management_portal.resources.portal import portal_route_script
 from management_portal.test_framework import api
 
@@ -88,7 +89,7 @@ def demo_frame_html(case_id: str, session: str) -> bytes:
     if not re.fullmatch(r"[A-Za-z0-9-]{16,100}", clean_session):
         raise ValueError("沙盒 Live 需要有效的 session")
 
-    html = source.read_text(encoding="utf-8")
+    html = script_groups.expand_document(source.read_text(encoding="utf-8"))
     # The synchronous shared state owner must run once, before the guard and consumers.
     html = re.sub(r'<script\s+src=["\']/static/portal_state\.js["\']\s*></script>', '', html)
     bootstrap = {

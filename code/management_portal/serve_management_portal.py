@@ -106,6 +106,7 @@ from management_portal.http_portal_session import PortalSessionHttp
 from management_portal.http_public_pages import PUBLIC_SHARED_STATIC_ASSETS, PublicPagesHttp
 from management_portal.http_principal_backpack import PrincipalBackpackHttp
 from management_portal import principal_backpack
+from management_portal import script_groups
 from management_portal import user_avatar
 from management_portal.http_resources import ResourceHttp
 from management_portal.http_script_runs import ScriptRunHttp
@@ -2611,6 +2612,8 @@ def _serve_bytes(
 ):
     if content_type.lower().startswith("text/html"):
         from management_portal.localization import normalize_language
+        if script_groups.MARKER.encode("ascii") in data:
+            data = script_groups.expand_document(data.decode("utf-8")).encode("utf-8")
         username = _get_request_actor(handler) or ""
         if username:
             language = normalize_language(_portal_user_preferences(username).get("appearance", {}).get("language"))
@@ -3538,35 +3541,7 @@ def _portal_route_definitions() -> tuple[RouteDefinition, ...]:
                 '/static/portal_button_tooltips.js',
                 '/static/portal_model_api_settings.js',
                 '/static/portal_resident_runtime_controller.js',
-                '/static/chat_workspace_message_content.js',
-                '/static/chat_workspace_composer.js',
-                '/static/chat_workspace_composer_menus.js',
-                '/static/chat_workspace_refs.js',
-                '/static/chat_workspace_inputs.js',
-                '/static/chat_workspace_messages.js',
-                '/static/chat_workspace_message_list.js',
-                '/static/chat_workspace_message_viewport.js',
-                '/static/chat_workspace_message_actions.js',
-                '/static/chat_workspace_message_folds.js',
-                '/static/chat_workspace_composer_attachments.js',
-                '/static/chat_workspace_composer_drafts.js',
-                '/static/chat_workspace_composer_undo.js',
-                '/static/chat_workspace_message_history.js',
-                '/static/chat_workspace_composer_height.js',
-                '/static/chat_workspace_runtime_controls.js',
-                '/static/chat_workspace_message_drawing.js',
-                '/static/chat_workspace_runtime_settings.js',
-                '/static/chat_workspace_harness_panel.js',
-                '/static/chat_workspace_subagents.js',
-                '/static/chat_workspace_conversation.js',
-                '/static/chat_workspace_question_cards.js',
-                '/static/chat_workspace_resident_messages.js',
-                '/static/chat_workspace_read_observer.js',
-                '/static/chat_workspace_family_status.js',
-                '/static/chat_workspace_forward_dialog.js',
-                '/static/chat_workspace_search.js',
-                '/static/chat_workspace_resident_workspace.js',
-                '/static/portal_chat_workspace.js',
+                *script_groups.scripts("chat-workspace"),
                 '/static/portal_resident_avatar.css',
                 '/static/portal_resident_avatar.js',
                 '/static/portal_resident_menu.js',

@@ -67,7 +67,11 @@ function findWorkbenchFunction(name, sources = workbenchSources()) {
 function startWorkbenchPage({ answers = {}, instructions = {}, url = 'https://portal.fixture.invalid/lineage' } = {}) {
   const { JSDOM, VirtualConsole } = require('jsdom');
   const { execFileSync } = require('node:child_process');
-  const html = fs.readFileSync(path.join(PORTAL, 'lineage.html'), 'utf8');
+  const python = code => execFileSync(process.env.TFI_TEST_PYTHON || 'python3', ['-c', code],
+    { cwd: path.dirname(PORTAL), encoding: 'utf8' });
+  // lineage.html as the server sends it, with its script groups expanded.
+  const html = python('import sys; from management_portal import script_groups; '
+    + 'sys.stdout.write(script_groups.expand_document(open("management_portal/lineage.html", encoding="utf-8").read()))');
   const errors = [], requests = [];
   const log = new VirtualConsole();
   log.on('jsdomError', error => errors.push(String(error?.message || error)));
@@ -112,9 +116,7 @@ function startWorkbenchPage({ answers = {}, instructions = {}, url = 'https://po
     return new Response(JSON.stringify(result), { status: 200, headers: { 'Content-Type': 'application/json' } });
   };
   // The server publishes the resource route contract as a generated script.
-  const routes = execFileSync(process.env.TFI_TEST_PYTHON || 'python3', ['-c',
-    'from management_portal.resources.portal import portal_route_script; print(portal_route_script().decode())'],
-  { cwd: path.dirname(PORTAL), encoding: 'utf8' });
+  const routes = python('from management_portal.resources.portal import portal_route_script; print(portal_route_script().decode())');
   const partFiles = new Set(workbenchModuleFiles());
   const parts = {};
   for (const [, file] of html.matchAll(/<script\b[^>]*\bsrc="\/static\/([^"]+)"/g)) {

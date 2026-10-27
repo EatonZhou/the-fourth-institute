@@ -43,15 +43,7 @@ class PublishOptions:
 
 def expand_release_unit_paths(paths: tuple[str, ...]) -> tuple[str, ...]:
     """Close explicitly selected paths over browser compatibility units."""
-
-    base = base_commit()
-
-    def released_text(name: str) -> str | None:
-        shown = subprocess.run(['git', 'show', f'{base}:./{name}'], cwd=ROOT,
-                               capture_output=True, text=True, check=False)
-        return shown.stdout if shown.returncode == 0 else None
-
-    return release_units.expand_release_unit_paths(paths, ROOT, released_text)
+    return release_units.expand_release_unit_paths(paths, ROOT)
 
 
 @contextmanager

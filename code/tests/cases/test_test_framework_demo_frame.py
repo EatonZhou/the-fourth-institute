@@ -11,7 +11,7 @@ from unittest.mock import Mock
 import pytest
 
 from management_portal.resources.portal import portal_route_script
-from management_portal import test_framework as framework
+from management_portal import script_groups, test_framework as framework
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -84,6 +84,8 @@ def test_sandbox_frame_inlines_canonical_routes_before_dependent_components(
         dependency_index, dependency_script = inline_scripts[f"/static/{dependency}"]
         assert dependency_script.strip()
         assert route_index < dependency_index
+    # The page names the chat workspace as a script group; the frame inlines all of it.
+    assert set(script_groups.scripts("chat-workspace")) <= set(inline_scripts)
 
 
 def test_demo_caption_uses_the_existing_readable_caption_style() -> None:

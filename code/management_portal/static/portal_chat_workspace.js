@@ -1,8 +1,10 @@
 (function () {
   const escapeHtml = value => window.PortalUIPrimitives.escapeHtml(value);
 
-  // Parts of the chat workspace live in module scripts that every page loads
-  // before this one. chatWorkspaceModule(name) returns what a script registers:
+  // Parts of the chat workspace live in module scripts that pages load before
+  // this one: the "chat-workspace" group of management_portal/script_groups.json
+  // lists them in load order. chatWorkspaceModule(name) returns what a script
+  // registers:
   //   chat_workspace_message_content.js  handoff cards, forward references, runtime
   //     status, response sources, attachment references, Markdown and previews
   //   chat_workspace_composer.js  the message input, its tokens, caret, paste and
@@ -165,6 +167,7 @@
     normalizeMessageStream, PRE_PROVIDER_RUNTIME_PHASES, renderMarkdownWithAttachmentRefs,
     renderResidentHandoffs, residentHandoffParts, responseSourcesHtml, runtimeDetailsHtml,
     runtimePhaseStatusHtml, subagentLiveHtml,
+    nativePlanLiveHtml: (...args) => nativePlanLiveHtml(...args),
   });
 
   const {
@@ -183,7 +186,7 @@
 
   const {
     residentMessageBody, familyExecution, familyReassignMenuItems, residentMessageFooter, residentMessageAfter,
-    requestProgressHtml, formatTokenCount,
+    requestProgressHtml, formatTokenCount, nativePlanLiveHtml,
   } = chatWorkspaceModule("PortalChatWorkspaceResidentMessages").createResidentMessages({
     escapeHtml, footerTime, messageQuotable, messageRole, messageSubmenuHtml, nativeInteractionNames,
     outwardToResidents, parseForwardReference, PRE_PROVIDER_RUNTIME_PHASES, resourceChips,

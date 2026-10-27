@@ -7,9 +7,9 @@ did not change add nothing to the commit.
 """
 from __future__ import annotations
 
-import re
+import json
 from pathlib import Path, PurePosixPath
-from typing import Callable, Iterable, Optional
+from typing import Iterable
 
 # A Lineage page is one browser runtime, even though its implementation is
 # split across an HTML shell and lazily loaded modules. Publishing only one
@@ -69,58 +69,37 @@ LINEAGE_WORKBENCH_RELEASE_UNIT = (
 )
 
 # The Chat entry script calls each Chat module's factory by name and hands it
-# its dependencies, so the entry script and every module are one unit.
-CHAT_WORKSPACE_ENTRY = 'management_portal/static/portal_chat_workspace.js'
-CHAT_WORKSPACE_MODULES = 'management_portal/static/chat_workspace_*.js'
-CHAT_SCRIPT = re.compile(r'/static/(?:chat_workspace_[a-z_]+|portal_chat_workspace)\.js')
-# Each page that loads the Chat lists its scripts, and so does the server's
-# list of public static files.
-CHAT_WORKSPACE_LISTINGS = (
-    'management_portal/*.html',
-    'management_portal/test_framework/page/*.html',
-    '*_lan/*.html',
-    'management_portal/serve_management_portal.py',
-)
-
-ReleasedText = Callable[[str], Optional[str]]
+# its dependencies, so the entry script and every module are one unit. Pages
+# load them as the "chat-workspace" script group, and the group's list in
+# ``script_groups.json`` joins the unit: Release then never lists a module it
+# lacks, nor lacks one the entry script calls.
+SCRIPT_GROUPS = 'management_portal/script_groups.json'
+CHAT_WORKSPACE_GROUP = 'chat-workspace'
 
 
-def chat_workspace_unit(root: Path, released_text: ReleasedText | None = None) -> tuple[str, ...]:
-    """The Chat entry script and modules, and each file whose Chat script list differs from Release.
-
-    A page or the server names the Chat scripts one by one. When a module is
-    added, removed or renamed, that list changes in Dev; such a file joins the
-    unit so Release never runs an entry script with modules its pages do not
-    load. ``released_text(path)`` returns the file at the released commit, or
-    ``None`` when it is absent there; without it no listing file joins.
-    """
-    members = [CHAT_WORKSPACE_ENTRY,
-               *sorted(path.relative_to(root).as_posix() for path in root.glob(CHAT_WORKSPACE_MODULES))]
-    if released_text is not None:
-        for pattern in CHAT_WORKSPACE_LISTINGS:
-            for path in sorted(root.glob(pattern)):
-                name = path.relative_to(root).as_posix()
-                listed = CHAT_SCRIPT.findall(path.read_text(encoding='utf-8'))
-                if listed and listed != CHAT_SCRIPT.findall(released_text(name) or ''):
-                    members.append(name)
-    return tuple(members)
+def chat_workspace_unit(root: Path) -> tuple[str, ...]:
+    """The script groups file and the Chat group's scripts, as source paths under ``root``."""
+    groups = root / SCRIPT_GROUPS
+    if not groups.is_file():
+        return ()
+    listed = json.loads(groups.read_text(encoding='utf-8'))[CHAT_WORKSPACE_GROUP]
+    return (SCRIPT_GROUPS, *(f'management_portal{source}' for source in listed))
 
 
-def release_units(root: Path, released_text: ReleasedText | None = None) -> tuple[tuple[str, ...], ...]:
-    return (LINEAGE_WORKBENCH_RELEASE_UNIT, chat_workspace_unit(root, released_text))
+def release_units(root: Path) -> tuple[tuple[str, ...], ...]:
+    return (LINEAGE_WORKBENCH_RELEASE_UNIT, chat_workspace_unit(root))
 
 
 def expand_release_unit_paths(paths: Iterable[str], root: Path,
-                              released_text: ReleasedText | None = None,
                               units: Iterable[tuple[str, ...]] | None = None) -> tuple[str, ...]:
     """Close the selected source paths over every unit one of them belongs to.
 
-    Units can share files (``lineage.html`` loads the Chat), so the closure
-    repeats until no unit adds a file. Only members present under ``root`` are
-    added; a member removed from the source does not block the others.
+    Units can share files, so the closure repeats until no unit adds a file.
+    Only members present under ``root`` are added; a member removed from the
+    source does not block the others.
     """
     expanded = {PurePosixPath(path).as_posix().rstrip('/') for path in paths}
-    units = tuple(release_units(root, released_text) if units is None else units)
+    units = tuple(release_units(root) if units is None else units)
     grown = True
     while grown:
         grown = False

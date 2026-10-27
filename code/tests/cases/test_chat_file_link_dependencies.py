@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pytest
 
+from management_portal import script_groups
+
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -22,9 +24,10 @@ class ScriptParser(HTMLParser):
 
 
 def script_hosts(consumer):
+    """Pages that load ``consumer``, with their scripts as the server sends them."""
     for path in sorted((ROOT / "management_portal").glob("*.html")) + sorted(ROOT.glob("*_lan/*.html")):
         parser = ScriptParser()
-        parser.feed(path.read_text(encoding="utf-8"))
+        parser.feed(script_groups.expand_document(path.read_text(encoding="utf-8")))
         if any(f"/static/{consumer}" in script["src"] for script in parser.scripts):
             yield pytest.param(parser.scripts, id=str(path.relative_to(ROOT)))
 

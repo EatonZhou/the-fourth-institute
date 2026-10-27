@@ -12,7 +12,7 @@
     "messageRole", "messageSenderIdentity", "messageSystemPresentation", "messageTitle",
     "normalizeMessageStream", "PRE_PROVIDER_RUNTIME_PHASES", "renderMarkdownWithAttachmentRefs",
     "renderResidentHandoffs", "residentHandoffParts", "responseSourcesHtml",
-    "runtimeDetailsHtml", "runtimePhaseStatusHtml", "subagentLiveHtml",
+    "runtimeDetailsHtml", "runtimePhaseStatusHtml", "subagentLiveHtml", "nativePlanLiveHtml",
   ]);
 
   function messageSelectionRanges() {
@@ -185,7 +185,7 @@
       messageSystemPresentation, messageTitle, normalizeMessageStream,
       PRE_PROVIDER_RUNTIME_PHASES, renderMarkdownWithAttachmentRefs, renderResidentHandoffs,
       residentHandoffParts, responseSourcesHtml, runtimeDetailsHtml, runtimePhaseStatusHtml,
-      subagentLiveHtml,
+      subagentLiveHtml, nativePlanLiveHtml,
     } = dependencies;
 
     // Human chat bursts periodically repeat their header. Agent output uses its
@@ -423,7 +423,7 @@
         : ""}`;
       }).join("");
       const tailHtml = renderEndIndex === items.length
-        ? window.PortalI18n.html`${runtimeStreamHtml(runtimeDetails, runtimeLive, options)}<div class="messageScrollAnchor" data-message-key="__scroll_anchor__" data-message-scroll-anchor aria-hidden="true"></div>`
+        ? window.PortalI18n.html`${runtimeStreamHtml(runtimeDetails, runtimeLive, { ...options, messages: items })}<div class="messageScrollAnchor" data-message-key="__scroll_anchor__" data-message-scroll-anchor aria-hidden="true"></div>`
         : "";
       return window.PortalI18n.html`<div class="messageList">${historyHtml}${renderStartIndex === 0 ? inheritanceHtml : ""}${html}${tailHtml}</div>`;
     }
@@ -546,7 +546,7 @@
           })}
         </article>`
         : "";
-      return `${runtimePhaseStatusHtml(stream.runtimePhase)}${stream.runtimeLive ? subagentLiveHtml(stream.runtimeDetails) : ""}${runtimeHtml}`;
+      return `${runtimePhaseStatusHtml(stream.runtimePhase)}${stream.runtimeLive ? nativePlanLiveHtml(stream.runtimeDetails, options.messages) + subagentLiveHtml(stream.runtimeDetails) : ""}${runtimeHtml}`;
     }
 
     function createMessageSelectionController(options = {}) {
