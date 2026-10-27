@@ -29,6 +29,8 @@
   //     being written is saved per conversation, and a failed send kept as a draft
   //   chat_workspace_composer_undo.js  one Workspace's composer undo: Ctrl/⌘+Z
   //     takes back its own pastes and inserted attachments
+  //   chat_workspace_message_history.js  one Workspace's way back: loading earlier
+  //     messages, the Fork card's compaction, revealing a message, the quote bar
   //   chat_workspace_runtime_settings.js  the Runtime Settings dialog, notices after
   //     saving, the session restart dialog and its progress
   //   chat_workspace_harness_panel.js  the Agent Harness panel and menu, prompt
@@ -885,41 +887,13 @@
       normalizeComposerAttachments, options, refsPayload, renderAttachmentTrayOnly, renderAttachments,
       restoreComposerSelection, serializeComposerInput, state, withoutAttachmentReconcile,
     });
-    // One Fork card per conversation: whether its compaction is open, and what was read.
-    let inheritanceView = null;
-    const inheritanceViewFor = inheritance => {
-      if (!inheritance || typeof inheritance !== "object") return null;
-      const key = `${historyScope()}\n${inheritance.source_resident_id || ""}\n${inheritance.forked_from_at || ""}`;
-      if (inheritanceView?.key !== key) inheritanceView = { key, expanded: false, status: "idle", compaction: null, error: "" };
-      return inheritanceView;
-    };
-    const renderInheritanceCard = () => {
-      const node = els.messages?.querySelector('.messageList > [data-message-key="__inheritance__"]');
-      if (!node) return;
-      const renderOptions = { ...options, ...state.messageRenderOptions };
-      const template = document.createElement("template");
-      template.innerHTML = inheritanceCardHtml(renderOptions.inheritance, inheritanceViewFor(renderOptions.inheritance), renderOptions).trim();
-      if (template.content.firstElementChild) node.replaceWith(template.content.firstElementChild);
-    };
-    const toggleInheritedSummary = async () => {
-      const view = inheritanceViewFor(state.messageRenderOptions?.inheritance);
-      if (!view) return;
-      view.expanded = !view.expanded;
-      const load = view.expanded && !["loading", "ready"].includes(view.status) && options.onLoadInheritedContext;
-      if (load) Object.assign(view, { status: "loading", error: "" });
-      renderInheritanceCard();
-      if (!load) return;
-      try {
-        const inheritance = await options.onLoadInheritedContext(controller);
-        const compaction = inheritance?.opening_compaction;
-        Object.assign(view, compaction && typeof compaction === "object"
-          ? { status: "ready", compaction }
-          : { status: "error", error: window.PortalI18n.t("这次 Fork 已没有可读取的压缩。") });
-      } catch (error) {
-        Object.assign(view, { status: "error", error: error?.message || String(error) });
-      }
-      if (inheritanceView === view) renderInheritanceCard();
-    };
+
+    const {
+      revealMessage, inheritanceViewFor, composerQuote, renderComposerQuote, setQuote, clearQuote, destroyMessageHistory,
+    } = chatWorkspaceModule("PortalChatWorkspaceMessageHistory").createMessageHistory({
+      bindResourceChips, composerQuoteHtml, currentController: () => controller, els, historyScope, inheritanceCardHtml,
+      messageRenderKey, messageViewportAtTail, options, state, syncMessageScrollMode, toggleMessageFold,
+    });
     const insertEditedMessageImage = async ({ file }) => {
       if (!file) return;
       await addFiles([file]);
@@ -1206,22 +1180,6 @@
         els.loading.replaceChildren();
       }
       updateControls();
-    };
-    // The message the composition quotes, per conversation; not saved with the draft.
-    const composerQuotes = new Map();
-    const composerQuoteScope = () => historyScope() || state.activeDraftScope || "";
-    const composerQuote = () => composerQuotes.get(composerQuoteScope()) || null;
-    const renderComposerQuote = () => {
-      const host = els.composer?.querySelector("[data-composer-quote-host]");
-      if (!host) return;
-      const quote = composerQuote();
-      const messageId = quote ? quote.message_id : "";
-      if ((host.dataset.composerQuote || "") === messageId) return;
-      host.dataset.composerQuote = messageId;
-      host.innerHTML = quote ? composerQuoteHtml(quote, options) : "";
-      if (quote) bindResourceChips(host, options);
-      host.hidden = !quote;
-      if (quote) window.PortalUIPrimitives?.mountIcons?.(host);
     };
     let stopPending = false;
     const updateControls = () => {
@@ -1654,66 +1612,12 @@
         controller.refreshRefs();
         markDraftSaved();
       },
-      quote: () => composerQuote(),
-      setQuote(quote) {
-        const scope = composerQuoteScope();
-        const messageId = String(quote?.message_id || "").trim();
-        const text = String(quote?.text || "").trim();
-        if (!scope || !messageId || !text) return false;
-        composerQuotes.set(scope, { message_id: messageId, author_id: String(quote.author_id || ""), text });
-        renderComposerQuote();
-        els.input?.focus?.();
-        return true;
-      },
+      quote: composerQuote,
+      setQuote,
       // Drops a conversation's quote; given a message ID, only while it still quotes that message.
-      clearQuote({ scope = composerQuoteScope(), messageId = "" } = {}) {
-        const current = composerQuotes.get(scope);
-        if (!current || (messageId && current.message_id !== messageId)) return false;
-        composerQuotes.delete(scope);
-        renderComposerQuote();
-        return true;
-      },
+      clearQuote,
       // Shows a message of this conversation, loading earlier history until it is there.
-      async revealMessage(messageId) {
-        const key = String(messageId || "").trim();
-        if (!key || !els.messages) return false;
-        const scope = historyScope();
-        const find = () => els.messages.querySelector(`.messageList > [data-message-key="${CSS.escape(key)}"]`);
-        let row = find();
-        while (!row) {
-          if (!options.onLoadOlder || !state.messageRenderOptions?.history?.can_load_older) break;
-          const before = `${state.messages.length}:${messageRenderKey(state.messages[0] || {})}`;
-          await options.onLoadOlder(controller);
-          await new Promise(resolve => window.requestAnimationFrame(resolve));
-          if (refsCatalog.disposed || historyScope() !== scope) return false;
-          row = find();
-          if (!row && before === `${state.messages.length}:${messageRenderKey(state.messages[0] || {})}`) break;
-        }
-        if (row?.dataset.workGroupId && state.collapsedWorkGroups.has(row.dataset.workGroupId)) {
-          els.messages.querySelector(`[data-portal-work-group-toggle="${CSS.escape(row.dataset.workGroupId)}"]`)?.click();
-          row = find();
-        }
-        if (row?.hidden && row.dataset.agentGroupId) {
-          els.messages.querySelector(`[data-portal-agent-group-toggle="${CSS.escape(row.dataset.agentGroupId)}"]`)?.click();
-          row = find();
-        }
-        if (!row || row.hidden) {
-          window.PortalUI?.toast?.("这条消息已不在当前对话中。", "warning");
-          return false;
-        }
-        const fold = row.querySelector('[data-message-fold-toggle][aria-expanded="false"]');
-        if (fold) toggleMessageFold(fold);
-        const box = row.getBoundingClientRect();
-        const view = els.messages.getBoundingClientRect();
-        els.messages.scrollTop += box.top - view.top - Math.max(12, (view.height - box.height) / 2);
-        state.messageTailFollowIntent = messageViewportAtTail(els.messages);
-        syncMessageScrollMode();
-        row.classList.remove("messageQuoteTarget");
-        void row.offsetWidth;
-        row.classList.add("messageQuoteTarget");
-        window.setTimeout(() => row.classList.remove("messageQuoteTarget"), 1600);
-        return true;
-      },
+      revealMessage,
       async submit(send, submitOptions = {}) {
         if (typeof send !== "function") throw new Error("workspace.submit requires a send function");
         const nextScope = historyScope();
@@ -2106,6 +2010,7 @@
         destroyMessageViewport();
         destroyMessageActions();
         destroyMessageFolds();
+        destroyMessageHistory();
         window.removeEventListener("resize", handleWindowResize);
         if (root.__portalChatWorkspaceController === controller) {
           delete root.__portalChatWorkspaceController;
@@ -2360,39 +2265,6 @@
         return;
       }
       options.onRefresh?.(controller);
-    });
-    // The Fork card shows its opening compaction on request.
-    els.messages?.addEventListener("click", event => {
-      if (!event.target.closest("[data-chat-inheritance-summary]")) return;
-      event.preventDefault();
-      toggleInheritedSummary().catch(error => options.onError?.(error));
-    });
-    // A quote block goes to the quoted message; the quote bar's cancel drops the quote.
-    els.messages?.addEventListener("click", event => {
-      const quote = event.target.closest("[data-message-quote]");
-      if (!quote) return;
-      event.preventDefault();
-      controller.revealMessage(quote.dataset.messageQuote).catch(error => options.onError?.(error));
-    });
-    root.addEventListener("click", event => {
-      if (!event.target.closest("[data-composer-quote-cancel]")) return;
-      event.preventDefault();
-      controller.clearQuote();
-      els.input?.focus?.();
-    });
-    els.messages?.addEventListener("click", event => {
-      const button = event.target.closest("[data-workspace-load-older]");
-      if (!button || !options.onLoadOlder || button.disabled) return;
-      button.disabled = true;
-      button.textContent = window.PortalI18n.t("正在加载…");
-      Promise.resolve(options.onLoadOlder(controller)).catch(error => {
-        if (options.onError) options.onError(error);
-        else window.PortalUI?.toast?.(error?.message || String(error), "error");
-      }).finally(() => {
-        if (!button.isConnected) return;
-        button.disabled = false;
-        button.textContent = window.PortalI18n.t("加载更早消息");
-      });
     });
     updateControls();
     root.__portalChatWorkspaceController = controller;

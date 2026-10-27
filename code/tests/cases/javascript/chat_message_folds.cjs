@@ -238,6 +238,24 @@ try {
     first.toggle('t1').click();
     assert.equal(first.reading(), true, 'a toggle away from the tail reads history');
   }
+  {
+    // Going to a message puts it in the middle of the view, or its top near the
+    // top when it is taller, opens it when folded, and the list stops following its tail.
+    const { workspace, view, row, fold, readAt, reading } = fresh('reveal');
+    heights.set('r1', LONG);
+    workspace.setMessages(conversation('r'));
+    readAt(view.scrollHeight);
+    assert.equal(reading(), false);
+    workspace.revealMessage('r2');
+    assert.equal(row('r2').getBoundingClientRect().top, (VIEWPORT - row('r2').getBoundingClientRect().height) / 2);
+    assert.equal(reading(), true, 'the reader is now in the history');
+    readAt(view.scrollHeight);
+    assert.equal(fold('r1'), 'collapsed');
+    workspace.revealMessage('r1');
+    assert.equal(fold('r1'), 'expanded', 'a folded message opens');
+    assert.equal(row('r1').getBoundingClientRect().top, 12);
+    assert.equal(reading(), true);
+  }
   // A new message is drawn by a whole render or appended; both follow the same
   // rules. Reader choices are kept per message ID for the page, so each way
   // uses messages of its own.
