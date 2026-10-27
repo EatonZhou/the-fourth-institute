@@ -36,11 +36,10 @@ def test_personal_family_can_precede_first_ai_account(future_creation_store, mon
     assert account_registrations.roles() == []
     accounts = []
     monkeypatch.setattr(execution_port, "service", lambda: SimpleNamespace(accounts=lambda: {"accounts": accounts}))
-    from management_portal import permission_system
-    from management_portal.society_service import resource_client
+    from management_portal.society_service import personal_ama, resource_client
     # The isolated resource boundary must expose the real personal-owner
     # descriptor for deliveries between the newly created Family roles.
-    monkeypatch.setattr(permission_system, "_DESCRIPTORS", SimpleNamespace(get=lambda rid:
+    monkeypatch.setattr(personal_ama, "_DESCRIPTORS", SimpleNamespace(get=lambda rid:
         resource_client._resident_resource_projection(resident_catalog.get_catalog().get(rid))["descriptor"]))
     ama = principal_hierarchy_domain.ensure_personal_ama("newcomer", "newcomer")
     assistant = personal_assistant.ensure("newcomer", ama["resident_id"], "newcomer")
