@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from management_portal.society_service import resident_domain, resident_protocol
+from management_portal.society_service import resident_domain, resident_protocol, resident_record_domain
 from tests.cases.test_resident_folder_creation_contract import (
     _new_session_payload,
     future_creation_store,
@@ -14,7 +14,7 @@ RECONCILE_INPUT = resident_protocol.get_input_reconciliation_state
 COMPLETED_EVIDENCE = resident_protocol.get_completed_message_evidence
 
 
-from management_portal.society_service import resident_conversation_projection_domain, resident_workspace_domain
+from management_portal.society_service import resident_conversation_projection_domain
 
 def message(message_id: str, role: str, text: str) -> dict:
     return {
@@ -31,7 +31,7 @@ def test_actual_prompt_checks_sensitive_permission_before_resolving(monkeypatch,
     resident_id = "resident_57acd34d2cd0"
     # Any User or Resident may read; a Portal service or nobody may not, and is refused before the Resident resolves.
     assert resident_conversation_projection_domain.can_view_actual_sent_prompts(actor, resident_id)
-    monkeypatch.setattr(resident_workspace_domain, "resolve_resident_runtime_target", lambda *_: pytest.fail("refused prompt must not resolve"))
+    monkeypatch.setattr(resident_record_domain, "resolve_resident_runtime_target", lambda *_: pytest.fail("refused prompt must not resolve"))
     for refused in ("", "portal"):
         assert not resident_conversation_projection_domain.can_view_actual_sent_prompts(refused, resident_id)
         with pytest.raises(PermissionError, match="无权读取实际发送内容"):

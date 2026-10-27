@@ -1,5 +1,5 @@
 from __future__ import annotations
-from management_portal.society_service import business_fact_views
+from management_portal.society_service import business_fact_views, resident_access, resident_record_domain
 from management_portal.society_service import resident_catalog
 from management_portal.society_service import resident_conversation_stream
 from management_portal.society_service.domain_ports import resource_port
@@ -47,14 +47,14 @@ def test_resident_workspace_roots_read_outside_global_lock(
         "workspace_bindings": [],
         "registration_state": "ready",
     }
-    monkeypatch.setattr(resident_workspace_domain, "find_resident", lambda _resident_id: record)
+    monkeypatch.setattr(resident_record_domain, "find_resident", lambda _resident_id: record)
     monkeypatch.setattr(
-        resident_directory_domain,
+        resident_access,
         "has_resident_workspace_authority",
         lambda *_args, **_kwargs: True,
     )
     monkeypatch.setattr(resident_directory_domain, "ensure_resident_visible_to_actor", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr(resident_directory_domain, "can_manage", lambda *_args: True)
+    monkeypatch.setattr(resident_access, "can_manage", lambda *_args: True)
     monkeypatch.setattr(resident_lineage, "snapshot", lambda _record: {"residents": []})
     def canonical_views_stub(records, **_kwargs):
         assert _other_lineage_can_enter_state_lock()
@@ -71,8 +71,8 @@ def test_resident_workspace_roots_read_outside_global_lock(
         lambda *_args, **_kwargs: [],
     )
     monkeypatch.setattr(
-        resident_workspace_domain,
-        "_resident_workspace_roots_with_usage",
+        resident_record_domain,
+        "resident_workspace_roots_with_usage",
         lambda _record: (
             [{
                 "workspace_id": "workspace_0123456789ab",
@@ -127,9 +127,9 @@ def test_resident_folder_opens_one_lineage_identity_snapshot(
         return registry["residents"]
 
     monkeypatch.setattr(lineage_domain, "lineage_access_projection", lineage_identity)
-    monkeypatch.setattr(resident_workspace_domain, "find_resident", lambda _resident_id: record)
+    monkeypatch.setattr(resident_record_domain, "find_resident", lambda _resident_id: record)
     monkeypatch.setattr(
-        resident_directory_domain,
+        resident_access,
         "has_resident_workspace_authority",
         lambda *_args, **_kwargs: True,
     )
@@ -147,13 +147,13 @@ def test_resident_folder_opens_one_lineage_identity_snapshot(
         actor_derived_residents,
     )
     monkeypatch.setattr(
-        resident_directory_domain,
+        resident_access,
         "can_manage",
         lambda *_args: bool(resident_runtime_domain.lineage_identity_record(record)),
     )
     monkeypatch.setattr(
-        resident_workspace_domain,
-        "_resident_workspace_roots_with_usage",
+        resident_record_domain,
+        "resident_workspace_roots_with_usage",
         lambda _record: ([], ""),
     )
 
@@ -226,7 +226,7 @@ def test_user_message_count_batch_uses_database_facts_without_transcript(
     record = {
         "resident_id": resident_id,
     }
-    monkeypatch.setattr(resident_workspace_domain, "find_resident", lambda _resident_id: record)
+    monkeypatch.setattr(resident_record_domain, "find_resident", lambda _resident_id: record)
     class Catalog:
         def get_many(self, resident_ids):
             return [record] if resident_id in resident_ids else []

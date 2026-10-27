@@ -9,10 +9,18 @@ from unittest import mock
 import pytest
 
 from management_portal.society_service import (
-    invariant_locks, lifecycle, lineage_message_events, resident_catalog,
-    resident_conversation_stream, resident_delivery_work, resident_execution_domain,
-    resident_execution_work, resident_intake_domain, resident_protocol,
-    resident_workspace_domain, resident_lifecycle_domain,
+    invariant_locks,
+    lifecycle,
+    lineage_message_events,
+    resident_catalog,
+    resident_conversation_stream,
+    resident_delivery_work,
+    resident_execution_domain,
+    resident_execution_work,
+    resident_intake_domain,
+    resident_protocol,
+    resident_lifecycle_domain,
+    resident_record_domain,
 )
 from tests.cases.test_resident_execution_protocol import resident_record  # noqa: F401
 
@@ -127,7 +135,7 @@ def test_cancelled_projection_releases_command_lock_before_terminal_io(running, 
     monkeypatch.setattr(resident_intake_domain, 'acknowledge_execution', lambda *a: True)
     monkeypatch.setattr(resident_execution_domain, '_notify_lineage_message_terminal', mock.Mock())
     def command():
-        with resident_lifecycle_domain.state_lock(rid):
+        with resident_record_domain.state_lock(rid):
             return resident_execution_work.read_control(rid)['state']['user_message_id']
     with ThreadPoolExecutor(max_workers=2) as pool:
         finalizer = pool.submit(resident_execution_domain.apply_cancelled_continuation, rid, 'continuation-stop')
@@ -171,7 +179,7 @@ def test_stop_retains_visibility_and_self_stop_guards(running, monkeypatch):
     record, _ = running
     rid = record['resident_id']
     with monkeypatch.context() as scope:
-        scope.setattr(resident_workspace_domain, '_resident_visible_to_actor', lambda *a: False)
+        scope.setattr(resident_record_domain, '_resident_visible_to_actor', lambda *a: False)
         with pytest.raises((PermissionError, KeyError)):
             resident_protocol.cancel_resident_input(rid, 'CASE-A', MID)
     monkeypatch.setenv('PORTAL_RESIDENT_ID', rid)

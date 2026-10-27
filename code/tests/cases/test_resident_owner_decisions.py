@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from management_portal.society_service import lineage_domain, resident_domain
+from management_portal.society_service import lineage_domain, resident_domain, resident_record_domain
 from management_portal.society_service import resident_execution_domain
 from management_portal.society_service import resident_runtime_domain
 from tests.cases.test_resident_folder_creation_contract import (
@@ -15,7 +15,6 @@ from tests.cases.test_resident_folder_creation_contract import (
 )
 
 
-from management_portal.society_service import resident_workspace_domain
 
 @pytest.mark.parametrize("damage", [
     "missing_owned_id", "missing_owned_object", "wrong_owned_path",
@@ -75,13 +74,13 @@ def test_fork_reference_keeps_shared_identity_and_purpose(
     resident_domain.add_resident_reference_workspace(
         source["resident_id"], str(reference), "sample_admin", purpose="Shared task files",
     )
-    source = resident_workspace_domain.find_resident(source["resident_id"])
+    source = resident_record_domain.find_resident(source["resident_id"])
     _append_conversation_turn(source["resident_id"], 0)
     created = resident_domain.create_resident_full_context_fork(
         source["resident_id"], "sample_admin", "lineage:owner-decision:origin", defer_backend_start=True,
     )
     _add_created_resident_to_lineage(source, created["resident_id"])
-    child = resident_workspace_domain.find_resident(created["resident_id"])
+    child = resident_record_domain.find_resident(created["resident_id"])
     binding = next(item for item in child["workspace_bindings"] if item["path"] == str(reference))
     assert binding == next(item for item in source["workspace_bindings"] if item["path"] == str(reference))
     assert binding["purpose"] == "Shared task files"

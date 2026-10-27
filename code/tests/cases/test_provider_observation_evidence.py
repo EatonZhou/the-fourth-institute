@@ -13,6 +13,7 @@ from management_portal.execution.contracts import ExecutionRequest, ExecutionRes
 from management_portal.execution.scheduler import Scheduler
 from management_portal.execution.session_manager import RuntimeSession
 from management_portal.society_service import resident_context_evidence as evidence
+from management_portal.society_service import resident_record_domain
 
 
 def observe(store, agent):
@@ -88,7 +89,7 @@ def test_immediate_input_preparation_is_recorded_atomically_and_read_through_con
     def resolve(target, actor, *, require_visible):
         seen.append((target, actor, require_visible))
         return SimpleNamespace(resident_id=target)
-    monkeypatch.setattr(resident_workspace_domain, "resolve_resident_runtime_target", resolve)
+    monkeypatch.setattr(resident_record_domain, "resolve_resident_runtime_target", resolve)
     monkeypatch.setattr(conversation, "protocol", lambda: SimpleNamespace(
         get_resident_conversation_snapshot=lambda *a, **kw: {"messages": []}))
     args = {"resident_id": agent, "include_context_evidence": True}

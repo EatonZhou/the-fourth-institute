@@ -13,10 +13,17 @@ import pytest
 from management_portal.execution import harness_isa_tool
 from management_portal.execution.session_tools import REQUIRED_SESSION_TOOLS, session_lacks_required_tools
 from management_portal.society_service import (
-    family_quota, resident_backend, resident_delivery_work, resident_domain,
-    resident_execution_domain, resident_intake_domain, resident_execution_work,
-    resident_lifecycle_domain, resident_restart_domain, resident_state,
-    resident_workspace_domain,
+    family_quota,
+    resident_backend,
+    resident_delivery_work,
+    resident_domain,
+    resident_execution_domain,
+    resident_intake_domain,
+    resident_execution_work,
+    resident_lifecycle_domain,
+    resident_restart_domain,
+    resident_state,
+    resident_record_domain,
 )
 from tests.cases.test_session_restart import _restart_domain
 
@@ -72,8 +79,8 @@ def test_next_input_keeps_original_session_without_automatic_restart(monkeypatch
     job = dict(JOB)
     calls = []
     monkeypatch.setattr(resident_lifecycle_domain, "resident_state_scope", lambda *_a, **_k: nullcontext())
-    monkeypatch.setattr(resident_lifecycle_domain, "state_lock", lambda *_a: nullcontext())
-    monkeypatch.setattr(resident_lifecycle_domain, "lifecycle_operations",
+    monkeypatch.setattr(resident_record_domain, "state_lock", lambda *_a: nullcontext())
+    monkeypatch.setattr(resident_record_domain, "lifecycle_operations",
                         lambda: type("Ops", (), {"pending": staticmethod(lambda *_: False)})())
     monkeypatch.setattr(resident_delivery_work, "drain", lambda *_a: None)
     monkeypatch.setattr(family_quota, "ensure_role_reserve", lambda *_a: False)
@@ -83,8 +90,8 @@ def test_next_input_keeps_original_session_without_automatic_restart(monkeypatch
     monkeypatch.setattr(resident_execution_work, "read", lambda *_a: job)
     monkeypatch.setattr(resident_execution_work, "continuation_needed", lambda *_a: True)
     monkeypatch.setattr(resident_backend, "session_record", lambda *_a, **_k: binding)
-    monkeypatch.setattr(resident_workspace_domain, "find_resident", lambda *_a: record)
-    monkeypatch.setattr(resident_workspace_domain, "save_resident_record", lambda *_a: None)
+    monkeypatch.setattr(resident_record_domain, "find_resident", lambda *_a: record)
+    monkeypatch.setattr(resident_record_domain, "save_resident_record", lambda *_a: None)
     monkeypatch.setattr(resident_intake_domain, "commit_resident_intake_state",
                         lambda current, state: current.update(intake_transition_id="t-1") or calls.append(state))
     monkeypatch.setattr(resident_restart_domain, "restart_resident_session",

@@ -4,10 +4,15 @@ from tests.cases.test_chatroom_backend import lineage  # noqa: F401
 from management_portal.society_service import resident_backend
 from management_portal.society_service import resident_lineage
 
-from management_portal.society_service import resident_domain, resident_protocol
+from management_portal.society_service import (
+    resident_access,
+    resident_domain,
+    resident_protocol,
+    resident_record_domain,
+)
 
 
-from management_portal.society_service import resident_directory_domain, resident_workspace_domain
+from management_portal.society_service import resident_directory_domain
 
 def _root(resident_id: str, lineage_id: str, title: str) -> dict:
     return {
@@ -38,7 +43,7 @@ def test_forward_contacts_list_exact_residents_by_lineage(monkeypatch) -> None:
         lambda: [second, derived_resident, first],
     )
     monkeypatch.setattr(resident_directory_domain, "_resident_visible_to_actor", lambda _record, _actor: True)
-    monkeypatch.setattr(resident_directory_domain, "can_manage", lambda _record, _actor: True)
+    monkeypatch.setattr(resident_access, "can_manage", lambda _record, _actor: True)
     monkeypatch.setattr(
         resident_backend,
         "record_session_id",
@@ -94,7 +99,7 @@ def test_forward_contact_can_be_resolved_by_exact_resident_id_contracts(monkeypa
         with monkeypatch.context() as monkeypatch:
             root = _root('resident_111111111111', 'lineage_111111111111', 'Alpha')
             derived_resident = {'resident_id': 'resident_333333333333', 'lineage_id': root['lineage_id'], 'lineage_title': root['lineage_title'], 'title': 'Alpha Fork', 'project_id': root['project_id'], 'source_resident_id': root['resident_id']}
-            monkeypatch.setattr(resident_workspace_domain, 'find_resident', lambda resident_id: derived_resident if resident_id == derived_resident['resident_id'] else root if resident_id == root['resident_id'] else None)
+            monkeypatch.setattr(resident_record_domain, 'find_resident', lambda resident_id: derived_resident if resident_id == derived_resident['resident_id'] else root if resident_id == root['resident_id'] else None)
             monkeypatch.setattr(resident_directory_domain, '_resident_visible_to_actor', lambda _record, _actor: True)
             monkeypatch.setattr(resident_backend, 'record_session_id', lambda record: str(record.get('backend_session_id') or ''))
             result = resident_domain.list_resident_forward_targets('sample_admin', resident_id='resident_333333333333')
@@ -102,7 +107,7 @@ def test_forward_contact_can_be_resolved_by_exact_resident_id_contracts(monkeypa
     with subtests.test(contract='test_forward_send_uses_exact_resident_id'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
             target = _root('resident_111111111111', 'lineage_111111111111', 'Alpha')
-            monkeypatch.setattr(resident_workspace_domain, 'find_resident', lambda resident_id: target if resident_id == target['resident_id'] else None)
+            monkeypatch.setattr(resident_record_domain, 'find_resident', lambda resident_id: target if resident_id == target['resident_id'] else None)
             monkeypatch.setattr(resident_directory_domain, '_resident_visible_to_actor', lambda _record, _actor: True)
             monkeypatch.setattr(resident_backend, 'record_session_id', lambda record: str(record.get('backend_session_id') or ''))
             result = resident_protocol.prepare_resident_forward({'target_resident_id': target['resident_id'], 'messages': [{'role': 'user', 'author': 'sample_admin', 'content': 'Please review.'}], 'message': 'Focus on the API contract.'}, 'sample_admin')

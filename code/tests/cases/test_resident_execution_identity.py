@@ -5,6 +5,7 @@ from tests.cases.test_resident_execution_protocol import resident_record
 from management_portal.society_service import resident_execution_work as work, trigger_paths
 from management_portal.execution import execution_inputs
 from management_portal.execution.agent_data_store import get_agent_data_store
+from management_portal.society_service import resident_record_domain
 
 AT = "2026-10-14T00:00:00Z"
 
@@ -29,7 +30,7 @@ def test_deterministic_provider_records_an_execution(resident_record, monkeypatc
     monkeypatch.setattr(resident_execution_provider, "provider_for", lambda record: SimpleNamespace(
         capabilities=SimpleNamespace(synchronous_delivery=True), deliver=deliver))
     monkeypatch.setattr(resident_intake_domain, "ensure_resident_visible_to_actor", lambda *args: None)
-    monkeypatch.setattr(resident_workspace_domain, "save_resident_record", lambda *args: None)
+    monkeypatch.setattr(resident_record_domain, "save_resident_record", lambda *args: None)
     monkeypatch.setattr(resident_lifecycle_domain, "append_conversation_message", lambda rid, message: replies.append(message))
     monkeypatch.setattr(resident_intake_domain, "_resident_message_delivery_result", lambda *args: {})
     call = lambda: resident_intake_domain._send_synchronous_provider_message(

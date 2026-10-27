@@ -9,8 +9,16 @@ from datetime import datetime, timezone
 import uuid
 
 from management_portal.society_service import (
-    resident_conversation_stream, resident_held_infos, resident_intake_domain, resident_execution_work,
-    resident_lifecycle_domain, resident_mailbox, resident_input_recovery, resident_workspace_domain,
+    resident_conversation_stream,
+    resident_held_infos,
+    resident_intake_domain,
+    resident_execution_work,
+    resident_lifecycle_domain,
+    resident_mailbox,
+    resident_input_recovery,
+    resident_access,
+    resident_domain_common,
+    resident_record_domain,
 )
 from management_portal.society_service.state_store import get_lineage_data_store
 from management_portal.execution.agent_data_store import get_agent_data_store
@@ -46,7 +54,7 @@ def test_mailbox_actor_activity_aggregates_valid_inputs_and_excludes_business_re
 
 
 def _record(resident_id: str) -> dict:
-    return resident_workspace_domain.find_resident(resident_id)
+    return resident_record_domain.find_resident(resident_id)
 
 
 def _info(resident_id: str, author: str, text: str) -> str:
@@ -83,11 +91,11 @@ def _round(resident_id: str, *, state: str = "cancelled", infos: tuple = (), tex
     store = get_agent_data_store()
     store.begin_execution(execution_id=job["execution_id"], agent_id=resident_id, actor_ref=ACTOR,
                           provider=resident_backend.execution_provider(record), started_at=datetime.now(timezone.utc).isoformat())
-    execution_inputs.attach(store, job["execution_id"], [{"message_id": message_id, "role": "primary", "accepted_at": resident_lifecycle_domain.now_iso()}])
+    execution_inputs.attach(store, job["execution_id"], [{"message_id": message_id, "role": "primary", "accepted_at": resident_domain_common.now_iso()}])
     resident_input_recovery.retain_input_checkpoint(record, job, carried)
     repository.set_input_state(resident_id, message_id, "running")
     if state != "running":
-        store.finish_execution(job["execution_id"], status=state, finished_at=resident_lifecycle_domain.now_iso())
+        store.finish_execution(job["execution_id"], status=state, finished_at=resident_domain_common.now_iso())
         repository.set_input_state(resident_id, message_id, state, error={"message": "provider error"} if state == "failed" else None)
     if state == "cancelled":
         notice = resident_intake_domain.resident_execution_stopped_event(ACTOR, job)
@@ -216,8 +224,8 @@ def test_only_those_who_organize_the_mailbox_put_a_round_back(team, monkeypatch)
 
     resident_id = team.target["resident_id"]
     stopped, _ = _round(resident_id)
-    manages = resident_directory_domain.can_manage
-    monkeypatch.setattr(resident_directory_domain, "can_manage",
+    manages = resident_access.can_manage
+    monkeypatch.setattr(resident_access, "can_manage",
                         lambda record, actor: actor != "storage-outsider" and manages(record, actor))
 
     result = instruction(team, "RequeueMessage", {"resident_id": resident_id, "message_id": stopped}, actor="storage-outsider")
@@ -243,8 +251,8 @@ def test_a_stopped_group_goes_back_with_its_members(team):
     # The group runs, entering the trace with its members, and is stopped.
     repository.commit_user_message(resident_id, group_item["input_message"])
     store = get_agent_data_store()
-    store.begin_execution(execution_id="execution-g", agent_id=resident_id, actor_ref=ACTOR, provider=resident_backend.execution_provider(record), started_at=resident_lifecycle_domain.now_iso())
-    execution_inputs.attach(store, "execution-g", [{"message_id": group_id, "role": "primary", "accepted_at": resident_lifecycle_domain.now_iso()}])
+    store.begin_execution(execution_id="execution-g", agent_id=resident_id, actor_ref=ACTOR, provider=resident_backend.execution_provider(record), started_at=resident_domain_common.now_iso())
+    execution_inputs.attach(store, "execution-g", [{"message_id": group_id, "role": "primary", "accepted_at": resident_domain_common.now_iso()}])
     resident_input_recovery.retain_input_checkpoint(record, {**group_item, "execution_id": "execution-g"}, [])
     store.finish_execution("execution-g", status="cancelled")
     job["queue"] = []
@@ -306,9 +314,9 @@ def test_the_mailbox_lists_what_waits_what_runs_and_the_recent_rounds(team, monk
     resident_held_infos.consume(record, carried, request_message_id=head)
     resident_input_recovery.retain_input_checkpoint(record, resident_execution_work.read(record), carried)
     job = resident_execution_work.read(record)
-    job["submitted_at"] = resident_lifecycle_domain.now_iso()
+    job["submitted_at"] = resident_domain_common.now_iso()
     get_agent_data_store().begin_execution(execution_id=job["execution_id"], agent_id=resident_id, actor_ref=ACTOR,
-        provider=resident_backend.execution_provider(record), started_at=resident_lifecycle_domain.now_iso())
+        provider=resident_backend.execution_provider(record), started_at=resident_domain_common.now_iso())
     resident_execution_work.write(record, job)
     info = _info(resident_id, STEWARD, "等待中的 info")
     repository = resident_conversation_stream.get_repository()

@@ -73,9 +73,9 @@ class ResidentResourceProjectionWorker:
     def _publish(self, claims: list[dict[str, Any]], *, origin: str = "worker") -> int:
         started = time.perf_counter()
         try:
-            from . import resident_lifecycle_domain
+            from . import resident_record_domain
             for claim in claims:
-                resident_lifecycle_domain.ensure_resident_agent(claim["payload"])
+                resident_record_domain.ensure_resident_agent(claim["payload"])
             self._resource_client.sync_resident_resource_bundles(
                 [item["payload"] for item in claims],
                 updated_by="society-service",
@@ -145,8 +145,8 @@ class ResidentResourceProjectionWorker:
                     raise KeyError(resident_id)
                 if current.get("registration_state") == "resource_pending":
                     raise RuntimeError("Resident registration has no publication acknowledgement")
-                from . import resident_lifecycle_domain
-                resident_lifecycle_domain.ensure_resident_agent(current)
+                from . import resident_record_domain
+                resident_record_domain.ensure_resident_agent(current)
                 _report_slow(
                     "confirmation", time.monotonic() - started, resident_id=resident_id,
                     published_itself=published, lease_waits=waits,

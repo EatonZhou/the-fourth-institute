@@ -15,7 +15,6 @@ from management_portal.society_service import (
 )
 from management_portal.society_service import resident_intake_domain
 from management_portal.society_service import resident_record_domain
-from management_portal.society_service import resident_workspace_domain
 from management_portal.society_service.lineage_storage import canonical_lineage_folder
 from management_portal.society_service.principal_hierarchy import classify_existing
 from management_portal.society_service.resident_conversation_stream import ResidentConversationRepository
@@ -62,8 +61,8 @@ def runtime(tmp_path, monkeypatch):
         if require_visible:
             raise PermissionError('shared Resident history is private')
         return resident_domain.ResidentRuntimeTarget(RID, record)
-    monkeypatch.setattr(resident_workspace_domain, 'resolve_resident_runtime_target', target)
-    monkeypatch.setattr(resident_workspace_domain, 'resolve_resident_admission_target', target)
+    monkeypatch.setattr(resident_record_domain, 'resolve_resident_runtime_target', target)
+    monkeypatch.setattr(resident_record_domain, 'resolve_resident_admission_target', target)
     monkeypatch.setattr(resident_protocol, '_resident_view', lambda target: {'resident_id': RID, 'lineage_id': LID})
     monkeypatch.setattr(resident_protocol.resident_access, 'can_manage_resident', lambda *args, **kwargs: False)
     monkeypatch.setattr(resident_handoff, 'ensure_notification_listener', lambda: None)

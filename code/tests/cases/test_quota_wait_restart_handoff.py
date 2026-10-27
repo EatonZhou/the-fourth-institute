@@ -12,9 +12,14 @@ import pytest
 from management_portal.execution.agent_data_store import AgentDataStore
 from management_portal.execution.contracts import ExecutionRequest, SessionOptions, SystemInstructions
 from management_portal.society_service import (
-    resident_backend, resident_catalog, resident_conversation_stream,
-    resident_deferred_restart, resident_execution_domain, resident_execution_work,
-    resident_restart_domain, resident_workspace_domain,
+    resident_backend,
+    resident_catalog,
+    resident_conversation_stream,
+    resident_deferred_restart,
+    resident_execution_domain,
+    resident_execution_work,
+    resident_record_domain,
+    resident_restart_domain,
 )
 from management_portal.society_service.domain_ports import execution_port
 from management_portal.society_service.state_store import LineageDataStore
@@ -112,11 +117,11 @@ def resident(monkeypatch, execution):
     record = _record(RID)
     record.update(backend='claude', backend_route_id='deepseek_primary', intake_open=True)
     store.put_resident_record(RID, record, commit_configuration=True)
-    monkeypatch.setattr(resident_workspace_domain, 'find_resident', store.resident_record)
-    monkeypatch.setattr(resident_workspace_domain, 'find_resident_canonical', store.resident_record)
-    monkeypatch.setattr(resident_workspace_domain, 'save_resident_record',
+    monkeypatch.setattr(resident_record_domain, 'find_resident', store.resident_record)
+    monkeypatch.setattr(resident_record_domain, 'find_resident_canonical', store.resident_record)
+    monkeypatch.setattr(resident_record_domain, 'save_resident_record',
                         lambda value, **kw: store.put_resident_record(RID, value, **kw))
-    monkeypatch.setattr(resident_workspace_domain, 'resolve_resident_runtime_target',
+    monkeypatch.setattr(resident_record_domain, 'resolve_resident_runtime_target',
                         lambda *a, **kw: SimpleNamespace(record=store.resident_record(RID), resident_id=RID))
     native = execution_port.service()
     # Native preparation is the only simulated execution; withdrawal and its
@@ -218,18 +223,18 @@ def test_lost_withdraw_reply_is_reconciled_without_terminal_input(resident, exec
 
 def test_receipt_save_failure_keeps_exact_intent_for_recovery(resident, monkeypatch):
     store, repo, operations, original, native = resident
-    save = resident_workspace_domain.save_resident_record
+    save = resident_record_domain.save_resident_record
     def fail_receipt(value, **kw):
         if value.get('session_restart', {}).get('deferred', {}).get('handoff', {}).get('phase') == 'withdrawn':
             raise RuntimeError('receipt persistence failed')
         return save(value, **kw)
-    monkeypatch.setattr(resident_workspace_domain, 'save_resident_record', fail_receipt)
+    monkeypatch.setattr(resident_record_domain, 'save_resident_record', fail_receipt)
     with pytest.raises(RuntimeError, match='receipt persistence failed'):
         resident_deferred_restart.advance(store.resident_record(RID))
     intent = copy.deepcopy(store.resident_record(RID)['session_restart']['deferred']['handoff'])
     assert not intent.get('phase')
     assert repo.input_state(RID, MID)['state'] == 'queued'
-    monkeypatch.setattr(resident_workspace_domain, 'save_resident_record', save)
+    monkeypatch.setattr(resident_record_domain, 'save_resident_record', save)
     assert resident_deferred_restart.advance(store.resident_record(RID)) is True
     assert store.resident_record(RID)['session_restart']['deferred']['handoff'] == {**intent, 'phase': 'withdrawn'}
 

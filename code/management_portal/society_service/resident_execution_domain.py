@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from . import resident_restart_handoff
 
-from dataclasses import dataclass
 
 from .errors import LineageConflictError
 
@@ -46,23 +45,16 @@ from . import resident_domain_common
 
 RESIDENT_PROJECTION_QUARANTINE_LIMIT = 64
 
-@dataclass(frozen=True)
-class _AppServerTokenUsage:
-    turn: dict[str, int]
-    cumulative: dict[str, int]
-    context: dict[str, int]
-    model_context_window: int
-
 
 def get_lineage_node_metadata(
     resident_id: str,
     actor: str,
 ) -> dict[str, Any]:
-    from . import resident_directory_domain, resident_runtime_domain, resident_workspace_domain
+    from . import resident_domain_common, resident_record_domain, resident_runtime_domain
     exact_resident_id = str(resident_id or "").strip()
     if not exact_resident_id:
         raise KeyError("resident not found")
-    target = resident_workspace_domain.resolve_resident_runtime_target(
+    target = resident_record_domain.resolve_resident_runtime_target(
         exact_resident_id,
         actor,
         require_visible=True,
@@ -78,7 +70,7 @@ def get_lineage_node_metadata(
     backend = resident_backend.execution_backend(record)
     return {
         "schema": "tfi.lineage-node-metadata.v1",
-        "revision": resident_directory_domain.resident_status_signature({
+        "revision": resident_domain_common.resident_status_signature({
             "record_updated_at": str(record.get("updated_at") or ""),
             "backend": backend,
             "session_account_id": session_account_id,
@@ -100,16 +92,16 @@ def read_resident_runtime_settings(
     resident_id: str,
     actor: str = "",
 ) -> dict[str, Any]:
-    from . import resident_directory_domain, resident_runtime_domain, resident_workspace_domain
+    from . import resident_access, resident_record_domain, resident_runtime_domain
     with resident_lineage.access_snapshot_scope():
-        target = resident_workspace_domain.resolve_resident_runtime_target(
+        target = resident_record_domain.resolve_resident_runtime_target(
             resident_id,
             actor,
             require_visible=True,
         )
         record = target.record
         actor_id = canonical_actor_id(actor)
-        owner = resident_directory_domain.has_resident_workspace_authority(
+        owner = resident_access.has_resident_workspace_authority(
             record,
             actor_id,
         )
@@ -130,11 +122,11 @@ def read_resident_runtime_settings(
 
 def change_resident_runtime_settings(resident_id: str, actor: str = "", payload: object = None) -> dict:
     from . import (
-        resident_directory_domain,
+        resident_access,
+        resident_domain_common,
         resident_intake_domain,
-        resident_lifecycle_domain,
+        resident_record_domain,
         resident_runtime_domain,
-        resident_workspace_domain,
     )
     actor_id = canonical_actor_id(actor)
     if not actor_id:
@@ -152,14 +144,14 @@ def change_resident_runtime_settings(resident_id: str, actor: str = "", payload:
         raise ValueError("runtime_settings required")
 
     for _attempt in range(3):
-        with resident_lifecycle_domain.state_lock(resident_id):
-            target = resident_workspace_domain.resolve_resident_runtime_target(
+        with resident_record_domain.state_lock(resident_id):
+            target = resident_record_domain.resolve_resident_runtime_target(
                 resident_id,
                 actor_id,
                 require_visible=True,
             )
             record = target.record
-            if not resident_directory_domain.has_resident_workspace_authority(record, actor_id):
+            if not resident_access.has_resident_workspace_authority(record, actor_id):
                 raise manage_refusal(record)
             validation_record = copy.deepcopy(record)
             validation_current = resident_runtime_domain.read_resident_runtime_settings(record)
@@ -180,14 +172,14 @@ def change_resident_runtime_settings(resident_id: str, actor: str = "", payload:
             validation_updates,
         )
 
-        with resident_lifecycle_domain.state_lock(resident_id):
-            target = resident_workspace_domain.resolve_resident_runtime_target(
+        with resident_record_domain.state_lock(resident_id):
+            target = resident_record_domain.resolve_resident_runtime_target(
                 resident_id,
                 actor_id,
                 require_visible=True,
             )
             record = target.record
-            if not resident_directory_domain.has_resident_workspace_authority(record, actor_id):
+            if not resident_access.has_resident_workspace_authority(record, actor_id):
                 raise manage_refusal(record)
             current = resident_runtime_domain.read_resident_runtime_settings(record)
             if (
@@ -196,7 +188,7 @@ def change_resident_runtime_settings(resident_id: str, actor: str = "", payload:
             ):
                 continue
 
-            now = resident_lifecycle_domain.now_iso()
+            now = resident_domain_common.now_iso()
             next_settings = resident_runtime_settings.merge_settings(
                 current,
                 validated_updates,
@@ -229,9 +221,9 @@ def change_resident_runtime_settings(resident_id: str, actor: str = "", payload:
                 resident_runtime_domain.write_resident_runtime_settings(record, next_settings)
                 record["updated_at"] = now
                 if route_changed:
-                    resident_workspace_domain.save_resident_record(record, commit_configuration=True)
+                    resident_record_domain.save_resident_record(record, commit_configuration=True)
                 else:
-                    resident_workspace_domain.save_resident_record(record)
+                    resident_record_domain.save_resident_record(record)
             resident_catalog.get_catalog().state_store.transaction(commit_settings)
             if "service_tier" in changed_settings:
                 try:
@@ -285,9 +277,9 @@ def deliver_resident_message_content(
     **options: Any,
 ) -> dict[str, Any]:
     """Send to one exact Resident; genealogy never participates in routing."""
-    from . import resident_intake_domain, resident_workspace_domain
+    from . import resident_intake_domain, resident_record_domain
 
-    target = resident_workspace_domain.resolve_resident_admission_target(
+    target = resident_record_domain.resolve_resident_admission_target(
         resident_id,
         actor,
         require_visible=not resident_input_scope.permits(resident_id, actor, options.get("message_id", "")),
@@ -400,8 +392,8 @@ def _completion_applied(job: dict[str, Any]) -> bool:
 
 
 def _mark_completion_applied(job: dict[str, Any], timestamp: str) -> None:
-    from . import resident_lifecycle_domain
-    job["completion_applied_at"] = str(timestamp or resident_lifecycle_domain.now_iso())
+    from . import resident_domain_common
+    job["completion_applied_at"] = str(timestamp or resident_domain_common.now_iso())
     job["completion_applied_execution_id"] = resident_execution_work.submitted_execution_id(job)
 
 
@@ -411,12 +403,7 @@ def _finalize_applied_execution(
     current_job: dict[str, Any],
 ) -> bool:
     """Ack one already-applied result and return whether its queue advanced."""
-    from . import (
-        resident_intake_domain,
-        resident_lifecycle_domain,
-        resident_record_domain,
-        resident_workspace_domain,
-    )
+    from . import resident_domain_common, resident_intake_domain, resident_record_domain
 
     if not resident_intake_domain.reconcile_queued_turn_inputs(
         resident_id, str(current_job.get("execution_id") or ""), turn_finished=True,
@@ -424,11 +411,11 @@ def _finalize_applied_execution(
         return False
     if not resident_intake_domain.acknowledge_execution(current_job):
         return False
-    record = resident_workspace_domain.find_resident(resident_id) or {}
+    record = resident_record_domain.find_resident(resident_id) or {}
     if not record:
         return False
     session_state = resident_record_domain.record_backend_session_state(record)
-    with resident_lifecycle_domain.state_lock(resident_id):
+    with resident_record_domain.state_lock(resident_id):
         job = resident_execution_work.read(record)
         if not resident_execution_work.matches_continuation(job, continuation_id):
             return False
@@ -436,7 +423,7 @@ def _finalize_applied_execution(
             # Promotion keeps the continuation; a second finalizer of the same
             # completion must not clear the job another runner already advanced.
             return False
-        now = resident_lifecycle_domain.now_iso()
+        now = resident_domain_common.now_iso()
         queue = resident_execution_work.waiting_input_queue(job)
         if queue:
             next_job = queue.pop(0)
@@ -449,7 +436,7 @@ def _finalize_applied_execution(
             )
             record["session_state"] = session_state
             resident_execution_work.write(record, job)
-            resident_workspace_domain.save_resident_record(record)
+            resident_record_domain.save_resident_record(record)
             return True
         resident_execution_work.clear(record)
         return False
@@ -462,20 +449,25 @@ def apply_cancelled_continuation(
     usage: Mapping[str, Any] | None = None,
 ) -> bool:
     """Persist a confirmed cancellation before advancing the Resident queue."""
-    from . import resident_intake_domain, resident_lifecycle_domain, resident_workspace_domain
+    from . import (
+        resident_domain_common,
+        resident_intake_domain,
+        resident_lifecycle_domain,
+        resident_record_domain,
+    )
 
     # Workspace/session reads and Conversation IO are outside the Resident
     # command lock. A confirmed old result must never settle its replacement.
-    record = resident_workspace_domain.find_resident(resident_id) or {}
+    record = resident_record_domain.find_resident(resident_id) or {}
     if not record:
         return False
     repository = resident_conversation_stream.get_repository()
     terminal_job: dict[str, Any] = {}
-    with resident_lifecycle_domain.state_lock(resident_id):
+    with resident_record_domain.state_lock(resident_id):
         job = resident_execution_work.read(record)
         if not resident_execution_work.matches_continuation(job, continuation_id):
             return False
-        now = str(job.get("stop_requested_at") or resident_lifecycle_domain.now_iso())
+        now = str(job.get("stop_requested_at") or resident_domain_common.now_iso())
         job.update({
             "error": "",
             "execution_terminal_status": "cancelled",
@@ -501,7 +493,7 @@ def apply_cancelled_continuation(
             queue_continues=bool(resident_execution_work.waiting_input_queue(job)),
             backend_label=resident_backend.backend_label(record),
         )
-        with resident_lifecycle_domain.state_lock(resident_id):
+        with resident_record_domain.state_lock(resident_id):
             current = _read_resident_execution_control(resident_id)
             if not same_execution_input(current):
                 return False
@@ -512,7 +504,7 @@ def apply_cancelled_continuation(
         resident_lifecycle_domain.append_conversation_message(resident_id, notice)
     # The input fact refers to this exact completed execution. Its terminal
     # event precedes idle/queue promotion; retries reuse the stable stop notice.
-    with resident_lifecycle_domain.state_lock(resident_id):
+    with resident_record_domain.state_lock(resident_id):
         current = _read_resident_execution_control(resident_id)
         if not same_execution_input(current):
             return False
@@ -520,11 +512,11 @@ def apply_cancelled_continuation(
         repository.set_input_state(resident_id, user_message_id, "cancelled", updated_at=now)
     # Bindings may have changed during projection. Resolve before taking the
     # short merge scope, then re-read the Job to preserve new queue arrivals.
-    record = resident_workspace_domain.find_resident(resident_id) or {}
+    record = resident_record_domain.find_resident(resident_id) or {}
     if not record:
         return False
     session_state = "active" if resident_backend.record_session_id(record) else str(record.get("session_state") or "")
-    with resident_lifecycle_domain.state_lock(resident_id):
+    with resident_record_domain.state_lock(resident_id):
         job = resident_execution_work.read(record)
         if not resident_execution_work.matches_continuation(job, continuation_id) or not same_execution_input(job):
             return False
@@ -544,7 +536,7 @@ def apply_cancelled_continuation(
             record["last_turn_usage_at"] = now
         resident_execution_work.write(record, job)
         record["updated_at"] = now
-        resident_workspace_domain.save_resident_record(record)
+        resident_record_domain.save_resident_record(record)
         terminal_job = {
             **job,
             "outcome": "cancelled",
@@ -575,12 +567,12 @@ def run_resident_execution(resident_id: str, continuation_id: str) -> None:
 
 def _run_resident_execution_scoped(resident_id: str, continuation_id: str) -> None:
     from . import (
+        resident_domain_common,
         resident_intake_domain,
         resident_lifecycle_domain,
         resident_record_domain,
         resident_registration_domain,
         resident_session_backend_domain,
-        resident_workspace_domain,
     )
     terminal_applied_job: dict[str, Any] = {}
     try:
@@ -588,8 +580,8 @@ def _run_resident_execution_scoped(resident_id: str, continuation_id: str) -> No
             current_job: dict[str, Any] = {}
             record_snapshot: dict[str, Any] = {}
             try:
-                with resident_lifecycle_domain.state_lock(resident_id):
-                    record = resident_workspace_domain.find_resident(resident_id) or {}
+                with resident_record_domain.state_lock(resident_id):
+                    record = resident_record_domain.find_resident(resident_id) or {}
                     if not record:
                         return
                     job = resident_execution_work.read(record)
@@ -600,14 +592,14 @@ def _run_resident_execution_scoped(resident_id: str, continuation_id: str) -> No
                     from .resident_default_backend import bind_before_execution
                     bind_before_execution(record, str(job.get("actor") or ""))
                     job = resident_execution_work.read(record)
-                    dispatched_at = str(job.get("dispatched_at") or resident_lifecycle_domain.now_iso())
+                    dispatched_at = str(job.get("dispatched_at") or resident_domain_common.now_iso())
                     job["dispatched_at"] = dispatched_at
                     current_job = dict(job)
                     record_snapshot = dict(record)
 
                 from .family_quota import ensure_role_reserve
-                from . import resident_lifecycle_domain
-                resident_lifecycle_domain.ensure_resident_agent(record_snapshot, actor=str(current_job.get("actor") or ""))
+                from . import resident_domain_common, resident_lifecycle_domain, resident_record_domain
+                resident_record_domain.ensure_resident_agent(record_snapshot, actor=str(current_job.get("actor") or ""))
                 if ensure_role_reserve(record_snapshot):
                     return
 
@@ -665,8 +657,8 @@ def _run_resident_execution_scoped(resident_id: str, continuation_id: str) -> No
                         )
 
                     applied_creation_job: dict[str, Any] = {}
-                    with resident_lifecycle_domain.state_lock(resident_id):
-                        record = resident_workspace_domain.find_resident(resident_id) or {}
+                    with resident_record_domain.state_lock(resident_id):
+                        record = resident_record_domain.find_resident(resident_id) or {}
                         if not record:
                             return
                         job = resident_execution_work.read(record)
@@ -675,7 +667,7 @@ def _run_resident_execution_scoped(resident_id: str, continuation_id: str) -> No
                             continuation_id,
                         ):
                             return
-                        now = resident_lifecycle_domain.now_iso()
+                        now = resident_domain_common.now_iso()
                         record.update({
                             "session_state": "active",
                             "last_error": "",
@@ -685,7 +677,7 @@ def _run_resident_execution_scoped(resident_id: str, continuation_id: str) -> No
                         record["backend_route_id"] = str(thread.get("backend_route_id") or record.get("backend_route_id") or "")
                         record["session_created_via"] = "execution_service"
                         if _requires_initial_context_compaction(record):
-                            compacted_at = resident_lifecycle_domain.now_iso()
+                            compacted_at = resident_domain_common.now_iso()
                             record.update({
                                 "context_compaction_state": "completed",
                                 "context_compacted_at": compacted_at,
@@ -698,7 +690,7 @@ def _run_resident_execution_scoped(resident_id: str, continuation_id: str) -> No
                             )
                         _mark_completion_applied(job, now)
                         resident_execution_work.write(record, job)
-                        resident_workspace_domain.save_resident_record(record, commit_configuration=True)
+                        resident_record_domain.save_resident_record(record, commit_configuration=True)
                         applied_creation_job = dict(job)
 
                     if _finalize_applied_execution(
@@ -729,8 +721,8 @@ def _run_resident_execution_scoped(resident_id: str, continuation_id: str) -> No
                         record_snapshot,
                         current_job,
                     )
-                    with resident_lifecycle_domain.state_lock(resident_id):
-                        record = resident_workspace_domain.find_resident(resident_id) or {}
+                    with resident_record_domain.state_lock(resident_id):
+                        record = resident_record_domain.find_resident(resident_id) or {}
                         if not record:
                             return
                         update_keys = [
@@ -748,7 +740,7 @@ def _run_resident_execution_scoped(resident_id: str, continuation_id: str) -> No
                             if key in updated_record:
                                 record[key] = updated_record[key]
                         record.pop("last_runtime_error", None)
-                        resident_workspace_domain.save_resident_record(record)
+                        resident_record_domain.save_resident_record(record)
                         persisted_job = resident_execution_work.read(record)
                         applied = str(persisted_job.get("execution_id") or "") == str(
                             completed_bootstrap_job.get("execution_id") or ""
@@ -756,7 +748,7 @@ def _run_resident_execution_scoped(resident_id: str, continuation_id: str) -> No
                         if applied:
                             _mark_completion_applied(
                                 persisted_job,
-                                str(updated_record.get("updated_at") or resident_lifecycle_domain.now_iso()),
+                                str(updated_record.get("updated_at") or resident_domain_common.now_iso()),
                             )
                             resident_execution_work.write(record, persisted_job)
                             completed_bootstrap_job = dict(persisted_job)
@@ -786,7 +778,7 @@ def _run_resident_execution_scoped(resident_id: str, continuation_id: str) -> No
                             ),
                             completed_at=str(
                                 updated_record.get("updated_at")
-                                or resident_lifecycle_domain.now_iso()
+                                or resident_domain_common.now_iso()
                             ),
                             **_lineage_terminal_fact_fields(
                                 completed_bootstrap_job
@@ -799,16 +791,16 @@ def _run_resident_execution_scoped(resident_id: str, continuation_id: str) -> No
                 if resident_execution_work.is_compact(current_job):
                     scope_label = str(current_job.get("compact_scope_label") or "Resident Session")
                     compact_updated, compact_detail = _compact_resident_backend(record_snapshot, current_job)
-                    with resident_lifecycle_domain.state_lock(resident_id):
-                        record = resident_workspace_domain.find_resident(resident_id) or {}
+                    with resident_record_domain.state_lock(resident_id):
+                        record = resident_record_domain.find_resident(resident_id) or {}
                         if not record:
                             return
                         job = resident_execution_work.read(record)
                         if not resident_execution_work.matches_continuation(job, continuation_id):
                             return
-                        now = resident_lifecycle_domain.now_iso()
+                        now = resident_domain_common.now_iso()
                         resident_lifecycle_domain.append_conversation_message(
-                            resident_record_domain.record_resident_id(record),
+                            resident_domain_common.record_resident_id(record),
                             resident_intake_domain.compact_portal_command_message(
                                 resident_session_backend_domain.compact_portal_result(
                                     "completed",
@@ -823,7 +815,7 @@ def _run_resident_execution_scoped(resident_id: str, continuation_id: str) -> No
                             ),
                         )
                         resident_conversation_stream.get_repository().set_input_state(
-                            resident_record_domain.record_resident_id(record),
+                            resident_domain_common.record_resident_id(record),
                             str(current_job.get("user_message_id") or ""),
                             "completed",
                         )
@@ -835,15 +827,15 @@ def _run_resident_execution_scoped(resident_id: str, continuation_id: str) -> No
                             if key in compact_updated:
                                 record[key] = compact_updated[key]
                         record["updated_at"] = now
-                        resident_workspace_domain.save_resident_record(record)
+                        resident_record_domain.save_resident_record(record)
                         _mark_completion_applied(job, now)
                         resident_execution_work.write(record, job)
 
                     if not resident_intake_domain.acknowledge_execution(current_job):
                         return
 
-                    with resident_lifecycle_domain.state_lock(resident_id):
-                        record = resident_workspace_domain.find_resident(resident_id) or {}
+                    with resident_record_domain.state_lock(resident_id):
+                        record = resident_record_domain.find_resident(resident_id) or {}
                         if not record:
                             return
                         job = resident_execution_work.read(record)
@@ -852,7 +844,7 @@ def _run_resident_execution_scoped(resident_id: str, continuation_id: str) -> No
                             continuation_id,
                         ) or str(job.get("execution_id") or "") != str(current_job.get("execution_id") or ""):
                             return
-                        now = resident_lifecycle_domain.now_iso()
+                        now = resident_domain_common.now_iso()
                         queue = resident_execution_work.waiting_input_queue(job)
                         if queue:
                             next_job = queue.pop(0)
@@ -865,12 +857,12 @@ def _run_resident_execution_scoped(resident_id: str, continuation_id: str) -> No
                             )
                             record["session_state"] = resident_record_domain.record_backend_session_state(record)
                             resident_execution_work.write(record, job)
-                            resident_workspace_domain.save_resident_record(record)
+                            resident_record_domain.save_resident_record(record)
                             continue
                         record["session_state"] = "active"
                         record["last_error"] = ""
                         record["updated_at"] = now
-                        resident_workspace_domain.save_resident_record(record)
+                        resident_record_domain.save_resident_record(record)
                         resident_execution_work.clear(record)
                     return
 
@@ -879,8 +871,8 @@ def _run_resident_execution_scoped(resident_id: str, continuation_id: str) -> No
                     current_job,
                 )
 
-                with resident_lifecycle_domain.state_lock(resident_id):
-                    record = resident_workspace_domain.find_resident(resident_id) or {}
+                with resident_record_domain.state_lock(resident_id):
+                    record = resident_record_domain.find_resident(resident_id) or {}
                     if not record:
                         return
                     job = resident_execution_work.read(record)
@@ -897,10 +889,10 @@ def _run_resident_execution_scoped(resident_id: str, continuation_id: str) -> No
                     ):
                         if key in updated_record:
                             record[key] = updated_record[key]
-                    now = resident_lifecycle_domain.now_iso()
+                    now = resident_domain_common.now_iso()
                     record["session_state"] = "active"
                     record["updated_at"] = now
-                    resident_workspace_domain.save_resident_record(record)
+                    resident_record_domain.save_resident_record(record)
                     _mark_completion_applied(job, now)
                     resident_execution_work.write(record, job)
                     # Delivery may have submitted a new Execution through its
@@ -945,14 +937,14 @@ def _run_resident_execution_scoped(resident_id: str, continuation_id: str) -> No
                 ):
                     return
                 error_message = resident_record_domain.resident_backend_failure_message(record_snapshot, str(exc))
-                with resident_lifecycle_domain.state_lock(resident_id):
+                with resident_record_domain.state_lock(resident_id):
                     try:
-                        record = resident_workspace_domain.find_resident(resident_id) or {}
+                        record = resident_record_domain.find_resident(resident_id) or {}
                         if record:
                             job = resident_execution_work.read(record)
                             if not resident_execution_work.matches_continuation(job, continuation_id):
                                 return
-                            now = resident_lifecycle_domain.now_iso()
+                            now = resident_domain_common.now_iso()
                             runtime_error = resident_record_domain.runtime_error_payload(
                                 error_message,
                                 code=getattr(exc, "error_code", ""),
@@ -973,7 +965,7 @@ def _run_resident_execution_scoped(resident_id: str, continuation_id: str) -> No
                             if resident_execution_work.is_compact(current_job):
                                 scope_label = str(current_job.get("compact_scope_label") or "Resident Session")
                                 resident_lifecycle_domain.append_conversation_message(
-                                    resident_record_domain.record_resident_id(record),
+                                    resident_domain_common.record_resident_id(record),
                                     resident_intake_domain.compact_portal_command_message(
                                         resident_session_backend_domain.compact_portal_result(
                                             "failed",
@@ -988,7 +980,7 @@ def _run_resident_execution_scoped(resident_id: str, continuation_id: str) -> No
                                     ),
                                 )
                                 resident_conversation_stream.get_repository().set_input_state(
-                                    resident_record_domain.record_resident_id(record),
+                                    resident_domain_common.record_resident_id(record),
                                     str(current_job.get("user_message_id") or ""),
                                     "failed",
                                     error=runtime_error,
@@ -1007,7 +999,7 @@ def _run_resident_execution_scoped(resident_id: str, continuation_id: str) -> No
                                 record.pop("last_runtime_error", None)
                                 record["updated_at"] = now
                                 resident_execution_work.write(record, job)
-                                resident_workspace_domain.save_resident_record(record)
+                                resident_record_domain.save_resident_record(record)
                                 if _lineage_notifiable_execution(
                                     current_job
                                 ):
@@ -1041,7 +1033,7 @@ def _run_resident_execution_scoped(resident_id: str, continuation_id: str) -> No
                                 "finished_at": now,
                             })
                             resident_execution_work.write(record, job)
-                            resident_workspace_domain.save_resident_record(record)
+                            resident_record_domain.save_resident_record(record)
                             if _lineage_notifiable_execution(current_job):
                                 _notify_lineage_message_terminal(
                                     resident_id,
@@ -1079,11 +1071,11 @@ def _prepare_resident_continuation(
     *,
     steward_reserve_checked: bool = False,
 ) -> tuple[str, str] | None:
-    from . import resident_lifecycle_domain, resident_record_domain, resident_workspace_domain
+    from . import resident_domain_common, resident_record_domain
     resident_id = str(record.get("resident_id") or "")
     if not resident_id:
         return None
-    if resident_lifecycle_domain.lifecycle_operations().pending(resident_id):
+    if resident_record_domain.lifecycle_operations().pending(resident_id):
         return None
     from .family_quota import ensure_role_reserve
     # The reserve check may ask the Execution service for account quota.
@@ -1100,13 +1092,13 @@ def _prepare_resident_continuation(
     if not resident_execution_work.continuation_needed(record, job):
         if clear_stale_error:
             record["last_error"] = ""
-            record["updated_at"] = resident_lifecycle_domain.now_iso()
-            resident_workspace_domain.save_resident_record(record)
+            record["updated_at"] = resident_domain_common.now_iso()
+            resident_record_domain.save_resident_record(record)
         return None
     from .resident_default_backend import bind_before_execution
     bind_before_execution(record, str(job.get("actor") or ""))
     job = resident_execution_work.read(record)
-    dispatched_at = resident_lifecycle_domain.now_iso()
+    dispatched_at = resident_domain_common.now_iso()
     job["dispatched_at"] = dispatched_at
     if not str(job.get("continuation_id") or "").strip():
         job.update(resident_execution_work.continuation_fields(record))
@@ -1116,8 +1108,8 @@ def _prepare_resident_continuation(
     resident_execution_work.write(record, job)
     record["session_state"] = resident_record_domain.record_backend_session_state(record)
     record["last_error"] = ""
-    record["updated_at"] = resident_lifecycle_domain.now_iso()
-    resident_workspace_domain.save_resident_record(record)
+    record["updated_at"] = resident_domain_common.now_iso()
+    resident_record_domain.save_resident_record(record)
     return resident_id, continuation_id
 
 
@@ -1144,7 +1136,7 @@ def resume_resident_execution(
 
 def _resume_resident_execution_scoped(resident_id: str) -> dict[str, int]:
     """Resume one Resident while its aggregate scope is bound."""
-    from . import resident_intake_domain, resident_lifecycle_domain
+    from . import resident_intake_domain, resident_record_domain
     from . import resident_delivery_work
 
     try:
@@ -1173,7 +1165,7 @@ def _resume_resident_execution_scoped(resident_id: str) -> dict[str, int]:
         return started
     if ensure_role_reserve(record):
         return started
-    with resident_lifecycle_domain.state_lock(resident_id):
+    with resident_record_domain.state_lock(resident_id):
         record = resident_record_for_execution(target_id)
         if record is None:
             raise KeyError("resident not found")
@@ -1192,7 +1184,7 @@ def _resume_resident_execution_scoped(resident_id: str) -> dict[str, int]:
 
 
 def resume_pending_resident_executions() -> dict[str, int]:
-    from . import resident_intake_domain, resident_lifecycle_domain, resident_workspace_domain
+    from . import resident_intake_domain, resident_lifecycle_domain, resident_record_domain
     started = {
         "residents": 0,
         "active": 0,
@@ -1228,7 +1220,7 @@ def resume_pending_resident_executions() -> dict[str, int]:
                 if not resident_execution_work.is_active(execution_work):
                     for intent in (execution_work.get(resident_execution_work.CONVERSATION_PROJECTION_INTENTS) or {}).values():
                         resident_lifecycle_domain.append_conversation_message(resident_id, dict(intent['message']))
-                        with resident_lifecycle_domain.state_lock(resident_id):
+                        with resident_record_domain.state_lock(resident_id):
                             resident_execution_work.complete_conversation_projection(
                                 record_copy,  execution_id=intent['execution_id'],
                                 message_id=intent['message']['message_id'],
@@ -1255,8 +1247,8 @@ def resume_pending_resident_executions() -> dict[str, int]:
             ):
                 if ensure_role_reserve(record):
                     continue
-                with resident_lifecycle_domain.state_lock(resident_id):
-                    current_record = resident_workspace_domain.find_resident(resident_id) or {}
+                with resident_record_domain.state_lock(resident_id):
+                    current_record = resident_record_domain.find_resident(resident_id) or {}
                     prepared = _prepare_resident_continuation(
                         current_record, steward_reserve_checked=True,
                     )
@@ -1272,7 +1264,7 @@ def resume_pending_resident_executions() -> dict[str, int]:
 
     for resident_id, continuation_id in jobs:
         try:
-            record = resident_workspace_domain.find_resident(resident_id) or {"resident_id": resident_id}
+            record = resident_record_domain.find_resident(resident_id) or {"resident_id": resident_id}
             resident_intake_domain.start_resident_continuation(record, continuation_id)
             started["residents"] += 1
         except Exception as exc:
@@ -1284,56 +1276,6 @@ def resume_pending_resident_executions() -> dict[str, int]:
             )
     started["active"] = _active_resident_continuations()
     return started
-
-
-def _app_server_token_usage(value: object) -> _AppServerTokenUsage:
-    from . import resident_lifecycle_domain
-    payload = value if isinstance(value, dict) else {}
-
-    def normalize(raw: object) -> dict[str, int]:
-        data = raw if isinstance(raw, dict) else {}
-        aliases = {
-            "input_tokens": "inputTokens",
-            "cached_input_tokens": "cachedInputTokens",
-            "output_tokens": "outputTokens",
-            "reasoning_output_tokens": "reasoningOutputTokens",
-            "total_tokens": "totalTokens",
-        }
-        return {
-            target: resident_lifecycle_domain.nonnegative_int(data.get(source), 0)
-            for target, source in aliases.items()
-            if resident_lifecycle_domain.nonnegative_int(data.get(source), 0) > 0
-        }
-
-    turn = normalize(payload.get("last"))
-    return _AppServerTokenUsage(
-        turn=turn,
-        cumulative=normalize(payload.get("total")),
-        context=normalize(payload.get("context")) or turn,
-        model_context_window=resident_lifecycle_domain.nonnegative_int(
-            payload.get("modelContextWindow"),
-            0,
-        ),
-    )
-
-
-def execution_token_usage_contract(
-    value: object,
-) -> dict[str, Any]:
-    """Separate turn accounting from cumulative Provider usage."""
-    from . import resident_record_domain
-
-    payload = value if isinstance(value, dict) else {}
-    flat_usage = resident_record_domain.clean_token_usage(payload)
-    app_server_usage = _app_server_token_usage(payload)
-    current_usage = flat_usage or app_server_usage.turn
-    return {
-        "turn_usage": current_usage,
-        "cumulative_usage": app_server_usage.cumulative,
-        "context_usage": app_server_usage.context or current_usage,
-        "model_context_window": app_server_usage.model_context_window,
-        "context_updated_at": "",
-    }
 
 
 def _resident_execution_request_backend(record: dict[str, Any], job: Mapping[str, Any] | None = None) -> str:
@@ -1372,7 +1314,7 @@ def resident_system_instructions(
     from management_portal.agent_prompt_context import portal_system_instructions, portal_turn_instructions
     from management_portal.execution.contracts import InjectionPart, SystemInstructions
     from management_common.skill_paths import normalize_additional_skills
-    from . import resident_record_domain, resident_runtime_domain
+    from . import resident_domain_common, resident_runtime_domain
 
     settings = resident_runtime_domain.read_resident_runtime_settings(record) if settings is None else settings
     choices = prompt_injection.resolve(settings.get("prompt_injection"))
@@ -1380,7 +1322,7 @@ def resident_system_instructions(
     allow_subagents = _turn_allows_subagents(record, job, settings)
     # An isolated business input is sent as its caller wrote it, without the
     # Resident's identity in front.
-    isolated = bool(resident_input_scope.get(resident_record_domain.record_resident_id(record), str(job.get("user_message_id") or "")))
+    isolated = bool(resident_input_scope.get(resident_domain_common.record_resident_id(record), str(job.get("user_message_id") or "")))
     skills_with_rules = bool(additional_skills) and choices["turn_skills"] == "with_rules"
     parts: list[InjectionPart] = []
     if choices["core_rules"] != "off":
@@ -1449,10 +1391,10 @@ def preview_prompt_injection(record: dict[str, Any], actor: str, turn: str = "fi
     from management_portal.execution.provider_catalog import AGENT_PROVIDERS
     from . import resident_turn_scope
     from . import (
+        resident_domain_common,
         resident_record_domain,
         resident_registration_domain,
         resident_runtime_domain,
-        resident_workspace_domain,
     )
 
     if turn not in PREVIEW_TURNS:
@@ -1460,11 +1402,11 @@ def preview_prompt_injection(record: dict[str, Any], actor: str, turn: str = "fi
     folder = str(resident_record_domain.resident_folder_path(record))
     cwd = str(resident_runtime_domain.resident_working_directory(record))
     paths = [{"path": folder}, {"path": cwd}, *(
-        {"path": str(item["path"])} for item in resident_workspace_domain.resident_workspace_roots(record) if item.get("path")
+        {"path": str(item["path"])} for item in resident_record_domain.resident_workspace_roots(record) if item.get("path")
     )]
     job = {"actor": actor, "message": "（本轮消息）", "context_refs": {}}
     job["authorization_prompt"] = resident_turn_scope.context_prompt(
-        {"principal_id": resident_record_domain.record_resident_id(record), "source_principal_id": actor, "paths": paths}, job, folder,
+        {"principal_id": resident_domain_common.record_resident_id(record), "source_principal_id": actor, "paths": paths}, job, folder,
     )
     parts = resident_system_instructions(record, job).parts
     backend = resident_backend.execution_backend(record)
@@ -1486,7 +1428,7 @@ def preview_prompt_injection(record: dict[str, Any], actor: str, turn: str = "fi
     labels = {name: label for name, (label, _description, _choices) in prompt_injection.CATEGORIES.items()}
     settings = resident_runtime_domain.read_resident_runtime_settings(record)
     return {
-        "resident_id": resident_record_domain.record_resident_id(record),
+        "resident_id": resident_domain_common.record_resident_id(record),
         "provider": backend,
         "turn": turn,
         "preset": prompt_injection.normalize(settings.get("prompt_injection"))["preset"],
@@ -1513,13 +1455,13 @@ def resident_execution_runtime_options(
     *,
     is_owner: bool,
 ) -> dict[str, Any]:
-    from . import resident_record_domain, resident_runtime_domain, resident_workspace_domain
+    from . import resident_domain_common, resident_record_domain, resident_runtime_domain
     from . import resident_turn_scope
 
     settings = resident_runtime_domain.read_resident_runtime_settings(record)
     scope = resident_turn_scope.filesystem_scope(
         record, job, cwd=str(resident_runtime_domain.resident_working_directory(record)),
-        resident_folder=str(resident_record_domain.resident_folder_path(record)), bindings=resident_workspace_domain.resident_workspace_roots(record),
+        resident_folder=str(resident_record_domain.resident_folder_path(record)), bindings=resident_record_domain.resident_workspace_roots(record),
     )
     job["filesystem_scope"] = scope
     job["authorization_prompt"] = resident_turn_scope.context_prompt(scope, job, str(resident_record_domain.resident_folder_path(record)))
@@ -1530,7 +1472,7 @@ def resident_execution_runtime_options(
         "runtime_root": str(resident_record_domain.sessions_path(record) / "backend"),
         "title": str(record.get("title") or "Portal Resident"),
         "is_owner": bool(is_owner),
-        "add_dirs": resident_workspace_domain.dedupe_strings([str(resident_workspace_domain.resident_workspace_path(record)), *resident_workspace_domain.workspace_paths(record)]),
+        "add_dirs": resident_domain_common.dedupe_strings([str(resident_record_domain.resident_workspace_path(record)), *resident_record_domain.workspace_paths(record)]),
         "execution_id": str(job.get("execution_id") or ""),
         "resident_environment": resident_runtime_domain.resident_cli_environment(record),
         "allow_subagents": _turn_allows_subagents(record, job, settings),
@@ -1616,10 +1558,10 @@ def _record_resident_execution(
     job: dict[str, Any],
     execution_id: str,
 ) -> None:
-    from . import resident_lifecycle_domain, resident_record_domain, resident_workspace_domain
-    resident_id = resident_record_domain.record_resident_id(record)
-    with resident_lifecycle_domain.state_lock(resident_id):
-        current_record = resident_workspace_domain.find_resident(resident_id) or {}
+    from . import resident_domain_common, resident_record_domain
+    resident_id = resident_domain_common.record_resident_id(record)
+    with resident_record_domain.state_lock(resident_id):
+        current_record = resident_record_domain.find_resident(resident_id) or {}
         if not current_record:
             return
         current = resident_execution_work.read(current_record)
@@ -1632,7 +1574,7 @@ def _record_resident_execution(
         bind_execution(
             current,
             execution_id=execution_id,
-            now=resident_lifecycle_domain.now_iso(),
+            now=resident_domain_common.now_iso(),
         )
         resident_execution_work.write(current_record, current)
 
@@ -1642,10 +1584,10 @@ def _flush_pending_active_turn_controls(
     resident_id: str,
     execution_id: str,
 ) -> None:
-    from . import resident_intake_domain, resident_lifecycle_domain, resident_workspace_domain
+    from . import resident_domain_common, resident_intake_domain, resident_record_domain
     while True:
-        with resident_lifecycle_domain.state_lock(resident_id):
-            record = resident_workspace_domain.find_resident(resident_id) or {}
+        with resident_record_domain.state_lock(resident_id):
+            record = resident_record_domain.find_resident(resident_id) or {}
             if not record:
                 return
             current = resident_execution_work.read(record)
@@ -1690,8 +1632,8 @@ def _flush_pending_active_turn_controls(
             "pending",
         }:
             return
-        with resident_lifecycle_domain.state_lock(resident_id):
-            record = resident_workspace_domain.find_resident(resident_id) or {}
+        with resident_record_domain.state_lock(resident_id):
+            record = resident_record_domain.find_resident(resident_id) or {}
             current = resident_execution_work.read(record) if record else {}
             if str(current.get("execution_id") or "") != expected_execution_id or resident_execution_work.submitted_execution_id(current) != execution_id:
                 return
@@ -1700,12 +1642,12 @@ def _flush_pending_active_turn_controls(
                 current["pending_active_turn_inputs"] = remaining
             else:
                 current.pop("pending_active_turn_inputs", None)
-            current["updated_at"] = resident_lifecycle_domain.now_iso()
+            current["updated_at"] = resident_domain_common.now_iso()
             resident_execution_work.write(record, current)
 
     while True:
-        with resident_lifecycle_domain.state_lock(resident_id):
-            record = resident_workspace_domain.find_resident(resident_id) or {}
+        with resident_record_domain.state_lock(resident_id):
+            record = resident_record_domain.find_resident(resident_id) or {}
             if not record:
                 return
             current = resident_execution_work.read(record)
@@ -1740,8 +1682,8 @@ def _flush_pending_active_turn_controls(
             "pending",
         }:
             return
-        with resident_lifecycle_domain.state_lock(resident_id):
-            record = resident_workspace_domain.find_resident(resident_id) or {}
+        with resident_record_domain.state_lock(resident_id):
+            record = resident_record_domain.find_resident(resident_id) or {}
             current = resident_execution_work.read(record) if record else {}
             if str(current.get("execution_id") or "") != expected_execution_id or resident_execution_work.submitted_execution_id(current) != execution_id:
                 return
@@ -1750,7 +1692,7 @@ def _flush_pending_active_turn_controls(
                 current["pending_active_turn_settings"] = remaining_settings
             else:
                 current.pop("pending_active_turn_settings", None)
-            current["updated_at"] = resident_lifecycle_domain.now_iso()
+            current["updated_at"] = resident_domain_common.now_iso()
             resident_execution_work.write(record, current)
 
 
@@ -1760,7 +1702,7 @@ def durable_resident_execution_request(
     request_factory: Callable[[], ExecutionRequest],
 ) -> ExecutionRequest:
     """Recover the durable request before constructing a new submission."""
-    from . import resident_lifecycle_domain, resident_record_domain, resident_workspace_domain
+    from . import resident_domain_common, resident_record_domain
 
     stored_payload = job.get("execution_request")
     if isinstance(stored_payload, dict):
@@ -1773,9 +1715,9 @@ def durable_resident_execution_request(
         durable_request = replace(request_factory(), execution_id=planned_id).validate()
     planned_id = durable_request.execution_id
     payload = durable_request.to_payload()
-    resident_id = resident_record_domain.record_resident_id(record)
-    with resident_lifecycle_domain.state_lock(resident_id):
-        current_record = resident_workspace_domain.find_resident(resident_id) or {}
+    resident_id = resident_domain_common.record_resident_id(record)
+    with resident_record_domain.state_lock(resident_id):
+        current_record = resident_record_domain.find_resident(resident_id) or {}
         if not current_record:
             raise RuntimeError("Resident disappeared before Execution submission")
         current = resident_execution_work.read(current_record)
@@ -1809,7 +1751,7 @@ def _project_resident_execution_snapshot(
     *,
     activity_projection: execution_events.ExecutionActivityProjection | None = None,
 ) -> None:
-    from . import resident_directory_domain, resident_lifecycle_domain, resident_record_domain
+    from . import resident_directory_domain, resident_domain_common, resident_record_domain
     projected_snapshot = dict(snapshot)
     if resident_restart_handoff.receipt(projected_snapshot):
         return
@@ -1837,7 +1779,7 @@ def _project_resident_execution_snapshot(
         projected_snapshot["status"] = terminal_status
         projected_snapshot.pop("scheduler", None)
     if changed:
-        with resident_lifecycle_domain.state_lock(resident_id):
+        with resident_record_domain.state_lock(resident_id):
             complete_job = resident_execution_work.read(current_record)
             if (
                 str(complete_job.get("execution_id") or "") != str(execution_id or "")
@@ -1848,7 +1790,7 @@ def _project_resident_execution_snapshot(
                 complete_job["execution_terminal_status"] = terminal_status
             resident_execution_work.write(current_record, complete_job)
         current = complete_job
-    exact_resident_id = resident_record_domain.record_resident_id(current_record)
+    exact_resident_id = resident_domain_common.record_resident_id(current_record)
     if not resident_execution_work.is_active(current):
         resident_conversation_stream.get_repository().set_activities(
             exact_resident_id,
@@ -1947,14 +1889,14 @@ def _record_resident_projection_error(
     event_sequence: int = 0,
 ) -> dict[str, Any]:
     """Record a projection fault without changing the Execution terminal state."""
-    from . import resident_conversation_projection_domain, resident_lifecycle_domain
+    from . import resident_domain_common, resident_record_domain
 
     message_id = str(
         getattr(error, "_resident_projection_message_id", "") or ""
     ).strip()
-    recorded_at = resident_lifecycle_domain.now_iso()
+    recorded_at = resident_domain_common.now_iso()
     payload = {
-        "message": resident_conversation_projection_domain.truncate_text(f"{type(error).__name__}: {error}", 1600),
+        "message": resident_domain_common.truncate_text(f"{type(error).__name__}: {error}", 1600),
         "execution_id": str(execution_id or ""),
         "event_sequence": max(0, int(event_sequence or 0)),
         "recorded_at": recorded_at,
@@ -1964,7 +1906,7 @@ def _record_resident_projection_error(
         record = resident_record_for_execution(resident_id) or {}
         if not record:
             return payload
-        with resident_lifecycle_domain.state_lock(resident_id):
+        with resident_record_domain.state_lock(resident_id):
             resident_execution_work.record_conversation_projection_error(
                 record,
 
@@ -1991,7 +1933,7 @@ def _resident_execution_event_cursor(
 
     execution_id: str,
 ) -> int:
-    from . import resident_lifecycle_domain
+    from . import resident_domain_common
     # The cursor only moves forward, so a read that races an advance returns
     # an earlier cursor and replays events the consumer already deduplicates.
     job = _read_resident_execution_control(resident_id)
@@ -1999,7 +1941,7 @@ def _resident_execution_event_cursor(
         str(job.get("execution_id") or "") != str(execution_id or "")
     ):
         return 0
-    return resident_lifecycle_domain.nonnegative_int(job.get("execution_event_cursor"), 0)
+    return resident_domain_common.nonnegative_int(job.get("execution_event_cursor"), 0)
 
 
 def _advance_resident_execution_event_cursor(
@@ -2027,7 +1969,12 @@ def _persist_execution_display_messages(
     execution_id: str,
     outputs: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
-    from . import resident_intake_domain, resident_lifecycle_domain, resident_record_domain
+    from . import (
+        resident_domain_common,
+        resident_intake_domain,
+        resident_lifecycle_domain,
+        resident_record_domain,
+    )
     from management_common.async_questions import question_message_parts
 
     display_messages: list[dict[str, Any]] = []
@@ -2077,7 +2024,7 @@ def _persist_execution_display_messages(
         if message_id in quarantined_message_ids:
             continue
         record = {"resident_id": job["resident_id"]}
-        exact_resident_id = resident_record_domain.record_resident_id(record)
+        exact_resident_id = resident_domain_common.record_resident_id(record)
         reply_to_message_id = str(job.get("user_message_id") or "")
 
         if canonical_final is not None:
@@ -2104,7 +2051,7 @@ def _persist_execution_display_messages(
 
         # Persist authorization before crossing into AgentData/Conversation.
         # This intent is the logical commit point for a later idempotent append.
-        with resident_lifecycle_domain.state_lock(resident_id):
+        with resident_record_domain.state_lock(resident_id):
             current = _read_resident_execution_control(resident_id)
             if (
                 str(current.get("execution_id") or "") != str(execution_id or "")
@@ -2132,7 +2079,7 @@ def _persist_execution_display_messages(
         except Exception as error:
             setattr(error, "_resident_projection_message_id", message_id)
             raise
-        with resident_lifecycle_domain.state_lock(resident_id):
+        with resident_record_domain.state_lock(resident_id):
             try:
                 resident_execution_work.complete_conversation_projection(
                     record,
@@ -2289,8 +2236,8 @@ def bind_or_resume_resident_execution(
     record: dict[str, Any],
     job: dict[str, Any],
 ) -> str:
-    from . import resident_lifecycle_domain, resident_record_domain
-    resident_lifecycle_domain.ensure_resident_agent(record, actor=str(job.get("actor") or ""))
+    from . import resident_domain_common, resident_record_domain
+    resident_record_domain.ensure_resident_agent(record, actor=str(job.get("actor") or ""))
     execution_id = resident_execution_work.submitted_execution_id(job)
     actor = str(getattr(request, "actor", "") or job.get("actor") or "")
     correlation_id = str(job.get("execution_id") or "")
@@ -2311,12 +2258,12 @@ def bind_or_resume_resident_execution(
         )
         _flush_pending_active_turn_controls(
             service,
-            resident_record_domain.record_resident_id(record),
+            resident_domain_common.record_resident_id(record),
             execution_id,
         )
         return execution_id
     if _resident_execution_cancellation_requested(
-        resident_record_domain.record_resident_id(record),
+        resident_domain_common.record_resident_id(record),
         correlation_id,
         str(job.get("user_message_id") or ""),
     ):
@@ -2335,11 +2282,11 @@ def bind_or_resume_resident_execution(
     bind_execution(
         job,
         execution_id=execution_id,
-        now=resident_lifecycle_domain.now_iso(),
+        now=resident_domain_common.now_iso(),
     )
     _flush_pending_active_turn_controls(
         service,
-        resident_record_domain.record_resident_id(record),
+        resident_domain_common.record_resident_id(record),
         execution_id,
     )
     return execution_id
@@ -2364,8 +2311,8 @@ def _build_resident_execution_request(
     record: dict[str, Any],
     job: dict[str, Any],
 ) -> object:
-    from . import resident_directory_domain, resident_record_domain, resident_runtime_domain
-    scope = resident_input_scope.get(resident_record_domain.record_resident_id(record), str(job.get("user_message_id") or ""))
+    from . import resident_access, resident_domain_common, resident_runtime_domain
+    scope = resident_input_scope.get(resident_domain_common.record_resident_id(record), str(job.get("user_message_id") or ""))
     if scope and scope["actor"] != resident_execution_work.request_actor(job):
         raise PermissionError("Resident job differs from its input caller")
     delivery = _lineage_delivery_profile(job)
@@ -2393,16 +2340,16 @@ def _build_resident_execution_request(
             prompt = str(seed["portable_prompt"])
             context = {**context, "history": {"enabled": False}}
         from .resident_api_context import assemble_api_messages
-        messages, history = assemble_api_messages(resident_record_domain.record_resident_id(record), job, context, fresh_context=fresh_context)
+        messages, history = assemble_api_messages(resident_domain_common.record_resident_id(record), job, context, fresh_context=fresh_context)
         options["messages"] = messages + [{"role": "user", "content": prompt}]
         options["context_history"] = history
         return build_chat_completion_request(
-            actor=resident_execution_work.request_actor(job), agent_id=resident_record_domain.record_resident_id(record),
+            actor=resident_execution_work.request_actor(job), agent_id=resident_domain_common.record_resident_id(record),
             prompt=str(job.get("raw_message") or "") if scope else str(job.get("actual_sent_prompt") or job.get("message") or job.get("raw_message") or ""),
             provider=resident_backend.execution_provider(record), correlation_id=str(job.get("execution_id") or ""),
             runtime_options=options,
             system_instructions=resident_system_instructions(record, job),
-            metadata={"resident_id": resident_record_domain.record_resident_id(record), "lineage_id": resident_lineage.lineage_id(record),
+            metadata={"resident_id": resident_domain_common.record_resident_id(record), "lineage_id": resident_lineage.lineage_id(record),
                       "execution_id": str(job.get("execution_id") or ""), "user_message_id": str(job.get("user_message_id") or "")},
         )
     if (
@@ -2421,17 +2368,17 @@ def _build_resident_execution_request(
     ).capabilities.synchronous_delivery:
         raise RuntimeError("同步 ExecutionProvider 不提交 Execution 请求")
     actor = resident_execution_work.request_actor(job)
-    is_owner = resident_directory_domain.has_resident_workspace_authority(record, actor)
+    is_owner = resident_access.has_resident_workspace_authority(record, actor)
     lineage_id = resident_lineage.lineage_id(record)
     if lineage_id:
         from . import resident_hatg_credentials
 
-        credential_resident_id = resident_record_domain.record_resident_id(record)
+        credential_resident_id = resident_domain_common.record_resident_id(record)
         resident_hatg_credentials.ensure_resident_credential(
             credential_resident_id,
             lineage_id,
         )
-    exact_resident_id = resident_record_domain.record_resident_id(record)
+    exact_resident_id = resident_domain_common.record_resident_id(record)
     backend = _resident_execution_request_backend(record)
     definition = AGENT_PROVIDERS[backend]
     account = resident_backend.execution_account(record)
@@ -2514,11 +2461,11 @@ def _send_resident_execution(
     *,
     persist_messages: bool = True,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
-    from . import resident_intake_domain, resident_lifecycle_domain, resident_record_domain
+    from . import resident_domain_common, resident_intake_domain
     from management_portal.execution.accounts import default_execution_accounts
     if (
         _resident_execution_cancellation_requested(
-            resident_record_domain.record_resident_id(record),
+            resident_domain_common.record_resident_id(record),
             str(job.get("execution_id") or ""),
             str(job.get("user_message_id") or ""),
         )
@@ -2532,7 +2479,7 @@ def _send_resident_execution(
     def build_request() -> ExecutionRequest:
         request = _build_resident_execution_request(record, job)
         if resident_input_scope.get(
-            resident_record_domain.record_resident_id(record), str(job.get("user_message_id") or "")
+            resident_domain_common.record_resident_id(record), str(job.get("user_message_id") or "")
         ) or resident_execution_work.is_compact(job):
             return request
         # Held info messages travel once, at the front of the next request.
@@ -2549,7 +2496,7 @@ def _send_resident_execution(
         # Retain the inputs so cancellation or failure can put them back in the Mailbox.
         resident_input_recovery.retain_input_checkpoint(record, job, carried_infos)
     except Exception as exc:  # noqa: BLE001 - the checkpoint never blocks execution
-        print(f"Execution input checkpoint not recorded for {resident_record_domain.record_resident_id(record)}: {type(exc).__name__}: {exc}", file=sys.stderr)
+        print(f"Execution input checkpoint not recorded for {resident_domain_common.record_resident_id(record)}: {type(exc).__name__}: {exc}", file=sys.stderr)
     actor = str(request.actor or "")
     backend = str(request.provider or "")
     service = execution_port.service()
@@ -2560,7 +2507,7 @@ def _send_resident_execution(
         job,
     )
     cancellation_requested = _resident_execution_cancellation_requested(
-        resident_record_domain.record_resident_id(record),
+        resident_domain_common.record_resident_id(record),
         str(job.get("execution_id") or ""),
         str(job.get("user_message_id") or ""),
     )
@@ -2574,7 +2521,7 @@ def _send_resident_execution(
         service,
         execution_id=execution_id,
         actor=actor,
-        resident_id=resident_record_domain.record_resident_id(record),
+        resident_id=resident_domain_common.record_resident_id(record),
 
         user_message_id=str(job.get("user_message_id") or ""),
         persist_messages=persist_messages,
@@ -2591,14 +2538,14 @@ def _send_resident_execution(
         if isinstance(result.get("usage"), dict)
         else {}
     )
-    usage_projection = execution_token_usage_contract(raw_usage)
+    usage_projection = resident_domain_common.execution_token_usage_contract(raw_usage)
     # The turn's usage is what the execution counted for its Provider requests,
     # whether the turn completed, failed or was stopped.
-    usage = resident_record_domain.clean_token_usage(result.get("accounted_usage")) or resident_record_domain.clean_token_usage(
+    usage = resident_domain_common.clean_token_usage(result.get("accounted_usage")) or resident_domain_common.clean_token_usage(
         usage_projection.get("turn_usage")
     )
     if status == "cancelled" or _resident_execution_cancellation_requested(
-        resident_record_domain.record_resident_id(record),
+        resident_domain_common.record_resident_id(record),
         str(job.get("execution_id") or ""),
         str(job.get("user_message_id") or ""),
     ):
@@ -2618,14 +2565,14 @@ def _send_resident_execution(
     backend_route_id = default_execution_accounts().canonical_route(
         backend, result.get("backend_route_id")
     )
-    context_usage = resident_record_domain.clean_token_usage(
+    context_usage = resident_domain_common.clean_token_usage(
         usage_projection.get("context_usage")
     )
-    context_window = resident_lifecycle_domain.nonnegative_int(
+    context_window = resident_domain_common.nonnegative_int(
         usage_projection.get("model_context_window"),
         0,
     )
-    usage_at = resident_lifecycle_domain.now_iso()
+    usage_at = resident_domain_common.now_iso()
     context_usage_at = str(
         usage_projection.get("context_updated_at") or usage_at
     )
@@ -2646,7 +2593,7 @@ def _send_resident_execution(
     # session is, and it ran on no route of the Resident's session.
     own_session = not (
         _lineage_delivery_profile(job)
-        or resident_input_scope.get(resident_record_domain.record_resident_id(record), str(job.get("user_message_id") or ""))
+        or resident_input_scope.get(resident_domain_common.record_resident_id(record), str(job.get("user_message_id") or ""))
     )
     if context_usage and own_session:
         updated["last_token_usage"] = context_usage
@@ -2658,7 +2605,7 @@ def _send_resident_execution(
         updated["last_model_context_window"] = context_window
     if backend_route_id and own_session:
         updated["backend_route_id"] = backend_route_id
-    exact_resident_id = resident_record_domain.record_resident_id(record)
+    exact_resident_id = resident_domain_common.record_resident_id(record)
     assistant_message_id = resident_message_contract.derived_message_identity(
         "resident-execution-message",
         execution_id,
@@ -2690,7 +2637,7 @@ def _send_resident_execution(
     conversation_repository = resident_conversation_stream.get_repository()
     if persist_messages:
         persisted = _persist_execution_final_message(
-            resident_record_domain.record_resident_id(record),
+            resident_domain_common.record_resident_id(record),
 
             execution_id,
             assistant_item,
@@ -2711,14 +2658,14 @@ def _prepare_resident_prompt(
     record: dict[str, Any],
     job: dict[str, Any],
 ) -> dict[str, Any]:
-    from . import resident_lifecycle_domain, resident_registration_domain
+    from . import resident_domain_common, resident_registration_domain
 
     prepared = dict(job)
     prepared["message"] = str(job.get("effective_message") or job.get("raw_message") or job.get("message") or "")
     prepared["actual_sent_prompt"] = resident_registration_domain.build_resident_prompt(record, prepared)
     prepared.pop("runtime_context", None)
     prepared["message"] = prepared["actual_sent_prompt"]
-    prepared["prompt_built_at"] = resident_lifecycle_domain.now_iso()
+    prepared["prompt_built_at"] = resident_domain_common.now_iso()
     prepared["prompt_builder_version"] = resident_execution_work.PROMPT_BUILDER_VERSION
     return prepared
 
@@ -2727,8 +2674,8 @@ def _portable_context_execution(
     record: dict[str, Any],
     job: dict[str, Any],
 ) -> dict[str, Any]:
-    from . import resident_record_domain
-    if resident_input_scope.get(resident_record_domain.record_resident_id(record), str(job.get("user_message_id") or "")):
+    from . import resident_domain_common
+    if resident_input_scope.get(resident_domain_common.record_resident_id(record), str(job.get("user_message_id") or "")):
         return job
     if _lineage_delivery_profile(job):
         # A fresh-context run does not use (or consume) the session's seed.
@@ -2740,7 +2687,7 @@ def _portable_context_execution(
         raise RuntimeError(
             "压缩继承上下文尚未准备完成；不能回退为完整上下文投递"
         )
-    resident_id = resident_record_domain.record_resident_id(record)
+    resident_id = resident_domain_common.record_resident_id(record)
     accepted = _initial_context_compaction_completed(record) or execution_port.sessions().has_accepted_input(
         resident_backend.execution_binding_id(record), agent_id=resident_id,
     )
@@ -2802,13 +2749,13 @@ def send_to_resident_backend(
     *,
     persist_messages: bool = True,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
-    from . import resident_lifecycle_domain, resident_record_domain
-    resident_lifecycle_domain.ensure_resident_agent(record, actor=str(job.get("actor") or ""))
+    from . import resident_domain_common, resident_record_domain
+    resident_record_domain.ensure_resident_agent(record, actor=str(job.get("actor") or ""))
     provider = resident_execution_provider.provider_for(record)
     outcome = provider.deliver(
         resident_execution_provider.DeliveryRequest(
             lineage_id=str(record.get("lineage_id") or ""),
-            resident_id=resident_record_domain.record_resident_id(record),
+            resident_id=resident_domain_common.record_resident_id(record),
             actor_id=str(job.get("actor") or ""),
             message=str(
                 job.get("effective_message")
@@ -2830,14 +2777,14 @@ def _with_compacted_context_usage(
     state: dict[str, Any],
     token_usage: object,
 ) -> dict[str, Any]:
-    from . import resident_lifecycle_domain
+    from . import resident_domain_common
     updated = dict(state)
-    usage = _app_server_token_usage(token_usage)
+    usage = resident_domain_common.app_server_token_usage(token_usage)
     usage_field = "last_token_usage"
     usage_at_field = "last_token_usage_at"
     context_window_field = "last_model_context_window"
     updated[usage_field] = usage.context or usage.turn
-    updated[usage_at_field] = resident_lifecycle_domain.now_iso()
+    updated[usage_at_field] = resident_domain_common.now_iso()
     if usage.model_context_window:
         updated[context_window_field] = usage.model_context_window
     return updated
@@ -2848,7 +2795,7 @@ def _run_resident_session_operation(
     job: dict[str, Any],
     operation: str,
 ) -> dict[str, Any]:
-    from . import resident_record_domain, resident_runtime_domain, resident_session_backend_domain
+    from . import resident_domain_common, resident_runtime_domain, resident_session_backend_domain
     def build_request() -> ExecutionRequest:
         if resident_execution_provider.provider_for(
             record
@@ -2870,8 +2817,8 @@ def _run_resident_session_operation(
                 **resident_execution_runtime_options(record, job, is_owner=True),
                 "timeout_seconds": resident_domain_common.CODEX_COMPACT_TIMEOUT_SECONDS,
             },
-            agent_id=resident_record_domain.record_resident_id(record),
-            metadata={"resident_id": resident_record_domain.record_resident_id(record)},
+            agent_id=resident_domain_common.record_resident_id(record),
+            metadata={"resident_id": resident_domain_common.record_resident_id(record)},
         )
 
     request = durable_resident_execution_request(
@@ -2891,7 +2838,7 @@ def _run_resident_session_operation(
         service,
         execution_id=execution_id,
         actor=actor,
-        resident_id=resident_record_domain.record_resident_id(record),
+        resident_id=resident_domain_common.record_resident_id(record),
 
         persist_messages=False,
         timeout_seconds=resident_domain_common.CODEX_COMPACT_TIMEOUT_SECONDS + 90,
@@ -2934,7 +2881,7 @@ def _compact_inherited_resident_context(
     continuation_id: str,
 ) -> dict[str, Any]:
     """Import and compact one frozen Fork window before the child can run."""
-    from . import resident_record_domain, resident_runtime_domain
+    from . import resident_domain_common, resident_runtime_domain
     from management_portal.execution.accounts import default_execution_accounts
     from . import resident_session_backend_domain
 
@@ -2942,14 +2889,14 @@ def _compact_inherited_resident_context(
     definition = AGENT_PROVIDERS.get(backend)
     if definition is None or not definition.seeded_compaction:
         raise RuntimeError(f"{resident_backend.backend_label(record)} Resident 不支持压缩继承")
-    segments = execution_port.frozen_initialization_segments(resident_record_domain.record_resident_id(record))
+    segments = execution_port.frozen_initialization_segments(resident_domain_common.record_resident_id(record))
     if not segments:
         raise RuntimeError("压缩继承缺少冻结的 PostgreSQL 上下文片段")
     actor = resident_execution_work.request_actor(job)
-    from . import resident_lifecycle_domain, resident_workspace_domain
+    from . import resident_record_domain
     operation_id = str(job.get('initial_compaction_operation_id') or f"{job['execution_id']}:initial-context-compaction")
-    with resident_lifecycle_domain.state_lock(resident_record_domain.record_resident_id(record)):
-        current = resident_workspace_domain.find_resident(resident_record_domain.record_resident_id(record))
+    with resident_record_domain.state_lock(resident_domain_common.record_resident_id(record)):
+        current = resident_record_domain.find_resident(resident_domain_common.record_resident_id(record))
         saved = resident_execution_work.read(current)
         if not resident_execution_work.matches_continuation(saved, continuation_id):
             raise RuntimeError('初始化工作已变化')
@@ -2974,9 +2921,9 @@ def _compact_inherited_resident_context(
             "timeout_seconds": resident_domain_common.CODEX_COMPACT_TIMEOUT_SECONDS,
         },
         operation_id=operation_id,
-        agent_id=resident_record_domain.record_resident_id(record),
+        agent_id=resident_domain_common.record_resident_id(record),
         metadata={
-            "resident_id": resident_record_domain.record_resident_id(record),
+            "resident_id": resident_domain_common.record_resident_id(record),
             "initial_context_policy": "compact_before_first_turn",
             "fork_context_input": {
                 "segments": copy.deepcopy(segments),

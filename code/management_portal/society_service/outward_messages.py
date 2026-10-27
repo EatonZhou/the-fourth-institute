@@ -50,9 +50,9 @@ _SPEAKING: ContextVar[tuple[str, str] | None] = ContextVar("family_speaking_for"
 
 
 def _find(resident_id: str) -> dict[str, Any]:
-    from . import resident_workspace_domain
+    from . import resident_record_domain
 
-    return resident_workspace_domain.find_resident(resident_id) or {}
+    return resident_record_domain.find_resident(resident_id) or {}
 
 
 def _families_around(resident_id: str) -> list[dict[str, Any]]:

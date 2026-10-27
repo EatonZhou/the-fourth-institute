@@ -9,14 +9,13 @@ import pytest
 
 from management_common.async_questions import decode_question_content, normalize_async_questions, question_answer_id
 from management_portal.execution import event_projection
-from management_portal.society_service import resident_directory_domain
 from management_portal.society_service import resident_execution_domain
 from management_portal.society_service import resident_intake_domain
 from management_portal.society_service import resident_lifecycle_domain
 from management_portal.society_service import resident_record_domain
 from management_portal.society_service import resident_registration_domain
 from management_portal.society_service import resident_session_backend_domain
-from management_portal.society_service import resident_execution_work, resident_protocol
+from management_portal.society_service import resident_access, resident_execution_work, resident_protocol
 from management_portal.society_service.resident_questions import prepare_question_answer
 from tests.cases.test_resident_execution_protocol import resident_record
 from management_portal.execution import slash_commands
@@ -419,7 +418,7 @@ def test_question_answer_accepts_non_owner_and_preserves_author(resident_record,
     """非管理者也可以回答问题集，回答保留实际作者"""
     source = persist_question(resident_record)
     resident_id = resident_record["resident_id"]
-    monkeypatch.setattr(resident_directory_domain, "_can_manage_resident", lambda *_args, **_kwargs: False)
+    monkeypatch.setattr(resident_access, "can_manage", lambda *_args, **_kwargs: False)
     answer = reply(resident_id, source)
     resident_intake_domain.persist_resident_input(
         resident_id, "non-owner", "定向", message_id=answer["message_id"],

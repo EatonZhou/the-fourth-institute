@@ -1,5 +1,5 @@
 from __future__ import annotations
-from management_portal.society_service import resident_execution_domain
+from management_portal.society_service import resident_execution_domain, resident_record_domain
 
 import copy
 import json
@@ -123,7 +123,7 @@ def runtime(tmp_path, monkeypatch):
     monkeypatch.setattr(resident_input_scope, "get_portal_access_store", lambda: access)
     monkeypatch.setattr(invariant_locks, "_ROOT_PROVIDER", lambda: tmp_path)
     monkeypatch.setattr(resident_protocol.resident_conversation_stream, "get_repository", lambda: repository)
-    monkeypatch.setattr(resident_workspace_domain, "resolve_resident_runtime_target",
+    monkeypatch.setattr(resident_record_domain, "resolve_resident_runtime_target",
                         lambda rid, actor="", **kwargs: resident_domain.ResidentRuntimeTarget(rid, resident))
     monkeypatch.setattr(resident_protocol, "_resident_view", lambda target: {"resident_id": RESIDENT, "lineage_id": LINEAGE})
     monkeypatch.setattr(resident_protocol, "_conversation_controls", lambda *args: {})

@@ -8,7 +8,13 @@ import threading
 from management_portal.society_service import resident_execution_provider
 
 
-from management_portal.society_service import resident_directory_domain, resident_intake_domain, resident_lifecycle_domain, resident_runtime_domain, resident_workspace_domain
+from management_portal.society_service import (
+    resident_access,
+    resident_intake_domain,
+    resident_lifecycle_domain,
+    resident_record_domain,
+    resident_runtime_domain,
+)
 
 from management_portal.society_service import resident_intake_domain
 
@@ -253,17 +259,17 @@ def test_concurrent_synchronous_duplicate_is_claimed_once(monkeypatch, tmp_path)
         assert release_delivery.wait(timeout=2)
         return {"resident_id": resident_id, "message_id": message_id}
 
-    monkeypatch.setattr(resident_lifecycle_domain, "state_lock", state_lock)
-    monkeypatch.setattr(resident_workspace_domain, "find_resident", lambda value: record)
-    monkeypatch.setattr(resident_workspace_domain, "find_resident_for_admission", lambda value: record)
+    monkeypatch.setattr(resident_record_domain, "state_lock", state_lock)
+    monkeypatch.setattr(resident_record_domain, "find_resident", lambda value: record)
+    monkeypatch.setattr(resident_record_domain, "find_resident_for_admission", lambda value: record)
     monkeypatch.setattr(resident_runtime_domain, "resident_working_directory", lambda _record: tmp_path)
     monkeypatch.setattr(
         resident_intake_domain,
         "ensure_resident_visible_to_actor",
         lambda *args, **kwargs: None,
     )
-    monkeypatch.setattr(resident_directory_domain, "can_manage", lambda *args: True)
-    monkeypatch.setattr(resident_workspace_domain, "save_resident_record", lambda *args: None)
+    monkeypatch.setattr(resident_access, "can_manage", lambda *args: True)
+    monkeypatch.setattr(resident_record_domain, "save_resident_record", lambda *args: None)
     monkeypatch.setattr(
         resident_execution_provider,
         "provider_for",

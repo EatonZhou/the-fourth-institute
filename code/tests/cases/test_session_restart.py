@@ -21,10 +21,17 @@ from management_portal.society_service import resident_domain
 from management_portal.society_service import resident_registration_domain
 
 
-from management_portal.society_service import resident_execution_domain, resident_intake_domain, resident_lifecycle_domain, resident_runtime_domain, resident_workspace_domain
+from management_portal.society_service import (
+    resident_access,
+    resident_execution_domain,
+    resident_intake_domain,
+    resident_lifecycle_domain,
+    resident_record_domain,
+    resident_runtime_domain,
+)
 
 
-from management_portal.society_service import resident_directory_domain, resident_restart_domain, resident_session_backend_domain
+from management_portal.society_service import resident_restart_domain, resident_session_backend_domain
 from management_portal.execution import codex_runtime_settings
 from tests.cases.model_api_test_support import DEEPSEEK_PRIMARY, register_apis
 
@@ -213,11 +220,11 @@ def _restart_domain(
         record=record,
     )
     monkeypatch.setattr(
-        resident_workspace_domain,
+        resident_record_domain,
         "resolve_resident_runtime_target",
         lambda *_args, **_kwargs: target,
     )
-    monkeypatch.setattr(resident_directory_domain, "can_manage", lambda *_args: True)
+    monkeypatch.setattr(resident_access, "can_manage", lambda *_args: True)
     monkeypatch.setattr(
         resident_backend,
         "session_record",
@@ -265,7 +272,7 @@ def _restart_domain(
     def enqueue(_resident_id, steps):
         operations[-1]["step"] = steps[0]
         return "operation_restart"
-    monkeypatch.setattr(resident_lifecycle_domain, "lifecycle_operations", lambda: SimpleNamespace(pending=lambda *_: False, enqueue=enqueue))
+    monkeypatch.setattr(resident_record_domain, "lifecycle_operations", lambda: SimpleNamespace(pending=lambda *_: False, enqueue=enqueue))
     monkeypatch.setattr(resident_catalog.get_catalog().state_store, "transaction", lambda commit: commit())
     def resolve_account(provider, route="", **kwargs):
         definition = AGENT_PROVIDERS[provider]
@@ -294,9 +301,9 @@ def _restart_domain(
             "current_binding": {"provider_session_ref": "provider_new"},
         },
     )
-    monkeypatch.setattr(resident_lifecycle_domain, "state_lock", nullcontext)
-    monkeypatch.setattr(resident_workspace_domain, "find_resident", lambda *_args: record)
-    monkeypatch.setattr(resident_workspace_domain, "find_resident_canonical", lambda *_args: record)
+    monkeypatch.setattr(resident_record_domain, "state_lock", nullcontext)
+    monkeypatch.setattr(resident_record_domain, "find_resident", lambda *_args: record)
+    monkeypatch.setattr(resident_record_domain, "find_resident_canonical", lambda *_args: record)
 
     def save_record(value, *, commit_configuration=False, commit_intake=False):
         from management_portal.society_service.resident_storage import validate_record_fields
@@ -306,7 +313,7 @@ def _restart_domain(
         saved.append(dict(value))
 
     monkeypatch.setattr(
-        resident_workspace_domain,
+        resident_record_domain,
         "save_resident_record",
         save_record,
     )
@@ -651,7 +658,7 @@ def test_restart_restores_only_its_own_intake_transition(monkeypatch, transition
         record.update(value)
         saved.append(dict(value))
 
-    monkeypatch.setattr(resident_workspace_domain, "save_resident_record", save)
+    monkeypatch.setattr(resident_record_domain, "save_resident_record", save)
     def resume(*args, **kwargs):
         assert protocol["intake_state"] == "closed"
         for transition in transitions:
@@ -705,7 +712,7 @@ def test_same_provider_smart_restart_uses_native_fork_contracts(monkeypatch, sub
             record, _operations, _saved = _restart_domain(monkeypatch)
             resident_domain.restart_resident_session(record['resident_id'], 'alice', {'target_provider': 'claude', 'context_strategy': 'compact'})
             restored: list[dict] = []
-            monkeypatch.setattr(resident_workspace_domain, 'save_resident_record', lambda value, **_kwargs: (_ for _ in ()).throw(RuntimeError('catalog unavailable')) if value.get('session_restart', {}).get('status') == 'completed' else None)
+            monkeypatch.setattr(resident_record_domain, 'save_resident_record', lambda value, **_kwargs: (_ for _ in ()).throw(RuntimeError('catalog unavailable')) if value.get('session_restart', {}).get('status') == 'completed' else None)
             monkeypatch.setattr(resident_backend, 'restore_replaced_session', lambda _record, replacement: restored.append(dict(replacement)))
             with pytest.raises(RuntimeError, match='catalog unavailable'):
                 resident_restart_domain.resume_resident_session_restart(_operations[0]['step'])
@@ -721,7 +728,7 @@ def test_same_provider_smart_restart_uses_native_fork_contracts(monkeypatch, sub
             assert step['request']['execution_id']
             assert step['request']['correlation_id'] == result['restart_id']
             assert saved[-1]['backend'] == 'codex'
-            monkeypatch.setattr(resident_lifecycle_domain, 'lifecycle_operations', lambda: SimpleNamespace(pending=lambda *_: True))
+            monkeypatch.setattr(resident_record_domain, 'lifecycle_operations', lambda: SimpleNamespace(pending=lambda *_: True))
             assert resident_domain.restart_resident_session(record['resident_id'], 'alice', payload) == result
             assert len(operations) == 1
             assert resident_domain.restart_resident_session(record['resident_id'], 'alice', {**payload, 'idempotency_key': 'restart-two'}) == result
@@ -894,7 +901,7 @@ def test_restart_real_outbox_recovers_one_execution_then_acknowledges(tmp_path, 
     record, _operations, _saved = _restart_domain(monkeypatch)
     database = LineageDataStore()
     outbox = ResidentLifecycleOperations(database)
-    monkeypatch.setattr(resident_lifecycle_domain, "lifecycle_operations", lambda: outbox)
+    monkeypatch.setattr(resident_record_domain, "lifecycle_operations", lambda: outbox)
     monkeypatch.setattr(resident_catalog.get_catalog().state_store, "transaction", database.transaction)
     submitted, acknowledged = [], []
     snapshot = {"status": "running"}
@@ -1023,9 +1030,9 @@ def test_deferred_restart_is_durable_idempotent_and_cancellable(monkeypatch):
     receipt = resident_domain.restart_resident_session(record["resident_id"], "alice", payload)
     assert receipt["phase"] == "waiting_current_execution" and not operations
     current = saved[-1]
-    monkeypatch.setattr(resident_workspace_domain, "find_resident", lambda *a: current)
+    monkeypatch.setattr(resident_record_domain, "find_resident", lambda *a: current)
     target = resident_domain.ResidentRuntimeTarget(resident_id=record["resident_id"], record=current)
-    monkeypatch.setattr(resident_workspace_domain, "resolve_resident_runtime_target", lambda *a, **kw: target)
+    monkeypatch.setattr(resident_record_domain, "resolve_resident_runtime_target", lambda *a, **kw: target)
     assert resident_domain.restart_resident_session(record["resident_id"], "alice", payload)["restart_id"] == receipt["restart_id"]
     assert resident_deferred_restart.advance(current) is False
     assert not operations
@@ -1047,7 +1054,7 @@ def test_deferred_restart_retains_origin_and_runs_only_after_current_turn(monkey
     )
     assert receipt.get("reason", "") == portal_reason
     current = saved[-1]
-    monkeypatch.setattr(resident_workspace_domain, "find_resident", lambda *a: current)
+    monkeypatch.setattr(resident_record_domain, "find_resident", lambda *a: current)
     calls = []
     def restart(rid, actor, body, **options):
         calls.append((rid, body, actor, options))
@@ -1125,7 +1132,7 @@ def test_restart_configuration_owner_commits_only_after_binding_promotion(monkey
     record, operations, _saved = _restart_domain(monkeypatch)
     saves = []
     promoted = []
-    original_save = resident_workspace_domain.save_resident_record
+    original_save = resident_record_domain.save_resident_record
     original_promote = resident_backend.replace_with_prepared_session
 
     def promote(*args, **kwargs):
@@ -1142,7 +1149,7 @@ def test_restart_configuration_owner_commits_only_after_binding_promotion(monkey
         original_save(value, commit_configuration=commit_configuration)
 
     monkeypatch.setattr(resident_backend, "replace_with_prepared_session", promote)
-    monkeypatch.setattr(resident_workspace_domain, "save_resident_record", save)
+    monkeypatch.setattr(resident_record_domain, "save_resident_record", save)
     accepted = resident_domain.restart_resident_session(
         record["resident_id"], "alice", {"target_provider": "claude", "context_strategy": "compact"},
     )
@@ -1241,7 +1248,7 @@ def test_model_api_migration_validation_and_save_failure_preserve_binding(monkey
         resident_domain.restart_resident_session(record['resident_id'], 'alice', {**body, 'model': 'wrong'})
     assert not detached and record['backend'] == 'codex'
     def fail(*a, **k): raise RuntimeError('save failed')
-    monkeypatch.setattr(resident_workspace_domain, 'save_resident_record', fail)
+    monkeypatch.setattr(resident_record_domain, 'save_resident_record', fail)
     with pytest.raises(RuntimeError, match='save failed'):
         resident_domain.restart_resident_session(record['resident_id'], 'alice', body)
     assert detached and restored[0]['current_binding']['detached'] is True

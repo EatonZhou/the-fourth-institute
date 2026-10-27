@@ -8,8 +8,11 @@ the message that carried it has left the Router's context.
 
 from __future__ import annotations
 
-from management_portal.society_service import execution_client, resident_conversation_stream
-from management_portal.society_service import resident_workspace_domain
+from management_portal.society_service import (
+    execution_client,
+    resident_conversation_stream,
+    resident_record_domain,
+)
 from tests.cases.test_cross_owner_storage_integration import owners  # noqa: F401 - fixture
 from tests.cases.test_resident_mailbox import _queue
 from tests.cases.test_wall04_residual_20260919 import instruction, team  # noqa: F401 - fixture
@@ -40,7 +43,7 @@ def test_a_waiting_message_will_reach_the_context_and_a_finished_one_asks_the_tr
     repository = resident_conversation_stream.get_repository()
     repository.set_input_state(resident_id, a, "completed")
     repository.set_input_state(resident_id, c, "failed")
-    since = str(resident_workspace_domain.find_resident(resident_id).get("context_reset_at") or "")
+    since = str(resident_record_domain.find_resident(resident_id).get("context_reset_at") or "")
     assert _state(team, resident_id, a, include_context=True)["in_context"] is True
     assert _state(team, resident_id, c, include_context=True)["in_context"] is False
     assert asked == [(resident_id, a, since), (resident_id, c, since)]

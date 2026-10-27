@@ -31,9 +31,9 @@ def _mailbox_terminal(fact: ResidentTerminalFact) -> list[str]:
     """A finished Mailbox group finishes its members with its state and replies (decision_b5d349190743)."""
 
     try:
-        from .. import resident_mailbox, resident_workspace_domain
+        from .. import resident_mailbox, resident_record_domain
 
-        record = resident_workspace_domain.find_resident(fact.resident_id) or {}
+        record = resident_record_domain.find_resident(fact.resident_id) or {}
         if not record or not resident_mailbox.members_of(record, fact.message_id):
             return []
         return resident_mailbox.finish_group(record, fact.message_id, fact.terminal_status)

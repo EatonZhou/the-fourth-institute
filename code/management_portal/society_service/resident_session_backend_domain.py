@@ -95,7 +95,7 @@ def run_backend_session_operation(
     agent_id: str = "",
     metadata: Mapping[str, object] | None = None,
 ) -> dict[str, Any]:
-    from . import resident_execution_domain, resident_lifecycle_domain, resident_record_domain
+    from . import resident_domain_common, resident_execution_domain, resident_record_domain
     managed_execution_work = bool(resident_record and execution_work)
     if preparation_id:
         if operation != "create" or managed_execution_work or operation_id:
@@ -111,7 +111,7 @@ def run_backend_session_operation(
     # Managed preparation already reserved this Execution for the Resident.
     # Its request must keep that Agent identity, including create/fork operations
     # without a model turn. Standalone session operations have their own owner.
-    request_agent_id = resident_record_domain.record_resident_id(resident_record or {}) if managed_execution_work else agent_id
+    request_agent_id = resident_domain_common.record_resident_id(resident_record or {}) if managed_execution_work else agent_id
     request = build_backend_session_operation_request(
         backend=backend, operation=operation, actor=actor, cwd=cwd,
         binding_id=binding_id, correlation_id=correlation_id, prompt=prompt,
@@ -125,7 +125,7 @@ def run_backend_session_operation(
             execution_id="execution-" + hashlib.sha256(operation_id.encode()).hexdigest()[:24],
         )
     if preparation_id:
-        resident_lifecycle_domain.lifecycle_operations().stage_preparation_execution(preparation_id, request.to_payload())
+        resident_record_domain.lifecycle_operations().stage_preparation_execution(preparation_id, request.to_payload())
     if managed_execution_work:
         if not wait_for_completion:
             raise ValueError(
@@ -148,7 +148,7 @@ def run_backend_session_operation(
             service,
             execution_id=execution_id,
             actor=actor,
-            resident_id=resident_record_domain.record_resident_id(exact_record),
+            resident_id=resident_domain_common.record_resident_id(exact_record),
 
             persist_messages=False,
             timeout_seconds=resident_domain_common.CODEX_COMPACT_TIMEOUT_SECONDS + 90,
@@ -240,12 +240,12 @@ def _materialize_queued_agent_data_fork(
     record: Mapping[str, Any],
     job: Mapping[str, Any],
 ) -> None:
-    from . import resident_record_domain
+    from . import resident_domain_common
     spec = job.get("agent_data_fork")
     if not isinstance(spec, Mapping):
         return
     materialize_agent_data_fork(
-        resident_record_domain.record_resident_id(record),
+        resident_domain_common.record_resident_id(record),
         spec,
         resident_execution_work.request_actor(job),
     )
@@ -255,10 +255,10 @@ def materialize_pending_agent_data_fork(
     resident: dict[str, Any],
     actor: str,
 ) -> None:
-    from . import resident_record_domain
+    from . import resident_domain_common
     spec = resident.pop("_pending_agent_data_fork", None)
     if isinstance(spec, Mapping):
-        materialize_agent_data_fork(resident_record_domain.record_resident_id(resident), spec, actor)
+        materialize_agent_data_fork(resident_domain_common.record_resident_id(resident), spec, actor)
 
 
 def create_exact_resident_session(
@@ -266,7 +266,7 @@ def create_exact_resident_session(
     job: dict[str, Any],
 ) -> dict[str, Any]:
     """Materialize one Resident's own Provider session from its creation job."""
-    from . import resident_directory_domain, resident_execution_domain, resident_runtime_domain
+    from . import resident_access, resident_execution_domain, resident_runtime_domain
     creation_kind = str(job.get("operation") or "")
     if creation_kind != "context_fork_create":
         raise ValueError(f"unsupported Resident creation job: {creation_kind}")
@@ -275,7 +275,7 @@ def create_exact_resident_session(
     backend = resident_backend.execution_backend(record)
     target_binding_id = resident_backend.execution_binding_id(record)
     cwd = resident_runtime_domain.resident_working_directory(record)
-    is_owner = resident_directory_domain.has_resident_workspace_authority(record, actor)
+    is_owner = resident_access.has_resident_workspace_authority(record, actor)
 
     definition = AGENT_PROVIDERS[backend]
     if "create" not in definition.operations:

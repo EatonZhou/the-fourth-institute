@@ -22,7 +22,11 @@ from management_portal.society_service.resident_lifecycle import (
 from management_portal.society_service.state_store import LineageDataStore
 
 
-from management_portal.society_service import resident_lifecycle_domain, resident_session_backend_domain, resident_workspace_domain
+from management_portal.society_service import (
+    resident_lifecycle_domain,
+    resident_record_domain,
+    resident_session_backend_domain,
+)
 
 @pytest.fixture
 def operations(tmp_path, monkeypatch):
@@ -217,8 +221,8 @@ def test_session_creation_preparation_recovers_exact_request_before_archiving(
             assert not source.exists() and (target / "keep.txt").is_file()
             events.append("ack")
 
-    monkeypatch.setattr(resident_lifecycle_domain, "lifecycle_operations", lambda: operations)
-    monkeypatch.setattr(resident_workspace_domain, "find_resident_canonical", lambda _: None)
+    monkeypatch.setattr(resident_record_domain, "lifecycle_operations", lambda: operations)
+    monkeypatch.setattr(resident_record_domain, "find_resident_canonical", lambda _: None)
     monkeypatch.setattr(execution_port, "service", lambda: Service())
     monkeypatch.setattr(resident_backend, "session_record", lambda *args, **kwargs: {})
     monkeypatch.setattr(resident_backend, "delete_session_identity", lambda *args, **kwargs: events.append("release"))
@@ -267,7 +271,7 @@ def test_stale_preparation_never_compensates_published_resident_contracts(monkey
             tmp_path = case_path
             source = tmp_path / 'published-resident'
             source.mkdir()
-            monkeypatch.setattr(resident_workspace_domain, 'find_resident_canonical', lambda _: {'registration_state': 'ready'})
+            monkeypatch.setattr(resident_record_domain, 'find_resident_canonical', lambda _: {'registration_state': 'ready'})
             monkeypatch.setattr(execution_port, 'service', lambda: pytest.fail('Published identity must not be touched'))
             monkeypatch.setattr(resident_backend, 'session_record', lambda _: pytest.fail('Published binding must not be released'))
             resident_lifecycle_domain.apply_resident_lifecycle_step('stale:0', {'kind': 'registration_abort', 'record': {'resident_id': 'resident_111111111111'}, 'actor': 'CASE-A', 'source': str(source), 'target': str(tmp_path / 'archive')})

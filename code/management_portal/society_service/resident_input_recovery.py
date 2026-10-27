@@ -329,28 +329,28 @@ def requeue(
 
     from . import family_facade, invariant_locks
     from . import (
-        resident_directory_domain,
+        resident_access,
+        resident_domain_common,
         resident_intake_domain,
         resident_lifecycle_domain,
         resident_record_domain,
-        resident_workspace_domain,
     )
     from . import resident_backend
 
     organizer = resident_mailbox.organizer_id(actor)
-    target = resident_workspace_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=not bool(portal_reason))
+    target = resident_record_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=not bool(portal_reason))
     message_id = str(message_id or "").strip()
     if not message_id:
         raise ValueError("message_id required")
     repository = resident_conversation_stream.get_repository()
-    now = resident_lifecycle_domain.now_iso()
-    with (resident_lifecycle_domain.state_lock(target.resident_id),
+    now = resident_domain_common.now_iso()
+    with (resident_record_domain.state_lock(target.resident_id),
           invariant_locks.resident_conversation_lock(target.resident_id),
           get_lineage_data_store().database.transaction()):
-        record = resident_workspace_domain.find_resident(target.resident_id)
+        record = resident_record_domain.find_resident(target.resident_id)
         if not record:
             raise KeyError("resident not found")
-        if not portal_reason and not resident_directory_domain.can_manage(record, organizer):
+        if not portal_reason and not resident_access.can_manage(record, organizer):
             raise PermissionError("只有对该 Resident 有整理权限的主体可以把消息放回队列")
         if family_facade.is_facade(record):
             raise MailboxConflict("Family 门面不执行，没有可以放回的一轮")
@@ -437,7 +437,7 @@ def requeue(
             set_recovery_entry(record, message_id, attempts=attempts + 1, recovered_by=organizer,
                                recovered_at=now, disabled=False)
         record["updated_at"] = now
-        resident_workspace_domain.save_resident_record(record)
+        resident_record_domain.save_resident_record(record)
     return resident_intake_domain.resident_operation_result(
         target.resident_id,
         message_id=message_id,
@@ -477,10 +477,10 @@ def view(resident_id: str, actor: str) -> dict[str, Any]:
     """What the Mailbox tab shows: waiting items and infos, the round in progress, and the recent checkpoints."""
 
     from . import family_facade
-    from . import resident_directory_domain, resident_workspace_domain
+    from . import resident_access, resident_record_domain
 
-    target = resident_workspace_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=True)
-    record = resident_workspace_domain.find_resident(target.resident_id) or {"resident_id": target.resident_id}
+    target = resident_record_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=True)
+    record = resident_record_domain.find_resident(target.resident_id) or {"resident_id": target.resident_id}
     try:
         in_lineage = bool(resident_lineage.lineage_id(record))
     except (KeyError, ValueError):
@@ -602,5 +602,5 @@ def view(resident_id: str, actor: str) -> dict[str, Any]:
         "pending": pending,
         "active": active,
         "recent": recent,
-        "can_organize": bool(resident_directory_domain.can_manage(record, actor)),
+        "can_organize": bool(resident_access.can_manage(record, actor)),
     }

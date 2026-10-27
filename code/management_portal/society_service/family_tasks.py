@@ -243,8 +243,8 @@ def render(record: dict, trigger: str, facts: dict, *, guide_version: str | None
 def dispatch(facade_id: str, trigger: str, actor: str, *, facts: dict | None = None,
              message_id: str = "", source_message_id: str = "", event: dict | None = None) -> dict:
     from . import family_facade, lineage_domain
-    from . import family_task_dispatches, resident_workspace_domain
-    facade = resident_workspace_domain.find_resident(facade_id)
+    from . import family_task_dispatches, resident_record_domain
+    facade = resident_record_domain.find_resident(facade_id)
     if not family_facade.is_facade(facade) or trigger not in TASKS:
         raise ValueError("未知 Family 或工作触发类型")
     body, block = context(facade)
@@ -252,7 +252,7 @@ def dispatch(facade_id: str, trigger: str, actor: str, *, facts: dict | None = N
     if actor not in {family["facade"], family["steward"], family["router"]}:
         lineage_domain._ensure_manager(body, actor)
     role = TASKS[trigger][1]
-    target = resident_workspace_domain.find_resident(family[role])
+    target = resident_record_domain.find_resident(family[role])
     facts = copy.deepcopy(facts or {})
     if source_message_id:
         facts["message_id"] = source_message_id

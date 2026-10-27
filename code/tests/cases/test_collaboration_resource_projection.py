@@ -4,13 +4,10 @@ from management_portal.society_service.resident_domain_common import RESIDENT_RE
 
 import json
 
-from management_portal.society_service import (
-    lineage_domain,
-    resident_domain,
-)
+from management_portal.society_service import lineage_domain, resident_domain, resident_record_domain
 
 
-from management_portal.society_service import resident_directory_domain, resident_workspace_domain
+from management_portal.society_service import resident_directory_domain
 
 def _protocol_projection(monkeypatch, resident_id: str, state: str = "idle") -> None:
     repository = type("Repository", (), {
@@ -69,7 +66,7 @@ def test_resident_projection_is_bounded_and_omits_internal_fields(
         record=record,
     )
     monkeypatch.setattr(
-        resident_workspace_domain,
+        resident_record_domain,
         "resolve_resident_resource_target",
         lambda _resident_id: target,
     )

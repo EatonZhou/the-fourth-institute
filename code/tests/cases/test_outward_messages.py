@@ -544,7 +544,7 @@ def test_a_familys_message_out_carries_the_members_own_uploads_and_no_one_elses(
     """
 
     from management_portal.society_service import resident_execution_work
-    from management_portal.society_service.resident_workspace_domain import find_resident as _find_resident
+    from management_portal.society_service.resident_record_domain import find_resident as _find_resident
 
     monkeypatch.setenv("PORTAL_UPLOAD_ROOT", str(tmp_path / "uploads"))
     member = delivery_resident["resident_id"]
@@ -633,7 +633,7 @@ def test_another_familys_router_relays_the_members_uploads_its_facade_received(d
     """
 
     from management_portal.society_service import family_facade, resident_execution_work, resident_protocol
-    from management_portal.society_service.resident_workspace_domain import (
+    from management_portal.society_service.resident_record_domain import (
         find_resident as _find_resident,
         save_resident_record as _save_resident_record,
     )

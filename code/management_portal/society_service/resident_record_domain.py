@@ -5,6 +5,7 @@ import os
 
 from . import (
     identity_contract,
+    invariant_locks,
     resident_backend,
     resident_catalog,
     resident_conversation_stream,
@@ -16,9 +17,18 @@ from pathlib import Path
 from typing import Any, Mapping
 import copy
 from management_portal.execution import slash_commands
+from management_common.actor_identity import canonical_actor_id
 import re
+from contextlib import contextmanager
 
 from . import resident_domain_common
+from .domain_ports import resident_lineage_host_port
+from .resident_access import (
+    actor_can_manage_residents,
+    resident_deliverable_to_actor as _resident_deliverable_to_actor,
+    resident_visible_to_actor as _resident_visible_to_actor,
+)
+from .resident_lifecycle import ResidentLifecycleOperations
 
 
 def _new_workspace_id(existing_ids: set[str] | None = None) -> str:
@@ -28,30 +38,6 @@ def _new_workspace_id(existing_ids: set[str] | None = None) -> str:
 REF_ITEM_CHAR_LIMIT = int(os.getenv("RESIDENT_AGENT_REF_ITEM_CHAR_LIMIT", "30000"))
 
 REF_TOTAL_CHAR_LIMIT = int(os.getenv("RESIDENT_AGENT_REF_TOTAL_CHAR_LIMIT", "80000"))
-
-TOKEN_USAGE_KEYS = (
-    "input_tokens",
-    "cached_input_tokens",
-    "output_tokens",
-    "reasoning_output_tokens",
-    "total_tokens",
-)
-
-
-def clean_token_usage(value: object) -> dict[str, int]:
-    from . import resident_lifecycle_domain
-    if not isinstance(value, dict):
-        return {}
-    out: dict[str, int] = {}
-    for key in TOKEN_USAGE_KEYS:
-        number = resident_lifecycle_domain.nonnegative_int(value.get(key), 0)
-        if number > 0:
-            out[key] = number
-    return out
-
-
-def record_resident_id(record: dict[str, Any]) -> str:
-    return str(record.get("resident_id") or "").strip()
 
 
 _BACKEND_SESSION_STATES = frozenset({
@@ -239,9 +225,8 @@ def sync_lineage_member_credentials(
 
 
 def resident_folder_path(record: dict[str, Any]) -> Path:
-    from . import resident_workspace_domain
-    workspace = resident_workspace_domain.resident_workspace_path(record)
-    resident_id = record_resident_id(record)
+    workspace = resident_workspace_path(record)
+    resident_id = resident_domain_common.record_resident_id(record)
     if not resident_id:
         raise ValueError("resident_id missing")
     return workspace / "residents" / resident_id
@@ -259,11 +244,11 @@ def set_resident_owned_workspace_binding(record: dict[str, Any], *, resident_id:
     from .resident_workspace_storage import apply_binding_projection, canonical_path
     if record.get("deleted_at"):
         raise KeyError("resident not found")
-    target_id = resident_id or record_resident_id(record)
+    target_id = resident_id or resident_domain_common.record_resident_id(record)
     path = canonical_path(resident_owned_workspace_path(record, target_id))
     previous = record.get("owned_workspace") or {}
     # A Fork owns a new Workspace, while a move preserves the original ID.
-    own_id = (record.get("owned_workspace_id") if target_id == record_resident_id(record) else "")
+    own_id = (record.get("owned_workspace_id") if target_id == resident_domain_common.record_resident_id(record) else "")
     if previous.get("path") and Path(previous["path"]).parent.name != target_id:
         own_id = ""
     own_id = own_id or _new_workspace_id()
@@ -309,7 +294,7 @@ def sessions_path(record: dict[str, Any]) -> Path:
 
 
 def session_token_usage_payload(record: dict[str, Any]) -> dict[str, Any]:
-    usage = clean_token_usage(record.get("last_turn_usage"))
+    usage = resident_domain_common.clean_token_usage(record.get("last_turn_usage"))
     return {
         "summary": {
             "last_turn_usage": usage,
@@ -319,12 +304,12 @@ def session_token_usage_payload(record: dict[str, Any]) -> dict[str, Any]:
 
 
 def last_user_message_text(resident_id: str) -> str:
-    from . import resident_workspace_domain
+    from . import resident_domain_common
     message = resident_conversation_stream.get_repository().latest_message(
         resident_id,
         role="user",
     )
-    return resident_workspace_domain.protocol_message_text(message) if isinstance(message, dict) else ""
+    return resident_domain_common.protocol_message_text(message) if isinstance(message, dict) else ""
 
 
 def resident_goal_payload(
@@ -401,7 +386,7 @@ def runtime_error_payload(
     code: str = "",
     details: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    from . import resident_conversation_projection_domain
+    from . import resident_domain_common
     raw = str(raw_error or "").strip()
     if not raw:
         return {}
@@ -411,10 +396,10 @@ def runtime_error_payload(
     if is_usage_limit_failure(raw, code=supplied_code):
         supplied_code = "provider_usage_limit"
     payload = {
-        "message": resident_conversation_projection_domain.truncate_text(raw, 1600),
+        "message": resident_domain_common.truncate_text(raw, 1600),
         "code": supplied_code or _runtime_error_code(raw),
         "source": "execution_result",
-        "raw_error": resident_conversation_projection_domain.truncate_text(raw, 1600),
+        "raw_error": resident_domain_common.truncate_text(raw, 1600),
     }
     if isinstance(details, dict) and details:
         payload["details"] = dict(details)
@@ -425,7 +410,7 @@ def runtime_failure_summary(
     raw_error: str,
     runtime_error: dict[str, Any] | None = None,
 ) -> str:
-    from . import resident_conversation_projection_domain
+    from . import resident_domain_common
     details = runtime_error if isinstance(runtime_error, dict) else {}
     message = str(details.get("message") or raw_error or "").strip()
     folded = message.casefold()
@@ -453,7 +438,7 @@ def runtime_failure_summary(
     if code in summaries:
         return summaries[code]
     compact = re.sub(r"\s+", " ", message).strip()
-    return resident_conversation_projection_domain.truncate_text(compact or "执行意外结束", 240)
+    return resident_domain_common.truncate_text(compact or "执行意外结束", 240)
 
 
 def resolve_context_refs(
@@ -474,3 +459,287 @@ def attached_references_text(context_refs: dict[str, Any]) -> str:
         item_char_limit=REF_ITEM_CHAR_LIMIT,
         total_char_limit=REF_TOTAL_CHAR_LIMIT,
     )
+
+
+def resident_quota_override(record: Mapping[str, Any]) -> dict[str, Any]:
+    policy = record.get("quota_reserve_override")
+    if not isinstance(policy, dict) or policy.get("binding_id") != resident_backend.execution_binding_id(record):
+        return {}
+    return copy.deepcopy(policy)
+
+
+def ensure_resident_agent(record: Mapping[str, Any], *, actor: str = "") -> dict[str, Any]:
+    """Establish the independent main Agent before registration or execution succeeds."""
+    from management_portal.execution.agent_data_store import get_agent_data_store
+    from . import identity_contract
+
+    resident_id = str(record.get("resident_id") or "").strip()
+    identity_contract.validate_id(resident_id, "resident")
+    return get_agent_data_store().ensure_agent(
+        resident_id,
+        actor_ref=str(actor or record.get("created_by") or ""),
+        sequence_kind="agent_trace",
+        parent_agent_id=None,
+    )
+
+
+@contextmanager
+def state_lock(resident_id: object):
+    """Protect short state transitions of exactly one Resident."""
+
+    with invariant_locks.resident_lock(resident_id):
+        yield
+
+
+def lifecycle_operations() -> ResidentLifecycleOperations:
+    return ResidentLifecycleOperations(resident_catalog.get_catalog().state_store)
+
+
+def resident_registration_projection_receipt(
+    record: dict[str, Any], *, committed_revision: int | None = None,
+) -> dict[str, Any]:
+    store = resident_catalog.get_catalog().state_store
+    if committed_revision is None:
+        committed_revision = int(store.lineage_definition(record["lineage_id"])["revision"])
+    return {
+        "projection": "resident.resource_bundle",
+        "resident_id": record["resident_id"],
+        "lineage_id": record["lineage_id"],
+        "committed_revision": committed_revision,
+    }
+
+
+def require_resident_registration_ready(record: dict[str, Any]) -> None:
+    if not resident_catalog.registration_ready(record):
+        from management_common.projection_receipts import CommittedProjectionError
+
+        raise CommittedProjectionError([resident_registration_projection_receipt(record)])
+
+
+def workspace_paths(record: dict) -> list[str]:
+    return resident_domain_common.dedupe_strings([
+        str(binding["path"])
+        for binding in record.get("workspace_bindings") or []
+    ])
+
+
+def resident_workspace_roots(record: dict) -> list[dict[str, Any]]:
+    from management_portal.resources.workspace_store import get_workspace_store
+
+    bindings = [record["owned_workspace"], *record.get("workspace_bindings", [])]
+    # Names belong to WorkspaceStore, never to the Resident's saved bindings.
+    # One current batch also works when the caller retained an older Resident
+    # record; no cross-request cache needs invalidation after a rename.
+    rows = get_workspace_store().rows(binding["workspace_id"] for binding in bindings)
+    roots = []
+    for binding in bindings:
+        workspace_id = binding["workspace_id"]
+        # During initial registration the owned Workspace may not exist yet.
+        title = rows.get(workspace_id, {}).get("title") or Path(binding["path"]).name
+        roots.append({"workspace_id": workspace_id, "directory_id": workspace_id, "path": binding["path"],
+                      "title": title, "label": title,
+                      "purpose": binding.get("purpose", ""),
+                      "is_primary": workspace_id == record["owned_workspace_id"]})
+    return roots
+
+
+def resident_default_cwd_path(record: dict) -> str:
+    return resident_catalog.default_cwd_path(record)
+
+
+def resident_workspace_roots_with_usage(record: dict) -> tuple[list[dict[str, Any]], str]:
+    roots = resident_workspace_roots(record)
+    default_cwd = resident_default_cwd_path(record)
+    annotated = [
+        {
+            **root,
+            "is_primary": bool(
+                default_cwd
+                and root.get("workspace_id") == record["owned_workspace_id"]
+            ),
+        }
+        for root in roots
+    ]
+    return annotated, default_cwd
+
+
+def find_resident(resident_id: str) -> dict | None:
+    record = resident_lineage.find(resident_id)
+    return record
+
+
+def find_resident_for_admission(resident_id: str) -> dict | None:
+    try:
+        return resident_catalog.get_catalog().get_admission(resident_id)
+    except KeyError:
+        return None
+
+
+def resolve_resident_admission_target(
+    resident_id: str, actor: str = "", *, require_visible: bool = False, delivery: bool = False,
+) -> resident_domain_common.ResidentRuntimeTarget:
+    """The Resident an input is for; ``delivery`` asks only that the actor may deliver to it, not read it."""
+    exact_id = str(resident_id or "").strip()
+    record = find_resident_for_admission(exact_id)
+    if not record:
+        raise KeyError("resident not found")
+    if require_visible:
+        reaches = _resident_deliverable_to_actor if delivery else _resident_visible_to_actor
+        if not reaches(record, canonical_actor_id(actor)):
+            if not actor_can_manage_residents(canonical_actor_id(actor)):
+                raise PermissionError("需要已登录的 User 或 Resident")
+            raise KeyError("resident not found")
+        require_resident_registration_ready(record)
+    return resident_domain_common.ResidentRuntimeTarget(resident_id=exact_id, record=record)
+
+
+def find_resident_canonical(resident_id: str) -> dict | None:
+    """Read canonical Resident state without crossing into ResourceService."""
+
+    try:
+        record = resident_catalog.get_catalog().get(str(resident_id or "").strip())
+    except KeyError:
+        return None
+    return record
+
+
+def resolve_resident_runtime_target(
+    resident_id: str,
+    actor: str = "",
+    *,
+    require_visible: bool = False,
+    delivery: bool = False,
+) -> resident_domain_common.ResidentRuntimeTarget:
+    """The Resident ``resident_id`` names; ``delivery`` asks only that the actor may deliver to it, not read it."""
+    exact_id = str(resident_id or "").strip()
+    exact = find_resident(exact_id)
+    if not exact or exact.get("deleted_at"):
+        raise KeyError("resident not found") from None
+    reaches = _resident_deliverable_to_actor if delivery else _resident_visible_to_actor
+    if require_visible and not reaches(
+        exact,
+        canonical_actor_id(actor),
+    ):
+        if not actor_can_manage_residents(canonical_actor_id(actor)):
+            raise PermissionError("需要已登录的 User 或 Resident")
+        # Like a denied ISA read: a personal AMA stays unknown to whoever may not read it.
+        raise KeyError("resident not found")
+    if require_visible:
+        require_resident_registration_ready(exact)
+    return resident_domain_common.ResidentRuntimeTarget(
+        resident_id=exact_id,
+        record=exact,
+    )
+
+
+def resolve_resident_resource_target(
+    resident_id: str,
+) -> resident_domain_common.ResidentRuntimeTarget:
+    """Resolve canonical Resident state without entering ResourceService.
+
+    ResourceService delegates Resident content reads to this domain.  The
+    projection path therefore reads the canonical catalog directly and must
+    not recurse back through ResourceService.
+    """
+
+    exact_id = str(resident_id or "").strip()
+    catalog = resident_catalog.get_catalog()
+    try:
+        exact = catalog.get(exact_id, include_deleted=True)
+    except KeyError:
+        raise KeyError("resident not found") from None
+    return resident_domain_common.ResidentRuntimeTarget(
+        resident_id=exact_id,
+        record=exact,
+    )
+
+
+def save_resident_record(record: dict, *, commit_configuration: bool = False, commit_intake: bool = False) -> None:
+    from . import resident_record_domain
+    record.pop("folder_sync_error", None)
+    resident_id = str(record.get("resident_id") or "").strip()
+    if not resident_id:
+        return
+    catalog = resident_catalog.get_catalog()
+    if "principal_hierarchy" not in record and record.get("lineage_id"):
+        from . import principal_hierarchy as hierarchy
+        try:
+            # Registration may have just created this home in the current
+            # transaction; a separate read connection cannot see it yet.
+            home = catalog.state_store.database.write(
+                lambda connection: catalog.state_store._lineage_definition_from_connection(
+                    connection, record["lineage_id"],
+                )
+            )
+        except KeyError:
+            pass
+        else:
+            evidence = {"scope_ids": [home["project_id"]] if home.get("project_id") else []}
+            if home.get("lineage_membership") == "personal":
+                evidence["category"] = "personal_ama"
+            elif (home.get(hierarchy.FIELD) or {}).get("level") == "user":
+                evidence["category"] = "user_scope_member"
+            record[hierarchy.FIELD] = hierarchy.classify_existing(record, home, evidence=evidence)
+    resident_backend.validate_resident_session_identity(record)
+    persisted = validated_resident_record_payload(record)
+    try:
+        previous = resident_catalog.get_catalog().get(resident_id)
+    except KeyError:
+        previous = {}
+    if not previous and resident_catalog.registration_ready(record):
+        ensure_resident_agent(record)
+    identity_changed = (
+        not isinstance(previous, dict)
+        or not previous
+        or resident_resource_identity_signature(previous)
+        != resident_resource_identity_signature(record)
+    )
+    catalog = resident_catalog.get_catalog()
+
+    def commit() -> None:
+        try:
+            current_policy = resident_quota_override(catalog.get(resident_id))
+        except KeyError:
+            current_policy = {}
+        incoming_policy = resident_quota_override(persisted)
+        if current_policy and int(current_policy["revision"]) >= int(incoming_policy.get("revision") or 0):
+            persisted["quota_reserve_override"] = current_policy
+            record["quota_reserve_override"] = copy.deepcopy(current_policy)
+        catalog.upsert(persisted, commit_configuration=commit_configuration, commit_intake=commit_intake)
+        if identity_changed:
+            catalog.state_store.enqueue_resident_resource_projection(
+                resident_id,
+                persisted,
+            )
+
+    catalog.state_store.transaction(commit)
+    if identity_changed:
+        resident_lineage_host_port.invalidate_lineage_read_cache(
+            str(record.get("lineage_id") or "")
+        )
+    from management_portal.society_service.changes import resident_changed
+
+    if resident_catalog.registration_ready(record) or record.get("deleted_at"):
+        resident_changed(
+            resident_id,
+            scope="identity" if identity_changed else "runtime",
+        )
+        if previous.get("session_restart") != persisted.get("session_restart"):
+            resident_changed(resident_id, scope="session_restart")
+
+
+def _save_resident_record_with_resource_identity(record: dict) -> None:
+    """Persist canonical Resident state and its durable projection request."""
+    from . import resident_record_domain
+    apply_resident_resource_identity(record)
+    save_resident_record(record)
+
+
+def resident_workspace_path(record: dict) -> Path:
+    raw = str(record.get("workspace_path") or "").strip()
+    if not raw:
+        raise ValueError("resident workspace_path missing")
+    path = Path(raw).expanduser()
+    if not path.is_absolute():
+        raise ValueError("resident workspace_path must be absolute")
+    return path.resolve(strict=False)

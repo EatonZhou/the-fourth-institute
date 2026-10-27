@@ -11,9 +11,14 @@ from management_portal.hatg import catalog
 from management_portal.hatg.contracts import InstructionCall, InstructionContext
 from management_portal.hatg.kernel import Invocation
 from management_portal.society_service import (
-    lineage_branch_transitions, lineage_domain, lineage_workspace_binding,
-    resident_domain, resident_intake_domain, resident_lifecycle_domain,
-    resident_protocol, resident_workspace_domain,
+    lineage_branch_transitions,
+    lineage_domain,
+    lineage_workspace_binding,
+    resident_domain,
+    resident_domain_common,
+    resident_intake_domain,
+    resident_protocol,
+    resident_workspace_domain,
 )
 from management_portal.society_service.isa import execution, residents
 from management_portal.society_service.domain_ports import execution_port
@@ -96,7 +101,7 @@ def test_unchanged_settings_keep_the_same_version(resident_record, monkeypatch):
     inv = invocation("UpdateResidentSettings", resident_id=resident_id, changes={"collaboration_mode": "plan"})
     residents.update_resident_settings(inv)
     before = residents.get_resident_settings(invocation("GetResidentSettings", resident_id=resident_id))
-    monkeypatch.setattr(resident_lifecycle_domain, "now_iso", lambda: "2099-01-01T00:00:00Z")
+    monkeypatch.setattr(resident_domain_common, "now_iso", lambda: "2099-01-01T00:00:00Z")
     residents.update_resident_settings(inv)
     assert residents.get_resident_settings(invocation("GetResidentSettings", resident_id=resident_id)) == before
 

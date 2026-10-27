@@ -26,9 +26,9 @@ from management_portal.society_service import (
     resident_execution_work,
     resident_fork_domain,
     resident_lifecycle_domain,
+    resident_record_domain,
     resident_restart_domain,
     resident_session_backend_domain,
-    resident_workspace_domain,
 )
 from tests.cases.test_resident_folder_creation_contract import (
     future_creation_store,  # noqa: F401 - pytest fixture
@@ -117,14 +117,14 @@ def _clear(resident_id: str, monkeypatch, *, expected_releases: int = 1) -> dict
     result = resident_domain.reset_resident_context(resident_id, "sample_admin")
     assert resident_lifecycle_domain.resume_resident_lifecycle_operation(result["operation_id"])
     assert [call["operation"] for call in released] == ["release"] * expected_releases
-    return resident_workspace_domain.find_resident(resident_id)
+    return resident_record_domain.find_resident(resident_id)
 
 
 def test_a_cleared_resident_forks_with_an_empty_context(future_creation_store, monkeypatch) -> None:  # noqa: F811
     """已清空的 Resident Fork 出的上下文为空"""
     source = resident_domain.register_resident(_new_session_payload("Clear fork fixture"), "sample_admin")
     _append_conversation_turn(source["resident_id"], 0)
-    before = resident_workspace_domain.find_resident(source["resident_id"])
+    before = resident_record_domain.find_resident(source["resident_id"])
     assert resident_fork_domain._fork_provider_context_snapshot(before)["segments"]
 
     cleared = _clear(source["resident_id"], monkeypatch)
@@ -255,7 +255,7 @@ def test_clearing_a_resident_marks_its_trace(future_creation_store, monkeypatch)
     # A message sent right after the clear is recorded before the mark is written.
     _recorded(store, resident_id, "segment_clear_mark_next_request", "2026-01-01T00:00:00Z")
     assert resident_lifecycle_domain.resume_resident_lifecycle_operation(result["operation_id"])
-    cleared = resident_workspace_domain.find_resident(resident_id)
+    cleared = resident_record_domain.find_resident(resident_id)
 
     after = _trace(store, resident_id)
     assert after[:len(before)] == before and len(after) == len(before) + 1

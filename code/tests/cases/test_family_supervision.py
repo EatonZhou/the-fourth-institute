@@ -5,7 +5,13 @@ import uuid
 import pytest
 
 from management_portal.society_service import family_facade, family_supervision as supervision
-from management_portal.society_service import resident_conversation_stream, resident_intake_domain, resident_protocol, resident_lifecycle_domain
+from management_portal.society_service import (
+    resident_conversation_stream,
+    resident_intake_domain,
+    resident_protocol,
+    resident_lifecycle_domain,
+    resident_record_domain,
+)
 from management_portal.society_service.state_store import get_lineage_data_store
 from tests.cases.isa_test_support import ok
 from tests.cases.test_family_familize import lineage, charters, future_creation_store, resident, graph  # noqa: F401
@@ -189,7 +195,7 @@ def test_closed_steward_is_reopened_before_repair_delivery(team):
     team.intake(team.member, "close")
     mid = team.message(status="queued", enqueue=True)
     result = team.check(mid, event_type="resident.message_received")
-    from management_portal.society_service.resident_workspace_domain import find_resident as _find_resident
+    from management_portal.society_service.resident_record_domain import find_resident as _find_resident
     assert _find_resident(team.steward)["intake_open"] is True
     assert result["incidents"][0]["status"] == "open" and len(team.sent) == 1
     assert not team.alerts
@@ -211,7 +217,7 @@ def test_family_pause_suppresses_repairs_until_facade_reopens(team):
     team.message(status="queued", enqueue=True)
     assert team.check()["paused"] is True
     assert not team.sent
-    from management_portal.society_service.resident_workspace_domain import find_resident as _find_resident
+    from management_portal.society_service.resident_record_domain import find_resident as _find_resident
     assert _find_resident(team.steward)["intake_open"] is False
     team.intake(team.facade, "open")
     assert team.check()["incidents"][0]["status"] == "open"
@@ -232,12 +238,12 @@ def test_session_migration_intake_hold_is_not_overridden_or_escalated(team, monk
     team.intake(team.member, "close")
     mid = team.message(status="queued", enqueue=True)
     pending = {team.member, team.steward}
-    monkeypatch.setattr(resident_lifecycle_domain, "lifecycle_operations", lambda: SimpleNamespace(
+    monkeypatch.setattr(resident_record_domain, "lifecycle_operations", lambda: SimpleNamespace(
         pending=lambda rid: {"status": "waiting"} if rid in pending else None))
     assert not team.check()["incidents"]
     pending.remove(team.member)
     assert team.check()["incidents"][0]["message_id"] == mid
-    from management_portal.society_service.resident_workspace_domain import find_resident as _find_resident
+    from management_portal.society_service.resident_record_domain import find_resident as _find_resident
     assert _find_resident(team.steward)["intake_open"] is False
     assert not team.sent and not team.alerts
     pending.clear()

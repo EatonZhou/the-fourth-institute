@@ -81,9 +81,9 @@ def create_resident(inv: Invocation) -> dict[str, Any]:
 
 def _family_role(resident_id: str) -> str:
     from management_portal.society_service import family_facade
-    from management_portal.society_service import resident_workspace_domain
+    from management_portal.society_service import resident_record_domain
 
-    record = resident_workspace_domain.find_resident(resident_id) or {}
+    record = resident_record_domain.find_resident(resident_id) or {}
     if family_facade.is_facade(record):
         return "facade"
     return "steward" if family_facade.is_steward(record) else ""
@@ -475,11 +475,11 @@ def _readable_settings(inv: Invocation) -> tuple[str, dict[str, Any]]:
 
 def preview_prompt_injection(inv: Invocation) -> dict[str, Any]:
     from management_portal.society_service import resident_execution_domain
-    from management_portal.society_service import resident_workspace_domain
+    from management_portal.society_service import resident_record_domain
 
     # Reading the settings checks that the caller may see this Resident's configuration.
     resident_id, _settings = _readable_settings(inv)
-    record = resident_workspace_domain.find_resident(resident_id)
+    record = resident_record_domain.find_resident(resident_id)
     if not record:
         raise invalid(f"Resident 不存在：{resident_id}")
     try:

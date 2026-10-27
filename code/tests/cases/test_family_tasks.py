@@ -12,7 +12,7 @@ import pytest
 from management_portal.society_service import family_tasks, resident_execution_domain, resident_intake_domain
 from management_portal.society_service.resident_execution_domain import deliver_resident_message_content
 from management_portal.society_service import resident_conversation_stream
-from management_portal.society_service.resident_workspace_domain import find_resident as _find_resident
+from management_portal.society_service.resident_record_domain import find_resident as _find_resident
 from management_portal.society_service.templates import familize
 from tests.cases.isa_test_support import ACTOR, ok
 from tests.cases.test_family_familize import lineage, charters, future_creation_store, resident, graph  # noqa: F401

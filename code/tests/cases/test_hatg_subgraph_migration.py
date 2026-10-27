@@ -7,7 +7,7 @@ import pytest
 from management_portal.execution.agent_data_store import get_agent_data_store
 from management_portal.society_service import lineage_domain, lineage_program_runtime, lineage_subgraph
 from management_portal.society_service import resident_backend, resident_lifecycle_domain
-from management_portal.society_service import resident_record_domain, resident_workspace_domain
+from management_portal.society_service import resident_record_domain
 from tests.cases.isa_test_support import ok, run
 from tests.cases.test_hatg_move_resident import ACTOR, graph, teams  # noqa: F401 - teams is a fixture
 from tests.cases.test_resident_folder_creation_contract import (  # noqa: F401 - fixture
@@ -62,7 +62,7 @@ def test_move_connected_objects_preserves_identity_and_replays(teams, empty_targ
     before = [graph(source), graph(target)]
     _append_conversation_turn(member["resident_id"], 0)
     chat = get_agent_data_store().read_chat_messages(member["resident_id"])
-    record = resident_workspace_domain.find_resident(member["resident_id"])
+    record = resident_record_domain.find_resident(member["resident_id"])
     session = resident_backend.record_session_id(record)
     folder = resident_record_domain.resident_folder_path(record)
     (folder / "sample.txt").write_text("preserved")
@@ -88,9 +88,9 @@ def test_move_connected_objects_preserves_identity_and_replays(teams, empty_targ
     assert status["status"] != "completed"
     transfer = result["operations"][0]["operation_id"]
     assert status["resident_operations"][0]["resident_id"] == member["resident_id"]
-    resident_lifecycle_domain.lifecycle_operations().run(transfer, resident_lifecycle_domain.apply_resident_lifecycle_step)
+    resident_record_domain.lifecycle_operations().run(transfer, resident_lifecycle_domain.apply_resident_lifecycle_step)
     assert ok("GetMoveOperation", {"operation_id": result["operation_id"]})["status"] == "completed"
-    current = resident_workspace_domain.find_resident(member["resident_id"])
+    current = resident_record_domain.find_resident(member["resident_id"])
     assert current["lineage_id"] == target["lineage_id"]
     assert current["owned_workspace_id"] == record["owned_workspace_id"]
     assert resident_backend.record_session_id(current) == session
@@ -162,8 +162,8 @@ def test_a_failed_commit_rolls_back_members_graphs_and_outbox(teams, monkeypatch
     monkeypatch.setattr(lineage_domain, "_persist_lineage_state", fail_target)
     assert "injected" in execute(move_call(teams, ids)).error["message"]
     assert [graph(teams[0]), graph(teams[1])] == before
-    assert resident_workspace_domain.find_resident(teams[2]["resident_id"])["lineage_id"] == teams[0]["lineage_id"]
-    assert not resident_lifecycle_domain.lifecycle_operations().pending(teams[2]["resident_id"])
+    assert resident_record_domain.find_resident(teams[2]["resident_id"])["lineage_id"] == teams[0]["lineage_id"]
+    assert not resident_record_domain.lifecycle_operations().pending(teams[2]["resident_id"])
 
 
 @pytest.mark.parametrize("side", [0, 1])
@@ -186,7 +186,7 @@ def test_selected_residents_move_without_stopping_their_work(teams, monkeypatch)
     ids = setup_flow(teams)
     monkeypatch.setattr(resident_lifecycle_domain, "resident_has_pending_work", lambda _: True)
     moved(teams, ids)
-    assert resident_workspace_domain.find_resident(ids[0])["lineage_id"] == teams[1]["lineage_id"]
+    assert resident_record_domain.find_resident(ids[0])["lineage_id"] == teams[1]["lineage_id"]
 
 
 def test_event_cursors_and_unsettled_fanout_move_with_their_sources(teams):
@@ -239,7 +239,7 @@ def test_inheritance_is_detached_without_reconnecting_or_losing_provenance(teams
     ]
     add_relations(source, edges)
     before = [graph(source), graph(target)]
-    original_record = resident_workspace_domain.find_resident(member["resident_id"])
+    original_record = resident_record_domain.find_resident(member["resident_id"])
     if fail_commit:
         persist = lineage_domain._persist_lineage_state
 
@@ -257,7 +257,7 @@ def test_inheritance_is_detached_without_reconnecting_or_losing_provenance(teams
     assert [item["id"] for item in result["detached"]] == [edge["id"] for edge in edges]
     assert graph(source)["edges"] == graph(target)["edges"] == []
     assert {node["id"] for node in graph(source)["nodes"]} == {source["resident_id"], child["resident_id"]}
-    current = resident_workspace_domain.find_resident(member["resident_id"])
+    current = resident_record_domain.find_resident(member["resident_id"])
     for key in ("provenance", "context_source"):
         assert current.get(key) == original_record.get(key)
     assert execute(call).replayed
@@ -361,7 +361,7 @@ def test_unselected_work_is_left_alone(teams, monkeypatch, busy_side):
     after = lineage_program_runtime.read_runtime(lineage_id)
     assert after["event_sources"][unrelated] == before["event_sources"][unrelated]
     assert lineage_program_runtime.pending_resident_handoffs(lineage_id) == pending
-    assert resident_workspace_domain.find_resident(teams[2]["resident_id"])["lineage_id"] == teams[1]["lineage_id"]
+    assert resident_record_domain.find_resident(teams[2]["resident_id"])["lineage_id"] == teams[1]["lineage_id"]
 
 
 def queue_on_wire(lineage_id: str, wire_id: str, event_source_id: str) -> None:

@@ -17,6 +17,7 @@ from management_portal.society_service import (
     resident_domain,
     resident_domain_common,
     resident_lineage,
+    resident_record_domain,
 )
 from management_portal.society_service import resident_workspace_domain
 
@@ -70,7 +71,7 @@ def _resident_record(resident_id: str, folder: Path) -> dict:
 
 def _write_resident_facts(records: list[dict]) -> None:
     for record in records:
-        resident_workspace_domain.save_resident_record(record)
+        resident_record_domain.save_resident_record(record)
     lineage_domain.update_lineage(
         LINEAGE_ID,
         {
@@ -145,7 +146,7 @@ def test_resident_backend_release_is_recovered_outside_state_locks(
     )
 
     with invariant_locks.lineage_scope(LINEAGE_ID):
-        operation_id = resident_lifecycle_domain.lifecycle_operations().enqueue(
+        operation_id = resident_record_domain.lifecycle_operations().enqueue(
             PEER_ID, [resident_lifecycle_domain.resident_release_step(record, "sample_admin")],
         )
         assert submitted == []
@@ -377,7 +378,7 @@ def test_lineage_cleanup_failure_preserves_deleted_identity_and_retryable_files(
     assert folder.is_dir()
     assert resident_lineage.all() == []
     assert resource_records[LINEAGE_ID]["status"] == "deleted"
-    operations = resident_lifecycle_domain.lifecycle_operations()
+    operations = resident_record_domain.lifecycle_operations()
     assert "remove failed" in operations.health()["last_error"]
     operations.store.database.write(lambda connection: connection.execute(
         'UPDATE resident_lifecycle_operations SET available_at=to_timestamp(0) WHERE operation_id=%s', (operation_id,),
@@ -410,7 +411,7 @@ def test_lineage_cleanup_removes_results_an_agent_sealed_read_only(
     operation_id, = resident_domain.ready_resident_lifecycle_operations()
     assert resident_domain.resume_resident_lifecycle_operation(operation_id)
     assert not folder.exists()
-    assert resident_lifecycle_domain.lifecycle_operations().health() == {"pending": 0, "failed": 0, "last_error": ""}
+    assert resident_record_domain.lifecycle_operations().health() == {"pending": 0, "failed": 0, "last_error": ""}
 
 
 def test_lineage_delete_rolls_back_every_authority_when_catalog_commit_fails(

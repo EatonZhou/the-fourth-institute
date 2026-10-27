@@ -10,7 +10,14 @@ from types import SimpleNamespace
 import pytest
 
 from management_common.projection_receipts import CommittedProjectionError
-from management_portal.society_service import lineage_domain, lineage_program_runtime, lineage_program_effect_execution, domain_ports, invariant_locks
+from management_portal.society_service import (
+    lineage_domain,
+    lineage_program_runtime,
+    lineage_program_effect_execution,
+    domain_ports,
+    invariant_locks,
+    resident_access,
+)
 from tests.cases.test_resident_lifecycle_operations import operations
 from tests.cases import test_lineage_generic_primitives as primitive_cases
 from tests.cases.isa_test_support import isolated_instruction_store, run  # noqa: F401 - fixture
@@ -197,13 +204,13 @@ def test_lifecycle_tombstone_precedes_release_and_recovery_cleanup(operations, t
               'workspace_bindings': []}
     folder = tmp_path / 'folder'
     folder.mkdir()
-    monkeypatch.setattr(resident_workspace_domain, 'find_resident', lambda resident_id: record)
-    monkeypatch.setattr(resident_directory_domain, 'can_manage', lambda *args: True)
+    monkeypatch.setattr(resident_record_domain, 'find_resident', lambda resident_id: record)
+    monkeypatch.setattr(resident_access, 'can_manage', lambda *args: True)
     monkeypatch.setattr(resident_lineage, 'is_lineage_leader', lambda item: True)
     monkeypatch.setattr(resident_directory_domain, 'lineage_registry_records_locked', lambda lineage_id: [record])
     monkeypatch.setattr(resident_lifecycle_domain, 'resident_has_pending_work', lambda resident_id: False)
     monkeypatch.setattr(resident_workspace_domain, '_safe_lineage_workspace_for_delete', lambda item: folder)
-    monkeypatch.setattr(resident_workspace_domain, 'resident_workspace_path', lambda item: folder)
+    monkeypatch.setattr(resident_record_domain, 'resident_workspace_path', lambda item: folder)
     monkeypatch.setattr(resident_project_domain, 'project_info_for_workspace', lambda *args: {})
     monkeypatch.setattr(resident_lifecycle_domain, 'resident_release_step', lambda member, actor: {'kind': 'release', 'resident_id': member['resident_id']})
     from management_portal.society_service.lineage_resident_operations import LineageDeletionToken

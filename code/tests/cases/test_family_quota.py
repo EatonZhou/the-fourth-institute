@@ -10,10 +10,18 @@ from types import SimpleNamespace
 import pytest
 
 from management_portal.society_service import (
-    family_facade, family_quota, lineage_domain, resident_account_policy as accounts_policy,
-    resident_backend, resident_conversation_stream, resident_domain, resident_execution_work,
-    resident_intake_domain, resident_lifecycle_domain, resident_restart_domain,
-    resident_workspace_domain, lineage_human_notifications,
+    family_facade,
+    family_quota,
+    lineage_domain,
+    resident_account_policy as accounts_policy,
+    resident_backend,
+    resident_conversation_stream,
+    resident_domain,
+    resident_execution_work,
+    resident_intake_domain,
+    resident_lifecycle_domain,
+    resident_restart_domain,
+    lineage_human_notifications,
     resident_record_domain,
 )
 from management_portal.society_service.domain_ports import execution_port
@@ -81,7 +89,7 @@ def quota_family(team, monkeypatch):
     monkeypatch.setattr(resident_backend, "session_record", lambda _: {})
     for rid, route in ((member_id, "one"), (steward_id, "one"), (spare_id, "two")):
         record = _record(rid); record["backend_route_id"] = route
-        resident_workspace_domain.save_resident_record(record, commit_configuration=True)
+        resident_record_domain.save_resident_record(record, commit_configuration=True)
     accounts = [_account("one", 9), _account("two", 90)]
     monkeypatch.setattr(execution_port, "service", lambda: SimpleNamespace(accounts=lambda: {"accounts": accounts}))
     message_id = "msg_1234567890abcdef"

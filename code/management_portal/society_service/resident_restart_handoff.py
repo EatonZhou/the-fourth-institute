@@ -42,7 +42,7 @@ def restore_preparation(record):
     source. The store keeps the input links and schedules old execution release.
     """
     from .resident_execution_storage import queue_input
-    from . import resident_lifecycle_domain
+    from . import resident_domain_common
 
     deferred = (record.get('session_restart') or {}).get('deferred') or {}
     handoff = deferred.get('handoff') or {}
@@ -58,7 +58,7 @@ def restore_preparation(record):
     for key in ('actual_sent_prompt', 'prompt_built_at', 'prompt_builder_version', 'runtime_context'):
         item.pop(key, None)
     resident_execution_work.promote_queue_item(
-        job, item, resident_execution_work.normalized_queue(job), resident_lifecycle_domain.now_iso(),
+        job, item, resident_execution_work.normalized_queue(job), resident_domain_common.now_iso(),
     )
     job['execution_id'] = handoff['replacement_execution_id']
     job['intake_state'] = 'closed' if record.get('intake_open') is False else 'open'
@@ -68,11 +68,11 @@ def restore_preparation(record):
 
 
 def advance(record):
-    from . import resident_lifecycle_domain, resident_workspace_domain
+    from . import resident_record_domain
 
     rid = record['resident_id']
-    with resident_lifecycle_domain.state_lock(rid):
-        current = copy.deepcopy(resident_workspace_domain.find_resident(rid) or {})
+    with resident_record_domain.state_lock(rid):
+        current = copy.deepcopy(resident_record_domain.find_resident(rid) or {})
         state = current.get('session_restart') or {}
         deferred = state.get('deferred') or {}
         job = resident_execution_work.read(current)
@@ -89,7 +89,7 @@ def advance(record):
                        "replacement_execution_id": 'execution-' + secrets.token_hex(12),
                        "operation_id": state['restart_id'], "binding_id": 'resident:' + rid}
             deferred['handoff'] = handoff
-            resident_workspace_domain.save_resident_record(current)
+            resident_record_domain.save_resident_record(current)
         if handoff['execution_id'] != job['execution_id'] or handoff['message_id'] != job['user_message_id']:
             return False
         actor = resident_execution_work.request_actor(job)
@@ -99,8 +99,8 @@ def advance(record):
         handoff['execution_id'], actor=actor, performed_by=performer,
         **{key: handoff[key] for key in ('binding_id', 'operation_id', 'replacement_execution_id')},
     )
-    with resident_lifecycle_domain.state_lock(rid):
-        current = copy.deepcopy(resident_workspace_domain.find_resident(rid) or {})
+    with resident_record_domain.state_lock(rid):
+        current = copy.deepcopy(resident_record_domain.find_resident(rid) or {})
         deferred = (current.get('session_restart') or {}).get('deferred') or {}
         if deferred.get('handoff') != handoff:
             return False
@@ -109,11 +109,11 @@ def advance(record):
             return False
         if not result.get('withdrawn'):
             deferred.pop('handoff', None)
-            resident_workspace_domain.save_resident_record(current)
+            resident_record_domain.save_resident_record(current)
             return False
         if any(result.get(key) != handoff[key] for key in
                ('execution_id', 'binding_id', 'operation_id', 'replacement_execution_id')):
             raise ValueError('unstarted handoff receipt does not match the saved intent')
         deferred['handoff'] = {**handoff, 'phase': 'withdrawn'}
-        resident_workspace_domain.save_resident_record(current)
+        resident_record_domain.save_resident_record(current)
     return True

@@ -135,7 +135,7 @@ def test_external_wire_in_another_block_rewires_and_new_member_joins(lineage, ch
     from management_portal.society_service.resident_record_domain import (
         resident_owned_workspace_path as _resident_owned_workspace_path,
     )
-    from management_portal.society_service.resident_workspace_domain import find_resident as _find_resident
+    from management_portal.society_service.resident_record_domain import find_resident as _find_resident
     guide_path = _resident_owned_workspace_path(_find_resident(charters[0][0])) / "family-work-guide.md"
     assert str(guide_path) in charters[0][1]
     guide = guide_path.read_text(encoding="utf-8")

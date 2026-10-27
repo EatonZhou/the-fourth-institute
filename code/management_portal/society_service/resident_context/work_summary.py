@@ -27,8 +27,8 @@ REMINDER = (
 
 
 def _record(resident_id: str) -> dict:
-    from .. import resident_workspace_domain
-    record = resident_workspace_domain.find_resident(resident_id)
+    from .. import resident_record_domain
+    record = resident_record_domain.find_resident(resident_id)
     if not record:
         raise KeyError("Resident 不存在")
     return record

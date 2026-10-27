@@ -45,10 +45,10 @@ from management_portal.society_service import (
     resident_registration_domain,
     resident_runtime_domain,
     resident_session_backend_domain,
-    resident_workspace_domain,
     resource_client,
     workspace_domain,
     workspace_contracts,
+    resident_domain_common,
 )
 from management_portal.society_service import lifecycle
 from management_portal.society_service import resident_domain as backend
@@ -455,7 +455,7 @@ def resident_record(
             str(record["lineage_id"]),
         )
     default_cwd.mkdir(parents=True)
-    resident_workspace_domain.save_resident_record(record)
+    resident_record_domain.save_resident_record(record)
     _bind(session_store,
         "resident:resident_aaaaaaaaaaaa",
         "codex",
@@ -1141,7 +1141,7 @@ def test_execution_display_batch_releases_state_lock_between_messages(resident_r
     resident_id = str(resident_record["resident_id"])
     job_id, execution_id = "incremental-batch", "execution-" + "c" * 24
     resident_execution_work.write(resident_record, { "actor": "CASE-A", "execution_id": execution_id, "submitted_at": "2026-10-14T00:00:00Z"})
-    original_lock = resident_lifecycle_domain.state_lock
+    original_lock = resident_record_domain.state_lock
     depth = 0
 
     @contextmanager
@@ -1159,7 +1159,7 @@ def test_execution_display_batch_releases_state_lock_between_messages(resident_r
             assert depth == 0, "history iteration must not occupy the state command lock"
             yield {"output_id": "msg_" + f"{index:032x}", "text": f"update-{index}"}
 
-    monkeypatch.setattr(resident_lifecycle_domain, "state_lock", observed_lock)
+    monkeypatch.setattr(resident_record_domain, "state_lock", observed_lock)
     assert len(resident_execution_domain._persist_execution_display_messages(resident_id,  execution_id, outputs())) == 3
 
 
@@ -1612,7 +1612,7 @@ def test_exact_resident_creation_job_is_applied_to_its_own_execution_work(
     )
     created_resident_id = str(detail["resident_id"])
     _add_created_resident_to_lineage(resident_record, created_resident_id)
-    exact_record = resident_workspace_domain.find_resident(created_resident_id)
+    exact_record = resident_record_domain.find_resident(created_resident_id)
     assert exact_record is not None
     fork_mode = exact_record["fork_mode"]
     forked_from_at = exact_record["forked_from_at"]
@@ -1659,7 +1659,7 @@ def test_exact_resident_creation_job_is_applied_to_its_own_execution_work(
 
     create_session.assert_called_once()
     finalize.assert_called_once()
-    persisted = resident_workspace_domain.find_resident(created_resident_id)
+    persisted = resident_record_domain.find_resident(created_resident_id)
     assert persisted is not None
     assert persisted["session_state"] == "active"
     assert persisted["fork_mode"] == fork_mode == "full"
@@ -1711,14 +1711,14 @@ def test_exact_resident_native_fork_uses_cross_lineage_source_binding(
         },
     }
     monkeypatch.setattr(
-        resident_workspace_domain,
+        resident_record_domain,
         "find_resident",
         lambda resident_id: (
             resident_record if resident_id == source_id else None
         ),
     )
     monkeypatch.setattr(
-        resident_directory_domain,
+        resident_access,
         "has_resident_workspace_authority",
         lambda *_args, **_kwargs: True,
     )
@@ -1972,7 +1972,7 @@ def test_fork_operation_commits_created_resident_before_publishing_work(
         notifications.append(target_id)
         catalog_record = resident_catalog.get_catalog().get(target_id)
         assert catalog_record["resident_id"] == target_id
-        root = resident_workspace_domain.find_resident(root_id)
+        root = resident_record_domain.find_resident(root_id)
         assert root is not None
         family = resident_lineage.snapshot(root)
         assert resident_lineage.find_in_snapshot(family, target_id) is not None
@@ -2022,7 +2022,7 @@ def test_fork_creation_persists_and_projects_inherited_runtime_settings(
         updated_at="2026-09-20T09:09:01Z",
     )
     resident_runtime_domain.write_resident_runtime_settings(resident_record, inherited)
-    resident_workspace_domain.save_resident_record(resident_record)
+    resident_record_domain.save_resident_record(resident_record)
     record_session_turn(resident_record)
 
     created = backend.create_resident_full_context_fork(
@@ -2058,7 +2058,7 @@ def test_fork_creation_does_not_enter_shared_registry_or_family_locks(
         raise AssertionError("fork creation entered the aggregate state lock")
         yield
 
-    monkeypatch.setattr(resident_lifecycle_domain, "state_lock", forbidden_state_lock)
+    monkeypatch.setattr(resident_record_domain, "state_lock", forbidden_state_lock)
     monkeypatch.setattr(
         resident_hatg_credentials,
         "ensure_resident_credential",
@@ -2115,7 +2115,7 @@ def test_concurrent_fork_creation_commits_distinct_residents_without_family_merg
     resident_ids = {str(item["resident_id"]) for item in created}
     assert len(resident_ids) == 2
     family = resident_lineage.snapshot(
-        resident_workspace_domain.find_resident(root_id)
+        resident_record_domain.find_resident(root_id)
     )
     assert resident_ids.issubset({
         str(item.get("resident_id") or "")
@@ -2549,7 +2549,7 @@ def test_clear_resident_queue_uses_isa_authority_and_empty_queue_is_idempotent(
         result = resident_protocol.clear_resident_queue(resident_id, "sample_admin")
         assert result["cleared_count"] == 0
         assert result["errors"] == []
-    monkeypatch.setattr(resident_directory_domain, "can_manage", lambda record, actor: False)
+    monkeypatch.setattr(resident_access, "can_manage", lambda record, actor: False)
     assert resident_protocol.clear_resident_queue(resident_id, "sample_admin")["cleared_count"] == 0
     assert quota.call_count == 3
     assert all(set(call.args[0]) == {f"resident:{resident_id}"} for call in quota.call_args_list)
@@ -2676,7 +2676,7 @@ def test_cancel_queue_retry_rolls_back_interrupted_resident_commit(
         nonlocal interrupted
         if interrupted:
             interrupted = False
-            monkeypatch.setattr(resident_lifecycle_domain, "now_iso", lambda: "2026-09-07T00:00:00Z")
+            monkeypatch.setattr(resident_domain_common, "now_iso", lambda: "2026-09-07T00:00:00Z")
             raise OSError("simulated Resident state commit interruption")
         return original_write(*args, **kwargs)
 
@@ -2827,7 +2827,7 @@ def test_send_now_into_a_forks_first_turn_does_not_repeat_its_inherited_context(
     :importance: P1
     :design: decision_0f57656a2acd
     """
-    from management_portal.society_service.resident_workspace_domain import (
+    from management_portal.society_service.resident_record_domain import (
         save_resident_record as _save_resident_record,
     )
 
@@ -3156,7 +3156,7 @@ def test_runtime_settings_save_while_idle_only_persists_settings(
         }
 
     resident_record["backend_route_id"] = "four"
-    resident_workspace_domain.save_resident_record(resident_record, commit_configuration=True)
+    resident_record_domain.save_resident_record(resident_record, commit_configuration=True)
     monkeypatch.setattr(codex_runtime_settings, "codex_runtime_catalog", catalog)
     result = resident_protocol.update_resident_runtime_settings(
         str(resident_record["resident_id"]), "CASE-A",
@@ -3206,7 +3206,7 @@ def test_fast_command_updates_running_turn_with_native_settings_control(
         resident_record,
         {"service_tier": ""},
     )
-    resident_workspace_domain.save_resident_record(resident_record)
+    resident_record_domain.save_resident_record(resident_record)
     resident_execution_work.write(
         resident_record,
         {
@@ -4091,7 +4091,7 @@ def test_lineage_projects_terminal_execution_without_harness_recovery(resident_r
             status = next(outcomes)
             _record_harness_execution(resident_id, execution_id, accepted=input_accepted)
             result = {'status': status, 'error': error if status != 'completed' else '', 'output': {'message': 'isolated work completed'} if status == 'completed' else {}}
-            snapshot = {**snapshots[execution_id], 'status': status, 'result': result, 'scheduler': {'status': status, 'updated_at': resident_lifecycle_domain.now_iso()}}
+            snapshot = {**snapshots[execution_id], 'status': status, 'result': result, 'scheduler': {'status': status, 'updated_at': resident_domain_common.now_iso()}}
             snapshots[execution_id] = snapshot
             kwargs['on_snapshot'](snapshot)
             kwargs['on_snapshot'](snapshot)
@@ -4119,7 +4119,7 @@ def test_lineage_projects_terminal_execution_without_harness_recovery(resident_r
     message_id = 'msg_123456789abcdef0123456789abcdef0'
     user_item = resident_intake_domain._resident_user_message(resident_id, 'isolated original task', 'CASE-A', message_id=message_id)
     repository.commit_user_message(resident_id, user_item)
-    job = resident_execution_work.new_item(user_item, 'isolated original task', 'isolated original task', resident_lifecycle_domain.now_iso(), prompt_cwd=str(resident_record['default_cwd']))
+    job = resident_execution_work.new_item(user_item, 'isolated original task', 'isolated original task', resident_domain_common.now_iso(), prompt_cwd=str(resident_record['default_cwd']))
     job.update({'actor': 'CASE-A', 'queue': []})
     original_job_id = job['execution_id']
     resident_execution_work.write(resident_record, job)
@@ -4135,7 +4135,7 @@ def test_lineage_projects_terminal_execution_without_harness_recovery(resident_r
     assert exit_wakeups == []
     messages = repository.read_messages(resident_id)
     assert not any((_message_text(m) == 'continue' for m in messages)), [(m['role'], _message_text(m)) for m in messages]
-    record = resident_workspace_domain.find_resident(resident_id)
+    record = resident_record_domain.find_resident(resident_id)
     assert record is not None
     final_job = resident_execution_work.read(record)
     assert not resident_execution_work.is_active(final_job)
@@ -4234,7 +4234,7 @@ def test_restart_recovery_isolates_one_broken_resident(
         continuation_needed,
     )
     monkeypatch.setattr(
-        resident_workspace_domain,
+        resident_record_domain,
         "find_resident",
         lambda resident_id: records.get(resident_id),
     )
@@ -4325,7 +4325,7 @@ def test_resident_timeline_keeps_canonical_messages_without_attached_session(
         resident_record,
     )
 
-    assert [resident_workspace_domain.protocol_message_text(item) for item in messages] == [
+    assert [resident_domain_common.protocol_message_text(item) for item in messages] == [
         "start",
         "reply survived restart",
     ]
@@ -4364,10 +4364,10 @@ def test_new_resident_session_account_is_independent_of_project(
     store = resident_catalog.get_catalog().state_store
     definition = store.lineage_definition(lineage_id)
     store.put_lineage_definition(lineage_id, {**definition, "project_id": project_id}, {})
-    record = resident_workspace_domain.find_resident(str(resident_record["resident_id"]))
+    record = resident_record_domain.find_resident(str(resident_record["resident_id"]))
     assert record["project_id"] == project_id
     resident_backend.delete_session_identity(record)
-    resident_workspace_domain.save_resident_record(record)
+    resident_record_domain.save_resident_record(record)
 
     request = resident_execution_domain._build_resident_execution_request(
         record,
@@ -4400,7 +4400,7 @@ def test_execution_reconciles_a_stale_provider_tuple_before_submission(
         },
     )
     resident_runtime_domain.write_resident_runtime_settings(resident_record, stale)
-    resident_workspace_domain.save_resident_record(resident_record)
+    resident_record_domain.save_resident_record(resident_record)
     catalog_accounts: list[str] = []
 
     def catalog(*, account_id: str) -> dict[str, object]:
@@ -4438,7 +4438,7 @@ def test_execution_reconciles_a_stale_provider_tuple_before_submission(
         "reasoning_effort": "medium",
         "service_tier": "",
     }
-    canonical = resident_workspace_domain.find_resident(str(resident_record["resident_id"]))
+    canonical = resident_record_domain.find_resident(str(resident_record["resident_id"]))
     assert request.runtime_options["runtime_settings"]["model"] == "replacement-model"
     assert request.runtime_options["runtime_settings"]["reasoning_effort"] == "medium"
     assert "service_tier" not in request.runtime_options
@@ -4609,7 +4609,7 @@ def test_derived_resident_execution_provisions_its_own_hatg_credential(
         "workspace_id": derived_resident["owned_workspace_id"],
         "path": str(owned_workspace),
     }
-    resident_workspace_domain.save_resident_record(derived_resident)
+    resident_record_domain.save_resident_record(derived_resident)
     resident_execution_domain._build_resident_execution_request(
         derived_resident,
         {
@@ -4778,7 +4778,7 @@ def test_full_context_fork_stays_on_source_account(
         defer_backend_start=True,
     )
     target_id = str(created["resident_id"])
-    target = resident_workspace_domain.find_resident(target_id)
+    target = resident_record_domain.find_resident(target_id)
     assert target is not None
 
     def run_operation(**kwargs):
@@ -4816,7 +4816,7 @@ def test_cross_account_codex_fork_uses_portable_context_seed(resident_record, mo
     created = backend.create_resident_full_context_fork(
         resident_record["resident_id"], "CASE-A", backend_route_id="one", defer_backend_start=True,
     )
-    child = resident_workspace_domain.find_resident(created["resident_id"])
+    child = resident_record_domain.find_resident(created["resident_id"])
     assert child["backend_route_id"] == "one"
     assert child["fork_mode"] == "full"
     snapshot = get_agent_data_store().agent_context_snapshot(child["resident_id"])
@@ -5200,7 +5200,7 @@ def test_completed_resident_turn_reuses_its_stable_final_message(
     stored = repository.read_messages(resident_id)
     assert [item["message_id"] for item in stored].count(first["message_id"]) == 1
 
-    resident_execution_domain._mark_completion_applied(job, resident_lifecycle_domain.now_iso())
+    resident_execution_domain._mark_completion_applied(job, resident_domain_common.now_iso())
     resident_execution_work.write(resident_record, job)
     events = repository.events_after(resident_id, before_cursor)["events"]
     completed = [
@@ -5754,7 +5754,7 @@ def test_snapshot_cannot_overwrite_a_concurrent_resident_transition(
 
     def concurrent_transition(*args, **kwargs):
         replacement = (
-            {**job, "outcome": "completed", "finished_at": resident_lifecycle_domain.now_iso()}
+            {**job, "outcome": "completed", "finished_at": resident_domain_common.now_iso()}
             if transition == "completed" else {'actor': 'CASE-A', 'execution_id': "job_next"}
         )
         resident_execution_work.write(resident_record, replacement)
@@ -5821,7 +5821,7 @@ def test_account_details_reads_current_states_without_reopening(resident_record,
     resident_protocol.change_resident_state(resident_id, "CASE-A", state_domain="intake", transition="close")
     repository = resident_conversation_stream.get_repository()
     resident_execution_work.write(resident_record, {"queue": [{"user_message_id": f"queued-{i}"} for i in range(5)]})
-    before = resident_workspace_domain.find_resident(resident_id)
+    before = resident_record_domain.find_resident(resident_id)
     quota.update(status="available", remaining_percent=80)
     execution_client.configure_binding_quota_overrides.reset_mock()
 
@@ -5835,7 +5835,7 @@ def test_account_details_reads_current_states_without_reopening(resident_record,
     assert result["without_session"] == 0
     assert result["quota_exempt"] == 0
     assert result["closed_resident_ids"] == [resident_id]
-    assert resident_workspace_domain.find_resident(resident_id) == before
+    assert resident_record_domain.find_resident(resident_id) == before
     assert resident_lifecycle_domain.resident_intake_state(before) == "closed"
     execution_client.configure_binding_quota_overrides.assert_not_called()
 
@@ -5982,15 +5982,15 @@ def test_provider_api_resident_belongs_to_its_api_execution_account(
 def test_quota_override_survives_stale_record_saves(resident_record, monkeypatch):
     """过期 Resident 记录保存不覆盖最新额度覆盖策略"""
     resident_id = resident_record["resident_id"]
-    stale = resident_workspace_domain.find_resident(resident_id)
+    stale = resident_record_domain.find_resident(resident_id)
     resident_protocol.change_resident_state(resident_id, "CASE-A", state_domain="intake", transition="open")
-    opened = resident_workspace_domain.find_resident(resident_id)
-    resident_workspace_domain.save_resident_record(stale)
-    assert resident_workspace_domain.find_resident(resident_id)["quota_reserve_override"] == opened["quota_reserve_override"]
+    opened = resident_record_domain.find_resident(resident_id)
+    resident_record_domain.save_resident_record(stale)
+    assert resident_record_domain.find_resident(resident_id)["quota_reserve_override"] == opened["quota_reserve_override"]
     resident_protocol.change_resident_state(resident_id, "CASE-A", state_domain="intake", transition="close")
-    closed = resident_workspace_domain.find_resident(resident_id)
-    resident_workspace_domain.save_resident_record(opened)
-    assert resident_workspace_domain.find_resident(resident_id)["quota_reserve_override"] == closed["quota_reserve_override"]
+    closed = resident_record_domain.find_resident(resident_id)
+    resident_record_domain.save_resident_record(opened)
+    assert resident_record_domain.find_resident(resident_id)["quota_reserve_override"] == closed["quota_reserve_override"]
     assert not closed["quota_reserve_override"]["enabled"]
 
 
@@ -6018,7 +6018,7 @@ def test_quota_override_repairs_failed_sync_and_releases_existing_execution(resi
     monkeypatch.setattr(execution_client, "health", lambda: {"scheduler": scheduler.health()})
     result = resident_protocol.change_resident_state(resident_id, "CASE-A", state_domain="intake", transition="open")
     assert result["quota_override_pending"]
-    opened = resident_workspace_domain.find_resident(resident_id)
+    opened = resident_record_domain.find_resident(resident_id)
     assert opened["quota_reserve_override"]["enabled"]
     assert resident_lifecycle_domain.resident_intake_state(opened) == "open"
     sync.side_effect = scheduler.configure_binding_quota_overrides
@@ -6036,9 +6036,9 @@ def test_quota_override_repairs_failed_sync_and_releases_existing_execution(resi
 def test_quota_override_does_not_inherit_to_another_resident(resident_record):
     """额度覆盖策略不能复制继承给其他 Resident"""
     resident_protocol.change_resident_state(resident_record["resident_id"], "CASE-A", state_domain="intake", transition="open")
-    copied = resident_workspace_domain.find_resident(resident_record["resident_id"])
+    copied = resident_record_domain.find_resident(resident_record["resident_id"])
     copied["resident_id"] = "resident_bbbbbbbbbbbb"
-    assert resident_intake_domain.resident_quota_override(copied) == {}
+    assert resident_record_domain.resident_quota_override(copied) == {}
 
 
 
@@ -6302,7 +6302,7 @@ def test_resident_session_projection_skips_lineage_lock_and_family_scan(
 ) -> None:
     """Resident 会话投影跳过 Lineage 锁与 Family 对话扫描"""
     monkeypatch.setattr(
-        resident_lifecycle_domain,
+        resident_record_domain,
         "state_lock",
         lambda *_args, **_kwargs: pytest.fail("projection entered lineage lock"),
     )
@@ -6381,7 +6381,7 @@ def test_resident_session_projection_excludes_execution_storage_fields(
         "actor": "CASE-A",
      "submitted_at": "2026-10-14T00:00:00Z"}
     stored["session_state"] = "running"
-    resident_workspace_domain.save_resident_record(stored)
+    resident_record_domain.save_resident_record(stored)
     resident_execution_work.write(stored, execution)
     assert resident_execution_work.read(stored)["execution_id"] == execution["execution_id"]
 
@@ -6851,7 +6851,7 @@ def test_lazy_resident_first_message_creates_session_job(
     resident_record.update({
         "session_state": "pending_create",
     })
-    resident_workspace_domain.save_resident_record(resident_record)
+    resident_record_domain.save_resident_record(resident_record)
     with (
         mock.patch.object(
             slash_commands,
@@ -6946,7 +6946,7 @@ def test_normal_delivery_starts_idle_and_advances_busy_queue(input_delivery, mon
     assert [message["message_id"] for message in resident_conversation_stream.get_repository().read_messages(resident_id)] == [first["message_id"]]
     assert resident_conversation_stream.get_repository().input_state(resident_id, second["message_id"])["state"] == "queued"
     assert resident_conversation_stream.get_repository().input_state(resident_id, third["message_id"])["state"] == "queued"
-    promoted = resident_execution_work.promote_queue_item(job, queue[0], queue[1:], resident_lifecycle_domain.now_iso())
+    promoted = resident_execution_work.promote_queue_item(job, queue[0], queue[1:], resident_domain_common.now_iso())
     assert promoted["user_message_id"] == second["message_id"]
     assert "actual_sent_prompt" not in promoted
     assert "prompt_built_at" not in promoted
@@ -6975,13 +6975,13 @@ def test_closing_intake_during_session_start_keeps_active_input_out_of_queue(inp
     if start == "reopened":
         intake("open")
         assert resident_execution_domain._prepare_resident_continuation(
-            resident_workspace_domain.find_resident(resident_id),
+            resident_record_domain.find_resident(resident_id),
         )
     elif start == "promoted":
         first = _published_delivery(backend.deliver_resident_message_content(resident_id, "CASE-A", "Next session"))
         job = resident_execution_work.read(input_delivery)
         queue = resident_execution_work.normalized_queue(job)
-        resident_execution_work.promote_queue_item(job, queue[0], [], resident_lifecycle_domain.now_iso())
+        resident_execution_work.promote_queue_item(job, queue[0], [], resident_domain_common.now_iso())
         resident_execution_work.write(input_delivery, job)
     assert repository.published_state(resident_id)["work_phase"] == "starting_session"
     assert not resident_execution_work.submitted_execution_id(resident_execution_work.read(input_delivery))
@@ -7008,7 +7008,7 @@ def test_closing_intake_during_session_start_keeps_active_input_out_of_queue(inp
 
     # A new head must still obey the closed gate after the current turn ends.
     job = resident_execution_work.read(input_delivery)
-    resident_execution_work.promote_queue_item(job, job["queue"][0], [], resident_lifecycle_domain.now_iso())
+    resident_execution_work.promote_queue_item(job, job["queue"][0], [], resident_domain_common.now_iso())
     resident_execution_work.write(input_delivery, job)
     assert resident_execution_work.is_execution_held(resident_execution_work.read(input_delivery))
     assert second["message_id"] not in [message["message_id"] for message in repository.read_messages(resident_id)]
@@ -7241,7 +7241,7 @@ def test_closed_resident_intake_holds_message_until_reopened(
     assert resident_execution_work.continuation_needed(resident_record, reopened)
     # Opening changes the manual gate; the execution owner reserves the
     # request identity when it prepares the resumed work.
-    current_record = resident_workspace_domain.find_resident("resident_aaaaaaaaaaaa")
+    current_record = resident_record_domain.find_resident("resident_aaaaaaaaaaaa")
     assert resident_execution_domain._prepare_resident_continuation(current_record)
     assert resident_execution_work.execution_id(resident_execution_work.read(current_record))
     reopened_view = resident_protocol.get_resident_state("resident_aaaaaaaaaaaa", "CASE-A")
@@ -7280,7 +7280,7 @@ def test_fork_intake_state_uses_protocol_state_and_holds_promoted_queue_item(
     assert resident_protocol.get_resident_state(created_resident_id, "CASE-A")["state"][
         "intake_state"
     ] == "closed"
-    exact_resident = resident_workspace_domain.find_resident(created_resident_id)
+    exact_resident = resident_record_domain.find_resident(created_resident_id)
     assert exact_resident is not None
 
 
@@ -7396,7 +7396,7 @@ def test_stop_job_is_accepted_before_execution_binding(
 
     with (
         mock.patch.object(execution_port, "service") as service,
-        mock.patch.object(resident_workspace_domain, "save_resident_record") as save_resident,
+        mock.patch.object(resident_record_domain, "save_resident_record") as save_resident,
     ):
         result = resident_protocol.cancel_resident_execution(
             resident_id,
@@ -7788,7 +7788,7 @@ def test_stop_notifies_exact_execution_after_outer_state_unlock(resident_record)
 
     lifecycle.set_execution_cancellation_handler(notified)
     try:
-        with resident_lifecycle_domain.state_lock(resident_id):
+        with resident_record_domain.state_lock(resident_id):
             backend.request_resident_execution_cancellation(resident_id, "CASE-A", message_id)
             assert notifications == []
         assert notifications == [(execution_id, "sample_admin")]
@@ -7813,7 +7813,7 @@ def test_stop_notification_waits_for_execution_binding_and_successful_commit(res
         resident_execution_work.write(resident_record, job)
         assert notifications == []
         try:
-            with resident_lifecycle_domain.state_lock(resident_id):
+            with resident_record_domain.state_lock(resident_id):
                 job["submitted_at"] = "2026-10-14T00:00:00Z"
                 resident_execution_work.write(resident_record, job)
                 assert notifications == []
@@ -8065,7 +8065,7 @@ def test_confirmed_cancellation_terminalizes_message_and_clears_job(
     assert len(input_state["reply_message_ids"]) == 1
     # The stop notice shows what the stopped turn used.
     assert repository.public_message(resident_id, input_state["reply_message_ids"][0])["usage"] == _TURN_510K
-    assert resident_workspace_domain.find_resident(resident_id)["last_turn_usage"] == _TURN_510K
+    assert resident_record_domain.find_resident(resident_id)["last_turn_usage"] == _TURN_510K
     assert repository.current_projection(resident_id)["state"]["work_state"] == "idle"
     notify.assert_called_once()
 
@@ -8176,7 +8176,7 @@ def test_job_projection_and_binding_run_after_the_resident_lock(
         ),
     )
 
-    with resident_lifecycle_domain.state_lock(resident_id):
+    with resident_record_domain.state_lock(resident_id):
         resident_execution_work.write(resident_record, {
 
             "execution_id": "execution-" + "a" * 24,
@@ -8261,7 +8261,7 @@ def test_failed_job_projection_does_not_suppress_change_or_binding(
     )
 
     with pytest.raises(RuntimeError, match="projection unavailable"):
-        with resident_lifecycle_domain.state_lock(resident_id):
+        with resident_record_domain.state_lock(resident_id):
             resident_execution_work.write(resident_record, {
 
                 "execution_id": "execution-" + "c" * 24,
@@ -8288,7 +8288,7 @@ def test_general_job_writes_cannot_drop_or_resurrect_projection_intents(
         "authorized projection",
         message_id="msg_" + "f" * 32,
     )
-    with resident_lifecycle_domain.state_lock(resident_id):
+    with resident_record_domain.state_lock(resident_id):
         assert resident_execution_work.authorize_conversation_projection(
             resident_record,
 
@@ -8306,7 +8306,7 @@ def test_general_job_writes_cannot_drop_or_resurrect_projection_intents(
         resident_execution_work.CONVERSATION_PROJECTION_INTENTS
     ]
     stale_with_intent = dict(authorized)
-    with resident_lifecycle_domain.state_lock(resident_id):
+    with resident_record_domain.state_lock(resident_id):
         resident_execution_work.complete_conversation_projection(
             resident_record,
 

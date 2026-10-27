@@ -14,6 +14,7 @@ import pytest
 from management_portal.execution.agent_data_store import AgentDataStore
 from management_portal.execution.codex_history_delivery import CodexHistoryDelivery
 from management_portal.society_service import resident_context_evidence as evidence
+from management_portal.society_service import resident_record_domain
 
 
 @pytest.mark.parametrize("encoded", [False, True])
@@ -33,7 +34,7 @@ def test_authorized_context_exposes_only_original_self_state_read(encoded, monke
     original = store.segment(segment_id)
     monkeypatch.setattr(resident_conversation_projection_domain, "can_view_actual_sent_prompts",
                         lambda actor, target: actor == "reader" and target == agent)
-    monkeypatch.setattr(resident_workspace_domain, "resolve_resident_runtime_target",
+    monkeypatch.setattr(resident_record_domain, "resolve_resident_runtime_target",
                         lambda *a, **kw: SimpleNamespace(resident_id=agent))
     monkeypatch.setattr(execution_client, "context_evidence_snapshot", store.context_evidence_snapshot)
 
@@ -215,7 +216,7 @@ def test_context_evidence_checks_access_before_loading_any_model_content(monkeyp
     monkeypatch.setattr(resident_conversation_projection_domain, "can_view_actual_sent_prompts",
                         lambda *_: not deny_prompt)
     resolve = Mock(side_effect=PermissionError("not visible"))
-    monkeypatch.setattr(resident_workspace_domain, "resolve_resident_runtime_target", resolve)
+    monkeypatch.setattr(resident_record_domain, "resolve_resident_runtime_target", resolve)
     load = Mock(side_effect=AssertionError("content must not be loaded"))
     monkeypatch.setattr(execution_client, "context_evidence_snapshot", load)
     with pytest.raises(PermissionError):

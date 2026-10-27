@@ -5,9 +5,15 @@ import pytest
 
 from management_common.json_columns import json_value
 from management_portal.society_service import (
-    invariant_locks, resident_catalog, resident_conversation_stream, resident_intake_domain,
-    resident_execution_work, resident_lifecycle_domain, resident_mailbox, resident_input_recovery,
-    resident_media_domain, resident_record_domain,
+    invariant_locks,
+    resident_catalog,
+    resident_conversation_stream,
+    resident_intake_domain,
+    resident_execution_work,
+    resident_mailbox,
+    resident_input_recovery,
+    resident_media_domain,
+    resident_record_domain,
 )
 from management_portal.society_service.domain_ports import execution_port
 from management_portal.execution.agent_data_store import get_agent_data_store
@@ -32,7 +38,7 @@ def test_catalog_deletion_archives_turn_and_queues_ack_atomically(tmp_path, monk
      "submitted_at": "2026-10-14T00:00:00Z"})
     get_agent_data_store().finish_execution("execution-finished", status="failed", finished_at="2026-10-14T00:00:00Z")
     catalog = resident_catalog.ResidentCatalog(tmp_path, store)
-    monkeypatch.setattr(resident_lifecycle_domain, 'ensure_resident_agent', lambda *a, **kw: None)
+    monkeypatch.setattr(resident_record_domain, 'ensure_resident_agent', lambda *a, **kw: None)
     monkeypatch.setattr(resident_mailbox, 'close', lambda *a: None)
     tombstone = {**record, 'deleted_at': '2026-10-11T00:00:00Z', 'deleted_by': 'CASE-A'}
     if fail_delete:

@@ -18,12 +18,18 @@ from management_portal.execution.backends import _compact_provider_activity_even
 from management_portal.execution.contracts import ExecutionInputControl, ExecutionRequest, SessionOptions
 from management_portal.execution.event_projection import append_execution_activity, execution_projection_from_path
 from management_portal.execution.session_manager import RuntimeSession
-from management_portal.society_service import invariant_locks, resident_conversation_stream, resident_domain, resident_protocol
+from management_portal.society_service import (
+    invariant_locks,
+    resident_conversation_stream,
+    resident_domain,
+    resident_protocol,
+    resident_record_domain,
+)
 from tests.cases.test_codex_user_input import native_client
 from tests.cases.test_resident_execution_protocol import resident_record
 
 
-from management_portal.society_service import resident_execution_domain, resident_workspace_domain
+from management_portal.society_service import resident_execution_domain
 
 def approval_params():
     return {"threadId": "thread-native", "turnId": "turn-native", "itemId": "item-native", "startedAtMs": 1,
@@ -366,7 +372,7 @@ def test_runtime_catalog_uses_authorized_society_service_route(resident_record, 
     monkeypatch.setattr(portal, "resident_api", SimpleNamespace(get_resident_runtime_route=route))
     monkeypatch.setattr(portal, "execution_api", SimpleNamespace(runtime_catalog=catalog))
     monkeypatch.setattr(portal, "_get_session_username", lambda _handler: "test-actor")
-    monkeypatch.setattr(resident_workspace_domain, "resolve_resident_runtime_target", Mock(side_effect=AssertionError("Web cannot access Lineage runtime ports")))
+    monkeypatch.setattr(resident_record_domain, "resolve_resident_runtime_target", Mock(side_effect=AssertionError("Web cannot access Lineage runtime ports")))
     handler = _ResponseHarness()
     parsed = urlparse(f"/api/agent-workbench/agent-runtime-catalog?resident_id={resident_id}")
     portal._AGENT_WORKBENCH_HTTP.runtime_catalog(handler, parsed, '')

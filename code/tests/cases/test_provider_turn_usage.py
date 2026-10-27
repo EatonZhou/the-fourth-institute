@@ -30,7 +30,7 @@ from management_portal.execution.provider_turn_usage import (
     read_kimi_turn_usage,
 )
 from management_portal.execution.scheduler import normalize_token_usage
-from management_portal.society_service.resident_execution_domain import (
+from management_portal.society_service.resident_domain_common import (
     execution_token_usage_contract as _execution_token_usage_contract,
 )
 

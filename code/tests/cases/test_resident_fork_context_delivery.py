@@ -13,11 +13,11 @@ from management_portal.society_service import (
     resident_catalog,
     resident_conversation_stream,
     resident_domain,
+    resident_domain_common,
     resident_execution_work,
 )
 from management_portal.society_service import resident_fork_domain
 from management_portal.society_service import resident_record_domain
-from management_portal.society_service import resident_workspace_domain
 from management_portal.society_service import resident_fork_context
 from management_portal.execution.agent_data_store import get_agent_data_store
 from management_portal.execution.codex_history import response_items_from_segments
@@ -106,7 +106,7 @@ def test_fork_window_keeps_every_reply_and_exact_link(subtests, isolated_portal_
                 {'provider_session_ref': 'source', 'segments': segments},
                 recent_turns=count,
             )
-            texts = [resident_workspace_domain.protocol_message_text(item) for item in selected]
+            texts = [resident_domain_common.protocol_message_text(item) for item in selected]
             assert len(selected) == count * 3
             for index in range(12 - count, 12):
                 assert f'download-{index}: /files/report-{index}.pdf?download=1' in texts
@@ -131,7 +131,7 @@ def test_fork_context_does_not_silently_truncate_delivery_links_contracts(subtes
                 'content': text,
             }],
         })
-        assert resident_workspace_domain.protocol_message_text(messages[0]) == text
+        assert resident_domain_common.protocol_message_text(messages[0]) == text
     with subtests.test(contract='test_fork_does_not_inject_encrypted_reasoning_placeholders'), isolated_portal_case() as case_path:
         snapshot = {'provider_session_ref': 'source', 'segments': [{'segment_id': 'encrypted-only', 'segment_type': 'model', 'content': {'encrypted': True}, 'metadata': {'kind': 'reasoning'}}, {'segment_id': 'readable', 'segment_type': 'model', 'content': {'encrypted': True, 'summary': 'readable summary'}, 'metadata': {'kind': 'reasoning'}}, {'segment_id': 'native', 'segment_type': 'model', 'content': {'encrypted': True, 'encrypted_content': 'opaque-native-content'}, 'metadata': {'kind': 'reasoning'}}]}
         messages = resident_fork_context.seed_messages(snapshot)
@@ -192,7 +192,7 @@ def test_fork_context_carries_text_not_base64_media(isolated_portal_case):
              'content': {'result': {'content': [{'type': 'image', 'data': png, 'mimeType': 'image/jpeg'}]}}},
             {'segment_id': 'answer', 'provider_turn_id': 'turn-1', 'segment_type': 'model', 'content': 'K02 对齐了'},
         ]})
-        texts = [resident_workspace_domain.protocol_message_text(item) for item in messages]
+        texts = [resident_domain_common.protocol_message_text(item) for item in messages]
         assert [item['source_segment_id'] for item in messages] == ['question', 'read', 'mcp', 'answer']
         assert not any('iVBORw0KGgo' in text for text in texts)
         assert sum(map(len, texts)) < 2_000
@@ -240,7 +240,7 @@ def test_fork_context_text_says_what_did_not_fit(monkeypatch):
                 "source_segment_type": "input" if index % 2 == 0 else "model",
                 "content_parts": [{"type": "text", "text": f"K03-{index} " + "文" * 20_000}]} for index in range(6)]
     monkeypatch.setattr(resident_fork_context, "seed_messages", lambda snapshot: history)
-    monkeypatch.setattr("management_portal.society_service.resident_workspace_domain.find_resident",
+    monkeypatch.setattr("management_portal.society_service.resident_record_domain.find_resident",
                         lambda resident_id: {"last_model_context_window": 100_000} if resident_id == "resident_source00001" else None)
     text = resident_directory_domain.resident_trace_context_text(
         {"last_model_context_window": 100_000}, {"segments": []})
@@ -286,11 +286,11 @@ def test_recent_fork_uses_child_trace_before_first_run(future_creation_store, mo
     fork_source = source
     if nested:
         branch = resident_domain.create_resident_full_context_fork(source['resident_id'], 'sample_admin')
-        fork_source = resident_workspace_domain.find_resident(branch['resident_id'])
+        fork_source = resident_record_domain.find_resident(branch['resident_id'])
     result = resident_domain.create_resident_context_fork(
         fork_source['resident_id'], 'sample_admin', 5, backend_route_id=route,
     )
-    child = resident_workspace_domain.find_resident(result['resident_id'])
+    child = resident_record_domain.find_resident(result['resident_id'])
     assert child['backend_route_id'] == (route or 'zero')
     _record_provider_turn(store, source, 7, question='future-parent-input', answer='future-parent-answer')
     prepared = resident_execution_domain._portable_context_execution(
@@ -352,7 +352,7 @@ def test_from_here_reads_recorded_input_without_repairing_execution_receipts(
 
     monkeypatch.setattr(execution_client, 'service', lambda: SimpleNamespace(input_control=input_control))
     result = resident_domain.create_resident_fork_from_message(source['resident_id'], 'sample_admin', {'message_id': message_id})
-    child = resident_workspace_domain.find_resident(result['resident_id'])
+    child = resident_record_domain.find_resident(result['resident_id'])
     assert reads == []
     assert store.chat_message(frozen['resident_id'], message_id)
     source_trace = store.read_sequence(store.trace_sequence_id(source['resident_id']), limit=1000)['segments']
@@ -361,7 +361,7 @@ def test_from_here_reads_recorded_input_without_repairing_execution_receipts(
     assert store.segment(original_trace[2]['segment_id'])  # Immutable source remains for audit.
     if nested:
         result = resident_domain.create_resident_fork_from_message(child['resident_id'], 'sample_admin', {'message_id': message_id})
-        child = resident_workspace_domain.find_resident(result['resident_id'])
+        child = resident_record_domain.find_resident(result['resident_id'])
     trace_ids = {item['segment_id'] for item in store.read_sequence(store.trace_sequence_id(child['resident_id']), limit=1000)['segments']}
     assert set(first_ids) <= trace_ids
     assert not set(future_ids) & trace_ids
@@ -384,7 +384,7 @@ def test_database_fork_creation_remains_a_prerequisite_after_reload(
     _append_conversation_turn(source['resident_id'], 0)
     _record_provider_turn(get_agent_data_store(), source, 0)
     result = resident_domain.create_resident_full_context_fork(source['resident_id'], 'sample_admin')
-    child = resident_workspace_domain.find_resident(result['resident_id'])
+    child = resident_record_domain.find_resident(result['resident_id'])
     job = resident_execution_work.read(child)
     assert job['operation'] == 'context_fork_create'
     assert resident_execution_work.is_active(job)
@@ -445,7 +445,7 @@ def test_compacted_fork_compacts_frozen_context_before_first_turn(
     result = resident_domain.create_resident_compacted_context_fork(
         source['resident_id'], 'sample_admin', backend_route_id='one',
     )
-    child = resident_workspace_domain.find_resident(result['resident_id'])
+    child = resident_record_domain.find_resident(result['resident_id'])
     job = resident_execution_work.read(child)
     assert job['operation'] == 'context_fork_create'
     assert child['fork_mode'] == 'compacted'
@@ -481,7 +481,7 @@ def test_compacted_fork_compacts_frozen_context_before_first_turn(
     assert prepared is not None
     resident_execution_domain.run_resident_execution(*prepared)
 
-    child = resident_workspace_domain.find_resident(result['resident_id'])
+    child = resident_record_domain.find_resident(result['resident_id'])
     assert child['session_state'] == 'active'
     assert child['context_compaction_state'] == 'completed'
     assert child['context_compacted_at']
@@ -510,7 +510,7 @@ def test_hatg_fork_preserves_context_and_creation_job(future_creation_store, mon
         'source_resident_id': source['resident_id'],
         'edge_id': 'edge_fork_context_regression', 'mode': 'full',
     }, 'sample_admin')
-    child = resident_workspace_domain.find_resident(result['created_resident']['id'])
+    child = resident_record_domain.find_resident(result['created_resident']['id'])
     job = resident_execution_work.read(child)
     assert job['operation'] == 'context_fork_create'
     assert resident_execution_work.is_active(job)
@@ -601,7 +601,7 @@ def test_from_here_uses_message_session_after_resident_session_migration(
     result = resident_domain.create_resident_fork_from_message(
         source['resident_id'], 'sample_admin', {'message_id': message_id},
     )
-    child = resident_workspace_domain.find_resident(result['resident_id'])
+    child = resident_record_domain.find_resident(result['resident_id'])
     assert _trace_refs(child)
     prompt = _delivered_window(resident_execution_domain._portable_context_execution(
         child, {'actor': 'sample_admin', 'raw_message': 'question after fork'},
@@ -629,7 +629,7 @@ def test_fork_preserves_full_trace_and_starts_its_own_session_instructions(
     _, new_ids, _ = _record_provider_turn(store, source, 1, answer='/files/segment-4.pdf?download=1')
     source_trace = store.sequence_segment_ids(store.trace_sequence_id(source['resident_id']))
     result = resident_domain.create_resident_full_context_fork(source['resident_id'], 'sample_admin')
-    child = resident_workspace_domain.find_resident(result['resident_id'])
+    child = resident_record_domain.find_resident(result['resident_id'])
     # The parent can keep working after Fork; the child's seed stays frozen.
     _record_provider_turn(store, source, 2, answer='future-parent-answer-must-not-leak')
     job = resident_execution_work.read(child)
@@ -686,9 +686,9 @@ def test_historical_native_fork_provenance_does_not_require_old_provider_session
     child_id = resident_domain.create_resident_full_context_fork(
         source['resident_id'], 'sample_admin', defer_backend_start=True,
     )['resident_id']
-    child = resident_workspace_domain.find_resident(child_id)
+    child = resident_record_domain.find_resident(child_id)
     child['fork_mode'] = 'historical_native'
-    resident_workspace_domain.save_resident_record(child)
+    resident_record_domain.save_resident_record(child)
     assert not resident_backend.record_session_id(child)
     trace = get_agent_data_store().read_sequence(
         get_agent_data_store().trace_sequence_id(child_id), limit=100,
@@ -698,7 +698,7 @@ def test_historical_native_fork_provenance_does_not_require_old_provider_session
         child, {'actor': 'sample_admin', 'message': 'new question'},
     )
     assert request.agent_id == child_id
-    assert resident_workspace_domain.find_resident(child_id)['fork_mode'] == 'historical_native'
+    assert resident_record_domain.find_resident(child_id)['fork_mode'] == 'historical_native'
 
 
 def test_fork_inherits_trace_messages_without_execution_records(future_creation_store, monkeypatch):
@@ -769,7 +769,7 @@ def test_empty_database_history_is_distinct_from_missing_context(future_creation
     monkeypatch.setattr(project_domain, 'project_root_for_id', lambda _: future_creation_store)
     source = resident_domain.register_resident(_new_session_payload('Truly empty source'), 'sample_admin')
     child_id = resident_domain.create_resident_full_context_fork(source['resident_id'], 'sample_admin')['resident_id']
-    child = resident_workspace_domain.find_resident(child_id)
+    child = resident_record_domain.find_resident(child_id)
     assert get_agent_data_store().agent_context_snapshot(child['resident_id'])['empty_context'] is True
     assert _trace_refs(child) == []
     sent = resident_execution_domain._portable_context_execution(child, {'actor': 'sample_admin', 'raw_message': 'first real input'})
@@ -782,10 +782,10 @@ def test_fork_of_unstarted_branch_uses_its_database_window(future_creation_store
     source = resident_domain.register_resident(_new_session_payload('Nested source'), 'sample_admin')
     _append_conversation_turn(source['resident_id'], 0)
     first_id = resident_domain.create_resident_full_context_fork(source['resident_id'], 'sample_admin')['resident_id']
-    first = resident_workspace_domain.find_resident(first_id)
+    first = resident_record_domain.find_resident(first_id)
     assert not resident_backend.record_session_id(first)
     second_id = resident_domain.create_resident_full_context_fork(first_id, 'sample_admin')['resident_id']
-    second = resident_workspace_domain.find_resident(second_id)
+    second = resident_record_domain.find_resident(second_id)
     assert _trace_refs(second) == _trace_refs(first)
     store = get_agent_data_store()
     assert store.sequence_segment_ids(store.trace_sequence_id(second_id)) == store.sequence_segment_ids(store.trace_sequence_id(source['resident_id']))
@@ -812,7 +812,7 @@ def test_historical_window_uses_compaction_before_cutoff_not_a_later_summary(fut
     assert [item['segment_id'] for item in snapshot['segments']] == [summary, *target_ids]
     trace_ids = store.sequence_segment_ids(store.trace_sequence_id(source['resident_id']))
     assert snapshot['segments'][-1]['segment_id'] == target_ids[-1]
-    texts = [resident_workspace_domain.protocol_message_text(item) for item in resident_fork_context.seed_messages(snapshot)]
+    texts = [resident_domain_common.protocol_message_text(item) for item in resident_fork_context.seed_messages(snapshot)]
     assert 'first-summary' in '\n'.join(texts)
     assert 'future-summary' not in '\n'.join(texts)
 
@@ -872,7 +872,7 @@ def test_from_here_resolves_canonical_chat_input_via_composition_graph(
             first_id = resident_domain.create_resident_context_fork(source['resident_id'], 'sample_admin', 10)['resident_id']
         else:
             first_id = resident_domain.create_resident_full_context_fork(source['resident_id'], 'sample_admin')['resident_id']
-        fork_source = resident_workspace_domain.find_resident(first_id)
+        fork_source = resident_record_domain.find_resident(first_id)
         assert not resident_backend.record_session_id(fork_source)
         # The same accepted message can acquire a later execution in the
         # parent. That relation is not part of the child's frozen trace.
@@ -888,7 +888,7 @@ def test_from_here_resolves_canonical_chat_input_via_composition_graph(
     result = resident_domain.create_resident_fork_from_message(
         fork_source['resident_id'], 'sample_admin', {'message_id': message_id}, backend_route_id=route,
     )
-    child = resident_workspace_domain.find_resident(result['resident_id'])
+    child = resident_record_domain.find_resident(result['resident_id'])
     assert child['backend_route_id'] == (route or 'zero')
     prompt = _delivered_window(resident_execution_domain._portable_context_execution(
         child, {'actor': 'sample_admin', 'raw_message': 'new branch question'},
@@ -927,7 +927,7 @@ def test_queued_followup_does_not_repeat_initial_context(future_creation_store, 
     source = resident_domain.register_resident(_new_session_payload('Queued context'), 'sample_admin')
     _append_conversation_turn(source['resident_id'], 0)
     child_id = resident_domain.create_resident_full_context_fork(source['resident_id'], 'sample_admin')['resident_id']
-    child = resident_workspace_domain.find_resident(child_id)
+    child = resident_record_domain.find_resident(child_id)
     first = resident_execution_domain._portable_context_execution(child, {'actor': 'sample_admin', 'raw_message': 'first'})
     queued = resident_execution_domain._portable_context_execution(child, {'actor': 'sample_admin', 'raw_message': 'second'})
     assert 'question 0' in _delivered_window(first) and 'question 0' in _delivered_window(queued)
@@ -953,10 +953,10 @@ def test_recent_fork_uses_effective_provider_turns_with_tools(future_creation_st
         tool_id = store.put_segment(segment_type='tool', content_type='application/json', content={'call_id': f'call-{index}', 'tool_name': 'inspect', 'input': {}, 'result': f'tool-evidence-{index}'}, execution_id=segment['execution_id'])
         store.append_agent_segments(source['resident_id'], [tool_id], actor_ref='sample_admin')
     child_id = resident_domain.create_resident_context_fork(source['resident_id'], 'sample_admin', count)['resident_id']
-    child = resident_workspace_domain.find_resident(child_id)
+    child = resident_record_domain.find_resident(child_id)
     workspace_snapshot = resident_conversation_stream.get_repository().snapshot(child_id)
     workspace_text = '\n'.join(
-        resident_workspace_domain.protocol_message_text(item)
+        resident_domain_common.protocol_message_text(item)
         for item in workspace_snapshot['messages']
     )
     assert 'question 0' not in workspace_text and 'answer 11' in workspace_text

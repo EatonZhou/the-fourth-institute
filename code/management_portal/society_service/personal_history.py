@@ -14,8 +14,8 @@ def source(facade: Mapping[str, Any]) -> dict[str, Any]:
     ama_id = family.get("personal_ama_id")
     if family.get("role") != "facade" or not ama_id or not family.get("history_before_ordinal"):
         return {}
-    from . import resident_workspace_domain
-    member = resident_workspace_domain.find_resident(ama_id)
+    from . import resident_record_domain
+    member = resident_record_domain.find_resident(ama_id)
     if not member or member.get("deleted_at") or member.get("lineage_id") != facade.get("lineage_id"):
         return {}
     return {"resident_id": ama_id, "title": member.get("title") or "Ask Me Anything",

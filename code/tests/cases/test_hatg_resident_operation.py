@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
-from management_portal.society_service import invariant_locks, lineage_domain
+from management_portal.society_service import invariant_locks, lineage_domain, resident_record_domain
 from management_portal.society_service import resident_lifecycle_domain
 from tests.cases.isa_test_support import run
 from tests.cases.test_hatg_move_resident import ACTOR, execute, graph, request, teams  # noqa: F401 - teams is a fixture
@@ -43,7 +43,7 @@ def test_operation_pending_completed_and_polling_preserve_the_original_move(team
         "source_lineage_id": source["lineage_id"], "target_lineage_id": target["lineage_id"],
         "instruction_id": transfer.instruction_id,
     }
-    operations = resident_lifecycle_domain.lifecycle_operations()
+    operations = resident_record_domain.lifecycle_operations()
     assert operations.run(operation_id, resident_lifecycle_domain.apply_resident_lifecycle_step) == member["resident_id"]
     completed = query(operation_id)
     assert completed.result["terminal"] is True
@@ -59,7 +59,7 @@ def test_operation_pending_completed_and_polling_preserve_the_original_move(team
 def test_operation_reports_retry_phase_and_error_without_running_work(teams, transfer, failure_index):
     """迁移步骤失败后 GetMoveOperation 报告重试阶段、已完成步数和错误，查询本身不执行步骤"""
     operation_id = transfer.result["operation_id"]
-    operations = resident_lifecycle_domain.lifecycle_operations()
+    operations = resident_record_domain.lifecycle_operations()
     calls = []
 
     def fail_at_step(effect_id, step):
@@ -85,7 +85,7 @@ def test_operation_rechecks_both_read_grants_on_every_poll(teams, transfer, monk
     """每次查询迁移操作都重新检查源和目标 Lineage 的读取权限"""
     operation_id = transfer.result["operation_id"]
     if completed:
-        resident_lifecycle_domain.lifecycle_operations().run(operation_id, lambda *_: None)
+        resident_record_domain.lifecycle_operations().run(operation_id, lambda *_: None)
     observed(operation_id)
     blocked = teams[side]["lineage_id"]
     ensure_visible = lineage_domain._ensure_visible
@@ -133,7 +133,7 @@ def test_operation_needs_read_permission_not_modify_permission(teams, transfer, 
 
 def test_operation_is_queryable_after_the_source_becomes_empty(teams, transfer):
     """源 Lineage 迁空后仍能查询最后一个成员的迁移操作"""
-    operations = resident_lifecycle_domain.lifecycle_operations()
+    operations = resident_record_domain.lifecycle_operations()
     operations.run(transfer.result["operation_id"], resident_lifecycle_domain.apply_resident_lifecycle_step)
     call = request((teams[0], teams[1], teams[0]), key="move-last-member")
     call["arguments"]["allow_empty_source"] = True
@@ -147,7 +147,7 @@ def test_operation_is_queryable_after_the_source_becomes_empty(teams, transfer):
 
 def test_operation_requires_a_move_receipt_even_if_the_outbox_has_a_matching_id(teams):
     """没有迁移回执的 outbox 操作 ID 在 GetMoveOperation 中报告不存在"""
-    operations = resident_lifecycle_domain.lifecycle_operations()
+    operations = resident_record_domain.lifecycle_operations()
     operation_id = operations.enqueue(teams[2]["resident_id"], [{"kind": "workspace_move"}])
     assert query(operation_id).error["code"] == "instruction.not_found"
     assert operations.pending(teams[2]["resident_id"])
@@ -168,7 +168,7 @@ def test_operation_requires_exact_identity(teams, operation_id):
 def test_operation_read_does_not_wait_for_transfer_or_graph_lock(teams, transfer):
     """查询迁移操作不等待正在执行的转移步骤或 Lineage 图锁"""
     entered, release = threading.Event(), threading.Event()
-    operations = resident_lifecycle_domain.lifecycle_operations()
+    operations = resident_record_domain.lifecycle_operations()
 
     def slow_step(*_):
         entered.set()
@@ -190,7 +190,7 @@ def test_operation_read_does_not_wait_for_transfer_or_graph_lock(teams, transfer
 def test_operation_is_not_terminal_until_outbox_completion_commits(teams, transfer, monkeypatch):
     """所有步骤执行完但 outbox 完成尚未提交时，迁移操作处于 finalizing 而非终态"""
     entered, release = threading.Event(), threading.Event()
-    operations = resident_lifecycle_domain.lifecycle_operations()
+    operations = resident_record_domain.lifecycle_operations()
     complete = operations.complete
 
     def paused_complete(operation_id):

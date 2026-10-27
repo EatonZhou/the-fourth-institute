@@ -894,9 +894,9 @@ def write(
             # preparation. Closing intake later only holds subsequent inputs.
             job.setdefault("intake_admitted_at", _now_iso())
     if job.get("execution_id"):
-        from . import resident_lifecycle_domain
+        from . import resident_record_domain
         from management_portal.execution.agent_data_store import get_agent_data_store
-        resident_lifecycle_domain.ensure_resident_agent(record, actor=request_actor(job))
+        resident_record_domain.ensure_resident_agent(record, actor=request_actor(job))
         get_agent_data_store()
     # Admission also allocates a Conversation cursor. Use the same short
     # commit scope as streaming replies so their events cannot take one cursor.

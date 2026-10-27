@@ -22,7 +22,7 @@ from management_portal.society_service import (
 from management_portal.society_service.resident_registration_domain import (
     build_resident_prompt as _build_resident_prompt,
 )
-from management_portal.society_service.resident_workspace_domain import find_resident as _find_resident
+from management_portal.society_service.resident_record_domain import find_resident as _find_resident
 from tests.cases.isa_test_support import run
 from tests.cases.test_quote_replies import _register, _say, _stored, _text
 from tests.cases.test_resident_delivery_receipts import delivery_resident  # noqa: F401

@@ -17,12 +17,12 @@ from management_portal.society_service import (
     family_facade,
     family_reassign,
     lineage_graph_state,
+    resident_access,
     resident_conversation_stream,
-    resident_directory_domain,
     resident_domain,
     resident_protocol,
 )
-from management_portal.society_service.resident_workspace_domain import find_resident as _find_resident
+from management_portal.society_service.resident_record_domain import find_resident as _find_resident
 from tests.cases.isa_test_support import run
 from tests.cases.test_resident_delivery_receipts import delivery_resident  # noqa: F401
 from tests.cases.test_resident_folder_creation_contract import (  # noqa: F401
@@ -157,6 +157,6 @@ def test_a_reassignment_needs_a_relayed_request_another_member_and_no_turn_in_pr
     assert refused.error["code"] == "instruction.invalid_arguments" and "先停止本轮" in refused.error["message"]
     assert family_facade.relay_links(_find_resident(facade))[request]["resident_id"] == wrong
     # Someone else's request is not theirs to move unless they own the facade or are its steward.
-    monkeypatch.setattr(resident_directory_domain, "can_manage", lambda record, actor: False)
+    monkeypatch.setattr(resident_access, "can_manage", lambda record, actor: False)
     assert _reassign(family, request, right, actor="CASE-A").error["code"] == "instruction.forbidden"
     assert family["told"] == []

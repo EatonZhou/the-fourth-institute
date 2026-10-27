@@ -3,47 +3,18 @@ from __future__ import annotations
 
 from management_common.principal import is_user_or_resident
 
-from . import resident_backend, resident_conversation_stream
+from . import resident_backend, resident_conversation_stream, resident_domain_common
 from .domain_ports import execution_port
-from datetime import datetime, timezone
 from difflib import SequenceMatcher
 from management_common.actor_identity import canonical_actor_id
 import re
-from pathlib import Path
 from typing import Any, Mapping
 
-
-MAX_MESSAGE_CHARS = 12000
 
 GENERATED_DERIVED_RESIDENT_TITLE_RE = re.compile(
     r"^(?:派生 Resident \d+|Fork \d+|Fork-\d+ \d+|Fork from here \d+|Fork selected \d+)"
     r" · \d{4}-\d{2}-\d{2}$"
 )
-
-
-def _parse_iso(value: str) -> datetime | None:
-    raw = str(value or "").strip()
-    if not raw:
-        return None
-    try:
-        if raw.endswith("Z"):
-            raw = raw[:-1] + "+00:00"
-        parsed = datetime.fromisoformat(raw)
-        if parsed.tzinfo is None:
-            parsed = parsed.replace(tzinfo=timezone.utc)
-        return parsed.astimezone(timezone.utc)
-    except Exception:
-        return None
-
-
-_EARLIEST = datetime.min.replace(tzinfo=timezone.utc)
-
-
-def date_part(value: str) -> str:
-    parsed = _parse_iso(value)
-    if parsed:
-        return parsed.date().isoformat()
-    return str(value or "").split("T", 1)[0] or "unknown date"
 
 
 def is_generated_derived_resident_title(value: object) -> bool:
@@ -61,13 +32,6 @@ def derived_resident_title_is_generated(resident: Mapping[str, Any]) -> bool:
     if origin:
         return origin == "generated"
     return is_generated_derived_resident_title(resident.get("title"))
-
-
-def truncate_text(text: str, limit: int = MAX_MESSAGE_CHARS) -> str:
-    value = str(text or "").strip()
-    if len(value) <= limit:
-        return value
-    return value[:limit].rstrip() + "\n\n[content truncated for portal preview]"
 
 
 def _terminal_input_unread_signature(
@@ -160,20 +124,12 @@ def conversation_family_summaries(
         # A message sent to the actor is itself worth reading (decision_b4e5ea4a47ec).
         addressed_id = str(summary.get("actor_addressed_message_id") or "")
         addressed_at = str(summary.get("actor_addressed_at") or "")
-        if addressed_id and (_parse_iso(addressed_at) or _EARLIEST, addressed_id) > (
-            _parse_iso(str(signature["completed_at"])) or _EARLIEST, str(signature["completion_id"]),
+        if addressed_id and (resident_domain_common.parse_iso(addressed_at) or resident_domain_common.EARLIEST, addressed_id) > (
+            resident_domain_common.parse_iso(str(signature["completed_at"])) or resident_domain_common.EARLIEST, str(signature["completion_id"]),
         ):
             signature.update(completion_id=addressed_id, input_message_id="", completed_at=addressed_at)
         summary["unread_signature"] = signature
     return summaries
-
-
-def path_is_within(path: Path, root: Path) -> bool:
-    try:
-        path.relative_to(root)
-    except ValueError:
-        return False
-    return True
 
 
 def can_view_actual_sent_prompts(actor: str, resident_id: str) -> bool:
@@ -218,16 +174,16 @@ def actual_sent_prompt_candidates(items: list[dict[str, Any]]) -> list[dict[str,
 
 
 def _actual_sent_prompt_matches(item: dict[str, Any], candidate: dict[str, Any]) -> bool:
-    from . import resident_workspace_domain
+    from . import resident_domain_common
     item_id = str(item.get("message_id") or "")
     candidate_id = str(candidate.get("user_message_id") or "")
     if item_id and candidate_id and item_id == candidate_id:
         return True
-    item_at = _parse_iso(str(item.get("created_at") or ""))
-    candidate_at = _parse_iso(str(candidate.get("created_at") or ""))
+    item_at = resident_domain_common.parse_iso(str(item.get("created_at") or ""))
+    candidate_at = resident_domain_common.parse_iso(str(candidate.get("created_at") or ""))
     if item_at and candidate_at and abs((candidate_at - item_at).total_seconds()) > 120:
         return False
-    content = resident_workspace_domain.protocol_message_text(item)
+    content = resident_domain_common.protocol_message_text(item)
     if not content:
         return False
     raw = str(candidate.get("raw_message") or "").strip()
@@ -271,12 +227,12 @@ def attach_actual_sent_prompts(
             continue
         if item.get("actual_sent_prompt"):
             continue
-        item_at = _parse_iso(str(item.get("created_at") or ""))
+        item_at = resident_domain_common.parse_iso(str(item.get("created_at") or ""))
         matches: list[tuple[tuple[int, float, int], int, dict[str, Any]]] = []
         for index, candidate in enumerate(candidates):
             if index in used_candidates or not _actual_sent_prompt_matches(item, candidate):
                 continue
-            candidate_at = _parse_iso(str(candidate.get("created_at") or ""))
+            candidate_at = resident_domain_common.parse_iso(str(candidate.get("created_at") or ""))
             time_distance = (
                 abs((candidate_at - item_at).total_seconds())
                 if item_at and candidate_at

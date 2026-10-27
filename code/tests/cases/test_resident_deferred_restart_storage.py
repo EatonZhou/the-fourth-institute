@@ -5,8 +5,10 @@ from types import SimpleNamespace
 import pytest
 
 from management_portal.society_service import (
-    resident_catalog, resident_conversation_stream, resident_deferred_restart,
-    resident_lifecycle_domain, resident_workspace_domain,
+    resident_catalog,
+    resident_conversation_stream,
+    resident_deferred_restart,
+    resident_record_domain,
 )
 from management_portal.society_service.state_store import LineageDataStore
 from tests.cases.test_lineage_catalogs import _lineage_definition, _record
@@ -22,8 +24,8 @@ def test_deferred_restart_and_intake_commit_together(monkeypatch, fail_save):
     store.put_resident_record(record["resident_id"], record)
     rid = record["resident_id"]
     monkeypatch.setattr(resident_catalog, "get_catalog", lambda: SimpleNamespace(state_store=store))
-    monkeypatch.setattr(resident_lifecycle_domain, "state_lock", nullcontext)
-    monkeypatch.setattr(resident_workspace_domain, "find_resident", store.resident_record)
+    monkeypatch.setattr(resident_record_domain, "state_lock", nullcontext)
+    monkeypatch.setattr(resident_record_domain, "find_resident", store.resident_record)
     repository = resident_conversation_stream.get_repository()
     monkeypatch.setattr(repository, "current_state", lambda *_: pytest.fail("Execution RPC inside state lock"))
 
@@ -32,7 +34,7 @@ def test_deferred_restart_and_intake_commit_together(monkeypatch, fail_save):
             raise RuntimeError("save failed")
         store.put_resident_record(rid, value, **options)
 
-    monkeypatch.setattr(resident_workspace_domain, "save_resident_record", save)
+    monkeypatch.setattr(resident_record_domain, "save_resident_record", save)
     source = {"provider": "codex", "account_id": "one"}
     intent = {"target_provider": "claude", "target_account": "", "context_strategy": "compact"}
     if fail_save:

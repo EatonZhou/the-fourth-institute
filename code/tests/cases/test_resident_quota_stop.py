@@ -19,10 +19,18 @@ from management_portal.execution.contracts import ExecutionRequest, SessionOptio
 from management_portal.execution.scheduler import Scheduler
 from management_portal.execution import slash_commands
 from management_portal.society_service import (
-    family_facade, lifecycle, resident_backend, resident_conversation_stream,
-    resident_execution_work, resident_domain, resident_intake_domain, resident_lifecycle_domain,
-    resident_protocol, resident_record_domain, resident_registration_domain,
-    resident_session_backend_domain, resident_workspace_domain,
+    family_facade,
+    lifecycle,
+    resident_backend,
+    resident_conversation_stream,
+    resident_execution_work,
+    resident_domain,
+    resident_intake_domain,
+    resident_lifecycle_domain,
+    resident_protocol,
+    resident_record_domain,
+    resident_registration_domain,
+    resident_session_backend_domain,
 )
 
 
@@ -44,7 +52,7 @@ def instruction(name, record, *, actor="CASE-A", **arguments):
 def sessionless(resident_record, monkeypatch):
     resident_backend.delete_session_identity(resident_record)
     resident_record["session_state"] = "pending_create"
-    resident_workspace_domain.save_resident_record(resident_record)
+    resident_record_domain.save_resident_record(resident_record)
     monkeypatch.setattr(resident_session_backend_domain, "handle_resident_native_command", lambda *a, **kw: {})
     monkeypatch.setattr(slash_commands, "handle_slash_command", lambda *a, **kw: {"handled": False})
     monkeypatch.setattr(resident_record_domain, "resolve_context_refs", lambda *a, **kw: {})
@@ -106,7 +114,7 @@ def test_manual_close_does_not_need_a_session_or_stop_quota_execution(sessionles
     for _ in range(2):
         receipt = resident_protocol.change_resident_state(record["resident_id"], "CASE-A", state_domain="intake", transition="close")
         assert receipt["intake_state"] == "closed"
-    current = resident_workspace_domain.find_resident(record["resident_id"])
+    current = resident_record_domain.find_resident(record["resident_id"])
     assert not resident_backend.record_session_id(current)
     assert resident_lifecycle_domain.resident_intake_state(current) == "closed"
     assert resident_execution_work.read(current)["user_message_id"] == first
@@ -146,7 +154,7 @@ def test_isa_manual_close_without_session_preserves_quota_waiting_input(sessionl
     assert job["user_message_id"] == first
     assert not job.get("stop_requested_at")
     assert scheduler.snapshot(execution_id)["status"] == "queued"
-    assert not resident_backend.record_session_id(resident_workspace_domain.find_resident(record["resident_id"]))
+    assert not resident_backend.record_session_id(resident_record_domain.find_resident(record["resident_id"]))
 
 
 def test_isa_cancel_waiting_input_leaves_current_quota_execution_alone(sessionless):
@@ -247,7 +255,7 @@ def test_nested_family_cancel_resolves_member_owner_under_quota(sessionless, wai
             "nodes": [{"id": facade_id, "title": f"Nested test facade {index}"}],
         }, actor="CASE-A")
         set_role(facade_id, family_id=f"fbi_00000000000{index}", actor="CASE-A")
-        facades.append(resident_workspace_domain.find_resident(facade_id))
+        facades.append(resident_record_domain.find_resident(facade_id))
     outer, inner = facades
     outer_message = deliver(outer, "outer request")
     inner_message = deliver(inner, "inner request")

@@ -11,7 +11,7 @@ from management_common.principal import message_origin
 from management_portal.hatg.contracts import InstructionContext
 from management_portal.society_service import family_facade, resident_conversation_stream
 from management_portal.society_service.resident_intake_domain import build_message as _message
-from management_portal.society_service.resident_workspace_domain import find_resident as _find_resident
+from management_portal.society_service.resident_record_domain import find_resident as _find_resident
 from management_portal.society_service.lineage_program_effect_execution import _family_note_context
 from tests.cases.isa_test_support import run
 from tests.cases.permission_test_support import Fact, permissions  # noqa: F401

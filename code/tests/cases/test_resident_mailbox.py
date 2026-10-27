@@ -13,9 +13,14 @@ from pathlib import Path
 import pytest
 
 from management_portal.society_service import (
-    resident_conversation_stream, resident_intake_domain, resident_execution_work, resident_lifecycle_domain, resident_mailbox,
+    resident_conversation_stream,
+    resident_intake_domain,
+    resident_execution_work,
+    resident_lifecycle_domain,
+    resident_mailbox,
+    resident_record_domain,
 )
-from management_portal.society_service import resident_protocol, resident_workspace_domain
+from management_portal.society_service import resident_protocol
 from management_portal.resources.portal import portal_route_script
 from tests.cases.test_cross_owner_storage_integration import ACTOR, owners  # noqa: F401 - fixture
 from tests.cases.test_wall04_residual_20260919 import instruction, team  # noqa: F401 - fixture
@@ -41,13 +46,13 @@ def _queue(team, count: int = 4, *, actors: list[str] | None = None) -> tuple[st
             "message": f"第 {index} 条", "actor": actor,
             "enqueued_at": (datetime(2026, 10, 3, tzinfo=timezone.utc) + timedelta(minutes=index)).isoformat(),
         })
-    record = resident_workspace_domain.find_resident(resident_id)
+    record = resident_record_domain.find_resident(resident_id)
     resident_execution_work.write(record, {**entries[0], "queue": entries[1:]})
     return resident_id, [item["user_message_id"] for item in entries]
 
 
 def _waiting(resident_id: str) -> list[dict]:
-    return resident_execution_work.read(resident_workspace_domain.find_resident(resident_id)).get("queue", [])
+    return resident_execution_work.read(resident_record_domain.find_resident(resident_id)).get("queue", [])
 
 
 @pytest.mark.parametrize("source", ["events", "history"])
@@ -162,7 +167,7 @@ def test_merge_puts_one_group_where_the_first_member_waited_and_split_restores_t
     assert group["content_parts"][0]["members"] == [{"message_id": a}, {"message_id": b}]
     member_state = instruction(team, "GetInputState", {"resident_id": resident_id, "message_id": a}).result["input_state"]
     assert member_state["state"] == "queued" and member_state["grouped_into_message_id"] == group_id
-    record = resident_workspace_domain.find_resident(resident_id)
+    record = resident_record_domain.find_resident(resident_id)
     assert resident_execution_work.read(record)["user_message_id"] == head
 
     split = instruction(team, "SplitMailboxItem", {"resident_id": resident_id, "message_id": group_id})
@@ -210,7 +215,7 @@ def test_large_groups_merge_regroup_and_split_without_losing_members(team):
         {"message_id": member_id} for member_id in members
     ]
     assert repository.input_state(resident_id, first_group)["state"] == "cancelled"
-    assert resident_execution_work.read(resident_workspace_domain.find_resident(resident_id))["user_message_id"] == head
+    assert resident_execution_work.read(resident_record_domain.find_resident(resident_id))["user_message_id"] == head
 
     split = instruction(team, "SplitMailboxItem", {"resident_id": resident_id, "message_id": group_id})
     assert split.status == "committed"
@@ -249,7 +254,7 @@ def test_merging_a_group_keeps_one_level_and_the_finished_group_finishes_its_mem
     resident_lifecycle_domain.append_conversation_message(resident_id, reply)
     repository.set_input_state(resident_id, group_id, "completed")
 
-    record = resident_workspace_domain.find_resident(resident_id)
+    record = resident_record_domain.find_resident(resident_id)
     assert resident_mailbox.finish_group(record, group_id, "completed") == [a, b, c]
     for member in (a, b, c):
         state = repository.input_state(resident_id, member)

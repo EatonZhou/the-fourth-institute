@@ -81,7 +81,7 @@ def test_binding_transaction_rolls_back_new_preparation(pending, monkeypatch):
 
 def test_legacy_bound_api_reprepares_old_codex_input(pending):
     """升级前已改绑但未提交的旧准备可恢复；不能沿用旧 Provider 提示词。"""
-    from management_portal.society_service.resident_workspace_domain import (
+    from management_portal.society_service.resident_record_domain import (
         save_resident_record as _save_resident_record,
     )
     record = pending

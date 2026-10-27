@@ -20,12 +20,15 @@ from management_portal.execution.backends import BackendContext, BackendInvocati
 from management_portal.execution.native_options import prepare_invocation
 from management_portal.execution.contracts import ExecutionRequest
 from management_portal.execution.session_manager import RuntimeSession
-from management_portal.society_service import resident_hatg_credentials, resident_turn_scope
-from management_portal.society_service import resident_directory_domain
+from management_portal.society_service import (
+    resident_access,
+    resident_hatg_credentials,
+    resident_record_domain,
+    resident_turn_scope,
+)
 from management_portal.society_service import resident_execution_domain
 from management_portal.society_service import resident_registration_domain
 from management_portal.society_service import resident_runtime_domain
-from management_portal.society_service import resident_workspace_domain
 from tests.cases.test_resident_execution_protocol import resident_record
 from scripts import resident_hatg_instruction
 
@@ -39,7 +42,7 @@ def test_resident_request_delivers_cli_identity_without_sender_impersonation(
     calls = []
     monkeypatch.setattr(resident_backend, "record_session_id", lambda _: session_id)
     monkeypatch.setattr(resident_runtime_domain, "resident_session_account_id", lambda *a, **k: "one")
-    monkeypatch.setattr(resident_directory_domain, "has_resident_workspace_authority", lambda *a: False)
+    monkeypatch.setattr(resident_access, "has_resident_workspace_authority", lambda *a: False)
     monkeypatch.setattr(
         resident_hatg_credentials, "ensure_resident_credential",
         lambda resident_id, lineage_id: calls.append((resident_id, lineage_id)),
@@ -223,7 +226,7 @@ def test_native_turn_keeps_resident_cli_environments_request_local(
         }
 
     monkeypatch.setattr(resident_execution_domain, "resident_execution_runtime_options", runtime_options)
-    monkeypatch.setattr(resident_directory_domain, "has_resident_workspace_authority", lambda *a: full_access)
+    monkeypatch.setattr(resident_access, "has_resident_workspace_authority", lambda *a: full_access)
     route = mock.Mock(account_id="one", socket_path=tmp_path / "unused.sock")
     registry = mock.Mock()
     registry.get.return_value = route
@@ -319,7 +322,7 @@ def test_resident_md_reaches_every_provider_once(resident_record, monkeypatch, b
     folder = _resident_folder_path(record)
     folder.mkdir(parents=True, exist_ok=True)
     (folder / "resident.md").write_text("我负责网络管理。", encoding="utf-8")
-    workspace = resident_workspace_domain.resident_workspace_path(record)
+    workspace = resident_record_domain.resident_workspace_path(record)
     monkeypatch.setattr(resident_runtime_domain, "resident_working_directory", lambda _: workspace)
     monkeypatch.setattr(resident_backend, "record_session_id", lambda _: "")
     job = {"actor": "sample_admin", "message": "检查出口", "context_refs": {}}

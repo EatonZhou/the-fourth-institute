@@ -26,25 +26,25 @@ SOURCE = ROOT / "management_portal" / "society_service"
 # Module short name -> sibling modules it imports.  Short names drop the
 # ``resident_`` prefix and ``_domain`` suffix; ``resident_domain`` is "domain".
 EDGES = {
-    "actual_sent": "conversation_projection workspace",
-    "conversation_projection": "workspace",
-    "directory": "conversation_projection domain_common execution lifecycle project record runtime watchboard workspace",
+    "actual_sent": "conversation_projection record",
+    "conversation_projection": "domain_common",
+    "directory": "conversation_projection domain_common execution lifecycle project record runtime watchboard",
     "domain": "actual_sent conversation_projection directory domain_common execution fork intake lifecycle record registration restart runtime watchboard workspace",
     "domain_common": "",
     "domain_host": "directory fork intake lifecycle record registration restart workspace",
-    "execution": "conversation_projection directory domain_common intake lifecycle record registration runtime session_backend workspace",
-    "fork": "conversation_projection directory domain_common execution lifecycle record runtime session_backend watchboard workspace",
+    "execution": "directory domain_common intake lifecycle record registration runtime session_backend",
+    "fork": "domain_common execution lifecycle record runtime session_backend watchboard workspace",
     "intake": "conversation_projection directory domain_common execution lifecycle media record registration runtime session_backend workspace",
     "lifecycle": "domain_common execution record restart runtime session_backend workspace",
-    "media": "conversation_projection lifecycle record",
+    "media": "domain_common record",
     "project": "domain_common",
-    "record": "conversation_projection domain_common lifecycle workspace",
+    "record": "domain_common",
     "registration": "directory domain_common execution fork intake lifecycle media project record runtime session_backend workspace",
-    "restart": "directory domain_common execution intake lifecycle record runtime session_backend workspace",
-    "runtime": "directory domain_common lifecycle record workspace",
-    "session_backend": "directory domain_common execution lifecycle record runtime",
-    "watchboard": "directory domain_common lifecycle record workspace",
-    "workspace": "directory domain_common intake lifecycle project record registration",
+    "restart": "directory domain_common execution intake record runtime session_backend",
+    "runtime": "domain_common record",
+    "session_backend": "domain_common execution record runtime",
+    "watchboard": "domain_common record workspace",
+    "workspace": "directory domain_common lifecycle project record",
 }
 
 

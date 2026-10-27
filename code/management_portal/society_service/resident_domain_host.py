@@ -80,7 +80,7 @@ class ResidentDomainHost:
             and str(item.get("lineage_id") or "") == lineage_id
         ]
         if not records:
-            resident_lifecycle_domain.lifecycle_operations().require_lineage_transfer_settled(lineage_id)
+            resident_record_domain.lifecycle_operations().require_lineage_transfer_settled(lineage_id)
             return None
         target = next(
             (

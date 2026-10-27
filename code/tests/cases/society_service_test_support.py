@@ -14,7 +14,7 @@ from management_portal.society_service import (
     resident_hatg_credentials,
     lineage_state_domains,
     resource_client,
-    resident_directory_domain,
+    resident_access,
     resident_intake_domain,
     resident_protocol,
 )
@@ -49,9 +49,8 @@ class _IsolatedPortalAccess:
     def is_configured(_actor: object) -> bool:
         return True
 
-    @staticmethod
-    def is_service_actor(_actor: object) -> bool:
-        return False
+    # Service principals are fixed names, the same in every installation.
+    is_service_actor = staticmethod(portal_access_control.PortalAccessStore.is_service_actor)
 
     @staticmethod
     def is_portal_admin(_actor: object) -> bool:
@@ -81,7 +80,7 @@ def _install_isolated_portal_access(monkeypatch) -> None:
         lineage_instruction_context,
         effect_failure_notifications,
         lineage_domain,
-        resident_directory_domain,
+        resident_access,
         resident_intake_domain,
     ):
         current_factory = module.get_portal_access_store
@@ -131,7 +130,7 @@ def publish_registered_lineage_members(
     from management_portal.society_service import identity_contract
     from management_portal.society_service.lineage_storage import canonical_lineage_folder
     from management_portal.society_service.principal_hierarchy import classify_existing
-    from management_portal.society_service.resident_lifecycle_domain import ensure_resident_agent
+    from management_portal.society_service.resident_record_domain import ensure_resident_agent
 
     store = resident_catalog.get_catalog().state_store
     nodes = [node for node in lineage.get("nodes") or []

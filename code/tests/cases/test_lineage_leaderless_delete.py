@@ -15,6 +15,7 @@ from management_portal.society_service import resident_lifecycle_domain as lifec
 from management_portal.society_service import resident_project_domain as project
 from management_portal.society_service import resident_record_domain as record
 from management_portal.society_service import resident_workspace_domain as workspace
+from management_portal.society_service import resident_access
 
 
 @pytest.fixture
@@ -40,13 +41,13 @@ def members(tmp_path, monkeypatch):
                             pending=set(), transfer=False, authorized=True, graph_authorized=True)
     monkeypatch.setattr(host.resident_lineage, 'for_lineage', lambda _: rows)
     monkeypatch.setattr(host.resident_lineage, 'is_lineage_leader', lambda _: False)
-    monkeypatch.setattr(workspace, 'find_resident', lambda rid: next((r for r in rows if r['resident_id'] == rid), None))
-    monkeypatch.setattr(directory, 'can_manage', lambda *a: state.authorized)
-    monkeypatch.setattr(directory, 'is_active_actor', lambda *a: state.authorized)
+    monkeypatch.setattr(record, 'find_resident', lambda rid: next((r for r in rows if r['resident_id'] == rid), None))
+    monkeypatch.setattr(resident_access, 'can_manage', lambda *a: state.authorized)
+    monkeypatch.setattr(resident_access, 'is_active_actor', lambda *a: state.authorized)
     monkeypatch.setattr(directory, 'lineage_registry_records_locked', lambda _: rows)
     monkeypatch.setattr(lifecycle, 'resident_has_pending_work', lambda rid: rid in state.pending)
     monkeypatch.setattr(workspace, '_safe_lineage_workspace_for_delete', lambda _: folder)
-    monkeypatch.setattr(workspace, 'resident_workspace_path', lambda row: row.get('mismatched_folder', folder))
+    monkeypatch.setattr(record, 'resident_workspace_path', lambda row: row.get('mismatched_folder', folder))
     monkeypatch.setattr(record, 'resident_folder_path', lambda row: folder / 'residents' / row['resident_id'])
     monkeypatch.setattr(project, 'project_info_for_workspace', lambda *a: {})
     monkeypatch.setattr(lifecycle, 'resident_release_step', lambda row, actor: {'kind': 'release', 'resident_id': row['resident_id']})
@@ -66,7 +67,7 @@ def members(tmp_path, monkeypatch):
         if state.transfer:
             raise ValueError('transfer pending')
 
-    monkeypatch.setattr(lifecycle, 'lifecycle_operations', lambda: SimpleNamespace(require_lineage_transfer_settled=settled))
+    monkeypatch.setattr(record, 'lifecycle_operations', lambda: SimpleNamespace(require_lineage_transfer_settled=settled))
 
     @contextmanager
     def lock(ids, **kwargs):

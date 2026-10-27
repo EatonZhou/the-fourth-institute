@@ -2,9 +2,14 @@
 import pytest
 
 from management_portal.society_service import (
-    resident_domain, resident_execution_work, resident_execution_domain,
-    resident_intake_domain, resident_workspace_domain, resident_session_backend_domain,
-    resident_catalog, resident_protocol,
+    resident_domain,
+    resident_execution_work,
+    resident_execution_domain,
+    resident_intake_domain,
+    resident_session_backend_domain,
+    resident_catalog,
+    resident_protocol,
+    resident_record_domain,
 )
 from management_portal.execution.agent_data_store import get_agent_data_store
 from tests.cases.agent_data_test_support import register_session
@@ -26,7 +31,7 @@ def compacted_child(future_creation_store, monkeypatch):
     source = _activate_created_resident(source['resident_id'])
     _record_provider_turn(get_agent_data_store(), source, 0)
     child = resident_domain.create_resident_compacted_context_fork(source['resident_id'], 'sample_admin', backend_route_id='one')
-    record = resident_workspace_domain.find_resident(child['resident_id'])
+    record = resident_record_domain.find_resident(child['resident_id'])
     register_session(record, '01a00000-0000-7000-8000-000000000918', backend_route_id='one')
     monkeypatch.setattr(resident_intake_domain, 'acknowledge_execution', lambda _: True)
     return record
@@ -39,7 +44,7 @@ def fail_initialization(record, monkeypatch):
     prepared = resident_execution_domain._prepare_resident_continuation(record)
     assert prepared
     resident_execution_domain.run_resident_execution(*prepared)
-    return resident_workspace_domain.find_resident(record['resident_id'])
+    return resident_record_domain.find_resident(record['resident_id'])
 
 
 def test_failed_compaction_retains_creation_work_and_incoming_input(compacted_child, monkeypatch):
@@ -93,10 +98,10 @@ def candidate_backend(calls, *, fail_compact=False, lost_create=False):
 
 
 def execute(record):
-    prepared = resident_execution_domain._prepare_resident_continuation(resident_workspace_domain.find_resident(record['resident_id']))
+    prepared = resident_execution_domain._prepare_resident_continuation(resident_record_domain.find_resident(record['resident_id']))
     assert prepared
     resident_execution_domain.run_resident_execution(*prepared)
-    return resident_workspace_domain.find_resident(record['resident_id'])
+    return resident_record_domain.find_resident(record['resident_id'])
 
 
 def test_legacy_pending_visible_and_restored_with_original_identity(compacted_child, monkeypatch):
@@ -128,7 +133,7 @@ def test_candidate_promotes_only_after_canonical_compaction_and_releases_one_inp
     monkeypatch.setattr(resident_session_backend_domain, 'run_backend_session_operation', candidate_backend(calls))
     finalize = resident_execution_domain._finalize_applied_execution
     def finalize_without_starting_business(*args):
-        assert resident_workspace_domain.find_resident(record['resident_id'])['context_compaction_state'] == 'completed'
+        assert resident_record_domain.find_resident(record['resident_id'])['context_compaction_state'] == 'completed'
         finalize(*args)
         return False
     monkeypatch.setattr(resident_execution_domain, '_finalize_applied_execution', finalize_without_starting_business)

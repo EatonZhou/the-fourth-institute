@@ -73,11 +73,11 @@ def is_operating_role(record: Mapping[str, Any] | None) -> bool:
 
 
 def is_own_steward(facade: Mapping[str, Any] | None, actor: object) -> bool:
-    from . import resident_workspace_domain
+    from . import resident_record_domain
     actor_id = str(actor or '').strip().lower()
     if not RESIDENT_REF.fullmatch(actor_id):
         return False
-    record = resident_workspace_domain.find_resident(actor_id) or {}
+    record = resident_record_domain.find_resident(actor_id) or {}
     return is_steward(record) and bool((facade or {}).get('family')) and record['family']['family_id'] == facade['family']['family_id']
 
 
@@ -100,12 +100,12 @@ def validate_relay(business_ref: object, actor: str) -> tuple[str, str] | None:
     facade message are ordinary business references.
     """
 
-    from . import resident_directory_domain, resident_workspace_domain
+    from . import resident_access, resident_record_domain
 
     source = parse_relay_mark(business_ref)
     if source is None:
         return None
-    facade = resident_workspace_domain.find_resident(source[0])
+    facade = resident_record_domain.find_resident(source[0])
     if not is_facade(facade):
         return None
     message = resident_conversation_stream.get_repository().message(source[0], source[1])
@@ -115,7 +115,7 @@ def validate_relay(business_ref: object, actor: str) -> tuple[str, str] | None:
     if not (
         same_actor(message.get("author_id"), actor_id)
         or same_actor(source[0], actor_id)
-        or resident_directory_domain.can_manage(facade, actor_id)
+        or resident_access.can_manage(facade, actor_id)
     ):
         raise PermissionError("只有门面消息的发送者、门面自身或能管理门面的身份可以转交这条消息")
     return source
@@ -150,11 +150,11 @@ def chat_presentation(facade: Mapping[str, Any]) -> dict[str, Any]:
 
     if not is_facade(facade):
         return {}
-    from . import resident_workspace_domain
+    from . import resident_record_domain
 
     members = []
     for member_id in family_members(facade):
-        member = resident_workspace_domain.find_resident(member_id) or {}
+        member = resident_record_domain.find_resident(member_id) or {}
         members.append({"resident_id": member_id, "title": str(member.get("title") or member_id)})
     family_id = str(facade_configuration(facade).get("family_id") or "")
     with get_lineage_data_store().database.read() as connection:
@@ -226,8 +226,8 @@ def tell_steward(facade_id: str, steward_id: str, initiated_by: str, content: st
 
     if not options.pop("_family_rendered", False):
         from .family_tasks import render
-        from . import resident_workspace_domain
-        record = resident_workspace_domain.find_resident(steward_id)
+        from . import resident_record_domain
+        record = resident_record_domain.find_resident(steward_id)
         trigger = options.pop("task_trigger", "organization")
         facts = options.pop("task_facts", {"change": content})
         if record and (record.get("family") or {}).get("role") == "steward":
@@ -295,11 +295,11 @@ def relay_delegates(source: tuple[str, str] | None, member_id: str) -> bool:
     Organization requests and answers to its messages can go to the own steward.
     """
 
-    from . import resident_workspace_domain
+    from . import resident_record_domain
 
     if source is None:
         return False
-    facade = resident_workspace_domain.find_resident(source[0])
+    facade = resident_record_domain.find_resident(source[0])
     if not facade:
         return False
     return is_relay_target(facade, member_id)
@@ -347,10 +347,10 @@ def complete_relay(source: tuple[str, str], member_id: str, member_message_id: s
 
 
 def _complete_relay(source: tuple[str, str], member_id: str, member_message_id: str) -> None:
-    from . import resident_workspace_domain
+    from . import resident_record_domain
 
     facade_id, facade_message_id = source
-    facade = resident_workspace_domain.find_resident(facade_id)
+    facade = resident_record_domain.find_resident(facade_id)
     if not facade:
         return
     store = get_lineage_data_store()
@@ -440,14 +440,14 @@ def relayed_outcomes(request_ids: Mapping[str, list[str]]) -> dict[str, dict[str
 def relay_source_of(member_id: str, member_message_id: str) -> tuple[str, str] | None:
     """The facade message a member message carries, when the facade recorded that relay."""
 
-    from . import resident_workspace_domain
+    from . import resident_record_domain
 
     source = parse_relay_mark(
         resident_conversation_stream.get_repository().message_business_ref(member_id, member_message_id)
     )
     if source is None:
         return None
-    facade = resident_workspace_domain.find_resident(source[0])
+    facade = resident_record_domain.find_resident(source[0])
     if not is_facade(facade):
         return None
     link = relay_links(facade).get(source[1]) or {}
@@ -500,9 +500,9 @@ class _RelayBatch:
         }
 
     def record(self, resident_id: str) -> dict[str, Any]:
-        from . import resident_workspace_domain
+        from . import resident_record_domain
         if resident_id not in self.records:
-            self.records[resident_id] = resident_workspace_domain.find_resident(resident_id) or {}
+            self.records[resident_id] = resident_record_domain.find_resident(resident_id) or {}
         return self.records[resident_id]
 
     def member_view(self, resident_id: str) -> dict[str, str]:
@@ -533,9 +533,9 @@ def relay_activity(facade_id: str) -> dict[str, Any] | None:
     finishes or when it is among the latest.
     """
 
-    from . import resident_workspace_domain
+    from . import resident_record_domain
 
-    facade = resident_workspace_domain.find_resident(facade_id)
+    facade = resident_record_domain.find_resident(facade_id)
     if not is_facade(facade):
         return None
     links = sorted(
@@ -985,9 +985,9 @@ def _facade_reply(
 
 
 def _member_view(resident_id: str) -> dict[str, str]:
-    from . import resident_workspace_domain
+    from . import resident_record_domain
 
-    record = resident_workspace_domain.find_resident(resident_id) or {}
+    record = resident_record_domain.find_resident(resident_id) or {}
     return {"title": str(record.get("title") or "")}
 
 
@@ -1048,7 +1048,7 @@ def quoted_member(facade: Mapping[str, Any], message: Mapping[str, Any] | None) 
     from management_common.principal import message_quote
 
     from . import resident_execution_provider
-    from . import resident_workspace_domain
+    from . import resident_record_domain
 
     if not isinstance(message, Mapping) or not is_facade(facade):
         return ""
@@ -1073,7 +1073,7 @@ def quoted_member(facade: Mapping[str, Any], message: Mapping[str, Any] | None) 
                     break
     if not member_id or (member_id not in family_member_ids(facade) and member_id != family_steward_id(facade)):
         return ""
-    record = resident_workspace_domain.find_resident(member_id)
+    record = resident_record_domain.find_resident(member_id)
     if not record or record.get("deleted_at"):
         return ""
     capabilities = resident_execution_provider.provider_for(record).capabilities
@@ -1096,7 +1096,7 @@ def relay_quote(source: tuple[str, str] | None, member_id: str) -> dict[str, str
     from management_common.principal import message_quote
 
     from .message_quotes import quote_of
-    from . import resident_workspace_domain
+    from . import resident_record_domain
 
     if source is None:
         return {}
@@ -1107,7 +1107,7 @@ def relay_quote(source: tuple[str, str] | None, member_id: str) -> dict[str, str
         return {}
     excerpt = {"author_id": quote["author_id"], "text": quote["text"]}
     quoted_id = quote.get("message_id", "")
-    facade, member = resident_workspace_domain.find_resident(facade_id), resident_workspace_domain.find_resident(member_id)
+    facade, member = resident_record_domain.find_resident(facade_id), resident_record_domain.find_resident(member_id)
     if not quoted_id or not facade or not member:
         return excerpt
     link = relay_links(facade).get(quoted_id) or {}

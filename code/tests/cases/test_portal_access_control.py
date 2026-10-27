@@ -26,7 +26,6 @@ from tests.cases.registry_support import write_projects
 
 from management_portal.society_service import resident_access, resident_runtime_domain
 
-from management_portal.society_service import resident_directory_domain
 
 def _projects() -> None:
     write_projects("schema_version: 1\nprojects:\n  - id: RobotWorker\n  - id: Robolab\n")
@@ -63,9 +62,9 @@ def test_open_mode_collaboration_and_resource_read_access_agree(
     else:
         with pytest.raises(PermissionError):
             lineage_domain._actor_can_manage_lineage(lineage, actor)
-    assert resident_directory_domain.can_manage(resident, actor) is collaboration_allowed
+    assert resident_access.can_manage(resident, actor) is collaboration_allowed
     assert resident_access.resident_visible_to_actor(resident, actor) is collaboration_allowed
-    assert resident_directory_domain.has_resident_workspace_authority(resident, actor) is collaboration_allowed
+    assert resident_access.has_resident_workspace_authority(resident, actor) is collaboration_allowed
     assert identity_reads == []
     assert resource_query.resource_is_readable({
         "resource_id": resident["resident_id"],
@@ -478,7 +477,7 @@ def test_open_mode_lets_any_user_view_and_manage_lineages_and_residents(
 
         )
     monkeypatch.setattr(lineage_domain, "get_portal_access_store", lambda: store)
-    monkeypatch.setattr(resident_directory_domain, "get_portal_access_store", lambda: store)
+    monkeypatch.setattr(resident_access, "get_portal_access_store", lambda: store)
     lineage = {
         "lineage_id": "lineage_0123456789ab",
         "project_id": "RobotWorker",
@@ -509,4 +508,4 @@ def test_open_mode_lets_any_user_view_and_manage_lineages_and_residents(
     )
     for actor in ("viewer", "contributor", "project-admin", "outsider"):
         assert resident_access.resident_visible_to_actor(resident, actor) is True
-        assert resident_directory_domain.can_manage(resident, actor) is True
+        assert resident_access.can_manage(resident, actor) is True

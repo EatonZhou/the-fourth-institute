@@ -288,7 +288,7 @@ def test_preference_updates_survive_login_and_router_reads_them(personal):
         "resident_id": FACADE, "trigger": "route", "source_message_id": "msg_123"}
     assert not any(name == "GetSharedState" for name, _ in calls)
     from management_portal.society_service import family_tasks
-    from management_portal.society_service.resident_workspace_domain import find_resident as _find_resident
+    from management_portal.society_service.resident_record_domain import find_resident as _find_resident
     _, block = family_tasks.context(_find_resident(assistant["resident_id"]))
     _, _, guide = family_tasks.guide(_find_resident(block["family"]["router"]))
     assert key in guide and "同话题优先保持上一轮成员" in guide

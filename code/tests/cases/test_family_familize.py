@@ -10,7 +10,7 @@ import math
 import pytest
 
 from management_portal.society_service import family_facade, resident_execution_domain
-from management_portal.society_service.resident_workspace_domain import find_resident as _find_resident
+from management_portal.society_service.resident_record_domain import find_resident as _find_resident
 from tests.cases.isa_test_support import ACTOR, ok, run
 from tests.cases.test_isa_lineage_lifecycle import (  # noqa: F401 - lineage is a fixture
     future_creation_store,

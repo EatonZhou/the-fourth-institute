@@ -55,10 +55,10 @@ def test_deleted_lookup_does_not_finalize_registration(monkeypatch):
     monkeypatch.setattr(resident_lineage, "find", lambda rid: record)
     def unexpected(*args, **kwargs):
         raise AssertionError("Deleted identity lookup must not finalize registration")
-    assert domain.find_resident(RID) is record
-    assert domain.find_resident_canonical(RID) is None
+    assert resident_record_domain.find_resident(RID) is record
+    assert resident_record_domain.find_resident_canonical(RID) is None
     with pytest.raises(KeyError):
-        domain.resolve_resident_runtime_target(RID, "sample_admin", require_visible=True)
+        resident_record_domain.resolve_resident_runtime_target(RID, "sample_admin", require_visible=True)
     assert includes == [False]
 
 

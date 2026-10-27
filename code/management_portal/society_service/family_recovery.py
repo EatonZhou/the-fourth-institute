@@ -49,14 +49,14 @@ def _state(repository, resident_id: str, message_id: str) -> dict:
 
 def request_status(facade: Mapping[str, Any], message_id: str) -> dict:
     from . import family_storage, trigger_paths
-    from . import resident_workspace_domain
+    from . import resident_record_domain
 
     facade_id = resident_lineage.resident_id(facade)
     repository = resident_conversation_stream.get_repository()
     links = family_facade.relay_links(facade)
     if message_id in links:
         via, (member, member_message) = family_facade.relay_holder(facade_id, message_id)
-        record = resident_workspace_domain.find_resident(member) or {}
+        record = resident_record_domain.find_resident(member) or {}
         return {**_state(repository, member, member_message), "resident_id": member,
                 "member_message_id": member_message, "title": record.get("title") or member, "via": via}
     own = _state(repository, facade_id, message_id)
@@ -79,8 +79,8 @@ def request_status(facade: Mapping[str, Any], message_id: str) -> dict:
 
 
 def _allowed(facade, request, actor):
-    from . import resident_directory_domain
-    return same_actor(request.get("author_id"), actor) or resident_directory_domain.can_manage(facade, actor)
+    from . import resident_access
+    return same_actor(request.get("author_id"), actor) or resident_access.can_manage(facade, actor)
 
 
 def _select(facade, message, entries):
@@ -135,13 +135,12 @@ def _select(facade, message, entries):
 
 def handle(facade: Mapping[str, Any], message_id: str) -> bool:
     """Repeatable after a crash. Selection is durable before any execution changes."""
-    from . import resident_lifecycle_domain
+    from . import resident_record_domain
     from .resident_input_recovery import requeue
-    from . import resident_workspace_domain
 
     facade_id, lineage_id = resident_lineage.resident_id(facade), resident_lineage.lineage_id(facade)
     repository = resident_conversation_stream.get_repository()
-    with resident_lifecycle_domain.state_lock(facade_id):
+    with resident_record_domain.state_lock(facade_id):
         entries = records(facade)
         entry = entries.get(message_id)
         if entry is None:
@@ -179,7 +178,7 @@ def handle(facade: Mapping[str, Any], message_id: str) -> bool:
                 try:
                     if current["state"] == "failed":
                         if current.get("resident_id"):
-                            member = resident_workspace_domain.find_resident(current["resident_id"])
+                            member = resident_record_domain.find_resident(current["resident_id"])
                             if not member or member.get("deleted_at"):
                                 raise ValueError("原接手成员已不可用，请先安排成员。")
                             # Authorization belongs to the facade request, not arbitrary member mailbox access.
@@ -237,7 +236,7 @@ def relay_completed(facade, request_id):
 
 def routing_failed(event, error: str, *, node_id: str = ""):
     """Close a failed routing attempt so the facade shows it and can explicitly retry."""
-    from . import resident_lifecycle_domain, resident_workspace_domain
+    from . import resident_record_domain
     payload = event.get("payload") or {}
     facade_id, request_id = str(payload.get("resident_id") or ""), str(payload.get("message_id") or "")
     ref = str(payload.get("input_business_ref") or "")
@@ -245,7 +244,7 @@ def routing_failed(event, error: str, *, node_id: str = ""):
         parsed = family_facade.parse_relay_mark(ref.removeprefix("family-route/"))
         if parsed:
             facade_id, request_id = parsed
-    facade = resident_workspace_domain.find_resident(facade_id) if facade_id else None
+    facade = resident_record_domain.find_resident(facade_id) if facade_id else None
     if not family_facade.is_facade(facade) or not request_id or request_id in family_facade.relay_links(facade):
         return
     if node_id:
@@ -253,7 +252,7 @@ def routing_failed(event, error: str, *, node_id: str = ""):
         with get_lineage_data_store().database.read() as connection:
             if node_id not in family_storage.routing_nodes(connection, facade["family"]["family_id"]):
                 return
-    with resident_lifecycle_domain.state_lock(facade_id):
+    with resident_record_domain.state_lock(facade_id):
         entries = records(facade)
         related = [(mid, item) for mid, item in entries.items() if item.get("request_message_id") == request_id and item.get("route_occurrence")]
         if related and max(_instant(item.get("requested_at")) for _, item in related) > _instant(event.get("occurred_at")):
@@ -281,20 +280,20 @@ def archive_result(facade_id: str, message_id: str, steward_message_id: str, act
     projection exposes the completed source and its real reply IDs; the link
     records who reconciled the failure and why.
     """
-    from . import resident_directory_domain, resident_lifecycle_domain, resident_workspace_domain
+    from . import resident_access, resident_record_domain
 
-    facade = resident_workspace_domain.find_resident(facade_id)
+    facade = resident_record_domain.find_resident(facade_id)
     if not family_facade.is_facade(facade):
         raise ValueError("目标不是 Family 门面")
     steward = family_facade.family_steward_id(facade)
-    if actor != steward and not resident_directory_domain.can_manage(facade, actor):
+    if actor != steward and not resident_access.can_manage(facade, actor):
         raise PermissionError("只有本 Family Steward 或能管理门面的身份可归档成果")
     if not str(reason or "").strip():
         raise ValueError("归档必须说明已完成成果与原请求的关系")
     repository = resident_conversation_stream.get_repository()
     store = get_lineage_data_store()
     lineage_id = facade["lineage_id"]
-    with resident_lifecycle_domain.state_lock(facade_id), store.family_quota_reviews.transaction(lineage_id, facade_id):
+    with resident_record_domain.state_lock(facade_id), store.family_quota_reviews.transaction(lineage_id, facade_id):
         original = repository.message(facade_id, message_id)
         if original is None or original.get("role") != "user":
             raise ValueError("门面原请求不存在")

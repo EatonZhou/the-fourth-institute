@@ -14,24 +14,24 @@ from management_portal.execution.accounts import shared_account_configuration
 from management_portal.portal_access_control import get_portal_access_store
 
 from . import (
-    family_facade,
     family_activity,
+    family_facade,
     identity_contract,
     resident_access,
+    resident_actual_sent_domain,
     resident_backend,
     resident_catalog,
     resident_conversation_stream,
-    resident_actual_sent_domain,
     resident_domain_common,
     resident_execution_domain,
     resident_execution_provider,
+    resident_execution_work,
     resident_held_infos,
-    resident_mailbox,
     resident_input_recovery,
     resident_intake_domain,
-    resident_workspace_domain,
-    resident_execution_work,
     resident_lineage,
+    resident_mailbox,
+    resident_record_domain,
 )
 from . import resident_fork_inheritance, resident_message_contract, resident_input_scope
 from .input_progress import input_progress
@@ -61,7 +61,7 @@ class ResidentDeliveryContext:
 
 
 def _target(resident_id: str, actor: str) -> resident_domain_common.ResidentRuntimeTarget:
-    return resident_workspace_domain.resolve_resident_runtime_target(
+    return resident_record_domain.resolve_resident_runtime_target(
         resident_id,
         actor,
         require_visible=True,
@@ -223,7 +223,7 @@ def _with_conversation_controls(
     response = dict(result)
     if isinstance(response.get("state"), Mapping):
         if target is None:
-            target = resident_workspace_domain.resolve_resident_runtime_target(resident_id)
+            target = resident_record_domain.resolve_resident_runtime_target(resident_id)
         if not state_projected:
             response["state"] = resident_execution_gate.project_states(
                 {target.resident_id: {"state": response["state"]}},
@@ -450,7 +450,7 @@ def prepare_resident_forward(
     if not target_resident_id:
         raise ValueError("target_resident_id required")
     # Forwarding delivers a message: anyone may forward to a personal AMA.
-    target = resident_workspace_domain.resolve_resident_runtime_target(
+    target = resident_record_domain.resolve_resident_runtime_target(
         target_resident_id, actor_id, require_visible=True, delivery=True)
     return {
         "lineage_id": resident_lineage.lineage_id(target.record),
@@ -489,11 +489,11 @@ def _resident_view(target: Any) -> dict[str, Any]:
 
 def _workspace_views(record: Mapping[str, Any]) -> list[dict[str, str]]:
     """Expose self ownership separately from ordinary usage."""
-    from . import resident_workspace_domain
+    from . import resident_record_domain
     return [{"workspace_id": root["workspace_id"], "path": root["path"],
              "title": root["title"], "label": root["label"],
              "is_owned": root["is_primary"], "purpose": root.get("purpose", "")}
-            for root in resident_workspace_domain.resident_workspace_roots(dict(record))]
+            for root in resident_record_domain.resident_workspace_roots(dict(record))]
 
 
 def get_resident(resident_id: str, actor: str) -> dict[str, Any]:
@@ -810,7 +810,7 @@ def get_resident_conversation_snapshot(
 ) -> dict[str, Any]:
     actor_id = canonical_actor_id(actor)
     scoped = bool(input_message_id) and resident_input_scope.permits(resident_id, actor_id, input_message_id)
-    target = resident_workspace_domain.resolve_resident_runtime_target(
+    target = resident_record_domain.resolve_resident_runtime_target(
         resident_id,
         actor_id,
         require_visible=not scoped and not get_portal_access_store().is_service_actor(
@@ -954,7 +954,7 @@ def get_resident_input_state(
     require_visible = not resident_input_scope.permits(resident_id, actor, message_id) and not (
         get_portal_access_store().is_service_actor(canonical_actor_id(actor))
     )
-    target = resident_workspace_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=require_visible)
+    target = resident_record_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=require_visible)
     return _stored_resident_input_state(
         target.resident_id, message_id, include_progress=include_progress, include_context=include_context,
     )
@@ -988,7 +988,7 @@ def _stored_resident_input_state(
         message_id,
     )
     # A Mailbox group member reports its group and follows it (decision_b5d349190743).
-    record = resident_workspace_domain.find_resident_for_admission(resident_id) or {"resident_id": resident_id}
+    record = resident_record_domain.find_resident_for_admission(resident_id) or {"resident_id": resident_id}
     projected = resident_mailbox.project_input_state(record, message_id, dict(state))
     if family_facade.is_facade(record):
         return family_facade.project_input_state(
@@ -1016,7 +1016,7 @@ def get_resident_message(
     actor: str,
     message_id: str,
 ) -> dict[str, Any]:
-    target = resident_workspace_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=not resident_input_scope.permits_message(resident_conversation_stream.get_repository(), resident_id, actor, message_id))
+    target = resident_record_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=not resident_input_scope.permits_message(resident_conversation_stream.get_repository(), resident_id, actor, message_id))
     try:
         return resident_conversation_stream.get_repository().public_message(
             target.resident_id,
@@ -1068,7 +1068,7 @@ def _sent_round(
     writer = own
     initiator = str(((message.get("origin") or {}).get("initiated_by") or {}).get("id") or "")
     if family_facade.is_facade(target.record) and initiator and initiator != target.resident_id:
-        record = resident_workspace_domain.find_resident(initiator) or {}
+        record = resident_record_domain.find_resident(initiator) or {}
         writer = {"resident_id": initiator, "title": str(record.get("title") or "")}
     return {
         "kind": "sent",
@@ -1189,7 +1189,7 @@ def _direct_member_rounds(facade: Mapping[str, Any], sender_id: str) -> list[dic
     latest.sort(reverse=True)
     rounds = []
     for at, member_id, kind, message_id in latest[:DIRECT_MEMBER_ROUNDS]:
-        record = resident_workspace_domain.find_resident(member_id) or {}
+        record = resident_record_domain.find_resident(member_id) or {}
         rounds.append({
             "kind": kind, "resident_id": member_id, "title": str(record.get("title") or ""), "created_at": at,
             "message_id": message_id, "text": _opening(repository.message(member_id, message_id)),
@@ -1449,7 +1449,7 @@ def get_resident_events(
     input_message_id: str = "",
 ) -> dict[str, Any]:
     scoped = bool(input_message_id) and resident_input_scope.permits(resident_id, actor, input_message_id)
-    target = resident_workspace_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=not scoped)
+    target = resident_record_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=not scoped)
     result = resident_conversation_stream.get_repository().events_after(
         target.resident_id,
         after_cursor,
@@ -1529,7 +1529,7 @@ def cancel_resident_input(
     actor: str,
     message_id: str,
 ) -> dict[str, Any]:
-    resident_workspace_domain.resolve_resident_admission_target(resident_id, actor, require_visible=True)
+    resident_record_domain.resolve_resident_admission_target(resident_id, actor, require_visible=True)
     if resident_input_scope.get(resident_id, message_id):
         for _attempt in range(3):
             state = _stored_resident_input_state(resident_id, message_id)
@@ -1608,11 +1608,11 @@ def _end_lost_input(resident_id: str, message_id: str) -> dict[str, Any] | None:
     """
     from management_portal.execution import execution_inputs
     from management_portal.execution.agent_data_store import get_agent_data_store
-    from . import resident_lifecycle_domain
+    from . import resident_domain_common, resident_record_domain
     from .state_store import get_lineage_data_store
 
-    with resident_lifecycle_domain.state_lock(resident_id):
-        record = resident_workspace_domain.find_resident(resident_id)
+    with resident_record_domain.state_lock(resident_id):
+        record = resident_record_domain.find_resident(resident_id)
         if not record or family_facade.is_facade(record):
             return None
         if _stored_resident_input_state(resident_id, message_id)["state"] not in {"queued", "running"}:
@@ -1628,7 +1628,7 @@ def _end_lost_input(resident_id: str, message_id: str) -> dict[str, Any] | None:
         if execution_inputs.latest(get_agent_data_store(), resident_id, message_id) is not None:
             return None
         repository.set_input_state(
-            resident_id, message_id, "cancelled", updated_at=resident_lifecycle_domain.now_iso(),
+            resident_id, message_id, "cancelled", updated_at=resident_domain_common.now_iso(),
             error={"code": "lost_input", "message": "没有任何工作在处理这条消息，它不会再送达，已撤回"},
         )
     return {"resident_id": resident_id, "message_id": message_id, "cancelled": True}
@@ -1639,7 +1639,7 @@ def cancel_resident_queue_item(
     actor: str,
     message_id: str,
 ) -> dict[str, Any]:
-    resident_workspace_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=True)
+    resident_record_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=True)
     if resident_input_scope.get(resident_id, message_id):
         return cancel_resident_input(resident_id, actor, message_id)
 
@@ -1665,7 +1665,7 @@ def cancel_resident_execution(
     *,
     continue_queue: bool = True,
 ) -> dict[str, Any]:
-    resident_workspace_domain.resolve_resident_admission_target(resident_id, actor, require_visible=True)
+    resident_record_domain.resolve_resident_admission_target(resident_id, actor, require_visible=True)
     if resident_input_scope.get(resident_id, message_id):
         return cancel_resident_input(resident_id, actor, message_id)
 

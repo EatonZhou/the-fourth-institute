@@ -8,7 +8,7 @@ Deleted Residents leave the active graph while their identity remains.
 
 from __future__ import annotations
 
-from management_portal.society_service.resident_workspace_domain import (
+from management_portal.society_service.resident_record_domain import (
     find_resident as _find_resident,
     save_resident_record as _save_resident_record,
 )

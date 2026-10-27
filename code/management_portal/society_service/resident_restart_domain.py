@@ -72,8 +72,8 @@ class _SessionRestartSuperseded(Exception):
 
 
 def _pending_session_restart(record: dict[str, Any], intent: dict[str, Any]) -> dict[str, Any] | None:
-    from . import resident_lifecycle_domain, resident_record_domain
-    if not resident_lifecycle_domain.lifecycle_operations().pending(resident_record_domain.record_resident_id(record)):
+    from . import resident_domain_common, resident_record_domain
+    if not resident_record_domain.lifecycle_operations().pending(resident_domain_common.record_resident_id(record)):
         return None
     previous = record.get("session_restart") or {}
     if previous.get("status") == "accepted" and previous.get("intent") == intent:
@@ -102,16 +102,16 @@ def _admitted_session_restart(record: dict[str, Any], intent: dict[str, Any]) ->
 
 
 def _record_session_restart_phase(resident_id: str, restart_id: str, phase: str) -> None:
-    from . import resident_lifecycle_domain, resident_workspace_domain
-    with resident_lifecycle_domain.state_lock(resident_id):
-        current = resident_workspace_domain.find_resident(resident_id)
+    from . import resident_domain_common, resident_record_domain
+    with resident_record_domain.state_lock(resident_id):
+        current = resident_record_domain.find_resident(resident_id)
         state = (current or {}).get("session_restart") or {}
         if state.get("restart_id") != restart_id or state.get("status") != "accepted" or state.get("phase") == phase:
             return
-        now = resident_lifecycle_domain.now_iso()
+        now = resident_domain_common.now_iso()
         current["session_restart"] = {**state, "phase": phase, "phase_started_at": now}
         current["updated_at"] = now
-        resident_workspace_domain.save_resident_record(current)
+        resident_record_domain.save_resident_record(current)
 
 
 def _apply_resident_session_target(
@@ -182,7 +182,7 @@ def _previous_compaction_summary(resident_id: str, *, since: str = "") -> str:
 
 
 def _source_session_context(record: dict[str, Any], limit: int = 18) -> str:
-    from . import resident_directory_domain, resident_workspace_domain
+    from . import resident_directory_domain, resident_domain_common
     session_id = resident_backend.record_session_id(record)
     if not session_id:
         return "(empty)"
@@ -198,7 +198,7 @@ def _source_session_context(record: dict[str, Any], limit: int = 18) -> str:
             if role == "agent"
             else "Portal"
         )
-        content = resident_workspace_domain.protocol_message_text(item)
+        content = resident_domain_common.protocol_message_text(item)
         if content:
             lines.append(f"{author}: {content}")
     return "\n\n".join(lines) or "(empty)"
@@ -335,9 +335,9 @@ def _release_session_restart_quota_override(step: Mapping[str, Any]) -> None:
 
 
 def get_resident_runtime_route(resident_id: str, actor: str = "") -> dict[str, Any]:
-    from . import resident_workspace_domain
+    from . import resident_record_domain
 
-    target = resident_workspace_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=True)
+    target = resident_record_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=True)
     account = resident_backend.execution_account(target.record)
     return {
         "backend": resident_backend.execution_backend(target.record),
@@ -349,15 +349,15 @@ def get_resident_restart_options(
     resident_id: str,
     actor: str = "",
 ) -> dict[str, Any]:
-    from . import resident_directory_domain, resident_runtime_domain, resident_workspace_domain
-    target = resident_workspace_domain.resolve_resident_runtime_target(
+    from . import resident_access, resident_record_domain, resident_runtime_domain
+    target = resident_record_domain.resolve_resident_runtime_target(
         resident_id,
         actor,
         require_visible=True,
     )
     actor_id = canonical_actor_id(actor)
     record = target.record
-    if not resident_directory_domain.can_manage(record, actor_id):
+    if not resident_access.can_manage(record, actor_id):
         raise manage_refusal(record)
     source = resident_backend.session_record(record)
     catalog = runtime_configuration_catalog()["backends"]
@@ -387,9 +387,9 @@ def get_resident_session_restart(
     actor: str = "",
 ) -> dict[str, Any]:
     """Return the narrow authoritative migration snapshot for HATG readers."""
-    from . import resident_workspace_domain
+    from . import resident_record_domain
 
-    target = resident_workspace_domain.resolve_resident_runtime_target(
+    target = resident_record_domain.resolve_resident_runtime_target(
         resident_id,
         actor,
         require_visible=True,
@@ -418,35 +418,36 @@ def restart_resident_session(
     resumes. Ordinary inputs do not trigger session replacement for tool metadata.
     """
     from . import (
+        resident_access,
         resident_directory_domain,
+        resident_domain_common,
         resident_execution_domain,
         resident_intake_domain,
-        resident_lifecycle_domain,
+        resident_record_domain,
         resident_runtime_domain,
         resident_session_backend_domain,
-        resident_workspace_domain,
     )
 
     body = payload if isinstance(payload, dict) else {}
     actor_id = canonical_actor_id(actor)
     if not actor_id:
         raise ValueError("需要登录后重启 session")
-    target = resident_workspace_domain.resolve_resident_runtime_target(
+    target = resident_record_domain.resolve_resident_runtime_target(
         resident_id,
         actor_id,
         require_visible=True,
     )
     record = target.record
-    if not portal_reason and not resident_directory_domain.can_manage(record, actor_id):
+    if not portal_reason and not resident_access.can_manage(record, actor_id):
         raise manage_refusal(record)
     if resident_backend.execution_backend(record) != "provider_api" and not resident_execution_provider.provider_for(
         record
     ).capabilities.supports_session_restart:
         raise ValueError("该 Resident ExecutionProvider 没有可重启 session")
     request_id = str(body.get("idempotency_key") or "")
-    with resident_lifecycle_domain.state_lock(resident_id):
-        record = copy.deepcopy(resident_workspace_domain.find_resident(resident_id) or record)
-        if not portal_reason and not resident_directory_domain.can_manage(record, actor_id):
+    with resident_record_domain.state_lock(resident_id):
+        record = copy.deepcopy(resident_record_domain.find_resident(resident_id) or record)
+        if not portal_reason and not resident_access.can_manage(record, actor_id):
             raise manage_refusal(record)
         previous_restart = record.get("session_restart") or {}
         from .resident_deferred_restart import pending as deferred_restart
@@ -491,7 +492,7 @@ def restart_resident_session(
         settings.update({key: body[key] for key in ("model", "prompt_context", "backend_options") if key in body})
         target_runtime_settings = resident_runtime_domain.resident_runtime_settings_from_register_payload(
             {**record, "backend": target_provider, "backend_route_id": target_route},
-            {"runtime_settings": settings}, actor_id, resident_lifecycle_domain.now_iso(),
+            {"runtime_settings": settings}, actor_id, resident_domain_common.now_iso(),
         )
     else:
         if "prompt_context" in body or "backend_options" in body:
@@ -557,12 +558,12 @@ def restart_resident_session(
     ) else {}
     resume_message_id = str(failed_input.get("message_id") or "") if intent["resume_failed_input"] else ""
     try:
-        with resident_lifecycle_domain.state_lock(resident_id):
-            pending = _pending_session_restart(resident_workspace_domain.find_resident(resident_id) or record, intent)
+        with resident_record_domain.state_lock(resident_id):
+            pending = _pending_session_restart(resident_record_domain.find_resident(resident_id) or record, intent)
     except _SessionRestartSuperseded as superseded:
         _supersede_session_restart(resident_id, actor_id, superseded.previous)
-        with resident_lifecycle_domain.state_lock(resident_id):
-            pending = _admitted_session_restart(resident_workspace_domain.find_resident(resident_id) or record, intent)
+        with resident_record_domain.state_lock(resident_id):
+            pending = _admitted_session_restart(resident_record_domain.find_resident(resident_id) or record, intent)
     if pending:
         return pending
 
@@ -603,7 +604,7 @@ def restart_resident_session(
                 actor_id,
                 str(current_job.get("user_message_id") or ""),
             )
-            refreshed = resident_workspace_domain.resolve_resident_runtime_target(
+            refreshed = resident_record_domain.resolve_resident_runtime_target(
                 target.resident_id,
                 actor_id,
                 require_visible=True,
@@ -618,11 +619,11 @@ def restart_resident_session(
     restart_id = str(previous_restart['restart_id']) if deferred else f"restart_{secrets.token_hex(12)}"
     public_request_id = str(deferred['request_id']) if deferred else request_id
     if target_provider == "provider_api" or (not source["has_session"] and not unbound_previous_session):
-        with resident_lifecycle_domain.state_lock(resident_id):
-            current = copy.deepcopy(resident_workspace_domain.find_resident(resident_id) or {})
+        with resident_record_domain.state_lock(resident_id):
+            current = copy.deepcopy(resident_record_domain.find_resident(resident_id) or {})
             if not current:
                 raise KeyError("resident not found")
-            if not portal_reason and not resident_directory_domain.can_manage(current, actor_id):
+            if not portal_reason and not resident_access.can_manage(current, actor_id):
                 raise manage_refusal(current)
             previous = current.get("session_restart") or {}
             if request_id and previous.get("request_id") == request_id:
@@ -666,7 +667,7 @@ def restart_resident_session(
                 "context_strategy": strategy,
                 "active_execution_reassigned": bool(reassigned_execution_id),
                 "execution_id": reassigned_execution_id,
-                "configured_by": actor_id, "configured_at": resident_lifecycle_domain.now_iso(),
+                "configured_by": actor_id, "configured_at": resident_domain_common.now_iso(),
                 "resume_message_id": resume_message_id,
                 "resume_failed_input": intent["resume_failed_input"],
                 "failed_message_id": str(failed_input.get("message_id") or ""),
@@ -679,7 +680,7 @@ def restart_resident_session(
                 state["execution_request_id"] = request_id
             current["updated_at"] = state["configured_at"]
             def commit_configuration():
-                resident_workspace_domain.save_resident_record(current, commit_configuration=True)
+                resident_record_domain.save_resident_record(current, commit_configuration=True)
                 if target_provider == "provider_api" and strategy == "fresh":
                     execution_port.reset_provider_context(resident_id, actor_ref=actor_id, reset_at=state["configured_at"])
                 refreshed = current
@@ -687,11 +688,11 @@ def restart_resident_session(
                     from .resident_work_recovery import resume_after_restart, set_recovery_entry
                     if not intent["resume_failed_input"]:
                         set_recovery_entry(current, str(failed_input["message_id"]), disabled=True)
-                        resident_workspace_domain.save_resident_record(current)
+                        resident_record_domain.save_resident_record(current)
                     resume_after_restart(current, state)
-                    refreshed = resident_workspace_domain.find_resident(resident_id)
+                    refreshed = resident_record_domain.find_resident(resident_id)
                     refreshed["session_restart"] = state
-                    resident_workspace_domain.save_resident_record(refreshed)
+                    resident_record_domain.save_resident_record(refreshed)
                 if intake_transition_id and refreshed.get("intake_transition_id") == intake_transition_id:
                     resident_intake_domain.commit_resident_intake_state(refreshed, resident_state.INTAKE_OPEN)
             replacement = None
@@ -761,7 +762,7 @@ def restart_resident_session(
         "status": "accepted", "phase": "accepted", "restart_id": restart_id, "request_id": public_request_id,
         "intent": intent, "execution_id": request.execution_id, "submitted_by": actor_id,
         "resident_id": target.resident_id, "requested_strategy": requested_strategy,
-        "context_strategy": strategy, "submitted_at": resident_lifecycle_domain.now_iso(),
+        "context_strategy": strategy, "submitted_at": resident_domain_common.now_iso(),
         "source": {"provider": source_provider, "account_id": source_route},
         "target": {"provider": target_provider, "account_id": target_route},
         "target_runtime_settings": copy.deepcopy(target_runtime_settings),
@@ -781,8 +782,8 @@ def restart_resident_session(
             "execution_id": preserved_execution_id,
             "message_id": preserved_held_message_id,
         }
-    with resident_lifecycle_domain.state_lock(resident_id):
-        current = copy.deepcopy(resident_workspace_domain.find_resident(resident_id) or {})
+    with resident_record_domain.state_lock(resident_id):
+        current = copy.deepcopy(resident_record_domain.find_resident(resident_id) or {})
         if not current:
             raise KeyError("resident not found")
         pending = _admitted_session_restart(current, intent)
@@ -805,11 +806,11 @@ def restart_resident_session(
             transition_id = intake_transition_id
             if current.get("intake_open") is not False:
                 resident_intake_domain.commit_resident_intake_state(current, resident_state.INTAKE_CLOSED)
-                current.update(resident_workspace_domain.find_resident(resident_id))
+                current.update(resident_record_domain.find_resident(resident_id))
                 transition_id = str(current.get("intake_transition_id") or "")
             current["session_restart"] = state
-            resident_workspace_domain.save_resident_record(current)
-            resident_lifecycle_domain.lifecycle_operations().enqueue(resident_id, [{
+            resident_record_domain.save_resident_record(current)
+            resident_record_domain.lifecycle_operations().enqueue(resident_id, [{
                 "kind": "session_restart", "resident_id": resident_id,
                 "request": request.to_payload(), "state": state,
                 "record": copy.deepcopy(current), "source_binding": source_binding,
@@ -822,9 +823,9 @@ def restart_resident_session(
 
 
 def resume_resident_session_restart(step: dict[str, Any]) -> None:
-    from . import resident_intake_domain, resident_lifecycle_domain, resident_workspace_domain
+    from . import resident_domain_common, resident_intake_domain, resident_record_domain
     resident_id, state = step["resident_id"], step["state"]
-    saved = (resident_workspace_domain.find_resident(resident_id) or {}).get("session_restart") or {}
+    saved = (resident_record_domain.find_resident(resident_id) or {}).get("session_restart") or {}
     if saved.get("restart_id") != state["restart_id"]:
         raise ValueError("Resident session restart identity changed")
     if saved.get("status") in {"completed", "failed", "cancelled"}:
@@ -885,8 +886,8 @@ def resume_resident_session_restart(step: dict[str, Any]) -> None:
     _record_session_restart_phase(resident_id, state["restart_id"], "switching" if not failure else "failed")
     prepared = resident_backend.session_record_for_binding(prepared_id)
     replacement = None
-    with resident_lifecycle_domain.state_lock(resident_id):
-        current = copy.deepcopy(resident_workspace_domain.find_resident(resident_id) or {})
+    with resident_record_domain.state_lock(resident_id):
+        current = copy.deepcopy(resident_record_domain.find_resident(resident_id) or {})
         if (current.get("session_restart") or {}).get("restart_id") != state["restart_id"]:
             raise ValueError("Resident session restart identity changed")
         current_restart = current.get("session_restart") or {}
@@ -946,30 +947,30 @@ def resume_resident_session_restart(step: dict[str, Any]) -> None:
             "status": "cancelled" if cancel_requested else "failed" if failure else "completed",
             "phase": "cancelled" if cancel_requested else "failed" if failure else "completed",
             "provider": target_provider, "account_id": target_route,
-            "restarted_by": request.actor, "restarted_at": resident_lifecycle_domain.now_iso(),
+            "restarted_by": request.actor, "restarted_at": resident_domain_common.now_iso(),
         }
         if cancel_requested:
             next_state["cancelled_by"] = str(current_restart.get("cancelled_by") or request.actor)
-            next_state["cancelled_at"] = str(current_restart.get("cancelled_at") or resident_lifecycle_domain.now_iso())
+            next_state["cancelled_at"] = str(current_restart.get("cancelled_at") or resident_domain_common.now_iso())
             if current_restart.get("cancelled_reason"):
                 next_state["cancelled_reason"] = str(current_restart["cancelled_reason"])
         if failure:
             next_state["error"] = failure
         def commit():
             current["session_restart"] = next_state
-            current["updated_at"] = resident_lifecycle_domain.now_iso()
-            resident_workspace_domain.save_resident_record(current, commit_configuration=not failure and not cancel_requested)
+            current["updated_at"] = resident_domain_common.now_iso()
+            resident_record_domain.save_resident_record(current, commit_configuration=not failure and not cancel_requested)
             if step["intake_transition_id"] and current.get("intake_transition_id") == step["intake_transition_id"]:
                 resident_intake_domain.commit_resident_intake_state(current, resident_state.INTAKE_OPEN)
             if not failure and not cancel_requested:
                 from .resident_work_recovery import resume_after_restart, set_recovery_entry
                 if state.get("failed_message_id") and state.get("resume_failed_input") is False:
                     set_recovery_entry(current, state["failed_message_id"], disabled=True)
-                    resident_workspace_domain.save_resident_record(current)
+                    resident_record_domain.save_resident_record(current)
                 resume_after_restart(current, next_state)
-                refreshed = resident_workspace_domain.find_resident(resident_id)
+                refreshed = resident_record_domain.find_resident(resident_id)
                 refreshed["session_restart"] = next_state
-                resident_workspace_domain.save_resident_record(refreshed)
+                resident_record_domain.save_resident_record(refreshed)
         try:
             resident_catalog.get_catalog().state_store.transaction(commit)
         except Exception:
@@ -986,11 +987,11 @@ def _supersede_session_restart(resident_id: str, actor_id: str, previous: Mappin
     The Lineage coordinator finishes the cancelled operation (it cancels the restart's execution, keeps the
     source session and reopens intake); only then can the new restart be admitted.
     """
-    from . import resident_lifecycle_domain
+    from . import resident_record_domain
 
     _cancel_session_restart(resident_id, actor_id, str(previous.get("restart_id") or ""), reason="superseded")
     deadline = time.monotonic() + SESSION_RESTART_SUPERSEDE_SECONDS
-    while resident_lifecycle_domain.lifecycle_operations().pending(resident_id):
+    while resident_record_domain.lifecycle_operations().pending(resident_id):
         if time.monotonic() >= deadline:
             raise resident_domain_common.ResidentSessionConflictError(
                 "上一次 Session 重启仍在取消，本次重启未执行，请稍后重试。",
@@ -1005,13 +1006,13 @@ def cancel_resident_session_restart(
     restart_id: str,
 ) -> dict[str, Any]:
     """Cancel one accepted Session migration without consulting quota."""
-    from . import resident_directory_domain, resident_workspace_domain
+    from . import resident_access, resident_record_domain
 
     actor_id = canonical_actor_id(actor)
     if not actor_id:
         raise ValueError("需要登录后取消 Session 迁移")
-    target = resident_workspace_domain.resolve_resident_runtime_target(resident_id, actor_id, require_visible=True)
-    if not resident_directory_domain.can_manage(target.record, actor_id):
+    target = resident_record_domain.resolve_resident_runtime_target(resident_id, actor_id, require_visible=True)
+    if not resident_access.can_manage(target.record, actor_id):
         raise manage_refusal(target.record)
     return _cancel_session_restart(target.resident_id, actor_id, restart_id)
 
@@ -1023,16 +1024,16 @@ def _cancel_session_restart(
     *,
     reason: str = "",
 ) -> dict[str, Any]:
-    from . import resident_directory_domain, resident_lifecycle_domain, resident_workspace_domain
+    from . import resident_access, resident_domain_common, resident_record_domain
 
     expected_restart_id = str(restart_id or "").strip()
     if not expected_restart_id:
         raise ValueError("restart_id required")
-    with resident_lifecycle_domain.state_lock(resident_id):
-        current = copy.deepcopy(resident_workspace_domain.find_resident(resident_id) or {})
+    with resident_record_domain.state_lock(resident_id):
+        current = copy.deepcopy(resident_record_domain.find_resident(resident_id) or {})
         if not current:
             raise KeyError("resident not found")
-        if not resident_directory_domain.can_manage(current, actor_id):
+        if not resident_access.can_manage(current, actor_id):
             raise manage_refusal(current)
         state = copy.deepcopy(current.get("session_restart") or {})
         if state.get("restart_id") != expected_restart_id:
@@ -1050,7 +1051,7 @@ def _cancel_session_restart(
         if state.get("status") not in {"accepted", "cancelling"}:
             raise ValueError("当前没有可取消的 Session 迁移")
         if state.get("status") == "accepted":
-            now = resident_lifecycle_domain.now_iso()
+            now = resident_domain_common.now_iso()
             state = {
                 **state,
                 "status": "cancelling",
@@ -1061,7 +1062,7 @@ def _cancel_session_restart(
             }
             current["session_restart"] = state
             current["updated_at"] = now
-            resident_workspace_domain.save_resident_record(current)
+            resident_record_domain.save_resident_record(current)
     execution_id = str(state.get("execution_id") or "")
     if execution_id:
         try:

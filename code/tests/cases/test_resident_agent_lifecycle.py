@@ -15,8 +15,8 @@ from management_portal.society_service import (
     resident_domain,
     resident_execution_domain,
     resident_domain_common,
-    resident_lifecycle_domain,
     resident_registration_domain,
+    resident_record_domain,
 )
 from management_portal.society_service.resident_resource_projection import ResidentResourceProjectionWorker
 from tests.cases.test_resident_folder_creation_contract import (
@@ -45,7 +45,7 @@ def test_main_agent_check_rejects_provider_child_identity():
     agent_data.ensure_agent(parent_id)
     child = agent_data.ensure_agent(child_id, sequence_kind="subagent_trace", parent_agent_id=parent_id)
     with pytest.raises(ValueError, match="trace purpose or parent"):
-        resident_lifecycle_domain.ensure_resident_agent({"resident_id": child_id})
+        resident_record_domain.ensure_resident_agent({"resident_id": child_id})
     assert agent_data.agent(child_id) == child
 
 
@@ -110,7 +110,7 @@ def test_registration_has_an_empty_independent_trace(future_creation_store, monk
     assert get_agent_data_store().read_chat_messages(resident_id) == []
     assert get_agent_data_store().trace_length(resident_id) == 0
     record = resident_catalog.get_catalog().get(resident_id)
-    resident_lifecycle_domain.ensure_resident_agent(record)
+    resident_record_domain.ensure_resident_agent(record)
     assert assert_main_trace(resident_id)["trace_sequence_id"] == before["trace_sequence_id"]
 
 
@@ -170,7 +170,7 @@ def test_background_publication_cannot_mark_ready_when_agent_creation_fails(futu
     store.enqueue_resident_resource_projection(record["resident_id"], {**record, "registration_state": "resource_pending"})
     claims = store.claim_resident_resource_projections(resident_id=record["resident_id"])
     published = []
-    monkeypatch.setattr(resident_lifecycle_domain, "ensure_resident_agent", lambda *a, **k: (_ for _ in ()).throw(OSError("Agent offline")))
+    monkeypatch.setattr(resident_record_domain, "ensure_resident_agent", lambda *a, **k: (_ for _ in ()).throw(OSError("Agent offline")))
     worker = ResidentResourceProjectionWorker(store, SimpleNamespace(sync_resident_resource_bundles=lambda *a, **k: published.append(a)))
     with pytest.raises(OSError, match="Agent offline"):
         worker._publish(claims)
@@ -184,7 +184,7 @@ def test_execution_does_not_dispatch_when_agent_check_fails(future_creation_stor
 
     :design-point:"""
     record = resident_domain.register_resident(_new_session_payload("Dispatch blocked"), "sample_admin")
-    monkeypatch.setattr(resident_lifecycle_domain, "ensure_resident_agent", lambda *a, **k: (_ for _ in ()).throw(OSError("Agent offline")))
+    monkeypatch.setattr(resident_record_domain, "ensure_resident_agent", lambda *a, **k: (_ for _ in ()).throw(OSError("Agent offline")))
     forbidden = lambda *a, **k: pytest.fail("Dispatched before Agent check")
     with pytest.raises(OSError, match="Agent offline"):
         if entry == "execution":

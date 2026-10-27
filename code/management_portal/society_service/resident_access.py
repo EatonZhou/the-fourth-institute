@@ -150,3 +150,29 @@ def visible_resident_records(
         )
     ]
 
+
+def can_manage(
+    record: dict,
+    actor: str,
+) -> bool:
+    """Whether this identity may change the Resident; see ``resident_access.can_manage_resident``."""
+    actor_id = canonical_actor_id(actor)
+    if not actor_id:
+        return False
+    return can_manage_resident(record, actor_id)
+
+
+def has_resident_workspace_authority(
+    record: dict[str, Any],
+    actor: str,
+    resident: dict[str, Any] | None = None,
+) -> bool:
+    """Return authority for one exact Resident workspace."""
+
+    return can_manage_resident(resident or record, actor)
+
+
+def is_active_actor(actor: str) -> bool:
+    """Any identity whose Portal account is not disabled: Users, Residents and Portal services."""
+
+    return get_portal_access_store().is_active(canonical_actor_id(actor))

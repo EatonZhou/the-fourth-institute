@@ -7,7 +7,11 @@ import pytest
 
 from management_portal import resident_handoff
 from management_portal.execution.agent_data_store import AgentDataStore
-from management_portal.society_service import resident_conversation_stream, resident_protocol
+from management_portal.society_service import (
+    resident_conversation_stream,
+    resident_protocol,
+    resident_record_domain,
+)
 from management_portal.society_service.isa import conversation
 from management_portal.society_service.state_store import LineageDataStore
 from tests.cases.test_conversation_projection_authority import RESIDENT, _repository
@@ -21,7 +25,7 @@ class Drained(Exception):
 def event_stream(tmp_path, monkeypatch):
     holder = {'repository': _repository(tmp_path)}
     monkeypatch.setattr(resident_conversation_stream, 'get_repository', lambda: holder['repository'])
-    monkeypatch.setattr(resident_protocol.resident_workspace_domain, 'resolve_resident_runtime_target',
+    monkeypatch.setattr(resident_record_domain, 'resolve_resident_runtime_target',
                         lambda *_args, **_kwargs: SimpleNamespace(resident_id=RESIDENT, record={"resident_id": RESIDENT}))
 
     def idle(_seconds):

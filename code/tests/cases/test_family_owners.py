@@ -4,7 +4,7 @@ import pytest
 from management_common.operation_identity import operation_identity_scope
 from management_common.principal import OperationIdentity, message_origin
 from management_portal.society_service import family_owners, resident_execution_work
-from management_portal.society_service.resident_workspace_domain import find_resident as _find_resident
+from management_portal.society_service.resident_record_domain import find_resident as _find_resident
 from tests.cases.isa_test_support import ACTOR, ok
 from tests.cases.test_family_familize import charters  # noqa: F401
 from tests.cases.test_isa_lineage_lifecycle import lineage, resident, future_creation_store  # noqa: F401

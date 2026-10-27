@@ -12,7 +12,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from management_portal.society_service import resident_domain, resident_lifecycle_domain, resident_restart_domain
+from management_portal.society_service import resident_domain, resident_record_domain, resident_restart_domain
 from management_portal.society_service.domain_ports import execution_port
 from tests.cases.test_session_restart import ExecutionStub, _restart_domain
 
@@ -39,7 +39,7 @@ def test_a_new_restart_replaces_an_unfinished_one(monkeypatch, isolated_portal_c
             return "operation_second"
 
         monkeypatch.setattr(
-            resident_lifecycle_domain, "lifecycle_operations",
+            resident_record_domain, "lifecycle_operations",
             lambda: SimpleNamespace(pending=lambda *_: queued["first"], enqueue=enqueue),
         )
         cancelled: list[str] = []
@@ -84,7 +84,7 @@ def test_the_same_restart_repeated_returns_the_unfinished_one(monkeypatch, isola
         body = {"target_provider": "codex", "target_account": "one", "context_strategy": "compact"}
         first = resident_domain.restart_resident_session(record["resident_id"], "alice", dict(body))
         monkeypatch.setattr(
-            resident_lifecycle_domain, "lifecycle_operations",
+            resident_record_domain, "lifecycle_operations",
             lambda: SimpleNamespace(pending=lambda *_: True, enqueue=lambda *_: pytest.fail("no new operation")),
         )
         again = resident_domain.restart_resident_session(record["resident_id"], "alice", dict(body))

@@ -10,8 +10,12 @@ import uuid
 
 import pytest
 
-from management_portal.society_service import resident_intake_domain, resident_execution_work, resident_lifecycle_domain
-from management_portal.society_service import resident_workspace_domain
+from management_portal.society_service import (
+    resident_intake_domain,
+    resident_execution_work,
+    resident_lifecycle_domain,
+    resident_record_domain,
+)
 from tests.cases.test_cross_owner_storage_integration import ACTOR, owners  # noqa: F401 - fixture
 from tests.cases.test_wall04_residual_20260919 import instruction, team  # noqa: F401 - fixture
 
@@ -28,7 +32,7 @@ def _queue(team, count: int = 4) -> tuple[str, list[dict]]:
             resident_lifecycle_domain.accept_resident_user_message(resident_id, message)
         entries.append({"user_message_id": message_id, "input_message": message,
                         "message": message_id, "actor": ACTOR})
-    record = resident_workspace_domain.find_resident(resident_id)
+    record = resident_record_domain.find_resident(resident_id)
     work = {**entries[0], "execution_id": "execution-" + uuid.uuid4().hex[:24], "queue": entries[1:]}
     resident_execution_work.write(record, work)
     entries[0]["execution_id"] = work["execution_id"]
@@ -36,7 +40,7 @@ def _queue(team, count: int = 4) -> tuple[str, list[dict]]:
 
 
 def _waiting(resident_id: str) -> list[str]:
-    record = resident_workspace_domain.find_resident(resident_id)
+    record = resident_record_domain.find_resident(resident_id)
     return [item["user_message_id"] for item in resident_execution_work.read(record)["queue"]]
 
 
@@ -58,7 +62,7 @@ def test_move_before_after_and_full_order_keep_the_running_head_and_scheduler_in
     full = instruction(team, "ReorderMailbox", {"resident_id": resident_id, "order": [c, a, d, b]})
     assert _waiting(resident_id) == [c, a, d, b]
     assert full.result["revision"].startswith("queue-")
-    record = resident_workspace_domain.find_resident(resident_id)
+    record = resident_record_domain.find_resident(resident_id)
     assert resident_execution_work.read(record)["user_message_id"] == head
     work = resident_execution_work.read(record)
     assert work["execution_id"] == entries[0]["execution_id"]

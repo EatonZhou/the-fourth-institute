@@ -14,9 +14,9 @@ from types import SimpleNamespace
 
 from management_portal.society_service import lineage_domain
 from management_portal.society_service import resident_domain as backend
-from management_portal.society_service import watchboard_lineage, lineage_program
+from management_portal.society_service import watchboard_lineage, lineage_program, resident_record_domain
 from management_portal.society_service import resident_watchboard_domain
-from management_portal.society_service import resident_workspace_domain, resident_access
+from management_portal.society_service import resident_access
 
 
 class ResidentWatchboardTest(unittest.TestCase):
@@ -53,7 +53,7 @@ class ResidentWatchboardTest(unittest.TestCase):
             "updated_at": "2026-07-17T00:00:00Z",
         }
         self.find_patch = mock.patch.object(
-            resident_workspace_domain,
+            resident_record_domain,
             "find_resident",
             side_effect=lambda resident_id: (
                 self.record

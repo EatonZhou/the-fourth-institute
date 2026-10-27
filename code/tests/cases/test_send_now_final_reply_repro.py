@@ -15,7 +15,11 @@ import pytest
 from management_portal.codex_app_server_client import CodexAppServerClient, _TurnWaiter
 from management_portal.execution.contracts import ExecutionRequest, ExecutionResult
 from management_portal.execution.scheduler import Scheduler, SchedulerClient
-from management_portal.society_service import resident_execution_work, resident_protocol, resident_workspace_domain
+from management_portal.society_service import (
+    resident_execution_work,
+    resident_protocol,
+    resident_record_domain,
+)
 from management_portal.society_service import resident_domain as backend
 from management_portal.society_service import resident_execution_domain
 from management_portal.society_service import resident_intake_domain
@@ -254,7 +258,7 @@ def test_send_now_is_refused_for_backend_without_active_turn_input(
     2026-10-03), so the test gives one Backend that capability's absence."""
     resident_id, message_id, job = queued_send_now
     resident_record["backend"] = "claude"
-    resident_workspace_domain.save_resident_record(resident_record)
+    resident_record_domain.save_resident_record(resident_record)
     from dataclasses import replace
     from management_portal.society_service import resident_execution_provider
 
@@ -284,7 +288,7 @@ def test_send_now_is_refused_for_backend_without_active_turn_input(
     assert [item["user_message_id"] for item in current["queue"]] == [message_id]
     assert not current.get("send_now_next_turn")
     assert not resident_execution_work.send_now_inputs(current)
-    target = resident_workspace_domain.resolve_resident_runtime_target(resident_id, "CASE-A")
+    target = resident_record_domain.resolve_resident_runtime_target(resident_id, "CASE-A")
     assert resident_protocol._conversation_controls(target, "CASE-A", {})["active_turn_input"] is False
     service.append_input.assert_not_called()
 
@@ -296,7 +300,7 @@ def test_send_now_does_not_requeue_delivered_input_for_non_append_backend(
     """后端不支持追加时已投递输入不会重新排队"""
     resident_id, message_id, job = queued_send_now
     resident_record["backend"] = "claude"
-    resident_workspace_domain.save_resident_record(resident_record)
+    resident_record_domain.save_resident_record(resident_record)
     resident_execution_work.materialize_conversation_input(
         resident_record, job["queue"][0], activated_at="2026-09-24T00:01:00Z",
     )

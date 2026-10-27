@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import pytest
 
-from management_portal.society_service import project_domain
+from management_portal.society_service import project_domain, resident_record_domain
 from tests.cases.isa_test_support import ACTOR, ok, reset_kernels, run
 from tests.cases.test_resident_folder_creation_contract import future_creation_store  # noqa: F401 - fixture
 
@@ -142,7 +142,7 @@ def test_basic_resident_reads_do_not_ensure_agent(lineage, monkeypatch):
         lambda _operation: pytest.fail("read instruction entered an AgentData write transaction"),
     )
     monkeypatch.setattr(
-        resident_lifecycle_domain, "ensure_resident_agent",
+        resident_record_domain, "ensure_resident_agent",
         lambda *_args, **_kwargs: pytest.fail("read instruction initialized an Agent"),
     )
     assert ok("GetResident", {"resident_id": worker})["resident"]["resident_id"] == worker
@@ -163,7 +163,7 @@ def test_list_resident_states_returns_a_snapshot_for_each_visible_resident(linea
     from management_portal.society_service import resident_protocol
     from tests.cases.isa_test_support import ACTOR
     controls = {rid: resident_protocol.get_resident_state(rid, ACTOR)["controls"] for rid in (first, second)}
-    with patch.object(resident_workspace_domain, "resolve_resident_runtime_target",
+    with patch.object(resident_record_domain, "resolve_resident_runtime_target",
                       side_effect=AssertionError("A state batch must not reload full runtime targets per Resident")):
         states = ok("ListResidentStates", {"resident_ids": [first, second, "resident_ffffffffffff"]})["states"]
     by_id = {item["resident_id"]: item for item in states}

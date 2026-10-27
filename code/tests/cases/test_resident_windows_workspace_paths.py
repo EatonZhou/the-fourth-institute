@@ -101,7 +101,7 @@ def test_workspace_roots_keep_valid_owned_identity_primary(windows_record, monke
     monkeypatch.setattr(workspace_store, "get_workspace_store", lambda: SimpleNamespace(
         rows=lambda ids: {OWN: {"title": "Owned"}, EXTRA: {"title": "Reference"}}))
 
-    roots, cwd = resident_workspace_domain._resident_workspace_roots_with_usage(record)
+    roots, cwd = resident_record_domain.resident_workspace_roots_with_usage(record)
 
     assert cwd == ("" if invalid_owned_path else expected)
     assert [root["workspace_id"] for root in roots if root["is_primary"]] == (
@@ -116,7 +116,7 @@ def test_workspace_api_keeps_canonical_path_equal_to_default_cwd(windows_record,
     monkeypatch.setattr(workspace_store, "get_workspace_store", lambda: SimpleNamespace(rows=lambda ids: {}))
     monkeypatch.setattr(WindowsPath, "exists", lambda self: True, raising=False)
     monkeypatch.setattr(WindowsPath, "is_dir", lambda self: True, raising=False)
-    monkeypatch.setattr(resident_workspace_domain, "find_resident", lambda rid: record)
+    monkeypatch.setattr(resident_record_domain, "find_resident", lambda rid: record)
     monkeypatch.setattr(resident_workspace_domain.resident_lineage, "access_snapshot_scope", nullcontext)
     monkeypatch.setattr(resident_workspace_domain.business_fact_views, "canonical_views", lambda records, **kwargs: records)
     monkeypatch.setattr(resident_workspace_domain, "ensure_resident_visible_to_actor", lambda *args: None)

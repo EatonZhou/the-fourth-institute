@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from management_portal.society_service import resident_state, resident_protocol
+from management_portal.society_service import resident_state, resident_protocol, resident_record_domain
 
 
 def test_intake_state_contract_is_canonical() -> None:
@@ -48,7 +48,7 @@ def test_native_command_acknowledgement_contains_actor_controls(monkeypatch, sub
                     state = {"work_state": "running", "intake_state": "closed", "active_message_id": "input"}
                     response = {"resident_id": resident_id, "state": state, "cursor": 8}
                     monkeypatch.setattr(resident_protocol.resident_access, "can_manage_resident", lambda record, actor: allowed)
-                    monkeypatch.setattr(resident_protocol.resident_workspace_domain, "resolve_resident_runtime_target", lambda *args, **kwargs: SimpleNamespace(resident_id=resident_id, record={"resident_id": resident_id, "backend": "codex"}))
+                    monkeypatch.setattr(resident_record_domain, "resolve_resident_runtime_target", lambda *args, **kwargs: SimpleNamespace(resident_id=resident_id, record={"resident_id": resident_id, "backend": "codex"}))
                     if operation == "deliver":
                         monkeypatch.setattr(resident_protocol.resident_execution_domain, "deliver_resident_message_content", lambda *args, **kwargs: response)
                         result = resident_protocol.deliver_resident_input({

@@ -6,9 +6,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from management_portal.society_service import (
-    resident_catalog, resident_directory_domain, resident_workspace_domain,
-)
+from management_portal.society_service import resident_access, resident_catalog, resident_workspace_domain
 
 
 @pytest.fixture
@@ -24,8 +22,8 @@ def deleted_identity(monkeypatch):
         get_historical=lambda resident_id: dict(record),
     ))
     monkeypatch.setattr(resident_workspace_domain, "confirm_resident_deletion_projection", confirmations.append)
-    monkeypatch.setattr(resident_directory_domain, "can_manage", lambda record, actor: actor == "allowed")
-    monkeypatch.setattr(resident_directory_domain, "is_active_actor", lambda actor: actor == "allowed")
+    monkeypatch.setattr(resident_access, "can_manage", lambda record, actor: actor == "allowed")
+    monkeypatch.setattr(resident_access, "is_active_actor", lambda actor: actor == "allowed")
     return record, confirmations
 
 

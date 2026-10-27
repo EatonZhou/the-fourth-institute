@@ -6,8 +6,14 @@ from unittest.mock import Mock
 import pytest
 
 from management_portal.society_service import (
-    lineage_domain, resident_catalog, resident_conversation_stream, resident_domain, resident_held_infos,
-    resident_intake_domain, resident_lifecycle_domain, resident_workspace_domain,
+    lineage_domain,
+    resident_catalog,
+    resident_conversation_stream,
+    resident_domain,
+    resident_held_infos,
+    resident_intake_domain,
+    resident_lifecycle_domain,
+    resident_record_domain,
 )
 from tests.cases.isa_test_support import reset_kernels, run
 from tests.cases.test_lineage_member_projection import _family
@@ -61,7 +67,7 @@ def test_batch_deletion_commits_identity_set_graph_and_effects_once(deletion_set
     assert after["revision"] == before["revision"] + 1
     assert {node["id"] for node in after["nodes"]} == {leader_id}
     assert {row["resident_id"] for row in store.residents_for_lineage(lineage_id)} == {leader_id}
-    assert all(resident_lifecycle_domain.lifecycle_operations().pending(resident_id) for resident_id in ids)
+    assert all(resident_record_domain.lifecycle_operations().pending(resident_id) for resident_id in ids)
     assert not any(item["id"] == component_id for item in after["program"]["components"])
 
 
@@ -227,7 +233,7 @@ def test_deleting_a_resident_cancels_what_still_waits_in_its_mailbox(deletion_se
         resident_lifecycle_domain.accept_resident_user_message(resident_id, message)
         repository.set_input_state(resident_id, message["message_id"], "queued")
         waiting.append(message)
-    resident_held_infos.hold(resident_workspace_domain.find_resident(resident_id), waiting[1])
+    resident_held_infos.hold(resident_record_domain.find_resident(resident_id), waiting[1])
     assert [entry["place"] for entry in store.mailbox_entries([resident_id], places=("pending", "info"))] == ["info", "pending"]
 
     result = _execute(lineage_id, {"resident_ids": [resident_id]}, key="delete-with-mailbox")

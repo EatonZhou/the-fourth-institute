@@ -17,7 +17,7 @@ from management_portal.society_service import (
     resident_intake_domain,
 )
 from management_portal.society_service.resident_execution_domain import deliver_resident_message_content
-from management_portal.society_service.resident_workspace_domain import find_resident
+from management_portal.society_service.resident_record_domain import find_resident
 from tests.cases.isa_test_support import ACTOR, ok, run
 from tests.cases.test_family_tasks import (  # noqa: F401
     charters, configured_family, future_creation_store, lineage,

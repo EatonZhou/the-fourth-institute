@@ -351,7 +351,7 @@ def _watchboard_text_file_payload(record: dict[str, Any], rel_path: str, editabl
 
 
 def _watchboard_commands_from_manifest(manifest: dict[str, Any]) -> list[dict[str, Any]]:
-    from . import resident_lifecycle_domain
+    from . import resident_domain_common
     commands = manifest.get("commands") or {}
     manifest_execution = (
         manifest.get("execution")
@@ -375,7 +375,7 @@ def _watchboard_commands_from_manifest(manifest: dict[str, Any]) -> list[dict[st
             "description": str(spec.get("description") or ""),
             "risk": str(spec.get("risk") or ""),
             "command_kind": str(command_execution.get("kind") or ""),
-            "timeout_seconds": resident_lifecycle_domain.nonnegative_int(spec.get("timeout_seconds"), 0),
+            "timeout_seconds": resident_domain_common.nonnegative_int(spec.get("timeout_seconds"), 0),
             "args_schema": args if isinstance(args, dict) else {},
             "requires_args": bool(args),
         })
@@ -394,7 +394,7 @@ def _watchboard_for_record(
     record: dict[str, Any],
     actor: str = "",
 ) -> dict[str, Any]:
-    from . import resident_directory_domain, resident_record_domain
+    from . import resident_domain_common
     if not has_watchboard(record):
         return {"enabled": False}
     from management_portal import permission_system
@@ -427,8 +427,8 @@ def _watchboard_for_record(
     actual_ids = {item["id"] for item in watchboard_lineage.components(record, graph)}
     commands = [{**item, **watchboard_lineage.command_ids(record, item["id"], graph)} for item in commands]
     commands = [item for item in commands if item["event_source_id"] in actual_ids and item["effect_id"] in actual_ids]
-    resident_id = resident_record_domain.record_resident_id(record)
-    signature = resident_directory_domain.resident_status_signature({
+    resident_id = resident_domain_common.record_resident_id(record)
+    signature = resident_domain_common.resident_status_signature({
         "resident_id": resident_id,
         "permissions": permissions,
         "script_root": str(script_root),
@@ -497,12 +497,12 @@ def get_resident_watchboard(
     resident_id: str,
     actor: str = "",
 ) -> dict[str, Any]:
-    from . import resident_directory_domain, resident_workspace_domain
+    from . import resident_access, resident_record_domain
     with resident_lineage.access_snapshot_scope():
-        target = resident_workspace_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=True)
+        target = resident_record_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=True)
         record = target.record
         actor_id = canonical_actor_id(actor)
-        if not resident_directory_domain.has_resident_workspace_authority(
+        if not resident_access.has_resident_workspace_authority(
             record,
             actor_id,
         ):

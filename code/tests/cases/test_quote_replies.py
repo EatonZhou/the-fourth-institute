@@ -25,8 +25,9 @@ from management_portal.society_service import (
     resident_domain,
     resident_execution_work,
     resident_protocol,
+    resident_record_domain,
 )
-from management_portal.society_service.resident_workspace_domain import find_resident as _find_resident
+from management_portal.society_service.resident_record_domain import find_resident as _find_resident
 from tests.cases.isa_test_support import run
 from tests.cases.test_resident_delivery_receipts import delivery_resident  # noqa: F401
 from tests.cases.test_resident_folder_creation_contract import (  # noqa: F401
@@ -243,8 +244,8 @@ def test_a_quote_of_a_members_message_goes_straight_back_to_that_member(family, 
 
     # A deleted member, gone from the Family, or not reading the request's images is passed over.
     with monkeypatch.context() as patched:
-        find = resident_workspace_domain.find_resident
-        patched.setattr(resident_workspace_domain, "find_resident", lambda rid: None if rid == member else find(rid))
+        find = resident_record_domain.find_resident
+        patched.setattr(resident_record_domain, "find_resident", lambda rid: None if rid == member else find(rid))
         assert routed("msg_00000000000001d1") == ""
     family["members"].clear()
     assert routed("msg_00000000000001d1") == ""

@@ -30,8 +30,8 @@ from . import resident_domain_common
 
 
 def resident_execution_session_key(record: dict[str, Any]) -> str:
-    from . import resident_record_domain
-    return f"resident:{resident_record_domain.record_resident_id(record)}"
+    from . import resident_domain_common
+    return f"resident:{resident_domain_common.record_resident_id(record)}"
 
 
 def resident_backend_capabilities(record: dict[str, Any]) -> dict[str, Any]:
@@ -163,8 +163,8 @@ def _resident_backend_binding(record: dict[str, Any]) -> dict[str, Any]:
 
 
 def resident_lineage_resident(record: dict[str, Any]) -> dict[str, Any]:
-    from . import resident_record_domain
-    resident_id = resident_record_domain.record_resident_id(record)
+    from . import resident_domain_common
+    resident_id = resident_domain_common.record_resident_id(record)
     return {
         "lineage_id": resident_lineage.lineage_id(record),
         "resident_id": resident_id,
@@ -198,9 +198,9 @@ def complete_derived_resident_identity(
     lineage_source: str = "",
     now: str = "",
 ) -> dict[str, Any]:
-    from . import resident_record_domain
+    from . import resident_domain_common, resident_record_domain
     resident.setdefault("lineage_id", resident_lineage.lineage_id(record))
-    resident.setdefault("source_resident_id", resident_record_domain.record_resident_id(record))
+    resident.setdefault("source_resident_id", resident_domain_common.record_resident_id(record))
     if actor_id:
         resident.setdefault("created_by", actor_id)
     if now:
@@ -213,8 +213,8 @@ def complete_derived_resident_identity(
 
 
 def resident_folder_for_id(record: dict, target_resident_id: str) -> Path:
-    from . import resident_lifecycle_domain, resident_workspace_domain
-    return resident_workspace_domain.resident_workspace_path(record) / "residents" / resident_lifecycle_domain.safe_id(target_resident_id)
+    from . import resident_domain_common, resident_record_domain
+    return resident_record_domain.resident_workspace_path(record) / "residents" / resident_domain_common.safe_id(target_resident_id)
 
 
 def resident_runtime_dir_for_id(record: dict, target_resident_id: str) -> Path:
@@ -230,11 +230,11 @@ def _resident_workspace_scope_record(
 def resident_media_workspace_roots(
     record: dict,
 ) -> tuple[Path, ...]:
-    from . import resident_workspace_domain
+    from . import resident_record_domain
     workspace_record = _resident_workspace_scope_record(record)
     roots: list[Path] = []
     seen: set[str] = set()
-    for item in resident_workspace_domain.resident_workspace_roots(workspace_record):
+    for item in resident_record_domain.resident_workspace_roots(workspace_record):
         raw_path = str(item.get("path") or "").strip()
         if not raw_path:
             continue
@@ -250,9 +250,9 @@ def resident_media_workspace_roots(
 def resident_working_directory(
     record: dict,
 ) -> Path:
-    from . import resident_workspace_domain
+    from . import resident_record_domain
     workspace_record = _resident_workspace_scope_record(record)
-    candidate = resident_workspace_domain.resident_default_cwd_path(workspace_record)
+    candidate = resident_record_domain.resident_default_cwd_path(workspace_record)
     if not candidate:
         raise ValueError("Resident 没有有效的默认 Workspace Binding")
     path = Path(candidate).expanduser().resolve(strict=False)
@@ -268,8 +268,8 @@ def resident_agents_instruction_block(record: dict[str, Any]) -> str:
     (``project_doc_max_bytes = 0``) and Claude Code, Kimi Code and DSH look for
     other file names, so Portal delivers it wherever the working directory is.
     """
-    from . import resident_record_domain, resident_workspace_domain
-    workspace = resident_workspace_domain.resident_workspace_path(record)
+    from . import resident_record_domain
+    workspace = resident_record_domain.resident_workspace_path(record)
     resident_folder = resident_record_domain.resident_folder_path(record)
     resident_id = str(
         record.get("resident_id")
@@ -331,7 +331,7 @@ def resident_runtime_identity_block(record: dict[str, Any]) -> str:
 def resident_title_map(
     identities: Iterable[tuple[str, str]],
 ) -> dict[tuple[str, str], str]:
-    from . import resident_record_domain
+    from . import resident_domain_common
     requested = list(dict.fromkeys(
         (
             str(anchor_resident_id or "").strip(),
@@ -348,7 +348,7 @@ def resident_title_map(
         )
     }
     records = {
-        resident_record_domain.record_resident_id(record): record
+        resident_domain_common.record_resident_id(record): record
         for record in resident_catalog.get_catalog().get_many(exact_ids)
     }
     return {
@@ -425,12 +425,12 @@ def _is_direct_family_resident(
     record: dict[str, Any],
     candidate: dict[str, Any],
 ) -> bool:
-    from . import resident_record_domain
+    from . import resident_domain_common
     candidate_id = resident_lineage.resident_id(candidate)
     source_id = str(candidate.get("source_resident_id") or "").strip()
     return bool(
         candidate_id
-        and source_id == resident_record_domain.record_resident_id(record)
+        and source_id == resident_domain_common.record_resident_id(record)
     )
 
 
@@ -472,10 +472,10 @@ def resident_runtime_defaults(record: dict) -> dict[str, Any]:
 
 
 def read_resident_runtime_settings(record: dict) -> dict[str, Any]:
-    from . import resident_record_domain
+    from . import resident_domain_common
 
     settings = resident_catalog.get_catalog().state_store.read_resident_execution_settings(
-        resident_record_domain.record_resident_id(record),
+        resident_domain_common.record_resident_id(record),
     )
     if settings is None:
         # Only a not-yet-registered identity may use staged registration data.
@@ -497,11 +497,11 @@ def read_resident_runtime_settings(record: dict) -> dict[str, Any]:
 
 
 def write_resident_runtime_settings(record: dict, settings: dict[str, Any]) -> dict[str, Any]:
-    from . import resident_record_domain
+    from . import resident_domain_common
 
     persisted = stage_runtime_settings(record, settings)
     store = resident_catalog.get_catalog().state_store
-    resident_id = resident_record_domain.record_resident_id(record)
+    resident_id = resident_domain_common.record_resident_id(record)
     if store.read_resident_execution_settings(resident_id) is not None:
         persisted = store.write_resident_execution_settings(resident_id, persisted)
         resident_conversation_stream.get_repository().execution_settings_changed(resident_id, persisted)
@@ -512,11 +512,11 @@ def reconcile_resident_codex_runtime_configuration(
     record: dict[str, Any],
 ) -> dict[str, Any]:
     """Persist adapter-normalized settings using one account and CAS path."""
-    from . import resident_lifecycle_domain, resident_record_domain, resident_workspace_domain
+    from . import resident_domain_common, resident_record_domain
     definition = AGENT_PROVIDERS.get(resident_backend.execution_backend(record))
     if not definition:
         return record
-    resident_id = resident_record_domain.record_resident_id(record)
+    resident_id = resident_domain_common.record_resident_id(record)
     for _attempt in range(2):
         account = resident_backend.execution_account(record)
         route = str(account.get("backend_route_id") or "")
@@ -524,19 +524,19 @@ def reconcile_resident_codex_runtime_configuration(
         resolved = definition.runtime_adapter().reconcile(definition, route, before)
         if resolved == before:
             return record
-        with resident_lifecycle_domain.state_lock(resident_id):
-            current = copy.deepcopy(resident_workspace_domain.find_resident(resident_id) or {})
+        with resident_record_domain.state_lock(resident_id):
+            current = copy.deepcopy(resident_record_domain.find_resident(resident_id) or {})
             if not current:
                 raise RuntimeError("Resident disappeared before runtime configuration validation")
             if resident_backend.execution_account(current) != account or read_resident_runtime_settings(current) != before:
                 record = current
                 continue
             current["backend_route_id"] = route
-            current["updated_at"] = resident_lifecycle_domain.now_iso()
+            current["updated_at"] = resident_domain_common.now_iso()
 
             def commit_configuration():
                 write_resident_runtime_settings(current, resolved)
-                resident_workspace_domain.save_resident_record(current, commit_configuration=True)
+                resident_record_domain.save_resident_record(current, commit_configuration=True)
 
             resident_catalog.get_catalog().state_store.transaction(commit_configuration)
             return current
@@ -624,12 +624,12 @@ def _derived_resident_runtime_defaults(
     workspace_authority: bool | None = None,
     base_runtime_settings: Mapping[str, Any] | None = None,
 ) -> dict[str, str]:
-    from . import resident_directory_domain
+    from . import resident_access
     actor_id = canonical_actor_id(actor)
     has_workspace_authority = (
         bool(workspace_authority)
         if workspace_authority is not None
-        else resident_directory_domain.has_resident_workspace_authority(record, actor_id, resident)
+        else resident_access.has_resident_workspace_authority(record, actor_id, resident)
     )
     if isinstance(resident.get("execution_settings"), Mapping) and isinstance(resident.get("harness_config"), Mapping):
         settings = runtime_settings_from_parts(resident["execution_settings"], resident["harness_config"])
@@ -695,7 +695,7 @@ def inherit_derived_resident_runtime_from_source(
     *,
     target_workspace_authority: bool,
 ) -> None:
-    from . import resident_record_domain
+    from . import resident_domain_common, resident_record_domain
     actor_id = canonical_actor_id(actor)
     source_settings = (
         _derived_resident_runtime_defaults(source_record, source_resident, actor)
@@ -759,7 +759,7 @@ def inherit_derived_resident_runtime_from_source(
     resident["source_resident_id"] = str(
         resident.get("source_resident_id")
         or (source_resident or {}).get("resident_id")
-        or resident_record_domain.record_resident_id(source_record)
+        or resident_domain_common.record_resident_id(source_record)
     )
     inherited_record = {
         **target_record,

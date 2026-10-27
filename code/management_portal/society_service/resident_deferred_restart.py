@@ -10,10 +10,10 @@ def pending(record):
 
 
 def schedule(record, actor, payload, source, intent, *, portal_reason=""):
-    from . import resident_intake_domain, resident_lifecycle_domain, resident_workspace_domain
+    from . import resident_domain_common, resident_intake_domain, resident_record_domain
     rid = record["resident_id"]
-    with resident_lifecycle_domain.state_lock(rid):
-        current = copy.deepcopy(resident_workspace_domain.find_resident(rid))
+    with resident_record_domain.state_lock(rid):
+        current = copy.deepcopy(resident_record_domain.find_resident(rid))
         previous = pending(current)
         if previous.get("request_id") == payload.get("idempotency_key") and previous:
             return copy.deepcopy(current["session_restart"])
@@ -22,7 +22,7 @@ def schedule(record, actor, payload, source, intent, *, portal_reason=""):
         before = "closed" if current.get("intake_open") is False else "open"
         request_id = payload.get("idempotency_key") or "deferred:" + secrets.token_hex(12)
         state = {"status": "accepted", "phase": "waiting_current_execution", "restart_id": "restart_" + secrets.token_hex(12),
-                 "request_id": request_id, "resident_id": rid, "submitted_by": actor, "submitted_at": resident_lifecycle_domain.now_iso(),
+                 "request_id": request_id, "resident_id": rid, "submitted_by": actor, "submitted_at": resident_domain_common.now_iso(),
                  "source": {"provider": source["provider"], "account_id": source["account_id"]}, "target": {"provider": intent["target_provider"], "account_id": intent["target_account"]},
                  "requested_strategy": intent["context_strategy"], "intent": intent, "previous_session_retained": True}
         if portal_reason:
@@ -35,20 +35,20 @@ def schedule(record, actor, payload, source, intent, *, portal_reason=""):
                                  "intake_before": before, "transition_id": current.get("intake_transition_id", ""),
                                  "phase": "waiting"}
             current["session_restart"] = state
-            resident_workspace_domain.save_resident_record(current)
+            resident_record_domain.save_resident_record(current)
         resident_catalog.get_catalog().state_store.transaction(commit)
         return copy.deepcopy(state)
 
 
 def _release(record, pending):
-    from . import resident_intake_domain, resident_workspace_domain
+    from . import resident_intake_domain, resident_record_domain
     def commit():
         from .resident_restart_handoff import restore_preparation
         restore_preparation(record)
         record["session_restart"].pop("deferred", None)
         if pending.get("intake_before") == "open" and pending.get("transition_id") == record.get("intake_transition_id"):
             resident_intake_domain.commit_resident_intake_state(record, "open")
-        resident_workspace_domain.save_resident_record(record)
+        resident_record_domain.save_resident_record(record)
     resident_catalog.get_catalog().state_store.transaction(commit)
 
 
@@ -67,12 +67,12 @@ def cancel(record, restart_id):
 
 def advance(record):
     """Continue the original request, retaining its explicit or background origin."""
-    from . import resident_lifecycle_domain, resident_restart_domain, resident_workspace_domain
+    from . import resident_record_domain, resident_restart_domain
     rid = str(record.get("resident_id") or "")
     if not pending(record):
         return False
-    with resident_lifecycle_domain.state_lock(rid):
-        current = copy.deepcopy(resident_workspace_domain.find_resident(rid) or {})
+    with resident_record_domain.state_lock(rid):
+        current = copy.deepcopy(resident_record_domain.find_resident(rid) or {})
         deferred = copy.deepcopy(pending(current))
         if not deferred:
             return False
@@ -99,21 +99,21 @@ def advance(record):
             rid, deferred["actor"], deferred["payload"], portal_reason=str(state.get("reason") or ""),
         )
     except Exception as exc:
-        with resident_lifecycle_domain.state_lock(rid):
-            current = copy.deepcopy(resident_workspace_domain.find_resident(rid) or {})
+        with resident_record_domain.state_lock(rid):
+            current = copy.deepcopy(resident_record_domain.find_resident(rid) or {})
             if pending(current).get("request_id") != deferred["request_id"]:
                 return False
             current["session_restart"] = {**(current.get("session_restart") or {}), "status": "failed", "phase": "failed", "error": str(exc)}
             _release(current, deferred)
         return False
-    with resident_lifecycle_domain.state_lock(rid):
-        current = copy.deepcopy(resident_workspace_domain.find_resident(rid) or {})
+    with resident_record_domain.state_lock(rid):
+        current = copy.deepcopy(resident_record_domain.find_resident(rid) or {})
         if pending(current).get("request_id") == deferred["request_id"]:
             current["session_restart"]["deferred"]["phase"] = "migrating"
             if receipt.get("status") in {"completed", "cancelled", "failed"}:
                 _release(current, deferred)
             else:
-                resident_workspace_domain.save_resident_record(current)
+                resident_record_domain.save_resident_record(current)
     return receipt.get("status") == "accepted"
 
 

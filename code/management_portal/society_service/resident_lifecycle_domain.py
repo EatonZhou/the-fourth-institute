@@ -7,45 +7,18 @@ from . import (
     resident_catalog,
     resident_conversation_stream,
     resident_lineage,
+    resident_record_domain,
     resident_state,
 )
 from .domain_ports import execution_port, resident_lineage_host_port
-from .resident_lifecycle import LifecycleStepPending, ResidentLifecycleOperations
+from .resident_lifecycle import LifecycleStepPending
 from contextlib import contextmanager
-from datetime import datetime, timezone
 from management_portal.execution.contracts import ExecutionRequest
 from pathlib import Path
 from typing import Any, Mapping
 import copy
-import re
 
 from . import resident_domain_common
-
-def now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
-
-
-def ensure_resident_agent(record: Mapping[str, Any], *, actor: str = "") -> dict[str, Any]:
-    """Establish the independent main Agent before registration or execution succeeds."""
-    from management_portal.execution.agent_data_store import get_agent_data_store
-    from . import identity_contract
-
-    resident_id = str(record.get("resident_id") or "").strip()
-    identity_contract.validate_id(resident_id, "resident")
-    return get_agent_data_store().ensure_agent(
-        resident_id,
-        actor_ref=str(actor or record.get("created_by") or ""),
-        sequence_kind="agent_trace",
-        parent_agent_id=None,
-    )
-
-
-@contextmanager
-def state_lock(resident_id: object):
-    """Protect short state transitions of exactly one Resident."""
-
-    with invariant_locks.resident_lock(resident_id):
-        yield
 
 
 def resident_aggregate_lineage_id(resident_id: object) -> str:
@@ -81,7 +54,7 @@ def resident_intake_state(record: Mapping[str, Any]) -> str:
 
 
 def resident_has_pending_work(resident_id: object) -> bool:
-    if lifecycle_operations().pending(str(resident_id or "")):
+    if resident_record_domain.lifecycle_operations().pending(str(resident_id or "")):
         return True
     state = resident_conversation_stream.get_repository().current_state(str(resident_id or ""))
     return str(state.get("work_state") or "idle") in {
@@ -91,14 +64,10 @@ def resident_has_pending_work(resident_id: object) -> bool:
     }
 
 
-def lifecycle_operations() -> ResidentLifecycleOperations:
-    return ResidentLifecycleOperations(resident_catalog.get_catalog().state_store)
-
-
 def require_no_pending_lifecycle(resident_id: str) -> None:
     """Folder writes wait until a pending move has relocated the Resident folder."""
 
-    if lifecycle_operations().pending(resident_id):
+    if resident_record_domain.lifecycle_operations().pending(resident_id):
         raise ValueError("Resident 生命周期操作正在完成，请稍后编辑")
 
 
@@ -108,16 +77,16 @@ def _resident_turn_running(resident_id: str) -> bool:
 
 
 def ready_resident_lifecycle_operations() -> list[str]:
-    return lifecycle_operations().ready()
+    return resident_record_domain.lifecycle_operations().ready()
 
 
 def resident_lifecycle_health() -> dict[str, Any]:
-    return lifecycle_operations().health()
+    return resident_record_domain.lifecycle_operations().health()
 
 
 def observe_committed_resident_transfer(operation_id: str, resident_id: str) -> dict[str, Any]:
     """Internal Lineage port: caller has verified receipt and both read grants."""
-    return lifecycle_operations().observe_committed_transfer(operation_id, resident_id)
+    return resident_record_domain.lifecycle_operations().observe_committed_transfer(operation_id, resident_id)
 
 
 def resident_release_step(record: dict[str, Any], actor: str) -> dict[str, Any]:
@@ -133,15 +102,16 @@ def resident_release_step(record: dict[str, Any], actor: str) -> dict[str, Any]:
 
 
 def resume_resident_lifecycle_operation(operation_id: str) -> bool:
-    from . import resident_execution_domain, resident_workspace_domain
-    resident_id = lifecycle_operations().run(operation_id, apply_resident_lifecycle_step)
-    if resident_id and resident_workspace_domain.find_resident(resident_id):
+    from . import resident_execution_domain, resident_record_domain
+    resident_id = resident_record_domain.lifecycle_operations().run(operation_id, apply_resident_lifecycle_step)
+    if resident_id and resident_record_domain.find_resident(resident_id):
         resident_execution_domain.resume_resident_execution(resident_id)
     return bool(resident_id)
 
 
 def apply_resident_lifecycle_step(operation_id: str, step: dict[str, Any]) -> None:
     from . import (
+        resident_record_domain,
         resident_restart_domain,
         resident_runtime_domain,
         resident_session_backend_domain,
@@ -212,8 +182,8 @@ def apply_resident_lifecycle_step(operation_id: str, step: dict[str, Any]) -> No
     elif kind == "resident_detach":
         resident_lineage_host_port.finalize_deleted_resident_detach(step["lineage_id"])
     elif kind == "workspace_document":
-        with state_lock(step["resident_id"]):
-            current = resident_workspace_domain.find_resident(step["resident_id"])
+        with resident_record_domain.state_lock(step["resident_id"]):
+            current = resident_record_domain.find_resident(step["resident_id"])
             if current:
                 resident_workspace_domain.refresh_resident_workspace_document(current)
                 from .state_store import get_lineage_data_store
@@ -229,7 +199,7 @@ def apply_resident_lifecycle_step(operation_id: str, step: dict[str, Any]) -> No
                 raise LifecycleStepPending()
             resident_workspace_transfer.relocate(transfer_id, step["source"], step["target"])
         else:
-            current = resident_workspace_domain.find_resident(step["resident_id"])
+            current = resident_record_domain.find_resident(step["resident_id"])
             if not current or resident_lineage.lineage_id(current) != step["lineage_id"]:
                 raise RuntimeError("Resident membership changed during workspace transfer")
             resident_workspace_domain.ensure_resident_workspace(current)
@@ -237,19 +207,6 @@ def apply_resident_lifecycle_step(operation_id: str, step: dict[str, Any]) -> No
             resident_workspace_transfer.finish(transfer_id, step["source"], step["target"])
     else:
         raise ValueError(f"Unknown Resident lifecycle effect: {kind}")
-
-
-def _slugify(value: str) -> str:
-    text = re.sub(r"[^A-Za-z0-9._-]+", "_", value.strip()).strip("._-")
-    return text[:48] or "resident_agent"
-
-
-def nonnegative_int(value: object, default: int = 0) -> int:
-    try:
-        number = int(value)
-    except Exception:
-        return default
-    return number if number >= 0 else default
 
 
 def append_conversation_message(
@@ -314,17 +271,11 @@ def accept_resident_user_message(
     )
 
 
-def safe_id(value: str) -> str:
-    raw = str(value or "").strip()
-    safe = re.sub(r"[^A-Za-z0-9_.@+-]+", "_", raw).strip("._")
-    return safe[:96] or "unknown"
-
-
 def _compensate_resident_registration(operation_id: str, step: dict[str, Any]) -> None:
-    from . import resident_record_domain, resident_workspace_domain
+    from . import resident_domain_common, resident_record_domain
     record = step["record"]
-    resident_id = resident_record_domain.record_resident_id(record)
-    if resident_workspace_domain.find_resident_canonical(resident_id) is not None:
+    resident_id = resident_domain_common.record_resident_id(record)
+    if resident_record_domain.find_resident_canonical(resident_id) is not None:
         return
     request_payload = step.get("execution_request")
     if request_payload:
@@ -352,7 +303,7 @@ def _compensate_resident_registration(operation_id: str, step: dict[str, Any]) -
         ):
             raise RuntimeError("Registration execution has no matching terminal result")
         # Keep the result unacknowledged until cleanup has a durable cursor.
-    if resident_workspace_domain.find_resident_canonical(resident_id) is not None:
+    if resident_record_domain.find_resident_canonical(resident_id) is not None:
         return
     apply_resident_lifecycle_step(
         operation_id, resident_release_step(record, step["actor"]),

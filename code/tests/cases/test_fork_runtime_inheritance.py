@@ -4,9 +4,12 @@ from __future__ import annotations
 import pytest
 
 from management_portal.execution import resident_runtime_settings, codex_runtime_settings
-from management_portal.society_service import resident_catalog, resident_runtime_domain
+from management_portal.society_service import (
+    resident_catalog,
+    resident_record_domain,
+    resident_runtime_domain,
+)
 from management_portal.society_service import resident_domain as backend
-from management_portal.society_service import resident_workspace_domain
 from tests.cases.test_resident_execution_protocol import resident_record  # noqa: F401 - fixture
 
 INHERITED_KEYS = (
@@ -47,7 +50,7 @@ def test_fork_inherits_every_runtime_setting_of_the_source(resident_record) -> N
         )
     )
     resident_runtime_domain.write_resident_runtime_settings(resident_record, source_settings)
-    resident_workspace_domain.save_resident_record(resident_record)
+    resident_record_domain.save_resident_record(resident_record)
     record_session_turn(resident_record)
 
     created = backend.create_resident_full_context_fork(

@@ -17,6 +17,7 @@ from . import (
     resident_lineage,
     resident_message_contract,
     resident_state,
+    resident_record_domain,
 )
 from .domain_ports import execution_port, resident_lineage_host_port
 from .resident_access import (
@@ -61,10 +62,10 @@ def finish_resident_continuation(
     resident_id: str,
 ) -> None:
     """Release one waiter and re-wake work persisted during its shutdown."""
-    from . import resident_execution_domain, resident_lifecycle_domain
+    from . import resident_execution_domain, resident_record_domain
 
     should_wake = False
-    with resident_lifecycle_domain.state_lock(resident_id):
+    with resident_record_domain.state_lock(resident_id):
         record = resident_execution_domain.resident_record_for_execution(resident_id)
         record_for_key = record or {
             "resident_id": resident_id,
@@ -184,7 +185,7 @@ def build_message(
     provider_response: Mapping[str, Any] | None = None,
     execution_id: str = "",
 ) -> dict[str, Any]:
-    from . import resident_lifecycle_domain
+    from . import resident_domain_common
     if role not in {"user", "agent", "system"}:
         raise ValueError("Resident Message role must be user, agent, or system")
     identity = resident_message_contract.message_identity(message_id)
@@ -194,7 +195,7 @@ def build_message(
         "content_parts": copy.deepcopy(content_parts)
         if content_parts is not None
         else [{"type": "text", "text": content}],
-        "created_at": str(created_at or resident_lifecycle_domain.now_iso()),
+        "created_at": str(created_at or resident_domain_common.now_iso()),
     }
     if role == "system":
         from management_common.principal import message_origin
@@ -278,7 +279,7 @@ def existing_resident_delivery(
     require_execution_binding: bool = False,
 ) -> bool:
     """Validate an idempotent retry and reject incomplete intake commits."""
-    from . import resident_lifecycle_domain, resident_workspace_domain
+    from . import resident_lifecycle_domain, resident_record_domain
 
     repository = resident_conversation_stream.get_repository()
     message_id = str(message.get("message_id") or "").strip()
@@ -310,7 +311,7 @@ def existing_resident_delivery(
 
         def repair_queued_input() -> None:
             resident_lifecycle_domain.accept_resident_user_message(resident_id, queued_message)
-            record = resident_workspace_domain.find_resident(resident_id)
+            record = resident_record_domain.find_resident(resident_id)
             if record:
                 resident_execution_work.project_latest_conversation_state(record, job)
 
@@ -336,14 +337,14 @@ def persist_failed_execution_message(
     *,
     failed_at: str = "",
 ) -> dict[str, Any]:
-    from . import resident_lifecycle_domain, resident_record_domain
+    from . import resident_domain_common, resident_lifecycle_domain, resident_record_domain
     message_id = resident_execution_work.failed_message_id(job, failed_at=failed_at)
     repository = resident_conversation_stream.get_repository()
     existing = repository.message(resident_id, message_id)
     if existing is not None:
         job["failure_message_id"] = message_id
         job["failure_message_persisted_at"] = str(
-            existing.get("created_at") or failed_at or resident_lifecycle_domain.now_iso()
+            existing.get("created_at") or failed_at or resident_domain_common.now_iso()
         )
         return repository.public_message(resident_id, message_id)
     details = dict(runtime_error) if isinstance(runtime_error, dict) else {}
@@ -359,7 +360,7 @@ def persist_failed_execution_message(
             failed_at
             or job.get("finished_at")
             or job.get("updated_at")
-            or resident_lifecycle_domain.now_iso()
+            or resident_domain_common.now_iso()
         ),
         # The failed turn's Execution: the notice shows what that turn used.
         execution_id=resident_execution_work.submitted_execution_id(job),
@@ -369,7 +370,7 @@ def persist_failed_execution_message(
         item,
     )
     job["failure_message_id"] = message_id
-    job["failure_message_persisted_at"] = str(item.get("created_at") or resident_lifecycle_domain.now_iso())
+    job["failure_message_persisted_at"] = str(item.get("created_at") or resident_domain_common.now_iso())
     return persisted
 
 
@@ -448,9 +449,9 @@ def _queue_resident_compaction(
     *,
     user_message: Mapping[str, Any] | None = None,
 ) -> None:
-    from . import resident_lifecycle_domain, resident_record_domain, resident_workspace_domain
-    now = resident_lifecycle_domain.now_iso()
-    resident_id = resident_record_domain.record_resident_id(record)
+    from . import resident_domain_common, resident_lifecycle_domain, resident_record_domain
+    now = resident_domain_common.now_iso()
+    resident_id = resident_domain_common.record_resident_id(record)
     session_id = resident_backend.record_session_id(record)
     running = _active_resident_execution(record)
     user_item = (
@@ -476,7 +477,7 @@ def _queue_resident_compaction(
         resident_execution_work.write(record, running)
         resident_lifecycle_domain.mark_resident_input_queued(resident_id, user_item)
         record["updated_at"] = now
-        resident_workspace_domain.save_resident_record(record)
+        resident_record_domain.save_resident_record(record)
         return
     job = {
         **item,
@@ -488,7 +489,7 @@ def _queue_resident_compaction(
     resident_execution_work.write(record, job)
     record["session_state"] = resident_record_domain.record_backend_session_state(record)
     record["updated_at"] = now
-    resident_workspace_domain.save_resident_record(record)
+    resident_record_domain.save_resident_record(record)
 
 
 def _context_refs_include_image(value: object) -> bool:
@@ -530,9 +531,9 @@ def _send_synchronous_provider_message(
     user_message: Mapping[str, Any],
 ) -> dict:
     """Record a deterministic provider invocation as one Agent Execution."""
-    from . import resident_lifecycle_domain, resident_record_domain, resident_workspace_domain
+    from . import resident_domain_common, resident_lifecycle_domain, resident_record_domain
     provider = resident_execution_provider.provider_for(record)
-    resident_id = resident_record_domain.record_resident_id(record)
+    resident_id = resident_domain_common.record_resident_id(record)
 
     # Keep the Resident registry lock out of the Lineage mutation boundary.
     # Resident registration takes Lineage -> Resident locks, so the reverse
@@ -543,7 +544,7 @@ def _send_synchronous_provider_message(
     from management_portal.execution import execution_inputs
     execution_id = "execution-" + uuid4().hex[:24]
     store = get_agent_data_store()
-    started_at = resident_lifecycle_domain.now_iso()
+    started_at = resident_domain_common.now_iso()
     with store.database.transaction():
         store.begin_execution(execution_id=execution_id, agent_id=resident_id,
                               actor_ref=actor_id, provider="portal", started_at=started_at)
@@ -565,8 +566,8 @@ def _send_synchronous_provider_message(
         if not reply:
             raise RuntimeError("Synchronous ExecutionProvider did not produce a reply")
 
-        with resident_lifecycle_domain.state_lock(resident_id):
-            current = resident_workspace_domain.find_resident(str(record.get("resident_id") or ""))
+        with resident_record_domain.state_lock(resident_id):
+            current = resident_record_domain.find_resident(str(record.get("resident_id") or ""))
             if not current:
                 raise KeyError("resident not found")
             if not _resident_deliverable_to_actor(current, actor_id):
@@ -578,7 +579,7 @@ def _send_synchronous_provider_message(
 
             user_item = dict(user_message)
             resident_lifecycle_domain.append_conversation_message(
-                resident_record_domain.record_resident_id(current),
+                resident_domain_common.record_resident_id(current),
                 {**build_message(
                     "agent",
                     reply,
@@ -590,20 +591,20 @@ def _send_synchronous_provider_message(
                     reply_to_message_id=str(user_item.get("message_id") or ""),
                 ), "execution_id": execution_id},
             )
-            store.finish_execution(execution_id, status="completed", finished_at=resident_lifecycle_domain.now_iso())
+            store.finish_execution(execution_id, status="completed", finished_at=resident_domain_common.now_iso())
             resident_conversation_stream.get_repository().set_input_state(
-                resident_record_domain.record_resident_id(current),
+                resident_domain_common.record_resident_id(current),
                 str(user_item.get("message_id") or ""),
                 "completed",
             )
             current["session_state"] = "active"
             current["last_error"] = ""
-            current["updated_at"] = resident_lifecycle_domain.now_iso()
-            resident_workspace_domain.save_resident_record(current)
+            current["updated_at"] = resident_domain_common.now_iso()
+            resident_record_domain.save_resident_record(current)
 
     except Exception:
         if (store.execution(execution_id) or {}).get("status") not in {"completed", "failed", "cancelled"}:
-            store.finish_execution(execution_id, status="failed", finished_at=resident_lifecycle_domain.now_iso())
+            store.finish_execution(execution_id, status="failed", finished_at=resident_domain_common.now_iso())
         raise
 
     return _resident_message_delivery_result(
@@ -616,7 +617,7 @@ def _resident_message_cwd(
     record: dict[str, Any],
     working_directory: object,
 ) -> Path:
-    from . import resident_runtime_domain, resident_workspace_domain
+    from . import resident_record_domain, resident_runtime_domain
     raw = str(working_directory or "").strip()
     default = resident_runtime_domain.resident_working_directory(record)
     if not raw:
@@ -627,7 +628,7 @@ def _resident_message_cwd(
     resolved = path.resolve(strict=False)
     allowed_roots = {
         Path(str(item.get("path") or "")).expanduser().resolve(strict=False)
-        for item in resident_workspace_domain.resident_workspace_roots(record)
+        for item in resident_record_domain.resident_workspace_roots(record)
         if str(item.get("path") or "").strip()
     }
     if resolved not in allowed_roots:
@@ -717,11 +718,11 @@ def _submit_active_turn_input(
     expected_execution_id: str,
 ) -> dict[str, Any]:
     """Submit one idempotent control to the Resident's exact active execution."""
-    from . import resident_lifecycle_domain, resident_record_domain, resident_workspace_domain
+    from . import resident_domain_common, resident_record_domain
 
-    resident_id = resident_record_domain.record_resident_id(record)
-    with resident_lifecycle_domain.state_lock(resident_id):
-        record = resident_workspace_domain.find_resident(resident_id) or record
+    resident_id = resident_domain_common.record_resident_id(record)
+    with resident_record_domain.state_lock(resident_id):
+        record = resident_record_domain.find_resident(resident_id) or record
         job = resident_execution_work.read(record)
         if (
             resident_execution_work.submitted_execution_id(job) != expected_execution_id
@@ -749,7 +750,7 @@ def _submit_active_turn_input(
         execution_id = resident_execution_work.submitted_execution_id(job)
 
         if not execution_id:
-            now = resident_lifecycle_domain.now_iso()
+            now = resident_domain_common.now_iso()
             pending_inputs = [
                 dict(item)
                 for item in job.get("pending_active_turn_inputs") or []
@@ -768,7 +769,7 @@ def _submit_active_turn_input(
             job["updated_at"] = now
             resident_execution_work.write(record, job)
             record["updated_at"] = now
-            resident_workspace_domain.save_resident_record(record)
+            resident_record_domain.save_resident_record(record)
             return {
                 "requested": True,
                 "status": "pending",
@@ -811,15 +812,15 @@ def submit_active_turn_settings(
     source: str,
 ) -> dict[str, Any]:
     """Publish a Provider-native speed update to the exact active turn."""
-    from . import resident_lifecycle_domain, resident_record_domain, resident_workspace_domain
+    from . import resident_domain_common, resident_record_domain
 
 
-    resident_id = resident_record_domain.record_resident_id(record)
+    resident_id = resident_domain_common.record_resident_id(record)
     if not str(control_key or "").strip():
         raise ValueError("active turn settings control_key required")
     control_id = resident_input_control_id(resident_id, f"turn-settings:{control_key}")
-    with resident_lifecycle_domain.state_lock(resident_id):
-        current_record = resident_workspace_domain.find_resident(resident_id) or record
+    with resident_record_domain.state_lock(resident_id):
+        current_record = resident_record_domain.find_resident(resident_id) or record
         job = resident_execution_work.read(current_record)
         if (not resident_execution_work.is_active(job) or job.get("stop_requested_at")
                 or job.get("execution_terminal_status") in {"completed", "failed", "cancelled"}):
@@ -827,7 +828,7 @@ def submit_active_turn_settings(
         execution_id = resident_execution_work.submitted_execution_id(job)
         expected_execution_id = str(job.get("execution_id") or "")
         item = {"control_id": control_id, "actor": actor_id, "service_tier": str(service_tier or ""),
-                "source": source, "created_at": resident_lifecycle_domain.now_iso()}
+                "source": source, "created_at": resident_domain_common.now_iso()}
         job["pending_active_turn_settings"] = [item]
         job["updated_at"] = item["created_at"]
         resident_execution_work.write(current_record, job)
@@ -848,8 +849,8 @@ def submit_active_turn_settings(
         except Exception as exc:
             result.update(status="failed", error=str(exc))
             return
-        with resident_lifecycle_domain.state_lock(resident_id):
-            current_record = resident_workspace_domain.find_resident(resident_id) or {}
+        with resident_record_domain.state_lock(resident_id):
+            current_record = resident_record_domain.find_resident(resident_id) or {}
             current = resident_execution_work.read(current_record) if current_record else {}
             if str(current.get("execution_id") or "") != expected_execution_id or resident_execution_work.submitted_execution_id(current) != execution_id:
                 return
@@ -864,13 +865,6 @@ def submit_active_turn_settings(
     return result
 
 
-def resident_quota_override(record: Mapping[str, Any]) -> dict[str, Any]:
-    policy = record.get("quota_reserve_override")
-    if not isinstance(policy, dict) or policy.get("binding_id") != resident_backend.execution_binding_id(record):
-        return {}
-    return copy.deepcopy(policy)
-
-
 def sync_resident_quota_overrides(residents: list[dict[str, Any]] | None = None) -> bool:
     if residents is None:
         from . import resident_catalog, resident_storage
@@ -878,7 +872,7 @@ def sync_resident_quota_overrides(residents: list[dict[str, Any]] | None = None)
         with catalog.state_store.database.read() as connection:
             ids = resident_storage.quota_override_resident_ids(connection)
         residents = catalog.get_many(ids)
-    policies = [policy for record in residents if (policy := resident_quota_override(record))]
+    policies = [policy for record in residents if (policy := resident_record_domain.resident_quota_override(record))]
     if not policies:
         return True
     try:
@@ -893,9 +887,9 @@ def commit_resident_intake_state(
     record: dict[str, Any], next_state: str, *,
     commit_configuration: bool = False,
 ) -> dict[str, Any]:
-    from . import resident_lifecycle_domain, resident_record_domain, resident_workspace_domain
-    now = resident_lifecycle_domain.now_iso()
-    target_id = resident_record_domain.record_resident_id(record)
+    from . import resident_domain_common, resident_record_domain
+    now = resident_domain_common.now_iso()
+    target_id = resident_domain_common.record_resident_id(record)
     repository = resident_conversation_stream.get_repository()
     current_state = repository.published_state(target_id)
     previous_state = "closed" if record.get("intake_open") is False else "open"
@@ -906,7 +900,7 @@ def commit_resident_intake_state(
     record["updated_at"] = now
     record["intake_transition_id"] = secrets.token_hex(16)
     record["intake_open"] = next_state == resident_state.INTAKE_OPEN
-    resident_workspace_domain.save_resident_record(record, commit_configuration=commit_configuration, commit_intake=True)
+    resident_record_domain.save_resident_record(record, commit_configuration=commit_configuration, commit_intake=True)
     repository.set_state(target_id, {**current_state, "intake_state": next_state})
     return {
         "resident_id": target_id, "state_domain": resident_state.INTAKE_DOMAIN,
@@ -997,7 +991,7 @@ def _require_execution_account(
 
 @resident_lineage.access_snapshot_scope()
 def get_account_resident_summary(account_id: str, actor: str) -> dict[str, Any]:
-    from . import resident_lifecycle_domain, resident_record_domain
+    from . import resident_domain_common
     operator = canonical_actor_id(actor)
     if not operator:
         raise PermissionError("需要登录后查看账号节点详情")
@@ -1023,7 +1017,7 @@ def get_account_resident_summary(account_id: str, actor: str) -> dict[str, Any]:
         ) == account_id
     ]
     snapshots = resident_conversation_stream.get_repository().state_snapshots([
-        resident_record_domain.record_resident_id(record) for record in selected
+        resident_domain_common.record_resident_id(record) for record in selected
     ])
     intake = {"open": 0, "closed": 0, "unknown": 0}
     # The page opens or closes these with OpenIntake resident_ids.
@@ -1032,7 +1026,7 @@ def get_account_resident_summary(account_id: str, actor: str) -> dict[str, Any]:
     latest_input = {"failed": 0, "cancelled": 0}
     queued_messages = no_session = exempt = 0
     for record in selected:
-        snapshot = snapshots.get(resident_record_domain.record_resident_id(record)) or {}
+        snapshot = snapshots.get(resident_domain_common.record_resident_id(record)) or {}
         state = snapshot.get("state") or {}
         intake_state = state.get("intake_state", "unknown")
         if intake_state == "closed":
@@ -1040,7 +1034,7 @@ def get_account_resident_summary(account_id: str, actor: str) -> dict[str, Any]:
         else:
             intake[intake_state if intake_state == "open" else "unknown"] += 1
         if intake_state in intake_ids:
-            intake_ids[intake_state].append(resident_record_domain.record_resident_id(record))
+            intake_ids[intake_state].append(resident_domain_common.record_resident_id(record))
         work_state = state.get("work_state", "unknown")
         work[work_state if work_state in work else "unknown"] += 1
         queued_messages += max(0, int(state.get("queued_count") or 0))
@@ -1049,7 +1043,7 @@ def get_account_resident_summary(account_id: str, actor: str) -> dict[str, Any]:
             latest_input[last_state] += 1
         binding = bindings.get(resident_backend.execution_binding_id(record)) or {}
         no_session += int(not binding.get("backend_session_id"))
-        exempt += int(resident_quota_override(record).get("enabled") is True)
+        exempt += int(resident_record_domain.resident_quota_override(record).get("enabled") is True)
     quota = next(
         (
             item.get("quota_reserve")
@@ -1059,7 +1053,7 @@ def get_account_resident_summary(account_id: str, actor: str) -> dict[str, Any]:
         None,
     ) or {"status": "unknown"}
     return {
-        "account_id": account_id, "observed_at": resident_lifecycle_domain.now_iso(),
+        "account_id": account_id, "observed_at": resident_domain_common.now_iso(),
         "scope": "visible", "total": len(selected),
         "intake": intake, "open_resident_ids": intake_ids["open"], "closed_resident_ids": intake_ids["closed"],
         "work": work, "latest_input": latest_input,
@@ -1072,7 +1066,7 @@ def _commit_manual_resident_intake_state(
     record: dict[str, Any], next_state: str, *, allow_quota_override: bool,
 ) -> dict[str, Any]:
     """Commit a human choice under the caller's Resident lock and authorization."""
-    policy = resident_quota_override(record)
+    policy = resident_record_domain.resident_quota_override(record)
     commit_configuration = bool(
         allow_quota_override or (next_state == resident_state.INTAKE_CLOSED and policy)
     )
@@ -1094,15 +1088,15 @@ def _change_resident_intake_state(
     *,
     allow_quota_override: bool = True,
 ) -> dict[str, Any]:
-    from . import resident_lifecycle_domain, resident_workspace_domain
+    from . import resident_record_domain
     actor_id = canonical_actor_id(actor)
     if not actor_id:
         raise ValueError("需要登录后切换 Agent 接单状态")
     next_state = str(intake_state or "").strip().lower()
     if next_state not in resident_state.INTAKE_VALUES:
         raise ValueError("intake_state 必须是 open 或 closed")
-    with resident_lifecycle_domain.state_lock(resident_id):
-        record = resident_workspace_domain.find_resident_canonical(resident_id)
+    with resident_record_domain.state_lock(resident_id):
+        record = resident_record_domain.find_resident_canonical(resident_id)
         if not record:
             raise KeyError("resident not found")
         ensure_resident_visible_to_actor(record, actor_id)
@@ -1124,11 +1118,11 @@ def transition_resident_state(
     transition: str,
     allow_quota_override: bool = True,
 ) -> dict[str, Any]:
-    from . import resident_workspace_domain
+    from . import resident_record_domain
     domain = str(state_domain or "").strip().lower() or resident_state.INTAKE_DOMAIN
     if domain != resident_state.INTAKE_DOMAIN:
         raise ValueError(f"Resident state module 不拥有状态域：{domain}")
-    target = resident_workspace_domain.resolve_resident_runtime_target(
+    target = resident_record_domain.resolve_resident_runtime_target(
         resident_id,
         actor,
         require_visible=True,
@@ -1159,7 +1153,12 @@ def persist_resident_input(
     protocol_input: Mapping[str, Any] | None = None,
     business_ref: str = "",
 ) -> dict:
-    from . import resident_directory_domain, resident_lifecycle_domain
+    from . import (
+        resident_directory_domain,
+        resident_domain_common,
+        resident_lifecycle_domain,
+        resident_record_domain,
+    )
     from . import message_quotes
     from .outward_messages import speaking_for
     from . import (
@@ -1168,11 +1167,10 @@ def persist_resident_input(
         resident_registration_domain,
         resident_runtime_domain,
         resident_session_backend_domain,
-        resident_workspace_domain,
     )
     def _save_resident_record(record):
         if record.get("default_cwd"):
-            return resident_workspace_domain.save_resident_record(record)
+            return resident_record_domain.save_resident_record(record)
         return _save_admission_observations(record)
     actor_id = canonical_actor_id(actor)
     if not actor_id:
@@ -1211,7 +1209,7 @@ def persist_resident_input(
     requested_quote = protocol_input.get("quote") if isinstance(protocol_input, Mapping) else None
     if requested_quote not in (None, {}) and (activation == "attach_to_next" or isolated_input):
         raise ValueError("info 消息和授权调用的输入不带引用")
-    quote_record = resident_workspace_domain.find_resident_for_admission(resident_id) or {"resident_id": resident_id}
+    quote_record = resident_record_domain.find_resident_for_admission(resident_id) or {"resident_id": resident_id}
     if requested_quote in (None, {}) and relay_source is None and family_facade.is_facade(quote_record):
         from .resident_questions import answered_set
 
@@ -1234,8 +1232,8 @@ def persist_resident_input(
         if activation == "inject_active_turn":
             # Recheck under the same queue lock used by promotion. A turn may
             # finish while context is prepared; the accepted input stays queued.
-            with resident_lifecycle_domain.state_lock(resident_id):
-                current_record = resident_workspace_domain.find_resident_for_admission(resident_id)
+            with resident_record_domain.state_lock(resident_id):
+                current_record = resident_record_domain.find_resident_for_admission(resident_id)
                 current = resident_execution_work.read(current_record) if current_record else {}
                 if resident_execution_work.is_active(current) and any(
                     _queue_item_matches(item, message_id)
@@ -1285,13 +1283,13 @@ def persist_resident_input(
     # File attachments/explicit cwd require the execution environment. Plain
     # messages need only persisted identity/configuration; resolve paths later.
     has_media = bool(input_media or resident_media_domain.RESIDENT_IMAGE_MARKER_RE.search(message))
-    environment = (resident_workspace_domain.find_resident(resident_id) if has_media or working_directory or message.lstrip().startswith("/")
+    environment = (resident_record_domain.find_resident(resident_id) if has_media or working_directory or message.lstrip().startswith("/")
                    or resident_execution_provider.provider_for(quote_record).capabilities.synchronous_delivery else None)
     synchronous_record: dict[str, Any] = {}
     synchronous_message: dict[str, Any] = {}
     input_record: dict[str, Any] = {}
-    with resident_intake_admission.scope(resident_id, message_id), resident_lifecycle_domain.state_lock(resident_id):
-        record = resident_workspace_domain.find_resident_for_admission(resident_id)
+    with resident_intake_admission.scope(resident_id, message_id), resident_record_domain.state_lock(resident_id):
+        record = resident_record_domain.find_resident_for_admission(resident_id)
         if not record:
             raise KeyError("resident not found")
         if not isolated_input and not delegated_relay and not _resident_deliverable_to_actor(record, actor_id):
@@ -1301,7 +1299,7 @@ def persist_resident_input(
         from .resident_questions import prepare_question_answer
 
         question_answer = prepare_question_answer(
-            resident_record_domain.record_resident_id(record), protocol_input,
+            resident_domain_common.record_resident_id(record), protocol_input,
             resident_conversation_stream.get_repository(),
             facade=record if family_facade.is_facade(record) else None,
             relay_source=relay_source if relayed_sender else None,
@@ -1325,20 +1323,20 @@ def persist_resident_input(
             # and the member the Router chooses reads them (decision_44cf587c1721).
             if input_media:
                 resident_media_domain.resident_input_media(
-                    input_media, actor=speaking_member or actor_id, resident_id=resident_record_domain.record_resident_id(record), content=message,
+                    input_media, actor=speaking_member or actor_id, resident_id=resident_domain_common.record_resident_id(record), content=message,
                     workspace_roots=resident_runtime_domain.resident_media_workspace_roots(environment or record),
                 )
             if context_refs:
                 resident_record_domain.resolve_context_refs(context_refs, speaking_member or actor_id, message)
             facade_item = _resident_user_message(
-                resident_record_domain.record_resident_id(record), message, actor_id,
+                resident_domain_common.record_resident_id(record), message, actor_id,
                 message_id=message_id, protocol_input=protocol_input,
             )
             if business_ref:
                 facade_item["business_ref"] = str(business_ref).strip()[:500]
             facade_message = copy.deepcopy(facade_item)
             if activation == "attach_to_next":
-                if not existing_resident_delivery(resident_record_domain.record_resident_id(record), facade_item):
+                if not existing_resident_delivery(resident_domain_common.record_resident_id(record), facade_item):
                     # Held only to be shown with the facade's next request.
                     resident_held_infos.hold(record, facade_item)
 
@@ -1356,7 +1354,7 @@ def persist_resident_input(
                     lambda: family_facade.forward_info(record, facade_message, actor_id)
                 )
                 return delivery_result()
-            if existing_resident_delivery(resident_record_domain.record_resident_id(record), facade_item):
+            if existing_resident_delivery(resident_domain_common.record_resident_id(record), facade_item):
                 from . import family_recovery
                 invariant_locks.defer_until_state_unlock(
                     lambda: family_recovery.handle(record, str(facade_message.get("message_id") or ""))
@@ -1388,12 +1386,12 @@ def persist_resident_input(
             if context_refs or input_media or runtime_context or additional_skills:
                 raise ValueError("info 消息只包含消息内容")
             info_item = _resident_user_message(
-                resident_record_domain.record_resident_id(record), message, actor_id,
+                resident_domain_common.record_resident_id(record), message, actor_id,
                 message_id=message_id, protocol_input=protocol_input,
             )
             if business_ref:
                 info_item["business_ref"] = str(business_ref).strip()[:500]
-            if existing_resident_delivery(resident_record_domain.record_resident_id(record), info_item):
+            if existing_resident_delivery(resident_domain_common.record_resident_id(record), info_item):
                 return delivery_result()
             resident_held_infos.hold(record, info_item)
             held_message = copy.deepcopy(info_item)
@@ -1455,7 +1453,7 @@ def persist_resident_input(
         if provider.capabilities.synchronous_delivery:
             record = environment or record
             synchronous_message = _resident_user_message(
-                resident_record_domain.record_resident_id(record),
+                resident_domain_common.record_resident_id(record),
                 message,
                 actor_id,
                 message_id=message_id,
@@ -1464,23 +1462,23 @@ def persist_resident_input(
             if business_ref:
                 synchronous_message["business_ref"] = str(business_ref).strip()[:500]
             if existing_resident_delivery(
-                resident_record_domain.record_resident_id(record),
+                resident_domain_common.record_resident_id(record),
                 synchronous_message,
             ):
                 return delivery_result()
             synchronous_message = resident_lifecycle_domain.persist_resident_user_message(
-                resident_record_domain.record_resident_id(record),
+                resident_domain_common.record_resident_id(record),
                 synchronous_message,
             )
             if business_ref:
                 synchronous_message["business_ref"] = str(business_ref).strip()[:500]
             resident_conversation_stream.get_repository().set_input_state(
-                resident_record_domain.record_resident_id(record),
+                resident_domain_common.record_resident_id(record),
                 message_id,
                 "running",
             )
             record["session_state"] = "running"
-            record["updated_at"] = resident_lifecycle_domain.now_iso()
+            record["updated_at"] = resident_domain_common.now_iso()
             _save_resident_record(record)
             synchronous_record = copy.deepcopy(record)
             resident_intake_admission.committed(resident_id, message_id)
@@ -1496,18 +1494,18 @@ def persist_resident_input(
                 user_message=synchronous_message,
             )
         except Exception as exc:
-            with resident_lifecycle_domain.state_lock(resident_id):
+            with resident_record_domain.state_lock(resident_id):
                 resident_conversation_stream.get_repository().set_input_state(
                     resident_id,
                     message_id,
                     "failed",
                     error=resident_record_domain.runtime_error_payload(str(exc)),
                 )
-                current = resident_workspace_domain.find_resident_for_admission(resident_id)
+                current = resident_record_domain.find_resident_for_admission(resident_id)
                 if current:
                     current["session_state"] = "active"
                     current["last_error"] = str(exc)
-                    current["updated_at"] = resident_lifecycle_domain.now_iso()
+                    current["updated_at"] = resident_domain_common.now_iso()
                     _save_resident_record(current)
             raise
         return delivery_result()
@@ -1517,19 +1515,19 @@ def persist_resident_input(
     _ensure_backend_accepts_context_refs(input_record, context_refs)
     resolved_refs = resident_record_domain.resolve_context_refs(context_refs, attachment_actor, message)
     media_roots = resident_runtime_domain.resident_media_workspace_roots(environment) if has_media else ()
-    facade_record = resident_workspace_domain.find_resident(relay_source[0]) if relayed_sender and input_media else None
+    facade_record = resident_record_domain.find_resident(relay_source[0]) if relayed_sender and input_media else None
     if facade_record:
         # The facade accepted attached paths within its own Workspaces.
         media_roots = (*media_roots, *resident_runtime_domain.resident_media_workspace_roots(facade_record))
     resolved_attachments = resident_media_domain.resident_input_media(
         input_media,
         actor=attachment_actor,
-        resident_id=resident_record_domain.record_resident_id(input_record),
+        resident_id=resident_domain_common.record_resident_id(input_record),
         content=message,
         workspace_roots=media_roots,
     )
     if resolved_attachments:
-        environment = environment or resident_workspace_domain.find_resident(resident_id)
+        environment = environment or resident_record_domain.find_resident(resident_id)
         resolved_attachments = resident_media_domain.stage_resident_input_images(
             resolved_attachments, resident_record_domain.sessions_path(environment or input_record), message_id,
         )
@@ -1546,8 +1544,8 @@ def persist_resident_input(
         else ""
     )
 
-    with resident_intake_admission.scope(resident_id, message_id), resident_lifecycle_domain.state_lock(resident_id):
-        record = resident_workspace_domain.find_resident_for_admission(resident_id)
+    with resident_intake_admission.scope(resident_id, message_id), resident_record_domain.state_lock(resident_id):
+        record = resident_record_domain.find_resident_for_admission(resident_id)
         if not record:
             raise KeyError("resident not found")
         if not isolated_input and not delegated_relay and not _resident_deliverable_to_actor(record, actor_id):
@@ -1584,17 +1582,17 @@ def persist_resident_input(
                 can_update_runtime=True,
                 can_manage_permissions=True,
                 scope_label=scope_label,
-                updated_at=resident_lifecycle_domain.now_iso(),
+                updated_at=resident_domain_common.now_iso(),
                 token_usage=resident_record_domain.session_token_usage_payload(record),
                 goal=goal_payload,
             )
         if slash_result.get("native_compact"):
             command_message = _resident_user_message(
-                resident_record_domain.record_resident_id(record), message, actor_id, message_id=message_id,
+                resident_domain_common.record_resident_id(record), message, actor_id, message_id=message_id,
                 protocol_input=protocol_input,
             )
             if existing_resident_delivery(
-                resident_record_domain.record_resident_id(record),
+                resident_domain_common.record_resident_id(record),
                 command_message,
                 bound_job=resident_execution_work.read(record),
                 require_execution_binding=True,
@@ -1614,10 +1612,10 @@ def persist_resident_input(
             )
         if slash_result.get("handled"):
             command_message = _resident_user_message(
-                resident_record_domain.record_resident_id(record), message, actor_id, message_id=message_id,
+                resident_domain_common.record_resident_id(record), message, actor_id, message_id=message_id,
                 protocol_input=protocol_input,
             )
-            if existing_resident_delivery(resident_record_domain.record_resident_id(record), command_message):
+            if existing_resident_delivery(resident_domain_common.record_resident_id(record), command_message):
                 return delivery_result()
             if slash_result.get("updates"):
                 resident_runtime_domain.write_resident_runtime_settings(record, slash_result["updates"])
@@ -1639,14 +1637,14 @@ def persist_resident_input(
                     )
                 )
             _persist_synchronous_command_exchange(
-                resident_record_domain.record_resident_id(record),
+                resident_domain_common.record_resident_id(record),
                 actor_id,
                 message,
                 message_id,
                 slash_result,
                 user_message=command_message,
             )
-            record["updated_at"] = resident_lifecycle_domain.now_iso()
+            record["updated_at"] = resident_domain_common.now_iso()
             _save_resident_record(record)
             return delivery_result()
 
@@ -1678,20 +1676,20 @@ def persist_resident_input(
 
                 delivery_message_id=message_id if deferred_delivery else "",
                 user_message=_resident_user_message(
-                    resident_record_domain.record_resident_id(record), message, actor_id,
+                    resident_domain_common.record_resident_id(record), message, actor_id,
                     message_id=message_id,
                     protocol_input=protocol_input,
                 ),
             )
             record["session_state"] = resident_record_domain.record_backend_session_state(record)
             record["last_error"] = ""
-            record["updated_at"] = resident_lifecycle_domain.now_iso()
+            record["updated_at"] = resident_domain_common.now_iso()
             _save_resident_record(record)
             return delivery_result()
-        now = resident_lifecycle_domain.now_iso()
+        now = resident_domain_common.now_iso()
         intake_state = resident_lifecycle_domain.resident_intake_state(record)
         user_item = _resident_user_message(
-            resident_record_domain.record_resident_id(record),
+            resident_domain_common.record_resident_id(record),
             message,
             actor_id,
             message_id=message_id,
@@ -1700,7 +1698,7 @@ def persist_resident_input(
         if business_ref:
             user_item["business_ref"] = str(business_ref).strip()[:500]
         if existing_resident_delivery(
-            resident_record_domain.record_resident_id(record),
+            resident_domain_common.record_resident_id(record),
             user_item,
             bound_job=running,
             require_execution_binding=True,
@@ -1795,21 +1793,21 @@ def persist_resident_input(
 
 def reset_resident_context(resident_id: str, actor: str) -> dict:
     """Commit a context reset and durably schedule its external cleanup."""
-    from . import resident_lifecycle_domain, resident_record_domain, resident_workspace_domain
+    from . import resident_domain_common, resident_lifecycle_domain, resident_record_domain
 
     actor_id = canonical_actor_id(actor)
     if not actor_id:
         raise ValueError("需要登录后清空上下文")
-    with resident_lifecycle_domain.state_lock(resident_id):
-        record = resident_workspace_domain.find_resident(resident_id)
+    with resident_record_domain.state_lock(resident_id):
+        record = resident_record_domain.find_resident(resident_id)
         if not record:
             raise KeyError("resident not found")
         if resident_execution_work.is_active(resident_execution_work.read(record)):
             raise ValueError("当前仍有任务正在排队或处理，停止或完成后再清空上下文")
-        operations = resident_lifecycle_domain.lifecycle_operations()
+        operations = resident_record_domain.lifecycle_operations()
         if operations.pending(resident_id):
             raise ValueError("Resident 生命周期操作正在完成，请稍后重试")
-        now = resident_lifecycle_domain.now_iso()
+        now = resident_domain_common.now_iso()
         next_record = copy.deepcopy(record)
         next_record.update({"session_state": "ready", "last_error": "", "updated_at": now})
         # Provider sessions that ran before this time hold the cleared context:
@@ -1833,7 +1831,7 @@ def reset_resident_context(resident_id: str, actor: str) -> dict:
             "trace_position": repository.agent_data.trace_length(resident_id),
         }, resident_lifecycle_domain.resident_release_step(record, actor_id)]
         def commit() -> str:
-            resident_workspace_domain.save_resident_record(next_record)
+            resident_record_domain.save_resident_record(next_record)
             resident_execution_work.clear(record)
             return operations.enqueue(resident_id, steps)
         operation_id = resident_catalog.get_catalog().state_store.transaction(commit)
@@ -1849,7 +1847,7 @@ def resident_execution_stopped_event(
     queue_continues: bool = False,
     backend_label: str = "Codex",
 ) -> dict[str, Any]:
-    from . import resident_lifecycle_domain
+    from . import resident_domain_common
     content = (
         f"{actor} 已停止当前 {backend_label} 运行。"
         if actor else f"当前 {backend_label} 运行已取消。"
@@ -1871,7 +1869,7 @@ def resident_execution_stopped_event(
             job.get("stop_requested_at")
             or job.get("stopped_at")
             or job.get("finished_at")
-            or resident_lifecycle_domain.now_iso()
+            or resident_domain_common.now_iso()
         ),
         # A stopped turn still used what it ran: the notice names its
         # Execution, whose usage the Chat shows on it.
@@ -1886,7 +1884,7 @@ def cancel_resident_execution_for_target(
     *,
     continue_queue: bool = True,
 ) -> dict:
-    from . import resident_execution_domain, resident_lifecycle_domain, resident_workspace_domain
+    from . import resident_domain_common, resident_execution_domain, resident_record_domain
     actor_id = canonical_actor_id(actor)
     if not actor_id:
         raise ValueError("需要登录后停止")
@@ -1894,11 +1892,11 @@ def cancel_resident_execution_for_target(
     # Authorization needs canonical identity, not a Workspace projection. The
     # exact input is rechecked under the command lock and in the DB commit.
     from .state_store import get_lineage_data_store
-    record = resident_workspace_domain.find_resident_for_admission(resident_id)
+    record = resident_record_domain.find_resident_for_admission(resident_id)
     if not record:
         raise KeyError("resident not found")
     held_continuation = ""
-    with resident_lifecycle_domain.state_lock(resident_id):
+    with resident_record_domain.state_lock(resident_id):
         control = dict(resident_execution_work.read_control(resident_id).get("state") or {})
         if str(control.get("user_message_id") or "") != message_id:
             raise ValueError("message is not the active Resident input")
@@ -1906,7 +1904,7 @@ def cancel_resident_execution_for_target(
             raise RuntimeError("当前 Resident job 不能停止自己；请从 Portal 外部停止，或等待本轮运行结束")
         if continue_queue and not resident_execution_work.is_execution_held(control) and control.get("operation") != "context_fork_create":
             accepted = get_lineage_data_store().request_resident_execution_stop(
-                resident_id, str(control.get("execution_id") or ""), message_id, actor_id, resident_lifecycle_domain.now_iso(),
+                resident_id, str(control.get("execution_id") or ""), message_id, actor_id, resident_domain_common.now_iso(),
             )
             if accepted:
                 from .lifecycle import notify_execution_cancellation
@@ -1918,8 +1916,8 @@ def cancel_resident_execution_for_target(
                     "already_terminal": not accepted, "backend_cancelled": False}
     # Withdrawing held inputs/clearing their queue also needs immutable input
     # materialization. Prepare its Workspace before reacquiring the Job lock.
-    record = resident_workspace_domain.find_resident(resident_id)
-    with resident_lifecycle_domain.state_lock(resident_id):
+    record = resident_record_domain.find_resident(resident_id)
+    with resident_record_domain.state_lock(resident_id):
         if not record:
             raise KeyError("resident not found")
         job = resident_execution_work.read(record)
@@ -1937,7 +1935,7 @@ def cancel_resident_execution_for_target(
             )
         current = job
         cleared_queue: list[dict[str, Any]] = []
-        now = resident_lifecycle_domain.now_iso()
+        now = resident_domain_common.now_iso()
         if not continue_queue:
             cleared_queue = resident_execution_work.normalized_queue(current)
         current.setdefault("stop_requested_by", actor_id)
@@ -1974,13 +1972,13 @@ def request_resident_execution_cancellation(
     continue_queue: bool = True,
 ) -> dict[str, Any]:
     """Submit cancellation for one exact Resident input."""
-    from . import resident_workspace_domain
+    from . import resident_record_domain
 
     message_id = str(message_id or "").strip()
     if not message_id:
         raise ValueError("message_id required")
 
-    target = resident_workspace_domain.resolve_resident_admission_target(
+    target = resident_record_domain.resolve_resident_admission_target(
         resident_id,
         actor,
         require_visible=True,
@@ -2035,15 +2033,15 @@ def _inject_queued_input_into_active_turn(
     ``delivered`` is a delivery injecting the input it has just queued: the
     sender needs only to be able to deliver to the Resident, not to read it.
     """
-    from . import resident_lifecycle_domain, resident_workspace_domain
+    from . import resident_domain_common, resident_record_domain
     actor_id = canonical_actor_id(actor)
     message_id = str(queue_item_id or "").strip()
     if not actor_id:
         raise ValueError("需要登录后操作队列")
     if not message_id:
         raise ValueError("queue_item_id required")
-    with resident_lifecycle_domain.state_lock(resident_id):
-        record = resident_workspace_domain.find_resident_for_admission(resident_id)
+    with resident_record_domain.state_lock(resident_id):
+        record = resident_record_domain.find_resident_for_admission(resident_id)
         if not record:
             raise KeyError("resident not found")
         if not delivered:
@@ -2090,7 +2088,7 @@ def _inject_queued_input_into_active_turn(
                 next_turn.pop("active_turn_input", None)
                 job["queue"] = [next_turn, *(
                     item for item in queue if not _queue_item_matches(item, message_id))]
-            job["updated_at"] = resident_lifecycle_domain.now_iso()
+            job["updated_at"] = resident_domain_common.now_iso()
             resident_execution_work.write(record, job, delivery_message_id=message_id)
             return _accepted_delivery(resident_id, message_id, injected=False,
                                       scheduled_next_turn=True, delivery_status="next_turn")
@@ -2101,7 +2099,7 @@ def _inject_queued_input_into_active_turn(
         }
         job["queue"] = [item for item in queue if not _queue_item_matches(item, message_id)]
         job["send_now_inputs"] = [*resident_execution_work.send_now_inputs(job), selected]
-        job["updated_at"] = resident_lifecycle_domain.now_iso()
+        job["updated_at"] = resident_domain_common.now_iso()
         resident_execution_work.write(record, job, delivery_message_id=message_id)
     return _accepted_delivery(resident_id, message_id, injected=False, delivery_status="pending")
 
@@ -2115,7 +2113,7 @@ def reconcile_queued_turn_inputs(
     Receipt RPCs are unlocked; commits revalidate the exact job and execution.
     An unavailable receipt must never be guessed to mean failed delivery.
     """
-    from . import resident_lifecycle_domain, resident_workspace_domain
+    from . import resident_domain_common, resident_record_domain
     # Every Execution snapshot asks this; nearly all find nothing pending.
     # Read the committed control unlocked; each commit below revalidates.
     job = dict(resident_execution_work.read_control(resident_id).get("state") or {})
@@ -2127,7 +2125,7 @@ def reconcile_queued_turn_inputs(
         return True
     if not execution_id and not turn_finished:
         return False
-    environment = resident_workspace_domain.find_resident(resident_id) or {}
+    environment = resident_record_domain.find_resident(resident_id) or {}
     service = execution_port.service() if execution_id else None
     resolved = True
     for item in pending:
@@ -2146,8 +2144,8 @@ def reconcile_queued_turn_inputs(
                     # Preparation can overlap Stop, withdrawal or a turn change.
                     # Revalidate the captured control before dispatching to the
                     # exact Execution; never discover a newer turn here.
-                    with resident_lifecycle_domain.state_lock(resident_id):
-                        current_record = resident_workspace_domain.find_resident_for_admission(resident_id) or {}
+                    with resident_record_domain.state_lock(resident_id):
+                        current_record = resident_record_domain.find_resident_for_admission(resident_id) or {}
                         current = resident_execution_work.read(current_record) if current_record else {}
                         if (str(current.get("execution_id") or "") != expected_execution_id
                                 or resident_execution_work.submitted_execution_id(current) != execution_id):
@@ -2177,8 +2175,8 @@ def reconcile_queued_turn_inputs(
         # exact-turn and control checks before committing the receipt.
         if not environment:
             return False
-        with resident_lifecycle_domain.state_lock(resident_id):
-            record = resident_workspace_domain.find_resident_for_admission(resident_id) or {}
+        with resident_record_domain.state_lock(resident_id):
+            record = resident_record_domain.find_resident_for_admission(resident_id) or {}
             current = resident_execution_work.read(record) if record else {}
             if (str(current.get("execution_id") or "") != expected_execution_id
                     or resident_execution_work.submitted_execution_id(current) != execution_id):
@@ -2189,7 +2187,7 @@ def reconcile_queued_turn_inputs(
                           and candidate.get("active_turn_input") == control), -1)
             if index < 0:
                 continue
-            now = resident_lifecycle_domain.now_iso()
+            now = resident_domain_common.now_iso()
             if receipt["status"] == "delivered":
                 delivered_item = {**dispatched[index], "dispatched_at": now,
                                   "delivery_mode": "inject_active_turn"}
@@ -2220,7 +2218,7 @@ def reconcile_queued_turn_inputs(
 def _withdraw_waiting_inputs(record, job, message_ids, now):
     """Under the Resident lock, end queued inputs and their groups atomically."""
     from . import resident_catalog, resident_mailbox
-    from . import resident_workspace_domain
+    from . import resident_record_domain
 
     ids = set(message_ids)
     queue = resident_execution_work.normalized_queue(job)
@@ -2235,23 +2233,23 @@ def _withdraw_waiting_inputs(record, job, message_ids, now):
         job["updated_at"] = now
         resident_execution_work.write(record, job)
         record["updated_at"] = now
-        resident_workspace_domain.save_resident_record(record)
+        resident_record_domain.save_resident_record(record)
     resident_catalog.get_catalog().state_store.transaction(commit)
     return removed
 
 
 def _cancel_resident_queue_item(resident_id: str, actor: str, queue_item_id: str) -> dict:
-    from . import resident_lifecycle_domain, resident_workspace_domain
+    from . import resident_domain_common, resident_record_domain
     actor_id = canonical_actor_id(actor)
     if not actor_id:
         raise ValueError("需要登录后操作队列")
     target_item_id = str(queue_item_id or "").strip()
     if not target_item_id:
         raise ValueError("queue_item_id required")
-    now = resident_lifecycle_domain.now_iso()
+    now = resident_domain_common.now_iso()
     # A waiting info is not in the queue; withdrawing it ends it before any
     # request carries it (decision_b5d349190743).
-    info_record = resident_workspace_domain.find_resident(resident_id)
+    info_record = resident_record_domain.find_resident(resident_id)
     if info_record and not family_facade.is_facade(info_record) and resident_held_infos.withdraw(
         info_record, target_item_id, actor_id, manager=True,
     ) is not None:
@@ -2266,8 +2264,8 @@ def _cancel_resident_queue_item(resident_id: str, actor: str, queue_item_id: str
         family_facade.withdraw_request(info_record, target_item_id, actor_id, manager=True)
         return resident_operation_result(str(info_record.get("resident_id") or resident_id),
                                           message_id=target_item_id, cancelled=True)
-    with resident_lifecycle_domain.state_lock(resident_id):
-        record = resident_workspace_domain.find_resident(resident_id)
+    with resident_record_domain.state_lock(resident_id):
+        record = resident_record_domain.find_resident(resident_id)
         if not record:
             raise KeyError("resident not found")
         execution = resident_execution_work.read(record)
@@ -2327,15 +2325,15 @@ def reorder_resident_queue(
 ) -> dict[str, Any]:
     """Change only the waiting order; times, authors and contents stay as they were."""
 
-    from . import resident_lifecycle_domain, resident_record_domain, resident_workspace_domain
+    from . import resident_domain_common, resident_record_domain
 
     actor_id = canonical_actor_id(actor)
     if not actor_id:
         raise ValueError("需要登录后操作队列")
-    target = resident_workspace_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=True)
-    now = resident_lifecycle_domain.now_iso()
-    with resident_lifecycle_domain.state_lock(target.resident_id):
-        record = resident_workspace_domain.find_resident(target.resident_id)
+    target = resident_record_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=True)
+    now = resident_domain_common.now_iso()
+    with resident_record_domain.state_lock(target.resident_id):
+        record = resident_record_domain.find_resident(target.resident_id)
         if not record:
             raise KeyError("resident not found")
         job = resident_execution_work.read(record)
@@ -2357,7 +2355,7 @@ def reorder_resident_queue(
             resident_execution_work.write(record, job)
             record["session_state"] = resident_record_domain.record_backend_session_state(record)
             record["updated_at"] = now
-            resident_workspace_domain.save_resident_record(record)
+            resident_record_domain.save_resident_record(record)
     return resident_operation_result(target.resident_id, reordered=wanted != ids, order=wanted)
 
 
@@ -2366,8 +2364,8 @@ def inject_resident_queue_input_into_active_turn(
     actor: str,
     queue_item_id: str,
 ) -> dict[str, Any]:
-    from . import resident_workspace_domain
-    target = resident_workspace_domain.resolve_resident_admission_target(
+    from . import resident_record_domain
+    target = resident_record_domain.resolve_resident_admission_target(
         resident_id,
         actor,
         require_visible=True,
@@ -2380,12 +2378,12 @@ def inject_resident_queue_input_into_active_turn(
 
 
 def clear_resident_queued_inputs(resident_id: str, actor: str) -> dict[str, Any]:
-    from . import resident_lifecycle_domain, resident_workspace_domain
+    from . import resident_domain_common, resident_record_domain
 
-    target = resident_workspace_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=True)
+    target = resident_record_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=True)
     resident_id = target.resident_id
-    with resident_lifecycle_domain.state_lock(resident_id):
-        record = resident_workspace_domain.find_resident(resident_id)
+    with resident_record_domain.state_lock(resident_id):
+        record = resident_record_domain.find_resident(resident_id)
         if not record:
             raise KeyError("resident not found")
         current = resident_execution_work.read(record)
@@ -2393,7 +2391,7 @@ def clear_resident_queued_inputs(resident_id: str, actor: str) -> dict[str, Any]
         held_head = (str(current.get("user_message_id") or "")
                      if resident_execution_work.is_execution_held(current) else "")
         if message_ids:
-            _withdraw_waiting_inputs(record, current, message_ids, resident_lifecycle_domain.now_iso())
+            _withdraw_waiting_inputs(record, current, message_ids, resident_domain_common.now_iso())
     # Already admitted Executions belong to Stop, not ClearMailbox. A held head
     # has not been admitted; cancellation revalidates its input identity.
     errors = []
@@ -2414,8 +2412,8 @@ def cancel_resident_queued_input(
     actor: str,
     queue_item_id: str,
 ) -> dict[str, Any]:
-    from . import resident_workspace_domain
-    target = resident_workspace_domain.resolve_resident_runtime_target(
+    from . import resident_record_domain
+    target = resident_record_domain.resolve_resident_runtime_target(
         resident_id,
         actor,
         require_visible=True,
@@ -2433,8 +2431,8 @@ def rename_resident_title(
     actor: str,
     title: str,
 ) -> dict[str, Any]:
-    from . import resident_lifecycle_domain, resident_workspace_domain
-    target = resident_workspace_domain.resolve_resident_runtime_target(
+    from . import resident_record_domain
+    target = resident_record_domain.resolve_resident_runtime_target(
         resident_id,
         actor,
         require_visible=True,
@@ -2451,7 +2449,7 @@ def rename_resident_title(
 
     with invariant_locks.lineage_scope(
         resident_lineage.lineage_id(target.record), operation="resident.rename",
-    ), resident_lifecycle_domain.state_lock(resident_id):
+    ), resident_record_domain.state_lock(resident_id):
         return resident_catalog.get_catalog().state_store.transaction(commit)
 
 
@@ -2461,17 +2459,22 @@ def _set_resident_title_locked(
     *,
     origin: str,
 ) -> dict[str, Any]:
-    from . import resident_lifecycle_domain, resident_record_domain, resident_workspace_domain
+    from . import (
+        resident_domain_common,
+        resident_lifecycle_domain,
+        resident_record_domain,
+        resident_workspace_domain,
+    )
     resident_lifecycle_domain.require_no_pending_lifecycle(str(record.get("resident_id") or ""))
     previous_workspace_path = str(record.get("workspace_path") or "")
     record["title"] = title
     record["title_origin"] = origin
-    record["updated_at"] = resident_lifecycle_domain.now_iso()
+    record["updated_at"] = resident_domain_common.now_iso()
     resident_record_domain.apply_resident_resource_identity(record)
     resident_record_domain.require_resident_owned_workspace_binding(record)
     resident_workspace_domain.ensure_resident_workspace(record)
     resident_workspace_domain.refresh_resident_workspace_document(record)
-    resident_workspace_domain.save_resident_record(record)
+    resident_record_domain.save_resident_record(record)
     return record
 
 
@@ -2481,11 +2484,7 @@ def adopt_generated_resident_title(
     title: str,
 ) -> bool:
     """Adopt a Lineage title while the exact Resident still has its generated name."""
-    from . import (
-        resident_conversation_projection_domain,
-        resident_lifecycle_domain,
-        resident_workspace_domain,
-    )
+    from . import resident_conversation_projection_domain, resident_record_domain
 
     actor_id = canonical_actor_id(actor)
     next_title = str(title or "").strip()
@@ -2493,8 +2492,8 @@ def adopt_generated_resident_title(
         raise ValueError("需要登录后同步 Resident 名称")
     if not next_title:
         raise ValueError("title required")
-    with resident_lifecycle_domain.state_lock(resident_id):
-        record = resident_workspace_domain.find_resident(resident_id)
+    with resident_record_domain.state_lock(resident_id):
+        record = resident_record_domain.find_resident(resident_id)
         if not record:
             raise KeyError("resident not found")
         if str(record.get("deleted_at") or "").strip():
@@ -2511,15 +2510,15 @@ def adopt_generated_resident_title(
 
 def _rename_resident_title_record(resident_id: str, actor: str, title: str) -> dict:
     """Rename a Resident without changing its owners, workspace, or lineage."""
-    from . import resident_lifecycle_domain, resident_workspace_domain
+    from . import resident_record_domain
     actor_id = canonical_actor_id(actor)
     next_title = str(title or "").strip()
     if not actor_id:
         raise ValueError("需要登录后重命名 Resident")
     if not next_title:
         raise ValueError("title required")
-    with resident_lifecycle_domain.state_lock(resident_id):
-        record = resident_workspace_domain.find_resident(resident_id)
+    with resident_record_domain.state_lock(resident_id):
+        record = resident_record_domain.find_resident(resident_id)
         if not record:
             raise KeyError("resident not found")
         if (
@@ -2593,16 +2592,16 @@ def move_resident_identities(
     scopes and supplies exact new identity projections to the graph callback.
     """
     from .resident_projection import _resident_lineage_node_projection
-    from . import resident_lifecycle_domain, resident_record_domain, resident_workspace_domain
+    from . import resident_record_domain, resident_workspace_domain
     with ExitStack() as stack:
         for resident_id in sorted(resident_ids):
-            stack.enter_context(resident_lifecycle_domain.state_lock(resident_id))
+            stack.enter_context(resident_record_domain.state_lock(resident_id))
         prepared = []
         for resident_id in sorted(resident_ids):
-            record = copy.deepcopy(resident_workspace_domain.find_resident(resident_id))
+            record = copy.deepcopy(resident_record_domain.find_resident(resident_id))
             if not record or resident_lineage.lineage_id(record) != source_id:
                 raise ValueError("Resident membership changed; refresh and retry")
-            if resident_lifecycle_domain.lifecycle_operations().pending(resident_id):
+            if resident_record_domain.lifecycle_operations().pending(resident_id):
                 raise ValueError("Resident 生命周期操作正在完成，请稍后重试")
             previous_path = str(record.get("workspace_path") or "")
             transfer = resident_workspace_domain.prepare_resident_lineage_move(record, target_id, actor)
@@ -2617,7 +2616,7 @@ def move_resident_identities(
             for record, transfer, previous_path in prepared:
                 resident_id = record["resident_id"]
                 resident_record_domain.apply_resident_resource_identity(record)
-                resident_workspace_domain.save_resident_record(record)
+                resident_record_domain.save_resident_record(record)
                 projections[resident_id] = _resident_lineage_node_projection(record)
                 operation_id = resident_workspace_domain.enqueue_resident_lineage_move(record, transfer, source_id, previous_path)
                 operations.append({"resident_id": resident_id, "operation_id": operation_id})
@@ -2632,8 +2631,8 @@ def update_resident(
     actor: str,
     payload: dict[str, Any],
 ) -> dict[str, Any]:
-    from . import resident_lifecycle_domain, resident_workspace_domain
-    target = resident_workspace_domain.resolve_resident_runtime_target(
+    from . import resident_record_domain, resident_workspace_domain
+    target = resident_record_domain.resolve_resident_runtime_target(
         resident_id,
         actor,
         require_visible=True,
@@ -2661,8 +2660,8 @@ def update_resident(
         graph_ids.append(destination_lineage)
     with invariant_locks.lineage_scopes(
         graph_ids, operation="resident.update",
-    ), resident_lifecycle_domain.state_lock(resident_id):
-        current = resident_workspace_domain.find_resident(target.resident_id)
+    ), resident_record_domain.state_lock(resident_id):
+        current = resident_record_domain.find_resident(target.resident_id)
         if not current or resident_lineage.lineage_id(current) != graph_ids[0]:
             raise ValueError("Resident membership changed; retry the update")
         return resident_catalog.get_catalog().state_store.transaction(commit)

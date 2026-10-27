@@ -25,6 +25,7 @@ from management_portal.society_service import (
     resident_execution_domain,
     resident_fork_domain,
     resident_protocol,
+    resident_record_domain,
     resource_client,
 )
 from management_portal.society_service.domain_ports import resident_terminal_port
@@ -2291,12 +2292,12 @@ def test_resident_completion_fact_and_async_lineage_notification(
 ) -> None:
     """最近完成消息引用按请求者区分且不含正文，完成和结束通知异步送达 Lineage"""
     monkeypatch.setattr(
-        resident_workspace_domain,
+        resident_record_domain,
         "find_resident",
         lambda resident_id: {"resident_id": resident_id, "registration_state": "ready"},
     )
     monkeypatch.setattr(resident_workspace_domain, "ensure_resident_visible_to_actor", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr(resident_workspace_domain, "_resident_visible_to_actor", lambda *_args, **_kwargs: True)
+    monkeypatch.setattr(resident_record_domain, "_resident_visible_to_actor", lambda *_args, **_kwargs: True)
     repository = resident_conversation_stream.get_repository()
     from tests.cases.isa_test_support import publish_test_members
 
@@ -2408,12 +2409,12 @@ def test_completed_references_read_a_bounded_window_of_newest_inputs(
     # Program polling asks for the latest completion of every watched member;
     # a long history must not be read in full for one reference.
     monkeypatch.setattr(
-        resident_workspace_domain,
+        resident_record_domain,
         "find_resident",
         lambda resident_id: {"resident_id": resident_id, "registration_state": "ready"},
     )
     monkeypatch.setattr(resident_workspace_domain, "ensure_resident_visible_to_actor", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr(resident_workspace_domain, "_resident_visible_to_actor", lambda *_args, **_kwargs: True)
+    monkeypatch.setattr(resident_record_domain, "_resident_visible_to_actor", lambda *_args, **_kwargs: True)
     repository = resident_conversation_stream.get_repository()
     from tests.cases.isa_test_support import publish_test_members
 
@@ -2525,12 +2526,12 @@ def test_failed_resident_message_references_are_actor_scoped_and_content_free(
         error={"code": "network", "message": "private failure details"},
     )
     monkeypatch.setattr(
-        resident_workspace_domain,
+        resident_record_domain,
         "find_resident",
         lambda _resident_id: {"resident_id": resident_id, "registration_state": "ready"},
     )
     monkeypatch.setattr(
-        resident_workspace_domain,
+        resident_record_domain,
         "_resident_visible_to_actor",
         lambda _record, _actor: True,
     )

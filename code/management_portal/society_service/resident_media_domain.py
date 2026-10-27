@@ -72,11 +72,11 @@ def _cleanup_resident_input_images(runtime_dir: Path, message_id: str) -> None:
 def cleanup_expired_input_images(record: dict[str, Any], *, dry_run: bool = False) -> list[str]:
     """Remove terminal input copies after they leave the requeue window."""
     from . import resident_conversation_stream, resident_mailbox, resident_input_recovery
-    from . import resident_lifecycle_domain, resident_record_domain
+    from . import resident_record_domain
 
     # Requeue uses this same lock: retry checkpoints and terminal states stay valid
     # until their staged copies have been removed.
-    with resident_lifecycle_domain.state_lock(record["resident_id"]):
+    with resident_record_domain.state_lock(record["resident_id"]):
         runtime_dir = resident_record_domain.sessions_path(record)
         root = runtime_dir / "input_media"
         if not root.is_dir() or root.is_symlink():
@@ -149,7 +149,7 @@ def resident_input_media(
     workspace_roots: Iterable[Path] = (),
 ) -> list[dict[str, str]]:
     """Validate local attachments before projecting files or native images."""
-    from . import resident_conversation_projection_domain
+    from . import resident_domain_common
 
     actor_id = canonical_actor_id(actor)
     explicit = selection is not None
@@ -246,7 +246,7 @@ def resident_input_media(
                 except ValueError:
                     relative_path = None
                 workspace_path = any(
-                    resident_conversation_projection_domain.path_is_within(path, root)
+                    resident_domain_common.path_is_within(path, root)
                     for root in allowed_workspace_roots
                 )
                 metadata: dict[str, Any] = {}

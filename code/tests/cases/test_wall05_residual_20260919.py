@@ -15,7 +15,6 @@ from management_portal.society_service import resident_directory_domain
 from management_portal.society_service import resident_intake_domain
 from management_portal.society_service import resident_record_domain
 from management_portal.society_service import resident_runtime_domain
-from management_portal.society_service import resident_workspace_domain
 from tests.cases.test_resident_folder_creation_contract import (
     future_creation_store,
     _append_conversation_turn,
@@ -47,7 +46,7 @@ def test_distinct_fork_ids_and_plain_new_resident(future_creation_store):
     blank = resident_domain.register_resident(_new_session_payload("Blank fixture"), "sample_admin")
     assert len({source["resident_id"], first["resident_id"], second["resident_id"], blank["resident_id"]}) == 4
     for result in [first, second]:
-        record = resident_workspace_domain.find_resident(result["resident_id"])
+        record = resident_record_domain.find_resident(result["resident_id"])
         assert record["source_resident_id"] == source["resident_id"]
         assert "Fork" in record["title"] or "派生 Resident" in record["title"]
         assert record["resident_id"].startswith("resident_")
@@ -113,9 +112,9 @@ def test_reference_workspace_inheritance_and_structured_cwd(future_creation_stor
     reference = tmp_path / "reference"
     reference.mkdir()
     lineage_domain.add_node_reference_workspace(source["lineage_id"], source["resident_id"], "sample_admin", str(reference))
-    source = resident_workspace_domain.find_resident(source["resident_id"])
+    source = resident_record_domain.find_resident(source["resident_id"])
     child_id = resident_domain.create_resident_full_context_fork(source["resident_id"], "sample_admin")["resident_id"]
-    child = resident_workspace_domain.find_resident(child_id)
+    child = resident_record_domain.find_resident(child_id)
     paths = {binding["path"] for binding in child["workspace_bindings"]}
     assert str(reference) in paths
     # The Fork owns its own node Workspace as default cwd; extra Bindings never repeat an owned one.

@@ -18,7 +18,14 @@ from management_portal.execution.context_seed import (
 from management_portal.execution.requests import build_agent_turn_request
 from management_portal.execution.provider_catalog import AGENT_PROVIDERS
 from management_portal.execution.session_manager import RuntimeSession
-from management_portal.society_service import resident_directory_domain, resident_execution_domain, resident_fork_domain, resident_runtime_domain, resident_session_backend_domain, resident_workspace_domain
+from management_portal.society_service import (
+    resident_access,
+    resident_execution_domain,
+    resident_fork_domain,
+    resident_record_domain,
+    resident_runtime_domain,
+    resident_session_backend_domain,
+)
 
 def _invocation(provider: str) -> BackendInvocation:
     request = build_agent_turn_request(
@@ -163,7 +170,7 @@ def test_registered_resident_derivation_uses_one_provider_neutral_seed(
     create_calls = []
 
     monkeypatch.setattr(
-        resident_workspace_domain,
+        resident_record_domain,
         "resolve_resident_runtime_target",
         lambda *_args, **_kwargs: SimpleNamespace(record=source),
     )
@@ -178,7 +185,7 @@ def test_registered_resident_derivation_uses_one_provider_neutral_seed(
         lambda *_args, **_kwargs: {},
     )
     monkeypatch.setattr(
-        resident_directory_domain,
+        resident_access,
         "has_resident_workspace_authority",
         lambda *_args, **_kwargs: True,
     )

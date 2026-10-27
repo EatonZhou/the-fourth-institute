@@ -48,9 +48,9 @@ def waiting_inputs(record: Mapping[str, Any], job: Mapping[str, Any]) -> list[di
 
 
 def _record(resident_id: str, actor: str) -> dict[str, Any]:
-    from . import resident_workspace_domain
+    from . import resident_record_domain
     from .resident_access import can_manage_resident
-    record = resident_workspace_domain.find_resident(resident_id)
+    record = resident_record_domain.find_resident(resident_id)
     if not record:
         raise KeyError('resident not found')
     if not can_manage_resident(record, actor):
@@ -85,7 +85,7 @@ def view(resident_id: str, actor: str) -> dict[str, Any]:
 
 
 def retry(resident_id: str, actor: str) -> dict[str, Any]:
-    from . import resident_execution_domain, resident_lifecycle_domain, resident_workspace_domain
+    from . import resident_domain_common, resident_execution_domain, resident_record_domain
     # Provider/AgentData reads happen outside the Resident state lock.
     record = _record(resident_id, actor)
     prior = resident_execution_work.read(record)
@@ -105,10 +105,10 @@ def retry(resident_id: str, actor: str) -> dict[str, Any]:
     # Transport failures and process restarts resume the same accepted request.
     # Only a canonical terminal failed/cancelled attempt allocates a new candidate.
     reuse = bool(previous_attempt) and not any(e.get('status') in {'failed', 'cancelled'} for e in prior_execs)
-    with resident_lifecycle_domain.state_lock(resident_id):
+    with resident_record_domain.state_lock(resident_id):
         record = _record(resident_id, actor)
         job = resident_execution_work.read(record)
-        if resident_lifecycle_domain.lifecycle_operations().pending(resident_id):
+        if resident_record_domain.lifecycle_operations().pending(resident_id):
             raise ValueError('Resident 生命周期操作尚未完成')
         if resident_execution_work.is_active(job):
             if job.get('operation') != 'context_fork_create':
@@ -119,7 +119,7 @@ def retry(resident_id: str, actor: str) -> dict[str, Any]:
         if facts and any(eid != prior.get('execution_id') for eid in facts['active_execution_ids']):
             raise ValueError('原初始化 Execution 仍在执行，请等待其真实结果')
         queue = waiting_inputs(record, job)
-        now = resident_lifecycle_domain.now_iso()
+        now = resident_domain_common.now_iso()
         attempt = copy.deepcopy(job.get('initialization_recovery') or {})
         # A failed candidate can be abandoned, but never operated on again by
         # a different attempt. Its Session, Execution and fork receipt remain.
@@ -143,7 +143,7 @@ def retry(resident_id: str, actor: str) -> dict[str, Any]:
         resident_execution_work.ensure_execution_id(fresh)
         resident_execution_work.write(record, fresh)
         record.update(session_state='creating', last_error='', updated_at=now)
-        resident_workspace_domain.save_resident_record(record)
+        resident_record_domain.save_resident_record(record)
     result = view(resident_id, actor)
     resident_execution_domain.resume_resident_execution(resident_id)
     return result
@@ -152,10 +152,9 @@ def retry(resident_id: str, actor: str) -> dict[str, Any]:
 def run(record: dict[str, Any], job: dict[str, Any], continuation_id: str) -> dict[str, Any]:
     from . import (
         resident_execution_domain,
-        resident_lifecycle_domain,
+        resident_record_domain,
         resident_runtime_domain,
         resident_session_backend_domain,
-        resident_workspace_domain,
     )
     from management_portal.execution.accounts import default_execution_accounts
     from management_portal.execution.provider_catalog import AGENT_PROVIDERS
@@ -179,8 +178,8 @@ def run(record: dict[str, Any], job: dict[str, Any], continuation_id: str) -> di
         return {'thread': {'id': current['backend_session_id'], 'backend_route_id': route}, 'usage': {}}
 
     def phase(name: str) -> None:
-        with resident_lifecycle_domain.state_lock(rid):
-            current = resident_workspace_domain.find_resident(rid)
+        with resident_record_domain.state_lock(rid):
+            current = resident_record_domain.find_resident(rid)
             saved = resident_execution_work.read(current)
             if not resident_execution_work.matches_continuation(saved, continuation_id) or saved.get('initialization_recovery', {}).get('id') != attempt['id']:
                 raise ValueError('初始化恢复已被替换')
@@ -205,8 +204,8 @@ def run(record: dict[str, Any], job: dict[str, Any], continuation_id: str) -> di
         metadata={'resident_id': rid, 'initial_context_policy': 'compact_before_first_turn',
                   'fork_context_input': {'segments': execution_port.frozen_initialization_segments(attempt['candidate_agent_id'])}})
     phase('promote')
-    with resident_lifecycle_domain.state_lock(rid):
-        current = resident_workspace_domain.find_resident(rid)
+    with resident_record_domain.state_lock(rid):
+        current = resident_record_domain.find_resident(rid)
         saved = resident_execution_work.read(current)
         if not resident_execution_work.matches_continuation(saved, continuation_id) or saved.get('initialization_recovery', {}).get('id') != attempt['id']:
             raise ValueError('初始化恢复已被替换')

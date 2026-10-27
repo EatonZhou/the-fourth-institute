@@ -11,6 +11,7 @@ from management_portal.society_service import (
     resident_lineage,
     resident_execution_work,
     resident_protocol,
+    resident_record_domain,
 )
 from management_portal.society_service import lineage_graph_state, lineage_program_event_dispatch
 
@@ -153,7 +154,7 @@ def test_effects_wait_for_all_state_scopes_and_discard_failed_transitions_contra
             lineage_entered = threading.Event()
 
             def hold_resident() -> None:
-                with resident_lifecycle_domain.state_lock("resident_111111111111"):
+                with resident_record_domain.state_lock("resident_111111111111"):
                     resident_entered.set()
                     release_resident.wait(timeout=2)
 
@@ -195,13 +196,13 @@ def test_resident_states_run_concurrently(tmp_path, monkeypatch, subtests, isola
                 second_entered = threading.Event()
 
                 def hold_first() -> None:
-                    with resident_lifecycle_domain.state_lock("resident_111111111111"):
+                    with resident_record_domain.state_lock("resident_111111111111"):
                         first_entered.set()
                         release_first.wait(timeout=2)
 
                 def enter_second() -> None:
                     first_entered.wait(timeout=2)
-                    with resident_lifecycle_domain.state_lock("resident_222222222222"):
+                    with resident_record_domain.state_lock("resident_222222222222"):
                         second_entered.set()
 
                 first = threading.Thread(target=hold_first)
@@ -237,7 +238,7 @@ def test_resident_mutation_lock_does_not_hold_an_identity_snapshot_contracts(mon
                 forbidden_snapshot_scope,
             )
 
-            with resident_lifecycle_domain.state_lock("resident_111111111111"):
+            with resident_record_domain.state_lock("resident_111111111111"):
                 pass
     with subtests.test(contract='test_state_lock_requires_explicit_lineage_identity'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
@@ -364,7 +365,7 @@ def test_resident_query_does_not_wait_for_aggregate_mutation_lock(
     """Resident 状态查询不等待聚合修改锁"""
     monkeypatch.setattr(lineage_domain, "DATA_ROOT", tmp_path)
     monkeypatch.setattr(
-        resident_protocol.resident_workspace_domain,
+        resident_record_domain,
         "resolve_resident_runtime_target",
         lambda resident_id, _actor=None, **_kwargs: type(
             "Target",

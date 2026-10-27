@@ -203,11 +203,11 @@ def project_context_evidence(snapshot: dict[str, Any], *, resident_id: str = "")
 
 
 def read_context_evidence(resident_id: str, actor: str) -> dict[str, Any]:
-    from . import resident_conversation_projection_domain, resident_workspace_domain
+    from . import resident_conversation_projection_domain, resident_record_domain
     from . import execution_client
 
     if not resident_conversation_projection_domain.can_view_actual_sent_prompts(actor, resident_id):
         raise PermissionError("无权读取模型上下文证据")
-    target = resident_workspace_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=True)
+    target = resident_record_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=True)
     return {"resident_id": target.resident_id, **project_context_evidence(
         execution_client.context_evidence_snapshot(target.resident_id), resident_id=target.resident_id)}

@@ -7,6 +7,7 @@ from management_portal.society_service import (
     lineage_domain,
     resident_access,
     resident_protocol,
+    resident_record_domain,
 )
 
 
@@ -219,7 +220,7 @@ def test_input_state_reads_follow_the_snapshot_service_actor_rule(monkeypatch, a
 
     monkeypatch.setattr(resident_protocol, "get_portal_access_store", lambda: AccessStore())
     monkeypatch.setattr(resident_protocol.resident_input_scope, "permits", lambda *_args: False)
-    monkeypatch.setattr(resident_protocol.resident_workspace_domain, "resolve_resident_runtime_target", resolve)
+    monkeypatch.setattr(resident_record_domain, "resolve_resident_runtime_target", resolve)
     monkeypatch.setattr(resident_protocol.resident_conversation_stream, "get_repository", lambda: Repository())
 
     state = resident_protocol.get_resident_input_state("resident_aaaaaaaaaaaa", actor, "msg_1")
