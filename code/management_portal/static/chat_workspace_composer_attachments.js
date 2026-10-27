@@ -157,7 +157,7 @@
     };
     // The input's tokens decide which attachments remain, in their order.
     const reconcileAttachmentsFromInput = (reconcileOptions = {}) => {
-      if (suppressAttachmentReconcile || !els.input || "value" in els.input || !state.attachments.length) return false;
+      if (suppressAttachmentReconcile || !els.input || !state.attachments.length) return false;
       const order = composerAttachmentTokenOrder(els.input);
       const present = new Set(order);
       const byId = new Map(state.attachments.map(item => [String(item?.id || ""), item]));

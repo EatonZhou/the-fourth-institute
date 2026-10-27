@@ -201,40 +201,20 @@
     });
   }
 
+  // The composer inputs these helpers take are contenteditable elements.
   function inputText(input) {
     if (!input) return "";
-    if ("value" in input) return String(input.value || "").replace(/\u00a0/g, " ").trim();
     return String(input.innerText || input.textContent || "").replace(/\u00a0/g, " ").trim();
   }
 
   function inputMutationValue(input) {
-    if (!input) return "";
-    return "value" in input ? String(input.value || "") : String(input.innerHTML || "");
+    return String(input?.innerHTML || "");
   }
 
   function setInputText(input, value, { focus = true } = {}) {
     if (!input) return;
-    const text = String(value || "");
-    if ("value" in input) {
-      input.value = text;
-      if (!focus) return;
-      input.focus?.();
-      const end = input.value.length;
-      try {
-        input.selectionStart = end;
-        input.selectionEnd = end;
-      } catch {}
-      return;
-    }
-    input.textContent = text;
-    if (!focus) return;
-    input.focus?.();
-    const range = document.createRange();
-    range.selectNodeContents(input);
-    range.collapse(false);
-    const selection = window.getSelection?.();
-    selection?.removeAllRanges();
-    selection?.addRange(range);
+    input.textContent = String(value || "");
+    if (focus) placeInputCaretAtEnd(input);
   }
 
   function nodePathWithin(root, node) {
@@ -263,13 +243,6 @@
 
   function composerSelectionSnapshot(input) {
     if (!input) return null;
-    if ("selectionStart" in input && "selectionEnd" in input) {
-      return {
-        mode: "value",
-        start: Number(input.selectionStart || 0),
-        end: Number(input.selectionEnd || input.selectionStart || 0),
-      };
-    }
     const selection = window.getSelection?.();
     if (!selection || selection.rangeCount !== 1) return null;
     const range = selection.getRangeAt(0);
@@ -290,14 +263,6 @@
   function placeInputCaretAtEnd(input) {
     if (!input) return;
     input.focus?.();
-    if ("selectionStart" in input && "selectionEnd" in input) {
-      const end = String(input.value || "").length;
-      try {
-        input.selectionStart = end;
-        input.selectionEnd = end;
-      } catch {}
-      return;
-    }
     const range = document.createRange();
     range.selectNodeContents(input);
     range.collapse(false);
@@ -321,10 +286,7 @@
   }
 
   function placeInputCaretFromPoint(input, event) {
-    if (!input || "selectionStart" in input) {
-      input?.focus?.();
-      return false;
-    }
+    if (!input) return false;
     const range = inputRangeFromPoint(event, input);
     if (!range || !input.contains(range.commonAncestorContainer)) {
       input.focus?.();
@@ -340,16 +302,6 @@
   function restoreComposerSelection(input, snapshot) {
     if (!input) return false;
     input.focus?.();
-    if (snapshot?.mode === "value" && "selectionStart" in input && "selectionEnd" in input) {
-      const length = String(input.value || "").length;
-      const start = Math.max(0, Math.min(length, Number(snapshot.start || 0)));
-      const end = Math.max(start, Math.min(length, Number(snapshot.end || start)));
-      try {
-        input.selectionStart = start;
-        input.selectionEnd = end;
-        return true;
-      } catch {}
-    }
     if (snapshot?.mode === "dom") {
       const startNode = nodeFromPath(input, snapshot.startPath);
       const endNode = nodeFromPath(input, snapshot.endPath);
@@ -371,17 +323,6 @@
 
   function inputCaretLineState(input) {
     if (!input) return { selectable: false };
-    if ("selectionStart" in input && "selectionEnd" in input) {
-      const start = Number(input.selectionStart || 0);
-      const end = Number(input.selectionEnd || start);
-      if (start !== end) return { selectable: false };
-      const text = String(input.value || "");
-      return {
-        selectable: true,
-        atFirstLine: !text.slice(0, start).includes("\n"),
-        atLastLine: !text.slice(end).includes("\n"),
-      };
-    }
     const selection = window.getSelection?.();
     if (document.activeElement === input && !String(input.innerText || input.textContent || "").trim()) {
       return { selectable: true, atFirstLine: true, atLastLine: true };
@@ -488,19 +429,6 @@
   function insertPlainText(input, text, options = {}) {
     const value = String(text || "");
     if (!input || !value) return "none";
-    if ("selectionStart" in input && "selectionEnd" in input) {
-      const start = Number(input.selectionStart || 0);
-      const end = Number(input.selectionEnd || start);
-      const current = String(input.value || "");
-      input.value = `${current.slice(0, start)}${value}${current.slice(end)}`;
-      const next = start + value.length;
-      try {
-        input.selectionStart = next;
-        input.selectionEnd = next;
-      } catch {}
-      input.dispatchEvent?.(new Event("input", { bubbles: true }));
-      return "manual";
-    }
     input.focus?.();
     if (!options.forceDom) {
       try {
@@ -961,7 +889,6 @@
         return text;
       };
       if (!input) return "";
-      if ("value" in input) return String(input.value || "").trim();
       let text = "";
       input.childNodes.forEach(child => { text = appendSerializedChild(text, child); });
       const normalized = text.replace(/\u00a0/g, " ");
@@ -1091,10 +1018,6 @@
     function setComposerDraftInput(input, value, items, options = {}) {
       if (!input) return;
       const text = String(value || "");
-      if ("value" in input) {
-        input.value = text;
-        return;
-      }
       const attachments = normalizeComposerAttachments(items);
       const byId = new Map();
       attachments.forEach((item) => {
@@ -1123,15 +1046,7 @@
         input.querySelectorAll("[data-mention-value]").forEach(node => { node.contentEditable = "false"; });
         bindResourceChips(input, options);
       }
-      if (options.focus !== false) {
-        input.focus?.();
-        const range = document.createRange();
-        range.selectNodeContents(input);
-        range.collapse(false);
-        const selection = window.getSelection?.();
-        selection?.removeAllRanges();
-        selection?.addRange(range);
-      }
+      if (options.focus !== false) placeInputCaretAtEnd(input);
       bindImagePreview(input, options);
     }
 

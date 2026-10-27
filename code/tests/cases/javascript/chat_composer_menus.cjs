@@ -94,6 +94,17 @@ const CAROL = { value: 'resident_cccccccccccc', title: 'Carol' };
     await settle();
     return event.defaultPrevented;
   };
+  // Where typing goes on: the collapsed caret's place in the composer text.
+  const caretAt = () => {
+    const selection = w.getSelection();
+    if (w.document.activeElement !== composer || selection.rangeCount !== 1 || !selection.isCollapsed) return null;
+    const range = selection.getRangeAt(0);
+    if (!composer.contains(range.startContainer)) return null;
+    const before = w.document.createRange();
+    before.selectNodeContents(composer);
+    before.setEnd(range.startContainer, range.startOffset);
+    return before.toString().length;
+  };
   const slashCommands = () => [...slashMenu.querySelectorAll('[data-portal-slash-command]')].map(item => item.dataset.portalSlashCommand);
   const activeSlash = () => slashMenu.querySelector('.composerSlashCommandItem.active')?.dataset.portalSlashCommand;
   const mentionValues = () => [...mentionMenu.querySelectorAll('[data-portal-mention-index]')].map(item => item.dataset.portalMentionIndex);
@@ -125,6 +136,7 @@ const CAROL = { value: 'resident_cccccccccccc', title: 'Carol' };
     inputs.length = 0;
     assert.equal(await key('Enter'), true, 'Enter chooses the active command');
     assert.equal(composer.textContent.trim(), '/plan', 'the chosen command replaces what was typed');
+    assert.equal(caretAt(), composer.textContent.length, 'typing goes on after the chosen command');
     assert.equal(slashMenu.hidden, true, 'choosing closes the menu');
     assert.equal(inputs.length, 1, 'choosing reports the input once');
     assert.equal(inputs[0].text.trim(), '/plan', 'the report carries the composer content');
@@ -138,6 +150,16 @@ const CAROL = { value: 'resident_cccccccccccc', title: 'Carol' };
     assert.equal(composer.textContent.trim(), '/compact', 'clicking a command chooses it');
     await type('plain text');
     assert.equal(slashMenu.hidden, true, 'text that does not start with "/" opens no menu');
+    // Text the host puts in reads like typed text, and typing goes on after it.
+    workspace.setInputText('/pl');
+    await settle();
+    assert.deepEqual(slashCommands(), ['/plan'], 'text the host puts in narrows the menu as typing does');
+    assert.equal(caretAt(), 3, 'the caret waits after the text the host put in');
+    workspace.setDraftText('note\n\n/');
+    await settle();
+    assert.equal(slashMenu.hidden, true, 'a "/" after other text opens no menu');
+    assert.equal(caretAt(), composer.textContent.length, 'the caret waits after the draft the host put in');
+    await type('plain text');
 
     // Mentions.
     searches.length = 0;

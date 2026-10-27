@@ -2291,25 +2291,6 @@
     return target.resident_id ? `resident-session:${target.resident_id}` : "resident-session:none";
   }
 
-  function placeCaretAtEnd(input) {
-    if (!input) return;
-    input.focus?.();
-    if ("value" in input) {
-      const end = input.value.length;
-      try {
-        input.selectionStart = end;
-        input.selectionEnd = end;
-      } catch {}
-      return;
-    }
-    const range = document.createRange();
-    range.selectNodeContents(input);
-    range.collapse(false);
-    const selection = window.getSelection?.();
-    selection?.removeAllRanges();
-    selection?.addRange(range);
-  }
-
   // A time inside a message reads like the message's own: local and compact.
   function footerTime(value) {
     return window.PortalUI?.formatDateTime?.(value, { style: "compact" }) || String(value || "");
@@ -2862,9 +2843,7 @@
     appendToComposer(text) {
       const draft = this.workspace.draftText();
       this.workspace.setDraftText(draft.trim() ? `${draft.replace(/\s+$/, "")}\n\n${text}` : text, this.workspace.attachments());
-      const input = this.workspace.element("input");
-      placeCaretAtEnd(input);
-      input?.dispatchEvent(new Event("input", { bubbles: true }));
+      this.workspace.element("input")?.dispatchEvent(new Event("input", { bubbles: true }));
       this.workspace.updateControls();
     }
 
@@ -2965,9 +2944,7 @@
           .map(attachment => [attachment.id, attachment])).values()];
         this.workspace.setDraftText(draft ? `${draft}\n\n${restored.text}` : restored.text, attachments);
         if (message.quote && !this.workspace.quote()) this.workspace.setQuote(message.quote);
-        const input = this.workspace.element("input");
-        placeCaretAtEnd(input);
-        input?.dispatchEvent(new Event("input", { bubbles: true }));
+        this.workspace.element("input")?.dispatchEvent(new Event("input", { bubbles: true }));
       } finally {
         this.withdrawnEdits.delete(key);
       }
