@@ -54,7 +54,7 @@ class ResidentWatchboardTest(unittest.TestCase):
         }
         self.find_patch = mock.patch.object(
             resident_workspace_domain,
-            "_find_resident",
+            "find_resident",
             side_effect=lambda resident_id: (
                 self.record
                 if resident_id == self.record["resident_id"]
@@ -127,7 +127,7 @@ class ResidentWatchboardTest(unittest.TestCase):
         """生成 Watchboard 安装计划不写文件，客户端写入文件和图组件后才启用"""
         plan = watchboard_lineage.installation_plan(self.record)
         self.assertFalse(self.owned_workspace.exists())
-        self.assertFalse(resident_watchboard_domain._has_watchboard(self.record))
+        self.assertFalse(resident_watchboard_domain.has_watchboard(self.record))
         self.install()
         payload = backend.get_resident_watchboard(self.record["resident_id"], "CASE-A")
         self.assertTrue(payload["watchboard"]["enabled"])
@@ -147,7 +147,7 @@ class ResidentWatchboardTest(unittest.TestCase):
     def test_wireguard_uses_installed_lineage_commands_and_owned_workspace(self):
         """WireGuard Watchboard 使用自有 Workspace 中的脚本，命令经 Lineage 组件执行"""
         self.record["resident_id"] = "resident_8df311142bc2"
-        self.assertFalse(resident_watchboard_domain._has_watchboard(self.record))
+        self.assertFalse(resident_watchboard_domain.has_watchboard(self.record))
         script_root = watchboard_lineage.root(self.record)
         script_root.mkdir(parents=True)
         (script_root / "agent.yaml").write_text(json.dumps({
@@ -213,7 +213,7 @@ class ResidentWatchboardTest(unittest.TestCase):
         plan = watchboard_lineage.installation_plan(self.record)
         self.assertTrue(plan["remove"])
         self.graph["program"] = {"components": [], "wires": []}
-        self.assertFalse(resident_watchboard_domain._has_watchboard(self.record))
+        self.assertFalse(resident_watchboard_domain.has_watchboard(self.record))
         self.assertTrue((self.owned_workspace / "watchboard/src/main.py").exists())
         self.assertEqual(watchboard_lineage.installation_plan(self.record)["files"], [])
 
@@ -288,7 +288,7 @@ class ResidentWatchboardTest(unittest.TestCase):
         )
         resident_watchboard_domain._WATCHBOARD_YAML_CACHE.clear()
 
-        manifest, error = resident_watchboard_domain._read_watchboard_agent_manifest(self.record)
+        manifest, error = resident_watchboard_domain.read_watchboard_agent_manifest(self.record)
 
         self.assertEqual(manifest, {})
         self.assertEqual(error, "agent.yaml commands must be a YAML mapping")
@@ -317,7 +317,7 @@ class ResidentWatchboardTest(unittest.TestCase):
                  "owned_workspace": {"path": str(self.root / "child")}}
         resident_watchboard_domain.inherit_watchboard(self.record, child)
         self.assertTrue((watchboard_lineage.root(child) / "agent.yaml").exists())
-        self.assertFalse(resident_watchboard_domain._has_watchboard(child))
+        self.assertFalse(resident_watchboard_domain.has_watchboard(child))
         self.assertNotEqual(watchboard_lineage.command_ids(child, "status"),
                             watchboard_lineage.command_ids(self.record, "status"))
 

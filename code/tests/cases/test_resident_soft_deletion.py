@@ -24,8 +24,8 @@ def deleted_identity(monkeypatch):
         get_historical=lambda resident_id: dict(record),
     ))
     monkeypatch.setattr(resident_workspace_domain, "confirm_resident_deletion_projection", confirmations.append)
-    monkeypatch.setattr(resident_directory_domain, "_can_manage", lambda record, actor: actor == "allowed")
-    monkeypatch.setattr(resident_directory_domain, "_is_active_actor", lambda actor: actor == "allowed")
+    monkeypatch.setattr(resident_directory_domain, "can_manage", lambda record, actor: actor == "allowed")
+    monkeypatch.setattr(resident_directory_domain, "is_active_actor", lambda actor: actor == "allowed")
     return record, confirmations
 
 

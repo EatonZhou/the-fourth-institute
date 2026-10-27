@@ -94,8 +94,8 @@ def with_quote(text: str, quote: Mapping[str, Any] | None) -> str:
 
     if not quote:
         return text
-    from .resident_workspace_domain import _find_resident
+    from . import resident_workspace_domain
 
     author = str(quote.get("author_id") or "")
-    title = str((_find_resident(author) or {}).get("title") or "") if author.startswith("resident_") else ""
+    title = str((resident_workspace_domain.find_resident(author) or {}).get("title") or "") if author.startswith("resident_") else ""
     return f"{quote_block(quote, author_title=title)}\n\n{text}"

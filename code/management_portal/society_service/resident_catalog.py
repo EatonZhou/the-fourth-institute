@@ -215,9 +215,9 @@ class ResidentCatalog:
             raise ValueError("Resident deletion requires deleted_at")
         from . import resident_mailbox
         from .resident_lifecycle import ResidentLifecycleOperations
-        from .resident_lifecycle_domain import ensure_resident_agent
+        from . import resident_lifecycle_domain
         for record in records:
-            ensure_resident_agent(record, actor=str(record.get("deleted_by") or ""))
+            resident_lifecycle_domain.ensure_resident_agent(record, actor=str(record.get("deleted_by") or ""))
 
         def commit() -> list[str]:
             # Its Mailbox closes with the Resident; a repeated deletion finds it closed.

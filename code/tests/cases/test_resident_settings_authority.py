@@ -44,7 +44,7 @@ def test_registered_settings_ignore_files_and_stale_resident_copies(tmp_path, mo
         "runtime_settings": settings("obsolete-nested-model"),
         "execution_settings": settings("stale-read-snapshot"), "harness_config": {},
     }
-    assert resident_runtime_domain._read_resident_runtime_settings(record) == current
+    assert resident_runtime_domain.read_resident_runtime_settings(record) == current
     assert calls == [record["resident_id"]]
 
 
@@ -65,7 +65,7 @@ def test_settings_update_has_one_current_writer_and_only_a_change_receipt(monkey
         execution_settings_changed=lambda rid, value: events.append((rid, deepcopy(value))),
     ))
     record = {"resident_id": "resident_aaaaaaaaaaaa", "backend": "codex", "model": "before", "runtime_settings": current}
-    changed = resident_runtime_domain._write_resident_runtime_settings(record, settings("after"))
+    changed = resident_runtime_domain.write_resident_runtime_settings(record, settings("after"))
     assert written == [(record["resident_id"], changed)]
     assert events == written
     assert record["execution_settings"]["model"] == "after"
@@ -82,8 +82,8 @@ def test_registration_stages_configuration_until_identity_is_saved(monkeypatch):
     store = SimpleNamespace(read_resident_execution_settings=lambda _: None)
     monkeypatch.setattr(resident_runtime_domain.resident_catalog, "get_catalog", lambda: SimpleNamespace(state_store=store))
     record = {"resident_id": "resident_bbbbbbbbbbbb", "backend": "codex"}
-    staged = resident_runtime_domain._write_resident_runtime_settings(record, settings())
-    assert resident_runtime_domain._read_resident_runtime_settings(record) == staged
+    staged = resident_runtime_domain.write_resident_runtime_settings(record, settings())
+    assert resident_runtime_domain.read_resident_runtime_settings(record) == staged
     assert set(record) == {"resident_id", "backend", "execution_settings", "harness_config"}
 
 
@@ -103,7 +103,7 @@ def test_restart_candidate_settings_do_not_change_the_active_provider(monkeypatc
     )
     assert candidate["backend_route_id"] == "candidate-account"
     assert candidate["execution_settings"]["model"] == "candidate-model"
-    assert resident_runtime_domain._read_resident_runtime_settings(candidate) == active
+    assert resident_runtime_domain.read_resident_runtime_settings(candidate) == active
     assert "runtime_settings" not in candidate
 
 
@@ -221,13 +221,13 @@ def test_frozen_fork_creates_an_independent_session_after_source_is_gone(monkeyp
         "fork_mode": "full",
     }
     calls = []
-    monkeypatch.setattr(resident_runtime_domain, "_resident_working_directory", lambda _: "/own-workspace")
-    monkeypatch.setattr(resident_directory_domain, "_has_resident_workspace_authority", lambda *_: True)
-    monkeypatch.setattr(resident_execution_domain, "_resident_execution_runtime_options", lambda *_args, **_kwargs: {})
-    monkeypatch.setattr(resident_session_backend_domain, "_run_backend_session_operation", lambda **kwargs: calls.append(kwargs) or {
+    monkeypatch.setattr(resident_runtime_domain, "resident_working_directory", lambda _: "/own-workspace")
+    monkeypatch.setattr(resident_directory_domain, "has_resident_workspace_authority", lambda *_: True)
+    monkeypatch.setattr(resident_execution_domain, "resident_execution_runtime_options", lambda *_args, **_kwargs: {})
+    monkeypatch.setattr(resident_session_backend_domain, "run_backend_session_operation", lambda **kwargs: calls.append(kwargs) or {
         "backend_session_id": "independent-session", "backend_route_id": "one",
     })
-    result = resident_session_backend_domain._create_exact_resident_session(record, {
+    result = resident_session_backend_domain.create_exact_resident_session(record, {
         "operation": "context_fork_create", "actor": "CASE-A",
     })
     assert result["id"] == "independent-session"
@@ -245,7 +245,7 @@ def test_old_creation_jobs_require_one_time_migration(kind):
     :design-point:
     """
     with pytest.raises(ValueError, match="unsupported Resident creation job"):
-        resident_session_backend_domain._create_exact_resident_session({}, {"operation": kind})
+        resident_session_backend_domain.create_exact_resident_session({}, {"operation": kind})
 
 
 def test_stale_runtime_state_save_preserves_current_configuration(resident_record):
@@ -259,15 +259,15 @@ def test_stale_runtime_state_save_preserves_current_configuration(resident_recor
     stale = deepcopy(resident_catalog.get_catalog().get(resident_id))
     owner = deepcopy(stale)
     owner["backend_route_id"] = "one"
-    resident_workspace_domain._save_resident_record(owner, commit_configuration=True)
-    changed = resident_runtime_domain._read_resident_runtime_settings(owner)
+    resident_workspace_domain.save_resident_record(owner, commit_configuration=True)
+    changed = resident_runtime_domain.read_resident_runtime_settings(owner)
     changed["model"] = "configuration-after"
     changed["agent_harness"] = {"mode": "manual", "features": {"provider_error_continue": {"enabled": False}}}
-    expected = resident_runtime_domain._write_resident_runtime_settings(owner, changed)
+    expected = resident_runtime_domain.write_resident_runtime_settings(owner, changed)
 
     stale["last_error"] = "runtime observation from an older record"
     stale["session_state"] = "failed"
-    resident_workspace_domain._save_resident_record(stale)
+    resident_workspace_domain.save_resident_record(stale)
     saved = resident_catalog.get_catalog().get(resident_id)
     assert saved["last_error"] == stale["last_error"]
     assert saved["session_state"] == "failed"
@@ -296,7 +296,7 @@ def test_provider_configuration_commits_atomically_and_survives_old_state_save(r
     stage_runtime_settings(candidate, target_settings)
 
     def interrupted_commit():
-        resident_workspace_domain._save_resident_record(candidate, commit_configuration=True)
+        resident_workspace_domain.save_resident_record(candidate, commit_configuration=True)
         raise RuntimeError("provider commit interrupted")
 
     with pytest.raises(RuntimeError, match="provider commit interrupted"):
@@ -305,7 +305,7 @@ def test_provider_configuration_commits_atomically_and_survives_old_state_save(r
     assert catalog.get(resident_id).get("backend_route_id", "") == original.get("backend_route_id", "")
     assert store.read_resident_execution_settings(resident_id) == before
 
-    store.transaction(lambda: resident_workspace_domain._save_resident_record(candidate, commit_configuration=True))
+    store.transaction(lambda: resident_workspace_domain.save_resident_record(candidate, commit_configuration=True))
     saved = catalog.get(resident_id)
     after = store.read_resident_execution_settings(resident_id)
     assert saved["backend"] == after["backend"] == "claude"
@@ -314,7 +314,7 @@ def test_provider_configuration_commits_atomically_and_survives_old_state_save(r
     assert after["agent_harness"]["features"]["inline_media_history"]["enabled"] is True
 
     original["last_error"] = "old Codex execution completed late"
-    resident_workspace_domain._save_resident_record(original)
+    resident_workspace_domain.save_resident_record(original)
     assert catalog.get(resident_id)["backend"] == "claude"
     assert catalog.get(resident_id)["backend_route_id"] == "claude_primary"
     assert catalog.get(resident_id)["last_error"] == original["last_error"]
@@ -336,16 +336,16 @@ def test_account_reconciliation_rolls_back_settings_with_its_configuration_commi
         reconcile=lambda _definition, _route, current: {**current, "model": "reconciled-after"},
     ))
     monkeypatch.setattr(resident_runtime_domain, "AGENT_PROVIDERS", {"codex": definition})
-    original_save = resident_workspace_domain._save_resident_record
+    original_save = resident_workspace_domain.save_resident_record
 
     def interrupted_save(record, *, commit_configuration=False):
         assert commit_configuration is True
         raise RuntimeError("account configuration commit interrupted")
 
     with monkeypatch.context() as patch:
-        patch.setattr(resident_workspace_domain, "_save_resident_record", interrupted_save)
+        patch.setattr(resident_workspace_domain, "save_resident_record", interrupted_save)
         with pytest.raises(RuntimeError, match="account configuration commit interrupted"):
-            resident_runtime_domain._reconcile_resident_codex_runtime_configuration(original)
+            resident_runtime_domain.reconcile_resident_codex_runtime_configuration(original)
     assert store.read_resident_execution_settings(resident_id) == before
     assert catalog.get(resident_id).get("backend_route_id", "") == original.get("backend_route_id", "")
     assert not catalog.get(resident_id).get("runtime_provider_reconciled_at")
@@ -354,8 +354,8 @@ def test_account_reconciliation_rolls_back_settings_with_its_configuration_commi
     def save(record, *, commit_configuration=False):
         commits.append(commit_configuration)
         original_save(record, commit_configuration=commit_configuration)
-    monkeypatch.setattr(resident_workspace_domain, "_save_resident_record", save)
-    reconciled = resident_runtime_domain._reconcile_resident_codex_runtime_configuration(original)
+    monkeypatch.setattr(resident_workspace_domain, "save_resident_record", save)
+    reconciled = resident_runtime_domain.reconcile_resident_codex_runtime_configuration(original)
     assert commits == [True]
     assert reconciled["backend_route_id"] == "zero"
     assert catalog.get(resident_id)["backend_route_id"] == "zero"
@@ -375,13 +375,13 @@ def test_api_settings_use_the_current_configuration_owner(resident_record, monke
     owner.update(backend="provider_api", backend_route_id="test-api")
     stage_runtime_settings(owner, {"backend": "provider_api", "model": "before",
                                   "prompt_context": {"system_prompt": "Review"}})
-    resident_workspace_domain._save_resident_record(owner, commit_configuration=True)
+    resident_workspace_domain.save_resident_record(owner, commit_configuration=True)
     stale = deepcopy(catalog.get(resident_id))
     result = resident_execution_domain.change_resident_runtime_settings(resident_id, "CASE-A", {"model": "after"})
     assert result["runtime_settings"]["model"] == "after"
     with monkeypatch.context() as patch:
-        patch.setattr(resident_workspace_domain, "_find_resident", lambda _resident_id: deepcopy(stale))
-        resident_workspace_domain._update_resident_record(resident_id, {"title": "plain edit"}, "CASE-A")
+        patch.setattr(resident_workspace_domain, "find_resident", lambda _resident_id: deepcopy(stale))
+        resident_workspace_domain.update_resident_record(resident_id, {"title": "plain edit"}, "CASE-A")
     saved = catalog.state_store.read_resident_execution_settings(resident_id)
     assert saved["model"] == "after"
     assert saved["prompt_context"]["system_prompt"] == "Review"
@@ -459,12 +459,12 @@ def test_model_api_account_and_parameters_commit_atomically(resident_record, mon
     stage_runtime_settings(record, {'backend': 'provider_api', 'model': 'text',
         'prompt_context': {'history': {'enabled': True, 'max_tokens': 8000}},
         'backend_options': {'parameters': {'temperature': 0.2}}})
-    resident_workspace_domain._save_resident_record(record, commit_configuration=True)
+    resident_workspace_domain.save_resident_record(record, commit_configuration=True)
     changes = {'backend_route_id': 'jev', 'model': 'decision', 'backend_options': {
         'parameters': {'questions': {'ready': {'type': 'noul', 'instructions': 'Ready?'}}}, 'timeout_seconds': 30}}
     before = catalog.state_store.read_resident_execution_settings(rid)
     with monkeypatch.context() as patch:
-        patch.setattr(resident_workspace_domain, '_save_resident_record', lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError('rollback')))
+        patch.setattr(resident_workspace_domain, 'save_resident_record', lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError('rollback')))
         with pytest.raises(RuntimeError, match='rollback'):
             resident_execution_domain.change_resident_runtime_settings(rid, 'CASE-A', changes)
     assert catalog.get(rid)['backend_route_id'] == 'chat'

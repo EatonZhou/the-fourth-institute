@@ -31,7 +31,7 @@ def test_authorized_context_exposes_only_original_self_state_read(encoded, monke
                  "result": {"output": "private-output"}})
     store.append_agent_segments(agent, [segment_id], actor_ref="test-actor")
     original = store.segment(segment_id)
-    monkeypatch.setattr(resident_conversation_projection_domain, "_can_view_actual_sent_prompts",
+    monkeypatch.setattr(resident_conversation_projection_domain, "can_view_actual_sent_prompts",
                         lambda actor, target: actor == "reader" and target == agent)
     monkeypatch.setattr(resident_workspace_domain, "resolve_resident_runtime_target",
                         lambda *a, **kw: SimpleNamespace(resident_id=agent))
@@ -212,7 +212,7 @@ def test_context_evidence_checks_access_before_loading_any_model_content(monkeyp
     """
     from management_portal.society_service import execution_client, resident_workspace_domain
     from management_portal.society_service import resident_conversation_projection_domain
-    monkeypatch.setattr(resident_conversation_projection_domain, "_can_view_actual_sent_prompts",
+    monkeypatch.setattr(resident_conversation_projection_domain, "can_view_actual_sent_prompts",
                         lambda *_: not deny_prompt)
     resolve = Mock(side_effect=PermissionError("not visible"))
     monkeypatch.setattr(resident_workspace_domain, "resolve_resident_runtime_target", resolve)

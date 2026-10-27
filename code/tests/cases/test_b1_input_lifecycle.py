@@ -78,7 +78,7 @@ def test_image_cleanup_preserves_active_unknown_and_recent_rounds(tmp_path, monk
     names = ['msg_' + str(i) * 32 for i in range(1, 6)]
     for name in names:
         (tmp_path / 'input_media' / name).mkdir(parents=True)
-    monkeypatch.setattr(resident_record_domain, '_sessions_path', lambda r: tmp_path)
+    monkeypatch.setattr(resident_record_domain, 'sessions_path', lambda r: tmp_path)
     monkeypatch.setattr(resident_input_recovery, 'checkpoints', lambda r: [{'message_id': names[0]}])
     states = {names[0]: 'failed', names[1]: 'completed', names[2]: 'cancelled', names[3]: 'running'}
     def state(rid, mid):
@@ -118,7 +118,7 @@ def test_image_cleanup_keeps_group_members_after_round_item_is_trimmed(tmp_path,
     info_id = 'msg_' + 'b' * 32
     (tmp_path / 'input_media' / info_id).mkdir(parents=True)
     (tmp_path / 'input_media' / message_id).mkdir(parents=True)
-    monkeypatch.setattr(resident_record_domain, '_sessions_path', lambda r: tmp_path)
+    monkeypatch.setattr(resident_record_domain, 'sessions_path', lambda r: tmp_path)
     monkeypatch.setattr(resident_input_recovery, 'checkpoints', lambda r: [{'message_id': 'group_1', 'kind': 'group', 'infos': [{'message_id': info_id}]}])
     monkeypatch.setattr(resident_mailbox, 'members_of', lambda r, mid: [message_id])
     monkeypatch.setattr(resident_conversation_stream, 'get_repository', lambda: SimpleNamespace(

@@ -55,7 +55,7 @@ def test_open_mode_collaboration_and_resource_read_access_agree(
         return {}
 
     monkeypatch.setattr(
-        resident_runtime_domain, "_lineage_identity_record",
+        resident_runtime_domain, "lineage_identity_record",
         lineage_identity,
     )
     if actor:
@@ -63,9 +63,9 @@ def test_open_mode_collaboration_and_resource_read_access_agree(
     else:
         with pytest.raises(PermissionError):
             lineage_domain._actor_can_manage_lineage(lineage, actor)
-    assert resident_directory_domain._can_manage(resident, actor) is collaboration_allowed
+    assert resident_directory_domain.can_manage(resident, actor) is collaboration_allowed
     assert resident_access.resident_visible_to_actor(resident, actor) is collaboration_allowed
-    assert resident_directory_domain._has_resident_workspace_authority(resident, actor) is collaboration_allowed
+    assert resident_directory_domain.has_resident_workspace_authority(resident, actor) is collaboration_allowed
     assert identity_reads == []
     assert resource_query.resource_is_readable({
         "resource_id": resident["resident_id"],
@@ -509,4 +509,4 @@ def test_open_mode_lets_any_user_view_and_manage_lineages_and_residents(
     )
     for actor in ("viewer", "contributor", "project-admin", "outsider"):
         assert resident_access.resident_visible_to_actor(resident, actor) is True
-        assert resident_directory_domain._can_manage(resident, actor) is True
+        assert resident_directory_domain.can_manage(resident, actor) is True

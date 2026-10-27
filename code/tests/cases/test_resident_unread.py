@@ -179,7 +179,7 @@ def test_observe_sets_boolean_without_activity_or_completion_scan(chat, monkeypa
 
     say(chat, 'request')
     chat.set_input_state(RESIDENT, 'request', 'failed')
-    monkeypatch.setattr(resident_conversation_projection_domain, '_conversation_family_summaries',
+    monkeypatch.setattr(resident_conversation_projection_domain, 'conversation_family_summaries',
                         lambda *a: pytest.fail('reading must not scan completed work'))
     portal._set_agent_conversation_read_state('sample_admin', f'resident:{RESIDENT}', unread=False)
     assert not unread()

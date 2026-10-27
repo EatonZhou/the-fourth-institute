@@ -20,7 +20,7 @@ pytestmark = pytest.mark.empty_execution_registrations
 
 @pytest.fixture
 def pending(future_creation_store, monkeypatch):
-    monkeypatch.setattr(resident_intake_domain, "_start_resident_continuation", lambda *a: None)
+    monkeypatch.setattr(resident_intake_domain, "start_resident_continuation", lambda *a: None)
     ama = principal_hierarchy_domain.ensure_personal_ama("api_user", "api_user")
     resident_domain.deliver_resident_message_content(ama["resident_id"], "api_user", "original input")
     record = resident_catalog.get_catalog().get(ama["resident_id"])
@@ -81,7 +81,9 @@ def test_binding_transaction_rolls_back_new_preparation(pending, monkeypatch):
 
 def test_legacy_bound_api_reprepares_old_codex_input(pending):
     """升级前已改绑但未提交的旧准备可恢复；不能沿用旧 Provider 提示词。"""
-    from management_portal.society_service.resident_workspace_domain import _save_resident_record
+    from management_portal.society_service.resident_workspace_domain import (
+        save_resident_record as _save_resident_record,
+    )
     record = pending
     original = resident_execution_work.read(record)
     original.update(actual_sent_prompt="old provider prompt", prompt_built_at="2026-10-22T12:00:00Z",

@@ -18,7 +18,7 @@ def test_navigation_target_identity_read_does_not_initialize_agent(monkeypatch, 
             'lineage_id': 'lineage_bbbbbbbbbbbb',
             'registration_state': 'ready',
         }
-        monkeypatch.setattr(resident_workspace_domain, '_find_resident', lambda _id: record)
+        monkeypatch.setattr(resident_workspace_domain, 'find_resident', lambda _id: record)
         monkeypatch.setattr(resident_workspace_domain, '_resident_visible_to_actor', lambda *_args: True)
         monkeypatch.setattr(resident_lifecycle_domain, 'ensure_resident_agent',
                             lambda _record: pytest.fail('navigation must not initialize Agent data'))
@@ -48,7 +48,7 @@ def test_resolve_resident_identity_uses_chat_protocol_identity_contracts(monkeyp
     with subtests.test(contract='test_resolve_resident_identity_hides_an_unreadable_resident'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
             resident_id = 'resident_private'
-            monkeypatch.setattr(resident_workspace_domain, '_find_resident', lambda value: {'resident_id': value})
+            monkeypatch.setattr(resident_workspace_domain, 'find_resident', lambda value: {'resident_id': value})
             monkeypatch.setattr(resident_workspace_domain, '_resident_visible_to_actor', lambda _record, _actor: False)
             # Answered like a missing Resident, as denied ISA reads are; only a
             # caller who is not signed in hears that it must sign in.

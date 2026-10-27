@@ -40,8 +40,8 @@ def test_main_agent_check_rejects_provider_child_identity():
 
     :design-point:"""
     agent_data = get_agent_data_store()
-    parent_id = resident_domain_common._new_resident_id()
-    child_id = resident_domain_common._new_resident_id()
+    parent_id = resident_domain_common.new_resident_id()
+    child_id = resident_domain_common.new_resident_id()
     agent_data.ensure_agent(parent_id)
     child = agent_data.ensure_agent(child_id, sequence_kind="subagent_trace", parent_agent_id=parent_id)
     with pytest.raises(ValueError, match="trace purpose or parent"):
@@ -73,15 +73,15 @@ def test_registration_candidate_uses_only_declared_storage_fields(future_creatio
         captured.append(record)
         raise CandidateValidated()
 
-    monkeypatch.setattr(resident_runtime_domain, "_resident_runtime_settings_from_register_payload", capture)
+    monkeypatch.setattr(resident_runtime_domain, "resident_runtime_settings_from_register_payload", capture)
     with pytest.raises(CandidateValidated):
         if entry == "personal":
-            resident_registration_domain._register_resident({
+            resident_registration_domain.register_resident_and_lineage({
                 "title": "Personal candidate", "backend": "codex",
             }, "newcomer", personal_owner="newcomer")
         else:
             payload = _new_session_payload("Strict candidate")
-            resident_registration_domain._register_resident(
+            resident_registration_domain.register_resident_and_lineage(
                 payload, "sample_admin", project_principal=entry == "project",
             )
     assert len(captured) == 1
@@ -102,7 +102,7 @@ def test_registration_has_an_empty_independent_trace(future_creation_store, monk
     elif entry == "personal":
         created = principal_hierarchy_domain.ensure_personal_ama("newcomer", "newcomer")
     elif entry == "project":
-        created, _ = resident_registration_domain._register_resident(payload, "sample_admin", project_principal=True)
+        created, _ = resident_registration_domain.register_resident_and_lineage(payload, "sample_admin", project_principal=True)
     else:
         created = resident_domain.register_resident(payload, "sample_admin")
     resident_id = created["resident_id"]
@@ -188,9 +188,9 @@ def test_execution_does_not_dispatch_when_agent_check_fails(future_creation_stor
     forbidden = lambda *a, **k: pytest.fail("Dispatched before Agent check")
     with pytest.raises(OSError, match="Agent offline"):
         if entry == "execution":
-            resident_execution_domain._bind_or_resume_resident_execution(SimpleNamespace(submit=forbidden, resume=forbidden), object(), record, {})
+            resident_execution_domain.bind_or_resume_resident_execution(SimpleNamespace(submit=forbidden, resume=forbidden), object(), record, {})
         else:
             monkeypatch.setattr(resident_execution_domain.resident_execution_provider, "provider_for", forbidden)
-            resident_execution_domain._send_to_resident_backend(record, {})
+            resident_execution_domain.send_to_resident_backend(record, {})
 
 

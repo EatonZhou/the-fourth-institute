@@ -335,7 +335,7 @@ def test_persistence_payload_discards_readonly_parent_view_and_preserves_direct_
     before = canonical.residents.get(R)
     view = facts.read_records([R])[R]
     monkeypatch.setattr(resident_catalog, 'get_catalog', lambda: canonical.residents)
-    persisted = resident_record_domain._validated_resident_record_payload(view)
+    persisted = resident_record_domain.validated_resident_record_payload(view)
     canonical.residents.upsert(persisted)
     assert canonical.residents.get(R) == before
     assert persisted['last_error'] == 'retained runtime'

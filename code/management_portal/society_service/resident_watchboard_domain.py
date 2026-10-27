@@ -14,9 +14,7 @@ import shutil
 import threading
 import yaml
 
-from .resident_domain_common import (
-    RESIDENT_MEDIA_KINDS,
-)
+from . import resident_domain_common
 
 _WATCHBOARD_YAML_CACHE_LOCK = threading.RLock()
 _WATCHBOARD_YAML_CACHE: dict[str, dict[str, Any]] = {}
@@ -29,7 +27,7 @@ WATCHBOARD_TEXT_LIMIT = 120_000
 WATCHBOARD_VIEW_SCHEMA = "tfi.resident_watchboard.v1"
 
 
-def _has_watchboard(record: dict[str, Any]) -> bool:
+def has_watchboard(record: dict[str, Any]) -> bool:
     return watchboard_lineage.installed(record)
 
 
@@ -43,7 +41,7 @@ def _watchboard_agent_manifest_rel(record: dict[str, Any]) -> str:
 
 def inherit_watchboard(source: dict[str, Any], child: dict[str, Any]) -> None:
     """Give the child its own script tree, independently of source relocation."""
-    if not _has_watchboard(source):
+    if not has_watchboard(source):
         return
     source_root = _watchboard_root(source)
     target_root = watchboard_lineage.root(child)
@@ -64,7 +62,7 @@ def _watchboard_view_manifest_path(record: dict[str, Any]) -> Path:
     return (_watchboard_root(record) / _watchboard_view_manifest_rel(record)).resolve(strict=False)
 
 
-def _default_watchboard_agent_manifest(record: dict[str, Any]) -> dict[str, Any]:
+def default_watchboard_agent_manifest(record: dict[str, Any]) -> dict[str, Any]:
     resident_id = str(record.get("resident_id") or "")
     title = str(record.get("title") or resident_id or "Resident Watchboard")
     script_root = str(_watchboard_root(record))
@@ -95,7 +93,7 @@ def _default_watchboard_agent_manifest(record: dict[str, Any]) -> dict[str, Any]
     }
 
 
-def _default_watchboard_view(record: dict[str, Any]) -> dict[str, Any]:
+def default_watchboard_view(record: dict[str, Any]) -> dict[str, Any]:
     return {
         "schema": WATCHBOARD_VIEW_SCHEMA,
         "title": str(record.get("title") or record.get("resident_id") or "Watchboard"),
@@ -104,7 +102,7 @@ def _default_watchboard_view(record: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _watchboard_readme_text(record: dict[str, Any]) -> str:
+def watchboard_readme_text(record: dict[str, Any]) -> str:
     resident_id = str(record.get("resident_id") or "resident")
     return "\n".join([
         f"# {resident_id} Watchboard",
@@ -120,7 +118,7 @@ def _watchboard_readme_text(record: dict[str, Any]) -> str:
     ])
 
 
-def _default_watchboard_main_py() -> str:
+def default_watchboard_main_py() -> str:
     return '''#!/usr/bin/env python3
 from __future__ import annotations
 
@@ -228,7 +226,7 @@ def _read_watchboard_yaml_cached(path: Path) -> tuple[Any, str]:
     return {}, ""
 
 
-def _read_watchboard_agent_manifest(record: dict[str, Any]) -> tuple[dict[str, Any], str]:
+def read_watchboard_agent_manifest(record: dict[str, Any]) -> tuple[dict[str, Any], str]:
     path = _watchboard_agent_manifest_path(record)
     payload, error = _read_watchboard_yaml_cached(path)
     if error:
@@ -306,10 +304,10 @@ def _watchboard_resolve_rel(record: dict[str, Any], rel_path: str) -> Path:
 
 def _watchboard_text_file_payload(record: dict[str, Any], rel_path: str, editable: bool) -> dict[str, Any]:
     from .lineage_access_policy import workspace_file_address
-    from .resident_workspace_domain import _resident_folder_kind
+    from . import resident_workspace_domain
     path = _watchboard_resolve_rel(record, rel_path)
     exists = path.exists()
-    kind = _resident_folder_kind(path) if exists else "missing"
+    kind = resident_workspace_domain.resident_folder_kind(path) if exists else "missing"
     binary = False
     truncated = False
     content = ""
@@ -328,7 +326,7 @@ def _watchboard_text_file_payload(record: dict[str, Any], rel_path: str, editabl
                 version = hashlib.sha256(data).hexdigest()
             if truncated:
                 data = data[:WATCHBOARD_TEXT_LIMIT]
-            binary = kind == "binary" or kind in RESIDENT_MEDIA_KINDS or b"\0" in data[:2048]
+            binary = kind == "binary" or kind in resident_domain_common.RESIDENT_MEDIA_KINDS or b"\0" in data[:2048]
             if not binary:
                 content = data.decode("utf-8", errors="replace")
         except Exception as exc:
@@ -353,7 +351,7 @@ def _watchboard_text_file_payload(record: dict[str, Any], rel_path: str, editabl
 
 
 def _watchboard_commands_from_manifest(manifest: dict[str, Any]) -> list[dict[str, Any]]:
-    from .resident_lifecycle_domain import _nonnegative_int
+    from . import resident_lifecycle_domain
     commands = manifest.get("commands") or {}
     manifest_execution = (
         manifest.get("execution")
@@ -377,7 +375,7 @@ def _watchboard_commands_from_manifest(manifest: dict[str, Any]) -> list[dict[st
             "description": str(spec.get("description") or ""),
             "risk": str(spec.get("risk") or ""),
             "command_kind": str(command_execution.get("kind") or ""),
-            "timeout_seconds": _nonnegative_int(spec.get("timeout_seconds"), 0),
+            "timeout_seconds": resident_lifecycle_domain.nonnegative_int(spec.get("timeout_seconds"), 0),
             "args_schema": args if isinstance(args, dict) else {},
             "requires_args": bool(args),
         })
@@ -396,15 +394,14 @@ def _watchboard_for_record(
     record: dict[str, Any],
     actor: str = "",
 ) -> dict[str, Any]:
-    from .resident_directory_domain import _resident_status_signature
-    from .resident_record_domain import _resident_id
-    if not _has_watchboard(record):
+    from . import resident_directory_domain, resident_record_domain
+    if not has_watchboard(record):
         return {"enabled": False}
     from management_portal import permission_system
 
     actor_id = canonical_actor_id(actor)
     script_root = _watchboard_root(record)
-    manifest, manifest_error = _read_watchboard_agent_manifest(record)
+    manifest, manifest_error = read_watchboard_agent_manifest(record)
     manifest_path = _watchboard_agent_manifest_path(record)
     view_manifest_path = _watchboard_view_manifest_path(record)
     view_manifest, view_manifest_error = _read_watchboard_view_manifest(record)
@@ -430,8 +427,8 @@ def _watchboard_for_record(
     actual_ids = {item["id"] for item in watchboard_lineage.components(record, graph)}
     commands = [{**item, **watchboard_lineage.command_ids(record, item["id"], graph)} for item in commands]
     commands = [item for item in commands if item["event_source_id"] in actual_ids and item["effect_id"] in actual_ids]
-    resident_id = _resident_id(record)
-    signature = _resident_status_signature({
+    resident_id = resident_record_domain.record_resident_id(record)
+    signature = resident_directory_domain.resident_status_signature({
         "resident_id": resident_id,
         "permissions": permissions,
         "script_root": str(script_root),
@@ -478,14 +475,14 @@ def _watchboard_for_record(
     }
 
 
-def _watchboard_capabilities(
+def watchboard_capabilities(
     record: dict[str, Any],
     actor: str,
 ) -> dict[str, Any]:
     from management_portal import permission_system
 
     actor_id = canonical_actor_id(actor)
-    installed = _has_watchboard(record)
+    installed = has_watchboard(record)
     # Installing and removing apply the plan with ApplyLineageChanges on the Resident's Lineage.
     can_manage = permission_system.allows(actor_id, "ApplyLineageChanges", {"lineage_id": resident_lineage.lineage_id(record)})
     return {
@@ -500,13 +497,12 @@ def get_resident_watchboard(
     resident_id: str,
     actor: str = "",
 ) -> dict[str, Any]:
-    from .resident_directory_domain import _has_resident_workspace_authority
-    from .resident_workspace_domain import resolve_resident_runtime_target
+    from . import resident_directory_domain, resident_workspace_domain
     with resident_lineage.access_snapshot_scope():
-        target = resolve_resident_runtime_target(resident_id, actor, require_visible=True)
+        target = resident_workspace_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=True)
         record = target.record
         actor_id = canonical_actor_id(actor)
-        if not _has_resident_workspace_authority(
+        if not resident_directory_domain.has_resident_workspace_authority(
             record,
             actor_id,
         ):
@@ -518,7 +514,7 @@ def get_resident_watchboard(
         return {
             "resident_id": target.resident_id,
             "watchboard": watchboard,
-            "watchboard_capabilities": _watchboard_capabilities(
+            "watchboard_capabilities": watchboard_capabilities(
                 record,
                 actor_id,
             ),

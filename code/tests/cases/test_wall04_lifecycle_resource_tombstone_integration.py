@@ -86,7 +86,7 @@ def integration(tmp_path, monkeypatch):
     resource_client.sync_lineage(neighbor_definition, updated_by=ACTOR)
     index.adapter_layer.refresh_now("collaboration", force=True)
     record = {"resident_id": RESIDENT, "lineage_id": LINEAGE, "backend": "codex", "folder_schema": "lineage-folder-v3", "workspace_path": str(folder), "owned_workspace_id": "workspace_040404040401", "default_cwd": str(owned), "owned_workspace": {"workspace_id": "workspace_040404040401", "path": str(owned)}, "workspace_bindings": []}
-    assert resident_runtime_domain._resident_working_directory(record) == owned
+    assert resident_runtime_domain.resident_working_directory(record) == owned
     register_session(record, "synthetic-release-session", backend_route_id="synthetic-route")
     operations = ResidentLifecycleOperations(LineageDataStore())
     target = SimpleNamespace(root=tmp_path, resource=resource, descriptors=descriptors, index=index, record=record, definition=definition, operations=operations, folder=folder, owned=owned, marker=marker, canonical=canonical, neighbor_folder=neighbor_folder, neighbor_link=neighbor_link, archive=tmp_path / "archived-folder")
@@ -158,10 +158,10 @@ def test_resource_tombstone_release_failure_recovery_and_archive(integration, mo
             raise OSError("synthetic unknown release outcome")
         return {"status": "completed"}
 
-    monkeypatch.setattr(resident_session_backend_domain, "_run_backend_session_operation", safe_release)
-    steps = [deletion_step(target, "lineage_tombstone"), resident_lifecycle_domain._resident_release_step(target.record, ACTOR), deletion_step(target, "lineage_folder_unbind"), {"kind": "archive", "source": str(target.folder), "target": str(target.archive)}]
+    monkeypatch.setattr(resident_session_backend_domain, "run_backend_session_operation", safe_release)
+    steps = [deletion_step(target, "lineage_tombstone"), resident_lifecycle_domain.resident_release_step(target.record, ACTOR), deletion_step(target, "lineage_folder_unbind"), {"kind": "archive", "source": str(target.folder), "target": str(target.archive)}]
     operation_id = target.operations.enqueue(RESIDENT, steps)
-    assert not target.operations.run(operation_id, resident_lifecycle_domain._apply_resident_lifecycle_step)
+    assert not target.operations.run(operation_id, resident_lifecycle_domain.apply_resident_lifecycle_step)
     cursor, error = pending_cursor(target, operation_id)
     assert cursor["next_step"] == 1
     assert "synthetic" in error
@@ -172,7 +172,7 @@ def test_resource_tombstone_release_failure_recovery_and_archive(integration, mo
     assert LINEAGE not in query_ids(target)
     recovered = recover_operations(target, operation_id)
     assert recovered.ready() == [operation_id]
-    assert recovered.run(operation_id, resident_lifecycle_domain._apply_resident_lifecycle_step) == RESIDENT
+    assert recovered.run(operation_id, resident_lifecycle_domain.apply_resident_lifecycle_step) == RESIDENT
     assert releases[1]["operation_id"] == releases[0]["operation_id"] + (":retry-1" if failure_kind == "confirmed" else "")
     assert not resident_backend.session_record(target.record)
     assert not recovered.pending(RESIDENT)
@@ -185,7 +185,7 @@ def test_resource_tombstone_release_failure_recovery_and_archive(integration, mo
 def test_tombstone_hides_ordinary_query_before_delayed_index_refresh(integration, record_property):
     """索引延迟刷新时权威墓碑仍立即隐藏普通查询结果"""
     target = integration
-    resident_lifecycle_domain._apply_resident_lifecycle_step("fixture-query:0", deletion_step(target, "lineage_tombstone"))
+    resident_lifecycle_domain.apply_resident_lifecycle_step("fixture-query:0", deletion_step(target, "lineage_tombstone"))
     assert_deleted_reference(target)
     result = query_ids(target)
     record_property("descriptor", json.dumps(target.descriptors.get(LINEAGE)))

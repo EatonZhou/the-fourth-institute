@@ -83,7 +83,7 @@ def test_immediate_input_preparation_is_recorded_atomically_and_read_through_con
     # There was no polling between either transformation and input admission.
     monkeypatch.setattr(data_module, "get_agent_data_store", lambda: store)
     seen = []
-    monkeypatch.setattr(resident_conversation_projection_domain, "_can_view_actual_sent_prompts",
+    monkeypatch.setattr(resident_conversation_projection_domain, "can_view_actual_sent_prompts",
                         lambda actor, target: actor == "resident_reader" and target == agent)
     def resolve(target, actor, *, require_visible):
         seen.append((target, actor, require_visible))

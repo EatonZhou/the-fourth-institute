@@ -98,7 +98,7 @@ def resident(monkeypatch, execution):
     transaction = store.transaction
     real_read, real_active = resident_execution_work.read, resident_execution_work.is_active
     _, operations, _ = _restart_domain(monkeypatch, source_provider='claude', source_route='deepseek_primary')
-    monkeypatch.setattr(resident_execution_domain, '_resident_system_instructions',
+    monkeypatch.setattr(resident_execution_domain, 'resident_system_instructions',
                         lambda *a, **kw: SystemInstructions())
     # The existing fixture replaces only native/provider work here. Restore the
     # actual durable Job, restart and Mailbox repositories for the whole handoff.
@@ -112,9 +112,9 @@ def resident(monkeypatch, execution):
     record = _record(RID)
     record.update(backend='claude', backend_route_id='deepseek_primary', intake_open=True)
     store.put_resident_record(RID, record, commit_configuration=True)
-    monkeypatch.setattr(resident_workspace_domain, '_find_resident', store.resident_record)
-    monkeypatch.setattr(resident_workspace_domain, '_find_resident_canonical', store.resident_record)
-    monkeypatch.setattr(resident_workspace_domain, '_save_resident_record',
+    monkeypatch.setattr(resident_workspace_domain, 'find_resident', store.resident_record)
+    monkeypatch.setattr(resident_workspace_domain, 'find_resident_canonical', store.resident_record)
+    monkeypatch.setattr(resident_workspace_domain, 'save_resident_record',
                         lambda value, **kw: store.put_resident_record(RID, value, **kw))
     monkeypatch.setattr(resident_workspace_domain, 'resolve_resident_runtime_target',
                         lambda *a, **kw: SimpleNamespace(record=store.resident_record(RID), resident_id=RID))
@@ -169,7 +169,7 @@ def test_original_deferred_request_advances_and_preserves_original_input(residen
     elif finish == 'cancelled':
         pending['session_restart']['status'] = 'cancelling'
         store.put_resident_record(RID, pending)
-    resident_restart_domain._resume_resident_session_restart(operations[-1]['step'])
+    resident_restart_domain.resume_resident_session_restart(operations[-1]['step'])
     resident_deferred_restart.advance(store.resident_record(RID))
     current = store.resident_record(RID)
     job = resident_execution_work.read(current)
@@ -218,18 +218,18 @@ def test_lost_withdraw_reply_is_reconciled_without_terminal_input(resident, exec
 
 def test_receipt_save_failure_keeps_exact_intent_for_recovery(resident, monkeypatch):
     store, repo, operations, original, native = resident
-    save = resident_workspace_domain._save_resident_record
+    save = resident_workspace_domain.save_resident_record
     def fail_receipt(value, **kw):
         if value.get('session_restart', {}).get('deferred', {}).get('handoff', {}).get('phase') == 'withdrawn':
             raise RuntimeError('receipt persistence failed')
         return save(value, **kw)
-    monkeypatch.setattr(resident_workspace_domain, '_save_resident_record', fail_receipt)
+    monkeypatch.setattr(resident_workspace_domain, 'save_resident_record', fail_receipt)
     with pytest.raises(RuntimeError, match='receipt persistence failed'):
         resident_deferred_restart.advance(store.resident_record(RID))
     intent = copy.deepcopy(store.resident_record(RID)['session_restart']['deferred']['handoff'])
     assert not intent.get('phase')
     assert repo.input_state(RID, MID)['state'] == 'queued'
-    monkeypatch.setattr(resident_workspace_domain, '_save_resident_record', save)
+    monkeypatch.setattr(resident_workspace_domain, 'save_resident_record', save)
     assert resident_deferred_restart.advance(store.resident_record(RID)) is True
     assert store.resident_record(RID)['session_restart']['deferred']['handoff'] == {**intent, 'phase': 'withdrawn'}
 
@@ -241,7 +241,7 @@ def test_cancel_after_withdraw_restores_source_and_only_own_intake_transition(re
     assert resident_restart_handoff.advance(store.resident_record(RID)) is True
     record = store.resident_record(RID)
     if manual_close:
-        resident_intake_domain._commit_resident_intake_state(record, 'closed')
+        resident_intake_domain.commit_resident_intake_state(record, 'closed')
     resident_deferred_restart.cancel(store.resident_record(RID), original['restart_id'])
     record = store.resident_record(RID)
     job = resident_execution_work.read(record)
@@ -257,12 +257,12 @@ def test_internal_handoff_terminal_does_not_project_user_cancellation(execution,
     scheduler, service, request, args = execution
     service.withdraw_unstarted(request.execution_id, **args)
     snapshot = scheduler.snapshot(request.execution_id)
-    monkeypatch.setattr(resident_execution_domain, '_resident_record_for_execution',
+    monkeypatch.setattr(resident_execution_domain, 'resident_record_for_execution',
                         lambda *a: pytest.fail('handoff must not project a user terminal'))
     resident_execution_domain._project_resident_execution_snapshot(RID, request.execution_id, snapshot)
     monkeypatch.setattr(resident_execution_domain, '_resident_execution_event_cursor', lambda *a: 0)
     with pytest.raises(resident_restart_handoff.ExecutionHandedOff):
-        resident_execution_domain._wait_for_resident_execution(
+        resident_execution_domain.wait_for_resident_execution(
             SimpleNamespace(wait=lambda *a, **kw: snapshot), execution_id=request.execution_id,
             actor='alice', resident_id=RID, user_message_id=MID,
         )

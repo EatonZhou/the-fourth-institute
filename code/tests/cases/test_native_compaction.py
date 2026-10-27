@@ -20,7 +20,9 @@ import pytest
 from management_portal import dsh_client
 from management_portal.execution import backends
 from management_portal.execution.provider_catalog import AGENT_PROVIDERS
-from management_portal.society_service.resident_session_backend_domain import _compact_portal_result
+from management_portal.society_service.resident_session_backend_domain import (
+    compact_portal_result as _compact_portal_result,
+)
 from tests.cases.claude_sdk_support import load_claude_module
 
 

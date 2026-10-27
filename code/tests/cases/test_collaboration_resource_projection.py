@@ -70,7 +70,7 @@ def test_resident_projection_is_bounded_and_omits_internal_fields(
     )
     monkeypatch.setattr(
         resident_workspace_domain,
-        "_resolve_resident_resource_target",
+        "resolve_resident_resource_target",
         lambda _resident_id: target,
     )
     _protocol_projection(monkeypatch, resident_id, "running")

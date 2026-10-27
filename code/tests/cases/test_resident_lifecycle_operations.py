@@ -217,8 +217,8 @@ def test_session_creation_preparation_recovers_exact_request_before_archiving(
             assert not source.exists() and (target / "keep.txt").is_file()
             events.append("ack")
 
-    monkeypatch.setattr(resident_lifecycle_domain, "_lifecycle_operations", lambda: operations)
-    monkeypatch.setattr(resident_workspace_domain, "_find_resident_canonical", lambda _: None)
+    monkeypatch.setattr(resident_lifecycle_domain, "lifecycle_operations", lambda: operations)
+    monkeypatch.setattr(resident_workspace_domain, "find_resident_canonical", lambda _: None)
     monkeypatch.setattr(execution_port, "service", lambda: Service())
     monkeypatch.setattr(resident_backend, "session_record", lambda *args, **kwargs: {})
     monkeypatch.setattr(resident_backend, "delete_session_identity", lambda *args, **kwargs: events.append("release"))
@@ -227,20 +227,20 @@ def test_session_creation_preparation_recovers_exact_request_before_archiving(
             "kind": "registration_abort", "record": record, "actor": "CASE-A",
             "source": str(source), "target": str(target),
         }]) as key:
-            resident_session_backend_domain._run_backend_session_operation(
+            resident_session_backend_domain.run_backend_session_operation(
                 backend=backend, operation="create", actor="CASE-A", cwd=tmp_path,
                 binding_id="resident:resident_111111111111",
                 preparation_id=key,
             )
     operations = ResidentLifecycleOperations(LineageDataStore())
     # Missing or mismatched terminal facts cannot release bindings or files.
-    assert not operations.run(key, resident_lifecycle_domain._apply_resident_lifecycle_step)
+    assert not operations.run(key, resident_lifecycle_domain.apply_resident_lifecycle_step)
     assert source.exists() and events == []
     outcome.update(status="completed", result={"status": "completed"})
     operations.store.database.write(lambda c: c.execute(
         'UPDATE resident_lifecycle_operations SET available_at=to_timestamp(0) WHERE operation_id=%s', (key,),
     ))
-    assert operations.run(key, resident_lifecycle_domain._apply_resident_lifecycle_step) == record["resident_id"]
+    assert operations.run(key, resident_lifecycle_domain.apply_resident_lifecycle_step) == record["resident_id"]
     assert events == ["release", "ack"]
     assert len(submitted) == (1 if accepted else 2)
     assert all(payload == submitted[0] for payload in submitted)
@@ -267,10 +267,10 @@ def test_stale_preparation_never_compensates_published_resident_contracts(monkey
             tmp_path = case_path
             source = tmp_path / 'published-resident'
             source.mkdir()
-            monkeypatch.setattr(resident_workspace_domain, '_find_resident_canonical', lambda _: {'registration_state': 'ready'})
+            monkeypatch.setattr(resident_workspace_domain, 'find_resident_canonical', lambda _: {'registration_state': 'ready'})
             monkeypatch.setattr(execution_port, 'service', lambda: pytest.fail('Published identity must not be touched'))
             monkeypatch.setattr(resident_backend, 'session_record', lambda _: pytest.fail('Published binding must not be released'))
-            resident_lifecycle_domain._apply_resident_lifecycle_step('stale:0', {'kind': 'registration_abort', 'record': {'resident_id': 'resident_111111111111'}, 'actor': 'CASE-A', 'source': str(source), 'target': str(tmp_path / 'archive')})
+            resident_lifecycle_domain.apply_resident_lifecycle_step('stale:0', {'kind': 'registration_abort', 'record': {'resident_id': 'resident_111111111111'}, 'actor': 'CASE-A', 'source': str(source), 'target': str(tmp_path / 'archive')})
             assert source.is_dir()
     with subtests.test(contract='test_cleanup_never_releases_a_replaced_session'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
@@ -282,10 +282,10 @@ def test_stale_preparation_never_compensates_published_resident_contracts(monkey
 
             def forbidden(*args, **kwargs):
                 pytest.fail('Stale cleanup must not release or delete a newer session')
-            monkeypatch.setattr(resident_session_backend_domain, '_run_backend_session_operation', forbidden)
+            monkeypatch.setattr(resident_session_backend_domain, 'run_backend_session_operation', forbidden)
             monkeypatch.setattr(resident_backend, 'delete_session_identity', forbidden)
             with pytest.raises(RuntimeError, match='binding changed'):
-                resident_lifecycle_domain._apply_resident_lifecycle_step('op:0', {'kind': 'release', 'record': record, 'actor': 'CASE-A', 'binding': {'provider_session_ref': 'old', 'backend_session_id': 'old-session'}})
+                resident_lifecycle_domain.apply_resident_lifecycle_step('op:0', {'kind': 'release', 'record': record, 'actor': 'CASE-A', 'binding': {'provider_session_ref': 'old', 'backend_session_id': 'old-session'}})
 
 
 def test_acknowledgement_replay_accepts_already_pruned_receipt(monkeypatch):
@@ -294,7 +294,7 @@ def test_acknowledgement_replay_accepts_already_pruned_receipt(monkeypatch):
         def acknowledge(self, execution_id, **kwargs):
             raise KeyError(execution_id)
     monkeypatch.setattr(execution_port, "service", lambda: Service())
-    resident_lifecycle_domain._apply_resident_lifecycle_step("op:1", {
+    resident_lifecycle_domain.apply_resident_lifecycle_step("op:1", {
         "kind": "execution_ack", "execution_id": "execution-old", "actor": "CASE-A",
     })
 
@@ -305,20 +305,22 @@ def test_release_snapshot_keeps_owned_workspace_after_identity_deletion(tmp_path
     """会话释放步骤保存自有 Workspace 路径快照，Resident 身份删除后仍在该目录释放"""
     from pathlib import Path
     from tests.cases.test_lineage_catalogs import _record
-    from management_portal.society_service.resident_runtime_domain import _resident_working_directory
+    from management_portal.society_service.resident_runtime_domain import (
+        resident_working_directory as _resident_working_directory,
+    )
     record = _record('resident_111111111111')
     path = Path(record['default_cwd'])
     path.mkdir(parents=True, exist_ok=True)
     binding = {'provider_session_ref': 'session-test', 'backend_session_id': 'native-test'}
     monkeypatch.setattr(resident_backend, 'session_record', lambda *a, **k: binding)
-    step = resident_lifecycle_domain._resident_release_step(record, 'CASE-A')
+    step = resident_lifecycle_domain.resident_release_step(record, 'CASE-A')
     record['deleted_at'] = '2026-10-10T00:00:00Z'
     record.pop('owned_workspace')
     assert _resident_working_directory(step['record']) == path
     calls = []
-    monkeypatch.setattr(resident_session_backend_domain, '_run_backend_session_operation', lambda **kw: calls.append(kw))
+    monkeypatch.setattr(resident_session_backend_domain, 'run_backend_session_operation', lambda **kw: calls.append(kw))
     monkeypatch.setattr(resident_backend, 'delete_session_identity', lambda *a, **kw: None)
-    resident_lifecycle_domain._apply_resident_lifecycle_step('op:0', step)
+    resident_lifecycle_domain.apply_resident_lifecycle_step('op:0', step)
     assert calls[0]['operation'] == 'release' and calls[0]['cwd'] == path
     assert 'workspace_bindings' not in step['record']
 
@@ -342,7 +344,7 @@ def test_recovered_release_resumes_the_same_execution_request(tmp_path, monkeypa
             pass
     monkeypatch.setattr(execution_port, "service", lambda: Service())
     for _ in range(2):
-        result = resident_session_backend_domain._run_backend_session_operation(
+        result = resident_session_backend_domain.run_backend_session_operation(
             backend="codex", operation="release", actor="CASE-A", cwd=tmp_path,
             binding_id="resident:resident_111111111111", backend_route_id="zero",
             operation_id="durable-release:0",
@@ -396,7 +398,7 @@ def test_release_retry_requires_matching_terminal_result(tmp_path, monkeypatch, 
                     else LifecycleAttemptFailed
                 )
                 with pytest.raises(error_type):
-                    resident_session_backend_domain._run_backend_session_operation(
+                    resident_session_backend_domain.run_backend_session_operation(
                         backend="codex", operation="release", actor="CASE-A", cwd=tmp_path,
                         binding_id="resident:resident_111111111111", backend_route_id="zero",
                         operation_id="durable-release:0",

@@ -30,10 +30,10 @@ def test_actual_prompt_checks_sensitive_permission_before_resolving(monkeypatch,
     """用户和 Resident 可读取实际发送内容，Portal 服务或匿名调用在解析 Resident 之前被拒绝"""
     resident_id = "resident_57acd34d2cd0"
     # Any User or Resident may read; a Portal service or nobody may not, and is refused before the Resident resolves.
-    assert resident_conversation_projection_domain._can_view_actual_sent_prompts(actor, resident_id)
+    assert resident_conversation_projection_domain.can_view_actual_sent_prompts(actor, resident_id)
     monkeypatch.setattr(resident_workspace_domain, "resolve_resident_runtime_target", lambda *_: pytest.fail("refused prompt must not resolve"))
     for refused in ("", "portal"):
-        assert not resident_conversation_projection_domain._can_view_actual_sent_prompts(refused, resident_id)
+        assert not resident_conversation_projection_domain.can_view_actual_sent_prompts(refused, resident_id)
         with pytest.raises(PermissionError, match="无权读取实际发送内容"):
             resident_domain.read_actual_sent_prompt(resident_id, refused, "fixture-message")
 
@@ -54,7 +54,7 @@ def test_actual_prompt_returns_only_requested_synthetic_provider_message(
         messages[0]["actual_sent_prompt"] = "synthetic provider envelope"
         messages[0]["actual_sent_prompt_source"] = "isolated-fixture"
 
-    monkeypatch.setattr(resident_conversation_projection_domain, "_attach_actual_sent_prompts", attach)
+    monkeypatch.setattr(resident_conversation_projection_domain, "attach_actual_sent_prompts", attach)
     actual = resident_domain.read_actual_sent_prompt(resident_id, actor, "round2-prompt")
     assert actual == {
         "resident_id": resident_id, "message_id": "round2-prompt",

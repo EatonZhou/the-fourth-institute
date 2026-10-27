@@ -124,13 +124,13 @@ def test_cancelled_projection_releases_command_lock_before_terminal_io(running, 
             assert release.wait(5)
         return original(*args, **kwargs)
     monkeypatch.setattr(repo, 'set_input_state', slow_terminal)
-    monkeypatch.setattr(resident_intake_domain, '_acknowledge_execution', lambda *a: True)
+    monkeypatch.setattr(resident_intake_domain, 'acknowledge_execution', lambda *a: True)
     monkeypatch.setattr(resident_execution_domain, '_notify_lineage_message_terminal', mock.Mock())
     def command():
-        with resident_lifecycle_domain._state_lock(rid):
+        with resident_lifecycle_domain.state_lock(rid):
             return resident_execution_work.read_control(rid)['state']['user_message_id']
     with ThreadPoolExecutor(max_workers=2) as pool:
-        finalizer = pool.submit(resident_execution_domain._apply_cancelled_continuation, rid, 'continuation-stop')
+        finalizer = pool.submit(resident_execution_domain.apply_cancelled_continuation, rid, 'continuation-stop')
         try:
             assert entered.wait(2)
             assert pool.submit(command).result(1) == MID
@@ -148,7 +148,7 @@ def test_stale_finalizer_does_not_clear_replacement(running, monkeypatch, replac
     """过期的取消收尾遇到执行或输入已被替换时，不清除新的执行记录"""
     record, repo = running
     rid = record['resident_id']
-    append = resident_lifecycle_domain._append_conversation_message
+    append = resident_lifecycle_domain.append_conversation_message
     replacement = {
         'execution_id': 'execution-' + 'c' * 24 if replaced != 'input' else EID,
         'user_message_id': 'msg_' + 'c' * 32 if replaced != 'execution' else MID,
@@ -159,8 +159,8 @@ def test_stale_finalizer_does_not_clear_replacement(running, monkeypatch, replac
         result = append(*args, **kwargs)
         resident_execution_work.write(record, replacement)
         return result
-    monkeypatch.setattr(resident_lifecycle_domain, '_append_conversation_message', append_then_replace)
-    assert not resident_execution_domain._apply_cancelled_continuation(rid, 'continuation-stop')
+    monkeypatch.setattr(resident_lifecycle_domain, 'append_conversation_message', append_then_replace)
+    assert not resident_execution_domain.apply_cancelled_continuation(rid, 'continuation-stop')
     for key in ('execution_id', 'user_message_id'):
         assert resident_execution_work.read(record)[key] == replacement[key]
     assert repo.input_state(rid, MID)['state'] == 'running'
@@ -202,7 +202,7 @@ def test_terminal_publication_retry_keeps_one_notice_and_does_not_clear_early(ru
     record, repo = running
     rid = record['resident_id']
     resident_protocol.cancel_resident_input(rid, 'CASE-A', MID)
-    monkeypatch.setattr(resident_intake_domain, '_acknowledge_execution', lambda *a: True)
+    monkeypatch.setattr(resident_intake_domain, 'acknowledge_execution', lambda *a: True)
     monkeypatch.setattr(resident_execution_domain, '_notify_lineage_message_terminal', mock.Mock())
     original = repo.set_input_state
     def fail_terminal(*args, **kwargs):
@@ -211,16 +211,16 @@ def test_terminal_publication_retry_keeps_one_notice_and_does_not_clear_early(ru
         return original(*args, **kwargs)
     monkeypatch.setattr(repo, 'set_input_state', fail_terminal)
     with pytest.raises(RuntimeError, match='terminal publication unavailable'):
-        resident_execution_domain._apply_cancelled_continuation(rid, 'continuation-stop')
+        resident_execution_domain.apply_cancelled_continuation(rid, 'continuation-stop')
     assert resident_execution_work.read(record)['execution_id'] == EID
     assert repo.input_state(rid, MID)['state'] == 'running'
     monkeypatch.setattr(repo, 'set_input_state', original)
-    monkeypatch.setattr(resident_intake_domain, '_acknowledge_execution', lambda *a: False)
-    resident_execution_domain._apply_cancelled_continuation(rid, 'continuation-stop')
+    monkeypatch.setattr(resident_intake_domain, 'acknowledge_execution', lambda *a: False)
+    resident_execution_domain.apply_cancelled_continuation(rid, 'continuation-stop')
     pending_ack = resident_execution_work.read(record)
     assert pending_ack['execution_id'] == EID
     assert not pending_ack.get(resident_execution_work.CONVERSATION_PROJECTION_INTENTS)
-    monkeypatch.setattr(resident_intake_domain, '_acknowledge_execution', lambda *a: True)
+    monkeypatch.setattr(resident_intake_domain, 'acknowledge_execution', lambda *a: True)
     resident_execution_domain._finalize_applied_execution(rid, 'continuation-stop', pending_ack)
     notices = [message for message in repo.read_messages(rid)
                if message.get('reply_to_message_id') == MID and message.get('role') == 'system']

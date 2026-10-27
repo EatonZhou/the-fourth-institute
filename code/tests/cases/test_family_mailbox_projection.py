@@ -22,7 +22,7 @@ def grouped_family(team):
     facade_id = team.source["resident_id"]
     set_role(facade_id, family_id="fbi_85089d425601", actor=ACTOR)
     set_role(member_id, family_id="fbi_85089d425601", role="member", actor=ACTOR)
-    facade = resident_workspace_domain._find_resident(facade_id)
+    facade = resident_workspace_domain.find_resident(facade_id)
     repository = resident_conversation_stream.get_repository()
     requests = []
     for member_message in (first, second):
@@ -48,7 +48,7 @@ def grouped_family(team):
 
 def _run_group(case):
     repository = case.repository
-    record = resident_workspace_domain._find_resident(case.member_id)
+    record = resident_workspace_domain.find_resident(case.member_id)
     work = resident_execution_work.read(record)
     group_work = next(item for item in work["queue"] if item["user_message_id"] == case.group_id)
     group = repository.state_store.mailbox_entry(case.member_id, case.group_id)["message"]
@@ -100,7 +100,7 @@ def _nest(case):
         family_facade.complete_relay((outer_id, message["message_id"]), inner_id, inner["message_id"])
         requests.append(message)
     case.facade_id = outer_id
-    case.facade = resident_workspace_domain._find_resident(outer_id)
+    case.facade = resident_workspace_domain.find_resident(outer_id)
     case.requests = requests
     return inner_id
 
@@ -198,7 +198,7 @@ def test_group_terminal_projects_before_and_after_member_receipts(grouped_family
     case.repository.set_state(case.member_id, {"work_state": "idle"})
     for durable in (False, True):
         if durable:
-            record = resident_workspace_domain._find_resident(case.member_id)
+            record = resident_workspace_domain.find_resident(case.member_id)
             resident_mailbox.finish_group(record, case.group_id, terminal)
         messages = _messages(case)
         for request, original_id in zip(case.requests, case.originals):
@@ -231,7 +231,7 @@ def test_independently_cancelled_member_does_not_inherit_running_group(grouped_f
     for durable in (False, True):
         if durable:
             resident_mailbox.finish_group(
-                resident_workspace_domain._find_resident(case.member_id), case.group_id, "cancelled",
+                resident_workspace_domain.find_resident(case.member_id), case.group_id, "cancelled",
             )
         terminal_messages = _messages(case)
         assert not any(item.get("message_id") == reply["message_id"]

@@ -46,7 +46,7 @@ def test_messages_queued_during_the_first_turn_run_after_it(resident_record):  #
         sent.append(str(job.get("user_message_id") or ""))
         if len(sent) == 1:
             for text in ("second", "third"):
-                waiting.append(resident_intake_domain._persist_resident_input(
+                waiting.append(resident_intake_domain.persist_resident_input(
                     resident_id, "test-actor", text, activation_policy="enqueue_and_trigger",
                 )["message_id"])
             places = {row["message_id"]: row["place"] for row in get_lineage_data_store().mailbox_entries([resident_id])}
@@ -56,10 +56,10 @@ def test_messages_queued_during_the_first_turn_run_after_it(resident_record):  #
         return reply, dict(record, session_state="active")
 
     with mock.patch.object(resident_backend, "record_session_id", return_value=""), \
-            mock.patch.object(resident_execution_domain, "_send_to_resident_backend", side_effect=send), \
+            mock.patch.object(resident_execution_domain, "send_to_resident_backend", side_effect=send), \
             mock.patch.object(resident_execution_domain, "_notify_lineage_message_completed") as notify, \
-            mock.patch.object(resident_intake_domain, "_acknowledge_execution", return_value=True):
-        resident_execution_domain._run_resident_execution(resident_id, continuation_id)
+            mock.patch.object(resident_intake_domain, "acknowledge_execution", return_value=True):
+        resident_execution_domain.run_resident_execution(resident_id, continuation_id)
 
     assert sent == ["message_first_turn", *waiting]
     assert [call.args[2] for call in notify.call_args_list] == sent

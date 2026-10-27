@@ -16,12 +16,11 @@ from . import (
     resident_store,
     resource_client,
 )
-from .domain_ports import project_domain_port, resident_lineage_host_port
+from .domain_ports import resident_lineage_host_port
 from .resident_access import can_manage_resident as _can_manage_resident, manage_refusal
-from .resident_fork_domain import initialize_resident_context_from_source
+from . import resident_domain_common, resident_fork_domain
 from contextlib import ExitStack
 from management_common.actor_identity import canonical_actor_id, same_actor as _same_actor
-from management_common.site_registry import rewrite_shared_path
 from management_portal.execution.accounts import resolve_account_configuration
 from management_portal.execution.provider_catalog import AGENT_PROVIDERS
 from pathlib import Path
@@ -30,27 +29,8 @@ import copy
 import json
 import secrets
 
-from .resident_domain_common import (
-    LINEAGE_FOLDER_SCHEMA_VERSION,
-    PROJECTS_ROOT,
-    _new_lineage_id,
-)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def _queue_bootstrap_resident_session(
+def queue_bootstrap_resident_session(
     record: dict[str, Any],
     *,
     message: str,
@@ -68,21 +48,22 @@ def _queue_bootstrap_resident_session(
     lineage_id: str = "",
     delivery_message_id: str = "",
 ) -> dict[str, Any]:
-    from .resident_intake_domain import _existing_resident_delivery, _message, _normalized_runtime_context
-    from .resident_lifecycle_domain import _accept_resident_user_message, _now_iso, _persist_resident_user_message, _resident_intake_state
-    from .resident_media_domain import _provider_message_with_native_media
-    from .resident_record_domain import _resident_id
-    from .resident_runtime_domain import _resident_working_directory
+    from . import (
+        resident_intake_domain,
+        resident_lifecycle_domain,
+        resident_media_domain,
+        resident_record_domain,
+    )
     message = str(message or "")
     if not message.strip():
         raise ValueError("message required")
 
-    now = _now_iso()
+    now = resident_lifecycle_domain.now_iso()
     resolved_refs = context_refs if isinstance(context_refs, dict) else {}
     resolved_input_media = (
         list(input_media) if isinstance(input_media, list) else []
     )
-    provider_message = _provider_message_with_native_media(
+    provider_message = resident_media_domain.provider_message_with_native_media(
         record,
         message,
         resolved_input_media,
@@ -93,14 +74,14 @@ def _queue_bootstrap_resident_session(
         user_item = (
             dict(user_message)
             if isinstance(user_message, Mapping)
-            else _message(
+            else resident_intake_domain.build_message(
                 "user", message, actor_id, message_id=message_id,
             )
         )
         if business_ref:
             user_item["business_ref"] = str(business_ref).strip()[:500]
-        if _existing_resident_delivery(
-            _resident_id(record),
+        if resident_intake_domain.existing_resident_delivery(
+            resident_record_domain.record_resident_id(record),
             user_item,
             bound_job=resident_execution_work.read(record),
             require_execution_binding=True,
@@ -117,7 +98,7 @@ def _queue_bootstrap_resident_session(
         "actor": actor_id,
         "context_refs": resolved_refs,
         "input_media": resolved_input_media,
-        "runtime_context": _normalized_runtime_context(runtime_context),
+        "runtime_context": resident_intake_domain.normalized_runtime_context(runtime_context),
         "started_at": now,
         "updated_at": now,
         "error": "",
@@ -134,17 +115,17 @@ def _queue_bootstrap_resident_session(
     if working_directory is not None:
         job["prompt_cwd"] = str(working_directory)
         job["working_directory"] = str(working_directory)
-    job[resident_state.INTAKE_FIELD] = _resident_intake_state(record)
+    job[resident_state.INTAKE_FIELD] = resident_lifecycle_domain.resident_intake_state(record)
     if user_item:
         job["input_message"] = copy.deepcopy(user_item)
         persist = (
-            _persist_resident_user_message
-            if _resident_intake_state(record) == resident_state.INTAKE_OPEN
+            resident_lifecycle_domain.persist_resident_user_message
+            if resident_lifecycle_domain.resident_intake_state(record) == resident_state.INTAKE_OPEN
             and activation_policy == "enqueue_and_trigger"
-            else _accept_resident_user_message
+            else resident_lifecycle_domain.accept_resident_user_message
         )
         if not delivery_message_id:
-            invariant_locks.defer_until_state_unlock(lambda: persist(_resident_id(record), user_item))
+            invariant_locks.defer_until_state_unlock(lambda: persist(resident_record_domain.record_resident_id(record), user_item))
     if delivery_message_id:
         resident_execution_work.admit(record, job, user_item)
     else:
@@ -152,21 +133,19 @@ def _queue_bootstrap_resident_session(
     return job
 
 
-def _complete_bootstrap_codex_session(
+def complete_bootstrap_codex_session(
     record: dict[str, Any],
     job: dict[str, Any],
     *,
     insert_assistant_message: bool = True,
 ) -> dict[str, Any]:
-    from .resident_execution_domain import _send_to_resident_backend
-    from .resident_lifecycle_domain import _now_iso
-    from .resident_workspace_domain import _protocol_message_text
-    assistant_item, updated = _send_to_resident_backend(
+    from . import resident_execution_domain, resident_lifecycle_domain, resident_workspace_domain
+    assistant_item, updated = resident_execution_domain.send_to_resident_backend(
         record,
         job,
         persist_messages=insert_assistant_message,
     )
-    if not _protocol_message_text(assistant_item):
+    if not resident_workspace_domain.protocol_message_text(assistant_item):
         raise RuntimeError(
             "ExecutionService bootstrap completed without a final response"
         )
@@ -183,7 +162,7 @@ def _complete_bootstrap_codex_session(
         "last_error": "",
         "last_turn_usage": current_usage or {},
         "last_turn_usage_at": current_usage_at,
-        "updated_at": _now_iso(),
+        "updated_at": resident_lifecycle_domain.now_iso(),
     })
     record.pop("last_runtime_error", None)
     return record
@@ -198,8 +177,8 @@ def _user_message_block(message: object) -> str:
 
 
 def _runtime_context_block(job: dict[str, Any]) -> str:
-    from .resident_intake_domain import _normalized_runtime_context
-    runtime_context = _normalized_runtime_context(job.get("runtime_context"))
+    from . import resident_intake_domain
+    runtime_context = resident_intake_domain.normalized_runtime_context(job.get("runtime_context"))
     if not runtime_context:
         return ""
     safe_context = runtime_context.replace("</runtime-context>", "<\\/runtime-context>")
@@ -214,9 +193,9 @@ def _runtime_context_block(job: dict[str, Any]) -> str:
 def _reply_hint_block(record: dict[str, Any], job: dict[str, Any]) -> str:
     """How to answer a message a Family facade sent out (decision_44cf587c1721); "" for any other message."""
     from .outward_messages import reply_hint
-    from .resident_record_domain import _resident_id
+    from . import resident_record_domain
     business_ref = job.get("business_ref") or (job.get("input_message") or {}).get("business_ref")
-    hint = reply_hint(_resident_id(record), str(job.get("actor") or ""), str(job.get("user_message_id") or ""),
+    hint = reply_hint(resident_record_domain.record_resident_id(record), str(job.get("actor") or ""), str(job.get("user_message_id") or ""),
                       str(business_ref or ""))
     return f"<reply-hint>\n{hint}\n</reply-hint>" if hint else ""
 
@@ -253,7 +232,7 @@ def _sender_line(job: dict[str, Any]) -> str:
     return f"当前发送者是用户 {actor}；{keep}"
 
 
-def _build_resident_prompt(record: dict[str, Any], job: dict[str, Any]) -> str:
+def build_resident_prompt(record: dict[str, Any], job: dict[str, Any]) -> str:
     """The turn's prompt: the message, its attached content and Portal's envelope.
 
     Portal's other injected input (rules, resident.md, runtime identity,
@@ -264,19 +243,17 @@ def _build_resident_prompt(record: dict[str, Any], job: dict[str, Any]) -> str:
     content and always travel with it.
     """
     from management_portal import prompt_injection
-    from .resident_record_domain import _attached_references_text, _resident_id
-    from .resident_runtime_domain import _read_resident_runtime_settings
-    from .resident_workspace_domain import _workspace_path
-    if resident_input_scope.get(_resident_id(record), str(job.get("user_message_id") or "")):
+    from . import resident_record_domain, resident_runtime_domain, resident_workspace_domain
+    if resident_input_scope.get(resident_record_domain.record_resident_id(record), str(job.get("user_message_id") or "")):
         return str(job.get("raw_message") or job.get("message") or "")
-    choices = prompt_injection.resolve(_read_resident_runtime_settings(record).get("prompt_injection"))
+    choices = prompt_injection.resolve(resident_runtime_domain.read_resident_runtime_settings(record).get("prompt_injection"))
     envelope = choices["message_envelope"] != "off"
     context_refs = job.get("context_refs") if isinstance(job.get("context_refs"), dict) else {}
-    attached_refs = _attached_references_text(context_refs)
+    attached_refs = resident_record_domain.attached_references_text(context_refs)
     message = str(job.get("message") or "")
     if not attached_refs or not envelope:
         return _build_plain_user_prompt(job, envelope=envelope, reply_block=_reply_hint_block(record, job) if envelope else "")
-    workspace = _workspace_path(record)
+    workspace = resident_workspace_domain.resident_workspace_path(record)
     resident_summary = {
         "resident_id": record.get("resident_id", ""),
         "title": record.get("title", ""),
@@ -304,9 +281,9 @@ def _build_resident_prompt(record: dict[str, Any], job: dict[str, Any]) -> str:
 
 
 def _build_plain_user_prompt(job: dict[str, Any], *, envelope: bool = True, reply_block: str = "") -> str:
-    from .resident_record_domain import _attached_references_text
+    from . import resident_record_domain
     context_refs = job.get("context_refs") if isinstance(job.get("context_refs"), dict) else {}
-    attached_refs = _attached_references_text(context_refs)
+    attached_refs = resident_record_domain.attached_references_text(context_refs)
     message = str(job.get("message") or "")
     blocks: list[str] = []
     if attached_refs:
@@ -322,8 +299,6 @@ def _build_plain_user_prompt(job: dict[str, Any], *, envelope: bool = True, repl
         blocks.append(reply_block)
     blocks.append(_user_message_block(message).strip() if envelope else message)
     return "\n\n".join(blocks) + ("\n" if envelope or len(blocks) > 1 else "")
-
-
 
 
 def _resident_registration_projection_receipt(
@@ -353,7 +328,7 @@ def _confirm_registered_resident_resources(
     )
 
 
-def _require_resident_registration_ready(record: dict[str, Any]) -> None:
+def require_resident_registration_ready(record: dict[str, Any]) -> None:
     if not resident_catalog.registration_ready(record):
         from management_common.projection_receipts import CommittedProjectionError
 
@@ -379,15 +354,15 @@ def register_resident(
     requested = dict(payload)
     lineage_id = str(requested.get("lineage_id") or "").strip()
     if not lineage_id:
-        lineage_id = _new_lineage_id()
+        lineage_id = resident_domain_common.new_lineage_id()
         requested["lineage_id"] = lineage_id
 
-    record, _lineage = _register_resident(requested, actor, lineage_node=lineage_node,
+    record, _lineage = register_resident_and_lineage(requested, actor, lineage_node=lineage_node,
                                         **({"creation_key": creation_key} if creation_key else {}))
     return record
 
 
-def _register_resident(
+def register_resident_and_lineage(
     payload: dict, actor: str, *,
     lineage_node: dict[str, Any] | None = None,
     project_principal: bool = False,
@@ -399,14 +374,17 @@ def _register_resident(
     ``personal_owner`` registers that User's own Ask Me Anything: a new
     personal Lineage outside any Project, created by the User alone.
     """
-    from .resident_directory_domain import _unique_resident_id
+    from . import resident_directory_domain
     from .resident_projection import _optional_absolute_paths, _resident_lineage_node_projection
-    from .resident_lifecycle_domain import _lifecycle_operations, _now_iso, _state_lock
-    from .resident_project_domain import _optional_absolute_path, _project_root_for_id, _safe_absolute_path
-    from .resident_record_domain import _apply_resident_resource_identity, _resident_folder_path, _set_resident_owned_workspace_binding
-    from .resident_runtime_domain import _resident_runtime_settings_from_register_payload, _write_resident_runtime_settings
-    from .resident_session_backend_domain import _materialize_pending_agent_data_fork
-    from .resident_workspace_domain import _ensure_resident_workspace, _save_resident_record
+    from . import (
+        project_domain,
+        resident_lifecycle_domain,
+        resident_project_domain,
+        resident_record_domain,
+        resident_runtime_domain,
+        resident_session_backend_domain,
+        resident_workspace_domain,
+    )
     actor_id = canonical_actor_id(actor)
     title = str(payload.get("title") or "").strip()
     if not title:
@@ -496,22 +474,22 @@ def _register_resident(
         )
     workspace_paths = _optional_absolute_paths(payload.get("workspace_paths"))
     if project_id:
-        project_path = str(_project_root_for_id(project_id).resolve(strict=False))
+        project_path = str(project_domain.project_root_for_id(project_id).resolve(strict=False))
         if project_path not in workspace_paths:
             workspace_paths.append(project_path)
-    resident_id = _unique_resident_id()
+    resident_id = resident_directory_domain.unique_resident_id()
     lineage_id = str(payload.get("lineage_id") or "").strip()
     if lineage_id and not identity_contract.is_valid_id(lineage_id, "lineage"):
         raise ValueError("lineage_id must be a canonical lineage_* ID")
     if not lineage_id:
-        lineage_id = _new_lineage_id()
+        lineage_id = resident_domain_common.new_lineage_id()
     source_resident_id = str(payload.get("source_resident_id") or "").strip()
     if source_resident_id:
         identity_contract.validate_id(source_resident_id, "resident")
     lineage_folder_raw = str(payload.get("lineage_folder_path") or "").strip()
 
     if lineage_folder_raw:
-        workspace_path = _safe_absolute_path(lineage_folder_raw)
+        workspace_path = resident_project_domain.safe_absolute_path(lineage_folder_raw)
         workspace_root = workspace_path.parent
     else:
 
@@ -525,7 +503,7 @@ def _register_resident(
         if isinstance(item, dict) and str(item.get("path") or "").strip()
     ]
 
-    now = _now_iso()
+    now = resident_lifecycle_domain.now_iso()
     session_state = (
         "active"
         if execution_provider.capabilities.synchronous_delivery
@@ -534,7 +512,7 @@ def _register_resident(
 
     record = {
         "resident_id": resident_id,
-        "folder_schema": LINEAGE_FOLDER_SCHEMA_VERSION,
+        "folder_schema": resident_domain_common.LINEAGE_FOLDER_SCHEMA_VERSION,
         "lineage_id": lineage_id,
         "lineage_title": str(payload.get("lineage_title") or title),
         "lineage_project_id": str(payload.get("lineage_project_id") or project_id),
@@ -561,43 +539,42 @@ def _register_resident(
 
     if source_resident_id:
         record["source_resident_id"] = source_resident_id
-    _apply_resident_resource_identity(record)
-    _set_resident_owned_workspace_binding(record)
-    from .resident_workspace_domain import _set_resident_reference_bindings
-    _set_resident_reference_bindings(record, [*workspace_paths, *[item["path"] for item in requested_workspace_bindings]])
+    resident_record_domain.apply_resident_resource_identity(record)
+    resident_record_domain.set_resident_owned_workspace_binding(record)
+    resident_workspace_domain.set_resident_reference_bindings(record, [*workspace_paths, *[item["path"] for item in requested_workspace_bindings]])
     if awaiting_default:
         from management_portal.execution.resident_runtime_settings import normalize_settings
         runtime_settings = normalize_settings({"backend": backend, **payload["runtime_settings"]})
     else:
-        runtime_settings = _resident_runtime_settings_from_register_payload(record, payload, actor_id, now)
+        runtime_settings = resident_runtime_domain.resident_runtime_settings_from_register_payload(record, payload, actor_id, now)
 
-    resident_folder = _resident_folder_path(record)
+    resident_folder = resident_record_domain.resident_folder_path(record)
     # Existing files are never owned by an aborted registration, even when
     # its Lineage Folder was explicitly supplied by the caller.
     owned_folder = not (resident_folder.exists() or resident_folder.is_symlink())
-    operations = _lifecycle_operations()
+    operations = resident_lifecycle_domain.lifecycle_operations()
     with operations.prepare(resident_id, lambda operation_id: [{
         "kind": "registration_abort", "record": dict(record), "actor": actor_id,
         "source": str(resident_folder) if owned_folder else "",
         "target": str(resident_folder.with_name(f".aborted-{resident_id}-{operation_id}")),
     }]) as preparation_id:
         workspace_path.mkdir(parents=True, exist_ok=bool(lineage_folder_raw))
-        _ensure_resident_workspace(record)
-        _write_resident_runtime_settings(record, runtime_settings)
+        resident_workspace_domain.ensure_resident_workspace(record)
+        resident_runtime_domain.write_resident_runtime_settings(record, runtime_settings)
 
         if bool(payload.get("initialize_from_source")):
             if not source_resident_id:
                 raise ValueError(
                     "initialize_from_source requires source_resident_id"
                 )
-            initialize_resident_context_from_source(
+            resident_fork_domain.initialize_resident_context_from_source(
                 record,
                 source_resident_id,
                 str(payload.get("source_context_mode") or "full"),
                 actor_id,
                 preparation_id=preparation_id,
             )
-            _materialize_pending_agent_data_fork(record, actor_id)
+            resident_session_backend_domain.materialize_pending_agent_data_fork(record, actor_id)
 
         # Only the publication of identity and membership is serialized. No
         # workspace preparation, native Fork or Provider wait holds this scope.
@@ -619,7 +596,7 @@ def _register_resident(
                 )
                 if registered_lineage is None:
                     raise ValueError("Target Lineage is no longer available")
-            _save_resident_record(record)
+            resident_workspace_domain.save_resident_record(record)
             if creation_key:
                 # Identity, graph membership, publication outbox and request
                 # association must become visible in the same domain commit.
@@ -645,7 +622,7 @@ def _register_resident(
     _confirm_registered_resident_resources(
         record, committed_revision=int(registered_lineage["revision"]),
     )
-    with _state_lock(resident_id):
+    with resident_lifecycle_domain.state_lock(resident_id):
         current = resident_lineage.find(resident_id)
         if current is None:
             raise KeyError("Resident deleted after registration")

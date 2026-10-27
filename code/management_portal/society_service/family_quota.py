@@ -41,9 +41,9 @@ def _validate_migration(state: dict[str, Any]) -> None:
 
 
 def role_availability(record: dict[str, Any], *, execution_gate: dict[str, Any] | None = None) -> dict[str, Any]:
-    from .resident_lifecycle_domain import _resident_intake_state
+    from . import resident_lifecycle_domain
     state = role_migration(record)
-    intake = _resident_intake_state(record)
+    intake = resident_lifecycle_domain.resident_intake_state(record)
     if intake != "open":
         return {"status": "paused", "reason": "接单已关闭；门面开放时平台将恢复，关闭门面可暂停 Family", "intake": intake}
     if state.get("account_wait"):
@@ -81,9 +81,9 @@ def _relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
                    scope_reviewed: bool = False) -> dict[str, Any]:
     from . import outward_messages, resident_conversation_stream, resident_protocol
     from .resident_questions import answered_set
-    from .resident_workspace_domain import _find_resident
+    from . import resident_workspace_domain
 
-    facade = _find_resident(facade_id)
+    facade = resident_workspace_domain.find_resident(facade_id)
     if not family_facade.is_facade(facade):
         raise ValueError("目标必须是 Family 门面")
     steward_id = family_facade.family_steward_id(facade)
@@ -106,7 +106,7 @@ def _relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
         raise KeyError("门面消息不存在")
     # An inner facade routes without running a model; its final member owns quota admission.
     to_steward = bool(steward_id) and member_id == steward_id
-    to_facade = family_facade.is_facade(_find_resident(member_id))
+    to_facade = family_facade.is_facade(resident_workspace_domain.find_resident(member_id))
     if not family_facade.is_relay_target(facade, member_id):
         raise ValueError("所选 Resident 已不属于这个 Family")
     state = repository.input_state(facade_id, message_id)
@@ -196,7 +196,7 @@ def _relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
         if approved and review.get("status") not in {"waiting", "delivering"}:
             raise ValueError("该请求没有待放行的额度复核")
         if not review:
-            account = resident_account(_find_resident(member_id) or {}, accounts)
+            account = resident_account(resident_workspace_domain.find_resident(member_id) or {}, accounts)
             # The steward keeps its own reserve (ensure_role_reserve) and does not review itself.
             remaining = None if to_steward or to_facade else weekly_remaining(account)
             review = {"member_id": member_id, "account_id": account.get("account_id", ""),
@@ -277,36 +277,34 @@ def _restore_role_intake(record: dict[str, Any]) -> dict[str, Any] | None:
     recreates a deleted role, requeues a cancelled input or restarts a Session.
     """
     from . import family_storage, resident_intake_domain
-    from .resident_lifecycle_domain import _resident_intake_state, _lifecycle_operations
-    from .resident_workspace_domain import _find_resident
+    from . import resident_lifecycle_domain, resident_workspace_domain
     if not family_facade.is_operating_role(record) or record.get("deleted_at"):
         return None
     with get_lineage_data_store().database.read() as connection:
         facade_ids = family_storage.roles_of(connection, record["family"]["family_id"])["facade"]
-    facade = _find_resident(facade_ids[0]) if facade_ids else None
-    if not facade or facade.get("deleted_at") or _resident_intake_state(facade) != "open":
+    facade = resident_workspace_domain.find_resident(facade_ids[0]) if facade_ids else None
+    if not facade or facade.get("deleted_at") or resident_lifecycle_domain.resident_intake_state(facade) != "open":
         return None
-    if _resident_intake_state(record) != "open":
-        if _lifecycle_operations().pending(record["resident_id"]):
+    if resident_lifecycle_domain.resident_intake_state(record) != "open":
+        if resident_lifecycle_domain.lifecycle_operations().pending(record["resident_id"]):
             return record  # The migration owns its temporary intake hold.
         resident_intake_domain.transition_resident_state(record["resident_id"], record["resident_id"],
             transition="open", allow_quota_override=False)
-        record = _find_resident(record["resident_id"])
+        record = resident_workspace_domain.find_resident(record["resident_id"])
     return record
 
 
 def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] | None = None) -> bool:
     """Return whether the next turn must wait for a safe account migration."""
-    from .resident_lifecycle_domain import _lifecycle_operations, _state_lock
-    from .resident_restart_domain import restart_resident_session
+    from . import resident_lifecycle_domain, resident_restart_domain
     from .resident_work_recovery import _intake_allows_recovery
-    from .resident_workspace_domain import _find_resident
+    from . import resident_workspace_domain
 
     record = _restore_role_intake(record)
     if not record:
         return False
     resident_id = record["resident_id"]
-    if _lifecycle_operations().pending(resident_id):
+    if resident_lifecycle_domain.lifecycle_operations().pending(resident_id):
         return True
     job = resident_execution_work.read(record)
     if resident_execution_work.is_active(job) and (
@@ -343,8 +341,8 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
         return bool(role_migration(record).get("status"))  # Stale observations cannot clear an outstanding incident.
     epoch = f"{account['account_id']}:{[(w.get('window'), w.get('resets_at')) for w in (account.get('quota_reserve') or {}).get('windows') or []]}"
     now = time.time()
-    with _state_lock(resident_id), get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as migration:
-        current = _find_resident(resident_id)
+    with resident_lifecycle_domain.state_lock(resident_id), get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as migration:
+        current = resident_workspace_domain.find_resident(resident_id)
         if (not current or current["lineage_id"] != record["lineage_id"]
                 or not _intake_allows_recovery(current)):
             return False
@@ -377,10 +375,10 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
                 migration["pending_restart"] = payload
                 migration.update(status="migrating", reason="正在保留上下文并切换可用后端")
     if payload:
-        if _lifecycle_operations().pending(resident_id):
+        if resident_lifecycle_domain.lifecycle_operations().pending(resident_id):
             return True
-        restart_resident_session(resident_id, resident_id, payload, portal_reason="steward_weekly_reserve")
-        with _state_lock(resident_id), get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as committed:
+        resident_restart_domain.restart_resident_session(resident_id, resident_id, payload, portal_reason="steward_weekly_reserve")
+        with resident_lifecycle_domain.state_lock(resident_id), get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as committed:
             if committed.get("pending_restart") == payload:
                 committed["pending_restart"] = None
     elif not migration.get("owner_notified"):
@@ -400,7 +398,7 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
             from .family_owners import message_creator
             message_creator(record, identity=f"role-reserve:{resident_id}:{epoch}",
                             text=f"Family 内部角色 {record.get('title') or resident_id} 暂不可用。{reason}请补充可用账号后恢复。")
-            with _state_lock(resident_id), get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as committed:
+            with resident_lifecycle_domain.state_lock(resident_id), get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as committed:
                 if committed.get("epoch") == epoch:
                     committed["owner_notified"] = True
     return True
@@ -410,23 +408,22 @@ def check_role_availability(lineage_id: str, family_id: str, actor: str) -> dict
     """ISA entry for the Family's explicit operating-role supervision Effect."""
     from .templates.familize import read_family
     from . import lineage_domain
-    from .resident_workspace_domain import _find_resident
-    from .resident_lifecycle_domain import _resident_intake_state
+    from . import resident_lifecycle_domain, resident_workspace_domain
 
     lineage, block = read_family(lineage_id, family_id, actor)
     family = block["family"]
     if actor not in {family["facade"], family["steward"]}:
         lineage_domain._ensure_manager(lineage, actor)
-    facade = _find_resident(family["facade"])
-    if facade.get("deleted_at") or _resident_intake_state(facade) != "open":
+    facade = resident_workspace_domain.find_resident(family["facade"])
+    if facade.get("deleted_at") or resident_lifecycle_domain.resident_intake_state(facade) != "open":
         return {"family_id": block["id"], "paused": True, "waiting_count": 0}
-    roles = [_find_resident(family[role]) for role in ("router", "steward")]
+    roles = [resident_workspace_domain.find_resident(family[role]) for role in ("router", "steward")]
     restore_role_intakes(roles)
     # Intake maintenance must not poll accounts or migrate idle roles. Quota
     # admission belongs to the execution queue; report existing incidents only.
     waiting = sum(bool((state := role_migration(r)).get("status") or state.get("account_wait")) for r in roles)
     return {"family_id": block["id"], "paused": False, "waiting_count": waiting,
-            "roles": [{"resident_id": r["resident_id"], **role_availability(_find_resident(r["resident_id"]))}
+            "roles": [{"resident_id": r["resident_id"], **role_availability(resident_workspace_domain.find_resident(r["resident_id"]))}
                       for r in roles]}
 
 

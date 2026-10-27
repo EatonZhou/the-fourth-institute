@@ -32,13 +32,13 @@ def test_update_workspace_inputs_persists_replacement_and_removal(future_creatio
     rid = record["resident_id"]
     owned = record["owned_workspace"]
     retained = next(b for b in record["workspace_bindings"] if b["path"] == str(paths[1]))
-    resident_workspace_domain._update_resident_record(rid, {"workspace_paths": list(map(str, paths[1:]))}, "sample_admin")
-    current = resident_workspace_domain._find_resident(rid)
+    resident_workspace_domain.update_resident_record(rid, {"workspace_paths": list(map(str, paths[1:]))}, "sample_admin")
+    current = resident_workspace_domain.find_resident(rid)
     assert current["owned_workspace"] == owned
     assert set(current["workspace_paths"]) == set(map(str, paths[1:]))
     assert next(b for b in current["workspace_bindings"] if b["path"] == str(paths[1])) == retained
-    resident_workspace_domain._update_resident_record(rid, {"workspace_paths": []}, "sample_admin")
-    current = resident_workspace_domain._find_resident(rid)
+    resident_workspace_domain.update_resident_record(rid, {"workspace_paths": []}, "sample_admin")
+    current = resident_workspace_domain.find_resident(rid)
     assert current["workspace_bindings"] == []
     assert current["owned_workspace"] == owned
 
@@ -56,12 +56,12 @@ def test_catalog_rejects_symlinked_default_workspace_path(
     alias_root = tmp_path / "lineage-alias"
     alias_root.symlink_to(lineage_root, target_is_directory=True)
     alias_workspace = alias_root / "residents" / resident_id / "workspace"
-    damaged = resident_workspace_domain._find_resident(resident_id)
+    damaged = resident_workspace_domain.find_resident(resident_id)
     damaged["owned_workspace"]["path"] = str(alias_workspace)
     damaged["default_cwd"] = str(alias_workspace)
-    assert resident_workspace_domain._resident_default_cwd_path(damaged) == ""
+    assert resident_workspace_domain.resident_default_cwd_path(damaged) == ""
     with pytest.raises(ValueError, match="Workspace"):
-        resident_workspace_domain._save_resident_record(damaged)
+        resident_workspace_domain.save_resident_record(damaged)
 
 
 def test_reference_workspace_ids_remain_unique_after_removal(
@@ -80,7 +80,7 @@ def test_reference_workspace_ids_remain_unique_after_removal(
         resident_domain.add_resident_reference_workspace(
             resident_id, str(directory), "sample_admin"
         )
-    before = resident_workspace_domain._find_resident(resident_id)
+    before = resident_workspace_domain.find_resident(resident_id)
     first = next(
         binding for binding in before["workspace_bindings"]
         if binding["path"] == str(directories[0])
@@ -95,7 +95,7 @@ def test_reference_workspace_ids_remain_unique_after_removal(
     resident_domain.add_resident_reference_workspace(
         resident_id, str(directories[2]), "sample_admin"
     )
-    after = resident_workspace_domain._find_resident(resident_id)
+    after = resident_workspace_domain.find_resident(resident_id)
     bindings = after["workspace_bindings"]
     root_ids = [binding["workspace_id"] for binding in bindings]
     assert len(root_ids) == len(set(root_ids))
@@ -104,13 +104,13 @@ def test_reference_workspace_ids_remain_unique_after_removal(
     retained_second = next(binding for binding in bindings if binding["path"] == str(directories[1]))
     assert retained_second["workspace_id"] == second["workspace_id"]
     assert second["workspace_id"] != third["workspace_id"]
-    assert next(root for root in resident_workspace_domain._resident_workspace_roots(after)
+    assert next(root for root in resident_workspace_domain.resident_workspace_roots(after)
                 if root["workspace_id"] == third["workspace_id"])["path"] == str(directories[2])
     removed = resident_domain.remove_resident_reference_workspace(
         resident_id, "sample_admin", workspace_id=third["workspace_id"]
     )
     assert removed["path"] == str(directories[2])
-    final = resident_workspace_domain._find_resident(resident_id)
+    final = resident_workspace_domain.find_resident(resident_id)
     assert any(binding["workspace_id"] == second["workspace_id"] and binding["path"] == str(directories[1]) for binding in final["workspace_bindings"])
     assert final["default_cwd"] == record["default_cwd"]
     assert all(directory.is_dir() for directory in directories)
@@ -138,7 +138,7 @@ def reference_workspace_mutation(future_creation_store: Path, tmp_path: Path, re
             resident_id, "sample_admin", workspace_path=str(directory)
         )
 
-    document = Path(resident_record_domain._resident_folder_path(record)) / "workspaces.md"
+    document = Path(resident_record_domain.resident_folder_path(record)) / "workspaces.md"
     return resident_id, document, mutate
 
 
@@ -148,18 +148,18 @@ def test_workspace_document_does_not_change_when_canonical_save_fails(
 ) -> None:
     """添加或移除引用 Workspace 时记录保存失败，workspaces.md 与记录都不变"""
     resident_id, document, mutate = reference_workspace_mutation
-    before_record = resident_workspace_domain._find_resident(resident_id)
+    before_record = resident_workspace_domain.find_resident(resident_id)
     before_document = document.read_bytes()
 
     def fail_save(record):
         raise RuntimeError("injected canonical save failure")
 
-    monkeypatch.setattr(resident_workspace_domain, "_save_resident_record", fail_save)
+    monkeypatch.setattr(resident_workspace_domain, "save_resident_record", fail_save)
     with pytest.raises(RuntimeError, match="injected canonical save failure"):
         mutate()
     assert document.read_bytes() == before_document
-    assert resident_workspace_domain._find_resident(resident_id) == before_record
-    assert not resident_lifecycle_domain._lifecycle_operations().pending(resident_id)
+    assert resident_workspace_domain.find_resident(resident_id) == before_record
+    assert not resident_lifecycle_domain.lifecycle_operations().pending(resident_id)
 
 
 @pytest.mark.parametrize("reference_workspace_mutation", ["add", "remove"], indirect=True)
@@ -168,25 +168,25 @@ def test_workspace_document_failure_recovers_from_committed_bindings(
 ) -> None:
     """workspaces.md 写入失败时绑定照常提交，之后由生命周期操作按最新绑定补写"""
     resident_id, document, mutate = reference_workspace_mutation
-    before_record = resident_workspace_domain._find_resident(resident_id)
+    before_record = resident_workspace_domain.find_resident(resident_id)
     before_document = document.read_bytes()
-    refresh = resident_workspace_domain._refresh_resident_workspace_document
+    refresh = resident_workspace_domain.refresh_resident_workspace_document
 
     def fail_projection(record):
-        assert resident_workspace_domain._find_resident(resident_id)["workspace_bindings"] == record["workspace_bindings"]
+        assert resident_workspace_domain.find_resident(resident_id)["workspace_bindings"] == record["workspace_bindings"]
         raise OSError("injected document failure")
 
     with monkeypatch.context() as patch:
-        patch.setattr(resident_workspace_domain, "_refresh_resident_workspace_document", fail_projection)
+        patch.setattr(resident_workspace_domain, "refresh_resident_workspace_document", fail_projection)
         result = mutate()
     assert result["workspace_document_pending"] is True
     assert document.read_bytes() == before_document
-    current = resident_workspace_domain._find_resident(resident_id)
+    current = resident_workspace_domain.find_resident(resident_id)
     assert current["workspace_bindings"] != before_record["workspace_bindings"]
-    operations = resident_lifecycle_domain._lifecycle_operations()
+    operations = resident_lifecycle_domain.lifecycle_operations()
     assert operations.pending(resident_id)
     current["workspace_bindings"][0]["purpose"] = "Recovery reads the latest binding"
-    resident_workspace_domain._save_resident_record(current)
+    resident_workspace_domain.save_resident_record(current)
     operations.store.database.write(lambda connection: connection.execute(
         'UPDATE resident_lifecycle_operations SET available_at=to_timestamp(0) WHERE operation_id=%s',
         (result["operation_id"],),
@@ -197,8 +197,8 @@ def test_workspace_document_failure_recovers_from_committed_bindings(
         refreshed.append(record["workspace_bindings"])
         refresh(record)
 
-    monkeypatch.setattr(resident_workspace_domain, "_refresh_resident_workspace_document", observe_projection)
-    assert operations.run(result["operation_id"], resident_lifecycle_domain._apply_resident_lifecycle_step) == resident_id
+    monkeypatch.setattr(resident_workspace_domain, "refresh_resident_workspace_document", observe_projection)
+    assert operations.run(result["operation_id"], resident_lifecycle_domain.apply_resident_lifecycle_step) == resident_id
     assert refreshed == [current["workspace_bindings"]]
     assert not operations.pending(resident_id)
     assert document.read_bytes() != before_document
@@ -210,7 +210,7 @@ def test_workspace_binding_and_projection_request_commit_together(
 ) -> None:
     """Workspace 绑定变更与文档刷新任务一起提交，任务登记失败时绑定也不变"""
     resident_id, document, mutate = reference_workspace_mutation
-    before_record = resident_workspace_domain._find_resident(resident_id)
+    before_record = resident_workspace_domain.find_resident(resident_id)
     before_document = document.read_bytes()
 
     def fail_enqueue(self, target_id, steps):
@@ -219,7 +219,7 @@ def test_workspace_binding_and_projection_request_commit_together(
     monkeypatch.setattr(ResidentLifecycleOperations, "enqueue", fail_enqueue)
     with pytest.raises(RuntimeError, match="injected projection enqueue failure"):
         mutate()
-    assert resident_workspace_domain._find_resident(resident_id) == before_record
+    assert resident_workspace_domain.find_resident(resident_id) == before_record
     assert document.read_bytes() == before_document
 
 
@@ -238,7 +238,7 @@ def test_deletion_preserves_workspace_still_bound_by_another_resident(future_cre
     resident_domain.delete_resident_lineage(a['resident_id'],'sample_admin')
     store=get_workspace_store()
     assert not store.rows([a['owned_workspace_id']],include_deleted=True)[a['owned_workspace_id']]['deleted_at']
-    current=resident_workspace_domain._find_resident(b['resident_id'])
+    current=resident_workspace_domain.find_resident(b['resident_id'])
     assert a['owned_workspace_id'] in {v['workspace_id'] for v in current['workspace_bindings']}
     assert Path(a['default_cwd']).is_dir()
     assert str(shared) in current['workspace_paths']

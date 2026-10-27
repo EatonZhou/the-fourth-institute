@@ -25,17 +25,17 @@ def test_personal_ama_can_precede_default_ai(future_creation_store, monkeypatch)
     result = principal_hierarchy_domain.ensure_personal_ama("first_user", "first_user")
     record = resident_catalog.get_catalog().get(result["resident_id"])
     assert record["backend_route_id"] == ""
-    settings = resident_runtime_domain._read_resident_runtime_settings(record)
+    settings = resident_runtime_domain.read_resident_runtime_settings(record)
     settings.update(allow_subagents=True, permission_preset="", permissions=":read-only",
                     sandbox="read-only", sandbox_explicit=True)
-    resident_runtime_domain._write_resident_runtime_settings(record, settings)
+    resident_runtime_domain.write_resident_runtime_settings(record, settings)
     monkeypatch.setattr(resident_default_backend, "role_configuration", lambda _: {
         "backend": "codex", "backend_route_id": "one", "runtime_settings": {"backend_role": "default"}})
     monkeypatch.setattr(resident_backend, "session_record", lambda _: {})
     resident_default_backend.bind_before_execution(record, "first_user")
     saved = resident_catalog.get_catalog().get(result["resident_id"])
     assert saved["backend_route_id"] == "one"
-    saved_settings = resident_runtime_domain._read_resident_runtime_settings(saved)
+    saved_settings = resident_runtime_domain.read_resident_runtime_settings(saved)
     assert saved_settings["backend_role"] == "default"
     assert saved_settings["allow_subagents"] is True
     assert saved_settings["sandbox"] == "read-only"
@@ -50,27 +50,27 @@ def test_first_api_binding_replaces_source_site_model(future_creation_store, mon
     monkeypatch.setattr(account_registrations, "roles", lambda: [])
     result = principal_hierarchy_domain.ensure_personal_ama("api_user", "api_user")
     record = resident_catalog.get_catalog().get(result["resident_id"])
-    settings = runtime._read_resident_runtime_settings(record)
+    settings = runtime.read_resident_runtime_settings(record)
     settings.update(model="gpt-6-luna", reasoning_effort="high", service_tier="priority")
-    runtime._write_resident_runtime_settings(record, settings)
+    runtime.write_resident_runtime_settings(record, settings)
     role_settings = {"backend_role": "default", **({"model": role_model} if role_model else {})}
     monkeypatch.setattr(defaults, "role_configuration", lambda _: {
         "backend": "provider_api", "backend_route_id": "deepseek_api", "runtime_settings": role_settings})
     monkeypatch.setattr(resident_backend, "session_record", lambda _: {})
     defaults.bind_before_execution(record, "api_user")
     saved = resident_catalog.get_catalog().get(result["resident_id"])
-    actual = runtime._read_resident_runtime_settings(saved)
+    actual = runtime.read_resident_runtime_settings(saved)
     assert (saved["backend"], saved["backend_route_id"]) == ("provider_api", "deepseek_api")
     assert (actual["model"], actual["reasoning_effort"], actual["service_tier"]) == (role_model or "", "", "")
     monkeypatch.setattr(defaults, "role_configuration", lambda _: pytest.fail("bound Residents must keep their route"))
     defaults.bind_before_execution(saved, "api_user")
-    assert runtime._read_resident_runtime_settings(saved) == actual
+    assert runtime.read_resident_runtime_settings(saved) == actual
     # Exercise the production request and API adapter without a real account or
     # network: both explicit role models and a blank model reach this API.
     from management_portal.society_service import resident_execution_domain as execution
     from management_portal.execution.backends import ChatCompletionService
     from management_portal.execution.contracts import SystemInstructions
-    monkeypatch.setattr(execution, "_resident_system_instructions", lambda *a: SystemInstructions())
+    monkeypatch.setattr(execution, "resident_system_instructions", lambda *a: SystemInstructions())
     job = {"actor": "api_user", "user_message_id": "message-test", "raw_message": "hello"}
     request = execution._build_resident_execution_request(saved, job)
     payloads = []
@@ -98,7 +98,7 @@ def test_first_api_binding_preserves_pending_input_provenance(future_creation_st
         resident_default_backend, resident_domain, resident_intake_domain,
         resident_execution_work, resident_execution_domain,
     )
-    monkeypatch.setattr(resident_intake_domain, "_start_resident_continuation", lambda *a: None)
+    monkeypatch.setattr(resident_intake_domain, "start_resident_continuation", lambda *a: None)
     ama = principal_hierarchy_domain.ensure_personal_ama("api_user", "api_user")
     account_registrations.create_registration({"account_id": "deepseek_only", "provider": "provider_api",
         "kind": "api_profile", "config": {"api_id": "deepseek_test"}}, "api_user")
@@ -123,7 +123,7 @@ def test_first_api_binding_preserves_pending_input_provenance(future_creation_st
     old = store.execution(original["execution_id"])
     assert (old["provider"], old["status"]) == ("codex", "cancelled")
     assert store.execution(current["execution_id"])["provider"] == "deepseek_test"
-    request = resident_execution_domain._durable_resident_execution_request(record, current,
+    request = resident_execution_domain.durable_resident_execution_request(record, current,
         lambda: resident_execution_domain._build_resident_execution_request(record, current))
     assert request.provider == "deepseek_test"
     assert request.execution_id == current["execution_id"]

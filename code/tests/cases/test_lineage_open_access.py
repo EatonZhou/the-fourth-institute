@@ -54,7 +54,7 @@ def test_lineage_access_is_uniform_for_valid_actors_contracts(monkeypatch, subte
             }
             monkeypatch.setattr(
                 resident_runtime_domain,
-                "_lineage_identity_record",
+                "lineage_identity_record",
                 lambda _record: resident_runtime_domain._compile_lineage_identity({
                     "lineage_id": LINEAGE_ID,
                     "lineage_node_ids": [LEADER_ID],

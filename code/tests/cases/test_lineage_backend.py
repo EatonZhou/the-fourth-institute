@@ -21,6 +21,7 @@ from management_portal.society_service import (
     resident_catalog,
     resident_conversation_stream,
     resident_directory_domain,
+    resident_domain_common,
     resident_execution_domain,
     resident_fork_domain,
     resident_protocol,
@@ -40,7 +41,7 @@ def lineage_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(lineage_domain, "LINEAGE_FOLDER_ROOT", root / "lineages")
     monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(root / "lineages"))
     install_resource_boundary(monkeypatch)
-    monkeypatch.setattr(resident_workspace_domain, "STAGING_ROOT", tmp_path)
+    monkeypatch.setattr(resident_domain_common, "STAGING_ROOT", tmp_path)
     monkeypatch.setattr(
         lineage_test_support,
         "RESIDENT_TARGET_RESOLVER",
@@ -2291,7 +2292,7 @@ def test_resident_completion_fact_and_async_lineage_notification(
     """最近完成消息引用按请求者区分且不含正文，完成和结束通知异步送达 Lineage"""
     monkeypatch.setattr(
         resident_workspace_domain,
-        "_find_resident",
+        "find_resident",
         lambda resident_id: {"resident_id": resident_id, "registration_state": "ready"},
     )
     monkeypatch.setattr(resident_workspace_domain, "ensure_resident_visible_to_actor", lambda *_args, **_kwargs: None)
@@ -2408,7 +2409,7 @@ def test_completed_references_read_a_bounded_window_of_newest_inputs(
     # a long history must not be read in full for one reference.
     monkeypatch.setattr(
         resident_workspace_domain,
-        "_find_resident",
+        "find_resident",
         lambda resident_id: {"resident_id": resident_id, "registration_state": "ready"},
     )
     monkeypatch.setattr(resident_workspace_domain, "ensure_resident_visible_to_actor", lambda *_args, **_kwargs: None)
@@ -2525,7 +2526,7 @@ def test_failed_resident_message_references_are_actor_scoped_and_content_free(
     )
     monkeypatch.setattr(
         resident_workspace_domain,
-        "_find_resident",
+        "find_resident",
         lambda _resident_id: {"resident_id": resident_id, "registration_state": "ready"},
     )
     monkeypatch.setattr(

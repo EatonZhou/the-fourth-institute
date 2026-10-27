@@ -81,9 +81,9 @@ def create_resident(inv: Invocation) -> dict[str, Any]:
 
 def _family_role(resident_id: str) -> str:
     from management_portal.society_service import family_facade
-    from management_portal.society_service.resident_workspace_domain import _find_resident
+    from management_portal.society_service import resident_workspace_domain
 
-    record = _find_resident(resident_id) or {}
+    record = resident_workspace_domain.find_resident(resident_id) or {}
     if family_facade.is_facade(record):
         return "facade"
     return "steward" if family_facade.is_steward(record) else ""
@@ -226,9 +226,9 @@ def update_resident(inv: Invocation) -> dict[str, Any]:
 
 def delete_resident(inv: Invocation) -> dict[str, Any]:
     resident_id = inv.argument("resident_id")
-    from ..resident_workspace_domain import retry_deleted_resident
+    from management_portal.society_service import resident_workspace_domain
 
-    if retry_deleted_resident(resident_id, inv.caller) is not None:
+    if resident_workspace_domain.retry_deleted_resident(resident_id, inv.caller) is not None:
         return {"resident_id": resident_id}
     lineage_id = inv.argument("lineage_id")
     result = domain().delete_lineage_graph_objects(
@@ -361,10 +361,10 @@ def _writer_identity(resident_id: str) -> tuple[str, str]:
     """``<resident>:<provider>:<model>:<effort>`` and account of the Resident writing summaries."""
 
     from management_portal.society_service import resident_backend
-    from management_portal.society_service.resident_runtime_domain import _read_resident_runtime_settings
+    from management_portal.society_service import resident_runtime_domain
 
     record = store().resident_record(resident_id)
-    settings = _read_resident_runtime_settings(record)
+    settings = resident_runtime_domain.read_resident_runtime_settings(record)
     provider = resident_backend.execution_provider(record)
     try:
         account = str(resident_backend.execution_account(record).get("account_id") or "")
@@ -475,11 +475,11 @@ def _readable_settings(inv: Invocation) -> tuple[str, dict[str, Any]]:
 
 def preview_prompt_injection(inv: Invocation) -> dict[str, Any]:
     from management_portal.society_service import resident_execution_domain
-    from management_portal.society_service.resident_workspace_domain import _find_resident
+    from management_portal.society_service import resident_workspace_domain
 
     # Reading the settings checks that the caller may see this Resident's configuration.
     resident_id, _settings = _readable_settings(inv)
-    record = _find_resident(resident_id)
+    record = resident_workspace_domain.find_resident(resident_id)
     if not record:
         raise invalid(f"Resident 不存在：{resident_id}")
     try:

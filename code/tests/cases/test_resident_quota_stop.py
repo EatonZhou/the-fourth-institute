@@ -44,11 +44,11 @@ def instruction(name, record, *, actor="CASE-A", **arguments):
 def sessionless(resident_record, monkeypatch):
     resident_backend.delete_session_identity(resident_record)
     resident_record["session_state"] = "pending_create"
-    resident_workspace_domain._save_resident_record(resident_record)
-    monkeypatch.setattr(resident_session_backend_domain, "_handle_resident_native_command", lambda *a, **kw: {})
+    resident_workspace_domain.save_resident_record(resident_record)
+    monkeypatch.setattr(resident_session_backend_domain, "handle_resident_native_command", lambda *a, **kw: {})
     monkeypatch.setattr(slash_commands, "handle_slash_command", lambda *a, **kw: {"handled": False})
-    monkeypatch.setattr(resident_record_domain, "_resolve_context_refs", lambda *a, **kw: {})
-    monkeypatch.setattr(resident_registration_domain, "_build_resident_prompt", lambda *a, **kw: "test prompt")
+    monkeypatch.setattr(resident_record_domain, "resolve_context_refs", lambda *a, **kw: {})
+    monkeypatch.setattr(resident_registration_domain, "build_resident_prompt", lambda *a, **kw: "test prompt")
     scheduler = Scheduler(quota_reserve_enabled=True, dispatch_interval_min_seconds=0, dispatch_interval_max_seconds=0)
     scheduler.register_worker(worker_id="quota-stop-test", build_id="test", capabilities=["agent_session:codex"])
     scheduler.update_account_quota("zero", quota_sample(
@@ -106,9 +106,9 @@ def test_manual_close_does_not_need_a_session_or_stop_quota_execution(sessionles
     for _ in range(2):
         receipt = resident_protocol.change_resident_state(record["resident_id"], "CASE-A", state_domain="intake", transition="close")
         assert receipt["intake_state"] == "closed"
-    current = resident_workspace_domain._find_resident(record["resident_id"])
+    current = resident_workspace_domain.find_resident(record["resident_id"])
     assert not resident_backend.record_session_id(current)
-    assert resident_lifecycle_domain._resident_intake_state(current) == "closed"
+    assert resident_lifecycle_domain.resident_intake_state(current) == "closed"
     assert resident_execution_work.read(current)["user_message_id"] == first
     assert not resident_execution_work.read(current).get("stop_requested_at")
     assert scheduler.snapshot(execution_id)["status"] == "queued"
@@ -146,7 +146,7 @@ def test_isa_manual_close_without_session_preserves_quota_waiting_input(sessionl
     assert job["user_message_id"] == first
     assert not job.get("stop_requested_at")
     assert scheduler.snapshot(execution_id)["status"] == "queued"
-    assert not resident_backend.record_session_id(resident_workspace_domain._find_resident(record["resident_id"]))
+    assert not resident_backend.record_session_id(resident_workspace_domain.find_resident(record["resident_id"]))
 
 
 def test_isa_cancel_waiting_input_leaves_current_quota_execution_alone(sessionless):
@@ -171,8 +171,8 @@ def test_isa_finished_input_preserves_result_and_new_work(sessionless, state):
     record, scheduler = sessionless
     target = "msg_" + uuid.uuid4().hex
     repository = resident_conversation_stream.get_repository()
-    resident_lifecycle_domain._accept_resident_user_message(record["resident_id"],
-        resident_intake_domain._message("user", "finished input", "CASE-A", message_id=target))
+    resident_lifecycle_domain.accept_resident_user_message(record["resident_id"],
+        resident_intake_domain.build_message("user", "finished input", "CASE-A", message_id=target))
     repository.set_input_state(record["resident_id"], target, state)
     first = deliver(record, "new work")
     execution_id = wait_for_quota(record, scheduler)
@@ -247,7 +247,7 @@ def test_nested_family_cancel_resolves_member_owner_under_quota(sessionless, wai
             "nodes": [{"id": facade_id, "title": f"Nested test facade {index}"}],
         }, actor="CASE-A")
         set_role(facade_id, family_id=f"fbi_00000000000{index}", actor="CASE-A")
-        facades.append(resident_workspace_domain._find_resident(facade_id))
+        facades.append(resident_workspace_domain.find_resident(facade_id))
     outer, inner = facades
     outer_message = deliver(outer, "outer request")
     inner_message = deliver(inner, "inner request")

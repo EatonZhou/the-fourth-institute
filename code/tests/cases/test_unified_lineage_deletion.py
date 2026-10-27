@@ -15,6 +15,7 @@ from management_portal.society_service import (
     lineage_domain,
     resident_conversation_stream,
     resident_domain,
+    resident_domain_common,
     resident_lineage,
 )
 from management_portal.society_service import resident_workspace_domain
@@ -41,11 +42,10 @@ def deletion_store(
     from management_portal.society_service.domain_ports import execution_port
     # Deleted Residents' quota overrides are forgotten in the Execution store.
     monkeypatch.setattr(execution_port, "forget_binding_quota_overrides", lambda binding_ids: {"removed": 0})
-    monkeypatch.setattr(resident_project_domain, "STAGING_ROOT", tmp_path)
-    monkeypatch.setattr(resident_workspace_domain, "STAGING_ROOT", tmp_path)
+    monkeypatch.setattr(resident_domain_common, "STAGING_ROOT", tmp_path)
     monkeypatch.setattr(
         resident_project_domain,
-        "_project_info_for_workspace",
+        "project_info_for_workspace",
         lambda _record, _workspace: {},
     )
     return data_root, resource_records
@@ -70,7 +70,7 @@ def _resident_record(resident_id: str, folder: Path) -> dict:
 
 def _write_resident_facts(records: list[dict]) -> None:
     for record in records:
-        resident_workspace_domain._save_resident_record(record)
+        resident_workspace_domain.save_resident_record(record)
     lineage_domain.update_lineage(
         LINEAGE_ID,
         {
@@ -128,7 +128,7 @@ def test_resident_backend_release_is_recovered_outside_state_locks(
     monkeypatch.setattr(resident_backend, "session_record", session_record)
     monkeypatch.setattr(
         resident_runtime_domain,
-        "_resident_working_directory",
+        "resident_working_directory",
         lambda _record: Path("/tmp/resident-release-regression"),
     )
     def release_session(**kwargs):
@@ -136,7 +136,7 @@ def test_resident_backend_release_is_recovered_outside_state_locks(
         submitted.append(dict(kwargs))
         return {}
 
-    monkeypatch.setattr(resident_session_backend_domain, "_run_backend_session_operation", release_session)
+    monkeypatch.setattr(resident_session_backend_domain, "run_backend_session_operation", release_session)
     deleted = []
     monkeypatch.setattr(
         resident_backend,
@@ -145,8 +145,8 @@ def test_resident_backend_release_is_recovered_outside_state_locks(
     )
 
     with invariant_locks.lineage_scope(LINEAGE_ID):
-        operation_id = resident_lifecycle_domain._lifecycle_operations().enqueue(
-            PEER_ID, [resident_lifecycle_domain._resident_release_step(record, "sample_admin")],
+        operation_id = resident_lifecycle_domain.lifecycle_operations().enqueue(
+            PEER_ID, [resident_lifecycle_domain.resident_release_step(record, "sample_admin")],
         )
         assert submitted == []
 
@@ -233,7 +233,7 @@ def test_lineage_deletion_projection_precedes_blocked_provider_release(
     folder = data_root / "lineages" / LINEAGE_ID
     _write_lineage(folder)
     _write_resident_facts([_resident_record(ROOT_ID, folder)])
-    apply_step = resident_lifecycle_domain._apply_resident_lifecycle_step
+    apply_step = resident_lifecycle_domain.apply_resident_lifecycle_step
     applied = []
     from management_portal.society_service.resident_lineage_host import ResidentLineageHost
     unbound = []
@@ -251,7 +251,7 @@ def test_lineage_deletion_projection_precedes_blocked_provider_release(
             raise TimeoutError("Provider release is unavailable")
         apply_step(operation_id, step)
 
-    monkeypatch.setattr(resident_lifecycle_domain, "_apply_resident_lifecycle_step", blocked_release)
+    monkeypatch.setattr(resident_lifecycle_domain, "apply_resident_lifecycle_step", blocked_release)
     lineage_domain.delete_lineage(LINEAGE_ID, "sample_admin")
     for operation_id in resident_domain.ready_resident_lifecycle_operations():
         assert not resident_domain.resume_resident_lifecycle_operation(operation_id)
@@ -343,7 +343,7 @@ def test_lineage_delete_is_rejected_before_moving_data_when_a_member_is_running(
     _write_resident_facts(records)
     monkeypatch.setattr(
         resident_lifecycle_domain,
-        "_resident_has_pending_work",
+        "resident_has_pending_work",
         lambda resident_id: resident_id == PEER_ID,
     )
 
@@ -377,7 +377,7 @@ def test_lineage_cleanup_failure_preserves_deleted_identity_and_retryable_files(
     assert folder.is_dir()
     assert resident_lineage.all() == []
     assert resource_records[LINEAGE_ID]["status"] == "deleted"
-    operations = resident_lifecycle_domain._lifecycle_operations()
+    operations = resident_lifecycle_domain.lifecycle_operations()
     assert "remove failed" in operations.health()["last_error"]
     operations.store.database.write(lambda connection: connection.execute(
         'UPDATE resident_lifecycle_operations SET available_at=to_timestamp(0) WHERE operation_id=%s', (operation_id,),
@@ -410,7 +410,7 @@ def test_lineage_cleanup_removes_results_an_agent_sealed_read_only(
     operation_id, = resident_domain.ready_resident_lifecycle_operations()
     assert resident_domain.resume_resident_lifecycle_operation(operation_id)
     assert not folder.exists()
-    assert resident_lifecycle_domain._lifecycle_operations().health() == {"pending": 0, "failed": 0, "last_error": ""}
+    assert resident_lifecycle_domain.lifecycle_operations().health() == {"pending": 0, "failed": 0, "last_error": ""}
 
 
 def test_lineage_delete_rolls_back_every_authority_when_catalog_commit_fails(

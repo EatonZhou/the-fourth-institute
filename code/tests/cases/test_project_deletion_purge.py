@@ -23,7 +23,7 @@ def test_the_archive_step_of_a_project_deletion_removes_the_resident_folder(tmp_
     (folder / "workspace").mkdir(parents=True)
     (folder / "resident.md").write_text("identity\n", encoding="utf-8")
 
-    resident_lifecycle_domain._apply_resident_lifecycle_step("operation", {"kind": "remove", "source": str(folder)})
+    resident_lifecycle_domain.apply_resident_lifecycle_step("operation", {"kind": "remove", "source": str(folder)})
 
     assert not folder.exists()
     assert not (tmp_path / "archive").exists()

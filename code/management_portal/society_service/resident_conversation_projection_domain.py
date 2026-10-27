@@ -39,7 +39,7 @@ def _parse_iso(value: str) -> datetime | None:
 _EARLIEST = datetime.min.replace(tzinfo=timezone.utc)
 
 
-def _date_part(value: str) -> str:
+def date_part(value: str) -> str:
     parsed = _parse_iso(value)
     if parsed:
         return parsed.date().isoformat()
@@ -56,14 +56,14 @@ def is_generated_derived_resident_title(value: object) -> bool:
     )
 
 
-def _derived_resident_title_is_generated(resident: Mapping[str, Any]) -> bool:
+def derived_resident_title_is_generated(resident: Mapping[str, Any]) -> bool:
     origin = str(resident.get("title_origin") or "").strip().lower()
     if origin:
         return origin == "generated"
     return is_generated_derived_resident_title(resident.get("title"))
 
 
-def _truncate_text(text: str, limit: int = MAX_MESSAGE_CHARS) -> str:
+def truncate_text(text: str, limit: int = MAX_MESSAGE_CHARS) -> str:
     value = str(text or "").strip()
     if len(value) <= limit:
         return value
@@ -116,7 +116,7 @@ def _terminal_input_unread_signature(
     return signature
 
 
-def _conversation_family_summaries(
+def conversation_family_summaries(
     resident_ids: list[str],
     actor: str,
 ) -> dict[str, dict[str, Any]]:
@@ -168,7 +168,7 @@ def _conversation_family_summaries(
     return summaries
 
 
-def _path_is_within(path: Path, root: Path) -> bool:
+def path_is_within(path: Path, root: Path) -> bool:
     try:
         path.relative_to(root)
     except ValueError:
@@ -176,7 +176,7 @@ def _path_is_within(path: Path, root: Path) -> bool:
     return True
 
 
-def _can_view_actual_sent_prompts(actor: str, resident_id: str) -> bool:
+def can_view_actual_sent_prompts(actor: str, resident_id: str) -> bool:
     return is_user_or_resident(actor)
 
 
@@ -188,13 +188,13 @@ def _read_provider_actual_sent_prompts(
     provider: str,
     session_id: str,
 ) -> list[dict[str, Any]]:
-    return _actual_sent_prompt_candidates(execution_port.provider_user_prompts(
+    return actual_sent_prompt_candidates(execution_port.provider_user_prompts(
         provider=provider,
         backend_session_id=session_id,
     ))
 
 
-def _actual_sent_prompt_candidates(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def actual_sent_prompt_candidates(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """The prompts a Provider session's transcript holds, as candidates for its user messages."""
     prompts: list[dict[str, Any]] = []
     for item in items:
@@ -218,7 +218,7 @@ def _actual_sent_prompt_candidates(items: list[dict[str, Any]]) -> list[dict[str
 
 
 def _actual_sent_prompt_matches(item: dict[str, Any], candidate: dict[str, Any]) -> bool:
-    from .resident_workspace_domain import _protocol_message_text
+    from . import resident_workspace_domain
     item_id = str(item.get("message_id") or "")
     candidate_id = str(candidate.get("user_message_id") or "")
     if item_id and candidate_id and item_id == candidate_id:
@@ -227,7 +227,7 @@ def _actual_sent_prompt_matches(item: dict[str, Any], candidate: dict[str, Any])
     candidate_at = _parse_iso(str(candidate.get("created_at") or ""))
     if item_at and candidate_at and abs((candidate_at - item_at).total_seconds()) > 120:
         return False
-    content = _protocol_message_text(item)
+    content = resident_workspace_domain.protocol_message_text(item)
     if not content:
         return False
     raw = str(candidate.get("raw_message") or "").strip()
@@ -244,7 +244,7 @@ def _actual_sent_prompt_matches(item: dict[str, Any], candidate: dict[str, Any])
     return bool(raw and SequenceMatcher(None, content_norm, _compact_match_text(raw)).ratio() >= 0.92)
 
 
-def _attach_actual_sent_prompts(
+def attach_actual_sent_prompts(
     messages: list[dict],
     *,
     session_ids: list[str] | None = None,

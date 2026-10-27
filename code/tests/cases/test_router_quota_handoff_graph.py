@@ -37,7 +37,7 @@ def test_router_input_handoff_preserves_graph_until_replacement_finishes(residen
         record = store.resident_record(RID)
         record["session_restart"]["status"] = "cancelling"
         store.put_resident_record(RID, record)
-    resident_restart_domain._resume_resident_session_restart(operations[-1]["step"])
+    resident_restart_domain.resume_resident_session_restart(operations[-1]["step"])
     resident_deferred_restart.advance(store.resident_record(RID))
     record = store.resident_record(RID)
     job = resident_execution_work.read(record)

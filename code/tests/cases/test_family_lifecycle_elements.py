@@ -62,7 +62,7 @@ def test_delete_family_waits_for_members_and_retries_without_partial_deletion(li
     before = graph(lineage)
     busy, stopped = {member}, set()
     monkeypatch.setattr(lineage_domain, "quiesce_lineage_resident", lambda _l, p, _a: stopped.add(p["target"]))
-    monkeypatch.setattr(resident_lifecycle_domain, "_resident_has_pending_work", lambda rid: rid in busy)
+    monkeypatch.setattr(resident_lifecycle_domain, "resident_has_pending_work", lambda rid: rid in busy)
     monkeypatch.setattr(familize, "ROLE_STOP_WAIT_SECONDS", 0)
     result = run("DeleteFamily", {"lineage_id": lineage, "family_id": family["family_id"]})
     assert result.error["code"] == "instruction.conflict" and result.error["retryable"]
@@ -132,8 +132,10 @@ def test_external_wire_in_another_block_rewires_and_new_member_joins(lineage, ch
     assert {"watch_member_queue", "watch_member_done", "watch_member_failed",
             "watch_recovery_finished", "watch_recovery_arrival"} <= member_listeners(first)
     assert member_listeners(added) == member_listeners(first)
-    from management_portal.society_service.resident_record_domain import _resident_owned_workspace_path
-    from management_portal.society_service.resident_workspace_domain import _find_resident
+    from management_portal.society_service.resident_record_domain import (
+        resident_owned_workspace_path as _resident_owned_workspace_path,
+    )
+    from management_portal.society_service.resident_workspace_domain import find_resident as _find_resident
     guide_path = _resident_owned_workspace_path(_find_resident(charters[0][0])) / "family-work-guide.md"
     assert str(guide_path) in charters[0][1]
     guide = guide_path.read_text(encoding="utf-8")

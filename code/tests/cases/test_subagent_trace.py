@@ -145,7 +145,7 @@ def test_the_card_is_an_artifact_of_the_trace_shown_in_the_chat(tmp_path: Path, 
 
     from management_portal.society_service import resident_workspace_domain
     resident_record["backend"] = "claude"
-    resident_workspace_domain._save_resident_record(resident_record, commit_configuration=True)
+    resident_workspace_domain.save_resident_record(resident_record, commit_configuration=True)
     resident_id = resident_record["resident_id"]
     store, projector, request, session_ref = _turn(resident_id)
     run = {"tool_use_id": "toolu_agent", "agent_id": "child", "agent_type": "explore",

@@ -64,7 +64,7 @@ def test_watchboard_root_tracks_owned_workspace_without_creating_files(tmp_path,
     :module: platform.core"""
     from management_portal.society_service import resident_record_domain
 
-    monkeypatch.setattr(resident_record_domain, '_resident_owned_workspace_path', lambda record: Path(record['folder']) / 'workspace')
+    monkeypatch.setattr(resident_record_domain, 'resident_owned_workspace_path', lambda record: Path(record['folder']) / 'workspace')
     record = {'folder': str(tmp_path / 'first')}
     assert watchboard._watchboard_root(record) == tmp_path / 'first/workspace/watchboard'
     record['folder'] = str(tmp_path / 'moved')
@@ -77,7 +77,7 @@ def test_fork_watchboard_survives_source_removal(tmp_path, monkeypatch):
     import shutil
     from management_portal.society_service import resident_record_domain
 
-    monkeypatch.setattr(resident_record_domain, '_resident_owned_workspace_path', lambda record: Path(record['folder']) / 'workspace')
+    monkeypatch.setattr(resident_record_domain, 'resident_owned_workspace_path', lambda record: Path(record['folder']) / 'workspace')
     monkeypatch.setattr(watchboard.watchboard_lineage, 'installed', lambda record: record['folder'].endswith('/source'))
     source = {'folder': str(tmp_path / 'source')}
     child = {'folder': str(tmp_path / 'child')}
@@ -86,7 +86,7 @@ def test_fork_watchboard_survives_source_removal(tmp_path, monkeypatch):
     (root / 'script.py').write_text('fixture')
     watchboard.inherit_watchboard(source, child)
     shutil.rmtree(tmp_path / 'source')
-    assert not watchboard._has_watchboard(child)
+    assert not watchboard.has_watchboard(child)
     assert (watchboard._watchboard_root(child) / 'script.py').read_text() == 'fixture'
 
 
@@ -123,7 +123,9 @@ def test_owned_workspace_projection_does_not_create_reference_bindings(tmp_path)
     """自有 Workspace 投影不创建引用绑定
 
     :module: platform.core"""
-    from management_portal.society_service.resident_record_domain import _set_resident_owned_workspace_binding
+    from management_portal.society_service.resident_record_domain import (
+        set_resident_owned_workspace_binding as _set_resident_owned_workspace_binding,
+    )
     record = {"resident_id": "resident_aaaaaaaaaaaa", "folder_schema": "lineage-folder-v3", "workspace_path": str(tmp_path),
               "workspace_paths": [str(tmp_path / "unrequested")], "workspace_bindings": []}
     _set_resident_owned_workspace_binding(record)
@@ -135,7 +137,9 @@ def test_reference_binding_replacement_rejects_missing_directory(tmp_path):
     """替换引用绑定时拒绝不存在的目录
 
     :module: platform.core"""
-    from management_portal.society_service.resident_workspace_domain import _set_resident_reference_bindings
+    from management_portal.society_service.resident_workspace_domain import (
+        set_resident_reference_bindings as _set_resident_reference_bindings,
+    )
     record = {"owned_workspace": {"path": str(tmp_path)}, "workspace_bindings": []}
     with pytest.raises(ValueError, match="不存在"):
         _set_resident_reference_bindings(record, [str(tmp_path / "missing")])

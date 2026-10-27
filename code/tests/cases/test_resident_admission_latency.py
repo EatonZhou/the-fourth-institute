@@ -233,7 +233,7 @@ def test_injection_preparation_revalidates_turn_without_blocking_state(input_del
         assert release.wait(5)
         return prepare(*args)
     monkeypatch.setattr(resident_intake_domain, "_running_turn_prompt", slow)
-    from management_portal.society_service.resident_lifecycle_domain import _state_lock
+    from management_portal.society_service.resident_lifecycle_domain import state_lock as _state_lock
     def change_turn():
         with _state_lock(rid):
             current = resident_execution_work.read(input_delivery)

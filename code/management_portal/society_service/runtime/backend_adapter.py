@@ -32,9 +32,9 @@ def _mailbox_terminal(fact: ResidentTerminalFact) -> list[str]:
 
     try:
         from .. import resident_mailbox
-        from ..resident_workspace_domain import _find_resident
+        from management_portal.society_service import resident_workspace_domain
 
-        record = _find_resident(fact.resident_id) or {}
+        record = resident_workspace_domain.find_resident(fact.resident_id) or {}
         if not record or not resident_mailbox.members_of(record, fact.message_id):
             return []
         return resident_mailbox.finish_group(record, fact.message_id, fact.terminal_status)

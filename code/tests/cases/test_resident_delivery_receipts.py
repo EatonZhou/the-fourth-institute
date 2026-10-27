@@ -7,10 +7,10 @@ from management_portal.society_service import (
     invariant_locks,
     lineage_domain,
     lineage_program_effect_execution,
+    project_domain,
     resident_conversation_stream,
     resident_domain,
     resident_message_contract,
-    resident_project_domain,
     resident_protocol,
 )
 from management_portal.society_service.lineage_program_effect_rules import effect_idempotency_key
@@ -27,7 +27,7 @@ REAL_DELIVER_RESIDENT_INPUT = resident_protocol.deliver_resident_input
 
 @pytest.fixture
 def delivery_resident(future_creation_store, monkeypatch):
-    monkeypatch.setattr(resident_project_domain, "_project_root_for_id", lambda _: future_creation_store)
+    monkeypatch.setattr(project_domain, "project_root_for_id", lambda _: future_creation_store)
     monkeypatch.setattr(resident_protocol, "deliver_resident_input", REAL_DELIVER_RESIDENT_INPUT)
     reset_kernels()
     record = resident_domain.register_resident(_new_session_payload("Delivery receipt"), "sample_admin")

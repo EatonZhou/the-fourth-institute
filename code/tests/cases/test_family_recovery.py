@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from management_portal.society_service import family_facade, family_recovery, lineage_message_events, resident_conversation_stream, resident_execution_work
-from management_portal.society_service.resident_workspace_domain import _find_resident
+from management_portal.society_service.resident_workspace_domain import find_resident as _find_resident
 from tests.cases.isa_test_support import run
 from tests.cases.test_family_reassign import family, delivery_resident, future_creation_store  # noqa: F401
 from tests.cases.test_resident_mailbox_requeue import _round
@@ -368,7 +368,7 @@ def test_completed_retry_is_observed_and_other_users_cannot_resume_the_request(f
     root = _send(family, "仅请求者和门面 owner 可恢复")
     member_message, _ = _round(family["wrong"], state="failed")
     family_facade.complete_relay((family["facade"], root), family["wrong"], member_message)
-    monkeypatch.setattr(resident_directory_domain, "_can_manage", lambda *_a: False)
+    monkeypatch.setattr(resident_directory_domain, "can_manage", lambda *_a: False)
     denied = _send(family, "continue", quote=root, actor="CASE-A")
     assert _view(family, denied)["status"] == "unavailable"
     assert repository.input_state(family["wrong"], member_message)["state"] == "failed"

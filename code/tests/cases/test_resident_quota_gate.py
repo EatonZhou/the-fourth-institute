@@ -199,7 +199,7 @@ def test_family_facade_uses_live_role_health_not_its_retained_account(catalog, s
     assert resident_protocol.get_resident_state(facade, ACTOR)['state']['execution_gate']['state'] == 'open'
 
     # A physical-account problem never undoes the user's explicit intake switch.
-    resident_intake_domain._commit_resident_intake_state(record, 'closed')
+    resident_intake_domain.commit_resident_intake_state(record, 'closed')
     assert resident_protocol.get_resident_state(facade, ACTOR)['state']['execution_gate'] == {
         'state': 'closed', 'reason': 'manual'}
 

@@ -9,8 +9,8 @@ import uuid
 import pytest
 
 from management_portal.society_service import family_facade, family_recovery, family_supervision, resident_conversation_stream
-from management_portal.society_service.resident_intake_domain import _message
-from management_portal.society_service.resident_workspace_domain import _find_resident
+from management_portal.society_service.resident_intake_domain import build_message as _message
+from management_portal.society_service.resident_workspace_domain import find_resident as _find_resident
 from tests.cases.isa_test_support import run
 from tests.cases.test_family_reassign import family, delivery_resident, future_creation_store  # noqa: F401
 
@@ -71,7 +71,7 @@ def test_archive_rejects_unfinished_cancelled_or_unrelated_results(family, optio
 def test_archive_rejects_outsider_and_existing_work(family, monkeypatch):
     from management_portal.society_service import resident_directory_domain
     root, source, _ = prepared(family)
-    monkeypatch.setattr(resident_directory_domain, "_can_manage", lambda *args: False)
+    monkeypatch.setattr(resident_directory_domain, "can_manage", lambda *args: False)
     with pytest.raises(PermissionError):
         family_recovery.archive_result(family["facade"], root, source, family["wrong"], reason="非管理者")
     # The own steward remains authorized without borrowing the request author.

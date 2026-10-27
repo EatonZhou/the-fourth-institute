@@ -112,7 +112,7 @@ def test_real_intake_commits_under_guard_and_prepares_outside_it(input_delivery,
         if outcome == 'receipt_failed':
             raise OperationError('bookkeeping failed', commit_state='not_committed')
         accepted.append(identity)
-    monkeypatch.setattr(resident_record_domain, '_resolve_context_refs', prepare)
+    monkeypatch.setattr(resident_record_domain, 'resolve_context_refs', prepare)
     with intake.bind(rid, message_id, guard, accept):
         if outcome == 'cancelled':
             with pytest.raises(OperationError, match='route changed'):

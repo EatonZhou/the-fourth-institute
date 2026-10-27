@@ -32,8 +32,8 @@ def _failed(team, monkeypatch, error="connection error"):
     record = _record(resident_id)
     record["last_error"] = error
     resident_execution_work.clear(record)
-    resident_workspace_domain._save_resident_record(record)
-    resident_intake_domain._commit_resident_intake_state(record, "open")
+    resident_workspace_domain.save_resident_record(record)
+    resident_intake_domain.commit_resident_intake_state(record, "open")
     monkeypatch.setattr(resident_backend, "session_record", lambda _r: {})
     monkeypatch.setattr(provider_egress, "provider_network_state", lambda *_args: "allowed")
     return resident_id, message_id
@@ -79,13 +79,13 @@ def test_recovery_respects_user_and_execution_boundaries(team, monkeypatch, boun
     resident_id, message_id = _failed(team, monkeypatch)
     record = _record(resident_id)
     if boundary == "closed":
-        resident_intake_domain._commit_resident_intake_state(record, "closed")
+        resident_intake_domain.commit_resident_intake_state(record, "closed")
     elif boundary == "cancelled":
         resident_conversation_stream.get_repository().reopen_input(resident_id, message_id)
         resident_conversation_stream.get_repository().set_input_state(resident_id, message_id, "cancelled")
     elif boundary == "disabled":
         recovery.set_recovery_entry(record, message_id, disabled=True)
-        resident_workspace_domain._save_resident_record(record)
+        resident_workspace_domain.save_resident_record(record)
     else:
         resident_input_recovery.requeue(resident_id, ACTOR, message_id)
     monkeypatch.setattr(provider_egress, "provider_network_state", lambda *_: pytest.fail("boundary must precede probe"))
@@ -149,7 +149,7 @@ def test_steward_quota_failure_migrates_without_calling_its_model(team, monkeypa
     resident_id, message_id = _failed(team, monkeypatch, "You've hit your weekly limit")
     record = _record(resident_id)
     record["backend_route_id"] = "one"
-    resident_workspace_domain._save_resident_record(record)
+    resident_workspace_domain.save_resident_record(record)
     monkeypatch.setattr(family_facade, "is_operating_role", lambda r: r.get("resident_id") == resident_id)
     accounts = [_account("codex", "one", 0), _account("claude", "claude_one", 90), _account("codex", "two", 80)]
     monkeypatch.setattr(execution_port, "service", lambda: SimpleNamespace(accounts=lambda: {"accounts": accounts}))
@@ -230,7 +230,7 @@ def test_restart_recovery_at_automatic_limit_depends_on_origin(team, monkeypatch
     resident_id, message_id = _failed(team, monkeypatch)
     record = _record(resident_id)
     recovery.set_recovery_entry(record, message_id, attempts=2)
-    resident_workspace_domain._save_resident_record(record)
+    resident_workspace_domain.save_resident_record(record)
     state = {"resume_message_id": message_id}
     if automatic:
         state["reason"] = "steward_quota_recovery"
@@ -273,7 +273,7 @@ def test_restart_records_recovery_choice_and_only_resumes_after_promotion(monkey
     }, portal_reason="steward_quota_recovery" if automatic else "")
     assert calls == [] and state["status"] == "accepted"
     assert state["resume_message_id"] == ("msg_original" if enabled else "")
-    resident_restart_domain._resume_resident_session_restart(operations[-1]["step"])
+    resident_restart_domain.resume_resident_session_restart(operations[-1]["step"])
     assert record["backend"] == "claude" and record["session_restart"]["status"] == "completed"
     assert len(calls) == 1 and calls[0]["resume_message_id"] == state["resume_message_id"]
     assert bool(calls[0].get("reason")) == automatic
@@ -315,7 +315,7 @@ def test_failed_session_initialization_preserves_input_and_original_provider(mon
     monkeypatch.setattr(execution_port, "service", lambda: SimpleNamespace(
         resume=lambda *args, **kwargs: {"status": "failed", "result": {"status": "failed", "error": "network outage"}},
     ))
-    resident_restart_domain._resume_resident_session_restart(operations[-1]["step"])
+    resident_restart_domain.resume_resident_session_restart(operations[-1]["step"])
     assert record["backend"] == "codex" and record["session_restart"]["status"] == "failed"
 
 
@@ -340,7 +340,7 @@ def test_steward_migration_intent_survives_interruption_without_new_request(team
     record = _record(resident_id)
     assert recovery.recovery_entry(record, message_id)["pending_restart"]
     recovery.set_recovery_entry(record, message_id, checked_at=0)
-    resident_workspace_domain._save_resident_record(record)
+    resident_workspace_domain.save_resident_record(record)
     assert recovery.reconcile_failed_work([_record(resident_id)]) == 1
     assert calls[0] == calls[1]
     assert recovery.recovery_entry(_record(resident_id), message_id)["switch_attempts"] == 1

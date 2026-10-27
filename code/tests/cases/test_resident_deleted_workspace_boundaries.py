@@ -55,8 +55,8 @@ def test_deleted_lookup_does_not_finalize_registration(monkeypatch):
     monkeypatch.setattr(resident_lineage, "find", lambda rid: record)
     def unexpected(*args, **kwargs):
         raise AssertionError("Deleted identity lookup must not finalize registration")
-    assert domain._find_resident(RID) is record
-    assert domain._find_resident_canonical(RID) is None
+    assert domain.find_resident(RID) is record
+    assert domain.find_resident_canonical(RID) is None
     with pytest.raises(KeyError):
         domain.resolve_resident_runtime_target(RID, "sample_admin", require_visible=True)
     assert includes == [False]
@@ -91,9 +91,9 @@ def test_deleted_workspace_helpers_do_not_create_bindings_or_directories(tmp_pat
     record = {"resident_id": RID, "deleted_at": "2026-10-08T00:00:00Z",
               "workspace_path": str(folder)}
     before = copy.deepcopy(record)
-    for helper in (domain._ensure_resident_workspace,
-                   resident_record_domain._set_resident_owned_workspace_binding,
-                   resident_record_domain._require_resident_owned_workspace_binding):
+    for helper in (domain.ensure_resident_workspace,
+                   resident_record_domain.set_resident_owned_workspace_binding,
+                   resident_record_domain.require_resident_owned_workspace_binding):
         with pytest.raises(KeyError):
             helper(record)
     assert not folder.exists()

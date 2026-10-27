@@ -46,7 +46,7 @@ def test_invalid_owned_binding_blocks_execution_preparation_and_is_not_repaired(
         record["owned_workspace_id"] = "workspace_000000000001"
     before = copy.deepcopy(record)
     with pytest.raises(ValueError, match="Workspace"):
-        resident_runtime_domain._resident_working_directory(record)
+        resident_runtime_domain.resident_working_directory(record)
     with pytest.raises(ValueError, match="Workspace"):
         resident_execution_domain._build_resident_execution_request(record, {
             "actor": "sample_admin", "prompt_cwd": str(reference), "message": "must not run",
@@ -62,7 +62,7 @@ def test_working_directory_uses_owned_workspace_not_stale_projection(future_crea
     record = resident_domain.register_resident(_new_session_payload("Owned cwd"), "sample_admin")
     expected = Path(record["owned_workspace"]["path"])
     record["default_cwd"] = str(expected.parent)
-    assert resident_runtime_domain._resident_working_directory(record) == expected
+    assert resident_runtime_domain.resident_working_directory(record) == expected
 
 
 def test_fork_reference_keeps_shared_identity_and_purpose(
@@ -75,13 +75,13 @@ def test_fork_reference_keeps_shared_identity_and_purpose(
     resident_domain.add_resident_reference_workspace(
         source["resident_id"], str(reference), "sample_admin", purpose="Shared task files",
     )
-    source = resident_workspace_domain._find_resident(source["resident_id"])
+    source = resident_workspace_domain.find_resident(source["resident_id"])
     _append_conversation_turn(source["resident_id"], 0)
     created = resident_domain.create_resident_full_context_fork(
         source["resident_id"], "sample_admin", "lineage:owner-decision:origin", defer_backend_start=True,
     )
     _add_created_resident_to_lineage(source, created["resident_id"])
-    child = resident_workspace_domain._find_resident(created["resident_id"])
+    child = resident_workspace_domain.find_resident(created["resident_id"])
     binding = next(item for item in child["workspace_bindings"] if item["path"] == str(reference))
     assert binding == next(item for item in source["workspace_bindings"] if item["path"] == str(reference))
     assert binding["purpose"] == "Shared task files"

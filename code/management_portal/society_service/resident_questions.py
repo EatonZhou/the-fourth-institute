@@ -48,9 +48,9 @@ def prepare_question_answer(
         # the immediate relay. Only follow accepted persisted links carrying
         # this same answer; never search arbitrary conversations by question ID.
         from . import family_facade
-        from .resident_workspace_domain import _find_resident
+        from . import resident_workspace_domain
 
-        relay_facade = _find_resident(relay_source[0])
+        relay_facade = resident_workspace_domain.find_resident(relay_source[0])
         original = repository.message(*relay_source)
         if (relay_facade is not None
                 and answered_set(original) == source_id

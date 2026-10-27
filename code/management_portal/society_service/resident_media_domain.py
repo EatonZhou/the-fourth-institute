@@ -26,7 +26,7 @@ RESIDENT_IMAGE_MARKER_RE = re.compile(
 )
 
 
-def _stage_resident_input_images(
+def stage_resident_input_images(
     attachments: list[dict[str, str]], runtime_dir: Path, message_id: str,
 ) -> list[dict[str, str]]:
     """Keep accepted image inputs independent of mutable composer uploads."""
@@ -72,13 +72,12 @@ def _cleanup_resident_input_images(runtime_dir: Path, message_id: str) -> None:
 def cleanup_expired_input_images(record: dict[str, Any], *, dry_run: bool = False) -> list[str]:
     """Remove terminal input copies after they leave the requeue window."""
     from . import resident_conversation_stream, resident_mailbox, resident_input_recovery
-    from .resident_lifecycle_domain import _state_lock
-    from .resident_record_domain import _sessions_path
+    from . import resident_lifecycle_domain, resident_record_domain
 
     # Requeue uses this same lock: retry checkpoints and terminal states stay valid
     # until their staged copies have been removed.
-    with _state_lock(record["resident_id"]):
-        runtime_dir = _sessions_path(record)
+    with resident_lifecycle_domain.state_lock(record["resident_id"]):
+        runtime_dir = resident_record_domain.sessions_path(record)
         root = runtime_dir / "input_media"
         if not root.is_dir() or root.is_symlink():
             return []
@@ -141,7 +140,7 @@ def _uploaded_input_media(upload_id: str, media_type: str, actor_id: str) -> dic
     return InputMedia.from_payload(media).to_payload() if media_type == "image" else media
 
 
-def _resident_input_media(
+def resident_input_media(
     selection: object,
     *,
     actor: str,
@@ -150,7 +149,7 @@ def _resident_input_media(
     workspace_roots: Iterable[Path] = (),
 ) -> list[dict[str, str]]:
     """Validate local attachments before projecting files or native images."""
-    from .resident_conversation_projection_domain import _path_is_within
+    from . import resident_conversation_projection_domain
 
     actor_id = canonical_actor_id(actor)
     explicit = selection is not None
@@ -247,7 +246,7 @@ def _resident_input_media(
                 except ValueError:
                     relative_path = None
                 workspace_path = any(
-                    _path_is_within(path, root)
+                    resident_conversation_projection_domain.path_is_within(path, root)
                     for root in allowed_workspace_roots
                 )
                 metadata: dict[str, Any] = {}
@@ -309,7 +308,7 @@ def _resident_input_media(
     return normalized
 
 
-def _resident_message_with_file_references(
+def resident_message_with_file_references(
     message: str, attachments: list[dict[str, str]],
 ) -> str:
     references = [
@@ -321,7 +320,7 @@ def _resident_message_with_file_references(
     return "\n\n".join([message, *references])
 
 
-def _provider_message_with_native_media(
+def provider_message_with_native_media(
     record: dict[str, Any],
     message: str,
     input_media: list[dict[str, str]],

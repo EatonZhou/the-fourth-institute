@@ -130,9 +130,9 @@ def test_fork_replaces_owned_identity_once_and_inherits_only_extras(tmp_path,mon
         owned_workspace_id=OWNED,owned_workspace=dict(workspace_id=OWNED,path=str(folder/'residents'/parent/'workspace')),
         workspace_bindings=[dict(workspace_id=EXTRA,path=str(tmp_path/'code'),purpose='code')],workspace_paths=[])
     monkeypatch.setattr(resident_record_domain,'_new_workspace_id',lambda:'workspace_444444444444')
-    resident_record_domain._set_resident_owned_workspace_binding(record)
+    resident_record_domain.set_resident_owned_workspace_binding(record)
     assert record['owned_workspace_id']=='workspace_444444444444'
     assert [b['workspace_id'] for b in record['workspace_bindings']]==[EXTRA]
     before=copy.deepcopy(record)
-    resident_record_domain._set_resident_owned_workspace_binding(record)
+    resident_record_domain.set_resident_owned_workspace_binding(record)
     assert record==before

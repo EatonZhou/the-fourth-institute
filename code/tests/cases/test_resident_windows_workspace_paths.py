@@ -38,7 +38,7 @@ def windows_record(request, monkeypatch):
 
 def test_new_resident_workspace_commits_and_reloads(windows_record, monkeypatch):
     record = windows_record
-    resident_record_domain._set_resident_owned_workspace_binding(record)
+    resident_record_domain.set_resident_owned_workspace_binding(record)
     expected = (WindowsPath(record["workspace_path"]) / "residents" / RID / "workspace").as_posix()
     calls = []
     monkeypatch.setattr(workspace_store, "get_workspace_store", lambda: SimpleNamespace(
@@ -50,7 +50,7 @@ def test_new_resident_workspace_commits_and_reloads(windows_record, monkeypatch)
     loaded = storage.project_records([record], {RID: []}, {OWN: expected},
                                      {LID: record["workspace_path"]})[0]
     assert resident_catalog.default_cwd_path(loaded) == expected
-    resident_record_domain._require_resident_owned_workspace_binding(loaded)
+    resident_record_domain.require_resident_owned_workspace_binding(loaded)
 
 
 def test_imported_workspace_path_is_a_valid_execution_directory(windows_record):
@@ -63,7 +63,7 @@ def test_imported_workspace_path_is_a_valid_execution_directory(windows_record):
 @pytest.mark.parametrize("wrong", ["identity", "location"])
 def test_other_workspace_is_still_rejected(windows_record, monkeypatch, wrong):
     record = windows_record
-    resident_record_domain._set_resident_owned_workspace_binding(record)
+    resident_record_domain.set_resident_owned_workspace_binding(record)
     if wrong == "identity":
         record["owned_workspace"]["workspace_id"] = EXTRA
     else:
@@ -78,13 +78,13 @@ def test_other_workspace_is_still_rejected(windows_record, monkeypatch, wrong):
 def test_reference_binding_roundtrip_keeps_identity_and_purpose(windows_record, monkeypatch):
     from management_portal.society_service import domain_ports
     record = windows_record
-    resident_record_domain._set_resident_owned_workspace_binding(record)
+    resident_record_domain.set_resident_owned_workspace_binding(record)
     path = WindowsPath(record["workspace_path"]) / "extra"
     record["workspace_bindings"] = [dict(workspace_id=EXTRA, path=path.as_posix(), purpose="keep")]
     monkeypatch.setattr(resident_workspace_domain, "_validated_reference_workspace_path", WindowsPath)
     monkeypatch.setattr(domain_ports, "resource_port", SimpleNamespace(
         workspace_id_for_path=lambda *args, **kwargs: pytest.fail("identity lost")))
-    resident_workspace_domain._set_resident_reference_bindings(record, [
+    resident_workspace_domain.set_resident_reference_bindings(record, [
         str(path), path.as_posix(), record["owned_workspace"]["path"]])
     assert record["workspace_bindings"] == [dict(workspace_id=EXTRA, path=path.as_posix(), purpose="keep")]
 
@@ -92,7 +92,7 @@ def test_reference_binding_roundtrip_keeps_identity_and_purpose(windows_record, 
 @pytest.mark.parametrize("invalid_owned_path", [False, True])
 def test_workspace_roots_keep_valid_owned_identity_primary(windows_record, monkeypatch, invalid_owned_path):
     record = windows_record
-    resident_record_domain._set_resident_owned_workspace_binding(record)
+    resident_record_domain.set_resident_owned_workspace_binding(record)
     expected = record["owned_workspace"]["path"]
     extra_path = (WindowsPath(record["workspace_path"]) / "extra").as_posix()
     record["workspace_bindings"] = [dict(workspace_id=EXTRA, path=extra_path, purpose="reference")]
@@ -112,11 +112,11 @@ def test_workspace_roots_keep_valid_owned_identity_primary(windows_record, monke
 
 def test_workspace_api_keeps_canonical_path_equal_to_default_cwd(windows_record, monkeypatch):
     record = windows_record
-    resident_record_domain._set_resident_owned_workspace_binding(record)
+    resident_record_domain.set_resident_owned_workspace_binding(record)
     monkeypatch.setattr(workspace_store, "get_workspace_store", lambda: SimpleNamespace(rows=lambda ids: {}))
     monkeypatch.setattr(WindowsPath, "exists", lambda self: True, raising=False)
     monkeypatch.setattr(WindowsPath, "is_dir", lambda self: True, raising=False)
-    monkeypatch.setattr(resident_workspace_domain, "_find_resident", lambda rid: record)
+    monkeypatch.setattr(resident_workspace_domain, "find_resident", lambda rid: record)
     monkeypatch.setattr(resident_workspace_domain.resident_lineage, "access_snapshot_scope", nullcontext)
     monkeypatch.setattr(resident_workspace_domain.business_fact_views, "canonical_views", lambda records, **kwargs: records)
     monkeypatch.setattr(resident_workspace_domain, "ensure_resident_visible_to_actor", lambda *args: None)

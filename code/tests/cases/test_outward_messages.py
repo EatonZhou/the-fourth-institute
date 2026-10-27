@@ -299,9 +299,9 @@ def test_a_resident_sends_a_user_a_message_in_its_own_conversation(delivery_resi
     assert changed.error["code"] == "instruction.conflict"
 
     # Only the recipient finds it unread; another reader of the Conversation does not.
-    unread = projection._conversation_family_summaries([sender], "CASE-A")[sender]["unread_signature"]
+    unread = projection.conversation_family_summaries([sender], "CASE-A")[sender]["unread_signature"]
     assert (unread["completion_id"], unread["request_actor"]) == (sent["message_id"], "CASE-A")
-    assert projection._conversation_family_summaries([sender], "sample_admin")[sender]["unread_signature"]["completion_id"] == ""
+    assert projection.conversation_family_summaries([sender], "sample_admin")[sender]["unread_signature"]["completion_id"] == ""
     listed = resident_domain.list_resident_conversation_activity("CASE-A", [sender])["residents"]
     assert [item["resident_id"] for item in listed] == [sender]
     assert resident_domain.list_resident_conversation_activity("sample_admin", [sender])["residents"] == []
@@ -332,7 +332,7 @@ def test_portal_writes_a_notice_in_a_residents_name_without_starting_its_work(de
     with pytest.raises(KeyError):  # the Leader is not asked to work
         repository.input_state(leader, "msg_0000000000000f01")
     assert repository.snapshot(leader)["queue"]["items"] == []
-    unread = projection._conversation_family_summaries([leader], "CASE-A")[leader]["unread_signature"]
+    unread = projection.conversation_family_summaries([leader], "CASE-A")[leader]["unread_signature"]
     assert unread["completion_id"] == "msg_0000000000000f01"
 
     # The same subject on the same day keeps its first message.
@@ -392,7 +392,7 @@ def test_a_family_member_writes_to_a_user_as_the_facade(delivery_resident, reade
     assert message["author_id"] == facade
     assert message["origin"]["initiated_by"] == {"kind": "resident", "id": member}
     assert repository.read_messages(member) == []
-    assert projection._conversation_family_summaries([facade], "CASE-A")[facade]["unread_signature"]["completion_id"] == \
+    assert projection.conversation_family_summaries([facade], "CASE-A")[facade]["unread_signature"]["completion_id"] == \
         sent["message_id"]
 
 
@@ -454,7 +454,7 @@ def test_the_newer_of_an_answer_and_a_message_to_the_user_is_what_is_unread(deli
         })
 
     def unread():
-        return projection._conversation_family_summaries([resident], "CASE-A")[resident]["unread_signature"]
+        return projection.conversation_family_summaries([resident], "CASE-A")[resident]["unread_signature"]
 
     say("msg_0000000000000d01", "user", "2026-10-06T01:00:00Z", author_id="CASE-A")
     say("msg_0000000000000d02", "agent", "2026-10-06T01:00:30Z", reply_to_message_id="msg_0000000000000d01")
@@ -544,7 +544,7 @@ def test_a_familys_message_out_carries_the_members_own_uploads_and_no_one_elses(
     """
 
     from management_portal.society_service import resident_execution_work
-    from management_portal.society_service.resident_workspace_domain import _find_resident
+    from management_portal.society_service.resident_workspace_domain import find_resident as _find_resident
 
     monkeypatch.setenv("PORTAL_UPLOAD_ROOT", str(tmp_path / "uploads"))
     member = delivery_resident["resident_id"]
@@ -633,7 +633,10 @@ def test_another_familys_router_relays_the_members_uploads_its_facade_received(d
     """
 
     from management_portal.society_service import family_facade, resident_execution_work, resident_protocol
-    from management_portal.society_service.resident_workspace_domain import _find_resident, _save_resident_record
+    from management_portal.society_service.resident_workspace_domain import (
+        find_resident as _find_resident,
+        save_resident_record as _save_resident_record,
+    )
 
     monkeypatch.setenv("PORTAL_UPLOAD_ROOT", str(tmp_path / "uploads"))
     member = delivery_resident["resident_id"]

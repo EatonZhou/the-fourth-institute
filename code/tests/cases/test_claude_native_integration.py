@@ -98,28 +98,28 @@ def test_claude_images_reach_native_client_and_common_composer(native_routes):
         'resident_id': 'resident_111111111111', 'resident': record,
         'backend_capabilities': capabilities, 'allows': {'DeliverMessage': True}}, 'test')
     assert projected['chat_workspace']['composer']['can_attach'] is True
-    assert resident_media_domain._provider_message_with_native_media(record, '[image: /authorized/image.png]', [image.to_payload()]) == '[attached image: image.png]'
-    assert '/authorized/image.png' in resident_media_domain._provider_message_with_native_media({'backend': 'kimi'}, 'Look', [image.to_payload()])
+    assert resident_media_domain.provider_message_with_native_media(record, '[image: /authorized/image.png]', [image.to_payload()]) == '[attached image: image.png]'
+    assert '/authorized/image.png' in resident_media_domain.provider_message_with_native_media({'backend': 'kimi'}, 'Look', [image.to_payload()])
 
 
 def test_native_runtime_settings_use_route_capabilities(native_routes):
     """Claude 运行设置按路由声明的模型、推理强度和权限预设校验"""
     record = {"backend": "claude", "backend_route_id": "claude_one"}
-    settings = resident_runtime_domain._validate_backend_runtime_updates(record, {}, {"model": "sonnet", "reasoning_effort": "high"})
+    settings = resident_runtime_domain.validate_backend_runtime_updates(record, {}, {"model": "sonnet", "reasoning_effort": "high"})
     assert settings["reasoning_effort"] == "high"
     # Claude declares the Restricted/Full Access presets; Codex's auto-review is not one of them.
-    assert resident_runtime_domain._validate_backend_runtime_updates(
+    assert resident_runtime_domain.validate_backend_runtime_updates(
         record, {"model": "sonnet"}, {"permission_preset": "full-access"})["permission_preset"] == "full-access"
     for updates in ({"model": "deepseek-v4-pro"}, {"reasoning_effort": "xhigh"},
                     {"service_tier": "priority"}, {"permission_preset": "auto-review"}):
         with pytest.raises(ValueError):
-            resident_runtime_domain._validate_backend_runtime_updates(record, {"model": "sonnet"}, updates)
+            resident_runtime_domain.validate_backend_runtime_updates(record, {"model": "sonnet"}, updates)
     # A model switch keeps the current effort; a model without it needs an explicit choice, which the error names.
     native_routes["claude_one"]["models"].append({"id": "haiku", "enabled": True, "support_efforts": []})
     with pytest.raises(ValueError, match=r"set reasoning_effort with the model to one of \[''\]"):
-        resident_runtime_domain._validate_backend_runtime_updates(
+        resident_runtime_domain.validate_backend_runtime_updates(
             record, {"model": "sonnet", "reasoning_effort": "high"}, {"model": "haiku"})
-    assert resident_runtime_domain._validate_backend_runtime_updates(
+    assert resident_runtime_domain.validate_backend_runtime_updates(
         record, {"model": "sonnet", "reasoning_effort": "high"}, {"model": "haiku", "reasoning_effort": ""})["reasoning_effort"] == ""
 
 
@@ -134,7 +134,7 @@ def test_context_fork_preserves_or_selects_native_account(monkeypatch, native_ro
 
     monkeypatch.setattr(resident_runtime_domain, 'default_execution_accounts',
                         lambda: default_execution_accounts(provider_registry=SimpleNamespace(entries=lambda: list(native_routes.values()))))
-    selected = resident_runtime_domain._assign_derived_resident_account_route(source, child, source, requested)
+    selected = resident_runtime_domain.assign_derived_resident_account_route(source, child, source, requested)
     assert selected == expected
     assert child['backend_route_id'] == expected
     assert 'provider_profile' not in child and 'runtime_settings' not in child
@@ -153,12 +153,12 @@ def test_context_fork_rejects_unknown_native_account(monkeypatch, native_routes)
     monkeypatch.setattr(resident_runtime_domain, 'default_execution_accounts',
                         lambda: default_execution_accounts(provider_registry=SimpleNamespace(entries=lambda: list(native_routes.values()))))
     with pytest.raises(ValueError, match='unknown Execution account route'):
-        resident_runtime_domain._assign_derived_resident_account_route(source, child, source, 'unknown')
+        resident_runtime_domain.assign_derived_resident_account_route(source, child, source, 'unknown')
     assert 'backend_route_id' not in child
 
 
 def _native_command(content, settings=None):
-    return resident_session_backend_domain._handle_resident_native_command(
+    return resident_session_backend_domain.handle_resident_native_command(
         {"backend": "claude", "provider_profile": "claude_one", "model": "sonnet"},
         content, settings or {"model": "sonnet"}, session_id="native-session", cwd="/workspace",
         actor="test", can_update_runtime=True, can_manage_permissions=False,
@@ -226,8 +226,8 @@ def test_native_status_names_the_provider_its_settings_and_the_sessions_tokens(r
     """
     # The Resident's token statistics, as the intake passes them (_session_token_usage_payload).
     token_usage = {"summary": {"last_turn_usage": {"input_tokens": 55_850, "output_tokens": 913, "total_tokens": 56_763}}}
-    with mock.patch.object(resident_runtime_domain, "_resident_runtime_defaults", return_value={}):
-        result = resident_session_backend_domain._handle_resident_native_command(
+    with mock.patch.object(resident_runtime_domain, "resident_runtime_defaults", return_value={}):
+        result = resident_session_backend_domain.handle_resident_native_command(
             record, "/status", settings, session_id="native-session", cwd="/workspace",
             actor="test", can_update_runtime=True, can_manage_permissions=False,
             scope_label="native", updated_at="2026-09-26T00:00:00Z", token_usage=token_usage, goal={},
@@ -252,8 +252,8 @@ def test_codex_status_names_its_provider_first_like_the_other_providers():
 
 
 def _permissions_command(backend, content, *, can_manage=True, settings=None):
-    with mock.patch.object(resident_runtime_domain, "_resident_runtime_defaults", return_value={}):
-        return resident_session_backend_domain._handle_resident_native_command(
+    with mock.patch.object(resident_runtime_domain, "resident_runtime_defaults", return_value={}):
+        return resident_session_backend_domain.handle_resident_native_command(
             {"backend": backend}, content, settings or {}, session_id="native-session", cwd="/workspace",
             actor="alice", can_update_runtime=True, can_manage_permissions=can_manage,
             scope_label="native", updated_at="2026-10-11T00:00:00Z", token_usage={}, goal={},
@@ -290,7 +290,7 @@ def test_claude_restart_preserves_settings_only_on_the_same_route(
     """重启 Claude 会话时只有同一路由保留模型和推理强度设置"""
     native_routes["claude_one"]["models"].append({"id": "opus", "enabled": True, "support_efforts": ["high"]})
     record, _, _ = _restart_domain(monkeypatch, source_provider="claude", source_route="claude_one")
-    monkeypatch.setattr(resident_runtime_domain, "_read_resident_runtime_settings",
+    monkeypatch.setattr(resident_runtime_domain, "read_resident_runtime_settings",
                         lambda *_: {"model": "opus", "reasoning_effort": "high"})
     state = resident_domain.restart_resident_session(record["resident_id"], "alice", {
         "target_provider": "claude", "target_account": target_route, "context_strategy": "smart",
@@ -313,7 +313,7 @@ def test_native_restart_route_and_strategy(monkeypatch, native_routes, source_pr
     assert operations[0]["backend_route_id"] == "claude_one"
     assert operations[0]["operation"] == ("fork" if expected_strategy == "native" else "turn")
     assert result["target_runtime_settings"]["model"] == "sonnet"
-    resident_restart_domain._resume_resident_session_restart(operations[0]["step"])
+    resident_restart_domain.resume_resident_session_restart(operations[0]["step"])
     assert saved[-1]["backend_route_id"] == "claude_one"
     assert "provider_profile" not in saved[-1]
     assert "backend_binding" not in saved[-1]
@@ -335,7 +335,7 @@ def test_native_restart_options_do_not_borrow_source_credentials(native_routes, 
 
     # The new session lives under the Resident's session directory; this test
     # is about credentials, so a synthetic record gets a temporary directory.
-    monkeypatch.setattr(resident_record_domain, "_sessions_path", lambda _record: tmp_path / "sessions")
+    monkeypatch.setattr(resident_record_domain, "sessions_path", lambda _record: tmp_path / "sessions")
     options = resident_restart_domain._session_restart_runtime_options(
         {"resident_id": "resident_test", "backend": "codex", "provider_profile": "unrelated"},
         "claude", "alice", target_route="claude_one", runtime_settings={"model": "sonnet"},
@@ -353,7 +353,7 @@ def test_historical_defaults_do_not_require_live_auth_or_catalog(monkeypatch):
     """读取历史记录的运行默认值不查询在线 Provider 模型目录"""
     monkeypatch.setattr(claude_provider_catalog, "catalog", lambda *_: pytest.fail("history must not query provider"))
     record = {"backend": "claude", "provider_profile": "claude_one", "model": "sonnet"}
-    assert resident_runtime_domain._resident_runtime_defaults(record)["model"] == "sonnet"
+    assert resident_runtime_domain.resident_runtime_defaults(record)["model"] == "sonnet"
 
 
 def test_account_helper_uses_native_subscription_login(monkeypatch, tmp_path):

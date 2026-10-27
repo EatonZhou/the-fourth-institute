@@ -65,11 +65,11 @@ def test_two_requests_pass_history_once_and_keep_system_instructions(monkeypatch
     from management_portal.execution.backends import ChatCompletionService
     from management_portal.execution.contracts import SystemInstructions
     settings = {'model': 'm', 'prompt_context': {'history': {'enabled': True, 'max_tokens': 8000}}}
-    monkeypatch.setattr(resident_runtime_domain, '_read_resident_runtime_settings', lambda record: deepcopy(settings))
+    monkeypatch.setattr(resident_runtime_domain, 'read_resident_runtime_settings', lambda record: deepcopy(settings))
     monkeypatch.setattr(resident_input_scope, 'get', lambda *args: {})
     monkeypatch.setattr(resident_input_scope, 'scoped_message_ids', lambda *args: set())
     monkeypatch.setattr(execution, '_lineage_delivery_profile', lambda job: {})
-    monkeypatch.setattr(execution, '_resident_system_instructions', lambda *args: SystemInstructions())
+    monkeypatch.setattr(execution, 'resident_system_instructions', lambda *args: SystemInstructions())
     repository = SimpleNamespace(
         messages_before_input=lambda rid, mid, limit: pair('first', 'Remember BLUE', 'BLUE') if mid == 'second' else [],
         input_states_by_id=lambda keys: {(RID, 'first'): {'state': 'completed', 'reply_message_ids': ['first-reply']}},

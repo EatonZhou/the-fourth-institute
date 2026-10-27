@@ -32,7 +32,7 @@ def team(owners, monkeypatch):
     resident_protocol.change_resident_state(
         target["resident_id"], ACTOR, state_domain="intake", transition="close",
     )
-    target = resident_workspace_domain._find_resident(target["resident_id"])
+    target = resident_workspace_domain.find_resident(target["resident_id"])
     yield SimpleNamespace(owners=owners, source=owners.record, target=target, lineage_id=owners.lineage_id)
     reset_kernels()
 
@@ -46,11 +46,11 @@ def test_artifact_isa_reads_exact_response_and_enforces_resident_scope(team):
     resident_id = team.source["resident_id"]
     message_id = "msg_" + uuid.uuid4().hex
     response = {"output": [{"text": "synthetic structured response"}], "usage": {"tokens": 7}}
-    message = resident_intake_domain._message(
+    message = resident_intake_domain.build_message(
         "agent", "Visible answer", resident_id, message_id=message_id,
         provider_response=response,
     )
-    resident_lifecycle_domain._append_conversation_message(resident_id, message)
+    resident_lifecycle_domain.append_conversation_message(resident_id, message)
     artifact_id = message_id + ":provider_response"
     arguments = {"resident_id": resident_id, "artifact_id": artifact_id}
     result = instruction(team, "GetMessageArtifact", arguments)
@@ -80,13 +80,13 @@ def test_reorder_isa_persists_input_order_before_execution_allocation(team):
     entries = []
     for index in range(4):
         message_id = "msg_" + uuid.uuid4().hex
-        resident_lifecycle_domain._append_conversation_message(
-            resident_id, resident_intake_domain._message("user", message_id, ACTOR, message_id=message_id),
+        resident_lifecycle_domain.append_conversation_message(
+            resident_id, resident_intake_domain.build_message("user", message_id, ACTOR, message_id=message_id),
         )
         entries.append({
              "user_message_id": message_id,
             "message": message_id, "actor": ACTOR})
-    record = resident_workspace_domain._find_resident(resident_id)
+    record = resident_workspace_domain.find_resident(resident_id)
     entries[0]["execution_id"] = "execution-" + uuid.uuid4().hex[:24]
     resident_execution_work.write(record, {**entries[0], "queue": entries[1:]})
     result = instruction(team, "ReorderMailbox", {
@@ -123,7 +123,7 @@ def test_absorb_persists_reference_message_without_history_copy(team, monkeypatc
     monkeypatch.setattr(agent_context_selection, "HOST_SKILLS_ROOT", team.owners.root / "skills")
     monkeypatch.setattr(agent_context_selection, "THIRD_PARTY_SKILLS_ROOT", team.owners.root / "skills" / "third-party")
     source_id, target_id = team.source["resident_id"], team.target["resident_id"]
-    resident_lifecycle_domain._append_conversation_message(source_id, resident_intake_domain._message(
+    resident_lifecycle_domain.append_conversation_message(source_id, resident_intake_domain.build_message(
         "user", "PRIVATE_HISTORY_MUST_NOT_BE_EMBEDDED", ACTOR, message_id="msg_" + uuid.uuid4().hex,
     ))
     arguments = {"source_resident_id": source_id, "target_resident_id": target_id}
@@ -197,7 +197,7 @@ def test_queued_input_ack_requires_readable_immutable_message_and_state(input_te
         assert resident_protocol.get_resident_input_state(resident_id, ACTOR, message_id)["state"] == (
             "running" if started else "queued"
         )
-        record = resident_workspace_domain._find_resident(resident_id)
+        record = resident_workspace_domain.find_resident(resident_id)
         job = resident_execution_work.read(record)
         assert len(resident_execution_work.normalized_queue(job)) == index
         events = repository.events_after(resident_id, 0)
@@ -226,7 +226,7 @@ def test_queued_input_commit_failure_retries_durable_job_without_duplicate(input
     message_id = payload["message"]["message_id"]
     repository = resident_conversation_stream.get_repository()
     original_accept = repository.accept_user_message
-    record = resident_workspace_domain._find_resident(resident_id)
+    record = resident_workspace_domain.find_resident(resident_id)
     before_job = resident_execution_work.read(record)
     before_events = repository.events_after(resident_id, 0)
 
@@ -265,10 +265,10 @@ def test_bootstrap_admission_starts_unless_intake_is_closed(input_team, closed):
     resident_id = input_team.target["resident_id"]
     if not closed:
         resident_protocol.change_resident_state(resident_id, ACTOR, state_domain="intake", transition="open")
-    record = resident_workspace_domain._find_resident(resident_id)
+    record = resident_workspace_domain.find_resident(resident_id)
     record["session_state"] = "queued"
-    resident_workspace_domain._save_resident_record(record)
-    assert resident_workspace_domain._find_resident(resident_id)["session_state"] != "pending_create"
+    resident_workspace_domain.save_resident_record(record)
+    assert resident_workspace_domain.find_resident(resident_id)["session_state"] != "pending_create"
     payload = queued_input_payload(input_team)
     receipt = resident_protocol.deliver_resident_input(payload, ACTOR)
     job = resident_execution_work.read(record)
@@ -312,7 +312,7 @@ def test_handoff_isa_prepares_durable_binding_and_idempotent_delivery(team, mode
     assert handoff["status"] == "ready"
     output = Path(handoff["items"][0]["result"]["target_path"])
     assert (output / "handoff.txt").read_text() == "original bytes"
-    record = resident_workspace_domain._find_resident(team.target["resident_id"])
+    record = resident_workspace_domain.find_resident(team.target["resident_id"])
     binding = next(binding for binding in record["workspace_bindings"] if Path(binding["path"]).resolve() == output.resolve())
     assert record["owned_workspace"] == before_owned
     assert record["default_cwd"] == team.target["default_cwd"]
@@ -385,7 +385,7 @@ def test_project_move_updates_canonical_member_paths_and_keeps_single_root(team)
     assert original == root and root.is_symlink() or not original.exists()
     assert (destination / "preserve.txt").read_text() == "user content"
     for resident_id in (team.source["resident_id"], team.target["resident_id"]):
-        record = resident_workspace_domain._find_resident(resident_id)
+        record = resident_workspace_domain.find_resident(resident_id)
         assert record["lineage_id"] == team.lineage_id
         assert record["project_id"] == next_project
         assert Path(record["default_cwd"]).resolve().is_relative_to(destination)
@@ -401,7 +401,7 @@ def test_missing_folder_rebuild_uses_canonical_members_and_preserves_user_files(
     actual.rename(backup)
     lineage_domain._ensure_lineage_folder_files(lineage)
     for record in resident_catalog.get_catalog().for_lineage(team.lineage_id):
-        resident_workspace_domain._ensure_resident_workspace(record)
+        resident_workspace_domain.ensure_resident_workspace(record)
     assert (canonical / "README.md").is_file()
     assert (canonical / "runtime").is_dir()
     assert not (canonical / "user.txt").exists()

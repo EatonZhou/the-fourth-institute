@@ -778,7 +778,7 @@ def _central_member(lineage: Mapping[str, Any], members: list[str]) -> str:
 
 
 def _stop_roles(lineage_id: str, resident_ids: list[str], actor: str, *, wait_seconds: float | None = None) -> None:
-    from ..resident_lifecycle_domain import _resident_has_pending_work
+    from management_portal.society_service import resident_lifecycle_domain
 
     from ..resident_protocol import clear_resident_queue
 
@@ -786,12 +786,12 @@ def _stop_roles(lineage_id: str, resident_ids: list[str], actor: str, *, wait_se
     # Even an idle role must close intake before the family can be removed.
     for resident_id in roles:
         _domain().quiesce_lineage_resident(lineage_id, {"target": resident_id}, actor)
-    busy = [item for item in roles if _resident_has_pending_work(item)]
+    busy = [item for item in roles if resident_lifecycle_domain.resident_has_pending_work(item)]
     deadline = time.monotonic() + (ROLE_STOP_WAIT_SECONDS if wait_seconds is None else wait_seconds)
     while busy and time.monotonic() < deadline:
         time.sleep(0.5)
         for resident_id in roles:
             clear_resident_queue(resident_id, actor)
-        busy = [item for item in roles if _resident_has_pending_work(item)]
+        busy = [item for item in roles if resident_lifecycle_domain.resident_has_pending_work(item)]
     if busy:
         raise FamilyBusy("、".join(busy) + " 仍在停止当前工作，Family 结构未作改动，请稍后重试。")

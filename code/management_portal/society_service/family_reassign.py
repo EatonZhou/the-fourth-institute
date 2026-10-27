@@ -42,10 +42,10 @@ def _text(message: dict[str, Any]) -> str:
 def _may_reassign(facade: dict[str, Any], message: dict[str, Any], actor: str) -> bool:
     from management_common.actor_identity import canonical_actor_id, same_actor
 
-    from .resident_directory_domain import _can_manage
+    from . import resident_directory_domain
 
     actor_id = canonical_actor_id(actor)
-    return (same_actor(message.get("author_id"), actor_id) or _can_manage(facade, actor_id)
+    return (same_actor(message.get("author_id"), actor_id) or resident_directory_domain.can_manage(facade, actor_id)
             or family_facade.is_own_steward(facade, actor_id))
 
 
@@ -54,10 +54,10 @@ def reassign_request(facade_id: str, message_id: str, member_id: str, actor: str
     from management_common.principal import OperationIdentity
 
     from . import changes, outward_messages, resident_protocol
-    from .resident_workspace_domain import _find_resident
+    from . import resident_workspace_domain
     from .state_store import get_lineage_data_store
 
-    facade = _find_resident(facade_id)
+    facade = resident_workspace_domain.find_resident(facade_id)
     if not family_facade.is_facade(facade):
         raise ValueError("目标必须是 Family 门面")
     repository = resident_conversation_stream.get_repository()
@@ -66,7 +66,7 @@ def reassign_request(facade_id: str, message_id: str, member_id: str, actor: str
         raise KeyError("门面中没有这条请求")
     if not _may_reassign(facade, message, actor):
         raise PermissionError("只有请求的发送者、能管理门面的身份或本 Family 的 steward 可以改派")
-    target = _find_resident(member_id)
+    target = resident_workspace_domain.find_resident(member_id)
     if not family_facade.is_relay_target(facade, member_id) or not target or target.get("deleted_at"):
         raise ValueError("所选 Resident 不是这个 Family 的成员")
     link = family_facade.relay_links(facade).get(message_id)
@@ -115,7 +115,7 @@ def reassign_request(facade_id: str, message_id: str, member_id: str, actor: str
     correction = {
         "request_message_id": message_id,
         "request": _text(message)[:MAX_REQUEST_EXCERPT],
-        "from": {"resident_id": previous_id, "title": str((_find_resident(previous_id) or {}).get("title") or "")},
+        "from": {"resident_id": previous_id, "title": str((resident_workspace_domain.find_resident(previous_id) or {}).get("title") or "")},
         "to": {"resident_id": member_id, "title": str(target.get("title") or "")},
         "judged_by": actor,
         "reason": reason.strip(),

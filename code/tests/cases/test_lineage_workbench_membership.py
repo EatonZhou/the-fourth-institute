@@ -65,7 +65,7 @@ def test_lineage_members_use_uniform_actor_access_contracts(monkeypatch, subtest
             main, child = _records()
             monkeypatch.setattr(
                 resident_runtime_domain,
-                "_lineage_identity_record",
+                "lineage_identity_record",
                 lambda _record: resident_runtime_domain._compile_lineage_identity({
                     "lineage_id": LINEAGE_ID,
                     "lineage_node_ids": [LEADER_ID, CHILD_ID, FORMAL_RESIDENT_ID],
@@ -88,7 +88,7 @@ def test_lineage_members_use_uniform_actor_access_contracts(monkeypatch, subtest
             formal_resident = _derived_residents_fixture()["residents"][0]
             monkeypatch.setattr(
                 resident_runtime_domain,
-                "_lineage_identity_record",
+                "lineage_identity_record",
                 lambda _record: resident_runtime_domain._compile_lineage_identity({
                     "lineage_id": LINEAGE_ID,
                     "lineage_node_ids": [LEADER_ID],
@@ -115,7 +115,7 @@ def test_lineage_members_use_uniform_actor_access_contracts(monkeypatch, subtest
             }
             monkeypatch.setattr(
                 resident_runtime_domain,
-                "_lineage_identity_record",
+                "lineage_identity_record",
                 lambda _record: resident_runtime_domain._compile_lineage_identity({
                     "lineage_id": LINEAGE_ID,
                     "lineage_node_ids": [LEADER_ID, CHILD_ID],
@@ -124,9 +124,9 @@ def test_lineage_members_use_uniform_actor_access_contracts(monkeypatch, subtest
             )
 
             registry = {"residents": [personal_resident], "logs": []}
-            assert resident_runtime_domain._managed_derived_residents(main, registry, "sample_admin") == [personal_resident]
-            assert resident_runtime_domain._managed_derived_residents(main, registry, "CASE-A") == [personal_resident]
-            assert resident_runtime_domain._managed_derived_residents(
+            assert resident_runtime_domain.managed_derived_residents(main, registry, "sample_admin") == [personal_resident]
+            assert resident_runtime_domain.managed_derived_residents(main, registry, "CASE-A") == [personal_resident]
+            assert resident_runtime_domain.managed_derived_residents(
                 main,
                 registry,
                 "lineage-owner",
@@ -146,7 +146,7 @@ def test_lineage_members_use_uniform_actor_access_contracts(monkeypatch, subtest
             }
             monkeypatch.setattr(
                 resident_runtime_domain,
-                "_lineage_identity_record",
+                "lineage_identity_record",
                 lambda _record: resident_runtime_domain._compile_lineage_identity({
                     "lineage_id": LINEAGE_ID,
                     "lineage_node_ids": [LEADER_ID, CHILD_ID],
@@ -155,4 +155,4 @@ def test_lineage_members_use_uniform_actor_access_contracts(monkeypatch, subtest
             )
             registry = {"residents": [child, direct, unrelated], "logs": []}
 
-            assert resident_runtime_domain._managed_derived_residents(main, registry, "sample_admin") == [direct]
+            assert resident_runtime_domain.managed_derived_residents(main, registry, "sample_admin") == [direct]

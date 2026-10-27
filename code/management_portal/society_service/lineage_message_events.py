@@ -135,9 +135,9 @@ def _sender_identity(actor_id: str, author_id: str) -> dict[str, Any] | None:
 
 def _facade_record(resident_id: str) -> dict[str, Any] | None:
     from . import family_facade
-    from .resident_workspace_domain import _find_resident
+    from . import resident_workspace_domain
 
-    record = _find_resident(resident_id)
+    record = resident_workspace_domain.find_resident(resident_id)
     return record if family_facade.is_facade(record) else None
 
 

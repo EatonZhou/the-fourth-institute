@@ -26,20 +26,20 @@ def compacted_child(future_creation_store, monkeypatch):
     source = _activate_created_resident(source['resident_id'])
     _record_provider_turn(get_agent_data_store(), source, 0)
     child = resident_domain.create_resident_compacted_context_fork(source['resident_id'], 'sample_admin', backend_route_id='one')
-    record = resident_workspace_domain._find_resident(child['resident_id'])
+    record = resident_workspace_domain.find_resident(child['resident_id'])
     register_session(record, '01a00000-0000-7000-8000-000000000918', backend_route_id='one')
-    monkeypatch.setattr(resident_intake_domain, '_acknowledge_execution', lambda _: True)
+    monkeypatch.setattr(resident_intake_domain, 'acknowledge_execution', lambda _: True)
     return record
 
 
 def fail_initialization(record, monkeypatch):
     def fail(**kwargs):
         raise RuntimeError('execution worker lease expired after backend execution started')
-    monkeypatch.setattr(resident_session_backend_domain, '_run_backend_session_operation', fail)
+    monkeypatch.setattr(resident_session_backend_domain, 'run_backend_session_operation', fail)
     prepared = resident_execution_domain._prepare_resident_continuation(record)
     assert prepared
-    resident_execution_domain._run_resident_execution(*prepared)
-    return resident_workspace_domain._find_resident(record['resident_id'])
+    resident_execution_domain.run_resident_execution(*prepared)
+    return resident_workspace_domain.find_resident(record['resident_id'])
 
 
 def test_failed_compaction_retains_creation_work_and_incoming_input(compacted_child, monkeypatch):
@@ -53,7 +53,7 @@ def test_failed_compaction_retains_creation_work_and_incoming_input(compacted_ch
     resident_catalog.get_catalog().state_store.acknowledge_resident_execution(record['resident_id'], identity)
     assert resident_execution_work.read(record)['execution_id'] == identity
     for mid in ['msg_' + 'a1' * 16, 'msg_' + 'a2' * 16]:
-        resident_intake_domain._persist_resident_input(record['resident_id'], 'sample_admin', 'keep original input', message_id=mid)
+        resident_intake_domain.persist_resident_input(record['resident_id'], 'sample_admin', 'keep original input', message_id=mid)
     after = resident_execution_work.read(record)
     assert after['execution_id'] == identity
     assert after['outcome'] == 'failed'
@@ -93,16 +93,16 @@ def candidate_backend(calls, *, fail_compact=False, lost_create=False):
 
 
 def execute(record):
-    prepared = resident_execution_domain._prepare_resident_continuation(resident_workspace_domain._find_resident(record['resident_id']))
+    prepared = resident_execution_domain._prepare_resident_continuation(resident_workspace_domain.find_resident(record['resident_id']))
     assert prepared
-    resident_execution_domain._run_resident_execution(*prepared)
-    return resident_workspace_domain._find_resident(record['resident_id'])
+    resident_execution_domain.run_resident_execution(*prepared)
+    return resident_workspace_domain.find_resident(record['resident_id'])
 
 
 def test_legacy_pending_visible_and_restored_with_original_identity(compacted_child, monkeypatch):
     record = fail_initialization(compacted_child, monkeypatch)
     mid = 'msg_' + 'b1' * 16
-    resident_intake_domain._persist_resident_input(record['resident_id'], 'sample_admin', 'original translation', message_id=mid)
+    resident_intake_domain.persist_resident_input(record['resident_id'], 'sample_admin', 'original translation', message_id=mid)
     saved = resident_execution_work.read(record)
     saved['queue'] = []
     resident_execution_work.write(record, saved)  # the historical demotion, not a new input
@@ -122,13 +122,13 @@ def test_candidate_promotes_only_after_canonical_compaction_and_releases_one_inp
     record = fail_initialization(compacted_child, monkeypatch)
     old = resident_backend.session_record(record)
     mid = 'msg_' + 'c1' * 16
-    resident_intake_domain._persist_resident_input(record['resident_id'], 'sample_admin', 'waiting business', message_id=mid)
+    resident_intake_domain.persist_resident_input(record['resident_id'], 'sample_admin', 'waiting business', message_id=mid)
     receipt = prepare_retry(record, monkeypatch)
     calls = []
-    monkeypatch.setattr(resident_session_backend_domain, '_run_backend_session_operation', candidate_backend(calls))
+    monkeypatch.setattr(resident_session_backend_domain, 'run_backend_session_operation', candidate_backend(calls))
     finalize = resident_execution_domain._finalize_applied_execution
     def finalize_without_starting_business(*args):
-        assert resident_workspace_domain._find_resident(record['resident_id'])['context_compaction_state'] == 'completed'
+        assert resident_workspace_domain.find_resident(record['resident_id'])['context_compaction_state'] == 'completed'
         finalize(*args)
         return False
     monkeypatch.setattr(resident_execution_domain, '_finalize_applied_execution', finalize_without_starting_business)
@@ -155,7 +155,7 @@ def test_failed_candidate_keeps_original_binding_and_frozen_prefix(compacted_chi
     prefix = store.frozen_fork_segments(record['resident_id'])
     first = prepare_retry(record, monkeypatch)
     calls = []
-    monkeypatch.setattr(resident_session_backend_domain, '_run_backend_session_operation', candidate_backend(calls, fail_compact=True))
+    monkeypatch.setattr(resident_session_backend_domain, 'run_backend_session_operation', candidate_backend(calls, fail_compact=True))
     current = execute(record)
     assert current['session_state'] == 'failed'
     assert current['context_compaction_state'] != 'completed'
@@ -171,7 +171,7 @@ def test_reply_loss_resumes_same_attempt_without_repeating_completed_operations(
     record = fail_initialization(compacted_child, monkeypatch)
     first = prepare_retry(record, monkeypatch)
     calls = []
-    monkeypatch.setattr(resident_session_backend_domain, '_run_backend_session_operation', candidate_backend(calls, lost_create=lost_at == 'create'))
+    monkeypatch.setattr(resident_session_backend_domain, 'run_backend_session_operation', candidate_backend(calls, lost_create=lost_at == 'create'))
     promote = execution_port.promote_initialization_session
     if lost_at == 'promotion':
         def lost_promotion(**kwargs):
@@ -183,7 +183,7 @@ def test_reply_loss_resumes_same_attempt_without_repeating_completed_operations(
     second = resident_initialization.retry(record['resident_id'], 'sample_admin')
     assert second['initialization_id'] == first['initialization_id']
     monkeypatch.setattr(execution_port, 'promote_initialization_session', promote)
-    monkeypatch.setattr(resident_session_backend_domain, '_run_backend_session_operation', candidate_backend(calls))
+    monkeypatch.setattr(resident_session_backend_domain, 'run_backend_session_operation', candidate_backend(calls))
     current = execute(record)
     assert current['context_compaction_state'] == 'completed', current.get('last_error')
     assert [c['operation'] for c in calls] == ['create', 'compact']
@@ -201,7 +201,7 @@ def test_binding_change_fences_candidate_promotion(compacted_child, monkeypatch)
             execution_port.sessions().release_session(resident_backend.execution_binding_id(record))
             register_session(record, '01a00000-0000-7000-8000-000000000920', backend_route_id='one')
         return result
-    monkeypatch.setattr(resident_session_backend_domain, '_run_backend_session_operation', change_binding)
+    monkeypatch.setattr(resident_session_backend_domain, 'run_backend_session_operation', change_binding)
     prefix = get_agent_data_store().sequence_segment_ids(get_agent_data_store().trace_sequence_id(record['resident_id']))
     current = execute(record)
     assert current['context_compaction_state'] != 'completed'
@@ -216,7 +216,7 @@ def test_promotion_rolls_back_binding_and_trace_together(compacted_child, monkey
     old_ref = resident_backend.session_record(record)['provider_session_ref']
     prefix = store.frozen_fork_segments(record['resident_id'])
     calls = []
-    monkeypatch.setattr(resident_session_backend_domain, '_run_backend_session_operation', candidate_backend(calls))
+    monkeypatch.setattr(resident_session_backend_domain, 'run_backend_session_operation', candidate_backend(calls))
     place = store.place_in_trace_before
     def fail_after_placement(*args, **kwargs):
         place(*args, **kwargs)
@@ -287,7 +287,7 @@ def test_already_completed_original_compaction_is_reconciled_without_native_work
         content={'replacement_history': [{'type': 'message', 'role': 'user', 'content': [{'type': 'input_text', 'text': 'original compaction'}]}]})
     store.finish_execution(eid, status='completed')
     prepare_retry(record, monkeypatch)
-    monkeypatch.setattr(resident_session_backend_domain, '_run_backend_session_operation', lambda **_: pytest.fail('must not resubmit confirmed operation'))
+    monkeypatch.setattr(resident_session_backend_domain, 'run_backend_session_operation', lambda **_: pytest.fail('must not resubmit confirmed operation'))
     current = execute(record)
     assert current['context_compaction_state'] == 'completed'
     assert resident_backend.session_record(record)['provider_session_ref'] == binding['provider_session_ref']
@@ -305,10 +305,10 @@ def test_closed_intake_is_preserved_while_initialization_completes(compacted_chi
     record = fail_initialization(compacted_child, monkeypatch)
     resident_protocol.change_resident_state(record['resident_id'], 'sample_admin', state_domain='intake', transition='close')
     mid = 'msg_' + 'e1' * 16
-    resident_intake_domain._persist_resident_input(record['resident_id'], 'sample_admin', 'held original', message_id=mid)
+    resident_intake_domain.persist_resident_input(record['resident_id'], 'sample_admin', 'held original', message_id=mid)
     prepare_retry(record, monkeypatch)
     calls = []
-    monkeypatch.setattr(resident_session_backend_domain, '_run_backend_session_operation', candidate_backend(calls))
+    monkeypatch.setattr(resident_session_backend_domain, 'run_backend_session_operation', candidate_backend(calls))
     current = execute(record)
     assert current['context_compaction_state'] == 'completed', current.get('last_error')
     job = resident_execution_work.read(current)
@@ -329,9 +329,9 @@ def test_retry_and_input_during_candidate_io_keep_one_attempt_and_all_inputs(com
         again = resident_initialization.retry(record['resident_id'], 'sample_admin')
         assert again['initialization_id'] == first['initialization_id']
         mid = mids[0 if kwargs['operation'] == 'create' else 1]
-        resident_intake_domain._persist_resident_input(record['resident_id'], 'sample_admin', 'arrived during initialization', message_id=mid)
+        resident_intake_domain.persist_resident_input(record['resident_id'], 'sample_admin', 'arrived during initialization', message_id=mid)
         return backend(**kwargs)
-    monkeypatch.setattr(resident_session_backend_domain, '_run_backend_session_operation', interleaved)
+    monkeypatch.setattr(resident_session_backend_domain, 'run_backend_session_operation', interleaved)
     current = execute(record)
     job = resident_execution_work.read(current)
     assert current['context_compaction_state'] == 'completed', current.get('last_error')

@@ -76,12 +76,12 @@ def test_workspace_root_names_batch_current_rows_without_mutating_record(tmp_pat
         calls.append(selected)
         return read(selected, **kwargs)
     monkeypatch.setattr(store, "rows", rows)
-    projected = resident_workspace_domain._resident_workspace_roots(record)
+    projected = resident_workspace_domain.resident_workspace_roots(record)
     assert calls == [[own, extra]]
     assert [root["title"] for root in projected] == ["Owned", "Extra"]
     current = read([extra])[extra]
     store.rename(extra, "Renamed", expected_version=current["updated_at"], authorize=lambda descriptor: None)
-    projected = resident_workspace_domain._resident_workspace_roots(record)
+    projected = resident_workspace_domain.resident_workspace_roots(record)
     assert projected[1]["title"] == projected[1]["label"] == "Renamed"
     assert calls == [[own, extra], [own, extra]]
     assert record == before
@@ -92,6 +92,6 @@ def test_initial_workspace_projection_does_not_register_missing_identity(tmp_pat
     wid = "workspace_333333333333"
     record = {"owned_workspace_id": wid, "owned_workspace": {"workspace_id": wid, "path": str(tmp_path / "workspace")},
               "workspace_bindings": []}
-    root, = resident_workspace_domain._resident_workspace_roots(record)
+    root, = resident_workspace_domain.resident_workspace_roots(record)
     assert root["title"] == root["label"] == "workspace"
     assert get_workspace_store().rows([wid], include_deleted=True) == {}

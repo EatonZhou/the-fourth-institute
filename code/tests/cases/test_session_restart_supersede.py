@@ -39,7 +39,7 @@ def test_a_new_restart_replaces_an_unfinished_one(monkeypatch, isolated_portal_c
             return "operation_second"
 
         monkeypatch.setattr(
-            resident_lifecycle_domain, "_lifecycle_operations",
+            resident_lifecycle_domain, "lifecycle_operations",
             lambda: SimpleNamespace(pending=lambda *_: queued["first"], enqueue=enqueue),
         )
         cancelled: list[str] = []
@@ -50,7 +50,7 @@ def test_a_new_restart_replaces_an_unfinished_one(monkeypatch, isolated_portal_c
         ))
 
         def coordinator_tick(_seconds):
-            resident_restart_domain._resume_resident_session_restart(first_step)
+            resident_restart_domain.resume_resident_session_restart(first_step)
             queued["first"] = False
 
         monkeypatch.setattr("time.sleep", coordinator_tick)
@@ -84,7 +84,7 @@ def test_the_same_restart_repeated_returns_the_unfinished_one(monkeypatch, isola
         body = {"target_provider": "codex", "target_account": "one", "context_strategy": "compact"}
         first = resident_domain.restart_resident_session(record["resident_id"], "alice", dict(body))
         monkeypatch.setattr(
-            resident_lifecycle_domain, "_lifecycle_operations",
+            resident_lifecycle_domain, "lifecycle_operations",
             lambda: SimpleNamespace(pending=lambda *_: True, enqueue=lambda *_: pytest.fail("no new operation")),
         )
         again = resident_domain.restart_resident_session(record["resident_id"], "alice", dict(body))

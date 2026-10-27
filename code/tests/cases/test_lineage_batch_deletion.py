@@ -61,7 +61,7 @@ def test_batch_deletion_commits_identity_set_graph_and_effects_once(deletion_set
     assert after["revision"] == before["revision"] + 1
     assert {node["id"] for node in after["nodes"]} == {leader_id}
     assert {row["resident_id"] for row in store.residents_for_lineage(lineage_id)} == {leader_id}
-    assert all(resident_lifecycle_domain._lifecycle_operations().pending(resident_id) for resident_id in ids)
+    assert all(resident_lifecycle_domain.lifecycle_operations().pending(resident_id) for resident_id in ids)
     assert not any(item["id"] == component_id for item in after["program"]["components"])
 
 
@@ -72,7 +72,7 @@ def test_batch_validation_failure_keeps_every_identity_and_graph(deletion_set, m
     before = store.lineage_definition(lineage_id)
     args = {"resident_ids": list(ids), "component_ids": [component_id]}
     if failure == "running":
-        monkeypatch.setattr(resident_lifecycle_domain, "_resident_has_pending_work", lambda resident_id: resident_id == ids[1])
+        monkeypatch.setattr(resident_lifecycle_domain, "resident_has_pending_work", lambda resident_id: resident_id == ids[1])
     elif failure == "missing":
         args["resident_ids"].append("resident_123456789abc")
     elif failure == "foreign":
@@ -223,11 +223,11 @@ def test_deleting_a_resident_cancels_what_still_waits_in_its_mailbox(deletion_se
     repository = resident_conversation_stream.get_repository()
     waiting = []
     for text in ("队列丢下的请求", "等待下一条请求的 info"):
-        message = resident_intake_domain._message("user", text, "sample_admin", message_id="msg_" + uuid.uuid4().hex)
-        resident_lifecycle_domain._accept_resident_user_message(resident_id, message)
+        message = resident_intake_domain.build_message("user", text, "sample_admin", message_id="msg_" + uuid.uuid4().hex)
+        resident_lifecycle_domain.accept_resident_user_message(resident_id, message)
         repository.set_input_state(resident_id, message["message_id"], "queued")
         waiting.append(message)
-    resident_held_infos.hold(resident_workspace_domain._find_resident(resident_id), waiting[1])
+    resident_held_infos.hold(resident_workspace_domain.find_resident(resident_id), waiting[1])
     assert [entry["place"] for entry in store.mailbox_entries([resident_id], places=("pending", "info"))] == ["info", "pending"]
 
     result = _execute(lineage_id, {"resident_ids": [resident_id]}, key="delete-with-mailbox")

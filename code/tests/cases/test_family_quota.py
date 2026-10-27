@@ -61,7 +61,7 @@ def test_reserve_targets_require_weekly_above_ten_or_a_funded_metered_agent():
 
 @pytest.fixture
 def quota_family(team, monkeypatch):
-    monkeypatch.setattr(resident_record_domain, "_resolve_context_refs", lambda *args, **kwargs: {})
+    monkeypatch.setattr(resident_record_domain, "resolve_context_refs", lambda *args, **kwargs: {})
     facade_id = team.source["resident_id"]
     member_id = team.target["resident_id"]
     steward = lineage_domain.create_lineage_resident(team.lineage_id, {
@@ -72,16 +72,16 @@ def quota_family(team, monkeypatch):
     spare_id = lineage_domain.create_lineage_resident(team.lineage_id, {
         "title": "数据库迁移", "backend": "codex", "mode": "new_session",
     }, ACTOR)["resident"]["resident_id"]
-    resident_intake_domain._commit_resident_intake_state(_record(steward_id), "closed")
+    resident_intake_domain.commit_resident_intake_state(_record(steward_id), "closed")
     set_role(facade_id, family_id="fbi_test", actor=ACTOR)
     set_role(steward_id, role="steward", family_id="fbi_test", actor=ACTOR)
-    resident_intake_domain._commit_resident_intake_state(_record(facade_id), "open")
+    resident_intake_domain.commit_resident_intake_state(_record(facade_id), "open")
     monkeypatch.setattr(family_facade, "family_steward_id", lambda _: steward_id)
     monkeypatch.setattr(family_facade, "family_member_ids", lambda _: {member_id})
     monkeypatch.setattr(resident_backend, "session_record", lambda _: {})
     for rid, route in ((member_id, "one"), (steward_id, "one"), (spare_id, "two")):
         record = _record(rid); record["backend_route_id"] = route
-        resident_workspace_domain._save_resident_record(record, commit_configuration=True)
+        resident_workspace_domain.save_resident_record(record, commit_configuration=True)
     accounts = [_account("one", 9), _account("two", 90)]
     monkeypatch.setattr(execution_port, "service", lambda: SimpleNamespace(accounts=lambda: {"accounts": accounts}))
     message_id = "msg_1234567890abcdef"
@@ -322,7 +322,7 @@ def test_platform_migrates_steward_before_execution_at_or_below_ten(quota_family
     """
     f = quota_family
     f.accounts[0] = _account("one", weekly)
-    resident_intake_domain._commit_resident_intake_state(_record(f.steward), "open")
+    resident_intake_domain.commit_resident_intake_state(_record(f.steward), "open")
     calls = []
     monkeypatch.setattr(resident_restart_domain, "restart_resident_session", lambda *args, **kwargs: calls.append((args, kwargs)))
     before = _record(f.steward)
@@ -354,7 +354,7 @@ def test_steward_without_a_safe_target_retains_work_and_notifies_once(quota_fami
     job = {"input_message": {"origin": message_origin(f.facade, initiated_by=ACTOR if human_initiator else f.member)}}
     monkeypatch.setattr(resident_execution_work, "read", lambda _: job)
     f.accounts[:] = [_account("one", 9), _account("two", 10)]
-    resident_intake_domain._commit_resident_intake_state(_record(f.steward), "open")
+    resident_intake_domain.commit_resident_intake_state(_record(f.steward), "open")
     notices = []
     monkeypatch.setattr(lineage_human_notifications, "create_notification", lambda *args, **kwargs: notices.append(kwargs))
     monkeypatch.setattr(resident_restart_domain, "restart_resident_session", lambda *args, **kwargs: pytest.fail("unsafe target"))
@@ -393,7 +393,7 @@ def test_proactive_migration_intent_survives_interruption(quota_family, monkeypa
     :design: decision_44cf587c1721
     """
     f = quota_family
-    resident_intake_domain._commit_resident_intake_state(_record(f.steward), "open")
+    resident_intake_domain.commit_resident_intake_state(_record(f.steward), "open")
     calls = []
     def restart(*args, **kwargs):
         calls.append(args[2])
@@ -419,9 +419,9 @@ def test_steward_reserve_preserves_manual_boundaries_and_an_admitted_turn(quota_
     """
     f = quota_family
     if boundary == "family_paused":
-        resident_intake_domain._commit_resident_intake_state(_record(f.facade), "closed")
+        resident_intake_domain.commit_resident_intake_state(_record(f.facade), "closed")
     else:
-        resident_intake_domain._commit_resident_intake_state(_record(f.steward), "open")
+        resident_intake_domain.commit_resident_intake_state(_record(f.steward), "open")
         monkeypatch.setattr(resident_execution_work, "read", lambda _: {
              "execution_id": "execution_running" if boundary == "executing" else "",
             "stop_requested_at": "2026-10-07T00:00:00Z" if boundary == "stopped" else "",
@@ -481,7 +481,7 @@ def test_wait_migration_preserves_a_steward_input_that_has_not_entered_execution
     })
     assert result["status"] == "accepted"
     assert result["preserved_held_input"] == {'execution_id': "job_pending", "message_id": "msg_pending"}
-    resident_restart_domain._resume_resident_session_restart(operations[-1]["step"])
+    resident_restart_domain.resume_resident_session_restart(operations[-1]["step"])
     assert record["session_restart"]["status"] == "completed"
     assert (pending['execution_id'], pending["user_message_id"], pending["actor"]) == ("job_pending", "msg_pending", "alice")
 
@@ -496,7 +496,7 @@ def test_selected_member_effect_keeps_admission_and_original_request(quota_famil
     f = quota_family
     f.accounts[0] = _account("one", weekly)
     # Closing intake holds the delivered request in the member queue.
-    resident_intake_domain._commit_resident_intake_state(_record(f.member), "closed")
+    resident_intake_domain.commit_resident_intake_state(_record(f.member), "closed")
     calls, results = [], []
 
     def execute(call):

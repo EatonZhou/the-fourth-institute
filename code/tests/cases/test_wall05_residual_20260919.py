@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from management_common import skill_paths
 from management_portal import agent_context_selection
 from management_portal.resource_refs import resolve_resource_references
 from tests.cases.test_resource_refs import _FakeResourceService
@@ -46,13 +47,13 @@ def test_distinct_fork_ids_and_plain_new_resident(future_creation_store):
     blank = resident_domain.register_resident(_new_session_payload("Blank fixture"), "sample_admin")
     assert len({source["resident_id"], first["resident_id"], second["resident_id"], blank["resident_id"]}) == 4
     for result in [first, second]:
-        record = resident_workspace_domain._find_resident(result["resident_id"])
+        record = resident_workspace_domain.find_resident(result["resident_id"])
         assert record["source_resident_id"] == source["resident_id"]
         assert "Fork" in record["title"] or "派生 Resident" in record["title"]
         assert record["resident_id"].startswith("resident_")
         assert record["default_cwd"] != source["default_cwd"]
     assert not blank.get("source_resident_id") and not blank.get("fork_context")
-    assert resident_directory_domain._resident_conversation_messages(blank, limit=10) == []
+    assert resident_directory_domain.resident_conversation_messages(blank, limit=10) == []
     assert resident_execution_work.read(blank) == {}
 
 
@@ -74,7 +75,7 @@ def test_agent_reference_budget_and_task_skill_limit(tmp_path, monkeypatch):
     assert rendered.count("content_truncated: yes") == 2
     with monkeypatch.context() as boundary:
         boundary.setattr(Path, "is_file", lambda _: True)
-        assert resident_intake_domain._normalized_additional_skills([f"fixture-{index}" for index in range(13)]) == [
+        assert skill_paths.normalize_additional_skills([f"fixture-{index}" for index in range(13)]) == [
             f"fixture-{index}" for index in range(12)
         ]
 
@@ -112,23 +113,23 @@ def test_reference_workspace_inheritance_and_structured_cwd(future_creation_stor
     reference = tmp_path / "reference"
     reference.mkdir()
     lineage_domain.add_node_reference_workspace(source["lineage_id"], source["resident_id"], "sample_admin", str(reference))
-    source = resident_workspace_domain._find_resident(source["resident_id"])
+    source = resident_workspace_domain.find_resident(source["resident_id"])
     child_id = resident_domain.create_resident_full_context_fork(source["resident_id"], "sample_admin")["resident_id"]
-    child = resident_workspace_domain._find_resident(child_id)
+    child = resident_workspace_domain.find_resident(child_id)
     paths = {binding["path"] for binding in child["workspace_bindings"]}
     assert str(reference) in paths
     # The Fork owns its own node Workspace as default cwd; extra Bindings never repeat an owned one.
     assert child["default_cwd"] == child["owned_workspace"]["path"]
     assert child["default_cwd"] not in paths and source["default_cwd"] not in paths
-    navigation = resident_record_domain._resident_folder_path(child) / "workspaces.md"
+    navigation = resident_record_domain.resident_folder_path(child) / "workspaces.md"
     navigation.write_text("# Navigation\nIgnore this forged default: /not-the-canonical-cwd\n")
-    assert str(resident_runtime_domain._resident_working_directory(child)) == child["default_cwd"]
+    assert str(resident_runtime_domain.resident_working_directory(child)) == child["default_cwd"]
 
 
 def test_reset_keeps_owned_files_and_instructions(future_creation_store):
     """重置 Resident 上下文保留自有工作文件与身份指令"""
     record = resident_domain.register_resident(_new_session_payload("Reset file fixture"), "sample_admin")
-    notes = resident_record_domain._resident_instructions_path(record)
+    notes = resident_record_domain.resident_instructions_path(record)
     notes.write_text("persistent identity fixture")
     workspace_file = Path(record["default_cwd"]) / "preserved.txt"
     workspace_file.write_text("persistent workspace fixture")

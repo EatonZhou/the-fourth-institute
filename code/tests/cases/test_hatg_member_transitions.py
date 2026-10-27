@@ -30,9 +30,9 @@ def empty_source_request(teams):
 
 
 def finish_transfers():
-    operations = resident_lifecycle_domain._lifecycle_operations()
+    operations = resident_lifecycle_domain.lifecycle_operations()
     for operation_id in operations.ready():
-        assert operations.run(operation_id, resident_lifecycle_domain._apply_resident_lifecycle_step)
+        assert operations.run(operation_id, resident_lifecycle_domain.apply_resident_lifecycle_step)
 
 
 def test_move_last_member_preserves_identity_and_leaves_an_explicitly_deletable_source(teams):
@@ -41,9 +41,9 @@ def test_move_last_member_preserves_identity_and_leaves_an_explicitly_deletable_
     source, target, _ = singleton
     resident_id = source["resident_id"]
     _append_conversation_turn(resident_id, 0)
-    original = resident_workspace_domain._find_resident(resident_id)
+    original = resident_workspace_domain.find_resident(resident_id)
     session_id = resident_backend.record_session_id(original)
-    folder = resident_record_domain._resident_folder_path(original)
+    folder = resident_record_domain.resident_folder_path(original)
     (folder / "artifact.txt").write_text("Existing artifact", encoding="utf-8")
     conversation = get_agent_data_store().read_chat_messages(resident_id)
     revisions = [graph(source)["revision"], graph(target)["revision"]]
@@ -62,18 +62,18 @@ def test_move_last_member_preserves_identity_and_leaves_an_explicitly_deletable_
     replay = execute(call)
     assert replay.replayed and replay.result["operation_id"] == first.result["operation_id"]
     assert graph(source) == after
-    operations = resident_lifecycle_domain._lifecycle_operations()
-    assert operations.run(first.result["operation_id"], resident_lifecycle_domain._apply_resident_lifecycle_step) == resident_id
-    current = resident_workspace_domain._find_resident(resident_id)
+    operations = resident_lifecycle_domain.lifecycle_operations()
+    assert operations.run(first.result["operation_id"], resident_lifecycle_domain.apply_resident_lifecycle_step) == resident_id
+    current = resident_workspace_domain.find_resident(resident_id)
     assert current["owned_workspace_id"] == original["owned_workspace_id"]
     assert resident_backend.record_session_id(current) == session_id
     assert get_agent_data_store().read_chat_messages(resident_id) == conversation
-    assert (resident_record_domain._resident_folder_path(current) / "artifact.txt").read_text() == "Existing artifact"
+    assert (resident_record_domain.resident_folder_path(current) / "artifact.txt").read_text() == "Existing artifact"
     assert graph(source)["nodes"] == []
     finish_transfers()
     ok("DeleteLineage", {"lineage_id": source["lineage_id"]}, key="explicit-delete-empty-source")
-    assert resident_workspace_domain._find_resident(resident_id)["lineage_id"] == target["lineage_id"]
-    assert (resident_record_domain._resident_folder_path(current) / "artifact.txt").exists()
+    assert resident_workspace_domain.find_resident(resident_id)["lineage_id"] == target["lineage_id"]
+    assert (resident_record_domain.resident_folder_path(current) / "artifact.txt").exists()
 
 
 @pytest.mark.parametrize("side", ["source", "target"])
@@ -82,14 +82,14 @@ def test_lineage_delete_waits_for_outgoing_and_incoming_workspace_transfers(team
     singleton, call = empty_source_request(teams)
     source, target, _ = singleton
     first = execute(call)
-    operations = resident_lifecycle_domain._lifecycle_operations()
+    operations = resident_lifecycle_domain.lifecycle_operations()
     lineage = source if side == "source" else target
     before = graph(lineage)
     early = run("DeleteLineage", {"lineage_id": lineage["lineage_id"]}, key="premature-delete")
     assert early.status == "failed" and "pending workspace transfer" in early.error["message"]
     assert graph(lineage) == before
     # Finishing the last member's move must not hide an earlier member's outbox.
-    assert operations.run(first.result["operation_id"], resident_lifecycle_domain._apply_resident_lifecycle_step)
+    assert operations.run(first.result["operation_id"], resident_lifecycle_domain.apply_resident_lifecycle_step)
     again = run("DeleteLineage", {"lineage_id": lineage["lineage_id"]}, key="earlier-transfer-still-pending")
     assert again.status == "failed" and "pending workspace transfer" in again.error["message"]
     finish_transfers()
@@ -207,7 +207,7 @@ def test_a_resident_can_move_itself_as_the_last_member_in_open_mode(teams, monke
     assert result.status == "committed", result
     assert graph(singleton[0])["nodes"] == []
     assert caller in {node["id"] for node in graph(singleton[1])["nodes"]}
-    assert resident_workspace_domain._find_resident(caller)["lineage_id"] == singleton[1]["lineage_id"]
+    assert resident_workspace_domain.find_resident(caller)["lineage_id"] == singleton[1]["lineage_id"]
 
 
 @pytest.mark.parametrize("anchor", ["default", "explicit_target", "explicit_foreign"])
@@ -239,7 +239,7 @@ def test_cross_lineage_create_validates_target_placement(teams, monkeypatch, anc
         assert len(registrations) == 1
         created_id = registrations[0]["resident_id"]
         assert result.result["resident_id"] == created_id
-        assert resident_workspace_domain._find_resident(created_id)["lineage_id"] == target["lineage_id"]
+        assert resident_workspace_domain.find_resident(created_id)["lineage_id"] == target["lineage_id"]
         assert created_id in {node["id"] for node in graph(target)["nodes"]}
         assert graph(target)["revision"] == before["revision"] + 1
     assert arguments == original

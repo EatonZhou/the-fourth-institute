@@ -15,7 +15,7 @@ from types import SimpleNamespace
 
 from management_portal.execution.harness_isa_tool import _resident_caller
 from management_portal.society_service.resident_session_backend_domain import (
-    _build_backend_session_operation_request,
+    build_backend_session_operation_request as _build_backend_session_operation_request,
 )
 
 

@@ -30,7 +30,9 @@ from management_portal.execution.provider_turn_usage import (
     read_kimi_turn_usage,
 )
 from management_portal.execution.scheduler import normalize_token_usage
-from management_portal.society_service.resident_execution_domain import _execution_token_usage_contract
+from management_portal.society_service.resident_execution_domain import (
+    execution_token_usage_contract as _execution_token_usage_contract,
+)
 
 SESSION = "0d1c2b3a-4e5f-4a6b-8c7d-9e0f1a2b3c4d"
 

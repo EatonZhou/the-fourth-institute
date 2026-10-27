@@ -186,7 +186,7 @@ def test_resident_delivery_routes_through_provider(monkeypatch) -> None:
         "message": "hello",
     }
 
-    assistant, updated = resident_execution_domain._send_to_resident_backend(
+    assistant, updated = resident_execution_domain.send_to_resident_backend(
         record,
         job,
     )
@@ -253,25 +253,25 @@ def test_concurrent_synchronous_duplicate_is_claimed_once(monkeypatch, tmp_path)
         assert release_delivery.wait(timeout=2)
         return {"resident_id": resident_id, "message_id": message_id}
 
-    monkeypatch.setattr(resident_lifecycle_domain, "_state_lock", state_lock)
-    monkeypatch.setattr(resident_workspace_domain, "_find_resident", lambda value: record)
-    monkeypatch.setattr(resident_workspace_domain, "_find_resident_for_admission", lambda value: record)
-    monkeypatch.setattr(resident_runtime_domain, "_resident_working_directory", lambda _record: tmp_path)
+    monkeypatch.setattr(resident_lifecycle_domain, "state_lock", state_lock)
+    monkeypatch.setattr(resident_workspace_domain, "find_resident", lambda value: record)
+    monkeypatch.setattr(resident_workspace_domain, "find_resident_for_admission", lambda value: record)
+    monkeypatch.setattr(resident_runtime_domain, "resident_working_directory", lambda _record: tmp_path)
     monkeypatch.setattr(
         resident_intake_domain,
         "ensure_resident_visible_to_actor",
         lambda *args, **kwargs: None,
     )
-    monkeypatch.setattr(resident_directory_domain, "_can_manage", lambda *args: True)
-    monkeypatch.setattr(resident_workspace_domain, "_save_resident_record", lambda *args: None)
+    monkeypatch.setattr(resident_directory_domain, "can_manage", lambda *args: True)
+    monkeypatch.setattr(resident_workspace_domain, "save_resident_record", lambda *args: None)
     monkeypatch.setattr(
         resident_execution_provider,
         "provider_for",
         lambda value: Provider(),
     )
     monkeypatch.setattr(resident_intake_domain, "_resident_user_message", user_message)
-    monkeypatch.setattr(resident_intake_domain, "_existing_resident_delivery", existing)
-    monkeypatch.setattr(resident_lifecycle_domain, "_persist_resident_user_message", persist)
+    monkeypatch.setattr(resident_intake_domain, "existing_resident_delivery", existing)
+    monkeypatch.setattr(resident_lifecycle_domain, "persist_resident_user_message", persist)
     monkeypatch.setattr(
         resident_conversation_stream,
         "get_repository",
@@ -292,7 +292,7 @@ def test_concurrent_synchronous_duplicate_is_claimed_once(monkeypatch, tmp_path)
 
     def send() -> None:
         try:
-            resident_intake_domain._persist_resident_input(
+            resident_intake_domain.persist_resident_input(
                 resident_id,
                 "sample_admin",
                 "hello",

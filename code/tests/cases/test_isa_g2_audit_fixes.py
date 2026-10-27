@@ -96,7 +96,7 @@ def test_unchanged_settings_keep_the_same_version(resident_record, monkeypatch):
     inv = invocation("UpdateResidentSettings", resident_id=resident_id, changes={"collaboration_mode": "plan"})
     residents.update_resident_settings(inv)
     before = residents.get_resident_settings(invocation("GetResidentSettings", resident_id=resident_id))
-    monkeypatch.setattr(resident_lifecycle_domain, "_now_iso", lambda: "2099-01-01T00:00:00Z")
+    monkeypatch.setattr(resident_lifecycle_domain, "now_iso", lambda: "2099-01-01T00:00:00Z")
     residents.update_resident_settings(inv)
     assert residents.get_resident_settings(invocation("GetResidentSettings", resident_id=resident_id)) == before
 
@@ -171,10 +171,10 @@ def test_quiesce_clears_closed_intake_waiting_inputs(resident_record, monkeypatc
     from management_portal.society_service import resident_registration_domain, resident_record_domain, resident_session_backend_domain
     resident_id = resident_record["resident_id"]
     resident_protocol.change_resident_state(resident_id, "CASE-A", state_domain="intake", transition="close")
-    monkeypatch.setattr(resident_session_backend_domain, "_handle_resident_native_command", lambda *_a, **_kw: {})
+    monkeypatch.setattr(resident_session_backend_domain, "handle_resident_native_command", lambda *_a, **_kw: {})
     monkeypatch.setattr(slash_commands, "handle_slash_command", lambda *_a, **_kw: {"handled": False})
-    monkeypatch.setattr(resident_record_domain, "_resolve_context_refs", lambda *_a, **_kw: {})
-    monkeypatch.setattr(resident_registration_domain, "_build_resident_prompt", lambda *_a, **_kw: "held prompt")
+    monkeypatch.setattr(resident_record_domain, "resolve_context_refs", lambda *_a, **_kw: {})
+    monkeypatch.setattr(resident_registration_domain, "build_resident_prompt", lambda *_a, **_kw: "held prompt")
     delivered = [resident_domain.deliver_resident_message_content(resident_id, "CASE-A", content) for content in ("one", "two")]
     assert resident_protocol.get_resident_state(resident_id, "CASE-A")["state"]["active_message_id"] == ""
     result = lineage_domain.quiesce_lineage_resident(resident_record["lineage_id"], {"target": resident_id}, "CASE-A")

@@ -76,7 +76,7 @@ def test_business_outcome_and_failure_query_follow_designated_successor(handoff,
     pending = trigger_paths.resident_inputs(lineage, pending=True)
     assert pending[0]['status'] == 'queued' and pending[0]['completed_at'] == ''
     assert trigger_paths.find_event_paths(lineage, {'handoff_test': 'guards'})[0]['failures'] == []
-    resident_restart_domain._resume_resident_session_restart(operations[-1]['step'])
+    resident_restart_domain.resume_resident_session_restart(operations[-1]['step'])
     resident_deferred_restart.advance(store.resident_record(RID))
     agent = AgentDataStore()
     agent.finish_execution(new, status=status)
@@ -91,7 +91,7 @@ def test_business_outcome_and_failure_query_follow_designated_successor(handoff,
 
 def test_failed_release_rolls_back_links_reservation_and_reenters_same_handoff(handoff, monkeypatch):
     store, repo, operations, old, new, lineage, path, _ = handoff
-    resident_restart_domain._resume_resident_session_restart(operations[-1]['step'])
+    resident_restart_domain.resume_resident_session_restart(operations[-1]['step'])
     link = trigger_path_storage.link_execution
     def fail_after_link(c, step, execution_id):
         link(c, step, execution_id)

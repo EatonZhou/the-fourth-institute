@@ -32,11 +32,8 @@ import copy
 import json
 from management_portal.execution import resident_runtime_settings
 
-from .resident_domain_common import (
-    MAX_TIMELINE_ITEMS,
-    RESIDENT_RESOURCE_ACTIVITY_TOTAL_CHARS,
-    _new_resident_id,
-)
+from . import resident_domain_common
+from .resident_domain_common import MAX_TIMELINE_ITEMS
 
 
 RECENT_RESIDENT_MESSAGES = 120
@@ -68,9 +65,9 @@ CONTEXT_PRESSURE_HOT_FALLBACK_TOKENS = max(
 
 
 def _lineage_summary(record: dict[str, Any], registry: dict[str, Any] | None = None) -> dict[str, Any]:
-    from .resident_runtime_domain import _lineage_identity_record
+    from . import resident_runtime_domain
     del registry
-    identity = _lineage_identity_record(record)
+    identity = resident_runtime_domain.lineage_identity_record(record)
     lineage_node_ids = list(
         identity.get("lineage_node_ids")
         or []
@@ -88,19 +85,19 @@ def _annotate_resident_lineage_fields(
     record: dict[str, Any],
     registry: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    from .resident_runtime_domain import _resident_backend_capabilities, _resident_lineage_resident
+    from . import resident_runtime_domain
     lineage_id = resident_lineage.lineage_id(record)
     record["lineage_id"] = lineage_id
-    record["backend_capabilities"] = _resident_backend_capabilities(record)
-    record["lineage_resident"] = _resident_lineage_resident(record)
+    record["backend_capabilities"] = resident_runtime_domain.resident_backend_capabilities(record)
+    record["lineage_resident"] = resident_runtime_domain.resident_lineage_resident(record)
     record["lineage"] = _lineage_summary(record, registry)
     return record
 
 
-def _unique_resident_id() -> str:
+def unique_resident_id() -> str:
     catalog = resident_catalog.get_catalog()
     while True:
-        candidate = _new_resident_id()
+        candidate = resident_domain_common.new_resident_id()
         if not catalog.get_many([candidate]):
             return candidate
 
@@ -149,7 +146,7 @@ def _list_actor_conversation_records(
     resident_ids: Iterable[str] | None = None,
 ) -> dict[str, Any]:
     """Return exactly the Residents with conversation activity by actor."""
-    from .resident_conversation_projection_domain import _conversation_family_summaries
+    from . import resident_conversation_projection_domain
 
     actor_id = canonical_actor_id(actor)
     requested_ids = (
@@ -176,7 +173,7 @@ def _list_actor_conversation_records(
             requested,
             actor_id,
         )
-        summaries = _conversation_family_summaries(
+        summaries = resident_conversation_projection_domain.conversation_family_summaries(
             [str(item.get("resident_id") or "") for item in residents],
             actor_id,
         )
@@ -204,7 +201,7 @@ def list_resident_conversation_activity(
     page_token: str = "",
 ) -> dict[str, Any]:
     """Return actor-scoped Resident conversation activity facts."""
-    from .resident_conversation_projection_domain import _conversation_family_summaries
+    from . import resident_conversation_projection_domain
 
     if page_size is not None:
         if resident_ids is not None:
@@ -244,7 +241,7 @@ def list_resident_conversation_activity(
         residents.sort(key=lambda item: order[str(item["resident_id"])])
         has_more = bool(next_token) or len(residents) > size
         residents = residents[:size]
-        summaries = _conversation_family_summaries(
+        summaries = resident_conversation_projection_domain.conversation_family_summaries(
             [str(item["resident_id"]) for item in residents], actor_id,
         )
         for resident in residents:
@@ -257,7 +254,7 @@ def list_resident_conversation_activity(
     return _list_actor_conversation_records(actor, resident_ids)
 
 
-def _lineage_registry_records_locked(lineage_id: str) -> list[dict[str, Any]]:
+def lineage_registry_records_locked(lineage_id: str) -> list[dict[str, Any]]:
     target = str(lineage_id or "").strip()
     if not identity_contract.is_valid_id(target, "lineage"):
         raise ValueError("lineage_id must be a canonical lineage_* ID")
@@ -278,7 +275,7 @@ def get_resident_user_message_counts(
     resident_ids: Iterable[str],
     actor: str = "",
 ) -> dict[str, int]:
-    from .resident_record_domain import _resident_id
+    from . import resident_record_domain
     actor_id = canonical_actor_id(actor)
     requested = {
         str(resident_id or "").strip()
@@ -289,7 +286,7 @@ def get_resident_user_message_counts(
     with resident_lineage.access_snapshot_scope():
         records = resident_catalog.get_catalog().get_many(requested)
         for record in records:
-            resident_id = _resident_id(record)
+            resident_id = resident_record_domain.record_resident_id(record)
             try:
                 ensure_resident_visible_to_actor(record, actor_id)
             except PermissionError:
@@ -314,14 +311,13 @@ def get_resident_user_message_count(
 
 
 def _session_context_tokens(usage: object) -> int:
-    from .resident_lifecycle_domain import _nonnegative_int
-    from .resident_record_domain import _clean_token_usage
-    cleaned = _clean_token_usage(usage)
-    input_tokens = _nonnegative_int(cleaned.get("input_tokens"), 0)
-    cached_input_tokens = _nonnegative_int(cleaned.get("cached_input_tokens"), 0)
-    total_tokens = _nonnegative_int(cleaned.get("total_tokens"), 0)
-    output_tokens = _nonnegative_int(cleaned.get("output_tokens"), 0)
-    reasoning_tokens = _nonnegative_int(cleaned.get("reasoning_output_tokens"), 0)
+    from . import resident_lifecycle_domain, resident_record_domain
+    cleaned = resident_record_domain.clean_token_usage(usage)
+    input_tokens = resident_lifecycle_domain.nonnegative_int(cleaned.get("input_tokens"), 0)
+    cached_input_tokens = resident_lifecycle_domain.nonnegative_int(cleaned.get("cached_input_tokens"), 0)
+    total_tokens = resident_lifecycle_domain.nonnegative_int(cleaned.get("total_tokens"), 0)
+    output_tokens = resident_lifecycle_domain.nonnegative_int(cleaned.get("output_tokens"), 0)
+    reasoning_tokens = resident_lifecycle_domain.nonnegative_int(cleaned.get("reasoning_output_tokens"), 0)
     non_output_tokens = max(0, total_tokens - output_tokens - reasoning_tokens)
     # Codex reports cached input as a subset of input, while some other backends
     # report it as a separate component. Taking the maximum avoids double
@@ -336,9 +332,9 @@ def _session_context_pressure(
     model_context_window: object = 0,
     source: str = "",
 ) -> dict[str, Any]:
-    from .resident_lifecycle_domain import _nonnegative_int
+    from . import resident_lifecycle_domain
     context_tokens = _session_context_tokens(usage)
-    context_window = _nonnegative_int(model_context_window, 0)
+    context_window = resident_lifecycle_domain.nonnegative_int(model_context_window, 0)
     if context_window and context_tokens > context_window:
         return {
             "context_tokens": 0,
@@ -384,16 +380,15 @@ def _session_context_pressure(
 def _active_execution_context_pressure(
     job: dict[str, Any],
 ) -> dict[str, Any]:
-    from .resident_lifecycle_domain import _nonnegative_int
-    from .resident_record_domain import _clean_token_usage
+    from . import resident_lifecycle_domain, resident_record_domain
     snapshot = resident_execution_work.execution_snapshot(job)
     checkpoint = (
         snapshot.get("checkpoint")
         if isinstance(snapshot.get("checkpoint"), dict)
         else {}
     )
-    usage = _clean_token_usage(checkpoint.get("context_usage"))
-    context_window = _nonnegative_int(
+    usage = resident_record_domain.clean_token_usage(checkpoint.get("context_usage"))
+    context_window = resident_lifecycle_domain.nonnegative_int(
         checkpoint.get("model_context_window"),
         0,
     )
@@ -423,9 +418,7 @@ def _resident_scope_context_pressure(
     *,
     active_job: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    from .resident_execution_domain import _execution_token_usage_contract
-    from .resident_lifecycle_domain import _nonnegative_int
-    from .resident_record_domain import _clean_token_usage
+    from . import resident_execution_domain, resident_lifecycle_domain, resident_record_domain
     if isinstance(active_job, dict) and resident_execution_work.is_active(active_job):
         return _active_execution_context_pressure(active_job)
     usage_field = "last_token_usage"
@@ -436,14 +429,14 @@ def _resident_scope_context_pressure(
         if isinstance(scope.get(usage_field), dict)
         else {}
     )
-    stored_usage = _clean_token_usage(raw_usage)
-    projection = _execution_token_usage_contract(raw_usage)
-    context_usage = stored_usage or _clean_token_usage(
+    stored_usage = resident_record_domain.clean_token_usage(raw_usage)
+    projection = resident_execution_domain.execution_token_usage_contract(raw_usage)
+    context_usage = stored_usage or resident_record_domain.clean_token_usage(
         projection.get("context_usage")
     )
     context_window = (
-        _nonnegative_int(scope.get(context_window_field), 0)
-        or _nonnegative_int(
+        resident_lifecycle_domain.nonnegative_int(scope.get(context_window_field), 0)
+        or resident_lifecycle_domain.nonnegative_int(
             projection.get("model_context_window"),
             0,
         )
@@ -462,7 +455,7 @@ def get_resident_context_pressures(
     resident_ids: list[str],
     actor: str = "",
 ) -> dict[str, dict[str, Any]]:
-    from .resident_record_domain import _resident_id
+    from . import resident_record_domain
     actor_id = canonical_actor_id(actor)
     requested = {
         str(resident_id or "").strip()
@@ -483,7 +476,7 @@ def get_resident_context_pressures(
         )
     projection: dict[str, dict[str, Any]] = {}
     for record in records:
-        resident_id = _resident_id(record)
+        resident_id = resident_record_domain.record_resident_id(record)
         if not _resident_visible_to_actor(record, actor_id):
             continue
         projection[resident_id] = _resident_scope_context_pressure(
@@ -513,9 +506,9 @@ def _forward_scope_id(record: dict[str, Any]) -> str:
 
 
 def _forward_project_titles() -> dict[str, str]:
-    from .resident_project_domain import _load_projects_registry
+    from . import resident_project_domain
     return {str(item["id"]): str(item.get("name") or item["id"])
-            for item in _load_projects_registry() if item.get("id")}
+            for item in resident_project_domain.load_projects_registry() if item.get("id")}
 
 
 def _forward_scope(
@@ -561,9 +554,9 @@ def _resolve_forward_target_by_resident_id(
     resident_id: str,
     actor_id: str,
 ) -> dict[str, Any]:
-    from .resident_workspace_domain import _find_resident
+    from . import resident_workspace_domain
     exact_id = str(resident_id or "").strip()
-    record = _find_resident(exact_id)
+    record = resident_workspace_domain.find_resident(exact_id)
     if not record:
         raise KeyError("resident not found")
     if not _resident_visible_to_actor(record, actor_id):
@@ -660,11 +653,9 @@ def _resident_conversation_activity(
     limit: int = RECENT_RESIDENT_MESSAGES,
 ) -> list[dict[str, Any]]:
     """Build the bounded Resource projection from canonical Messages."""
-    from .resident_conversation_projection_domain import _truncate_text
-    from .resident_record_domain import _resident_id
-    from .resident_workspace_domain import _protocol_message_text
+    from . import resident_conversation_projection_domain, resident_record_domain, resident_workspace_domain
 
-    resident_id = _resident_id(record)
+    resident_id = resident_record_domain.record_resident_id(record)
     repository = resident_conversation_stream.get_repository()
     output: list[dict[str, Any]] = []
     for order, message in enumerate(
@@ -678,7 +669,7 @@ def _resident_conversation_activity(
             "agent": "backend_output",
             "system": "portal",
         }.get(role, "portal")
-        content = _protocol_message_text(message)
+        content = resident_workspace_domain.protocol_message_text(message)
         output.append({
             "id": str(message.get("message_id") or ""),
             "message_id": str(message.get("message_id") or ""),
@@ -694,7 +685,7 @@ def _resident_conversation_activity(
             ),
             "author": author_id if role == "user" else role,
             "resident_id": resident_id,
-            "content": _truncate_text(content),
+            "content": resident_conversation_projection_domain.truncate_text(content),
             "order": order,
         })
     return output
@@ -733,7 +724,7 @@ def _resident_resource_activity(
         seen.add(key)
         deduped.append(item)
     truncated = len(deduped) > RESIDENT_RESOURCE_ACTIVITY_LIMIT
-    remaining = RESIDENT_RESOURCE_ACTIVITY_TOTAL_CHARS
+    remaining = resident_domain_common.RESIDENT_RESOURCE_ACTIVITY_TOTAL_CHARS
     output: list[dict[str, Any]] = []
     for item in deduped[-RESIDENT_RESOURCE_ACTIVITY_LIMIT:]:
         projected = {
@@ -771,10 +762,9 @@ def _resident_resource_activity(
 
 def get_resident_resource_projection(resident_id: str) -> dict[str, Any]:
     """Return the bounded cross-Resident work/status read model."""
-    from .resident_lifecycle_domain import _resident_user_message_count
-    from .resident_workspace_domain import _resolve_resident_resource_target
+    from . import resident_lifecycle_domain, resident_workspace_domain
 
-    target = _resolve_resident_resource_target(resident_id)
+    target = resident_workspace_domain.resolve_resident_resource_target(resident_id)
     record = target.record
     activity_items = [
         *_resident_conversation_activity(
@@ -816,7 +806,7 @@ def get_resident_resource_projection(resident_id: str) -> dict[str, Any]:
         "project_id": str(record.get("project_id") or ""),
         "backend": str(record.get("backend") or ""),
         "state": state or "idle",
-        "user_message_count": _resident_user_message_count(target.resident_id),
+        "user_message_count": resident_lifecycle_domain.resident_user_message_count(target.resident_id),
         "created_at": str(record.get("created_at") or ""),
         "updated_at": updated_at,
         "last_interaction_at": str(
@@ -832,30 +822,30 @@ def get_resident_resource_projection(resident_id: str) -> dict[str, Any]:
     }
 
 
-def _resident_trace_context_text(record: Mapping[str, Any], snapshot: dict[str, Any]) -> str:
-    from .resident_workspace_domain import _protocol_message_text
+def resident_trace_context_text(record: Mapping[str, Any], snapshot: dict[str, Any]) -> str:
+    from . import resident_workspace_domain
     messages, left_out = resident_fork_context.fit_to_window(
         resident_fork_context.seed_messages(snapshot), int(record.get("last_model_context_window") or 0),
     )
     note = [f"（更早的 {left_out} 条历史超出新会话可用上下文；完整记录保留在本 Resident 的轨迹中。）"] if left_out else []
-    return "\n\n".join(note + [f"{item['role']}: {_protocol_message_text(item)}" for item in messages])
+    return "\n\n".join(note + [f"{item['role']}: {resident_workspace_domain.protocol_message_text(item)}" for item in messages])
 
 
-def _resident_conversation_messages(
+def resident_conversation_messages(
     record: dict,
     limit: int = MAX_TIMELINE_ITEMS,
 ) -> list[dict[str, Any]]:
     """Read canonical Messages without deriving a second transcript shape."""
-    from .resident_record_domain import _resident_id
+    from . import resident_record_domain
 
-    resident_id = _resident_id(record)
+    resident_id = resident_record_domain.record_resident_id(record)
     return resident_conversation_stream.get_repository().read_messages(
         resident_id,
         limit=limit,
     )
 
 
-def _resident_session_prompt_controls(
+def resident_session_prompt_controls(
     runtime_settings: object,
 ) -> dict[str, bool]:
     """The per-input snapshot of a Resident's prompt controls."""
@@ -863,7 +853,7 @@ def _resident_session_prompt_controls(
     return {"allow_subagents": bool(settings.get("allow_subagents"))}
 
 
-def _can_manage(
+def can_manage(
     record: dict,
     actor: str,
 ) -> bool:
@@ -874,7 +864,7 @@ def _can_manage(
     return _can_manage_resident(record, actor_id)
 
 
-def _has_resident_workspace_authority(
+def has_resident_workspace_authority(
     record: dict[str, Any],
     actor: str,
     resident: dict[str, Any] | None = None,
@@ -884,7 +874,7 @@ def _has_resident_workspace_authority(
     return _can_manage_resident(resident or record, actor)
 
 
-def _is_active_actor(actor: str) -> bool:
+def is_active_actor(actor: str) -> bool:
     """Any identity whose Portal account is not disabled: Users, Residents and Portal services."""
 
     return get_portal_access_store().is_active(canonical_actor_id(actor))
@@ -895,11 +885,9 @@ def _resident_workspace_public_record(
     actor: str,
 ) -> dict[str, Any]:
     """Project only Resident identity and workspace fields used by the Portal UI."""
-    from .resident_record_domain import _resident_id
-    from .resident_runtime_domain import _resident_backend_capabilities
-    from .resident_workspace_domain import _resident_workspace_roots
+    from . import resident_record_domain, resident_runtime_domain, resident_workspace_domain
 
-    resident_id = _resident_id(record)
+    resident_id = resident_record_domain.record_resident_id(record)
     public = {
         key: copy.deepcopy(record.get(key))
         for key in (
@@ -925,8 +913,8 @@ def _resident_workspace_public_record(
         "title": str(record.get("title") or resident_id),
         "lineage_id": resident_lineage.lineage_id(record),
         "backend": resident_backend.execution_backend(record),
-        "backend_capabilities": _resident_backend_capabilities(record),
-        "workspace_roots": _resident_workspace_roots(record),
+        "backend_capabilities": resident_runtime_domain.resident_backend_capabilities(record),
+        "workspace_roots": resident_workspace_domain.resident_workspace_roots(record),
     })
     _annotate_resident_lineage_fields(
         public,
@@ -953,7 +941,7 @@ def _resident_provider_session(
     }
 
 
-def _runtime_activity_for_execution(
+def runtime_activity_for_execution(
     resident_id: str,
     job: dict[str, Any] | None,
     *,
@@ -1026,7 +1014,7 @@ def _runtime_activity_for_execution(
     }
 
 
-def _resident_status_signature(payload: dict[str, Any]) -> str:
+def resident_status_signature(payload: dict[str, Any]) -> str:
     return json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
@@ -1035,10 +1023,10 @@ def get_lineage_node_metadata(
     actor: str = "",
 ) -> dict[str, Any]:
     """Return the one session projection consumed by the Lineage workspace."""
-    from .resident_execution_domain import _get_lineage_node_metadata
+    from . import resident_execution_domain
 
     with resident_lineage.access_snapshot_scope():
-        return _get_lineage_node_metadata(
+        return resident_execution_domain.get_lineage_node_metadata(
             resident_id,
             actor,
         )
@@ -1049,16 +1037,14 @@ def _resident_session_projection_from_record(
     actor: str,
 ) -> dict[str, Any]:
     """Own the one canonical projection shared by every Resident Chat surface."""
-    from .resident_record_domain import _resident_id
-    from .resident_runtime_domain import _read_resident_runtime_settings, _resident_session_account_id, account_selection_payload
-    from .resident_watchboard_domain import _has_watchboard, _watchboard_capabilities
+    from . import resident_record_domain, resident_runtime_domain, resident_watchboard_domain
 
     actor_id = canonical_actor_id(actor)
-    exact_resident_id = _resident_id(record)
-    runtime_settings = _read_resident_runtime_settings(record)
+    exact_resident_id = resident_record_domain.record_resident_id(record)
+    runtime_settings = resident_runtime_domain.read_resident_runtime_settings(record)
     exact_session_record = resident_backend.session_record(record)
     provider_session = _resident_provider_session(record, exact_session_record)
-    session_account_id = _resident_session_account_id(
+    session_account_id = resident_runtime_domain.resident_session_account_id(
         record,
         session_record=exact_session_record,
     )
@@ -1068,7 +1054,7 @@ def _resident_session_projection_from_record(
     )
     return {
         "schema": "tfi.resident-session-projection.v1",
-        "revision": _resident_status_signature({
+        "revision": resident_status_signature({
             "record_updated_at": str(record.get("updated_at") or ""),
             "provider_session": provider_session,
             "runtime_settings": runtime_settings,
@@ -1080,17 +1066,17 @@ def _resident_session_projection_from_record(
         "backend_capabilities": resident_public.get("backend_capabilities") or {},
         "provider_session": provider_session,
         "execution_account": resident_backend.execution_account_projection(record),
-        "account_selection": account_selection_payload(
+        "account_selection": resident_runtime_domain.account_selection_payload(
             record,
             session_account_id,
         ),
         "runtime_settings": runtime_settings,
         "agent_harness_defaults": resident_runtime_settings.normalize_settings({})["agent_harness"]["features"],
         "watchboard": {
-            "enabled": _has_watchboard(record),
+            "enabled": resident_watchboard_domain.has_watchboard(record),
             "resident_id": exact_resident_id,
         },
-        "watchboard_capabilities": _watchboard_capabilities(record, actor_id),
+        "watchboard_capabilities": resident_watchboard_domain.watchboard_capabilities(record, actor_id),
         "family_facade": family_facade.chat_presentation(record),
         "allows": resident_access.resident_allows(record, actor_id),
     }
@@ -1107,11 +1093,11 @@ def get_resident_session_projection(
     return detached committed views, so a Chat read does not need to serialize
     with unrelated reads from the same Lineage.
     """
-    from .resident_workspace_domain import resolve_resident_runtime_target
+    from . import resident_workspace_domain
 
     actor_id = canonical_actor_id(actor)
     with resident_lineage.access_snapshot_scope():
-        resolved = resolve_resident_runtime_target(
+        resolved = resident_workspace_domain.resolve_resident_runtime_target(
             resident_id,
             actor_id,
             require_visible=True,

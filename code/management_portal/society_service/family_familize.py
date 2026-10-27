@@ -9,9 +9,9 @@ from . import family_facade
 
 
 def _find(resident_id: str) -> dict[str, Any]:
-    from .resident_workspace_domain import _find_resident
+    from . import resident_workspace_domain
 
-    return _find_resident(resident_id) or {}
+    return resident_workspace_domain.find_resident(resident_id) or {}
 
 
 def family_blocks(lineage: Mapping[str, Any]) -> list[dict[str, Any]]:
@@ -62,7 +62,7 @@ def facade_for_arrival_call(lineage, component_id, instruction, arguments, event
     """
     from management_common.actor_identity import same_actor
     from . import family_facade, resident_conversation_stream
-    from .resident_workspace_domain import _find_resident
+    from . import resident_workspace_domain
 
     if event is None or event.type != "resident.message_received":
         return ""
@@ -86,7 +86,7 @@ def facade_for_arrival_call(lineage, component_id, instruction, arguments, event
             or arguments.get("resident_id") != facade_id
             or message_id != payload.get("message_id")):
         return ""
-    facade = _find_resident(facade_id)
+    facade = resident_workspace_domain.find_resident(facade_id)
     if (not family_facade.is_facade(facade) or facade.get("deleted_at")
             or facade.get("lineage_id") != lineage_id
             or facade["family"]["family_id"] != block["id"]):

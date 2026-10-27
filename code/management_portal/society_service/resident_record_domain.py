@@ -18,13 +18,7 @@ import copy
 from management_portal.execution import slash_commands
 import re
 
-from .resident_domain_common import (
-    LINEAGE_FOLDER_SCHEMA_VERSION,
-    RESIDENT_INSTRUCTIONS_FILE,
-    RESIDENT_WORKSPACE_DIR,
-    _new_lineage_id,
-    _new_resident_id,
-)
+from . import resident_domain_common
 
 
 def _new_workspace_id(existing_ids: set[str] | None = None) -> str:
@@ -44,19 +38,19 @@ TOKEN_USAGE_KEYS = (
 )
 
 
-def _clean_token_usage(value: object) -> dict[str, int]:
-    from .resident_lifecycle_domain import _nonnegative_int
+def clean_token_usage(value: object) -> dict[str, int]:
+    from . import resident_lifecycle_domain
     if not isinstance(value, dict):
         return {}
     out: dict[str, int] = {}
     for key in TOKEN_USAGE_KEYS:
-        number = _nonnegative_int(value.get(key), 0)
+        number = resident_lifecycle_domain.nonnegative_int(value.get(key), 0)
         if number > 0:
             out[key] = number
     return out
 
 
-def _resident_id(record: dict[str, Any]) -> str:
+def record_resident_id(record: dict[str, Any]) -> str:
     return str(record.get("resident_id") or "").strip()
 
 
@@ -82,7 +76,7 @@ def _backend_session_state(
     return "active" if str(backend_session_id or "").strip() else "pending_create"
 
 
-def _record_backend_session_state(
+def record_backend_session_state(
     record: Mapping[str, object],
     *,
     provider_binding: Mapping[str, object] | None = None,
@@ -102,22 +96,22 @@ def _record_backend_session_state(
     )
 
 
-def _apply_resident_resource_identity(record: dict[str, Any]) -> None:
+def apply_resident_resource_identity(record: dict[str, Any]) -> None:
     resident_id = str(record.get("resident_id") or "").strip()
     if resident_id:
         identity_contract.validate_id(resident_id, "resident")
     else:
-        resident_id = _new_resident_id()
+        resident_id = resident_domain_common.new_resident_id()
         record["resident_id"] = resident_id
     lineage_id = str(record.get("lineage_id") or "").strip()
     if lineage_id:
         identity_contract.validate_id(lineage_id, "lineage")
     else:
-        lineage_id = _new_lineage_id()
+        lineage_id = resident_domain_common.new_lineage_id()
         record["lineage_id"] = lineage_id
 
 
-def _resident_resource_identity_signature(record: dict[str, Any]) -> dict[str, Any]:
+def resident_resource_identity_signature(record: dict[str, Any]) -> dict[str, Any]:
     """Return only fields projected to ResourceService, excluding runtime state."""
     bindings = sorted(
         (
@@ -147,7 +141,7 @@ def _resident_resource_identity_signature(record: dict[str, Any]) -> dict[str, A
     }
 
 
-def _canonical_derived_resident_record(
+def canonical_derived_resident_record(
     anchor: dict[str, Any],
     resident: dict[str, Any],
 ) -> dict[str, Any]:
@@ -173,9 +167,9 @@ def _canonical_derived_resident_record(
         "schema": resident_catalog.RESIDENT_RECORD_SCHEMA,
         "resident_id": resident_lineage.resident_id(resident),
         "lineage_id": resident_lineage.lineage_id(anchor),
-        "folder_schema": LINEAGE_FOLDER_SCHEMA_VERSION,
+        "folder_schema": resident_domain_common.LINEAGE_FOLDER_SCHEMA_VERSION,
         "title": str(resident.get("title") or resident_lineage.resident_id(resident)),
-        "session_state": _record_backend_session_state(resident),
+        "session_state": record_backend_session_state(resident),
         # A derived Resident is usable at once; only registration waits for its resources.
         "registration_state": "ready",
     })
@@ -244,36 +238,32 @@ def sync_lineage_member_credentials(
         )
 
 
-def _resident_folder_path(record: dict[str, Any]) -> Path:
-    from .resident_workspace_domain import _workspace_path
-    workspace = _workspace_path(record)
-    resident_id = _resident_id(record)
+def resident_folder_path(record: dict[str, Any]) -> Path:
+    from . import resident_workspace_domain
+    workspace = resident_workspace_domain.resident_workspace_path(record)
+    resident_id = record_resident_id(record)
     if not resident_id:
         raise ValueError("resident_id missing")
     return workspace / "residents" / resident_id
 
 
-def _resident_owned_workspace_path(
+def resident_owned_workspace_path(
     record: dict[str, Any],
     resident_id: str = "",
 ) -> Path:
     return resident_catalog.owned_workspace_path(record, resident_id)
 
 
-
-
-
-
-def _set_resident_owned_workspace_binding(record: dict[str, Any], *, resident_id: str = "") -> dict[str, Any]:
+def set_resident_owned_workspace_binding(record: dict[str, Any], *, resident_id: str = "") -> dict[str, Any]:
     """Prepare one owned Workspace and only explicit additional relationships."""
     from .resident_workspace_storage import apply_binding_projection, canonical_path
     if record.get("deleted_at"):
         raise KeyError("resident not found")
-    target_id = resident_id or _resident_id(record)
-    path = canonical_path(_resident_owned_workspace_path(record, target_id))
+    target_id = resident_id or record_resident_id(record)
+    path = canonical_path(resident_owned_workspace_path(record, target_id))
     previous = record.get("owned_workspace") or {}
     # A Fork owns a new Workspace, while a move preserves the original ID.
-    own_id = (record.get("owned_workspace_id") if target_id == _resident_id(record) else "")
+    own_id = (record.get("owned_workspace_id") if target_id == record_resident_id(record) else "")
     if previous.get("path") and Path(previous["path"]).parent.name != target_id:
         own_id = ""
     own_id = own_id or _new_workspace_id()
@@ -286,7 +276,7 @@ def _set_resident_owned_workspace_binding(record: dict[str, Any], *, resident_id
     return record
 
 
-def _require_resident_owned_workspace_binding(
+def require_resident_owned_workspace_binding(
     record: dict[str, Any],
 ) -> dict[str, Any]:
     """Return the canonical private Workspace Binding without changing it."""
@@ -300,7 +290,7 @@ def _require_resident_owned_workspace_binding(
     return dict(record["owned_workspace"])
 
 
-def _validated_resident_record_payload(
+def validated_resident_record_payload(
     record: dict[str, Any],
 ) -> dict[str, Any]:
     payload = copy.deepcopy(dict(record))
@@ -310,16 +300,16 @@ def _validated_resident_record_payload(
     return payload
 
 
-def _resident_instructions_path(record: dict[str, Any]) -> Path:
-    return _resident_folder_path(record) / RESIDENT_INSTRUCTIONS_FILE
+def resident_instructions_path(record: dict[str, Any]) -> Path:
+    return resident_folder_path(record) / resident_domain_common.RESIDENT_INSTRUCTIONS_FILE
 
 
-def _sessions_path(record: dict[str, Any]) -> Path:
-    return _resident_folder_path(record) / "runtime"
+def sessions_path(record: dict[str, Any]) -> Path:
+    return resident_folder_path(record) / "runtime"
 
 
-def _session_token_usage_payload(record: dict[str, Any]) -> dict[str, Any]:
-    usage = _clean_token_usage(record.get("last_turn_usage"))
+def session_token_usage_payload(record: dict[str, Any]) -> dict[str, Any]:
+    usage = clean_token_usage(record.get("last_turn_usage"))
     return {
         "summary": {
             "last_turn_usage": usage,
@@ -328,16 +318,16 @@ def _session_token_usage_payload(record: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _last_user_message_text(resident_id: str) -> str:
-    from .resident_workspace_domain import _protocol_message_text
+def last_user_message_text(resident_id: str) -> str:
+    from . import resident_workspace_domain
     message = resident_conversation_stream.get_repository().latest_message(
         resident_id,
         role="user",
     )
-    return _protocol_message_text(message) if isinstance(message, dict) else ""
+    return resident_workspace_domain.protocol_message_text(message) if isinstance(message, dict) else ""
 
 
-def _resident_goal_payload(
+def resident_goal_payload(
     record: dict[str, Any],
     *,
     job: dict[str, Any] | None = None,
@@ -368,7 +358,7 @@ def _resident_goal_payload(
     return {
         "resident_id": str(record.get("resident_id") or ""),
         "title": str(record.get("title") or record.get("resident_id") or ""),
-        "state": _record_backend_session_state(record),
+        "state": record_backend_session_state(record),
         "current_job": "" if current_job.startswith("/") else current_job,
         "last_user_message": str(last_user_message or ""),
     }
@@ -401,17 +391,17 @@ def _runtime_error_code(message: str) -> str:
     return "unknown"
 
 
-def _resident_backend_failure_message(record: dict[str, Any], raw_error: str) -> str:
+def resident_backend_failure_message(record: dict[str, Any], raw_error: str) -> str:
     return str(raw_error or "").strip()
 
 
-def _runtime_error_payload(
+def runtime_error_payload(
     raw_error: str,
     *,
     code: str = "",
     details: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    from .resident_conversation_projection_domain import _truncate_text
+    from . import resident_conversation_projection_domain
     raw = str(raw_error or "").strip()
     if not raw:
         return {}
@@ -421,21 +411,21 @@ def _runtime_error_payload(
     if is_usage_limit_failure(raw, code=supplied_code):
         supplied_code = "provider_usage_limit"
     payload = {
-        "message": _truncate_text(raw, 1600),
+        "message": resident_conversation_projection_domain.truncate_text(raw, 1600),
         "code": supplied_code or _runtime_error_code(raw),
         "source": "execution_result",
-        "raw_error": _truncate_text(raw, 1600),
+        "raw_error": resident_conversation_projection_domain.truncate_text(raw, 1600),
     }
     if isinstance(details, dict) and details:
         payload["details"] = dict(details)
     return payload
 
 
-def _runtime_failure_summary(
+def runtime_failure_summary(
     raw_error: str,
     runtime_error: dict[str, Any] | None = None,
 ) -> str:
-    from .resident_conversation_projection_domain import _truncate_text
+    from . import resident_conversation_projection_domain
     details = runtime_error if isinstance(runtime_error, dict) else {}
     message = str(details.get("message") or raw_error or "").strip()
     folded = message.casefold()
@@ -463,10 +453,10 @@ def _runtime_failure_summary(
     if code in summaries:
         return summaries[code]
     compact = re.sub(r"\s+", " ", message).strip()
-    return _truncate_text(compact or "执行意外结束", 240)
+    return resident_conversation_projection_domain.truncate_text(compact or "执行意外结束", 240)
 
 
-def _resolve_context_refs(
+def resolve_context_refs(
     selection: object,
     actor: str = "",
     content: object = "",
@@ -478,7 +468,7 @@ def _resolve_context_refs(
     )
 
 
-def _attached_references_text(context_refs: dict[str, Any]) -> str:
+def attached_references_text(context_refs: dict[str, Any]) -> str:
     return agent_context_selection.prompt_references(
         context_refs,
         item_char_limit=REF_ITEM_CHAR_LIMIT,

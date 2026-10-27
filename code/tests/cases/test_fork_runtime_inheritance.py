@@ -30,7 +30,7 @@ def test_fork_inherits_every_runtime_setting_of_the_source(resident_record) -> N
     source_settings = codex_runtime_settings.effective_codex_runtime_settings(
         resident_runtime_settings.mark_portal_manual_authority(
             resident_runtime_settings.merge_settings(
-                resident_runtime_domain._read_resident_runtime_settings(resident_record),
+                resident_runtime_domain.read_resident_runtime_settings(resident_record),
                 {
                     "model": "gpt-5.6-sol",
                     "reasoning_effort": "xhigh",
@@ -46,15 +46,15 @@ def test_fork_inherits_every_runtime_setting_of_the_source(resident_record) -> N
             updated_at="2026-09-30T10:00:00Z",
         )
     )
-    resident_runtime_domain._write_resident_runtime_settings(resident_record, source_settings)
-    resident_workspace_domain._save_resident_record(resident_record)
+    resident_runtime_domain.write_resident_runtime_settings(resident_record, source_settings)
+    resident_workspace_domain.save_resident_record(resident_record)
     record_session_turn(resident_record)
 
     created = backend.create_resident_full_context_fork(
         str(resident_record["resident_id"]), "CASE-A", defer_backend_start=True,
     )
     child = resident_catalog.get_catalog().get(created["resident_id"])
-    persisted = resident_runtime_domain._read_resident_runtime_settings(child)
+    persisted = resident_runtime_domain.read_resident_runtime_settings(child)
 
     for key in INHERITED_KEYS:
         assert persisted.get(key) == source_settings.get(key), key
@@ -154,7 +154,7 @@ def test_cross_provider_fork_keeps_trace_and_uses_target_account(resident_record
     source_ids = record_session_turn(resident_record, question="Keep the cross-provider marker")
     account = (default_execution_accounts().get("deepseek_primary") if provider == "provider_api"
                else next(a for a in default_execution_accounts().accounts() if a.provider == provider))
-    source_settings = resident_runtime_domain._read_resident_runtime_settings(resident_record)
+    source_settings = resident_runtime_domain.read_resident_runtime_settings(resident_record)
     args = {"provider": provider, "backend_route_id": account.account_id}
     if mode == "full":
         created = backend.create_resident_full_context_fork(resident_record["resident_id"], "CASE-A", **args)
@@ -164,11 +164,11 @@ def test_cross_provider_fork_keeps_trace_and_uses_target_account(resident_record
     assert child["backend"] == provider
     assert child["backend_route_id"] == account.route_id
     assert resident_backend.execution_backend(child) == provider
-    settings = resident_runtime_domain._read_resident_runtime_settings(child)
+    settings = resident_runtime_domain.read_resident_runtime_settings(child)
     assert settings["backend"] == provider
     assert settings["model"] == ("dsh-model" if provider == "provider_api" else f"{provider}-model")
     assert settings["reasoning_effort"] == ""
-    assert resident_runtime_domain._read_resident_runtime_settings(resident_record) == source_settings
+    assert resident_runtime_domain.read_resident_runtime_settings(resident_record) == source_settings
     snapshot = get_agent_data_store().agent_context_snapshot(child["resident_id"])
     assert [s["segment_id"] for s in snapshot["segments"]] == source_ids
     if child["session_state"] == "creating":
@@ -179,7 +179,7 @@ def test_cross_provider_fork_keeps_trace_and_uses_target_account(resident_record
         from management_portal.execution.contracts import SystemInstructions
         monkeypatch.setattr(execution, "_prepare_resident_prompt", lambda record, job: {
             **job, "actual_sent_prompt": job["raw_message"]})
-        monkeypatch.setattr(execution, "_resident_system_instructions", lambda *a: SystemInstructions())
+        monkeypatch.setattr(execution, "resident_system_instructions", lambda *a: SystemInstructions())
         prepared = execution._portable_context_execution(child, {"actor": "CASE-A", "raw_message": "Continue"})
         request = execution._build_resident_execution_request(child, prepared)
         assert "Keep the cross-provider marker" in request.runtime_options["messages"][-1]["content"]
@@ -193,7 +193,7 @@ def test_cross_provider_fork_keeps_trace_and_uses_target_account(resident_record
         codex_child = resident_catalog.get_catalog().get(returned["resident_id"])
         assert codex_child["backend"] == "codex"
         assert codex_child["backend_route_id"] == "zero"
-        assert resident_runtime_domain._read_resident_runtime_settings(codex_child)["model"] != settings["model"]
+        assert resident_runtime_domain.read_resident_runtime_settings(codex_child)["model"] != settings["model"]
         assert [s["segment_id"] for s in get_agent_data_store().agent_context_snapshot(codex_child["resident_id"])["segments"]] == source_ids
 
 

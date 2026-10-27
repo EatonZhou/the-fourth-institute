@@ -63,6 +63,6 @@ def test_a_kimi_turn_that_ran_out_of_balance_tells_the_user_the_account_is_out_o
 
     raw = ("Kimi Code turn failed before returning a response: 429 Your credit balance is running low "
            "for account <org-1>, please recharge immediately to avoid service disruption")
-    runtime_error = resident_record_domain._runtime_error_payload(raw, code="rate_limit")
+    runtime_error = resident_record_domain.runtime_error_payload(raw, code="rate_limit")
     assert runtime_error["code"] == "provider_usage_limit"
-    assert resident_record_domain._runtime_failure_summary(raw, runtime_error) == "当前模型账号额度不足"
+    assert resident_record_domain.runtime_failure_summary(raw, runtime_error) == "当前模型账号额度不足"

@@ -21,14 +21,14 @@ def _queue(team, count: int = 4) -> tuple[str, list[dict]]:
     entries = []
     for index in range(count):
         message_id = "msg_" + uuid.uuid4().hex
-        message = resident_intake_domain._message("user", message_id, ACTOR, message_id=message_id)
+        message = resident_intake_domain.build_message("user", message_id, ACTOR, message_id=message_id)
         if index == 0:
-            resident_lifecycle_domain._append_conversation_message(resident_id, message)
+            resident_lifecycle_domain.append_conversation_message(resident_id, message)
         else:
-            resident_lifecycle_domain._accept_resident_user_message(resident_id, message)
+            resident_lifecycle_domain.accept_resident_user_message(resident_id, message)
         entries.append({"user_message_id": message_id, "input_message": message,
                         "message": message_id, "actor": ACTOR})
-    record = resident_workspace_domain._find_resident(resident_id)
+    record = resident_workspace_domain.find_resident(resident_id)
     work = {**entries[0], "execution_id": "execution-" + uuid.uuid4().hex[:24], "queue": entries[1:]}
     resident_execution_work.write(record, work)
     entries[0]["execution_id"] = work["execution_id"]
@@ -36,7 +36,7 @@ def _queue(team, count: int = 4) -> tuple[str, list[dict]]:
 
 
 def _waiting(resident_id: str) -> list[str]:
-    record = resident_workspace_domain._find_resident(resident_id)
+    record = resident_workspace_domain.find_resident(resident_id)
     return [item["user_message_id"] for item in resident_execution_work.read(record)["queue"]]
 
 
@@ -58,7 +58,7 @@ def test_move_before_after_and_full_order_keep_the_running_head_and_scheduler_in
     full = instruction(team, "ReorderMailbox", {"resident_id": resident_id, "order": [c, a, d, b]})
     assert _waiting(resident_id) == [c, a, d, b]
     assert full.result["revision"].startswith("queue-")
-    record = resident_workspace_domain._find_resident(resident_id)
+    record = resident_workspace_domain.find_resident(resident_id)
     assert resident_execution_work.read(record)["user_message_id"] == head
     work = resident_execution_work.read(record)
     assert work["execution_id"] == entries[0]["execution_id"]

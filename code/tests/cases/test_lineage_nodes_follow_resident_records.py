@@ -8,7 +8,10 @@ Deleted Residents leave the active graph while their identity remains.
 
 from __future__ import annotations
 
-from management_portal.society_service.resident_workspace_domain import _find_resident, _save_resident_record
+from management_portal.society_service.resident_workspace_domain import (
+    find_resident as _find_resident,
+    save_resident_record as _save_resident_record,
+)
 from tests.cases.isa_test_support import ok
 from tests.cases.test_isa_lineage_lifecycle import (  # noqa: F401 - lineage is a fixture
     future_creation_store,

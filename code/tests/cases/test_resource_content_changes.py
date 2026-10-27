@@ -148,7 +148,7 @@ def test_resource_receipts_project_only_at_terminal_without_polling(receipt_stor
     service.execution_content_changes.assert_not_called()
     execution_service = Mock()
     execution_service.wait.return_value = {"status": "completed"}
-    resident_execution_domain._wait_for_resident_execution(
+    resident_execution_domain.wait_for_resident_execution(
         execution_service, resident_id=resident_id,
         execution_id=execution_id, actor="CASE-A", user_message_id="msg-source",
     )

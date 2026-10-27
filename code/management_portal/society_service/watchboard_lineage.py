@@ -10,8 +10,8 @@ import json
 from pathlib import Path
 
 def root(record):
-    from .resident_record_domain import _resident_owned_workspace_path
-    return _resident_owned_workspace_path(record) / "watchboard"
+    from . import resident_record_domain
+    return resident_record_domain.resident_owned_workspace_path(record) / "watchboard"
 
 
 def prefix(record):
@@ -80,20 +80,20 @@ def installation_plan(record, graph=None):
         return plan
     script_root = root(record)
     manifest_path = script_root / "agent.yaml"
-    manifest, error = views._read_watchboard_agent_manifest(record) if manifest_path.exists() else ({}, "")
+    manifest, error = views.read_watchboard_agent_manifest(record) if manifest_path.exists() else ({}, "")
     if error:
         raise ValueError(error)
     if not manifest:
-        manifest = views._default_watchboard_agent_manifest(record)
+        manifest = views.default_watchboard_agent_manifest(record)
         manifest["root"] = str(script_root)
     defaults = {
         "agent.yaml": json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
-        "watchboard.yaml": json.dumps(views._default_watchboard_view(record), ensure_ascii=False, indent=2) + "\n",
+        "watchboard.yaml": json.dumps(views.default_watchboard_view(record), ensure_ascii=False, indent=2) + "\n",
         "state/status.json": "{}\n",
-        "README.md": views._watchboard_readme_text(record),
+        "README.md": views.watchboard_readme_text(record),
     }
     if manifest["commands"]:
-        defaults["src/main.py"] = views._default_watchboard_main_py()
+        defaults["src/main.py"] = views.default_watchboard_main_py()
         defaults["config/config.yaml"] = "{}\n"
     files = [{"address": record["owned_workspace_id"] + "/file/watchboard/" + path, "content": content}
              for path, content in defaults.items() if not (script_root / path).exists()]

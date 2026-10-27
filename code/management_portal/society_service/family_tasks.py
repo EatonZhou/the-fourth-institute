@@ -189,7 +189,7 @@ def validate_routes(body: dict, block: dict) -> None:
 
 def guide(record: dict, body: dict | None = None, block: dict | None = None) -> tuple[str, str, str]:
     """Materialize the current graph projection at a stable, atomically replaced path."""
-    from .resident_record_domain import _resident_owned_workspace_path
+    from . import resident_record_domain
     if body is None:
         body, block = context(record)
     family = block["family"]
@@ -213,7 +213,7 @@ def guide(record: dict, body: dict | None = None, block: dict | None = None) -> 
             sections.append(f"## {entry['title']} ({trigger})\n{entry['guide']}")
     content = "\n\n".join(sections) + "\n"
     version = hashlib.sha256(content.encode()).hexdigest()[:12]
-    path = _resident_owned_workspace_path(record) / "family-work-guide.md"
+    path = resident_record_domain.resident_owned_workspace_path(record) / "family-work-guide.md"
     path.parent.mkdir(parents=True, exist_ok=True)
     if not path.exists() or path.read_text(encoding="utf-8") != content:
         fd, temporary = tempfile.mkstemp(dir=path.parent, prefix=".family-guide-")
@@ -243,9 +243,8 @@ def render(record: dict, trigger: str, facts: dict) -> str:
 def dispatch(facade_id: str, trigger: str, actor: str, *, facts: dict | None = None,
              message_id: str = "", source_message_id: str = "", event: dict | None = None) -> dict:
     from . import family_facade, lineage_domain
-    from .resident_workspace_domain import _find_resident
-    from .resident_execution_domain import deliver_resident_message_content
-    facade = _find_resident(facade_id)
+    from . import resident_execution_domain, resident_workspace_domain
+    facade = resident_workspace_domain.find_resident(facade_id)
     if not family_facade.is_facade(facade) or trigger not in TASKS:
         raise ValueError("未知 Family 或工作触发类型")
     body, block = context(facade)
@@ -253,7 +252,7 @@ def dispatch(facade_id: str, trigger: str, actor: str, *, facts: dict | None = N
     if actor not in {family["facade"], family["steward"], family["router"]}:
         lineage_domain._ensure_manager(body, actor)
     role = TASKS[trigger][1]
-    target = _find_resident(family[role])
+    target = resident_workspace_domain.find_resident(family[role])
     facts = copy.deepcopy(facts or {})
     if source_message_id:
         facts["message_id"] = source_message_id
@@ -283,7 +282,7 @@ def dispatch(facade_id: str, trigger: str, actor: str, *, facts: dict | None = N
         from management_common.operation_identity import operation_identity_scope
         from management_common.principal import OperationIdentity
         with operation_identity_scope(OperationIdentity.for_actor(facade_id, initiated_by=actor)):
-            return deliver_resident_message_content(target["resident_id"], facade_id, render(target, trigger, facts),
+            return resident_execution_domain.deliver_resident_message_content(target["resident_id"], facade_id, render(target, trigger, facts),
                 business_ref=f"family-route/{facade_id}/message/{mid}", **options)
     ref = f"duty/family-{trigger}"
     if trigger == "route_review":

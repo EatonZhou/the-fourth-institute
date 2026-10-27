@@ -29,7 +29,7 @@ def test_chatroom_waits_for_family_work_and_projects_its_terminal(delivery_resid
     """
     facade_id = delivery_resident["resident_id"]
     set_role(facade_id, family_id="fbi_chatroom_family", actor="sample_admin")
-    facade = resident_workspace_domain._find_resident(facade_id)
+    facade = resident_workspace_domain.find_resident(facade_id)
     _register_test_member(facade, "Implementation")
     set_role(MEMBER, family_id="fbi_chatroom_family", role="member", actor="sample_admin")
     room_id = chatroom.create_chatroom("sample_admin", ["bob"], "Family work")["chatroom_id"]
@@ -123,7 +123,7 @@ def test_nested_family_state_and_events_follow_the_original_request(monkeypatch)
             assert rid == worker
             return {"state": {"active_message_id": leaf, "work_state": "running", "work_phase": "starting_session"}, "activities": []}
     monkeypatch.setattr(resident_conversation_stream, "get_repository", lambda: Repository())
-    monkeypatch.setattr(resident_workspace_domain, "_find_resident", lambda rid: records[rid])
+    monkeypatch.setattr(resident_workspace_domain, "find_resident", lambda rid: records[rid])
     monkeypatch.setattr(family_facade, "is_facade", lambda r: r["resident_id"] in links)
     monkeypatch.setattr(family_facade, "relay_links", lambda r: links.get(r["resident_id"], {}))
     monkeypatch.setattr(resident_protocol.resident_mailbox, "project_input_state", lambda r, mid, state: state)

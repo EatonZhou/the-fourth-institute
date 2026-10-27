@@ -466,31 +466,29 @@ def organizer_id(actor: str) -> str:
 
 
 def _operation_result(resident_id: str, **fields: Any) -> dict[str, Any]:
-    from .resident_intake_domain import _resident_operation_result
+    from . import resident_intake_domain
 
-    return _resident_operation_result(resident_id, **fields)
+    return resident_intake_domain.resident_operation_result(resident_id, **fields)
 
 
 def merge(resident_id: str, actor: str, message_ids: Iterable[object]) -> dict[str, Any]:
     """Replace the selected waiting items with one group message at the earliest one's position."""
 
     from . import invariant_locks
-    from .resident_directory_domain import _can_manage
-    from .resident_lifecycle_domain import _accept_resident_user_message, _now_iso, _state_lock
+    from . import resident_directory_domain, resident_lifecycle_domain
     from .resident_message_contract import message_identity
-    from .resident_record_domain import _record_backend_session_state
-    from .resident_workspace_domain import _find_resident, _save_resident_record, resolve_resident_runtime_target
+    from . import resident_record_domain, resident_workspace_domain
 
     organizer = organizer_id(actor)
     ids = ordered_ids(message_ids)
-    target = resolve_resident_runtime_target(resident_id, actor, require_visible=True)
+    target = resident_workspace_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=True)
     group_id = message_identity()
-    now = _now_iso()
-    with _state_lock(target.resident_id):
-        record = _find_resident(target.resident_id)
+    now = resident_lifecycle_domain.now_iso()
+    with resident_lifecycle_domain.state_lock(target.resident_id):
+        record = resident_workspace_domain.find_resident(target.resident_id)
         if not record:
             raise KeyError("resident not found")
-        if not _can_manage(record, organizer):
+        if not resident_directory_domain.can_manage(record, organizer):
             raise PermissionError("只有对该 Resident 有整理权限的主体可以合并消息")
         job = resident_execution_work.read(record)
         queue = resident_execution_work.normalized_queue(job) if resident_execution_work.is_active(job) else []
@@ -512,10 +510,10 @@ def merge(resident_id: str, actor: str, message_ids: Iterable[object]) -> dict[s
         job["queue"] = remaining
         job["updated_at"] = now
         resident_execution_work.write(record, job)
-        record["session_state"] = _record_backend_session_state(record)
+        record["session_state"] = resident_record_domain.record_backend_session_state(record)
         record["updated_at"] = now
-        _save_resident_record(record)
-        invariant_locks.defer_until_state_unlock(lambda: _accept_resident_user_message(target.resident_id, group))
+        resident_workspace_domain.save_resident_record(record)
+        invariant_locks.defer_until_state_unlock(lambda: resident_lifecycle_domain.accept_resident_user_message(target.resident_id, group))
     member_ids = [str(entry.get("user_message_id") or "") for entry in members]
     repository = resident_conversation_stream.get_repository()
     for old_group in superseded:
@@ -529,20 +527,22 @@ def merge(resident_id: str, actor: str, message_ids: Iterable[object]) -> dict[s
 def split(resident_id: str, actor: str, group_id: str) -> dict[str, Any]:
     """Put a waiting group's members back at its position, in order; the group ends as cancelled."""
 
-    from .resident_directory_domain import _can_manage
-    from .resident_lifecycle_domain import _now_iso, _state_lock
-    from .resident_record_domain import _record_backend_session_state
-    from .resident_workspace_domain import _find_resident, _save_resident_record, resolve_resident_runtime_target
+    from . import (
+        resident_directory_domain,
+        resident_lifecycle_domain,
+        resident_record_domain,
+        resident_workspace_domain,
+    )
 
     organizer = organizer_id(actor)
-    target = resolve_resident_runtime_target(resident_id, actor, require_visible=True)
+    target = resident_workspace_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=True)
     group_id = str(group_id or "").strip()
-    now = _now_iso()
-    with _state_lock(target.resident_id):
-        record = _find_resident(target.resident_id)
+    now = resident_lifecycle_domain.now_iso()
+    with resident_lifecycle_domain.state_lock(target.resident_id):
+        record = resident_workspace_domain.find_resident(target.resident_id)
         if not record:
             raise KeyError("resident not found")
-        if not _can_manage(record, organizer):
+        if not resident_directory_domain.can_manage(record, organizer):
             raise PermissionError("只有对该 Resident 有整理权限的主体可以拆分群体消息")
         job = resident_execution_work.read(record)
         queue = resident_execution_work.normalized_queue(job) if resident_execution_work.is_active(job) else []
@@ -557,9 +557,9 @@ def split(resident_id: str, actor: str, group_id: str) -> dict[str, Any]:
         job["queue"] = queue[:position] + members + queue[position + 1:]
         job["updated_at"] = now
         resident_execution_work.write(record, job)
-        record["session_state"] = _record_backend_session_state(record)
+        record["session_state"] = resident_record_domain.record_backend_session_state(record)
         record["updated_at"] = now
-        _save_resident_record(record)
+        resident_workspace_domain.save_resident_record(record)
     resident_conversation_stream.get_repository().set_input_state(
         target.resident_id, group_id, "cancelled", error={"code": SPLIT_REASON, "message": "Mailbox 拆分"},
     )

@@ -11,7 +11,7 @@ import pytest
 from management_portal.society_service import family_facade, resident_conversation_stream, resident_execution_work
 from management_portal.society_service import resident_directory_domain
 from management_portal.society_service import resident_domain as backend
-from management_portal.society_service.resident_workspace_domain import _find_resident
+from management_portal.society_service.resident_workspace_domain import find_resident as _find_resident
 from tests.cases.test_resident_execution_protocol import VALID_PNG_BYTES as PNG
 from tests.cases.test_resident_execution_protocol import input_delivery, resident_record  # noqa: F401
 from tests.cases.permission_test_support import Fact, permissions  # noqa: F401
@@ -113,7 +113,9 @@ def test_a_facade_request_carries_its_images_and_files_to_the_member(facade, mon
     """
 
     from management_portal.society_service import resident_protocol
-    from management_portal.society_service.resident_workspace_domain import _save_resident_record
+    from management_portal.society_service.resident_workspace_domain import (
+        save_resident_record as _save_resident_record,
+    )
 
     monkeypatch.setenv("PORTAL_UPLOAD_ROOT", str(tmp_path / "uploads"))
     resident_id = facade["resident_id"]
@@ -349,7 +351,7 @@ def test_only_the_sender_or_owner_can_relay(facade, monkeypatch):
     """
     resident_id = facade["resident_id"]
     backend.deliver_resident_message_content(resident_id, "CASE-A", "只有我能转交。", message_id="msg_00000000000000f3")
-    monkeypatch.setattr(resident_directory_domain, "_can_manage", lambda record, actor: False)
+    monkeypatch.setattr(resident_directory_domain, "can_manage", lambda record, actor: False)
 
     with pytest.raises(PermissionError):
         family_facade.validate_relay(family_facade.relay_mark(resident_id, "msg_00000000000000f3"), "intruder")
@@ -423,7 +425,7 @@ def test_a_relayed_copy_does_not_make_the_member_one_of_the_senders_conversation
     # Only which Residents are listed matters here, not how each record is read.
     monkeypatch.setattr(resident_directory_domain, "_engaged_conversation_records",
                         lambda resident_ids, actor: [{"resident_id": item} for item in resident_ids])
-    monkeypatch.setattr(resident_conversation_projection_domain, "_conversation_family_summaries",
+    monkeypatch.setattr(resident_conversation_projection_domain, "conversation_family_summaries",
                         lambda resident_ids, actor: {})
     listed = lambda: [  # noqa: E731
         item["resident_id"]
@@ -476,7 +478,7 @@ def test_a_relayed_request_is_answered_on_the_facade_and_is_not_the_members(faca
         repository.set_input_state(MEMBER, request_id, "completed", updated_at=at)
 
     def unread(resident_id):
-        return projection._conversation_family_summaries([facade_id, MEMBER], "CASE-A")[resident_id]["unread_signature"]
+        return projection.conversation_family_summaries([facade_id, MEMBER], "CASE-A")[resident_id]["unread_signature"]
 
     backend.deliver_resident_message_content(facade_id, "CASE-A", "请评审 Operation 资源。", message_id="msg_00000000000000f7")
     say(MEMBER, "msg_00000000000000e7", "2026-10-05T07:00:00Z", "请评审 Operation 资源。", role="user", author_id="CASE-A",
@@ -834,7 +836,7 @@ def test_a_nested_family_follows_the_relay_chain_to_the_member_doing_the_work(mo
 
     monkeypatch.setattr(resident_conversation_stream, "get_repository", lambda: Repository())
     monkeypatch.setattr(family_facade.resident_mailbox, "_groups_of", lambda *_: {})
-    monkeypatch.setattr(resident_workspace_domain, "_find_resident",
+    monkeypatch.setattr(resident_workspace_domain, "find_resident",
                         lambda resident_id: {"resident_id": resident_id, "title": titles.get(resident_id, "")})
     monkeypatch.setattr(family_facade, "is_facade", lambda record: (record or {}).get("resident_id") in links)
     monkeypatch.setattr(family_facade, "relay_links", lambda record: links.get(record["resident_id"], {}))
@@ -898,7 +900,7 @@ def test_facade_batches_only_the_page_and_reuses_nested_member_lookups(monkeypat
         rounds.append(requests)
         return {key: {"input_state": {"state": "completed"}, "replies": []} for key in requests}
 
-    monkeypatch.setattr(resident_workspace_domain, "_find_resident", record)
+    monkeypatch.setattr(resident_workspace_domain, "find_resident", record)
     monkeypatch.setattr(family_facade, "is_facade", lambda record: record.get("resident_id") in links)
     monkeypatch.setattr(family_facade, "relay_links", relays)
     monkeypatch.setattr(resident_conversation_stream, "get_repository", lambda: SimpleNamespace(reply_rounds=replies))
@@ -939,7 +941,7 @@ def test_facade_outcomes_read_each_resident_on_the_relay_path_once(monkeypatch):
         asked.append(requests)
         return {MEMBER: {"message_id": "input_19", "state": "completed", "updated_at": "2026-10-16T00:00:00Z"}}
 
-    monkeypatch.setattr(resident_workspace_domain, "_find_resident", record)
+    monkeypatch.setattr(resident_workspace_domain, "find_resident", record)
     monkeypatch.setattr(family_facade, "is_facade", lambda record: record.get("resident_id") in links)
     monkeypatch.setattr(family_facade, "relay_links", lambda record: links.get(record["resident_id"], {}))
     monkeypatch.setattr(family_facade, "get_lineage_data_store", lambda: SimpleNamespace(
@@ -1032,7 +1034,7 @@ def test_the_facade_conversation_reads_like_a_resident_answering_its_requests(mo
 
     monkeypatch.setattr(resident_conversation_stream, "get_repository", lambda: Repository())
     monkeypatch.setattr(family_facade.resident_mailbox, "_groups_of", lambda *_: {})
-    monkeypatch.setattr(resident_workspace_domain, "_find_resident", lambda resident_id: {
+    monkeypatch.setattr(resident_workspace_domain, "find_resident", lambda resident_id: {
         "resident_id": resident_id, "title": {first: "权限内核", second: "admin 页面"}.get(resident_id, "门面"),
     })
     monkeypatch.setattr(family_facade, "is_facade", lambda record: (record or {}).get("resident_id") == facade_id)
@@ -1396,7 +1398,7 @@ def test_withdrawing_or_stopping_a_relayed_request_reaches_the_member_doing_the_
         states[payload["message_id"]] = "cancelled"
         return {"cancelled": True}
 
-    monkeypatch.setattr("management_portal.society_service.resident_workspace_domain._find_resident",
+    monkeypatch.setattr("management_portal.society_service.resident_workspace_domain.find_resident",
                         lambda resident_id: {"resident_id": resident_id})
     monkeypatch.setattr(family_facade, "is_facade", lambda record: (record or {}).get("resident_id") in links)
     monkeypatch.setattr(family_facade, "relay_links", lambda record: links.get(record["resident_id"], {}))

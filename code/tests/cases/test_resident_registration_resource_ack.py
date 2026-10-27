@@ -19,8 +19,9 @@ from management_portal.hatg import routing
 from management_portal.society_service import (
     invariant_locks,
     lineage_domain,
-    resident_directory_domain,
+    project_domain,
     resident_domain,
+    resident_domain_common,
     resident_project_domain,
     resident_registration_domain,
     resource_client,
@@ -37,8 +38,8 @@ def registration(isolated_instruction_store, monkeypatch, tmp_path):
     isolated_instruction_store.mkdir(parents=True, exist_ok=True)
     monkeypatch.setenv("PORTAL_SOCIETY_SERVICE_PROCESS", "0")
     monkeypatch.setattr(invariant_locks, "_ROOT_PROVIDER", lambda: tmp_path / "locks")
-    monkeypatch.setattr(resident_project_domain, "_project_root_for_id", lambda _: isolated_instruction_store)
-    monkeypatch.setattr(resident_project_domain, "_safe_absolute_path", lambda raw: Path(raw).resolve(strict=False))
+    monkeypatch.setattr(project_domain, "project_root_for_id", lambda _: isolated_instruction_store)
+    monkeypatch.setattr(resident_project_domain, "safe_absolute_path", lambda raw: Path(raw).resolve(strict=False))
     monkeypatch.setattr(
         codex_runtime_settings,
         "codex_runtime_catalog",
@@ -117,7 +118,7 @@ def test_replay_repairs_a_missing_outbox_only_after_a_real_ack(registration, mon
     store.database.write(lambda connection: connection.execute(
         'DELETE FROM resident_resource_projection_outbox WHERE resident_id=%s', (resident_id,),
     ))
-    monkeypatch.setattr(resident_directory_domain, "_new_resident_id", lambda *args: pytest.fail("created replacement identity"))
+    monkeypatch.setattr(resident_domain_common, "new_resident_id", lambda *args: pytest.fail("created replacement identity"))
     retry = create_resident(request)
     assert retry.error["code"] == "instruction.projection_pending"
     assert store.resident_resource_projection_pending(resident_id)
@@ -288,7 +289,7 @@ def test_committed_registration_retries_only_publication_with_same_identity(regi
         return publish(records, **kwargs)
 
     monkeypatch.setattr(resource_client, "sync_resident_resource_bundles", observed)
-    monkeypatch.setattr(resident_directory_domain, "_new_resident_id", lambda *args: pytest.fail("retry created a new identity"))
+    monkeypatch.setattr(resident_domain_common, "new_resident_id", lambda *args: pytest.fail("retry created a new identity"))
     if entry == "hatg":
         retried = create_resident(request)
         assert retried.status == "committed" and retried.replayed
@@ -448,7 +449,7 @@ def test_pending_create_replay_after_deletion_is_notfound_without_recreation(reg
     store = resident_catalog.get_catalog().state_store
     mark_deleted(store, failure["resident_id"])
     monkeypatch.setattr(resource_client, "sync_resident_resource_bundles", lambda *args, **kwargs: pytest.fail("deleted identity was published"))
-    monkeypatch.setattr(resident_directory_domain, "_new_resident_id", lambda *args: pytest.fail("deleted identity was recreated"))
+    monkeypatch.setattr(resident_domain_common, "new_resident_id", lambda *args: pytest.fail("deleted identity was recreated"))
     deleted = create_resident(request)
     assert deleted.error["code"] == "instruction.not_found"
     with pytest.raises(KeyError):

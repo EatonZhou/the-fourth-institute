@@ -69,7 +69,9 @@ def test_captured_file_references_keep_authored_position():
     :module: resident.conversation
     """
     from management_portal.execution.message_projection import message_facts, project_message, wrap_message
-    from management_portal.society_service.resident_media_domain import _resident_message_with_file_references
+    from management_portal.society_service.resident_media_domain import (
+        resident_message_with_file_references as _resident_message_with_file_references,
+    )
 
     upload_id = "upload_" + "a" * 24
     original = {"message_id": "msg_file_order", "role": "user", "author_id": "sample_admin", "content_parts": [

@@ -38,8 +38,8 @@ def test_resident_request_delivers_cli_identity_without_sender_impersonation(
     record = resident_record
     calls = []
     monkeypatch.setattr(resident_backend, "record_session_id", lambda _: session_id)
-    monkeypatch.setattr(resident_runtime_domain, "_resident_session_account_id", lambda *a, **k: "one")
-    monkeypatch.setattr(resident_directory_domain, "_has_resident_workspace_authority", lambda *a: False)
+    monkeypatch.setattr(resident_runtime_domain, "resident_session_account_id", lambda *a, **k: "one")
+    monkeypatch.setattr(resident_directory_domain, "has_resident_workspace_authority", lambda *a: False)
     monkeypatch.setattr(
         resident_hatg_credentials, "ensure_resident_credential",
         lambda resident_id, lineage_id: calls.append((resident_id, lineage_id)),
@@ -104,8 +104,8 @@ def test_every_turn_carries_exact_cli_identity_in_front_of_the_message(
     record = {**resident_record, "backend": backend}
     monkeypatch.setattr(resident_backend, "record_session_id", lambda _: "existing-session")
     job = {"actor": "test-actor", "message": "query authorized papers", "context_refs": {}}
-    prompt = resident_registration_domain._build_resident_prompt(record, dict(job))
-    parts = {part.name: part for part in resident_execution_domain._resident_system_instructions(record, job).parts}
+    prompt = resident_registration_domain.build_resident_prompt(record, dict(job))
+    parts = {part.name: part for part in resident_execution_domain.resident_system_instructions(record, job).parts}
     identity = parts["runtime_identity"]
     # The standard preset sends the identity on every turn, before the message.
     assert (identity.timing, identity.placement) == ("every_turn", "prompt_prefix")
@@ -137,10 +137,10 @@ def test_turn_prompt_names_the_real_sender(resident_record, monkeypatch, tmp_pat
     """
     from management_portal.society_service import resident_record_domain
 
-    monkeypatch.setattr(resident_runtime_domain, "_resident_working_directory", lambda _: tmp_path)
+    monkeypatch.setattr(resident_runtime_domain, "resident_working_directory", lambda _: tmp_path)
     monkeypatch.setattr(resident_backend, "record_session_id", lambda _: "existing-session")
-    monkeypatch.setattr(resident_record_domain, "_attached_references_text", lambda refs: "<resource address=\"r\"/>" if refs else "")
-    prompt = resident_registration_domain._build_resident_prompt(resident_record, {
+    monkeypatch.setattr(resident_record_domain, "attached_references_text", lambda refs: "<resource address=\"r\"/>" if refs else "")
+    prompt = resident_registration_domain.build_resident_prompt(resident_record, {
         "actor": actor, "message": "status?", "context_refs": {"resources": ["r"]},
     })
     assert expected in prompt
@@ -161,14 +161,14 @@ def test_family_router_prompt_keeps_control_packets_off_the_facade_inbox(
     from management_portal.society_service import resident_record_domain
 
     monkeypatch.setattr(resident_backend, "record_session_id", lambda _: "existing-session")
-    monkeypatch.setattr(resident_record_domain, "_attached_references_text", lambda _: '<resource address="r"/>')
+    monkeypatch.setattr(resident_record_domain, "attached_references_text", lambda _: '<resource address="r"/>')
     job = {"actor": "resident_2a1fc6cd272d", "message": "为原请求选择承接成员，输出 route packet。",
            "context_refs": {"resources": ["r"]}}
     if embedded:
         job["input_message"] = {"business_ref": reference}
     else:
         job["business_ref"] = reference
-    prompt = resident_registration_domain._build_resident_prompt(resident_record, job)
+    prompt = resident_registration_domain.build_resident_prompt(resident_record, job)
     assert ("只输出 route packet" in prompt) is internal
     assert ("要让它收到，用 DeliverMessage 发给它" in prompt) is not internal
 
@@ -184,8 +184,8 @@ def test_a_model_api_resident_is_told_it_has_no_tools(resident_record) -> None:
     :importance: P1
     :aspects: functional
     """
-    agent = resident_runtime_domain._resident_runtime_identity_block(resident_record)
-    model_api = resident_runtime_domain._resident_runtime_identity_block({**resident_record, "backend": "provider_api"})
+    agent = resident_runtime_domain.resident_runtime_identity_block(resident_record)
+    model_api = resident_runtime_domain.resident_runtime_identity_block({**resident_record, "backend": "provider_api"})
     assert "hatg_instruction 工具" in agent and "没有任何工具" not in agent
     assert "没有任何工具" in model_api and "hatg_instruction" not in model_api
     assert f"resident_id: {resident_record['resident_id']}" in model_api
@@ -201,7 +201,7 @@ def test_cli_identity_delivery_rejects_incomplete_canonical_identity(
     """CLI 身份注入拒绝缺失或非法 Resident 与 Lineage ID"""
     record = {**resident_record, field: value}
     with pytest.raises(ValueError):
-        resident_runtime_domain._resident_runtime_identity_block(record)
+        resident_runtime_domain.resident_runtime_identity_block(record)
 
 
 @pytest.mark.parametrize("full_access", [False, True])
@@ -210,20 +210,20 @@ def test_native_turn_keeps_resident_cli_environments_request_local(
 ):
     """共享原生客户端逐请求隔离 Resident CLI 环境"""
     expected_database_url = os.environ["PORTAL_DATABASE_URL"]
-    monkeypatch.setattr(resident_runtime_domain, "_reconcile_resident_codex_runtime_configuration", lambda record: record)
+    monkeypatch.setattr(resident_runtime_domain, "reconcile_resident_codex_runtime_configuration", lambda record: record)
     monkeypatch.setattr(resident_hatg_credentials, "ensure_resident_credential", lambda *a: None)
-    monkeypatch.setattr(resident_runtime_domain, "_resident_working_directory", lambda *a: tmp_path)
+    monkeypatch.setattr(resident_runtime_domain, "resident_working_directory", lambda *a: tmp_path)
     monkeypatch.setattr(resident_backend, "record_session_id", lambda *a: "existing-session")
-    monkeypatch.setattr(resident_runtime_domain, "_resident_session_account_id", lambda *a, **k: "one")
+    monkeypatch.setattr(resident_runtime_domain, "resident_session_account_id", lambda *a, **k: "one")
     def runtime_options(record, job, **_kwargs):
         job["filesystem_scope"] = {}
         return {
             "runtime_settings": {"inherit_session_runtime": True},
-            "resident_environment": resident_runtime_domain._resident_cli_environment(record),
+            "resident_environment": resident_runtime_domain.resident_cli_environment(record),
         }
 
-    monkeypatch.setattr(resident_execution_domain, "_resident_execution_runtime_options", runtime_options)
-    monkeypatch.setattr(resident_directory_domain, "_has_resident_workspace_authority", lambda *a: full_access)
+    monkeypatch.setattr(resident_execution_domain, "resident_execution_runtime_options", runtime_options)
+    monkeypatch.setattr(resident_directory_domain, "has_resident_workspace_authority", lambda *a: full_access)
     route = mock.Mock(account_id="one", socket_path=tmp_path / "unused.sock")
     registry = mock.Mock()
     registry.get.return_value = route
@@ -311,19 +311,21 @@ def test_resident_md_reaches_every_provider_once(resident_record, monkeypatch, b
     :design: decision_ef1d6c925955
     """
     from management_portal.execution.injection_plan import plan_injection
-    from management_portal.society_service.resident_record_domain import _resident_folder_path
+    from management_portal.society_service.resident_record_domain import (
+        resident_folder_path as _resident_folder_path,
+    )
 
     record = {**resident_record, "backend": backend}
     folder = _resident_folder_path(record)
     folder.mkdir(parents=True, exist_ok=True)
     (folder / "resident.md").write_text("我负责网络管理。", encoding="utf-8")
-    workspace = resident_workspace_domain._workspace_path(record)
-    monkeypatch.setattr(resident_runtime_domain, "_resident_working_directory", lambda _: workspace)
+    workspace = resident_workspace_domain.resident_workspace_path(record)
+    monkeypatch.setattr(resident_runtime_domain, "resident_working_directory", lambda _: workspace)
     monkeypatch.setattr(resident_backend, "record_session_id", lambda _: "")
     job = {"actor": "sample_admin", "message": "检查出口", "context_refs": {}}
 
-    prompt = resident_registration_domain._build_resident_prompt(record, dict(job))
-    parts = resident_execution_domain._resident_system_instructions(record, dict(job)).parts
+    prompt = resident_registration_domain.build_resident_prompt(record, dict(job))
+    parts = resident_execution_domain.resident_system_instructions(record, dict(job)).parts
     plan = plan_injection(parts, prompt, generation=True, first_injection=True)
 
     assert {part.name: part.placement for part in parts}["resident_md"] == placement

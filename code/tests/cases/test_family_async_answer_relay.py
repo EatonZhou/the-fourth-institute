@@ -9,9 +9,9 @@ import pytest
 from management_common.async_questions import question_answer_id, question_message_parts
 from management_common.principal import message_origin
 from management_portal.society_service import family_facade, family_quota, resident_conversation_stream
-from management_portal.society_service.resident_intake_domain import _message
+from management_portal.society_service.resident_intake_domain import build_message as _message
 from management_portal.society_service.resident_questions import prepare_question_answer
-from management_portal.society_service.resident_workspace_domain import _find_resident
+from management_portal.society_service.resident_workspace_domain import find_resident as _find_resident
 from tests.cases.family_test_support import set_role
 from tests.cases.isa_test_support import run
 from tests.cases.test_cross_owner_storage_integration import ACTOR

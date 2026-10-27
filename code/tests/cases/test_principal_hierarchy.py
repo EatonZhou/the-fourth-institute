@@ -13,7 +13,7 @@ import copy
 import pytest
 
 from management_portal.society_service import lineage_domain as graphs
-from management_portal.society_service import resident_project_domain
+from management_portal.society_service import project_domain
 from management_portal.society_service import principal_hierarchy as hierarchy
 from tests.cases.test_resident_folder_creation_contract import future_creation_store, _new_session_payload
 
@@ -106,7 +106,7 @@ def test_shared_user_scope_and_leader_levels_do_not_change_permissions():
 def test_ensure_project_principal_creates_once_without_starting_execution(future_creation_store, monkeypatch):
     """项目主体仅创建一次且不启动执行"""
     from management_portal.society_service import principal_hierarchy_domain, resource_client
-    monkeypatch.setattr(resident_project_domain, "_project_root_for_id", lambda _: future_creation_store)
+    monkeypatch.setattr(project_domain, "project_root_for_id", lambda _: future_creation_store)
     monkeypatch.setattr(resource_client, "_query_all", lambda *args, **kwargs: [{"resource_id": "project_test", "title": "Test project", "attributes": {"path": str(future_creation_store)}}])
     child = family("Child")
     first = principal_hierarchy_domain.ensure_project("project_test", "sample_admin")

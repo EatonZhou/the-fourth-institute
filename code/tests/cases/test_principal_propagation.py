@@ -160,11 +160,11 @@ def test_resident_delivery_signs_sender_independently_of_provider_role(repositor
 
 def test_model_output_and_service_notice_have_distinct_senders(repository):
     """模型输出与服务通知分别记录各自发送者"""
-    answer = resident_lifecycle_domain._append_conversation_message(
-        RECEIVER, resident_intake_domain._message("agent", "answer"),
+    answer = resident_lifecycle_domain.append_conversation_message(
+        RECEIVER, resident_intake_domain.build_message("agent", "answer"),
     )
-    notice = resident_lifecycle_domain._append_conversation_message(
-        RECEIVER, resident_intake_domain._message("system", "cancelled", "alice"),
+    notice = resident_lifecycle_domain.append_conversation_message(
+        RECEIVER, resident_intake_domain.build_message("system", "cancelled", "alice"),
     )
     assert answer["author_id"] == RECEIVER
     assert answer["origin"]["sender"]["kind"] == "resident"
@@ -195,4 +195,4 @@ def test_fork_recovery_does_not_borrow_the_resident_creator():
     with pytest.raises(PermissionError, match="explicit reissue"):
         resident_session_backend_domain._materialize_queued_agent_data_fork(record, {"agent_data_fork": {}})
     with pytest.raises(PermissionError, match="explicit reissue"):
-        resident_session_backend_domain._create_exact_resident_session(record, {"operation": "context_fork_create"})
+        resident_session_backend_domain.create_exact_resident_session(record, {"operation": "context_fork_create"})

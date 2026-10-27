@@ -35,7 +35,7 @@ def test_delete_resident_skips_unused_view_but_keeps_committed_effects(deletion_
     view = Mock(side_effect=AssertionError('DeleteResident must not build a discarded full graph response'))
     monkeypatch.setattr(lineage_domain, '_verified_lineage_view', view)
     release = Mock(side_effect=AssertionError('Provider cleanup must remain in the durable lifecycle worker'))
-    monkeypatch.setattr(resident_session_backend_domain, '_run_backend_session_operation', release)
+    monkeypatch.setattr(resident_session_backend_domain, 'run_backend_session_operation', release)
 
     result = run('DeleteResident', {"lineage_id": lineage_id, 'resident_id': target}, key='minimal-delete-response')
     assert result.status == 'committed', result

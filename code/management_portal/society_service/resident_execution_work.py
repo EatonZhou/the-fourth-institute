@@ -722,8 +722,8 @@ def _post_execution_commit(
             run_effect(lambda: notify_execution_binding(
                 resident_lineage.resident_id(record)
             ))
-    from .resident_media_domain import cleanup_expired_input_images
-    run_effect(lambda: cleanup_expired_input_images(dict(record)))
+    from . import resident_media_domain
+    run_effect(lambda: resident_media_domain.cleanup_expired_input_images(dict(record)))
     if first_error is not None:
         raise first_error
 
@@ -894,9 +894,9 @@ def write(
             # preparation. Closing intake later only holds subsequent inputs.
             job.setdefault("intake_admitted_at", _now_iso())
     if job.get("execution_id"):
-        from .resident_lifecycle_domain import ensure_resident_agent
+        from . import resident_lifecycle_domain
         from management_portal.execution.agent_data_store import get_agent_data_store
-        ensure_resident_agent(record, actor=request_actor(job))
+        resident_lifecycle_domain.ensure_resident_agent(record, actor=request_actor(job))
         get_agent_data_store()
     # Admission also allocates a Conversation cursor. Use the same short
     # commit scope as streaming replies so their events cannot take one cursor.

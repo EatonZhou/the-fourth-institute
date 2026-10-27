@@ -19,9 +19,9 @@ from typing import Any, Mapping
 import copy
 import re
 
-from .resident_domain_common import CODEX_COMPACT_TIMEOUT_SECONDS
+from . import resident_domain_common
 
-def _now_iso() -> str:
+def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
@@ -41,7 +41,7 @@ def ensure_resident_agent(record: Mapping[str, Any], *, actor: str = "") -> dict
 
 
 @contextmanager
-def _state_lock(resident_id: object):
+def state_lock(resident_id: object):
     """Protect short state transitions of exactly one Resident."""
 
     with invariant_locks.resident_lock(resident_id):
@@ -76,12 +76,12 @@ def resident_state_scope(
         yield
 
 
-def _resident_intake_state(record: Mapping[str, Any]) -> str:
+def resident_intake_state(record: Mapping[str, Any]) -> str:
     return resident_state.INTAKE_CLOSED if record.get("intake_open") is False else resident_state.INTAKE_OPEN
 
 
-def _resident_has_pending_work(resident_id: object) -> bool:
-    if _lifecycle_operations().pending(str(resident_id or "")):
+def resident_has_pending_work(resident_id: object) -> bool:
+    if lifecycle_operations().pending(str(resident_id or "")):
         return True
     state = resident_conversation_stream.get_repository().current_state(str(resident_id or ""))
     return str(state.get("work_state") or "idle") in {
@@ -91,14 +91,14 @@ def _resident_has_pending_work(resident_id: object) -> bool:
     }
 
 
-def _lifecycle_operations() -> ResidentLifecycleOperations:
+def lifecycle_operations() -> ResidentLifecycleOperations:
     return ResidentLifecycleOperations(resident_catalog.get_catalog().state_store)
 
 
-def _require_no_pending_lifecycle(resident_id: str) -> None:
+def require_no_pending_lifecycle(resident_id: str) -> None:
     """Folder writes wait until a pending move has relocated the Resident folder."""
 
-    if _lifecycle_operations().pending(resident_id):
+    if lifecycle_operations().pending(resident_id):
         raise ValueError("Resident 生命周期操作正在完成，请稍后编辑")
 
 
@@ -108,19 +108,19 @@ def _resident_turn_running(resident_id: str) -> bool:
 
 
 def ready_resident_lifecycle_operations() -> list[str]:
-    return _lifecycle_operations().ready()
+    return lifecycle_operations().ready()
 
 
 def resident_lifecycle_health() -> dict[str, Any]:
-    return _lifecycle_operations().health()
+    return lifecycle_operations().health()
 
 
 def observe_committed_resident_transfer(operation_id: str, resident_id: str) -> dict[str, Any]:
     """Internal Lineage port: caller has verified receipt and both read grants."""
-    return _lifecycle_operations().observe_committed_transfer(operation_id, resident_id)
+    return lifecycle_operations().observe_committed_transfer(operation_id, resident_id)
 
 
-def _resident_release_step(record: dict[str, Any], actor: str) -> dict[str, Any]:
+def resident_release_step(record: dict[str, Any], actor: str) -> dict[str, Any]:
     return {
         "kind": "release", "record": {
             key: copy.deepcopy(record[key]) for key in (
@@ -133,25 +133,26 @@ def _resident_release_step(record: dict[str, Any], actor: str) -> dict[str, Any]
 
 
 def resume_resident_lifecycle_operation(operation_id: str) -> bool:
-    from .resident_execution_domain import resume_resident_execution
-    from .resident_workspace_domain import _find_resident
-    resident_id = _lifecycle_operations().run(operation_id, _apply_resident_lifecycle_step)
-    if resident_id and _find_resident(resident_id):
-        resume_resident_execution(resident_id)
+    from . import resident_execution_domain, resident_workspace_domain
+    resident_id = lifecycle_operations().run(operation_id, apply_resident_lifecycle_step)
+    if resident_id and resident_workspace_domain.find_resident(resident_id):
+        resident_execution_domain.resume_resident_execution(resident_id)
     return bool(resident_id)
 
 
-def _apply_resident_lifecycle_step(operation_id: str, step: dict[str, Any]) -> None:
-    from .resident_restart_domain import _resume_resident_session_restart
-    from .resident_runtime_domain import _resident_execution_session_key, _resident_working_directory
-    from .resident_session_backend_domain import _run_backend_session_operation
-    from .resident_workspace_domain import _ensure_resident_workspace, _find_resident, _refresh_resident_workspace_document
+def apply_resident_lifecycle_step(operation_id: str, step: dict[str, Any]) -> None:
+    from . import (
+        resident_restart_domain,
+        resident_runtime_domain,
+        resident_session_backend_domain,
+        resident_workspace_domain,
+    )
     kind = step["kind"]
     record = dict(step.get("record") or {})
     if kind == "registration_abort":
         _compensate_resident_registration(operation_id, step)
     elif kind == "session_restart":
-        _resume_resident_session_restart(step)
+        resident_restart_domain.resume_resident_session_restart(step)
     elif kind == "execution_ack":
         try:
             execution_port.service().acknowledge(step["execution_id"], actor=step["actor"])
@@ -186,13 +187,13 @@ def _apply_resident_lifecycle_step(operation_id: str, step: dict[str, Any]) -> N
         expected = step["binding"]
         binding = resident_backend.session_record(record, expected_binding=expected)
         if binding:
-            _run_backend_session_operation(
+            resident_session_backend_domain.run_backend_session_operation(
                 backend=resident_backend.execution_provider(record),
                 operation="release", actor=step["actor"],
-                cwd=_resident_working_directory(record),
+                cwd=resident_runtime_domain.resident_working_directory(record),
                 backend_route_id=str(binding.get("backend_route_id") or ""),
                 binding_id=resident_backend.execution_binding_id(record),
-                runtime_options={"session_key": _resident_execution_session_key(record), "delete_binding_on_release": True},
+                runtime_options={"session_key": resident_runtime_domain.resident_execution_session_key(record), "delete_binding_on_release": True},
                 operation_id=operation_id,
             )
         resident_backend.delete_session_identity(
@@ -211,10 +212,10 @@ def _apply_resident_lifecycle_step(operation_id: str, step: dict[str, Any]) -> N
     elif kind == "resident_detach":
         resident_lineage_host_port.finalize_deleted_resident_detach(step["lineage_id"])
     elif kind == "workspace_document":
-        with _state_lock(step["resident_id"]):
-            current = _find_resident(step["resident_id"])
+        with state_lock(step["resident_id"]):
+            current = resident_workspace_domain.find_resident(step["resident_id"])
             if current:
-                _refresh_resident_workspace_document(current)
+                resident_workspace_domain.refresh_resident_workspace_document(current)
                 from .state_store import get_lineage_data_store
                 get_lineage_data_store().enqueue_resident_resource_projection(step["resident_id"], current)
     elif kind in {"workspace_move", "workspace_finish"}:
@@ -228,11 +229,11 @@ def _apply_resident_lifecycle_step(operation_id: str, step: dict[str, Any]) -> N
                 raise LifecycleStepPending()
             resident_workspace_transfer.relocate(transfer_id, step["source"], step["target"])
         else:
-            current = _find_resident(step["resident_id"])
+            current = resident_workspace_domain.find_resident(step["resident_id"])
             if not current or resident_lineage.lineage_id(current) != step["lineage_id"]:
                 raise RuntimeError("Resident membership changed during workspace transfer")
-            _ensure_resident_workspace(current)
-            _refresh_resident_workspace_document(current)
+            resident_workspace_domain.ensure_resident_workspace(current)
+            resident_workspace_domain.refresh_resident_workspace_document(current)
             resident_workspace_transfer.finish(transfer_id, step["source"], step["target"])
     else:
         raise ValueError(f"Unknown Resident lifecycle effect: {kind}")
@@ -243,7 +244,7 @@ def _slugify(value: str) -> str:
     return text[:48] or "resident_agent"
 
 
-def _nonnegative_int(value: object, default: int = 0) -> int:
+def nonnegative_int(value: object, default: int = 0) -> int:
     try:
         number = int(value)
     except Exception:
@@ -251,7 +252,7 @@ def _nonnegative_int(value: object, default: int = 0) -> int:
     return number if number >= 0 else default
 
 
-def _append_conversation_message(
+def append_conversation_message(
     resident_id: str,
     message: dict[str, Any],
 ) -> dict[str, Any]:
@@ -275,7 +276,7 @@ def _append_conversation_message(
     )
 
 
-def _mark_resident_input_queued(
+def mark_resident_input_queued(
     resident_id: str,
     message: Mapping[str, Any],
 ) -> None:
@@ -286,14 +287,14 @@ def _mark_resident_input_queued(
     )
 
 
-def _resident_user_message_count(resident_id: object) -> int:
+def resident_user_message_count(resident_id: object) -> int:
     key = str(resident_id or "").strip()
     if not key:
         return 0
     return resident_conversation_stream.get_repository().user_message_counts([key]).get(key, 0)
 
 
-def _persist_resident_user_message(
+def persist_resident_user_message(
     resident_id: str,
     message: dict[str, Any],
 ) -> dict[str, Any]:
@@ -303,7 +304,7 @@ def _persist_resident_user_message(
     )
 
 
-def _accept_resident_user_message(
+def accept_resident_user_message(
     resident_id: str,
     message: dict[str, Any],
 ) -> dict[str, Any]:
@@ -313,18 +314,17 @@ def _accept_resident_user_message(
     )
 
 
-def _safe_id(value: str) -> str:
+def safe_id(value: str) -> str:
     raw = str(value or "").strip()
     safe = re.sub(r"[^A-Za-z0-9_.@+-]+", "_", raw).strip("._")
     return safe[:96] or "unknown"
 
 
 def _compensate_resident_registration(operation_id: str, step: dict[str, Any]) -> None:
-    from .resident_record_domain import _resident_id
-    from .resident_workspace_domain import _find_resident_canonical
+    from . import resident_record_domain, resident_workspace_domain
     record = step["record"]
-    resident_id = _resident_id(record)
-    if _find_resident_canonical(resident_id) is not None:
+    resident_id = resident_record_domain.record_resident_id(record)
+    if resident_workspace_domain.find_resident_canonical(resident_id) is not None:
         return
     request_payload = step.get("execution_request")
     if request_payload:
@@ -342,7 +342,7 @@ def _compensate_resident_registration(operation_id: str, step: dict[str, Any]) -
             service.submit(request)
         snapshot = service.wait(
             request.execution_id, actor=step["actor"],
-            timeout_seconds=CODEX_COMPACT_TIMEOUT_SECONDS + 90,
+            timeout_seconds=resident_domain_common.CODEX_COMPACT_TIMEOUT_SECONDS + 90,
         )
         result = snapshot.get("result") or {}
         if (
@@ -352,12 +352,12 @@ def _compensate_resident_registration(operation_id: str, step: dict[str, Any]) -
         ):
             raise RuntimeError("Registration execution has no matching terminal result")
         # Keep the result unacknowledged until cleanup has a durable cursor.
-    if _find_resident_canonical(resident_id) is not None:
+    if resident_workspace_domain.find_resident_canonical(resident_id) is not None:
         return
-    _apply_resident_lifecycle_step(
-        operation_id, _resident_release_step(record, step["actor"]),
+    apply_resident_lifecycle_step(
+        operation_id, resident_release_step(record, step["actor"]),
     )
     if step.get("source"):
-        _apply_resident_lifecycle_step(operation_id, {
+        apply_resident_lifecycle_step(operation_id, {
             "kind": "archive", "source": step["source"], "target": step["target"],
         })

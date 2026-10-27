@@ -489,11 +489,11 @@ def _resident_view(target: Any) -> dict[str, Any]:
 
 def _workspace_views(record: Mapping[str, Any]) -> list[dict[str, str]]:
     """Expose self ownership separately from ordinary usage."""
-    from .resident_workspace_domain import _resident_workspace_roots
+    from . import resident_workspace_domain
     return [{"workspace_id": root["workspace_id"], "path": root["path"],
              "title": root["title"], "label": root["label"],
              "is_owned": root["is_primary"], "purpose": root.get("purpose", "")}
-            for root in _resident_workspace_roots(dict(record))]
+            for root in resident_workspace_domain.resident_workspace_roots(dict(record))]
 
 
 def get_resident(resident_id: str, actor: str) -> dict[str, Any]:
@@ -840,9 +840,9 @@ def get_resident_conversation_snapshot(
     snapshot["resident"] = _resident_view(target)
     snapshot = _with_conversation_controls(snapshot, target.resident_id, actor_id, target=target)
     if (include_inheritance or include_inherited_context) and not input_message_id:
-        from .resident_conversation_projection_domain import _can_view_actual_sent_prompts
+        from . import resident_conversation_projection_domain
 
-        if include_inherited_context and not _can_view_actual_sent_prompts(actor_id, target.resident_id):
+        if include_inherited_context and not resident_conversation_projection_domain.can_view_actual_sent_prompts(actor_id, target.resident_id):
             raise PermissionError("无权读取继承的模型上下文")
         inheritance = resident_fork_inheritance.inheritance_view(
             target.resident_id, target.record, actor_id, include_context=include_inherited_context,
@@ -988,7 +988,7 @@ def _stored_resident_input_state(
         message_id,
     )
     # A Mailbox group member reports its group and follows it (decision_b5d349190743).
-    record = resident_workspace_domain._find_resident_for_admission(resident_id) or {"resident_id": resident_id}
+    record = resident_workspace_domain.find_resident_for_admission(resident_id) or {"resident_id": resident_id}
     projected = resident_mailbox.project_input_state(record, message_id, dict(state))
     if family_facade.is_facade(record):
         return family_facade.project_input_state(
@@ -1068,7 +1068,7 @@ def _sent_round(
     writer = own
     initiator = str(((message.get("origin") or {}).get("initiated_by") or {}).get("id") or "")
     if family_facade.is_facade(target.record) and initiator and initiator != target.resident_id:
-        record = resident_workspace_domain._find_resident(initiator) or {}
+        record = resident_workspace_domain.find_resident(initiator) or {}
         writer = {"resident_id": initiator, "title": str(record.get("title") or "")}
     return {
         "kind": "sent",
@@ -1189,7 +1189,7 @@ def _direct_member_rounds(facade: Mapping[str, Any], sender_id: str) -> list[dic
     latest.sort(reverse=True)
     rounds = []
     for at, member_id, kind, message_id in latest[:DIRECT_MEMBER_ROUNDS]:
-        record = resident_workspace_domain._find_resident(member_id) or {}
+        record = resident_workspace_domain.find_resident(member_id) or {}
         rounds.append({
             "kind": kind, "resident_id": member_id, "title": str(record.get("title") or ""), "created_at": at,
             "message_id": message_id, "text": _opening(repository.message(member_id, message_id)),
@@ -1608,11 +1608,11 @@ def _end_lost_input(resident_id: str, message_id: str) -> dict[str, Any] | None:
     """
     from management_portal.execution import execution_inputs
     from management_portal.execution.agent_data_store import get_agent_data_store
-    from .resident_lifecycle_domain import _now_iso, _state_lock
+    from . import resident_lifecycle_domain
     from .state_store import get_lineage_data_store
 
-    with _state_lock(resident_id):
-        record = resident_workspace_domain._find_resident(resident_id)
+    with resident_lifecycle_domain.state_lock(resident_id):
+        record = resident_workspace_domain.find_resident(resident_id)
         if not record or family_facade.is_facade(record):
             return None
         if _stored_resident_input_state(resident_id, message_id)["state"] not in {"queued", "running"}:
@@ -1628,7 +1628,7 @@ def _end_lost_input(resident_id: str, message_id: str) -> dict[str, Any] | None:
         if execution_inputs.latest(get_agent_data_store(), resident_id, message_id) is not None:
             return None
         repository.set_input_state(
-            resident_id, message_id, "cancelled", updated_at=_now_iso(),
+            resident_id, message_id, "cancelled", updated_at=resident_lifecycle_domain.now_iso(),
             error={"code": "lost_input", "message": "没有任何工作在处理这条消息，它不会再送达，已撤回"},
         )
     return {"resident_id": resident_id, "message_id": message_id, "cancelled": True}

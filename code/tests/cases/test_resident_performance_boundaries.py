@@ -47,14 +47,14 @@ def test_resident_workspace_roots_read_outside_global_lock(
         "workspace_bindings": [],
         "registration_state": "ready",
     }
-    monkeypatch.setattr(resident_workspace_domain, "_find_resident", lambda _resident_id: record)
+    monkeypatch.setattr(resident_workspace_domain, "find_resident", lambda _resident_id: record)
     monkeypatch.setattr(
         resident_directory_domain,
-        "_has_resident_workspace_authority",
+        "has_resident_workspace_authority",
         lambda *_args, **_kwargs: True,
     )
     monkeypatch.setattr(resident_directory_domain, "ensure_resident_visible_to_actor", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr(resident_directory_domain, "_can_manage", lambda *_args: True)
+    monkeypatch.setattr(resident_directory_domain, "can_manage", lambda *_args: True)
     monkeypatch.setattr(resident_lineage, "snapshot", lambda _record: {"residents": []})
     def canonical_views_stub(records, **_kwargs):
         assert _other_lineage_can_enter_state_lock()
@@ -67,7 +67,7 @@ def test_resident_workspace_roots_read_outside_global_lock(
     )
     monkeypatch.setattr(
         resident_runtime_domain,
-        "_managed_derived_residents",
+        "managed_derived_residents",
         lambda *_args, **_kwargs: [],
     )
     monkeypatch.setattr(
@@ -119,18 +119,18 @@ def test_resident_folder_opens_one_lineage_identity_snapshot(
 
     def ensure_visible(*_args, **_kwargs):
         for _ in range(3):
-            resident_runtime_domain._lineage_identity_record(record)
+            resident_runtime_domain.lineage_identity_record(record)
 
     def actor_derived_residents(*_args, **_kwargs):
         for _resident in registry["residents"]:
-            resident_runtime_domain._lineage_identity_record(record)
+            resident_runtime_domain.lineage_identity_record(record)
         return registry["residents"]
 
     monkeypatch.setattr(lineage_domain, "lineage_access_projection", lineage_identity)
-    monkeypatch.setattr(resident_workspace_domain, "_find_resident", lambda _resident_id: record)
+    monkeypatch.setattr(resident_workspace_domain, "find_resident", lambda _resident_id: record)
     monkeypatch.setattr(
         resident_directory_domain,
-        "_has_resident_workspace_authority",
+        "has_resident_workspace_authority",
         lambda *_args, **_kwargs: True,
     )
     monkeypatch.setattr(resident_directory_domain, "ensure_resident_visible_to_actor", ensure_visible)
@@ -143,13 +143,13 @@ def test_resident_folder_opens_one_lineage_identity_snapshot(
     )
     monkeypatch.setattr(
         resident_runtime_domain,
-        "_managed_derived_residents",
+        "managed_derived_residents",
         actor_derived_residents,
     )
     monkeypatch.setattr(
         resident_directory_domain,
-        "_can_manage",
-        lambda *_args: bool(resident_runtime_domain._lineage_identity_record(record)),
+        "can_manage",
+        lambda *_args: bool(resident_runtime_domain.lineage_identity_record(record)),
     )
     monkeypatch.setattr(
         resident_workspace_domain,
@@ -200,7 +200,7 @@ def test_context_pressure_query_does_not_rebuild_resident_runtime_projection(
 
     monkeypatch.setattr(
         resident_directory_domain,
-        "_resident_conversation_messages",
+        "resident_conversation_messages",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(
             AssertionError("context pressure must not read transcripts")
         ),
@@ -226,7 +226,7 @@ def test_user_message_count_batch_uses_database_facts_without_transcript(
     record = {
         "resident_id": resident_id,
     }
-    monkeypatch.setattr(resident_workspace_domain, "_find_resident", lambda _resident_id: record)
+    monkeypatch.setattr(resident_workspace_domain, "find_resident", lambda _resident_id: record)
     class Catalog:
         def get_many(self, resident_ids):
             return [record] if resident_id in resident_ids else []
@@ -260,7 +260,7 @@ def test_user_message_count_batch_uses_database_facts_without_transcript(
         )
     monkeypatch.setattr(
         resident_directory_domain,
-        "_resident_conversation_messages",
+        "resident_conversation_messages",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(
             AssertionError("turn-count lookup must not read transcripts")
         ),

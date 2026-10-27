@@ -197,15 +197,15 @@ def test_lifecycle_tombstone_precedes_release_and_recovery_cleanup(operations, t
               'workspace_bindings': []}
     folder = tmp_path / 'folder'
     folder.mkdir()
-    monkeypatch.setattr(resident_workspace_domain, '_find_resident', lambda resident_id: record)
-    monkeypatch.setattr(resident_directory_domain, '_can_manage', lambda *args: True)
+    monkeypatch.setattr(resident_workspace_domain, 'find_resident', lambda resident_id: record)
+    monkeypatch.setattr(resident_directory_domain, 'can_manage', lambda *args: True)
     monkeypatch.setattr(resident_lineage, 'is_lineage_leader', lambda item: True)
-    monkeypatch.setattr(resident_directory_domain, '_lineage_registry_records_locked', lambda lineage_id: [record])
-    monkeypatch.setattr(resident_lifecycle_domain, '_resident_has_pending_work', lambda resident_id: False)
+    monkeypatch.setattr(resident_directory_domain, 'lineage_registry_records_locked', lambda lineage_id: [record])
+    monkeypatch.setattr(resident_lifecycle_domain, 'resident_has_pending_work', lambda resident_id: False)
     monkeypatch.setattr(resident_workspace_domain, '_safe_lineage_workspace_for_delete', lambda item: folder)
-    monkeypatch.setattr(resident_workspace_domain, '_workspace_path', lambda item: folder)
-    monkeypatch.setattr(resident_project_domain, '_project_info_for_workspace', lambda *args: {})
-    monkeypatch.setattr(resident_lifecycle_domain, '_resident_release_step', lambda member, actor: {'kind': 'release', 'resident_id': member['resident_id']})
+    monkeypatch.setattr(resident_workspace_domain, 'resident_workspace_path', lambda item: folder)
+    monkeypatch.setattr(resident_project_domain, 'project_info_for_workspace', lambda *args: {})
+    monkeypatch.setattr(resident_lifecycle_domain, 'resident_release_step', lambda member, actor: {'kind': 'release', 'resident_id': member['resident_id']})
     from management_portal.society_service.lineage_resident_operations import LineageDeletionToken
 
     monkeypatch.setattr(resident_lineage_host_port, 'prepare_lineage_deletion',

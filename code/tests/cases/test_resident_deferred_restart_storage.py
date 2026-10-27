@@ -22,8 +22,8 @@ def test_deferred_restart_and_intake_commit_together(monkeypatch, fail_save):
     store.put_resident_record(record["resident_id"], record)
     rid = record["resident_id"]
     monkeypatch.setattr(resident_catalog, "get_catalog", lambda: SimpleNamespace(state_store=store))
-    monkeypatch.setattr(resident_lifecycle_domain, "_state_lock", nullcontext)
-    monkeypatch.setattr(resident_workspace_domain, "_find_resident", store.resident_record)
+    monkeypatch.setattr(resident_lifecycle_domain, "state_lock", nullcontext)
+    monkeypatch.setattr(resident_workspace_domain, "find_resident", store.resident_record)
     repository = resident_conversation_stream.get_repository()
     monkeypatch.setattr(repository, "current_state", lambda *_: pytest.fail("Execution RPC inside state lock"))
 
@@ -32,7 +32,7 @@ def test_deferred_restart_and_intake_commit_together(monkeypatch, fail_save):
             raise RuntimeError("save failed")
         store.put_resident_record(rid, value, **options)
 
-    monkeypatch.setattr(resident_workspace_domain, "_save_resident_record", save)
+    monkeypatch.setattr(resident_workspace_domain, "save_resident_record", save)
     source = {"provider": "codex", "account_id": "one"}
     intent = {"target_provider": "claude", "target_account": "", "context_strategy": "compact"}
     if fail_save:

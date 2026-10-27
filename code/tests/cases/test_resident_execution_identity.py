@@ -29,8 +29,8 @@ def test_deterministic_provider_records_an_execution(resident_record, monkeypatc
     monkeypatch.setattr(resident_execution_provider, "provider_for", lambda record: SimpleNamespace(
         capabilities=SimpleNamespace(synchronous_delivery=True), deliver=deliver))
     monkeypatch.setattr(resident_intake_domain, "ensure_resident_visible_to_actor", lambda *args: None)
-    monkeypatch.setattr(resident_workspace_domain, "_save_resident_record", lambda *args: None)
-    monkeypatch.setattr(resident_lifecycle_domain, "_append_conversation_message", lambda rid, message: replies.append(message))
+    monkeypatch.setattr(resident_workspace_domain, "save_resident_record", lambda *args: None)
+    monkeypatch.setattr(resident_lifecycle_domain, "append_conversation_message", lambda rid, message: replies.append(message))
     monkeypatch.setattr(resident_intake_domain, "_resident_message_delivery_result", lambda *args: {})
     call = lambda: resident_intake_domain._send_synchronous_provider_message(
         resident_record, "sample_admin", "inspect", message_id="msg_sync", user_message={"message_id": "msg_sync"})

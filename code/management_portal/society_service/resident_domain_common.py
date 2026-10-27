@@ -11,12 +11,12 @@ from management_common.operation_errors import OperationError
 from . import identity_contract
 
 
-def _new_resident_id(existing_ids: set[str] | None = None) -> str:
+def new_resident_id(existing_ids: set[str] | None = None) -> str:
     occupied = {str(value or "").strip() for value in existing_ids or set()}
     return identity_contract.new_id("resident", occupied)
 
 
-def _new_lineage_id(existing_ids: set[str] | None = None) -> str:
+def new_lineage_id(existing_ids: set[str] | None = None) -> str:
     occupied = {str(value or "").strip() for value in existing_ids or set()}
     return identity_contract.new_id("lineage", occupied)
 

@@ -139,7 +139,7 @@ def test_permission_filtered_page_hydrates_only_returned_summaries(tmp_path, mon
         hydrated.extend(ids)
         return {}
 
-    monkeypatch.setattr(resident_conversation_projection_domain, "_conversation_family_summaries", summaries)
+    monkeypatch.setattr(resident_conversation_projection_domain, "conversation_family_summaries", summaries)
     result = resident_domain.list_resident_conversation_activity("CASE-A", page_size=2)
     expected = ["resident_000000000001", "resident_000000000003"]
     assert [item["resident_id"] for item in result["residents"]] == expected
@@ -163,7 +163,7 @@ def test_filtered_conversation_page_scans_activity_once_and_keeps_overflow(tmp_p
     monkeypatch.setattr(resident_directory_domain, "_engaged_conversation_records", lambda ids, actor: [
         {"resident_id": resident_id} for resident_id in reversed(list(ids)) if resident_id in visible
     ])
-    monkeypatch.setattr(resident_conversation_projection_domain, "_conversation_family_summaries", lambda ids, actor: {})
+    monkeypatch.setattr(resident_conversation_projection_domain, "conversation_family_summaries", lambda ids, actor: {})
     original = store.chat_actor_activity_page
     pages_read = []
 
@@ -208,7 +208,7 @@ def test_dismissed_conversations_leave_the_page_before_their_summaries(tmp_path,
         return [{"resident_id": resident_id} for resident_id in ids]
 
     monkeypatch.setattr(resident_directory_domain, "_engaged_conversation_records", records)
-    monkeypatch.setattr(resident_conversation_projection_domain, "_conversation_family_summaries", lambda ids, actor: {})
+    monkeypatch.setattr(resident_conversation_projection_domain, "conversation_family_summaries", lambda ids, actor: {})
     activity = store.chat_actor_activity("CASE-A")
     hidden = [f"resident_{number:012x}" for number in (0, 1, 3)]
     conversation_read_state.dismiss("CASE-A", {f"resident:{resident_id}": activity[resident_id] for resident_id in hidden})

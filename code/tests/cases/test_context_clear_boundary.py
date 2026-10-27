@@ -21,11 +21,11 @@ from management_portal.execution import backends
 from management_portal.execution.agent_data_store import AgentDataStore, get_agent_data_store
 from management_portal.execution.agent_data_projection import persist_provider_compaction
 from management_portal.society_service import (
+    project_domain,
     resident_domain,
-    resident_fork_domain,
     resident_execution_work,
+    resident_fork_domain,
     resident_lifecycle_domain,
-    resident_project_domain,
     resident_restart_domain,
     resident_session_backend_domain,
     resident_workspace_domain,
@@ -110,21 +110,21 @@ def test_a_restart_right_after_a_clear_only_configures(monkeypatch) -> None:
 
 def _clear(resident_id: str, monkeypatch, *, expected_releases: int = 1) -> dict:
     released = []
-    monkeypatch.setattr(resident_session_backend_domain, "_run_backend_session_operation",
+    monkeypatch.setattr(resident_session_backend_domain, "run_backend_session_operation",
                         lambda **kwargs: released.append(kwargs) or {})
     monkeypatch.setattr("management_portal.society_service.resident_execution_domain.resume_resident_execution",
                         lambda _resident_id: None)
     result = resident_domain.reset_resident_context(resident_id, "sample_admin")
     assert resident_lifecycle_domain.resume_resident_lifecycle_operation(result["operation_id"])
     assert [call["operation"] for call in released] == ["release"] * expected_releases
-    return resident_workspace_domain._find_resident(resident_id)
+    return resident_workspace_domain.find_resident(resident_id)
 
 
 def test_a_cleared_resident_forks_with_an_empty_context(future_creation_store, monkeypatch) -> None:  # noqa: F811
     """已清空的 Resident Fork 出的上下文为空"""
     source = resident_domain.register_resident(_new_session_payload("Clear fork fixture"), "sample_admin")
     _append_conversation_turn(source["resident_id"], 0)
-    before = resident_workspace_domain._find_resident(source["resident_id"])
+    before = resident_workspace_domain.find_resident(source["resident_id"])
     assert resident_fork_domain._fork_provider_context_snapshot(before)["segments"]
 
     cleared = _clear(source["resident_id"], monkeypatch)
@@ -140,7 +140,7 @@ def test_a_fork_cleared_before_its_first_turn_loses_the_inherited_context(
     future_creation_store, monkeypatch,  # noqa: F811
 ) -> None:
     """Fork 在首轮前被清空时丢弃继承的上下文"""
-    monkeypatch.setattr(resident_project_domain, "_project_root_for_id", lambda _: future_creation_store)
+    monkeypatch.setattr(project_domain, "project_root_for_id", lambda _: future_creation_store)
     source = resident_domain.register_resident(_new_session_payload("Seed source"), "sample_admin")
     _append_conversation_turn(source["resident_id"], 0)
     child_id = resident_domain.create_resident_context_fork(
@@ -246,7 +246,7 @@ def test_clearing_a_resident_marks_its_trace(future_creation_store, monkeypatch)
     before = _trace(store, resident_id)
     shown = store.displayed_chat_message_ids(resident_id)
     released = []
-    monkeypatch.setattr(resident_session_backend_domain, "_run_backend_session_operation",
+    monkeypatch.setattr(resident_session_backend_domain, "run_backend_session_operation",
                         lambda **kwargs: released.append(kwargs) or {})
     monkeypatch.setattr("management_portal.society_service.resident_execution_domain.resume_resident_execution",
                         lambda _resident_id: None)
@@ -255,7 +255,7 @@ def test_clearing_a_resident_marks_its_trace(future_creation_store, monkeypatch)
     # A message sent right after the clear is recorded before the mark is written.
     _recorded(store, resident_id, "segment_clear_mark_next_request", "2026-01-01T00:00:00Z")
     assert resident_lifecycle_domain.resume_resident_lifecycle_operation(result["operation_id"])
-    cleared = resident_workspace_domain._find_resident(resident_id)
+    cleared = resident_workspace_domain.find_resident(resident_id)
 
     after = _trace(store, resident_id)
     assert after[:len(before)] == before and len(after) == len(before) + 1

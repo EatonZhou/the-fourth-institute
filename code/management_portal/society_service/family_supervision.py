@@ -76,8 +76,7 @@ def _event_input(lineage_id, event):
 
 
 def _observe(facade, incident):
-    from .resident_workspace_domain import _find_resident
-    from .resident_lifecycle_domain import _resident_intake_state
+    from . import resident_lifecycle_domain, resident_workspace_domain
     root = incident.get("request_message_id")
     if root:
         if _input(facade["resident_id"], root).get("state") == "cancelled":
@@ -92,13 +91,13 @@ def _observe(facade, incident):
         return "resolved", state
     if status == "cancelled":
         return "cancelled", state
-    record = _find_resident(state["resident_id"])
-    if record and _resident_intake_state(record) != "open":
+    record = resident_workspace_domain.find_resident(state["resident_id"])
+    if record and resident_lifecycle_domain.resident_intake_state(record) != "open":
         from . import resident_execution_work
         held = status == "running" and resident_execution_work.is_intake_held(resident_execution_work.read(record))
         if status in {"queued", "failed"} or held:
-            from .resident_lifecycle_domain import _lifecycle_operations
-            if _lifecycle_operations().pending(record["resident_id"]):
+            from . import resident_lifecycle_domain
+            if resident_lifecycle_domain.lifecycle_operations().pending(record["resident_id"]):
                 state.update(intake_state="closed", blocked_reason="session_restart")
                 return "waiting", state
             state.update(intake_state="closed", blocked_reason="intake_closed")
@@ -115,9 +114,9 @@ def _blocked_queue_candidates(facade, resident_ids):
     its current relay holder before registering it, including nested Families.
     """
     from .resident_catalog import get_catalog
-    from .resident_lifecycle_domain import _resident_intake_state
+    from . import resident_lifecycle_domain
     closed = [r["resident_id"] for r in get_catalog().get_many(sorted(resident_ids))
-              if not r.get("deleted_at") and _resident_intake_state(r) != "open"]
+              if not r.get("deleted_at") and resident_lifecycle_domain.resident_intake_state(r) != "open"]
     for rid, queue in resident_conversation_stream.get_repository().queues(closed).items():
         for item in queue["items"]:
             candidate = _candidate(facade, rid, item["message_id"])
@@ -145,22 +144,22 @@ def _escalate(lineage_id, family, incidents, reason):
                     "任务和故障记录已保留，请处理阻塞后恢复原任务。")
         incident.update(status="escalated", notification_id=notification_id)
         from .family_owners import message_creator
-        from .resident_workspace_domain import _find_resident
-        message_creator(_find_resident(family["facade"]), identity=notification_id,
+        from . import resident_workspace_domain
+        message_creator(resident_workspace_domain.find_resident(family["facade"]), identity=notification_id,
                         text=f"Family「{family['title']}」需要恢复协助：{reason}。原请求 {incident.get('request_message_id') or incident['message_id']} 已保留。")
 
 
 def check(lineage_id, family_id, actor, *, event=None, escalate_reason=""):
     from .templates.familize import read_family
     from . import lineage_domain
-    from .resident_workspace_domain import _find_resident
+    from . import resident_workspace_domain
     lineage, block = read_family(lineage_id, family_id, actor)
     family = block["family"]
     if actor not in {family["facade"], family["steward"]}:
         lineage_domain._ensure_manager(lineage, actor)
-    facade = _find_resident(family["facade"])
-    from .resident_lifecycle_domain import _resident_intake_state
-    if facade.get("deleted_at") or _resident_intake_state(facade) != "open":
+    facade = resident_workspace_domain.find_resident(family["facade"])
+    from . import resident_lifecycle_domain
+    if facade.get("deleted_at") or resident_lifecycle_domain.resident_intake_state(facade) != "open":
         # Pausing the Family is explicit; closing one member is a repairable fault.
         ledger = get_lineage_data_store().family_relays.get(lineage_id, family["facade"]).get("supervision") or {}
         return {"family_id": block["id"], "paused": True,
@@ -168,7 +167,7 @@ def check(lineage_id, family_id, actor, *, event=None, escalate_reason=""):
     # Recovery can race the independent intake Event. Restore its recipient
     # before deciding delivery is impossible, without scanning role accounts.
     from .family_quota import restore_role_intakes
-    restore_role_intakes([_find_resident(family["steward"])])
+    restore_role_intakes([resident_workspace_domain.find_resident(family["steward"])])
     roles = set(family["members"]) | {family[r] for r in ("router", "steward", "facade")}
     event = event or {}
     event_type = str(event.get("type") or "")
@@ -225,12 +224,11 @@ def check(lineage_id, family_id, actor, *, event=None, escalate_reason=""):
             else:
                 notice.update(delivered=True, withdrawn=True)
         elif open_incidents and notice_state not in {"queued", "running"}:
-            from .resident_lifecycle_domain import _resident_intake_state
-            steward = _find_resident(family["steward"])
-            from .resident_lifecycle_domain import _lifecycle_operations
-            if steward and _resident_intake_state(steward) != "open" and _lifecycle_operations().pending(family["steward"]):
+            from . import resident_lifecycle_domain
+            steward = resident_workspace_domain.find_resident(family["steward"])
+            if steward and resident_lifecycle_domain.resident_intake_state(steward) != "open" and resident_lifecycle_domain.lifecycle_operations().pending(family["steward"]):
                 pass  # Its lifecycle operation will restore intake; do not bypass it.
-            elif not steward or _resident_intake_state(steward) != "open":
+            elif not steward or resident_lifecycle_domain.resident_intake_state(steward) != "open":
                 _escalate(lineage_id, family, open_incidents, "steward 不可接单，无法继续监督恢复")
             else:
                 for incident in open_incidents:

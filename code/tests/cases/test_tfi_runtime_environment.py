@@ -60,16 +60,16 @@ def test_runtime_identity_is_record_owned_and_request_local(monkeypatch):
     monkeypatch.setenv('PORTAL_RESIDENT_ID', 'different-inherited-owner')
     before = dict(os.environ)
     record = {'resident_id': RID, 'lineage_id': LID, 'backend': 'codex'}
-    result = resident_runtime_domain._resident_cli_environment(record)
+    result = resident_runtime_domain.resident_cli_environment(record)
     assert result == {
         'PORTAL_RESIDENT_ID': RID,
         'PORTAL_LINEAGE_ID': LID,
     }
     result['PORTAL_RESIDENT_ID'] = 'locally-mutated'
     next_record = {**record, 'resident_id': 'resident_222222222222'}
-    next_env = resident_runtime_domain._resident_cli_environment(next_record)
+    next_env = resident_runtime_domain.resident_cli_environment(next_record)
     assert next_env['PORTAL_RESIDENT_ID'] == next_record['resident_id']
-    block = resident_runtime_domain._resident_runtime_identity_block(record)
+    block = resident_runtime_domain.resident_runtime_identity_block(record)
     assert f'resident_id: {RID}' in block and f'lineage_id: {LID}' in block
     assert f'--resident-id {RID}' in block
     assert dict(os.environ) == before

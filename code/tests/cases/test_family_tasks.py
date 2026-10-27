@@ -12,7 +12,7 @@ import pytest
 from management_portal.society_service import family_tasks, resident_execution_domain, resident_intake_domain
 from management_portal.society_service.resident_execution_domain import deliver_resident_message_content
 from management_portal.society_service import resident_conversation_stream
-from management_portal.society_service.resident_workspace_domain import _find_resident
+from management_portal.society_service.resident_workspace_domain import find_resident as _find_resident
 from management_portal.society_service.templates import familize
 from tests.cases.isa_test_support import ACTOR, ok
 from tests.cases.test_family_familize import lineage, charters, future_creation_store, resident, graph  # noqa: F401
@@ -56,7 +56,7 @@ def test_router_task_keeps_sender_original_media_and_request_binding(configured_
     _, block = configured_family
     family = block["family"]
     mid = "msg_0123456789abcdef0123456789abcdef"
-    message = resident_intake_domain._message("user", "本轮原文 ${facts}", "sample_admin", message_id=mid)
+    message = resident_intake_domain.build_message("user", "本轮原文 ${facts}", "sample_admin", message_id=mid)
     message["content_parts"].append({"type": "file", "resource_id": "file_original"})
     quote = {"message_id": "msg_00000000000000000000000000000012",
              "author_id": family["facade"], "text": "已修好，引用原文 ${facts}"}
@@ -248,7 +248,7 @@ def test_stale_quota_retains_incident_and_funded_backend_resolves_it(configured_
     from management_portal.society_service import family_quota
     _, block = configured_family
     record = _find_resident(block["family"]["router"])
-    resident_intake_domain._commit_resident_intake_state(record, "open")
+    resident_intake_domain.commit_resident_intake_state(record, "open")
     with family_quota.get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], record['resident_id']) as state:
         state.update(status="unavailable", reason="无备用后端")
     account = {}
@@ -268,7 +268,7 @@ def test_both_roles_migrate_on_short_window_pressure_and_keep_context(configured
     from tests.cases.test_family_quota import _account
     _, block = configured_family
     record = _find_resident(block["family"][role])
-    resident_intake_domain._commit_resident_intake_state(record, "open")
+    resident_intake_domain.commit_resident_intake_state(record, "open")
     accounts = [_account("one", 90, short=8), _account("two", 90)]
     monkeypatch.setattr(family_quota, "resident_account", lambda record, accounts: accounts[0])
     calls = []

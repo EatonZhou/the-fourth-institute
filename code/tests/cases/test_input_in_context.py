@@ -40,7 +40,7 @@ def test_a_waiting_message_will_reach_the_context_and_a_finished_one_asks_the_tr
     repository = resident_conversation_stream.get_repository()
     repository.set_input_state(resident_id, a, "completed")
     repository.set_input_state(resident_id, c, "failed")
-    since = str(resident_workspace_domain._find_resident(resident_id).get("context_reset_at") or "")
+    since = str(resident_workspace_domain.find_resident(resident_id).get("context_reset_at") or "")
     assert _state(team, resident_id, a, include_context=True)["in_context"] is True
     assert _state(team, resident_id, c, include_context=True)["in_context"] is False
     assert asked == [(resident_id, a, since), (resident_id, c, since)]

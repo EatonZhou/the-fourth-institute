@@ -72,20 +72,20 @@ def test_next_input_keeps_original_session_without_automatic_restart(monkeypatch
     job = dict(JOB)
     calls = []
     monkeypatch.setattr(resident_lifecycle_domain, "resident_state_scope", lambda *_a, **_k: nullcontext())
-    monkeypatch.setattr(resident_lifecycle_domain, "_state_lock", lambda *_a: nullcontext())
-    monkeypatch.setattr(resident_lifecycle_domain, "_lifecycle_operations",
+    monkeypatch.setattr(resident_lifecycle_domain, "state_lock", lambda *_a: nullcontext())
+    monkeypatch.setattr(resident_lifecycle_domain, "lifecycle_operations",
                         lambda: type("Ops", (), {"pending": staticmethod(lambda *_: False)})())
     monkeypatch.setattr(resident_delivery_work, "drain", lambda *_a: None)
     monkeypatch.setattr(family_quota, "ensure_role_reserve", lambda *_a: False)
-    monkeypatch.setattr(resident_execution_domain, "_resident_record_for_execution", lambda *_a: record)
+    monkeypatch.setattr(resident_execution_domain, "resident_record_for_execution", lambda *_a: record)
     monkeypatch.setattr(resident_execution_domain, "_read_resident_execution_control", lambda *_a: job)
     monkeypatch.setattr(resident_execution_domain, "_active_resident_continuations", lambda: 0)
     monkeypatch.setattr(resident_execution_work, "read", lambda *_a: job)
     monkeypatch.setattr(resident_execution_work, "continuation_needed", lambda *_a: True)
     monkeypatch.setattr(resident_backend, "session_record", lambda *_a, **_k: binding)
-    monkeypatch.setattr(resident_workspace_domain, "_find_resident", lambda *_a: record)
-    monkeypatch.setattr(resident_workspace_domain, "_save_resident_record", lambda *_a: None)
-    monkeypatch.setattr(resident_intake_domain, "_commit_resident_intake_state",
+    monkeypatch.setattr(resident_workspace_domain, "find_resident", lambda *_a: record)
+    monkeypatch.setattr(resident_workspace_domain, "save_resident_record", lambda *_a: None)
+    monkeypatch.setattr(resident_intake_domain, "commit_resident_intake_state",
                         lambda current, state: current.update(intake_transition_id="t-1") or calls.append(state))
     monkeypatch.setattr(resident_restart_domain, "restart_resident_session",
                         lambda *_a, **_k: calls.append("restart") or {"status": "accepted", "restart_id": "unexpected"})
@@ -95,7 +95,7 @@ def test_next_input_keeps_original_session_without_automatic_restart(monkeypatch
         return current["resident_id"], "continuation-1"
 
     monkeypatch.setattr(resident_execution_domain, "_prepare_resident_continuation", prepare)
-    monkeypatch.setattr(resident_intake_domain, "_start_resident_continuation",
+    monkeypatch.setattr(resident_intake_domain, "start_resident_continuation",
                         lambda current, key: calls.append(("started", current["resident_id"], key)))
     result = resident_execution_domain.resume_resident_execution(record["resident_id"])
     assert calls == [("prepared", "msg-1", "thread-old"),

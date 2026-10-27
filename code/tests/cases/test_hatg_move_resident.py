@@ -8,7 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 import pytest
 
 from management_portal.execution.agent_data_store import get_agent_data_store
-from management_portal.society_service import lineage_domain, resident_domain, resident_backend, resident_lifecycle_domain, resident_project_domain
+from management_portal.society_service import lineage_domain, project_domain, resident_backend, resident_domain, resident_lifecycle_domain
 from management_portal.society_service import resident_record_domain
 from management_portal.society_service import resident_workspace_domain
 from tests.cases.isa_test_support import ACTOR, ok, reset_kernels, run
@@ -21,7 +21,7 @@ from tests.cases.test_resident_folder_creation_contract import (
 
 @pytest.fixture
 def teams(future_creation_store, monkeypatch):  # noqa: F811 - pytest fixture
-    monkeypatch.setattr(resident_project_domain, "_project_root_for_id", lambda _: future_creation_store)
+    monkeypatch.setattr(project_domain, "project_root_for_id", lambda _: future_creation_store)
     reset_kernels()
     source = resident_domain.register_resident(_new_session_payload("Source"), ACTOR)
     target = resident_domain.register_resident(_new_session_payload("Target"), ACTOR)
@@ -62,7 +62,7 @@ def unchanged(teams, before):
     source, target, member = teams
     assert [graph(source), graph(target)] == before
     assert resident_domain.resolve_resident_identity(member["resident_id"], ACTOR)["lineage_id"] == source["lineage_id"]
-    assert not resident_lifecycle_domain._lifecycle_operations().pending(member["resident_id"])
+    assert not resident_lifecycle_domain.lifecycle_operations().pending(member["resident_id"])
 
 
 @pytest.mark.parametrize("empty_target", [False, True])
@@ -77,10 +77,10 @@ def test_move_preserves_member_conversation_files_and_replays(teams, empty_targe
     _append_conversation_turn(resident_id, 0)
     agent_data = get_agent_data_store()
     conversation = agent_data.read_chat_messages(resident_id)
-    identity = resident_workspace_domain._find_resident(resident_id)
+    identity = resident_workspace_domain.find_resident(resident_id)
     session_id = resident_backend.record_session_id(identity)
     workspace_id = identity["owned_workspace_id"]
-    original = resident_record_domain._resident_folder_path(identity)
+    original = resident_record_domain.resident_folder_path(identity)
     (original / "artifact.txt").write_text("real artifact contents", encoding="utf-8")
     node = next(item for item in graph(source)["nodes"] if item["id"] == resident_id)
     call = request(teams)
@@ -108,14 +108,14 @@ def test_move_preserves_member_conversation_files_and_replays(teams, empty_targe
     operation = ok("GetMoveOperation", {"operation_id": first.result["operation_id"]})
     assert operation["source_lineage_id"] == source["lineage_id"]
     assert operation["target_lineage_id"] == target["lineage_id"]
-    operations = resident_lifecycle_domain._lifecycle_operations()
-    assert operations.run(first.result["operation_id"], resident_lifecycle_domain._apply_resident_lifecycle_step) == resident_id
-    updated = resident_workspace_domain._find_resident(resident_id)
+    operations = resident_lifecycle_domain.lifecycle_operations()
+    assert operations.run(first.result["operation_id"], resident_lifecycle_domain.apply_resident_lifecycle_step) == resident_id
+    updated = resident_workspace_domain.find_resident(resident_id)
     assert updated["lineage_id"] == target["lineage_id"]
     assert resident_backend.record_session_id(updated) == session_id
     assert updated["owned_workspace_id"] == workspace_id
     assert not original.exists()
-    assert (resident_record_domain._resident_folder_path(updated) / "artifact.txt").read_text() == "real artifact contents"
+    assert (resident_record_domain.resident_folder_path(updated) / "artifact.txt").read_text() == "real artifact contents"
     assert agent_data.read_chat_messages(resident_id) == conversation
     assert execute(call).result["operation_id"] == first.result["operation_id"]
 
@@ -170,24 +170,24 @@ def test_a_busy_resident_moves_and_its_folder_follows_when_the_running_turn_ends
     """忙碌的 Resident 先迁入目标 Lineage，文件夹等运行中的 turn 结束后再移动"""
     source, target, member = teams
     resident_id = member["resident_id"]
-    monkeypatch.setattr(resident_lifecycle_domain, "_resident_has_pending_work", lambda identity: identity == resident_id)
+    monkeypatch.setattr(resident_lifecycle_domain, "resident_has_pending_work", lambda identity: identity == resident_id)
     running = {"value": True}
     monkeypatch.setattr(resident_lifecycle_domain, "_resident_turn_running", lambda identity: running["value"])
-    original = resident_record_domain._resident_folder_path(resident_workspace_domain._find_resident(resident_id))
+    original = resident_record_domain.resident_folder_path(resident_workspace_domain.find_resident(resident_id))
     result = execute(request(teams)).raise_for_error()
     assert resident_id in {node["id"] for node in graph(target)["nodes"]}
-    operations = resident_lifecycle_domain._lifecycle_operations()
+    operations = resident_lifecycle_domain.lifecycle_operations()
     # While the turn runs, the folder stays where the turn is working and queued work waits.
-    assert operations.run(result["operation_id"], resident_lifecycle_domain._apply_resident_lifecycle_step) == ""
+    assert operations.run(result["operation_id"], resident_lifecycle_domain.apply_resident_lifecycle_step) == ""
     assert original.exists() and operations.pending(resident_id)
     assert ok("GetMoveOperation", {"operation_id": result["operation_id"]})["terminal"] is False
     running["value"] = False
     operations.store.database.write(lambda connection: connection.execute(
         "UPDATE resident_lifecycle_operations SET available_at=to_timestamp(0) WHERE operation_id=%s", (result["operation_id"],)))
-    assert operations.run(result["operation_id"], resident_lifecycle_domain._apply_resident_lifecycle_step) == resident_id
+    assert operations.run(result["operation_id"], resident_lifecycle_domain.apply_resident_lifecycle_step) == resident_id
     assert not original.exists()
-    moved = resident_workspace_domain._find_resident(resident_id)
-    assert resident_record_domain._resident_folder_path(moved).exists()
+    moved = resident_workspace_domain.find_resident(resident_id)
+    assert resident_record_domain.resident_folder_path(moved).exists()
 
 
 @pytest.mark.parametrize("side", ["source", "target"])
@@ -236,12 +236,12 @@ def test_move_detaches_relations_without_reconnecting(teams):
     lineage_domain._apply_lineage_graph_patch(source["lineage_id"], {
         "patch": {"edges": edges}, "history_reason": "test relations",
     }, ACTOR, synchronize_external_projections=False)
-    record = resident_workspace_domain._find_resident(member["resident_id"])
+    record = resident_workspace_domain.find_resident(member["resident_id"])
     result = execute(request(teams)).raise_for_error()
     assert [item["id"] for item in result["detached"]] == [edge["id"] for edge in edges]
     assert result["family_id"] == ""
     assert graph(source)["edges"] == graph(target)["edges"] == []
-    moved = resident_workspace_domain._find_resident(member["resident_id"])
+    moved = resident_workspace_domain.find_resident(member["resident_id"])
     for key in ("provenance", "context_source"):
         assert moved.get(key) == record.get(key)
 
@@ -294,7 +294,7 @@ def test_a_resident_caller_can_move_across_lineages_in_open_mode(teams, monkeypa
     result = execute(request(teams), actor=caller, entry="harness")
     assert result.status == "committed", result
     moved_id = teams[2]["resident_id"]
-    assert resident_workspace_domain._find_resident(moved_id)["lineage_id"] == teams[1]["lineage_id"]
+    assert resident_workspace_domain.find_resident(moved_id)["lineage_id"] == teams[1]["lineage_id"]
     assert moved_id not in {node["id"] for node in graph(teams[0])["nodes"]}
     assert moved_id in {node["id"] for node in graph(teams[1])["nodes"]}
 

@@ -4416,12 +4416,12 @@ def create_lineage_branch(
 def _discard_unattached_branch(lineage_id: str, resident_id: str, actor: str) -> None:
     try:
         from . import resident_intake_domain, resident_execution_work
-        from .resident_workspace_domain import _find_resident
-        record = _find_resident(resident_id)
+        from . import resident_workspace_domain
+        record = resident_workspace_domain.find_resident(resident_id)
         job = resident_execution_work.read(record) if record else {}
         if job.get("operation") == "context_fork_create" and not resident_execution_work.submitted_execution_id(job) and not job.get("continuation_id"):
             # This unattached child has only preparation work, never a dispatched turn.
-            resident_intake_domain._cancel_resident_execution_for_target(
+            resident_intake_domain.cancel_resident_execution_for_target(
                 resident_id, actor, str(job.get("user_message_id") or ""), continue_queue=False,
             )
         delete_lineage_graph_objects(lineage_id, {"resident_ids": [resident_id]}, actor)

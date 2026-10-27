@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 def _optional_absolute_paths(value: object) -> list[str]:
-    from .resident_project_domain import _optional_absolute_path
+    from . import resident_project_domain
     if isinstance(value, str):
         raw_items = re.split(r"[\r\n,]+", value)
     elif isinstance(value, list):
@@ -19,7 +19,7 @@ def _optional_absolute_paths(value: object) -> list[str]:
         raw = str(item or "").strip()
         if not raw:
             continue
-        path = _optional_absolute_path(raw)
+        path = resident_project_domain.optional_absolute_path(raw)
         if path and path not in seen:
             paths.append(path)
             seen.add(path)

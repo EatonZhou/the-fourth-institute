@@ -43,7 +43,7 @@ def runtime(tmp_path, monkeypatch):
                   backend_route_id='test', execution_settings={'model':'ranker', 'prompt_context':{'system_prompt':'Rank candidates'}})
     store.put_lineage_definition(LID, lineage, {})
     record['principal_hierarchy'] = classify_existing(record, lineage, evidence={'scope_ids': [LID]})
-    resident_record_domain._set_resident_owned_workspace_binding(record)
+    resident_record_domain.set_resident_owned_workspace_binding(record)
     repo.agent_data.ensure_agent(RID, actor_ref='fixture')
     store.put_resident_record(RID, record, commit_configuration=True)
     record = store.resident_record(RID)
@@ -225,7 +225,7 @@ def test_scope_is_immutable_and_payload_cannot_override_authorized_input(runtime
     with pytest.raises(ValueError, match='immutable'):
         resident_input_scope.register(resident_id=RID, message_id=result['message_id'], actor='bob', profile=profile)
     with pytest.raises(ValueError, match='authorized invocation'):
-        resident_intake_domain._persist_resident_input(RID, 'alice', 'changed prompt', message_id=result['message_id'])
+        resident_intake_domain.persist_resident_input(RID, 'alice', 'changed prompt', message_id=result['message_id'])
 
 
 # The actual intake/queue owner is exercised separately from the provider simulator.
@@ -242,8 +242,8 @@ def test_isolated_input_uses_bound_codex_resident_account_and_model(resident_rec
                         lambda: SimpleNamespace(is_active=lambda actor: actor == 'CASE-A'))
     resident_input_scope.register(resident_id=resident_id, message_id=message_id, actor='CASE-A',
                                   profile={'input_sha256': hashlib.sha256(b'find relevant papers').hexdigest()})
-    settings = resident_runtime_domain._read_resident_runtime_settings(resident_record)
-    resident_runtime_domain._write_resident_runtime_settings(resident_record, {
+    settings = resident_runtime_domain.read_resident_runtime_settings(resident_record)
+    resident_runtime_domain.write_resident_runtime_settings(resident_record, {
         **settings, 'model': 'gpt-6-luna', 'reasoning_effort': 'max',
     })
     request = resident_execution_domain._build_resident_execution_request(resident_record, {

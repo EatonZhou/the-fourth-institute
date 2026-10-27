@@ -123,9 +123,9 @@ def _relayed_message(resident_id: str, message_id: str) -> tuple[bool, tuple[str
     """
 
     from management_portal.society_service import family_facade
-    from management_portal.society_service.resident_workspace_domain import _find_resident
+    from management_portal.society_service import resident_workspace_domain
 
-    if not family_facade.is_facade(_find_resident(resident_id)):
+    if not family_facade.is_facade(resident_workspace_domain.find_resident(resident_id)):
         return False, None
     via, holder = family_facade.relay_holder(str(resident_id or ""), str(message_id or ""))
     return True, (holder if via else None)

@@ -75,8 +75,8 @@ def resume_after_restart(record: dict[str, Any], restart: dict[str, Any]) -> Non
 
 def _intake_allows_recovery(record: Mapping[str, Any]) -> bool:
     from . import resident_state
-    from .resident_lifecycle_domain import _resident_intake_state
-    if _resident_intake_state(dict(record)) == resident_state.INTAKE_OPEN:
+    from . import resident_lifecycle_domain
+    if resident_lifecycle_domain.resident_intake_state(dict(record)) == resident_state.INTAKE_OPEN:
         return True
     return False
 
@@ -110,13 +110,12 @@ def _notify_steward_blocked(record: Mapping[str, Any], message_id: str, reason: 
         from .family_owners import message_creator
         message_creator(record, identity=f"work-recovery:{record['resident_id']}:{message_id}",
                         text=f"Family 内部角色 {record.get('title') or record['resident_id']} 无法继续恢复。{reason}。原输入 {message_id} 已保留。")
-        from .resident_lifecycle_domain import _state_lock
-        from .resident_workspace_domain import _find_resident, _save_resident_record
-        with _state_lock(record["resident_id"]):
-            current = _find_resident(record["resident_id"])
+        from . import resident_lifecycle_domain, resident_workspace_domain
+        with resident_lifecycle_domain.state_lock(record["resident_id"]):
+            current = resident_workspace_domain.find_resident(record["resident_id"])
             if current:
                 set_recovery_entry(current, message_id, owner_notified=True)
-                _save_resident_record(current)
+                resident_workspace_domain.save_resident_record(current)
 
 
 def reconcile_failed_work(residents: list[dict[str, Any]] | None = None, *, jobs: Mapping[str, Any] | None = None) -> int:
@@ -144,9 +143,7 @@ def reconcile_failed_work(residents: list[dict[str, Any]] | None = None, *, jobs
 def _reconcile_failed_work(residents: list[dict[str, Any]], context: dict[str, Any]) -> int:
     """Recheck only eligible failed rounds; no model or sleeping worker required."""
     from . import family_facade, resident_catalog
-    from .resident_lifecycle_domain import _lifecycle_operations, _state_lock
-    from .resident_workspace_domain import _find_resident, _save_resident_record
-    from .resident_restart_domain import restart_resident_session
+    from . import resident_lifecycle_domain, resident_restart_domain, resident_workspace_domain
     from management_portal.execution.provider_egress import provider_network_state
 
     accounts = context.get("accounts")
@@ -157,7 +154,7 @@ def _reconcile_failed_work(residents: list[dict[str, Any]], context: dict[str, A
         resident_id = str(snapshot.get("resident_id") or "")
         if not resident_id or snapshot.get("deleted_at") or family_facade.is_facade(snapshot):
             continue
-        if _lifecycle_operations().pending(resident_id):
+        if resident_lifecycle_domain.lifecycle_operations().pending(resident_id):
             continue
         failed = _recoverable_input(snapshot, context.get("jobs", {}).get(resident_id))
         if not failed:
@@ -181,13 +178,13 @@ def _reconcile_failed_work(residents: list[dict[str, Any]], context: dict[str, A
         # Recovery respects the independently persisted manual intake gate.
         if not _intake_allows_recovery(snapshot):
             continue
-        with _state_lock(resident_id):
-            record = _find_resident(resident_id)
+        with resident_lifecycle_domain.state_lock(resident_id):
+            record = resident_workspace_domain.find_resident(resident_id)
             if (not record or not _intake_allows_recovery(record)
                     or _recoverable_input(record) != failed):
                 continue
             set_recovery_entry(record, message_id, checked_at=now)
-            _save_resident_record(record)
+            resident_workspace_domain.save_resident_record(record)
         provider = resident_backend.execution_provider(record)
         binding = resident_backend.session_record(record)
         route = str(binding.get("backend_route_id")
@@ -196,11 +193,11 @@ def _reconcile_failed_work(residents: list[dict[str, Any]], context: dict[str, A
             route = str(resident_backend.execution_account(record, binding).get("backend_route_id") or "")
         pending = recovery.get("pending_restart")
         if pending:
-            restart_resident_session(resident_id, resident_id, pending, portal_reason="steward_quota_recovery")
-            with _state_lock(resident_id):
-                current = _find_resident(resident_id)
+            resident_restart_domain.restart_resident_session(resident_id, resident_id, pending, portal_reason="steward_quota_recovery")
+            with resident_lifecycle_domain.state_lock(resident_id):
+                current = resident_workspace_domain.find_resident(resident_id)
                 set_recovery_entry(current, message_id, pending_restart=None)
-                _save_resident_record(current)
+                resident_workspace_domain.save_resident_record(current)
             changed += 1
             continue
         if net:
@@ -215,8 +212,8 @@ def _reconcile_failed_work(residents: list[dict[str, Any]], context: dict[str, A
             ready = any(account_available(a) and a["provider"] == provider
                         and str(a.get("backend_route_id") or "") == route for a in accounts)
         if ready:
-            with _state_lock(resident_id):
-                current = _find_resident(resident_id)
+            with resident_lifecycle_domain.state_lock(resident_id):
+                current = resident_workspace_domain.find_resident(resident_id)
                 if (not current or latest_failed_input(current).get("message_id") != message_id
                         or not _intake_allows_recovery(current) or resident_execution_work.is_active(resident_execution_work.read(current))):
                     continue
@@ -242,18 +239,18 @@ def _reconcile_failed_work(residents: list[dict[str, Any]], context: dict[str, A
                        "context_strategy": "compact", "active_execution_policy": "wait",
                        "resume_failed_input": True,
                        "idempotency_key": f"work-recovery:{message_id}:{switches + 1}"}
-            with _state_lock(resident_id):
-                current = _find_resident(resident_id)
+            with resident_lifecycle_domain.state_lock(resident_id):
+                current = resident_workspace_domain.find_resident(resident_id)
                 if not current or _recoverable_input(current) != failed:
                     continue
                 set_recovery_entry(current, message_id, pending_restart=payload,
                                    switch_attempts=switches + 1,
                                    tried_accounts=[*tried, str(target["account_id"])])
-                _save_resident_record(current)
-            restart_resident_session(resident_id, resident_id, payload, portal_reason="steward_quota_recovery")
-            with _state_lock(resident_id):
-                current = _find_resident(resident_id)
+                resident_workspace_domain.save_resident_record(current)
+            resident_restart_domain.restart_resident_session(resident_id, resident_id, payload, portal_reason="steward_quota_recovery")
+            with resident_lifecycle_domain.state_lock(resident_id):
+                current = resident_workspace_domain.find_resident(resident_id)
                 set_recovery_entry(current, message_id, pending_restart=None)
-                _save_resident_record(current)
+                resident_workspace_domain.save_resident_record(current)
             changed += 1
     return changed

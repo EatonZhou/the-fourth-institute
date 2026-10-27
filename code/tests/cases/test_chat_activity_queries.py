@@ -176,7 +176,7 @@ def test_resident_filter_is_applied_before_activity_discovery(monkeypatch):
 
     monkeypatch.setattr(resident_conversation_stream, "get_repository", lambda: Repository())
     monkeypatch.setattr(resident_directory_domain, "_engaged_conversation_records", visible)
-    monkeypatch.setattr(resident_conversation_projection_domain, "_conversation_family_summaries", lambda ids, actor: {})
+    monkeypatch.setattr(resident_conversation_projection_domain, "conversation_family_summaries", lambda ids, actor: {})
     assert resident_domain.list_resident_conversation_activity("CASE-A", iter([resident_id, "", resident_id])) == {"residents": []}
 
 

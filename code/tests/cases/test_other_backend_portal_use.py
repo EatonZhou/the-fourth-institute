@@ -13,6 +13,7 @@ Found by driving Kimi and DSH Residents through the ISA:
 """
 from __future__ import annotations
 
+import inspect
 from types import SimpleNamespace
 from unittest import mock
 
@@ -251,12 +252,12 @@ def test_restarted_session_is_created_where_the_residents_turns_look_for_it(monk
 
     record = {"resident_id": "resident_0123456789ab", "title": "Probe", "lineage_id": ""}
     monkeypatch.setattr(
-        "management_portal.society_service.resident_record_domain._resident_folder_path",
+        "management_portal.society_service.resident_record_domain.resident_folder_path",
         lambda _record: Path("/srv/residents/resident_0123456789ab"),
     )
     restart = resident_restart_domain._session_restart_runtime_options(
         record, "claude", "sample_admin", runtime_settings={"model": "x"}, target_route="deepseek_primary",
     )
     assert restart["runtime_root"] == "/srv/residents/resident_0123456789ab/runtime/backend"
-    source = Path(resident_execution_domain.__file__).read_text(encoding="utf-8")
-    assert '"runtime_root": str(_sessions_path(record) / "backend")' in source  # the same root for turns
+    source = inspect.getsource(resident_execution_domain.resident_execution_runtime_options)
+    assert '"runtime_root": str(resident_record_domain.sessions_path(record) / "backend")' in source  # the same root for turns

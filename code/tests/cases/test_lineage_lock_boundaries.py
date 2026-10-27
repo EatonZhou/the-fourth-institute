@@ -153,7 +153,7 @@ def test_effects_wait_for_all_state_scopes_and_discard_failed_transitions_contra
             lineage_entered = threading.Event()
 
             def hold_resident() -> None:
-                with resident_lifecycle_domain._state_lock("resident_111111111111"):
+                with resident_lifecycle_domain.state_lock("resident_111111111111"):
                     resident_entered.set()
                     release_resident.wait(timeout=2)
 
@@ -195,13 +195,13 @@ def test_resident_states_run_concurrently(tmp_path, monkeypatch, subtests, isola
                 second_entered = threading.Event()
 
                 def hold_first() -> None:
-                    with resident_lifecycle_domain._state_lock("resident_111111111111"):
+                    with resident_lifecycle_domain.state_lock("resident_111111111111"):
                         first_entered.set()
                         release_first.wait(timeout=2)
 
                 def enter_second() -> None:
                     first_entered.wait(timeout=2)
-                    with resident_lifecycle_domain._state_lock("resident_222222222222"):
+                    with resident_lifecycle_domain.state_lock("resident_222222222222"):
                         second_entered.set()
 
                 first = threading.Thread(target=hold_first)
@@ -237,7 +237,7 @@ def test_resident_mutation_lock_does_not_hold_an_identity_snapshot_contracts(mon
                 forbidden_snapshot_scope,
             )
 
-            with resident_lifecycle_domain._state_lock("resident_111111111111"):
+            with resident_lifecycle_domain.state_lock("resident_111111111111"):
                 pass
     with subtests.test(contract='test_state_lock_requires_explicit_lineage_identity'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:

@@ -5,7 +5,8 @@ import pytest
 from management_common.domain_database import DomainDatabase
 from management_portal import identity_store, mailbox_todos
 from management_portal.society_service.resident_record_domain import (
-    _runtime_error_payload, _runtime_failure_summary,
+    runtime_error_payload as _runtime_error_payload,
+    runtime_failure_summary as _runtime_failure_summary,
 )
 
 

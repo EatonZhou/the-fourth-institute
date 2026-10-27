@@ -56,7 +56,7 @@ def test_personal_family_can_precede_first_ai_account(future_creation_store, mon
     for rid in [ama["resident_id"], *(family[r] for r in ("facade", "router", "steward"))]:
         record = resident_catalog.get_catalog().get(rid)
         assert record["backend_route_id"] == ""
-        settings = resident_runtime_domain._read_resident_runtime_settings(record)
+        settings = resident_runtime_domain.read_resident_runtime_settings(record)
         assert settings["backend_role"] == "default"
         assert not settings.get("model")
     assert personal_assistant.ensure("newcomer", ama["resident_id"], "newcomer") == assistant
@@ -65,7 +65,7 @@ def test_personal_family_can_precede_first_ai_account(future_creation_store, mon
     from management_portal.society_service import family_quota, resident_intake_domain, resident_domain
     from management_portal.society_service.coordinator import LineageCoordinator
     starts = []
-    monkeypatch.setattr(resident_intake_domain, "_start_resident_continuation", lambda record, cid:
+    monkeypatch.setattr(resident_intake_domain, "start_resident_continuation", lambda record, cid:
                         starts.append((record["resident_id"], cid)))
     coordinator = LineageCoordinator(
         resume_residents=resident_execution_domain.resume_pending_resident_executions,
@@ -203,8 +203,8 @@ def test_personal_instructions_keep_user_customization_and_refresh_each_turn(per
     ama, assistant = personal
     record = resident_catalog.get_catalog().get(ama["resident_id"])
     from management_portal.society_service import resident_runtime_domain
-    monkeypatch.setattr(resident_runtime_domain, "_resident_agents_instruction_block", lambda record: "用户自己的语气")
-    instructions = resident_execution_domain._resident_system_instructions(record, {}, settings={})
+    monkeypatch.setattr(resident_runtime_domain, "resident_agents_instruction_block", lambda record: "用户自己的语气")
+    instructions = resident_execution_domain.resident_system_instructions(record, {}, settings={})
     personal = [p for p in instructions.parts if p.name == "personal_assistant"]
     assert len(personal) == 1 and personal[0].timing == "every_turn"
     assert "portal-resident-handoff" in personal[0].content
@@ -288,7 +288,7 @@ def test_preference_updates_survive_login_and_router_reads_them(personal):
         "resident_id": FACADE, "trigger": "route", "source_message_id": "msg_123"}
     assert not any(name == "GetSharedState" for name, _ in calls)
     from management_portal.society_service import family_tasks
-    from management_portal.society_service.resident_workspace_domain import _find_resident
+    from management_portal.society_service.resident_workspace_domain import find_resident as _find_resident
     _, block = family_tasks.context(_find_resident(assistant["resident_id"]))
     _, _, guide = family_tasks.guide(_find_resident(block["family"]["router"]))
     assert key in guide and "同话题优先保持上一轮成员" in guide

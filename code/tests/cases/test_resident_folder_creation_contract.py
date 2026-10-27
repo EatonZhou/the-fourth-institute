@@ -39,7 +39,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 CANONICAL_RESIDENT_TARGETS = lineage_domain._resident_targets
 
 
-from management_portal.society_service import project_domain, resident_access, resident_conversation_projection_domain, resident_domain_common, resident_lifecycle_domain, resident_project_domain, resident_registration_domain, resident_session_backend_domain, resident_workspace_domain
+from management_portal.society_service import project_domain, resident_access, resident_conversation_projection_domain, resident_domain_common, resident_lifecycle_domain, resident_registration_domain, resident_session_backend_domain, resident_workspace_domain
 from management_portal.society_service import resident_directory_domain
 
 @pytest.fixture()
@@ -55,12 +55,11 @@ def future_creation_store(
     # Deleted Residents' quota overrides are forgotten in the Execution store.
     monkeypatch.setattr(execution_port, "forget_binding_quota_overrides", lambda binding_ids: {"removed": 0})
     install_resource_boundary(monkeypatch, synthetic_residents=False)
-    monkeypatch.setattr(resident_project_domain, "STAGING_ROOT", tmp_path)
-    monkeypatch.setattr(resident_workspace_domain, "STAGING_ROOT", tmp_path)
+    monkeypatch.setattr(resident_domain_common, "STAGING_ROOT", tmp_path)
     # A Resident created in a Project defaults to the Project directory as its workspace.
     project_root = tmp_path / "project_test"
     project_root.mkdir(exist_ok=True)
-    monkeypatch.setattr(resident_project_domain, "_project_root_for_id", lambda _project_id: project_root)
+    monkeypatch.setattr(project_domain, "project_root_for_id", lambda _project_id: project_root)
     monkeypatch.setattr(project_domain, "PROJECTS_ROOT", tmp_path)
     return lineage_root
 
@@ -87,7 +86,7 @@ def test_registration_creates_identity_without_synthetic_message(
     future_creation_store, monkeypatch, member,
 ):
     """注册 Resident 或添加 Lineage 成员只创建身份和图节点，不写入合成消息"""
-    monkeypatch.setattr(resident_project_domain, "_project_root_for_id", lambda _: future_creation_store)
+    monkeypatch.setattr(project_domain, "project_root_for_id", lambda _: future_creation_store)
     parent = resident_domain.register_resident(_new_session_payload("Parent"), "sample_admin")
     payload = _new_session_payload("Registered without task")
     if member:
@@ -111,7 +110,7 @@ def test_registration_does_not_hydrate_unrelated_residents(
     future_creation_store, monkeypatch, member,
 ):
     """注册 Resident 或添加成员时不加载全部 Resident"""
-    monkeypatch.setattr(resident_project_domain, "_project_root_for_id", lambda _: future_creation_store)
+    monkeypatch.setattr(project_domain, "project_root_for_id", lambda _: future_creation_store)
     parent = resident_domain.register_resident(_new_session_payload("Existing parent"), "sample_admin")
 
     def unexpected_catalog_hydration():
@@ -132,9 +131,9 @@ def test_registration_candidate_collision_preserves_existing_resident(
 ):
     """候选 Resident ID 与已有 Resident 冲突时改用新 ID，已有 Resident 不被覆盖"""
     parent = resident_domain.register_resident(_new_session_payload("Collision owner"), "sample_admin")
-    fresh_id = resident_domain_common._new_resident_id()
+    fresh_id = resident_domain_common.new_resident_id()
     candidates = iter([parent["resident_id"], fresh_id])
-    monkeypatch.setattr(resident_directory_domain, "_new_resident_id", lambda *args: next(candidates))
+    monkeypatch.setattr(resident_domain_common, "new_resident_id", lambda *args: next(candidates))
     created = resident_domain.register_resident(_new_session_payload("After collision"), "sample_admin")
     assert created["resident_id"] == fresh_id
     assert resident_lineage.find(parent["resident_id"])["title"] == "Collision owner"
@@ -145,10 +144,10 @@ def test_slow_registration_preparation_does_not_block_other_residents(
     future_creation_store, monkeypatch, member,
 ):
     """一次注册的工作区准备很慢时不持有锁，其他 Resident 的注册照常完成"""
-    monkeypatch.setattr(resident_project_domain, "_project_root_for_id", lambda _: future_creation_store)
+    monkeypatch.setattr(project_domain, "project_root_for_id", lambda _: future_creation_store)
     parent = resident_domain.register_resident(_new_session_payload("Parent"), "sample_admin")
     entered, release = threading.Event(), threading.Event()
-    prepare = resident_workspace_domain._ensure_resident_workspace
+    prepare = resident_workspace_domain.ensure_resident_workspace
 
     def slow(record):
         if record["title"] == "Slow preparation":
@@ -157,7 +156,7 @@ def test_slow_registration_preparation_does_not_block_other_residents(
             assert release.wait(5)
         return prepare(record)
 
-    monkeypatch.setattr(resident_workspace_domain, "_ensure_resident_workspace", slow)
+    monkeypatch.setattr(resident_workspace_domain, "ensure_resident_workspace", slow)
 
     def register(title):
         payload = _new_session_payload(title)
@@ -182,9 +181,9 @@ def test_resident_registration_commits_different_lineages_concurrently(
     future_creation_store, monkeypatch,
 ):
     """不同 Lineage 的 Resident 注册可以并发提交"""
-    monkeypatch.setattr(resident_project_domain, "_project_root_for_id", lambda _: future_creation_store)
+    monkeypatch.setattr(project_domain, "project_root_for_id", lambda _: future_creation_store)
     entered, release = threading.Event(), threading.Event()
-    save = resident_workspace_domain._save_resident_record
+    save = resident_workspace_domain.save_resident_record
 
     def slow_first_commit(record):
         if record["title"] == "Slow commit":
@@ -193,7 +192,7 @@ def test_resident_registration_commits_different_lineages_concurrently(
             assert release.wait(5)
         return save(record)
 
-    monkeypatch.setattr(resident_workspace_domain, "_save_resident_record", slow_first_commit)
+    monkeypatch.setattr(resident_workspace_domain, "save_resident_record", slow_first_commit)
     with ThreadPoolExecutor(max_workers=2) as pool:
         first = pool.submit(
             resident_domain.register_resident,
@@ -222,11 +221,11 @@ def test_hatg_registration_keeps_a_creation_committed_during_its_preparation(fut
 
     Another Resident created while this one prepares does not fail the registration; both stay."""
 
-    monkeypatch.setattr(resident_project_domain, "_project_root_for_id", lambda _: future_creation_store)
+    monkeypatch.setattr(project_domain, "project_root_for_id", lambda _: future_creation_store)
     parent = resident_domain.register_resident(_new_session_payload("Parent"), "sample_admin")
     lineage_id = parent["lineage_id"]
     prepared = []
-    prepare = resident_workspace_domain._ensure_resident_workspace
+    prepare = resident_workspace_domain.ensure_resident_workspace
 
     def graph_changed_during_preparation(record):
         assert not invariant_locks.lock_held()
@@ -235,7 +234,7 @@ def test_hatg_registration_keeps_a_creation_committed_during_its_preparation(fut
             prepared.append(record["resident_id"])
             lineage_domain.create_lineage_resident(lineage_id, _new_session_payload("Concurrent node"), "sample_admin")
 
-    monkeypatch.setattr(resident_workspace_domain, "_ensure_resident_workspace", graph_changed_during_preparation)
+    monkeypatch.setattr(resident_workspace_domain, "ensure_resident_workspace", graph_changed_during_preparation)
     created = lineage_domain.create_lineage_resident(
         lineage_id, _new_session_payload("Prepared creation"), "sample_admin",
     )["resident"]
@@ -251,29 +250,29 @@ def test_member_move_commits_graphs_then_recovers_unlocked_file_transfer(future_
     """成员迁往另一 Lineage 时先提交两张图，锁外文件迁移失败后可重试完成"""
     from management_portal.society_service import resident_workspace_transfer
 
-    monkeypatch.setattr(resident_project_domain, "_project_root_for_id", lambda _: future_creation_store)
+    monkeypatch.setattr(project_domain, "project_root_for_id", lambda _: future_creation_store)
     source = resident_domain.register_resident(_new_session_payload("Move source"), "sample_admin")
     destination = resident_domain.register_resident(_new_session_payload("Move destination"), "sample_admin")
     member = lineage_domain.create_lineage_resident(
         source["lineage_id"], _new_session_payload("Moving member"), "sample_admin",
     )["resident"]
     resident_id = member["resident_id"]
-    original = resident_record_domain._resident_folder_path(member)
+    original = resident_record_domain.resident_folder_path(member)
     (original / "keep.txt").write_text("preserve", encoding="utf-8")
     result = resident_domain.update_resident(resident_id, "sample_admin", {
         "target_lineage_id": destination["lineage_id"],
     })
     assert result["workspace_pending"] is True
     assert original.exists()
-    moved = resident_workspace_domain._find_resident(resident_id)
-    target = resident_record_domain._resident_folder_path(moved)
+    moved = resident_workspace_domain.find_resident(resident_id)
+    target = resident_record_domain.resident_folder_path(moved)
     assert not target.exists()
     assert moved["lineage_id"] == destination["lineage_id"]
     old_graph = lineage_domain._lineage_catalog_store().get(source["lineage_id"])
     new_graph = lineage_domain._lineage_catalog_store().get(destination["lineage_id"])
     assert resident_id not in {item["id"] for item in old_graph["nodes"]}
     assert resident_id in {item["id"] for item in new_graph["nodes"]}
-    operations = resident_lifecycle_domain._lifecycle_operations()
+    operations = resident_lifecycle_domain.lifecycle_operations()
     relocate = resident_workspace_transfer.relocate
 
     def fail(*args):
@@ -281,15 +280,15 @@ def test_member_move_commits_graphs_then_recovers_unlocked_file_transfer(future_
         raise OSError("temporary filesystem failure")
 
     monkeypatch.setattr(resident_workspace_transfer, "relocate", fail)
-    assert not operations.run(result["operation_id"], resident_lifecycle_domain._apply_resident_lifecycle_step)
+    assert not operations.run(result["operation_id"], resident_lifecycle_domain.apply_resident_lifecycle_step)
     assert operations.pending(resident_id)
     assert original.exists()
-    assert resident_lifecycle_domain._resident_has_pending_work(resident_id)
+    assert resident_lifecycle_domain.resident_has_pending_work(resident_id)
     monkeypatch.setattr(resident_workspace_transfer, "relocate", relocate)
     operations.store.database.write(lambda c: c.execute(
         'UPDATE resident_lifecycle_operations SET available_at=to_timestamp(0) WHERE operation_id=%s', (result["operation_id"],),
     ))
-    assert operations.run(result["operation_id"], resident_lifecycle_domain._apply_resident_lifecycle_step) == resident_id, operations.health()
+    assert operations.run(result["operation_id"], resident_lifecycle_domain.apply_resident_lifecycle_step) == resident_id, operations.health()
     assert not original.exists()
     assert (target / "keep.txt").read_text() == "preserve"
     assert not operations.pending(resident_id)
@@ -298,7 +297,7 @@ def test_member_move_commits_graphs_then_recovers_unlocked_file_transfer(future_
 @pytest.mark.parametrize("project_id", ["project_test", "project_next", ""])
 def test_project_edit_does_not_move_the_lineage_owned_folder(future_creation_store, monkeypatch, project_id):
     """修改 Resident 的 project_id 不移动 Lineage 文件夹，改成其他 Project 被拒绝"""
-    monkeypatch.setattr(resident_project_domain, "_project_root_for_id", lambda _: future_creation_store)
+    monkeypatch.setattr(project_domain, "project_root_for_id", lambda _: future_creation_store)
     record = resident_domain.register_resident(_new_session_payload("Project ownership"), "sample_admin")
     original = record["workspace_path"]
     if project_id == record["project_id"]:
@@ -309,7 +308,7 @@ def test_project_edit_does_not_move_the_lineage_owned_folder(future_creation_sto
         with pytest.raises(ValueError, match="由 Lineage 派生"):
             resident_domain.update_resident(record["resident_id"], "sample_admin", {"project_id": project_id})
     assert Path(original).is_dir()
-    reloaded = resident_workspace_domain._find_resident(record["resident_id"])
+    reloaded = resident_workspace_domain.find_resident(record["resident_id"])
     assert reloaded["workspace_path"] == original
     assert reloaded["project_id"] == record["project_id"]
     assert lineage_domain.get_lineage(record["lineage_id"], "sample_admin")["project_id"] == record["project_id"]
@@ -324,14 +323,14 @@ def test_reset_commits_intent_before_archiving_conversation(future_creation_stor
         resident_id, "before reset", "sample_admin", message_id="msg_11111111111111111111111111111111",
     )
     repository.commit_user_message(resident_id, old_message)
-    operations = resident_lifecycle_domain._lifecycle_operations()
+    operations = resident_lifecycle_domain.lifecycle_operations()
     enqueue = operations.enqueue
 
     def failed_enqueue(*args, **kwargs):
         raise RuntimeError("reset intent could not commit")
 
     monkeypatch.setattr(operations, "enqueue", failed_enqueue)
-    monkeypatch.setattr(resident_lifecycle_domain, "_lifecycle_operations", lambda: operations)
+    monkeypatch.setattr(resident_lifecycle_domain, "lifecycle_operations", lambda: operations)
     with pytest.raises(RuntimeError, match="reset intent could not commit"):
         resident_domain.reset_resident_context(resident_id, "sample_admin")
     assert old_message["message_id"] in repository.context_reset_boundary(resident_id)
@@ -345,7 +344,7 @@ def test_reset_commits_intent_before_archiving_conversation(future_creation_stor
         resident_id, "after reset", "sample_admin", message_id="msg_22222222222222222222222222222222",
     )
     repository.commit_user_message(resident_id, new_message)
-    assert operations.run(result["operation_id"], resident_lifecycle_domain._apply_resident_lifecycle_step) == resident_id, operations.health()
+    assert operations.run(result["operation_id"], resident_lifecycle_domain.apply_resident_lifecycle_step) == resident_id, operations.health()
     assert repository.context_reset_boundary(resident_id) == [new_message["message_id"]]
 
 
@@ -363,7 +362,7 @@ def test_registration_failure_rolls_back_graph_and_identity(future_creation_stor
         raise RuntimeError("identity commit failed")
 
     monkeypatch.setattr(lineage_domain, "initialize_resident_lineage", capture)
-    monkeypatch.setattr(resident_workspace_domain, "_save_resident_record", fail)
+    monkeypatch.setattr(resident_workspace_domain, "save_resident_record", fail)
     with pytest.raises(RuntimeError, match="identity commit failed"):
         resident_domain.register_resident(_new_session_payload("Rollback registration"), "sample_admin")
     assert resident_catalog.get_catalog().snapshot() == before
@@ -374,31 +373,31 @@ def test_registration_failure_rolls_back_graph_and_identity(future_creation_stor
 
 def test_failed_registration_archives_only_new_resident_folder(future_creation_store, monkeypatch):
     """成员注册失败后只归档新 Resident 的文件夹，已有成员的文件保留"""
-    monkeypatch.setattr(resident_project_domain, "_project_root_for_id", lambda _: future_creation_store)
+    monkeypatch.setattr(project_domain, "project_root_for_id", lambda _: future_creation_store)
     parent = resident_domain.register_resident(_new_session_payload("Kept parent"), "sample_admin")
-    parent_folder = resident_record_domain._resident_folder_path(parent)
+    parent_folder = resident_record_domain.resident_folder_path(parent)
     keep = parent_folder / "user-file.txt"
     keep.write_text("existing data", encoding="utf-8")
     created = []
-    prepare = resident_workspace_domain._ensure_resident_workspace
+    prepare = resident_workspace_domain.ensure_resident_workspace
 
     def interrupted(record):
         prepare(record)
-        folder = resident_record_domain._resident_folder_path(record)
+        folder = resident_record_domain.resident_folder_path(record)
         (folder / "partial.txt").write_text("partial preparation", encoding="utf-8")
         created.append(folder)
         raise RuntimeError("preparation interrupted")
 
-    monkeypatch.setattr(resident_workspace_domain, "_ensure_resident_workspace", interrupted)
+    monkeypatch.setattr(resident_workspace_domain, "ensure_resident_workspace", interrupted)
     with pytest.raises(RuntimeError, match="preparation interrupted"):
         lineage_domain.create_lineage_resident(
             parent["lineage_id"], _new_session_payload("Unpublished member"), "sample_admin",
         )
     assert created[0].exists(), "Failure must leave recovery evidence, not rmtree"
-    operations = resident_lifecycle_domain._lifecycle_operations()
+    operations = resident_lifecycle_domain.lifecycle_operations()
     keys = operations.ready()
     assert len(keys) == 1
-    assert operations.run(keys[0], resident_lifecycle_domain._apply_resident_lifecycle_step)
+    assert operations.run(keys[0], resident_lifecycle_domain.apply_resident_lifecycle_step)
     assert not created[0].exists()
     archives = list(created[0].parent.glob(f".aborted-{created[0].name}-*"))
     assert len(archives) == 1
@@ -426,7 +425,7 @@ def _append_conversation_turn(
     index: int,
 ) -> None:
     store = get_agent_data_store()
-    record = resident_workspace_domain._find_resident(resident_id)
+    record = resident_workspace_domain.find_resident(resident_id)
     if not resident_backend.record_session_id(record):
         record = _activate_created_resident(resident_id)
     session = store.ensure_provider_session(
@@ -469,14 +468,14 @@ def _context_user_message_id(index: int) -> str:
 
 
 def _activate_created_resident(resident_id: str) -> dict:
-    record = resident_workspace_domain._find_resident(resident_id)
+    record = resident_workspace_domain.find_resident(resident_id)
     assert record is not None
     register_session(
         record,
         f"01a00000-0000-7000-8000-{resident_id[-12:]}",
         backend_route_id="zero",
     )
-    activated = resident_workspace_domain._find_resident(resident_id)
+    activated = resident_workspace_domain.find_resident(resident_id)
     assert activated is not None
     return activated
 
@@ -751,7 +750,11 @@ def test_lineage_project_move_reprojects_resident_and_workspace_resources(
         "load",
         lambda: {"projects": [{"id": "OSForAgent", "path": str(project_root)}, {"id": "RoboLab", "path": str(second_project_root)}]},
     )
-    monkeypatch.setattr(resource_client, "project_roots", lambda **kwargs: {"OSForAgent": project_root, "RoboLab": second_project_root})
+    roots = {"OSForAgent": project_root, "RoboLab": second_project_root}
+    monkeypatch.setattr(resource_client, "project_roots", lambda **kwargs: roots)
+    # The move resolves these Projects; registration keeps the fixture's Project.
+    fixture_root = project_domain.project_root_for_id
+    monkeypatch.setattr(project_domain, "project_root_for_id", lambda project_id: roots.get(project_id) or fixture_root(project_id))
     payload = _new_session_payload("System projection root")
     record = resident_domain.register_resident(payload, "sample_admin")
     lineage_id = record["lineage_id"]
@@ -849,8 +852,8 @@ def test_leader_resident_rename_preserves_lineage_identity_and_refreshes_hatg(
     reference_workspace.mkdir()
     stored = resident_catalog.get_catalog().get(resident_id)
     stored["workspace_bindings"] = []
-    resident_workspace_domain._set_resident_reference_bindings(stored, [str(development_workspace), str(reference_workspace)])
-    resident_workspace_domain._save_resident_record(stored)
+    resident_workspace_domain.set_resident_reference_bindings(stored, [str(development_workspace), str(reference_workspace)])
+    resident_workspace_domain.save_resident_record(stored)
     bindings_before = resident_catalog.get_catalog().get(resident_id)["workspace_bindings"]
 
     updated = resident_domain.update_resident(
@@ -1264,7 +1267,7 @@ def test_lineage_fork_creation_returns_lightweight_result_without_family_rewrite
     assert "family_residents" not in result
     assert "messages" not in result
     registry = resident_lineage.snapshot(
-        resident_workspace_domain._find_resident(record["resident_id"])
+        resident_workspace_domain.find_resident(record["resident_id"])
     )
     created = resident_lineage.find_in_snapshot(
         registry,
@@ -1354,7 +1357,7 @@ def test_cross_lineage_context_fork_keeps_external_source_as_provenance(
     source_resident_id = source_creation_result["resident_id"]
     _add_created_resident_to_lineage(source, source_resident_id)
     source_session_id = "019e63b0-031d-7913-9dc8-0d972899beef"
-    source_resident_record = resident_workspace_domain._find_resident(source_resident_id)
+    source_resident_record = resident_workspace_domain.find_resident(source_resident_id)
     register_session(
         source_resident_record,
         source_session_id,
@@ -1427,7 +1430,7 @@ def test_cross_lineage_context_fork_keeps_external_source_as_provenance(
         })
     assert external_message_id not in {
         item["message_id"]
-        for item in resident_directory_domain._resident_conversation_messages(
+        for item in resident_directory_domain.resident_conversation_messages(
             source_resident_record,
             limit=MAX_TIMELINE_ITEMS,
         )
@@ -1439,7 +1442,7 @@ def test_cross_lineage_context_fork_keeps_external_source_as_provenance(
         target_lineage_resident_id=target["resident_id"],
     )
 
-    target_record = resident_workspace_domain._find_resident(target["resident_id"])
+    target_record = resident_workspace_domain.find_resident(target["resident_id"])
     registry = resident_lineage.snapshot(target_record)
     created = resident_lineage.find_in_snapshot(
         registry,
@@ -1454,7 +1457,7 @@ def test_cross_lineage_context_fork_keeps_external_source_as_provenance(
     native_operations: list[dict] = []
     monkeypatch.setattr(
         resident_session_backend_domain,
-        "_run_backend_session_operation",
+        "run_backend_session_operation",
         lambda **kwargs: (
             native_operations.append(kwargs)
             or {
@@ -1464,9 +1467,9 @@ def test_cross_lineage_context_fork_keeps_external_source_as_provenance(
         ),
     )
 
-    exact_created = resident_workspace_domain._find_resident(result["resident_id"])
+    exact_created = resident_workspace_domain.find_resident(result["resident_id"])
     assert exact_created is not None
-    resident_session_backend_domain._create_exact_resident_session(
+    resident_session_backend_domain.create_exact_resident_session(
         exact_created,
         {
             'execution_id': "job_cross_lineage_native_fork",
@@ -1514,7 +1517,7 @@ def test_generated_fork_title_can_adopt_the_existing_lineage_name(
         (record["resident_id"], created_resident_id),
     ]
     initial_registry = resident_lineage.snapshot(
-        resident_workspace_domain._find_resident(record["resident_id"])
+        resident_workspace_domain.find_resident(record["resident_id"])
     )
     initial_resident = resident_lineage.find_in_snapshot(initial_registry, created_resident_id)
 
@@ -1531,7 +1534,7 @@ def test_generated_fork_title_can_adopt_the_existing_lineage_name(
     )
     after = resident_domain.resident_title_map(identities)
     adopted_registry = resident_lineage.snapshot(
-        resident_workspace_domain._find_resident(record["resident_id"])
+        resident_workspace_domain.find_resident(record["resident_id"])
     )
     adopted_resident = resident_lineage.find_in_snapshot(adopted_registry, created_resident_id)
 
@@ -1609,7 +1612,7 @@ def test_full_context_fork_deferred_creation_has_no_independent_start_gate(
     assert derived_resident["owned_workspace"]["path"] == str(expected_workspace)
     assert all(binding["path"] != record["default_cwd"]
                for binding in derived_resident["workspace_bindings"])
-    exact_resident = resident_workspace_domain._find_resident(created_resident_id)
+    exact_resident = resident_workspace_domain.find_resident(created_resident_id)
     assert exact_resident is not None
     assert resident_execution_work.read(exact_resident) == {}
 
@@ -1758,10 +1761,10 @@ def test_deleted_resident_cleanup_failure_retries_without_resurrecting_identity(
     )
     from management_portal.resources.workspace_store import get_workspace_store
     workspace_id = derived_resident["owned_workspace_id"]
-    folder = resident_record_domain._resident_folder_path(resident_catalog.get_catalog().get(created_resident_id))
+    folder = resident_record_domain.resident_folder_path(resident_catalog.get_catalog().get(created_resident_id))
     _delete_member(created_resident_id)
-    assert resident_workspace_domain._find_resident(created_resident_id) is None
-    operations = resident_lifecycle_domain._lifecycle_operations()
+    assert resident_workspace_domain.find_resident(created_resident_id) is None
+    operations = resident_lifecycle_domain.lifecycle_operations()
     operation_id, = operations.ready()
     with monkeypatch.context() as failure:
         from management_portal.society_service import resident_workspace_retirement
@@ -1769,7 +1772,7 @@ def test_deleted_resident_cleanup_failure_retries_without_resurrecting_identity(
                         lambda *_args, **_kwargs: (_ for _ in ()).throw(OSError("remove failed")))
         assert not resident_domain.resume_resident_lifecycle_operation(operation_id)
     assert "remove failed" in operations.health()["last_error"]
-    assert resident_workspace_domain._find_resident(created_resident_id) is None
+    assert resident_workspace_domain.find_resident(created_resident_id) is None
     assert folder.is_dir()
     assert get_workspace_store().rows([workspace_id], include_deleted=True)[workspace_id]["deleted_at"]
     operations.store.database.write(lambda connection: connection.execute(
@@ -2020,7 +2023,7 @@ def test_non_leader_creates_and_manages_residents_through_hatg(
     assert resident_catalog.get_catalog().get(caller_id)["lineage_id"] == lineage["lineage_id"]
     deleted = call("DeleteResident", {"lineage_id": lineage["lineage_id"], "resident_id": child_id}, key="member-delete-resident")
     assert deleted.status == "committed", deleted.error
-    assert resident_workspace_domain._find_resident(child_id) is None
+    assert resident_workspace_domain.find_resident(child_id) is None
     remaining = lineage_domain.get_lineage(lineage["lineage_id"], caller_id)
     assert {node["id"] for node in remaining["nodes"]} == {
         leader["resident_id"], caller_id,
@@ -2033,7 +2036,7 @@ def test_resident_creation_uses_current_membership_without_project_role(
     """Resident 凭当前成员身份即可创建 Resident，调用者已删除或目标 Lineage 不存在时被拒绝
 
     :design: decision_3e07c6d35cac"""
-    monkeypatch.setattr(resident_project_domain, "_project_root_for_id", lambda _: future_creation_store)
+    monkeypatch.setattr(project_domain, "project_root_for_id", lambda _: future_creation_store)
     leader = resident_domain.register_resident(_new_session_payload("Authority root"), "sample_admin")
     caller = lineage_domain.create_lineage_resident(
         leader["lineage_id"], _new_session_payload("Ordinary member"), "sample_admin",

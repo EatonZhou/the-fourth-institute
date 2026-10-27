@@ -149,7 +149,9 @@ def test_file_projection_preserves_inline_order_and_authored_markers(with_quote)
     :module: resident.conversation
     """
     from management_portal.execution.message_projection import message_facts, quote_block, wrap_message
-    from management_portal.society_service.resident_media_domain import _resident_message_with_file_references
+    from management_portal.society_service.resident_media_domain import (
+        resident_message_with_file_references as _resident_message_with_file_references,
+    )
 
     upload_id = "upload_" + "a" * 24
     source = f"/uploads/{upload_id}/manuscript.docx"

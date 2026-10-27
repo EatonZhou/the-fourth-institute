@@ -10,7 +10,7 @@ import math
 import pytest
 
 from management_portal.society_service import family_facade, resident_execution_domain
-from management_portal.society_service.resident_workspace_domain import _find_resident
+from management_portal.society_service.resident_workspace_domain import find_resident as _find_resident
 from tests.cases.isa_test_support import ACTOR, ok, run
 from tests.cases.test_isa_lineage_lifecycle import (  # noqa: F401 - lineage is a fixture
     future_creation_store,
@@ -474,7 +474,7 @@ def test_unfamilize_stops_a_busy_steward_first_and_changes_nothing_while_it_is_s
         stopped.append(payload["target"])
         return {}
 
-    monkeypatch.setattr(resident_lifecycle_domain, "_resident_has_pending_work", lambda resident_id: resident_id in busy)
+    monkeypatch.setattr(resident_lifecycle_domain, "resident_has_pending_work", lambda resident_id: resident_id in busy)
     monkeypatch.setattr(lineage_domain, "quiesce_lineage_resident", quiesce)
     monkeypatch.setattr(family_familize, "ROLE_STOP_WAIT_SECONDS", 0.0)
 

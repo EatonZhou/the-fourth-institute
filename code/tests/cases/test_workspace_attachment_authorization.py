@@ -61,7 +61,7 @@ def test_conversation_attachment_viewers_share_preview_and_input(conversation_up
                 assert preview["allows"] == {"UpdateWorkspaceFile": False}
                 if kind == "image":
                     assert workspace_domain.resolve_workspace_pasted_image(upload["file_id"], actor)[0] == path
-                media = resident_media_domain._resident_input_media(
+                media = resident_media_domain.resident_input_media(
                     [{"kind": kind, "path": str(path)}],
                     actor=actor,
                     resident_id="resident_cccccccccccc",
@@ -86,7 +86,7 @@ def test_conversation_attachment_denial_applies_to_uploader_and_resident(convers
                     with pytest.raises(PermissionError, match="Conversation"):
                         workspace_domain.resolve_workspace_pasted_image(upload["file_id"], actor)
                 with pytest.raises(PermissionError, match="Conversation"):
-                    resident_media_domain._resident_input_media(
+                    resident_media_domain.resident_input_media(
                         [{"kind": kind, "path": upload["path"]}],
                         actor=actor,
                         resident_id="resident_cccccccccccc",

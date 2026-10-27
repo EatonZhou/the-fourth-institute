@@ -29,25 +29,25 @@ def _queue(team, count: int = 4, *, actors: list[str] | None = None) -> tuple[st
     for index in range(count):
         message_id = "msg_" + uuid.uuid4().hex
         actor = (actors or [])[index] if actors else ACTOR
-        user_item = resident_intake_domain._message("user", f"第 {index} 条：{message_id}", actor, message_id=message_id)
+        user_item = resident_intake_domain.build_message("user", f"第 {index} 条：{message_id}", actor, message_id=message_id)
         # The head runs, so it is in the trace; the others wait in the Mailbox.
         if index == 0:
-            resident_lifecycle_domain._append_conversation_message(resident_id, user_item)
+            resident_lifecycle_domain.append_conversation_message(resident_id, user_item)
         else:
-            resident_lifecycle_domain._accept_resident_user_message(resident_id, user_item)
+            resident_lifecycle_domain.accept_resident_user_message(resident_id, user_item)
         resident_conversation_stream.get_repository().set_input_state(resident_id, message_id, "queued")
         entries.append({
             **({"execution_id": f"mailbox-execution-{index}"} if index == 0 else {}), "user_message_id": message_id, "input_message": user_item,
             "message": f"第 {index} 条", "actor": actor,
             "enqueued_at": (datetime(2026, 10, 3, tzinfo=timezone.utc) + timedelta(minutes=index)).isoformat(),
         })
-    record = resident_workspace_domain._find_resident(resident_id)
+    record = resident_workspace_domain.find_resident(resident_id)
     resident_execution_work.write(record, {**entries[0], "queue": entries[1:]})
     return resident_id, [item["user_message_id"] for item in entries]
 
 
 def _waiting(resident_id: str) -> list[dict]:
-    return resident_execution_work.read(resident_workspace_domain._find_resident(resident_id)).get("queue", [])
+    return resident_execution_work.read(resident_workspace_domain.find_resident(resident_id)).get("queue", [])
 
 
 @pytest.mark.parametrize("source", ["events", "history"])
@@ -76,7 +76,7 @@ def test_delivered_mailbox_group_has_original_bodies_before_snapshot_refresh(tea
                      } and event.get("payload", {}).get("message", {}).get("message_id") == group_id]
         assert len(delivered) == 2  # appended and updated must both keep the body
     else:
-        tail = resident_intake_domain._message("agent", "后续回复", resident_id)
+        tail = resident_intake_domain.build_message("agent", "后续回复", resident_id)
         repository.append_message(resident_id, tail)
         latest = resident_protocol.get_resident_conversation_snapshot(resident_id, ACTOR, history_limit=1)
         page = resident_protocol.get_conversation_messages(resident_id, ACTOR, latest["next_page_token"])
@@ -115,7 +115,7 @@ def test_quiescing_cancels_waiting_group_members(team):
     resident_id, (head, a, b, c) = _queue(team)
     merged = instruction(team, "MergeMailboxItems", {"resident_id": resident_id, "message_ids": [a, b]})
     group_id = merged.result["group_message_id"]
-    resident_intake_domain._cancel_resident_execution_for_target(resident_id, ACTOR, head, continue_queue=False)
+    resident_intake_domain.cancel_resident_execution_for_target(resident_id, ACTOR, head, continue_queue=False)
     repository = resident_conversation_stream.get_repository()
     for message_id in (group_id, a, b, c):
         assert repository.input_state(resident_id, message_id)["state"] == "cancelled"
@@ -162,7 +162,7 @@ def test_merge_puts_one_group_where_the_first_member_waited_and_split_restores_t
     assert group["content_parts"][0]["members"] == [{"message_id": a}, {"message_id": b}]
     member_state = instruction(team, "GetInputState", {"resident_id": resident_id, "message_id": a}).result["input_state"]
     assert member_state["state"] == "queued" and member_state["grouped_into_message_id"] == group_id
-    record = resident_workspace_domain._find_resident(resident_id)
+    record = resident_workspace_domain.find_resident(resident_id)
     assert resident_execution_work.read(record)["user_message_id"] == head
 
     split = instruction(team, "SplitMailboxItem", {"resident_id": resident_id, "message_id": group_id})
@@ -210,7 +210,7 @@ def test_large_groups_merge_regroup_and_split_without_losing_members(team):
         {"message_id": member_id} for member_id in members
     ]
     assert repository.input_state(resident_id, first_group)["state"] == "cancelled"
-    assert resident_execution_work.read(resident_workspace_domain._find_resident(resident_id))["user_message_id"] == head
+    assert resident_execution_work.read(resident_workspace_domain.find_resident(resident_id))["user_message_id"] == head
 
     split = instruction(team, "SplitMailboxItem", {"resident_id": resident_id, "message_id": group_id})
     assert split.status == "committed"
@@ -243,13 +243,13 @@ def test_merging_a_group_keeps_one_level_and_the_finished_group_finishes_its_mem
     assert repository.input_state(resident_id, first["group_message_id"])["state"] == "cancelled"
     # The group is delivered with its members; its reply answers them all.
     repository.append_message(resident_id, repository.state_store.mailbox_entry(resident_id, group_id)["message"])
-    reply = resident_intake_domain._message(
+    reply = resident_intake_domain.build_message(
         "agent", "一起处理完了", "", message_id="msg_" + uuid.uuid4().hex, reply_to_message_id=group_id,
     )
-    resident_lifecycle_domain._append_conversation_message(resident_id, reply)
+    resident_lifecycle_domain.append_conversation_message(resident_id, reply)
     repository.set_input_state(resident_id, group_id, "completed")
 
-    record = resident_workspace_domain._find_resident(resident_id)
+    record = resident_workspace_domain.find_resident(resident_id)
     assert resident_mailbox.finish_group(record, group_id, "completed") == [a, b, c]
     for member in (a, b, c):
         state = repository.input_state(resident_id, member)
@@ -336,8 +336,8 @@ def test_cancel_input_ends_an_input_nothing_holds_and_leaves_held_ones(team):
     resident_id, (_head, waiting) = _queue(team, 2)
     repository = resident_conversation_stream.get_repository()
     dropped = "msg_" + uuid.uuid4().hex
-    resident_lifecycle_domain._accept_resident_user_message(
-        resident_id, resident_intake_domain._message("user", "队列丢下的请求", ACTOR, message_id=dropped))
+    resident_lifecycle_domain.accept_resident_user_message(
+        resident_id, resident_intake_domain.build_message("user", "队列丢下的请求", ACTOR, message_id=dropped))
     repository.set_input_state(resident_id, dropped, "queued")
     stalled = "msg_" + uuid.uuid4().hex
     repository.set_input_state(resident_id, stalled, "running")

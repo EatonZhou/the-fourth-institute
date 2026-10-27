@@ -49,7 +49,7 @@ def test_ensure_project_principal_serializes_concurrent_creation(future_creation
     records, calls = [], []
     started = Barrier(2)
     concurrent_registration = Event()
-    original_register = resident_registration_domain._register_resident
+    original_register = resident_registration_domain.register_resident_and_lineage
     project_root = future_creation_store.parent / project_id
     project_root.mkdir()
     original_project_root = graphs.resource_port.project_root
@@ -69,7 +69,7 @@ def test_ensure_project_principal_serializes_concurrent_creation(future_creation
             records.append(item)
         return record, item
 
-    monkeypatch.setattr(resident_registration_domain, "_register_resident", register)
+    monkeypatch.setattr(resident_registration_domain, "register_resident_and_lineage", register)
 
     def ensure():
         started.wait()

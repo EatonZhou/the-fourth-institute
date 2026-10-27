@@ -9,7 +9,7 @@ from typing import Any
 
 from .resident_discovery_client import ResidentDiscoveryClient, ResidentDiscoveryUnavailable
 from .society_service import get_society_service
-from .society_service.resident_media_domain import RESIDENT_IMAGE_MARKER_RE
+from management_portal.society_service import resident_media_domain
 from .society_service.resident_protocol import WORKING_DIRECTORY_FIELD
 from .portal_ui_state import get_portal_ui_state_store
 from . import system_application_flows
@@ -98,7 +98,7 @@ def _available_query_media(query: str) -> str:
             pass
         return "[image unavailable]"
 
-    return RESIDENT_IMAGE_MARKER_RE.sub(replace, query)
+    return resident_media_domain.RESIDENT_IMAGE_MARKER_RE.sub(replace, query)
 
 
 def _recommendation_query(query: str) -> str:

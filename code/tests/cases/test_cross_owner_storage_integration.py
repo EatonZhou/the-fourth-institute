@@ -24,8 +24,8 @@ from management_portal.execution.contracts import ExecutionRequest
 from management_portal.execution.scheduler import Scheduler
 from management_portal.society_service import (
     domain_ports, execution_client, invariant_locks, lineage_domain,
-    project_domain, resident_catalog, resident_hatg_credentials,
-    resident_project_domain, resident_registration_domain, resident_workspace_domain, resource_client,
+    project_domain, resident_catalog, resident_domain_common, resident_hatg_credentials,
+    resident_workspace_domain, resource_client,
     state_store,
 )
 from management_portal.portal_access_control import PortalAccessStore
@@ -120,10 +120,8 @@ def owners(tmp_path, monkeypatch):
     monkeypatch.setattr(lineage_domain, "DATA_ROOT", tmp_path / "lineage")
     monkeypatch.setattr(lineage_domain, "LINEAGE_FOLDER_ROOT", tmp_path / "lineages")
     monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(tmp_path / "lineages"))
-    for module in (resident_project_domain, resident_registration_domain, resident_workspace_domain):
-        for name, value in {"STAGING_ROOT": tmp_path, "AGENTS_ROOT": tmp_path / "agents", "PROJECTS_ROOT": project_root}.items():
-            if hasattr(module, name):
-                monkeypatch.setattr(module, name, value)
+    for name, value in {"STAGING_ROOT": tmp_path, "AGENTS_ROOT": tmp_path / "agents", "PROJECTS_ROOT": project_root}.items():
+        monkeypatch.setattr(resident_domain_common, name, value)
     monkeypatch.setattr(resident_hatg_credentials, "TOKEN_ROOT", tmp_path / "credentials")
     monkeypatch.setattr(
         codex_runtime_settings,
@@ -241,7 +239,7 @@ def attach_and_submit(owners):
     domain_ports.resident_domain_port.add_resident_reference_workspace(
         owners.resident_id, workspace_path=str(path), actor=ACTOR,
     )
-    binding = next(item for item in resident_workspace_domain._find_resident(owners.resident_id)["workspace_bindings"] if item["path"] == str(path))
+    binding = next(item for item in resident_workspace_domain.find_resident(owners.resident_id)["workspace_bindings"] if item["path"] == str(path))
     body, request, receipt = submit_bound_resource(owners, binding)
     return binding, body, request, receipt
 
@@ -286,7 +284,7 @@ def assert_separate_owners(owners, binding, body, request):
     assert owners.content_path.read_bytes() == body
     assert any(item["id"] == PROJECT for item in yaml.safe_load(owners.registry.read_text())["projects"])
     assert "memberships" not in owners.access.user(ACTOR)
-    canonical = resident_workspace_domain._find_resident(owners.resident_id)
+    canonical = resident_workspace_domain.find_resident(owners.resident_id)
     assert binding in canonical["workspace_bindings"]
     execution = owners.scheduler.snapshot(request.execution_id)
     assert execution["status"] == "queued"
@@ -321,7 +319,7 @@ def test_project_binding_resource_and_execution_follow_real_domain_ports(owners,
     owners.monkeypatch.setattr(knowledge_backend, "get_resource_service", lambda: fresh_resource)
     owners.monkeypatch.setattr(resource_client, "get_resource_service", lambda: fresh_resource)
     assert fresh_resource.read_content(CONTENT_ID, actor=ACTOR)[0] == body
-    assert binding in resident_workspace_domain._find_resident(owners.resident_id)["workspace_bindings"]
+    assert binding in resident_workspace_domain.find_resident(owners.resident_id)["workspace_bindings"]
     fresh_index.adapter_layer.stop()
     record_property("point_id", POINT)
     record_property("owners", "Project registry -> project port -> Resident/Lineage -> Binding port -> Resource body -> Execution port -> durable queue; no worker or Provider")
@@ -339,7 +337,7 @@ def test_another_reader_uses_the_same_committed_storage_path(owners, record_prop
     )
     path = owners.content_path.parent
     domain_ports.resident_domain_port.add_resident_reference_workspace(owners.resident_id, workspace_path=str(path), actor=ACTOR)
-    before_resident = deepcopy(resident_workspace_domain._find_resident(owners.resident_id))
+    before_resident = deepcopy(resident_workspace_domain.find_resident(owners.resident_id))
     before_lineage = deepcopy(lineage_domain._read_lineage_state(owners.lineage_id))
     binding = next(item for item in before_resident["workspace_bindings"] if item["path"] == str(path))
     assert execution_count(owners) == 0
@@ -349,7 +347,7 @@ def test_another_reader_uses_the_same_committed_storage_path(owners, record_prop
     )
     assert execution_count(owners) == 1
     state_store.reset_lineage_data_store_for_tests()
-    assert resident_workspace_domain._find_resident(owners.resident_id)["workspace_bindings"] == before_resident["workspace_bindings"]
+    assert resident_workspace_domain.find_resident(owners.resident_id)["workspace_bindings"] == before_resident["workspace_bindings"]
     reopened_catalog = reopen_resident_catalog(owners)
     assert reopened_catalog.get(owners.resident_id)["workspace_bindings"] == before_resident["workspace_bindings"]
     after_lineage = lineage_domain._read_lineage_state(owners.lineage_id)

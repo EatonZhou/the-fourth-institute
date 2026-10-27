@@ -18,9 +18,17 @@ from tests.cases.isa_test_support import reset_kernels, run
 from management_portal.execution.agent_data_store import get_agent_data_store
 from management_portal import conversation_index_projection
 from management_portal.society_service import (
-    active_agent_projection, lineage_domain, lineage_handoff_backend,
-    lineage_primitives, resident_directory_domain, resident_domain, resident_execution_work,
-    resident_project_domain, resident_protocol, resource_client, state_store,
+    active_agent_projection,
+    lineage_domain,
+    lineage_handoff_backend,
+    lineage_primitives,
+    project_domain,
+    resident_directory_domain,
+    resident_domain,
+    resident_execution_work,
+    resident_protocol,
+    resource_client,
+    state_store,
 )
 from management_portal.society_service import lineage_program_effect_rules
 from management_portal.society_service import resident_intake_domain
@@ -45,13 +53,13 @@ CANONICAL_RESIDENT_INPUT = resident_protocol.deliver_resident_input
 @pytest.fixture
 def isolated_team(future_creation_store, tmp_path, monkeypatch):
     reset_kernels()
-    monkeypatch.setattr(resident_project_domain, "_project_root_for_id", lambda project_id: tmp_path)
+    monkeypatch.setattr(project_domain, "project_root_for_id", lambda project_id: tmp_path)
 
     source = resident_domain.register_resident(_new_session_payload("Helper04 source"), ACTOR)
     target = lineage_domain.create_lineage_resident(
         source["lineage_id"], _new_session_payload("Helper04 target"), ACTOR,
     )["resident"]
-    target = resident_workspace_domain._find_resident(target["resident_id"])
+    target = resident_workspace_domain.find_resident(target["resident_id"])
     for record in (source, target):
         resource_client.sync_resident(record, updated_by=ACTOR)
     assert Path(source["default_cwd"]).is_relative_to(tmp_path)
@@ -85,21 +93,21 @@ def test_workspace_isa_binding_and_unbind_preserve_files(isolated_team, tmp_path
         marker = reference / "retained.txt"
         marker.write_text("retained fixture")
         mounted = instruction(team, name, {"resident_id": resident_id, "path": str(reference)})
-        record = resident_workspace_domain._find_resident(resident_id)
+        record = resident_workspace_domain.find_resident(resident_id)
         binding = next(value for value in record["workspace_bindings"] if value["path"] == str(reference))
         assert binding["workspace_id"].startswith("workspace_")
         assert record["default_cwd"] == team.target["default_cwd"]
-        document = Path(resident_record_domain._resident_folder_path(record)) / "workspaces.md"
+        document = Path(resident_record_domain.resident_folder_path(record)) / "workspaces.md"
         assert str(reference) in document.read_text()
         assert str(reference) in json.dumps(mounted.result)
         instruction(team, "UnbindWorkspace", {"resident_id": resident_id, "workspace_id": binding["workspace_id"]})
-        after = resident_workspace_domain._find_resident(resident_id)
+        after = resident_workspace_domain.find_resident(resident_id)
         assert not any(value["path"] == str(reference) for value in after["workspace_bindings"])
         assert str(reference) not in document.read_text()
         assert marker.read_text() == "retained fixture"
-    before = deepcopy(resident_workspace_domain._find_resident(resident_id)["workspace_bindings"])
+    before = deepcopy(resident_workspace_domain.find_resident(resident_id)["workspace_bindings"])
     instruction(team, "UnbindWorkspace", {"resident_id": resident_id, "root_id": "resident_workspace"}, succeed=False)
-    assert resident_workspace_domain._find_resident(resident_id)["workspace_bindings"] == before
+    assert resident_workspace_domain.find_resident(resident_id)["workspace_bindings"] == before
 
 
 def test_human_notification_isa_persistence_idempotency_and_listing(isolated_team):
@@ -136,7 +144,7 @@ def test_handoff_create_and_prepare_bind_the_target_without_invoke(isolated_team
     edge = next(value for value in graph["edges"] if value["type"] == "handoff")
     assert edge["id"] == created["handoff_id"]
     assert edge["items"][0]["source"]["path"] == str(source_path)
-    record = resident_workspace_domain._find_resident(target_id)
+    record = resident_workspace_domain.find_resident(target_id)
     assert any(value["path"] == str(source_path) for value in record["workspace_bindings"])
     with state_store.get_lineage_data_store().database.read() as connection:
         assert connection.execute("SELECT COUNT(*) FROM conversation_input_states").fetchone()[0] == 0
@@ -185,7 +193,7 @@ def test_event_attachment_invocation_reaches_canonical_message_with_closed_intak
     assert lowered["arguments"]["activation_policy"] == "enqueue_and_trigger"
     delivered = deliver(lowered)
     assert delivered.status == "committed", delivered.to_payload()
-    job = resident_execution_work.read(resident_workspace_domain._find_resident(target_id))
+    job = resident_execution_work.read(resident_workspace_domain.find_resident(target_id))
     assert job["input_message"]["content_parts"] == lowered["arguments"]["message"]["content_parts"]
     assert job["input_message"]["author_id"] == ACTOR
     assert job["input_media"] == []
@@ -219,7 +227,7 @@ def attachment_fix_request(team, parts, prompt="Attachment contract"):
 
 def assert_attachment_fix_not_persisted(team):
     target_id = team.target["resident_id"]
-    assert not resident_execution_work.read(resident_workspace_domain._find_resident(target_id))
+    assert not resident_execution_work.read(resident_workspace_domain.find_resident(target_id))
     assert get_agent_data_store().read_chat_messages(target_id) == []
     with state_store.get_lineage_data_store().database.read() as connection:
         assert connection.execute('SELECT COUNT(*) FROM conversation_input_states WHERE resident_id=%s', (target_id,)).fetchone()[0] == 0
@@ -253,7 +261,7 @@ def test_attachment_fix_mixed_files_and_images_keep_native_contract(isolated_tea
     request = attachment_fix_request(team, parts, prompt)
     result = deliver(request)
     assert result.status == "committed", result.to_payload()
-    job = resident_execution_work.read(resident_workspace_domain._find_resident(team.target["resident_id"]))
+    job = resident_execution_work.read(resident_workspace_domain.find_resident(team.target["resident_id"]))
     assert job["input_message"]["content_parts"] == request["arguments"]["message"]["content_parts"]
     assert job["effective_message"].count(f"[file: {attachment}]") == 1
     assert "never expanded" not in job["message"]
@@ -278,7 +286,7 @@ def test_attachment_fix_rejects_unsafe_parts_before_message_persistence(isolated
     attachment.write_bytes(b"fixture bytes")
     outside = tmp_path_factory.mktemp("unbound-attachment") / ("private" + suffix)
     outside.write_bytes(b"private fixture bytes")
-    assert not any(outside.is_relative_to(path) for path in resident_runtime_domain._resident_media_workspace_roots(team.target))
+    assert not any(outside.is_relative_to(path) for path in resident_runtime_domain.resident_media_workspace_roots(team.target))
     part = {"type": kind, "path": str(attachment)}
     if boundary == "outside":
         part["path"] = str(outside)
@@ -334,7 +342,7 @@ def test_attachment_fix_upload_ownership_is_not_replaced_by_path(isolated_team, 
         sender = team.source["resident_id"]
         result = deliver(attachment_fix_request(team, [{"type": kind, "path": str(attachment)}]), actor=sender)
         assert result.status == "committed", result.to_payload()
-        job = resident_execution_work.read(resident_workspace_domain._find_resident(team.target["resident_id"]))
+        job = resident_execution_work.read(resident_workspace_domain.find_resident(team.target["resident_id"]))
         assert job["input_message"]["author_id"] == sender
         assert json.loads(metadata_path.read_text()) == metadata
         if kind == "image":
@@ -375,11 +383,11 @@ def test_attachment_fix_local_file_requires_local_tools_not_native_images(isolat
     """本地文件附件在 claude 保留引用且模型 API 拒绝接收"""
     team = isolated_team
     monkeypatch.setattr(resident_protocol, "deliver_resident_input", CANONICAL_RESIDENT_INPUT)
-    record = resident_workspace_domain._find_resident(team.target["resident_id"])
+    record = resident_workspace_domain.find_resident(team.target["resident_id"])
     record["backend"] = backend
     record["execution_settings"]["backend"] = backend
-    resident_workspace_domain._save_resident_record(record, commit_configuration=True)
-    record = resident_workspace_domain._find_resident(team.target["resident_id"])
+    resident_workspace_domain.save_resident_record(record, commit_configuration=True)
+    record = resident_workspace_domain.find_resident(team.target["resident_id"])
     assert record["backend"] == backend
     attachment = Path(record["default_cwd"]) / "context.txt"
     attachment.write_text("isolated content")
@@ -391,7 +399,7 @@ def test_attachment_fix_local_file_requires_local_tools_not_native_images(isolat
     else:
         result = deliver(request)
         assert result.status == "committed", result.to_payload()
-        job = resident_execution_work.read(resident_workspace_domain._find_resident(record["resident_id"]))
+        job = resident_execution_work.read(resident_workspace_domain.find_resident(record["resident_id"]))
         assert job["input_media"] == []
         assert f"[file: {attachment}]" in job["message"]
         assert job["input_message"]["content_parts"] == request["arguments"]["message"]["content_parts"]
@@ -406,7 +414,7 @@ def test_attachment_fix_file_reference_serialization_bounds(tmp_path, monkeypatc
     part = {"type": "file", "path": str(attachment)}
     if boundary == "size_limit":
         monkeypatch.setattr(workspace_contracts, "CHAT_ATTACHMENT_MAX_BYTES", attachment.stat().st_size)
-        result = resident_media_domain._resident_input_media([part], actor=ACTOR, resident_id="resident_000000000004", content="fixture", workspace_roots=[tmp_path])
+        result = resident_media_domain.resident_input_media([part], actor=ACTOR, resident_id="resident_000000000004", content="fixture", workspace_roots=[tmp_path])
         assert result[0]["media_type"] == "file" and result[0]["source"] == str(attachment)
         return
     if boundary == "name_limit":
@@ -416,22 +424,22 @@ def test_attachment_fix_file_reference_serialization_bounds(tmp_path, monkeypatc
     elif boundary == "source_limit":
         part["path"] = "/" + "a" * MAX_INPUT_MEDIA_SOURCE_CHARS
     with pytest.raises(ValueError, match="invalid Resident input file"):
-        resident_media_domain._resident_input_media([part], actor=ACTOR, resident_id="resident_000000000004", content="fixture", workspace_roots=[tmp_path])
+        resident_media_domain.resident_input_media([part], actor=ACTOR, resident_id="resident_000000000004", content="fixture", workspace_roots=[tmp_path])
 
 
 def test_attachment_fix_bootstrap_preserves_message_and_file_reference(isolated_team, monkeypatch):
     """首次会话启动保留原消息与文件引用且不展开附件正文"""
     team = isolated_team
     monkeypatch.setattr(resident_protocol, "deliver_resident_input", CANONICAL_RESIDENT_INPUT)
-    record = resident_workspace_domain._find_resident(team.target["resident_id"])
+    record = resident_workspace_domain.find_resident(team.target["resident_id"])
     record["session_state"] = "idle"
-    resident_workspace_domain._save_resident_record(record)
+    resident_workspace_domain.save_resident_record(record)
     attachment = Path(record["default_cwd"]) / "bootstrap.txt"
     attachment.write_text("isolated bootstrap file")
     request = attachment_fix_request(team, [{"type": "file", "path": str(attachment)}])
     result = deliver(request)
     assert result.status == "committed", result.to_payload()
-    job = resident_execution_work.read(resident_workspace_domain._find_resident(record["resident_id"]))
+    job = resident_execution_work.read(resident_workspace_domain.find_resident(record["resident_id"]))
     assert job["bootstrap_session"] is True
     assert job["input_message"]["content_parts"] == request["arguments"]["message"]["content_parts"]
     assert job["input_media"] == []
@@ -444,11 +452,11 @@ def test_attachment_fix_bootstrap_preserves_message_and_file_reference(isolated_
 def test_attachment_fix_malformed_media_rejected_before_provider_dispatch(isolated_team):
     """媒体输入结构无效时在持久化和 Provider 派发前拒绝"""
     team = isolated_team
-    record = resident_workspace_domain._find_resident(team.target["resident_id"])
+    record = resident_workspace_domain.find_resident(team.target["resident_id"])
     record["backend"] = "provider_api"
-    resident_workspace_domain._save_resident_record(record)
+    resident_workspace_domain.save_resident_record(record)
     with pytest.raises(ValueError, match="input_media must be an array"):
-        resident_intake_domain._persist_resident_input(record["resident_id"], ACTOR, "fixture input", activation_policy="enqueue_and_trigger", input_media={"type": "file", "path": "/nonexistent"})
+        resident_intake_domain.persist_resident_input(record["resident_id"], ACTOR, "fixture input", activation_policy="enqueue_and_trigger", input_media={"type": "file", "path": "/nonexistent"})
     assert_attachment_fix_not_persisted(team)
 
 
@@ -490,7 +498,7 @@ def test_attachment_positive_control_uses_canonical_owner_with_closed_intake(iso
     assert lowered["arguments"]["message"]["content_parts"] == [{"type": "text", "text": "Fixed contract\n\nOne invocation"}, part]
     result = deliver(lowered)
     assert result.status == "committed", result.to_payload()
-    job = resident_execution_work.read(resident_workspace_domain._find_resident(target_id))
+    job = resident_execution_work.read(resident_workspace_domain.find_resident(target_id))
     assert job["input_message"]["content_parts"] == lowered["arguments"]["message"]["content_parts"]
     assert job["input_message"]["author_id"] == ACTOR
     assert job["activation_policy"] == "enqueue_and_trigger"
@@ -590,7 +598,7 @@ def test_active_projection_skips_idle_bindings_and_rechecks_state_and_permission
         state_store=SimpleNamespace(resident_work_ids=lambda: resident_ids),
         get_identity_records=lambda ids: [deepcopy(record) for record in records if record["resident_id"] in ids],
     ))
-    monkeypatch.setattr(resident_directory_domain, "_is_active_actor", lambda actor: False)
+    monkeypatch.setattr(resident_directory_domain, "is_active_actor", lambda actor: False)
     monkeypatch.setattr(active_agent_projection, "_capacity_snapshot", lambda: (2, {}))
 
     def read_activity(ids):

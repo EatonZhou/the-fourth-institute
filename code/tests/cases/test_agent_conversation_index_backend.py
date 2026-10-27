@@ -98,7 +98,7 @@ def _register_protocol_resident(resident_id: str) -> None:
 
 def _unread_signature(resident_id: str, actor: str) -> dict:
     """The unread version the conversation index reads for one Resident."""
-    summaries = resident_conversation_projection_domain._conversation_family_summaries([resident_id], actor)
+    summaries = resident_conversation_projection_domain.conversation_family_summaries([resident_id], actor)
     return summaries[resident_id]["unread_signature"]
 
 
@@ -547,7 +547,7 @@ def test_conversation_resident_candidates_come_from_actor_messages(
     )
     monkeypatch.setattr(
         resident_conversation_projection_domain,
-        "_conversation_family_summaries",
+        "conversation_family_summaries",
         lambda resident_ids, actor: {
             resident_id: {
                 "actor_last_user_message_at": "2026-08-27T15:19:45Z",
@@ -923,11 +923,11 @@ def test_conversation_summary_exposes_actor_specific_chat_engagement_contracts(t
             },
         )
 
-        sample_peer = resident_conversation_projection_domain._conversation_family_summaries(
+        sample_peer = resident_conversation_projection_domain.conversation_family_summaries(
             [resident_id],
             "sample_peer",
         )[resident_id]
-        other = resident_conversation_projection_domain._conversation_family_summaries(
+        other = resident_conversation_projection_domain.conversation_family_summaries(
             [resident_id],
             "CASE-A",
         )[resident_id]

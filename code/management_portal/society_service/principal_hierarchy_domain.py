@@ -30,8 +30,8 @@ def ensure_project(project_id: str, actor: str) -> dict[str, Any]:
         project = next((row for row in resource_client._query_all("project", actor=actor) if row["resource_id"] == project_id), None)
         if project is None:
             raise KeyError("Project not found")
-        record, graph = resident_registration_domain._register_resident({
-            "lineage_id": resident_domain_common._new_lineage_id(), "project_id": project_id,
+        record, graph = resident_registration_domain.register_resident_and_lineage({
+            "lineage_id": resident_domain_common.new_lineage_id(), "project_id": project_id,
             "title": str(project.get("title") or project_id),
             "workspace_paths": [str((project.get("attributes") or {}).get("path") or "")],
             "mode": "new_session",
@@ -67,8 +67,8 @@ def ensure_personal_ama(username: str, actor: str) -> dict[str, Any]:
                 leader = resident_catalog.get_catalog().get(graph["leader_resident_id"])
                 ama_id = (leader.get("family") or {}).get("personal_ama_id") or graph["leader_resident_id"]
                 return {"resident_id": ama_id, "lineage_id": graph["lineage_id"], "created": False}
-        record, _ = resident_registration_domain._register_resident({
-            "lineage_id": resident_domain_common._new_lineage_id(), "title": PERSONAL_AMA_TITLE,
+        record, _ = resident_registration_domain.register_resident_and_lineage({
+            "lineage_id": resident_domain_common.new_lineage_id(), "title": PERSONAL_AMA_TITLE,
             "mode": "new_session",
         }, owner.id, personal_owner=owner.id)
         return {"resident_id": record["resident_id"], "lineage_id": record["lineage_id"], "created": True}
@@ -114,8 +114,8 @@ def _finish_personal_ama(graph: dict[str, Any], owner_id: str) -> None:
     lineage_id = graph["lineage_id"]
     leader = str(graph.get("leader_resident_id") or "")
     if leader and resident_catalog.get_catalog().get(leader).get("registration_state") == "ready":
-        from .resident_lifecycle_domain import ensure_resident_agent
-        ensure_resident_agent(resident_catalog.get_catalog().get(leader), actor=owner_id)
+        from . import resident_lifecycle_domain
+        resident_lifecycle_domain.ensure_resident_agent(resident_catalog.get_catalog().get(leader), actor=owner_id)
         return
     graphs._publish_lineage_resource_projection(
         lineage_id, None, creation=graphs._read_lineage_state(lineage_id),

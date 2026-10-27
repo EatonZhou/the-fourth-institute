@@ -89,10 +89,10 @@ def test_api_request_uses_unified_model_and_appends_current_input(monkeypatch):
     settings = runtime.normalize_settings({"backend": "provider_api", "model": "selected",
         "prompt_context": {"system_prompt": "Review", "messages": [{"role": "user", "content": "old input"}]},
         "backend_options": {"max_retries": 2, "parameters": {"temperature": 0.3}}})
-    monkeypatch.setattr(resident_runtime_domain, '_read_resident_runtime_settings', lambda record: deepcopy(settings))
+    monkeypatch.setattr(resident_runtime_domain, 'read_resident_runtime_settings', lambda record: deepcopy(settings))
     monkeypatch.setattr(execution.resident_input_scope, 'get', lambda *a: {})
     monkeypatch.setattr(execution, '_lineage_delivery_profile', lambda job: {})
-    monkeypatch.setattr(execution, '_resident_system_instructions', lambda *a: SystemInstructions())
+    monkeypatch.setattr(execution, 'resident_system_instructions', lambda *a: SystemInstructions())
     request = execution._build_resident_execution_request(
         {'resident_id': 'resident_aaaaaaaaaaaa', 'lineage_id': 'lineage_bbbbbbbbbbbb', 'backend': 'provider_api', 'backend_route_id': 'api-a'},
         {'actor': 'alice', 'job_id': 'job-a', 'raw_message': 'new input'})
@@ -132,8 +132,8 @@ def test_new_api_resident_history_default_is_registration_only(monkeypatch, prot
     from management_portal.society_service import resident_runtime_domain as domain
     monkeypatch.setattr(ai_provider_registry, 'shared_ai_provider_registry', SimpleNamespace(get=lambda route: {
         'id': route, 'kind': protocol, 'default_model': 'm', 'models': [{'id': 'm'}]}))
-    monkeypatch.setattr(domain, '_resident_runtime_defaults', lambda record: runtime.normalize_settings({'backend': 'provider_api', 'model': 'm'}))
-    result = domain._resident_runtime_settings_from_register_payload(
+    monkeypatch.setattr(domain, 'resident_runtime_defaults', lambda record: runtime.normalize_settings({'backend': 'provider_api', 'model': 'm'}))
+    result = domain.resident_runtime_settings_from_register_payload(
         {'backend': 'provider_api', 'backend_route_id': 'api'}, {'runtime_settings': requested}, 'CASE-A', 'now')
     assert result['prompt_context']['history']['enabled'] is expected
     # Reading/normalizing a saved pre-feature configuration never enables history.

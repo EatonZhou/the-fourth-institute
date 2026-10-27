@@ -24,12 +24,11 @@ def bind_before_execution(record, actor):
     from . import resident_backend, resident_catalog, resident_execution_work
     from .resident_execution_storage import queue_input
     from management_portal.execution import execution_lifecycle
-    from .resident_runtime_domain import _read_resident_runtime_settings
+    from . import resident_runtime_domain
     from .resident_settings_contract import stage_runtime_settings
     from . import resident_conversation_stream
     from management_portal.execution.resident_runtime_settings import merge_settings
-    from .resident_workspace_domain import _save_resident_record
-    from .resident_lifecycle_domain import _now_iso
+    from . import resident_lifecycle_domain, resident_workspace_domain
     configured = configuration(record, resident_backend.session_record(record))
     candidate = deepcopy(record)
     # The role was configured separately. Resolve no remote model catalog while
@@ -38,11 +37,11 @@ def bind_before_execution(record, actor):
     # effort. Resolve these together with the new account; absent role values
     # mean the new Provider's defaults, never the source account's settings.
     if configured:
-        current = _read_resident_runtime_settings(record)
+        current = resident_runtime_domain.read_resident_runtime_settings(record)
         candidate.update(backend=configured["backend"], backend_route_id=configured["backend_route_id"])
         settings = merge_settings({**current, "backend": configured["backend"]},
                                   {"model": "", "reasoning_effort": "", "service_tier": "",
-                                   **configured["runtime_settings"]}, actor=actor, updated_at=_now_iso())
+                                   **configured["runtime_settings"]}, actor=actor, updated_at=resident_lifecycle_domain.now_iso())
         stage_runtime_settings(candidate, settings)
     # Commit the Provider and settings together. The ordinary settings writer
     # correctly rejects changing backend before the Resident transition commits.
@@ -51,7 +50,7 @@ def bind_before_execution(record, actor):
         retargeted = False
         if resident_execution_work.is_active(job):
             replacement = 'execution-' + secrets.token_hex(12)
-            now = _now_iso()
+            now = resident_lifecycle_domain.now_iso()
             retargeted = execution_lifecycle.retarget_preparation(connection,
                     execution_id=job['execution_id'], replacement_execution_id=replacement,
                     agent_id=candidate['resident_id'], actor=resident_execution_work.request_actor(job),
@@ -59,7 +58,7 @@ def bind_before_execution(record, actor):
         # Check durable admission even when the local submit acknowledgement
         # exists. A submitted placeholder must keep its original Provider.
         if configured:
-            _save_resident_record(candidate, commit_configuration=True)
+            resident_workspace_domain.save_resident_record(candidate, commit_configuration=True)
         if retargeted:
             item = queue_input(job)
             for key in ('actual_sent_prompt', 'prompt_built_at', 'prompt_builder_version', 'runtime_context'):

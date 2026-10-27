@@ -185,7 +185,7 @@ def test_reset_recovery_preserves_new_messages_and_finishes_archive_projection(r
         return original(*args, **kwargs)
 
     monkeypatch.setattr(repository, "_record_event", broken_projection)
-    assert not operations.run(operation_id, resident_lifecycle_domain._apply_resident_lifecycle_step)
+    assert not operations.run(operation_id, resident_lifecycle_domain.apply_resident_lifecycle_step)
     assert operations.pending(resident_id)
     assert repository.context_reset_boundary(resident_id) == [message(2)["message_id"]]
     operations.store.database.write(lambda c: c.execute(
@@ -193,7 +193,7 @@ def test_reset_recovery_preserves_new_messages_and_finishes_archive_projection(r
     ))
     recovered = ResidentConversationRepository(repository.state_store, repository.agent_data)
     monkeypatch.setattr(resident_conversation_stream, "get_repository", lambda: recovered)
-    assert operations.run(operation_id, resident_lifecycle_domain._apply_resident_lifecycle_step) == resident_id
+    assert operations.run(operation_id, resident_lifecycle_domain.apply_resident_lifecycle_step) == resident_id
     assert not operations.pending(resident_id)
     assert recovered.context_reset_boundary(resident_id) == [message(2)["message_id"]]
     events = recovered.events_after(resident_id, 0)["events"]
@@ -217,7 +217,7 @@ def test_a_reset_keeps_cleared_messages_in_the_trace_and_excludes_new_input(repo
     repository.commit_user_message(resident_id, message(3))
     reset_at = "2026-09-07T04:02:33Z"
 
-    resident_lifecycle_domain._apply_resident_lifecycle_step("operation_reset", {
+    resident_lifecycle_domain.apply_resident_lifecycle_step("operation_reset", {
         "kind": "context_archive", "resident_id": resident_id, "message_ids": boundary,
         "archived_at": reset_at, "reset_at": reset_at, "trace_position": position,
     })
@@ -312,7 +312,7 @@ def test_reset_storage_work_runs_outside_the_conversation_writer_scope(
         return record(*args, **kwargs)
 
     monkeypatch.setattr(repository.agent_data, "record_context_reset", record_without_writer_scope)
-    resident_lifecycle_domain._apply_resident_lifecycle_step("operation_reset", {
+    resident_lifecycle_domain.apply_resident_lifecycle_step("operation_reset", {
         "kind": "context_archive", "resident_id": resident_id,
         "message_ids": repository.context_reset_boundary(resident_id),
         "archived_at": "2026-09-07T05:00:00Z", "reset_at": "2026-09-07T05:00:00Z",

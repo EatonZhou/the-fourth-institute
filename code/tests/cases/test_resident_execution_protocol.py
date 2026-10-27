@@ -86,7 +86,7 @@ def test_resident_default_runtime_reaches_execution_contracts(monkeypatch, subte
             def prepared(runtime_settings):
                 return CodexOptions().prepare(_Invocation(_Request({"runtime_settings": runtime_settings}))).request.runtime_options
 
-            settings = resident_runtime_domain._resident_runtime_defaults({'backend': 'codex'})
+            settings = resident_runtime_domain.resident_runtime_defaults({'backend': 'codex'})
             options = prepared(settings)
             assert options['model'] == 'gpt-6.1-sol'
             assert options['effort'] == 'high'
@@ -104,7 +104,7 @@ def test_resident_default_runtime_reaches_execution_contracts(monkeypatch, subte
             execution_id = 'execution-' + '4' * 24
             tool_detail = {'id': 'runtime:2:tool', 'kind': 'tool', 'title': 'Shell', 'content': 'pytest -q', 'status': 'completed'}
             monkeypatch.setattr(execution_events, 'execution_projection_from_execution', lambda *args, **kwargs: {'execution_id': execution_id, 'outputs': [{'output_id': 'output-owned-by-transcript'}], 'runtime_details': [tool_detail]})
-            activity = resident_directory_domain._runtime_activity_for_execution('resident_444444444444', {'execution_id': execution_id, 'status': 'running', 'submitted_at': '2026-10-14T00:00:00Z'})
+            activity = resident_directory_domain.runtime_activity_for_execution('resident_444444444444', {'execution_id': execution_id, 'status': 'running', 'submitted_at': '2026-10-14T00:00:00Z'})
             assert activity == {'live': True, 'execution_id': execution_id, 'details': [{'activity_id': 'runtime:2:tool', 'resident_id': 'resident_444444444444', 'message_id': '', 'kind': 'tool', 'status': 'completed', 'title': 'Shell', 'content': 'pytest -q', 'started_at': '', 'updated_at': ''}]}
     with subtests.test(contract='test_a_running_subagent_activity_carries_its_card'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
@@ -112,7 +112,7 @@ def test_resident_default_runtime_reaches_execution_contracts(monkeypatch, subte
             card = {'tool_use_id': 'toolu_a', 'agent_type': 'Explore', 'status': 'running', 'steps': [{'kind': 'tool', 'tool_name': 'Bash', 'text': 'ls', 'error': False, 'running': True}]}
             subagent_detail = {'id': 'runtime-update:subagent:toolu_a', 'kind': 'subagent', 'title': '子 agent', 'content': 'Survey', 'status': 'running', 'subagent': card}
             monkeypatch.setattr(execution_events, 'execution_projection_from_execution', lambda *args, **kwargs: {'execution_id': execution_id, 'outputs': [], 'runtime_details': [subagent_detail]})
-            detail, = resident_directory_domain._runtime_activity_for_execution('resident_444444444444', {'execution_id': execution_id, 'status': 'running', 'submitted_at': '2026-10-14T00:00:00Z'})['details']
+            detail, = resident_directory_domain.runtime_activity_for_execution('resident_444444444444', {'execution_id': execution_id, 'status': 'running', 'submitted_at': '2026-10-14T00:00:00Z'})['details']
             assert (detail['kind'], detail['status'], detail['subagent']) == ('subagent', 'running', card)
             published, = resident_conversation_stream.protocol_activities('resident_444444444444', [detail])
             assert published['subagent'] == card
@@ -123,7 +123,7 @@ def test_resident_default_runtime_reaches_execution_contracts(monkeypatch, subte
         with monkeypatch.context() as monkeypatch:
             messages = [{'message_id': 'msg_0123456789abcdef', 'role': 'user', 'author_id': 'sample_admin', 'content_parts': [{'type': 'text', 'text': '检查投影协议'}], 'created_at': '2026-08-23T00:00:00Z'}]
             monkeypatch.setattr(resident_conversation_projection_domain, '_read_provider_actual_sent_prompts', lambda _provider, _session_id: [{'user_message_id': 'msg_0123456789abcdef', 'raw_message': '检查投影协议', 'actual_sent_prompt': '<portal-context>guard</portal-context>\n检查投影协议', 'created_at': '2026-08-23T00:00:00Z', 'source': 'provider_transcript'}])
-            resident_conversation_projection_domain._attach_actual_sent_prompts(messages, session_ids=['019e63b0-031d-7913-9dc8-0d972899bed4'], provider='codex')
+            resident_conversation_projection_domain.attach_actual_sent_prompts(messages, session_ids=['019e63b0-031d-7913-9dc8-0d972899bed4'], provider='codex')
             assert messages[0]['actual_sent_prompt'].startswith('<portal-context>')
     with subtests.test(contract='test_active_context_pressure_uses_execution_checkpoint_sample'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
@@ -296,7 +296,7 @@ def test_backend_session_operation_uses_unified_execution_service(
     service_factory = mock.Mock(return_value=service)
     monkeypatch.setattr(execution_port, "service", service_factory)
 
-    result = resident_session_backend_domain._run_backend_session_operation(
+    result = resident_session_backend_domain.run_backend_session_operation(
         backend="codex",
         operation="create",
         actor="sample_admin",
@@ -330,17 +330,17 @@ def test_managed_backend_session_operation_uses_execution_work_correlation(
     monkeypatch.setattr(execution_port, "service", lambda: service)
     monkeypatch.setattr(
         resident_execution_domain,
-        "_durable_resident_execution_request",
+        "durable_resident_execution_request",
         lambda _record, _job, factory: factory(),
     )
     monkeypatch.setattr(
         resident_execution_domain,
-        "_bind_or_resume_resident_execution",
+        "bind_or_resume_resident_execution",
         lambda *_args: "execution-managed",
     )
     monkeypatch.setattr(
         resident_execution_domain,
-        "_wait_for_resident_execution",
+        "wait_for_resident_execution",
         lambda *_args, **_kwargs: {
             "status": "completed",
             "result": {
@@ -352,7 +352,7 @@ def test_managed_backend_session_operation_uses_execution_work_correlation(
     record = {"resident_id": "resident_managed"}
     job = {'execution_id': "execution-" + "6" * 24}
 
-    result = resident_session_backend_domain._run_backend_session_operation(
+    result = resident_session_backend_domain.run_backend_session_operation(
         backend="codex",
         operation="fork",
         actor="sample_admin",
@@ -455,7 +455,7 @@ def resident_record(
             str(record["lineage_id"]),
         )
     default_cwd.mkdir(parents=True)
-    resident_workspace_domain._save_resident_record(record)
+    resident_workspace_domain.save_resident_record(record)
     _bind(session_store,
         "resident:resident_aaaaaaaaaaaa",
         "codex",
@@ -597,7 +597,7 @@ def test_reopened_job_failure_appends_a_new_terminal_event(
         "execution_id": "execution-first",
         "finished_at": "2026-08-25T01:00:00Z",
      "submitted_at": "2026-10-14T00:00:00Z"}
-    resident_intake_domain._persist_failed_execution_message(
+    resident_intake_domain.persist_failed_execution_message(
         resident_id,
         job,
         "first failure",
@@ -609,7 +609,7 @@ def test_reopened_job_failure_appends_a_new_terminal_event(
     job.pop("failure_message_persisted_at")
     job["execution_id"] = "execution-second"
     job["finished_at"] = "2026-08-25T02:00:00Z"
-    resident_intake_domain._persist_failed_execution_message(
+    resident_intake_domain.persist_failed_execution_message(
         resident_id,
         job,
         "second failure",
@@ -631,11 +631,11 @@ def test_promoted_failures_each_persist_their_own_notice(resident_record):
     job = { "execution_id": "execution-first",
            "finished_at": "2026-10-11T00:00:00Z", "runtime_error": {"message": "first"},
            "execution_event_cursor": 23, "submitted_at": "2026-10-14T00:00:00Z"}
-    resident_intake_domain._persist_failed_execution_message(resident_id, job, "first", {"message": "first"})
+    resident_intake_domain.persist_failed_execution_message(resident_id, job, "first", {"message": "first"})
     first_id = job["failure_message_id"]
     resident_execution_work.promote_queue_item(job, {'execution_id': "job_second", "user_message_id": "second"}, [], "now")
     assert not set(job) & {"failure_message_id", "failure_message_persisted_at", "runtime_error", "execution_event_cursor"}
-    resident_intake_domain._persist_failed_execution_message(resident_id, job, "second", {"message": "second"})
+    resident_intake_domain.persist_failed_execution_message(resident_id, job, "second", {"message": "second"})
     assert job["failure_message_id"] != first_id
     repository = resident_conversation_stream.get_repository()
     assert repository.message(resident_id, first_id)["content_parts"][0]["text"] == "first"
@@ -662,7 +662,7 @@ def test_delivery_retry_finds_every_durable_input_location(resident_record, loca
         job["queue"] = [{"user_message_id": "msg_group", "mailbox_members": [item]}]
     else:
         job["send_now_inputs"] = [item]
-    assert resident_intake_domain._existing_resident_delivery(rid, message, bound_job=job, require_execution_binding=True)
+    assert resident_intake_domain.existing_resident_delivery(rid, message, bound_job=job, require_execution_binding=True)
     if location != "info":
         with pytest.raises(ValueError, match="duplicate message_id"):
             resident_execution_work.normalized_queue(job, [*(job.get("queue") or []), item])
@@ -793,7 +793,7 @@ def test_conversation_message_is_persisted_with_its_durable_event(
                 or project(target_id, item, **kwargs)
             ),
     ):
-        result = resident_lifecycle_domain._append_conversation_message(
+        result = resident_lifecycle_domain.append_conversation_message(
             resident_id,
             message,
         )
@@ -942,13 +942,13 @@ def test_running_snapshot_and_cancel_check_read_only_lightweight_job_controls(re
     monkeypatch.setattr(execution_events, 'execution_projection_from_execution',
                         lambda *_args, **_kwargs: {'outputs': [], 'runtime_details': []})
     observed = []
-    original = resident_execution_domain._resident_record_for_execution
+    original = resident_execution_domain.resident_record_for_execution
 
     def read_record(identifier):
         observed.append(identifier)
         return original(identifier)
 
-    monkeypatch.setattr(resident_execution_domain, '_resident_record_for_execution', read_record)
+    monkeypatch.setattr(resident_execution_domain, 'resident_record_for_execution', read_record)
     assert resident_execution_domain._resident_execution_still_current(resident_id, execution_id)
     assert observed == []
     resident_execution_domain._project_resident_execution_snapshot(resident_id,  execution_id, {'status': 'running'})
@@ -988,7 +988,7 @@ def test_execution_message_callbacks_do_not_hydrate_resources(resident_record, m
     resident_execution_domain._advance_resident_execution_event_cursor(resident_id, "old-execution", 99)
     assert resident_execution_domain._resident_execution_event_cursor(resident_id,  execution_id) == 7
     assert resident_execution_domain._resident_execution_event_cursor(resident_id,  "old-execution") == 0
-    final = resident_intake_domain._message("agent", "final", message_id="msg_" + "c" * 32)
+    final = resident_intake_domain.build_message("agent", "final", message_id="msg_" + "c" * 32)
     assert resident_execution_domain._persist_execution_final_message(resident_id,  "old-execution", final) is None
     assert resident_execution_domain._persist_execution_final_message(resident_id,  execution_id, final)["message_id"] == final["message_id"]
     stored = resident_conversation_stream.get_repository().read_messages(resident_id)
@@ -1006,7 +1006,7 @@ def test_execution_message_callbacks_do_not_hydrate_resources(resident_record, m
         projection_attempts += 1
         raise ValueError("test projection fault")
 
-    monkeypatch.setattr(resident_lifecycle_domain, "_append_conversation_message", reject_poison)
+    monkeypatch.setattr(resident_lifecycle_domain, "append_conversation_message", reject_poison)
     with pytest.raises(ValueError, match="test projection fault") as raised:
         resident_execution_domain._persist_execution_display_messages(
             resident_id,  execution_id, [poison_output],
@@ -1141,7 +1141,7 @@ def test_execution_display_batch_releases_state_lock_between_messages(resident_r
     resident_id = str(resident_record["resident_id"])
     job_id, execution_id = "incremental-batch", "execution-" + "c" * 24
     resident_execution_work.write(resident_record, { "actor": "CASE-A", "execution_id": execution_id, "submitted_at": "2026-10-14T00:00:00Z"})
-    original_lock = resident_lifecycle_domain._state_lock
+    original_lock = resident_lifecycle_domain.state_lock
     depth = 0
 
     @contextmanager
@@ -1159,7 +1159,7 @@ def test_execution_display_batch_releases_state_lock_between_messages(resident_r
             assert depth == 0, "history iteration must not occupy the state command lock"
             yield {"output_id": "msg_" + f"{index:032x}", "text": f"update-{index}"}
 
-    monkeypatch.setattr(resident_lifecycle_domain, "_state_lock", observed_lock)
+    monkeypatch.setattr(resident_lifecycle_domain, "state_lock", observed_lock)
     assert len(resident_execution_domain._persist_execution_display_messages(resident_id,  execution_id, outputs())) == 3
 
 
@@ -1172,14 +1172,14 @@ def test_execution_display_batch_refences_each_message(resident_record, monkeypa
     resident_id = str(resident_record["resident_id"])
     job_id, execution_id = "incremental-fence", "execution-" + "d" * 24
     resident_execution_work.write(resident_record, { "actor": "CASE-A", "execution_id": execution_id, "submitted_at": "2026-10-14T00:00:00Z"})
-    append = resident_lifecycle_domain._append_conversation_message
+    append = resident_lifecycle_domain.append_conversation_message
 
     def replace_job_after_append(target, message):
         committed = append(target, message)
         resident_execution_work.write(resident_record, { "actor": "CASE-A", "execution_id": "replacement-execution", "submitted_at": "2026-10-14T00:00:00Z"})
         return committed
 
-    monkeypatch.setattr(resident_lifecycle_domain, "_append_conversation_message", replace_job_after_append)
+    monkeypatch.setattr(resident_lifecycle_domain, "append_conversation_message", replace_job_after_append)
     outputs = [{"output_id": "msg_" + f"{index:032x}", "text": f"update-{index}"} for index in range(3)]
     assert len(resident_execution_domain._persist_execution_display_messages(resident_id,  execution_id, outputs)) == 1
 
@@ -1200,7 +1200,7 @@ def test_execution_display_batch_allows_stop_before_recovery_finishes(resident_r
 
     def stop():
         try:
-            resident_intake_domain._cancel_resident_execution_for_target(resident_id, "CASE-A", message_id)
+            resident_intake_domain.cancel_resident_execution_for_target(resident_id, "CASE-A", message_id)
         except Exception as error:
             errors.append(error)
         finally:
@@ -1264,7 +1264,7 @@ def test_execution_waiter_uses_incremental_durable_projection(resident_record, m
             kwargs["on_snapshot"](snapshot)
             return snapshot
 
-    result = resident_execution_domain._wait_for_resident_execution(Service(), execution_id=execution_id,
+    result = resident_execution_domain.wait_for_resident_execution(Service(), execution_id=execution_id,
                                                  actor="CASE-A", resident_id=resident_id)
     assert len(result["projection_errors"]) == int(fail_once)
     assert batches == ([1, 1, 1, 0] if fail_once else [1, 0, 1, 0])
@@ -1446,14 +1446,14 @@ def test_execution_display_messages_append_after_injected_user_message(
         "queue": [],
      "submitted_at": "2026-10-14T00:00:00Z"}
     resident_execution_work.write(resident_record, job)
-    resident_lifecycle_domain._append_conversation_message(resident_id, {
+    resident_lifecycle_domain.append_conversation_message(resident_id, {
         "message_id": user_message_id,
         "role": "user",
         "author_id": "CASE-A",
         "content_parts": [{"type": "text", "text": "question"}],
         "created_at": "2026-08-17T00:00:00Z",
     })
-    resident_lifecycle_domain._append_conversation_message(resident_id, {
+    resident_lifecycle_domain.append_conversation_message(resident_id, {
         "message_id": "msg_40000000000000000000000000000003",
         "role": "user",
         "content_parts": [{"type": "text", "text": "injected follow-up"}],
@@ -1505,7 +1505,7 @@ def test_execution_final_message_follows_projected_updates(
         "queue": [],
      "submitted_at": "2026-10-14T00:00:00Z"}
     resident_execution_work.write(resident_record, job)
-    resident_lifecycle_domain._append_conversation_message(resident_id, {
+    resident_lifecycle_domain.append_conversation_message(resident_id, {
         "message_id": user_message_id,
         "role": "user",
         "author_id": "CASE-A",
@@ -1612,7 +1612,7 @@ def test_exact_resident_creation_job_is_applied_to_its_own_execution_work(
     )
     created_resident_id = str(detail["resident_id"])
     _add_created_resident_to_lineage(resident_record, created_resident_id)
-    exact_record = resident_workspace_domain._find_resident(created_resident_id)
+    exact_record = resident_workspace_domain.find_resident(created_resident_id)
     assert exact_record is not None
     fork_mode = exact_record["fork_mode"]
     forked_from_at = exact_record["forked_from_at"]
@@ -1646,7 +1646,7 @@ def test_exact_resident_creation_job_is_applied_to_its_own_execution_work(
     with (
         mock.patch.object(
             resident_session_backend_domain,
-            "_create_exact_resident_session",
+            "create_exact_resident_session",
             side_effect=create_exact,
         ) as create_session,
         mock.patch.object(
@@ -1655,11 +1655,11 @@ def test_exact_resident_creation_job_is_applied_to_its_own_execution_work(
             return_value=False,
         ) as finalize,
     ):
-        resident_execution_domain._run_resident_execution(created_resident_id, continuation_id)
+        resident_execution_domain.run_resident_execution(created_resident_id, continuation_id)
 
     create_session.assert_called_once()
     finalize.assert_called_once()
-    persisted = resident_workspace_domain._find_resident(created_resident_id)
+    persisted = resident_workspace_domain.find_resident(created_resident_id)
     assert persisted is not None
     assert persisted["session_state"] == "active"
     assert persisted["fork_mode"] == fork_mode == "full"
@@ -1691,7 +1691,7 @@ def test_exact_resident_native_fork_uses_cross_lineage_source_binding(
         "source_resident_id": source_id,
         "backend_route_id": "zero",
     }
-    owned_workspace = resident_record_domain._resident_owned_workspace_path(target, str(target["resident_id"]))
+    owned_workspace = resident_record_domain.resident_owned_workspace_path(target, str(target["resident_id"]))
     owned_workspace.mkdir(parents=True, exist_ok=True)
     target["owned_workspace_id"] = "workspace_bbbbbbbbbbbb"
     target["default_cwd"] = str(owned_workspace)
@@ -1712,14 +1712,14 @@ def test_exact_resident_native_fork_uses_cross_lineage_source_binding(
     }
     monkeypatch.setattr(
         resident_workspace_domain,
-        "_find_resident",
+        "find_resident",
         lambda resident_id: (
             resident_record if resident_id == source_id else None
         ),
     )
     monkeypatch.setattr(
         resident_directory_domain,
-        "_has_resident_workspace_authority",
+        "has_resident_workspace_authority",
         lambda *_args, **_kwargs: True,
     )
     captured: dict[str, object] = {}
@@ -1747,11 +1747,11 @@ def test_exact_resident_native_fork_uses_cross_lineage_source_binding(
 
     monkeypatch.setattr(
         resident_session_backend_domain,
-        "_run_backend_session_operation",
+        "run_backend_session_operation",
         create_between_bindings,
     )
 
-    result = resident_session_backend_domain._create_exact_resident_session(target, job)
+    result = resident_session_backend_domain.create_exact_resident_session(target, job)
 
     assert result["id"] == "01a00000-0000-7000-8000-000000000299"
     assert "source_binding_id" not in captured
@@ -1833,7 +1833,7 @@ def test_applied_completion_retries_ack_without_reapplying_completion(
 
     with mock.patch.object(
         resident_intake_domain,
-        "_acknowledge_execution",
+        "acknowledge_execution",
         side_effect=[False, True],
     ):
         assert resident_execution_domain._finalize_applied_execution(
@@ -1880,8 +1880,8 @@ def test_a_second_finalizer_of_one_completion_keeps_the_promoted_queue_item(
     continuation_id = str(completed["continuation_id"])
     resident_execution_work.write(resident_record, completed)
 
-    with mock.patch.object(resident_intake_domain, "_acknowledge_execution", return_value=True), \
-            mock.patch.object(resident_intake_domain, "_reconcile_queued_turn_inputs", return_value=True):
+    with mock.patch.object(resident_intake_domain, "acknowledge_execution", return_value=True), \
+            mock.patch.object(resident_intake_domain, "reconcile_queued_turn_inputs", return_value=True):
         assert resident_execution_domain._finalize_applied_execution(resident_id, continuation_id, completed) is True
         assert resident_execution_domain._finalize_applied_execution(resident_id, continuation_id, completed) is False
 
@@ -1932,7 +1932,7 @@ def test_resident_success_uses_shared_applied_completion_finalizer(
     with (
         mock.patch.object(
             resident_execution_domain,
-            "_send_to_resident_backend",
+            "send_to_resident_backend",
             return_value=(
                 {
                     'execution_id': job['execution_id'],
@@ -1948,7 +1948,7 @@ def test_resident_success_uses_shared_applied_completion_finalizer(
         ) as finalize,
         mock.patch.object(resident_execution_domain, "_notify_lineage_message_completed"),
     ):
-        resident_execution_domain._run_resident_execution(resident_id, continuation_id)
+        resident_execution_domain.run_resident_execution(resident_id, continuation_id)
 
     send.assert_called_once()
     finalize.assert_called_once()
@@ -1972,7 +1972,7 @@ def test_fork_operation_commits_created_resident_before_publishing_work(
         notifications.append(target_id)
         catalog_record = resident_catalog.get_catalog().get(target_id)
         assert catalog_record["resident_id"] == target_id
-        root = resident_workspace_domain._find_resident(root_id)
+        root = resident_workspace_domain.find_resident(root_id)
         assert root is not None
         family = resident_lineage.snapshot(root)
         assert resident_lineage.find_in_snapshot(family, target_id) is not None
@@ -2009,7 +2009,7 @@ def test_fork_creation_persists_and_projects_inherited_runtime_settings(
 
     inherited = resident_runtime_settings.mark_portal_manual_authority(
         resident_runtime_settings.merge_settings(
-            resident_runtime_domain._read_resident_runtime_settings(resident_record),
+            resident_runtime_domain.read_resident_runtime_settings(resident_record),
             {
                 "model": "gpt-5.6-sol",
                 "reasoning_effort": "xhigh",
@@ -2021,8 +2021,8 @@ def test_fork_creation_persists_and_projects_inherited_runtime_settings(
         actor="CASE-A",
         updated_at="2026-09-20T09:09:01Z",
     )
-    resident_runtime_domain._write_resident_runtime_settings(resident_record, inherited)
-    resident_workspace_domain._save_resident_record(resident_record)
+    resident_runtime_domain.write_resident_runtime_settings(resident_record, inherited)
+    resident_workspace_domain.save_resident_record(resident_record)
     record_session_turn(resident_record)
 
     created = backend.create_resident_full_context_fork(
@@ -2031,7 +2031,7 @@ def test_fork_creation_persists_and_projects_inherited_runtime_settings(
         defer_backend_start=True,
     )
     child = resident_catalog.get_catalog().get(created["resident_id"])
-    persisted = resident_runtime_domain._read_resident_runtime_settings(child)
+    persisted = resident_runtime_domain.read_resident_runtime_settings(child)
     assert persisted["model"] == "gpt-5.6-sol"
     assert persisted["reasoning_effort"] == "xhigh"
     assert persisted["service_tier"] == "priority"
@@ -2058,7 +2058,7 @@ def test_fork_creation_does_not_enter_shared_registry_or_family_locks(
         raise AssertionError("fork creation entered the aggregate state lock")
         yield
 
-    monkeypatch.setattr(resident_lifecycle_domain, "_state_lock", forbidden_state_lock)
+    monkeypatch.setattr(resident_lifecycle_domain, "state_lock", forbidden_state_lock)
     monkeypatch.setattr(
         resident_hatg_credentials,
         "ensure_resident_credential",
@@ -2115,7 +2115,7 @@ def test_concurrent_fork_creation_commits_distinct_residents_without_family_merg
     resident_ids = {str(item["resident_id"]) for item in created}
     assert len(resident_ids) == 2
     family = resident_lineage.snapshot(
-        resident_workspace_domain._find_resident(root_id)
+        resident_workspace_domain.find_resident(root_id)
     )
     assert resident_ids.issubset({
         str(item.get("resident_id") or "")
@@ -2217,7 +2217,7 @@ def test_resident_image_reaches_execution_as_native_input_media(
     with (
         mock.patch.object(
             resident_session_backend_domain,
-            "_handle_resident_native_command",
+            "handle_resident_native_command",
             return_value={},
         ),
         mock.patch.object(
@@ -2225,7 +2225,7 @@ def test_resident_image_reaches_execution_as_native_input_media(
             "handle_slash_command",
             return_value={"handled": False},
         ),
-        mock.patch.object(resident_record_domain, "_resolve_context_refs", return_value={}),
+        mock.patch.object(resident_record_domain, "resolve_context_refs", return_value={}),
     ):
         result = _published_delivery(backend.deliver_resident_message_content(
             resident_id,
@@ -2289,11 +2289,11 @@ def test_inline_media_positions_survive_delivery_and_provider_capture(resident_r
     attachment = tmp_path / upload_id / ("inline.png" if media_type == "image" else "manuscript.docx")
     attachment.parent.mkdir()
     attachment.write_bytes(VALID_PNG_BYTES if media_type == "image" else b"file-content")
-    monkeypatch.setattr(resident_media_domain, "_resident_input_media", lambda *a, **kw: [{
+    monkeypatch.setattr(resident_media_domain, "resident_input_media", lambda *a, **kw: [{
         "media_type": media_type, "source_type": "local_path", "source": str(attachment),
         "mime_type": "image/png" if media_type == "image" else "application/octet-stream", "name": attachment.name,
     }])
-    monkeypatch.setattr(resident_record_domain, "_resolve_context_refs", lambda *a, **kw: {})
+    monkeypatch.setattr(resident_record_domain, "resolve_context_refs", lambda *a, **kw: {})
     if queued:
         _published_delivery(backend.deliver_resident_message_content(resident_id, "sample_admin", "Previous work"))
     parts = [
@@ -2336,7 +2336,7 @@ def test_resident_workspace_image_marker_becomes_native_input_media(
     with (
         mock.patch.object(
             resident_session_backend_domain,
-            "_handle_resident_native_command",
+            "handle_resident_native_command",
             return_value={},
         ),
         mock.patch.object(
@@ -2344,7 +2344,7 @@ def test_resident_workspace_image_marker_becomes_native_input_media(
             "handle_slash_command",
             return_value={"handled": False},
         ),
-        mock.patch.object(resident_record_domain, "_resolve_context_refs", return_value={}),
+        mock.patch.object(resident_record_domain, "resolve_context_refs", return_value={}),
     ):
         result = _published_delivery(backend.deliver_resident_message_content(
             resident_id,
@@ -2374,12 +2374,12 @@ def test_resident_input_media_rejects_path_outside_workspace(
     outside_path.write_bytes(b"\x89PNG\r\n\x1a\noutside-image")
 
     with pytest.raises(PermissionError, match="outside its upload and workspace"):
-        resident_media_domain._resident_input_media(
+        resident_media_domain.resident_input_media(
             [{"kind": "image", "path": str(outside_path)}],
             actor="CASE-A",
             resident_id=str(resident_record["resident_id"]),
             content=f"[image: {outside_path}]",
-            workspace_roots=resident_runtime_domain._resident_media_workspace_roots(
+            workspace_roots=resident_runtime_domain.resident_media_workspace_roots(
                 resident_record
             ),
         )
@@ -2411,7 +2411,7 @@ def test_resident_input_media_rejects_another_residents_image(
         "data_bytes": VALID_PNG_BYTES,
     }, "CASE-A")
 
-    reused = resident_media_domain._resident_input_media(
+    reused = resident_media_domain.resident_input_media(
         [{"kind": "image", "path": image["path"]}],
         actor="CASE-A",
         resident_id=child_id,
@@ -2429,7 +2429,7 @@ def test_resident_input_media_rejects_another_residents_image(
         reject_root_conversation,
     )
     with pytest.raises(PermissionError, match="Conversation"):
-        resident_media_domain._resident_input_media(
+        resident_media_domain.resident_input_media(
             [{"kind": "image", "path": image["path"]}],
             actor="CASE-A",
             resident_id=child_id,
@@ -2461,7 +2461,7 @@ def test_exiting_continuation_rewakes_job_persisted_during_shutdown(
         lambda target_id: notifications.append(str(target_id)),
     )
 
-    resident_intake_domain._finish_resident_continuation(resident_id)
+    resident_intake_domain.finish_resident_continuation(resident_id)
 
     assert resident_execution_work.thread(resident_record) is None
     assert notifications == [resident_id]
@@ -2491,7 +2491,7 @@ def test_exiting_continuation_wakes_the_next_job(
         lambda target_id: notifications.append(str(target_id)),
     )
 
-    resident_intake_domain._finish_resident_continuation(resident_id)
+    resident_intake_domain.finish_resident_continuation(resident_id)
 
     assert resident_execution_work.thread(resident_record) is None
     assert notifications == [resident_id]
@@ -2549,7 +2549,7 @@ def test_clear_resident_queue_uses_isa_authority_and_empty_queue_is_idempotent(
         result = resident_protocol.clear_resident_queue(resident_id, "sample_admin")
         assert result["cleared_count"] == 0
         assert result["errors"] == []
-    monkeypatch.setattr(resident_directory_domain, "_can_manage", lambda record, actor: False)
+    monkeypatch.setattr(resident_directory_domain, "can_manage", lambda record, actor: False)
     assert resident_protocol.clear_resident_queue(resident_id, "sample_admin")["cleared_count"] == 0
     assert quota.call_count == 3
     assert all(set(call.args[0]) == {f"resident:{resident_id}"} for call in quota.call_args_list)
@@ -2562,10 +2562,10 @@ def test_clear_resident_queue_cancels_held_inputs_without_reopening_intake(resid
         resident_id, "CASE-A", state_domain="intake", transition="close",
     )
     with (
-        mock.patch.object(resident_session_backend_domain, "_handle_resident_native_command", return_value={}),
+        mock.patch.object(resident_session_backend_domain, "handle_resident_native_command", return_value={}),
         mock.patch.object(slash_commands, "handle_slash_command", return_value={"handled": False}),
-        mock.patch.object(resident_record_domain, "_resolve_context_refs", return_value={}),
-        mock.patch.object(resident_registration_domain, "_build_resident_prompt", return_value="held prompt"),
+        mock.patch.object(resident_record_domain, "resolve_context_refs", return_value={}),
+        mock.patch.object(resident_registration_domain, "build_resident_prompt", return_value="held prompt"),
     ):
         backend.deliver_resident_message_content(resident_id, "CASE-A", "held first message")
         backend.deliver_resident_message_content(resident_id, "CASE-A", "held following message")
@@ -2676,7 +2676,7 @@ def test_cancel_queue_retry_rolls_back_interrupted_resident_commit(
         nonlocal interrupted
         if interrupted:
             interrupted = False
-            monkeypatch.setattr(resident_lifecycle_domain, "_now_iso", lambda: "2026-09-07T00:00:00Z")
+            monkeypatch.setattr(resident_lifecycle_domain, "now_iso", lambda: "2026-09-07T00:00:00Z")
             raise OSError("simulated Resident state commit interruption")
         return original_write(*args, **kwargs)
 
@@ -2794,7 +2794,7 @@ def test_inject_queue_message_does_not_stop_current_execution(
     assert result["queue"]["items"] == []
     assert isinstance(result["state"], dict)
     assert isinstance(result["cursor"], int)
-    assert resident_conversation_projection_domain._conversation_family_summaries(
+    assert resident_conversation_projection_domain.conversation_family_summaries(
         [resident_id], "CASE-A",
     )[resident_id]["unread_signature"]["completion_id"] == ""
 
@@ -2827,7 +2827,9 @@ def test_send_now_into_a_forks_first_turn_does_not_repeat_its_inherited_context(
     :importance: P1
     :design: decision_0f57656a2acd
     """
-    from management_portal.society_service.resident_workspace_domain import _save_resident_record
+    from management_portal.society_service.resident_workspace_domain import (
+        save_resident_record as _save_resident_record,
+    )
 
     store = get_agent_data_store()
     sid = store.put_segment(segment_type="model", content="source question", created_by_agent_id="resident_bbbbbbbbbbbb")
@@ -2839,7 +2841,7 @@ def test_send_now_into_a_forks_first_turn_does_not_repeat_its_inherited_context(
     })
     _save_resident_record(resident_record)
     queued_message_id = "msg_cccccccccccccccccccccccccccccccc"
-    queued_prompt = resident_registration_domain._build_resident_prompt(
+    queued_prompt = resident_registration_domain.build_resident_prompt(
         resident_record, {"actor": "CASE-A", "message": "补充检查移动端"},
     )
     prepared = resident_execution_domain._portable_context_execution(
@@ -2940,7 +2942,7 @@ def test_a_send_now_input_the_execution_refuses_waits_for_the_next_turn(
     # An input an earlier refusal left outside the queue is settled the same way.
     stranded = {**item, "active_turn_input": {"control_id": "control-stranded", "actor": "CASE-A"}}
     resident_execution_work.write(resident_record, {**running, "send_now_inputs": [stranded]})
-    assert resident_intake_domain._reconcile_queued_turn_inputs(resident_id, 'execution-444444444444444444444444')
+    assert resident_intake_domain.reconcile_queued_turn_inputs(resident_id, 'execution-444444444444444444444444')
     job = resident_execution_work.read(resident_record)
     assert not resident_execution_work.send_now_inputs(job)
     assert [entry["user_message_id"] for entry in job["queue"]] == [message_id]
@@ -3009,7 +3011,7 @@ def test_runtime_mode_persists_for_next_turn_without_steering(
 ) -> None:
     """协作模式保存供下一轮使用且不干预当前执行"""
     resident_id = str(resident_record["resident_id"])
-    resident_runtime_domain._write_resident_runtime_settings(
+    resident_runtime_domain.write_resident_runtime_settings(
         resident_record, {"collaboration_mode": "default" if mode == "plan" else "plan"},
     )
     if running:
@@ -3028,7 +3030,7 @@ def test_runtime_mode_persists_for_next_turn_without_steering(
     assert result["next_turn_fields"] == ["collaboration_mode"]
     assert result["active_turn_settings_update"] == {"requested": False, "status": "next_turn"}
     assert result["active_turn_fields"] == []
-    persisted = resident_runtime_domain._read_resident_runtime_settings(resident_record)
+    persisted = resident_runtime_domain.read_resident_runtime_settings(resident_record)
     assert persisted["collaboration_mode"] == mode
     assert codex_runtime_settings.codex_cli_overrides(persisted)["collaboration_mode"] == mode
     unchanged = resident_protocol.update_resident_runtime_settings(
@@ -3036,7 +3038,7 @@ def test_runtime_mode_persists_for_next_turn_without_steering(
     )
     assert unchanged["next_turn_fields"] == []
     assert unchanged["active_turn_settings_update"]["status"] == "unchanged"
-    assert resident_runtime_domain._read_resident_runtime_settings(resident_record) == persisted
+    assert resident_runtime_domain.read_resident_runtime_settings(resident_record) == persisted
     if running:
         assert resident_execution_work.read(resident_record)["execution_id"] == "execution-mode"
 
@@ -3046,13 +3048,13 @@ def test_runtime_mode_rejects_invalid_values_without_writing(
     resident_record: dict[str, object], mode: object,
 ) -> None:
     """无效协作模式被拒绝且不写入设置"""
-    previous = resident_runtime_domain._read_resident_runtime_settings(resident_record)
+    previous = resident_runtime_domain.read_resident_runtime_settings(resident_record)
     with pytest.raises(ValueError, match="collaboration_mode"):
         resident_protocol.update_resident_runtime_settings(
             str(resident_record["resident_id"]), "CASE-A",
             {"runtime_settings": {"collaboration_mode": mode}},
         )
-    assert resident_runtime_domain._read_resident_runtime_settings(resident_record) == previous
+    assert resident_runtime_domain.read_resident_runtime_settings(resident_record) == previous
 
 
 @pytest.mark.parametrize("provider", ["claude", "kimi", "portal"])
@@ -3062,12 +3064,12 @@ def test_runtime_mode_rejects_non_codex_provider(
     """非 codex Provider 拒绝协作模式设置"""
     record = {**resident_record, "backend": provider}
     with pytest.raises(ValueError, match="collaboration_mode|不支持运行设置"):
-        resident_runtime_domain._validate_backend_runtime_updates(record, {}, {"collaboration_mode": "plan"})
+        resident_runtime_domain.validate_backend_runtime_updates(record, {}, {"collaboration_mode": "plan"})
 
 
 def test_runtime_mode_is_preserved_in_creation_settings(resident_record: dict[str, object]) -> None:
     """Resident 创建设置保留协作模式"""
-    settings = resident_runtime_domain._resident_runtime_settings_from_register_payload(
+    settings = resident_runtime_domain.resident_runtime_settings_from_register_payload(
         resident_record, {"runtime_settings": {"collaboration_mode": "plan"}},
         "CASE-A", "2026-09-13T00:00:00Z",
     )
@@ -3095,7 +3097,7 @@ def test_codex_registration_resolves_defaults_against_the_selected_account(
         },
     )
 
-    settings = resident_runtime_domain._resident_runtime_settings_from_register_payload(
+    settings = resident_runtime_domain.resident_runtime_settings_from_register_payload(
         {
             "resident_id": "resident_bbbbbbbbbbbb",
             "backend": "codex",
@@ -3154,7 +3156,7 @@ def test_runtime_settings_save_while_idle_only_persists_settings(
         }
 
     resident_record["backend_route_id"] = "four"
-    resident_workspace_domain._save_resident_record(resident_record, commit_configuration=True)
+    resident_workspace_domain.save_resident_record(resident_record, commit_configuration=True)
     monkeypatch.setattr(codex_runtime_settings, "codex_runtime_catalog", catalog)
     result = resident_protocol.update_resident_runtime_settings(
         str(resident_record["resident_id"]), "CASE-A",
@@ -3182,7 +3184,7 @@ def test_runtime_settings_provider_catalog_validation_runs_outside_resident_lock
         lock_states.append(invariant_locks.lock_held())
         return dict(updates)
 
-    monkeypatch.setattr(resident_runtime_domain, "_validate_backend_runtime_updates", validate)
+    monkeypatch.setattr(resident_runtime_domain, "validate_backend_runtime_updates", validate)
 
     result = resident_protocol.update_resident_runtime_settings(
         str(resident_record["resident_id"]),
@@ -3200,11 +3202,11 @@ def test_fast_command_updates_running_turn_with_native_settings_control(
 ) -> None:
     """快速指令通过原生设置控制更新当前轮速度"""
     resident_id = str(resident_record["resident_id"])
-    resident_runtime_domain._write_resident_runtime_settings(
+    resident_runtime_domain.write_resident_runtime_settings(
         resident_record,
         {"service_tier": ""},
     )
-    resident_workspace_domain._save_resident_record(resident_record)
+    resident_workspace_domain.save_resident_record(resident_record)
     resident_execution_work.write(
         resident_record,
         {
@@ -3240,12 +3242,12 @@ def test_fast_command_updates_running_turn_with_native_settings_control(
     assert calls and calls[0][:3] == (
         "execution-fast-command", "CASE-A", "priority",
     )
-    settings = resident_runtime_domain._read_resident_runtime_settings(resident_record)
+    settings = resident_runtime_domain.read_resident_runtime_settings(resident_record)
     assert settings["service_tier"] == "priority"
     stored = resident_execution_work.read(resident_record)
     assert stored['execution_id'] == 'execution-fast-command'
     assert stored["execution_id"] == "execution-fast-command"
-    assert resident_conversation_projection_domain._conversation_family_summaries(
+    assert resident_conversation_projection_domain.conversation_family_summaries(
         [resident_id], "CASE-A",
     )[resident_id]["unread_signature"]["completion_id"] == ""
 
@@ -3481,7 +3483,7 @@ def test_inject_queue_message_waits_durably_for_execution_binding(
         now="2026-08-28T00:00:00Z",
     )
     resident_execution_work.write(resident_record, pending_job)
-    resident_intake_domain._reconcile_queued_turn_inputs(
+    resident_intake_domain.reconcile_queued_turn_inputs(
         resident_id,
         "execution-333333333333333333333333",
     )
@@ -3492,7 +3494,7 @@ def test_inject_queue_message_waits_durably_for_execution_binding(
         [{"type": "text", "text": "<user-message>\n追加到尚未绑定的 turn\n</user-message>"}],
     )]
     assert "pending_active_turn_inputs" not in resident_execution_work.read(resident_record)
-    assert resident_intake_domain._reconcile_queued_turn_inputs(resident_id, "execution-333333333333333333333333")
+    assert resident_intake_domain.reconcile_queued_turn_inputs(resident_id, "execution-333333333333333333333333")
     assert resident_execution_work.read(resident_record)["queue"] == []
     assert [item["message_id"] for item in repository.read_messages(resident_id)] == [queued_message_id]
 
@@ -3610,7 +3612,7 @@ def test_api_session_state_never_exposes_scheduler_state(
     """会话状态接口将调度器阶段归一为活跃状态"""
     resident_record["session_state"] = scheduler_state
 
-    assert resident_record_domain._record_backend_session_state(resident_record) == "active"
+    assert resident_record_domain.record_backend_session_state(resident_record) == "active"
 
 
 @pytest.mark.parametrize("outcome", ["completed", "failed", "cancelled"])
@@ -3887,7 +3889,7 @@ def test_conversation_replay_does_not_acquire_writer_locks(
     """已提交对话消息重放无需获取写锁"""
     repository = resident_conversation_stream.get_repository()
     resident_id = str(resident_record["resident_id"])
-    message = resident_intake_domain._message("agent", "durable update")
+    message = resident_intake_domain.build_message("agent", "durable update")
     persisted = repository.append_message(resident_id, message)
 
     def forbidden_write(*args, **kwargs):
@@ -3987,7 +3989,7 @@ def test_conversation_replay_repairs_missing_event(
     """对话消息重放补齐缺失事件且仅发布一次"""
     repository = resident_conversation_stream.get_repository()
     resident_id = str(resident_record["resident_id"])
-    message = resident_intake_domain._message("agent", "committed before event failure")
+    message = resident_intake_domain.build_message("agent", "committed before event failure")
     repository.agent_data.project_chat_message(resident_id, message)
     before = repository.current_projection(resident_id)["cursor"]
     repository.append_message(resident_id, message)
@@ -4004,7 +4006,7 @@ def test_concurrent_conversation_replays_commit_one_message_and_event(
     """并发对话重放仅提交一条消息和一个事件"""
     repository = resident_conversation_stream.get_repository()
     resident_id = str(resident_record["resident_id"])
-    message = resident_intake_domain._message("agent", "concurrent durable update")
+    message = resident_intake_domain.build_message("agent", "concurrent durable update")
     before = repository.current_projection(resident_id)["cursor"]
     ready = threading.Barrier(8)
 
@@ -4032,7 +4034,7 @@ def test_recovery_attaches_only_the_completion_waiter(
     # An active Job with no attached waiter is what recovery attaches one to.
     resident_execution_work.write(resident_record, {"execution_id": "execution-" + "a" * 24, "actor": "CASE-A", "queue": []})
     monkeypatch.setattr(resident_execution_domain, "_prepare_resident_continuation", lambda _record, **_kwargs: (resident_id, "waiter"))
-    monkeypatch.setattr(resident_intake_domain, "_start_resident_continuation", lambda record, key: attached.append((record["resident_id"], key)))
+    monkeypatch.setattr(resident_intake_domain, "start_resident_continuation", lambda record, key: attached.append((record["resident_id"], key)))
     assert backend.resume_resident_execution(resident_id)["residents"] == 1
     assert attached == [(resident_id, "waiter")]
 
@@ -4089,7 +4091,7 @@ def test_lineage_projects_terminal_execution_without_harness_recovery(resident_r
             status = next(outcomes)
             _record_harness_execution(resident_id, execution_id, accepted=input_accepted)
             result = {'status': status, 'error': error if status != 'completed' else '', 'output': {'message': 'isolated work completed'} if status == 'completed' else {}}
-            snapshot = {**snapshots[execution_id], 'status': status, 'result': result, 'scheduler': {'status': status, 'updated_at': resident_lifecycle_domain._now_iso()}}
+            snapshot = {**snapshots[execution_id], 'status': status, 'result': result, 'scheduler': {'status': status, 'updated_at': resident_lifecycle_domain.now_iso()}}
             snapshots[execution_id] = snapshot
             kwargs['on_snapshot'](snapshot)
             kwargs['on_snapshot'](snapshot)
@@ -4103,37 +4105,37 @@ def test_lineage_projects_terminal_execution_without_harness_recovery(resident_r
     monkeypatch.setattr(resident_execution_domain, '_notify_lineage_message_terminal', mock.Mock())
     monkeypatch.setattr(resident_execution_domain, '_notify_lineage_message_completed', mock.Mock())
     monkeypatch.setattr(lifecycle, 'notify_execution_binding', wakeups.append)
-    finish_continuation = resident_intake_domain._finish_resident_continuation
+    finish_continuation = resident_intake_domain.finish_resident_continuation
 
     def observe_finish(target_id):
         before = len(wakeups)
         finish_continuation(target_id)
         exit_wakeups.extend(wakeups[before:])
-    monkeypatch.setattr(resident_intake_domain, '_finish_resident_continuation', observe_finish)
+    monkeypatch.setattr(resident_intake_domain, 'finish_resident_continuation', observe_finish)
     backend.change_resident_runtime_settings(resident_id, 'CASE-A', {'agent_harness': {'mode': mode, 'features': {'provider_error_continue': {'enabled': enabled}}}})
-    saved = resident_runtime_domain._read_resident_runtime_settings(resident_record)['agent_harness']
+    saved = resident_runtime_domain.read_resident_runtime_settings(resident_record)['agent_harness']
     assert saved['mode'] == mode
     assert saved['features']['provider_error_continue']['enabled'] is enabled
     message_id = 'msg_123456789abcdef0123456789abcdef0'
     user_item = resident_intake_domain._resident_user_message(resident_id, 'isolated original task', 'CASE-A', message_id=message_id)
     repository.commit_user_message(resident_id, user_item)
-    job = resident_execution_work.new_item(user_item, 'isolated original task', 'isolated original task', resident_lifecycle_domain._now_iso(), prompt_cwd=str(resident_record['default_cwd']))
+    job = resident_execution_work.new_item(user_item, 'isolated original task', 'isolated original task', resident_lifecycle_domain.now_iso(), prompt_cwd=str(resident_record['default_cwd']))
     job.update({'actor': 'CASE-A', 'queue': []})
     original_job_id = job['execution_id']
     resident_execution_work.write(resident_record, job)
     prepared = resident_execution_domain._prepare_resident_continuation(resident_record)
     assert prepared is not None
-    current_harness = resident_runtime_domain._read_resident_runtime_settings(resident_record)['agent_harness']
+    current_harness = resident_runtime_domain.read_resident_runtime_settings(resident_record)['agent_harness']
     assert current_harness['mode'] == mode
     assert current_harness['features']['provider_error_continue']['enabled'] is enabled
     resident_execution_work.track_current_thread(resident_record)
-    resident_execution_domain._run_resident_execution(*prepared)
+    resident_execution_domain.run_resident_execution(*prepared)
     assert len(requests) == 1
     assert repository.input_state(resident_id, message_id)['state'] == first_status
     assert exit_wakeups == []
     messages = repository.read_messages(resident_id)
     assert not any((_message_text(m) == 'continue' for m in messages)), [(m['role'], _message_text(m)) for m in messages]
-    record = resident_workspace_domain._find_resident(resident_id)
+    record = resident_workspace_domain.find_resident(resident_id)
     assert record is not None
     final_job = resident_execution_work.read(record)
     assert not resident_execution_work.is_active(final_job)
@@ -4233,7 +4235,7 @@ def test_restart_recovery_isolates_one_broken_resident(
     )
     monkeypatch.setattr(
         resident_workspace_domain,
-        "_find_resident",
+        "find_resident",
         lambda resident_id: records.get(resident_id),
     )
     monkeypatch.setattr(
@@ -4246,7 +4248,7 @@ def test_restart_recovery_isolates_one_broken_resident(
     )
     monkeypatch.setattr(
         resident_intake_domain,
-        "_start_resident_continuation",
+        "start_resident_continuation",
         lambda record, continuation_id: started.append((
             str(record.get("resident_id") or ""),
             continuation_id,
@@ -4280,7 +4282,7 @@ def test_compact_persists_context_usage_from_app_server_contract_contracts(subte
         assert pressure['source'] == 'invalid_context_usage'
     with subtests.test(contract='test_resident_session_prompt_controls_honor_both_customer_switches'), isolated_portal_case() as case_path:
         settings = {'prompt_injection': {'preset': 'full'}, 'allow_subagents': True}
-        assert resident_directory_domain._resident_session_prompt_controls(settings) == {'allow_subagents': True}
+        assert resident_directory_domain.resident_session_prompt_controls(settings) == {'allow_subagents': True}
     with subtests.test(contract='test_quota_wait_is_projected_without_closing_resident'), isolated_portal_case() as case_path:
         state = resident_execution_work.conversation_state({ 'user_message_id': 'message_quota', 'execution_id': 'execution-' + '2' * 24, "submitted_at": "2026-10-14T00:00:00Z"}, snapshot={'status': 'queued', 'scheduler': {'queue_reason': 'quota_reserve'}}, intake_state='open')
         assert state['work_state'] == 'queued'
@@ -4288,17 +4290,17 @@ def test_compact_persists_context_usage_from_app_server_contract_contracts(subte
         assert state['intake_state'] == 'open'
     with subtests.test(contract='test_execution_failure_preserves_structured_provider_interruption'), isolated_portal_case() as case_path:
         error = backend.ResidentExecutionFailed({'status': 'failed', 'result': {'error': 'Codex turn interrupted without a provider reason', 'error_code': 'provider_turn_interrupted', 'error_details': {'provider_status': 'interrupted', 'thread_id': 'thread-1'}}}, 'failed')
-        runtime_error = resident_record_domain._runtime_error_payload(str(error), code=error.error_code, details=error.error_details)
+        runtime_error = resident_record_domain.runtime_error_payload(str(error), code=error.error_code, details=error.error_details)
         assert runtime_error['code'] == 'provider_turn_interrupted'
         assert runtime_error['details']['thread_id'] == 'thread-1'
-        assert resident_record_domain._runtime_failure_summary(str(error), runtime_error) == '模型后端中断了本轮执行'
+        assert resident_record_domain.runtime_failure_summary(str(error), runtime_error) == '模型后端中断了本轮执行'
     with subtests.test(contract='test_unknown_provider_code_is_normalized_from_usage_limit_message'), isolated_portal_case() as case_path:
-        runtime_error = resident_record_domain._runtime_error_payload(
+        runtime_error = resident_record_domain.runtime_error_payload(
             "Codex turn failed: You’ve hit your usage limit. Purchase more credits.",
             code="unknown",
         )
         assert runtime_error['code'] == 'provider_usage_limit'
-        assert resident_record_domain._runtime_failure_summary(runtime_error['message'], runtime_error) == '当前模型账号额度不足'
+        assert resident_record_domain.runtime_failure_summary(runtime_error['message'], runtime_error) == '当前模型账号额度不足'
 
 
 def test_resident_timeline_keeps_canonical_messages_without_attached_session(
@@ -4306,12 +4308,12 @@ def test_resident_timeline_keeps_canonical_messages_without_attached_session(
 ) -> None:
     """Resident 未绑定会话时仍保留规范对话时间线"""
     resident_backend.delete_session_identity(resident_record)
-    resident_lifecycle_domain._append_conversation_message(str(resident_record["resident_id"]), {
+    resident_lifecycle_domain.append_conversation_message(str(resident_record["resident_id"]), {
         "message_id": "msg_33333333333333333333333333333333",
         "role": "user",
         "content_parts": [{"type": "text", "text": "start"}],
     })
-    resident_lifecycle_domain._append_conversation_message(str(resident_record["resident_id"]), {
+    resident_lifecycle_domain.append_conversation_message(str(resident_record["resident_id"]), {
         "message_id": "msg_44444444444444444444444444444444",
         "role": "agent",
         "content_parts": [
@@ -4319,11 +4321,11 @@ def test_resident_timeline_keeps_canonical_messages_without_attached_session(
         ],
     })
 
-    messages = resident_directory_domain._resident_conversation_messages(
+    messages = resident_directory_domain.resident_conversation_messages(
         resident_record,
     )
 
-    assert [resident_workspace_domain._protocol_message_text(item) for item in messages] == [
+    assert [resident_workspace_domain.protocol_message_text(item) for item in messages] == [
         "start",
         "reply survived restart",
     ]
@@ -4346,7 +4348,7 @@ def test_session_account_uses_the_active_execution_route(
         },
     )
 
-    assert resident_runtime_domain._resident_session_account_id(
+    assert resident_runtime_domain.resident_session_account_id(
         resident_record,
         job={"execution_id": "execution_1234567890abcdef"},
     ) == "zero"
@@ -4362,10 +4364,10 @@ def test_new_resident_session_account_is_independent_of_project(
     store = resident_catalog.get_catalog().state_store
     definition = store.lineage_definition(lineage_id)
     store.put_lineage_definition(lineage_id, {**definition, "project_id": project_id}, {})
-    record = resident_workspace_domain._find_resident(str(resident_record["resident_id"]))
+    record = resident_workspace_domain.find_resident(str(resident_record["resident_id"]))
     assert record["project_id"] == project_id
     resident_backend.delete_session_identity(record)
-    resident_workspace_domain._save_resident_record(record)
+    resident_workspace_domain.save_resident_record(record)
 
     request = resident_execution_domain._build_resident_execution_request(
         record,
@@ -4390,15 +4392,15 @@ def test_execution_reconciles_a_stale_provider_tuple_before_submission(
 ) -> None:
     """执行提交前按当前账号修正过期模型设置"""
     stale = resident_runtime_settings.merge_settings(
-        resident_runtime_domain._read_resident_runtime_settings(resident_record),
+        resident_runtime_domain.read_resident_runtime_settings(resident_record),
         {
             "model": "retired-model",
             "reasoning_effort": "xhigh",
             "service_tier": "priority",
         },
     )
-    resident_runtime_domain._write_resident_runtime_settings(resident_record, stale)
-    resident_workspace_domain._save_resident_record(resident_record)
+    resident_runtime_domain.write_resident_runtime_settings(resident_record, stale)
+    resident_workspace_domain.save_resident_record(resident_record)
     catalog_accounts: list[str] = []
 
     def catalog(*, account_id: str) -> dict[str, object]:
@@ -4427,7 +4429,7 @@ def test_execution_reconciles_a_stale_provider_tuple_before_submission(
         },
     )
 
-    persisted = resident_runtime_domain._read_resident_runtime_settings(resident_record)
+    persisted = resident_runtime_domain.read_resident_runtime_settings(resident_record)
     assert {
         field: persisted[field]
         for field in ("model", "reasoning_effort", "service_tier")
@@ -4436,7 +4438,7 @@ def test_execution_reconciles_a_stale_provider_tuple_before_submission(
         "reasoning_effort": "medium",
         "service_tier": "",
     }
-    canonical = resident_workspace_domain._find_resident(str(resident_record["resident_id"]))
+    canonical = resident_workspace_domain.find_resident(str(resident_record["resident_id"]))
     assert request.runtime_options["runtime_settings"]["model"] == "replacement-model"
     assert request.runtime_options["runtime_settings"]["reasoning_effort"] == "medium"
     assert "service_tier" not in request.runtime_options
@@ -4461,14 +4463,14 @@ def test_resident_goal_uses_structured_runtime_option(
         "action": "set",
         "objective": "finish the Resident integration",
     }
-    running_goal = resident_record_domain._resident_goal_payload(
+    running_goal = resident_record_domain.resident_goal_payload(
         resident_record,
         job={
             'execution_id': "job_native_goal",
             "message": "/goal finish the Resident integration",
         },
     )
-    paused_goal = resident_record_domain._resident_goal_payload(
+    paused_goal = resident_record_domain.resident_goal_payload(
         resident_record,
         job={
             'execution_id': "job_native_goal",
@@ -4484,7 +4486,7 @@ def test_resident_goal_uses_structured_runtime_option(
         "objective": "finish the Resident integration",
         "status": "paused",
     }
-    fallback = resident_record_domain._resident_goal_payload(resident_record)
+    fallback = resident_record_domain.resident_goal_payload(resident_record)
     assert fallback["current_job"] == ""
     assert "objective" not in fallback
 
@@ -4514,8 +4516,8 @@ def test_resident_execution_forwards_explicit_subagent_permission(
     resident_record: dict[str, object],
 ) -> None:
     """Resident 执行传递显式启用的子 agent 权限"""
-    settings = resident_runtime_domain._read_resident_runtime_settings(resident_record)
-    resident_runtime_domain._write_resident_runtime_settings(
+    settings = resident_runtime_domain.read_resident_runtime_settings(resident_record)
+    resident_runtime_domain.write_resident_runtime_settings(
         resident_record,
         {**settings, "allow_subagents": True},
     )
@@ -4537,8 +4539,8 @@ def test_resident_execution_forwards_agent_harness_settings(
     resident_record: dict[str, object],
 ) -> None:
     """Resident 执行传递归一化的 agent_harness 设置"""
-    settings = resident_runtime_domain._read_resident_runtime_settings(resident_record)
-    resident_runtime_domain._write_resident_runtime_settings(
+    settings = resident_runtime_domain.read_resident_runtime_settings(resident_record)
+    resident_runtime_domain.write_resident_runtime_settings(
         resident_record,
         {
             **settings,
@@ -4599,7 +4601,7 @@ def test_derived_resident_execution_provisions_its_own_hatg_credential(
         backend_route_id="zero",
     )
 
-    owned_workspace = resident_record_domain._resident_owned_workspace_path(derived_resident, str(derived_resident["resident_id"]))
+    owned_workspace = resident_record_domain.resident_owned_workspace_path(derived_resident, str(derived_resident["resident_id"]))
     owned_workspace.mkdir(parents=True, exist_ok=True)
     derived_resident["owned_workspace_id"] = "workspace_bbbbbbbbbbbb"
     derived_resident["default_cwd"] = str(owned_workspace)
@@ -4607,7 +4609,7 @@ def test_derived_resident_execution_provisions_its_own_hatg_credential(
         "workspace_id": derived_resident["owned_workspace_id"],
         "path": str(owned_workspace),
     }
-    resident_workspace_domain._save_resident_record(derived_resident)
+    resident_workspace_domain.save_resident_record(derived_resident)
     resident_execution_domain._build_resident_execution_request(
         derived_resident,
         {
@@ -4657,14 +4659,14 @@ def test_fork_account_selection_defaults_to_source_session_account(
 
     selection = backend.account_selection_payload(
         resident_record,
-        resident_runtime_domain._resident_session_account_id(resident_record),
+        resident_runtime_domain.resident_session_account_id(resident_record),
     )
     derived_resident = {
         "resident_id": "resident_bbbbbbbbbbbb",
         "backend": "codex",
         "source_resident_id": str(resident_record["resident_id"]),
     }
-    selected = resident_runtime_domain._assign_derived_resident_account_route(
+    selected = resident_runtime_domain.assign_derived_resident_account_route(
         resident_record,
         derived_resident,
         resident_record,
@@ -4723,7 +4725,7 @@ def test_fork_account_selection_reconciles_the_inherited_provider_tuple(
         "harness_config": {},
     }
 
-    selected = resident_runtime_domain._assign_derived_resident_account_route(
+    selected = resident_runtime_domain.assign_derived_resident_account_route(
         resident_record,
         derived_resident,
         resident_record,
@@ -4776,7 +4778,7 @@ def test_full_context_fork_stays_on_source_account(
         defer_backend_start=True,
     )
     target_id = str(created["resident_id"])
-    target = resident_workspace_domain._find_resident(target_id)
+    target = resident_workspace_domain.find_resident(target_id)
     assert target is not None
 
     def run_operation(**kwargs):
@@ -4790,7 +4792,7 @@ def test_full_context_fork_stays_on_source_account(
 
     monkeypatch.setattr(
         resident_session_backend_domain,
-        "_run_backend_session_operation",
+        "run_backend_session_operation",
         run_operation,
     )
     creation_job = {
@@ -4799,7 +4801,7 @@ def test_full_context_fork_stays_on_source_account(
         "actor": "CASE-A",
     }
     resident_execution_work.write(target, creation_job)
-    result = resident_session_backend_domain._create_exact_resident_session(target, creation_job)
+    result = resident_session_backend_domain.create_exact_resident_session(target, creation_job)
 
     assert result['id'] == created_session_id
     assert result['backend_route_id'] == 'zero'
@@ -4814,7 +4816,7 @@ def test_cross_account_codex_fork_uses_portable_context_seed(resident_record, mo
     created = backend.create_resident_full_context_fork(
         resident_record["resident_id"], "CASE-A", backend_route_id="one", defer_backend_start=True,
     )
-    child = resident_workspace_domain._find_resident(created["resident_id"])
+    child = resident_workspace_domain.find_resident(created["resident_id"])
     assert child["backend_route_id"] == "one"
     assert child["fork_mode"] == "full"
     snapshot = get_agent_data_store().agent_context_snapshot(child["resident_id"])
@@ -4860,8 +4862,8 @@ def test_session_token_usage_payload_reads_only_current_scope_projection(
         "last_turn_usage_at": "2026-08-03T12:01:00Z",
     }
 
-    resident_usage = resident_record_domain._session_token_usage_payload(resident_record)
-    derived_payload = resident_record_domain._session_token_usage_payload(derived_resident)
+    resident_usage = resident_record_domain.session_token_usage_payload(resident_record)
+    derived_payload = resident_record_domain.session_token_usage_payload(derived_resident)
 
     assert resident_usage["summary"] == {
         "last_turn_usage": {"total_tokens": 120},
@@ -4918,7 +4920,7 @@ def test_execution_projection_failure_is_quarantined_without_terminalizing_execu
         lambda *_args: advanced.append(int(_args[-1])),
     )
 
-    snapshot = resident_execution_domain._wait_for_resident_execution(
+    snapshot = resident_execution_domain.wait_for_resident_execution(
         Service(),
         execution_id="execution-000000000000000000000706",
         actor="sample_admin",
@@ -4987,17 +4989,17 @@ def test_completed_codex_turn_separates_accounting_and_context_usage(
     )
     monkeypatch.setattr(
         resident_execution_domain,
-        "_durable_resident_execution_request",
+        "durable_resident_execution_request",
         lambda _record, _job, factory: factory(),
     )
     monkeypatch.setattr(
         resident_execution_domain,
-        "_bind_or_resume_resident_execution",
+        "bind_or_resume_resident_execution",
         lambda *_args: "execution-" + "8" * 24,
     )
     monkeypatch.setattr(
         resident_execution_domain,
-        "_wait_for_resident_execution",
+        "wait_for_resident_execution",
         lambda *_args, **_kwargs: {
             "status": "completed",
             "scheduler": {"updated_at": "2026-08-17T00:00:00Z"},
@@ -5072,12 +5074,12 @@ def test_a_stopped_or_failed_turn_keeps_the_usage_its_execution_counted(
     monkeypatch.setattr("management_portal.execution.service.ExecutionService", Service)
     monkeypatch.setattr(resident_execution_domain, "_build_resident_execution_request", lambda *_args: request)
     monkeypatch.setattr(
-        resident_execution_domain, "_durable_resident_execution_request", lambda _record, _job, factory: factory(),
+        resident_execution_domain, "durable_resident_execution_request", lambda _record, _job, factory: factory(),
     )
     monkeypatch.setattr(
-        resident_execution_domain, "_bind_or_resume_resident_execution", lambda *_args: "execution-" + "9" * 24,
+        resident_execution_domain, "bind_or_resume_resident_execution", lambda *_args: "execution-" + "9" * 24,
     )
-    monkeypatch.setattr(resident_execution_domain, "_wait_for_resident_execution", lambda *_args, **_kwargs: {
+    monkeypatch.setattr(resident_execution_domain, "wait_for_resident_execution", lambda *_args, **_kwargs: {
         "status": status,
         "scheduler": {"updated_at": "2026-08-17T00:00:00Z"},
         "result": {
@@ -5094,7 +5096,7 @@ def test_a_stopped_or_failed_turn_keeps_the_usage_its_execution_counted(
         # The failure notice names the turn's Execution and shows what the Scheduler counted for it.
         execution_id = "execution-" + "9" * 24
         _ended_execution(resident_id, execution_id, "failed", _TURN_510K)
-        notice = resident_intake_domain._persist_failed_execution_message(
+        notice = resident_intake_domain.persist_failed_execution_message(
             resident_id, { "user_message_id": "message_709", "execution_id": execution_id, "submitted_at": "2026-10-14T00:00:00Z"},
             "stopped", {}, failed_at="2026-08-17T00:00:01Z",
         )
@@ -5167,12 +5169,12 @@ def test_completed_resident_turn_reuses_its_stable_final_message(
     )
     monkeypatch.setattr(
         resident_execution_domain,
-        "_durable_resident_execution_request",
+        "durable_resident_execution_request",
         lambda _record, _job, factory: factory(),
     )
     monkeypatch.setattr(
         resident_execution_domain,
-        "_bind_or_resume_resident_execution",
+        "bind_or_resume_resident_execution",
         lambda *_args: execution_id,
     )
     before_cursor = repository.current_projection(resident_id)["cursor"]
@@ -5198,7 +5200,7 @@ def test_completed_resident_turn_reuses_its_stable_final_message(
     stored = repository.read_messages(resident_id)
     assert [item["message_id"] for item in stored].count(first["message_id"]) == 1
 
-    resident_execution_domain._mark_completion_applied(job, resident_lifecycle_domain._now_iso())
+    resident_execution_domain._mark_completion_applied(job, resident_lifecycle_domain.now_iso())
     resident_execution_work.write(resident_record, job)
     events = repository.events_after(resident_id, before_cursor)["events"]
     completed = [
@@ -5233,7 +5235,7 @@ def test_worker_completion_notifies_exact_resident_identity(
         "queue": [],
     }
     resident_execution_work.write(resident_record, job)
-    resident_lifecycle_domain._append_conversation_message(resident_id, {
+    resident_lifecycle_domain.append_conversation_message(resident_id, {
         "message_id": user_message_id,
         "role": "user",
         "author_id": "CASE-A",
@@ -5253,17 +5255,17 @@ def test_worker_completion_notifies_exact_resident_identity(
             "content_parts": [{"type": "text", "text": "完成"}],
             "created_at": "2026-08-12T13:56:00Z",
         }
-        resident_lifecycle_domain._append_conversation_message(resident_id, assistant)
+        resident_lifecycle_domain.append_conversation_message(resident_id, assistant)
         return assistant, {**record, "last_error": ""}
 
-    monkeypatch.setattr(resident_execution_domain, "_send_to_resident_backend", send_resident)
+    monkeypatch.setattr(resident_execution_domain, "send_to_resident_backend", send_resident)
     monkeypatch.setattr(
         resident_execution_domain,
         "_notify_lineage_message_completed",
         record_completion,
     )
 
-    resident_execution_domain._run_resident_execution(resident_id, continuation_id)
+    resident_execution_domain.run_resident_execution(resident_id, continuation_id)
 
     assert completion_resident_ids == [resident_id]
     assert resident_execution_work.read(resident_record) == {}
@@ -5291,7 +5293,7 @@ def test_resident_submission_recovers_same_request_after_prebind_crash(
         "queue": [],
     }
     resident_execution_work.write(resident_record, job)
-    first = resident_execution_domain._durable_resident_execution_request(
+    first = resident_execution_domain.durable_resident_execution_request(
         resident_record,
         job,
         lambda: resident_execution_domain._build_resident_execution_request(resident_record, job),
@@ -5303,14 +5305,14 @@ def test_resident_submission_recovers_same_request_after_prebind_crash(
     recovered_job = resident_execution_work.read(resident_record)
     assert recovered_job["execution_id"] == first.execution_id
     assert not recovered_job.get("submitted_at")
-    recovered = resident_execution_domain._durable_resident_execution_request(
+    recovered = resident_execution_domain.durable_resident_execution_request(
         resident_record,
         recovered_job,
         mock.Mock(side_effect=PermissionError("Authorization configuration is unavailable")),
     )
     assert recovered.to_payload() == first.to_payload()
 
-    execution_id = resident_execution_domain._bind_or_resume_resident_execution(
+    execution_id = resident_execution_domain.bind_or_resume_resident_execution(
         service,
         recovered,
         resident_record,
@@ -5328,9 +5330,9 @@ def test_resident_submission_recovers_same_request_after_prebind_crash(
     with (
         mock.patch.object(execution_port, "service", return_value=service),
         mock.patch.object(resident_execution_domain, "_build_resident_execution_request", side_effect=PermissionError("Authorization configuration is unavailable")) as build_turn,
-        mock.patch.object(resident_session_backend_domain, "_build_backend_session_operation_request", side_effect=PermissionError("Authorization configuration is unavailable")) as build_operation,
+        mock.patch.object(resident_session_backend_domain, "build_backend_session_operation_request", side_effect=PermissionError("Authorization configuration is unavailable")) as build_operation,
         mock.patch.object(resident_execution_domain, "_flush_pending_active_turn_controls"),
-        mock.patch.object(resident_execution_domain, "_wait_for_resident_execution", side_effect=RuntimeError("existing execution reached")) as wait,
+        mock.patch.object(resident_execution_domain, "wait_for_resident_execution", side_effect=RuntimeError("existing execution reached")) as wait,
     ):
         for operation in ("turn", "compact"):
             with pytest.raises(RuntimeError, match="^existing execution reached$"):
@@ -5458,7 +5460,7 @@ def test_resident_send_publishes_nothing_before_turn_persistence(
     with (
         mock.patch.object(
             resident_session_backend_domain,
-            "_handle_resident_native_command",
+            "handle_resident_native_command",
             return_value={},
         ),
         mock.patch.object(
@@ -5466,7 +5468,7 @@ def test_resident_send_publishes_nothing_before_turn_persistence(
             "handle_slash_command",
             return_value={"handled": False},
         ),
-        mock.patch.object(resident_record_domain, "_resolve_context_refs", return_value={}),
+        mock.patch.object(resident_record_domain, "resolve_context_refs", return_value={}),
         mock.patch.object(
             resident_execution_work,
             "write",
@@ -5474,7 +5476,7 @@ def test_resident_send_publishes_nothing_before_turn_persistence(
         ),
         mock.patch.object(
             resident_record_domain,
-            "_last_user_message_text",
+            "last_user_message_text",
             side_effect=AssertionError("ordinary messages must not read history"),
         ),
     ):
@@ -5497,7 +5499,7 @@ def test_resident_send_publishes_nothing_before_turn_persistence(
     with (
         mock.patch.object(
             resident_session_backend_domain,
-            "_handle_resident_native_command",
+            "handle_resident_native_command",
             return_value={},
         ),
         mock.patch.object(
@@ -5505,10 +5507,10 @@ def test_resident_send_publishes_nothing_before_turn_persistence(
             "handle_slash_command",
             return_value={"handled": False},
         ),
-        mock.patch.object(resident_record_domain, "_resolve_context_refs", return_value={}),
+        mock.patch.object(resident_record_domain, "resolve_context_refs", return_value={}),
         mock.patch.object(
             resident_record_domain,
-            "_last_user_message_text",
+            "last_user_message_text",
             side_effect=AssertionError("ordinary messages must not read history"),
         ),
     ):
@@ -5533,12 +5535,12 @@ def test_non_codex_resident_instructions_use_runtime_lifecycle(
     """非 codex Resident 系统指令按会话生命周期注入"""
     resident_record["backend"] = resident_backend
 
-    runtime_options = resident_execution_domain._resident_execution_runtime_options(
+    runtime_options = resident_execution_domain.resident_execution_runtime_options(
         resident_record,
         {"actor": "CASE-A"},
         is_owner=True,
     )
-    system_instructions = resident_execution_domain._resident_system_instructions(
+    system_instructions = resident_execution_domain.resident_system_instructions(
         resident_record,
         {"actor": "CASE-A"},
     )
@@ -5579,8 +5581,8 @@ def test_resident_turn_prompt_avoids_provider_system_prompt_duplicates(
         "message": "continue",
         "context_refs": {},
     }
-    prompt = resident_registration_domain._build_resident_prompt(resident_record, job)
-    system_instructions = resident_execution_domain._resident_system_instructions(
+    prompt = resident_registration_domain.build_resident_prompt(resident_record, job)
+    system_instructions = resident_execution_domain.resident_system_instructions(
         resident_record,
         job,
     )
@@ -5658,7 +5660,7 @@ def test_late_execution_snapshot_cannot_restore_terminal_activity(
     repository.set_activities(resident_id, [_activity(resident_id, "stale")])
     monkeypatch.setattr(
         resident_directory_domain,
-        "_runtime_activity_for_execution",
+        "runtime_activity_for_execution",
         lambda _resident_id, _job: {"details": [_activity(resident_id, "late")]},
     )
 
@@ -5707,7 +5709,7 @@ def test_terminal_execution_snapshot_latches_provider_status_until_delivery(
     )
     monkeypatch.setattr(
         resident_directory_domain,
-        "_runtime_activity_for_execution",
+        "runtime_activity_for_execution",
         lambda _resident_id, _job: {
             "details": [_activity(resident_id, "stale")],
         },
@@ -5752,7 +5754,7 @@ def test_snapshot_cannot_overwrite_a_concurrent_resident_transition(
 
     def concurrent_transition(*args, **kwargs):
         replacement = (
-            {**job, "outcome": "completed", "finished_at": resident_lifecycle_domain._now_iso()}
+            {**job, "outcome": "completed", "finished_at": resident_lifecycle_domain.now_iso()}
             if transition == "completed" else {'actor': 'CASE-A', 'execution_id': "job_next"}
         )
         resident_execution_work.write(resident_record, replacement)
@@ -5819,7 +5821,7 @@ def test_account_details_reads_current_states_without_reopening(resident_record,
     resident_protocol.change_resident_state(resident_id, "CASE-A", state_domain="intake", transition="close")
     repository = resident_conversation_stream.get_repository()
     resident_execution_work.write(resident_record, {"queue": [{"user_message_id": f"queued-{i}"} for i in range(5)]})
-    before = resident_workspace_domain._find_resident(resident_id)
+    before = resident_workspace_domain.find_resident(resident_id)
     quota.update(status="available", remaining_percent=80)
     execution_client.configure_binding_quota_overrides.reset_mock()
 
@@ -5833,8 +5835,8 @@ def test_account_details_reads_current_states_without_reopening(resident_record,
     assert result["without_session"] == 0
     assert result["quota_exempt"] == 0
     assert result["closed_resident_ids"] == [resident_id]
-    assert resident_workspace_domain._find_resident(resident_id) == before
-    assert resident_lifecycle_domain._resident_intake_state(before) == "closed"
+    assert resident_workspace_domain.find_resident(resident_id) == before
+    assert resident_lifecycle_domain.resident_intake_state(before) == "closed"
     execution_client.configure_binding_quota_overrides.assert_not_called()
 
 
@@ -5980,15 +5982,15 @@ def test_provider_api_resident_belongs_to_its_api_execution_account(
 def test_quota_override_survives_stale_record_saves(resident_record, monkeypatch):
     """过期 Resident 记录保存不覆盖最新额度覆盖策略"""
     resident_id = resident_record["resident_id"]
-    stale = resident_workspace_domain._find_resident(resident_id)
+    stale = resident_workspace_domain.find_resident(resident_id)
     resident_protocol.change_resident_state(resident_id, "CASE-A", state_domain="intake", transition="open")
-    opened = resident_workspace_domain._find_resident(resident_id)
-    resident_workspace_domain._save_resident_record(stale)
-    assert resident_workspace_domain._find_resident(resident_id)["quota_reserve_override"] == opened["quota_reserve_override"]
+    opened = resident_workspace_domain.find_resident(resident_id)
+    resident_workspace_domain.save_resident_record(stale)
+    assert resident_workspace_domain.find_resident(resident_id)["quota_reserve_override"] == opened["quota_reserve_override"]
     resident_protocol.change_resident_state(resident_id, "CASE-A", state_domain="intake", transition="close")
-    closed = resident_workspace_domain._find_resident(resident_id)
-    resident_workspace_domain._save_resident_record(opened)
-    assert resident_workspace_domain._find_resident(resident_id)["quota_reserve_override"] == closed["quota_reserve_override"]
+    closed = resident_workspace_domain.find_resident(resident_id)
+    resident_workspace_domain.save_resident_record(opened)
+    assert resident_workspace_domain.find_resident(resident_id)["quota_reserve_override"] == closed["quota_reserve_override"]
     assert not closed["quota_reserve_override"]["enabled"]
 
 
@@ -6016,11 +6018,11 @@ def test_quota_override_repairs_failed_sync_and_releases_existing_execution(resi
     monkeypatch.setattr(execution_client, "health", lambda: {"scheduler": scheduler.health()})
     result = resident_protocol.change_resident_state(resident_id, "CASE-A", state_domain="intake", transition="open")
     assert result["quota_override_pending"]
-    opened = resident_workspace_domain._find_resident(resident_id)
+    opened = resident_workspace_domain.find_resident(resident_id)
     assert opened["quota_reserve_override"]["enabled"]
-    assert resident_lifecycle_domain._resident_intake_state(opened) == "open"
+    assert resident_lifecycle_domain.resident_intake_state(opened) == "open"
     sync.side_effect = scheduler.configure_binding_quota_overrides
-    resident_intake_domain._sync_resident_quota_overrides([opened])
+    resident_intake_domain.sync_resident_quota_overrides([opened])
     claimed = scheduler.claim(worker_id="quota-test", capabilities=["agent_session:codex"])
     assert claimed["execution"]["execution_id"] == request.execution_id
     scheduler.update_account_quota("zero", quota_sample({"rateLimits": {"primary": {"usedPercent": 100}}}, observed_at=time.time()))
@@ -6034,9 +6036,9 @@ def test_quota_override_repairs_failed_sync_and_releases_existing_execution(resi
 def test_quota_override_does_not_inherit_to_another_resident(resident_record):
     """额度覆盖策略不能复制继承给其他 Resident"""
     resident_protocol.change_resident_state(resident_record["resident_id"], "CASE-A", state_domain="intake", transition="open")
-    copied = resident_workspace_domain._find_resident(resident_record["resident_id"])
+    copied = resident_workspace_domain.find_resident(resident_record["resident_id"])
     copied["resident_id"] = "resident_bbbbbbbbbbbb"
-    assert resident_intake_domain._resident_quota_override(copied) == {}
+    assert resident_intake_domain.resident_quota_override(copied) == {}
 
 
 
@@ -6257,7 +6259,7 @@ def test_conversation_snapshot_includes_persisted_runtime_settings(
     resident_record: dict[str, object],
 ) -> None:
     """对话快照包含持久化运行设置"""
-    resident_runtime_domain._write_resident_runtime_settings(
+    resident_runtime_domain.write_resident_runtime_settings(
         resident_record,
         {
             "model": "gpt-5.6-sol",
@@ -6279,7 +6281,7 @@ def test_conversation_snapshot_is_a_side_effect_free_read(
     """读取对话快照不推进游标或产生副作用"""
     resident_id = str(resident_record["resident_id"])
     repository = resident_conversation_stream.get_repository()
-    resident_runtime_domain._write_resident_runtime_settings(
+    resident_runtime_domain.write_resident_runtime_settings(
         resident_record,
         {"model": "gpt-5.6-sol", "reasoning_effort": "high"},
     )
@@ -6301,17 +6303,17 @@ def test_resident_session_projection_skips_lineage_lock_and_family_scan(
     """Resident 会话投影跳过 Lineage 锁与 Family 对话扫描"""
     monkeypatch.setattr(
         resident_lifecycle_domain,
-        "_state_lock",
+        "state_lock",
         lambda *_args, **_kwargs: pytest.fail("projection entered lineage lock"),
     )
     monkeypatch.setattr(
         resident_conversation_projection_domain,
-        "_conversation_family_summaries",
+        "conversation_family_summaries",
         lambda *_args, **_kwargs: pytest.fail("projection scanned family messages"),
     )
     monkeypatch.setattr(
         resident_directory_domain,
-        "_resident_conversation_messages",
+        "resident_conversation_messages",
         lambda *_args, **_kwargs: pytest.fail("projection read the conversation"),
     )
 
@@ -6348,7 +6350,7 @@ def test_lineage_node_metadata_does_not_build_chat_or_workspace_projection(
     )
     monkeypatch.setattr(
         resident_runtime_domain,
-        "_read_resident_runtime_settings",
+        "read_resident_runtime_settings",
         lambda *_args, **_kwargs: pytest.fail("node metadata read runtime settings"),
     )
 
@@ -6379,7 +6381,7 @@ def test_resident_session_projection_excludes_execution_storage_fields(
         "actor": "CASE-A",
      "submitted_at": "2026-10-14T00:00:00Z"}
     stored["session_state"] = "running"
-    resident_workspace_domain._save_resident_record(stored)
+    resident_workspace_domain.save_resident_record(stored)
     resident_execution_work.write(stored, execution)
     assert resident_execution_work.read(stored)["execution_id"] == execution["execution_id"]
 
@@ -6463,7 +6465,7 @@ def test_message_queued_behind_active_job_stays_in_mailbox(
         ),
         mock.patch.object(
             resident_session_backend_domain,
-            "_handle_resident_native_command",
+            "handle_resident_native_command",
             return_value={},
         ),
         mock.patch.object(
@@ -6471,7 +6473,7 @@ def test_message_queued_behind_active_job_stays_in_mailbox(
             "handle_slash_command",
             return_value={"handled": False},
         ),
-        mock.patch.object(resident_record_domain, "_resolve_context_refs", return_value={}),
+        mock.patch.object(resident_record_domain, "resolve_context_refs", return_value={}),
     ):
         result = _published_delivery(backend.deliver_resident_message_content(
             "resident_aaaaaaaaaaaa",
@@ -6507,7 +6509,7 @@ def test_starting_session_materializes_message_at_the_execution_tail(
     """会话启动时在执行尾部激活消息并保留原创建时间"""
     resident_id = str(resident_record["resident_id"])
     repository = resident_conversation_stream.get_repository()
-    prior_reply = resident_intake_domain._message(
+    prior_reply = resident_intake_domain.build_message(
         "agent",
         "previous turn completed",
         message_id="msg_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -6521,7 +6523,7 @@ def test_starting_session_materializes_message_at_the_execution_tail(
         message_id="msg_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
     )
     queued_message["created_at"] = "2026-08-31T13:46:00Z"
-    resident_lifecycle_domain._mark_resident_input_queued(resident_id, queued_message)
+    resident_lifecycle_domain.mark_resident_input_queued(resident_id, queued_message)
 
     assert [
         item["message_id"] for item in repository.read_messages(resident_id)
@@ -6849,15 +6851,15 @@ def test_lazy_resident_first_message_creates_session_job(
     resident_record.update({
         "session_state": "pending_create",
     })
-    resident_workspace_domain._save_resident_record(resident_record)
+    resident_workspace_domain.save_resident_record(resident_record)
     with (
         mock.patch.object(
             slash_commands,
             "handle_slash_command",
             return_value={"handled": False},
         ),
-        mock.patch.object(resident_record_domain, "_resolve_context_refs", return_value={}),
-        mock.patch.object(resident_registration_domain, "_build_resident_prompt", side_effect=AssertionError("prompt built during admission")),
+        mock.patch.object(resident_record_domain, "resolve_context_refs", return_value={}),
+        mock.patch.object(resident_registration_domain, "build_resident_prompt", side_effect=AssertionError("prompt built during admission")),
     ):
         result = _published_delivery(backend.deliver_resident_message_content(
             "resident_aaaaaaaaaaaa",
@@ -6886,9 +6888,9 @@ def test_lazy_resident_first_message_creates_session_job(
 
 @pytest.fixture
 def input_delivery(resident_record, monkeypatch):
-    monkeypatch.setattr(resident_session_backend_domain, "_handle_resident_native_command", lambda *a, **kw: {})
+    monkeypatch.setattr(resident_session_backend_domain, "handle_resident_native_command", lambda *a, **kw: {})
     monkeypatch.setattr(slash_commands, "handle_slash_command", lambda *a, **kw: {"handled": False})
-    monkeypatch.setattr(resident_record_domain, "_resolve_context_refs", lambda *a, **kw: {})
+    monkeypatch.setattr(resident_record_domain, "resolve_context_refs", lambda *a, **kw: {})
     return resident_record
 
 
@@ -6921,14 +6923,14 @@ def test_delivery_instructions_share_the_two_activation_modes():
 def test_normal_delivery_starts_idle_and_advances_busy_queue(input_delivery, monkeypatch):
     """普通投递启动空闲任务且忙碌时按序排队提升"""
     resident_id = input_delivery["resident_id"]
-    prompt_builder = resident_registration_domain._build_resident_prompt
-    monkeypatch.setattr(resident_registration_domain, "_build_resident_prompt", lambda *_: (_ for _ in ()).throw(AssertionError("prompt built during admission")))
+    prompt_builder = resident_registration_domain.build_resident_prompt
+    monkeypatch.setattr(resident_registration_domain, "build_resident_prompt", lambda *_: (_ for _ in ()).throw(AssertionError("prompt built during admission")))
     first = _published_delivery(backend.deliver_resident_message_content(resident_id, "CASE-A", "First"))
     job = resident_execution_work.read(input_delivery)
     assert "prompt_builder_version" not in job
     assert "actual_sent_prompt" not in job
     assert resident_conversation_stream.get_repository().message(resident_id, first["message_id"]) is not None
-    monkeypatch.setattr(resident_registration_domain, "_build_resident_prompt", prompt_builder)
+    monkeypatch.setattr(resident_registration_domain, "build_resident_prompt", prompt_builder)
     prepared = resident_execution_domain._portable_context_execution(input_delivery, job)
     assert prepared["prompt_builder_version"] == resident_execution_work.PROMPT_BUILDER_VERSION
     assert "<user-message>\nFirst\n</user-message>" in prepared["actual_sent_prompt"]
@@ -6944,7 +6946,7 @@ def test_normal_delivery_starts_idle_and_advances_busy_queue(input_delivery, mon
     assert [message["message_id"] for message in resident_conversation_stream.get_repository().read_messages(resident_id)] == [first["message_id"]]
     assert resident_conversation_stream.get_repository().input_state(resident_id, second["message_id"])["state"] == "queued"
     assert resident_conversation_stream.get_repository().input_state(resident_id, third["message_id"])["state"] == "queued"
-    promoted = resident_execution_work.promote_queue_item(job, queue[0], queue[1:], resident_lifecycle_domain._now_iso())
+    promoted = resident_execution_work.promote_queue_item(job, queue[0], queue[1:], resident_lifecycle_domain.now_iso())
     assert promoted["user_message_id"] == second["message_id"]
     assert "actual_sent_prompt" not in promoted
     assert "prompt_built_at" not in promoted
@@ -6973,13 +6975,13 @@ def test_closing_intake_during_session_start_keeps_active_input_out_of_queue(inp
     if start == "reopened":
         intake("open")
         assert resident_execution_domain._prepare_resident_continuation(
-            resident_workspace_domain._find_resident(resident_id),
+            resident_workspace_domain.find_resident(resident_id),
         )
     elif start == "promoted":
         first = _published_delivery(backend.deliver_resident_message_content(resident_id, "CASE-A", "Next session"))
         job = resident_execution_work.read(input_delivery)
         queue = resident_execution_work.normalized_queue(job)
-        resident_execution_work.promote_queue_item(job, queue[0], [], resident_lifecycle_domain._now_iso())
+        resident_execution_work.promote_queue_item(job, queue[0], [], resident_lifecycle_domain.now_iso())
         resident_execution_work.write(input_delivery, job)
     assert repository.published_state(resident_id)["work_phase"] == "starting_session"
     assert not resident_execution_work.submitted_execution_id(resident_execution_work.read(input_delivery))
@@ -7006,7 +7008,7 @@ def test_closing_intake_during_session_start_keeps_active_input_out_of_queue(inp
 
     # A new head must still obey the closed gate after the current turn ends.
     job = resident_execution_work.read(input_delivery)
-    resident_execution_work.promote_queue_item(job, job["queue"][0], [], resident_lifecycle_domain._now_iso())
+    resident_execution_work.promote_queue_item(job, job["queue"][0], [], resident_lifecycle_domain.now_iso())
     resident_execution_work.write(input_delivery, job)
     assert resident_execution_work.is_execution_held(resident_execution_work.read(input_delivery))
     assert second["message_id"] not in [message["message_id"] for message in repository.read_messages(resident_id)]
@@ -7117,7 +7119,7 @@ def test_direct_injection_turn_completion_race_keeps_one_queued_input(input_deli
         job["outcome"] = "completed"
         resident_execution_work.write(input_delivery, job)
         return {}
-    monkeypatch.setattr(resident_record_domain, "_resolve_context_refs", finish_while_preparing)
+    monkeypatch.setattr(resident_record_domain, "resolve_context_refs", finish_while_preparing)
     result = _published_delivery(backend.deliver_resident_message_content(
         input_delivery["resident_id"], "CASE-A", "Extra", activation_policy="inject_active_turn",
     ))
@@ -7139,10 +7141,10 @@ def test_cancel_closed_intake_first_input_needs_no_execution(resident_record, ge
     resident_id = str(resident_record["resident_id"])
     resident_protocol.change_resident_state(resident_id, "CASE-A", state_domain="intake", transition="close")
     with (
-        mock.patch.object(resident_session_backend_domain, "_handle_resident_native_command", return_value={}),
+        mock.patch.object(resident_session_backend_domain, "handle_resident_native_command", return_value={}),
         mock.patch.object(slash_commands, "handle_slash_command", return_value={"handled": False}),
-        mock.patch.object(resident_record_domain, "_resolve_context_refs", return_value={}),
-        mock.patch.object(resident_registration_domain, "_build_resident_prompt", return_value="held prompt"),
+        mock.patch.object(resident_record_domain, "resolve_context_refs", return_value={}),
+        mock.patch.object(resident_registration_domain, "build_resident_prompt", return_value="held prompt"),
     ):
         delivery = backend.deliver_resident_message_content(resident_id, "CASE-A", "hold this message")
         following = backend.deliver_resident_message_content(resident_id, "CASE-A", "keep this message") if with_queue else None
@@ -7174,7 +7176,7 @@ def test_closed_resident_intake_holds_message_until_reopened(
     with (
         mock.patch.object(
             resident_session_backend_domain,
-            "_handle_resident_native_command",
+            "handle_resident_native_command",
             return_value={},
         ),
         mock.patch.object(
@@ -7182,8 +7184,8 @@ def test_closed_resident_intake_holds_message_until_reopened(
             "handle_slash_command",
             return_value={"handled": False},
         ),
-        mock.patch.object(resident_record_domain, "_resolve_context_refs", return_value={}),
-        mock.patch.object(resident_registration_domain, "_build_resident_prompt", return_value="held prompt"),
+        mock.patch.object(resident_record_domain, "resolve_context_refs", return_value={}),
+        mock.patch.object(resident_registration_domain, "build_resident_prompt", return_value="held prompt"),
     ):
         result = _published_delivery(resident_protocol.deliver_resident_input({
             "resident_id": "resident_aaaaaaaaaaaa",
@@ -7239,7 +7241,7 @@ def test_closed_resident_intake_holds_message_until_reopened(
     assert resident_execution_work.continuation_needed(resident_record, reopened)
     # Opening changes the manual gate; the execution owner reserves the
     # request identity when it prepares the resumed work.
-    current_record = resident_workspace_domain._find_resident("resident_aaaaaaaaaaaa")
+    current_record = resident_workspace_domain.find_resident("resident_aaaaaaaaaaaa")
     assert resident_execution_domain._prepare_resident_continuation(current_record)
     assert resident_execution_work.execution_id(resident_execution_work.read(current_record))
     reopened_view = resident_protocol.get_resident_state("resident_aaaaaaaaaaaa", "CASE-A")
@@ -7278,7 +7280,7 @@ def test_fork_intake_state_uses_protocol_state_and_holds_promoted_queue_item(
     assert resident_protocol.get_resident_state(created_resident_id, "CASE-A")["state"][
         "intake_state"
     ] == "closed"
-    exact_resident = resident_workspace_domain._find_resident(created_resident_id)
+    exact_resident = resident_workspace_domain.find_resident(created_resident_id)
     assert exact_resident is not None
 
 
@@ -7314,7 +7316,7 @@ def test_similar_failed_message_accepts_a_new_retry_job_generation(
     with (
         mock.patch.object(
             resident_session_backend_domain,
-            "_handle_resident_native_command",
+            "handle_resident_native_command",
             return_value={},
         ),
         mock.patch.object(
@@ -7322,7 +7324,7 @@ def test_similar_failed_message_accepts_a_new_retry_job_generation(
             "handle_slash_command",
             return_value={"handled": False},
         ),
-        mock.patch.object(resident_record_domain, "_resolve_context_refs", return_value={}),
+        mock.patch.object(resident_record_domain, "resolve_context_refs", return_value={}),
     ):
         result = _published_delivery(backend.deliver_resident_message_content(
             "resident_aaaaaaaaaaaa",
@@ -7394,7 +7396,7 @@ def test_stop_job_is_accepted_before_execution_binding(
 
     with (
         mock.patch.object(execution_port, "service") as service,
-        mock.patch.object(resident_workspace_domain, "_save_resident_record") as save_resident,
+        mock.patch.object(resident_workspace_domain, "save_resident_record") as save_resident,
     ):
         result = resident_protocol.cancel_resident_execution(
             resident_id,
@@ -7414,7 +7416,7 @@ def test_stop_job_is_accepted_before_execution_binding(
     resident_delivery_work.drain(str(resident_record["resident_id"]))
     assert repository.current_projection(resident_id)["state"]["work_state"] == "stopping"
     with pytest.raises(backend.ResidentTurnCancelled):
-        resident_execution_domain._durable_resident_execution_request(
+        resident_execution_domain.durable_resident_execution_request(
             resident_record,
             stored,
             lambda: pending_request,
@@ -7435,7 +7437,7 @@ def test_stop_job_is_accepted_before_execution_binding(
         mock.patch.object(resident_execution_domain, "_build_resident_execution_request") as build,
         mock.patch.object(resident_execution_domain, "_notify_lineage_message_terminal"),
     ):
-        resident_execution_domain._run_resident_execution(resident_id, continuation_id)
+        resident_execution_domain.run_resident_execution(resident_id, continuation_id)
     build.assert_not_called()
     assert resident_execution_work.read(resident_record) == {}
     assert repository.input_state(resident_id, message_id)["state"] == "cancelled"
@@ -7549,7 +7551,7 @@ def test_stop_after_request_construction_prevents_execution_submission(
     with (
         mock.patch.object(
             resident_execution_domain,
-            "_durable_resident_execution_request",
+            "durable_resident_execution_request",
             side_effect=finish_request_construction,
         ),
         mock.patch.object(execution_port, "service", return_value=service),
@@ -7581,7 +7583,7 @@ def test_stopped_job_cannot_authorize_final_projection(
         "stop_requested_at": "2026-08-28T00:00:01Z",
         "queue": [],
      "submitted_at": "2026-10-14T00:00:00Z"})
-    final = resident_intake_domain._message(
+    final = resident_intake_domain.build_message(
         "agent",
         "must not be visible",
         message_id="msg_59595959595959595959595959595959",
@@ -7786,7 +7788,7 @@ def test_stop_notifies_exact_execution_after_outer_state_unlock(resident_record)
 
     lifecycle.set_execution_cancellation_handler(notified)
     try:
-        with resident_lifecycle_domain._state_lock(resident_id):
+        with resident_lifecycle_domain.state_lock(resident_id):
             backend.request_resident_execution_cancellation(resident_id, "CASE-A", message_id)
             assert notifications == []
         assert notifications == [(execution_id, "sample_admin")]
@@ -7811,7 +7813,7 @@ def test_stop_notification_waits_for_execution_binding_and_successful_commit(res
         resident_execution_work.write(resident_record, job)
         assert notifications == []
         try:
-            with resident_lifecycle_domain._state_lock(resident_id):
+            with resident_lifecycle_domain.state_lock(resident_id):
                 job["submitted_at"] = "2026-10-14T00:00:00Z"
                 resident_execution_work.write(resident_record, job)
                 assert notifications == []
@@ -8042,7 +8044,7 @@ def test_confirmed_cancellation_terminalizes_message_and_clears_job(
     with (
         mock.patch.object(
             resident_intake_domain,
-            "_acknowledge_execution",
+            "acknowledge_execution",
             return_value=True,
         ),
         mock.patch.object(
@@ -8050,7 +8052,7 @@ def test_confirmed_cancellation_terminalizes_message_and_clears_job(
             "_notify_lineage_message_terminal",
         ) as notify,
     ):
-        advanced = resident_execution_domain._apply_cancelled_continuation(
+        advanced = resident_execution_domain.apply_cancelled_continuation(
             resident_id,
             continuation_id,
             usage=_TURN_510K,
@@ -8063,7 +8065,7 @@ def test_confirmed_cancellation_terminalizes_message_and_clears_job(
     assert len(input_state["reply_message_ids"]) == 1
     # The stop notice shows what the stopped turn used.
     assert repository.public_message(resident_id, input_state["reply_message_ids"][0])["usage"] == _TURN_510K
-    assert resident_workspace_domain._find_resident(resident_id)["last_turn_usage"] == _TURN_510K
+    assert resident_workspace_domain.find_resident(resident_id)["last_turn_usage"] == _TURN_510K
     assert repository.current_projection(resident_id)["state"]["work_state"] == "idle"
     notify.assert_called_once()
 
@@ -8118,7 +8120,7 @@ def test_recovery_preparation_does_not_hydrate_resources(resident_record, monkey
         job.update(outcome="completed", finished_at="2026-09-06T12:00:00Z")
     resident_execution_work.write(resident_record, job)
 
-    with mock.patch.object(resident_intake_domain, "_start_resident_continuation") as start:
+    with mock.patch.object(resident_intake_domain, "start_resident_continuation") as start:
         result = backend.resume_resident_execution(resident_id)
         assert result["residents"] == (0 if terminal else 1)
         assert start.call_count == (0 if terminal else 1)
@@ -8174,7 +8176,7 @@ def test_job_projection_and_binding_run_after_the_resident_lock(
         ),
     )
 
-    with resident_lifecycle_domain._state_lock(resident_id):
+    with resident_lifecycle_domain.state_lock(resident_id):
         resident_execution_work.write(resident_record, {
 
             "execution_id": "execution-" + "a" * 24,
@@ -8200,7 +8202,7 @@ def test_execution_message_append_runs_outside_the_execution_work_lock(
         "execution_id": execution_id,
         "actor": "CASE-A",
      "submitted_at": "2026-10-14T00:00:00Z"})
-    append = resident_lifecycle_domain._append_conversation_message
+    append = resident_lifecycle_domain.append_conversation_message
     observed: list[bool] = []
 
     def append_after_unlock(*args, **kwargs):
@@ -8209,7 +8211,7 @@ def test_execution_message_append_runs_outside_the_execution_work_lock(
 
     monkeypatch.setattr(
         resident_lifecycle_domain,
-        "_append_conversation_message",
+        "append_conversation_message",
         append_after_unlock,
     )
     persisted = resident_execution_domain._persist_execution_display_messages(
@@ -8259,7 +8261,7 @@ def test_failed_job_projection_does_not_suppress_change_or_binding(
     )
 
     with pytest.raises(RuntimeError, match="projection unavailable"):
-        with resident_lifecycle_domain._state_lock(resident_id):
+        with resident_lifecycle_domain.state_lock(resident_id):
             resident_execution_work.write(resident_record, {
 
                 "execution_id": "execution-" + "c" * 24,
@@ -8281,12 +8283,12 @@ def test_general_job_writes_cannot_drop_or_resurrect_projection_intents(
         "execution_id": execution_id,
         "actor": "CASE-A",
      "submitted_at": "2026-10-14T00:00:00Z"})
-    projected_message = resident_intake_domain._message(
+    projected_message = resident_intake_domain.build_message(
         "agent",
         "authorized projection",
         message_id="msg_" + "f" * 32,
     )
-    with resident_lifecycle_domain._state_lock(resident_id):
+    with resident_lifecycle_domain.state_lock(resident_id):
         assert resident_execution_work.authorize_conversation_projection(
             resident_record,
 
@@ -8304,7 +8306,7 @@ def test_general_job_writes_cannot_drop_or_resurrect_projection_intents(
         resident_execution_work.CONVERSATION_PROJECTION_INTENTS
     ]
     stale_with_intent = dict(authorized)
-    with resident_lifecycle_domain._state_lock(resident_id):
+    with resident_lifecycle_domain.state_lock(resident_id):
         resident_execution_work.complete_conversation_projection(
             resident_record,
 
@@ -8327,7 +8329,7 @@ def test_recovery_finishes_durable_terminal_projection_then_releases_turn(reside
     """
     resident_id = str(resident_record['resident_id'])
     job_id, execution_id = 'job_projection_recovery', 'execution-' + 'a' * 24
-    message = resident_intake_domain._message('agent', 'completed reply', message_id='msg_' + 'a' * 32)
+    message = resident_intake_domain.build_message('agent', 'completed reply', message_id='msg_' + 'a' * 32)
     store = resident_execution_work.get_lineage_data_store()
     store.put_resident_execution_record(resident_id, {
          'execution_id': execution_id, 'actor': 'CASE-A',
@@ -8337,7 +8339,7 @@ def test_recovery_finishes_durable_terminal_projection_then_releases_turn(reside
          "submitted_at": "2026-10-14T00:00:00Z"}},
      "submitted_at": "2026-10-14T00:00:00Z"})
     observed = []
-    monkeypatch.setattr(resident_lifecycle_domain, '_append_conversation_message',
+    monkeypatch.setattr(resident_lifecycle_domain, 'append_conversation_message',
                         lambda rid, value: observed.append((rid, value)))
     resident_execution_domain.resume_pending_resident_executions()
     assert observed == [(resident_id, message)]

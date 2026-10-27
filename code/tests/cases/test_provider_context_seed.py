@@ -174,17 +174,17 @@ def test_registered_resident_derivation_uses_one_provider_neutral_seed(
     )
     monkeypatch.setattr(
         resident_execution_domain,
-        "_resident_execution_runtime_options",
+        "resident_execution_runtime_options",
         lambda *_args, **_kwargs: {},
     )
     monkeypatch.setattr(
         resident_directory_domain,
-        "_has_resident_workspace_authority",
+        "has_resident_workspace_authority",
         lambda *_args, **_kwargs: True,
     )
     monkeypatch.setattr(
         resident_runtime_domain,
-        "_resident_working_directory",
+        "resident_working_directory",
         lambda *_args, **_kwargs: "/tmp/provider-context-seed",
     )
     monkeypatch.setattr(
@@ -202,7 +202,7 @@ def test_registered_resident_derivation_uses_one_provider_neutral_seed(
 
     monkeypatch.setattr(
         resident_session_backend_domain,
-        "_run_backend_session_operation",
+        "run_backend_session_operation",
         create_session,
     )
 

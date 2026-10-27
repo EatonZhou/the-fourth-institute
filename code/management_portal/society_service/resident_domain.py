@@ -34,7 +34,6 @@ from .resident_execution_domain import (
 )
 
 
-
 from .resident_fork_domain import (
     create_resident_compacted_context_fork,
     create_resident_context_fork,

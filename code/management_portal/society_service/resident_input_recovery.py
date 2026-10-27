@@ -150,12 +150,11 @@ def _restored_media(record: Mapping[str, Any], message_id: str, item: Mapping[st
         return media
     if any(not Path(str(media[index]["original_source"])).is_file() for index in gone):
         raise MailboxConflict("这一轮的图片附件已经清理，不能放回队列；请重新发送这条消息")
-    from .resident_media_domain import _stage_resident_input_images
-    from .resident_record_domain import _sessions_path
+    from . import resident_media_domain, resident_record_domain
 
-    staged = _stage_resident_input_images(
+    staged = resident_media_domain.stage_resident_input_images(
         [{**part, "source": part["original_source"]} if index in gone else part for index, part in enumerate(media)],
-        _sessions_path(dict(record)), message_id,
+        resident_record_domain.sessions_path(dict(record)), message_id,
     )
     return [
         {**part, "original_source": media[index].get("original_source") or part.get("original_source")}
@@ -329,27 +328,29 @@ def requeue(
     """
 
     from . import family_facade, invariant_locks
-    from .resident_directory_domain import _can_manage
-    from .resident_intake_domain import _resident_operation_result
-    from .resident_lifecycle_domain import _now_iso, _resident_intake_state, _state_lock
-    from .resident_record_domain import _record_backend_session_state
-    from .resident_workspace_domain import _find_resident, _save_resident_record, resolve_resident_runtime_target
+    from . import (
+        resident_directory_domain,
+        resident_intake_domain,
+        resident_lifecycle_domain,
+        resident_record_domain,
+        resident_workspace_domain,
+    )
     from . import resident_backend
 
     organizer = resident_mailbox.organizer_id(actor)
-    target = resolve_resident_runtime_target(resident_id, actor, require_visible=not bool(portal_reason))
+    target = resident_workspace_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=not bool(portal_reason))
     message_id = str(message_id or "").strip()
     if not message_id:
         raise ValueError("message_id required")
     repository = resident_conversation_stream.get_repository()
-    now = _now_iso()
-    with (_state_lock(target.resident_id),
+    now = resident_lifecycle_domain.now_iso()
+    with (resident_lifecycle_domain.state_lock(target.resident_id),
           invariant_locks.resident_conversation_lock(target.resident_id),
           get_lineage_data_store().database.transaction()):
-        record = _find_resident(target.resident_id)
+        record = resident_workspace_domain.find_resident(target.resident_id)
         if not record:
             raise KeyError("resident not found")
-        if not portal_reason and not _can_manage(record, organizer):
+        if not portal_reason and not resident_directory_domain.can_manage(record, organizer):
             raise PermissionError("只有对该 Resident 有整理权限的主体可以把消息放回队列")
         if family_facade.is_facade(record):
             raise MailboxConflict("Family 门面不执行，没有可以放回的一轮")
@@ -363,7 +364,7 @@ def requeue(
             if (active and job.get("user_message_id") == message_id) or any(
                 item.get("user_message_id") == message_id for item in resident_execution_work.normalized_queue(job)
             ):
-                return _resident_operation_result(target.resident_id, message_id=message_id, message_ids=[message_id])
+                return resident_intake_domain.resident_operation_result(target.resident_id, message_id=message_id, message_ids=[message_id])
             raise MailboxConflict("这条消息已在等待或正在处理")
         entry = next((item for item in checkpoints(record) if item.get("message_id") == message_id), None)
         if entry is None:
@@ -424,20 +425,20 @@ def requeue(
             resident_execution_work.write(record, job)
         else:
             waiting = resident_execution_work.normalized_queue(job)
-            if _resident_intake_state(record) == resident_state.INTAKE_CLOSED:
+            if resident_lifecycle_domain.resident_intake_state(record) == resident_state.INTAKE_CLOSED:
                 resident_execution_work.write(record, {"queue": [item, *waiting]})
             else:
                 next_job = {**item, "started_at": now, "updated_at": now, "error": "", "queue": waiting}
                 resident_execution_work.ensure_execution_id(next_job)
                 resident_execution_work.write(record, next_job)
-                record["session_state"] = _record_backend_session_state(record)
+                record["session_state"] = resident_record_domain.record_backend_session_state(record)
                 record["last_error"] = ""
         if automatic:
             set_recovery_entry(record, message_id, attempts=attempts + 1, recovered_by=organizer,
                                recovered_at=now, disabled=False)
         record["updated_at"] = now
-        _save_resident_record(record)
-    return _resident_operation_result(
+        resident_workspace_domain.save_resident_record(record)
+    return resident_intake_domain.resident_operation_result(
         target.resident_id,
         message_id=message_id,
         message_ids=[message_id, *[str(info["message_id"]) for info in infos]],
@@ -476,11 +477,10 @@ def view(resident_id: str, actor: str) -> dict[str, Any]:
     """What the Mailbox tab shows: waiting items and infos, the round in progress, and the recent checkpoints."""
 
     from . import family_facade
-    from .resident_directory_domain import _can_manage
-    from .resident_workspace_domain import _find_resident, resolve_resident_runtime_target
+    from . import resident_directory_domain, resident_workspace_domain
 
-    target = resolve_resident_runtime_target(resident_id, actor, require_visible=True)
-    record = _find_resident(target.resident_id) or {"resident_id": target.resident_id}
+    target = resident_workspace_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=True)
+    record = resident_workspace_domain.find_resident(target.resident_id) or {"resident_id": target.resident_id}
     try:
         in_lineage = bool(resident_lineage.lineage_id(record))
     except (KeyError, ValueError):
@@ -602,5 +602,5 @@ def view(resident_id: str, actor: str) -> dict[str, Any]:
         "pending": pending,
         "active": active,
         "recent": recent,
-        "can_organize": bool(_can_manage(record, actor)),
+        "can_organize": bool(resident_directory_domain.can_manage(record, actor)),
     }

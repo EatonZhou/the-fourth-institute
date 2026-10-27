@@ -114,7 +114,7 @@ def test_send_now_uses_next_turn_if_final_reply_closed_input(
         retry = _published_delivery(resident_protocol.inject_queued_input_into_active_turn(resident_id, "CASE-A", message_id))
         assert retry["already_injected"] is True
         assert retry["queue"]["items"] == []
-        control_id = resident_intake_domain._resident_input_control_id(resident_id, message_id)
+        control_id = resident_intake_domain.resident_input_control_id(resident_id, message_id)
         pending = service.input_control(control_id, agent_id=resident_id)
         assert pending["status"] == "pending"
 
@@ -153,7 +153,7 @@ def test_send_now_uses_next_turn_if_final_reply_closed_input(
         continuation_id = job["continuation_id"]
         resident_execution_domain._mark_completion_applied(job, "2026-09-24T00:01:00Z")
         resident_execution_work.write(resident_record, job)
-        monkeypatch.setattr(resident_intake_domain, "_acknowledge_execution", lambda *_: True)
+        monkeypatch.setattr(resident_intake_domain, "acknowledge_execution", lambda *_: True)
         advanced = resident_execution_domain._finalize_applied_execution(resident_id, continuation_id, job)
         assert advanced is final_answer_seen
         state = resident_protocol.get_resident_input_state(resident_id, "CASE-A", message_id)
@@ -181,9 +181,9 @@ def test_send_now_uses_next_turn_if_final_reply_closed_input(
                 deliveries.append(job["user_message_id"])
                 return {"created_at": "2026-09-24T00:02:00Z"}, record
 
-            monkeypatch.setattr(resident_execution_domain, "_send_to_resident_backend", respond)
+            monkeypatch.setattr(resident_execution_domain, "send_to_resident_backend", respond)
             monkeypatch.setattr(resident_execution_domain, "_notify_lineage_message_completed", lambda *_a, **_kw: None)
-            resident_execution_domain._run_resident_execution(resident_id, continuation_id)
+            resident_execution_domain.run_resident_execution(resident_id, continuation_id)
             assert deliveries == [message_id]
             assert resident_execution_work.read(resident_record) == {}
         else:
@@ -254,7 +254,7 @@ def test_send_now_is_refused_for_backend_without_active_turn_input(
     2026-10-03), so the test gives one Backend that capability's absence."""
     resident_id, message_id, job = queued_send_now
     resident_record["backend"] = "claude"
-    resident_workspace_domain._save_resident_record(resident_record)
+    resident_workspace_domain.save_resident_record(resident_record)
     from dataclasses import replace
     from management_portal.society_service import resident_execution_provider
 
@@ -270,7 +270,7 @@ def test_send_now_is_refused_for_backend_without_active_turn_input(
     monkeypatch.setattr(resident_execution_provider, "provider_for", provider_without_turn_input)
     if marked:  # an item marked for injection before the backend changed
         job["queue"][0]["active_turn_input"] = {
-            "control_id": resident_intake_domain._resident_input_control_id(resident_id, message_id),
+            "control_id": resident_intake_domain.resident_input_control_id(resident_id, message_id),
             "actor": "CASE-A",
         }
         resident_execution_work.write(resident_record, job)
@@ -296,7 +296,7 @@ def test_send_now_does_not_requeue_delivered_input_for_non_append_backend(
     """后端不支持追加时已投递输入不会重新排队"""
     resident_id, message_id, job = queued_send_now
     resident_record["backend"] = "claude"
-    resident_workspace_domain._save_resident_record(resident_record)
+    resident_workspace_domain.save_resident_record(resident_record)
     resident_execution_work.materialize_conversation_input(
         resident_record, job["queue"][0], activated_at="2026-09-24T00:01:00Z",
     )
@@ -364,7 +364,7 @@ def test_send_now_receipt_from_peer_scheduler_updates_live_queue(
 
     def wait_for_execution():
         try:
-            resident_execution_domain._wait_for_resident_execution(
+            resident_execution_domain.wait_for_resident_execution(
                 service, execution_id=request.execution_id, actor="CASE-A",
                 resident_id=resident_id,  persist_messages=False,
             )
@@ -392,7 +392,7 @@ def test_send_now_receipt_from_peer_scheduler_updates_live_queue(
         assert not reconciled.is_set()
 
         peer.complete_input_control(
-            resident_intake_domain._resident_input_control_id(resident_id, message_id),
+            resident_intake_domain.resident_input_control_id(resident_id, message_id),
             execution_id=request.execution_id, worker_id="explore-1:peer-receipt",
             claim_token=token, delivered=delivered, error="" if delivered else "delivery_failed",
         )
@@ -436,7 +436,7 @@ def test_send_now_preserves_dispatch_across_recovery_and_queue_clear(
     ]
     monkeypatch.setattr(execution_port, "service", lambda: service)
     ack = mock.Mock(return_value=True)
-    monkeypatch.setattr(resident_intake_domain, "_acknowledge_execution", ack)
+    monkeypatch.setattr(resident_intake_domain, "acknowledge_execution", ack)
     _published_delivery(resident_protocol.inject_queued_input_into_active_turn(resident_id, "CASE-A", message_id))
     with pytest.raises(KeyError, match="queue item not found"):
         resident_protocol.cancel_resident_queue_item(resident_id, "CASE-A", message_id)
@@ -485,13 +485,13 @@ def test_send_now_recovers_intent_committed_before_append(
     service.append_input.assert_not_called()
     intent = resident_execution_work.send_now_inputs(resident_execution_work.read(resident_record))[0]["active_turn_input"]
     assert set(intent) == {"control_id", "actor"}
-    assert not resident_intake_domain._reconcile_queued_turn_inputs(resident_id, original['execution_id'])
+    assert not resident_intake_domain.reconcile_queued_turn_inputs(resident_id, original['execution_id'])
     service.append_input.assert_called_once()
-    assert service.append_input.call_args.kwargs["control_id"] == resident_intake_domain._resident_input_control_id(resident_id, message_id)
+    assert service.append_input.call_args.kwargs["control_id"] == resident_intake_domain.resident_input_control_id(resident_id, message_id)
     assert service.append_input.call_args.kwargs["input"] == [
         {"type": "text", "text": "<user-message>\nfollow-up\n</user-message>"},
     ]
-    assert resident_intake_domain._reconcile_queued_turn_inputs(resident_id, original['execution_id'])
+    assert resident_intake_domain.reconcile_queued_turn_inputs(resident_id, original['execution_id'])
     current = resident_execution_work.read(resident_record)
     assert len(current["queue"]) == 1
     assert current["queue"][0]["user_message_id"] == message_id
@@ -527,7 +527,7 @@ def test_send_now_without_receiving_turn_keeps_original_for_next_turn(
     resident_execution_work.write(resident_record, job)
     service = mock.Mock()
     monkeypatch.setattr(execution_port, "service", lambda: service)
-    monkeypatch.setattr(resident_intake_domain, "_acknowledge_execution", lambda *_: True)
+    monkeypatch.setattr(resident_intake_domain, "acknowledge_execution", lambda *_: True)
     if turn_state == "held":
         assert resident_execution_work.is_execution_held(resident_execution_work.read(resident_record))
     elif turn_state == "finished":
@@ -579,7 +579,7 @@ def test_send_now_after_execution_finished_falls_back_and_respects_intake(
     service.append_input.side_effect = ValueError("execution has no active turn")
     service.input_control.return_value = None
     monkeypatch.setattr(execution_port, "service", lambda: service)
-    monkeypatch.setattr(resident_intake_domain, "_acknowledge_execution", lambda *_: True)
+    monkeypatch.setattr(resident_intake_domain, "acknowledge_execution", lambda *_: True)
     if close_intake:
         resident_protocol.change_resident_state(resident_id, "CASE-A", state_domain="intake", transition="close")
     result = _published_delivery(resident_protocol.inject_queued_input_into_active_turn(resident_id, "CASE-A", message_id))
@@ -612,11 +612,11 @@ def test_send_now_before_binding_survives_backend_startup_failure(
         result = _published_delivery(resident_protocol.inject_queued_input_into_active_turn(resident_id, "CASE-A", message_id))
         assert result["accepted"] is True
         assert result["queue"]["items"] == []
-        assert not resident_intake_domain._reconcile_queued_turn_inputs(resident_id, original['execution_id'])
+        assert not resident_intake_domain.reconcile_queued_turn_inputs(resident_id, original['execution_id'])
         raise RuntimeError("execution startup failed")
 
-    monkeypatch.setattr(resident_execution_domain, "_send_to_resident_backend", fail_before_binding)
-    resident_execution_domain._run_resident_execution(resident_id, original["continuation_id"])
+    monkeypatch.setattr(resident_execution_domain, "send_to_resident_backend", fail_before_binding)
+    resident_execution_domain.run_resident_execution(resident_id, original["continuation_id"])
     next_job = resident_execution_work.read(resident_record)
     assert next_job["user_message_id"] == message_id
     assert next_job["previous_execution_failure"]["error"] == "execution startup failed"
@@ -646,7 +646,7 @@ def test_send_now_receipt_cannot_modify_replaced_job(
         return {"status": "delivered"}
 
     service.input_control.side_effect = replace_job
-    assert not resident_intake_domain._reconcile_queued_turn_inputs(resident_id, original['execution_id'])
+    assert not resident_intake_domain.reconcile_queued_turn_inputs(resident_id, original['execution_id'])
     assert resident_execution_work.read(resident_record)['execution_id'] == "job_replacement"
     # The accepted input survives; an old receipt cannot bind its occurrence
     # to the replacement execution.

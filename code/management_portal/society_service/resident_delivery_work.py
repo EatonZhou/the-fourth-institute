@@ -60,7 +60,7 @@ def pending_ids():
 def drain(resident_id):
     """Retry idempotent effects outside state locks; acknowledge only this revision."""
     from . import resident_catalog, resident_execution_work, lineage_message_events
-    from .resident_intake_domain import _reconcile_queued_turn_inputs
+    from . import resident_intake_domain
     from .state_store import get_lineage_data_store
     store = get_lineage_data_store()
     with store.database.read() as connection:
@@ -82,7 +82,7 @@ def drain(resident_id):
             notify_execution_cancellation(resident_execution_work.submitted_execution_id(job), str(job.get("actor") or ""))
         settled = True
         if resident_execution_work.send_now_inputs(job):
-            settled = _reconcile_queued_turn_inputs(resident_id, str(job.get("execution_id") or ""))
+            settled = resident_intake_domain.reconcile_queued_turn_inputs(resident_id, str(job.get("execution_id") or ""))
         resident_execution_work.project_latest_conversation_state(record, job)
         resident_execution_work.notify_changed(record)
         for row in rows:
@@ -91,8 +91,8 @@ def drain(resident_id):
         # Checkpoint retention runs during admission with identity-only records.
         # Filesystem cleanup belongs to this durable, hydrated publication step;
         # a cleanup failure retains the work without rejecting an accepted input.
-        from .resident_media_domain import cleanup_expired_input_images
-        cleanup_expired_input_images(record)
+        from . import resident_media_domain
+        resident_media_domain.cleanup_expired_input_images(record)
         if not settled:
             return False
     store.database.write(lambda connection: connection.execute(

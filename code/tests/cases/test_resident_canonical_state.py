@@ -52,10 +52,10 @@ def test_owned_workspace_alias_is_coalesced(tmp_path, external_resident_folder):
         "owned_workspace": {"workspace_id": "workspace_111111111111", "path": str(workspace.resolve())},
         "workspace_bindings": [{"workspace_id": "workspace_111111111111", "path": str(alias_path), "purpose": ""}],
     }
-    resident_record_domain._set_resident_owned_workspace_binding(record)
+    resident_record_domain.set_resident_owned_workspace_binding(record)
     assert record["workspace_bindings"] == []
     assert record["owned_workspace_id"] == "workspace_111111111111"
-    assert resident_workspace_domain._resident_default_cwd_path(record) == str(workspace.resolve())
+    assert resident_workspace_domain.resident_default_cwd_path(record) == str(workspace.resolve())
     assert alias_path.is_dir()
 
 
@@ -72,12 +72,12 @@ def test_move_preserves_owned_identity_and_explicit_extra_workspaces(tmp_path):
         "owned_workspace": {"workspace_id": "workspace_111111111111", "path": str(previous_path)},
         "workspace_bindings": [extra],
     }
-    resident_record_domain._set_resident_owned_workspace_binding(record)
+    resident_record_domain.set_resident_owned_workspace_binding(record)
     assert record["owned_workspace_id"] == "workspace_111111111111"
     assert record["owned_workspace"]["path"] == str(owned_path)
     assert record["workspace_bindings"] == [extra]
     normalized = json.dumps(record, sort_keys=True)
-    resident_record_domain._set_resident_owned_workspace_binding(record)
+    resident_record_domain.set_resident_owned_workspace_binding(record)
     assert json.dumps(record, sort_keys=True) == normalized
 
 
@@ -88,7 +88,7 @@ def test_extra_workspace_never_selects_default_cwd(tmp_path):
     shared = {"workspace_id": "workspace_222222222222", "path": str(tmp_path / "shared"), "purpose": ""}
     record = {"resident_id": resident_id, "folder_schema": "lineage-folder-v3",
               "workspace_path": str(lineage), "default_cwd": shared["path"], "workspace_bindings": [shared]}
-    resident_record_domain._set_resident_owned_workspace_binding(record)
+    resident_record_domain.set_resident_owned_workspace_binding(record)
     expected = lineage / "residents" / resident_id / "workspace"
     assert record["default_cwd"] == str(expected)
     assert record["owned_workspace"]["path"] == str(expected)
@@ -118,10 +118,10 @@ def test_peer_resident_rejects_conflicting_session_identity_before_write_contrac
             current = {**previous, 'updated_at': '2026-08-04T00:01:00Z', 'session_state': 'running'}
             upserts: list[dict] = []
             state_store = _ImmediateStateStore()
-            monkeypatch.setattr(resident_record_domain, '_validated_resident_record_payload', lambda record: dict(record))
+            monkeypatch.setattr(resident_record_domain, 'validated_resident_record_payload', lambda record: dict(record))
             monkeypatch.setattr(resident_catalog, 'get_catalog', lambda: SimpleNamespace(get=lambda _resident_id: dict(previous), upsert=lambda record, *, commit_configuration=False, commit_intake=False: upserts.append(record), state_store=state_store))
             monkeypatch.setattr(changes, 'resident_changed', lambda *_args, **_kwargs: None)
-            resident_workspace_domain._save_resident_record(current)
+            resident_workspace_domain.save_resident_record(current)
             assert state_store.queued == []
             assert upserts == [current]
     with subtests.test(contract='test_identity_change_enqueues_resource_projection_once'), isolated_portal_case() as case_path:
@@ -133,10 +133,10 @@ def test_peer_resident_rejects_conflicting_session_identity_before_write_contrac
             state_store = _ImmediateStateStore()
             credential_calls: list[tuple] = []
             monkeypatch.setattr(resident_hatg_credentials, 'ensure_resident_credential', lambda *args, **kwargs: credential_calls.append((args, kwargs)))
-            monkeypatch.setattr(resident_record_domain, '_validated_resident_record_payload', lambda record: dict(record))
+            monkeypatch.setattr(resident_record_domain, 'validated_resident_record_payload', lambda record: dict(record))
             monkeypatch.setattr(resident_catalog, 'get_catalog', lambda: SimpleNamespace(get=lambda _resident_id: dict(previous), upsert=lambda _record, *, commit_configuration=False, commit_intake=False: None, state_store=state_store))
             monkeypatch.setattr(changes, 'resident_changed', lambda *_args, **_kwargs: None)
-            resident_workspace_domain._save_resident_record(current)
+            resident_workspace_domain.save_resident_record(current)
             assert state_store.queued == [(resident_id, current)]
             assert credential_calls == []
 
@@ -151,8 +151,8 @@ def test_save_and_sync_resident_identity_updates_both_stores_contracts(monkeypat
         with monkeypatch.context() as monkeypatch:
             calls: list[tuple[str, str]] = []
             record = {'resident_id': 'resident_111111111111'}
-            monkeypatch.setattr(resident_record_domain, '_apply_resident_resource_identity', lambda value: calls.append(('identity', value['resident_id'])))
-            monkeypatch.setattr(resident_workspace_domain, '_save_resident_record', lambda value: calls.append(('registry', value['resident_id'])))
+            monkeypatch.setattr(resident_record_domain, 'apply_resident_resource_identity', lambda value: calls.append(('identity', value['resident_id'])))
+            monkeypatch.setattr(resident_workspace_domain, 'save_resident_record', lambda value: calls.append(('registry', value['resident_id'])))
             resident_workspace_domain._save_resident_record_with_resource_identity(record)
             assert calls == [('identity', 'resident_111111111111'), ('registry', 'resident_111111111111')]
     with subtests.test(contract='test_find_resident_reuses_lineage_access_within_one_request'), isolated_portal_case() as case_path:
@@ -163,8 +163,8 @@ def test_save_and_sync_resident_identity_updates_both_stores_contracts(monkeypat
             monkeypatch.setattr(resident_catalog, 'get_catalog', lambda: SimpleNamespace(get=lambda _resident_id: dict(record), root=Path('/tmp')))
             monkeypatch.setattr(resident_lineage.lineage_catalog, 'get_catalog', lambda _root: SimpleNamespace(get_access_metadata=lambda lineage_id: calls.append(lineage_id) or {'lineage_id': lineage_id}))
             with resident_lineage.access_snapshot_scope():
-                first = resident_workspace_domain._find_resident(resident_id)
-                second = resident_workspace_domain._find_resident(resident_id)
+                first = resident_workspace_domain.find_resident(resident_id)
+                second = resident_workspace_domain.find_resident(resident_id)
                 assert 'lineage_owner_ids' not in first
                 assert 'lineage_owner_ids' not in second
                 assert 'owner_ids' not in first and 'owner_ids' not in second
