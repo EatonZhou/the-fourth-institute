@@ -59,10 +59,14 @@ function requestDetailsRecovery() {
   const closedRefresh = session();
   closedRefresh.part.restoreWhichResidentState(saved);
   assert.equal(details(closedRefresh).element.open, false, 'explicit collapse also survives refresh');
+  restored.toggle(true);
+  assert.equal(refreshed.state.whichResident.detailsOpen, true, 'old request is expanded before switching requests');
+  const oldRequestSaved = refreshed.saved;
   refreshed.state.whichResident.requestId = 'request-new';
   assert.equal(details(refreshed).element.open, false, 'a new request does not inherit the old expansion');
-  restored.toggle(true);
-  assert.equal(refreshed.state.whichResident.detailsOpen, false, 'late toggle from old request cannot change new request');
+  restored.toggle(false);
+  assert.equal(refreshed.state.whichResident.detailsOpen, true, 'late toggle from old request cannot change saved expansion');
+  assert.deepEqual(refreshed.saved, oldRequestSaved, 'late toggle from old request cannot persist new state');
   const legacy = session();
   legacy.part.restoreWhichResidentState({ version: 8, request_id: 'request-old' });
   assert.equal(details(legacy).element.open, false, 'old saved state remains compatible');
