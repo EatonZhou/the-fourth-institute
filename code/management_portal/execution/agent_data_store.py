@@ -1733,6 +1733,23 @@ class AgentDataStore:
             source = self.chat_message_provenance(agent_id, message_id)
         except KeyError:
             return False
+        # A fresh restart clears the canonical context before the next lazy
+        # Provider session exists. The latest execution still names the old
+        # session in that interval, so its context window alone is stale.
+        with self.database.read() as connection:
+            trace = self._agent_trace(connection, agent_id)
+            if trace is None:
+                return False
+            reset = connection.execute(
+                "SELECT 1 FROM sequence_segments member JOIN operation_positions boundary "
+                "ON boundary.sequence_id=member.sequence_id AND boundary.ordinal>member.ordinal "
+                "JOIN agent_operations operation USING(operation_id) "
+                "WHERE member.sequence_id=%s AND member.segment_id=%s "
+                "AND operation.kind IN ('context_reset','provider_context_reset') LIMIT 1",
+                (trace["sequence_id"], source["segment_id"]),
+            ).fetchone()
+            if reset is not None:
+                return False
         provider_session_ref = self.latest_provider_session_ref(agent_id, since=since)
         if not provider_session_ref or source["provider_session_ref"] != provider_session_ref:
             return False

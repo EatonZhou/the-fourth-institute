@@ -1296,6 +1296,30 @@ def test_a_message_stays_in_the_newest_context_until_a_compaction_a_clear_or_a_n
     assert store.message_in_context(agent_id, "message_new_session")
 
 
+def test_fresh_reset_excludes_old_input_before_next_provider_session():
+    """Fresh must report old inputs out of context before its lazy first turn."""
+    store = AgentDataStore()
+    agent_id = "resident_fresh_context_visibility"
+    first = store.ensure_provider_session(provider="codex", backend_route_id="zero",
+        backend_session_id="thread-before-fresh", agent_id=agent_id, actor_ref="sample_admin")
+    _taken(store, agent_id, "message_before_fresh", first["provider_session_ref"], "2026-10-12T01:00:00Z")
+    provenance = store.chat_message_provenance(agent_id, "message_before_fresh")
+    original = store.segment(provenance["segment_id"])
+    assert store.message_in_context(agent_id, "message_before_fresh")
+
+    store.reset_provider_context(agent_id, reset_at="2026-10-12T01:01:00Z", actor_ref="sample_admin")
+    assert store.agent_context_snapshot(agent_id)["segments"] == []
+    assert store.latest_provider_session_ref(agent_id) == first["provider_session_ref"]
+    assert not store.message_in_context(agent_id, "message_before_fresh")
+    assert store.segment(provenance["segment_id"]) == original
+
+    second = store.ensure_provider_session(provider="codex", backend_route_id="zero",
+        backend_session_id="thread-after-fresh", agent_id=agent_id, actor_ref="sample_admin")
+    _taken(store, agent_id, "message_after_fresh", second["provider_session_ref"], "2026-10-12T01:02:00Z")
+    assert store.message_in_context(agent_id, "message_after_fresh")
+    assert not store.message_in_context(agent_id, "message_before_fresh")
+
+
 def test_execution_preserves_durable_provider_outcome_without_copying_context(
     tmp_path: Path,
 ) -> None:
