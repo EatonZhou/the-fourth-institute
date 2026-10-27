@@ -98,27 +98,6 @@ def test_isa_metadata_migration_preserves_runtime_and_survives_graph_edit(primit
     assert "run_as_principal" not in lineage_domain._read_lineage_state(lineage_id)
 
 
-def test_schema_upgrade_is_idempotent_and_does_not_assign_runtime_authority(primitive_store):
-    """加入 run_as_principal 列的 schema 升级可重复执行，不给已有 Lineage 分配运行身份"""
-    from scripts.migrate_lineage_automation_identity import upgrade, OLD_SCHEMA, NEW_SCHEMA
-    current = lineage_domain.create_lineage({"title": "migration"}, "sample_admin")
-    store = lineage_domain._lineage_catalog_store().state_store
-    # Keep the historical v54 migration inside a savepoint: later cases share
-    # the current schema and must not inherit its historical version marker.
-    with store.database.transaction() as connection, connection.raw.transaction(force_rollback=True):
-        connection.execute("ALTER TABLE lineages DROP COLUMN run_as_principal_json")
-        connection.execute("UPDATE lineage_meta SET value=%s WHERE key='schema'", (OLD_SCHEMA,))
-        before = dict(connection.execute("SELECT * FROM lineages WHERE lineage_id=%s", (current["lineage_id"],)).fetchone())
-        assert upgrade(connection) == {"previous_schema": OLD_SCHEMA, "schema": NEW_SCHEMA}
-        after = dict(connection.execute("SELECT * FROM lineages WHERE lineage_id=%s", (current["lineage_id"],)).fetchone())
-        assert after.pop("run_as_principal_json") is None
-        assert after == before
-        assert upgrade(connection) == {"previous_schema": NEW_SCHEMA, "schema": NEW_SCHEMA}
-    from management_portal.society_service.state_store import LINEAGE_DATA_SCHEMA
-    with store.database.read() as connection:
-        assert connection.execute("SELECT value FROM lineage_meta WHERE key='schema'").fetchone()["value"] == LINEAGE_DATA_SCHEMA
-
-
 def test_concurrent_graph_merge_never_uses_creator_to_reauthorize_identity(primitive_store, accounts, monkeypatch):
     """编辑者可把运行身份设为自己，并发合并保留改名且不借创建者重新授权"""
     original = lineage_domain.create_lineage({"title": "created by someone else"}, "sample_admin")

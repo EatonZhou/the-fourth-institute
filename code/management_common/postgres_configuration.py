@@ -16,6 +16,17 @@ def postgres_env_file() -> Path:
         deployment.get('postgres_env_file', '~/.config/tfi/portal-postgres.env')))
 
 
+def host_database_url() -> str:
+    """Site database URL for a host script, read from the PostgreSQL env file when unset."""
+    from management_common.portal_database import portal_database_url
+    if not os.getenv('PORTAL_DATABASE_URL'):
+        for line in postgres_env_file().read_text().splitlines():
+            key, sep, value = line.partition('=')
+            if sep and key.strip() == 'PORTAL_DATABASE_URL':
+                os.environ[key.strip()] = value.strip().strip('"\'')
+    return portal_database_url()
+
+
 def postgres_settings() -> dict:
     settings = read_site_config().get('deployment', {}).get('postgres', {})
     if not isinstance(settings, dict):

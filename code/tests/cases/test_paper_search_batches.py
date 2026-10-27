@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -413,3 +413,13 @@ def test_snapshot_atomic_failure_does_not_leave_partial_input(paper_jobs, monkey
     with pytest.raises(OSError, match='fixture write failure'):
         adapter._input_snapshot(job, jobs.candidates[ACTOR])
     assert semantic_search_store.stored_run_input(job['search_id']) is None
+
+
+def test_paper_searches_do_not_trim_at_a_thousand():
+    """论文检索记录超过一千条时仍完整保留"""
+    with patch("management_portal.semantic_search_store._notify"):
+        with semantic_search_store.PAPER_SEARCHES.locked():
+            for i in range(1005):
+                semantic_search_store.PAPER_SEARCHES.save({"search_id": f"search-{i}", "status": "running", "created_at": 1700000000 + i})
+    assert len(semantic_search_store.PAPER_SEARCHES.load()) == 1005
+    assert semantic_search_store.PAPER_SEARCHES.get("search-0")["status"] == "running"

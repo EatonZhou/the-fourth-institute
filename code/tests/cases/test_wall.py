@@ -1237,40 +1237,6 @@ def test_wall_low_confidence_routing_creates_an_independent_worker(wall_project,
     assert "invocation_id" not in stored
 
 
-@pytest.mark.parametrize("ambiguous", [False, True])
-def test_wall_receipt_cutover_preserves_business_results_and_exact_event_links(wall_project, ambiguous):
-    """WALL 回执迁移保留业务结果并按事件匹配唯一触发路径"""
-    from management_common.portal_database import _database_schema
-    from management_portal.wall_store import WallState, database
-    from scripts.migrate_wall_trigger_paths import migrate
-
-    jobs = {
-        "matched": {"id": "matched", "lineage_id": "team", "event_id": "event-one", "message_id": "input-one",
-                    "status": "completed", "summary": "Original result", "trigger_path_id": "old-invocation-one"},
-        "unavailable": {"id": "unavailable", "lineage_id": "team", "event_id": "event-two", "message_id": "input-two",
-                        "status": "failed", "error": "Original error", "trigger_path_id": "old-invocation-two"},
-    }
-    WallState().replace({"jobs": jobs})
-    with database().transaction() as connection, connection.raw.transaction(force_rollback=True):
-        connection.execute("ALTER TABLE wall_jobs RENAME COLUMN trigger_path_id TO invocation_id")
-        connection.execute("CREATE TABLE trigger_paths (lineage_id TEXT,occurrence_id TEXT,trigger_path_id TEXT)")
-        connection.execute("INSERT INTO trigger_paths VALUES ('team','event-one','path-one')")
-        if ambiguous:
-            connection.execute("INSERT INTO trigger_paths VALUES ('team','event-one','path-two')")
-        schema = _database_schema("portal_wall")
-        if ambiguous:
-            with pytest.raises(ValueError, match="identify one Trigger Path"):
-                migrate(connection.raw, wall_schema=schema, lineage_schema=schema)
-            assert connection.execute("SELECT invocation_id FROM wall_jobs WHERE id='matched'").fetchone()["invocation_id"] == "old-invocation-one"
-        else:
-            assert migrate(connection.raw, wall_schema=schema, lineage_schema=schema) == {
-                "jobs": 2, "trigger_path_links": 1, "events_without_path": 1}
-            restored = {row["id"]: {key: value for key, value in dict(row).items() if value is not None}
-                        for row in connection.execute("SELECT * FROM wall_jobs")}
-            assert restored["matched"] == {**jobs["matched"], "trigger_path_id": "path-one"}
-            assert restored["unavailable"] == {key: value for key, value in jobs["unavailable"].items() if key != "trigger_path_id"}
-
-
 def test_wall_expert_recommendation_is_context_for_bound_team(wall_project, monkeypatch):
     """WALL 将专家推荐作为已绑定团队的任务上下文"""
     from management_portal import resident_recommendation_backend

@@ -1028,7 +1028,6 @@ modules:
       - "scripts/portal_background_jobs.py"
       - "management_portal/__init__.py"
       - "scripts/portal_services"
-      - "scripts/migrate_domain_records.py"
       - "scripts/migrate_tfi_runtime_names.py"
       - "scripts/migrate_deployment_paths.py"
       - "scripts/portal_release.py"

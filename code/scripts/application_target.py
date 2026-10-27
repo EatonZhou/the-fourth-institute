@@ -40,10 +40,10 @@ def main(argv: list[str] | None = None) -> int:
     change.add_argument("--reason")
     args = parser.parse_args(argv)
 
-    from scripts.migrate_domain_records import source_url
+    from management_common.postgres_configuration import host_database_url
     from management_portal.society_service import application_target_configuration as configuration
 
-    source_url()
+    host_database_url()
     if args.command == "show":
         result = configuration.get(args.application)
     else:

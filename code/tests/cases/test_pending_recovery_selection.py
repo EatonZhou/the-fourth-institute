@@ -1,6 +1,5 @@
 """Recovery discovery reads owned pending records, never idle aggregates."""
 import json
-import os
 import threading
 
 import pytest
@@ -216,24 +215,6 @@ def test_restart_and_quota_policies_are_discovered_without_execution_work(tmp_pa
         c.execute("UPDATE resident_execution_configuration SET quota_reserve_override_json='{}'")
         assert resident_storage.deferred_restart_resident_ids(c) == []
         assert resident_storage.quota_override_resident_ids(c) == []
-
-
-def test_recovery_index_migration_is_additive_and_repeatable(store):
-    """恢复索引迁移可重复执行且保留版本与原有数据"""
-    from management_common.portal_database import _database_schema
-    from scripts.migrate_recovery_selection_indexes import INDEXES, install
-    with store.database.read() as c:
-        before = c.execute("SELECT value FROM lineage_meta WHERE key='schema'").fetchone()[0]
-    with store.database.transaction() as c:
-        for name in INDEXES:
-            c.execute(f"DROP INDEX {name}")
-    for _ in range(2):
-        assert install(os.environ["PORTAL_DATABASE_URL"], schema=_database_schema("lineage")) == sorted(INDEXES)
-    with store.database.read() as c:
-        assert c.execute("SELECT value FROM lineage_meta WHERE key='schema'").fetchone()[0] == before
-        assert c.execute("SELECT count(*) FROM lineages").fetchone()[0] == 2
-        indexes = {r[0] for r in c.execute("SELECT indexname FROM pg_indexes WHERE schemaname=current_schema()").fetchall()}
-        assert set(INDEXES) <= indexes
 
 
 def test_periodic_program_recovery_does_not_block_resident_notifications():

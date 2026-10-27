@@ -42,6 +42,6 @@ def migrate(*, apply=False):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--apply", action="store_true")
-    from scripts.migrate_domain_records import source_url
-    source_url()  # Resolve the registered site DB without printing credentials.
+    from management_common.postgres_configuration import host_database_url
+    host_database_url()  # Resolve the registered site DB without printing credentials.
     print(json.dumps(migrate(apply=parser.parse_args().apply)))

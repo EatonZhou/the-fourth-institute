@@ -95,34 +95,6 @@ def test_family_domain_projection_rejects_stale_live_resource(lineage, charters)
         get_resource_service().sync_collaboration_resource(**_family_resource_projection(original))
 
 
-def test_existing_family_resource_migration_is_transactional_and_idempotent(lineage, charters):
-    """已有 Family 资源迁移支持事务回滚与幂等重放"""
-    from scripts.migrate_family_resources import upgrade, OLD_SCHEMA, NEW_SCHEMA
-    made = ok("Familize", {"lineage_id": lineage, "scope": "lineage"})
-    state = get_lineage_data_store()
-    # Exercise rollback and idempotency without leaving an old schema version
-    # (or historical DDL) in the shared per-process database.
-    class Rollback(Exception):
-        pass
-    with state.database.transaction() as connection, connection.raw.transaction(force_rollback=True):
-        connection.execute('ALTER TABLE families DROP COLUMN resource_id, DROP COLUMN created_at, DROP COLUMN updated_at')
-        connection.execute("UPDATE lineage_meta SET value=%s WHERE key='schema'", (OLD_SCHEMA,))
-        with pytest.raises(Rollback):
-            with connection.raw.transaction():
-                assert upgrade(connection)['previous_schema'] == OLD_SCHEMA
-                raise Rollback()
-        assert connection.execute("SELECT value FROM lineage_meta WHERE key='schema'").fetchone()['value'] == OLD_SCHEMA
-        first = upgrade(connection)
-        assert first['schema'] == NEW_SCHEMA
-        assert upgrade(connection)['families'] == first['families']
-        assert first['families'][0]['family_id'] == made['family_id']
-        assert connection.execute('SELECT count(*) AS n FROM family_residents').fetchone()['n'] == 3
-        assert connection.execute('SELECT count(*) AS n FROM function_blocks WHERE function_block_id=%s', (made['family_id'],)).fetchone()['n'] == 1
-    from management_portal.society_service.state_store import LINEAGE_DATA_SCHEMA
-    with state.database.read() as connection:
-        assert connection.execute("SELECT value FROM lineage_meta WHERE key='schema'").fetchone()['value'] == LINEAGE_DATA_SCHEMA
-
-
 def test_family_projection_reconciles_missing_descriptors_from_domain(lineage, charters):
     """Family 投影从领域记录补齐缺失描述"""
     from management_portal.society_service.family_resource_projection import FamilyResourceProjectionWorker

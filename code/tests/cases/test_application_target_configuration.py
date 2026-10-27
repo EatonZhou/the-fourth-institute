@@ -15,7 +15,6 @@ from management_common.database_time import instant
 from management_common.portal_database import portal_database
 from management_portal import application_targets
 from management_portal.society_service import application_target_configuration as config
-from tests.cases.test_lineage_generic_primitives import primitive_store  # noqa: F401
 
 A = "lineage_111111111111"
 B = "lineage_222222222222"
@@ -183,78 +182,6 @@ def test_freeze_waits_for_durable_admission_then_rejects_new_work(configuration,
     with pytest.raises(config.AdmissionPaused):
         with config.admission_scope("tau"):
             pytest.fail("new work after committed freeze")
-
-
-def test_schema_migration_moves_every_target_and_portal_notification_and_is_idempotent(primitive_store):
-    """v60 迁移把各应用的配置表合并为 application_targets 行，并把无 Lineage 的人工通知移入 lineage schema；重复执行结果不变
-
-    v59 的每个应用一张表，表上的 CHECK 写死了检索范围和资源类型；迁移后同一份目标、修订号、暂停状态和原因以应用名为键保存在一张表里，
-    原表和已无应用读取的 discussion_reply_configuration 一起删除。公告板 schema 中的 human_notifications 行移入 portal_human_notifications 记录，原表删除。
-
-    :module: lineage.service
-    :design: decision_6591e7793116, decision_71aa039e3211
-    :design-point:
-    """
-    from psycopg import sql
-    from management_common.json_columns import json_value
-    from management_common.portal_database import _database_schema
-    from management_portal.society_service import lineage_domain, lineage_human_notifications
-    from scripts.migrate_application_targets_table import OLD_SCHEMA, NEW_SCHEMA, upgrade
-
-    lineage_id = lineage_domain.create_lineage({"title": "TAU"}, "sample_admin")["lineage_id"]
-    database = lineage_domain._lineage_catalog_store().state_store.database
-    notice = sql.Identifier(_database_schema("portal_notice"))
-    configuration = ("revision INTEGER NOT NULL DEFAULT 1,admission_paused BOOLEAN NOT NULL DEFAULT FALSE,"
-                     "reason TEXT NOT NULL DEFAULT '',updated_by TEXT NOT NULL DEFAULT '',updated_at TIMESTAMPTZ")
-    # Migrations change the version marker as well as DDL. Roll both back so
-    # the shared per-process test schema remains usable by later cases.
-    with database.transaction() as connection, connection.raw.transaction(force_rollback=True):
-        connection.execute("DROP TABLE application_targets")
-        connection.execute("DROP TABLE portal_human_notifications")
-        for table in ("resident_discovery_configuration", "resident_summary_configuration",
-                      "notice_classifier_configuration", "discussion_reply_configuration"):
-            connection.execute(f"CREATE TABLE {table} (singleton INTEGER PRIMARY KEY CHECK(singleton=1), "
-                               f"resident_id TEXT NOT NULL REFERENCES residents(resident_id),{configuration})")
-        connection.execute("CREATE TABLE semantic_search_residents (surface TEXT PRIMARY KEY CHECK(surface IN ('knowledge','wall')), "
-                           f"resident_id TEXT NOT NULL REFERENCES residents(resident_id),{configuration})")
-        connection.execute("CREATE TABLE resource_chat_lineages (resource_type TEXT PRIMARY KEY CHECK(resource_type IN ('project')), "
-                           f"lineage_id TEXT NOT NULL REFERENCES lineages(lineage_id),{configuration})")
-        connection.execute("CREATE TABLE tau_configuration (singleton INTEGER PRIMARY KEY CHECK(singleton=1), "
-                           f"lineage_id TEXT NOT NULL REFERENCES lineages(lineage_id),{configuration})")
-        connection.execute("INSERT INTO tau_configuration (singleton,lineage_id,revision,admission_paused,reason,updated_by,updated_at) "
-                           "VALUES (1,%s,7,TRUE,'migrating','sample_admin',now())", (lineage_id,))
-        connection.execute("INSERT INTO resource_chat_lineages (resource_type,lineage_id) VALUES ('project',%s)", (lineage_id,))
-        connection.execute(sql.SQL("CREATE SCHEMA IF NOT EXISTS {}").format(notice))
-        connection.execute(sql.SQL("DROP TABLE IF EXISTS {}.human_notifications").format(notice))
-        connection.execute(sql.SQL(
-            "CREATE TABLE {}.human_notifications (id TEXT PRIMARY KEY,title TEXT,message TEXT,severity TEXT,lineage_id TEXT,"
-            "trigger_path_id TEXT,created_by TEXT,created_at TIMESTAMPTZ,recipients TEXT[])").format(notice))
-        connection.execute(sql.SQL("INSERT INTO {}.human_notifications VALUES "
-                                   "('human_notice_1','额度','Codex 额度已用完','warning','','','portal',now(),ARRAY['sample_admin'])").format(notice))
-        connection.execute("UPDATE lineage_meta SET value=%s WHERE key='schema'", (OLD_SCHEMA,))
-
-        assert upgrade(connection) == {"previous_schema": OLD_SCHEMA, "schema": NEW_SCHEMA, "targets": 2, "notifications": 1}
-        rows = {row["application"]: dict(row) for row in connection.execute("SELECT * FROM application_targets")}
-        assert set(rows) == {"tau", "resource_chat:project"}
-        tau = rows["tau"]
-        assert (tau["lineage_id"], tau["resident_id"], tau["revision"], tau["admission_paused"], tau["reason"], tau["updated_by"]) == (
-            lineage_id, None, 7, True, "migrating", "sample_admin")
-        assert tau["updated_at"] is not None and rows["resource_chat:project"]["revision"] == 1
-        tables = {row["table_name"] for row in connection.execute(
-            "SELECT table_name FROM information_schema.tables WHERE table_schema=current_schema()")}
-        assert not tables & {"tau_configuration", "resource_chat_lineages", "semantic_search_residents", "discussion_reply_configuration"}
-        assert not connection.execute(sql.SQL("SELECT to_regclass({}) AS present").format(
-            sql.Literal(_database_schema("portal_notice") + ".human_notifications"))).fetchone()["present"]
-        document = json_value(connection.execute("SELECT notifications_json FROM portal_human_notifications").fetchone()["notifications_json"])
-        assert [(item["id"], item["recipients"], item["lineage_id"]) for item in document["notifications"]] == [
-            ("human_notice_1", ["sample_admin"], "")]
-        assert document == lineage_human_notifications._normalize(document)
-
-        assert upgrade(connection) == {"previous_schema": NEW_SCHEMA, "schema": NEW_SCHEMA, "targets": 0, "notifications": 0}
-        assert {row["application"]: dict(row) for row in connection.execute("SELECT * FROM application_targets")} == rows
-    from management_portal.society_service.state_store import LINEAGE_DATA_SCHEMA
-    with database.read() as connection:
-        assert connection.execute("SELECT value FROM lineage_meta WHERE key='schema'").fetchone()["value"] == LINEAGE_DATA_SCHEMA
 
 
 def test_feature_applications_come_from_the_installed_features(configuration, monkeypatch):

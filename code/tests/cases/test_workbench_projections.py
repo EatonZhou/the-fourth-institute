@@ -703,40 +703,6 @@ def test_draft_binding_does_not_change_published_dispatch(store, monkeypatch):
     assert set(calls) == set(reads) == {LINEAGE}
 
 
-@pytest.mark.parametrize("missing_path", [False, True])
-def test_generation_receipt_migration_preserves_records_and_requires_proven_links(store, missing_path):
-    """生成记录迁移把 run_id 换成对应 Trigger Path 并保留其余字段，找不到对应路径时拒绝迁移
-
-    :design-point:"""
-    from management_common.portal_database import _database_schema
-    from scripts.migrate_workbench_trigger_paths import migrate
-
-    source = {"id": "historical-generation", "workbench_id": APP, "lineage_id": LINEAGE,
-              "event_id": "event-historical", "message_id": "msg_historical", "status": "completed",
-              "trigger_path_id": "old-run", "response": "Saved draft", "save_receipt": {"revision": 2}}
-    store.job(source["id"], "alice", source)
-    with store.connect() as connection, connection.raw.transaction(force_rollback=True):
-        connection.execute("ALTER TABLE generations RENAME COLUMN trigger_path_id TO run_id")
-        connection.execute("ALTER TABLE generations ADD COLUMN invocation_id TEXT")
-        connection.execute("CREATE TABLE trigger_paths (lineage_id TEXT,occurrence_id TEXT,trigger_path_id TEXT)")
-        if not missing_path:
-            connection.execute("INSERT INTO trigger_paths VALUES(%s,'event-historical','trigger_path-historical')", (LINEAGE,))
-        schema = _database_schema("workbenches")
-        if missing_path:
-            with pytest.raises(ValueError, match="no migrated event Trigger Path"):
-                migrate(connection.raw, workbench_schema=schema, lineage_schema=schema)
-            assert connection.execute("SELECT run_id FROM generations").fetchone()["run_id"] == "old-run"
-        else:
-            assert migrate(connection.raw, workbench_schema=schema, lineage_schema=schema) == {
-                "generations": 1, "trigger_path_links": 1}
-            from management_portal.workbench_projections.generation_storage import decode
-            result = decode(connection.execute("SELECT * FROM generations").fetchone())
-            assert result == {**source, "created_by": "alice", "trigger_path_id": "trigger_path-historical"}
-            columns = {row["column_name"] for row in connection.execute(
-                "SELECT column_name FROM information_schema.columns WHERE table_schema=%s AND table_name='generations'", (schema,))}
-            assert not {"run_id", "invocation_id"}.intersection(columns)
-
-
 def test_generation_persists_the_current_workflow_receipt(store, resources, monkeypatch):
     """发起页面生成先持久化待提交回执，提交后记录 TriggerEvent 回执，重复请求不再触发
 

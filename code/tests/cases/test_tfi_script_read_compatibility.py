@@ -1,12 +1,9 @@
 """Passive script readers only: no migration, provider call or control action."""
-import ast
-import copy
-import inspect
 import json
 from datetime import datetime, timezone
 
 import pytest
-from scripts import codex_weekly_quota_usage as quota, migrate_paper_records as migration
+from scripts import codex_weekly_quota_usage as quota
 
 
 @pytest.mark.parametrize('prefix', ['archive', 'tfi'])
@@ -39,25 +36,3 @@ def test_quota_reader_retains_observation_health_account_and_file(prefix, tmp_pa
     path.write_text(json.dumps(record));before,mtime=path.read_bytes(),path.stat().st_mtime_ns
     assert not load()[0]
     assert (path.read_bytes(),path.stat().st_mtime_ns)==(before,mtime)
-
-
-@pytest.mark.parametrize('prefix', ['archive', 'tfi'])
-def test_migration_receipt_reader_preserves_tags_and_unrelated_data_without_running_migration(prefix):
-    """迁移回执只投影规范标签，退役及未知版本原样保留，不执行数据库迁移"""
-    # Execute the production recursive projection alone, never the SQL migration.
-    tree=ast.parse(inspect.getsource(migration))
-    node=next(n for n in ast.walk(tree) if isinstance(n,ast.FunctionDef) and n.name=='receipt')
-    scope={**vars(migration), 'paths': {('lineage_test','event_test'): 'path_test'}}
-    exec(compile(ast.Module(body=[node],type_ignores=[]),'<migration receipt projection>','exec'),scope)
-    record={'schema':f'{prefix}.paper-resident-input.v1','lineage_id':'lineage_test','event_id':'event_test',
-            'invocation_id':'legacy_invocation','opaque':{'schema':'unrelated.v1','value':'keep'}}
-    before=copy.deepcopy(record)
-    result=scope['receipt']([record])[0]
-    if prefix == 'archive':
-        assert result == before
-    else:
-        assert result['schema']==record['schema'] and result['trigger_path_id']=='path_test'
-        assert 'invocation_id' not in result and result['opaque']==record['opaque']
-    assert record == before
-    wrong={**record,'schema':f'{prefix}.paper-resident-input.v2'}
-    assert scope['receipt'](wrong)==wrong
