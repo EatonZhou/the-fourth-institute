@@ -905,6 +905,7 @@ def analyze(
     declaration_for: Callable[[str], Any],
     declared_endpoints: Iterable[str] = (),
     connected_endpoints: Iterable[str] | None = None,
+    endpoint_targets: dict[str, str] | None = None,
     runtime_supplied: Mapping[str, Iterable[str]] | None = None,
     validate_argument: Callable[[str, str, Any], None] | None = None,
 ) -> Analysis:
@@ -1022,6 +1023,9 @@ def analyze(
 
     for statement in script.statements:
         visit(statement)
+    from .lineage_effect_targets import target_diagnostics
+
+    result.diagnostics.extend(target_diagnostics(script, declaration_for, endpoint_targets))
     if has_output:
         result.output_fields = outputs
     else:

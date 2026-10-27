@@ -56,11 +56,11 @@ DECLARATIONS = (
         R("lineage_id", description="组件所在的 Lineage"),
         R("kind", description="组件类型；可用类型见 ListComponentTypes", enum=COMPONENT_KINDS),
         P("title", description="组件名称；省略时按类型取默认名，如“新 Effect”"),
-        P("config", "object", "按组件类型校验；Effect 的 failure_recipients 是失败通知用户名数组，省略时默认设立用户，空数组关闭通知"),
+        P("config", "object", "按组件类型校验；Effect 脚本的固定 Resident/组件目标须声明 endpoints 并通过 target 连线引用，不能硬编码；failure_recipients 是失败通知用户名数组，省略时默认设立用户，空数组关闭通知"),
         P("client_key", description="调用者的审计标记，不代替组件 ID"),
         *PLACEMENT,
     ), (R("component_id", description="新组件的 ID"), R("component", "object", "新组件的定义：id、kind、title、config 等")), mutates=True),
-    _d("UpdateComponent", "修改一个组件的名称或配置。", (
+    _d("UpdateComponent", "修改一个组件的名称或配置。Effect 脚本的固定 Resident/组件目标必须通过具名端点与 target 连线声明；错误草稿可保存，但不能执行。", (
         R("lineage_id", description="组件所在的 Lineage"), R("component_id", description="要修改的组件"),
         R("changes", "object", "title、config；Effect 还可以包含 script、endpoints、failure_recipients（失败通知用户名数组，空数组关闭通知）；事件源还可以包含 watch_subject：{kind, id}，支持多选的 Resident 或 Effect 事件可用 {kind: \"resident\", ids: [...]} 或 {kind: \"effect\", ids: [...]} 同时监听多个同类对象，任一触发"),
     ), (R("component", "object", "修改后的组件定义：id、kind、title、config 等"),), mutates=True),

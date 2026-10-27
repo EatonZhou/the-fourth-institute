@@ -299,6 +299,14 @@ def _execute_claimed_effect_component(
                 registrations=registrations,
                 replayed=True,
             )
+        # Keep terminal replays above authoritative. For unfinished activations,
+        # reject hidden fixed targets or broken endpoint references before any
+        # further ISA call, including an earlier read/write in the same script.
+        from .lineage_program import effect_script_analysis
+
+        for code, message, line in effect_script_analysis(definition).diagnostics:
+            if code in {"effect.target_endpoint_required", "effect.target_type_mismatch", "effect.unknown_endpoint", "effect.missing_target"}:
+                raise lineage_effect_script.ScriptFailure(code, message, line=line)
         calls: dict[str, dict[str, Any]] = dict(journal.get("calls") or {})
         sequence = [len(calls)]
 

@@ -224,8 +224,10 @@ def test_typed_effect_constants_and_message_shorthand_remain_valid():
 
     result = analyze(
         'RunScript path=/tmp/maintenance.sh timeout_seconds:=3600\n'
-        'DeliverMessage resident_id=resident_0123456789ab message=hello',
+        'DeliverMessage resident_id=${endpoint.target} message=hello',
         declaration_for=instruction_catalog().get,
+        declared_endpoints=["target"],
+        connected_endpoints=["target"],
         validate_argument=validate_effect_argument,
     )
     assert result.diagnostics == []

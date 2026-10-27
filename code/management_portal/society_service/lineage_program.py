@@ -2713,6 +2713,7 @@ def effect_script_analysis(effect: dict[str, Any]) -> Any:
         declaration_for=catalog.get,
         declared_endpoints=effect.get("endpoint_names") or [],
         connected_endpoints=list((effect.get("endpoints") or {}).keys()),
+        endpoint_targets=dict(effect.get("endpoints") or {}),
         runtime_supplied=EFFECT_RUNTIME_SUPPLIED_ARGUMENTS,
         validate_argument=validate_effect_argument,
     )
