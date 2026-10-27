@@ -1,10 +1,14 @@
 'use strict';
 
 // Original pre-action DOM evidence only. Never fits, scrolls, selects or retries.
-async function readWatchboardNodePrerequisites(panel, {residentId} = {}) {
+// Save the result before asserting ready. This bounds browser frame sampling,
+// not the original caller's tool RTT or the enclosing business action.
+async function readWatchboardNodePrerequisites(panel, {residentId, frameTimeoutMs = 1000} = {}) {
   if (!/^resident_[a-z0-9]+$/.test(residentId || '')) throw new TypeError('Exact Resident ID required');
+  if (!Number.isFinite(frameTimeoutMs) || frameTimeoutMs <= 0 || frameTimeoutMs > 10000)
+    throw new TypeError('Frame sampling deadline must be in (0, 10000] ms');
   if (await panel.count() !== 1) throw new Error('One current HATG panel required');
-  return panel.evaluate(async (root, residentId) => {
+  return panel.evaluate(async (root, {residentId, frameTimeoutMs}) => {
     if (root.id !== 'lineage-hatg-panel' || root.getAttribute('role') !== 'region')
       throw new Error('Full native HATG region required');
     const doc = root.ownerDocument, win = doc.defaultView;
@@ -41,14 +45,48 @@ async function readWatchboardNodePrerequisites(panel, {residentId} = {}) {
         bound_to_canvas:bound,node_visible:visible(node),geometry,canvas_geometry:canvasGeometry,clip,
         within_clip:within,center_hit:centerHit,active_animations:animations.length};
     };
-    const first=sample(); await new Promise(r=>win.requestAnimationFrame(()=>win.requestAnimationFrame(r)));
-    const second=sample();
+    let first=null, second=null, framesCompleted=0, phase='initial_sample';
+    try {
+      first=sample();
+      phase='animation_frames';
+      await new Promise((resolve,reject)=>{
+        let frame=null, settled=false;
+        const finish=error=>{
+          if(settled)return;
+          settled=true;
+          win.clearTimeout(timer);
+          if(frame!==null)win.cancelAnimationFrame(frame);
+          if(error)reject(error);else resolve();
+        };
+        const timer=win.setTimeout(()=>{
+          const error=new Error('Native HATG node frame sampling deadline exceeded');
+          error.code='frame_timeout';finish(error);
+        },frameTimeoutMs);
+        function next(){
+          try {
+            frame=win.requestAnimationFrame(()=>{
+              if(settled)return;
+              frame=null;framesCompleted++;
+              if(framesCompleted===2)finish();else next();
+            });
+          } catch(error){finish(error);}
+        }
+        next();
+      });
+      phase='final_sample';
+      second=sample();
+    } catch(error){
+      return {resident_id:residentId,first,second,stable:false,ready:false,frames_completed:framesCompleted,
+        frame_timeout_ms:frameTimeoutMs,error:{code:error?.code||'sampling_error',phase,
+          name:error?.name||'Error',message:String(error?.message||error),stack:String(error?.stack||'')}};
+    }
     const stable = ['geometry','canvas_geometry','clip'].every(k=>first[k] && second[k]
       && Object.keys(first[k]).every(p=>Math.abs(first[k][p]-second[k][p])<0.25));
     const usable=s=>s.panel_visible&&s.node_visible&&s.bound_to_canvas&&s.within_clip&&s.center_hit
       &&s.node_count===1&&s.canvas_count===1&&s.active_animations===0;
-    return {resident_id:residentId,first,second,stable,ready:stable&&usable(first)&&usable(second)};
-  },residentId);
+    return {resident_id:residentId,first,second,stable,ready:stable&&usable(first)&&usable(second),
+      frames_completed:framesCompleted,frame_timeout_ms:frameTimeoutMs,error:null};
+  },{residentId,frameTimeoutMs});
 }
 
 module.exports={readWatchboardNodePrerequisites};
