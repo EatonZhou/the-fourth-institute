@@ -12,13 +12,15 @@ from management_common.postgres_database import close_all_database_pools
 from management_common.process_runtime import run_process
 from management_common.portal_paths import resolve_directory
 from management_common.site_config import read_site_config
+from management_common.provider_runtime_paths import runtime_entry
 from management_portal import kimi_portal_tools
 from management_portal.ai_provider_registry import AIProviderRegistry
 
 
-DEFAULT_BINARY = resolve_directory(read_site_config().get("deployment", {}).get("providers", {}).get(
-    "runtime_root", str(portal_path("staging_root") / "provider-runtimes"))) / (
-        "kimi-code-current/kimi.cmd" if sys.platform == "win32" else "kimi-code-current/bin/kimi")
+_PROVIDERS = read_site_config().get("deployment", {}).get("providers", {})
+DEFAULT_BINARY = runtime_entry(_PROVIDERS, "kimi_runtime_current", resolve_directory(_PROVIDERS.get(
+    "runtime_root", str(portal_path("staging_root") / "provider-runtimes"))) / "kimi-code-current") / (
+        "kimi.cmd" if sys.platform == "win32" else "bin/kimi")
 DEFAULT_HOME = (portal_path("staging_root") / "shared" / "kimi-code-portal")
 DEFAULT_CONFIG_TEMPLATE = Path(__file__).resolve().parents[1] / "systemd" / "portal-kimi-code-config.toml"
 

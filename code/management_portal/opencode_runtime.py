@@ -72,4 +72,4 @@ class OpenCodeRuntime(ProviderRuntime):
         return root
 
     def link(self) -> Path:
-        return updates.RUNTIMES / "opencode-current"
+        return updates.runtime_entry(updates._PROVIDER_DEPLOYMENT, "opencode_runtime_current", updates.RUNTIMES / "opencode-current")

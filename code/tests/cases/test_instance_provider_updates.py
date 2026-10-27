@@ -28,6 +28,9 @@ class InstanceProviderUpdateTests(unittest.TestCase):
         runtimes = patch.object(updates, "RUNTIMES", self.root / "runtimes")
         runtimes.start()
         self.addCleanup(runtimes.stop)
+        deployment = patch.object(updates, "_PROVIDER_DEPLOYMENT", {})
+        deployment.start()
+        self.addCleanup(deployment.stop)
         self.context = {"root": self.root / "instance", "directory": self.root,
                         "service_prefix": "tfi-one"}
         self.context_patch = patch.object(units, "_isolated_provider_context", return_value=self.context)

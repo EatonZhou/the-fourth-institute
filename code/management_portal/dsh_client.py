@@ -3,6 +3,7 @@ from __future__ import annotations
 from management_common.portal_paths import path as portal_path
 from management_common.portal_paths import resolve_directory
 from management_common.site_config import read_site_config
+from management_common.provider_runtime_paths import runtime_entry
 
 from management_common.file_lock import lock_stream
 from management_common.process_runtime import spawn_process, terminate_process_tree
@@ -26,10 +27,11 @@ from management_common.provider_subagent_runs import STOPPING_METHOD
 from management_portal.resident_shell_environment import resident_process_environment
 from management_portal.ai_provider_registry import shared_ai_provider_registry
 
+_PROVIDERS = read_site_config().get("deployment", {}).get("providers", {})
 RUNTIME = Path(os.environ.get(
     "PORTAL_DSH_RUNTIME_ROOT",
-    str(resolve_directory(read_site_config().get("deployment", {}).get("providers", {}).get(
-        "runtime_root", str(portal_path("staging_root") / "provider-runtimes"))) / "dsh-runtime-current"),
+    str(runtime_entry(_PROVIDERS, "dsh_runtime_current", resolve_directory(_PROVIDERS.get(
+        "runtime_root", str(portal_path("staging_root") / "provider-runtimes"))) / "dsh-runtime-current")),
 ))
 STATE = Path(os.environ.get("PORTAL_DSH_STATE", str(portal_path("staging_root") / "shared" / "dsh")))
 SOCKETS = Path(os.environ.get("PORTAL_DSH_SOCKETS", str(portal_path("staging_root") / "portal_locks" / "dsh")))

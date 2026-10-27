@@ -53,7 +53,8 @@ def control(monkeypatch, tmp_path):
     target = {"install_root": str(root), "service_prefix": "tfi-new", "run_id": "fixture",
               "data_roots": {"staging_root": str(stage)}, "database_name": "new_database",
               "ports": {"web": 7000, "postgres": 7001, "nats": 7002}}
-    (root / "installation.json").write_text(json.dumps({"target": target}))
+    (root / "installation.json").write_text(json.dumps({
+        "schema": "tfi.release-installation.v1", "target": target}))
     monkeypatch.setattr(units, "_isolated_provider_context", lambda: context)
     monkeypatch.setattr(portal_paths, "path", lambda key: stage if key == "staging_root" else root / key)
     monkeypatch.setattr(updates, "RUNTIMES", tmp_path / "runtimes")

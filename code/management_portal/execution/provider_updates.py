@@ -35,6 +35,7 @@ from management_common.file_lock import try_lock_descriptor
 from management_common.process_runtime import run_process
 from management_common.portal_paths import path as portal_path, resolve_directory
 from management_common.site_config import read_site_config
+from management_common.provider_runtime_paths import runtime_entry
 
 LOGGER = logging.getLogger(__name__)
 ROOT = Path(__file__).resolve().parents[2]
@@ -284,17 +285,8 @@ class CodexRuntime(ProviderRuntime):
         return _user_program("codex") or managed
 
     def activation_link(self) -> Path:
-        if sys.platform == "win32":
-            return RUNTIMES / "codex-cli-current"
-        configured = _PROVIDER_DEPLOYMENT.get("codex_binary")
-        if configured:
-            if not isinstance(configured, str) or any(c in configured for c in "\0\n\r"):
-                raise ValueError("Codex binary must be a path")
-            path = Path(configured).expanduser()
-            # Activation replaces this link. Resolve only its parent so an
-            # instance can reuse an installed binary without updating that copy.
-            return resolve_directory(str(path.parent)) / path.name
-        return RUNTIMES / "codex"
+        default = RUNTIMES / ("codex-cli-current" if sys.platform == "win32" else "codex")
+        return runtime_entry(_PROVIDER_DEPLOYMENT, "codex_binary", default)
 
     def link_target(self, root: Path) -> Path:
         if sys.platform == "win32":
@@ -349,7 +341,8 @@ class ClaudeRuntime(ProviderRuntime):
         if configured:
             return resolve_directory(configured)
         managed = self.activation_link()
-        if managed.exists() or managed.is_symlink():
+        if (_PROVIDER_DEPLOYMENT.get("claude_runtime_current")
+                or managed.exists() or managed.is_symlink()):
             return managed
         found = self._existing_sdk
         return found[0] if found else managed
@@ -373,7 +366,7 @@ class ClaudeRuntime(ProviderRuntime):
         return None
 
     def activation_link(self) -> Path:
-        return RUNTIMES / "claude-agent-sdk-current"
+        return runtime_entry(_PROVIDER_DEPLOYMENT, "claude_runtime_current", RUNTIMES / "claude-agent-sdk-current")
 
     def busy(self) -> bool:
         # The daemon also runs turns Claude Code starts by itself.
@@ -414,7 +407,7 @@ class KimiRuntime(ProviderRuntime):
         return root
 
     def link(self) -> Path:
-        return RUNTIMES / "kimi-code-current"
+        return runtime_entry(_PROVIDER_DEPLOYMENT, "kimi_runtime_current", RUNTIMES / "kimi-code-current")
 
 
 class DshRuntime(ProviderRuntime):
@@ -468,7 +461,7 @@ class DshRuntime(ProviderRuntime):
         return root
 
     def link(self) -> Path:
-        return RUNTIMES / "dsh-runtime-current"
+        return runtime_entry(_PROVIDER_DEPLOYMENT, "dsh_runtime_current", RUNTIMES / "dsh-runtime-current")
 
 
 def runtimes() -> dict[str, ProviderRuntime]:

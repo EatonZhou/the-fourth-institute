@@ -26,6 +26,7 @@ from management_common.instance_paths import instance_root
 from management_common.file_lock import lock_stream
 from management_common.site_compatibility import compatibility_value
 from management_common.postgres_configuration import postgres_settings
+from management_common.provider_runtime_paths import runtime_entry
 
 USER_UNIT_ROOT = Path.home() / ".config" / "systemd" / "user"
 RELEASE_SERVICES = INSTANCE_LAYOUT['release']['services']
@@ -419,7 +420,8 @@ def _install_claude_backend(*, app_server_only: bool) -> Path:
     if not re.fullmatch(r"[0-9A-Za-z][0-9A-Za-z._-]{0,63}", version):
         raise ValueError("Invalid Claude app-server version")
     package = Path(os.environ.get("PORTAL_CLAUDE_APP_SERVER_ROOT", updates.RUNTIMES / f"claude-app-server-{version}"))
-    current = Path(os.environ.get("PORTAL_CLAUDE_APP_SERVER_CURRENT", updates.RUNTIMES / "claude-app-server-current"))
+    current = Path(os.environ.get("PORTAL_CLAUDE_APP_SERVER_CURRENT", runtime_entry(
+        updates._PROVIDER_DEPLOYMENT, "claude_app_server_current", updates.RUNTIMES / "claude-app-server-current")))
     package.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix=".claude-app-server-", dir=package.parent) as temporary:
         candidate = Path(temporary) / "package"

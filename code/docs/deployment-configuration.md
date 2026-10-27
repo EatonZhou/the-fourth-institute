@@ -17,6 +17,23 @@
 
 配置事务使用稳定的 `.configuration.lock` 协调读取和提交，避免在线导入时读到“新 target、旧状态摘要”的中间组合。旧实例的只读检查不创建文件；首次导入和后续写入建立该锁。代码升级备份和恢复保留当前锁文件的身份。
 
+## Provider 程序入口
+
+Provider 当前版本的稳定入口在 `config/site.json` 的 `deployment.providers` 中显式配置：
+
+| 字段 | 用途 |
+| --- | --- |
+| `codex_binary` | 所有 Codex 账号共用的程序入口 |
+| `claude_runtime_current` | Claude Agent SDK 虚拟环境入口 |
+| `claude_app_server_current` | Portal Claude daemon 代码包入口 |
+| `kimi_runtime_current` | Kimi Code 程序包入口 |
+| `dsh_runtime_current` | DSH 依赖与桥接运行时入口 |
+| `opencode_runtime_current` | OpenCode 程序包入口 |
+
+这些值为绝对路径，保留最后一级软链接；不能把入口解析成某个版本后再写入服务定义。启动方和更新器使用相同字段，更新器通过切换该入口选择新版本，并继续遵守空闲检查与失败回退。版本包仍安装在 `runtime_root` 下。未配置入口的源码安装保留首次接入的发现和引导默认值。
+
+Codex 各账号独立保存凭据、会话和 socket，共用 `codex_binary`。账号下由 Codex 自身生成的 `packages/app-server-daemon` 属于独立的自管理安装产物，不能充当 Portal 程序入口；清理前须检查运行进程和实际服务命令是否引用它。
+
 ## 导入已有实例
 
 从匹配的 v1 安装记录导入时运行：
