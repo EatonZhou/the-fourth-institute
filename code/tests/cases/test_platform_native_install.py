@@ -30,17 +30,21 @@ def test_native_artifact_matches_host_and_has_pinned_digest(monkeypatch, system,
 
 
 def test_checksum_failure_leaves_previous_install_and_cleans_staging(tmp_path, monkeypatch):
-    target = tmp_path / 'texlab'
+    bin_dir = tmp_path / 'bin'
+    bin_dir.mkdir()
+    target = bin_dir / 'texlab'
     target.write_bytes(b'previous executable')
-    monkeypatch.setenv('ARTICLE_TOOL_BIN_DIR', str(tmp_path))
+    monkeypatch.setenv('ARTICLE_TOOL_BIN_DIR', str(bin_dir))
     monkeypatch.setattr(article, 'release_asset', lambda:('https://invalid.test/fixture', '0'*64, '5.26.0', 'texlab'))
     monkeypatch.setattr(article, '_version', lambda _: 'texlab 0.0.0')
     monkeypatch.setattr(article.shutil, 'which', lambda *a,**kw:'/fixture/synctex')
     monkeypatch.setattr(article.urllib.request, 'urlopen', lambda *a,**kw:io.BytesIO(b'untrusted archive'))
+    from scripts import article_dependencies
+    monkeypatch.setattr(article_dependencies, 'prepare_tex', lambda *_a, **_kw: {})
     with pytest.raises(ValueError, match='checksum'):
         article.install()
     assert target.read_bytes() == b'previous executable'
-    assert list(tmp_path.iterdir()) == [target]
+    assert list(bin_dir.iterdir()) == [target]
 
 
 def test_archive_links_are_rejected_and_zip_extracts_only_named_executable(tmp_path):
@@ -86,9 +90,11 @@ def test_verified_native_executable_replaces_previous_install(tmp_path, monkeypa
     with zipfile.ZipFile(data, 'w') as bundle:
         bundle.writestr('texlab.exe', b'verified fixture executable')
     payload = data.getvalue()
-    target = tmp_path / 'texlab.exe'
+    bin_dir = tmp_path / 'bin'
+    bin_dir.mkdir()
+    target = bin_dir / 'texlab.exe'
     target.write_bytes(b'previous')
-    monkeypatch.setenv('ARTICLE_TOOL_BIN_DIR', str(tmp_path))
+    monkeypatch.setenv('ARTICLE_TOOL_BIN_DIR', str(bin_dir))
     monkeypatch.setattr(article, 'release_asset', lambda:('https://fixture.invalid/asset', hashlib.sha256(payload).hexdigest(), '5.26.0', 'texlab.exe'))
     monkeypatch.setattr(article, '_version', lambda p: 'texlab 5.26.0' if p.read_bytes() == b'verified fixture executable' else 'texlab 0.0.0')
     monkeypatch.setattr(article.shutil, 'which', lambda *a, **kw:'/fixture/synctex')
@@ -99,7 +105,7 @@ def test_verified_native_executable_replaces_previous_install(tmp_path, monkeypa
     monkeypatch.setattr(article_dependencies, 'smoke_compile', lambda *_a, **_kw: None)
     assert article.install() == target
     assert target.read_bytes() == b'verified fixture executable'
-    assert list(tmp_path.iterdir()) == [target]
+    assert list(bin_dir.iterdir()) == [target]
 
 
 @pytest.mark.parametrize('failure', ['stop', 'state'])
@@ -119,16 +125,3 @@ def test_embedding_install_restores_handlers_and_records_failure(tmp_path, monke
     assert restored == ['previous']
     assert writes[-1]['state'] == 'failed'
     assert ('stopped' if failure == 'stop' else 'unavailable') in writes[-1]['error']
-
-
-def test_non_linux_live_directory_exchange_rejected_before_writing(tmp_path, monkeypatch):
-    from scripts import portal_instance_storage as storage
-    source, destination = tmp_path/'source', tmp_path/'destination'
-    source.mkdir()
-    (source/'preserved').write_text('untouched')
-    monkeypatch.setattr(storage.sys, 'platform', 'darwin')
-    with pytest.raises(NotImplementedError, match='Linux'):
-        storage.migrate(source, destination, apply=True)
-    assert source.is_dir() and not source.is_symlink()
-    assert not destination.exists() and not destination.is_symlink()
-    assert (source/'preserved').read_text() == 'untouched'

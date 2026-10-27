@@ -15,76 +15,10 @@ import pytest
 
 from scripts import dev_resident_lifecycle_smoke as smoke
 from scripts import harness_lineage as harness
-from scripts import portal_dev_restart_requests as restart
-from scripts import portal_dev_source_reloader as reloader
 
 
 REPO = Path(__file__).resolve().parents[2]
 PREFIXES = ['archive.', 'tfi.']
-
-
-def stored_payload(tmp_path, payload):
-    path = tmp_path / 'input.json'
-    path.write_text(json.dumps(payload))
-    return path, (path.read_bytes(), path.stat().st_mtime_ns)
-
-
-def assert_untouched(path, original):
-    assert (path.read_bytes(), path.stat().st_mtime_ns) == original
-
-
-@pytest.mark.parametrize('prefix', PREFIXES)
-@pytest.mark.parametrize('version', ['v2', 'v99'])
-def test_restart_request_reads_same_version_without_rewriting(tmp_path, prefix, version):
-    payload = {'schema': prefix + 'portal-dev-restart-request.' + version,
-               'request_id': 'request-fixture', 'revision': 7,
-               'requested_at': '2026-10-19T00:00:00Z',
-               'components': ['web', 'execution'], 'auto': False}
-    path, original = stored_payload(tmp_path, payload)
-    result = restart.read_restart_request(path)
-    if version == 'v2' and prefix == 'tfi.':
-        assert result['request_id'] == payload['request_id']
-        assert result['revision'] == 7
-        assert result['components'] == ['execution', 'web']
-        assert result['auto'] is False
-        assert result['schema'] == restart.REQUEST_SCHEMA == 'tfi.portal-dev-restart-request.v2'
-    else:
-        assert result == {}
-    assert_untouched(path, original)
-
-
-@pytest.mark.parametrize('prefix', PREFIXES)
-def test_restart_request_still_rejects_invalid_revision(tmp_path, prefix):
-    path, original = stored_payload(tmp_path, {
-        'schema': prefix + 'portal-dev-restart-request.v2',
-        'request_id': 'request-fixture', 'revision': 0, 'components': ['web'],
-    })
-    assert restart.read_restart_request(path) == {}
-    assert_untouched(path, original)
-
-
-@pytest.mark.parametrize('prefix', PREFIXES)
-@pytest.mark.parametrize('version', ['v1', 'v99'])
-def test_deployed_state_reads_same_version_without_rewriting(tmp_path, prefix, version):
-    current = {name: (('current.py', 100, 200),) for name in reloader.ALL_COMPONENTS}
-    stored = {name: (('deployed.py', 10, 20),) for name in reloader.ALL_COMPONENTS}
-    path, original = stored_payload(tmp_path, {
-        'schema': prefix + 'portal-deployed-component-source-state.' + version,
-        'components': stored,
-    })
-    assert reloader.read_deployed_source_states(current, path) == (stored if version == 'v1' and prefix == 'tfi.' else current)
-    assert reloader.DEPLOYED_SOURCE_STATE_SCHEMA == 'tfi.portal-deployed-component-source-state.v1'
-    assert_untouched(path, original)
-
-
-@pytest.mark.parametrize('prefix', PREFIXES)
-def test_deployed_state_still_rejects_incomplete_components(tmp_path, prefix):
-    current = {name: (('current.py', 100, 200),) for name in reloader.ALL_COMPONENTS}
-    path, original = stored_payload(tmp_path, {
-        'schema': prefix + 'portal-deployed-component-source-state.v1', 'components': {},
-    })
-    assert reloader.read_deployed_source_states(current, path) == current
-    assert_untouched(path, original)
 
 
 @pytest.mark.parametrize('prefix', PREFIXES)
@@ -158,9 +92,7 @@ def test_smoke_proof_reads_retained_request_without_business_or_writes(monkeypat
     assert row == original
 
 
-@pytest.mark.parametrize('script', [
-    'portal_dev_restart_requests.py', 'portal_dev_source_reloader.py', 'dev_resident_lifecycle_smoke.py',
-])
+@pytest.mark.parametrize('script', ['dev_resident_lifecycle_smoke.py'])
 def test_script_imports_outside_repository_without_pythonpath(tmp_path, script):
     command = [sys.executable, '-I', '-c',
                'import runpy, sys; runpy.run_path(sys.argv[1], run_name="read_only_import"); '
@@ -180,7 +112,7 @@ def test_harness_loads_helper_after_release_path_is_selected(tmp_path):
     package = release / 'management_common'
     package.mkdir(parents=True)
     for name in ('__init__', 'format_tags', 'site_compatibility', 'site_config',
-                 'portal_paths', 'product_environment', 'file_lock'):
+                 'instance_config', 'portal_paths', 'product_environment', 'file_lock'):
         shutil.copyfile(REPO / f'management_common/{name}.py', package / f'{name}.py')
     captured = tmp_path / 'captured' / 'scripts' / 'harness_lineage.py'
     captured.parent.mkdir(parents=True)

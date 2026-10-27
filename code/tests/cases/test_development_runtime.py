@@ -131,6 +131,33 @@ class PairedRuntimeTest(unittest.TestCase):
             control.assert_called_once_with("kill", "--kill-whom=main", "--signal=HUP", "test-worker.service")
             self.assertTrue(result["ok"])
 
+    def test_publication_records_a_release_event_only_for_a_new_healthy_commit(self):
+        """发布激活成功且 Release 提交变化时记录一次发布事件，提交未变或激活失败时不记录"""
+        old, new = "a" * 40, "b" * 40
+        for previous, ok, recorded in ((old, True, True), (new, True, False), (old, False, False)):
+            with self.subTest(previous=previous, ok=ok), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                (root / "runtime").mkdir()
+                (root / "runtime/development-activation.json").write_text(json.dumps({"commit": previous}))
+                request = root / "runtime/request.json"
+                receipt = root / "runtime/request-result.json"
+                request.write_text(json.dumps({"commit": new, "paths": ["code/scripts/a.py"],
+                                               "receipt": str(receipt), "parent_commit": old}))
+                with patch("management_common.instance_config.read_development",
+                           return_value={"release_code": directory}), \
+                        patch.object(paired.subprocess, "check_output", return_value=new + "\n"), \
+                        patch.object(paired, "activate", return_value={"ok": ok, "commit": new}), \
+                        patch.object(paired, "record_release",
+                                     return_value={"ok": True, "sequence": 7}) as record:
+                    result = paired.apply_request(root, request)
+                self.assertEqual(record.call_count, int(recorded))
+                if recorded:
+                    self.assertEqual(record.call_args.args[2], new)
+                    self.assertEqual(record.call_args.args[1]["parent_commit"], old)
+                self.assertEqual(json.loads(receipt.read_text()).get("release_event"),
+                                 {"ok": True, "sequence": 7} if recorded else None)
+                self.assertEqual(result["requested_commit"], new)
+
     def test_service_command_preserves_explicit_restart_intent_for_a_pair(self):
         from scripts import portal_services
         for force in (False, True):

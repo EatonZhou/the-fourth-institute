@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import os
 import re
-import subprocess
 import sys
 import time
 import uuid
@@ -580,47 +579,13 @@ def get_portal_status(inv: Invocation) -> dict[str, Any]:
 
 
 def restart_portal(inv: Invocation) -> dict[str, Any]:
-    import json
-    import secrets
-
     instance = inv.argument("instance")
     components = [str(item) for item in inv.argument("components") or []]
     from scripts import tfi_development_runtime as paired
     root = paired.configured_root()
-    if root:
-        return paired.request_restart(root, instance, components)["request"]
-    # portal_services is a shell wrapper; run the Python entry point with this interpreter.
-    command = [sys.executable, str(REPO_ROOT / "scripts" / "portal_services.py")]
-    command += ["request-restart", "dev"] if instance == "dev" else ["restart", "release"]
-    for component in components:
-        command += ["--component", component]
-    if instance == "dev":
-        # The Dev request is queued and returns at once.
-        completed = subprocess.run(command, capture_output=True, text=True, cwd=str(REPO_ROOT), timeout=180)
-        if completed.returncode != 0:
-            raise InstructionError("instruction.failed", (completed.stderr or completed.stdout).strip()[-500:] or "重启请求没有被接受")
-        try:
-            request = json.loads(completed.stdout or "{}").get("request") or {}
-        except (json.JSONDecodeError, AttributeError):
-            request = {}
-        if not request.get("request_id"):
-            raise InstructionError("instruction.failed", "重启请求没有返回请求 ID")
-        # An empty component list means "whatever changed since the last deployment".
-        return {"request_id": str(request["request_id"]), "components": list(request.get("components") or components)}
-    # Release source only changes when a release is published, and publishing
-    # restarts what changed; a plain Release restart covers Web and the control plane.
-    request_id = f"portal-restart-{secrets.token_hex(8)}"
-    completed = subprocess.run(
-        ['systemd-run', '--user', '--collect', f'--unit={request_id}',
-         f'--working-directory={REPO_ROOT}', *command],
-        capture_output=True, text=True, timeout=180,
-    )
-    if completed.returncode:
-        raise InstructionError('instruction.failed', (completed.stderr or completed.stdout).strip()[-500:])
-    return {
-        "request_id": request_id,
-        "components": components or ["web", "resource", "execution-service", "lineage"],
-    }
+    if not root:
+        raise InstructionError("instruction.failed", "独立 TFI 实例的服务由 install_tfi_release 管理，不能在这里重启")
+    return paired.request_restart(root, instance, components)["request"]
 
 
 def publish_release(inv: Invocation) -> dict[str, Any]:
@@ -628,13 +593,13 @@ def publish_release(inv: Invocation) -> dict[str, Any]:
     if _instance() != "dev" and not configured_root():
         raise InstructionError("instruction.forbidden", "PublishRelease 只能在 Dev 实例执行")
     sys.path.insert(0, str(REPO_ROOT)) if str(REPO_ROOT) not in sys.path else None
-    from scripts.publish_portal_release import PublishOptions, publish
+    from scripts import tfi_dev
 
-    report = publish(PublishOptions(
-        str(inv.argument("message") or ""),
-        tuple(str(item) for item in inv.argument("paths") or ()),
-        bool(inv.argument("all")),
-    ))
+    report = tfi_dev.publish(
+        REPO_ROOT.parent, str(inv.argument("message") or ""),
+        paths=tuple(f"code/{item}" for item in inv.argument("paths") or ()),
+        all_files=bool(inv.argument("all")),
+    )
     if not report.get("ok"):
         raise InstructionError("instruction.failed", str(report.get("error") or "发布没有完成"), details={
             "commit": report.get("commit"), "status": report.get("status"),

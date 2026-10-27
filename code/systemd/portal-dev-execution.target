@@ -1,7 +1,0 @@
-[Unit]
-Description=TFI Portal Dev domain services
-Wants=portal-dev-nats.service portal-dev-resource-service.service portal-dev-execution-service.service portal-dev-execution-worker.service portal-dev-society-service.service
-After=portal-dev-nats.service portal-dev-resource-service.service portal-dev-execution-service.service portal-dev-execution-worker.service portal-dev-society-service.service
-
-[Install]
-WantedBy=default.target

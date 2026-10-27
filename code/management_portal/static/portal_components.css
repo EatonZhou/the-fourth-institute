@@ -68,19 +68,6 @@ body.portalBoardShell {
   color: inherit;
 }
 
-.portalReleaseStamp {
-  position: fixed;
-  right: 18px;
-  bottom: 5px;
-  z-index: 5;
-  color: var(--muted, #64748b);
-  font-size: 10px;
-  line-height: 1;
-  opacity: 0.68;
-  pointer-events: none;
-  white-space: nowrap;
-}
-
 body.portalBoardShell .portalNavShell {
   box-sizing: border-box;
   width: 100%;

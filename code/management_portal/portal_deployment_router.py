@@ -4,14 +4,12 @@ from management_common.site_compatibility import compatibility_value
 
 import argparse
 import base64
-import hashlib
 import http.client
 import ipaddress
 import json
 import os
 import select
 import socket
-import sys
 import threading
 import time
 from dataclasses import dataclass
@@ -25,7 +23,6 @@ from .portal_deployment_registry import (
     DEFAULT_DEPLOYMENT_REGISTRY_PATH,
     PortalDeploymentRegistry,
 )
-from management_common.instance_paths import instance_root
 from management_common.service_socket import retry_delays
 from .portal_session_auth import (
     PortalSessionAuthority,
@@ -64,13 +61,6 @@ BACKEND_UNAVAILABLE_PAGE = """<!doctype html>
 </head><body><h1>Portal 暂时无法连接</h1><p>服务可能正在重启。页面会在 5 秒后自动重试。</p>
 <p lang="en">Portal is unavailable for the moment, probably restarting. This page retries in 5 seconds.</p></body></html>
 """
-# The repository source files the running router has loaded, with their
-# digests (``{"pid", "sources"}``).  A publication restarts the router only
-# when one of them changed: a restart cuts every connection it carries.
-SOURCE_MANIFEST_NAME = "user-router-source.json"
-REPOSITORY = Path(__file__).resolve().parents[1]
-# The unit the router runs under counts as its source too.
-UNIT_TEMPLATE = "systemd/portal-user-router.service"
 PUBLIC_RUNTIME_STATUS_FIELDS = (
     "schema",
     "ok",
@@ -113,46 +103,6 @@ def _public_health_payload() -> dict:
 def _public_runtime_status(payload: object) -> dict:
     source = payload if isinstance(payload, dict) else {}
     return {field: source[field] for field in PUBLIC_RUNTIME_STATUS_FIELDS if field in source}
-
-
-def source_manifest_path() -> Path:
-    return instance_root() / SOURCE_MANIFEST_NAME
-
-
-def _digest(path: Path) -> str:
-    try:
-        return hashlib.sha256(path.read_bytes()).hexdigest()
-    except OSError:
-        return ""
-
-
-def loaded_sources() -> dict[str, str]:
-    """The repository source files of the modules this process loaded (and its unit), by content digest."""
-
-    found = {UNIT_TEMPLATE: _digest(REPOSITORY / UNIT_TEMPLATE)}
-    for module in list(sys.modules.values()):
-        path = getattr(module, "__file__", None)
-        if not path:
-            continue
-        source = Path(path).resolve()
-        if source.suffix == ".py" and REPOSITORY in source.parents:
-            found[str(source.relative_to(REPOSITORY))] = _digest(source)
-    return found
-
-
-def changed_sources(manifest: object, pid: int) -> list[str] | None:
-    """The router sources that differ from what the running router loaded.
-
-    ``None`` when the manifest is not the running router's (``pid`` is its
-    process): what it loaded is unknown.
-    """
-
-    if not isinstance(manifest, dict) or not pid or manifest.get("pid") != pid:
-        return None
-    sources = manifest.get("sources")
-    if not isinstance(sources, dict):
-        return None
-    return sorted(name for name, digest in sources.items() if _digest(REPOSITORY / name) != digest)
 
 
 def _public_backend_error() -> dict:
@@ -275,14 +225,10 @@ class PortalRouterServer(ThreadingHTTPServer):
         deployment_registry: PortalDeploymentRegistry | None = None,
         runtime_status_reader: Callable[[], dict] = portal_runtime_status,
         restart_wait: float = BACKEND_RESTART_WAIT_SECONDS,
-        source_manifest: Path | None = None,
         network_settings_path: Path | None = None,
     ):
         self.policy = policy
         self.restart_wait = restart_wait
-        self.source_manifest = source_manifest
-        self._recorded_modules = -1
-        self._record_lock = threading.Lock()
         self.backends = backends
         self.deployment_registry = deployment_registry
         self.runtime_status_reader = runtime_status_reader
@@ -311,24 +257,6 @@ class PortalRouterServer(ThreadingHTTPServer):
             }
             for name in self.backends
         ]
-
-    def record_sources(self) -> None:
-        """Write the source manifest again when this process loaded more modules."""
-
-        if self.source_manifest is None or len(sys.modules) == self._recorded_modules:
-            return
-        with self._record_lock:
-            count = len(sys.modules)
-            if count == self._recorded_modules:
-                return
-            payload = {"pid": os.getpid(), "sources": loaded_sources()}
-            temporary = self.source_manifest.with_name(f".{self.source_manifest.name}.{os.getpid()}")
-            try:
-                temporary.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
-                os.replace(temporary, self.source_manifest)
-                self._recorded_modules = count
-            except OSError as exc:
-                print(f"Portal router source manifest not written: {exc}", file=sys.stderr, flush=True)
 
     def runtime_status(self) -> dict:
         payload = self.runtime_status_reader()
@@ -593,7 +521,6 @@ class PortalRouterHandler(BaseHTTPRequestHandler):
         )
 
     def _dispatch(self) -> None:
-        self.server.record_sources()  # type: ignore[attr-defined]
         clean_path = urlsplit(self.path).path
         if clean_path == "/__portal_router/health":
             return self._json(200, _public_health_payload())
@@ -687,12 +614,10 @@ def main() -> int:
             networks,
             max(1.0, args.timeout),
             registry,
-            source_manifest=source_manifest_path(),
             network_settings_path=portal_network.config_path(),
         )
         for host in binds
     ]
-    servers[0].record_sources()
     threads = [threading.Thread(target=server.serve_forever, name=f"portal-router-{server.server_address[0]}", daemon=True) for server in servers]
     for thread in threads:
         thread.start()

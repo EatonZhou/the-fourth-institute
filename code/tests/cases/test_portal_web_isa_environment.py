@@ -6,10 +6,7 @@
 
 from __future__ import annotations
 
-import json
 import subprocess
-import sys
-from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -40,16 +37,27 @@ def test_paired_restart_queues_the_selected_web_without_legacy_services(monkeypa
     assert requests == [(tmp_path, "release", ["web"])]
 
 
+def test_standalone_restart_is_refused_without_running_commands(monkeypatch):
+    """没有 Dev/Release 配对时 RestartPortal 报告不支持，不执行任何命令"""
+    monkeypatch.setattr(subprocess, "run", lambda *a, **k: pytest.fail("standalone restart ran a command"))
+    for instance in ("dev", "release"):
+        with pytest.raises(InstructionError, match="install_tfi_release"):
+            web_isa.restart_portal(invocation({"instance": instance}))
+
+
 def test_paired_publish_from_release_preserves_pending_activation_receipt(monkeypatch, tmp_path):
-    from scripts import tfi_development_runtime as paired, publish_portal_release as publisher
+    """PublishRelease 从仓库根目录调用 tfi_dev 发布，路径带 code/ 前缀，并返回待确认的激活回执"""
+    from scripts import tfi_development_runtime as paired, tfi_dev
     monkeypatch.setattr(paired, "configured_root", lambda: tmp_path)
     monkeypatch.setattr(web_isa, "_instance", lambda: "release")
     health = {"status": "pending", "receipt": str(tmp_path / "result.json")}
-    monkeypatch.setattr(publisher, "publish", lambda options:
-                        {"ok": True, "commit": "abc", "paths": list(options.paths), "health": health})
+    calls = []
+    monkeypatch.setattr(tfi_dev, "publish", lambda root, message, **options: calls.append((root, message, options)) or
+                        {"ok": True, "commit": "abc", "paths": list(options["paths"]), "health": health})
     result = web_isa.publish_release(invocation({"message": "fix", "paths": ["SPEC.md"]}))
     assert result["health"] == health
-    assert result["paths"] == ["SPEC.md"]
+    assert result["paths"] == ["code/SPEC.md"]
+    assert calls == [(web_isa.REPO_ROOT.parent, "fix", {"paths": ("code/SPEC.md",), "all_files": False})]
 
 
 def test_clear_unread_updates_read_boundary_without_listing_inbox(monkeypatch):
@@ -76,48 +84,6 @@ def test_clear_unread_updates_read_boundary_without_listing_inbox(monkeypatch):
     assert web_isa.clear_user_mailbox(invocation({"user_id": "sample_admin", "mode": "unread"})) == {
         "status": "cleared", "cleared": 1, "items": []}
     assert calls == [("sample_admin", {"mode": "unread", "entries": [{"key": key, "unread": True}]})]
-
-
-def test_dev_restart_returns_the_queued_request_and_its_components(monkeypatch):
-    """RestartPortal 对 Dev 返回排队的请求 ID 和组件，经 Python 入口执行"""
-    calls = []
-
-    def run(command, **_options):
-        calls.append(command)
-        body = {"ok": True, "queued": True, "instance": "dev",
-                "request": {"request_id": "restart_request_0123", "components": ["web", "lineage"]}}
-        return SimpleNamespace(returncode=0, stdout=json.dumps(body), stderr="")
-
-    monkeypatch.setattr(subprocess, "run", run)
-    result = web_isa.restart_portal(invocation({"instance": "dev"}))
-    assert result == {"request_id": "restart_request_0123", "components": ["web", "lineage"]}
-    assert calls[0][-2:] == ["request-restart", "dev"]
-    # The interpreter runs a Python entry point (the shell wrapper is not Python).
-    script = Path(calls[0][1])
-    assert calls[0][0] == sys.executable and script.suffix == ".py"
-    compile(script.read_text(encoding="utf-8"), str(script), "exec")
-
-
-def test_dev_restart_without_a_request_id_fails(monkeypatch):
-    """Dev 重启结果缺少请求 ID 时 RestartPortal 报错"""
-    monkeypatch.setattr(subprocess, "run", lambda command, **_: SimpleNamespace(returncode=0, stdout="{}", stderr=""))
-    with pytest.raises(InstructionError, match="请求 ID"):
-        web_isa.restart_portal(invocation({"instance": "dev"}))
-
-
-def test_release_restart_has_an_independent_service_cgroup(monkeypatch):
-    """Release 重启经 systemd-run 在独立服务单元中执行，单元被拒时报错"""
-    commands = []
-    monkeypatch.setattr(subprocess, 'run', lambda command, **kwargs:
-                        commands.append(command) or SimpleNamespace(returncode=0, stdout='', stderr=''))
-    result = web_isa.restart_portal(invocation({'instance': 'release'}))
-    assert commands[0][:3] == ['systemd-run', '--user', '--collect']
-    assert f'--unit={result["request_id"]}' in commands[0]
-    assert commands[0][-2:] == ['restart', 'release']
-    monkeypatch.setattr(subprocess, 'run', lambda *a, **kw:
-                        SimpleNamespace(returncode=1, stdout='', stderr='unit rejected'))
-    with pytest.raises(InstructionError, match='unit rejected'):
-        web_isa.restart_portal(invocation({'instance': 'release'}))
 
 
 def test_resident_favorites_sit_beside_lineage_and_project_favorites(monkeypatch, isolated_portal_case):
@@ -366,13 +332,14 @@ def test_disk_status_lists_the_disks_or_the_selected_disk(monkeypatch):
     assert asked == [(True, ""), (False, "device_disk0")]
 
 
-def test_publish_release_reports_the_push_to_each_remote(monkeypatch):
-    """PublishRelease 结果报告推送到每个远端的成败"""
-    import scripts.publish_portal_release as publisher
+def test_publish_release_reports_the_push_to_the_remote(monkeypatch):
+    """PublishRelease 结果报告提交、待激活回执和推送结果"""
+    from scripts import tfi_dev
 
-    push = {"ok": False, "branch": "main", "remotes": {"origin": {"ok": True}, "github": {"ok": False, "error": "rejected"}}}
+    push = {"ok": True, "remote": "origin"}
+    health = {"status": "pending", "receipt": "/runtime/receipt.json"}
     monkeypatch.setattr(web_isa, "_instance", lambda: "dev", raising=False)
-    monkeypatch.setattr(publisher, "publish", lambda options: {
-        "ok": True, "commit": "abc123", "paths": ["SPEC.md"], "health": {"ok": True}, "push": push})
+    monkeypatch.setattr(tfi_dev, "publish", lambda *args, **options: {
+        "ok": True, "commit": "abc123", "paths": ["code/SPEC.md"], "health": health, "push": push})
     result = web_isa.publish_release(invocation({"message": "m", "paths": ["SPEC.md"]}))
-    assert result["commit"] == "abc123" and result["push"] == push
+    assert result == {"commit": "abc123", "paths": ["code/SPEC.md"], "health": health, "push": push}

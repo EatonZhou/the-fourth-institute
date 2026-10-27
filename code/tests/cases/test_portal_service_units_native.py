@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import plistlib
+import shutil
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -21,7 +22,7 @@ def test_native_codex_lifecycle_uses_registered_service(tmp_path, monkeypatch, p
     monkeypatch.setattr(units, "sys", SimpleNamespace(platform=platform, executable=str(tmp_path / "Python.exe")))
     monkeypatch.setattr(units, "instance_root", lambda: tmp_path / "Portal Instance")
     monkeypatch.setattr(site_config, "read_site_config", lambda: {"deployment": {"providers": {"codex_binary": str(binary)}}})
-    monkeypatch.setattr(units.shutil, "which", lambda name: str(binary))
+    monkeypatch.setattr(shutil, "which", lambda name: str(binary))
     if platform == "win32":
         from management_portal.execution import provider_updates
         monkeypatch.setattr(provider_updates, "sys", units.sys)
@@ -122,7 +123,7 @@ def test_native_start_failure_rolls_back_new_registration(tmp_path, monkeypatch)
     monkeypatch.setattr(units, "sys", SimpleNamespace(platform="darwin", executable=str(binary)))
     monkeypatch.setattr(units, "instance_root", lambda: tmp_path / "instance")
     monkeypatch.setattr(site_config, "read_site_config", lambda: {"deployment": {}})
-    monkeypatch.setattr(units.shutil, "which", lambda name: str(binary))
+    monkeypatch.setattr(shutil, "which", lambda name: str(binary))
     from management_common import portal_paths
     original_path = portal_paths.path_values
     monkeypatch.setattr(portal_paths, "path_values", lambda: {**original_path(), "accounts_root": str(tmp_path / "accounts")})

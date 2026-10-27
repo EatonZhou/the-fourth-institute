@@ -1,8 +1,6 @@
-"""Load private service environment files before a native service execs its child."""
+"""Read private service environment files for a native service's child process."""
 from __future__ import annotations
 
-import argparse
-import os
 from pathlib import Path
 import re
 
@@ -30,18 +28,3 @@ def load_environment_files(files, environment):
                 value = value[1:-1]
             result[key] = value
     return result
-
-
-def main(argv=None):
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--env-file", action="append", default=[])
-    parser.add_argument("command", nargs=argparse.REMAINDER)
-    args = parser.parse_args(argv)
-    command = args.command[1:] if args.command[:1] == ["--"] else args.command
-    if not command:
-        parser.error("service command is required")
-    os.execvpe(command[0], command, load_environment_files(args.env_file, os.environ))
-
-
-if __name__ == "__main__":
-    main()

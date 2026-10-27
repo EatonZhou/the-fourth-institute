@@ -2,27 +2,11 @@
 from __future__ import annotations
 import sys
 import logging
-import threading
 import os
 from pathlib import Path
 from urllib.parse import parse_qs
 from management_common import portal_network, portal_paths
-from management_portal import embedding_setup
 from scripts.migrate_portal_paths import job_status, queue_migration
-
-def _restart_router_after_response() -> None:
-
-    def restart() -> None:
-        try:
-            from scripts.portal_services import restart_user_router
-            health = restart_user_router()
-            if not health.get('ok'):
-                logging.error('Portal Router did not become healthy after network settings changed: %s', health)
-        except Exception:
-            logging.exception('Portal Router restart failed after network settings changed')
-    timer = threading.Timer(1.0, restart)
-    timer.daemon = True
-    timer.start()
 
 class AdminHttp:
 

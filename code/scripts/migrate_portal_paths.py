@@ -9,9 +9,7 @@ import json
 import os
 import shutil
 import stat
-import subprocess
 import sys
-import tempfile
 import time
 import uuid
 from pathlib import Path
@@ -22,7 +20,6 @@ if str(ROOT) not in sys.path:
 
 from management_common import portal_paths
 from scripts.portal_background_jobs import job_alive, launch_job
-from scripts.portal_service_control import ServiceControl
 
 
 JOBS_DIR = portal_paths.CONFIG_PATH.parent / "portal_path_jobs"
@@ -106,33 +103,17 @@ def _clear_abandoned_lock() -> bool:
     return False
 
 
-def _check_directory_alias_support(current: dict[str, str], resolved: dict[str, str],
-                                   *, platform: str | None = None) -> None:
-    if (platform or sys.platform) != "win32":
-        return
-    # The rollback alias is mandatory when old paths are still referenced.
-    # Probe before stopping any Portal service, while the source is live.
-    for key in portal_paths.KEYS:
-        source = Path(current[key])
-        if source == Path(resolved[key]) or not source.exists():
-            continue
-        with tempfile.TemporaryDirectory(prefix="portal-alias-check-", dir=source.parent) as probe_dir:
-            probe = Path(probe_dir) / "alias"
-            try:
-                probe.symlink_to(source, target_is_directory=True)
-            except OSError as exc:
-                raise RuntimeError(
-                    "Windows directory symlinks are unavailable; enable Developer Mode "
-                    "or grant symlink privilege before migrating Portal paths"
-                ) from exc
-            probe.unlink()
+def _installation_root() -> Path:
+    from management_common.instance_config import installed_root
+    root = installed_root(portal_paths.CONFIG_PATH)
+    if root is None:
+        raise RuntimeError("Portal path migration requires an installed TFI instance")
+    return root
 
 
 def queue_migration(target: dict[str, str]) -> dict:
     current, resolved = validate(target)
-    from management_common.instance_config import installed_root
-    if installed_root(portal_paths.CONFIG_PATH) is None:
-        _check_directory_alias_support(current, resolved)
+    _installation_root()
     JOBS_DIR.mkdir(parents=True, exist_ok=True)
     try:
         fd = os.open(LOCK_PATH, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
@@ -199,38 +180,6 @@ def _copy_and_verify(source: Path, destination: Path) -> None:
         raise RuntimeError(f"Copy verification failed: {source}")
 
 
-def _service(instance: str, action: str, *, force: bool = False) -> None:
-    arguments = [sys.executable, str(ROOT / "scripts" / "portal_services.py"), action, instance]
-    if action == "stop":
-        arguments.extend(["--force"] if force else ["--drain", "--drain-timeout", "360"])
-    subprocess.run(arguments, cwd=ROOT, check=True)
-
-
-def _router(action: str) -> None:
-    getattr(ServiceControl(), action)("portal-user-router.service")
-
-
-def _install_alias(source: Path, destination: Path, job_id: str) -> Path | None:
-    if not source.exists():
-        return None
-    backup = source.with_name(f"{source.name}.portal-backup-{job_id}")
-    if backup.exists() or backup.is_symlink():
-        raise FileExistsError(backup)
-    source.rename(backup)
-    try:
-        source.symlink_to(destination, target_is_directory=True)
-    except Exception:
-        backup.rename(source)
-        raise
-    return backup
-
-
-def _restore_aliases(aliases: list[tuple[Path, Path]]) -> None:
-    for source, backup in reversed(aliases):
-        source.unlink()
-        backup.rename(source)
-
-
 def run_installed(job_id, root):
     """Installed sites use the deployment owner and never create old-path aliases."""
     from management_common.instance_config import read_installation, configuration_digest
@@ -280,86 +229,15 @@ def run_installed(job_id, root):
 
 
 def run(job_id: str) -> None:
-    item = job_status(job_id)
     if LOCK_PATH.read_text(encoding="utf-8") != job_id:
         raise RuntimeError("Migration lock no longer belongs to this job")
-    from management_common.instance_config import installed_root
-    root = installed_root(portal_paths.CONFIG_PATH)
-    if root is not None:
-        return run_installed(job_id, root)
-    previous = portal_paths.path_values()
-    original_config = portal_paths.CONFIG_PATH.read_bytes() if portal_paths.CONFIG_PATH.exists() else None
-    stopped = []
-    aliases: list[tuple[Path, Path]] = []
-    switched = False
-    router_stopped = False
-    started: list[str] = []
     try:
-        if {key: str(value) for key, value in portal_paths.paths().items()} != item["source"]:
-            raise RuntimeError("Portal paths changed after this migration was queued")
-        if validate(item["target"]) != (item["source"], item["target"]):
-            raise RuntimeError("Portal paths changed after this migration was queued")
-        _update(job_id, state="stopping")
-        for instance in ("dev", "release"):
-            stopped.append(instance)
-            _service(instance, "stop")
-        _router("stop")
-        router_stopped = True
-        _update(job_id, state="copying")
-        for key in portal_paths.KEYS:
-            source, destination = Path(item["source"][key]), Path(item["target"][key])
-            if source != destination:
-                _copy_and_verify(source, destination)
-        _update(job_id, state="switching")
-        for key in portal_paths.KEYS:
-            source, destination = Path(item["source"][key]), Path(item["target"][key])
-            if source != destination:
-                backup = _install_alias(source, destination, job_id)
-                if backup is not None:
-                    aliases.append((source, backup))
-        portal_paths.write_config(item["target"])
-        switched = True
-        _update(job_id, state="restarting")
-        for instance in reversed(stopped):
-            started.append(instance)
-            _service(instance, "start")
-        _update(job_id, state="completed")
-    except Exception as exc:
-        restart_errors = []
-        for instance in started:
-            try:
-                _service(instance, "stop", force=True)
-            except Exception as stop_exc:
-                restart_errors.append(f"{instance} stop: {stop_exc}")
-        if restart_errors:
-            _update(job_id, state="failed", error=f"{exc}; rollback blocked: {restart_errors}")
-            raise RuntimeError("Could not stop newly started services; manual recovery required") from exc
-        try:
-            if switched:
-                if original_config is None:
-                    portal_paths.CONFIG_PATH.unlink(missing_ok=True)
-                else:
-                    temporary = portal_paths.CONFIG_PATH.with_suffix(".rollback.tmp")
-                    temporary.write_bytes(original_config)
-                    os.replace(temporary, portal_paths.CONFIG_PATH)
-            _restore_aliases(aliases)
-        except Exception as rollback_exc:
-            _update(job_id, state="failed", error=f"{exc}; rollback failed: {rollback_exc}; manual recovery required")
-            raise RuntimeError("Portal path rollback failed; manual recovery required") from exc
-        if router_stopped:
-            try:
-                _router("start")
-            except Exception as restart_exc:
-                restart_errors.append(f"router: {restart_exc}")
-        for instance in reversed(stopped):
-            try:
-                _service(instance, "start")
-            except Exception as restart_exc:
-                restart_errors.append(f"{instance}: {restart_exc}")
-        _update(job_id, state="failed", error=f"{exc}; restart errors: {restart_errors}")
-        raise
-    finally:
+        root = _installation_root()
+    except RuntimeError as exc:
+        _update(job_id, state="failed", error=str(exc))
         LOCK_PATH.unlink(missing_ok=True)
+        raise
+    return run_installed(job_id, root)
 
 
 if __name__ == "__main__":

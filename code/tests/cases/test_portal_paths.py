@@ -42,13 +42,13 @@ def test_copied_legacy_config_does_not_bind_new_install_to_old_instance(tmp_path
 
 def test_queue_passes_path_environment_to_detached_service(tmp_path, monkeypatch):
     monkeypatch.setattr(migration.sys, "platform", "linux")
-    monkeypatch.setattr(migration.shutil, "which", lambda _name: "/usr/bin/systemd-run")
     monkeypatch.setattr(migration, "JOBS_DIR", tmp_path / "jobs")
     monkeypatch.setattr(migration, "LOCK_PATH", migration.JOBS_DIR / "active.lock")
     monkeypatch.setattr(migration, "validate", lambda _target: ({}, {}))
+    monkeypatch.setattr(migration, "_installation_root", lambda: tmp_path)
     monkeypatch.setenv("PORTAL_PATHS_CONFIG", str(tmp_path / "paths.json"))
     commands = []
-    monkeypatch.setattr(migration.subprocess, "run", lambda command, **_kwargs: commands.append(command))
+    monkeypatch.setattr(portal_background_jobs.subprocess, "run", lambda command, **_kwargs: commands.append(command))
     migration.queue_migration({})
     assert f"--setenv=PORTAL_PATHS_CONFIG={tmp_path / 'paths.json'}" in commands[0]
 
@@ -89,6 +89,7 @@ def test_native_migration_queue_persists_child_pid_without_saving_paths(tmp_path
     monkeypatch.setattr(migration, "JOBS_DIR", tmp_path / "jobs")
     monkeypatch.setattr(migration, "LOCK_PATH", migration.JOBS_DIR / "active.lock")
     monkeypatch.setattr(migration, "validate", lambda _target: ({"old": "source"}, {"new": "target"}))
+    monkeypatch.setattr(migration, "_installation_root", lambda: tmp_path)
     monkeypatch.setattr(migration, "launch_job", lambda *_args, **_kwargs: 321)
     queued = migration.queue_migration({})
     assert queued["state"] == "queued"
@@ -107,18 +108,7 @@ def test_detached_script_runner_receives_only_explicit_environment(tmp_path, mon
     assert launched[0]["env"] == {"HOME": str(tmp_path)}
 
 
-def test_windows_migration_checks_alias_privilege_before_stopping_services(tmp_path, monkeypatch):
-    source = tmp_path / "old"
-    source.mkdir()
-    destination = tmp_path / "new"
-    monkeypatch.setattr(Path, "symlink_to", lambda *_args, **_kwargs: (_ for _ in ()).throw(PermissionError()))
-    with pytest.raises(RuntimeError, match="Developer Mode"):
-        migration._check_directory_alias_support(
-            {"share_root": str(source)}, {"share_root": str(destination)}, platform="win32"
-        )
-
-
-def test_migration_validates_before_saving_and_copies_verified_data(tmp_path, monkeypatch):
+def test_migration_validates_targets_and_requires_an_installed_instance(tmp_path, monkeypatch):
     root = tmp_path / "portal"
     root.mkdir()
     config = tmp_path / "settings" / "paths.json"
@@ -137,21 +127,20 @@ def test_migration_validates_before_saving_and_copies_verified_data(tmp_path, mo
     with pytest.raises(ValueError, match="not empty"):
         migration.validate(new)
     (Path(new["share_root"]) / "existing.txt").unlink()
-    actions = []
-    monkeypatch.setattr(migration, "_service", lambda instance, action: actions.append((instance, action)))
-    monkeypatch.setattr(migration, "_router", lambda action: actions.append(("router", action)))
+    # A source checkout without an installation has no service owner to stop.
+    monkeypatch.setattr("management_common.instance_config.installed_root", lambda _config: None)
+    with pytest.raises(RuntimeError, match="installed TFI instance"):
+        migration.queue_migration(new)
+    assert not migration.LOCK_PATH.exists()
     migration.JOBS_DIR.mkdir(parents=True)
     job_id = "a" * 32
     migration.LOCK_PATH.write_text(job_id, encoding="utf-8")
     migration._atomic_json(migration._job_path(job_id), {"id": job_id, "state": "queued", "source": old, "target": new})
-    migration.run(job_id)
-    assert portal_paths.paths() == {key: Path(value) for key, value in new.items()}
-    assert (Path(new["share_root"]) / "message.txt").read_text(encoding="utf-8") == "portal data"
-    assert (Path(old["share_root"]) / "message.txt").exists()
-    assert Path(old["share_root"]).is_symlink()
-    assert Path(old["share_root"]).resolve() == Path(new["share_root"])
-    assert migration.job_status(job_id)["state"] == "completed"
-    assert actions == [("dev", "stop"), ("release", "stop"), ("router", "stop"), ("release", "start"), ("dev", "start")]
+    with pytest.raises(RuntimeError, match="installed TFI instance"):
+        migration.run(job_id)
+    assert portal_paths.paths() == {key: Path(value) for key, value in old.items()}
+    assert not migration.LOCK_PATH.exists()
+    assert migration.job_status(job_id)["state"] == "failed"
 
 
 def test_http_refuses_unconfirmed_path_change(monkeypatch):
@@ -166,38 +155,3 @@ def test_http_refuses_unconfirmed_path_change(monkeypatch):
     status, payload = admin.paths_post(object(), None, None)
     assert status == 400
     assert "migration" in payload["error"].lower()
-
-
-def test_failed_restart_restores_paths_and_existing_data(tmp_path, monkeypatch):
-    root = tmp_path / "portal"
-    root.mkdir()
-    monkeypatch.setattr(portal_paths, "PORTAL_ROOT", root)
-    monkeypatch.setattr(portal_paths, "CONFIG_PATH", tmp_path / "settings" / "paths.json")
-    monkeypatch.setattr(migration, "JOBS_DIR", tmp_path / "settings" / "jobs")
-    monkeypatch.setattr(migration, "LOCK_PATH", migration.JOBS_DIR / "active.lock")
-    old = {key: str(tmp_path / "old" / key) for key in portal_paths.KEYS}
-    new = {key: str(tmp_path / "new" / key) for key in portal_paths.KEYS}
-    for key, name in portal_paths.ENV_KEYS.items():
-        monkeypatch.setenv(name, old[key])
-    original = Path(old["share_root"])
-    original.mkdir(parents=True)
-    (original / "data.txt").write_text("original", encoding="utf-8")
-    migration.JOBS_DIR.mkdir(parents=True)
-    job_id = "b" * 32
-    migration.LOCK_PATH.write_text(job_id, encoding="utf-8")
-    migration._atomic_json(migration._job_path(job_id), {"id": job_id, "state": "queued", "source": old, "target": new})
-    calls = []
-    def service(instance, action, *, force=False):
-        calls.append((instance, action, force))
-        if instance == "release" and action == "start" and len(calls) == 3:
-            raise RuntimeError("service unhealthy")
-    monkeypatch.setattr(migration, "_service", service)
-    monkeypatch.setattr(migration, "_router", lambda _action: None)
-    with pytest.raises(RuntimeError, match="service unhealthy"):
-        migration.run(job_id)
-    assert portal_paths.paths() == {key: Path(value) for key, value in old.items()}
-    assert not portal_paths.CONFIG_PATH.exists()
-    assert original.is_dir() and not original.is_symlink()
-    assert (original / "data.txt").read_text(encoding="utf-8") == "original"
-    assert not migration.LOCK_PATH.exists()
-    assert migration.job_status(job_id)["state"] == "failed"

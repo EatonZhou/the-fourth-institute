@@ -282,7 +282,6 @@
           currentIdentity = data && typeof data === "object" ? data : {};
           const username = String(data?.username || "").trim();
           if (username) currentUsername = username;
-          renderReleaseStamp(data);
           // Identity changes account-only state. Rebuilding navigation here replaces
           // already-focusable links and creates an avoidable click/accessibility race.
           // User-specific ordering is applied incrementally by hydrateItemOrder().
@@ -290,27 +289,6 @@
         });
     }
     return identityEffectsPromise;
-  }
-
-  function renderReleaseStamp(data = {}) {
-    document.querySelectorAll("[data-portal-release-stamp]").forEach(node => node.remove());
-    if (String(data.portal_instance || "").toLowerCase() !== "release") return;
-    const builtAt = new Date(String(data.built_at || ""));
-    if (Number.isNaN(builtAt.getTime())) return;
-    // This bootstrap stamp runs before portal_ui.js; its pre-Portal formatter is intentional.
-    const updated = new Intl.DateTimeFormat(window.PortalI18n.locale(), {
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    }).format(builtAt);
-    const stamp = document.createElement("div");
-    stamp.className = "portalReleaseStamp";
-    stamp.dataset.portalReleaseStamp = "";
-    stamp.textContent = window.PortalI18n.text`Release · Updated ${updated}`;
-    stamp.title = [String(data.build_id || ""), String(data.source_commit || "")].filter(Boolean).join(" · ");
-    document.body.appendChild(stamp);
   }
 
   function normalizedItemOrder(value) {

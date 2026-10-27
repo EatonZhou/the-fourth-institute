@@ -207,7 +207,7 @@ class SharedInstanceTests(unittest.TestCase):
             config = root / "config/paths.json"
             config.write_text("{}")
             target = self.target(root)
-            (root / "installation.json").write_text(json.dumps({"target": target}))
+            (root / "installation.json").write_text(json.dumps({"schema": "tfi.release-installation.v1", "target": target}))
             with patch.dict("os.environ", {"PORTAL_PATHS_CONFIG": str(config)}), \
                     patch("management_common.portal_paths.path",
                           side_effect=lambda key: Path(target["data_roots"][key])):

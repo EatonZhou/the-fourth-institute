@@ -20,7 +20,7 @@ def test_resource_type_page_access_uses_separate_read_and_write_permissions(monk
     http = PortalSessionHttp(
         respond=lambda request, status, payload: payload, exception_response=None, read_json=None,
         session_actor=lambda request: "reader", access=lambda: SimpleNamespace(user=lambda actor: {}),
-        avatar=lambda actor: None, instance="dev", build_id="", release_manifest={},
+        avatar=lambda actor: None, instance="dev", build_id="",
         preferences=lambda actor: {}, set_preferences=None, conversation_payload=None, workspace_adapter=None,
     )
     flags = http.me(None, None, "")["access"]["allows"]

@@ -354,8 +354,7 @@ def test_config_to_real_account_and_service_consumers(tmp_path,monkeypatch):
     assert codex_socket_path('codex_two')==root/'instances_root/sockets/codex-codex_two.sock'
     source=Path(cutover.__file__).resolve().parents[1]
     for name in ['config/systemd/portal-codex-app-server@.service.in',
-                 'systemd/portal-dev-execution-service.service',
-                 'systemd/portal-postgresql.service']:
+                 'systemd/portal-claude-code.service']:
         rendered=storage.render_unit(source/name)
         assert '@PORTAL_' not in rendered
         assert f'PORTAL_PATHS_CONFIG={config}' in rendered

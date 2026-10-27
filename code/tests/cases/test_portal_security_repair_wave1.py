@@ -192,9 +192,6 @@ def test_router_rebuilds_forwarded_metadata_at_the_trust_boundary_contracts(subt
         for origin in ('http://example.invalid:18085', 'http://localhost:18085', 'http://192.168.115.10:18085'):
             with pytest.raises(ValueError, match='loopback'):
                 PortalDeployment.from_payload({**base, 'origin': origin})
-    with subtests.test(contract='test_release_build_identity_uses_source_commit'), isolated_portal_case() as case_path:
-        manifest = {'release_id': '20260826-020000-deadbeef00', 'source_commit': 'deadbeef'}
-        assert portal._resolve_portal_build_id('release', manifest) == manifest['source_commit']
     with subtests.test(contract='test_public_router_diagnostics_are_allowlisted'), isolated_portal_case() as case_path:
         assert router_module._public_health_payload() == {'ok': True}
         status = router_module._public_runtime_status({'schema': 'tfi.portal-runtime-status.v1', 'ok': False, 'ready': False, 'state': 'blocked', 'code': 'runtime_status_unavailable', 'terminal': True, 'retryable': False, 'title': 'Unavailable', 'message': 'Try later', 'detail': '/private/path', 'instance': 'release'})

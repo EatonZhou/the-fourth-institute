@@ -119,7 +119,8 @@ def feature_imports(repo):
     def owner(name):
         return next((key for key, patterns in features.items() if any(fnmatchcase(name, p) for p in patterns)), None)
 
-    files = repo.files if repo.commit else set(repo.git('ls-files').splitlines())
+    files = repo.files if repo.commit else {
+        path for path in repo.git('ls-files').splitlines() if (repo.root / path).is_file()}
     found = {}
     for path in sorted(files):
         if not path.endswith('.py') or not path.startswith(CORE_PACKAGES) or owner(module_name(path)):

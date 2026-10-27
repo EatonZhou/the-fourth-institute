@@ -732,6 +732,7 @@
     const markComposerInputActivity = (activity = {}) => {
       state.composerInputFocused = !!activity.focused;
       state.composerImeActive = !!activity.composing;
+      if (activity.event?.type === "compositionend") resumeAttachmentRefs();
       updateControls();
     };
 
@@ -766,14 +767,14 @@
     });
 
     const {
-      attachmentPreviewOptions, renderAttachments, renderAttachmentTrayOnly, withoutAttachmentReconcile,
+      attachmentPreviewOptions, renderAttachments, renderAttachmentTrayOnly, resumeAttachmentRefs, withoutAttachmentReconcile,
       setAttachments, updateAttachment, addFiles, addReference, uploadComposerAttachment, removeComposerAttachment,
       reconcileAttachmentsFromInput, discardComposerAttachments, releaseAttachmentPreviews, reportAttachmentError,
       destroyComposerAttachments,
     } = chatWorkspaceModule("PortalChatWorkspaceComposerAttachments").createComposerAttachments({
       composerAttachmentTokenOrder, composerSelectionSnapshot,
       createConversationSelectionReference, currentController: () => controller, els, historyScope,
-      insertComposerAttachmentRef, mediaPartPath, normalizeComposerAttachment, normalizeComposerAttachments, options,
+      insertComposerAttachmentRef, isComposerImeActive, mediaPartPath, normalizeComposerAttachment, normalizeComposerAttachments, options,
       removeComposerAttachmentRef, renderComposerAttachmentTray, requireImageEditor, restoreComposerSelection,
       saveActiveDraft, state, syncComposerAttachmentRefs,
       // Made below: the undo takes back these attachments, so it comes after them.
@@ -1027,10 +1028,16 @@
 
       const desiredInput = desired.querySelector(`#${CSS.escape(dom.inputId)}`);
       if (desiredInput) {
-        els.input.setAttribute("data-placeholder", desiredInput.dataset.placeholder || "");
-        els.input.setAttribute("contenteditable", desiredInput.getAttribute("contenteditable") || "true");
-        els.input.setAttribute("role", desiredInput.getAttribute("role") || "textbox");
-        els.input.setAttribute("aria-multiline", desiredInput.getAttribute("aria-multiline") || "true");
+        for (const [name, value] of [
+          ["data-placeholder", desiredInput.dataset.placeholder || ""],
+          ["contenteditable", desiredInput.getAttribute("contenteditable") || "true"],
+          ["role", desiredInput.getAttribute("role") || "textbox"],
+          ["aria-multiline", desiredInput.getAttribute("aria-multiline") || "true"],
+        ]) {
+          // Reapplying contenteditable can disturb a native composition even
+          // when a background update has not changed the editing capability.
+          if (els.input.getAttribute(name) !== value) els.input.setAttribute(name, value);
+        }
       }
 
       for (const position of ["before", "after"]) {

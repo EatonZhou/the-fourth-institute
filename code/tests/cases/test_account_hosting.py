@@ -1,6 +1,7 @@
 """:module: execution.providers"""
 from pathlib import Path
 import json
+import shutil
 import stat
 
 import pytest
@@ -113,7 +114,7 @@ def test_codex_template_and_instance_control(tmp_path, monkeypatch):
     monkeypatch.setenv("PORTAL_ACCOUNTS_ROOT", str(tmp_path / "accounts"))
     monkeypatch.setenv("PORTAL_PROVIDER_EGRESS_ENV_FILE", str(tmp_path / "proxy.env"))
     monkeypatch.setattr(units, "USER_UNIT_ROOT", tmp_path / "units")
-    monkeypatch.setattr(storage.shutil, "which", lambda _: "/opt/bin/codex")
+    monkeypatch.setattr(shutil, "which", lambda _: "/opt/bin/codex")
     calls = []
     def run(*args, **kwargs):
         calls.append(args)

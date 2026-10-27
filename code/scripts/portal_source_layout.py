@@ -2,7 +2,6 @@
 from pathlib import Path
 import importlib.abc
 import importlib.machinery
-import json
 import os
 import sys
 
@@ -34,29 +33,26 @@ class SharedSourceFinder(importlib.abc.MetaPathFinder):
 
 
 def activate_shared_imports(worktree: Path) -> Path | None:
+    """Route shared packages to ``PORTAL_SHARED_SOURCE_ROOT`` when the pair sets it."""
     configured = os.environ.get('PORTAL_SHARED_SOURCE_ROOT', '').strip()
-    manifest = worktree / 'release-manifest.json'
-    if not configured and not manifest.is_file():
+    if not configured:
         return None
-    config = json.loads(manifest.read_text(encoding='utf-8')) if not configured else {}
-    root = Path(configured or config['shared_source'])
-    paths = SHARED_PATHS if configured else tuple(config['shared_paths'])
+    root = Path(configured)
     for finder in sys.meta_path:
         if isinstance(finder, SharedSourceFinder):
             return root
-    sys.meta_path.insert(0, SharedSourceFinder(root, paths))
+    sys.meta_path.insert(0, SharedSourceFinder(root, SHARED_PATHS))
     return root
 
 
 # Select the owner using only stdlib before even configuration/path helpers are
 # imported. Otherwise importing this module caches Release's management_common
 # before management_portal.__init__ can install the shared package finder.
-_MANIFEST_SHARED_ROOT = activate_shared_imports(_INSTALLATION_ROOT)
+_CONFIGURED_SHARED_ROOT = activate_shared_imports(_INSTALLATION_ROOT)
 from management_common.portal_paths import resolve_directory
 from management_common.site_config import read_site_config
-from management_common.postgres_configuration import postgres_settings
 
-SHARED_ROOT = _MANIFEST_SHARED_ROOT or resolve_directory(
+SHARED_ROOT = _CONFIGURED_SHARED_ROOT or resolve_directory(
     read_site_config().get('deployment', {}).get('source_root', str(_INSTALLATION_ROOT)))
 # These packages own shared persisted facts and their RPC contracts. Both Web
 # clients see the same contracts; both service pools execute from SHARED_ROOT.
@@ -68,9 +64,7 @@ COMPONENTS = {
     'lineage': {'unit': 'society-service', 'build_key': 'society_service', 'module': 'management_portal.society_service.server'},
 }
 SHARED_COMPONENTS = tuple(name for name, item in COMPONENTS.items() if item['unit'])
-SERVICE_ENTRY_MODULES = {name: (item['module'],) for name, item in COMPONENTS.items()}
-SERVICE_ENTRY_MODULES['resource'] += SERVICE_ENTRY_MODULES['lineage']
-SERVICE_ENTRY_MODULES['execution-worker'] += ('management_portal.execution.worker',)
+# Unit names of the source-checkout pools; one-time migrations still check them.
 INSTANCE_LAYOUT = {}
 for _instance, _web, _port in (
     ('dev', 'management-portal.service', 18086),
@@ -83,9 +77,5 @@ for _instance, _web, _port in (
         'component_units': _units,
         'services': (f'portal-{_instance}-nats.service', *(_units[name] for name in SHARED_COMPONENTS)),
     }
-AI_SOCKET_RELAY_UNIT = 'portal-ai-socket-relay.service'
-DEV_AUX_UNITS = (postgres_settings()['unit'], AI_SOCKET_RELAY_UNIT,
-                 'portal-user-router.service', 'portal-dev-source-reloader.service')
-DEV_WEB_DROPINS = {'routing.conf': 'management-portal-routed.conf'}
 SHARED_MODULES = {item['unit']: (item['module'], item['build_key'])
                   for name, item in COMPONENTS.items() if name in SHARED_COMPONENTS}

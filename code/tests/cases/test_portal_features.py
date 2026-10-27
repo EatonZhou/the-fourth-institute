@@ -315,7 +315,7 @@ def test_telepus_management_access_flags_follow_feature_installation(features, m
     session = PortalSessionHttp(
         respond=lambda _request, _status, payload: payload, exception_response=None, read_json=None,
         session_actor=lambda _request: "alice", access=lambda: SimpleNamespace(user=lambda _actor: {"status": "active"}),
-        avatar=lambda _actor: "", instance="dev", build_id="test", release_manifest={},
+        avatar=lambda _actor: "", instance="dev", build_id="test",
         preferences=lambda _actor: {}, set_preferences=None, conversation_payload=None, workspace_adapter=None,
     )
     installed = session.me(None, None, None)["access"]["allows"]

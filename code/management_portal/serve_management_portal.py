@@ -7,7 +7,6 @@ from management_portal.http_timing import timed_call
 
 import base64
 import gzip
-import hashlib
 import hmac
 import io
 import json
@@ -16,7 +15,6 @@ import os
 import re
 import secrets
 import shutil
-import subprocess
 import sys
 import threading
 import time
@@ -55,10 +53,8 @@ from management_portal.society_service import (
     get_society_service,
 )
 from management_portal.society_service import workspace_contracts
-from management_portal.conversation_completion import completion_signature
 from management_portal import agent_context_selection, conversation_read_state
 from management_portal.execution import get_execution_service
-from management_portal.component_lifecycle import read_component_state
 from management_portal.http_errors import instruction_error_payload as _hatg_instruction_error_payload
 from management_common.operation_errors import OperationError
 from management_portal.http_errors import exception_http_error, normalize_json_error
@@ -204,33 +200,8 @@ def _daily_news_payload() -> dict:
     }
 
 
-def _read_release_manifest() -> dict:
-    try:
-        payload = json.loads((WORKSPACE_ROOT / "release-manifest.json").read_text(encoding="utf-8"))
-    except Exception:
-        return {}
-    return payload if isinstance(payload, dict) else {}
-
-
-_RELEASE_MANIFEST = _read_release_manifest()
 _PORTAL_INSTANCE = os.getenv("PORTAL_INSTANCE", "dev").strip() or "dev"
-
-
-def _resolve_portal_build_id(configured: object, manifest: object) -> str:
-    configured_id = str(configured or "").strip()
-    release = manifest if isinstance(manifest, dict) else {}
-    manifest_id = str(
-        release.get("source_commit") or ""
-    ).strip()
-    if configured_id and configured_id != "release":
-        return configured_id
-    return manifest_id or configured_id or "development"
-
-
-_PORTAL_BUILD_ID = _resolve_portal_build_id(
-    os.getenv("PORTAL_BUILD_ID", ""),
-    _RELEASE_MANIFEST,
-)
+_PORTAL_BUILD_ID = os.getenv("PORTAL_BUILD_ID", "").strip() or "development"
 _PORTAL_ALLOWED_USERS = {
     item.strip()
     for item in os.getenv("PORTAL_ALLOWED_USERS", "").split(",")
@@ -1237,8 +1208,6 @@ def _portal_health_payload(handler: SimpleHTTPRequestHandler | None = None) -> d
         "ok": True,
         "instance": _PORTAL_INSTANCE,
         "build_id": _PORTAL_BUILD_ID,
-        "built_at": str(_RELEASE_MANIFEST.get("built_at") or ""),
-        "source_commit": str(_RELEASE_MANIFEST.get("source_commit") or ""),
         "port": port,
         "started_at": _SERVER_STARTED_AT,
         "now": time.time(),
@@ -1260,33 +1229,25 @@ def _portal_health_payload(handler: SimpleHTTPRequestHandler | None = None) -> d
 
 
 def _society_service_status_payload() -> dict:
-    lifecycle = read_component_state(_PORTAL_INSTANCE, "lineage")
     try:
         if isinstance(_SOCIETY_SERVICE, SocietyServiceClient):
             health = _SOCIETY_SERVICE.health(timeout=2.25)
         else:
             health = _SOCIETY_SERVICE.health()
     except Exception as exc:
-        announced_restart = lifecycle.get("state") == "restarting"
-        busy = isinstance(exc, SocietyServiceBusy) and not announced_restart
+        busy = isinstance(exc, SocietyServiceBusy)
         return {
             "schema": "tfi.portal-component-status.v1",
             "component": "lineage",
             "service": "SocietyService",
-            "state": (
-                "restarting" if announced_restart else "busy" if busy else "unavailable"
-            ),
+            "state": "busy" if busy else "unavailable",
             "ready": False,
             "message": (
-                "SocietyService 正在重启"
-                if announced_restart
-                else "SocietyService 正忙，正在等待当前操作完成"
+                "SocietyService 正忙，正在等待当前操作完成"
                 if busy
                 else "SocietyService 暂时不可用，正在重新连接"
             ),
             "retry_after_ms": 750,
-            "operation_id": str(lifecycle.get("operation_id") or ""),
-            "updated_at": float(lifecycle.get("updated_at") or 0),
             "detail": str(exc),
         }
     return {
@@ -1297,32 +1258,22 @@ def _society_service_status_payload() -> dict:
         "ready": True,
         "message": "SocietyService 已就绪",
         "retry_after_ms": 0,
-        "operation_id": str(lifecycle.get("operation_id") or ""),
-        "updated_at": float(lifecycle.get("updated_at") or 0),
         "health": health,
     }
 
 
 def _resource_service_status_payload() -> dict:
-    lifecycle = read_component_state(_PORTAL_INSTANCE, "resource")
     try:
         health = get_resource_service().status(timeout=2.25)
     except Exception as exc:
-        announced_restart = lifecycle.get("state") == "restarting"
         return {
             "schema": "tfi.portal-component-status.v1",
             "component": "resource",
             "service": "ResourceService",
-            "state": "restarting" if announced_restart else "unavailable",
+            "state": "unavailable",
             "ready": False,
-            "message": (
-                "ResourceService 正在重启"
-                if announced_restart
-                else "ResourceService 暂时不可用，正在重新连接"
-            ),
+            "message": "ResourceService 暂时不可用，正在重新连接",
             "retry_after_ms": 750,
-            "operation_id": str(lifecycle.get("operation_id") or ""),
-            "updated_at": float(lifecycle.get("updated_at") or 0),
             "detail": str(exc),
         }
     return {
@@ -1333,8 +1284,6 @@ def _resource_service_status_payload() -> dict:
         "ready": True,
         "message": "ResourceService 已就绪",
         "retry_after_ms": 0,
-        "operation_id": str(lifecycle.get("operation_id") or ""),
-        "updated_at": float(lifecycle.get("updated_at") or 0),
         "health": health,
     }
 
@@ -3185,7 +3134,6 @@ _PORTAL_SESSION_HTTP = PortalSessionHttp(
     avatar=lambda actor: user_avatar.get_user_avatar(actor),
     instance=_PORTAL_INSTANCE,
     build_id=_PORTAL_BUILD_ID,
-    release_manifest=_RELEASE_MANIFEST,
     preferences=lambda actor: _portal_user_preferences(actor),
     set_preferences=lambda actor, value: _set_portal_user_preferences(actor, value),
     conversation_payload=lambda actor, **kwargs: _cached_agent_conversation_payload(actor, **kwargs),

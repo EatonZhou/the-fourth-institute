@@ -138,20 +138,6 @@ class SiteCompatibilityTests(unittest.TestCase):
         self.assertEqual((actual['role'], actual['database'], actual['port']),
                          ('archive_operator', 'archive_records', 55439))
 
-    def test_systemd_template_consumes_configured_unit_and_paths(self):
-        from scripts.portal_instance_storage import render_unit
-        self.config['deployment']['postgres'] = {
-            'prefix': self.directory.name, 'base': self.directory.name, 'port': 55439,
-        }
-        self.save()
-        source = Path(__file__).resolve().parents[2] / 'systemd'
-        database = render_unit(source / 'portal-postgresql.service')
-        service = render_unit(source / 'portal-dev-execution-service.service')
-        self.assertIn('port=55439', database)
-        self.assertIn(self.directory.name + '/data', database)
-        self.assertIn('Requires=archive-postgresql.service', service)
-        self.assertNotIn('@PORTAL_', database + service)
-
     def test_launchd_labels_preserve_explicit_deployment_prefix(self):
         from scripts.portal_service_control import ServiceControl
         self.assertEqual(ServiceControl.label('portal-dev.service'), 'com.tfi.portal.portal-dev')

@@ -23,7 +23,7 @@ PAGE_ARGUMENTS = {"UpdateExecutionSettings": {"permission_system_enabled": True}
 class PortalSessionHttp:
     def __init__(
         self, *, respond, exception_response, read_json, session_actor, access, avatar, instance, build_id,
-        release_manifest, preferences, set_preferences,
+        preferences, set_preferences,
         conversation_payload, workspace_adapter, session_opened=None,
     ):
         self.respond = respond
@@ -34,7 +34,6 @@ class PortalSessionHttp:
         self.avatar = avatar
         self.instance = instance
         self.build_id = build_id
-        self.release_manifest = release_manifest
         self.preferences = preferences
         self.set_preferences = set_preferences
         self.conversation_payload = conversation_payload
@@ -66,8 +65,6 @@ class PortalSessionHttp:
             "avatar": avatar,
             "portal_instance": self.instance,
             "build_id": self.build_id,
-            "built_at": str(self.release_manifest.get("built_at") or ""),
-            "source_commit": str(self.release_manifest.get("source_commit") or ""),
             "preferences": self.preferences(actor),
             "access": {
                 # Page flags, each the answer of the instruction behind it.

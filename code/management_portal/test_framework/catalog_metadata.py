@@ -25,7 +25,6 @@ def module_for(path: str) -> str:
         ("test_tau_observation_retention", "operations.test-framework"),
         ("tau_browser_observability", "operations.test-framework"),
         ("test_lab", "operations.test-workbench"),
-        ("publish_portal_release", "operations.test-gates"),
         ("release", "operations.deployment"),
         ("runtime", "operations.runtime"),
         ("lineage_program", "lineage.hatg"),
@@ -72,7 +71,7 @@ def module_for(path: str) -> str:
 
 def importance_for(path: str, title: str) -> str:
     value = f"{path} {title}".casefold()
-    if "test_lab" in value or "publish_portal_release" in value:
+    if "test_lab" in value or "test_local_development" in value:
         return "P0"
     if any(token in value for token in ("access_control", "identity_bootstrap", "security", "release", "runtime_status")):
         return "P1"

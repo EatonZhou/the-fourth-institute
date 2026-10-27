@@ -6,16 +6,11 @@ so no process silently builds a second index of its own.
 """
 from __future__ import annotations
 
-import re
-from pathlib import Path
-
 import pytest
 
 from management_portal.resources import runtime
 from management_portal.resources.config import resource_database_schema, resource_service_mode
 from management_portal.resources.transport import ResourceServiceClient
-
-ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_unconfigured_process_is_a_client_of_its_instance_service(monkeypatch, tmp_path):
@@ -47,17 +42,17 @@ def test_local_index_schema_must_be_named_outside_test_namespaces(monkeypatch):
     assert resource_database_schema() == "resource_dev"
 
 
-def test_every_unit_running_resource_service_locally_names_its_index():
-    """只有资源服务单元在本地运行索引
+def test_only_the_installed_resource_component_runs_the_index_locally(monkeypatch, tmp_path):
+    """只有资源服务组件在本地运行索引
 
-    systemd 单元中只有 Dev 与 Release 的 resource service 以 local 模式运行，并各自指定 resource_dev、resource_release 索引 schema。
+    安装器生成的组件命令中，只有 resource 组件以 local 模式运行 ResourceService，其余进程都是它的客户端。
     """
-    local_units = []
-    for unit in sorted((ROOT / "systemd").glob("*.service")):
-        text = unit.read_text(encoding="utf-8")
-        mode = re.search(r"^Environment=PORTAL_RESOURCE_SERVICE_MODE=(\S+)$", text, re.M)
-        if mode and mode.group(1) in {"local", "server"}:
-            local_units.append(unit.name)
-            schema = re.search(r"^Environment=PORTAL_RESOURCE_DATABASE_SCHEMA=(resource_\w+)$", text, re.M)
-            assert schema, f"{unit.name} runs ResourceService locally without naming its index schema"
-    assert local_units == ["portal-dev-resource-service.service", "portal-release-resource-service.service"]
+    from scripts import tfi_release_install as installer
+
+    monkeypatch.setattr(installer, "clean_environment", lambda target, **_kwargs: {
+        "PORTAL_RESOURCE_SERVICE_MODE": "client", "PORTAL_SOCIETY_SERVICE_MODE": "client"})
+    monkeypatch.setattr(installer, "runtime_python", lambda target: "python")
+    target = {"install_root": str(tmp_path), "bind": "127.0.0.1", "ports": {"web": 18001}}
+    local = [component for component in installer.COMPONENTS if component not in {"postgres", "nats"}
+             and installer.component_command(target, component)[1]["PORTAL_RESOURCE_SERVICE_MODE"] == "local"]
+    assert local == ["resource"]

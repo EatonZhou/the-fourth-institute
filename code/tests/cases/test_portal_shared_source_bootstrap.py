@@ -22,7 +22,7 @@ def installation(tmp_path):
         for package in ('scripts', 'management_common', 'management_portal/execution'):
             (root / package).mkdir(parents=True, exist_ok=True)
             (root / package / '__init__.py').write_text('')
-        for name in ('portal_paths.py', 'product_environment.py', 'site_config.py', 'site_compatibility.py', 'postgres_configuration.py'):
+        for name in ('portal_paths.py', 'product_environment.py', 'site_config.py', 'site_compatibility.py'):
             (root / 'management_common' / name).write_bytes((SOURCE / 'management_common' / name).read_bytes())
         (root / 'management_common/service_endpoint.py').write_text(
             'class LocalServiceSocketMixin: pass\n' if root == shared else '# Earlier Release has no mixin.\n')
@@ -32,14 +32,10 @@ def installation(tmp_path):
     (release / 'scripts/portal_source_layout.py').write_bytes((SOURCE / 'scripts/portal_source_layout.py').read_bytes())
     (release / 'management_portal/__init__.py').write_bytes((SOURCE / 'management_portal/__init__.py').read_bytes())
     (release / 'management_portal/web_only.py').write_text("owner = 'release'\n")
-    (release / 'release-manifest.json').write_text(json.dumps({
-        'shared_source': str(shared),
-        'shared_paths': ['management_common', 'management_portal/execution'],
-    }))
     environment = dict(os.environ, PORTAL_SITE_CONFIG=str(tmp_path / 'absent-site.json'),
-                       PORTAL_PATHS_CONFIG=str(tmp_path / 'absent-paths.json'))
+                       PORTAL_PATHS_CONFIG=str(tmp_path / 'absent-paths.json'),
+                       PORTAL_SHARED_SOURCE_ROOT=str(shared))
     environment.pop('PYTHONPATH', None)
-    environment.pop('PORTAL_SHARED_SOURCE_ROOT', None)
     return release, shared, environment
 
 
@@ -78,9 +74,9 @@ def test_missing_shared_owner_does_not_fall_back_to_release(installation):
     assert 'Shared source package is unavailable' in result.stderr
 
 
-def test_standalone_install_without_release_manifest_uses_local_configuration(installation):
-    release, _, _ = installation
-    (release / 'release-manifest.json').unlink()
+def test_standalone_install_without_shared_source_uses_local_configuration(installation):
+    release, _, environment = installation
+    environment.pop('PORTAL_SHARED_SOURCE_ROOT')
     result = probe(installation, '''
 import management_portal
 import management_common.site_config as site
@@ -90,19 +86,3 @@ print(json.dumps([site.__file__, str(layout.SHARED_ROOT)]))
 ''')
     assert result.returncode == 0, result.stderr
     assert json.loads(result.stdout) == [str(release / 'management_common/site_config.py'), str(release)]
-
-
-def test_installed_pair_uses_explicit_shared_source_without_release_manifest(installation):
-    release, shared, environment = installation
-    (release / 'release-manifest.json').unlink()
-    environment['PORTAL_SHARED_SOURCE_ROOT'] = str(shared)
-    result = probe(installation, '''
-import management_portal
-from management_portal.execution import service
-from management_portal import web_only
-from scripts import portal_source_layout as layout
-import json
-print(json.dumps([service.owner, web_only.owner, str(layout.SHARED_ROOT)]))
-''')
-    assert result.returncode == 0, result.stderr
-    assert json.loads(result.stdout) == ['shared', 'release', str(shared)]

@@ -8,7 +8,6 @@ import json
 from pathlib import Path
 import re
 import subprocess
-import sys
 
 import pytest
 
@@ -60,10 +59,10 @@ def save(site):
     config.write_text(json.dumps({"deployment": deployment}))
 
 
-def test_renderer_uses_configured_paths_group_and_preserves_templates(site, tmp_path):
+def test_renderer_uses_configured_paths_and_preserves_templates(site, tmp_path):
     _, deployment, values = site
-    files = [p for p in (ROOT / "systemd").iterdir() if p.suffix in {".service", ".target", ".env", ".conf"} and p.name != "portal-postgresql.service"]
-    files += [ROOT / "management_portal/management-portal.service", ROOT / "config/systemd/portal-codex-app-server@.service.in"]
+    files = [p for p in (ROOT / "systemd").iterdir() if p.suffix in {".service", ".env"}]
+    files.append(ROOT / "config/systemd/portal-codex-app-server@.service.in")
     before = {p: p.read_bytes() for p in files}
     rendered = {p.name: storage.render_unit(p) for p in files}
     for text in rendered.values():
@@ -71,41 +70,30 @@ def test_renderer_uses_configured_paths_group_and_preserves_templates(site, tmp_
         assert str(Path.home()) not in text
         assert "/srv/agent-staging" not in text
         assert "192.168." not in text and "10.138." not in text
-        assert "sg panda" not in text
     assert {p: p.read_bytes() for p in files} == before
-    web = rendered["management-portal.service"]
-    assert f"WorkingDirectory={deployment['source_root']}" in web
-    assert "/usr/bin/sg operators -c 'exec " in web
-    assert f"WorkingDirectory={deployment['release_root']}" in rendered["management-portal-release.service"]
-    assert f"EnvironmentFile=-{deployment['postgres_env_file']}" in web or f"EnvironmentFile=-{deployment['postgres_env_file']}" in rendered["management-portal-routed.conf"]
-    assert f"Environment=PORTAL_SITE_CONFIG={site[0]}" in web
-    assert "PORTAL_ROUTER_DEV_USERS=alice" in rendered["portal-user-router.service"]
-    # Router access policy now comes from its network configuration file.
-    router = rendered["portal-user-router.service"]
-    assert f"Environment=PORTAL_NETWORK_CONFIG={site[0].parent / 'network.env'}" in router
-    assert "--bind" not in router and "--port" not in router and "--allow-network" not in router
-    assert "ALLOWED_IPS=127.0.0.2" in rendered["portal-ai-socket-relay.service"]
-    assert f"{deployment['providers']['runtime_root']}/kimi-code-current/bin/kimi" in rendered["portal-kimi-code.env"]
-    assert "%i" in rendered["portal-codex-app-server@.service.in"]
-    assert "portal-postgresql.service" in rendered["portal-dev-execution-service.service"]
+    claude = rendered["portal-claude-code.service"]
+    assert f"WorkingDirectory={deployment['providers']['claude_source_root']}" in claude
+    assert f"EnvironmentFile=-{deployment['postgres_env_file']}" in claude
+    assert f"Environment=PORTAL_SITE_CONFIG={site[0]}" in claude
+    assert f"Environment=PORTAL_NETWORK_CONFIG={site[0].parent / 'network.env'}" in claude
+    assert f"{deployment['providers']['runtime_root']}/claude-agent-sdk-current/bin/python" in claude
+    codex = rendered["portal-codex-app-server@.service.in"]
+    assert "%i" in codex and deployment["providers"]["codex_binary"] in codex
 
 
 def test_render_defaults_and_invalid_values(site):
     site[1].clear()
     save(site)
-    text = storage.render_unit(ROOT / "management_portal/management-portal.service")
-    assert "/usr/bin/sg" not in text
+    text = storage.render_unit(ROOT / "systemd/portal-claude-code.service")
     assert "ExecStart=" in text
-    router = storage.render_unit(ROOT / "systemd/portal-user-router.service")
-    assert "--bind" not in router and "--allow-network" not in router
-    assert "PORTAL_NETWORK_CONFIG=" in router
-    assert "PORTAL_ROUTER_DEV_USERS=\n" in router
-    for key, value in (("runtime_group", "bad;group"), ("source_root", "/tmp/a\nInjected=yes"), ("router", {"allowed_networks": ["not-a-network"]}), ("relay", {"port": True})):
+    assert "PORTAL_NETWORK_CONFIG=" in text
+    for key, value in (("source_root", "/tmp/a\nInjected=yes"), ("providers", {"runtime_root": "/tmp/a b"}),
+                       ("providers", ["not-an-object"])):
         site[1].clear()
         site[1][key] = value
         save(site)
         with pytest.raises(ValueError):
-            storage.render_unit(ROOT / "systemd/portal-user-router.service")
+            storage.render_unit(ROOT / "systemd/portal-claude-code.service")
 
 
 def test_renderer_rejects_unknown_placeholder(site, tmp_path):
@@ -113,23 +101,6 @@ def test_renderer_rejects_unknown_placeholder(site, tmp_path):
     source.write_text("[Service]\nExecStart=@PORTAL_MISSPELLED_ROOT@/python\n")
     with pytest.raises(ValueError, match="placeholder"):
         storage.render_unit(source)
-
-
-def test_installer_materializes_provider_environment_without_overwriting_source(site, tmp_path, monkeypatch):
-    from scripts import portal_service_units as units
-    monkeypatch.setattr(units, "DEV_ROOT", ROOT)
-    monkeypatch.setattr(units, "USER_UNIT_ROOT", tmp_path / "units")
-    monkeypatch.setattr(units, "DEV_WEB_UNIT_SOURCE", ROOT / "management_portal/management-portal.service")
-    monkeypatch.setattr(units, "provider_units", lambda: ("portal-claude-code.service", "portal-kimi-code.service"))
-    calls = []
-    monkeypatch.setattr(units, "_run", lambda *args, **kwargs: calls.append(args))
-    units.install_units()
-    materialized = Path(site[2]["instances_root"]) / "systemd"
-    for name in ("portal-kimi-code.env", "portal-claude-code.env"):
-        assert (materialized / name).is_file()
-        assert not re.search(r"@PORTAL_[A-Z_]+@", (materialized / name).read_text())
-    assert f"EnvironmentFile={materialized}/portal-kimi-code.env" in (tmp_path / "units/portal-kimi-code.service").read_text()
-    assert calls and all(call == ("systemctl", "--user", "daemon-reload") for call in calls)
 
 
 def test_provider_roots_and_quota_defaults_share_site_paths(site, monkeypatch):
@@ -172,18 +143,6 @@ def test_source_root_can_be_configured_outside_cwd(site, monkeypatch):
     monkeypatch.chdir(site[0].parent)
     importlib.reload(portal_source_layout)
     assert portal_source_layout.SHARED_ROOT == Path(site[1]["source_root"])
-    assert "portal-ai-socket-relay.service" in portal_source_layout.DEV_AUX_UNITS
-    assert "portal-postgresql.service" in portal_source_layout.DEV_AUX_UNITS
-
-
-def test_deployment_cli_is_importable_outside_repo(site, tmp_path):
-    import os
-    environment = dict(os.environ)
-    environment.pop("PYTHONPATH", None)
-    result = subprocess.run([sys.executable, "-B", str(ROOT / "scripts/portal_instance_storage.py"), "--help"],
-                            cwd=tmp_path, env=environment, text=True, capture_output=True)
-    assert result.returncode == 0, result.stderr
-    assert "install-unit" in result.stdout
 
 
 def test_portable_provider_defaults_and_explicit_existing_paths(site):

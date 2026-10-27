@@ -2,7 +2,6 @@
 import json
 import os
 from pathlib import Path
-import socket
 import subprocess
 
 import pytest
@@ -94,81 +93,16 @@ def test_unit_install_materializes_configuration_without_editing_source(tmp_path
     assert f"ExecStart={tmp_path}/state/dev/" in destination.read_text()
 
 
-def test_migration_preserves_open_files_socket_and_retries(tmp_path):
-    """实例目录迁移先给计划再执行，保留已打开的文件和 socket，重复执行报已迁移"""
-    source = tmp_path / "old"
-    destination = tmp_path / "new"
-    source.mkdir()
-    (source / "state").write_text("before")
-    identity = source.stat().st_ino
-    with (source / "state").open("a+") as stream, socket.socket(socket.AF_UNIX) as server:
-        server.bind(str(source / "rpc.sock"))
-        server.listen(2)
-        assert storage.migrate(source, destination)["status"] == "planned"
-        assert not destination.exists()
-        assert storage.migrate(source, destination, apply=True)["status"] == "migrated"
-        stream.write("after")
-        stream.flush()
-        assert destination.stat().st_ino == identity
-        assert (destination / "state").read_text() == "beforeafter"
-        for root in (source, destination):
-            with socket.socket(socket.AF_UNIX) as client:
-                client.connect(str(root / "rpc.sock"))
-                accepted, address = server.accept()
-                accepted.close()
-        assert storage.migrate(source, destination, apply=True)["status"] == "already_migrated"
-
-
-def test_migration_refuses_overwrite_and_rolls_back_failed_exchange(tmp_path, monkeypatch):
-    """实例目录迁移拒绝覆盖已有目标，路径交换失败时回滚原目录"""
-    source = tmp_path / "old"
-    destination = tmp_path / "new"
-    source.mkdir()
-    destination.mkdir()
-    with pytest.raises(ValueError, match="absent"):
-        storage.migrate(source, destination, apply=True)
-    destination.rmdir()
-    def fail(*args):
-        raise OSError("exchange unsupported")
-    monkeypatch.setattr(storage, "exchange_paths", fail)
-    with pytest.raises(OSError, match="unsupported"):
-        storage.migrate(source, destination, apply=True)
-    assert source.is_dir() and not source.is_symlink()
-    assert not os.path.lexists(destination)
-
-
-def test_runtime_files_are_ignored_by_git_snapshot_and_source_detector(tmp_path, monkeypatch):
-    """portal_instances 下的运行文件被 git 忽略，也不影响源码构建 ID"""
-    from scripts import portal_dev_generation
+def test_runtime_files_are_ignored_by_git(tmp_path):
+    """portal_instances 下的运行文件被 git 忽略"""
     repo = Path(__file__).resolve().parents[2]
     (tmp_path / ".gitignore").write_text((repo / ".gitignore").read_text())
-    (tmp_path / "scripts").mkdir()
-    (tmp_path / "scripts" / "application.py").write_text("print('source')\n")
     runtime = tmp_path / "portal_instances" / "dev"
     runtime.mkdir(parents=True)
     (runtime / "generated.py").write_text("print('runtime')\n")
     subprocess.run(["git", "init", "--quiet", str(tmp_path)], check=True)
     ignored = subprocess.run(["git", "-C", str(tmp_path), "check-ignore", "portal_instances/dev/generated.py"], capture_output=True, text=True, check=True)
     assert "generated.py" in ignored.stdout
-    assert all(
-        "portal_instances" not in item.parts
-        for item in portal_dev_generation.source_paths(tmp_path)
-    )
-    first = portal_dev_generation.source_build_id(tmp_path)
-    (runtime / "generated.py").write_text("print('changed runtime')\n")
-    assert portal_dev_generation.source_build_id(tmp_path) == first
-
-
-def test_custom_nested_runtime_is_excluded_even_when_git_is_unavailable(tmp_path, monkeypatch):
-    """没有 git 时，嵌在源码树内的自定义实例目录仍被排除在源码之外"""
-    from scripts import portal_dev_generation
-    root = tmp_path / "scripts" / "runtime"
-    root.mkdir(parents=True)
-    (root / "worker.py").write_text("runtime\n")
-    (tmp_path / "scripts" / "application.py").write_text("source\n")
-    configure_instance_root(root, monkeypatch)
-    monkeypatch.setattr(portal_dev_generation.subprocess, "run", lambda *args, **kwargs: (_ for _ in ()).throw(OSError("no git")))
-    assert portal_dev_generation.source_paths(tmp_path) == [tmp_path / "scripts" / "application.py"]
 
 
 def test_python_command_uses_saved_instance_configuration(tmp_path, monkeypatch):
@@ -180,87 +114,12 @@ def test_python_command_uses_saved_instance_configuration(tmp_path, monkeypatch)
     assert python.stdout.strip() == str(tmp_path / "runtime/dev")
 
 
-def test_deployment_coordinator_installs_rendered_units_on_every_entrypoint(tmp_path, monkeypatch):
-    """每个部署入口都安装填好实例路径的 systemd 单元文件，并只重载一次"""
-    from scripts import portal_service_units as deployment
-    source = tmp_path / "source"
-    (source / "systemd").mkdir(parents=True)
-    units = tmp_path / "units"
-    configure_instance_root(tmp_path / "state", monkeypatch)
-    monkeypatch.setattr(deployment, "DEV_ROOT", source)
-    monkeypatch.setattr(deployment, "USER_UNIT_ROOT", units)
-    monkeypatch.setattr(deployment, "DEV_WEB_UNIT_SOURCE", source / "web.service")
-    calls = []
-    monkeypatch.setattr(deployment, "_run", lambda *args, **kwargs: calls.append(args))
-    names = set(deployment.RELEASE_UNITS + deployment.DEV_UNITS + deployment.DEV_AUX_UNITS)
-    names.update(deployment.DEV_WEB_DROPINS.values())
-    names.update(deployment.provider_units())
-    template = "[Service]\nExecStart=@PORTAL_INSTANCES_ROOT@/dev/runtime-venv/bin/python\n"
-    for name in names:
-        (source / "systemd" / name).write_text(template)
-    (source / "web.service").write_text(template)
-    (source / "config/systemd").mkdir(parents=True)
-    (source / "config/systemd" / f"{deployment.CODEX_TEMPLATE}.in").write_text(template)
-    for install in (deployment.install_dev_units, deployment.install_units, deployment.install_units):
-        calls.clear()
-        result = install()
-        assert result["ok"]
-        assert calls == [('systemctl', '--user', 'daemon-reload')]
-        assert len({entry['unit'] for entry in result['installed']}) == len(result['installed'])
-        for entry in result["installed"]:
-            installed = units / entry["unit"]
-            assert not installed.is_symlink()
-            assert "@PORTAL_INSTANCES_ROOT@" not in installed.read_text()
-            assert str(tmp_path / "state") in installed.read_text()
-
-
-def test_every_deployed_portal_process_routes_instructions_over_owner_sockets() -> None:
-    """部署的 Portal 进程（含 Release Web）按拥有服务的 socket 路由指令，Release Web 单元随发布安装
-
-    Release Web 单元与各服务单元都设置 PORTAL_ISA_ROUTING=socket；发布流程安装 Release Web 单元，使其环境随发布的源码更新。
-
-    :module: operations.deployment
-    :design: decision_08bb2d9141f9, decision_898b8911a2ff
-    """
-    from scripts import portal_service_units as deployment
-
-    repo = Path(__file__).resolve().parents[2]
-    assert deployment.RELEASE_WEB_SERVICE in deployment.RELEASE_UNITS
-    for name in (
-        deployment.RELEASE_WEB_SERVICE, *deployment.RELEASE_SERVICES[1:],
-        *[unit for unit in deployment.DEV_UNITS if unit != "portal-dev-nats.service" and unit.endswith(".service")],
-        *deployment.DEV_WEB_DROPINS.values(),
-    ):
-        assert "Environment=PORTAL_ISA_ROUTING=socket" in (repo / "systemd" / name).read_text(), name
-
-
-def test_user_router_reads_the_postgres_cutover_environment() -> None:
-    """用户 Router 单元读取 PostgreSQL 环境文件并由 Dev 辅助单元管理
-
-    :module: operations.deployment
-    :importance: P1
-    """
-    repo = Path(__file__).resolve().parents[2]
-    unit = (repo / "systemd" / "portal-user-router.service").read_text()
-
-    assert (
-        "EnvironmentFile=-@PORTAL_POSTGRES_ENV_FILE@"
-        in unit
-    )
-    assert (
-        "ExecStart=@PORTAL_INSTANCES_ROOT@/dev/runtime-venv/bin/python"
-        in unit
-    )
-    from scripts.portal_source_layout import DEV_AUX_UNITS
-    assert "portal-user-router.service" in DEV_AUX_UNITS
-
-
 def test_standalone_deployment_commands_bootstrap_imports(tmp_path):
     """部署脚本在任意目录且无 PYTHONPATH 时也能独立运行"""
     repo = Path(__file__).resolve().parents[2]
     environment = dict(os.environ)
     environment.pop("PYTHONPATH", None)
-    for name in ("restart_portal_release.py", "portal_services.py", "portal_instance_storage.py"):
+    for name in ("portal_services.py",):
         result = subprocess.run(["python3", "-B", str(repo / "scripts" / name), "--help"], cwd=tmp_path, env=environment, capture_output=True, text=True)
         assert result.returncode == 0, (name, result.stderr)
         assert "usage:" in result.stdout

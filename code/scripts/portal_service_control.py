@@ -1,21 +1,19 @@
-"""One service-control contract for Portal's two persistent service pools.
+"""One service-control contract for Portal's persistent services.
 
-The process topology belongs to ``portal_source_layout``.  This module owns
-only operating-system service operations; it never decides which Portal
-component should be restarted or when a request may be interrupted.
+This module owns only operating-system service operations; it never decides
+which Portal component should be restarted or when a request may be
+interrupted.
 """
 from __future__ import annotations
 
 import os
 import re
-import signal
 import subprocess
 import sys
 import time
 from pathlib import Path
 from typing import Any, Callable
 
-from scripts.portal_source_layout import INSTANCE_LAYOUT
 from management_common.site_compatibility import compatibility_value
 from management_common.native_output import run_native_capture
 
@@ -36,13 +34,7 @@ def _state(service: str, *, load: str, active: str, sub: str, pid: int = 0) -> d
 
 
 class ServiceControl:
-    """start/stop/restart/status/health for a registered persistent service.
-
-    ``reload`` and ``signal_main`` are explicit Linux-only capabilities used
-    by the current zero-interruption ExecutionService and Worker handovers.
-    A platform without those capabilities must not silently substitute a
-    process-killing restart.
-    """
+    """start/stop/restart/status for a registered persistent service."""
 
     def __init__(self, *, platform: str | None = None, runner: Runner | None = None,
                  agent_root: Path | None = None, uid: int | None = None):
@@ -70,23 +62,7 @@ class ServiceControl:
     def _launch_target(self, service: str) -> str:
         return f"{self._launch_domain()}/{self.label(service)}"
 
-    def _members(self, service: str) -> tuple[str, ...] | None:
-        if self.platform == "linux":
-            return None
-        for config in INSTANCE_LAYOUT.values():
-            if service == config["target"]:
-                return tuple(config["services"])
-        return None
-
     def status(self, service: str) -> dict[str, Any]:
-        members = self._members(service)
-        if members is not None:
-            states = [self.status(member) for member in members]
-            loaded = all(item["load"] == "loaded" for item in states)
-            active = all(item["active"] == "active" for item in states)
-            return _state(service, load="loaded" if loaded else "not-found",
-                          active="active" if active else "inactive",
-                          sub="running" if active else "dead")
         if self.platform == "linux":
             result = self.run("systemctl", "--user", "show", service,
                               "-p", "LoadState", "-p", "ActiveState",
@@ -122,18 +98,9 @@ class ServiceControl:
         return _state(service, load="loaded", active=active,
                       sub=name.lower(), pid=int(pid.group(1)) if pid and name != "STOPPED" else 0)
 
-    def health(self, service: str, probe: Callable[[], dict[str, Any]] | None = None) -> dict[str, Any]:
-        state = self.status(service)
-        result = probe() if probe is not None else {"ok": True}
-        return {**state, "ok": state["active"] == "active" and bool(result.get("ok")),
-                "probe": result}
-
     def start(self, *services: str) -> None:
         for service in services:
-            members = self._members(service)
-            if members is not None:
-                self.start(*members)
-            elif self.platform == "linux":
+            if self.platform == "linux":
                 self.run("systemctl", "--user", "start", service)
             elif self.platform == "macos":
                 state = self.status(service)
@@ -157,10 +124,7 @@ class ServiceControl:
 
     def stop(self, *services: str) -> None:
         for service in services:
-            members = self._members(service)
-            if members is not None:
-                self.stop(*reversed(members))
-            elif self.platform == "linux":
+            if self.platform == "linux":
                 self.run("systemctl", "--user", "stop", service)
             elif self.platform == "macos":
                 target = self._launch_target(service)
@@ -198,15 +162,3 @@ class ServiceControl:
         else:
             self.stop(service)
             self.start(service)
-
-    def reload(self, service: str) -> None:
-        if self.platform != "linux":
-            raise NotImplementedError(f"{self.platform} does not support Portal's Linux hot reload: {service}")
-        self.run("systemctl", "--user", "reload", service)
-
-    def signal_main(self, service: str, name: str) -> None:
-        if self.platform != "linux":
-            raise NotImplementedError(f"{self.platform} does not support Portal's Linux service signal: {service}")
-        if not hasattr(signal, name):
-            raise ValueError(f"unknown signal: {name}")
-        self.run("systemctl", "--user", "kill", "--kill-whom=main", f"--signal={name}", service)

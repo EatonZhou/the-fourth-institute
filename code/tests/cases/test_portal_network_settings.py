@@ -155,12 +155,10 @@ def test_router_listener_uses_saved_mode_and_port_over_old_unit_arguments(networ
     assert {str(item) for item in networks} == {"0.0.0.0/0", "::/0"}
 
 
-def test_admin_http_requires_admin_and_schedules_router_restart_only_for_access(network, monkeypatch):
+def test_admin_http_requires_admin_and_refuses_network_changes(network, monkeypatch):
     from management_portal import http_admin
     actor = None
     body = {}
-    restarts = []
-    monkeypatch.setattr(http_admin, "_restart_router_after_response", lambda: restarts.append(True))
     admin = http_admin.AdminHttp(respond=lambda request, status, value: (status, value),
                                 session_actor=lambda _: actor, access_payload=lambda _: {},
                                 read_json=lambda _: body, is_admin=lambda a: a == "admin")
@@ -174,26 +172,16 @@ def test_admin_http_requires_admin_and_schedules_router_restart_only_for_access(
     status, response = admin.network_post(None, None, None)
     assert status == 409 and response["supported"] is False
     assert network.read_settings() == initial
-    assert restarts == []
 
 
-def test_changed_port_is_used_by_runtime_registry_and_health_probe(network, monkeypatch):
+def test_changed_port_is_used_by_runtime_registry(network, monkeypatch):
     from management_common import site_registry
-    from scripts import portal_services
     with socket.socket() as free:
         free.bind(("127.0.0.1", 0))
         port = free.getsockname()[1]
     save(network, access={"mode": "local", "port": port})
     assert site_registry.get_runtime_config()["portal"]["port"] == port
     assert all(item["entry_port"] == port for item in site_registry.get_module_registry())
-    observed = []
-    class Reply:
-        def __enter__(self): return self
-        def __exit__(self, *args): return None
-        def read(self): return b'{"ok": true}'
-    monkeypatch.setattr(portal_services.urllib.request, "urlopen", lambda url, timeout: (observed.append(url) or Reply()))
-    assert portal_services.user_router_health()["supported"] is False
-    assert observed == []
 
 
 def test_unit_environment_file_is_last_and_optional(network, tmp_path, monkeypatch):

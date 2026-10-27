@@ -3,29 +3,8 @@ import copy
 import json
 import pytest
 
-from management_portal import capacity_alerts, component_lifecycle
+from management_portal import capacity_alerts
 from management_portal import provider_transport_diagnostics as transport
-
-
-def test_component_publication_preserves_other_components_and_old_reads(tmp_path):
-    """旧格式读取不写回；当前格式发布保留其他组件。"""
-    path = component_lifecycle.lifecycle_path('isolated', instance_root=tmp_path)
-    path.parent.mkdir()
-    old = {'schema': 'archive.portal-component-lifecycle.v1', 'instance': 'isolated',
-           'components': {'execution': {'state': 'ready', 'operation_id': 'retained'}}}
-    path.write_text(json.dumps(old))
-    original, modified = path.read_bytes(), path.stat().st_mtime_ns
-    rejected = component_lifecycle.read_lifecycle('isolated', instance_root=tmp_path)
-    assert rejected['schema'] == 'tfi.portal-component-lifecycle.v1'
-    assert rejected['components'] == {}
-    assert (path.read_bytes(), path.stat().st_mtime_ns) == (original, modified)
-    path.write_text(json.dumps({**old, 'schema': 'tfi.portal-component-lifecycle.v1'}))
-    component_lifecycle.publish_component_state('isolated', 'web', 'ready', message='ready',
-                                               operation_id='new', instance_root=tmp_path)
-    saved = json.loads(path.read_text())
-    assert saved['schema'] == 'tfi.portal-component-lifecycle.v1'
-    assert saved['components']['execution'] == old['components']['execution']
-    assert saved['components']['web']['operation_id'] == 'new'
 
 
 def test_capacity_new_state_does_not_relabel_existing_state():

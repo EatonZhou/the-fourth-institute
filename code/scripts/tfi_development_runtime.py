@@ -240,7 +240,7 @@ def request_restart(root, instance, components=None):
             "request": {"request_id": request_id, "components": list(components or ())}}
 
 
-def request_activation(root, paths, commit):
+def request_activation(root, paths, commit, *, parent_commit=""):
     """Return a receipt before restarting the Web that accepted publication."""
     from management_common.instance_config import read_installation
     from scripts.tfi_release_install import runtime_python
@@ -248,7 +248,8 @@ def request_activation(root, paths, commit):
     request_id = "tfi-pair-publish-" + uuid.uuid4().hex
     request = root / "runtime" / (request_id + ".json")
     receipt = root / "runtime" / (request_id + "-result.json")
-    write(request, {"commit": commit, "paths": list(paths), "receipt": str(receipt)})
+    write(request, {"commit": commit, "paths": list(paths), "receipt": str(receipt),
+                    "parent_commit": parent_commit, "requested_at": time.time()})
     command = ["systemd-run", "--user", "--collect", "--unit=" + request_id,
                runtime_python(target), str(Path(__file__).resolve()), "apply", "--root", str(root),
                "--request", str(request)]
@@ -264,13 +265,37 @@ def apply_request(root, request):
         with (root / "runtime/development-activation.lock").open("a+") as stream, lock_stream(stream):
             config = read_development(root)
             current = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=config["release_code"], text=True).strip()
+            try:
+                previous = read(root / "runtime/development-activation.json").get("commit")
+            except (OSError, ValueError, AttributeError):
+                previous = None
             result = activate(root, payload["paths"], current)
             result["requested_commit"] = payload["commit"]
+            if result.get("ok") and current != previous:
+                result["release_event"] = record_release(root, payload, current)
     except Exception as exc:
         write(payload["receipt"], {"ok": False, "error": str(exc), "commit": payload["commit"]})
         raise
     write(payload["receipt"], result)
     return result
+
+
+def record_release(root, payload, commit):
+    """Publish the newly active Release commit to Lineage release-event sources."""
+    from management_common.instance_config import read_installation
+    from scripts.tfi_release_install import clean_environment
+    try:
+        # The activation job runs with the supervisor environment, which
+        # carries no database settings; use the installed services' own.
+        os.environ["PORTAL_DATABASE_URL"] = clean_environment(read_installation(root)["target"])["PORTAL_DATABASE_URL"]
+        from management_common.portal_release_events import record
+        sequence = record({"status": "completed", "ok": True, "commit": commit, "active_commit": commit,
+                           "started_at": payload.get("requested_at") or time.time(), "completed_at": time.time(),
+                           "parent_commit": payload.get("parent_commit", ""), "origin": "direct"})
+    except Exception as exc:
+        # A notification failure does not undo the healthy activation.
+        return {"ok": False, "error": str(exc)}
+    return {"ok": True, "sequence": sequence}
 
 
 def worker_health(root):

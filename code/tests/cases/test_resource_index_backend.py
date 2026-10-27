@@ -851,7 +851,8 @@ def test_existing_projection_does_not_scan_during_service_startup_contracts(subt
 def test_watch_tree_stops_at_the_declared_depth_contracts(tmp_path, subtests, isolated_portal_case):
     """文件监听遵循深度限制且协作描述符按键增量刷新"""
     with subtests.test(contract='test_watch_tree_stops_at_the_declared_depth'), isolated_portal_case() as case_path:
-        tmp_path = case_path
+        # The case directory also holds the isolated site's accounts; watch a tree of its own.
+        tmp_path = case_path / 'watched'
         first = tmp_path / 'first'
         second = first / 'second'
         third = second / 'third'

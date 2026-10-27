@@ -156,7 +156,7 @@ def publish(root, message, check=None, push=True, *, paths=(), all_files=False, 
                   "release_unit_paths": sorted(set(selected) - set(paths))}
     if activate and cfg.get("runtime_root"):
         from scripts.tfi_development_runtime import request_activation
-        result["activation"] = request_activation(Path(cfg["runtime_root"]), changed, commit)
+        result["activation"] = request_activation(Path(cfg["runtime_root"]), changed, commit, parent_commit=base)
         result["health"] = {"status": "pending", "receipt": result["activation"]["receipt"]}
         result["activation_required"] = True
     return result

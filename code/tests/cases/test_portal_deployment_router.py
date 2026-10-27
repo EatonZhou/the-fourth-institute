@@ -632,56 +632,17 @@ def test_a_request_whose_client_left_during_the_wait_never_reaches_the_backend(t
         thread.join(timeout=2)
 
 
-def test_a_router_names_the_sources_that_changed_since_it_started(tmp_path: Path, monkeypatch) -> None:
-    """路由器只在自己运行的代码变化时随发布重启
-
-    路由器记录自己加载的仓库源码和 unit 模板的摘要；发布比较当前文件，只有其中有变化（或记录不属于正在运行的进程）时才重启路由器。
-    """
-    # A publication restarts the router only when code it runs changed.
-    import os
-
-    from management_portal import portal_deployment_router as router_module
-
-    repository = tmp_path / "repo"
-    (repository / "management_portal").mkdir(parents=True)
-    (repository / "systemd").mkdir()
-    module = repository / "management_portal" / "router_part.py"
-    module.write_text("VALUE = 1\n")
-    (repository / router_module.UNIT_TEMPLATE).write_text("[Service]\n")
-    monkeypatch.setattr(router_module, "REPOSITORY", repository)
-    # A module the router loaded from the repository.
-    loaded = type(sys)("router_part")
-    loaded.__file__ = str(module)
-    monkeypatch.setitem(sys.modules, "router_part_fixture", loaded)
-
-    manifest_path = tmp_path / router_module.SOURCE_MANIFEST_NAME
-    server = PortalRouterServer.__new__(PortalRouterServer)
-    server.source_manifest, server._recorded_modules = manifest_path, -1
-    server._record_lock = threading.Lock()
-    server.record_sources()
-    manifest = json.loads(manifest_path.read_text())
-    assert manifest["pid"] == os.getpid()
-    assert set(manifest["sources"]) >= {"management_portal/router_part.py", router_module.UNIT_TEMPLATE}
-
-    assert router_module.changed_sources(manifest, os.getpid()) == []
-    module.write_text("VALUE = 2\n")
-    assert router_module.changed_sources(manifest, os.getpid()) == ["management_portal/router_part.py"]
-    # A manifest of another process says nothing about the running router.
-    assert router_module.changed_sources(manifest, os.getpid() + 1) is None
-    assert router_module.changed_sources(None, os.getpid()) is None
-
-
 def test_a_router_checking_sessions_loads_neither_resources_nor_execution(isolated_portal_case) -> None:
     """路由器校验登录时不加载资源层和执行层
 
-    用户路由器校验会话 cookie 并读取运行状态后，已加载的源文件中没有 management_portal/resources 与 management_portal/execution，这两层的发布不会重启路由器。
+    用户路由器校验会话 cookie 并读取运行状态后，已加载的源文件中没有 management_portal/resources 与 management_portal/execution；发布只在 scripts、management_common 和 HATG 改动时重启路由器，这两层改动后路由器也不会运行旧代码。
 
     :design: decision_08bb2d9141f9
     """
-    # Every source the router loaded restarts it on a publication, and the
-    # restart cuts the connections it carries: the browser sees "Failed to
-    # fetch".  Checking a session and reading the runtime status stay out of
-    # the resource and execution packages, which change in most publications.
+    # A router restart cuts the connections it carries: the browser sees
+    # "Failed to fetch".  Checking a session and reading the runtime status
+    # stay out of the resource and execution packages, which change in most
+    # publications and do not restart the router.
     with isolated_portal_case() as case_path:
         _credentials()
         signing_key_path = case_path / "session_signing.key"
@@ -689,10 +650,14 @@ def test_a_router_checking_sessions_loads_neither_resources_nor_execution(isolat
         _access(case_path)
         probe = (
             "import json, sys\n"
+            "from pathlib import Path\n"
             "from management_portal import portal_deployment_router as router\n"
             "actor = router.PortalSessionAuthority(sys.argv[1]).verify(sys.argv[2])\n"
             "router.portal_runtime_status()\n"
-            "print(json.dumps({'actor': actor, 'sources': sorted(router.loaded_sources())}))\n"
+            "root = Path(router.__file__).resolve().parents[1]\n"
+            "files = [Path(m.__file__).resolve() for m in list(sys.modules.values()) if getattr(m, '__file__', None)]\n"
+            "sources = sorted(str(f.relative_to(root)) for f in files if root in f.parents)\n"
+            "print(json.dumps({'actor': actor, 'sources': sources}))\n"
         )
         result = subprocess.run(
             [sys.executable, "-c", probe, str(signing_key_path), token],

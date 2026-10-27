@@ -89,9 +89,9 @@ def cutover(*, rehearsal=False, backup_dir=None, source_archive=None):
                         '--jobs=2', '--no-owner', '--no-acl', '--exit-on-error', str(archive)],
                        check=True, env=environment, capture_output=True)
         return {'mode': 'isolated-rehearsal', 'archive': str(archive), **migrate(target)}
-    from scripts import portal_services
+    from scripts.portal_source_layout import INSTANCE_LAYOUT
     for instance in ('dev', 'release'):
-        units = portal_services._config(instance)['component_units']
+        units = INSTANCE_LAYOUT[instance]['component_units']
         for component in ('web', 'lineage', 'resource', 'execution-service', 'execution-worker'):
             unit = units[component]
             state = subprocess.run(['systemctl', '--user', 'show', unit, '--property=ActiveState', '--value'],

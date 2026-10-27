@@ -571,10 +571,7 @@ def validate_engineering(manifest_path, target, *, defer_data_verification=False
         if not path.is_file() or digest(path) != item["sha256"]:
             raise ValueError(f"Engineering checksum mismatch: {item['path']}")
     code = engineering_path(bundle, manifest["code"]["path"])
-    internal_release = code / "release-manifest.json"
-    if internal_release.exists() and read_json(internal_release).get("shared_source"):
-        raise ValueError("Engineering retains an internal shared_source import route; generator must make it standalone")
-    database = engineering_path(bundle, manifest["database"]["path"])
+    database =engineering_path(bundle, manifest["database"]["path"])
     if digest(database) != manifest["database"]["sha256"]:
         raise ValueError("Database checksum mismatch")
     code_prefix = code.relative_to(bundle).as_posix() + "/"

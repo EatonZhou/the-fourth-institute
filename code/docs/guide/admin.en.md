@@ -167,7 +167,7 @@ Back up PostgreSQL plus instance data (including uploads), Projects, knowledge, 
 
 ### Upgrades and releases
 
-After an authorized Dev code update, `./scripts/portal_services request-restart dev` requests component activation. After validation, `./scripts/publish_portal_release --message '<description>' --path <file>…` publishes selected paths; `--all` selects everything. Services may briefly become unavailable during activation; execution workers use their configured handover process. `GetPortalStatus` reads service health; `PublishRelease` and `RestartPortal` are the instruction interfaces. Use the installation's current operating design (`decision_ab9880dc4c9d`) for exact steps.
+After an authorized Dev code update, `./scripts/portal_services request-restart dev` requests component activation. After validation, run `python3 code/scripts/tfi_dev.py publish --message '<description>' --path code/<file>…` from the repository root to publish selected paths; `--all` selects everything. The command prints `activation.receipt`, a file that records the result and service health once activation finishes. Services may briefly become unavailable during activation; execution workers use their configured handover process. `GetPortalStatus` reads service health; `PublishRelease` and `RestartPortal` are the instruction interfaces. Use the installation's current operating design (`decision_ab9880dc4c9d`) for exact steps.
 
 Special migrations are separate maintenance operations:
 
@@ -175,7 +175,7 @@ Special migrations are separate maintenance operations:
 - Historical message origins: `scripts/migrate_message_origins.py --plan <private plan> --backup <new private backup>` validates actual database/schema bindings and source-marker mappings. Apply requires the returned plan digest. It backs up and updates format markers transactionally, preserving message bodies, authors, initiators, order, IDs, and payload digests. Reread actual conversations afterwards.
 - Deployment paths: `scripts/migrate_deployment_paths.py` requires an external maintenance window, complete backups, stopped writers, process visibility, and a sealed private plan. Independently verify the plan digest before apply. Active references, changed sources, or existing targets block changes. Rebuild virtual environments at the new location with the same interpreter and exact dependencies. Configuration, credentials, service restart, and live validation need their own authorization. Rollback accepts only a completed, unchanged target; interrupted migrations require individual review.
 
-Dev/Release management registers native service definitions before activation: systemd on Linux, launchd on macOS, SCM on Windows. Windows needs its configured service account and registration password. Registration prepares services without starting them. PostgreSQL must already run and NATS must be installed. Standalone release installations manage their own independent service chain.
+The installer `scripts/tfi_release_install.py` registers Portal's native services during installation: systemd on Linux, launchd on macOS, SCM on Windows. Windows needs its configured service account and registration password. Every service name starts with the instance's `service_prefix`, for example `<service_prefix>-web.service`, so each instance has its own service chain. An instance with a configured Dev also gets Dev Web and the Router from `scripts/tfi_development_runtime.py`, which restarts the affected components when a publication changes their files.
 
 ### Usage and quota
 
@@ -185,14 +185,14 @@ Home → Usage Attribution reports tokens; AI Activity & Accounts reports accoun
 
 | Component | Responsibility | Source of operational details |
 | --- | --- | --- |
-| PostgreSQL 16 | Accounts, permissions, Lineages, conversations, executions, and resource indexes in domain schemas | Database service definition, preparation script, operating design. |
-| NATS | Change notifications and live refresh | NATS service definitions and configuration. |
-| Portal Web | Pages and HTTP, including `/api/instructions/execute` | Web service definition. |
-| ResourceService | Resources and permission-related operations | Resource service definition. |
-| SocietyService | Lineages and Residents | Society service definition. |
-| ExecutionService and ExecutionWorker | Model request scheduling and execution | Execution service and worker definitions. |
-| Portal Router | User routing to Dev or Release | Router service and deployment registry. |
-| Provider backends | AI tools such as Codex App Server, Claude Code, and Kimi Code | Provider service definitions and operating design. |
+| PostgreSQL 16 | Accounts, permissions, Lineages, conversations, executions, and resource indexes in domain schemas | The installer's `postgres` component and the operating design. |
+| NATS | Change notifications and live refresh | The installer's `nats` component. |
+| Portal Web | Pages and HTTP, including `/api/instructions/execute` | The installer's `web` component; Dev Web from the development runtime. |
+| ResourceService | Resources and permission-related operations | The installer's `resource` component. |
+| SocietyService | Lineages and Residents | The installer's `society` component. |
+| ExecutionService and ExecutionWorker | Model request scheduling and execution | The installer's `execution` and `worker` components. |
+| Portal Router | User routing to Dev or Release | The development runtime's `router` and the deployment registry. |
+| Provider backends | AI tools such as Codex App Server, Claude Code, and Kimi Code | Provider service templates and the operating design. |
 
 Python dependencies are in `requirements*.txt`. Services read the configured `PORTAL_DATABASE_URL`. Dev runs working source for development; Release runs published source for everyday use. They share the configured database and background services. Adapt paths, system accounts, and ports to your installation.
 

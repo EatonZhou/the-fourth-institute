@@ -283,7 +283,7 @@ class WindowsInstallerTests(unittest.TestCase):
         root = Path(target["install_root"])
         root.mkdir(parents=True)
         (root / "runtime").mkdir()
-        (root / "installation.json").write_text(json.dumps({"target": target}))
+        (root / "installation.json").write_text(json.dumps({"schema": "tfi.release-installation.v1", "target": target}))
         value = json.loads(windows.unit_text(target, "web", []))
         return value, windows.unit_name(target, "web")
 

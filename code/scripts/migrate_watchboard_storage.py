@@ -61,7 +61,7 @@ def main() -> None:
     from psycopg.rows import dict_row
     from management_common.portal_database import portal_database_url, _database_schema
     from management_portal.society_service.state_store import LINEAGE_DATA_SCHEMA
-    from scripts import portal_services
+    from scripts.portal_source_layout import INSTANCE_LAYOUT
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--display-root', type=Path, required=True)
@@ -71,7 +71,7 @@ def main() -> None:
         raise RuntimeError('Run migration from the matching prepared code')
     for instance in ('dev', 'release'):
         for component in ('web', 'lineage', 'resource'):
-            unit = portal_services._config(instance)['component_units'][component]
+            unit = INSTANCE_LAYOUT[instance]['component_units'][component]
             state = subprocess.check_output(['systemctl', '--user', 'show', unit, '--property=ActiveState', '--value'], text=True).strip()
             if state not in {'inactive', 'failed'}:
                 raise RuntimeError(f'Stop schema consumer before cutover: {unit} is {state}')

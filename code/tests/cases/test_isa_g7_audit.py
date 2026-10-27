@@ -295,10 +295,10 @@ def test_selected_disk_is_in_declared_result_array(monkeypatch):
 
 def test_failed_publish_preserves_remote_push_result(monkeypatch):
     """PublishRelease 失败时错误详情保留各远端的推送结果"""
-    from scripts import publish_portal_release as publisher
+    from scripts import tfi_dev
     push = {"ok": False, "remotes": {"github": {"ok": False, "error": "offline"}}}
     monkeypatch.setattr(web_isa, "_instance", lambda: "dev")
-    monkeypatch.setattr(publisher, "publish", lambda options: {"ok": False, "error": "failed", "push": push})
+    monkeypatch.setattr(tfi_dev, "publish", lambda *args, **options: {"ok": False, "error": "failed", "push": push})
     with pytest.raises(InstructionError) as error:
         web_isa.publish_release(invoke("PublishRelease", {"message": "test", "paths": ["SPEC.md"]}))
     assert error.value.details["push"] == push

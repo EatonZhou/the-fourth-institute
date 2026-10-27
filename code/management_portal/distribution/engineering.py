@@ -5,13 +5,12 @@ import ast
 import gzip
 import hashlib
 import json
-import os
 import re
 import shutil
 import subprocess
 from pathlib import Path
 
-from .sanitize import knowledge_links, private_path, scrub, SECRET_VALUE
+from .sanitize import knowledge_links, private_path, scrub
 from .store import canonical, digest
 from management_common.release_dependencies import declaration as runtime_dependencies
 
@@ -279,7 +278,7 @@ def generate(*, source_root, destination, snapshot, resolved, database_sql, sour
             if (path.parts[0] in {"tests", ".wall"} and not test_source
                     and str(path) not in resolved.get("code_extras", [])):
                 continue
-            if str(path) in {"SPEC.md", "IMPROVE.md", "config/site.json", "config/portal_instances.json", "release-manifest.json"}:
+            if str(path) in {"SPEC.md", "IMPROVE.md", "config/site.json", "config/portal_instances.json"}:
                 continue
             copy_content(source_root / path, code / path, selected=selected, anonymize=False, source_usernames=source_usernames, skill_scope=skill_scope)
         for name in ("LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md"):
@@ -306,18 +305,6 @@ def generate(*, source_root, destination, snapshot, resolved, database_sql, sour
             ResourceTypeRegistry(resource_types).declarations
         from .permissions import adapt_builtin_schemes
         permission_validation = adapt_builtin_schemes(code)
-        # Standalone distributions cannot invoke the source site's Dev/Release
-        # service controller through either its CLI or an imported API.
-        controller = code / "scripts/portal_services.py"
-        if controller.exists():
-            tree = ast.parse(controller.read_text())
-            unsupported = '{"ok": False, "supported": False, "reason": "Standalone TFI instances use install_tfi_release status/cleanup; source Dev/Release service management is unavailable"}'
-            for statement in tree.body:
-                if isinstance(statement, ast.FunctionDef) and statement.name in {"status", "instance_status", "user_router_health", "restart_user_router"}:
-                    statement.body = ast.parse("return " + unsupported).body
-                elif isinstance(statement, ast.FunctionDef) and statement.name in {"start", "stop", "restart", "request_restart", "_run", "_controller", "_prepare_units"}:
-                    statement.body.insert(0, ast.parse('raise RuntimeError("Standalone TFI: use install_tfi_release status/cleanup; source Dev/Release control is unsupported")').body[0])
-            controller.write_text(ast.unparse(tree) + "\n")
         # Reject source-router network changes before saving; return a concrete
         # unsupported result rather than an asynchronous success notification.
         admin = code / "management_portal/http_admin.py"

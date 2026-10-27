@@ -3,7 +3,7 @@ import copy
 import json
 
 import pytest
-from management_portal import capacity_alerts, component_lifecycle, device_identity_backend, portal_deployment_registry
+from management_portal import capacity_alerts, device_identity_backend, portal_deployment_registry
 
 
 @pytest.mark.parametrize('prefix', ['archive', 'tfi'])
@@ -32,22 +32,8 @@ def test_capacity_observation_and_previous_state_are_read_without_mutation(prefi
 
 
 @pytest.mark.parametrize('prefix', ['archive', 'tfi'])
-def test_component_and_device_status_read_keep_files_unchanged(prefix, tmp_path):
-    """组件和设备缓存只读取规范版本，退役标签及错误版本均不写回"""
-    path = component_lifecycle.lifecycle_path('test', instance_root=tmp_path)
-    path.parent.mkdir()
-    payload = {'schema': f'{prefix}.portal-component-lifecycle.v1', 'instance': 'test', 'updated_at': 123,
-               'components': {'web': {'state': 'ready', 'operation_id': 'frozen'}}}
-    path.write_text(json.dumps(payload))
-    original = path.read_bytes()
-    mtime = path.stat().st_mtime_ns
-    expected = payload['components']['web'] if prefix == 'tfi' else {}
-    assert component_lifecycle.read_component_state('test', 'web', instance_root=tmp_path) == expected
-    assert (path.read_bytes(), path.stat().st_mtime_ns) == (original, mtime)
-    path.write_text(json.dumps({**payload, 'schema': f'{prefix}.portal-component-lifecycle.v2'}))
-    original, mtime = path.read_bytes(), path.stat().st_mtime_ns
-    assert component_lifecycle.read_component_state('test', 'web', instance_root=tmp_path) == {}
-    assert (path.read_bytes(), path.stat().st_mtime_ns) == (original, mtime)
+def test_device_status_read_keeps_files_unchanged(prefix, tmp_path):
+    """设备缓存只读取规范版本，退役标签及错误版本均不写回"""
     device = tmp_path/'status.json'
     saved = {'schema': f'{prefix}.device_status.v1', 'updated_at': 'original', 'servers': {'device_0123456789ab': {'payload': {'status': 'ok'}}}}
     device.write_text(json.dumps(saved)); original, mtime = device.read_bytes(), device.stat().st_mtime_ns

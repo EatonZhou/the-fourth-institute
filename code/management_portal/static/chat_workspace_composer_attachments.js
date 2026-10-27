@@ -43,7 +43,7 @@
   const DEPENDENCIES = Object.freeze([
     "composerAttachmentTokenOrder", "composerSelectionSnapshot",
     "createConversationSelectionReference", "currentController", "els", "historyScope",
-    "insertComposerAttachmentRef", "markComposerUndoAfterSnapshot", "mediaPartPath", "normalizeComposerAttachment",
+    "insertComposerAttachmentRef", "isComposerImeActive", "markComposerUndoAfterSnapshot", "mediaPartPath", "normalizeComposerAttachment",
     "normalizeComposerAttachments", "options", "pushComposerUndoSnapshot", "removeComposerAttachmentRef",
     "renderComposerAttachmentTray", "requireImageEditor", "restoreComposerSelection", "saveActiveDraft", "state",
     "syncComposerAttachmentRefs", "updateControls",
@@ -55,7 +55,7 @@
     const {
       composerAttachmentTokenOrder, composerSelectionSnapshot,
       createConversationSelectionReference, currentController, els, historyScope,
-      insertComposerAttachmentRef, markComposerUndoAfterSnapshot, mediaPartPath, normalizeComposerAttachment,
+      insertComposerAttachmentRef, isComposerImeActive, markComposerUndoAfterSnapshot, mediaPartPath, normalizeComposerAttachment,
       normalizeComposerAttachments, options, pushComposerUndoSnapshot, removeComposerAttachmentRef,
       renderComposerAttachmentTray, requireImageEditor, restoreComposerSelection, saveActiveDraft, state,
       syncComposerAttachmentRefs, updateControls,
@@ -96,14 +96,37 @@
       attachmentById: id => state.attachments.find(item => String(item?.id || "") === String(id || "")) || null,
       onImagePreview: context => openComposerAttachmentEditor({ ...context, workspace: currentController() }),
     });
-    const renderAttachments = (renderOptions = {}) => {
+    let pendingAttachmentRefs = false;
+    let compositionEndTimer = null;
+    const syncAttachmentRefs = () => {
+      // Native input methods own the editing DOM and selection until commit.
+      // Replacing a chip or resetting an identical selection can end composition.
+      if (isComposerImeActive(els.input)) {
+        pendingAttachmentRefs = true;
+        return;
+      }
+      pendingAttachmentRefs = false;
       const selection = document.activeElement === els.input
         ? composerSelectionSnapshot(els.input)
         : null;
-      state.attachments = normalizeComposerAttachments(state.attachments);
-      renderComposerAttachmentTray(els.tray, state.attachments, attachmentPreviewOptions());
       syncComposerAttachmentRefs(els.input, state.attachments, attachmentPreviewOptions());
       if (selection) restoreComposerSelection(els.input, selection);
+    };
+    const resumeAttachmentRefs = () => {
+      clearTimeout(compositionEndTimer);
+      // Some engines emit the final input after compositionend. Let both finish.
+      compositionEndTimer = setTimeout(() => {
+        compositionEndTimer = null;
+        if (pendingAttachmentRefs && !isComposerImeActive(els.input)) {
+          syncAttachmentRefs();
+          saveActiveDraft();
+        }
+      }, 0);
+    };
+    const renderAttachments = (renderOptions = {}) => {
+      state.attachments = normalizeComposerAttachments(state.attachments);
+      renderComposerAttachmentTray(els.tray, state.attachments, attachmentPreviewOptions());
+      syncAttachmentRefs();
       updateControls();
       if (renderOptions.notify) notifyAttachmentsChange();
     };
@@ -402,11 +425,12 @@
     };
 
     const destroyComposerAttachments = () => {
+      clearTimeout(compositionEndTimer);
       ownedAttachmentPreviews.forEach(releaseAttachmentPreview);
     };
 
     return {
-      attachmentPreviewOptions, renderAttachments, renderAttachmentTrayOnly, withoutAttachmentReconcile,
+      attachmentPreviewOptions, renderAttachments, renderAttachmentTrayOnly, resumeAttachmentRefs, withoutAttachmentReconcile,
       setAttachments, updateAttachment, addFiles, addReference, uploadComposerAttachment, removeComposerAttachment,
       reconcileAttachmentsFromInput, discardComposerAttachments, releaseAttachmentPreviews, reportAttachmentError,
       destroyComposerAttachments,

@@ -168,7 +168,7 @@ modules:
     entrypoints:
       - "management_portal/portal_deployment_router.py"
     deployment:
-      - "systemd/portal-user-router.service"
+      - "<service_prefix>-router.service"
     level: "runtime"
   - id: "web"
     title: "Portal Web 服务"
@@ -193,7 +193,8 @@ modules:
     entrypoints:
       - "management_portal/asgi.py"
     deployment:
-      - "systemd/management-portal-release.service"
+      - "<service_prefix>-web.service"
+      - "<service_prefix>-dev-web.service"
     level: "runtime"
   - id: "resources"
     title: "ResourceService"
@@ -212,8 +213,7 @@ modules:
     entrypoints:
       - "management_portal/resources/server.py"
     deployment:
-      - "systemd/portal-dev-resource-service.service"
-      - "systemd/portal-release-resource-service.service"
+      - "<service_prefix>-resource.service"
     level: "runtime"
   - id: "lineage"
     title: "SocietyService"
@@ -231,8 +231,7 @@ modules:
     entrypoints:
       - "management_portal/society_service/server.py"
     deployment:
-      - "systemd/portal-dev-society-service.service"
-      - "systemd/portal-release-society-service.service"
+      - "<service_prefix>-society.service"
     level: "runtime"
   - id: "execution"
     title: "ExecutionService"
@@ -252,8 +251,7 @@ modules:
     entrypoints:
       - "management_portal/execution/service.py"
     deployment:
-      - "systemd/portal-dev-execution-service.service"
-      - "systemd/portal-release-execution-service.service"
+      - "<service_prefix>-execution.service"
     level: "runtime"
   - id: "worker"
     designs: []
@@ -270,8 +268,7 @@ modules:
       - "management_portal/execution/worker_manager.py"
       - "management_portal/execution/worker.py"
     deployment:
-      - "systemd/portal-dev-execution-worker.service"
-      - "systemd/portal-release-execution-worker.service"
+      - "<service_prefix>-worker.service"
     level: "runtime"
   - id: "providers"
     designs: []
@@ -284,13 +281,12 @@ modules:
       - "management_portal/dsh_runtime"
       - "management_portal/opencode_bridge.py"
       - "systemd/portal-kimi-code-config.toml"
-      - "systemd/portal-kimi-code.env"
     responsibility: "隔离并承载 Codex、Claude、Kimi、DSH 和 OpenCode 原生会话；把本地 IPC 请求送入各自模型客户端。"
     runtime: "多个可独立重启的服务或子进程；不是一个统一 daemon"
     deployment:
-      - "portal-codex-app-server@<account_id>.service"
-      - "systemd/portal-claude-code.service"
-      - "systemd/portal-kimi-code.service"
+      - "<service_prefix>-codex-app-server@<account_id>.service"
+      - "<service_prefix>-claude-code.service"
+      - "<service_prefix>-kimi-code.service"
     level: "runtime"
   - id: "notifications"
     designs: []
@@ -298,10 +294,11 @@ modules:
     title: "Core NATS 通知服务"
     layer: "service"
     code_paths:
-      - "systemd/portal-dev-nats.service"
-      - "systemd/portal-release-nats.service"
+      - "scripts/tfi_release_install.py"
     responsibility: "转发轻量变化通知，帮助订阅者失效缓存并重新读真值；不保存业务状态或代替可靠事件账本。"
     runtime: "nats-server"
+    deployment:
+      - "<service_prefix>-nats.service"
     level: "runtime"
   - id: "postgres"
     designs: []
@@ -312,7 +309,6 @@ modules:
       - "management_common/portal_database.py"
       - "management_common/postgres_database.py"
       - "management_common/domain_database.py"
-      - "systemd/portal-postgresql.service"
     responsibility: "保存 Portal 业务与运行真值，提供事务、行锁、唯一约束和分区；领域服务各自拥有表的读写语义。"
     runtime: "PostgreSQL 服务；多个领域 schema"
     level: "runtime"
@@ -342,21 +338,19 @@ modules:
     level: "runtime"
   - id: "delivery"
     title: "部署与运行维护进程"
-    responsibility: "按重启请求和发布提交协调服务换代，检查健康并记录发布事实；运行容量维护脚本通过 Lineage 定时或手动触发。"
+    responsibility: "把 Dev 的提交按文件发布到 Release，重启受影响组件，检查健康并记录发布事实；运行容量维护脚本通过 Lineage 定时或手动触发。"
     instruction_owners: []
     code_paths:
-      - "scripts/portal_dev_source_reloader.py"
+      - "scripts/tfi_dev.py"
+      - "scripts/tfi_development_runtime.py"
       - "scripts/portal_services.py"
-      - "scripts/publish_portal_release.py"
       - "scripts/run_portal_shared_component.py"
     designs: []
     layer: "service"
     entrypoints:
-      - "scripts/portal_dev_source_reloader.py"
-    deployment:
-      - "systemd/portal-dev-source-reloader.service"
+      - "scripts/tfi_dev.py"
     level: "runtime"
-    runtime: "Source Reloader、部署 CLI 和 Lineage RunScript 子进程；容量工作流不另设常驻调度器。"
+    runtime: "发布 CLI、配对运行时的组件激活和 Lineage RunScript 子进程；容量工作流不另设常驻调度器。"
 
   - id: "engineering"
     title: "验证运行器"
@@ -1011,10 +1005,9 @@ modules:
     responsibility: "执行提交发布、健康检查和各服务的代际管理，持久化发布完成事实；提供部署拥有的站点配置读取入口。"
     instruction_owners: []
     code_paths:
-      - "scripts/publish_portal_release*"
-      - "scripts/restart_portal_release.py"
+      - "scripts/tfi_dev.py"
+      - "scripts/tfi_development_runtime.py"
       - "scripts/run_portal_shared_component.py"
-      - "management_portal/component_lifecycle.py"
       - "management_portal/runtime_status.py"
       - "management_common/portal_release_events.py"
       - "management_common/service_shutdown.py"
@@ -1036,23 +1029,16 @@ modules:
       - "scripts/install_portal_embeddings.py"
       - "scripts/portal_background_jobs.py"
       - "management_portal/__init__.py"
-      - "management_portal/management-portal.service"
       - "scripts/portal_services"
-      - "scripts/prepare_portal_release_services"
-      - "scripts/restart_portal_with_notice.py"
       - "scripts/migrate_domain_records.py"
       - "scripts/migrate_tfi_runtime_names.py"
       - "scripts/migrate_deployment_paths.py"
       - "scripts/portal_release.py"
-      - "scripts/portal_restart_notice_client.py"
       - "scripts/portal_dev_commit.py"
-      - "scripts/portal_dev_source_reloader.py"
-      - "scripts/portal_publication_batch.py"
       - "scripts/portal_dev_generation.py"
       - "scripts/portal_services.py"
       - "scripts/portal_source_layout.py"
       - "scripts/portal_instance_storage.py"
-      - "scripts/portal_dev_restart_requests.py"
       - "scripts/portal_service_units.py"
       - "config/systemd/portal-codex-app-server@.service.in"
       - "scripts/portal_service_control.py"
@@ -1062,30 +1048,8 @@ modules:
       - "management_common/site_compatibility.py"
       - "management_common/postgres_configuration.py"
       - "management_common/portal_network.py"
-      - "config/portal_instances.json"
-      - "systemd/portal-ai-socket-relay.service"
-      - "systemd/portal-postgresql.service"
-      - "systemd/management-portal-release.service"
-      - "systemd/management-portal-routed.conf"
       - "systemd/portal-claude-code.env"
       - "systemd/portal-claude-code.service"
-      - "systemd/portal-dev-execution-service.service"
-      - "systemd/portal-dev-execution-worker.service"
-      - "systemd/portal-dev-execution.target"
-      - "systemd/portal-dev-society-service.service"
-      - "systemd/portal-dev-nats.conf"
-      - "systemd/portal-dev-nats.service"
-      - "systemd/portal-dev-resource-service.service"
-      - "systemd/portal-dev-source-reloader.service"
-      - "systemd/portal-kimi-code.service"
-      - "systemd/portal-release-execution-service.service"
-      - "systemd/portal-release-execution-worker.service"
-      - "systemd/portal-release-execution.target"
-      - "systemd/portal-release-society-service.service"
-      - "systemd/portal-release-nats.conf"
-      - "systemd/portal-release-nats.service"
-      - "systemd/portal-release-resource-service.service"
-      - "systemd/portal-user-router.service"
     designs:
       - "decision_08bb2d9141f9"
       - "decision_ab9880dc4c9d"
@@ -1211,7 +1175,7 @@ modules:
     responsibility: "将授权 VM 请求代理到 host 上的模型运行端点。"
     parent: "providers"
     deployment:
-      - "systemd/portal-ai-socket-relay.service"
+      - "<service_prefix>-ai-socket-relay.service"
     level: "component"
   - id: "web.projections"
     designs:

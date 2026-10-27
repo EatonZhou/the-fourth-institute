@@ -459,7 +459,7 @@ def test_an_existing_session_finishes_the_personal_assistant_in_the_background(u
     http = PortalSessionHttp(
         respond=lambda _request, status, payload: (status, payload), exception_response=None, read_json=None,
         session_actor=lambda _request: "sample_editor", access=lambda: SimpleNamespace(user=lambda _actor: {}),
-        avatar=lambda _actor: None, instance="dev", build_id="", release_manifest={},
+        avatar=lambda _actor: None, instance="dev", build_id="",
         preferences=lambda _actor: {}, set_preferences=None, conversation_payload=None, workspace_adapter=None,
         session_opened=lambda actor: opened.append(personal_ama.provision_session(actor)))
 

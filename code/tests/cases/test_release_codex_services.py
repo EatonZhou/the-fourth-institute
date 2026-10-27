@@ -49,7 +49,7 @@ def test_context_rejects_mismatched_code_and_roots(tmp_path, monkeypatch):
     config.write_text("{}")
     target = {"install_root": str(root), "service_prefix": "tfi-check",
               "data_roots": {"accounts_root": str(root / "accounts")}}
-    (root / "installation.json").write_text(json.dumps({"target": target}))
+    (root / "installation.json").write_text(json.dumps({"schema": "tfi.release-installation.v1", "target": target}))
     monkeypatch.setenv("PORTAL_PATHS_CONFIG", str(config))
     with pytest.raises(ValueError, match="ownership"):
         units._isolated_codex_context()

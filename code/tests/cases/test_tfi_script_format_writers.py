@@ -5,32 +5,16 @@ from contextlib import nullcontext
 
 import pytest
 
-from scripts import portal_dev_generation as generation, portal_release
+from scripts import portal_dev_generation as generation
 
 
-def test_generation_read_preserves_old_file_and_write_uses_tfi(tmp_path):
+def test_generation_read_preserves_old_file(tmp_path):
     path = tmp_path / 'generations.json'
     old = {'schema': 'archive.portal-component-generations.v1', 'components': {'web': 'retained'}}
     path.write_text(json.dumps(old))
     before = (path.read_bytes(), path.stat().st_mtime_ns)
     assert generation.read_component_build_ids(path) == old['components']
     assert (path.read_bytes(), path.stat().st_mtime_ns) == before
-    generation._write_component_build_ids({'web': 'new'}, path)
-    assert json.loads(path.read_text()) == {
-        'schema': 'tfi.portal-component-generations.v1', 'components': {'web': 'new'}}
-
-
-def test_release_manifest_read_preserves_original_then_new_write_uses_tfi(tmp_path):
-    path = tmp_path / portal_release.MANIFEST_NAME
-    old = {'schema': 'archive.portal-publication.v1', 'source_commit': 'original'}
-    path.write_text(json.dumps(old))
-    before = (path.read_bytes(), path.stat().st_mtime_ns)
-    assert portal_release.load_release_manifest(tmp_path) == old
-    assert (path.read_bytes(), path.stat().st_mtime_ns) == before
-    portal_release.write_manifest(tmp_path, 'new', changed=['one.py'], message='test')
-    new = portal_release.load_release_manifest(tmp_path)
-    assert new['schema'] == 'tfi.portal-publication.v1'
-    assert new['source_commit'] == 'new'
 
 
 class ReachedMigration(Exception):

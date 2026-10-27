@@ -852,15 +852,15 @@ def _task_prompt(record: dict[str, Any], job: dict[str, Any], point: dict[str, A
         "analyse": "维护此工程的WALL。阅读SPEC.md、IMPROVE.md及实现，只保留值得独立审查、能显著改善用户任务或系统能力的改进，一份Plan只解释一个核心变化并链接IMPROVE.md。完整说明背景、现状后果、目标体验、方案与检验；细节归入该Plan正文。没有重要发现就不创建Plan，不按Design配额凑数。metaness表示文档的meta层次，与importance分开评价；未评价可省略。实现/规范不一致与演化方向按各自类型记录。已授权的显著日常bug可以直接修复并验证。分析的成果是WALL文档：发现的不一致或缺陷如实记录后即为完成（completed），未修复的问题写入summary，不因被分析的工程本身未通过验证而返回blocked；只有分析本身未能完成时才返回blocked。",
         "verify": "你是本工程固定的回归测试与修复 Resident。先读取工程测试规范与目录，通过现有测试运行入口组织全面回归，覆盖适用的后端、浏览器及TAU真实使用测试；如本次输入指定用例，只验证指定范围并明确记录范围。你负责调用测试、观察真实终态、分析失败、修复并复测。区分产品代码bug、错误或过时的测试断言、环境问题；以有效Design和真实业务语义为依据修正代码或测试，不能靠删掉用例、跳过失败或弱化正确断言制造通过。保存实际命令、测试报告、失败原因和修复证据；已通过且相关代码未变的测试不重复运行，修复优先重跑失败与受影响用例。全面回归独立于全量发布，不自动调用全量发布、不等待发布完成；本次实际修复通过定向验证后，依开发规则发布相关改动。结果附真实test_run_ids（如使用测试框架），未解决的问题如实返回blocked。",
         "publish-all": "将此工程当前Dev源码完整同步到Release，补齐漏发的新增、修改和删除。全量同步与全面回归独立，不要求全量测试通过、工作区干净、其他功能完成或人工版本号。保留并行编辑，不清理或覆盖开发工作树。使用工程已有发布入口，工程没有全量发布能力时返回blocked，不借用其他工程的工具。发布后检查实际健康、命令输出和Release分支的commit；不要删除、完成或重写任何WALL功能卡片。" + (
-            " Portal执行 ./scripts/publish_portal_release --all --message 'WALL全量同步Dev到Release'"
-            + " --origin wall --wall-job " + job.get("id", "")
-            + "。成功后在WALL_RESULT附完整publication_commit和实际验证结果；不传--block。WALL校验该commit已在Release分支历史中。"
+            " Portal在仓库根目录执行 python3 code/scripts/tfi_dev.py publish --all --message 'WALL全量同步Dev到Release（WALL任务 "
+            + job.get("id", "") + "）'"
+            + "，等输出中 activation.receipt 文件写出后检查其 ok 与 health。成功后在WALL_RESULT把输出的完整 commit 作为 publication_commit，并附实际验证结果。WALL校验该commit已在Release分支历史中。"
             if record["id"] == "portal" else ""
         ),
         "publish": "将当前成果及必要依赖以小批量同步到 Release。先查明实际文件范围，保留同文件中已经混合的修改及其他人的工作；不要求工作区干净、全功能完成或全量测试；发布工具会把发布 commit 自动推送到全部远端，不需要另外推送。只做本次变化所需的定向验证。使用该工程的更新入口，工程没有发布入口时返回blocked；不调用其他工程的工具。不要自行删除或标记其他待发布成果。" + (
-            " Portal 执行 ./scripts/publish_portal_release --message '<说明>' --path '<文件或目录>'（可重复）"
-            + " --origin wall --wall-job " + job.get("id", "") + " --block '" + job.get("block", "") + "'。"
-            + "发布工具返回ok后，在WALL_RESULT附完整publication_commit和实际验证结果；WALL校验该commit为Release分支HEAD或祖先后，只更新当前任务对应的成果。"
+            " Portal 在仓库根目录执行 python3 code/scripts/tfi_dev.py publish --message '<说明>（WALL任务 " + job.get("id", "") + "）'"
+            + " --path 'code/<文件或目录>'（可重复，路径相对仓库根目录）。"
+            + "发布工具返回ok且 activation.receipt 文件显示 ok 后，在WALL_RESULT把输出的完整 commit 作为 publication_commit，并附实际验证结果；WALL校验该commit为Release分支HEAD或祖先后，只更新当前任务对应的成果。"
             if record["id"] == "portal" else ""
         ),
     }

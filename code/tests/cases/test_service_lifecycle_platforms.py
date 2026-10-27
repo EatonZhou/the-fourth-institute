@@ -232,9 +232,6 @@ def test_external_native_restart_uses_service_control_not_hot_reload(value):
         return SimpleNamespace(returncode=0, stdout=output)
 
     controller = ServiceControl(platform=value, runner=command, uid=501)
-    with pytest.raises(NotImplementedError, match='hot reload'):
-        controller.reload('execution-test.service')
-    assert calls == []
     controller.restart('execution-test.service')
     if value == 'win32':
         assert ('sc.exe', 'stop', 'execution-test.service') in calls

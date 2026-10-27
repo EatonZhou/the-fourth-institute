@@ -68,17 +68,6 @@ def test_every_provider_portal_installs_declares_its_runtime():
     }
 
 
-def test_unit_installation_does_not_read_running_codex_accounts(monkeypatch):
-    """首次部署无登记数据库时仍能安装静态服务，Codex 模板由部署器单独渲染。"""
-    from management_portal.execution import account_registrations
-    from scripts import portal_service_units
-    def unavailable(*args, **kwargs):
-        raise OSError("registration database unavailable during installation")
-    monkeypatch.setattr(account_registrations, "registrations", unavailable)
-    assert set(portal_service_units.provider_units()) == {
-        "portal-claude-code.service", "portal-kimi-code.service"}
-
-
 def test_codex_runtime_services_follow_registered_running_instances(monkeypatch):
     """更新运行中的登记实例，包括已停用但仍存活的进程，不启动空闲停服账号。"""
     from management_portal.execution import account_registrations, account_hosting

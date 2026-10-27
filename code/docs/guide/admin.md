@@ -200,7 +200,7 @@ Portal 管理员永远可以开关权限系统（“执行设置”中的权限�
 
 ### 升级与发布
 
-修改或更新 Dev 的代码后，运行 `./scripts/portal_services request-restart dev` 让受影响的服务重新加载。验证通过后，用 `./scripts/publish_portal_release --message '<说明>' --path <文件>…`（或 `--all`）把改动发布到 Release。发布会重启服务，正在运行的 Resident 工作会被中断，尽量在空闲时发布。完整流程见 `decision_ab9880dc4c9d`。对应指令为 `PublishRelease`、`RestartPortal`；`GetPortalStatus` 查看各服务状态。
+修改或更新 Dev 的代码后，运行 `./scripts/portal_services request-restart dev` 让受影响的服务重新加载。验证通过后，在仓库根目录用 `python3 code/scripts/tfi_dev.py publish --message '<说明>' --path code/<文件>…`（或 `--all`）把改动发布到 Release；命令输出 `activation.receipt`，激活完成后该文件记录结果和各服务健康状态。发布会重启受影响的服务，正在运行的 Resident 工作会被中断，尽量在空闲时发布。完整流程见 `decision_ab9880dc4c9d`。对应指令为 `PublishRelease`、`RestartPortal`；`GetPortalStatus` 查看各服务状态。
 
 部署注册表更换产品名称时，使用 `scripts/migrate_tfi_runtime_names.py --names-file <私有计划> --deployment-registry <实际文件>` 单独检查。私有计划的 `deployment_registry` 对象须含实际旧 `source_schema` 和原文件 `sha256`。工具只接受同一 v1 格式，调用正式读取器校验实例与路由；默认不写入。确认检查结果后，加 `--apply --backup-dir <私有备份目录>` 保存原字节并替换顶层标记为 `tfi.portal-deployments.v1`，其余字节保持不变。文件摘要变化时拒绝覆盖，重新核对实际状态；此模式不连接数据库，也不启动或发布服务。运行时读取器始终只接受当前标记。
 
@@ -208,7 +208,7 @@ Portal 管理员永远可以开关权限系统（“执行设置”中的权限�
 
 源码、Provider 状态、密钥或部署配置的路径更名使用 `scripts/migrate_deployment_paths.py`，须在外部维护窗口执行。准备列出目录移动、文件前后摘要、既有链接及所有共享服务的私有清单，验证完整备份并停止相关写入者；使用源运行用户的 systemd bus 和完整 Linux 进程可见性检查占用。先运行 `seal <清单> <计划> --lock-file <私有锁>`，独立核对计划摘要，再运行 `apply <计划> --expected-sha256 <摘要> --backup <新备份目录> --lock-file <同一私有锁>`。工具遇到活动引用、权限不足、已有目标或源文件变化会拒绝；不停止服务、不创建旧路径别名、不修改账号或数据库内容。Python 虚拟环境须在新位置使用相同解释器与精确包版本重建，并保留原系统包继承设置。跨服务配置、域名和证书齐备后，由维护者按原依赖启动并验证真实路径、账号、凭据及会话。工具的文件备份不能替代完整数据备份；`rollback <备份目录> --lock-file <同一私有锁>` 只接受完整执行且目标未再改变的状态，中断或恢复写入后须逐项核对，不能盲重放。详细合同见 `decision_ab9880dc4c9d`。
 
-Dev/Release 管理入口启动前会从同一组服务定义注册 Portal 的原生服务：Linux 使用 systemd，macOS 使用 launchd，Windows 使用 SCM（需配置 `deployment.windows_service_account` 或 `PORTAL_WINDOWS_SERVICE_ACCOUNT`，并在注册时提供 `TFI_WINDOWS_SERVICE_PASSWORD`）。注册只准备服务，不会额外启动；PostgreSQL 须已安装并运行，NATS 可执行文件须已安装。独立 TFI 发布安装器则在其安装阶段注册自己的完整服务链，与 Dev/Release 服务隔离。
+Portal 的原生服务由安装器 `scripts/tfi_release_install.py` 在安装阶段注册：Linux 使用 systemd，macOS 使用 launchd，Windows 使用 SCM（需配置 `deployment.windows_service_account` 或 `PORTAL_WINDOWS_SERVICE_ACCOUNT`，并在注册时提供 `TFI_WINDOWS_SERVICE_PASSWORD`）。每个实例的服务名以自己的 `service_prefix` 开头，例如 `<service_prefix>-web.service`，不同实例的服务链互相隔离。配置了 Dev 的实例另由 `scripts/tfi_development_runtime.py` 注册 Dev Web 与 Router，发布时按改动的文件重启受影响的组件。
 
 ### 用量与额度
 
@@ -220,12 +220,12 @@ Portal 不是单个程序。下表列出各部分的用途，以及仓库中描�
 
 | 组成部分 | 用途 | 依据 |
 | --- | --- | --- |
-| PostgreSQL 16 | 保存几乎所有业务与运行数据：账号、权限、Lineage、对话、执行记录、资源索引。各领域使用独立 schema | `decision_ab9880dc4c9d`、`systemd/portal-postgresql.service`、`scripts/prepare_lineage_postgres` |
-| NATS | 服务之间的变化通知，页面据此实时刷新 | `systemd/portal-*-nats.service`、`systemd/portal-*-nats.conf` |
-| Portal Web | 网页与 HTTP 接口，包括 `/api/instructions/execute` | `systemd/management-portal-release.service` |
-| ResourceService、SocietyService、ExecutionService、ExecutionWorker | 资源与权限、Lineage 与 Resident、模型调用的排队与执行 | `systemd/portal-*-resource-service.service`、`systemd/portal-*-society-service.service`、`systemd/portal-*-execution-service.service`、`systemd/portal-*-execution-worker.service` |
-| Portal Router | 按用户把请求转给 Dev 或 Release 实例 | `systemd/portal-user-router.service`、`config/portal_instances.json` |
-| Provider 后端 | 实际运行 Resident 的 AI 编程工具，例如 Codex App Server、Claude Code、Kimi Code | `systemd/portal-codex-app-server*.service`、`systemd/portal-claude-code.*`、`systemd/portal-kimi-code.*`、`decision_ab9880dc4c9d` |
+| PostgreSQL 16 | 保存几乎所有业务与运行数据：账号、权限、Lineage、对话、执行记录、资源索引。各领域使用独立 schema | `decision_ab9880dc4c9d`、`scripts/tfi_release_install.py`（`postgres` 组件） |
+| NATS | 服务之间的变化通知，页面据此实时刷新 | `scripts/tfi_release_install.py`（`nats` 组件） |
+| Portal Web | 网页与 HTTP 接口，包括 `/api/instructions/execute` | `scripts/tfi_release_install.py`（`web` 组件）、`scripts/tfi_development_runtime.py`（`dev-web`） |
+| ResourceService、SocietyService、ExecutionService、ExecutionWorker | 资源与权限、Lineage 与 Resident、模型调用的排队与执行 | `scripts/tfi_release_install.py`（`resource`、`society`、`execution`、`worker` 组件） |
+| Portal Router | 按用户把请求转给 Dev 或 Release 实例 | `scripts/tfi_development_runtime.py`（`router`）、`management_portal/portal_deployment_registry.py` |
+| Provider 后端 | 实际运行 Resident 的 AI 编程工具，例如 Codex App Server、Claude Code、Kimi Code | `config/systemd/portal-codex-app-server@.service.in`、`systemd/portal-claude-code.*`、`systemd/portal-kimi-code-config.toml`、`decision_ab9880dc4c9d` |
 
 Python 依赖见仓库根目录的 `requirements*.txt`；按档安装和检查入口见 `decision_ab9880dc4c9d`。所有服务从同一个环境文件读取 `PORTAL_DATABASE_URL`。Portal 有 Dev 和 Release 两个实例：Dev 直接运行工作目录中的代码，用于开发和验证；Release 是发布后的稳定版本，供日常使用。两者共用数据库和后台服务，见 `decision_ab9880dc4c9d`。
 

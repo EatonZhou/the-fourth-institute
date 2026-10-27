@@ -1641,7 +1641,7 @@ def test_wall_publication_validates_commit_and_keeps_other_cards(wall_project, m
     assert '**unrelated**' in path.read_text()
     prompt=wall._task_prompt({'id':'portal','title':'Portal','root':str(wall_project)},
                             {**job,'message':''},None)
-    assert '--path' in prompt and '--origin wall' in prompt and '全量测试' in prompt
+    assert '--path' in prompt and 'tfi_dev.py publish' in prompt and job['id'] in prompt and '全量测试' in prompt
 
 
 def test_wall_full_publish_is_independent_and_does_not_retire_cards(wall_project, monkeypatch):
@@ -1661,7 +1661,7 @@ def test_wall_full_publish_is_independent_and_does_not_retire_cards(wall_project
     assert wall._read_state()['jobs'][verify['id']]['status'] == 'queued'
     assert wall._read_state()['jobs'][publish['id']]['publication_commit'] == 'a'*40
     prompt = wall._task_prompt(wall.project('portal', 'owner'), publish, None)
-    assert '--all' in prompt and '--wall-job ' + publish['id'] in prompt and '不传--block' in prompt
+    assert '--all' in prompt and 'tfi_dev.py publish' in prompt and publish['id'] in prompt
 
 
 def test_wall_project_jobs_stop_only_selected_job(wall_project, monkeypatch):

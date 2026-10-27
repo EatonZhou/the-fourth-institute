@@ -5,20 +5,13 @@
 from __future__ import annotations
 
 import signal
-import subprocess
 from contextlib import nullcontext
 from unittest.mock import Mock
 
 import pytest
 
 from management_portal.execution.worker_manager import ExecutionWorkerManager, WorkerProcess
-from scripts import portal_dev_source_reloader, portal_services
-
-
-@pytest.fixture(autouse=True)
-def isolated_deployment_snapshot(monkeypatch, tmp_path):
-    monkeypatch.setattr(portal_dev_source_reloader, 'DEPLOYED_SOURCE_STATE', tmp_path / 'deployed.json')
-    monkeypatch.setattr(portal_dev_source_reloader, 'source_state', lambda: ())
+from scripts import portal_services
 
 
 @pytest.mark.parametrize("failure", [None, "ready", "activate"])
@@ -116,36 +109,11 @@ def test_manager_dispatches_explicit_signal_without_forcing_reload(monkeypatch, 
     assert handlers == original_handlers
 
 
-
-
-def test_explicit_restart_waits_for_changed_worker_instead_of_old_healthy_status(monkeypatch):
-    """显式重启等待新的健康 Worker 身份
-
-    验证旧 Worker 健康不代表重启完成；等待新身份就绪，未变化则超时失败。
-
-    :design-point:
-    """
-    old = {"ok": True, "runtime_ok": True, "execution_worker": {"ok": True, "runtime_ok": True, "current": {"worker_id": "old"}}}
-    new = {"ok": True, "runtime_ok": True, "execution_worker": {"ok": True, "runtime_ok": True, "current": {"worker_id": "new"}}}
-    snapshots = iter([old, new])
-    monkeypatch.setattr(portal_services, "instance_status", lambda *args, **kwargs: next(snapshots))
-    monkeypatch.setattr(portal_services, "_assert_instance", lambda *args, **kwargs: None)
-    sleeps = []
-    monkeypatch.setattr(portal_services.time, "sleep", lambda seconds: sleeps.append(seconds))
-    assert portal_services._wait_healthy("dev", worker_id_before_restart="old") is new
-    assert sleeps == [0.5]
-    monkeypatch.setattr(portal_services, "instance_status", lambda *args, **kwargs: old)
-    ticks = iter([0, 0, 0.1, 0.3])
-    monkeypatch.setattr(portal_services.time, "monotonic", lambda: next(ticks))
-    with pytest.raises(RuntimeError, match="has not activated a new Worker"):
-        portal_services._wait_healthy("dev", worker_id_before_restart="old", timeout_seconds=0.2)
-
-
 @pytest.mark.parametrize("generation_only", [False, True])
 def test_explicit_cli_and_automatic_deployment_keep_distinct_worker_intent(monkeypatch, generation_only):
     """管理命令保留显式重启与自动部署的区别
 
-    验证显式组件重启传递强制意图，generation-only 和普通发布不强制替换同版本 Worker。
+    验证显式组件重启传递强制意图，generation-only 不强制替换同版本 Worker。
 
     :design-point:
     """
@@ -157,31 +125,3 @@ def test_explicit_cli_and_automatic_deployment_keep_distinct_worker_intent(monke
         args.append("--generation-only")
     assert portal_services.main(args) == 0
     assert captured[0]["force_worker_restart"] is (not generation_only)
-    commands = []
-    monkeypatch.setattr(portal_dev_source_reloader.subprocess, "run", lambda command, **kwargs: commands.append(command) or subprocess.CompletedProcess(command, 0, "", ""))
-    assert portal_dev_source_reloader.restart_dev({"execution-worker"}, force_worker_restart=not generation_only) == "ok"
-    assert ("--generation-only" in commands[0]) is generation_only
-
-
-@pytest.mark.parametrize("requested", [["execution-worker"], []])
-def test_source_coordinator_forces_only_explicit_worker_component(monkeypatch, requested, tmp_path):
-    """源码协调器只强制显式指定的 Worker 重启
-
-    验证重启队列中的 Worker 请求携带强制意图，普通部署和其他组件不携带。
-
-    :design-point:
-    """
-    write_states = portal_dev_source_reloader.write_deployed_source_states
-    monkeypatch.setattr(portal_dev_source_reloader, "write_deployed_source_states",
-                        lambda states: write_states(states, path=tmp_path / "deployed.json"))
-    baseline = portal_dev_source_reloader.component_source_states((("management_portal/execution/worker.py", 1, 1),))
-    monkeypatch.setattr(portal_dev_source_reloader, "source_state", lambda: (("management_portal/execution/worker.py", 2, 1),))
-    monkeypatch.setattr(portal_dev_source_reloader, "read_restart_request", lambda: {"request_id": "r", "revision": 1, "components": requested})
-    calls = []
-    monkeypatch.setattr(portal_dev_source_reloader, "restart_dev", lambda components, **kwargs: calls.append((components, kwargs)) or "ok")
-    acks = []
-    monkeypatch.setattr(portal_dev_source_reloader, "acknowledge_restart_request", lambda *args: acks.append(args))
-    assert portal_dev_source_reloader.process_restart_request(baseline, "")[2] == "ok"
-    assert "execution-worker" in calls[0][0]
-    assert calls[0][1] == ({"force_worker_restart": True} if requested else {})
-    assert acks == [("r", 1)]
