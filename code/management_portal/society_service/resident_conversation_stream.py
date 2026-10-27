@@ -215,6 +215,19 @@ def protocol_activity(activity: Mapping[str, Any]) -> dict[str, Any]:
     phase = str(activity.get("phase") or "").strip().casefold()
     if phase:
         result["phase"] = phase
+    native_plan = activity.get("native_plan")
+    if kind == "plan" and status == "running" and isinstance(native_plan, Mapping):
+        execution_id = str(activity.get("execution_id") or "").strip()
+        if (
+            native_plan.get("type") != "native_turn"
+            or not execution_id
+            or native_plan.get("execution_id") != execution_id
+            or any(not str(native_plan.get(key) or "").strip() for key in ("thread_id", "turn_id", "message_id"))
+            or native_plan.get("diff")
+        ):
+            raise ValueError("Live Plan requires its exact Execution/Thread/Turn identity and no final Diff")
+        result["execution_id"] = execution_id
+        result["native_plan"] = copy.deepcopy(dict(native_plan))
     subagent = activity.get("subagent")
     if kind == "subagent" and isinstance(subagent, Mapping):
         # The card of a subagent run the Resident's model waits on, and the

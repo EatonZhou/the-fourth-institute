@@ -1008,6 +1008,12 @@ def _runtime_activity_for_execution(
                 # A running subagent's card, and the Execution it runs in
                 # (the Chat stops one run there).
                 **(
+                    {"native_plan": copy.deepcopy(item["native_plan"]),
+                     "execution_id": str(item.get("execution_id") or execution_id)}
+                    if isinstance(item.get("native_plan"), dict)
+                    else {}
+                ),
+                **(
                     {"subagent": item["subagent"], "execution_id": str(item.get("execution_id") or execution_id)}
                     if isinstance(item.get("subagent"), dict)
                     else {}

@@ -575,6 +575,8 @@ def runtime_details_from_objects(
                 detail["questions"] = activity["questions"]
             if isinstance(activity.get("content_parts"), list):
                 detail["content_parts"] = activity["content_parts"]
+            if isinstance(activity.get("native_plan"), dict):
+                detail["native_plan"] = activity["native_plan"]
             stored_id = str(activity.get("id") or "").strip()
             if kind == "subagent" and stored_id.startswith("runtime-update:"):
                 if isinstance(activity.get("subagent"), dict):
@@ -843,6 +845,15 @@ def runtime_details_from_objects(
             detail.update({"id": native_item["id"], "execution_id": event_execution_id,
                            "content_parts": [part], "turn_id": part["turn_id"]})
             details.append(detail)
+            if part["type"] == "native_turn" and part.get("thread_id") and part.get("turn_id"):
+                # The immutable turn record replaces this turn's transient plan.
+                append_stream_detail(_runtime_detail(
+                    line_number=line_number, created_at=created_at, kind="plan",
+                    title="Plan ended", content="", status="completed",
+                ), {
+                    "update_id": scoped_update_id(f"plan:{part['thread_id']}:{part['turn_id']}", event_execution_id),
+                    "replace_previous": True,
+                })
             if part["type"] == "subagent_run":
                 # The run's card is a message now; its running card ends.
                 ended = _runtime_detail(
@@ -879,20 +890,36 @@ def runtime_details_from_objects(
                     })
             continue
         if method == "turn/plan/updated":
-            turn_id = str(params.get("turnId") or "current")
-            update_id = scoped_update_id(
-                f"plan:{turn_id}",
-                event_execution_id,
-            )
-            append_stream_detail(_runtime_detail(
+            thread_id = str(params.get("threadId") or "")
+            turn_id = str(params.get("turnId") or "")
+            detail = _runtime_detail(
                 line_number=line_number,
                 created_at=created_at,
                 kind="plan",
                 title="Plan updated",
                 content=_runtime_plan_content(params),
                 status="running",
-            ), {
-                "update_id": update_id,
+            )
+            if event_execution_id and thread_id and turn_id:
+                from management_common.provider_turn_artifacts import content_part
+
+                detail.update(execution_id=event_execution_id, turn_id=turn_id)
+                detail["native_plan"] = content_part({"artifacts": {
+                    "thread_id": thread_id,
+                    "turn_id": turn_id,
+                    "status": "running",
+                    "plan": [
+                        {"step": str(step.get("step") or ""), "status": str(step.get("status") or "")}
+                        for step in params.get("plan") or [] if isinstance(step, dict)
+                    ],
+                    "explanation": str(params.get("explanation") or ""),
+                }}, event_execution_id)
+                detail["native_plan"]["message_id"] = derived_message_identity(
+                    "resident-execution-message", event_execution_id, "turn-artifacts:" + turn_id,
+                )
+            plan_id = f"plan:{thread_id}:{turn_id}" if thread_id and turn_id else f"plan:{turn_id or 'current'}"
+            append_stream_detail(detail, {
+                "update_id": scoped_update_id(plan_id, event_execution_id),
                 "replace_previous": True,
             })
             continue
@@ -966,6 +993,17 @@ def runtime_details_from_objects(
         elif method == "turn/completed":
             obj_type = "turn.completed"
             turn = params.get("turn") if isinstance(params.get("turn"), dict) else {}
+            thread_id = str(params.get("threadId") or "")
+            turn_id = str(turn.get("id") or params.get("turnId") or "")
+            if event_execution_id and thread_id and turn_id:
+                # Cancelled/failed turns can end without a final artifact.
+                append_stream_detail(_runtime_detail(
+                    line_number=line_number, created_at=created_at, kind="plan",
+                    title="Plan ended", content="", status="completed",
+                ), {
+                    "update_id": scoped_update_id(f"plan:{thread_id}:{turn_id}", event_execution_id),
+                    "replace_previous": True,
+                })
             obj = {
                 **obj,
                 "turn_id": str(turn.get("id") or params.get("turnId") or ""),
@@ -1271,9 +1309,15 @@ def _running_subagent(detail: dict[str, Any]) -> bool:
 
 
 def last_runtime_details(details: list[dict[str, Any]], limit: int) -> list[dict[str, Any]]:
-    """The last ``limit`` details, after every subagent still running: its card stays in view."""
+    """Keep running cards in view even when tool activity fills the recent window."""
 
-    return [detail for detail in details[:-limit] if _running_subagent(detail)] + details[-limit:]
+    return [
+        detail for detail in details[:-limit]
+        if _running_subagent(detail) or (
+            detail.get("kind") == "plan" and detail.get("status") == "running"
+            and isinstance(detail.get("native_plan"), dict)
+        )
+    ] + details[-limit:]
 
 
 
@@ -1526,6 +1570,7 @@ def append_execution_activity(
                 "provider_event_type",
                 "questions",
                 "content_parts",
+                "native_plan",
                 "subagent",
             )
             if detail.get(key) not in (None, "")
