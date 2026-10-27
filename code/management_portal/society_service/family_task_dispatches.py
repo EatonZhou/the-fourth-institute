@@ -21,7 +21,7 @@ def create_schema(connection):
 
 
 def _validate_original(repository, target_id, facade_id, mid, text, business_ref):
-    from . import resident_intake_domain, resident_message_contract
+    from . import resident_input_queue_domain, resident_message_contract
 
     original = repository.message(target_id, mid)
     if original is None:
@@ -29,7 +29,7 @@ def _validate_original(repository, target_id, facade_id, mid, text, business_ref
     if (original.get("author_id") != facade_id
             or repository.message_business_ref(target_id, mid) != business_ref):
         raise resident_message_contract.MessageIdentityConflict("Family task message_id belongs to another task")
-    candidate = resident_intake_domain.build_message(
+    candidate = resident_input_queue_domain.build_message(
         "user", text, facade_id, message_id=mid, created_at=original["created_at"],
     )
     if "origin" in original:
@@ -71,7 +71,7 @@ def deliver(facade, target, trigger, facts, actor, *, business_ref, message_id="
     from management_common.operation_identity import operation_identity_scope
     from management_common.principal import OperationIdentity
     from . import family_tasks, invariant_locks, resident_conversation_stream
-    from . import resident_execution_domain, resident_execution_work, resident_intake_domain
+    from . import resident_execution_work, resident_intake_domain
     from . import resident_message_contract
     from .state_store import get_lineage_data_store
 
@@ -124,6 +124,6 @@ def deliver(facade, target, trigger, facts, actor, *, business_ref, message_id="
         # dispatch already authorized the current caller. Only the historical
         # message origin is frozen; its ISA invocation keeps its own caller.
         with operation_identity_scope(OperationIdentity.for_actor(facade_id, initiated_by=intent["initiated_by"])):
-            return resident_execution_domain.deliver_resident_message_content(
+            return resident_intake_domain.deliver_resident_message_content(
                 target_id, facade_id, intent["text"], business_ref=business_ref, message_id=mid,
             )

@@ -50,6 +50,7 @@ from management_portal.society_service import (
     workspace_contracts,
     resident_domain_common,
     resident_prompt_domain,
+    resident_input_queue_domain,
 )
 from management_portal.society_service import lifecycle
 from management_portal.society_service import resident_domain as backend
@@ -234,7 +235,7 @@ def test_deliver_resident_input_resolves_message_context_once(
         return {"ok": True}
 
     monkeypatch.setattr(
-        resident_execution_domain,
+        resident_intake_domain,
         "deliver_resident_message_content",
         deliver,
     )
@@ -583,7 +584,7 @@ def test_running_job_projection_does_not_run_recovery(
         "_prepare_resident_continuation",
         side_effect=AssertionError("read projection invoked recovery"),
     ):
-        projected = resident_intake_domain._active_resident_execution(resident_record)
+        projected = resident_input_queue_domain.active_resident_execution(resident_record)
 
     assert projected['execution_id'] == 'execution-projection-read'
 
@@ -598,7 +599,7 @@ def test_reopened_job_failure_appends_a_new_terminal_event(
         "execution_id": "execution-first",
         "finished_at": "2026-08-25T01:00:00Z",
      "submitted_at": "2026-10-14T00:00:00Z"}
-    resident_intake_domain.persist_failed_execution_message(
+    resident_input_queue_domain.persist_failed_execution_message(
         resident_id,
         job,
         "first failure",
@@ -610,7 +611,7 @@ def test_reopened_job_failure_appends_a_new_terminal_event(
     job.pop("failure_message_persisted_at")
     job["execution_id"] = "execution-second"
     job["finished_at"] = "2026-08-25T02:00:00Z"
-    resident_intake_domain.persist_failed_execution_message(
+    resident_input_queue_domain.persist_failed_execution_message(
         resident_id,
         job,
         "second failure",
@@ -632,11 +633,11 @@ def test_promoted_failures_each_persist_their_own_notice(resident_record):
     job = { "execution_id": "execution-first",
            "finished_at": "2026-10-11T00:00:00Z", "runtime_error": {"message": "first"},
            "execution_event_cursor": 23, "submitted_at": "2026-10-14T00:00:00Z"}
-    resident_intake_domain.persist_failed_execution_message(resident_id, job, "first", {"message": "first"})
+    resident_input_queue_domain.persist_failed_execution_message(resident_id, job, "first", {"message": "first"})
     first_id = job["failure_message_id"]
     resident_execution_work.promote_queue_item(job, {'execution_id': "job_second", "user_message_id": "second"}, [], "now")
     assert not set(job) & {"failure_message_id", "failure_message_persisted_at", "runtime_error", "execution_event_cursor"}
-    resident_intake_domain.persist_failed_execution_message(resident_id, job, "second", {"message": "second"})
+    resident_input_queue_domain.persist_failed_execution_message(resident_id, job, "second", {"message": "second"})
     assert job["failure_message_id"] != first_id
     repository = resident_conversation_stream.get_repository()
     assert repository.message(resident_id, first_id)["content_parts"][0]["text"] == "first"
@@ -989,7 +990,7 @@ def test_execution_message_callbacks_do_not_hydrate_resources(resident_record, m
     resident_execution_domain._advance_resident_execution_event_cursor(resident_id, "old-execution", 99)
     assert resident_execution_domain._resident_execution_event_cursor(resident_id,  execution_id) == 7
     assert resident_execution_domain._resident_execution_event_cursor(resident_id,  "old-execution") == 0
-    final = resident_intake_domain.build_message("agent", "final", message_id="msg_" + "c" * 32)
+    final = resident_input_queue_domain.build_message("agent", "final", message_id="msg_" + "c" * 32)
     assert resident_execution_domain._persist_execution_final_message(resident_id,  "old-execution", final) is None
     assert resident_execution_domain._persist_execution_final_message(resident_id,  execution_id, final)["message_id"] == final["message_id"]
     stored = resident_conversation_stream.get_repository().read_messages(resident_id)
@@ -1201,7 +1202,7 @@ def test_execution_display_batch_allows_stop_before_recovery_finishes(resident_r
 
     def stop():
         try:
-            resident_intake_domain.cancel_resident_execution_for_target(resident_id, "CASE-A", message_id)
+            resident_execution_domain.cancel_resident_execution_for_target(resident_id, "CASE-A", message_id)
         except Exception as error:
             errors.append(error)
         finally:
@@ -1833,7 +1834,7 @@ def test_applied_completion_retries_ack_without_reapplying_completion(
     resident_execution_work.write(resident_record, job)
 
     with mock.patch.object(
-        resident_intake_domain,
+        resident_input_queue_domain,
         "acknowledge_execution",
         side_effect=[False, True],
     ):
@@ -1881,8 +1882,8 @@ def test_a_second_finalizer_of_one_completion_keeps_the_promoted_queue_item(
     continuation_id = str(completed["continuation_id"])
     resident_execution_work.write(resident_record, completed)
 
-    with mock.patch.object(resident_intake_domain, "acknowledge_execution", return_value=True), \
-            mock.patch.object(resident_intake_domain, "reconcile_queued_turn_inputs", return_value=True):
+    with mock.patch.object(resident_input_queue_domain, "acknowledge_execution", return_value=True), \
+            mock.patch.object(resident_input_queue_domain, "reconcile_queued_turn_inputs", return_value=True):
         assert resident_execution_domain._finalize_applied_execution(resident_id, continuation_id, completed) is True
         assert resident_execution_domain._finalize_applied_execution(resident_id, continuation_id, completed) is False
 
@@ -2462,7 +2463,7 @@ def test_exiting_continuation_rewakes_job_persisted_during_shutdown(
         lambda target_id: notifications.append(str(target_id)),
     )
 
-    resident_intake_domain.finish_resident_continuation(resident_id)
+    resident_execution_domain.finish_resident_continuation(resident_id)
 
     assert resident_execution_work.thread(resident_record) is None
     assert notifications == [resident_id]
@@ -2492,7 +2493,7 @@ def test_exiting_continuation_wakes_the_next_job(
         lambda target_id: notifications.append(str(target_id)),
     )
 
-    resident_intake_domain.finish_resident_continuation(resident_id)
+    resident_execution_domain.finish_resident_continuation(resident_id)
 
     assert resident_execution_work.thread(resident_record) is None
     assert notifications == [resident_id]
@@ -2943,7 +2944,7 @@ def test_a_send_now_input_the_execution_refuses_waits_for_the_next_turn(
     # An input an earlier refusal left outside the queue is settled the same way.
     stranded = {**item, "active_turn_input": {"control_id": "control-stranded", "actor": "CASE-A"}}
     resident_execution_work.write(resident_record, {**running, "send_now_inputs": [stranded]})
-    assert resident_intake_domain.reconcile_queued_turn_inputs(resident_id, 'execution-444444444444444444444444')
+    assert resident_input_queue_domain.reconcile_queued_turn_inputs(resident_id, 'execution-444444444444444444444444')
     job = resident_execution_work.read(resident_record)
     assert not resident_execution_work.send_now_inputs(job)
     assert [entry["user_message_id"] for entry in job["queue"]] == [message_id]
@@ -3024,7 +3025,7 @@ def test_runtime_mode_persists_for_next_turn_without_steering(
     def reject_injection(*_args, **_kwargs):
         pytest.fail("mode changes must not steer or interrupt the active turn")
 
-    monkeypatch.setattr(resident_intake_domain, "_submit_active_turn_input", reject_injection)
+    monkeypatch.setattr(resident_input_queue_domain, "_submit_active_turn_input", reject_injection)
     result = resident_protocol.update_resident_runtime_settings(
         resident_id, "CASE-A", {"runtime_settings": {"collaboration_mode": mode}},
     )
@@ -3484,7 +3485,7 @@ def test_inject_queue_message_waits_durably_for_execution_binding(
         now="2026-08-28T00:00:00Z",
     )
     resident_execution_work.write(resident_record, pending_job)
-    resident_intake_domain.reconcile_queued_turn_inputs(
+    resident_input_queue_domain.reconcile_queued_turn_inputs(
         resident_id,
         "execution-333333333333333333333333",
     )
@@ -3495,7 +3496,7 @@ def test_inject_queue_message_waits_durably_for_execution_binding(
         [{"type": "text", "text": "<user-message>\n追加到尚未绑定的 turn\n</user-message>"}],
     )]
     assert "pending_active_turn_inputs" not in resident_execution_work.read(resident_record)
-    assert resident_intake_domain.reconcile_queued_turn_inputs(resident_id, "execution-333333333333333333333333")
+    assert resident_input_queue_domain.reconcile_queued_turn_inputs(resident_id, "execution-333333333333333333333333")
     assert resident_execution_work.read(resident_record)["queue"] == []
     assert [item["message_id"] for item in repository.read_messages(resident_id)] == [queued_message_id]
 
@@ -3890,7 +3891,7 @@ def test_conversation_replay_does_not_acquire_writer_locks(
     """已提交对话消息重放无需获取写锁"""
     repository = resident_conversation_stream.get_repository()
     resident_id = str(resident_record["resident_id"])
-    message = resident_intake_domain.build_message("agent", "durable update")
+    message = resident_input_queue_domain.build_message("agent", "durable update")
     persisted = repository.append_message(resident_id, message)
 
     def forbidden_write(*args, **kwargs):
@@ -3959,7 +3960,7 @@ def test_conversation_native_controls_follow_snapshot_and_events(resident_record
                     if with_state:
                         raw_receipt["state"] = deepcopy(state)
                     before_receipt = deepcopy(raw_receipt)
-                    cancellation.setattr(resident_intake_domain, "request_resident_execution_cancellation",
+                    cancellation.setattr(resident_execution_domain, "request_resident_execution_cancellation",
                                          lambda *_args, **_kwargs: raw_receipt)
                     before_calls = len(quota_calls)
                     receipt = resident_protocol.cancel_resident_execution(
@@ -3990,7 +3991,7 @@ def test_conversation_replay_repairs_missing_event(
     """对话消息重放补齐缺失事件且仅发布一次"""
     repository = resident_conversation_stream.get_repository()
     resident_id = str(resident_record["resident_id"])
-    message = resident_intake_domain.build_message("agent", "committed before event failure")
+    message = resident_input_queue_domain.build_message("agent", "committed before event failure")
     repository.agent_data.project_chat_message(resident_id, message)
     before = repository.current_projection(resident_id)["cursor"]
     repository.append_message(resident_id, message)
@@ -4007,7 +4008,7 @@ def test_concurrent_conversation_replays_commit_one_message_and_event(
     """并发对话重放仅提交一条消息和一个事件"""
     repository = resident_conversation_stream.get_repository()
     resident_id = str(resident_record["resident_id"])
-    message = resident_intake_domain.build_message("agent", "concurrent durable update")
+    message = resident_input_queue_domain.build_message("agent", "concurrent durable update")
     before = repository.current_projection(resident_id)["cursor"]
     ready = threading.Barrier(8)
 
@@ -4035,7 +4036,7 @@ def test_recovery_attaches_only_the_completion_waiter(
     # An active Job with no attached waiter is what recovery attaches one to.
     resident_execution_work.write(resident_record, {"execution_id": "execution-" + "a" * 24, "actor": "CASE-A", "queue": []})
     monkeypatch.setattr(resident_execution_domain, "_prepare_resident_continuation", lambda _record, **_kwargs: (resident_id, "waiter"))
-    monkeypatch.setattr(resident_intake_domain, "start_resident_continuation", lambda record, key: attached.append((record["resident_id"], key)))
+    monkeypatch.setattr(resident_execution_domain, "start_resident_continuation", lambda record, key: attached.append((record["resident_id"], key)))
     assert backend.resume_resident_execution(resident_id)["residents"] == 1
     assert attached == [(resident_id, "waiter")]
 
@@ -4106,19 +4107,19 @@ def test_lineage_projects_terminal_execution_without_harness_recovery(resident_r
     monkeypatch.setattr(resident_execution_domain, '_notify_lineage_message_terminal', mock.Mock())
     monkeypatch.setattr(resident_execution_domain, '_notify_lineage_message_completed', mock.Mock())
     monkeypatch.setattr(lifecycle, 'notify_execution_binding', wakeups.append)
-    finish_continuation = resident_intake_domain.finish_resident_continuation
+    finish_continuation = resident_execution_domain.finish_resident_continuation
 
     def observe_finish(target_id):
         before = len(wakeups)
         finish_continuation(target_id)
         exit_wakeups.extend(wakeups[before:])
-    monkeypatch.setattr(resident_intake_domain, 'finish_resident_continuation', observe_finish)
+    monkeypatch.setattr(resident_execution_domain, 'finish_resident_continuation', observe_finish)
     backend.change_resident_runtime_settings(resident_id, 'CASE-A', {'agent_harness': {'mode': mode, 'features': {'provider_error_continue': {'enabled': enabled}}}})
     saved = resident_runtime_domain.read_resident_runtime_settings(resident_record)['agent_harness']
     assert saved['mode'] == mode
     assert saved['features']['provider_error_continue']['enabled'] is enabled
     message_id = 'msg_123456789abcdef0123456789abcdef0'
-    user_item = resident_intake_domain._resident_user_message(resident_id, 'isolated original task', 'CASE-A', message_id=message_id)
+    user_item = resident_input_queue_domain.resident_user_message(resident_id, 'isolated original task', 'CASE-A', message_id=message_id)
     repository.commit_user_message(resident_id, user_item)
     job = resident_execution_work.new_item(user_item, 'isolated original task', 'isolated original task', resident_domain_common.now_iso(), prompt_cwd=str(resident_record['default_cwd']))
     job.update({'actor': 'CASE-A', 'queue': []})
@@ -4248,7 +4249,7 @@ def test_restart_recovery_isolates_one_broken_resident(
         ),
     )
     monkeypatch.setattr(
-        resident_intake_domain,
+        resident_execution_domain,
         "start_resident_continuation",
         lambda record, continuation_id: started.append((
             str(record.get("resident_id") or ""),
@@ -5097,7 +5098,7 @@ def test_a_stopped_or_failed_turn_keeps_the_usage_its_execution_counted(
         # The failure notice names the turn's Execution and shows what the Scheduler counted for it.
         execution_id = "execution-" + "9" * 24
         _ended_execution(resident_id, execution_id, "failed", _TURN_510K)
-        notice = resident_intake_domain.persist_failed_execution_message(
+        notice = resident_input_queue_domain.persist_failed_execution_message(
             resident_id, { "user_message_id": "message_709", "execution_id": execution_id, "submitted_at": "2026-10-14T00:00:00Z"},
             "stopped", {}, failed_at="2026-08-17T00:00:01Z",
         )
@@ -5123,7 +5124,7 @@ def test_completed_resident_turn_reuses_its_stable_final_message(
     """Resident 完成轮复用稳定最终消息并按顺序发布终态"""
     repository = resident_conversation_stream.get_repository()
     resident_id = str(resident_record["resident_id"])
-    user_message = resident_intake_domain._resident_user_message(
+    user_message = resident_input_queue_domain.resident_user_message(
         resident_id, "question", "CASE-A", message_id="msg_" + "9" * 32,
     )
     repository.commit_user_message(resident_id, user_message)
@@ -5791,7 +5792,7 @@ def test_live_waiter_is_not_reprojected_or_queried_by_recovery(
 
     monkeypatch.setattr(resident_execution_work, "publish_conversation_state", forbidden_work)
     monkeypatch.setattr(resident_execution_work, "execution_snapshot", forbidden_work)
-    assert resident_intake_domain._active_resident_execution(resident_record)['execution_id'] == job['execution_id']
+    assert resident_input_queue_domain.active_resident_execution(resident_record)['execution_id'] == job['execution_id']
     assert backend.resume_resident_execution(resident_id)["residents"] == 0
 
 
@@ -6023,7 +6024,7 @@ def test_quota_override_repairs_failed_sync_and_releases_existing_execution(resi
     assert opened["quota_reserve_override"]["enabled"]
     assert resident_lifecycle_domain.resident_intake_state(opened) == "open"
     sync.side_effect = scheduler.configure_binding_quota_overrides
-    resident_intake_domain.sync_resident_quota_overrides([opened])
+    resident_input_queue_domain.sync_resident_quota_overrides([opened])
     claimed = scheduler.claim(worker_id="quota-test", capabilities=["agent_session:codex"])
     assert claimed["execution"]["execution_id"] == request.execution_id
     scheduler.update_account_quota("zero", quota_sample({"rateLimits": {"primary": {"usedPercent": 100}}}, observed_at=time.time()))
@@ -6510,14 +6511,14 @@ def test_starting_session_materializes_message_at_the_execution_tail(
     """会话启动时在执行尾部激活消息并保留原创建时间"""
     resident_id = str(resident_record["resident_id"])
     repository = resident_conversation_stream.get_repository()
-    prior_reply = resident_intake_domain.build_message(
+    prior_reply = resident_input_queue_domain.build_message(
         "agent",
         "previous turn completed",
         message_id="msg_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         created_at="2026-08-31T13:49:00Z",
     )
     repository.append_message(resident_id, prior_reply)
-    queued_message = resident_intake_domain._resident_user_message(
+    queued_message = resident_input_queue_domain.resident_user_message(
         resident_id,
         "queued while the previous turn was running",
         "CASE-A",
@@ -6575,7 +6576,7 @@ def test_observed_active_input_is_not_rematerialized_for_state_updates(
     """活跃输入状态更新不重复物化已观察的消息"""
     resident_id = str(resident_record["resident_id"])
     repository = resident_conversation_stream.get_repository()
-    message = resident_intake_domain._resident_user_message(
+    message = resident_input_queue_domain.resident_user_message(
         resident_id, "one accepted input", "CASE-A",
         message_id="msg_abababababababababababababababab",
     )
@@ -6615,7 +6616,7 @@ def test_input_activation_failure_does_not_advance_public_checkpoint(
     """输入激活失败时不推进公开状态且重试可完成"""
     resident_id = str(resident_record["resident_id"])
     repository = resident_conversation_stream.get_repository()
-    message = resident_intake_domain._resident_user_message(
+    message = resident_input_queue_domain.resident_user_message(
         resident_id, "retry activation", "CASE-A",
         message_id="msg_acacacacacacacacacacacacacacacac",
     )
@@ -6644,7 +6645,7 @@ def test_new_active_input_has_its_own_materialization_checkpoint(
     repository = resident_conversation_stream.get_repository()
     expected_ids = []
     for marker in ("d", "e"):
-        message = resident_intake_domain._resident_user_message(
+        message = resident_input_queue_domain.resident_user_message(
             resident_id, "next input " + marker, "CASE-A", message_id="msg_" + marker * 32,
         )
         job = {
@@ -6664,7 +6665,7 @@ def test_waiting_capacity_keeps_message_out_of_chat_until_starting_session(
     """等待容量的消息在会话启动前不进入聊天记录"""
     resident_id = str(resident_record["resident_id"])
     repository = resident_conversation_stream.get_repository()
-    queued_message = resident_intake_domain._resident_user_message(
+    queued_message = resident_input_queue_domain.resident_user_message(
         resident_id,
         "wait for scheduler capacity",
         "CASE-A",
@@ -6774,7 +6775,7 @@ def test_recovery_snapshot_can_requeue_the_same_running_input(
     """恢复快照可将同一运行输入重新置为容量等待"""
     resident_id = str(resident_record["resident_id"])
     repository = resident_conversation_stream.get_repository()
-    message = resident_intake_domain._resident_user_message(
+    message = resident_input_queue_domain.resident_user_message(
         resident_id, "recover the accepted input", "CASE-A",
         message_id="msg_76547654765476547654765476547654",
     )
@@ -6799,7 +6800,7 @@ def test_waiting_capacity_is_not_overwritten_by_snapshotless_job_write(
     """无快照任务写入保留容量等待且不提前激活消息"""
     resident_id = str(resident_record["resident_id"])
     repository = resident_conversation_stream.get_repository()
-    queued_message = resident_intake_domain._resident_user_message(
+    queued_message = resident_input_queue_domain.resident_user_message(
         resident_id,
         "wait for scheduler capacity",
         "CASE-A",
@@ -7584,7 +7585,7 @@ def test_stopped_job_cannot_authorize_final_projection(
         "stop_requested_at": "2026-08-28T00:00:01Z",
         "queue": [],
      "submitted_at": "2026-10-14T00:00:00Z"})
-    final = resident_intake_domain.build_message(
+    final = resident_input_queue_domain.build_message(
         "agent",
         "must not be visible",
         message_id="msg_59595959595959595959595959595959",
@@ -7757,7 +7758,7 @@ def test_stop_identity_is_rechecked_when_current_turn_changes(
         return cancel(*args, **kwargs)
 
     with (
-        mock.patch.object(resident_intake_domain, "request_resident_execution_cancellation", side_effect=advance_turn_before_cancellation),
+        mock.patch.object(resident_execution_domain, "request_resident_execution_cancellation", side_effect=advance_turn_before_cancellation),
         pytest.raises(ValueError, match="message is not the active Resident input"),
     ):
         resident_protocol.cancel_resident_execution(resident_id, "sample_admin", original_message_id)
@@ -8044,7 +8045,7 @@ def test_confirmed_cancellation_terminalizes_message_and_clears_job(
 
     with (
         mock.patch.object(
-            resident_intake_domain,
+            resident_input_queue_domain,
             "acknowledge_execution",
             return_value=True,
         ),
@@ -8121,7 +8122,7 @@ def test_recovery_preparation_does_not_hydrate_resources(resident_record, monkey
         job.update(outcome="completed", finished_at="2026-09-06T12:00:00Z")
     resident_execution_work.write(resident_record, job)
 
-    with mock.patch.object(resident_intake_domain, "start_resident_continuation") as start:
+    with mock.patch.object(resident_execution_domain, "start_resident_continuation") as start:
         result = backend.resume_resident_execution(resident_id)
         assert result["residents"] == (0 if terminal else 1)
         assert start.call_count == (0 if terminal else 1)
@@ -8284,7 +8285,7 @@ def test_general_job_writes_cannot_drop_or_resurrect_projection_intents(
         "execution_id": execution_id,
         "actor": "CASE-A",
      "submitted_at": "2026-10-14T00:00:00Z"})
-    projected_message = resident_intake_domain.build_message(
+    projected_message = resident_input_queue_domain.build_message(
         "agent",
         "authorized projection",
         message_id="msg_" + "f" * 32,
@@ -8330,7 +8331,7 @@ def test_recovery_finishes_durable_terminal_projection_then_releases_turn(reside
     """
     resident_id = str(resident_record['resident_id'])
     job_id, execution_id = 'job_projection_recovery', 'execution-' + 'a' * 24
-    message = resident_intake_domain.build_message('agent', 'completed reply', message_id='msg_' + 'a' * 32)
+    message = resident_input_queue_domain.build_message('agent', 'completed reply', message_id='msg_' + 'a' * 32)
     store = resident_execution_work.get_lineage_data_store()
     store.put_resident_execution_record(resident_id, {
          'execution_id': execution_id, 'actor': 'CASE-A',

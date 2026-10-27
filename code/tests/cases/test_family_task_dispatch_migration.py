@@ -1,7 +1,7 @@
 """Additive dispatch intent migration preserves accepted inputs and is atomic."""
 import pytest
 
-from management_portal.society_service import resident_conversation_stream, resident_intake_domain
+from management_portal.society_service import resident_conversation_stream, resident_input_queue_domain
 from management_portal.society_service.state_store import get_lineage_data_store
 from scripts.migrate_family_task_dispatches import OLD_SCHEMA, NEW_SCHEMA, upgrade
 from tests.cases.test_family_tasks import charters, configured_family, future_creation_store, lineage  # noqa: F401
@@ -11,7 +11,7 @@ def test_dispatch_intent_migration_preserves_messages_and_replays(configured_fam
     _, block = configured_family
     target = block["family"]["steward"]
     repository = resident_conversation_stream.get_repository()
-    message = resident_intake_domain.build_message("user", "original", block["family"]["facade"])
+    message = resident_input_queue_domain.build_message("user", "original", block["family"]["facade"])
     repository.accept_user_message(target, message)
     before = repository.message(target, message["message_id"])
     database = get_lineage_data_store().database

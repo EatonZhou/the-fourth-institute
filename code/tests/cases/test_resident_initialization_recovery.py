@@ -10,6 +10,7 @@ from management_portal.society_service import (
     resident_catalog,
     resident_protocol,
     resident_record_domain,
+    resident_input_queue_domain,
 )
 from management_portal.execution.agent_data_store import get_agent_data_store
 from tests.cases.agent_data_test_support import register_session
@@ -33,7 +34,7 @@ def compacted_child(future_creation_store, monkeypatch):
     child = resident_domain.create_resident_compacted_context_fork(source['resident_id'], 'sample_admin', backend_route_id='one')
     record = resident_record_domain.find_resident(child['resident_id'])
     register_session(record, '01a00000-0000-7000-8000-000000000918', backend_route_id='one')
-    monkeypatch.setattr(resident_intake_domain, 'acknowledge_execution', lambda _: True)
+    monkeypatch.setattr(resident_input_queue_domain, 'acknowledge_execution', lambda _: True)
     return record
 
 

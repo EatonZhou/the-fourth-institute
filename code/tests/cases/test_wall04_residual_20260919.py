@@ -17,11 +17,11 @@ from management_portal.society_service import (
     resident_conversation_stream,
     resident_delivery_work,
     resident_execution_work,
+    resident_input_queue_domain,
     resident_protocol,
     resident_record_domain,
     state_store,
 )
-from management_portal.society_service import resident_intake_domain
 from management_portal.society_service import resident_lifecycle_domain
 from management_portal.society_service import resident_workspace_domain
 from management_portal.resources.providers import project
@@ -53,7 +53,7 @@ def test_artifact_isa_reads_exact_response_and_enforces_resident_scope(team):
     resident_id = team.source["resident_id"]
     message_id = "msg_" + uuid.uuid4().hex
     response = {"output": [{"text": "synthetic structured response"}], "usage": {"tokens": 7}}
-    message = resident_intake_domain.build_message(
+    message = resident_input_queue_domain.build_message(
         "agent", "Visible answer", resident_id, message_id=message_id,
         provider_response=response,
     )
@@ -88,7 +88,7 @@ def test_reorder_isa_persists_input_order_before_execution_allocation(team):
     for index in range(4):
         message_id = "msg_" + uuid.uuid4().hex
         resident_lifecycle_domain.append_conversation_message(
-            resident_id, resident_intake_domain.build_message("user", message_id, ACTOR, message_id=message_id),
+            resident_id, resident_input_queue_domain.build_message("user", message_id, ACTOR, message_id=message_id),
         )
         entries.append({
              "user_message_id": message_id,
@@ -130,7 +130,7 @@ def test_absorb_persists_reference_message_without_history_copy(team, monkeypatc
     monkeypatch.setattr(agent_context_selection, "HOST_SKILLS_ROOT", team.owners.root / "skills")
     monkeypatch.setattr(agent_context_selection, "THIRD_PARTY_SKILLS_ROOT", team.owners.root / "skills" / "third-party")
     source_id, target_id = team.source["resident_id"], team.target["resident_id"]
-    resident_lifecycle_domain.append_conversation_message(source_id, resident_intake_domain.build_message(
+    resident_lifecycle_domain.append_conversation_message(source_id, resident_input_queue_domain.build_message(
         "user", "PRIVATE_HISTORY_MUST_NOT_BE_EMBEDDED", ACTOR, message_id="msg_" + uuid.uuid4().hex,
     ))
     arguments = {"source_resident_id": source_id, "target_resident_id": target_id}

@@ -15,6 +15,7 @@ from management_portal.society_service import (
     resident_domain,
     resident_domain_common,
     resident_execution_work,
+    resident_input_queue_domain,
 )
 from management_portal.society_service import resident_fork_domain
 from management_portal.society_service import resident_record_domain
@@ -33,7 +34,6 @@ from tests.cases.test_resident_folder_creation_contract import (
 from management_portal.society_service import (
     project_domain,
     resident_execution_domain,
-    resident_intake_domain,
     resident_session_backend_domain,
 )
 
@@ -326,7 +326,7 @@ def test_from_here_reads_recorded_input_without_repairing_execution_receipts(
     original_trace = store.read_sequence(store.trace_sequence_id(source['resident_id']), limit=1000)['segments']
     frozen = resident_domain.create_resident_full_context_fork(source['resident_id'], 'sample_admin')
     _, future_ids, _ = _record_provider_turn(store, source, 1, question='future-input', answer='future-answer')
-    control_id = resident_intake_domain.resident_input_control_id(source['resident_id'], message_id)
+    control_id = resident_input_queue_domain.resident_input_control_id(source['resident_id'], message_id)
     receipt = {
         **ExecutionInputControl.new(
             control_id=control_id,
@@ -419,7 +419,7 @@ def test_database_fork_creation_remains_a_prerequisite_after_reload(
             'backend_session_id': '01a00000-0000-7000-8000-000000000777', 'backend_route_id': 'zero'},
     })
     monkeypatch.setattr(resident_session_backend_domain, 'run_backend_session_operation', fork)
-    monkeypatch.setattr(resident_intake_domain, 'acknowledge_execution', lambda _: True)
+    monkeypatch.setattr(resident_input_queue_domain, 'acknowledge_execution', lambda _: True)
     prepared = resident_execution_domain._prepare_resident_continuation(child)
     assert prepared is not None
     resident_execution_domain.run_resident_execution(*prepared)
@@ -474,7 +474,7 @@ def test_compacted_fork_compacts_frozen_context_before_first_turn(
 
     monkeypatch.setattr(resident_session_backend_domain, 'create_exact_resident_session', create_session)
     monkeypatch.setattr(resident_session_backend_domain, 'run_backend_session_operation', compact)
-    monkeypatch.setattr(resident_intake_domain, 'acknowledge_execution', lambda _: True)
+    monkeypatch.setattr(resident_input_queue_domain, 'acknowledge_execution', lambda _: True)
     prepared = resident_execution_domain._prepare_resident_continuation(child)
     assert prepared is not None
     resident_execution_domain.run_resident_execution(*prepared)

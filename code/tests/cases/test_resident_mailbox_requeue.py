@@ -11,7 +11,6 @@ import uuid
 from management_portal.society_service import (
     resident_conversation_stream,
     resident_held_infos,
-    resident_intake_domain,
     resident_execution_work,
     resident_lifecycle_domain,
     resident_mailbox,
@@ -19,6 +18,7 @@ from management_portal.society_service import (
     resident_access,
     resident_domain_common,
     resident_record_domain,
+    resident_input_queue_domain,
 )
 from management_portal.society_service.state_store import get_lineage_data_store
 from management_portal.execution.agent_data_store import get_agent_data_store
@@ -37,11 +37,11 @@ def test_mailbox_actor_activity_aggregates_valid_inputs_and_excludes_business_re
     :module: resident.identity"""
     resident_id = team.target["resident_id"]
     store = get_lineage_data_store()
-    first = resident_intake_domain.build_message(
+    first = resident_input_queue_domain.build_message(
         "user", "first", ACTOR, message_id="msg_" + uuid.uuid4().hex,
         created_at="2026-10-01T00:00:00Z",
     )
-    second = resident_intake_domain.build_message(
+    second = resident_input_queue_domain.build_message(
         "user", "second", ACTOR, message_id="msg_" + uuid.uuid4().hex,
         created_at="2026-10-02T00:00:00Z",
     )
@@ -61,7 +61,7 @@ def _info(resident_id: str, author: str, text: str) -> str:
     """An info message waiting for the next request, as attach_to_next leaves it."""
 
     info_id = "msg_" + uuid.uuid4().hex
-    info = resident_intake_domain.build_message("user", text, author, message_id=info_id)
+    info = resident_input_queue_domain.build_message("user", text, author, message_id=info_id)
     repository = resident_conversation_stream.get_repository()
     repository.accept_user_message(resident_id, info)
     repository.set_input_state(resident_id, info_id, "queued")
@@ -76,7 +76,7 @@ def _round(resident_id: str, *, state: str = "cancelled", infos: tuple = (), tex
     for author, info_text in infos:
         _info(resident_id, author, info_text)
     message_id = "msg_" + uuid.uuid4().hex
-    request = resident_intake_domain.build_message("user", text, ACTOR, message_id=message_id)
+    request = resident_input_queue_domain.build_message("user", text, ACTOR, message_id=message_id)
     resident_lifecycle_domain.append_conversation_message(resident_id, request)
     record = _record(resident_id)
     _, carried = resident_held_infos.attach(record, text)
@@ -98,7 +98,7 @@ def _round(resident_id: str, *, state: str = "cancelled", infos: tuple = (), tex
         store.finish_execution(job["execution_id"], status=state, finished_at=resident_domain_common.now_iso())
         repository.set_input_state(resident_id, message_id, state, error={"message": "provider error"} if state == "failed" else None)
     if state == "cancelled":
-        notice = resident_intake_domain.resident_execution_stopped_event(ACTOR, job)
+        notice = resident_input_queue_domain.resident_execution_stopped_event(ACTOR, job)
         resident_lifecycle_domain.append_conversation_message(resident_id, notice)
     return message_id, [item["message_id"] for item in carried]
 
@@ -399,8 +399,8 @@ def test_each_stop_of_a_message_has_its_own_notice():
     :design: decision_b5d349190743, decision_2a3ff353165c
     """
     message_id = "msg_" + "c" * 32
-    first = resident_intake_domain.resident_execution_stopped_event(ACTOR, {"user_message_id": message_id, 'execution_id': "job_1"})
-    second = resident_intake_domain.resident_execution_stopped_event(ACTOR, {"user_message_id": message_id, 'execution_id': "job_2"})
+    first = resident_input_queue_domain.resident_execution_stopped_event(ACTOR, {"user_message_id": message_id, 'execution_id': "job_1"})
+    second = resident_input_queue_domain.resident_execution_stopped_event(ACTOR, {"user_message_id": message_id, 'execution_id': "job_2"})
 
     assert first["message_id"] != second["message_id"]
     assert first["reply_to_message_id"] == second["reply_to_message_id"] == message_id

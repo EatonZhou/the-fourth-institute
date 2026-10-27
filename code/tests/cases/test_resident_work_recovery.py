@@ -15,7 +15,6 @@ from management_portal.society_service import (
     family_facade,
     resident_backend,
     resident_conversation_stream,
-    resident_intake_domain,
     resident_execution_work,
     resident_input_recovery,
     resident_restart_domain,
@@ -27,7 +26,7 @@ from tests.cases.test_cross_owner_storage_integration import ACTOR, owners  # no
 from tests.cases.test_wall04_residual_20260919 import instruction, team  # noqa: F401
 from tests.cases.test_resident_mailbox_requeue import _record, _round
 from tests.cases.test_session_restart import _restart_domain
-from management_portal.society_service import resident_record_domain
+from management_portal.society_service import resident_input_queue_domain, resident_record_domain
 
 
 def _failed(team, monkeypatch, error="connection error"):
@@ -39,7 +38,7 @@ def _failed(team, monkeypatch, error="connection error"):
     record["last_error"] = error
     resident_execution_work.clear(record)
     resident_record_domain.save_resident_record(record)
-    resident_intake_domain.commit_resident_intake_state(record, "open")
+    resident_input_queue_domain.commit_resident_intake_state(record, "open")
     monkeypatch.setattr(resident_backend, "session_record", lambda _r: {})
     monkeypatch.setattr(provider_egress, "provider_network_state", lambda *_args: "allowed")
     return resident_id, message_id
@@ -85,7 +84,7 @@ def test_recovery_respects_user_and_execution_boundaries(team, monkeypatch, boun
     resident_id, message_id = _failed(team, monkeypatch)
     record = _record(resident_id)
     if boundary == "closed":
-        resident_intake_domain.commit_resident_intake_state(record, "closed")
+        resident_input_queue_domain.commit_resident_intake_state(record, "closed")
     elif boundary == "cancelled":
         resident_conversation_stream.get_repository().reopen_input(resident_id, message_id)
         resident_conversation_stream.get_repository().set_input_state(resident_id, message_id, "cancelled")

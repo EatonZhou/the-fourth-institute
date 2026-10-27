@@ -276,7 +276,7 @@ def _restore_role_intake(record: dict[str, Any]) -> dict[str, Any] | None:
     Reuse the intake transition owner; this never overrides quota admission,
     recreates a deleted role, requeues a cancelled input or restarts a Session.
     """
-    from . import family_storage, resident_intake_domain
+    from . import family_storage, resident_management_domain
     from . import resident_lifecycle_domain, resident_record_domain
     if not family_facade.is_operating_role(record) or record.get("deleted_at"):
         return None
@@ -288,7 +288,7 @@ def _restore_role_intake(record: dict[str, Any]) -> dict[str, Any] | None:
     if resident_lifecycle_domain.resident_intake_state(record) != "open":
         if resident_record_domain.lifecycle_operations().pending(record["resident_id"]):
             return record  # The migration owns its temporary intake hold.
-        resident_intake_domain.transition_resident_state(record["resident_id"], record["resident_id"],
+        resident_management_domain.transition_resident_state(record["resident_id"], record["resident_id"],
             transition="open", allow_quota_override=False)
         record = resident_record_domain.find_resident(record["resident_id"])
     return record

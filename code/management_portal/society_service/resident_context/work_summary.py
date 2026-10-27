@@ -110,7 +110,7 @@ def update_resident_work_summary(actor: str, resident_id: str, expected_revision
 
 def check_resident_work_summary(actor: str, resident_id: str, message_id: str) -> dict:
     from .. import invariant_locks, resident_conversation_stream, resident_held_infos, family_facade
-    from .. import resident_execution_domain
+    from .. import resident_intake_domain
     record = _visible(actor, resident_id)
     if family_facade.is_facade(record):
         return {"status": "facade"}
@@ -134,7 +134,7 @@ def check_resident_work_summary(actor: str, resident_id: str, message_id: str) -
         if any(repo.message_business_ref(resident_id, item["message_id"]) == REMINDER_REF for item in resident_held_infos.peek(record)):
             return {"status": "reminder_pending"}
         reminder_id = derived_message_identity(REMINDER_REF, resident_id, message_id)
-        resident_execution_domain.deliver_resident_message_content(resident_id, roles["facade"][0], REMINDER,
+        resident_intake_domain.deliver_resident_message_content(resident_id, roles["facade"][0], REMINDER,
                                         activation_policy="attach_to_next", business_ref=REMINDER_REF,
                                         message_id=reminder_id)
     return {"status": "reminder_attached"}

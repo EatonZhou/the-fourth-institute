@@ -10,8 +10,12 @@ from management_portal.execution.accounts import ExecutionAccounts
 from management_portal.execution.contracts import ExecutionRequest, SessionOptions
 from management_portal.execution.scheduler import Scheduler
 from management_portal.society_service import (
-    principal_hierarchy_domain, resident_catalog, resident_default_backend,
-    resident_domain, resident_execution_work, resident_intake_domain,
+    principal_hierarchy_domain,
+    resident_catalog,
+    resident_default_backend,
+    resident_domain,
+    resident_execution_domain,
+    resident_execution_work,
 )
 from tests.cases.test_resident_folder_creation_contract import future_creation_store  # noqa: F401
 
@@ -20,7 +24,7 @@ pytestmark = pytest.mark.empty_execution_registrations
 
 @pytest.fixture
 def pending(future_creation_store, monkeypatch):
-    monkeypatch.setattr(resident_intake_domain, "start_resident_continuation", lambda *a: None)
+    monkeypatch.setattr(resident_execution_domain, "start_resident_continuation", lambda *a: None)
     ama = principal_hierarchy_domain.ensure_personal_ama("api_user", "api_user")
     resident_domain.deliver_resident_message_content(ama["resident_id"], "api_user", "original input")
     record = resident_catalog.get_catalog().get(ama["resident_id"])

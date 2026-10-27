@@ -11,7 +11,7 @@ from management_portal.society_service import (
     resident_conversation_stream,
     resident_domain,
     resident_held_infos,
-    resident_intake_domain,
+    resident_input_queue_domain,
     resident_lifecycle_domain,
     resident_record_domain,
 )
@@ -229,7 +229,7 @@ def test_deleting_a_resident_cancels_what_still_waits_in_its_mailbox(deletion_se
     repository = resident_conversation_stream.get_repository()
     waiting = []
     for text in ("队列丢下的请求", "等待下一条请求的 info"):
-        message = resident_intake_domain.build_message("user", text, "sample_admin", message_id="msg_" + uuid.uuid4().hex)
+        message = resident_input_queue_domain.build_message("user", text, "sample_admin", message_id="msg_" + uuid.uuid4().hex)
         resident_lifecycle_domain.accept_resident_user_message(resident_id, message)
         repository.set_input_state(resident_id, message["message_id"], "queued")
         waiting.append(message)

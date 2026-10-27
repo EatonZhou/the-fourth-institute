@@ -30,7 +30,6 @@ from management_portal.society_service import (
 )
 from management_portal.society_service import resident_execution_domain
 from management_portal.society_service import resident_fork_domain
-from management_portal.society_service import resident_intake_domain
 from management_portal.society_service import resident_record_domain
 from management_portal.society_service import resident_runtime_domain
 
@@ -39,7 +38,17 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 CANONICAL_RESIDENT_TARGETS = lineage_domain._resident_targets
 
 
-from management_portal.society_service import project_domain, resident_access, resident_conversation_projection_domain, resident_domain_common, resident_lifecycle_domain, resident_registration_domain, resident_session_backend_domain, resident_workspace_domain
+from management_portal.society_service import (
+    project_domain,
+    resident_access,
+    resident_conversation_projection_domain,
+    resident_domain_common,
+    resident_input_queue_domain,
+    resident_lifecycle_domain,
+    resident_registration_domain,
+    resident_session_backend_domain,
+    resident_workspace_domain,
+)
 
 @pytest.fixture()
 def future_creation_store(
@@ -318,7 +327,7 @@ def test_reset_commits_intent_before_archiving_conversation(future_creation_stor
     record = resident_domain.register_resident(_new_session_payload("Reset boundary"), "sample_admin")
     resident_id = record["resident_id"]
     repository = resident_conversation_stream.get_repository()
-    old_message = resident_intake_domain._resident_user_message(
+    old_message = resident_input_queue_domain.resident_user_message(
         resident_id, "before reset", "sample_admin", message_id="msg_11111111111111111111111111111111",
     )
     repository.commit_user_message(resident_id, old_message)
@@ -339,7 +348,7 @@ def test_reset_commits_intent_before_archiving_conversation(future_creation_stor
     assert operations.pending(resident_id)
     # Acceptance never performs the archive synchronously under the state lock.
     assert old_message["message_id"] in repository.context_reset_boundary(resident_id)
-    new_message = resident_intake_domain._resident_user_message(
+    new_message = resident_input_queue_domain.resident_user_message(
         resident_id, "after reset", "sample_admin", message_id="msg_22222222222222222222222222222222",
     )
     repository.commit_user_message(resident_id, new_message)

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from management_portal.society_service import config, lineage_domain, resident_execution_domain
+from management_portal.society_service import config, lineage_domain, resident_intake_domain
 from management_portal.society_service.coordinator import LineageCoordinator
 from management_portal.society_service.templates import familize
 from tests.cases.isa_test_support import ok
@@ -22,7 +22,7 @@ from tests.cases.test_isa_lineage_lifecycle import (  # noqa: F401 - lineage is 
 
 @pytest.fixture
 def charters(monkeypatch):
-    monkeypatch.setattr(resident_execution_domain, "deliver_resident_message_content", lambda *a, **k: {})
+    monkeypatch.setattr(resident_intake_domain, "deliver_resident_message_content", lambda *a, **k: {})
 
 
 def _relay(lineage_id: str, family_id: str) -> dict:

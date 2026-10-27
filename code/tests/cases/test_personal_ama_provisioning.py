@@ -12,7 +12,12 @@ from types import SimpleNamespace
 import pytest
 
 from management_portal.society_service import lineage_domain as graphs
-from management_portal.society_service import principal_hierarchy_domain, resident_catalog, resident_conversation_stream
+from management_portal.society_service import (
+    principal_hierarchy_domain,
+    resident_catalog,
+    resident_conversation_stream,
+    resident_execution_domain,
+)
 from tests.cases.test_resident_folder_creation_contract import future_creation_store  # noqa: F401 - fixture
 
 
@@ -95,10 +100,12 @@ def test_first_api_binding_preserves_pending_input_provenance(future_creation_st
     from management_portal.execution import account_registrations
     from management_portal.execution.agent_data_store import get_agent_data_store
     from management_portal.society_service import (
-        resident_default_backend, resident_domain, resident_intake_domain,
-        resident_execution_work, resident_execution_domain,
+        resident_default_backend,
+        resident_domain,
+        resident_execution_work,
+        resident_execution_domain,
     )
-    monkeypatch.setattr(resident_intake_domain, "start_resident_continuation", lambda *a: None)
+    monkeypatch.setattr(resident_execution_domain, "start_resident_continuation", lambda *a: None)
     ama = principal_hierarchy_domain.ensure_personal_ama("api_user", "api_user")
     account_registrations.create_registration({"account_id": "deepseek_only", "provider": "provider_api",
         "kind": "api_profile", "config": {"api_id": "deepseek_test"}}, "api_user")

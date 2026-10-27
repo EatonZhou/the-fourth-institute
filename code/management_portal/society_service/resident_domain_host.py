@@ -6,9 +6,9 @@ from typing import Any
 from . import (
     resident_directory_domain,
     resident_fork_domain,
-    resident_intake_domain,
     resident_lifecycle_domain,
     resident_lineage,
+    resident_management_domain,
     resident_record_domain,
     resident_registration_domain,
     resident_restart_domain,
@@ -31,7 +31,7 @@ class ResidentDomainHost:
                 "create_resident_fork_from_message",
                 "create_resident_context_fork",
             )),
-            (resident_intake_domain, (
+            (resident_management_domain, (
                 "rename_resident_identity", "rename_resident_title", "update_resident",
                 "move_resident_identities",
             )),

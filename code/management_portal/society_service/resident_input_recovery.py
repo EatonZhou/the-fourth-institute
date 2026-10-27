@@ -331,7 +331,7 @@ def requeue(
     from . import (
         resident_access,
         resident_domain_common,
-        resident_intake_domain,
+        resident_input_queue_domain,
         resident_lifecycle_domain,
         resident_record_domain,
     )
@@ -364,7 +364,7 @@ def requeue(
             if (active and job.get("user_message_id") == message_id) or any(
                 item.get("user_message_id") == message_id for item in resident_execution_work.normalized_queue(job)
             ):
-                return resident_intake_domain.resident_operation_result(target.resident_id, message_id=message_id, message_ids=[message_id])
+                return resident_input_queue_domain.resident_operation_result(target.resident_id, message_id=message_id, message_ids=[message_id])
             raise MailboxConflict("这条消息已在等待或正在处理")
         entry = next((item for item in checkpoints(record) if item.get("message_id") == message_id), None)
         if entry is None:
@@ -438,7 +438,7 @@ def requeue(
                                recovered_at=now, disabled=False)
         record["updated_at"] = now
         resident_record_domain.save_resident_record(record)
-    return resident_intake_domain.resident_operation_result(
+    return resident_input_queue_domain.resident_operation_result(
         target.resident_id,
         message_id=message_id,
         message_ids=[message_id, *[str(info["message_id"]) for info in infos]],

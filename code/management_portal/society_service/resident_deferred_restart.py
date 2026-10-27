@@ -10,7 +10,7 @@ def pending(record):
 
 
 def schedule(record, actor, payload, source, intent, *, portal_reason=""):
-    from . import resident_domain_common, resident_intake_domain, resident_record_domain
+    from . import resident_domain_common, resident_input_queue_domain, resident_record_domain
     rid = record["resident_id"]
     with resident_record_domain.state_lock(rid):
         current = copy.deepcopy(resident_record_domain.find_resident(rid))
@@ -29,7 +29,7 @@ def schedule(record, actor, payload, source, intent, *, portal_reason=""):
             state["reason"] = portal_reason
         def commit():
             if before == "open":
-                resident_intake_domain.commit_resident_intake_state(current, "closed")
+                resident_input_queue_domain.commit_resident_intake_state(current, "closed")
             state["deferred"] = {"request_id": request_id, "actor": actor,
                                  "payload": {**payload, "idempotency_key": request_id + ":execute"},
                                  "intake_before": before, "transition_id": current.get("intake_transition_id", ""),
@@ -41,13 +41,13 @@ def schedule(record, actor, payload, source, intent, *, portal_reason=""):
 
 
 def _release(record, pending):
-    from . import resident_intake_domain, resident_record_domain
+    from . import resident_input_queue_domain, resident_record_domain
     def commit():
         from .resident_restart_handoff import restore_preparation
         restore_preparation(record)
         record["session_restart"].pop("deferred", None)
         if pending.get("intake_before") == "open" and pending.get("transition_id") == record.get("intake_transition_id"):
-            resident_intake_domain.commit_resident_intake_state(record, "open")
+            resident_input_queue_domain.commit_resident_intake_state(record, "open")
         resident_record_domain.save_resident_record(record)
     resident_catalog.get_catalog().state_store.transaction(commit)
 

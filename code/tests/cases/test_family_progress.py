@@ -8,12 +8,13 @@ from types import SimpleNamespace
 
 import pytest
 
-from management_portal.society_service import family_progress as progress, resident_execution_domain
-from management_portal.society_service.resident_execution_domain import deliver_resident_message_content
+from management_portal.society_service import family_progress as progress
+from management_portal.society_service.resident_intake_domain import deliver_resident_message_content
 from management_portal.society_service.state_store import get_lineage_data_store
 from tests.cases.test_family_supervision import team, lineage, charters, future_creation_store  # noqa: F401
 from tests.cases.test_family_familize import graph
 from tests.cases.isa_test_support import ok
+from management_portal.society_service import resident_intake_domain
 
 
 @pytest.fixture
@@ -32,7 +33,7 @@ def reports(team, monkeypatch):
     monkeypatch.setattr(progress.work_summary, "update_resident_work_summary", update)
     def deliver(rid, actor, text, **kwargs):
         infos.append({"resident_id": rid, "actor": actor, "text": text, **kwargs})
-    monkeypatch.setattr(resident_execution_domain, "deliver_resident_message_content", deliver)
+    monkeypatch.setattr(resident_intake_domain, "deliver_resident_message_content", deliver)
     def receive(mid=None, **options):
         mid = mid or team.message(team.facade, "queued")
         event = {"type": "resident.message_received", "payload": {"resident_id": team.facade, "message_id": mid}}
@@ -169,7 +170,7 @@ def test_concurrent_duplicate_arrivals_reserve_one_batch(reports):
 
 def test_publication_updates_real_summary_without_infos_and_steward_can_notify_selectively(team, monkeypatch):
     """Family 进展简报的触发、发布与设置"""
-    monkeypatch.setattr(resident_execution_domain, "deliver_resident_message_content", deliver_resident_message_content)
+    monkeypatch.setattr(resident_intake_domain, "deliver_resident_message_content", deliver_resident_message_content)
     mid = team.message(team.facade, "queued")
     ok("CheckFamilyProgress", {"lineage_id": team.lineage, "family_id": team.family["family_id"], "every_turns": 1,
        "event": {"type": "resident.message_received", "payload": {"resident_id": team.facade, "message_id": mid}}},

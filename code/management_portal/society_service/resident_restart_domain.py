@@ -426,7 +426,7 @@ def restart_resident_session(
         resident_access,
         resident_domain_common,
         resident_execution_domain,
-        resident_intake_domain,
+        resident_input_queue_domain,
         resident_record_domain,
         resident_runtime_domain,
         resident_session_backend_domain,
@@ -603,7 +603,7 @@ def restart_resident_session(
             )
             reassigned_execution_id = candidate_execution_id
         else:
-            resident_intake_domain.request_resident_execution_cancellation(
+            resident_execution_domain.request_resident_execution_cancellation(
                 target.resident_id,
                 actor_id,
                 str(current_job.get("user_message_id") or ""),
@@ -698,7 +698,7 @@ def restart_resident_session(
                     refreshed["session_restart"] = state
                     resident_record_domain.save_resident_record(refreshed)
                 if intake_transition_id and refreshed.get("intake_transition_id") == intake_transition_id:
-                    resident_intake_domain.commit_resident_intake_state(refreshed, resident_state.INTAKE_OPEN)
+                    resident_input_queue_domain.commit_resident_intake_state(refreshed, resident_state.INTAKE_OPEN)
             replacement = None
             try:
                 if target_provider == "provider_api":
@@ -809,7 +809,7 @@ def restart_resident_session(
         def commit():
             transition_id = intake_transition_id
             if current.get("intake_open") is not False:
-                resident_intake_domain.commit_resident_intake_state(current, resident_state.INTAKE_CLOSED)
+                resident_input_queue_domain.commit_resident_intake_state(current, resident_state.INTAKE_CLOSED)
                 current.update(resident_record_domain.find_resident(resident_id))
                 transition_id = str(current.get("intake_transition_id") or "")
             current["session_restart"] = state
@@ -827,7 +827,7 @@ def restart_resident_session(
 
 
 def resume_resident_session_restart(step: dict[str, Any]) -> None:
-    from . import resident_domain_common, resident_intake_domain, resident_record_domain
+    from . import resident_domain_common, resident_input_queue_domain, resident_record_domain
     resident_id, state = step["resident_id"], step["state"]
     saved = (resident_record_domain.find_resident(resident_id) or {}).get("session_restart") or {}
     if saved.get("restart_id") != state["restart_id"]:
@@ -965,7 +965,7 @@ def resume_resident_session_restart(step: dict[str, Any]) -> None:
             current["updated_at"] = resident_domain_common.now_iso()
             resident_record_domain.save_resident_record(current, commit_configuration=not failure and not cancel_requested)
             if step["intake_transition_id"] and current.get("intake_transition_id") == step["intake_transition_id"]:
-                resident_intake_domain.commit_resident_intake_state(current, resident_state.INTAKE_OPEN)
+                resident_input_queue_domain.commit_resident_intake_state(current, resident_state.INTAKE_OPEN)
             if not failure and not cancel_requested:
                 from .resident_work_recovery import resume_after_restart, set_recovery_entry
                 if state.get("failed_message_id") and state.get("resume_failed_input") is False:

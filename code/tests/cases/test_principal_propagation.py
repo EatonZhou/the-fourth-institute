@@ -10,8 +10,7 @@ from management_common.principal import OperationIdentity, authenticated_princip
 from management_portal.execution.contracts import ExecutionRequest, SessionOptions
 from management_portal.execution.scheduler import Scheduler
 from management_portal.hatg.contracts import InstructionContext, InstructionError
-from management_portal.society_service import lineage_domain, lineage_primitives
-from management_portal.society_service import resident_intake_domain
+from management_portal.society_service import lineage_domain, lineage_primitives, resident_input_queue_domain
 from management_portal.society_service import resident_lifecycle_domain
 from management_portal.society_service import resident_session_backend_domain
 from management_portal.society_service.resident_conversation_stream import protocol_message
@@ -142,7 +141,7 @@ def test_queued_codex_execution_can_change_account_without_changing_identity(tmp
 def test_resident_delivery_signs_sender_independently_of_provider_role(repository):
     """Resident 投递独立记录发送者及发起用户"""
     with operation_identity_scope(OperationIdentity.for_actor(SENDER, initiated_by="alice")):
-        message = resident_intake_domain._resident_user_message(
+        message = resident_input_queue_domain.resident_user_message(
             RECEIVER, "hello", SENDER, message_id="msg_" + "a" * 32,
         )
     saved = repository.commit_user_message(RECEIVER, message)
@@ -161,10 +160,10 @@ def test_resident_delivery_signs_sender_independently_of_provider_role(repositor
 def test_model_output_and_service_notice_have_distinct_senders(repository):
     """模型输出与服务通知分别记录各自发送者"""
     answer = resident_lifecycle_domain.append_conversation_message(
-        RECEIVER, resident_intake_domain.build_message("agent", "answer"),
+        RECEIVER, resident_input_queue_domain.build_message("agent", "answer"),
     )
     notice = resident_lifecycle_domain.append_conversation_message(
-        RECEIVER, resident_intake_domain.build_message("system", "cancelled", "alice"),
+        RECEIVER, resident_input_queue_domain.build_message("system", "cancelled", "alice"),
     )
     assert answer["author_id"] == RECEIVER
     assert answer["origin"]["sender"]["kind"] == "resident"

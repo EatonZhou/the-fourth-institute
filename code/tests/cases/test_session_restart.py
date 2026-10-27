@@ -24,8 +24,9 @@ from management_portal.society_service import resident_registration_domain
 from management_portal.society_service import (
     resident_access,
     resident_execution_domain,
-    resident_intake_domain,
+    resident_input_queue_domain,
     resident_lifecycle_domain,
+    resident_management_domain,
     resident_record_domain,
     resident_runtime_domain,
 )
@@ -133,7 +134,7 @@ def _restart_domain(
     monkeypatch.setattr(resident_restart_domain, "resolve_account_configuration", configuration.resolve_account)
     monkeypatch.setattr(resident_backend, "resolve_account_configuration", configuration.resolve_account)
     monkeypatch.setattr(resident_restart_domain, "runtime_configuration_catalog", configuration.runtime_catalog)
-    monkeypatch.setattr(resident_intake_domain, "sync_resident_quota_overrides", lambda _records: True)
+    monkeypatch.setattr(resident_input_queue_domain, "sync_resident_quota_overrides", lambda _records: True)
     monkeypatch.setattr(
         execution_port,
         "health",
@@ -480,7 +481,7 @@ def test_restart_options_show_unbound_residents_configured_account_contracts(mon
                 lambda *_args, **_kwargs: None,
             )
             cancelled = []
-            monkeypatch.setattr(resident_intake_domain, 'request_resident_execution_cancellation', lambda *args: cancelled.append(args))
+            monkeypatch.setattr(resident_execution_domain, 'request_resident_execution_cancellation', lambda *args: cancelled.append(args))
             result = resident_domain.restart_resident_session(record['resident_id'], 'alice', {
                 'target_account': 'one', 'active_execution_policy': 'wait',
             })
@@ -525,7 +526,7 @@ def test_restart_options_show_unbound_residents_configured_account_contracts(mon
             cancellations = []
             monkeypatch.setattr(resident_execution_work, 'read', lambda *_args: job)
             monkeypatch.setattr(resident_execution_work, 'is_active', lambda value: bool(value))
-            monkeypatch.setattr(resident_intake_domain, 'request_resident_execution_cancellation', lambda *args: cancellations.append(args))
+            monkeypatch.setattr(resident_execution_domain, 'request_resident_execution_cancellation', lambda *args: cancellations.append(args))
             with pytest.raises(RuntimeError, match='当前工作正在停止'):
                 resident_domain.restart_resident_session(record['resident_id'], 'alice', {'active_execution_policy': 'cancel'})
             assert cancellations == [(record['resident_id'], 'alice', 'msg_current')]
@@ -652,7 +653,7 @@ def test_restart_restores_only_its_own_intake_transition(monkeypatch, transition
         set_state=lambda _resident_id, value: protocol.update(value),
     )
     monkeypatch.setattr(resident_conversation_stream, "get_repository", lambda: repository)
-    monkeypatch.setattr(resident_intake_domain, "ensure_resident_visible_to_actor", lambda *_: None)
+    monkeypatch.setattr(resident_management_domain, "ensure_resident_visible_to_actor", lambda *_: None)
 
     def save(value, *, commit_configuration=False, commit_intake=False):
         record.update(value)
@@ -1084,7 +1085,7 @@ def test_deferred_restart_does_not_reopen_a_manually_closed_intake(monkeypatch):
     receipt = resident_domain.restart_resident_session(record["resident_id"], "alice", {"target_provider": "claude", "idempotency_key": "keep-closed"})
     current = saved[-1]
     assert current["session_restart"]["deferred"]["intake_before"] == "closed"
-    monkeypatch.setattr(resident_intake_domain, "commit_resident_intake_state", lambda *a, **k: pytest.fail("manual intake must stay closed"))
+    monkeypatch.setattr(resident_input_queue_domain, "commit_resident_intake_state", lambda *a, **k: pytest.fail("manual intake must stay closed"))
     assert resident_deferred_restart.cancel(current, receipt["restart_id"])["status"] == "cancelled"
     assert not operations
 

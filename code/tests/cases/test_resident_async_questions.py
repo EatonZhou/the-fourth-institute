@@ -16,8 +16,10 @@ from management_portal.society_service import resident_session_backend_domain
 from management_portal.society_service import (
     resident_access,
     resident_execution_work,
+    resident_input_queue_domain,
     resident_prompt_domain,
     resident_protocol,
+    resident_queue_control_domain,
 )
 from management_portal.society_service.resident_questions import prepare_question_answer
 from tests.cases.test_resident_execution_protocol import resident_record
@@ -74,7 +76,7 @@ def test_normal_provider_output_is_stored_as_typed_message(resident_record, phas
         source = resident_execution_domain._persist_execution_display_messages(resident_id,  "execution-question", outputs)[0]
         replay = resident_execution_domain._persist_execution_display_messages(resident_id,  "execution-question", outputs)[0]
     else:
-        message = resident_intake_domain.build_message("agent", CARD_OUTPUT)
+        message = resident_input_queue_domain.build_message("agent", CARD_OUTPUT)
         source = resident_execution_domain._persist_execution_final_message(resident_id,  "execution-question", message)
         replay = resident_execution_domain._persist_execution_final_message(resident_id,  "execution-question", message)
     assert replay == source
@@ -119,7 +121,7 @@ def test_one_message_asks_one_question_set_and_user_text_is_not_decoded(resident
         (0, "选择测试范围？"), (1, "是否更新规范？"), (2, "补充说明？"),
     ]
     assert decode_question_content(parts, resident_id, "msg_multiple") == parts
-    user = resident_lifecycle_domain.append_conversation_message(resident_id, resident_intake_domain.build_message("user", text, "CASE-A"))
+    user = resident_lifecycle_domain.append_conversation_message(resident_id, resident_input_queue_domain.build_message("user", text, "CASE-A"))
     assert user["content_parts"] == [{"type": "text", "text": text}]
 
 
@@ -128,7 +130,7 @@ def test_snapshot_only_requests_bounded_message_page(resident_record):
     resident_id = resident_record["resident_id"]
     persist_question(resident_record)
     repository = resident_conversation_stream.get_repository()
-    repository.append_message(resident_id, resident_intake_domain.build_message("agent", "最近消息"))
+    repository.append_message(resident_id, resident_input_queue_domain.build_message("agent", "最近消息"))
     with (
         mock.patch.object(repository.agent_data, "read_chat_messages", side_effect=AssertionError("full history")),
         mock.patch.object(repository.agent_data, "read_chat_message_page", wraps=repository.agent_data.read_chat_message_page) as read_page,
@@ -150,7 +152,7 @@ def test_unanswered_card_preserves_runtime_and_does_not_block_final_output(resid
      "submitted_at": "2026-10-14T00:00:00Z"})
     active_message_id = ""
     if work_state == "running":
-        user = repository.append_message(resident_id, resident_intake_domain.build_message("user", "继续检查", "CASE-A"))
+        user = repository.append_message(resident_id, resident_input_queue_domain.build_message("user", "继续检查", "CASE-A"))
         active_message_id = user["message_id"]
         repository.set_input_state(resident_id, active_message_id, "running")
     repository.set_state(resident_id, {
@@ -168,7 +170,7 @@ def test_unanswered_card_preserves_runtime_and_does_not_block_final_output(resid
     answer_id = question_answer_id(resident_id, source["message_id"])
     assert repository.message(resident_id, answer_id) is None
     final = resident_execution_domain._persist_execution_final_message(
-        resident_id,  "execution-question", resident_intake_domain.build_message("agent", "可独立完成的检查已经结束。"),
+        resident_id,  "execution-question", resident_input_queue_domain.build_message("agent", "可独立完成的检查已经结束。"),
     )
     assert final is not None
     assert repository.message(resident_id, source["message_id"])["content_parts"] == source["content_parts"]
@@ -184,17 +186,17 @@ def test_question_set_stays_open_until_it_is_answered(resident_record):
     resident_id = resident_record["resident_id"]
     repository = resident_conversation_stream.get_repository()
     source = resident_lifecycle_domain.append_conversation_message(
-        resident_id, resident_intake_domain.build_message("agent", CARD_OUTPUT, created_at="2001-01-01T00:00:00Z"),
+        resident_id, resident_input_queue_domain.build_message("agent", CARD_OUTPUT, created_at="2001-01-01T00:00:00Z"),
     )
-    repository.append_message(resident_id, resident_intake_domain.build_message("agent", "后续任务已经结束。"))
-    repository.append_message(resident_id, resident_intake_domain.build_message("user", "先做别的", "CASE-A"))
+    repository.append_message(resident_id, resident_input_queue_domain.build_message("agent", "后续任务已经结束。"))
+    repository.append_message(resident_id, resident_input_queue_domain.build_message("user", "先做别的", "CASE-A"))
     report, facade = "resident_0afd9a0731f7", "resident_111111111111"
     repository.append_message(resident_id, {
-        **resident_intake_domain.build_message("user", "T8 已修复并发布。", report),
+        **resident_input_queue_domain.build_message("user", "T8 已修复并发布。", report),
         "origin": message_origin(report, initiated_by=report),
     })
     repository.append_message(resident_id, {
-        **resident_intake_domain.build_message("user", "再做一件事", facade),
+        **resident_input_queue_domain.build_message("user", "再做一件事", facade),
         "origin": message_origin(facade, initiated_by="CASE-A"),
     })
     with mock.patch.object(repository, "queues", return_value={resident_id: {"items": [
@@ -203,7 +205,7 @@ def test_question_set_stays_open_until_it_is_answered(resident_record):
     content, answer = prepare_question_answer(resident_id, reply(resident_id, source), repository)
     assert "选择测试范围？" in content
     assert answer["message_id"] == question_answer_id(resident_id, source["message_id"])
-    repository.append_message(resident_id, resident_intake_domain.build_message(
+    repository.append_message(resident_id, resident_input_queue_domain.build_message(
         "user", content, "CASE-A", message_id=answer["message_id"], content_parts=answer["content_parts"],
     ))
     assert repository.question_set_state(resident_id, source["message_id"]) == "answered"
@@ -214,15 +216,15 @@ def test_a_later_question_set_leaves_earlier_sets_answerable(resident_record):
     resident_id = resident_record["resident_id"]
     repository = resident_conversation_stream.get_repository()
     first = resident_lifecycle_domain.append_conversation_message(
-        resident_id, resident_intake_domain.build_message("agent", CARD_OUTPUT),
+        resident_id, resident_input_queue_domain.build_message("agent", CARD_OUTPUT),
     )
     second = resident_lifecycle_domain.append_conversation_message(
-        resident_id, resident_intake_domain.build_message("agent", CARD_OUTPUT),
+        resident_id, resident_input_queue_domain.build_message("agent", CARD_OUTPUT),
     )
     assert repository.question_set_state(resident_id, first["message_id"]) == "open"
     assert repository.question_set_state(resident_id, second["message_id"]) == "open"
     content, answer = prepare_question_answer(resident_id, reply(resident_id, first), repository)
-    repository.append_message(resident_id, resident_intake_domain.build_message(
+    repository.append_message(resident_id, resident_input_queue_domain.build_message(
         "user", content, "CASE-A", message_id=answer["message_id"], content_parts=answer["content_parts"],
     ))
     assert repository.question_set_state(resident_id, first["message_id"]) == "answered"
@@ -237,7 +239,7 @@ def test_a_person_closes_a_set_unanswered_without_telling_the_resident(resident_
     resident_id = resident_record["resident_id"]
     repository = resident_conversation_stream.get_repository()
     source = resident_lifecycle_domain.append_conversation_message(
-        resident_id, resident_intake_domain.build_message("agent", CARD_OUTPUT),
+        resident_id, resident_input_queue_domain.build_message("agent", CARD_OUTPUT),
     )
     answer_id = question_answer_id(resident_id, source["message_id"])
     with mock.patch.object(resident_protocol.resident_access, "can_manage_resident", return_value=True):
@@ -271,10 +273,10 @@ def test_an_answered_set_cannot_be_closed(resident_record):
     resident_id = resident_record["resident_id"]
     repository = resident_conversation_stream.get_repository()
     source = resident_lifecycle_domain.append_conversation_message(
-        resident_id, resident_intake_domain.build_message("agent", CARD_OUTPUT),
+        resident_id, resident_input_queue_domain.build_message("agent", CARD_OUTPUT),
     )
     content, answer = prepare_question_answer(resident_id, reply(resident_id, source), repository)
-    repository.append_message(resident_id, resident_intake_domain.build_message(
+    repository.append_message(resident_id, resident_input_queue_domain.build_message(
         "user", content, "CASE-A", message_id=answer["message_id"], content_parts=answer["content_parts"],
     ))
     with pytest.raises(ValueError, match="已回答"):
@@ -286,7 +288,7 @@ def test_a_set_takes_one_answer_for_all_of_its_questions(resident_record):
     resident_id = resident_record["resident_id"]
     repository = resident_conversation_stream.get_repository()
     source = resident_lifecycle_domain.append_conversation_message(
-        resident_id, resident_intake_domain.build_message("agent", CARD_OUTPUT.replace(
+        resident_id, resident_input_queue_domain.build_message("agent", CARD_OUTPUT.replace(
             '{"title":"选择测试范围？","options":["定向","全部"]}',
             '[{"title":"选择测试范围？","options":["定向","全部"]},{"title":"是否更新规范？"}]',
         )),
@@ -358,7 +360,7 @@ def test_questions_follow_history_page_and_answers_are_idempotent(resident_recor
     source = persist_question(resident_record)
     repository = resident_conversation_stream.get_repository()
     for index in range(3):
-        repository.append_message(resident_id, resident_intake_domain.build_message("agent", f"继续工作 {index}"))
+        repository.append_message(resident_id, resident_input_queue_domain.build_message("agent", f"继续工作 {index}"))
     with mock.patch.object(repository.agent_data, "read_chat_messages", side_effect=AssertionError("full history")):
         snapshot = repository.snapshot(resident_id, history_limit=1)
     assert source["message_id"] not in [message["message_id"] for message in snapshot["messages"]]
@@ -367,7 +369,7 @@ def test_questions_follow_history_page_and_answers_are_idempotent(resident_recor
     assert source["message_id"] in [message["message_id"] for message in older["messages"]]
     content, answer = prepare_question_answer(resident_id, reply(resident_id, source), repository)
     assert "选择测试范围？" in content
-    answer = resident_intake_domain.build_message("user", content, "CASE-A", message_id=answer["message_id"], content_parts=answer["content_parts"])
+    answer = resident_input_queue_domain.build_message("user", content, "CASE-A", message_id=answer["message_id"], content_parts=answer["content_parts"])
     repository.append_message(resident_id, answer)
     first_cursor = repository.current_projection(resident_id)["cursor"]
     repository.append_message(resident_id, answer)
@@ -377,7 +379,7 @@ def test_questions_follow_history_page_and_answers_are_idempotent(resident_recor
     with pytest.raises(ValueError):
         repository.append_message(resident_id, conflicting)
     repository.set_input_state(resident_id, answer["message_id"], "completed")
-    repository.append_message(resident_id, resident_intake_domain.build_message("agent", "后续进展"))
+    repository.append_message(resident_id, resident_input_queue_domain.build_message("agent", "后续进展"))
     restored = repository.snapshot(resident_id, history_limit=1)
     assert "question_messages" not in restored
     assert not any(item["message_id"] == answer["message_id"] for item in restored["input_states"])
@@ -446,7 +448,7 @@ def test_compact_race_preserves_one_canonical_answer_in_real_resident_queue(resi
         mock.patch.object(slash_commands, "handle_slash_command", return_value={"handled": False}),
         mock.patch.object(resident_intake_domain, "resolve_context_refs", return_value={}),
         mock.patch.object(resident_prompt_domain, "build_resident_prompt", return_value="prompt"),
-        mock.patch.object(resident_intake_domain, "_submit_active_turn_input", side_effect=RuntimeError(
+        mock.patch.object(resident_input_queue_domain, "_submit_active_turn_input", side_effect=RuntimeError(
             "ActiveTurnNotSteerable { turn_kind: Compact }",
         )),
     ):
@@ -476,8 +478,8 @@ def test_question_answer_queues_like_a_normal_message(monkeypatch, isolated_port
         queued = {"message_id": answer["message_id"], "input_state": {"state": "queued"}}
         enqueue = mock.Mock(return_value=deepcopy(queued))
         inject = mock.Mock()
-        monkeypatch.setattr(resident_execution_domain, "deliver_resident_message_content", enqueue)
-        monkeypatch.setattr(resident_intake_domain, "inject_resident_queue_input_into_active_turn", inject)
+        monkeypatch.setattr(resident_intake_domain, "deliver_resident_message_content", enqueue)
+        monkeypatch.setattr(resident_queue_control_domain, "inject_resident_queue_input_into_active_turn", inject)
         monkeypatch.setattr(resident_protocol, "_with_conversation_controls", lambda result, *_args: result)
         result = resident_protocol.deliver_resident_input({"resident_id": resident_id, "message": answer}, "CASE-A")
         enqueue.assert_called_once()

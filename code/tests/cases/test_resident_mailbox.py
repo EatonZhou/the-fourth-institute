@@ -14,11 +14,13 @@ import pytest
 
 from management_portal.society_service import (
     resident_conversation_stream,
-    resident_intake_domain,
     resident_execution_work,
     resident_lifecycle_domain,
     resident_mailbox,
     resident_record_domain,
+    resident_execution_domain,
+    resident_input_queue_domain,
+    resident_queue_control_domain,
 )
 from management_portal.society_service import resident_protocol
 from management_portal.resources.portal import portal_route_script
@@ -34,7 +36,7 @@ def _queue(team, count: int = 4, *, actors: list[str] | None = None) -> tuple[st
     for index in range(count):
         message_id = "msg_" + uuid.uuid4().hex
         actor = (actors or [])[index] if actors else ACTOR
-        user_item = resident_intake_domain.build_message("user", f"第 {index} 条：{message_id}", actor, message_id=message_id)
+        user_item = resident_input_queue_domain.build_message("user", f"第 {index} 条：{message_id}", actor, message_id=message_id)
         # The head runs, so it is in the trace; the others wait in the Mailbox.
         if index == 0:
             resident_lifecycle_domain.append_conversation_message(resident_id, user_item)
@@ -81,7 +83,7 @@ def test_delivered_mailbox_group_has_original_bodies_before_snapshot_refresh(tea
                      } and event.get("payload", {}).get("message", {}).get("message_id") == group_id]
         assert len(delivered) == 2  # appended and updated must both keep the body
     else:
-        tail = resident_intake_domain.build_message("agent", "后续回复", resident_id)
+        tail = resident_input_queue_domain.build_message("agent", "后续回复", resident_id)
         repository.append_message(resident_id, tail)
         latest = resident_protocol.get_resident_conversation_snapshot(resident_id, ACTOR, history_limit=1)
         page = resident_protocol.get_conversation_messages(resident_id, ACTOR, latest["next_page_token"])
@@ -120,7 +122,7 @@ def test_quiescing_cancels_waiting_group_members(team):
     resident_id, (head, a, b, c) = _queue(team)
     merged = instruction(team, "MergeMailboxItems", {"resident_id": resident_id, "message_ids": [a, b]})
     group_id = merged.result["group_message_id"]
-    resident_intake_domain.cancel_resident_execution_for_target(resident_id, ACTOR, head, continue_queue=False)
+    resident_execution_domain.cancel_resident_execution_for_target(resident_id, ACTOR, head, continue_queue=False)
     repository = resident_conversation_stream.get_repository()
     for message_id in (group_id, a, b, c):
         assert repository.input_state(resident_id, message_id)["state"] == "cancelled"
@@ -134,7 +136,7 @@ def test_withdraw_rolls_back_terminal_states_if_queue_write_fails(team, monkeypa
     group_id = merged.result["group_message_id"]
     monkeypatch.setattr(resident_execution_work, "write", lambda *_: (_ for _ in ()).throw(RuntimeError("write failed")))
     with pytest.raises(RuntimeError, match="write failed"):
-        resident_intake_domain._cancel_resident_queue_item(resident_id, ACTOR, group_id)
+        resident_queue_control_domain._cancel_resident_queue_item(resident_id, ACTOR, group_id)
     repository = resident_conversation_stream.get_repository()
     for message_id in (group_id, a, b):
         assert repository.input_state(resident_id, message_id)["state"] == "queued"
@@ -248,7 +250,7 @@ def test_merging_a_group_keeps_one_level_and_the_finished_group_finishes_its_mem
     assert repository.input_state(resident_id, first["group_message_id"])["state"] == "cancelled"
     # The group is delivered with its members; its reply answers them all.
     repository.append_message(resident_id, repository.state_store.mailbox_entry(resident_id, group_id)["message"])
-    reply = resident_intake_domain.build_message(
+    reply = resident_input_queue_domain.build_message(
         "agent", "一起处理完了", "", message_id="msg_" + uuid.uuid4().hex, reply_to_message_id=group_id,
     )
     resident_lifecycle_domain.append_conversation_message(resident_id, reply)
@@ -342,7 +344,7 @@ def test_cancel_input_ends_an_input_nothing_holds_and_leaves_held_ones(team):
     repository = resident_conversation_stream.get_repository()
     dropped = "msg_" + uuid.uuid4().hex
     resident_lifecycle_domain.accept_resident_user_message(
-        resident_id, resident_intake_domain.build_message("user", "队列丢下的请求", ACTOR, message_id=dropped))
+        resident_id, resident_input_queue_domain.build_message("user", "队列丢下的请求", ACTOR, message_id=dropped))
     repository.set_input_state(resident_id, dropped, "queued")
     stalled = "msg_" + uuid.uuid4().hex
     repository.set_input_state(resident_id, stalled, "running")

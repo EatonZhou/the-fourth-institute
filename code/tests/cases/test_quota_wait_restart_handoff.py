@@ -18,6 +18,7 @@ from management_portal.society_service import (
     resident_deferred_restart,
     resident_execution_domain,
     resident_execution_work,
+    resident_input_queue_domain,
     resident_record_domain,
     resident_restart_domain,
 )
@@ -241,12 +242,12 @@ def test_receipt_save_failure_keeps_exact_intent_for_recovery(resident, monkeypa
 
 @pytest.mark.parametrize('manual_close', [False, True])
 def test_cancel_after_withdraw_restores_source_and_only_own_intake_transition(resident, manual_close):
-    from management_portal.society_service import resident_restart_handoff, resident_intake_domain
+    from management_portal.society_service import resident_restart_handoff
     store, repo, operations, original, native = resident
     assert resident_restart_handoff.advance(store.resident_record(RID)) is True
     record = store.resident_record(RID)
     if manual_close:
-        resident_intake_domain.commit_resident_intake_state(record, 'closed')
+        resident_input_queue_domain.commit_resident_intake_state(record, 'closed')
     resident_deferred_restart.cancel(store.resident_record(RID), original['restart_id'])
     record = store.resident_record(RID)
     job = resident_execution_work.read(record)

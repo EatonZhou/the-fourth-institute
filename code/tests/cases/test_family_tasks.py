@@ -9,8 +9,12 @@ from pathlib import Path
 
 import pytest
 
-from management_portal.society_service import family_tasks, resident_execution_domain, resident_intake_domain
-from management_portal.society_service.resident_execution_domain import deliver_resident_message_content
+from management_portal.society_service import (
+    family_tasks,
+    resident_input_queue_domain,
+    resident_intake_domain,
+)
+from management_portal.society_service.resident_intake_domain import deliver_resident_message_content
 from management_portal.society_service import resident_conversation_stream
 from management_portal.society_service.resident_record_domain import find_resident as _find_resident
 from management_portal.society_service.templates import familize
@@ -56,7 +60,7 @@ def test_router_task_keeps_sender_original_media_and_request_binding(configured_
     _, block = configured_family
     family = block["family"]
     mid = "msg_0123456789abcdef0123456789abcdef"
-    message = resident_intake_domain.build_message("user", "本轮原文 ${facts}", "sample_admin", message_id=mid)
+    message = resident_input_queue_domain.build_message("user", "本轮原文 ${facts}", "sample_admin", message_id=mid)
     message["content_parts"].append({"type": "file", "resource_id": "file_original"})
     quote = {"message_id": "msg_00000000000000000000000000000012",
              "author_id": family["facade"], "text": "已修好，引用原文 ${facts}"}
@@ -66,7 +70,7 @@ def test_router_task_keeps_sender_original_media_and_request_binding(configured_
     def deliver(rid, actor, text, **options):
         deliveries.append((rid, actor, text, options))
         return {"message_id": "msg_1123456789abcdef0123456789abcdef"}
-    monkeypatch.setattr(resident_execution_domain, "deliver_resident_message_content", deliver)
+    monkeypatch.setattr(resident_intake_domain, "deliver_resident_message_content", deliver)
     ok("DispatchFamilyTask", {"resident_id": family["facade"], "trigger": "route", "source_message_id": mid})
     rid, actor, text, options = deliveries[0]
     assert actor == family["facade"]
@@ -96,7 +100,7 @@ def test_queue_task_preserves_actual_pressure_facts_without_bulk_context(configu
     def deliver(rid, actor, text, **options):
         deliveries.append((rid, actor, text))
         return {"message_id": "msg_1123456789abcdef0123456789abcdef"}
-    monkeypatch.setattr(resident_execution_domain, "deliver_resident_message_content", deliver)
+    monkeypatch.setattr(resident_intake_domain, "deliver_resident_message_content", deliver)
     payload = {"message_id": "msg_waiting", "queue_count": 3, "pressure_metric": "queue_length",
                "pressure_threshold": 1, "pressure_value": 3, "oldest_wait_seconds": 45}
     event = {"id": "event_queue", "type": "resident.queue_pressure_exceeded",
@@ -115,7 +119,7 @@ def test_maintenance_dispatch_accepts_real_input_with_identity_only_admission(co
     """周期回顾及复用维护入口使用真实受理链，提交后可读取同一输入。"""
     _, block = configured_family
     family = block["family"]
-    monkeypatch.setattr(resident_execution_domain, "deliver_resident_message_content", deliver_resident_message_content)
+    monkeypatch.setattr(resident_intake_domain, "deliver_resident_message_content", deliver_resident_message_content)
     result = ok("DispatchFamilyTask", {"resident_id": family["facade"], "trigger": trigger})
     message = resident_conversation_stream.get_repository().message(family["steward"], result["message_id"])
     assert message["author_id"] == family["facade"]
@@ -131,7 +135,7 @@ def test_summary_repeated_notification_preserves_first_initiator(configured_fami
     """A member-triggered notification and its timer replay are one accepted task."""
     _, block = configured_family
     family = block["family"]
-    monkeypatch.setattr(resident_execution_domain, "deliver_resident_message_content", deliver_resident_message_content)
+    monkeypatch.setattr(resident_intake_domain, "deliver_resident_message_content", deliver_resident_message_content)
     request = {"resident_id": family["facade"], "trigger": "summary",
                "message_id": "msg_129c6e13c6668503136c9927dee976a3"}
     first = ok("DispatchFamilyTask", request, actor=family["steward"])
@@ -146,7 +150,7 @@ def test_summary_repeated_notification_preserves_first_initiator(configured_fami
 def test_legacy_summary_replay_preserves_original_guide_version(configured_family, monkeypatch):
     body, block = configured_family
     family = block["family"]
-    monkeypatch.setattr(resident_execution_domain, "deliver_resident_message_content", deliver_resident_message_content)
+    monkeypatch.setattr(resident_intake_domain, "deliver_resident_message_content", deliver_resident_message_content)
     request = {"resident_id": family["facade"], "trigger": "summary",
                "message_id": "msg_70000000000000000000000000000077"}
     ok("DispatchFamilyTask", request, actor=family["steward"])
@@ -288,7 +292,7 @@ def test_stale_quota_retains_incident_and_funded_backend_resolves_it(configured_
     from management_portal.society_service import family_quota
     _, block = configured_family
     record = _find_resident(block["family"]["router"])
-    resident_intake_domain.commit_resident_intake_state(record, "open")
+    resident_input_queue_domain.commit_resident_intake_state(record, "open")
     with family_quota.get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], record['resident_id']) as state:
         state.update(status="unavailable", reason="无备用后端")
     account = {}
@@ -308,7 +312,7 @@ def test_both_roles_migrate_on_short_window_pressure_and_keep_context(configured
     from tests.cases.test_family_quota import _account
     _, block = configured_family
     record = _find_resident(block["family"][role])
-    resident_intake_domain.commit_resident_intake_state(record, "open")
+    resident_input_queue_domain.commit_resident_intake_state(record, "open")
     accounts = [_account("one", 90, short=8), _account("two", 90)]
     monkeypatch.setattr(family_quota, "resident_account", lambda record, accounts: accounts[0])
     calls = []

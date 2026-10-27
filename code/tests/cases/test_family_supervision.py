@@ -7,10 +7,10 @@ import pytest
 from management_portal.society_service import family_facade, family_supervision as supervision
 from management_portal.society_service import (
     resident_conversation_stream,
-    resident_intake_domain,
     resident_protocol,
     resident_lifecycle_domain,
     resident_record_domain,
+    resident_input_queue_domain,
 )
 from management_portal.society_service.state_store import get_lineage_data_store
 from tests.cases.isa_test_support import ok
@@ -35,7 +35,7 @@ def team(lineage, charters, monkeypatch):
         repo.set_input_state(rid, mid, status)
     def message(rid=member, status="failed", ref="", *, enqueue=False):
         mid = "msg_" + uuid.uuid4().hex
-        item = resident_intake_domain.build_message("user", "original task", "sample_admin", message_id=mid)
+        item = resident_input_queue_domain.build_message("user", "original task", "sample_admin", message_id=mid)
         if ref:
             item["business_ref"] = ref
         if enqueue:
@@ -48,7 +48,7 @@ def team(lineage, charters, monkeypatch):
     def deliver(facade_id, steward_id, actor, text, **options):
         sent.append({"facade": facade_id, "resident_id": steward_id, "actor": actor, "text": text, **options})
         mid = options["message_id"]
-        item = resident_intake_domain.build_message("user", text, facade_id, message_id=mid)
+        item = resident_input_queue_domain.build_message("user", text, facade_id, message_id=mid)
         item["business_ref"] = options["business_ref"]
         repo.accept_user_message(steward_id, item)
         state(steward_id, mid, "queued")

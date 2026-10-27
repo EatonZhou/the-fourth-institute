@@ -15,6 +15,7 @@ from management_portal.society_service import (
     resident_execution_domain,
     resident_intake_domain,
     resident_execution_work,
+    resident_input_queue_domain,
 )
 from management_portal.society_service.state_store import get_lineage_data_store
 from tests.cases.test_resident_execution_protocol import resident_record  # noqa: F401 - fixture
@@ -58,7 +59,7 @@ def test_messages_queued_during_the_first_turn_run_after_it(resident_record):  #
     with mock.patch.object(resident_backend, "record_session_id", return_value=""), \
             mock.patch.object(resident_execution_domain, "send_to_resident_backend", side_effect=send), \
             mock.patch.object(resident_execution_domain, "_notify_lineage_message_completed") as notify, \
-            mock.patch.object(resident_intake_domain, "acknowledge_execution", return_value=True):
+            mock.patch.object(resident_input_queue_domain, "acknowledge_execution", return_value=True):
         resident_execution_domain.run_resident_execution(resident_id, continuation_id)
 
     assert sent == ["message_first_turn", *waiting]

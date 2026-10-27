@@ -10,6 +10,7 @@ from management_portal.society_service import resident_execution_provider
 
 from management_portal.society_service import (
     resident_access,
+    resident_input_queue_domain,
     resident_intake_domain,
     resident_lifecycle_domain,
     resident_record_domain,
@@ -263,11 +264,6 @@ def test_concurrent_synchronous_duplicate_is_claimed_once(monkeypatch, tmp_path)
     monkeypatch.setattr(resident_record_domain, "find_resident", lambda value: record)
     monkeypatch.setattr(resident_record_domain, "find_resident_for_admission", lambda value: record)
     monkeypatch.setattr(resident_runtime_domain, "resident_working_directory", lambda _record: tmp_path)
-    monkeypatch.setattr(
-        resident_intake_domain,
-        "ensure_resident_visible_to_actor",
-        lambda *args, **kwargs: None,
-    )
     monkeypatch.setattr(resident_access, "can_manage", lambda *args: True)
     monkeypatch.setattr(resident_record_domain, "save_resident_record", lambda *args: None)
     monkeypatch.setattr(
@@ -275,7 +271,7 @@ def test_concurrent_synchronous_duplicate_is_claimed_once(monkeypatch, tmp_path)
         "provider_for",
         lambda value: Provider(),
     )
-    monkeypatch.setattr(resident_intake_domain, "_resident_user_message", user_message)
+    monkeypatch.setattr(resident_input_queue_domain, "resident_user_message", user_message)
     monkeypatch.setattr(resident_intake_domain, "existing_resident_delivery", existing)
     monkeypatch.setattr(resident_lifecycle_domain, "persist_resident_user_message", persist)
     monkeypatch.setattr(

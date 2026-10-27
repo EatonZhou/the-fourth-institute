@@ -61,10 +61,10 @@ def test_personal_family_can_precede_first_ai_account(future_creation_store, mon
     assert personal_assistant.ensure("newcomer", ama["resident_id"], "newcomer") == assistant
     # Background recovery must accept the same unconfigured installation as
     # registration, without abandoning other Residents' accepted work.
-    from management_portal.society_service import family_quota, resident_intake_domain, resident_domain
+    from management_portal.society_service import family_quota, resident_domain
     from management_portal.society_service.coordinator import LineageCoordinator
     starts = []
-    monkeypatch.setattr(resident_intake_domain, "start_resident_continuation", lambda record, cid:
+    monkeypatch.setattr(resident_execution_domain, "start_resident_continuation", lambda record, cid:
                         starts.append((record["resident_id"], cid)))
     coordinator = LineageCoordinator(
         resume_residents=resident_execution_domain.resume_pending_resident_executions,

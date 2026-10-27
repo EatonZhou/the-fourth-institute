@@ -9,8 +9,11 @@ import pytest
 
 from management_portal.execution import event_projection as execution_events
 from management_portal.society_service import (
-    invariant_locks, resident_catalog, resident_execution_domain, resident_execution_work,
-    resident_intake_domain,
+    invariant_locks,
+    resident_catalog,
+    resident_execution_domain,
+    resident_execution_work,
+    resident_input_queue_domain,
 )
 from tests.cases.test_resident_execution_protocol import resident_record  # noqa: F401
 
@@ -49,7 +52,7 @@ def test_execution_polling_takes_no_resident_state_scope(bound_job, monkeypatch)
     monkeypatch.setattr(invariant_locks, "resident_lock", forbidden)
     assert resident_execution_domain._resident_execution_still_current(resident_id, EXECUTION_ID)
     assert not resident_execution_domain._resident_execution_cancellation_requested(resident_id, EXECUTION_ID)
-    assert resident_intake_domain.reconcile_queued_turn_inputs(resident_id, EXECUTION_ID)
+    assert resident_input_queue_domain.reconcile_queued_turn_inputs(resident_id, EXECUTION_ID)
     resident_execution_domain._advance_resident_execution_event_cursor(resident_id, EXECUTION_ID, 7)
     resident_execution_domain._advance_resident_execution_event_cursor(resident_id, EXECUTION_ID, 3)
     assert resident_execution_domain._resident_execution_event_cursor(resident_id, EXECUTION_ID) == 7
@@ -129,7 +132,7 @@ def test_steward_quota_lookup_runs_before_the_state_scope(resident_record, monke
     checks = []
     monkeypatch.setattr(family_quota, "ensure_role_reserve",
                         lambda record, *args: checks.append(held(resident_id)) or False)
-    monkeypatch.setattr(resident_intake_domain, "start_resident_continuation", mock.Mock())
+    monkeypatch.setattr(resident_execution_domain, "start_resident_continuation", mock.Mock())
     started = resident_execution_domain.resume_resident_execution(resident_id)
     assert started["residents"] == 1
     assert checks == [False]

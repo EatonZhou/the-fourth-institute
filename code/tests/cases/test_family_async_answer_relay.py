@@ -9,7 +9,7 @@ import pytest
 from management_common.async_questions import question_answer_id, question_message_parts
 from management_common.principal import message_origin
 from management_portal.society_service import family_facade, family_quota, resident_conversation_stream
-from management_portal.society_service.resident_intake_domain import build_message as _message
+from management_portal.society_service.resident_input_queue_domain import build_message as _message
 from management_portal.society_service.resident_questions import prepare_question_answer
 from management_portal.society_service.resident_record_domain import find_resident as _find_resident
 from tests.cases.family_test_support import set_role

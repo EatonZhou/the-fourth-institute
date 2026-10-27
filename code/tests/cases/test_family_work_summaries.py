@@ -9,7 +9,11 @@ import pytest
 from tests.cases.test_resident_context import context, A, B, C, _record, _turn, _summarize
 from tests.cases.test_family_familize import lineage, charters, future_creation_store
 from management_portal.society_service.resident_context import work_summary as work
-from management_portal.society_service import resident_conversation_stream, resident_held_infos, resident_execution_domain
+from management_portal.society_service import (
+    resident_conversation_stream,
+    resident_held_infos,
+    resident_intake_domain,
+)
 
 SUMMARY = {"current_focus": "维护登录", "active_threads": ["权限分工"], "durable_expertise": ["登录"],
            "recent_results": ["修正权限边界"], "primary_ownership": ["登录"], "supporting_expertise": [],
@@ -40,7 +44,7 @@ def setup_work(context, monkeypatch):
         sent.append((rid, actor, text, kwargs))
         pending.append({"message_id": kwargs["message_id"]})
         refs[kwargs["message_id"]] = kwargs["business_ref"]
-    monkeypatch.setattr(resident_execution_domain, "deliver_resident_message_content", deliver)
+    monkeypatch.setattr(resident_intake_domain, "deliver_resident_message_content", deliver)
     return context, roles, records, states, refs, pending, sent
 
 

@@ -8,12 +8,12 @@ from management_portal.society_service import (
     invariant_locks,
     resident_catalog,
     resident_conversation_stream,
-    resident_intake_domain,
     resident_execution_work,
     resident_mailbox,
     resident_input_recovery,
     resident_media_domain,
     resident_record_domain,
+    resident_input_queue_domain,
 )
 from management_portal.society_service.domain_ports import execution_port
 from management_portal.execution.agent_data_store import get_agent_data_store
@@ -71,7 +71,7 @@ def test_control_does_not_follow_a_replaced_turn(resident_record, monkeypatch):
     monkeypatch.setattr(execution_port, 'service', lambda: SimpleNamespace(
         append_input=lambda *a, **kw: pytest.fail('sent the old control to a new turn'),
     ))
-    result = resident_intake_domain._submit_active_turn_input(
+    result = resident_input_queue_domain._submit_active_turn_input(
         resident_record, 'CASE-A', control_key='msg_control', turn_input=[{'type': 'text', 'text': 'hello'}],
         source='queued_message', expected_execution_id='execution-old',
     )

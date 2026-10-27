@@ -11,10 +11,11 @@ import uuid
 import pytest
 
 from management_portal.society_service import (
-    resident_intake_domain,
     resident_execution_work,
     resident_lifecycle_domain,
     resident_record_domain,
+    resident_input_queue_domain,
+    resident_queue_control_domain,
 )
 from tests.cases.test_cross_owner_storage_integration import ACTOR, owners  # noqa: F401 - fixture
 from tests.cases.test_wall04_residual_20260919 import instruction, team  # noqa: F401 - fixture
@@ -25,7 +26,7 @@ def _queue(team, count: int = 4) -> tuple[str, list[dict]]:
     entries = []
     for index in range(count):
         message_id = "msg_" + uuid.uuid4().hex
-        message = resident_intake_domain.build_message("user", message_id, ACTOR, message_id=message_id)
+        message = resident_input_queue_domain.build_message("user", message_id, ACTOR, message_id=message_id)
         if index == 0:
             resident_lifecycle_domain.append_conversation_message(resident_id, message)
         else:
@@ -98,9 +99,9 @@ def test_reordered_ids_rejects_duplicates_and_partial_permutations():
     完整顺序必须恰好覆盖当前全部等待项。
     """
     with pytest.raises(ValueError):
-        resident_intake_domain._reordered_ids(
+        resident_queue_control_domain._reordered_ids(
             ["a", "b"], message_id="", before_message_id="", after_message_id="", order=["a", "a"],
         )
-    assert resident_intake_domain._reordered_ids(
+    assert resident_queue_control_domain._reordered_ids(
         ["a", "b", "c"], message_id="c", before_message_id="a", after_message_id="", order=None,
     ) == ["c", "a", "b"]

@@ -466,9 +466,9 @@ def organizer_id(actor: str) -> str:
 
 
 def _operation_result(resident_id: str, **fields: Any) -> dict[str, Any]:
-    from . import resident_intake_domain
+    from . import resident_input_queue_domain
 
-    return resident_intake_domain.resident_operation_result(resident_id, **fields)
+    return resident_input_queue_domain.resident_operation_result(resident_id, **fields)
 
 
 def merge(resident_id: str, actor: str, message_ids: Iterable[object]) -> dict[str, Any]:

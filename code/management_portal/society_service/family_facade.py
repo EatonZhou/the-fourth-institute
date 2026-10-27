@@ -222,7 +222,7 @@ def tell_steward(facade_id: str, steward_id: str, initiated_by: str, content: st
     from management_common.operation_identity import operation_identity_scope
     from management_common.principal import OperationIdentity
 
-    from . import resident_execution_domain
+    from . import resident_intake_domain
 
     if not options.pop("_family_rendered", False):
         from .family_tasks import render
@@ -235,7 +235,7 @@ def tell_steward(facade_id: str, steward_id: str, initiated_by: str, content: st
     sender = facade_id or initiated_by
     identity = OperationIdentity.for_actor(sender, initiated_by=initiated_by or sender)
     with operation_identity_scope(identity):
-        return resident_execution_domain.deliver_resident_message_content(steward_id, sender, content, **options)
+        return resident_intake_domain.deliver_resident_message_content(steward_id, sender, content, **options)
 
 
 def forward_info(facade: Mapping[str, Any], message: Mapping[str, Any], actor: str) -> dict[str, Any] | None:

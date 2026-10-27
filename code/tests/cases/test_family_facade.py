@@ -13,6 +13,7 @@ from management_portal.society_service import (
     resident_access,
     resident_conversation_stream,
     resident_execution_work,
+    resident_intake_domain,
     resident_record_domain,
 )
 from management_portal.society_service import resident_directory_domain
@@ -213,13 +214,13 @@ def test_a_facade_info_goes_to_the_steward_and_shows_with_the_next_request(facad
     :design: decision_44cf587c1721, concept_43c793b4f3ab
     """
 
-    from management_portal.society_service import lineage_message_events, resident_execution_domain, resident_held_infos
+    from management_portal.society_service import lineage_message_events, resident_held_infos
 
     steward = "resident_cccccccccccc"
     forwarded = []
     monkeypatch.setattr(family_facade, "family_steward_id", lambda record: steward)
     monkeypatch.setattr(
-        resident_execution_domain, "deliver_resident_message_content",
+        resident_intake_domain, "deliver_resident_message_content",
         lambda resident_id, actor, content, **options: forwarded.append((resident_id, actor, content, options)) or {},
     )
     resident_id, info_id, request_id = facade["resident_id"], "msg_00000000000000f7", "msg_00000000000000f8"

@@ -31,6 +31,8 @@ from management_portal.society_service import (
     resident_record_domain,
     resident_session_backend_domain,
     resident_prompt_domain,
+    resident_input_queue_domain,
+    resident_queue_control_domain,
 )
 
 
@@ -180,7 +182,7 @@ def test_isa_finished_input_preserves_result_and_new_work(sessionless, state):
     target = "msg_" + uuid.uuid4().hex
     repository = resident_conversation_stream.get_repository()
     resident_lifecycle_domain.accept_resident_user_message(record["resident_id"],
-        resident_intake_domain.build_message("user", "finished input", "CASE-A", message_id=target))
+        resident_input_queue_domain.build_message("user", "finished input", "CASE-A", message_id=target))
     repository.set_input_state(record["resident_id"], target, state)
     first = deliver(record, "new work")
     execution_id = wait_for_quota(record, scheduler)
@@ -232,7 +234,7 @@ def test_cancel_does_not_swallow_queue_error_without_owner_change(sessionless, m
     def broken_queue(*args, **kwargs):
         raise KeyError("unchanged queue failure")
 
-    monkeypatch.setattr(resident_intake_domain, "cancel_resident_queued_input", broken_queue)
+    monkeypatch.setattr(resident_queue_control_domain, "cancel_resident_queued_input", broken_queue)
     with pytest.raises(KeyError, match="unchanged queue failure"):
         resident_protocol.cancel_resident_input(record["resident_id"], "CASE-A", target)
     assert resident_execution_work.read(record) == before

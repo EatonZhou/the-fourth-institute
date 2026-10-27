@@ -28,10 +28,10 @@ from .resident_domain_common import (
 
 from .resident_execution_domain import (
     change_resident_runtime_settings,
-    deliver_resident_message_content,
     resume_pending_resident_executions,
     resume_resident_execution,
 )
+from .resident_intake_domain import deliver_resident_message_content
 
 
 from .resident_fork_domain import (
@@ -41,17 +41,17 @@ from .resident_fork_domain import (
     create_resident_full_context_fork,
 )
 
-from .resident_intake_domain import (
+from .resident_management_domain import (
     adopt_generated_resident_title,
-    get_account_resident_summary,
     move_resident_identities,
     rename_resident_identity,
     rename_resident_title,
-    request_resident_execution_cancellation,
     reset_resident_context,
     transition_resident_state,
     update_resident,
 )
+from .resident_intake_domain import get_account_resident_summary
+from .resident_execution_domain import request_resident_execution_cancellation
 
 from .resident_lifecycle_domain import (
     observe_committed_resident_transfer,

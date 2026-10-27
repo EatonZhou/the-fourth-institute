@@ -31,6 +31,8 @@ from . import (
     resident_intake_domain,
     resident_lineage,
     resident_mailbox,
+    resident_management_domain,
+    resident_queue_control_domain,
     resident_record_domain,
 )
 from . import resident_fork_inheritance, resident_message_contract, resident_input_scope
@@ -353,7 +355,7 @@ def deliver_resident_input(
         raise ValueError("message.message_id required")
     message_id = resident_message_contract.message_identity(supplied_message_id)
     trusted_context = delivery_context or ResidentDeliveryContext()
-    result = resident_execution_domain.deliver_resident_message_content(
+    result = resident_intake_domain.deliver_resident_message_content(
             resident_id,
             actor,
             content,
@@ -1484,7 +1486,7 @@ def split_resident_queue_item(resident_id: str, actor: str, message_id: str) -> 
 
 def reorder_resident_queue(resident_id: str, actor: str, **move: Any) -> dict[str, Any]:
     return _with_conversation_controls(
-        resident_intake_domain.reorder_resident_queue(resident_id, actor, **move), resident_id, actor,
+        resident_queue_control_domain.reorder_resident_queue(resident_id, actor, **move), resident_id, actor,
     )
 
 
@@ -1504,7 +1506,7 @@ def inject_queued_input_into_active_turn(
     message_id: str,
 ) -> dict[str, Any]:
     return _with_conversation_controls(
-        resident_intake_domain.inject_resident_queue_input_into_active_turn(
+        resident_queue_control_domain.inject_resident_queue_input_into_active_turn(
             resident_id, actor, message_id
         ), resident_id, actor,
     )
@@ -1536,7 +1538,7 @@ def cancel_resident_input(
             if state["state"] not in {"queued", "running"}:
                 return {"resident_id": resident_id, "message_id": message_id, "input_state": state}
             active = resident_conversation_stream.get_repository().state_snapshots([resident_id])[resident_id]["state"]
-            cancel = resident_intake_domain.request_resident_execution_cancellation if active.get("active_message_id") == message_id else resident_intake_domain.cancel_resident_queued_input
+            cancel = resident_execution_domain.request_resident_execution_cancellation if active.get("active_message_id") == message_id else resident_queue_control_domain.cancel_resident_queued_input
             try:
                 cancel(resident_id, actor, message_id)
                 return {"resident_id": resident_id, "message_id": message_id,
@@ -1644,7 +1646,7 @@ def cancel_resident_queue_item(
         return cancel_resident_input(resident_id, actor, message_id)
 
     try:
-        result = resident_intake_domain.cancel_resident_queued_input(resident_id, actor, message_id)
+        result = resident_queue_control_domain.cancel_resident_queued_input(resident_id, actor, message_id)
     except KeyError:
         result = _end_lost_input(resident_id, message_id)
         if result is None:
@@ -1654,7 +1656,7 @@ def cancel_resident_queue_item(
 
 def clear_resident_queue(resident_id: str, actor: str) -> dict[str, Any]:
     return _with_conversation_controls(
-        resident_intake_domain.clear_resident_queued_inputs(resident_id, actor), resident_id, actor,
+        resident_queue_control_domain.clear_resident_queued_inputs(resident_id, actor), resident_id, actor,
     )
 
 
@@ -1681,7 +1683,7 @@ def cancel_resident_execution(
     ):
         return cancel_resident_queue_item(resident_id, actor, message_id)
     result = dict(
-        resident_intake_domain.request_resident_execution_cancellation(
+        resident_execution_domain.request_resident_execution_cancellation(
             resident_id,
             actor,
             message_id,
@@ -1702,7 +1704,7 @@ def change_resident_state(
     allow_quota_override: bool = True,
 ) -> dict[str, Any]:
     return _with_conversation_controls(
-        resident_intake_domain.transition_resident_state(
+        resident_management_domain.transition_resident_state(
             resident_id,
             actor,
             state_domain=state_domain,

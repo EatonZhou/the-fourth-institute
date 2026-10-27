@@ -10,7 +10,7 @@ import pytest
 
 from management_portal.execution.service import ExecutionService, ExecutionServiceServer
 from management_portal.execution import account_registrations
-from management_portal.society_service import resident_catalog, resident_protocol
+from management_portal.society_service import resident_catalog, resident_input_queue_domain, resident_protocol
 from management_portal.society_service.domain_ports import execution_port
 from tests.cases.test_conversation_account_resolution_batch import catalog, populate, ACTOR
 from tests.cases.test_codex_quota_reserve import scheduler, sample, submit, claim
@@ -163,7 +163,7 @@ def test_family_facade_uses_live_role_health_not_its_retained_account(catalog, s
 
     :design: decision_44cf587c1721
     """
-    from management_portal.society_service import family_facade, resident_intake_domain
+    from management_portal.society_service import family_facade
     from tests.cases.family_test_support import set_role
 
     facade, router, steward = populate(3, routes=[('codex', 'one'), ('codex', 'two'), ('codex', 'two')])
@@ -199,7 +199,7 @@ def test_family_facade_uses_live_role_health_not_its_retained_account(catalog, s
     assert resident_protocol.get_resident_state(facade, ACTOR)['state']['execution_gate']['state'] == 'open'
 
     # A physical-account problem never undoes the user's explicit intake switch.
-    resident_intake_domain.commit_resident_intake_state(record, 'closed')
+    resident_input_queue_domain.commit_resident_intake_state(record, 'closed')
     assert resident_protocol.get_resident_state(facade, ACTOR)['state']['execution_gate'] == {
         'state': 'closed', 'reason': 'manual'}
 

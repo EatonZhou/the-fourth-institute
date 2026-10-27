@@ -15,7 +15,7 @@ from management_portal.society_service import (
     resident_access,
     resident_conversation_stream,
 )
-from management_portal.society_service.resident_intake_domain import build_message as _message
+from management_portal.society_service.resident_input_queue_domain import build_message as _message
 from management_portal.society_service.resident_record_domain import find_resident as _find_resident
 from tests.cases.isa_test_support import run
 from tests.cases.test_family_reassign import family, delivery_resident, future_creation_store  # noqa: F401

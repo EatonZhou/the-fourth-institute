@@ -9,10 +9,17 @@ from unittest import mock
 import pytest
 
 from management_portal.society_service import (
-    invariant_locks, lifecycle, resident_catalog, resident_conversation_stream,
-    resident_delivery_work, resident_execution_domain, resident_execution_work,
-    resident_intake_domain, resident_protocol, resident_registration_domain,
+    invariant_locks,
+    lifecycle,
+    resident_catalog,
+    resident_conversation_stream,
+    resident_delivery_work,
+    resident_execution_domain,
+    resident_execution_work,
+    resident_protocol,
+    resident_registration_domain,
     lineage_message_events,
+    resident_input_queue_domain,
 )
 from management_portal.society_service.domain_ports import execution_port
 from tests.cases.test_resident_execution_protocol import resident_record, input_delivery  # noqa: F401
@@ -167,11 +174,11 @@ def test_injection_ack_is_durable_and_dispatch_is_unlocked(input_delivery, monke
         return {"status": status}
     service.append_input.side_effect = append
     monkeypatch.setattr(execution_port, "service", lambda: service)
-    prompt = resident_intake_domain._running_turn_prompt
+    prompt = resident_input_queue_domain._running_turn_prompt
     def prepare(*args, **kwargs):
         assert not invariant_locks.lock_held()
         return prompt(*args, **kwargs)
-    monkeypatch.setattr(resident_intake_domain, "_running_turn_prompt", prepare)
+    monkeypatch.setattr(resident_input_queue_domain, "_running_turn_prompt", prepare)
     with monkeypatch.context() as admission:
         admission.setattr(resident_catalog.get_catalog().state_store, "_residents_from_rows",
                           lambda *a, **kw: pytest.fail("Workspace hydration during injection admission"))
@@ -227,12 +234,12 @@ def test_injection_preparation_revalidates_turn_without_blocking_state(input_del
     monkeypatch.setattr(execution_port, "service", lambda: service)
     resident_protocol.inject_queued_input_into_active_turn(rid, "CASE-A", mid)
     entered, release = threading.Event(), threading.Event()
-    prepare = resident_intake_domain._running_turn_prompt
+    prepare = resident_input_queue_domain._running_turn_prompt
     def slow(*args):
         entered.set()
         assert release.wait(5)
         return prepare(*args)
-    monkeypatch.setattr(resident_intake_domain, "_running_turn_prompt", slow)
+    monkeypatch.setattr(resident_input_queue_domain, "_running_turn_prompt", slow)
     from management_portal.society_service.resident_record_domain import state_lock as _state_lock
     def change_turn():
         with _state_lock(rid):

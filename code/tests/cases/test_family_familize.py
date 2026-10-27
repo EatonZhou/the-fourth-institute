@@ -9,7 +9,7 @@ import math
 
 import pytest
 
-from management_portal.society_service import family_facade, resident_execution_domain
+from management_portal.society_service import family_facade, resident_intake_domain
 from management_portal.society_service.resident_record_domain import find_resident as _find_resident
 from tests.cases.isa_test_support import ACTOR, ok, run
 from tests.cases.test_isa_lineage_lifecycle import (  # noqa: F401 - lineage is a fixture
@@ -24,7 +24,7 @@ from tests.cases.test_isa_lineage_lifecycle import (  # noqa: F401 - lineage is 
 def charters(monkeypatch):
     sent = []
     monkeypatch.setattr(
-        resident_execution_domain, "deliver_resident_message_content",
+        resident_intake_domain, "deliver_resident_message_content",
         lambda resident_id, actor, content, **options: sent.append(
             (resident_id, content, options.get("activation_policy", ""), actor),
         ) or {},
@@ -562,21 +562,21 @@ def test_the_steward_hears_its_notes_from_the_facade_and_stays_out_of_the_owners
     from tests.cases.isa_test_support import ACTOR
 
     delivered = []
-    deliver = resident_execution_domain.deliver_resident_message_content
+    deliver = resident_intake_domain.deliver_resident_message_content
 
     def observe(resident_id, actor, content, *args, **options):
         result = deliver(resident_id, actor, content, *args, **options)
         delivered.append((resident_id, result["message_id"]))
         return result
 
-    monkeypatch.setattr(resident_execution_domain, "deliver_resident_message_content", observe)
+    monkeypatch.setattr(resident_intake_domain, "deliver_resident_message_content", observe)
     first, second, third = (resident(lineage, name) for name in ("Auth", "Pages", "Docs"))
     family = ok("Familize", {"lineage_id": lineage, "resident_ids": [first, second, third],
                              "goal": "维护 Portal 登录"}, key="familize-notes")
     facade, steward = family["facade_resident_id"], family["steward_resident_id"]
     # An info the owner sends the facade reaches the steward at once, also from the facade.
     with operation_identity_scope(OperationIdentity.for_actor(ACTOR)):
-        resident_execution_domain.deliver_resident_message_content(
+        resident_intake_domain.deliver_resident_message_content(
             facade, ACTOR, "登录页改到周五上线。", activation_policy="attach_to_next",
         )
 
@@ -683,7 +683,7 @@ def test_unfamilize_drains_a_completion_queued_after_roles_stop(lineage, monkeyp
 
     member = resident(lineage, "Member")
     with monkeypatch.context() as setup:
-        setup.setattr(resident_execution_domain, "deliver_resident_message_content", lambda *_a, **_kw: {})
+        setup.setattr(resident_intake_domain, "deliver_resident_message_content", lambda *_a, **_kw: {})
         family = ok("Familize", {"lineage_id": lineage, "resident_ids": [member]}, key="late-completion-family")
     steward = family["steward_resident_id"]
     stop = family_familize._stop_roles
@@ -693,7 +693,7 @@ def test_unfamilize_drains_a_completion_queued_after_roles_stop(lineage, monkeyp
         stop(*args, **kwargs)
         if deliveries:
             return
-        response = resident_execution_domain.deliver_resident_message_content(
+        response = resident_intake_domain.deliver_resident_message_content(
             steward, ACTOR, "Member completed", message_id="msg_11111111111111111111111111111111",
         )
         deliveries.append(response["message_id"])

@@ -12,11 +12,11 @@ import pytest
 
 from management_portal.society_service import (
     resident_conversation_stream,
-    resident_execution_domain,
     resident_execution_work,
+    resident_input_queue_domain,
     resident_intake_domain,
 )
-from management_portal.society_service.resident_execution_domain import deliver_resident_message_content
+from management_portal.society_service.resident_intake_domain import deliver_resident_message_content
 from management_portal.society_service.resident_record_domain import find_resident
 from tests.cases.isa_test_support import ACTOR, ok, run
 from tests.cases.test_family_tasks import (  # noqa: F401
@@ -28,7 +28,7 @@ from tests.cases.test_family_tasks import (  # noqa: F401
 def real_family(configured_family, monkeypatch):
     """Keep the isolated PG/Family fixture and restore real input admission."""
     monkeypatch.setattr(
-        resident_execution_domain, "deliver_resident_message_content",
+        resident_intake_domain, "deliver_resident_message_content",
         deliver_resident_message_content,
     )
     return configured_family
@@ -129,7 +129,7 @@ def test_changed_trigger_to_router_cannot_reuse_steward_task_identity(real_famil
     repository = resident_conversation_stream.get_repository()
     message_id = "msg_31000000000000000000000000000001"
     source_id = "msg_31000000000000000000000000000002"
-    repository.accept_user_message(family["facade"], resident_intake_domain.build_message(
+    repository.accept_user_message(family["facade"], resident_input_queue_domain.build_message(
         "user", "A real original request", ACTOR, message_id=source_id,
     ))
     arguments = {"resident_id": family["facade"], "trigger": "summary",
@@ -326,7 +326,7 @@ def test_interrupted_dispatch_resumes_first_committed_intent_once(real_family, m
 
             failure.setattr(database, "write", fail_before_commit)
         else:
-            failure.setattr(resident_execution_domain, "deliver_resident_message_content", delivery_fault)
+            failure.setattr(resident_intake_domain, "deliver_resident_message_content", delivery_fault)
         interrupted = run("DispatchFamilyTask", arguments, actor=family["steward"])
         assert interrupted.status == "failed"
         assert "Injected" in interrupted.error["message"]

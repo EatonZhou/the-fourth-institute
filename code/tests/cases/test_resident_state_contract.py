@@ -4,7 +4,14 @@ from types import SimpleNamespace
 
 import pytest
 
-from management_portal.society_service import resident_state, resident_protocol, resident_record_domain
+from management_portal.society_service import (
+    resident_state,
+    resident_protocol,
+    resident_record_domain,
+    resident_intake_domain,
+    resident_management_domain,
+    resident_queue_control_domain,
+)
 
 
 def test_intake_state_contract_is_canonical() -> None:
@@ -50,13 +57,13 @@ def test_native_command_acknowledgement_contains_actor_controls(monkeypatch, sub
                     monkeypatch.setattr(resident_protocol.resident_access, "can_manage_resident", lambda record, actor: allowed)
                     monkeypatch.setattr(resident_record_domain, "resolve_resident_runtime_target", lambda *args, **kwargs: SimpleNamespace(resident_id=resident_id, record={"resident_id": resident_id, "backend": "codex"}))
                     if operation == "deliver":
-                        monkeypatch.setattr(resident_protocol.resident_execution_domain, "deliver_resident_message_content", lambda *args, **kwargs: response)
+                        monkeypatch.setattr(resident_intake_domain, "deliver_resident_message_content", lambda *args, **kwargs: response)
                         result = resident_protocol.deliver_resident_input({
                             "resident_id": resident_id,
                             "message": {"message_id": "msg_11111111111111111111111111111111", "role": "user", "content_parts": [{"type": "text", "text": "queue this"}]},
                         }, "CASE-A")
                     else:
-                        monkeypatch.setattr(resident_protocol.resident_intake_domain, "clear_resident_queued_inputs", lambda *args, **kwargs: response)
+                        monkeypatch.setattr(resident_queue_control_domain, "clear_resident_queued_inputs", lambda *args, **kwargs: response)
                         result = resident_protocol.clear_resident_queue(resident_id, "CASE-A")
                     assert result["cursor"] == 8
                     assert result["controls"]["can_send"] is allowed
@@ -83,7 +90,7 @@ def test_intake_transition_acknowledgement_remains_a_transition_summary(monkeypa
                     "changed": True,
                 }
                 monkeypatch.setattr(
-                    resident_protocol.resident_intake_domain,
+                    resident_management_domain,
                     "transition_resident_state",
                     lambda *args, **kwargs: response,
                 )

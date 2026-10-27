@@ -7,8 +7,12 @@ from unittest import mock
 import pytest
 
 from management_portal.society_service import (
-    lifecycle, resident_conversation_stream, resident_execution_domain,
-    resident_execution_work, resident_intake_domain, resident_lifecycle_domain,
+    lifecycle,
+    resident_conversation_stream,
+    resident_execution_domain,
+    resident_execution_work,
+    resident_input_queue_domain,
+    resident_lifecycle_domain,
     resident_protocol,
 )
 from tests.cases.test_resident_execution_protocol import resident_record  # noqa: F401
@@ -42,7 +46,7 @@ def cancelling(resident_record, monkeypatch, request):
     })
     monkeypatch.setattr(lifecycle, 'notify_execution_binding', mock.Mock())
     monkeypatch.setattr(lifecycle, 'notify_execution_cancellation', mock.Mock())
-    monkeypatch.setattr(resident_intake_domain, 'acknowledge_execution', lambda *a: False)
+    monkeypatch.setattr(resident_input_queue_domain, 'acknowledge_execution', lambda *a: False)
     monkeypatch.setattr(resident_execution_domain, '_notify_lineage_message_terminal', mock.Mock())
     monkeypatch.setattr(resident_lifecycle_domain, 'append_conversation_message',
                         mock.Mock(wraps=resident_lifecycle_domain.append_conversation_message))
@@ -97,7 +101,7 @@ def test_unattributed_notice_survives_publication_and_ack_retry(cancelling, monk
     monkeypatch.setattr(repo, 'set_input_state', original)
     resident_execution_domain.apply_cancelled_continuation(rid, 'continuation-stop')
     pending = resident_execution_work.read(record)
-    monkeypatch.setattr(resident_intake_domain, 'acknowledge_execution', lambda *a: True)
+    monkeypatch.setattr(resident_input_queue_domain, 'acknowledge_execution', lambda *a: True)
     resident_execution_domain._finalize_applied_execution(rid, 'continuation-stop', pending)
 
     notice = notice_for(repo, rid)
@@ -119,9 +123,9 @@ def test_queue_notice_and_identity_do_not_depend_on_attribution(stopper, expecte
     """归因只改变通知文字，不改变队列后续说明及精确执行的消息身份。"""
     job = {'user_message_id': MID, 'execution_id': EID, 'submitted_at': '2026-10-19T01:00:00Z',
            'stopped_at': '2026-10-19T01:23:27Z'}
-    event = resident_intake_domain.resident_execution_stopped_event(
+    event = resident_input_queue_domain.resident_execution_stopped_event(
         stopper, job, queue_continues=True, backend_label='Claude')
-    neutral = resident_intake_domain.resident_execution_stopped_event('', job)
+    neutral = resident_input_queue_domain.resident_execution_stopped_event('', job)
     assert text_of(event) == expected + '下一条排队消息将继续执行。'
     assert event['message_id'] == neutral['message_id']
     assert event['created_at'] == job['stopped_at']

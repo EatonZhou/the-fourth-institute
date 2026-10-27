@@ -15,7 +15,7 @@ from management_portal.society_service import (
     lineage_state_domains,
     resource_client,
     resident_access,
-    resident_intake_domain,
+    resident_management_domain,
     resident_protocol,
 )
 
@@ -81,7 +81,7 @@ def _install_isolated_portal_access(monkeypatch) -> None:
         effect_failure_notifications,
         lineage_domain,
         resident_access,
-        resident_intake_domain,
+        resident_management_domain,
     ):
         current_factory = module.get_portal_access_store
         if getattr(current_factory, "__module__", "") != portal_access_control.__name__:

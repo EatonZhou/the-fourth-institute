@@ -364,9 +364,9 @@ def get_subagent_run(inv: Invocation) -> dict[str, Any]:
 
 
 def clear_context(inv: Invocation) -> dict[str, Any]:
-    from management_portal.society_service import resident_intake_domain
+    from management_portal.society_service import resident_management_domain
 
-    result = resident_intake_domain.reset_resident_context(inv.argument("resident_id"), inv.caller)
+    result = resident_management_domain.reset_resident_context(inv.argument("resident_id"), inv.caller)
     return {
         **result,
         "cleanup_pending": bool(result.get("cleanup_pending")),

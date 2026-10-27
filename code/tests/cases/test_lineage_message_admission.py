@@ -90,7 +90,6 @@ def test_real_intake_commits_under_guard_and_prepares_outside_it(input_delivery,
 
     :importance: P2"""
     from contextlib import contextmanager
-    from management_portal.society_service import resident_execution_domain as backend
     from management_portal.society_service import resident_execution_work
     lid, rid = 'lineage_444444444444', input_delivery['resident_id']
     message_id = 'msg_0123456789abcdef'
@@ -116,14 +115,14 @@ def test_real_intake_commits_under_guard_and_prepares_outside_it(input_delivery,
     with intake.bind(rid, message_id, guard, accept):
         if outcome == 'cancelled':
             with pytest.raises(OperationError, match='route changed'):
-                backend.deliver_resident_message_content(rid, 'CASE-A', 'hello', message_id=message_id)
+                resident_intake_domain.deliver_resident_message_content(rid, 'CASE-A', 'hello', message_id=message_id)
             assert resident_execution_work.read(input_delivery) == {}
             assert accepted == []
         elif outcome == 'receipt_failed':
             with pytest.raises(OperationError) as raised:
-                backend.deliver_resident_message_content(rid, 'CASE-A', 'hello', message_id=message_id)
+                resident_intake_domain.deliver_resident_message_content(rid, 'CASE-A', 'hello', message_id=message_id)
             assert raised.value.commit_state == 'committed'
             assert resident_execution_work.read(input_delivery)['user_message_id'] == message_id
         else:
-            assert backend.deliver_resident_message_content(rid, 'CASE-A', 'hello', message_id=message_id)['message_id'] == message_id
+            assert resident_intake_domain.deliver_resident_message_content(rid, 'CASE-A', 'hello', message_id=message_id)['message_id'] == message_id
             assert accepted == [message_id]

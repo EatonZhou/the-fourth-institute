@@ -8,7 +8,7 @@ from .domain_ports import execution_port
 from difflib import SequenceMatcher
 from management_common.actor_identity import canonical_actor_id
 import re
-from typing import Any, Mapping
+from typing import Any
 
 
 GENERATED_DERIVED_RESIDENT_TITLE_RE = re.compile(
@@ -25,13 +25,6 @@ def is_generated_derived_resident_title(value: object) -> bool:
             str(value or "").strip()
         )
     )
-
-
-def derived_resident_title_is_generated(resident: Mapping[str, Any]) -> bool:
-    origin = str(resident.get("title_origin") or "").strip().lower()
-    if origin:
-        return origin == "generated"
-    return is_generated_derived_resident_title(resident.get("title"))
 
 
 def _terminal_input_unread_signature(
