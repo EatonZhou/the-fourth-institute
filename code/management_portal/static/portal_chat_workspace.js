@@ -31,6 +31,8 @@
   //     takes back its own pastes and inserted attachments
   //   chat_workspace_message_history.js  one Workspace's way back: loading earlier
   //     messages, the Fork card's compaction, revealing a message, the quote bar
+  //   chat_workspace_composer_height.js  one Workspace's composer height: the
+  //     splitter, limits that follow the Workspace, the kept height
   //   chat_workspace_runtime_settings.js  the Runtime Settings dialog, notices after
   //     saving, the session restart dialog and its progress
   //   chat_workspace_harness_panel.js  the Agent Harness panel and menu, prompt
@@ -406,16 +408,6 @@
     const id = workspaceInstanceId(options);
     const refsScope = String(options.refsScope || id);
     const composerResizeEnabled = options.composerResize !== false;
-    const composerHeightStorageKey = String(options.composerHeightKey || `portal.workspaceComposerHeight.${id}`);
-    const defaultComposerInputHeight = Math.max(56, Number(options.composerInputHeight || 86));
-    const readStoredComposerInputHeight = () => {
-      const value = Number(window.PortalState.storage.readText(composerHeightStorageKey, ""));
-      return Number.isFinite(value) && value > 0 ? value : defaultComposerInputHeight;
-    };
-    const writeStoredComposerInputHeight = (value) => {
-      if (!composerHeightStorageKey) return;
-      window.PortalState.storage.writeText(composerHeightStorageKey, Math.round(value));
-    };
     root.classList.add("portalChatWorkspaceRoot");
     // The shared Workspace owns its catalog lifecycle, independently of host loading.
     const refsCatalog = {
@@ -464,7 +456,6 @@
       composer: {},
       composerSignature: "",
       composerQueueSignature: "",
-      composerInputHeight: readStoredComposerInputHeight(),
       messageItemSignatures: [],
       messageRenderContext: { signature: "", renderers: [] },
       messageRenderOptions: {},
@@ -894,6 +885,11 @@
       bindResourceChips, composerQuoteHtml, currentController: () => controller, els, historyScope, inheritanceCardHtml,
       messageRenderKey, messageViewportAtTail, options, state, syncMessageScrollMode, toggleMessageFold,
     });
+
+    const { applyComposerInputLayout, destroyComposerHeight } = chatWorkspaceModule("PortalChatWorkspaceComposerHeight")
+      .createComposerHeight({
+        composerResizeEnabled, els, followTailAfterResize, id, options, root, saveActiveDraft, state,
+      });
     const insertEditedMessageImage = async ({ file }) => {
       if (!file) return;
       await addFiles([file]);
@@ -1208,51 +1204,6 @@
       }
       renderComposerQuote();
     };
-    const composerInputHeightLimits = () => {
-      const rootHeight = root.getBoundingClientRect().height || window.innerHeight || 800;
-      const min = Math.max(40, Number(options.composerMinHeight || 56));
-      const configuredMax = Math.max(min, Number(options.composerMaxHeight || 360));
-      const max = Math.max(min, Math.min(configuredMax, Math.round(rootHeight * 0.46)));
-      return { min, max };
-    };
-    const applyComposerInputLayout = ({ persist = false } = {}) => {
-      if (!composerResizeEnabled) return;
-      const limits = composerInputHeightLimits();
-      state.composerInputHeight = Math.max(limits.min, Math.min(limits.max, Number(state.composerInputHeight || defaultComposerInputHeight)));
-      root.style.setProperty("--portal-composer-input-h", `${Math.round(state.composerInputHeight)}px`);
-      if (persist) {
-        writeStoredComposerInputHeight(state.composerInputHeight);
-        saveActiveDraft();
-      }
-    };
-    const handleWindowResize = () => {
-      applyComposerInputLayout();
-      followTailAfterResize();
-    };
-    const bindComposerSplitter = () => {
-      const handle = els.composerSplitter;
-      if (!composerResizeEnabled || !handle) return;
-      if (!window.PortalWorkbench.layout) {
-        throw new Error("PortalWorkbench.layout must be loaded before resizable Chat Workspaces.");
-      }
-      window.PortalWorkbench.layout.bindSplitter({
-        handle,
-        axis: "y",
-        direction: -1,
-        bodyClass: "resizingComposer",
-        boundKey: "portalComposerSplitterBound",
-        min: () => composerInputHeightLimits().min,
-        max: () => composerInputHeightLimits().max,
-        readSize: () => state.composerInputHeight,
-        applySize: height => {
-          state.composerInputHeight = height;
-          applyComposerInputLayout();
-        },
-        onDone: () => applyComposerInputLayout({ persist: true }),
-      });
-      window.addEventListener("resize", handleWindowResize);
-      applyComposerInputLayout();
-    };
     // Show the draft of a conversation in the composer.
     const restoreDraftScope = (scope, { force = false, focus = document.activeElement === els.input } = {}) => {
       const nextScope = String(scope || "").trim();
@@ -1433,7 +1384,6 @@
       bindAttachmentRefs(els.composer, {
         previewUrlForPath: options.previewUrlForPath,
       });
-      applyComposerInputLayout();
       renderAttachments();
       refreshSlashCommandMenu();
       controller.refreshRefs();
@@ -2011,7 +1961,7 @@
         destroyMessageActions();
         destroyMessageFolds();
         destroyMessageHistory();
-        window.removeEventListener("resize", handleWindowResize);
+        destroyComposerHeight();
         if (root.__portalChatWorkspaceController === controller) {
           delete root.__portalChatWorkspaceController;
         }
@@ -2244,8 +2194,6 @@
         els.auto.addEventListener("click", () => options.onAuto?.(controller));
       }
     };
-    bindComposerSplitter();
-    applyComposerInputLayout();
     conversationSearch = createConversationSearch({
       root, scope: historyScope, messages: () => state.messages,
       rendering: () => ({ ...options, ...state.messageRenderOptions }),
