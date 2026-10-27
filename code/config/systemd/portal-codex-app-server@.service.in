@@ -8,10 +8,11 @@ ConditionPathExists=@PORTAL_ACCOUNTS_ROOT@/codex/%i/auth.json
 Type=simple
 WorkingDirectory=@PORTAL_ACCOUNTS_ROOT@/codex/%i
 Environment=CODEX_HOME=@PORTAL_ACCOUNTS_ROOT@/codex/%i
+Environment=PYTHONPATH=@PORTAL_CODE_ROOT@
 @PORTAL_PROVIDER_EGRESS_DIRECTIVE@
 ExecStartPre=/usr/bin/mkdir -p @PORTAL_INSTANCES_ROOT@/sockets
 ExecStartPre=/usr/bin/rm -f @PORTAL_INSTANCES_ROOT@/sockets/codex-%i.sock
-ExecStart=@PORTAL_CODEX_BINARY@ app-server --listen unix://@PORTAL_INSTANCES_ROOT@/sockets/codex-%i.sock
+ExecStart=@PORTAL_PYTHON@ -m management_portal.codex_app_server_host --socket @PORTAL_INSTANCES_ROOT@/sockets/codex-%i.sock --binary @PORTAL_CODEX_BINARY@ --account-home @PORTAL_ACCOUNTS_ROOT@/codex/%i
 Restart=always
 RestartSec=2
 TimeoutStopSec=45

@@ -173,7 +173,7 @@ def _run(*args: str, check: bool = True, capture: bool = True) -> subprocess.Com
     )
 
 
-def install_codex_unit_template(*, reload: bool = True) -> Path:
+def install_codex_unit_template(*, reload: bool = True, refresh: bool = False) -> Path:
     if sys.platform == "win32":
         target = instance_root() / "service-units"
         target.mkdir(parents=True, exist_ok=True)
@@ -195,8 +195,19 @@ def install_codex_unit_template(*, reload: bool = True) -> Path:
                                   f"Environment=XDG_CONFIG_HOME={isolated['root'] / 'home/.config'}\n" +
                                   f"Environment=XDG_CACHE_HOME={isolated['root'] / 'home/.cache'}\n" +
                                   f"Environment=TMPDIR={isolated['root'] / 'runtime'}\n")
-        if target.is_symlink() or (target.exists() and target.read_text() != content):
+        if target.is_symlink():
             raise ValueError("Refusing to replace a different Provider service template")
+        if target.exists() and target.read_text() != content:
+            if not refresh:
+                raise ValueError("Refusing to replace a different Provider service template")
+            # Explicit deployment maintenance may refresh this instance's own
+            # template. Account startup never overwrites a different definition.
+            required = {line for line in content.splitlines() if line.startswith((
+                "Environment=HOME=", "Environment=CODEX_HOME=", "WorkingDirectory=", "Environment=PORTAL_PATHS_CONFIG="))}
+            if not required.issubset(set(target.read_text().splitlines())):
+                raise ValueError("Provider service template belongs to another instance")
+            from management_common.file_permissions import atomic_write_private_bytes
+            atomic_write_private_bytes(target, content.encode())
         if not target.exists():
             target.parent.mkdir(parents=True, exist_ok=True)
             with target.open("x") as stream:

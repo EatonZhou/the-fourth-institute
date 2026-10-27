@@ -92,6 +92,8 @@ def run_host(path, binary, account_home, stop_event, *, platform=None, startup_t
     if not binary.is_absolute() or not binary.is_file():
         raise ValueError("Codex executable must be an existing absolute path")
     ensure_private_directory(account_home)
+    from .execution.codex_rollout_index import prepare_account_index
+    prepare_account_index(account_home)
     if not windows:
         ensure_private_directory(path.parent)
     previous_identity = None
@@ -102,7 +104,12 @@ def run_host(path, binary, account_home, stop_event, *, platform=None, startup_t
         except FileNotFoundError:
             pass
     token = secrets.token_hex(32) if windows else None
-    command = [str(binary), "app-server", "--listen", "ws://127.0.0.1:0" if windows else f"unix://{path}"]
+    # Do not expose the native socket until fresh SQLite schemas have received
+    # their relative-path writer rules. Existing account processes stay live.
+    startup_path = None if windows else unix_socket_path(path.with_name("." + secrets.token_hex(4)), platform=platform)
+    if startup_path is not None:
+        ensure_private_directory(startup_path.parent)
+    command = [str(binary), "app-server", "--listen", "ws://127.0.0.1:0" if windows else f"unix://{startup_path}"]
     if windows:
         command += ["--ws-auth", "capability-token", "--ws-token-sha256", hashlib.sha256(token.encode()).hexdigest()]
     env = dict(os.environ, CODEX_HOME=str(account_home))
@@ -145,6 +152,7 @@ def run_host(path, binary, account_home, stop_event, *, platform=None, startup_t
                 except queue.Empty:
                     port = None
                 if port is not None:
+                    prepare_account_index(account_home)
                     record = {"schema": _SCHEMA, "host": "127.0.0.1", "port": port, "token": token}
                     # Verify authentication before advertising readiness. An old
                     # CLI lacking capability-token support fails closed.
@@ -155,14 +163,21 @@ def run_host(path, binary, account_home, stop_event, *, platform=None, startup_t
                     break
             else:
                 try:
-                    st = path.lstat()
+                    st = startup_path.lstat()
                     identity = (st.st_dev, st.st_ino)
-                    if stat.S_ISSOCK(st.st_mode) and identity != previous_identity:
+                    native_alias = (stat.S_ISLNK(st.st_mode)
+                                    and startup_path.is_socket()
+                                    and startup_path.stat().st_uid == os.getuid()
+                                    and startup_path.resolve().parent.stat().st_uid == os.getuid()
+                                    and not startup_path.resolve().parent.stat().st_mode & 0o022)
+                    if (stat.S_ISSOCK(st.st_mode) or native_alias) and identity != previous_identity:
+                        prepare_account_index(account_home)
                         # Never mistake an earlier service's socket for this
                         # child's readiness, or remove it on startup failure.
                         unix_identity = identity
-                        transport = connect_transport(path, platform=platform)
+                        transport = connect_transport(startup_path, platform=platform)
                         transport.close()
+                        startup_path.replace(path)
                         break
                 except (FileNotFoundError, ConnectionRefusedError):
                     pass
@@ -193,6 +208,8 @@ def run_host(path, binary, account_home, stop_event, *, platform=None, startup_t
                         path.unlink()
                 except FileNotFoundError:
                     pass
+            if startup_path is not None:
+                startup_path.unlink(missing_ok=True)
 
 
 def main():

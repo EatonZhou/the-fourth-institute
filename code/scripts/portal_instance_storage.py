@@ -49,6 +49,8 @@ def _deployment_values(deployment: dict) -> dict[str, str]:
     source = resolve_directory(deployment.get("source_root", str(ROOT)))
     runtimes = resolve_directory(providers.get("runtime_root", str(portal_path("staging_root") / "provider-runtimes")))
     return {
+        "PORTAL_PYTHON": sys.executable,
+        "PORTAL_CODE_ROOT": str(source),
         "PORTAL_POSTGRES_ENV_FILE": str(postgres_env_file()),
         "PORTAL_STAGING_ROOT": str(portal_path("staging_root")),
         "PORTAL_PROVIDER_RUNTIME_ROOT": str(runtimes),
