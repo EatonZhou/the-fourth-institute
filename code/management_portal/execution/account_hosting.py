@@ -20,7 +20,7 @@ def validate_account_id(account_id: str) -> str:
 
 
 def account_home(provider: str, account_id: str) -> Path:
-    if provider not in {"codex", "claude"}:
+    if provider not in {"codex", "claude", "kimi"}:
         raise ValueError("Provider has no subscription account directory")
     return accounts_root() / provider / validate_account_id(account_id)
 

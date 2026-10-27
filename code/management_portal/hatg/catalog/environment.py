@@ -102,11 +102,11 @@ DECLARATIONS = (
     _d("CompleteChat", FIXED, "调用一个已登记的模型接口，完成一次无状态的文本生成。", (
         R("api_id", description="模型接口 ID"), P("model", description="省略时使用接口的 default_model"),
         R("messages", "array", "OpenAI 兼容的对话消息，每项含 role 与 content", items={"type": "object"}),
-        P("options", "object", "生成选项"),
+        P("options", "object", "生成选项；typesafe_system_one 接口必须提供 questions（choice、score、noul）"),
         P("response_schema", "object", "回答必须满足的 JSON Schema；提供时把回答解析为 JSON 并按它校验"),
     ), (R("message", "object", "模型的回答消息：OpenAI 兼容的 role、content…"),
         R("usage", "object", "接口返回的 token 用量；未返回时为空"),
-        P("structured", "any", "提供 response_schema 时，按它解析并校验后的回答")), mutates=True, target="api_id", owner="execution"),
+        P("structured", "any", "提供 response_schema 时的校验结果，或 typesafe_system_one 的结构化答案")), mutates=True, target="api_id", owner="execution"),
     _d("ProbeModelApi", FIXED, "向模型接口的各协议地址各发一次很短的请求，检测它为 Agent Harness 提供哪些协议；不保存任何内容。", (
         P("api_id", description="已登记的模型接口；其余参数覆盖它的登记值"),
         P("base_url", description="接口基础地址"), P("default_model", description="检测请求使用的模型"),

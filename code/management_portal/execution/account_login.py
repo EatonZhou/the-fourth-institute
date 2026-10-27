@@ -76,7 +76,7 @@ class LoginSessionStore:
             row = c.execute("SELECT * FROM login_sessions WHERE account_id=%s", (account_id,)).fetchone()
             return _public(row) if row else None
 
-    def begin(self, account_id):
+    def begin(self, account_id, *, expires_seconds=LOGIN_SECONDS):
         # Caller holds the host-wide account lock for the complete subprocess lifetime.
         started = now()
         with self.connection() as c:
@@ -84,7 +84,7 @@ class LoginSessionStore:
                             "VALUES(%s,'pending',%s,%s,%s) ON CONFLICT(account_id) DO UPDATE SET "
                             "state='pending',verification_code='',verification_url='',error='', "
                             "started_at=EXCLUDED.started_at,expires_at=EXCLUDED.expires_at,updated_at=EXCLUDED.updated_at "
-                            "RETURNING *", (account_id, started, started + timedelta(seconds=LOGIN_SECONDS), started)).fetchone()
+                            "RETURNING *", (account_id, started, started + timedelta(seconds=expires_seconds), started)).fetchone()
             return _public(row)
 
     def transition(self, session, state, *, code="", url="", error=""):
@@ -205,10 +205,16 @@ def provider_binary(provider):
     # reuses a Codex found on PATH.
     binary = (str(resolve_directory(configured)) if configured
               else None if provider == "codex" else shutil.which(provider))
+    if binary and provider == "codex" and sys.platform == "win32" and Path(binary).is_dir():
+        from .provider_updates import npm_binary
+        binary = str(npm_binary(Path(binary), "codex"))
     if not binary:
         from .provider_updates import CodexRuntime, ClaudeRuntime
         if provider == "codex":
             candidate = CodexRuntime().link()
+            if sys.platform == "win32":
+                from .provider_updates import npm_binary
+                candidate = npm_binary(candidate, "codex")
         else:
             root = ClaudeRuntime().link()
             candidates = [*root.glob("lib/python*/site-packages/claude_agent_sdk/_bundled/claude"),
@@ -232,6 +238,9 @@ def login_command(provider, *, status=False):
 
 
 def provider_logged_in(provider, account_id):
+    if provider == "kimi":
+        from .kimi_account_login import logged_in
+        return logged_in(account_id)
     result = run_process(login_command(provider, status=True), env=login_environment(provider, account_id),
                             stdin=subprocess.DEVNULL, capture_output=True, timeout=60)
     if provider == "codex":
@@ -468,7 +477,7 @@ def _registration(inv):
     registration = read_registration(inv.argument("account_id"))
     if not registration:
         raise not_found("执行账号不存在")
-    if registration["kind"] != "subscription_login" or registration["provider"] not in {"codex", "claude"}:
+    if registration["kind"] != "subscription_login" or registration["provider"] not in {"codex", "claude", "kimi"}:
         raise invalid("该账号不支持订阅登录")
     return registration
 
@@ -479,6 +488,9 @@ def _session_result(registration, session):
 
 def open_provider_account_login(inv):
     registration = _registration(inv)
+    if registration["provider"] == "kimi":
+        from .kimi_account_login import login
+        return login(registration, "open")
     try:
         session = LoginManager().start(registration)
     except (ValueError, OSError):
@@ -495,12 +507,18 @@ def update_provider_account_login(inv):
 
 def get_provider_account_login(inv):
     registration = _registration(inv)
+    if registration["provider"] == "kimi":
+        from .kimi_account_login import login
+        return login(registration, "get")
     session = login_store().get(registration["account_id"])
     return {"session": _session_result(registration, session), "login_state": get_login_state(registration)}
 
 
 def cancel_provider_account_login(inv):
     registration = _registration(inv)
+    if registration["provider"] == "kimi":
+        from .kimi_account_login import login
+        return login(registration, "cancel")
     return {"session": _session_result(registration, LoginManager().cancel(registration["account_id"]))}
 
 

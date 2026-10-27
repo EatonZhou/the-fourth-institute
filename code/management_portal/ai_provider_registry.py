@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import ssl
+import sys
 import urllib.error
 import urllib.request
 from collections.abc import Callable
@@ -211,7 +213,16 @@ class AIProviderRegistry:
         failure = None
         try:
             try:
-                with urllib.request.urlopen(request, timeout=timeout) as response:
+                tls = {}
+                if sys.platform == "win32":
+                    # Fresh Windows installations may not yet have populated
+                    # roots that browsers retrieve on demand. Retain OS trust
+                    # and add the maintained public CA bundle, never skip TLS.
+                    import certifi
+                    context = ssl.create_default_context()
+                    context.load_verify_locations(cafile=certifi.where())
+                    tls["context"] = context
+                with urllib.request.urlopen(request, timeout=timeout, **tls) as response:
                     observation.headers_received(getattr(response, "status", None))
                     observation.enter("reading_response_body")
                     raw_body = response.read()

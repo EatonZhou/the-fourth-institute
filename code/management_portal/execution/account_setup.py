@@ -147,7 +147,7 @@ def check(inv):
             raise InstructionError("instruction.owner_unavailable",
                 "Codex 本地后台未能在规定时间内就绪。登录授权仍然保留；请重试“测试并完成”，若仍失败请检查该账号的后台服务日志。",
                 details={"reason": "account.service_not_ready"}, retryable=True) from None
-    elif row["provider"] == "claude" and sys.platform.startswith("linux"):
+    elif row["provider"] == "claude" and (sys.platform.startswith("linux") or sys.platform == "win32"):
         from scripts.portal_service_units import start_claude_service
         from management_portal.claude_code_client import ClaudeCodeUnavailable
         try:
@@ -179,6 +179,10 @@ def check(inv):
     cwd.mkdir(parents=True, exist_ok=True)
     direct = row["provider"] == "provider_api"
     options = {"model": model, "allow_subagents": False}
+    if direct:
+        from management_portal.ai_provider_registry import shared_ai_provider_registry
+        if shared_ai_provider_registry.get(route(row))["kind"] == "typesafe_system_one":
+            options["parameters"] = {"questions": {"greeting": {"type": "noul", "instructions": "Does the message request a greeting?"}}}
     if not direct:
         definition = AGENT_PROVIDERS[row["provider"]]
         settings = definition.runtime_adapter().defaults(definition, {"model": model})

@@ -377,7 +377,8 @@ class KimiAccounts:
         from management_portal.kimi_code_server import provider_profile_id
         profile = provider_profile_id()
         return tuple(ExecutionAccount(row["account_id"], self.provider, row["route_id"], f"account:{row['account_id']}",
-                                      row["max_concurrency"], billing_account_id=row["config"].get("api_id", profile),
+                                      row["max_concurrency"], billing_account_id=(row["account_id"] if row["kind"] == "subscription_login"
+                                          else row["config"].get("api_id", profile)),
                                       kind=row["kind"]) for row in self.entries)
 
     def resolve(self, route_id, options, *, bound=False):

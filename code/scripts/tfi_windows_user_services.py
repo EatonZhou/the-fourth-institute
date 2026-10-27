@@ -115,7 +115,7 @@ def validate_definition(value, name):
     if value.get("name") != name or not re.fullmatch(pattern, name):
         raise ValueError("Invalid user service identity")
     if value.get("mode") != "user" or value.get("component") not in (
-            "postgres", "nats", "resource", "execution", "society", "worker", "web", "codex"):
+            "postgres", "nats", "resource", "execution", "society", "worker", "web", "codex", "claude"):
         raise ValueError("Invalid user service component")
     for key in ("root", "code", "python"):
         path = Path(value[key])

@@ -66,6 +66,9 @@ def run_command(*command: str, timeout: int = 1800, env: dict[str, str] | None =
 
 
 def _service_control():
+    if sys.platform == "win32":
+        from scripts.tfi_release_platform_windows import service_controller
+        return service_controller()
     from scripts.portal_service_control import ServiceControl
     from scripts.portal_service_units import _run as run_unit_command
     def run(*command, check=True):
@@ -330,7 +333,7 @@ class ClaudeRuntime(ProviderRuntime):
         if not marker.is_file() or marker.read_text() != validated:
             run_command(str(binary), "-m", "pip", "install", *requirements, timeout=3600)
         run_command(str(binary), "-c", "import claude_agent_sdk as s,sys; assert s.__version__ == sys.argv[1]", version)
-        bundled = run_command(str(binary), "-c", "from pathlib import Path; import claude_agent_sdk as s; print(Path(s.__file__).parent/'_bundled'/'claude')")
+        bundled = run_command(str(binary), "-c", "from pathlib import Path; import sys, claude_agent_sdk as s; print(Path(s.__file__).parent/'_bundled'/('claude.exe' if sys.platform == 'win32' else 'claude'))")
         run_command(bundled, "--version", timeout=60)
         marker.write_text(validated)
         return root

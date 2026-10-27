@@ -70,6 +70,26 @@ def provider_runtime_services(unit: str) -> tuple[str, ...]:
     """Resolve a daemon's running services in this installation only."""
     if unit not in {"portal-claude-code.service", "portal-kimi-code.service"}:
         raise ValueError("Unknown Provider daemon")
+    if sys.platform == "win32":
+        from management_common.instance_config import read_installation
+        from scripts import tfi_release_platform_windows as adapter
+        configured = os.environ.get("PORTAL_PATHS_CONFIG")
+        if not configured:
+            raise ValueError("Windows Provider activation requires an installed instance")
+        root = Path(configured).resolve().parent.parent
+        target = read_installation(root)["target"]
+        component = {"portal-claude-code.service": "claude", "portal-kimi-code.service": "kimi"}[unit]
+        name = adapter.unit_name(target, component)
+        path = adapter.unit_path(adapter.unit_directory(), name)
+        if not path.exists():
+            return ()
+        if path.is_symlink() or not path.is_file():
+            raise ValueError("Provider daemon service ownership mismatch")
+        expected = adapter.unit_text(target, component, (component,))
+        if json.loads(path.read_text(encoding="utf-8")) != json.loads(expected):
+            raise ValueError("Provider daemon belongs to another instance")
+        adapter.verify_service(name, expected)
+        return (name,)
     isolated = _isolated_provider_context()
     if isolated is None:
         return (unit,)
@@ -292,6 +312,17 @@ def start_claude_service() -> None:
     from management_portal.execution.provider_updates import STATE_ROOT
     STATE_ROOT.mkdir(parents=True, exist_ok=True)
     with (STATE_ROOT / "claude-backend-install.lock").open("a+") as stream, lock_stream(stream):
+        if sys.platform == "win32":
+            from management_common.instance_config import read_installation
+            from scripts import tfi_release_platform_windows as adapter
+            configured = os.environ.get("PORTAL_PATHS_CONFIG")
+            if not configured:
+                raise ValueError("Windows Claude requires an installed instance")
+            installation = read_installation(Path(configured).resolve().parent.parent)["target"]
+            name = adapter.unit_name(installation, "claude")
+            adapter.register_services(adapter.unit_directory(), {name: adapter.unit_text(installation, "claude", ("claude",))})
+            adapter.service_controller().start(name)
+            return
         target = _claude_unit_path()
         active = provider_runtime_services("portal-claude-code.service")
         if not target.exists():

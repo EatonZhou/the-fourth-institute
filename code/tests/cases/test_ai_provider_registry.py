@@ -10,6 +10,44 @@ from management_portal import model_api_store
 from management_portal.ai_provider_registry import AIProviderRegistry
 
 
+@pytest.mark.parametrize("certificate_failure", [False, True])
+def test_windows_transport_adds_ca_roots_without_disabling_verification(monkeypatch, certificate_failure):
+    """Fresh Windows roots are supplemented; bad certificates still fail."""
+    import io
+    import ssl
+    import sys
+    import urllib.error
+    from types import SimpleNamespace
+    from management_portal import ai_provider_registry as module
+
+    context = ssl.create_default_context()
+    loaded = []
+    monkeypatch.setattr(context, "load_verify_locations", lambda **kwargs: loaded.append(kwargs))
+    monkeypatch.setattr(module, "sys", SimpleNamespace(platform="win32"))
+    monkeypatch.setitem(sys.modules, "certifi", SimpleNamespace(where=lambda: "public-roots.pem"))
+    monkeypatch.setattr(module.ssl, "create_default_context", lambda: context)
+    registry = AIProviderRegistry()
+    monkeypatch.setattr(registry, "get", lambda _: {
+        "id": "test", "base_url": "https://model.example", "api_key_file": "/private/test"})
+    monkeypatch.setattr(registry, "read_secret", lambda _: "test-key")
+    calls = []
+    def urlopen(request, **kwargs):
+        calls.append(kwargs)
+        assert kwargs["context"] is context
+        assert context.check_hostname and context.verify_mode == ssl.CERT_REQUIRED
+        if certificate_failure:
+            raise urllib.error.URLError(ssl.SSLCertVerificationError("untrusted certificate"))
+        return io.BytesIO(b'{"ok":true}')
+    monkeypatch.setattr(module.urllib.request, "urlopen", urlopen)
+    if certificate_failure:
+        with pytest.raises(urllib.error.URLError, match="untrusted certificate"):
+            registry.request("test", "chat/completions", {}, timeout_seconds=5)
+    else:
+        assert registry.request("test", "chat/completions", {}, timeout_seconds=5) == {"ok": True}
+    assert loaded == [{"cafile": "public-roots.pem"}]
+    assert len(calls) == 1
+
+
 def test_provider_registry_reads_registrations_from_postgres_in_order():
     """Provider 登记表按登记顺序从 PostgreSQL 读取
 

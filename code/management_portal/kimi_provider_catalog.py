@@ -10,6 +10,22 @@ def profile(account):
 
 
 def catalog(account):
+    if account["kind"] == "subscription_login":
+        from .kimi_account_runtime import client_for_route
+        client = client_for_route(account["route_id"])
+        auth = client._request("GET", "auth")
+        if (auth.get("managed_provider") or {}).get("status") != "authenticated":
+            raise ValueError("请先完成 Kimi Code 订阅登录")
+        config = client._request("GET", "config")
+        entries = {name: model for name, model in config.get("models", {}).items()
+                   if model.get("provider") == "managed:kimi-code"}
+        default = config.get("default_model", "")
+        if not entries or default not in entries:
+            raise ValueError("Kimi Code 订阅模型目录尚未就绪")
+        return {"models": list(entries), "default_model": default,
+                "efforts_by_model": {}, "service_tiers_by_model": {},
+                "context_windows": {name: int(model.get("max_context_size") or 32768)
+                                    for name, model in entries.items()}}
     if account["kind"] == "service":
         from .kimi_code_server import model_catalog
         return model_catalog()

@@ -16,6 +16,21 @@ from management_portal.execution import account_login as login
 from management_portal.execution import account_hosting
 
 
+@pytest.mark.parametrize("configured", [True, False])
+def test_windows_codex_login_uses_npm_command_in_runtime_directory(tmp_path, monkeypatch, configured):
+    from management_portal.execution import provider_updates as updates
+    from management_common import site_config
+    entry = tmp_path / "codex.cmd"
+    entry.write_text("@echo off")
+    entry.chmod(0o700)
+    monkeypatch.setattr(login, "sys", SimpleNamespace(platform="win32"))
+    monkeypatch.setattr(updates, "sys", SimpleNamespace(platform="win32"))
+    monkeypatch.setattr(site_config, "read_site_config", lambda: {
+        "deployment": {"providers": {"codex_binary": str(tmp_path)} if configured else {}}})
+    monkeypatch.setattr(updates.CodexRuntime, "link", lambda self: tmp_path)
+    assert login.login_command("codex") == [str(entry), "login", "--device-auth"]
+
+
 @pytest.fixture
 def isolated_login(tmp_path, tmp_path_factory, monkeypatch):
     monkeypatch.setattr(instance_paths.portal_paths, "CONFIG_PATH", tmp_path / "no-site-config")
@@ -111,7 +126,7 @@ def test_first_login_state_reads_native_status_through_migration_link(isolated_l
     legacy = tmp_path / "legacy"
     legacy.mkdir()
     home = login.account_home(provider, registration["account_id"])
-    home.parent.mkdir(parents=True)
+    home.parent.mkdir(parents=True, exist_ok=True)
     home.symlink_to(legacy, target_is_directory=True)
     monkeypatch.setattr(login, "login_command", lambda name, *, status: [name, "status"])
 

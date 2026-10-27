@@ -47,3 +47,26 @@ class AccountSetupReadinessTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_jev_account_check_submits_required_typed_question(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    from management_portal.ai_provider_registry import shared_ai_provider_registry
+    from management_portal.execution import resident_configuration
+    row = {"account_id": "jev", "provider": "provider_api", "kind": "api_profile", "enabled": True, "config": {"api_id": "jev"}}
+    monkeypatch.setattr(account_setup, "account", lambda account: row)
+    monkeypatch.setattr(account_setup.provider_updates, "runtime_available", lambda provider: True)
+    monkeypatch.setattr(account_setup.provider_updates, "STATE_ROOT", tmp_path)
+    monkeypatch.setattr(account_setup, "catalog", lambda row: {"default_model": "jev-latest"})
+    monkeypatch.setattr(account_setup, "signature", lambda row: {})
+    monkeypatch.setattr(resident_configuration, "validate_api_settings", lambda *args: None)
+    monkeypatch.setattr(shared_ai_provider_registry, "get", lambda route: {"kind": "typesafe_system_one"})
+    requests = []
+    def submit(request):
+        requests.append(request)
+        return SimpleNamespace(execution_id="test-execution")
+    monkeypatch.setattr(account_setup, "ExecutionClient", lambda: SimpleNamespace(submit=submit))
+    inv = SimpleNamespace(caller="alice", argument=lambda name: "jev" if name == "account_id" else None)
+    account_setup.check(inv)
+    assert requests[0].runtime_options["parameters"]["questions"]["greeting"]["type"] == "noul"
+    assert requests[0].provider == "jev"

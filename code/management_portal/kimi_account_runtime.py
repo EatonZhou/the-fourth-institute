@@ -1,4 +1,4 @@
-"""On-demand Kimi servers for API accounts; each account owns its config and sessions.
+"""On-demand Kimi servers; each account owns its credentials, config and sessions.
 
 The installed service account keeps its existing server. API accounts never
 rewrite that service's credentials. Workers may reconnect after a handover.
@@ -42,6 +42,10 @@ def home(account):
 
 
 def _write_config(account, target):
+    if account["kind"] == "subscription_login":
+        # Kimi owns OAuth configuration. Never replace it with an API profile.
+        kimi_portal_tools.install(target)
+        return
     entry = kimi_provider_catalog.profile(account)
     key = AIProviderRegistry.read_secret(AIProviderRegistry.secret_path(entry))
     config = kimi_provider_catalog.runtime_config(account, key)
@@ -66,6 +70,21 @@ def _client(target, port):
     return KimiCodeClient(f"http://127.0.0.1:{port}/api/v1", events_root=target / "server" / "events", home=target)
 
 
+def _subscription_tools(account, client):
+    if account["kind"] != "subscription_login":
+        return client
+    if not kimi_portal_tools.service_ready(client.home):
+        kimi_portal_tools.install(client.home)
+    import tomllib
+    hook = tomllib.loads(kimi_portal_tools.hook_config())["hooks"][0]
+    config = client._request("GET", "config")
+    hooks = config.get("hooks", [])
+    if hook not in hooks:
+        # Merge only the hook list; a redacted config must never be written back.
+        client._request("POST", "config", {"hooks": [*hooks, hook]})
+    return client
+
+
 def _read(path):
     try:
         return json.loads(path.read_text())
@@ -84,13 +103,14 @@ def client_for_route(route, *, for_control=False):
     with (target / "launch.lock").open("a+") as stream, lock_stream(stream):
         marker = target / "server.json"
         state = _read(marker)
-        version = [account["version"], model_api_store.api_version(account["config"]["api_id"])]
+        version = [account["version"], model_api_store.api_version(account["config"]["api_id"])
+                   if account["kind"] == "api_profile" else None]
         if state and process_alive(state["pid"]):
             client = _client(target, state["port"])
             # Never start a second daemon or kill a live turn after a failed probe.
             sessions = client._request("GET", "sessions", timeout=3)
             if for_control or state["version"] == version:
-                return client
+                return client if for_control else _subscription_tools(account, client)
             rows = sessions.get("items", sessions.get("sessions", [])) if isinstance(sessions, dict) else sessions
             for row in rows or []:
                 if client.get_status(row["id"]).get("busy"):
@@ -118,7 +138,7 @@ def client_for_route(route, *, for_control=False):
                 try:
                     client._request("GET", "sessions", timeout=1)
                     atomic_write_private_bytes(marker, json.dumps({"pid": process.pid, "port": port, "version": version}).encode())
-                    return client
+                    return _subscription_tools(account, client)
                 except KimiCodeUnavailable:
                     if time.monotonic() >= deadline:
                         break

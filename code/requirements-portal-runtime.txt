@@ -1,5 +1,6 @@
 nats-py
 aiohttp
+certifi
 jsonschema
 markdown-it-py
 packaging

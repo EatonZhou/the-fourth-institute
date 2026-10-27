@@ -334,6 +334,16 @@ def component_command(target, component):
             if os.environ.get(key):
                 env[key] = os.environ[key]
     python = runtime_python(target)
+    if component == "claude" and platform_adapter().__name__.endswith("_windows"):
+        providers = read_json(root / "config/site.json").get("deployment", {}).get("providers", {})
+        entry = providers.get("claude_runtime_current") or str(Path(target["data_roots"]["staging_root"]) / "provider-runtimes/claude-agent-sdk-current")
+        runtime_root = Path(entry)
+        if not runtime_root.is_absolute():
+            raise ValueError("Claude runtime must be an absolute deployment path")
+        executable = runtime_root / "Scripts/python.exe"
+        if not executable.is_file():
+            raise FileNotFoundError("Claude runtime is not prepared")
+        return [str(executable), "-m", "management_portal.claude_code_daemon"], env
     if component == "postgres":
         windows = platform_adapter().__name__.endswith("_windows")
         command = [str(Path(target["pg_bin"]) / native_tool("postgres")), "-D", str(database_root(target)),

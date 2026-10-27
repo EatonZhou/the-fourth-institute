@@ -12,6 +12,38 @@ from management_portal.hatg.contracts import InstructionError
 
 
 MEMBERS = ["resident_aaaaaaaaaaaa", "resident_bbbbbbbbbbbb"]
+
+
+def test_jev_complete_chat_uses_typed_decision_protocol(monkeypatch):
+    """The public instruction routes Jev to systemone and keeps typed answers."""
+    from management_portal.ai_provider_registry import AIProviderRegistry
+    entry = {"id": "jev", "provider": "typesafe", "kind": "typesafe_system_one", "default_model": "jev-latest",
+             "models": [{"id": "jev-latest"}], "timeout_s": 30}
+    answers = {"ok": {"type": "noul", "noul": 0.99}}
+    requests = []
+    registry = AIProviderRegistry()
+    monkeypatch.setattr(registry, "get", lambda api_id: entry)
+    def request(api_id, endpoint, payload, **kwargs):
+        requests.append((endpoint, payload))
+        return {"model": "jev-latest", "answers": answers, "usage": {"input_tokens": 12}}
+    monkeypatch.setattr(registry, "request", request)
+    monkeypatch.setattr(execution_isa, "_registry", lambda: registry)
+    arguments = {"api_id": "jev", "messages": [{"role": "user", "content": "Windows"}],
+                 "options": {"questions": {"ok": {"type": "noul", "instructions": "Is this Windows?"}}}}
+    inv = SimpleNamespace(argument=lambda name, default=None: arguments.get(name, default))
+    result = execution_isa.complete_chat(inv)
+    assert requests[0][0] == "systemone"
+    assert requests[0][1]["state"] == {"messages": arguments["messages"]}
+    assert result["structured"] == answers
+    arguments["response_schema"] = {"type": "object"}
+    with pytest.raises(InstructionError, match="questions"):
+        execution_isa.complete_chat(inv)
+    assert len(requests) == 1
+    arguments.pop("response_schema")
+    arguments["options"] = {}
+    with pytest.raises(ValueError, match="requires"):
+        execution_isa.complete_chat(inv)
+    assert len(requests) == 1
 ROUTE_SCHEMA = {
     "type": "object",
     "required": ["target", "reason", "confidence"],

@@ -311,6 +311,17 @@ def complete_chat(inv: Invocation) -> dict[str, Any]:
         options.pop(forbidden, None)
     messages = list(inv.argument("messages") or [])
     schema = inv.argument("response_schema")
+    from .model_api_protocols import protocol_adapter
+    adapter = protocol_adapter(item.get("kind", "openai_compatible_chat"))
+    adapter.validate(options, require_questions=True)
+    if adapter.name == "typesafe_system_one":
+        if schema is not None:
+            raise invalid("Jev 使用 options.questions 定义结构化问题，不支持 response_schema")
+        answer = adapter.execute(registry, item, inv.argument("model") or item["default_model"],
+            messages, options, float(item.get("timeout_s") or 90), 0,
+            lambda: False, lambda observation: None, lambda call: call())
+        return {"message": {"role": "assistant", "content": answer.content},
+                "structured": answer.structured, "usage": dict(answer.response.get("usage") or {})}
     validator = None
     if schema is not None:
         validator = _response_validator(schema)
