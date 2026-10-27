@@ -33,6 +33,8 @@
   //     messages, the Fork card's compaction, revealing a message, the quote bar
   //   chat_workspace_composer_height.js  one Workspace's composer height: the
   //     splitter, limits that follow the Workspace, the kept height
+  //   chat_workspace_runtime_controls.js  one Workspace's runtime controls for its
+  //     Resident: the runtime button, the Session restart and its progress
   //   chat_workspace_runtime_settings.js  the Runtime Settings dialog, notices after
   //     saving, the session restart dialog and its progress
   //   chat_workspace_harness_panel.js  the Agent Harness panel and menu, prompt
@@ -529,79 +531,10 @@
     const composer = root.querySelector(`#${CSS.escape(dom.composerId)}`);
     let refsControlBinding = null;
     let conversationSearch = null;
-    let runtimeSettingsDialog = null;
-    let sessionRestartDialog = null;
-    let runtimeCatalogEntry = null;
-    let residentRuntime = null, runtimeResidentId = "", runtimeTargetPending = false;
-    const releaseResidentRuntime = () => {
-      residentRuntime?.destroy(); residentRuntime = null; runtimeResidentId = ""; runtimeCatalogEntry = null;
-    };
-    const residentRuntimeController = () => {
-      if (runtimeTargetPending) return null;
-      const residentId = contractResidentId();
-      if (runtimeResidentId !== residentId) releaseResidentRuntime();
-      if (!residentId) return null;
-      if (!residentRuntime) {
-        runtimeResidentId = residentId;
-        residentRuntime = window.PortalResidentRuntimeController.bind(residentId, {
-          onState: view => {
-            if (contractResidentId() !== residentId) return;
-            if (view.detail) state.composer.runtime_settings = view.settings;
-            if (view.catalog && runtimeCatalogEntry) runtimeCatalogEntry.catalog = view.catalog;
-            const button = composer.querySelector("[data-workspace-runtime-settings-open]");
-            if (button) {
-              button.disabled = view.loading || view.busy || sessionRestartActive(view.restart) || (!view.canEdit && !view.canRestart);
-              const label = button.querySelector(".composerRuntimeLabel");
-              if (label && view.detail) label.textContent = residentRuntimeStatusText(view.settings, view.catalog || {});
-            }
-          },
-          onChanged: result => {
-            if (contractResidentId() !== residentId) return;
-            options.onRuntimeSettingsSaved?.(result, controller);
-            void options.onRefresh?.(controller);
-          },
-        });
-      }
-      return residentRuntime;
-    };
     // The Resident whose Chat this is; empty in other Chats (a Chatroom, an article).
     const contractResidentId = () => {
       const target = state.contract?.target || {};
       return String(target.resident_id || (target.kind === "resident" ? target.id : "") || "");
-    };
-    const runtimeCatalogUrl = (cfg = state.composer) => {
-      const residentId = contractResidentId()
-        || state.contract?.actions?.runtime_settings?.payload?.resident_id || "";
-      // A Resident's own Provider wins on the server; the composer names it otherwise.
-      const query = new URLSearchParams(cfg.runtime_backend ? { backend: cfg.runtime_backend } : {});
-      if (residentId) query.set("resident_id", residentId);
-      if (cfg.runtime_account_id) query.set("account_id", cfg.runtime_account_id);
-      return `/api/agent-workbench/agent-runtime-catalog?${query}`;
-    };
-    const loadWorkspaceRuntimeCatalog = (cfg = state.composer, retry = false) => {
-      if (runtimeTargetPending) return { catalog: null, promise: Promise.resolve({}) };
-      const key = runtimeCatalogUrl(cfg);
-      if (runtimeCatalogEntry?.key === key && !(retry && runtimeCatalogEntry.error)) return runtimeCatalogEntry;
-      const entry = { key, catalog: cfg.runtime_catalog || null, error: null, promise: null };
-      runtimeCatalogEntry = entry;
-      entry.promise = (contractResidentId() ? residentRuntimeController().load().then(view => view.catalog || {})
-        : entry.catalog ? Promise.resolve(entry.catalog) : window.PortalAPI.get(key))
-        .then(catalog => {
-          entry.catalog = catalog;
-          // A late response from the previous Resident must not change this composer.
-          if (runtimeCatalogEntry !== entry || runtimeCatalogUrl() !== key) return catalog;
-          const button = composer.querySelector("[data-workspace-runtime-settings-open]");
-          const label = button?.querySelector(".composerRuntimeLabel");
-          if (label) {
-            const text = residentRuntimeStatusText(state.composer.runtime_settings, catalog);
-            label.textContent = text;
-            button.title = window.PortalI18n.text`切换模型与运行设置：${text}`;
-          }
-          return catalog;
-        }).catch(error => { entry.error = error; throw error; });
-      // The footer can still show saved settings while a catalog is unavailable.
-      entry.promise.catch(() => {});
-      return entry;
     };
     const composerShellOptions = (composerOptions = {}) => {
       const cfg = {
@@ -617,13 +550,12 @@
         : false;
       const showStop = cfg.can_stop === true || dynamicCanStop;
       const capabilities = workspaceComposerCapabilities(cfg);
-      const runtimeSettingsEnabled = (capabilities.has("runtime_settings")
-        && cfg.runtime_settings && typeof cfg.runtime_settings === "object")
-        || (contractResidentId() && state.contract?.actions?.session_restart);
+      const runtimeSettingsEnabled = !!contractResidentId() && (
+        (capabilities.has("runtime_settings") && cfg.runtime_settings && typeof cfg.runtime_settings === "object")
+        || !!state.contract?.actions?.session_restart);
       const runtimeMetaHtml = cfg.metaHtml || (
         runtimeSettingsEnabled
           ? residentRuntimeMetaHtml(cfg.runtime_settings || {}, {
-              catalog: loadWorkspaceRuntimeCatalog(cfg).catalog || {},
               openAttribute: "data-workspace-runtime-settings-open",
             })
           : ""
@@ -683,36 +615,12 @@
       status: root.querySelector("[data-workspace-status]"),
       loading: root.querySelector("[data-workspace-loading]"),
     };
-    const restartService = window.PortalResidentService;
-    const restartProgress = createSessionRestartProgress({
-      compact: true,
-      owner: options.draftOwner,
-      onOpen: () => openWorkspaceSessionRestart().catch(error => window.PortalUI.toast(error.message || String(error), "error")),
-      onDismiss: () => els.refresh?.focus(),
+    const {
+      sessionRestartAvailable, bindRuntimeButton, followContractResident, releaseRuntimeTarget, destroyRuntimeControls,
+    } = chatWorkspaceModule("PortalChatWorkspaceRuntimeControls").createRuntimeControls({
+      contractResidentId, createSessionRestartProgress, currentController: () => controller, els, options,
+      residentRuntimeStatusText, sessionRestartActive, state,
     });
-    els.status?.closest(".chatHeadText")?.append(restartProgress.element);
-    let restartUnobserve = null;
-    let restartResidentId = "";
-    let lastRestartView = null;
-    function syncSessionRestartObservation() {
-      const residentId = sessionRestartAvailable() ? String(controller.target?.()?.resident_id || "") : "";
-      if (residentId === restartResidentId || !restartService) return;
-      restartUnobserve?.();
-      restartResidentId = residentId;
-      lastRestartView = null;
-      restartProgress.update({});
-      if (!residentId) return;
-      restartUnobserve = restartService.observeSessionRestart(residentId, view => {
-        const previous = lastRestartView?.restart;
-        lastRestartView = view;
-        restartProgress.update(view);
-          if (["accepted", "cancelling"].includes(previous?.status) && previous.restart_id === view.restart?.restart_id
-          && ["completed", "failed", "cancelled"].includes(view.restart.status)) {
-          options.onSessionRestarted?.(view.restart, controller);
-          Promise.resolve(options.onRefresh?.(controller)).catch(error => options.onError?.(error));
-        }
-      });
-    }
     const renderSubtitle = (transientStatus = "") => {
       if (els.refresh) {
         const label = sessionRestartAvailable() ? window.PortalI18n.t("Session 操作") : window.PortalI18n.t("刷新 Chat Workspace");
@@ -1454,7 +1362,7 @@
           capabilities: normalizedComposer.capabilities,
           runtime_settings: normalizedComposer.runtime_settings || null,
           runtime_backend: normalizedComposer.runtime_backend || "",
-          runtime_catalog_key: runtimeCatalogUrl(normalizedComposer),
+          runtime_resident_id: contractResidentId(),
           metaHtml: normalizedComposer.metaHtml || options.metaHtml || "",
           beforeComposerHtml: normalizedComposer.beforeComposerHtml ?? options.beforeComposerHtml ?? "",
           afterComposerHtml: normalizedComposer.afterComposerHtml || options.afterComposerHtml || "",
@@ -1907,8 +1815,7 @@
       applyContract(contract, renderOptions = {}) {
         if (!contract || typeof contract !== "object") return;
         state.contract = contract;
-        runtimeTargetPending = false;
-        if (runtimeResidentId && runtimeResidentId !== contractResidentId()) releaseResidentRuntime();
+        followContractResident();
         const runtime = contract.runtime && typeof contract.runtime === "object" ? contract.runtime : {};
         const rendering = contract.rendering && typeof contract.rendering === "object" ? contract.rendering : {};
         const composerCfg = contract.composer && typeof contract.composer === "object" ? { ...contract.composer } : {};
@@ -1939,20 +1846,16 @@
         clearWorkspaceLoading();
         updateControls();
         options.onContractApplied?.(contract, controller);
-        syncSessionRestartObservation();
       },
+      // The host is changing the Resident; the runtime controls wait for its contract.
       releaseResidentRuntime() {
-        releaseResidentRuntime(); runtimeTargetPending = true;
-        const button = composer.querySelector("[data-workspace-runtime-settings-open]");
-        if (button) button.disabled = true;
+        releaseRuntimeTarget();
       },
       destroy() {
-        releaseResidentRuntime();
+        destroyRuntimeControls();
         conversationSearch?.destroy();
         refsCatalog.disposed = true;
         destroyMentionMenu();
-        restartUnobserve?.();
-        restartProgress.destroy();
         destroyComposerDrafts();
         destroyComposerAttachments();
         refsControlBinding?.destroy();
@@ -1965,112 +1868,7 @@
         if (root.__portalChatWorkspaceController === controller) {
           delete root.__portalChatWorkspaceController;
         }
-        runtimeSettingsDialog?.destroy?.();
-        runtimeSettingsDialog = null;
-        sessionRestartDialog?.destroy?.();
-        sessionRestartDialog = null;
       },
-    };
-    const saveWorkspaceRuntimeSettings = async runtimeSettings => {
-      const action = state.contract?.actions?.runtime_settings;
-      let result;
-      if (typeof options.onRuntimeSettingsSave === "function") {
-        result = await options.onRuntimeSettingsSave(runtimeSettings, controller, action);
-      } else {
-        result = await requestWorkspaceAction(state.contract, "runtime_settings", {
-          changes: runtimeSettings,
-        });
-      }
-      const contract = result?.chat_workspace || result?.contract;
-      if (contract && typeof contract === "object") {
-        controller.applyContract(contract, state.messageRenderOptions || {});
-      } else {
-        controller.setComposer({
-          ...state.composer,
-          runtime_settings: { ...state.composer.runtime_settings, ...runtimeSettings },
-        });
-      }
-      notifyRuntimeSettingsSaved(result);
-      options.onRuntimeSettingsSaved?.(result, controller);
-      return result;
-    };
-    const openWorkspaceRuntimeSettings = async () => {
-      if (runtimeTargetPending) return;
-      const resident = residentRuntimeController();
-      if (resident) {
-        try { await resident.openSettings(() => composer.querySelector("[data-workspace-runtime-settings-open]")); }
-        catch (error) { window.PortalUI.toast(error.message, "error"); }
-        return;
-      }
-      const workspaceCatalogKey = runtimeCatalogUrl();
-      runtimeSettingsDialog ||= createRuntimeSettingsDialog({ id: `${id}RuntimeSettings` });
-      const suppliedOptions = typeof options.runtimeSettingsDialogOptions === "function"
-        ? await options.runtimeSettingsDialogOptions(controller)
-        : (options.runtimeSettingsDialogOptions || {});
-      const dialogOptions = {
-        backend: state.composer.runtime_backend, ...suppliedOptions,
-        residentId: contractResidentId() || state.contract?.actions?.runtime_settings?.payload?.resident_id,
-        accountId: state.composer.runtime_account_id,
-      };
-      if (!dialogOptions.catalog) {
-        try {
-          dialogOptions.catalog = await loadWorkspaceRuntimeCatalog({ ...state.composer, runtime_backend: dialogOptions.backend }, true).promise;
-        } catch (error) {
-          window.PortalUI?.toast?.(`无法读取当前 Provider 能力，未打开设置：${error.message}`, "error");
-          return;
-        }
-      }
-      if (workspaceCatalogKey !== runtimeCatalogUrl()) return;
-      runtimeSettingsDialog.open(
-        state.composer.runtime_settings || {},
-        saveWorkspaceRuntimeSettings,
-        dialogOptions,
-      );
-    };
-    function sessionRestartAvailable() {
-      if (runtimeTargetPending) return false;
-      return (typeof options.onSessionRestartOptions === "function" && !!controller.target?.()?.resident_id)
-        || !!state.contract?.actions?.session_restart?.instruction
-        || !!state.contract?.actions?.session_restart?.url;
-    }
-    const openWorkspaceSessionRestart = async () => {
-      if (runtimeTargetPending) return;
-      const resident = residentRuntimeController();
-      if (resident) {
-        try { await resident.openRestart(() => composer.querySelector("[data-workspace-runtime-settings-open]")); }
-        catch (error) { window.PortalUI.toast(error.message, "error"); }
-        return;
-      }
-      const action = state.contract?.actions?.session_restart;
-      const config = typeof options.onSessionRestartOptions === "function"
-        ? await options.onSessionRestartOptions(controller, action)
-        : await window.PortalAPI.get(String(action?.options_url || ""));
-      sessionRestartDialog ||= createSessionRestartDialog({ id: `${id}SessionRestart` });
-      sessionRestartDialog.open(
-        config,
-        async values => {
-          const result = typeof options.onSessionRestart === "function"
-              ? await options.onSessionRestart(values, controller, action)
-              : await requestWorkspaceAction(state.contract, "session_restart", values);
-          if (!["accepted", "completed"].includes(result?.status)) throw new Error("Session 切换结果尚未确认，请刷新查看状态");
-          restartService?.rememberSessionRestart(config.resident_id, result);
-          window.PortalUI.toast(result.status === "accepted" ? window.PortalI18n.t("迁移请求已受理，可在聊天顶部持续查看进度。") : result.configuration_only
-            ? window.PortalI18n.t("Provider / 账号设置已保存；尚未创建 Session。")
-            : window.PortalI18n.t("Session 已切换，旧 session 已保留。"), "success");
-          if (result.status === "completed") {
-            options.onSessionRestarted?.(result, controller);
-            await options.onRefresh?.(controller);
-          }
-          return result;
-        },
-        () => options.onRefresh?.(controller),
-        values => {
-          if (typeof options.onSessionRestartCancel !== "function") {
-            throw new Error("当前 Workspace 未提供 Session 迁移取消入口");
-          }
-          return options.onSessionRestartCancel(values, controller, action);
-        },
-      );
     };
     const bindComposer = () => {
       bindWorkspaceComposer({
@@ -2181,14 +1979,7 @@
           chooseSlashCommand(button.dataset.portalSlashCommand || "");
         });
       }
-      const runtimeSettingsButton = els.composer.querySelector("[data-workspace-runtime-settings-open]");
-      if (runtimeSettingsButton && runtimeSettingsButton.dataset.workspaceRuntimeSettingsBound !== "1") {
-        runtimeSettingsButton.dataset.workspaceRuntimeSettingsBound = "1";
-        runtimeSettingsButton.addEventListener("click", openWorkspaceRuntimeSettings);
-        const view = residentRuntimeController()?.state();
-        if (runtimeTargetPending) runtimeSettingsButton.disabled = true;
-        else if (view) runtimeSettingsButton.disabled = view.loading || view.busy || sessionRestartActive(view.restart) || (!view.canEdit && !view.canRestart);
-      }
+      bindRuntimeButton();
       if (els.auto && els.auto.dataset.workspaceAutoBound !== "1") {
         els.auto.dataset.workspaceAutoBound = "1";
         els.auto.addEventListener("click", () => options.onAuto?.(controller));
@@ -2201,18 +1992,6 @@
       canLoadOlder: () => !!options.onLoadOlder && !!state.messageRenderOptions?.history?.can_load_older,
       loadOlder: () => options.onLoadOlder?.(controller),
       reveal: key => controller.revealMessage(key),
-    });
-    if (els.refresh) els.refresh.addEventListener("click", event => {
-      event.preventDefault();
-      if (sessionRestartAvailable()) {
-        openWorkspaceSessionRestart().catch(error => (
-          options.onError
-            ? options.onError(error)
-            : window.PortalUI.toast(error.message || String(error), "error")
-        ));
-        return;
-      }
-      options.onRefresh?.(controller);
     });
     updateControls();
     root.__portalChatWorkspaceController = controller;
@@ -2257,7 +2036,7 @@
         "root", "id", "panelId", "target", "autoLoad", "title", "emptyText", "placeholder",
         "draftOwner", "historyLimit", "residentFeatures", "pendingHistoryScope",
         "resolveResident", "resolveBeforeSend", "initialContext", "submissionContext", "onDetail", "onAcknowledgement", "emit",
-        "onSent", "onRollback", "onError", "onRuntimeSettingsSaved", "onForkCreated", "conversationView", "onWatchboardAction", "onInteractionChange",
+        "onSent", "onRollback", "onError", "onForkCreated", "conversationView", "onWatchboardAction", "onInteractionChange",
       ].filter(key => Object.prototype.hasOwnProperty.call(options, key)).map(key => [key, options[key]]));
       this.options = hostOptions;
       this.initialContext = null;
@@ -2361,12 +2140,6 @@
           this.conversationView()?.onMessagesRendered?.(root, this);
         },
         onExtensionOpen: () => this.renderExtensions(),
-        onRuntimeSettingsSaved: (result, controller) => {
-          window.PortalResidentProjection?.invalidate?.(
-            result.resident_id || this.workspace?.target?.().resident_id,
-          );
-          options.onRuntimeSettingsSaved?.(result, controller, this);
-        },
         onSubagentFinished: run => this.noticeSubagentFinished(run),
       }).mount();
       this.workspace.root?.addEventListener("click", event => this.onSubagentClick(event));
