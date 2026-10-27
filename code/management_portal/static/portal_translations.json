@@ -40775,5 +40775,49 @@
   "不交出": {"en": "Don't lend", "zh-CN": "不交出"},
   "同意后随这条回答交给 Resident 的权限：": {"en": "Permissions lent to the Resident with this answer if you agree:", "zh-CN": "同意后随这条回答交给 Resident 的权限："},
   "成员在 Family 内提出的权限请求不能经门面交出": {"en": "A member's permission request inside a Family cannot be granted through its facade", "zh-CN": "成员在 Family 内提出的权限请求不能经门面交出"},
-  "只在 Resident 处理这条回答期间有效，处理完即失效。": {"en": "Valid only while the Resident handles this answer; it ends when the Resident finishes.", "zh-CN": "只在 Resident 处理这条回答期间有效，处理完即失效。"}
+  "只在 Resident 处理这条回答期间有效，处理完即失效。": {"en": "Valid only while the Resident handles this answer; it ends when the Resident finishes.", "zh-CN": "只在 Resident 处理这条回答期间有效，处理完即失效。"},
+  "管理工作流": {
+    "zh-CN": "管理工作流",
+    "en": "Manage workflows"
+  },
+  "收纳普通组件和连线，或将它们移出 Family；不会删除对象。收纳组件时，内部连线一并收纳；移出组件时，关联的内部连线一并移出。": {
+    "zh-CN": "收纳普通组件和连线，或将它们移出 Family；不会删除对象。收纳组件时，内部连线一并收纳；移出组件时，关联的内部连线一并移出。",
+    "en": "Add ordinary components and wires to this Family, or remove them without deleting them. Internal wires are included when adding components; connected internal wires leave with removed components."
+  },
+  "工作流操作": {
+    "zh-CN": "工作流操作",
+    "en": "Workflow action"
+  },
+  "收纳": {
+    "zh-CN": "收纳",
+    "en": "Add to Family"
+  },
+  "移出": {
+    "zh-CN": "移出",
+    "en": "Remove from Family"
+  },
+  "连线两端须在此 Family 内；可先选择对应组件。": {
+    "zh-CN": "连线两端须在此 Family 内；可先选择对应组件。",
+    "en": "Both wire endpoints must be inside this Family; select the components first."
+  },
+  "没有可操作的普通工作流对象。": {
+    "zh-CN": "没有可操作的普通工作流对象。",
+    "en": "No ordinary workflow objects are available."
+  },
+  "Lineage 已变化，请重新选择工作流。": {
+    "zh-CN": "Lineage 已变化，请重新选择工作流。",
+    "en": "The Lineage has changed. Select the workflows again."
+  },
+  "保存归属": {
+    "zh-CN": "保存归属",
+    "en": "Save ownership"
+  },
+  "重新选择": {
+    "zh-CN": "重新选择",
+    "en": "Select again"
+  },
+  "工作流归属已保存。": {
+    "zh-CN": "工作流归属已保存。",
+    "en": "Workflow ownership saved."
+  }
 }

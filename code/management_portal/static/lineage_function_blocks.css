@@ -519,3 +519,16 @@
 .functionBlockObjectInventory > summary { cursor: pointer; color: var(--muted); font-size: 12px; }
 .familyTaskCard button[type="submit"] { justify-self: start; }
 .familyTaskCard [role="status"] { font-size: 12px; }
+.familyWorkflowOwnership {
+  margin-block: 12px;
+}
+.familyWorkflowOwnership > summary { cursor: pointer; }
+.familyWorkflowOwnership form { display: grid; gap: 10px; padding-block: 10px; }
+.familyWorkflowChoices { display: grid; gap: 8px; max-height: 320px; overflow: auto; }
+.familyWorkflowOwnership .familyWorkflowChoices > label { display: flex; flex-direction: row; align-items: flex-start; gap: 8px; font-size: 12px; }
+.familyWorkflowOwnership .familyWorkflowChoices > label > input {
+  width: 16px; height: 16px; min-height: 0; margin-top: 4px; padding: 0; flex: 0 0 auto;
+}
+.familyWorkflowOwnership .familyWorkflowChoices > label > span { min-width: 0; overflow-wrap: anywhere; }
+.familyWorkflowOwnership .familyWorkflowChoices strong, .familyWorkflowOwnership .familyWorkflowChoices small { display: block; }
+.familyWorkflowOwnership .familyWorkflowChoices small { color: var(--muted); font-size: 11px; }

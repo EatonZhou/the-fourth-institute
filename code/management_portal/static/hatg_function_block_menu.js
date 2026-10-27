@@ -301,7 +301,71 @@
       return `${functionBlockRecipientsSummaryHtml(effects, readonly)}${functionBlockInstanceTriggersHtml(block, readonly)}${functionBlockElementListHtml(block)}`;
     }
 
-    function functionBlockObjectsHtml(components, selected, readonly, block) {
+    // Only ordinary components/wires may move into a Family. The server owns
+    // the final validation; do not offer another block's or generated objects.
+    function familyWorkflowChoices(block, mode) {
+      const lineage = state.lineage;
+      const blocks = lineage.function_blocks || [];
+      const owners = new Map();
+      blocks.forEach(owner => (owner.elements || []).forEach(element => {
+        const list = owners.get(element.id) || [];
+        list.push({ owner, element }); owners.set(element.id, list);
+      }));
+      const ancestors = new Set();
+      let parent = owners.get(block.id);
+      while (parent?.length === 1 && !ancestors.has(parent[0].owner.id)) {
+        ancestors.add(parent[0].owner.id); parent = owners.get(parent[0].owner.id);
+      }
+      const inside = new Set(), pending = [block];
+      while (pending.length) (pending.pop().elements || []).forEach(element => {
+        if (inside.has(element.id)) return;
+        inside.add(element.id);
+        const nested = blocks.find(item => item.id === element.id);
+        if (nested) pending.push(nested);
+      });
+      const rows = [...(lineage.program?.components || []).map(item => ({ ...item, elementKind: "component" })),
+        ...(lineage.program?.wires || []).map(item => ({ ...item, elementKind: "wire" }))].filter(item => {
+        const ownership = owners.get(item.id) || [];
+        if (!ownership.length) return mode === "add";
+        if (ownership.length !== 1) return false;
+        const { owner, element } = ownership[0];
+        if (!String(element.key || "").startsWith("workflow:")) return false;
+        return mode === "remove" ? owner.id === block.id
+          : owner.id !== block.id && !!owner.family && ancestors.has(owner.id);
+      });
+      return { rows, inside, owners };
+    }
+
+    function familyWorkflowHtml(block, draft, readonly, error) {
+      if (!familyRoles(block)) return "";
+      const { rows, inside, owners } = familyWorkflowChoices(block, draft.mode);
+      rows.filter(item => item.elementKind === "component" && draft.ids.has(item.id)).forEach(item => inside.add(item.id));
+      const stale = state.lineage.lineage_id !== draft.lineageId || state.lineage.revision !== draft.revision;
+      const disabled = readonly || stale;
+      return window.PortalI18n.html`<details class="familyWorkflowOwnership"${draft.open ? " open" : ""}>
+        <summary>管理工作流</summary>
+        <form data-family-workflow-form>
+          <p>收纳普通组件和连线，或将它们移出 Family；不会删除对象。收纳组件时，内部连线一并收纳；移出组件时，关联的内部连线一并移出。</p>
+          <label><span>工作流操作</span><select data-family-workflow-mode${disabled ? " disabled" : ""}>
+            <option value="add"${draft.mode === "add" ? " selected" : ""}>收纳</option>
+            <option value="remove"${draft.mode === "remove" ? " selected" : ""}>移出</option>
+          </select></label>
+          <div class="familyWorkflowChoices">${rows.map(item => {
+            const available = draft.mode === "remove" || item.elementKind !== "wire" || (inside.has(item.source) && inside.has(item.target));
+            const owner = owners.get(item.id)?.[0]?.owner;
+            return window.PortalI18n.html`<label><input type="checkbox" data-family-workflow-id="${esc(item.id)}"${draft.ids.has(item.id) && available ? " checked" : ""}${disabled || !available ? " disabled" : ""}>
+              <span><strong>${esc(item.title || item.id)}</strong><small>${esc(item.kind)} · ${esc(item.id)}</small>
+              ${owner ? `<small>${esc(owner.title || owner.id)}</small>` : ""}
+              ${!available ? window.PortalI18n.html`<small>连线两端须在此 Family 内；可先选择对应组件。</small>` : ""}</span></label>`;
+          }).join("") || window.PortalI18n.html`<p>没有可操作的普通工作流对象。</p>`}</div>
+          ${stale ? window.PortalI18n.html`<p role="alert">Lineage 已变化，请重新选择工作流。</p>` : error ? `<p role="alert">${esc(error)}</p>` : ""}
+          <button class="portalButton" type="submit"${disabled || !draft.ids.size ? " disabled" : ""}>保存归属</button>
+          <button class="portalButton" type="button" data-family-workflow-reset${readonly ? " disabled" : ""}>重新选择</button>
+        </form>
+      </details>`;
+    }
+
+    function functionBlockObjectsHtml(components, selected, readonly, block, workflowHtml = "") {
       const groups = [
         ["effect", "Effect", components.filter(item => item.kind === "effect")],
         ["event_source", "Event", components.filter(item => item.kind === "event_source")],
@@ -310,8 +374,8 @@
       const effects = components.filter(item => item.kind === "effect" && selected.has(item.id));
       const events = components.filter(item => item.kind === "event_source" && selected.has(item.id));
       const count = components.filter(item => selected.has(item.id)).length;
-      if (!components.length) return window.PortalI18n.html`<p class="functionBlockObjectsEmpty">这个模块里没有组件。</p>`;
-      return window.PortalI18n.html`${familyProgressSettingsHtml(block, readonly)}<p class="functionBlockObjectsIntro">折叠时也能直接管理模块内的组件：点 Effect 的收件人修改失败通知，勾选多个对象可以一起处理。</p>
+      if (!components.length) return `${workflowHtml}${window.PortalI18n.html`<p class="functionBlockObjectsEmpty">这个模块里没有组件。</p>`}`;
+      return window.PortalI18n.html`${workflowHtml}${familyProgressSettingsHtml(block, readonly)}<p class="functionBlockObjectsIntro">折叠时也能直接管理模块内的组件：点 Effect 的收件人修改失败通知，勾选多个对象可以一起处理。</p>
       <div class="functionBlockObjectToolbar" role="toolbar" aria-label="批量操作">
         <label class="functionBlockSelectAll"><input type="checkbox" data-block-select-all${readonly ? " disabled" : ""}><span>${esc(count ? window.PortalI18n.text`已选 ${count} 项` : window.PortalI18n.t("全选"))}</span></label>
         <span class="functionBlockBulkButtons">
@@ -326,6 +390,8 @@
 
     function renderFunctionBlockMenuPanel(blockId, root, close, setLabel, pane = "block") {
       let titleDraft;
+      const menuLineageId = state.lineage?.lineage_id;
+      let workflowDraft = null, workflowPending = false, workflowError = "", disposed = false;
       const taskDrafts = new Map();
       const expandedTasks = new Set();
       let editingId = "";
@@ -333,11 +399,18 @@
       const editor = document.createElement("section");
       editor.className = "functionBlockObjectEditor";
       const draw = () => {
+        if (disposed) return;
+        const previousWorkflow = root.querySelector(".familyWorkflowOwnership");
+        if (workflowDraft && previousWorkflow) workflowDraft.open = previousWorkflow.open;
+        if (state.lineage?.lineage_id !== menuLineageId) { root.textContent = window.PortalI18n.t("Lineage 已变化，请重新选择工作流。"); return; }
         const block = functionBlockInstanceById(blockId);
         if (!block) { root.textContent = window.PortalI18n.t("这个 Function Block 已不在 Lineage 中。"); return; }
         setLabel(pane === "objects" ? window.PortalI18n.t("内部对象") : pane === "issues" ? window.PortalI18n.t("问题") : block.title || window.PortalI18n.t("Function Block"));
         const roles = familyRoles(block);
-        const readonly = state.programMutationInFlight;
+        const readonly = state.programMutationInFlight || workflowPending;
+        if (roles && pane === "objects" && !workflowDraft) workflowDraft = {
+          lineageId: menuLineageId, revision: state.lineage.revision, mode: "add", ids: new Set(), open: false,
+        };
         const failures = functionBlockInstanceFailures(block);
         const components = instanceInnerObjects(block, "components");
         const effects = components.filter(item => item.kind === "effect" && selected.has(item.id));
@@ -356,13 +429,49 @@
           <button class="portalButton" type="button" data-function-block-save-template${readonly ? " disabled" : ""}>存为模板</button>
           ${roles ? window.PortalI18n.html`<button class="portalButton" type="button" data-family-fold>${familyExpanded(roles) ? window.PortalI18n.t("折叠为门面") : window.PortalI18n.t("展开成员")}</button><button class="portalButton" type="button" data-family-unfamilize${readonly ? " disabled" : ""}>Unfamilize</button>`
           : window.PortalI18n.html`<button class="portalButton" type="button" data-function-block-expand>${expandedFunctionBlockIds().has(block.id) ? window.PortalI18n.t("折叠") : window.PortalI18n.t("展开")}</button><button class="portalButton" type="button" data-function-block-unfunctionalize${readonly ? " disabled" : ""}>Unfunctionalize</button><button class="portalButton is-danger" type="button" data-function-block-delete${readonly ? " disabled" : ""}>删除</button>`}
-        </div>` : pane === "objects" ? functionBlockObjectsHtml(components, selected, readonly, block) : window.PortalI18n.html`<p>打开本页会自动消除当前错误提醒，保留错误与运行记录；新的失败会再次提示。成功运行或修正配置后，对应问题会自动移出当前清单。</p>${functionBlockInsideResidentsHtml(block)}${issueRows || '<p data-block-no-issues>当前没有问题。</p>'}`}
+        </div>` : pane === "objects" ? functionBlockObjectsHtml(components, selected, readonly, block,
+          roles ? familyWorkflowHtml(block, workflowDraft, readonly, workflowError) : "") : window.PortalI18n.html`<p>打开本页会自动消除当前错误提醒，保留错误与运行记录；新的失败会再次提示。成功运行或修正配置后，对应问题会自动移出当前清单。</p>${functionBlockInsideResidentsHtml(block)}${issueRows || '<p data-block-no-issues>当前没有问题。</p>'}`}
         <div data-block-object-editor></div>
       </div></div>`;
         const action = (selector, callback, closing = true) => root.querySelector(selector)?.addEventListener("click", () => {
           if (closing) close();
           Promise.resolve().then(callback).catch(error => toast(error.message || String(error), "error"));
         });
+        const workflowForm = root.querySelector("[data-family-workflow-form]");
+        if (workflowForm) {
+          const draft = workflowDraft;
+          workflowForm.querySelector("[data-family-workflow-mode]").addEventListener("change", event => {
+            draft.mode = event.target.value; draft.ids.clear(); workflowError = ""; draw();
+          });
+          workflowForm.querySelectorAll("[data-family-workflow-id]").forEach(input => input.addEventListener("change", () => {
+            if (input.checked) draft.ids.add(input.dataset.familyWorkflowId); else draft.ids.delete(input.dataset.familyWorkflowId);
+            const { rows, inside } = familyWorkflowChoices(block, draft.mode);
+            rows.filter(item => item.elementKind === "component" && draft.ids.has(item.id)).forEach(item => inside.add(item.id));
+            if (draft.mode === "add") rows.filter(item => item.elementKind === "wire" && (!inside.has(item.source) || !inside.has(item.target)))
+              .forEach(item => draft.ids.delete(item.id));
+            draw();
+          }));
+          workflowForm.querySelector("[data-family-workflow-reset]").addEventListener("click", () => {
+            workflowDraft = null; workflowError = ""; draw();
+          });
+          workflowForm.addEventListener("submit", async event => {
+            event.preventDefault();
+            if (workflowPending || state.programMutationInFlight || !draft.ids.size) return;
+            const ids = [...draft.ids], mode = draft.mode;
+            workflowPending = true; workflowError = ""; draw();
+            try {
+              const result = await applyProgramMutation(() => {
+                if (state.lineage?.lineage_id !== draft.lineageId || state.lineage.revision !== draft.revision)
+                  throw new Error(window.PortalI18n.t("Lineage 已变化，请重新选择工作流。"));
+                return executeHatgInstruction("UpdateFamily", {
+                  family_id: blockId, add_element_ids: mode === "add" ? ids : [], remove_element_ids: mode === "remove" ? ids : [],
+                }, { expectedVersion: draft.revision });
+              }, "工作流归属已保存。");
+              if (result) workflowDraft = null;
+            } catch (error) { workflowError = error.message || String(error); }
+            finally { workflowPending = false; draw(); }
+          });
+        }
         root.querySelector("[data-function-block-title]")?.addEventListener("input", event => { titleDraft = event.target.value; });
         action("[data-function-block-rename]", async () => {
           const title = root.querySelector("[data-function-block-title]").value.trim();
@@ -460,7 +569,7 @@
         const unseen = functionBlockInstanceUnacknowledgedFailures(functionBlockInstanceById(blockId));
         if (unseen.length) acknowledgeFunctionBlockFailures(unseen);
       }
-      return () => { if (functionBlockMenuRefresh === draw) functionBlockMenuRefresh = null; };
+      return () => { disposed = true; if (functionBlockMenuRefresh === draw) functionBlockMenuRefresh = null; };
     }
 
     async function unfunctionalize(id) {
