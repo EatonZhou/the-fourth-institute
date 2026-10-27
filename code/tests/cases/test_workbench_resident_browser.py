@@ -126,6 +126,39 @@ def test_native_script_and_chat_dependencies_preserve_identity(browser_http, mon
         "address": WORKBENCH, "viewer": RESIDENT}
 
 
+def test_chat_restart_options_use_resident_identity_and_keep_target_acl(browser_http, monkeypatch):
+    # Chat fetches these options on mount, even before opening its restart menu.
+    # A user-only route would turn a valid Resident workbench into a login page.
+    def options(target, actor):
+        if not browser_http.state.readable:
+            raise PermissionError("Resident management denied")
+        return {"resident_id": target, "viewer": actor, "strategies": []}
+
+    monkeypatch.setattr(portal._AGENT_WORKBENCH_HTTP, "resident_api", lambda: SimpleNamespace(
+        get_resident_restart_options=options))
+    path = f"/api/agent-workbench/residents/session-restart-options?id={RESIDENT}"
+    status, body, headers = browser_http.request(path)
+    assert status == 200
+    assert body == {"resident_id": RESIDENT, "viewer": RESIDENT, "strategies": []}
+    assert "Set-Cookie" not in headers
+    browser_http.state.readable = False
+    assert browser_http.request(path)[0] == 403
+
+
+@pytest.mark.parametrize("headers,status", [
+    ({"Authorization": ""}, 401),
+    ({"Authorization": "Bearer invalid"}, 401),
+    ({"X-Portal-Lineage-ID": ""}, 403),
+])
+def test_chat_restart_options_reject_invalid_principal(browser_http, monkeypatch, headers, status):
+    def unexpected_access():
+        pytest.fail("Invalid principal reached restart options")
+
+    monkeypatch.setattr(portal._AGENT_WORKBENCH_HTTP, "resident_api", unexpected_access)
+    path = f"/api/agent-workbench/residents/session-restart-options?id={RESIDENT}"
+    assert browser_http.request(path, headers=headers)[0] == status
+
+
 @pytest.mark.parametrize("headers,status", [
     ({"Authorization": ""}, 401),
     ({"Authorization": "Bearer invalid"}, 401),
