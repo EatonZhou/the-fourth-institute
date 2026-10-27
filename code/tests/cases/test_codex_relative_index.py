@@ -100,6 +100,8 @@ def test_service_template_uses_configured_home_and_explicit_owned_refresh(tmp_pa
     deployment["source_root"] = str(tmp_path / "moved-source")
     with pytest.raises(ValueError, match="different Provider"):
         units.install_codex_unit_template(reload=False)
+    old_locator = next(line for line in target.read_text().splitlines() if line.startswith("Environment=PORTAL_PATHS_CONFIG="))
+    target.write_text(target.read_text().replace(old_locator, f"Environment=PORTAL_PATHS_CONFIG={instance / 'config/target.json'}"))
     units.install_codex_unit_template(reload=False, refresh=True)
     assert "Environment=PYTHONPATH=" + deployment["source_root"] in target.read_text()
     target.write_text(target.read_text().replace("Environment=HOME=", "Environment=FOREIGN_HOME="))

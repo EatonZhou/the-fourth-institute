@@ -203,8 +203,12 @@ def install_codex_unit_template(*, reload: bool = True, refresh: bool = False) -
             # Explicit deployment maintenance may refresh this instance's own
             # template. Account startup never overwrites a different definition.
             required = {line for line in content.splitlines() if line.startswith((
-                "Environment=HOME=", "Environment=CODEX_HOME=", "WorkingDirectory=", "Environment=PORTAL_PATHS_CONFIG="))}
-            if not required.issubset(set(target.read_text().splitlines())):
+                "Environment=HOME=", "Environment=CODEX_HOME=", "WorkingDirectory="))}
+            locators = {line for line in content.splitlines() if line.startswith("Environment=PORTAL_PATHS_CONFIG=")}
+            locators.update(f"Environment=PORTAL_PATHS_CONFIG={isolated['root'] / 'config' / name}"
+                            for name in ("target.json", "paths.json"))
+            existing = set(target.read_text().splitlines())
+            if not required.issubset(existing) or not existing.intersection(locators):
                 raise ValueError("Provider service template belongs to another instance")
             from management_common.file_permissions import atomic_write_private_bytes
             atomic_write_private_bytes(target, content.encode())
