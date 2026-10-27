@@ -26,6 +26,7 @@ async function readWallChatPanel(root, {kind, messageId = ''} = {}) {
     const composer = composers.length === 1 ? composers[0] : null;
     const matched = rows.filter(row => row.key === messageId);
     return {sampled_at_ms: Date.now(), visible: visible(node), selected_tab: selected ? kind : '',
+      tab_id: tab?.id || '', tab_visible: visible(tab), tablist_visible: visible(tab?.closest('[role="tablist"]')),
       panel_id: panel?.id || '', panel_visible: !!selected && visible(node) && visible(panel),
       resident_id: residents[0] || '', message_keys: rows.map(row => row.key), message_rows: rows,
       message_id: matched.length === 1 && matched[0].visible ? matched[0].key : '',
