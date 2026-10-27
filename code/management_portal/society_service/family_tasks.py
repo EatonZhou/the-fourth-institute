@@ -243,7 +243,7 @@ def render(record: dict, trigger: str, facts: dict) -> str:
 def dispatch(facade_id: str, trigger: str, actor: str, *, facts: dict | None = None,
              message_id: str = "", source_message_id: str = "", event: dict | None = None) -> dict:
     from . import family_facade, lineage_domain
-    from . import resident_execution_domain, resident_workspace_domain
+    from . import family_task_dispatches, resident_workspace_domain
     facade = resident_workspace_domain.find_resident(facade_id)
     if not family_facade.is_facade(facade) or trigger not in TASKS:
         raise ValueError("未知 Family 或工作触发类型")
@@ -262,7 +262,6 @@ def dispatch(facade_id: str, trigger: str, actor: str, *, facts: dict | None = N
         facts["event"].update({k: v for k, v in (event.get("payload") or {}).items()
                                if k in {"resident_id", "message_id", "queue_count", "pressure_metric",
                                         "pressure_threshold", "pressure_value", "oldest_wait_seconds"}})
-    options = {"message_id": message_id} if message_id else {}
     if trigger == "route":
         # A Lineage can contain nested Families. Expose this layer's exact
         # routing boundary instead of making the Router infer it from the graph.
@@ -279,11 +278,8 @@ def dispatch(facade_id: str, trigger: str, actor: str, *, facts: dict | None = N
         facts.update(sender=message.get("author_id"), content=message.get("content_parts"))
         if message.get("quote"):
             facts["quote"] = message["quote"]
-        from management_common.operation_identity import operation_identity_scope
-        from management_common.principal import OperationIdentity
-        with operation_identity_scope(OperationIdentity.for_actor(facade_id, initiated_by=actor)):
-            return resident_execution_domain.deliver_resident_message_content(target["resident_id"], facade_id, render(target, trigger, facts),
-                business_ref=f"family-route/{facade_id}/message/{mid}", **options)
+        return family_task_dispatches.deliver(facade, target, trigger, facts, actor,
+            business_ref=f"family-route/{facade_id}/message/{mid}", message_id=message_id)
     ref = f"duty/family-{trigger}"
     if trigger == "route_review":
         from . import resident_conversation_stream
@@ -291,5 +287,5 @@ def dispatch(facade_id: str, trigger: str, actor: str, *, facts: dict | None = N
         if not mid or not resident_conversation_stream.get_repository().message(facade_id, mid):
             raise ValueError("路由复核必须绑定门面原消息")
         ref = f"family-review/{facade_id}/message/{mid}"
-    return family_facade.tell_steward(facade_id, target["resident_id"], actor, render(target, trigger, facts),
-        business_ref=ref, _family_rendered=True, **options)
+    return family_task_dispatches.deliver(facade, target, trigger, facts, actor,
+        business_ref=ref, message_id=message_id)

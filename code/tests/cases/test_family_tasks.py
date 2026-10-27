@@ -127,6 +127,22 @@ def test_maintenance_dispatch_accepts_real_input_with_identity_only_admission(co
     )["state"] in {"queued", "running"}
 
 
+def test_summary_repeated_notification_preserves_first_initiator(configured_family, monkeypatch):
+    """A member-triggered notification and its timer replay are one accepted task."""
+    _, block = configured_family
+    family = block["family"]
+    monkeypatch.setattr(resident_execution_domain, "deliver_resident_message_content", deliver_resident_message_content)
+    request = {"resident_id": family["facade"], "trigger": "summary",
+               "message_id": "msg_129c6e13c6668503136c9927dee976a3"}
+    first = ok("DispatchFamilyTask", request, actor=family["steward"])
+    repository = resident_conversation_stream.get_repository()
+    original = copy.deepcopy(repository.message(family["steward"], first["message_id"]))
+    again = ok("DispatchFamilyTask", request, actor=ACTOR)
+    assert again["message_id"] == first["message_id"]
+    assert repository.message(family["steward"], first["message_id"]) == original
+    assert original["origin"]["initiated_by"]["id"] == family["steward"]
+
+
 @pytest.mark.parametrize("custom_guide,custom_prompt", [(False, False), (True, False), (False, True), (True, True)])
 def test_queue_default_migration_preserves_each_edited_field(configured_family, custom_guide, custom_prompt):
     body, block = configured_family

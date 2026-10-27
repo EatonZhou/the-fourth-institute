@@ -20,7 +20,7 @@ from management_common.json_columns import json_text, json_value
 from .read_snapshot import request_cached
 from . import trigger_path_storage, family_storage, resident_storage, program_work_storage, domain_work_storage, relation_work_storage, resident_execution_storage
 from . import graph_storage, definition_collections, lineage_metadata_storage, lineage_state_domains
-from . import wire_delivery_budget
+from . import wire_delivery_budget, family_task_dispatches
 from management_portal import application_targets
 from .runtime_read_models import (
     POSTGRES_TRIGGERS,
@@ -28,7 +28,7 @@ from .runtime_read_models import (
 )
 
 
-LINEAGE_DATA_SCHEMA = "tfi.lineage-data.v60"
+LINEAGE_DATA_SCHEMA = "tfi.lineage-data.v61"
 LINEAGE_TIMER_LEASE_KEY = "lineage_timer_lease"
 # Projects whose principal graph a membership transaction must re-project
 # when it finishes; None outside such a transaction.
@@ -98,6 +98,7 @@ LINEAGE_DATA_COLUMNS = {
     "lineage_meta": ("key", "value"),
     **program_work_storage.COLUMNS,
     **wire_delivery_budget.COLUMNS,
+    **family_task_dispatches.COLUMNS,
     **domain_work_storage.COLUMNS,
     **relation_work_storage.COLUMNS,
     **lineage_metadata_storage.COLUMNS,
@@ -327,6 +328,7 @@ def create_lineage_data_schema(connection: Any) -> None:
     connection.executescript('\n        CREATE TABLE lineage_meta (\n            key TEXT PRIMARY KEY,\n            value TEXT NOT NULL\n        );\n\n        CREATE TABLE lineage_layout_positions (\n            lineage_id TEXT NOT NULL REFERENCES lineages(lineage_id),\n            object_id TEXT NOT NULL, x DOUBLE PRECISION NOT NULL, y DOUBLE PRECISION NOT NULL,\n            PRIMARY KEY(lineage_id,object_id)\n        );\n\n        ')
     program_work_storage.create_schema(connection)
     wire_delivery_budget.create_schema(connection)
+    family_task_dispatches.create_schema(connection)
     domain_work_storage.create_schema(connection)
     relation_work_storage.create_schema(connection)
     resident_storage.create_schema(connection)
@@ -622,7 +624,7 @@ class LineageDataStore:
         ).fetchone()
         if (
             schema is None
-            or not schema_matches(schema["value"], "tfi.lineage-data.v60")
+            or not schema_matches(schema["value"], "tfi.lineage-data.v61")
             or not lineage_data_schema_matches(connection)
         ):
             raise RuntimeError("Lineage data database does not match its schema")
