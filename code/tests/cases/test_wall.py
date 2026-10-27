@@ -718,6 +718,20 @@ def test_wall_permission_and_no_model_calls_on_board(wall_project, monkeypatch):
     wall.register({"root": str(wall_project), "project_id": "AI员工"}, "viewer")
 
 
+@pytest.mark.parametrize("root", ["", ".", "repo", "../repo"])
+def test_wall_registration_rejects_relative_directory(wall_project, monkeypatch, root):
+    """空目录和相对目录不能意外登记服务进程的工作目录。"""
+    monkeypatch.chdir(wall_project)
+    with pytest.raises(ValueError, match="绝对路径"):
+        wall.register({"root": root, "project_id": "AI员工"}, "owner")
+
+
+def test_wall_registration_rejects_filesystem_root(wall_project):
+    """文件系统根目录不能被当作工程，兼容 Windows 盘符根目录。"""
+    with pytest.raises(ValueError, match="软件工程目录"):
+        wall.register({"root": wall_project.anchor, "project_id": "AI员工"}, "owner")
+
+
 def test_wall_registration_asks_update_project_on_its_project(wall_project, tmp_path, monkeypatch):
     """登记与取消登记工程按 UpdateProject 对所属 Project 判定，不再只看是否登录
 

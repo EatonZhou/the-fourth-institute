@@ -1351,7 +1351,7 @@
     text(element("FormTitle"), mode === "create" ? "新建点" : mode === "edit" ? "编辑点" : register ? "登记工程" : "自动推进" );
     const fields = element("FormFields");
     if (register) {
-      fields.innerHTML = window.PortalI18n.markup('<label>工程根目录<input name="root" placeholder="/absolute/path/to/project" required pattern="/.*" /></label><label>权限 Project ID<input name="project_id" required placeholder="AI员工" /></label><label>工程名称<input name="title" required maxlength="200" /></label>');
+      fields.innerHTML = window.PortalI18n.markup('<label>工程根目录<input name="root" placeholder="工程所在机器上的绝对路径" required /></label><label>权限 Project ID<input name="project_id" required placeholder="AI员工" /></label><label>工程名称<input name="title" required maxlength="200" /></label>');
     } else if (mode === "automation") {
       const automation = project.automation || {};
       fields.innerHTML = window.PortalI18n.html`<label class="wallCheck"><input type="checkbox" name="enabled" ${automation.enabled ? "checked" : ""} />启用自动推进</label><label>分析间隔（分钟）<input type="number" name="interval_minutes" min="10" max="10080" step="1" value="${Number(automation.interval_minutes) || 60}" required /></label><label class="wallCheck"><input type="checkbox" name="auto_fix" ${automation.auto_fix ? "checked" : ""} />授权自动修复日常错误</label>`;

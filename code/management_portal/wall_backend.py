@@ -118,8 +118,11 @@ def _require_project_change(actor: str, project_id: str) -> None:
 
 
 def register(payload: dict[str, Any], actor: str) -> dict[str, Any]:
-    root = Path(str(payload.get("root") or "")).expanduser().resolve()
-    if not root.is_dir() or root == Path("/"):
+    root = Path(str(payload.get("root") or "")).expanduser()
+    if not root.is_absolute():
+        raise ValueError("请输入软件工程目录的绝对路径")
+    root = root.resolve()
+    if not root.is_dir() or root.parent == root:
         raise ValueError("请输入存在的软件工程目录")
     if not any(index_file(root, name).is_file() for name in ("SPEC.md", "IMPROVE.md")):
         raise ValueError("工程内尚未找到 SPEC.md 或 IMPROVE.md")
