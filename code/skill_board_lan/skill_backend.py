@@ -682,7 +682,9 @@ def save_address_text(
     text: str,
     *,
     actor: str = "",
+    expected_version: object = None,
 ) -> tuple[int, dict[str, Any]]:
+    """Replace a Skill file; ``expected_version`` is the sha256 that ReadResource returned."""
     try:
         skill_id, path = _resolve_skill_address(address, actor=actor)
     except ValueError as exc:
@@ -696,6 +698,9 @@ def save_address_text(
     from management_portal.resources.content_changes import record_text_change
 
     with resource_mutation_lock(path.parent, skill_id):
+        current = hashlib.sha256(path.read_bytes()).hexdigest()
+        if expected_version is not None and str(expected_version).strip() != current:
+            return 409, {"error": "Skill 已被其他修改更新；请重新加载后再保存", "current_version": current}
         before = path.read_text(encoding="utf-8")
         path.write_text(body, encoding="utf-8")
         record_text_change(address, path, before, body)

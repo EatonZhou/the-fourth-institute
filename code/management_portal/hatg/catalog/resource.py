@@ -90,7 +90,7 @@ DECLARATIONS = (
         R("resource_id", description="新资源的统一 ID"),
         RESOURCE_RECORD,
     ), mutates=True),
-    _d("UpdateResource", (On("resource_id"),), "按资源类型修改正文或元数据；知识正文支持 expected_version 检查。Workspace 只允许修改非空 title，必须原样携带 ResolveResource 返回的 resource.version。", (
+    _d("UpdateResource", (On("resource_id"),), "按资源类型修改正文或元数据；知识正文与 Skill 支持 expected_version 检查（知识正文用版本号，Skill 用 ReadResource 返回的 sha256）。Workspace 只允许修改非空 title，必须原样携带 ResolveResource 返回的 resource.version。", (
         R("resource_id", description="资源统一 ID"),
         R("changes", "object", "要修改的字段；Workspace 只接受 title 和 expected_version（也可用请求顶层 expected_version）"),
     ), (

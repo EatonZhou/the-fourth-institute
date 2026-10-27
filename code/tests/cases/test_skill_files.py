@@ -114,3 +114,45 @@ def test_skill_save_resolves_resource_with_current_actor(tmp_path: Path) -> None
     assert payload["skill_id"] == "skill_0123456789ab"
     assert service.actors == ["sample_reader"]
     assert primary.read_text(encoding="utf-8") == "# Updated\n"
+
+
+def test_skill_save_with_stale_version_keeps_the_newer_text(tmp_path: Path) -> None:
+    """带着过期版本保存 Skill 时拒绝写入，保留别人的新内容并报告当前版本"""
+    import hashlib
+
+    from knowledge_board_lan import knowledge_backend
+
+    package = tmp_path / "shared" / "example-skill"
+    primary = package / "SKILL.md"
+    package.mkdir(parents=True)
+    primary.write_text("# Original\n", encoding="utf-8")
+    read_version = hashlib.sha256(primary.read_bytes()).hexdigest()
+    primary.write_text("# Someone else\n", encoding="utf-8")
+    current = hashlib.sha256(primary.read_bytes()).hexdigest()
+    service = _SkillService(primary, package)
+
+    with (
+        mock.patch(
+            "management_portal.resources.get_resource_service",
+            return_value=service,
+        ),
+        mock.patch.object(skill_backend, "SHARED_SKILLS_ROOT", tmp_path / "shared"),
+    ):
+        status, payload = skill_backend.save_address_text(
+            "skill_0123456789ab", "# Mine\n", actor="sample_reader", expected_version=read_version,
+        )
+        assert (status, payload["current_version"]) == (409, current)
+        assert primary.read_text(encoding="utf-8") == "# Someone else\n"
+        with mock.patch.object(knowledge_backend, "resolve_item_address", return_value={
+            "kb_id": "skill_0123456789ab", "address": "skill_0123456789ab", "type": "skill",
+            "selected_path": str(primary), "selected_file_id": "primary",
+        }), pytest.raises(knowledge_backend.KnowledgeVersionConflict) as conflict:
+            knowledge_backend.update_item_text(
+                "skill_0123456789ab", "# Mine\n", actor="sample_reader", expected_version=read_version,
+            )
+        assert conflict.value.current_version == current
+        status, _ = skill_backend.save_address_text(
+            "skill_0123456789ab", "# Mine\n", actor="sample_reader", expected_version=current,
+        )
+    assert status == 200
+    assert primary.read_text(encoding="utf-8") == "# Mine\n"

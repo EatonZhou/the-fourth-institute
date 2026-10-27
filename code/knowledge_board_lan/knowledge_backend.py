@@ -2469,7 +2469,10 @@ def update_item_text(
             str(record.get("address") or clean_address),
             content,
             actor=actor,
+            expected_version=expected_version,
         )
+        if status == 409:
+            raise KnowledgeVersionConflict(expected_version, result.get("current_version"))
         if status != 200:
             raise ValueError(str(result.get("error") or "skill update failed"))
         with _LOCK:

@@ -286,6 +286,7 @@ def test_skill_text_update_forwards_actor_to_skill_backend() -> None:
         skill_id,
         "# Updated\n",
         actor=actor,
+        expected_version=None,
     )
 
 
