@@ -21,6 +21,20 @@ MODELS = {"default_model": "sonnet",
                      {"id": "opus", "enabled": True}]}
 
 
+def test_subscription_registration_accepts_named_and_detailed_models(tmp_path, monkeypatch):
+    from management_portal.execution import account_registrations, account_hosting
+    from management_portal import claude_provider_catalog as catalog
+    row = {"account_id": "claude_names", "route_id": "names", "kind": "subscription_login", "enabled": True,
+           "config": {"default_model": "sonnet", "models": ["sonnet", {"id": "opus", "enabled": False}]}}
+    monkeypatch.setattr(account_registrations, "registrations", lambda provider: [row])
+    monkeypatch.setattr(account_hosting, "account_home", lambda provider, account: tmp_path)
+    resolved = catalog.profile("names")
+    assert catalog.catalog("names")["models"] == ["sonnet"]
+    assert catalog.validate_settings(resolved, "", "") == ("sonnet", "")
+    assert row["config"]["models"][0] == "sonnet"
+    assert resolved["models"][1]["enabled"] is False
+
+
 def native_profile(config_dir: Path) -> dict:
     """The entry catalog.profile() derives from a Claude login registration."""
     return {"id": "claude_personal", "provider": "claude", "kind": "subscription_login",

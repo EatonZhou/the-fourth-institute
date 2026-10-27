@@ -39,6 +39,10 @@ def profile(profile_id: str, *, allow_disabled: bool = False) -> dict[str, Any]:
         entry = {"id": row["route_id"], "provider": "claude", "kind": NATIVE_KIND,
                  "enabled": row["enabled"], "config_dir": str(account_home("claude", row["account_id"])),
                  **row["config"]}
+        # Registration accepts names and detailed model entries. Resolve both
+        # into the catalog's representation without mutating the saved config.
+        entry["models"] = [{"id": model} if isinstance(model, str) else model
+                           for model in entry.get("models") or []]
     else:
         entry = {**AIProviderRegistry().get(row["config"]["api_id"]), "id": row["route_id"]}
         entry["enabled"] = row["enabled"] and AIProviderRegistry.is_enabled(entry)
