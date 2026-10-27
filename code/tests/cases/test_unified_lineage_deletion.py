@@ -39,13 +39,13 @@ def deletion_store(
     monkeypatch.setattr(lineage_domain, "LINEAGE_FOLDER_ROOT", data_root / "lineages")
     monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(data_root / "lineages"))
     resource_records = install_resource_boundary(monkeypatch)
-    from management_portal.society_service import resident_project_domain, resident_workspace_domain
+    from management_portal.society_service import resident_workspace_domain
     from management_portal.society_service.domain_ports import execution_port
     # Deleted Residents' quota overrides are forgotten in the Execution store.
     monkeypatch.setattr(execution_port, "forget_binding_quota_overrides", lambda binding_ids: {"removed": 0})
     monkeypatch.setattr(resident_domain_common, "STAGING_ROOT", tmp_path)
     monkeypatch.setattr(
-        resident_project_domain,
+        resident_workspace_domain,
         "project_info_for_workspace",
         lambda _record, _workspace: {},
     )

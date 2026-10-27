@@ -17,6 +17,7 @@ from management_portal.society_service import (
     resident_domain,
     resident_domain_common,
     resident_intake_domain,
+    resident_prompt_domain,
     resident_protocol,
     resident_workspace_domain,
 )
@@ -173,13 +174,13 @@ def test_inject_receipt_reports_delivery_outcome(monkeypatch, receipt, status):
 
 def test_quiesce_clears_closed_intake_waiting_inputs(resident_record, monkeypatch):
     """静默 Resident 时清除入口关闭期间等待的输入并标为已取消"""
-    from management_portal.society_service import resident_registration_domain, resident_record_domain, resident_session_backend_domain
+    from management_portal.society_service import resident_session_backend_domain
     resident_id = resident_record["resident_id"]
     resident_protocol.change_resident_state(resident_id, "CASE-A", state_domain="intake", transition="close")
     monkeypatch.setattr(resident_session_backend_domain, "handle_resident_native_command", lambda *_a, **_kw: {})
     monkeypatch.setattr(slash_commands, "handle_slash_command", lambda *_a, **_kw: {"handled": False})
-    monkeypatch.setattr(resident_record_domain, "resolve_context_refs", lambda *_a, **_kw: {})
-    monkeypatch.setattr(resident_registration_domain, "build_resident_prompt", lambda *_a, **_kw: "held prompt")
+    monkeypatch.setattr(resident_intake_domain, "resolve_context_refs", lambda *_a, **_kw: {})
+    monkeypatch.setattr(resident_prompt_domain, "build_resident_prompt", lambda *_a, **_kw: "held prompt")
     delivered = [resident_domain.deliver_resident_message_content(resident_id, "CASE-A", content) for content in ("one", "two")]
     assert resident_protocol.get_resident_state(resident_id, "CASE-A")["state"]["active_message_id"] == ""
     result = lineage_domain.quiesce_lineage_resident(resident_record["lineage_id"], {"target": resident_id}, "CASE-A")

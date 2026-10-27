@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from . import (
-    invariant_locks,
     resident_backend,
     resident_catalog,
     resident_conversation_stream,
@@ -12,7 +11,6 @@ from . import (
 )
 from .domain_ports import execution_port, resident_lineage_host_port
 from .resident_lifecycle import LifecycleStepPending
-from contextlib import contextmanager
 from management_portal.execution.contracts import ExecutionRequest
 from pathlib import Path
 from typing import Any, Mapping
@@ -35,20 +33,6 @@ def resident_aggregate_lineage_id(resident_id: object) -> str:
         ) from exc
 
 
-@contextmanager
-def resident_state_scope(
-    resident_id: object,
-    operation: str = "",
-):
-    """Attach Resident request diagnostics without selecting a mutation lock."""
-
-    with invariant_locks.diagnostic_scope(
-        f"resident:{str(resident_id or '').strip()}",
-        operation,
-    ):
-        yield
-
-
 def resident_intake_state(record: Mapping[str, Any]) -> str:
     return resident_state.INTAKE_CLOSED if record.get("intake_open") is False else resident_state.INTAKE_OPEN
 
@@ -62,13 +46,6 @@ def resident_has_pending_work(resident_id: object) -> bool:
         "running",
         "stopping",
     }
-
-
-def require_no_pending_lifecycle(resident_id: str) -> None:
-    """Folder writes wait until a pending move has relocated the Resident folder."""
-
-    if resident_record_domain.lifecycle_operations().pending(resident_id):
-        raise ValueError("Resident 生命周期操作正在完成，请稍后编辑")
 
 
 def _resident_turn_running(resident_id: str) -> bool:

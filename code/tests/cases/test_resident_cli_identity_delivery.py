@@ -23,11 +23,11 @@ from management_portal.execution.session_manager import RuntimeSession
 from management_portal.society_service import (
     resident_access,
     resident_hatg_credentials,
+    resident_prompt_domain,
     resident_record_domain,
     resident_turn_scope,
 )
 from management_portal.society_service import resident_execution_domain
-from management_portal.society_service import resident_registration_domain
 from management_portal.society_service import resident_runtime_domain
 from tests.cases.test_resident_execution_protocol import resident_record
 from scripts import resident_hatg_instruction
@@ -107,7 +107,7 @@ def test_every_turn_carries_exact_cli_identity_in_front_of_the_message(
     record = {**resident_record, "backend": backend}
     monkeypatch.setattr(resident_backend, "record_session_id", lambda _: "existing-session")
     job = {"actor": "test-actor", "message": "query authorized papers", "context_refs": {}}
-    prompt = resident_registration_domain.build_resident_prompt(record, dict(job))
+    prompt = resident_prompt_domain.build_resident_prompt(record, dict(job))
     parts = {part.name: part for part in resident_execution_domain.resident_system_instructions(record, job).parts}
     identity = parts["runtime_identity"]
     # The standard preset sends the identity on every turn, before the message.
@@ -138,12 +138,11 @@ def test_turn_prompt_names_the_real_sender(resident_record, monkeypatch, tmp_pat
 
     :design: decision_c524c775e0be
     """
-    from management_portal.society_service import resident_record_domain
 
     monkeypatch.setattr(resident_runtime_domain, "resident_working_directory", lambda _: tmp_path)
     monkeypatch.setattr(resident_backend, "record_session_id", lambda _: "existing-session")
-    monkeypatch.setattr(resident_record_domain, "attached_references_text", lambda refs: "<resource address=\"r\"/>" if refs else "")
-    prompt = resident_registration_domain.build_resident_prompt(resident_record, {
+    monkeypatch.setattr(resident_prompt_domain, "attached_references_text", lambda refs: "<resource address=\"r\"/>" if refs else "")
+    prompt = resident_prompt_domain.build_resident_prompt(resident_record, {
         "actor": actor, "message": "status?", "context_refs": {"resources": ["r"]},
     })
     assert expected in prompt
@@ -161,17 +160,16 @@ def test_family_router_prompt_keeps_control_packets_off_the_facade_inbox(
     resident_record, monkeypatch, reference, embedded, internal,
 ):
     """The routing duty's packet continues its Effect, rather than becoming a new facade request."""
-    from management_portal.society_service import resident_record_domain
 
     monkeypatch.setattr(resident_backend, "record_session_id", lambda _: "existing-session")
-    monkeypatch.setattr(resident_record_domain, "attached_references_text", lambda _: '<resource address="r"/>')
+    monkeypatch.setattr(resident_prompt_domain, "attached_references_text", lambda _: '<resource address="r"/>')
     job = {"actor": "resident_2a1fc6cd272d", "message": "为原请求选择承接成员，输出 route packet。",
            "context_refs": {"resources": ["r"]}}
     if embedded:
         job["input_message"] = {"business_ref": reference}
     else:
         job["business_ref"] = reference
-    prompt = resident_registration_domain.build_resident_prompt(resident_record, job)
+    prompt = resident_prompt_domain.build_resident_prompt(resident_record, job)
     assert ("只输出 route packet" in prompt) is internal
     assert ("要让它收到，用 DeliverMessage 发给它" in prompt) is not internal
 
@@ -327,7 +325,7 @@ def test_resident_md_reaches_every_provider_once(resident_record, monkeypatch, b
     monkeypatch.setattr(resident_backend, "record_session_id", lambda _: "")
     job = {"actor": "sample_admin", "message": "检查出口", "context_refs": {}}
 
-    prompt = resident_registration_domain.build_resident_prompt(record, dict(job))
+    prompt = resident_prompt_domain.build_resident_prompt(record, dict(job))
     parts = resident_execution_domain.resident_system_instructions(record, dict(job)).parts
     plan = plan_injection(parts, prompt, generation=True, first_injection=True)
 

@@ -12,10 +12,13 @@ from management_portal.execution import event_projection
 from management_portal.society_service import resident_execution_domain
 from management_portal.society_service import resident_intake_domain
 from management_portal.society_service import resident_lifecycle_domain
-from management_portal.society_service import resident_record_domain
-from management_portal.society_service import resident_registration_domain
 from management_portal.society_service import resident_session_backend_domain
-from management_portal.society_service import resident_access, resident_execution_work, resident_protocol
+from management_portal.society_service import (
+    resident_access,
+    resident_execution_work,
+    resident_prompt_domain,
+    resident_protocol,
+)
 from management_portal.society_service.resident_questions import prepare_question_answer
 from tests.cases.test_resident_execution_protocol import resident_record
 from management_portal.execution import slash_commands
@@ -441,8 +444,8 @@ def test_compact_race_preserves_one_canonical_answer_in_real_resident_queue(resi
         }),
         mock.patch.object(resident_session_backend_domain, "handle_resident_native_command", return_value={}),
         mock.patch.object(slash_commands, "handle_slash_command", return_value={"handled": False}),
-        mock.patch.object(resident_record_domain, "resolve_context_refs", return_value={}),
-        mock.patch.object(resident_registration_domain, "build_resident_prompt", return_value="prompt"),
+        mock.patch.object(resident_intake_domain, "resolve_context_refs", return_value={}),
+        mock.patch.object(resident_prompt_domain, "build_resident_prompt", return_value="prompt"),
         mock.patch.object(resident_intake_domain, "_submit_active_turn_input", side_effect=RuntimeError(
             "ActiveTurnNotSteerable { turn_kind: Compact }",
         )),

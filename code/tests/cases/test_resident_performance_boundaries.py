@@ -1,5 +1,10 @@
 from __future__ import annotations
-from management_portal.society_service import business_fact_views, resident_access, resident_record_domain
+from management_portal.society_service import (
+    business_fact_views,
+    resident_access,
+    resident_conversation_projection_domain,
+    resident_record_domain,
+)
 from management_portal.society_service import resident_catalog
 from management_portal.society_service import resident_conversation_stream
 from management_portal.society_service.domain_ports import resource_port
@@ -199,7 +204,7 @@ def test_context_pressure_query_does_not_rebuild_resident_runtime_projection(
     )
 
     monkeypatch.setattr(
-        resident_directory_domain,
+        resident_conversation_projection_domain,
         "resident_conversation_messages",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(
             AssertionError("context pressure must not read transcripts")
@@ -259,7 +264,7 @@ def test_user_message_count_batch_uses_database_facts_without_transcript(
             },
         )
     monkeypatch.setattr(
-        resident_directory_domain,
+        resident_conversation_projection_domain,
         "resident_conversation_messages",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(
             AssertionError("turn-count lookup must not read transcripts")

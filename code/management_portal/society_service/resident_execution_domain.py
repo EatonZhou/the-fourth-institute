@@ -1,7 +1,7 @@
 """Resident domain responsibilities: execution."""
 from __future__ import annotations
 
-from . import resident_restart_handoff
+from . import invariant_locks, resident_fork_context, resident_restart_handoff, resident_store
 
 
 from .errors import LineageConflictError
@@ -19,7 +19,7 @@ from . import (
     resident_message_contract,
 )
 from .domain_ports import execution_port, resident_terminal_port
-from .resident_access import can_manage_resident as _can_manage_resident, manage_refusal
+from .resident_access import manage_refusal
 from .resident_fork_context import (
     initial_context_compaction_completed as _initial_context_compaction_completed,
     requires_initial_context_compaction as _requires_initial_context_compaction,
@@ -40,52 +40,11 @@ import copy
 from management_portal.execution import resident_runtime_settings, slash_commands
 from management_portal.execution.harness_settings import normalize_agent_harness_settings
 import sys
+from contextlib import contextmanager
 
 from . import resident_domain_common
 
 RESIDENT_PROJECTION_QUARANTINE_LIMIT = 64
-
-
-def get_lineage_node_metadata(
-    resident_id: str,
-    actor: str,
-) -> dict[str, Any]:
-    from . import resident_domain_common, resident_record_domain, resident_runtime_domain
-    exact_resident_id = str(resident_id or "").strip()
-    if not exact_resident_id:
-        raise KeyError("resident not found")
-    target = resident_record_domain.resolve_resident_runtime_target(
-        exact_resident_id,
-        actor,
-        require_visible=True,
-    )
-    if not _can_manage_resident(target.record, actor):
-        raise PermissionError("无权读取该 Resident 的 HATG 节点详情")
-    record = target.record
-    session_record = resident_backend.session_record(record)
-    session_account_id = resident_runtime_domain.resident_session_account_id(
-        record,
-        session_record=session_record,
-    )
-    backend = resident_backend.execution_backend(record)
-    return {
-        "schema": "tfi.lineage-node-metadata.v1",
-        "revision": resident_domain_common.resident_status_signature({
-            "record_updated_at": str(record.get("updated_at") or ""),
-            "backend": backend,
-            "session_account_id": session_account_id,
-        }),
-        "resident_id": exact_resident_id,
-        "resident": {
-            "resident_id": exact_resident_id,
-            "title": str(record.get("title") or exact_resident_id),
-            "backend": backend,
-        },
-        "account_selection": resident_runtime_domain.account_selection_payload(
-            record,
-            session_account_id,
-        ),
-    }
 
 
 def read_resident_runtime_settings(
@@ -155,7 +114,7 @@ def change_resident_runtime_settings(resident_id: str, actor: str = "", payload:
                 raise manage_refusal(record)
             validation_record = copy.deepcopy(record)
             validation_current = resident_runtime_domain.read_resident_runtime_settings(record)
-            validation_key = resident_runtime_domain.runtime_settings_validation_key(record)
+            validation_key = runtime_settings_validation_key(record)
 
         # Provider catalogs come from ExecutionService and can perform I/O.
         # Keep that read outside the Resident invariant lock, then commit only
@@ -184,7 +143,7 @@ def change_resident_runtime_settings(resident_id: str, actor: str = "", payload:
             current = resident_runtime_domain.read_resident_runtime_settings(record)
             if (
                 current != validation_current
-                or resident_runtime_domain.runtime_settings_validation_key(record) != validation_key
+                or runtime_settings_validation_key(record) != validation_key
             ):
                 continue
 
@@ -560,8 +519,7 @@ def apply_cancelled_continuation(
 
 
 def run_resident_execution(resident_id: str, continuation_id: str) -> None:
-    from . import resident_lifecycle_domain
-    with resident_lifecycle_domain.resident_state_scope(resident_id, "resident.job"):
+    with resident_state_scope(resident_id, "resident.job"):
         _run_resident_execution_scoped(resident_id, continuation_id)
 
 
@@ -571,7 +529,6 @@ def _run_resident_execution_scoped(resident_id: str, continuation_id: str) -> No
         resident_intake_domain,
         resident_lifecycle_domain,
         resident_record_domain,
-        resident_registration_domain,
         resident_session_backend_domain,
     )
     terminal_applied_job: dict[str, Any] = {}
@@ -717,7 +674,7 @@ def _run_resident_execution_scoped(resident_id: str, continuation_id: str) -> No
                 ):
                     job_actor = resident_execution_work.request_actor(current_job)
                     completed_bootstrap_job = current_job
-                    updated_record = resident_registration_domain.complete_bootstrap_codex_session(
+                    updated_record = complete_bootstrap_codex_session(
                         record_snapshot,
                         current_job,
                     )
@@ -936,7 +893,7 @@ def _run_resident_execution_scoped(resident_id: str, continuation_id: str) -> No
                     resident_id, str(current_job.get("execution_id") or ""), turn_finished=True,
                 ):
                     return
-                error_message = resident_record_domain.resident_backend_failure_message(record_snapshot, str(exc))
+                error_message = resident_backend_failure_message(record_snapshot, str(exc))
                 with resident_record_domain.state_lock(resident_id):
                     try:
                         record = resident_record_domain.find_resident(resident_id) or {}
@@ -1128,9 +1085,8 @@ def resume_resident_execution(
     resident_id: str,
 ) -> dict[str, int]:
     """Attach a completion waiter to one newly persisted execution binding."""
-    from . import resident_lifecycle_domain
 
-    with resident_lifecycle_domain.resident_state_scope(resident_id, "resident.resume_execution"):
+    with resident_state_scope(resident_id, "resident.resume_execution"):
         return _resume_resident_execution_scoped(resident_id)
 
 
@@ -1209,7 +1165,7 @@ def resume_pending_resident_executions() -> dict[str, int]:
     for record in residents:
         resident_id = str(record.get("resident_id") or "")
         try:
-            with resident_lifecycle_domain.resident_state_scope(
+            with resident_state_scope(
                 resident_id,
                 "resident.recovery_scan",
             ):
@@ -1241,7 +1197,7 @@ def resume_pending_resident_executions() -> dict[str, int]:
     for _order_key, record in candidates:
         resident_id = str(record.get("resident_id") or "")
         try:
-            with resident_lifecycle_domain.resident_state_scope(
+            with resident_state_scope(
                 resident_id,
                 "resident.recovery_prepare",
             ):
@@ -1336,7 +1292,7 @@ def resident_system_instructions(
         parts.extend(rules.parts)
     transport = resident_execution_provider.initial_instructions_transport_for(record.get("backend"))
     resident_md = (
-        resident_runtime_domain.resident_agents_instruction_block(record).strip() if choices["resident_md"] != "off" else ""
+        resident_agents_instruction_block(record).strip() if choices["resident_md"] != "off" else ""
     )
     if resident_md and transport == "system_instructions":
         parts.append(InjectionPart("resident_md", resident_md, choices["resident_md"], "system"))
@@ -1392,8 +1348,8 @@ def preview_prompt_injection(record: dict[str, Any], actor: str, turn: str = "fi
     from . import resident_turn_scope
     from . import (
         resident_domain_common,
+        resident_prompt_domain,
         resident_record_domain,
-        resident_registration_domain,
         resident_runtime_domain,
     )
 
@@ -1413,7 +1369,7 @@ def preview_prompt_injection(record: dict[str, Any], actor: str, turn: str = "fi
     definition = AGENT_PROVIDERS.get(backend)
     plan = plan_injection(
         parts,
-        resident_registration_domain.build_resident_prompt(record, job),
+        resident_prompt_domain.build_resident_prompt(record, job),
         generation=True,
         first_injection=turn == "first",
         injected_at="2000-01-01T00:00:00Z",
@@ -2658,11 +2614,11 @@ def _prepare_resident_prompt(
     record: dict[str, Any],
     job: dict[str, Any],
 ) -> dict[str, Any]:
-    from . import resident_domain_common, resident_registration_domain
+    from . import resident_domain_common, resident_prompt_domain
 
     prepared = dict(job)
     prepared["message"] = str(job.get("effective_message") or job.get("raw_message") or job.get("message") or "")
-    prepared["actual_sent_prompt"] = resident_registration_domain.build_resident_prompt(record, prepared)
+    prepared["actual_sent_prompt"] = resident_prompt_domain.build_resident_prompt(record, prepared)
     prepared.pop("runtime_context", None)
     prepared["message"] = prepared["actual_sent_prompt"]
     prepared["prompt_built_at"] = resident_domain_common.now_iso()
@@ -2698,8 +2654,7 @@ def _portable_context_execution(
     snapshot = {"segments": []} if accepted else execution_port.agent_context_snapshot(
         resident_id, before_message_id=str(job.get("user_message_id") or ""))
     if snapshot["segments"]:
-        from . import resident_directory_domain
-        history = resident_directory_domain.resident_trace_context_text(record, snapshot)
+        history = resident_trace_context_text(record, snapshot)
         source = str(record.get("source_resident_id") or "")
         # The inherited history carries its authors' identity blocks; a model
         # once took them for another Resident's memory and refused to use it.
@@ -2930,3 +2885,113 @@ def _compact_inherited_resident_context(
             },
         },
     )
+
+
+def resident_trace_context_text(record: Mapping[str, Any], snapshot: dict[str, Any]) -> str:
+    from . import resident_domain_common
+    messages, left_out = resident_fork_context.fit_to_window(
+        resident_fork_context.seed_messages(snapshot), int(record.get("last_model_context_window") or 0),
+    )
+    note = [f"（更早的 {left_out} 条历史超出新会话可用上下文；完整记录保留在本 Resident 的轨迹中。）"] if left_out else []
+    return "\n\n".join(note + [f"{item['role']}: {resident_domain_common.protocol_message_text(item)}" for item in messages])
+
+
+@contextmanager
+def resident_state_scope(
+    resident_id: object,
+    operation: str = "",
+):
+    """Attach Resident request diagnostics without selecting a mutation lock."""
+
+    with invariant_locks.diagnostic_scope(
+        f"resident:{str(resident_id or '').strip()}",
+        operation,
+    ):
+        yield
+
+
+def resident_backend_failure_message(record: dict[str, Any], raw_error: str) -> str:
+    return str(raw_error or "").strip()
+
+
+def complete_bootstrap_codex_session(
+    record: dict[str, Any],
+    job: dict[str, Any],
+    *,
+    insert_assistant_message: bool = True,
+) -> dict[str, Any]:
+    from . import resident_domain_common
+    assistant_item, updated = send_to_resident_backend(
+        record,
+        job,
+        persist_messages=insert_assistant_message,
+    )
+    if not resident_domain_common.protocol_message_text(assistant_item):
+        raise RuntimeError(
+            "ExecutionService bootstrap completed without a final response"
+        )
+    record.update(updated)
+    current_usage = (
+        dict(record.get("last_turn_usage"))
+        if isinstance(record.get("last_turn_usage"), dict)
+        else {}
+    )
+    current_usage_at = str(record.get("last_turn_usage_at") or "")
+    record.update({
+        "session_created_via": "execution_service",
+        "session_state": "active",
+        "last_error": "",
+        "last_turn_usage": current_usage or {},
+        "last_turn_usage_at": current_usage_at,
+        "updated_at": resident_domain_common.now_iso(),
+    })
+    record.pop("last_runtime_error", None)
+    return record
+
+
+def resident_agents_instruction_block(record: dict[str, Any]) -> str:
+    """The Resident's resident.md, as Portal hands it to the model.
+
+    No Provider reads it on its own: Codex runs with project docs off
+    (``project_doc_max_bytes = 0``) and Claude Code, Kimi Code and DSH look for
+    other file names, so Portal delivers it wherever the working directory is.
+    """
+    from . import resident_record_domain
+    workspace = resident_record_domain.resident_workspace_path(record)
+    resident_folder = resident_record_domain.resident_folder_path(record)
+    resident_id = str(
+        record.get("resident_id")
+        or workspace.name
+        or "resident"
+    ).strip()
+    instructions_path = resident_folder / resident_domain_common.RESIDENT_INSTRUCTIONS_FILE
+    content = resident_store.read_text(instructions_path)
+    if not content.strip():
+        return ""
+    return (
+        "<resident-identity>\n"
+        f"resident_id: {resident_id}\n"
+        f"instructions_file: {instructions_path.name}\n\n"
+        f"{content}\n"
+        "</resident-identity>\n"
+    )
+
+
+def runtime_settings_validation_key(record: dict[str, Any]) -> tuple[str, str]:
+    """Identify the Provider catalog whose values validate runtime settings."""
+
+    backend = resident_backend.execution_backend(record)
+    definition = AGENT_PROVIDERS.get(backend)
+    if definition is None:
+        return backend, str(record.get("backend_route_id") or "")
+    binding = (
+        resident_backend.session_record(record)
+        if record.get("resident_id")
+        else {}
+    )
+    route = str(
+        binding.get("backend_route_id")
+        or record.get("backend_route_id")
+        or definition.default_route
+    )
+    return backend, route

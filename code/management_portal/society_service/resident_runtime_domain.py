@@ -9,7 +9,6 @@ from . import (
     resident_execution_provider,
     resident_execution_work,
     resident_lineage,
-    resident_store,
 )
 from .domain_ports import resident_lineage_host_port
 from .resident_access import can_manage_resident as _can_manage_resident
@@ -153,7 +152,7 @@ def assign_derived_resident_account_route(
     return str(selection["backend_route_id"])
 
 
-def _resident_backend_binding(record: dict[str, Any]) -> dict[str, Any]:
+def resident_backend_binding(record: dict[str, Any]) -> dict[str, Any]:
     backend = resident_backend.backend_name(record)
     binding = resident_backend.session_record(record) if record.get("resident_id") else {}
     return {"backend": backend, "binding_role": "main",
@@ -162,63 +161,9 @@ def _resident_backend_binding(record: dict[str, Any]) -> dict[str, Any]:
             "model": str(read_resident_runtime_settings(record).get("model") or "")}
 
 
-def resident_lineage_resident(record: dict[str, Any]) -> dict[str, Any]:
-    from . import resident_domain_common
-    resident_id = resident_domain_common.record_resident_id(record)
-    return {
-        "lineage_id": resident_lineage.lineage_id(record),
-        "resident_id": resident_id,
-        "title": str(record.get("title") or ""),
-        "backend_binding": _resident_backend_binding(record),
-        "backend_capabilities": resident_backend_capabilities(record),
-        "created_at": str(record.get("created_at") or ""),
-        "updated_at": str(record.get("updated_at") or ""),
-    }
-
-
-def derived_resident_backend_binding(
-    record: dict[str, Any],
-    resident: dict[str, Any],
-) -> dict[str, Any]:
-    backend = str(resident.get("backend") or record.get("backend") or "codex").strip().lower()
-    binding = {
-        "backend": backend or "codex",
-        "provider_profile": str(resident.get("backend_route_id") or record.get("backend_route_id") or ""),
-    }
-    account_id = str(resident.get("backend_route_id") or "")
-    if account_id:
-        binding["backend_route_id"] = account_id
-    return binding
-
-
-def complete_derived_resident_identity(
-    record: dict[str, Any],
-    resident: dict[str, Any],
-    actor_id: str,
-    lineage_source: str = "",
-    now: str = "",
-) -> dict[str, Any]:
-    from . import resident_domain_common, resident_record_domain
-    resident.setdefault("lineage_id", resident_lineage.lineage_id(record))
-    resident.setdefault("source_resident_id", resident_domain_common.record_resident_id(record))
-    if actor_id:
-        resident.setdefault("created_by", actor_id)
-    if now:
-        resident.setdefault("created_at", now)
-        resident.setdefault("updated_at", now)
-    canonical = resident_record_domain.canonical_derived_resident_record(record, resident)
-    resident.clear()
-    resident.update(canonical)
-    return resident
-
-
 def resident_folder_for_id(record: dict, target_resident_id: str) -> Path:
     from . import resident_domain_common, resident_record_domain
     return resident_record_domain.resident_workspace_path(record) / "residents" / resident_domain_common.safe_id(target_resident_id)
-
-
-def resident_runtime_dir_for_id(record: dict, target_resident_id: str) -> Path:
-    return resident_folder_for_id(record, target_resident_id) / "runtime"
 
 
 def _resident_workspace_scope_record(
@@ -259,34 +204,6 @@ def resident_working_directory(
     if not path.is_dir():
         raise ValueError(f"Resident 默认 Workspace 不可访问: {path}")
     return path
-
-
-def resident_agents_instruction_block(record: dict[str, Any]) -> str:
-    """The Resident's resident.md, as Portal hands it to the model.
-
-    No Provider reads it on its own: Codex runs with project docs off
-    (``project_doc_max_bytes = 0``) and Claude Code, Kimi Code and DSH look for
-    other file names, so Portal delivers it wherever the working directory is.
-    """
-    from . import resident_record_domain
-    workspace = resident_record_domain.resident_workspace_path(record)
-    resident_folder = resident_record_domain.resident_folder_path(record)
-    resident_id = str(
-        record.get("resident_id")
-        or workspace.name
-        or "resident"
-    ).strip()
-    instructions_path = resident_folder / resident_domain_common.RESIDENT_INSTRUCTIONS_FILE
-    content = resident_store.read_text(instructions_path)
-    if not content.strip():
-        return ""
-    return (
-        "<resident-identity>\n"
-        f"resident_id: {resident_id}\n"
-        f"instructions_file: {instructions_path.name}\n\n"
-        f"{content}\n"
-        "</resident-identity>\n"
-    )
 
 
 def resident_cli_environment(record: dict[str, Any]) -> dict[str, str]:
@@ -561,26 +478,6 @@ def validate_backend_runtime_updates(
     return definition.runtime_adapter().validate_updates(definition, route, current, updates)
 
 
-def runtime_settings_validation_key(record: dict[str, Any]) -> tuple[str, str]:
-    """Identify the Provider catalog whose values validate runtime settings."""
-
-    backend = resident_backend.execution_backend(record)
-    definition = AGENT_PROVIDERS.get(backend)
-    if definition is None:
-        return backend, str(record.get("backend_route_id") or "")
-    binding = (
-        resident_backend.session_record(record)
-        if record.get("resident_id")
-        else {}
-    )
-    route = str(
-        binding.get("backend_route_id")
-        or record.get("backend_route_id")
-        or definition.default_route
-    )
-    return backend, route
-
-
 def resident_runtime_settings_from_register_payload(record: dict, payload: dict, actor_id: str, now: str) -> dict[str, Any]:
     settings = resident_runtime_defaults(record)
     updates = _runtime_settings_updates_from_payload(payload.get("runtime_settings"))
@@ -615,7 +512,7 @@ def _derived_resident_runtime_base_defaults(
     )
 
 
-def _derived_resident_runtime_defaults(
+def derived_resident_runtime_defaults(
     record: dict,
     resident: dict[str, Any],
     actor: str = "",
@@ -685,108 +582,25 @@ def fork_runtime_settings(
     return inherited
 
 
-def inherit_derived_resident_runtime_from_source(
-    target_record: dict[str, Any],
-    resident: dict[str, Any],
-    source_record: dict[str, Any],
-    source_resident: dict[str, Any] | None,
-    actor: str,
-    now: str,
-    *,
-    target_workspace_authority: bool,
-) -> None:
-    from . import resident_domain_common, resident_record_domain
-    actor_id = canonical_actor_id(actor)
-    source_settings = (
-        _derived_resident_runtime_defaults(source_record, source_resident, actor)
-        if source_resident
-        else read_resident_runtime_settings(source_record)
-    )
-    # A setting the source leaves to its Provider's default (model, effort)
-    # stays unset, so the fork runs with the same default.
-    source_effective = resident_runtime_settings.effective_settings(source_settings)
-    target_backend = resident_backend.execution_backend(resident)
-    same_provider = target_backend == resident_backend.execution_backend(source_record)
-    if not same_provider:
-        # Carry portable policy across Providers. Model, effort and native
-        # options belong to the target Provider's configuration owner.
-        source_effective = {key: value for key, value in source_effective.items()
-                            if key not in {"model", "reasoning_effort", "service_tier",
-                                           "collaboration_mode", "backend_options"}}
-        definition = AGENT_PROVIDERS.get(target_backend)
-        if definition:
-            capabilities = definition.runtime_capabilities()
-            if source_effective.get("permission_preset") not in capabilities["permission_presets"]:
-                source_effective.pop("permission_preset", None)
-            if "subagents" not in capabilities["harness_capabilities"]:
-                source_effective["allow_subagents"] = False
-            context = source_effective.get("prompt_context") or {}
-            source_effective["prompt_context"] = {"system_prompt": context.get("system_prompt", "")}
-    target_settings = _derived_resident_runtime_defaults(
-        target_record,
-        resident,
-        actor,
-        workspace_authority=target_workspace_authority,
-        base_runtime_settings=resident_runtime_defaults(resident) if not same_provider else None,
-    )
-    # Every setting of the source session, not only the model: reasoning
-    # effort, service tier, permission preset, sandbox and approvals, Harness
-    # features, initial instructions, subagents and collaboration mode.
-    inherited = fork_runtime_settings(
-        source_effective, target_settings,
-        actor=actor, updated_at=now, workspace_authority=target_workspace_authority,
-    )
-    stage_runtime_settings(resident, resident_runtime_settings.mark_portal_manual_authority(
-        inherited,
-        actor=actor,
-        updated_at=now,
-    ))
-    binding_source = source_resident if source_resident is not None else source_record
-    resident["workspace_bindings"] = copy.deepcopy(binding_source.get("workspace_bindings") or [])
-    _stamp_derived_resident_runtime_defaults(
-        target_record,
-        resident,
-        actor=actor_id,
-        workspace_authority=target_workspace_authority,
-    )
-    target_resident_id = str(resident.get("resident_id") or "").strip()
-    if not target_resident_id:
-        target_resident_id = resident_domain_common.new_resident_id()
-        resident["resident_id"] = target_resident_id
-    identity_contract.validate_id(target_resident_id, "resident")
-    resident["resident_id"] = target_resident_id
-    resident["lineage_id"] = resident_lineage.lineage_id(target_record)
-    resident["source_resident_id"] = str(
-        resident.get("source_resident_id")
-        or (source_resident or {}).get("resident_id")
-        or resident_domain_common.record_resident_id(source_record)
-    )
-    inherited_record = {
-        **target_record,
-        "resident_id": str(resident.get("resident_id") or ""),
-        "workspace_bindings": resident.get("workspace_bindings") or [],
-    }
-    resident_record_domain.set_resident_owned_workspace_binding(
-        inherited_record,
-        resident_id=str(resident.get("resident_id") or ""),
-    )
-    resident["workspace_bindings"] = inherited_record["workspace_bindings"]
-    resident["owned_workspace_id"] = inherited_record["owned_workspace_id"]
-    resident["owned_workspace"] = inherited_record["owned_workspace"]
-    resident["default_cwd"] = inherited_record["default_cwd"]
-
-
-def _stamp_derived_resident_runtime_defaults(
+def stamp_derived_resident_runtime_defaults(
     record: dict,
     resident: dict[str, Any],
     *,
     actor: str = "",
     workspace_authority: bool | None = None,
 ) -> None:
-    defaults = _derived_resident_runtime_defaults(
+    defaults = derived_resident_runtime_defaults(
         record,
         resident,
         actor,
         workspace_authority=workspace_authority,
     )
     stage_runtime_settings(resident, defaults)
+
+
+def resident_session_prompt_controls(
+    runtime_settings: object,
+) -> dict[str, bool]:
+    """The per-input snapshot of a Resident's prompt controls."""
+    settings = runtime_settings if isinstance(runtime_settings, dict) else {}
+    return {"allow_subagents": bool(settings.get("allow_subagents"))}

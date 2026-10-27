@@ -15,6 +15,7 @@ from management_portal.society_service import (
     invariant_locks,
     lineage_domain,
     resident_domain_common,
+    resident_intake_domain,
     resource_client,
 )
 from management_portal.resources.collaboration_registry import CollaborationDescriptorStore
@@ -44,8 +45,7 @@ def fence_fixture(tmp_path, monkeypatch, isolate_portal_databases):
 
     monkeypatch.setattr(socket.socket, "connect", forbidden)
     monkeypatch.setattr(subprocess, "Popen", forbidden)
-    from management_portal.society_service import resident_registration_domain
-    monkeypatch.setattr(resident_registration_domain, "queue_bootstrap_resident_session", forbidden)
+    monkeypatch.setattr(resident_intake_domain, "queue_bootstrap_resident_session", forbidden)
     install_resource_boundary(monkeypatch)
     for name, method in RESOURCE_METHODS.items():
         monkeypatch.setattr(resource_client, name, method)

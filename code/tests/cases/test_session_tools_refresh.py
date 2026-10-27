@@ -20,7 +20,6 @@ from management_portal.society_service import (
     resident_execution_domain,
     resident_intake_domain,
     resident_execution_work,
-    resident_lifecycle_domain,
     resident_restart_domain,
     resident_state,
     resident_record_domain,
@@ -78,7 +77,7 @@ def test_next_input_keeps_original_session_without_automatic_restart(monkeypatch
     original_record, original_binding = copy.deepcopy(record), copy.deepcopy(binding)
     job = dict(JOB)
     calls = []
-    monkeypatch.setattr(resident_lifecycle_domain, "resident_state_scope", lambda *_a, **_k: nullcontext())
+    monkeypatch.setattr(resident_execution_domain, "resident_state_scope", lambda *_a, **_k: nullcontext())
     monkeypatch.setattr(resident_record_domain, "state_lock", lambda *_a: nullcontext())
     monkeypatch.setattr(resident_record_domain, "lifecycle_operations",
                         lambda: type("Ops", (), {"pending": staticmethod(lambda *_: False)})())

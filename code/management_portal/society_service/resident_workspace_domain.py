@@ -7,7 +7,6 @@ from . import (
     invariant_locks,
     resident_backend,
     resident_catalog,
-    resident_execution_provider,
     resident_lineage,
     resident_record_domain,
     resident_store,
@@ -21,6 +20,7 @@ import copy
 import os
 
 from . import resident_domain_common
+from .project_domain import project_record_for_id
 
 
 LINEAGE_INSTRUCTIONS_FILE = "LINEAGE.md"
@@ -294,14 +294,7 @@ def _prepare_resident_deletion(
     whole_lineage: bool = False,
     removed_family_ids: frozenset[str] = frozenset(),
 ) -> dict:
-    from . import (
-        resident_access,
-        resident_directory_domain,
-        resident_domain_common,
-        resident_lifecycle_domain,
-        resident_project_domain,
-        resident_record_domain,
-    )
+    from . import resident_access, resident_domain_common, resident_lifecycle_domain, resident_record_domain
     actor_id = canonical_actor_id(actor)
     if not actor_id:
         raise ValueError("需要登录后删除")
@@ -328,7 +321,7 @@ def _prepare_resident_deletion(
             resident_record_domain.lifecycle_operations().require_lineage_transfer_settled(lineage_id)
             deletion_records = [
                 item
-                for item in resident_directory_domain.lineage_registry_records_locked(lineage_id)
+                for item in lineage_registry_records_locked(lineage_id)
                 if str(item.get("lineage_id") or "").strip() == lineage_id
             ]
         else:
@@ -361,7 +354,7 @@ def _prepare_resident_deletion(
             if workspace_path.name != target_id or not (resident_path == residents_root / target_id or residents_root in resident_path.parents):
                 raise ValueError("resident folder 与 resident_id 不匹配，拒绝移动工作区")
 
-        archive_project_info = resident_project_domain.project_info_for_workspace(record, workspace_path)
+        archive_project_info = project_info_for_workspace(record, workspace_path)
         lineage_deletion_token: Any | None = None
 
         if delete_aggregate:
@@ -578,7 +571,7 @@ def delete_resident_identities(
 
 def delete_resident_lineage(resident_id: str, actor: str) -> dict:
     """Delete the complete Lineage identified by an existing member."""
-    from . import resident_directory_domain, resident_domain_common
+    from . import resident_domain_common
     previous = retry_deleted_resident(resident_id, actor)
     if previous is not None:
         return previous
@@ -590,7 +583,7 @@ def delete_resident_lineage(resident_id: str, actor: str) -> dict:
         lineage_id,
         operation="resident.delete",
     ):
-        participants = [resident_domain_common.record_resident_id(item) for item in resident_directory_domain.lineage_registry_records_locked(lineage_id)]
+        participants = [resident_domain_common.record_resident_id(item) for item in lineage_registry_records_locked(lineage_id)]
         with invariant_locks.resident_locks(participants, operation="resident.delete"):
             previous = retry_deleted_resident(resident_id, actor)
             if previous is not None:
@@ -920,36 +913,6 @@ def remove_resident_reference_workspace(
     return result
 
 
-def ensure_resident_supports_forks(record: dict[str, Any]) -> None:
-    if not resident_execution_provider.provider_for(
-        record
-    ).capabilities.supports_fork:
-        raise ValueError("该 Resident ExecutionProvider 不支持 fork")
-
-
-def resident_folder_kind(path: Path) -> str:
-    if path.is_symlink():
-        return "symlink"
-    if path.is_dir():
-        return "directory"
-    suffix = path.suffix.lower()
-    if suffix in {".md", ".mdx", ".markdown"}:
-        return "markdown"
-    if suffix == ".json":
-        return "json"
-    if suffix == ".jsonl":
-        return "jsonl"
-    if suffix in resident_domain_common.RESIDENT_IMAGE_SUFFIXES:
-        return "image"
-    if suffix in resident_domain_common.RESIDENT_VIDEO_SUFFIXES:
-        return "video"
-    if suffix == ".pdf":
-        return "pdf"
-    if suffix in resident_domain_common.RESIDENT_TEXT_SUFFIXES:
-        return "text"
-    return "binary"
-
-
 def _get_resident_workspace_roots(resident_id: str, actor: str = "") -> dict:
     from . import resident_domain_common
     actor_id = canonical_actor_id(actor)
@@ -1001,3 +964,38 @@ def get_resident_workspace_roots(resident_id: str, actor: str = "") -> dict[str,
         result = _get_resident_workspace_roots(target.resident_id, actor)
     result["resident_id"] = target.resident_id
     return result
+
+
+def lineage_registry_records_locked(lineage_id: str) -> list[dict[str, Any]]:
+    target = str(lineage_id or "").strip()
+    if not identity_contract.is_valid_id(target, "lineage"):
+        raise ValueError("lineage_id must be a canonical lineage_* ID")
+    records: list[dict[str, Any]] = []
+    for item in resident_lineage.for_lineage(target):
+        if not isinstance(item, dict):
+            continue
+        try:
+            item_lineage_id = resident_lineage.lineage_id(item)
+        except ValueError:
+            continue
+        if item_lineage_id == target:
+            records.append(item)
+    return records
+
+
+def project_info_for_workspace(record: dict, workspace_path: Path) -> dict[str, str]:
+    project_id = str(record.get("project_id") or "").strip()
+    project_record: dict[str, Any] = {}
+    project_root: Path | None = None
+    if project_id:
+        try:
+            project_record, project_root = project_record_for_id(project_id)
+        except KeyError:
+            pass
+    project_name = project_root.name if project_root else ""
+    return {
+        "project_id": project_id,
+        "project_name": project_name,
+        "project_path": str(project_root or ""),
+        "project_registry_id": str(project_record.get("id") or "") if project_record else "",
+    }

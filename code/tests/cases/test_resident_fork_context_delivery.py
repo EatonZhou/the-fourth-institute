@@ -32,7 +32,6 @@ from tests.cases.test_resident_folder_creation_contract import (
 
 from management_portal.society_service import (
     project_domain,
-    resident_directory_domain,
     resident_execution_domain,
     resident_intake_domain,
     resident_session_backend_domain,
@@ -235,14 +234,13 @@ def test_fork_context_text_says_what_did_not_fit(monkeypatch):
 
     :importance: P1
     """
-    from management_portal.society_service import resident_directory_domain
     history = [{"source_segment_id": f"m{index}", "role": "user" if index % 2 == 0 else "agent",
                 "source_segment_type": "input" if index % 2 == 0 else "model",
                 "content_parts": [{"type": "text", "text": f"K03-{index} " + "文" * 20_000}]} for index in range(6)]
     monkeypatch.setattr(resident_fork_context, "seed_messages", lambda snapshot: history)
     monkeypatch.setattr("management_portal.society_service.resident_record_domain.find_resident",
                         lambda resident_id: {"last_model_context_window": 100_000} if resident_id == "resident_source00001" else None)
-    text = resident_directory_domain.resident_trace_context_text(
+    text = resident_execution_domain.resident_trace_context_text(
         {"last_model_context_window": 100_000}, {"segments": []})
     # 60% of the source's 100k-token window is 60,000 tokens: two of these 25,003-token messages.
     assert text.startswith("（更早的 4 条历史超出新会话可用上下文")

@@ -26,7 +26,11 @@ from tests.cases.test_lineage_generic_primitives import primitive_store
 from tests.cases.test_lineage_program_runtime_claims import lineage_id
 
 
-from management_portal.society_service import resident_directory_domain, resident_lifecycle_domain, resident_project_domain, resident_record_domain, resident_workspace_domain
+from management_portal.society_service import (
+    resident_lifecycle_domain,
+    resident_record_domain,
+    resident_workspace_domain,
+)
 from tests.cases.effect_script_support import effect_config, lower_effect_call
 
 @pytest.fixture(autouse=True)
@@ -207,11 +211,11 @@ def test_lifecycle_tombstone_precedes_release_and_recovery_cleanup(operations, t
     monkeypatch.setattr(resident_record_domain, 'find_resident', lambda resident_id: record)
     monkeypatch.setattr(resident_access, 'can_manage', lambda *args: True)
     monkeypatch.setattr(resident_lineage, 'is_lineage_leader', lambda item: True)
-    monkeypatch.setattr(resident_directory_domain, 'lineage_registry_records_locked', lambda lineage_id: [record])
+    monkeypatch.setattr(resident_workspace_domain, 'lineage_registry_records_locked', lambda lineage_id: [record])
     monkeypatch.setattr(resident_lifecycle_domain, 'resident_has_pending_work', lambda resident_id: False)
     monkeypatch.setattr(resident_workspace_domain, '_safe_lineage_workspace_for_delete', lambda item: folder)
     monkeypatch.setattr(resident_record_domain, 'resident_workspace_path', lambda item: folder)
-    monkeypatch.setattr(resident_project_domain, 'project_info_for_workspace', lambda *args: {})
+    monkeypatch.setattr(resident_workspace_domain, 'project_info_for_workspace', lambda *args: {})
     monkeypatch.setattr(resident_lifecycle_domain, 'resident_release_step', lambda member, actor: {'kind': 'release', 'resident_id': member['resident_id']})
     from management_portal.society_service.lineage_resident_operations import LineageDeletionToken
 

@@ -205,17 +205,6 @@ def run_backend_session_operation(
             )
 
 
-def stage_agent_data_fork(
-    resident: dict[str, Any], source_agent_id: str, *, segment_ids: list[str],
-) -> None:
-    # An ephemeral creation command. After commit the child's trace owns context.
-    resident["_pending_agent_data_fork"] = {
-        "source_agent_id": source_agent_id,
-        "target_agent_id": str(resident["resident_id"]),
-        "segment_ids": list(segment_ids),
-    }
-
-
 def materialize_agent_data_fork(
     target_resident_id: str,
     spec: Mapping[str, Any],

@@ -6,17 +6,17 @@ import os
 
 from . import (
     family_facade,
-    identity_contract,
     resident_access,
     resident_backend,
     resident_catalog,
     resident_conversation_stream,
-    resident_fork_context,
     resident_execution_work,
     resident_lineage,
+    resident_runtime_domain,
 )
 from .domain_ports import execution_port, resource_port
 from .resident_access import (
+    can_manage_resident as _can_manage_resident,
     ensure_resident_visible_to_actor,
     resident_visible_to_actor as _resident_visible_to_actor,
 )
@@ -29,9 +29,9 @@ from pathlib import Path
 from typing import Any, Iterable, Mapping
 import copy
 from management_portal.execution import resident_runtime_settings
+from management_portal import project_registry
 
 from . import resident_domain_common
-from .resident_domain_common import MAX_TIMELINE_ITEMS
 
 
 RECENT_RESIDENT_MESSAGES = 120
@@ -87,17 +87,9 @@ def _annotate_resident_lineage_fields(
     lineage_id = resident_lineage.lineage_id(record)
     record["lineage_id"] = lineage_id
     record["backend_capabilities"] = resident_runtime_domain.resident_backend_capabilities(record)
-    record["lineage_resident"] = resident_runtime_domain.resident_lineage_resident(record)
+    record["lineage_resident"] = resident_lineage_resident(record)
     record["lineage"] = _lineage_summary(record, registry)
     return record
-
-
-def unique_resident_id() -> str:
-    catalog = resident_catalog.get_catalog()
-    while True:
-        candidate = resident_domain_common.new_resident_id()
-        if not catalog.get_many([candidate]):
-            return candidate
 
 
 def _engaged_conversation_records(
@@ -250,23 +242,6 @@ def list_resident_conversation_activity(
             next_token = repository.activity_page_token(last_id, activity[last_id])
         return {"residents": residents, "next_page_token": next_token}
     return _list_actor_conversation_records(actor, resident_ids)
-
-
-def lineage_registry_records_locked(lineage_id: str) -> list[dict[str, Any]]:
-    target = str(lineage_id or "").strip()
-    if not identity_contract.is_valid_id(target, "lineage"):
-        raise ValueError("lineage_id must be a canonical lineage_* ID")
-    records: list[dict[str, Any]] = []
-    for item in resident_lineage.for_lineage(target):
-        if not isinstance(item, dict):
-            continue
-        try:
-            item_lineage_id = resident_lineage.lineage_id(item)
-        except ValueError:
-            continue
-        if item_lineage_id == target:
-            records.append(item)
-    return records
 
 
 def get_resident_user_message_counts(
@@ -504,9 +479,8 @@ def _forward_scope_id(record: dict[str, Any]) -> str:
 
 
 def _forward_project_titles() -> dict[str, str]:
-    from . import resident_project_domain
     return {str(item["id"]): str(item.get("name") or item["id"])
-            for item in resident_project_domain.load_projects_registry() if item.get("id")}
+            for item in load_projects_registry() if item.get("id")}
 
 
 def _forward_scope(
@@ -820,37 +794,6 @@ def get_resident_resource_projection(resident_id: str) -> dict[str, Any]:
     }
 
 
-def resident_trace_context_text(record: Mapping[str, Any], snapshot: dict[str, Any]) -> str:
-    from . import resident_domain_common
-    messages, left_out = resident_fork_context.fit_to_window(
-        resident_fork_context.seed_messages(snapshot), int(record.get("last_model_context_window") or 0),
-    )
-    note = [f"（更早的 {left_out} 条历史超出新会话可用上下文；完整记录保留在本 Resident 的轨迹中。）"] if left_out else []
-    return "\n\n".join(note + [f"{item['role']}: {resident_domain_common.protocol_message_text(item)}" for item in messages])
-
-
-def resident_conversation_messages(
-    record: dict,
-    limit: int = MAX_TIMELINE_ITEMS,
-) -> list[dict[str, Any]]:
-    """Read canonical Messages without deriving a second transcript shape."""
-    from . import resident_domain_common
-
-    resident_id = resident_domain_common.record_resident_id(record)
-    return resident_conversation_stream.get_repository().read_messages(
-        resident_id,
-        limit=limit,
-    )
-
-
-def resident_session_prompt_controls(
-    runtime_settings: object,
-) -> dict[str, bool]:
-    """The per-input snapshot of a Resident's prompt controls."""
-    settings = runtime_settings if isinstance(runtime_settings, dict) else {}
-    return {"allow_subagents": bool(settings.get("allow_subagents"))}
-
-
 def _resident_workspace_public_record(
     record: dict[str, Any],
     actor: str,
@@ -990,10 +933,9 @@ def get_lineage_node_metadata(
     actor: str = "",
 ) -> dict[str, Any]:
     """Return the one session projection consumed by the Lineage workspace."""
-    from . import resident_execution_domain
 
     with resident_lineage.access_snapshot_scope():
-        return resident_execution_domain.get_lineage_node_metadata(
+        return _get_lineage_node_metadata(
             resident_id,
             actor,
         )
@@ -1075,7 +1017,61 @@ def get_resident_session_projection(
         )
 
 
-SESSION_RESTART_STRATEGIES = frozenset(
-    {"smart", "native", "compact", "visible", "fresh"}
-)
-SESSION_RESTART_ACTIVE_EXECUTION_POLICIES = frozenset({"wait", "cancel"})
+def _get_lineage_node_metadata(
+    resident_id: str,
+    actor: str,
+) -> dict[str, Any]:
+    from . import resident_domain_common, resident_record_domain, resident_runtime_domain
+    exact_resident_id = str(resident_id or "").strip()
+    if not exact_resident_id:
+        raise KeyError("resident not found")
+    target = resident_record_domain.resolve_resident_runtime_target(
+        exact_resident_id,
+        actor,
+        require_visible=True,
+    )
+    if not _can_manage_resident(target.record, actor):
+        raise PermissionError("无权读取该 Resident 的 HATG 节点详情")
+    record = target.record
+    session_record = resident_backend.session_record(record)
+    session_account_id = resident_runtime_domain.resident_session_account_id(
+        record,
+        session_record=session_record,
+    )
+    backend = resident_backend.execution_backend(record)
+    return {
+        "schema": "tfi.lineage-node-metadata.v1",
+        "revision": resident_domain_common.resident_status_signature({
+            "record_updated_at": str(record.get("updated_at") or ""),
+            "backend": backend,
+            "session_account_id": session_account_id,
+        }),
+        "resident_id": exact_resident_id,
+        "resident": {
+            "resident_id": exact_resident_id,
+            "title": str(record.get("title") or exact_resident_id),
+            "backend": backend,
+        },
+        "account_selection": resident_runtime_domain.account_selection_payload(
+            record,
+            session_account_id,
+        ),
+    }
+
+
+def load_projects_registry() -> list[dict[str, Any]]:
+    return project_registry.projects()
+
+
+def resident_lineage_resident(record: dict[str, Any]) -> dict[str, Any]:
+    from . import resident_domain_common
+    resident_id = resident_domain_common.record_resident_id(record)
+    return {
+        "lineage_id": resident_lineage.lineage_id(record),
+        "resident_id": resident_id,
+        "title": str(record.get("title") or ""),
+        "backend_binding": resident_runtime_domain.resident_backend_binding(record),
+        "backend_capabilities": resident_runtime_domain.resident_backend_capabilities(record),
+        "created_at": str(record.get("created_at") or ""),
+        "updated_at": str(record.get("updated_at") or ""),
+    }

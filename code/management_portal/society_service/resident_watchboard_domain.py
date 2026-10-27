@@ -304,10 +304,9 @@ def _watchboard_resolve_rel(record: dict[str, Any], rel_path: str) -> Path:
 
 def _watchboard_text_file_payload(record: dict[str, Any], rel_path: str, editable: bool) -> dict[str, Any]:
     from .lineage_access_policy import workspace_file_address
-    from . import resident_workspace_domain
     path = _watchboard_resolve_rel(record, rel_path)
     exists = path.exists()
-    kind = resident_workspace_domain.resident_folder_kind(path) if exists else "missing"
+    kind = resident_folder_kind(path) if exists else "missing"
     binary = False
     truncated = False
     content = ""
@@ -519,3 +518,26 @@ def get_resident_watchboard(
                 actor_id,
             ),
         }
+
+
+def resident_folder_kind(path: Path) -> str:
+    if path.is_symlink():
+        return "symlink"
+    if path.is_dir():
+        return "directory"
+    suffix = path.suffix.lower()
+    if suffix in {".md", ".mdx", ".markdown"}:
+        return "markdown"
+    if suffix == ".json":
+        return "json"
+    if suffix == ".jsonl":
+        return "jsonl"
+    if suffix in resident_domain_common.RESIDENT_IMAGE_SUFFIXES:
+        return "image"
+    if suffix in resident_domain_common.RESIDENT_VIDEO_SUFFIXES:
+        return "video"
+    if suffix == ".pdf":
+        return "pdf"
+    if suffix in resident_domain_common.RESIDENT_TEXT_SUFFIXES:
+        return "text"
+    return "binary"

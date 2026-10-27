@@ -69,7 +69,7 @@ def test_reserve_targets_require_weekly_above_ten_or_a_funded_metered_agent():
 
 @pytest.fixture
 def quota_family(team, monkeypatch):
-    monkeypatch.setattr(resident_record_domain, "resolve_context_refs", lambda *args, **kwargs: {})
+    monkeypatch.setattr(resident_intake_domain, "resolve_context_refs", lambda *args, **kwargs: {})
     facade_id = team.source["resident_id"]
     member_id = team.target["resident_id"]
     steward = lineage_domain.create_lineage_resident(team.lineage_id, {

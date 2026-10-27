@@ -10,7 +10,7 @@ import pytest
 
 from management_portal.hatg import kernel as kernel_module, routing
 from management_portal.hatg.contracts import InstructionContext, InstructionResult
-from management_portal.society_service import resident_domain_common
+from management_portal.society_service import resident_domain_common, resident_intake_domain
 
 
 ACTOR = "sample_admin"
@@ -52,7 +52,6 @@ def isolated_instruction_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     from management_portal.society_service import (
         lineage_domain,
         resident_project_domain,
-        resident_registration_domain,
         resident_workspace_domain,
     )
     from tests.cases.society_service_test_support import install_resource_boundary
@@ -64,7 +63,7 @@ def isolated_instruction_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     install_resource_boundary(monkeypatch, synthetic_residents=False)
     monkeypatch.setattr(resident_domain_common, "STAGING_ROOT", tmp_path)
     monkeypatch.setattr(
-        resident_registration_domain,
+        resident_intake_domain,
         "queue_bootstrap_resident_session",
         lambda *_args, **_kwargs: {"job_id": "bootstrap_test", "status": "queued"},
     )

@@ -10,9 +10,7 @@ import pytest
 
 from management_portal.society_service import resident_domain_host as host
 from management_portal.society_service import resident_lineage_host as graph_host
-from management_portal.society_service import resident_directory_domain as directory
 from management_portal.society_service import resident_lifecycle_domain as lifecycle
-from management_portal.society_service import resident_project_domain as project
 from management_portal.society_service import resident_record_domain as record
 from management_portal.society_service import resident_workspace_domain as workspace
 from management_portal.society_service import resident_access
@@ -44,12 +42,12 @@ def members(tmp_path, monkeypatch):
     monkeypatch.setattr(record, 'find_resident', lambda rid: next((r for r in rows if r['resident_id'] == rid), None))
     monkeypatch.setattr(resident_access, 'can_manage', lambda *a: state.authorized)
     monkeypatch.setattr(resident_access, 'is_active_actor', lambda *a: state.authorized)
-    monkeypatch.setattr(directory, 'lineage_registry_records_locked', lambda _: rows)
+    monkeypatch.setattr(workspace, 'lineage_registry_records_locked', lambda _: rows)
     monkeypatch.setattr(lifecycle, 'resident_has_pending_work', lambda rid: rid in state.pending)
     monkeypatch.setattr(workspace, '_safe_lineage_workspace_for_delete', lambda _: folder)
     monkeypatch.setattr(record, 'resident_workspace_path', lambda row: row.get('mismatched_folder', folder))
     monkeypatch.setattr(record, 'resident_folder_path', lambda row: folder / 'residents' / row['resident_id'])
-    monkeypatch.setattr(project, 'project_info_for_workspace', lambda *a: {})
+    monkeypatch.setattr(workspace, 'project_info_for_workspace', lambda *a: {})
     monkeypatch.setattr(lifecycle, 'resident_release_step', lambda row, actor: {'kind': 'release', 'resident_id': row['resident_id']})
     monkeypatch.setattr(workspace.resident_lineage_host_port, 'canonical_lineage_folder', lambda _: folder)
 

@@ -257,3 +257,17 @@ def attach_actual_sent_prompts(
         if match.get("event_path"):
             item["actual_sent_prompt_event_path"] = str(match.get("event_path") or "")
             item["actual_sent_prompt_event_line"] = match.get("event_line")
+
+
+def resident_conversation_messages(
+    record: dict,
+    limit: int = resident_domain_common.MAX_TIMELINE_ITEMS,
+) -> list[dict[str, Any]]:
+    """Read canonical Messages without deriving a second transcript shape."""
+    from . import resident_domain_common
+
+    resident_id = resident_domain_common.record_resident_id(record)
+    return resident_conversation_stream.get_repository().read_messages(
+        resident_id,
+        limit=limit,
+    )

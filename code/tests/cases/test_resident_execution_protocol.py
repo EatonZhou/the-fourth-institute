@@ -49,6 +49,7 @@ from management_portal.society_service import (
     workspace_domain,
     workspace_contracts,
     resident_domain_common,
+    resident_prompt_domain,
 )
 from management_portal.society_service import lifecycle
 from management_portal.society_service import resident_domain as backend
@@ -2225,7 +2226,7 @@ def test_resident_image_reaches_execution_as_native_input_media(
             "handle_slash_command",
             return_value={"handled": False},
         ),
-        mock.patch.object(resident_record_domain, "resolve_context_refs", return_value={}),
+        mock.patch.object(resident_intake_domain, "resolve_context_refs", return_value={}),
     ):
         result = _published_delivery(backend.deliver_resident_message_content(
             resident_id,
@@ -2293,7 +2294,7 @@ def test_inline_media_positions_survive_delivery_and_provider_capture(resident_r
         "media_type": media_type, "source_type": "local_path", "source": str(attachment),
         "mime_type": "image/png" if media_type == "image" else "application/octet-stream", "name": attachment.name,
     }])
-    monkeypatch.setattr(resident_record_domain, "resolve_context_refs", lambda *a, **kw: {})
+    monkeypatch.setattr(resident_intake_domain, "resolve_context_refs", lambda *a, **kw: {})
     if queued:
         _published_delivery(backend.deliver_resident_message_content(resident_id, "sample_admin", "Previous work"))
     parts = [
@@ -2344,7 +2345,7 @@ def test_resident_workspace_image_marker_becomes_native_input_media(
             "handle_slash_command",
             return_value={"handled": False},
         ),
-        mock.patch.object(resident_record_domain, "resolve_context_refs", return_value={}),
+        mock.patch.object(resident_intake_domain, "resolve_context_refs", return_value={}),
     ):
         result = _published_delivery(backend.deliver_resident_message_content(
             resident_id,
@@ -2564,8 +2565,8 @@ def test_clear_resident_queue_cancels_held_inputs_without_reopening_intake(resid
     with (
         mock.patch.object(resident_session_backend_domain, "handle_resident_native_command", return_value={}),
         mock.patch.object(slash_commands, "handle_slash_command", return_value={"handled": False}),
-        mock.patch.object(resident_record_domain, "resolve_context_refs", return_value={}),
-        mock.patch.object(resident_registration_domain, "build_resident_prompt", return_value="held prompt"),
+        mock.patch.object(resident_intake_domain, "resolve_context_refs", return_value={}),
+        mock.patch.object(resident_prompt_domain, "build_resident_prompt", return_value="held prompt"),
     ):
         backend.deliver_resident_message_content(resident_id, "CASE-A", "held first message")
         backend.deliver_resident_message_content(resident_id, "CASE-A", "held following message")
@@ -2841,7 +2842,7 @@ def test_send_now_into_a_forks_first_turn_does_not_repeat_its_inherited_context(
     })
     _save_resident_record(resident_record)
     queued_message_id = "msg_cccccccccccccccccccccccccccccccc"
-    queued_prompt = resident_registration_domain.build_resident_prompt(
+    queued_prompt = resident_prompt_domain.build_resident_prompt(
         resident_record, {"actor": "CASE-A", "message": "补充检查移动端"},
     )
     prepared = resident_execution_domain._portable_context_execution(
@@ -4282,7 +4283,7 @@ def test_compact_persists_context_usage_from_app_server_contract_contracts(subte
         assert pressure['source'] == 'invalid_context_usage'
     with subtests.test(contract='test_resident_session_prompt_controls_honor_both_customer_switches'), isolated_portal_case() as case_path:
         settings = {'prompt_injection': {'preset': 'full'}, 'allow_subagents': True}
-        assert resident_directory_domain.resident_session_prompt_controls(settings) == {'allow_subagents': True}
+        assert resident_runtime_domain.resident_session_prompt_controls(settings) == {'allow_subagents': True}
     with subtests.test(contract='test_quota_wait_is_projected_without_closing_resident'), isolated_portal_case() as case_path:
         state = resident_execution_work.conversation_state({ 'user_message_id': 'message_quota', 'execution_id': 'execution-' + '2' * 24, "submitted_at": "2026-10-14T00:00:00Z"}, snapshot={'status': 'queued', 'scheduler': {'queue_reason': 'quota_reserve'}}, intake_state='open')
         assert state['work_state'] == 'queued'
@@ -4321,7 +4322,7 @@ def test_resident_timeline_keeps_canonical_messages_without_attached_session(
         ],
     })
 
-    messages = resident_directory_domain.resident_conversation_messages(
+    messages = resident_conversation_projection_domain.resident_conversation_messages(
         resident_record,
     )
 
@@ -5468,14 +5469,14 @@ def test_resident_send_publishes_nothing_before_turn_persistence(
             "handle_slash_command",
             return_value={"handled": False},
         ),
-        mock.patch.object(resident_record_domain, "resolve_context_refs", return_value={}),
+        mock.patch.object(resident_intake_domain, "resolve_context_refs", return_value={}),
         mock.patch.object(
             resident_execution_work,
             "write",
             side_effect=RuntimeError("process interrupted"),
         ),
         mock.patch.object(
-            resident_record_domain,
+            resident_intake_domain,
             "last_user_message_text",
             side_effect=AssertionError("ordinary messages must not read history"),
         ),
@@ -5507,9 +5508,9 @@ def test_resident_send_publishes_nothing_before_turn_persistence(
             "handle_slash_command",
             return_value={"handled": False},
         ),
-        mock.patch.object(resident_record_domain, "resolve_context_refs", return_value={}),
+        mock.patch.object(resident_intake_domain, "resolve_context_refs", return_value={}),
         mock.patch.object(
-            resident_record_domain,
+            resident_intake_domain,
             "last_user_message_text",
             side_effect=AssertionError("ordinary messages must not read history"),
         ),
@@ -5581,7 +5582,7 @@ def test_resident_turn_prompt_avoids_provider_system_prompt_duplicates(
         "message": "continue",
         "context_refs": {},
     }
-    prompt = resident_registration_domain.build_resident_prompt(resident_record, job)
+    prompt = resident_prompt_domain.build_resident_prompt(resident_record, job)
     system_instructions = resident_execution_domain.resident_system_instructions(
         resident_record,
         job,
@@ -6312,7 +6313,7 @@ def test_resident_session_projection_skips_lineage_lock_and_family_scan(
         lambda *_args, **_kwargs: pytest.fail("projection scanned family messages"),
     )
     monkeypatch.setattr(
-        resident_directory_domain,
+        resident_conversation_projection_domain,
         "resident_conversation_messages",
         lambda *_args, **_kwargs: pytest.fail("projection read the conversation"),
     )
@@ -6473,7 +6474,7 @@ def test_message_queued_behind_active_job_stays_in_mailbox(
             "handle_slash_command",
             return_value={"handled": False},
         ),
-        mock.patch.object(resident_record_domain, "resolve_context_refs", return_value={}),
+        mock.patch.object(resident_intake_domain, "resolve_context_refs", return_value={}),
     ):
         result = _published_delivery(backend.deliver_resident_message_content(
             "resident_aaaaaaaaaaaa",
@@ -6858,8 +6859,8 @@ def test_lazy_resident_first_message_creates_session_job(
             "handle_slash_command",
             return_value={"handled": False},
         ),
-        mock.patch.object(resident_record_domain, "resolve_context_refs", return_value={}),
-        mock.patch.object(resident_registration_domain, "build_resident_prompt", side_effect=AssertionError("prompt built during admission")),
+        mock.patch.object(resident_intake_domain, "resolve_context_refs", return_value={}),
+        mock.patch.object(resident_prompt_domain, "build_resident_prompt", side_effect=AssertionError("prompt built during admission")),
     ):
         result = _published_delivery(backend.deliver_resident_message_content(
             "resident_aaaaaaaaaaaa",
@@ -6890,7 +6891,7 @@ def test_lazy_resident_first_message_creates_session_job(
 def input_delivery(resident_record, monkeypatch):
     monkeypatch.setattr(resident_session_backend_domain, "handle_resident_native_command", lambda *a, **kw: {})
     monkeypatch.setattr(slash_commands, "handle_slash_command", lambda *a, **kw: {"handled": False})
-    monkeypatch.setattr(resident_record_domain, "resolve_context_refs", lambda *a, **kw: {})
+    monkeypatch.setattr(resident_intake_domain, "resolve_context_refs", lambda *a, **kw: {})
     return resident_record
 
 
@@ -6923,14 +6924,14 @@ def test_delivery_instructions_share_the_two_activation_modes():
 def test_normal_delivery_starts_idle_and_advances_busy_queue(input_delivery, monkeypatch):
     """普通投递启动空闲任务且忙碌时按序排队提升"""
     resident_id = input_delivery["resident_id"]
-    prompt_builder = resident_registration_domain.build_resident_prompt
-    monkeypatch.setattr(resident_registration_domain, "build_resident_prompt", lambda *_: (_ for _ in ()).throw(AssertionError("prompt built during admission")))
+    prompt_builder = resident_prompt_domain.build_resident_prompt
+    monkeypatch.setattr(resident_prompt_domain, "build_resident_prompt", lambda *_: (_ for _ in ()).throw(AssertionError("prompt built during admission")))
     first = _published_delivery(backend.deliver_resident_message_content(resident_id, "CASE-A", "First"))
     job = resident_execution_work.read(input_delivery)
     assert "prompt_builder_version" not in job
     assert "actual_sent_prompt" not in job
     assert resident_conversation_stream.get_repository().message(resident_id, first["message_id"]) is not None
-    monkeypatch.setattr(resident_registration_domain, "build_resident_prompt", prompt_builder)
+    monkeypatch.setattr(resident_prompt_domain, "build_resident_prompt", prompt_builder)
     prepared = resident_execution_domain._portable_context_execution(input_delivery, job)
     assert prepared["prompt_builder_version"] == resident_execution_work.PROMPT_BUILDER_VERSION
     assert "<user-message>\nFirst\n</user-message>" in prepared["actual_sent_prompt"]
@@ -7119,7 +7120,7 @@ def test_direct_injection_turn_completion_race_keeps_one_queued_input(input_deli
         job["outcome"] = "completed"
         resident_execution_work.write(input_delivery, job)
         return {}
-    monkeypatch.setattr(resident_record_domain, "resolve_context_refs", finish_while_preparing)
+    monkeypatch.setattr(resident_intake_domain, "resolve_context_refs", finish_while_preparing)
     result = _published_delivery(backend.deliver_resident_message_content(
         input_delivery["resident_id"], "CASE-A", "Extra", activation_policy="inject_active_turn",
     ))
@@ -7143,8 +7144,8 @@ def test_cancel_closed_intake_first_input_needs_no_execution(resident_record, ge
     with (
         mock.patch.object(resident_session_backend_domain, "handle_resident_native_command", return_value={}),
         mock.patch.object(slash_commands, "handle_slash_command", return_value={"handled": False}),
-        mock.patch.object(resident_record_domain, "resolve_context_refs", return_value={}),
-        mock.patch.object(resident_registration_domain, "build_resident_prompt", return_value="held prompt"),
+        mock.patch.object(resident_intake_domain, "resolve_context_refs", return_value={}),
+        mock.patch.object(resident_prompt_domain, "build_resident_prompt", return_value="held prompt"),
     ):
         delivery = backend.deliver_resident_message_content(resident_id, "CASE-A", "hold this message")
         following = backend.deliver_resident_message_content(resident_id, "CASE-A", "keep this message") if with_queue else None
@@ -7184,8 +7185,8 @@ def test_closed_resident_intake_holds_message_until_reopened(
             "handle_slash_command",
             return_value={"handled": False},
         ),
-        mock.patch.object(resident_record_domain, "resolve_context_refs", return_value={}),
-        mock.patch.object(resident_registration_domain, "build_resident_prompt", return_value="held prompt"),
+        mock.patch.object(resident_intake_domain, "resolve_context_refs", return_value={}),
+        mock.patch.object(resident_prompt_domain, "build_resident_prompt", return_value="held prompt"),
     ):
         result = _published_delivery(resident_protocol.deliver_resident_input({
             "resident_id": "resident_aaaaaaaaaaaa",
@@ -7324,7 +7325,7 @@ def test_similar_failed_message_accepts_a_new_retry_job_generation(
             "handle_slash_command",
             return_value={"handled": False},
         ),
-        mock.patch.object(resident_record_domain, "resolve_context_refs", return_value={}),
+        mock.patch.object(resident_intake_domain, "resolve_context_refs", return_value={}),
     ):
         result = _published_delivery(backend.deliver_resident_message_content(
             "resident_aaaaaaaaaaaa",

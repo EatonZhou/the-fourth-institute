@@ -18,6 +18,7 @@ from . import (
     resident_message_contract,
     resident_state,
     resident_record_domain,
+    resident_prompt_domain,
 )
 from .domain_ports import execution_port, resident_lineage_host_port
 from .resident_access import (
@@ -38,15 +39,13 @@ import copy
 import hashlib
 import logging
 from management_portal.execution import slash_commands
+from management_portal import agent_context_selection
 import re
 import secrets
 import sys
 import time
 
 from . import resident_domain_common
-
-
-MAX_RUNTIME_CONTEXT_CHARS = 120_000
 
 
 def start_resident_continuation(record: dict, continuation_id: str) -> None:
@@ -513,13 +512,6 @@ def _context_refs_include_image(value: object) -> bool:
 def _ensure_backend_accepts_context_refs(record: dict[str, Any], context_refs: object) -> None:
     if not resident_execution_provider.provider_for(record).capabilities.supports_media and _context_refs_include_image(context_refs):
         raise ValueError("Claude Code + DeepSeek 当前不支持图片输入；请改用文字或文本文件")
-
-
-def normalized_runtime_context(value: object) -> str:
-    runtime_context = str(value or "").strip()
-    if len(runtime_context) > MAX_RUNTIME_CONTEXT_CHARS:
-        raise ValueError(f"runtime_context 最多 {MAX_RUNTIME_CONTEXT_CHARS} 个字符")
-    return runtime_context
 
 
 def _send_synchronous_provider_message(
@@ -1154,17 +1146,16 @@ def persist_resident_input(
     business_ref: str = "",
 ) -> dict:
     from . import (
-        resident_directory_domain,
         resident_domain_common,
         resident_lifecycle_domain,
         resident_record_domain,
+        resident_runtime_domain,
     )
     from . import message_quotes
     from .outward_messages import speaking_for
     from . import (
         resident_media_domain,
         resident_record_domain,
-        resident_registration_domain,
         resident_runtime_domain,
         resident_session_backend_domain,
     )
@@ -1190,7 +1181,7 @@ def persist_resident_input(
             raise ValueError("Resident input differs from its authorized invocation")
         if context_refs or input_media or working_directory or runtime_context or additional_skills:
             raise ValueError("Isolated input context must be contained in the authorized message")
-    resolved_runtime_context = normalized_runtime_context(runtime_context)
+    resolved_runtime_context = resident_prompt_domain.normalized_runtime_context(runtime_context)
     resolved_additional_skills = normalize_additional_skills(additional_skills)
     # A Family Router delivery carries the facade message it relays; the
     # facade message authorizes delivery to members of that Family.
@@ -1327,7 +1318,7 @@ def persist_resident_input(
                     workspace_roots=resident_runtime_domain.resident_media_workspace_roots(environment or record),
                 )
             if context_refs:
-                resident_record_domain.resolve_context_refs(context_refs, speaking_member or actor_id, message)
+                resolve_context_refs(context_refs, speaking_member or actor_id, message)
             facade_item = _resident_user_message(
                 resident_domain_common.record_resident_id(record), message, actor_id,
                 message_id=message_id, protocol_input=protocol_input,
@@ -1513,7 +1504,7 @@ def persist_resident_input(
     deferred_delivery = not message.lstrip().startswith("/")
     message_cwd = _resident_message_cwd(environment, working_directory) if environment is not None else None
     _ensure_backend_accepts_context_refs(input_record, context_refs)
-    resolved_refs = resident_record_domain.resolve_context_refs(context_refs, attachment_actor, message)
+    resolved_refs = resolve_context_refs(context_refs, attachment_actor, message)
     media_roots = resident_runtime_domain.resident_media_workspace_roots(environment) if has_media else ()
     facade_record = resident_record_domain.find_resident(relay_source[0]) if relayed_sender and input_media else None
     if facade_record:
@@ -1539,7 +1530,7 @@ def persist_resident_input(
     )
     goal_command = slash_commands.parse_goal_command(message)
     last_user_message = (
-        resident_record_domain.last_user_message_text(resident_id)
+        last_user_message_text(resident_id)
         if goal_command.get("action") == "get"
         else ""
     )
@@ -1661,7 +1652,7 @@ def persist_resident_input(
             not resident_backend.record_session_id(record)
             and not running
         ):
-            job = resident_registration_domain.queue_bootstrap_resident_session(
+            job = queue_bootstrap_resident_session(
                 record,
                 message=provider_input,
                 actor_id=actor_id,
@@ -1720,7 +1711,7 @@ def persist_resident_input(
             "input_media": resolved_input_media,
             "runtime_context": resolved_runtime_context,
             "additional_skills": resolved_additional_skills,
-            **resident_directory_domain.resident_session_prompt_controls(runtime_settings),
+            **resident_runtime_domain.resident_session_prompt_controls(runtime_settings),
         }
         prompt_cwd = str(message_cwd) if message_cwd is not None else ""
         queue_item = resident_execution_work.new_item(
@@ -1994,10 +1985,10 @@ def request_resident_execution_cancellation(
 
 def _running_turn_prompt(record: Mapping[str, Any], item: Mapping[str, Any]) -> dict[str, Any]:
     """An active turn already has context; inject only the new input."""
-    from . import resident_registration_domain
+    from . import resident_prompt_domain
     prompt_job = dict(item)
     prompt_job["message"] = str(item.get("effective_message") or item.get("raw_message") or item.get("message") or "")
-    prompt = resident_registration_domain.build_resident_prompt(dict(record), prompt_job)
+    prompt = resident_prompt_domain.build_resident_prompt(dict(record), prompt_job)
     return {**item, "message": prompt, "actual_sent_prompt": prompt}
 
 
@@ -2459,13 +2450,8 @@ def _set_resident_title_locked(
     *,
     origin: str,
 ) -> dict[str, Any]:
-    from . import (
-        resident_domain_common,
-        resident_lifecycle_domain,
-        resident_record_domain,
-        resident_workspace_domain,
-    )
-    resident_lifecycle_domain.require_no_pending_lifecycle(str(record.get("resident_id") or ""))
+    from . import resident_domain_common, resident_record_domain, resident_workspace_domain
+    require_no_pending_lifecycle(str(record.get("resident_id") or ""))
     previous_workspace_path = str(record.get("workspace_path") or "")
     record["title"] = title
     record["title_origin"] = origin
@@ -2665,3 +2651,134 @@ def update_resident(
         if not current or resident_lineage.lineage_id(current) != graph_ids[0]:
             raise ValueError("Resident membership changed; retry the update")
         return resident_catalog.get_catalog().state_store.transaction(commit)
+
+
+def require_no_pending_lifecycle(resident_id: str) -> None:
+    """Folder writes wait until a pending move has relocated the Resident folder."""
+
+    if resident_record_domain.lifecycle_operations().pending(resident_id):
+        raise ValueError("Resident 生命周期操作正在完成，请稍后编辑")
+
+
+def last_user_message_text(resident_id: str) -> str:
+    from . import resident_domain_common
+    message = resident_conversation_stream.get_repository().latest_message(
+        resident_id,
+        role="user",
+    )
+    return resident_domain_common.protocol_message_text(message) if isinstance(message, dict) else ""
+
+
+def resolve_context_refs(
+    selection: object,
+    actor: str = "",
+    content: object = "",
+) -> dict[str, Any]:
+    return agent_context_selection.resolve(
+        selection,
+        actor=actor,
+        content=content,
+    )
+
+
+def queue_bootstrap_resident_session(
+    record: dict[str, Any],
+    *,
+    message: str,
+    actor_id: str,
+    context_refs: object = None,
+    input_media: object = None,
+    working_directory: Path | None = None,
+    operation: str = "",
+    append_user_message: bool = True,
+    runtime_context: str = "",
+    message_id: str = "",
+    user_message: Mapping[str, Any] | None = None,
+    activation_policy: str = "enqueue_and_trigger",
+    business_ref: str = "",
+    lineage_id: str = "",
+    delivery_message_id: str = "",
+) -> dict[str, Any]:
+    from . import (
+        resident_domain_common,
+        resident_lifecycle_domain,
+        resident_media_domain,
+        resident_prompt_domain,
+    )
+    message = str(message or "")
+    if not message.strip():
+        raise ValueError("message required")
+
+    now = resident_domain_common.now_iso()
+    resolved_refs = context_refs if isinstance(context_refs, dict) else {}
+    resolved_input_media = (
+        list(input_media) if isinstance(input_media, list) else []
+    )
+    provider_message = resident_media_domain.provider_message_with_native_media(
+        record,
+        message,
+        resolved_input_media,
+    )
+    user_message_id = str(message_id or "").strip()
+    user_item: dict[str, Any] = {}
+    if append_user_message:
+        user_item = (
+            dict(user_message)
+            if isinstance(user_message, Mapping)
+            else build_message(
+                "user", message, actor_id, message_id=message_id,
+            )
+        )
+        if business_ref:
+            user_item["business_ref"] = str(business_ref).strip()[:500]
+        if existing_resident_delivery(
+            resident_domain_common.record_resident_id(record),
+            user_item,
+            bound_job=resident_execution_work.read(record),
+            require_execution_binding=True,
+        ):
+            return resident_execution_work.read(record)
+        user_message_id = str(user_item.get("message_id") or "")
+    bootstrap_execution_id = f"execution-{secrets.token_hex(12)}"
+    job = {
+        "execution_id": bootstrap_execution_id,
+        "user_message_id": user_message_id,
+        "raw_message": message,
+        "message": provider_message,
+        "effective_message": provider_message,
+        "actor": actor_id,
+        "context_refs": resolved_refs,
+        "input_media": resolved_input_media,
+        "runtime_context": resident_prompt_domain.normalized_runtime_context(runtime_context),
+        "started_at": now,
+        "updated_at": now,
+        "error": "",
+        "queue": [],
+        "bootstrap_session": True,
+        "activation_policy": activation_policy,
+    }
+    if business_ref:
+        job["business_ref"] = str(business_ref).strip()[:500]
+    if lineage_id:
+        job["lineage_id"] = str(lineage_id).strip()
+    if operation:
+        job["operation"] = operation
+    if working_directory is not None:
+        job["prompt_cwd"] = str(working_directory)
+        job["working_directory"] = str(working_directory)
+    job[resident_state.INTAKE_FIELD] = resident_lifecycle_domain.resident_intake_state(record)
+    if user_item:
+        job["input_message"] = copy.deepcopy(user_item)
+        persist = (
+            resident_lifecycle_domain.persist_resident_user_message
+            if resident_lifecycle_domain.resident_intake_state(record) == resident_state.INTAKE_OPEN
+            and activation_policy == "enqueue_and_trigger"
+            else resident_lifecycle_domain.accept_resident_user_message
+        )
+        if not delivery_message_id:
+            invariant_locks.defer_until_state_unlock(lambda: persist(resident_domain_common.record_resident_id(record), user_item))
+    if delivery_message_id:
+        resident_execution_work.admit(record, job, user_item)
+    else:
+        resident_execution_work.write(record, job)
+    return job

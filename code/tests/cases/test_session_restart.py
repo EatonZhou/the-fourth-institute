@@ -180,7 +180,7 @@ def _restart_domain(
         "reasoning_effort": "xhigh",
         "service_tier": "priority",
     }
-    monkeypatch.setattr(resident_runtime_domain, "resident_agents_instruction_block", lambda record: "<resident-identity>Restart target</resident-identity>")
+    monkeypatch.setattr(resident_execution_domain, "resident_agents_instruction_block", lambda record: "<resident-identity>Restart target</resident-identity>")
     monkeypatch.setattr(resident_runtime_domain, "resident_runtime_identity_block", lambda record: "<resident-runtime-identity>Restart target</resident-runtime-identity>")
     monkeypatch.setattr(
         resident_runtime_domain,

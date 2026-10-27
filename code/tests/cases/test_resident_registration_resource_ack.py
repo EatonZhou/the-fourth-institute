@@ -22,7 +22,6 @@ from management_portal.society_service import (
     project_domain,
     resident_domain,
     resident_domain_common,
-    resident_project_domain,
     resident_registration_domain,
     resource_client,
 )
@@ -39,7 +38,7 @@ def registration(isolated_instruction_store, monkeypatch, tmp_path):
     monkeypatch.setenv("PORTAL_SOCIETY_SERVICE_PROCESS", "0")
     monkeypatch.setattr(invariant_locks, "_ROOT_PROVIDER", lambda: tmp_path / "locks")
     monkeypatch.setattr(project_domain, "project_root_for_id", lambda _: isolated_instruction_store)
-    monkeypatch.setattr(resident_project_domain, "safe_absolute_path", lambda raw: Path(raw).resolve(strict=False))
+    monkeypatch.setattr(resident_registration_domain, "safe_absolute_path", lambda raw: Path(raw).resolve(strict=False))
     monkeypatch.setattr(
         codex_runtime_settings,
         "codex_runtime_catalog",

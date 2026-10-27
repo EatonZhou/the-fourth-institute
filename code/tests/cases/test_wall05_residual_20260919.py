@@ -10,8 +10,12 @@ from management_common import skill_paths
 from management_portal import agent_context_selection
 from management_portal.resource_refs import resolve_resource_references
 from tests.cases.test_resource_refs import _FakeResourceService
-from management_portal.society_service import lineage_domain, resident_domain, resident_execution_work
-from management_portal.society_service import resident_directory_domain
+from management_portal.society_service import (
+    lineage_domain,
+    resident_conversation_projection_domain,
+    resident_domain,
+    resident_execution_work,
+)
 from management_portal.society_service import resident_intake_domain
 from management_portal.society_service import resident_record_domain
 from management_portal.society_service import resident_runtime_domain
@@ -52,7 +56,7 @@ def test_distinct_fork_ids_and_plain_new_resident(future_creation_store):
         assert record["resident_id"].startswith("resident_")
         assert record["default_cwd"] != source["default_cwd"]
     assert not blank.get("source_resident_id") and not blank.get("fork_context")
-    assert resident_directory_domain.resident_conversation_messages(blank, limit=10) == []
+    assert resident_conversation_projection_domain.resident_conversation_messages(blank, limit=10) == []
     assert resident_execution_work.read(blank) == {}
 
 

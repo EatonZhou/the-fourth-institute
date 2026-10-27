@@ -202,8 +202,7 @@ def test_personal_instructions_keep_user_customization_and_refresh_each_turn(per
     """个人行为每轮刷新并保留用户定制，压缩后仍按相同时机注入"""
     ama, assistant = personal
     record = resident_catalog.get_catalog().get(ama["resident_id"])
-    from management_portal.society_service import resident_runtime_domain
-    monkeypatch.setattr(resident_runtime_domain, "resident_agents_instruction_block", lambda record: "用户自己的语气")
+    monkeypatch.setattr(resident_execution_domain, "resident_agents_instruction_block", lambda record: "用户自己的语气")
     instructions = resident_execution_domain.resident_system_instructions(record, {}, settings={})
     personal = [p for p in instructions.parts if p.name == "personal_assistant"]
     assert len(personal) == 1 and personal[0].timing == "every_turn"

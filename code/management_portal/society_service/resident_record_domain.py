@@ -8,11 +8,9 @@ from . import (
     invariant_locks,
     resident_backend,
     resident_catalog,
-    resident_conversation_stream,
     resident_execution_work,
     resident_lineage,
 )
-from management_portal import agent_context_selection
 from pathlib import Path
 from typing import Any, Mapping
 import copy
@@ -303,15 +301,6 @@ def session_token_usage_payload(record: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def last_user_message_text(resident_id: str) -> str:
-    from . import resident_domain_common
-    message = resident_conversation_stream.get_repository().latest_message(
-        resident_id,
-        role="user",
-    )
-    return resident_domain_common.protocol_message_text(message) if isinstance(message, dict) else ""
-
-
 def resident_goal_payload(
     record: dict[str, Any],
     *,
@@ -376,10 +365,6 @@ def _runtime_error_code(message: str) -> str:
     return "unknown"
 
 
-def resident_backend_failure_message(record: dict[str, Any], raw_error: str) -> str:
-    return str(raw_error or "").strip()
-
-
 def runtime_error_payload(
     raw_error: str,
     *,
@@ -439,26 +424,6 @@ def runtime_failure_summary(
         return summaries[code]
     compact = re.sub(r"\s+", " ", message).strip()
     return resident_domain_common.truncate_text(compact or "执行意外结束", 240)
-
-
-def resolve_context_refs(
-    selection: object,
-    actor: str = "",
-    content: object = "",
-) -> dict[str, Any]:
-    return agent_context_selection.resolve(
-        selection,
-        actor=actor,
-        content=content,
-    )
-
-
-def attached_references_text(context_refs: dict[str, Any]) -> str:
-    return agent_context_selection.prompt_references(
-        context_refs,
-        item_char_limit=REF_ITEM_CHAR_LIMIT,
-        total_char_limit=REF_TOTAL_CHAR_LIMIT,
-    )
 
 
 def resident_quota_override(record: Mapping[str, Any]) -> dict[str, Any]:
@@ -655,7 +620,6 @@ def resolve_resident_resource_target(
 
 
 def save_resident_record(record: dict, *, commit_configuration: bool = False, commit_intake: bool = False) -> None:
-    from . import resident_record_domain
     record.pop("folder_sync_error", None)
     resident_id = str(record.get("resident_id") or "").strip()
     if not resident_id:
@@ -730,7 +694,6 @@ def save_resident_record(record: dict, *, commit_configuration: bool = False, co
 
 def _save_resident_record_with_resource_identity(record: dict) -> None:
     """Persist canonical Resident state and its durable projection request."""
-    from . import resident_record_domain
     apply_resident_resource_identity(record)
     save_resident_record(record)
 

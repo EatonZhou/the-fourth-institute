@@ -13,7 +13,7 @@ from management_common.operation_errors import OperationError
 from management_portal.society_service import lineage_execution_authority as locks
 from management_portal.society_service import lineage_program_execution as owner
 from management_portal.society_service import lineage_primitives, resident_intake_admission as intake
-from management_portal.society_service import family_familize
+from management_portal.society_service import family_familize, resident_intake_domain
 from tests.cases.test_resident_execution_protocol import resident_record, input_delivery  # noqa: F401
 
 
@@ -91,7 +91,7 @@ def test_real_intake_commits_under_guard_and_prepares_outside_it(input_delivery,
     :importance: P2"""
     from contextlib import contextmanager
     from management_portal.society_service import resident_execution_domain as backend
-    from management_portal.society_service import resident_record_domain, resident_execution_work
+    from management_portal.society_service import resident_execution_work
     lid, rid = 'lineage_444444444444', input_delivery['resident_id']
     message_id = 'msg_0123456789abcdef'
     valid, accepted = [True], []
@@ -112,7 +112,7 @@ def test_real_intake_commits_under_guard_and_prepares_outside_it(input_delivery,
         if outcome == 'receipt_failed':
             raise OperationError('bookkeeping failed', commit_state='not_committed')
         accepted.append(identity)
-    monkeypatch.setattr(resident_record_domain, 'resolve_context_refs', prepare)
+    monkeypatch.setattr(resident_intake_domain, 'resolve_context_refs', prepare)
     with intake.bind(rid, message_id, guard, accept):
         if outcome == 'cancelled':
             with pytest.raises(OperationError, match='route changed'):

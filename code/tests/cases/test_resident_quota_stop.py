@@ -29,8 +29,8 @@ from management_portal.society_service import (
     resident_lifecycle_domain,
     resident_protocol,
     resident_record_domain,
-    resident_registration_domain,
     resident_session_backend_domain,
+    resident_prompt_domain,
 )
 
 
@@ -55,8 +55,8 @@ def sessionless(resident_record, monkeypatch):
     resident_record_domain.save_resident_record(resident_record)
     monkeypatch.setattr(resident_session_backend_domain, "handle_resident_native_command", lambda *a, **kw: {})
     monkeypatch.setattr(slash_commands, "handle_slash_command", lambda *a, **kw: {"handled": False})
-    monkeypatch.setattr(resident_record_domain, "resolve_context_refs", lambda *a, **kw: {})
-    monkeypatch.setattr(resident_registration_domain, "build_resident_prompt", lambda *a, **kw: "test prompt")
+    monkeypatch.setattr(resident_intake_domain, "resolve_context_refs", lambda *a, **kw: {})
+    monkeypatch.setattr(resident_prompt_domain, "build_resident_prompt", lambda *a, **kw: "test prompt")
     scheduler = Scheduler(quota_reserve_enabled=True, dispatch_interval_min_seconds=0, dispatch_interval_max_seconds=0)
     scheduler.register_worker(worker_id="quota-stop-test", build_id="test", capabilities=["agent_session:codex"])
     scheduler.update_account_quota("zero", quota_sample(

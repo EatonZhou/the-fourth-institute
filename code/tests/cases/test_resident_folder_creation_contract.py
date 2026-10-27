@@ -40,7 +40,6 @@ CANONICAL_RESIDENT_TARGETS = lineage_domain._resident_targets
 
 
 from management_portal.society_service import project_domain, resident_access, resident_conversation_projection_domain, resident_domain_common, resident_lifecycle_domain, resident_registration_domain, resident_session_backend_domain, resident_workspace_domain
-from management_portal.society_service import resident_directory_domain
 
 @pytest.fixture()
 def future_creation_store(
@@ -1430,7 +1429,7 @@ def test_cross_lineage_context_fork_keeps_external_source_as_provenance(
         })
     assert external_message_id not in {
         item["message_id"]
-        for item in resident_directory_domain.resident_conversation_messages(
+        for item in resident_conversation_projection_domain.resident_conversation_messages(
             source_resident_record,
             limit=MAX_TIMELINE_ITEMS,
         )

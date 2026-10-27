@@ -19,7 +19,7 @@ from management_portal.society_service import (
     outward_messages,
     resident_execution_work,
 )
-from management_portal.society_service.resident_registration_domain import (
+from management_portal.society_service.resident_prompt_domain import (
     build_resident_prompt as _build_resident_prompt,
 )
 from management_portal.society_service.resident_record_domain import find_resident as _find_resident

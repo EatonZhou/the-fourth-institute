@@ -32,6 +32,11 @@ import time
 
 from . import resident_domain_common
 
+SESSION_RESTART_STRATEGIES = frozenset(
+    {"smart", "native", "compact", "visible", "fresh"}
+)
+SESSION_RESTART_ACTIVE_EXECUTION_POLICIES = frozenset({"wait", "cancel"})
+
 
 def _session_restart_provider(value: object) -> str:
     key = str(value or "").strip().lower()
@@ -182,11 +187,11 @@ def _previous_compaction_summary(resident_id: str, *, since: str = "") -> str:
 
 
 def _source_session_context(record: dict[str, Any], limit: int = 18) -> str:
-    from . import resident_directory_domain, resident_domain_common
+    from . import resident_conversation_projection_domain, resident_domain_common
     session_id = resident_backend.record_session_id(record)
     if not session_id:
         return "(empty)"
-    messages = resident_directory_domain.resident_conversation_messages(record, limit=limit)
+    messages = resident_conversation_projection_domain.resident_conversation_messages(record, limit=limit)
     agent_label = resident_backend.backend_label(record)
     lines = []
     for item in messages[-limit:]:
@@ -419,7 +424,6 @@ def restart_resident_session(
     """
     from . import (
         resident_access,
-        resident_directory_domain,
         resident_domain_common,
         resident_execution_domain,
         resident_intake_domain,
@@ -465,10 +469,10 @@ def restart_resident_session(
         body.get("target_provider") or source_provider
     )
     requested_strategy = str(body.get("context_strategy") or "smart").strip().lower()
-    if requested_strategy not in resident_directory_domain.SESSION_RESTART_STRATEGIES:
+    if requested_strategy not in SESSION_RESTART_STRATEGIES:
         raise ValueError("未知的 session 重启上下文策略")
     active_execution_policy = str(body.get("active_execution_policy") or "wait").strip().lower()
-    if active_execution_policy not in resident_directory_domain.SESSION_RESTART_ACTIVE_EXECUTION_POLICIES:
+    if active_execution_policy not in SESSION_RESTART_ACTIVE_EXECUTION_POLICIES:
         raise ValueError("active_execution_policy 必须是 wait 或 cancel")
 
     source_route = source["account_id"]
