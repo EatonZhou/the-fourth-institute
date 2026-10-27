@@ -365,7 +365,7 @@ def test_empty_thread_recovery_cannot_reset_used_or_concurrently_replaced_bindin
     assert not sessions.provider_binding(f'recovery:{request.execution_id}')
 
 
-@pytest.mark.parametrize('failure', ['missing_thread', 'missing_rollout', 'missing_history', 'other_error'])
+@pytest.mark.parametrize('failure', ['missing_thread', 'missing_rollout', 'missing_source_rollout', 'missing_history', 'other_error'])
 def test_explicit_fork_recovers_a_missing_source_only_from_recorded_context(tmp_path, failure):
     """显式会话重建在源线程丢失时仅使用已记录上下文
 
@@ -386,6 +386,8 @@ def test_explicit_fork_recovers_a_missing_source_only_from_recorded_context(tmp_
     error = 'request denied' if failure == 'other_error' else f'thread not found: {source_thread}'
     if failure == 'missing_rollout':
         error = f'no rollout found for thread id {source_thread}'
+    if failure == 'missing_source_rollout':
+        error = f'invalid paginated history lineage for {source_thread}: missing source rollout'
     client.fork_thread.side_effect = (CodexAppServerError if failure == 'other_error' else CodexThreadNotFound)('Codex app-server request failed: ' + error)
     client.start_thread.return_value = {'thread': {'id': 'restored-thread'}}
     registry = mock.Mock()
@@ -394,7 +396,7 @@ def test_explicit_fork_recovers_a_missing_source_only_from_recorded_context(tmp_
     context = BackendContext(emit_event=lambda *_: None, cancellation_requested=lambda: False,
                              set_interrupt_target=lambda *_: None)
     with mock.patch('management_portal.execution.agent_data_store.get_agent_data_store', return_value=store):
-        if failure not in {'missing_thread', 'missing_rollout'}:
+        if failure not in {'missing_thread', 'missing_rollout', 'missing_source_rollout'}:
             with pytest.raises(CodexAppServerError):
                 backend.execute(_invocation(request, session), context)
             assert not client.start_thread.called

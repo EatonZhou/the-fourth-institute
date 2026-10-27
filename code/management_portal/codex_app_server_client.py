@@ -684,6 +684,7 @@ class CodexAppServerClient:
                 if thread_id and str(pending.error) in {
                     f"Codex app-server request failed: thread not found: {thread_id}",
                     f"Codex app-server request failed: no rollout found for thread id {thread_id}",
+                    f"Codex app-server request failed: invalid paginated history lineage for {thread_id}: missing source rollout",
                 }:
                     self._forget_loaded_thread(thread_id)
                     raise CodexThreadNotFound(str(pending.error)) from pending.error

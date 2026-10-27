@@ -18,6 +18,7 @@ from unittest import mock
 from management_portal.codex_app_server_client import (
     CodexAppServerClient,
     CodexAppServerError,
+    CodexThreadNotFound,
     CodexTurnAuthenticationError,
     CodexCompactionInProgress,
     CodexThreadWriterBusy,
@@ -3081,17 +3082,26 @@ class CodexAppServerClientTest(unittest.TestCase):
 
     def test_explicit_missing_thread_response_invalidates_the_cached_thread(self) -> None:
         """app-server 明确回复线程不存在时清除该线程的本地缓存"""
-        client = CodexAppServerClient(self.socket_path)
-        client._thread_activity["persisted"] = time.monotonic()
-        def reject(message):
-            client._dispatch_message({
-                "id": message["id"],
-                "error": {"code": -32600, "message": "thread not found: persisted"},
-            })
-        with mock.patch.object(client, "_connect"), mock.patch.object(client, "_send", side_effect=reject):
-            with self.assertRaisesRegex(CodexAppServerError, "thread not found"):
-                client.request("turn/start", {"threadId": "persisted", "input": []})
-        self.assertNotIn("persisted", client._thread_activity)
+        for error, missing in [
+            ("thread not found: persisted", True),
+            ("no rollout found for thread id persisted", True),
+            ("invalid paginated history lineage for persisted: missing source rollout", True),
+            ("invalid paginated history lineage for other: missing source rollout", False),
+            ("invalid paginated history lineage for persisted: invalid cursor", False),
+        ]:
+            with self.subTest(error=error):
+                client = CodexAppServerClient(self.socket_path)
+                client._thread_activity["persisted"] = time.monotonic()
+                def reject(message):
+                    client._dispatch_message({
+                        "id": message["id"],
+                        "error": {"code": -32600, "message": error},
+                    })
+                with mock.patch.object(client, "_connect"), mock.patch.object(client, "_send", side_effect=reject):
+                    with self.assertRaises(CodexAppServerError) as caught:
+                        client.request("thread/fork", {"threadId": "persisted"})
+                self.assertEqual(isinstance(caught.exception, CodexThreadNotFound), missing)
+                self.assertEqual("persisted" not in client._thread_activity, missing)
 
     def test_failed_turn_start_does_not_restore_unloaded_cache(self) -> None:
         """线程已卸载导致 turn/start 失败时，不恢复已清除的线程缓存"""
