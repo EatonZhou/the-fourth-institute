@@ -1134,6 +1134,11 @@ def lifecycle(command, root, *, shutdown_timeout=20.0):
             start_services(providers, controller)
             for component in COMPONENTS[1:]:
                 controller.start(unit_name(target, component))
+            # A development pair serves the public port from its router, in front of both Webs.
+            from management_common.instance_config import has_development
+            if has_development(root):
+                for unit in ("dev-web", "router"):
+                    controller.start(unit_name(target, unit))
             save_stage(state, "start", "started")
             return {"status": "started", "installation_root": str(root)}
         if sys.platform.startswith("linux") and command == "stop":

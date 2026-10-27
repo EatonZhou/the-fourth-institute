@@ -142,6 +142,25 @@ class SharedInstanceTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "cutover"):
                     installer.lifecycle("start", root)
 
+    def test_start_brings_up_the_development_pair_after_the_instance(self):
+        """安装与实例回归：配对开发站的 start 在实例组件之后启动 Dev Web 与公共路由。"""
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "instance"
+            state = {"target": self.target(root), "completed": ["database"],
+                     "stages": [{"status": "installed"}]}
+            with patch.object(installer, "owned_state", return_value=state), \
+                    patch("scripts.tfi_release_provider_services.owned_services", return_value={"names": [], "daemons": [], "units": [], "template": None}), \
+                    patch("scripts.tfi_release_provider_services._run"), \
+                    patch("management_common.instance_config.has_development", return_value=True), \
+                    patch.object(installer, "check_available"), \
+                    patch.object(installer, "register_services"), \
+                    patch.object(installer, "wait_database"), \
+                    patch.object(installer, "service_controller") as control:
+                installer.lifecycle("start", root)
+            started = [call.args[0] for call in control.return_value.start.call_args_list]
+            self.assertEqual(started[-3:], [installer.unit_name(state["target"], name)
+                                            for name in ("web", "dev-web", "router")])
+
     def test_copy_verifies_shared_code_and_does_not_overwrite_it(self):
         """安装与实例回归：copy verifies shared code and does not overwrite it。"""
         with tempfile.TemporaryDirectory() as temporary:
