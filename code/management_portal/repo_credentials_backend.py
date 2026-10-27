@@ -87,13 +87,6 @@ def _ensure_private_directory(path: Path) -> None:
         raise RepoCredentialStoreError(str(exc)) from exc
 
 
-def _assert_private_file(path: Path) -> None:
-    try:
-        file_permissions.assert_private_file(path)
-    except file_permissions.PrivateFileError as exc:
-        raise RepoCredentialStoreError(str(exc)) from exc
-
-
 def _read_private_bytes(path: Path) -> bytes:
     try:
         return file_permissions.read_private_bytes(path)

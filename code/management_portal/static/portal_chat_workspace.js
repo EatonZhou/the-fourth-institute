@@ -3386,32 +3386,6 @@
     return new ResidentChatPanel(options);
   }
 
-  function requestWorkspaceAction(contract, actionName, payload = {}) {
-    const action = contract?.actions?.[String(actionName || "")];
-    const instruction = String(action?.instruction || "").trim();
-    if (instruction) {
-      const args = {
-        ...(action.arguments && typeof action.arguments === "object" ? action.arguments : {}),
-        ...(payload && typeof payload === "object" ? payload : {}),
-      };
-      // Session restarts keep their own pending-receipt bookkeeping.
-      if (instruction === "RestartSession") {
-        return window.PortalResidentService.restartSession({ ...(payload || {}), resident_id: args.resident_id });
-      }
-      return window.PortalInstructionClient.execute(instruction, args, {
-        idempotencyKey: `workspace-action:${globalThis.PortalUIPrimitives.randomUUID()}`,
-      });
-    }
-    const url = String(action?.url || "").trim();
-    const method = String(action?.method || "POST").trim().toUpperCase();
-    if (!url) throw new Error(`当前 Chat Workspace 没有提供 ${actionName} 能力`);
-    if (method !== "POST") throw new Error(`Chat Workspace 暂不支持 ${method} action`);
-    return window.PortalAPI.post(url, {
-      ...(action.payload && typeof action.payload === "object" ? action.payload : {}),
-      ...(payload && typeof payload === "object" ? payload : {}),
-    });
-  }
-
   window.PortalChatWorkspace = {
     residentHandoffParts,
     messageRole,
