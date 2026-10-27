@@ -14,7 +14,8 @@ from management_common.instance_paths import instance_root
 from management_common.file_lock import try_lock_descriptor
 from management_common.process_runtime import run_process
 
-MAX_SOURCE_BYTES = 64 * 1024 * 1024
+# Video-bearing decks can be much larger than the static PDF they produce.
+MAX_SOURCE_BYTES = 256 * 1024 * 1024
 MAX_PDF_BYTES = 128 * 1024 * 1024
 CACHE_BYTES = 512 * 1024 * 1024
 CONVERSION_SECONDS = 60
@@ -36,11 +37,17 @@ def libreoffice() -> str:
     return executable
 
 
+def _check_source_size(size: int) -> None:
+    if size > MAX_SOURCE_BYTES:
+        limit_mib = MAX_SOURCE_BYTES // (1024 * 1024)
+        raise PresentationPreviewError(f"演示文稿超过 {limit_mib} MiB 预览上限，请下载原文件查看。")
+
+
 def read_presentation(path: Path) -> bytes:
     with path.open("rb") as stream:
-        if os.fstat(stream.fileno()).st_size > MAX_SOURCE_BYTES:
-            raise PresentationPreviewError("演示文稿超过 64 MiB 预览上限，请下载原文件查看。")
+        _check_source_size(os.fstat(stream.fileno()).st_size)
         data = stream.read(MAX_SOURCE_BYTES + 1)
+    _check_source_size(len(data))
     return data
 
 
@@ -58,8 +65,7 @@ def presentation_pdf(data: bytes, filename: str) -> Path:
     suffix = Path(filename).suffix.lower()
     if suffix not in {".ppt", ".pptx"}:
         raise PresentationPreviewError("仅支持 PPT 和 PPTX 演示文稿预览。")
-    if len(data) > MAX_SOURCE_BYTES:
-        raise PresentationPreviewError("演示文稿超过 64 MiB 预览上限，请下载原文件查看。")
+    _check_source_size(len(data))
     if not data:
         raise PresentationPreviewError("演示文稿为空，请下载原文件检查。")
     executable = libreoffice()

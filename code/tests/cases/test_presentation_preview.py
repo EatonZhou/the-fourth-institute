@@ -63,11 +63,37 @@ def test_cache_uses_content_and_releases_conversion_slot(converter):
     assert not list(first.parent.glob('convert-*'))
 
 
+def test_video_deck_above_64_mib_can_preview(tmp_path, converter):
+    # Embedded videos can make an otherwise ordinary presentation exceed 64 MiB.
+    source = tmp_path / 'deck-with-videos.pptx'
+    size = 65 * 1024 * 1024
+    with source.open('wb') as stream:
+        stream.write(b'PK\x03\x04')
+        stream.truncate(size)
+    data = preview.read_presentation(source)
+    assert len(data) == size
+    pdf = preview.presentation_pdf(data, source.name)
+    assert pdf.read_bytes().startswith(b'%PDF-')
+    assert converter.call_count == 1
+    assert source.stat().st_size == size
+    with source.open('rb') as stream:
+        assert stream.read(4) == b'PK\x03\x04'
+
+
+def test_oversized_source_rejected_before_reading_or_converting(tmp_path, converter):
+    source = tmp_path / 'oversized.pptx'
+    with source.open('wb') as stream:
+        stream.truncate(preview.MAX_SOURCE_BYTES + 1)
+    with pytest.raises(preview.PresentationPreviewError, match='预览上限'):
+        preview.read_presentation(source)
+    converter.assert_not_called()
+
+
 def test_conversion_errors_limits_and_cleanup(converter, monkeypatch):
     with pytest.raises(preview.PresentationPreviewError, match='PPT'):
         preview.presentation_pdf(b'file', 'slides.docx')
     monkeypatch.setattr(preview, 'MAX_SOURCE_BYTES', 4)
-    with pytest.raises(preview.PresentationPreviewError, match='64 MiB'):
+    with pytest.raises(preview.PresentationPreviewError, match='预览上限'):
         preview.presentation_pdf(b'large', 'slides.ppt')
     converter.side_effect = subprocess.TimeoutExpired('soffice', 60)
     with pytest.raises(preview.PresentationPreviewError, match='超时'):
