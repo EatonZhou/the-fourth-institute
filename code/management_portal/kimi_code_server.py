@@ -13,7 +13,7 @@ from management_common.process_runtime import run_process
 from management_common.portal_paths import resolve_directory
 from management_common.site_config import read_site_config
 from management_common.provider_runtime_paths import runtime_entry
-from management_portal import kimi_portal_tools
+from management_portal import kimi_portal_tools, kimi_windows_runtime
 from management_portal.ai_provider_registry import AIProviderRegistry
 
 
@@ -165,6 +165,7 @@ def main() -> int:
         "KIMI_CODE_AGENT_SWARM_MAX_CONCURRENCY": os.getenv("PORTAL_KIMI_CODE_SWARM_MAX_CONCURRENCY", "3"),
         "KIMI_SUBAGENT_TIMEOUT_MS": os.getenv("PORTAL_KIMI_CODE_SUBAGENT_TIMEOUT_MS", "2147000000"),
     })
+    env.update(kimi_windows_runtime.environment())
     command = [
             str(binary),
             "web",

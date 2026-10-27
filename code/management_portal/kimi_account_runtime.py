@@ -17,7 +17,7 @@ from management_common.file_lock import lock_stream
 from management_common.file_permissions import atomic_write_private_bytes, ensure_private_directory
 from management_common.instance_paths import accounts_root
 from management_common.process_runtime import spawn_process, terminate_process_tree, process_alive
-from management_portal import kimi_provider_catalog, kimi_code_server, kimi_portal_tools, model_api_store
+from management_portal import kimi_provider_catalog, kimi_code_server, kimi_portal_tools, model_api_store, kimi_windows_runtime
 from management_portal.ai_provider_registry import AIProviderRegistry
 from management_portal.execution.account_registrations import registrations
 from management_portal.resident_shell_environment import resident_process_environment
@@ -127,6 +127,7 @@ def client_for_route(route, *, for_control=False):
             port = reservation.getsockname()[1]
         env, _ = resident_process_environment({})
         env["KIMI_CODE_HOME"] = str(target)
+        env.update(kimi_windows_runtime.environment())
         with (target / "server.log").open("ab") as log:
             process = spawn_process([str(binary), "web", "--no-open", "--host", "127.0.0.1", "--port", str(port),
                                      "--dangerous-bypass-auth"], cwd=target, env=env, stdout=log, stderr=log,

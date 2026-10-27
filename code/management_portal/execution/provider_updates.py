@@ -213,6 +213,12 @@ class ProviderRuntime:
     def link(self) -> Path:
         raise NotImplementedError
 
+    def prerequisites_available(self) -> bool:
+        return True
+
+    def prepare_prerequisites(self) -> None:
+        pass
+
     def activation_link(self) -> Path:
         return self.link()
 
@@ -381,6 +387,14 @@ class ClaudeRuntime(ProviderRuntime):
 
 
 class KimiRuntime(ProviderRuntime):
+    def prerequisites_available(self) -> bool:
+        from management_portal.kimi_windows_runtime import available
+        return available()
+
+    def prepare_prerequisites(self) -> None:
+        from management_portal.kimi_windows_runtime import prepare
+        prepare()
+
     unit_files = ("portal-kimi-code.service",)
 
     @property
@@ -395,6 +409,7 @@ class KimiRuntime(ProviderRuntime):
         return (linked_version(self.link(), "kimi-code-"),)
 
     def stage(self, versions: tuple[str, ...]) -> Path:
+        self.prepare_prerequisites()
         (version,) = versions
         root = RUNTIMES / f"kimi-code-{version}"
         binary = npm_binary(root, "kimi")
@@ -687,7 +702,8 @@ def runtime_available(provider: str) -> bool:
         return False
     try:
         versions = runtime.installed()
-        return bool(versions and all(v and v != "0" for v in versions) and runtime.link().exists())
+        return bool(versions and all(v and v != "0" for v in versions) and runtime.link().exists()
+                    and runtime.prerequisites_available())
     except (OSError, ValueError, RuntimeError, subprocess.SubprocessError):
         return False
 
@@ -723,6 +739,7 @@ def prepare_runtime(provider: str) -> dict:
             state, save = locked
             result = state.setdefault("preparations", {}).setdefault(provider, {})
             try:
+                runtime.prepare_prerequisites()
                 if runtime_available(provider):
                     result.update(status="ready", source="existing")
                 else:
