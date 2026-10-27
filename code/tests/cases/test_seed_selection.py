@@ -126,7 +126,10 @@ INSERT INTO "s"."t" ("a") VALUES ('body\nINSERT INTO "x"."y" ("z") VALUES (1);')
             payload = {'ok': False, 'execution_layer': {'ok': False}, 'society_service': {'ok': True}}
             http = HTTPError('http://localhost/api/health', 503, 'Unavailable', {}, io.BytesIO(json.dumps(payload).encode()))
             controller = Mock()
-            controller.status.return_value = {'service': 'tfi-fixture-worker', 'active': 'inactive'}
+            # Web answers with a 503 while the Worker it reports on is stopped.
+            controller.status.side_effect = lambda unit: (
+                {'service': 'tfi-fixture-worker', 'active': 'inactive'} if 'worker' in unit
+                else {'service': unit, 'active': 'active'})
             (root / 'runtime/worker.log').write_text('earlier output\nTraceback (most recent call last):\nRuntimeError: fixture startup failure\n')
             with patch.object(installer, 'service_controller', return_value=controller), \
                     patch.object(installer._LOCAL_HTTP, 'open', side_effect=[http, OSError('not ready')]):

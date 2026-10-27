@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-07-29'
 version:
-  number: 157
+  number: 163
   created_at: '2026-07-29'
   created_by:
     user: ''
     agent: ''
-  updated_at: '2026-10-19T19:59:40Z'
+  updated_at: '2026-10-27T12:50:14Z'
   updated_by:
-    user: tfi-exported-user
-    agent: resident_865c3c24f251
+    user: ''
+    agent: resident_73cb83291316
 importance: 10
 metaness: 3
 ai_generated: false
@@ -62,7 +62,7 @@ links:
   - ${code_root}/management_portal/society_service/script_runs/events.py
   - ${code_root}/management_common/portal_release_events.py
   - ${code_root}/management_portal/society_service/lineage_release_events.py
-  - ${code_root}/scripts/publish_portal_release.py
+  - ${code_root}/scripts/tfi_development_runtime.py
   - ${code_root}/tests/cases/test_portal_release_events.py
   - ${code_root}/management_portal/society_service/trigger_paths.py
   - ${code_root}/management_portal/society_service/trigger_path_storage.py
@@ -237,13 +237,13 @@ Effect 仍可用字符串简写固定提示词，也可省略它或留空；通�
 
 ### Portal 发布完成 Event
 
-`portal.release_published` 表示一次已经生效并通过健康检查的 Portal Release 发布。发布器确认本次提交已激活、健康检查通过且 Release 当前提交等于本次提交后，把发布事实写入 PostgreSQL。事实包含 `publication_id`、`commit`、`previous_commit`、`completed_at`、`source`，并分配稳定递增的 `sequence`。同一次发布的写入可幂等重试；同一提交的另一次成功发布有独立发布 ID。失败发布不产生完成事实，发布日志文件不参与事件检测。
+`portal.release_published` 表示一次已经生效并通过健康检查的 Portal Release 发布。`tfi_dev.py publish` 快进 Release 后排队一次激活任务（`scripts/tfi_development_runtime.py` 的 `apply_request`）；激活任务重启受影响的服务，Dev、Release 和用户入口的健康检查都通过后，如果 Release 当前提交与上一次成功激活记录 `runtime/development-activation.json` 中的提交不同，就把发布事实写入 PostgreSQL。事实包含 `publication_id`、`commit`、`previous_commit`、`completed_at`、`source`，并分配稳定递增的 `sequence`：`commit` 是激活时的 Release 当前提交，`previous_commit` 是本次发布前的 Release 提交，`source` 为 `direct`，`publication_id` 由提交和发布请求时间计算。同一次发布请求的写入可幂等重试。激活失败不产生完成事实；Release 当前提交已在上一次成功激活中生效时，再次激活也不写新事实。发布日志文件不参与事件检测。
 
 事件源首次订阅时以当前事实水位建立基线，此后读取游标之后的事实。SocietyService 停机期间的发布在恢复后继续读取。每个订阅源独立保存持久游标，接受事件时比较原游标并推进，重试同一事实使用相同事件标识，避免重复接受。暂停和恢复沿用事件源的基线规则。`misfire_policy=all`（默认）逐次补发；`coalesce_latest` 只接受当前积压中最新的一次，并将游标推进到该事实。改变积压策略会使旧投递合同失效，但保留事实游标、暂停状态和触发预算。
 
 事件 payload 保留以上全部事实字段。发布事件可同时连接确定性 Effect 与 Resident，例如 Effect 通过 `RunScript` 核对发布提交的模块地图，另一条 Route 提示汇报成员执行具名工作项《整理进展摘要》。两条路线共享同一次发布事实，独立处理各自结果。自动激活使用 Lineage 的显式运行身份，沿用本 Design 的身份和权限规则。
 
-事实写入失败须在发布回执中明确暴露；事件核对失败、脚本失败或下游投递失败均不撤销已生效发布，也不阻止发布完成。`TriggerEvent` 只触发 `manual.triggered`；人工补跑通过单独的手动事件源连接同一核对流程，不能伪造发布完成事实。开发投影中的消费方式见 decision_13e1a748cf04。
+事实写入失败记录在激活 receipt 的 `release_event` 中（`ok: false` 与错误信息）；事件核对失败、脚本失败或下游投递失败均不撤销已生效发布，也不阻止发布完成。`TriggerEvent` 只触发 `manual.triggered`；人工补跑通过单独的手动事件源连接同一核对流程，不能伪造发布完成事实。开发投影中的消费方式见 decision_13e1a748cf04。
 
 ### Event 的投递与恢复
 
@@ -428,9 +428,9 @@ done
 - **按顺序执行，调用失败即停止。** 与 bash 的 `set -e` 相同：一次调用失败时脚本立即结束，Effect 产生 `effect.failed`；作为 `if` 条件的调用除外。已经提交的调用保留结果，不回滚。几项修改需要同时成立或同时不成立时，放进一次 `ApplyLineageChanges` 调用。
 - **每次调用都经过完整的指令流程。** 调用者是本次运行的发起者，权限系统逐次检查，Effect 不能获得发起者没有的权限。调用不提供 `expected_version`，直接作用于目标的当前状态。
 - **每次调用有自己的幂等键。** 幂等键按 Lineage、Effect、激活 Event、本次调用的身份，以及调用在脚本中的位置（语句位置和所在各层循环的序号）计算，格式为 `effect:` 加哈希。第一次调用（位置 `c1`，不在循环中）沿用激活本身的键，同一次激活重放时不会重复执行。
-- **中断后从未完成的调用继续。** 运行器保存每次已完成调用的完整结果后才继续执行。重新认领或重试时，脚本从头解释，已完成的调用直接使用保存的结果。`effect_script` 是每次激活的临时恢复日志。单次结果超过 256 KiB，或放入日志后超过 2 MiB 时，完整 JSON 存入 `ArtifactStore`，日志保存引用，恢复时校验作用域、字节数和 SHA-256 后读取；不得省略结果并因此重复调用。引用包含 Lineage ID、激活键、用途、摘要、字节数和内容类型；文件不暴露绝对路径，读取内容前必须按所属 Trigger Path 检查权限。
+- **中断后从未完成的调用继续。** 运行器保存每次已完成调用的完整结果后才继续执行。重新认领或重试时，脚本从头解释，已完成的调用直接使用保存的结果。`effect_script` 是每次激活的临时恢复日志。单次结果超过 256 KiB，或放入日志后超过 2 MiB 时，完整 JSON 存入 `ArtifactStore`（本安装 `staging_root` 下的 `shared/effect_artifacts`，可用 `PORTAL_EFFECT_ARTIFACT_ROOT` 指定其他绝对路径），日志保存引用，恢复时校验作用域、字节数和 SHA-256 后读取；不得省略结果并因此重复调用。引用包含 Lineage ID、激活键、用途、摘要、字节数和内容类型；文件不暴露绝对路径，读取内容前必须按所属 Trigger Path 检查权限。
 - **临时失败保持续跑日志。** `retryable: true` 的已确认失败保留恢复日志和原幂等键，重新认领后只重试未成功调用。提交状态为 `unknown`、业务已提交但投影仍待确认、或恢复结果 artifact 不可读取时，调用记录为未确认，激活保持可恢复，不伪造成功或最终失败，也不清理恢复依赖。明确取消或超时的终态要求提供实际原因与发生时间；仍有未确认调用时拒绝终结。已保存的终态失败按终态消费。
-- **人工处置结束结果未知的激活。** 具有该 Lineage admin 权限的调用者可用 `ResolveEffectActivation` 标记成功或失败，并附说明。执行与处置共享每个激活的进程间互斥，正在执行外部调用时拒绝处置；互斥连接不持有数据库事务或 Lineage 定义行锁。处置在短事务中保存 Effect 步骤终态、移除恢复日志、登记清理任务并释放本次 Event/Wire 待投递项，随后清理恢复依赖。终态永久记录处置人、结果、说明与时间，原调用保留未知状态。重复提交相同处置返回首次记录，不同结果被拒绝。本次脚本到此结束，不继续剩余调用，不产生下游结果 Event；连线中的其他待投递项保留，删除不再受本次激活阻塞。运行面板通过 `GetTriggerPath.steps` 的 `resolution_required` 显示“标记成功 / 标记失败”。重试确认无法得到结果时，平台停止重试并请人处置（见“投递失败的连线单独等待重试”）。
+- **人工处置结束结果未知的激活。** 具有该 Lineage admin 权限的调用者可用 `ResolveEffectActivation` 标记成功或失败，并附说明。执行与处置共享每个激活的进程间互斥，正在执行外部调用时拒绝处置；互斥连接不持有数据库事务或 Lineage 定义行锁。处置在短事务中保存 Effect 步骤终态、移除恢复日志、登记清理任务并释放本次 Event/Wire 待投递项，同时结束同一 Trigger Path 上本次投递的等待步骤；路径只有在其余步骤也已结束时才终结。投递步骤由该激活的路径、连线和前驱关系唯一确定，不能仅按连线名称结束其他分支或后续 Event；关系歧义或仍在执行时拒绝处置，事务整体回滚。随后清理恢复依赖。终态永久记录处置人、结果、说明与时间，原调用保留未知状态。重复提交相同处置返回首次记录，并补齐同一次历史处置尚未结束的投递步骤，不改写处置时间或说明；不同结果被拒绝。人工处置过的步骤不再生成新的自动失败通知，同一路径中其他真实失败仍按原渠道通知。本次脚本到此结束，不继续剩余调用，不产生下游结果 Event；连线中的其他待投递项保留，删除不再受本次激活阻塞。运行面板通过 `GetTriggerPath.steps` 的 `resolution_required` 显示“标记成功 / 标记失败”。重试确认无法得到结果时，平台停止重试并请人处置（见“投递失败的连线单独等待重试”）。
 - **调用次数有上限。** 一次激活最多执行 32 次指令调用，循环中的调用逐次计数；达到上限时 Effect 失败，已完成的调用保留。每次调用的参数与消息预算沿用"一次激活的输入"中的上限。
 - **输出由 `output` 决定。** 脚本执行过 `output` 时，Effect 输出就是这些字段；没有执行 `output` 时，输出取最后一次成功调用的声明结果字段。Event 内嵌输出预算为 64,000 字节；超过预算的完整输出存为正式 artifact，Event 和长期记录携带 `artifact` 引用，不跳过字段。正式输出长期保留；恢复专用 artifact 仅在终态提交后清理。
 - **脚本正常执行的结果产生 Event。** 成功时产生 `effect.succeeded` 并携带输出；失败时产生 `effect.failed`，不占用 Effect 的输出端口。失败输出包括 `error_code`、`diagnostic`、`retryable`、失败所在的行号 `failed_line` 和已完成的调用次数 `completed_calls`；`fail` 产生的失败不可重试；续跑时发现脚本已被修改，以 `effect.script_changed` 失败，不在新脚本上继续。两种结果 Event 都带 `call_count`（本次激活的调用次数）。
@@ -449,7 +449,173 @@ done
 
 脚本或激活连线的参数映射读取 `event.payload.<字段>`，而激活这个 Effect 的全部 Event 类型都不带这个字段时，诊断报告 warning 级的 `effect.unavailable_event_payload`，并列出可用字段。目前登记了字段表的 Event 类型是 `resident.work_finished`、`resident.work_failed`、`resident.work_cancelled`（`message_id`、`job_id`）与 `residents.all_finished`（`resident_ids`、`resident_count`），另加每次投递都有的 `run_id`、`route_path`、`event_source_id`、`source_event_id`、`runtime_event_depth`、`wire_id`；激活来源中有未登记字段表的类型时不检查。
 
-**配置接受 `script`、`endpoints` 与 `failure_recipients`。** `failure_recipients` 保存失败通知的 User 用户名清单，最多 20 位；新建时未指定…5604 tokens truncated…中心。
+**配置接受 `script`、`endpoints` 与 `failure_recipients`。** `failure_recipients` 保存失败通知的 User 用户名清单，最多 20 位；新建时未指定清单，平台按创建操作的人类来源填入设立用户，Resident 代建时沿工作来源取得人类发起人。显式空数组关闭失败通知。已有 Effect 没有这个字段时处于“尚未配置”状态：失败时不通知任何人；保存脚本、端点或 Lineage 其他部分都保留这一状态，不把它改写成空数组，只有用户添加收件人或明确关闭时才写入清单。平台不为旧 Effect 推断设立用户，也不批量迁移。其他字段（例如旧格式的 `instruction`、`arguments`）保存时被拒绝。
+
+**收件人在“失败通知”编辑器中修改，单个 Effect 与多个 Effect 使用同一编辑器。** Effect 检查器显示“失败通知”摘要：每位收件人显示为一个标签，带头像（无上传头像时用首字母）、显示名称和用户名；摘要区分三种状态，互不合并：有清单时列出收件人；显式空数组写“已关闭 · 失败时不提醒任何人”；已有 Effect 没有清单写“尚未配置 · 当前不通知”（虚线框），不显示成已关闭，也不显示成会通知设立用户；只有模板草稿尚未指定清单时写“新建时通知设立它的用户”。检查器、概览、内部对象行、问题卡片和编辑器预览使用同一判断。不是当前有效 User 的收件人标为“已失效”。点“修改收件人…”打开编辑器。在搜索框按用户名或显示名称查找有效 User（`ListUsers status=active`），用方向键加回车或点击添加；用 × 或在空搜索框按退格移除。“只通知我”把清单换成当前用户；“关闭通知”移除全部收件人，并把所编辑的 Effect（包括尚未配置的）明确写为空数组。编辑尚未配置的 Effect 时，编辑器说明它当前不通知，并提示添加收件人或选择“关闭通知”。编辑器底部实时写出保存后的结果，例如“保存后，失败时提醒：TFI portal、TFI portal”或“保存后关闭失败通知”。清单没有变化时不能保存；带着未保存的修改关闭编辑器时先确认。保存用一次 `ApplyLineageChanges` 只更新 `config.failure_recipients`，以打开编辑器时的定义版本做并发检查，与脚本、端点的保存相互独立：检查器中未保存的脚本草稿保留，之后照常保存，脚本保存不携带收件人。模板编辑器使用同一编辑器，确认后写入模板草稿，随模板一起保存。修改收件人与 Effect 的其他配置使用相同的权限，不重启或中断运行。收件人需是有效 User，投递时忽略已停用的用户。Effect 执行失败以及它启动的 RunScript 失败只使用这份清单，不追加项目或全局管理员；已有失败处理事件源时继续由它处理。清单为空、Effect 已删除，或旧 Effect 没有记录可核实的设立用户且未指定清单时不广播，用户可在检查器中指定收件人。
+
+
+**常见写法：**
+
+| 动作 | 调用的指令 | 常用参数来源 |
+| --- | --- | --- |
+| 给 Resident 发消息 | `DeliverMessage` | `resident_id` 来自 target 端点；`message` 写固定提示词，与本次输入组合 |
+| Fork 一个 Resident | `ForkResident` | `source_resident_id` 来自 target 端点 |
+| 先 Fork 再派活 | `ForkResident`、`DeliverMessage` | 第二次调用的 `resident_id` 来自第一次调用的结果 |
+| 修改 Lineage | `ApplyLineageChanges` | 操作列表用 `${…}` 引用上游 Effect 输出，或本脚本中前面调用返回的对象 ID |
+| 写共享状态 | `UpdateSharedState`；带 `expected_value` 时只在当前值相等时写入 | 键为常量，值来自 Event、上游输出或前面的调用 |
+| 通知用户 | `CreateNotification` | 标题与正文为常量或带变量的文字 |
+| 准备工作区交接 | `PrepareWorkspaceHandoff` | 来源与目标 Resident 来自两个 target 端点 |
+| 触发手动 Event | `TriggerEvent` | `event_source_id` 指向 `manual.triggered` 事件源；`prompt`、`payload` 来自本次输入。其他类型的 Event 只由真实事实产生 |
+| 停止接单、取消工作、清空队列或删除 Resident | `OpenIntake`（`open:=false`）、`ListResidentStates`、`CancelInput`、`ClearMailbox`、`DeleteResident` | `resident_id` 来自 target 端点；`CancelInput` 使用 `ListResidentStates` 读到的当前消息 ID；需要多步时由调用者组合 |
+
+`ForkResident` 只创建新 Resident，`DeliverMessage` 只投递消息。"先 Fork 再派活"写成同一个 Effect 中的两次调用；只有这组动作需要在图上分别可见时，才画成两个 Effect。
+
+### Graph State、Function Block、Seed 与 Workspace Handoff
+
+**Graph State：**
+- 最多 128 个 cell；单个 cell 最大 64 KiB；总量最大 512 KiB。
+- 使用独立的 revision，与图的 revision 无关。
+
+**Function Block：**
+- 实例拥有按定义展开出的内部组件。
+- 解除实例（`Unfunctionalize`；Family 用 `Unfamilize`）后，内部对象变成普通的 Lineage 对象。
+- 其余规则见 decision_5b5653c3eaa5。
+
+**Seed 是 Program 组件，不是 Resident。**
+- 生成候选时先创建 Seed。声明了候选的 Function Block（如“扩展想法”“扩展方案”）运行时，从来源 Resident Fork 出一个探索者，探索者在自有工作区写候选 Markdown，系统同步到 Lineage 目录；Seed 记录类型与文件路径，不记录探索者，并和来源 Resident 之间建立候选 Fork（decision_5b5653c3eaa5“候选”）。
+- **候选 Fork（`candidate_fork`）是 Lineage 中的一种关系，不是页面画的线。** 它从一个 Resident 指向一个 Seed，表示这个候选从该 Resident 的工作出发，采纳时 Fork 这个 Resident。它是唯一以 Seed 为终点的关系，一个 Seed 最多一条；Seed 的来源只记录在这里，Seed 组件本身不保存来源。
+  - 建立：Function Block 创建 Seed 时一起建立；手动建立时，把 Resident 卡片上的“+”拖到 Seed 上（单击“+”仍是 Fork），或在 Seed 设置中选择来源 Resident；对应指令 `CreateCandidateFork`（decision_4637ca4a69e2）。换成另一个 Resident 时替换原有的一条。写入 Seed 的 `config.source_resident_id` 也在提交时记录为候选 Fork。
+  - 删除：在关系检查器或 Seed 设置中删除（`DeleteCandidateFork`）；Seed 被删除时一起删除；来源 Resident 被删除时只删除这条关系，Seed 保留，等待重新建立。放弃 Seed 不删除它，它随 Seed 一起隐藏。
+  - 画布：从 Resident 指向 Seed 的紫色虚线箭头，标签“候选 Fork”；点开标签查看来源、Seed 和候选文件，并可删除。
+  - 存储：候选 Fork 与其他边共用当前事实表，保存关系 ID、类型和两端对象；不额外生成边的创建、更新时间字段。删除 Resident 时移除其相关候选 Fork，保留的候选 Fork 必须可以正常重新保存。
+- Seed 的 Markdown 位于 Lineage 目录：`artifact_path` 相对于 Lineage 目录（`${share_root}/Agents/<Lineage ID>`），不在任何 Resident 的工作区中，所以删除写出它的探索者或候选 Fork 的来源后，Seed 和 Markdown 都保留。单击 Seed 打开它的卡片：预览这份文件，提供采纳、抛弃和设置；双击或卡片上的“设置”打开 Seed 设置（名称、类型、候选文件和候选 Fork）。画布上 Seed 显示文件的一级标题，每个 Seed 只画一次。
+- `PromoteSeed` 从候选 Fork 的来源 Resident Fork 出待命的 Resident，这条候选 Fork 随之变成从来源到新 Resident 的继承关系（标签“Seed 采纳”，关系 ID 不变），并返回候选 Markdown 的绝对路径；它本身不发送任务。没有候选 Fork 的 Seed 不能采纳，卡片提示“先建立候选 Fork 才能采纳”。页面采纳时随后用 `DeliverMessage` 把所选的行动目的、补充提示和候选路径作为第一条任务发给新 Resident；投递失败时如实提示，新 Resident 保持待命。
+- 放弃 Seed 时，用 `UpdateComponent` 把状态改为 `dismissed`，记录放弃时间、来源（owner 或 explorer）和可选理由，只改变这个组件的状态，Markdown 保留。探索者在自己的候选文件第一行写入抛弃标记时，它的下一轮工作结束后系统做同样的修改。
+
+**Workspace Handoff：**
+- 只能在两个不同的 Resident 之间进行。
+- 不交接 secret、缓存和符号链接；最多 60,000 个文件、总计 2 GiB。
+- 准备命令默认超时 5400 秒（90 分钟）。环境变量 `PORTAL_HANDOFF_COMMAND_TIMEOUT_SECONDS` 只有在是有限正数时才生效。
+- 页面直接创建的交接只准备和绑定工作区，不自动启动接收方。后续工作要由 `workspace_handoff.ready` Event Source 接到激活连线或 Effect。
+
+**删除 Resident：** 画布和调用 `DeleteResident` 的 Effect 使用同一条完整删除路径，规则见 decision_6fc653d55c79。删除 Selector、Reducer 组件只解除它与执行者的绑定，不删除执行者 Resident。
+
+### Leader 与 Leader Pulse
+
+**Leader 是 Lineage 的特殊全局身份。** 它的产生和接任规则见 decision_6fc653d55c79。
+
+**周期检查由内置 Function Block Leader Pulse 表达。** Portal 不维护专门的脉冲设置、脉冲记录或调度子系统。
+
+### 历史对象不进入现行模型
+
+历史自动化对象的名称只出现在数据迁移代码及其输入夹具中。现行规范、领域测试和 UI 测试只验证 Program 的公开行为与结构，不依赖已删除的内部函数，也不把历史对象当作当前能力描述。
+
+## 编辑页面：Workbench
+
+Workbench 是 Lineage 页面里编辑 HATG 的工作区。页面只是能力的一个入口，Program 和指令的能力以指令目录、结构定义和权限为准。
+
+### 页面区域
+
+| 区域 | 内容与用途 |
+| --- | --- |
+| 顶部工具栏 | Lineage 名称、ID、设置入口，以及折叠、Context/Workspace 视图切换、新节点、轨迹分支（Fork）、选区操作（Functionalize 封装为 Function Block、Familize 封装为 Family、存为模板、做成改写模板、批量删除、迁移选区、取消多选）、工作交接和全局 Stop |
+| 画布 | 可平移、缩放的视口；卡片表示 Resident 和 Program 组件，SVG 线条和箭头表示连线；空图时显示创建入口 |
+| 节点卡片 | 图标、名称、对象类型、状态摘要和端口；颜色与标记区分 Event、Packet、Effect 和异常状态 |
+| 检查器 | 选中对象或连线后显示字段、诊断，以及保存、删除和手动触发控件 |
+| 视图控件 | 总览、操作、检视三档信息密度；放大、缩小、适配、导航器、搜索、关系筛选、自动整理、深度重排、跳转到 Leader 和邻域聚焦（选中 Family 门面时只显示这个 Family，卡片保持原位置；门面卡片的“+”效果相同，“−”折叠并回到点“+”之前的画布）。未接线时，点击 Resident 卡片打开它的 Chat，包括画布已经选中的卡片（例如加载时选中的 leader） |
+| 辅助区 | Seed 检查器、小地图和图例 |
+| 底部 Function shelf | 可拖拽的 Event、Loop、Filter、Selector、Reducer、Effect、Seed 及 Function Block 原语库 |
+| Function Block Studio | 单独的编辑界面，包含子图原语库、画布和检查器 |
+
+检查器随所在 HATG 面板宽度排版。窄面板中的表单使用可收缩的单列网格，字段、下拉控件和保存按钮保持在面板内；长文字换行，不以横向裁切隐藏操作。宽度不超过 360 像素时，Program 检查器使用面板全部宽度，排在导航、连线提示和一小段画布下方；宽度为 361 至 520 像素时，检查器靠右显示，上限 300 像素。表单内容超出高度时沿纵向滚动。面板宽度不超过 720 像素时，检查器顶部按完整导航栏的实际高度留出空间。导航因面板缩放、语言切换或控件换行改变高度时，预留位置同步调整，Fit、缩放、搜索、Leader、邻域和关闭入口均保持可操作。连线提示条排在完整导航栏下方；窄面板中的检查器继续排在提示条下方，宽面板中的提示条使用检查器左侧的画布空间，保持操作和提示可见。
+
+### 工具栏的响应式布局
+
+**Lineage 身份区始终可见。** 布局按 HATG 编辑区自身的可用宽度调整。空间不足时：
+- Lineage 名称和设置入口保持可见，Lineage ID 可以截断；
+- Context/Workspace 切换移到下一行；
+- 次要动作压缩为图标，或收进统一的"更多"菜单。
+
+重新变宽后恢复单行排列。
+
+**多选时，选区操作单独占一行。** 画布进入多选状态后，封装、批量删除、迁移和取消多选成为主操作。它们占用独立的整行点击区域，可以随宽度换行，不与 Lineage 身份区、视图切换或覆盖层重叠。
+
+Family 嵌套、折叠或关系更新后，如果当前邻域焦点被外层 Family 隐藏，画布退出邻域并适配当前可见图。仍然存在的内层节点不应触发“没有节点”的空图提示；当前 Chat 的 Resident 保持不变。
+
+**窄画布会收拢导航控件。** 画布宽度不超过 520px 时，导航控件收拢在画布内，关系图例隐藏。缩放、适配、搜索和邻域按钮按剩余宽度换行，保证窄面板中的所有可见控件仍位于画布边界内且可以操作。用户可以平移画布，或用小地图浏览。
+
+### 底部组件库布局
+
+底部组件库由“原语”和“功能”两组组成，默认等宽分配 HATG 面板的可用宽度。两组之间的竖向分隔线可用鼠标左右拖动；获得键盘焦点后，左右方向键调整宽度，Home / End 调整到两端，双击恢复等宽。分隔线在悬停、键盘聚焦和拖动时提供可见反馈。
+
+分栏比例由 HATG 编辑界面负责，保存在当前用户的 Workbench 页面偏好中，刷新或重新打开后恢复，不写入 Lineage、Program 或节点布局。拖动和键盘调整复用 Portal 的分栏交互机制；一次操作结束后才保存比例。每组至少保留 116 像素，面板窄到无法同时满足时平均分配剩余宽度。面板变窄只约束当前显示，不覆盖用户保存的比例；重新变宽后按原比例显示。分栏只调整组件库，不平移或缩放画布，不移动节点，也不创建组件。
+
+每组的标题和创建入口固定可见，条目列表独立横向滚动。条目保持可读尺寸；空间不足时通过组内滚动访问全部条目，不压缩条目，也不把整个页面撑宽。两组继续使用原有的点击、拖到画布和创建操作。
+
+Function Block 在组件库中的条目和画布上的实例使用同一套鸽子图标；同一个定义在两处显示相同图样，画布上的实例只有这只鸽子，不带组件库中表示持续的 ∞，也不写字，缩小到总览模式时仍保留鸽子（decision_5b5653c3eaa5）。内置模块各有固定图样（Family 是肥肥鸽子，TFI portal 10-10）；自定义模块根据稳定的 Block ID 选择图样，改名和排序不改变图标。图标只承担视觉识别，不定义角色、执行方式或另一套分类；组件库中名称仍是明确区分模块的标签，画布上的名称在鸽子的提示、实例按钮的无障碍名称和 Menu 中，拖拽和实例化继续遵守 Function Block 的同一套交互。
+
+Function Block 实例的单击、右键和悬停时显示的菜单按钮都打开同一个实例菜单，双击继续支持该入口。菜单提供配置、展开、解除封装与删除操作；Ctrl／Meta 等修饰键的选区操作仍只改变选区。显式按钮包含实例名称，便于键盘、读屏和自动化定位。 折叠实例的展开按钮贴近鸽子图标右上角；存在手动触发入口时，播放按钮位于右下角，悬停菜单按钮位于左下角。各入口随图标实际尺寸、拖动和语义缩放同步定位，保持可点击且互不重叠，不使用大卡片的固定偏移。
+
+### Resident 节点设置
+
+**弹窗显示成员归属、名称和运行控制。**
+- 标题区只读显示所属 Lineage 的名称和 `lineage_id`，分行显示 Resident 的 ID 和后端。
+- 归属来自当前加载的 Lineage 权威状态，不从节点名称、工作区路径或页面 URL 推断。成员迁移后，弹窗按目标 Lineage 的状态显示新归属。
+- Resident 不保存创建时目标、长期目标或产物标准；具体任务由消息、Event、Effect 或调用在执行时携带。
+
+**删除和迁移：**
+- 所有节点都可以删除。删除 Leader 时，确认框说明系统会从其余 Resident 中随机选出新 Leader。
+- 迁移按钮对 Leader 禁用，需要先指定新 Leader（与 `MoveResident` 的规则一致）。
+- 迁移选区后页面切换到目标 Lineage。迁移自动断开了跨边界关系时，提示条写明断开的条数，并保留到用户关闭；没有断开关系时提示 7 秒后消失。
+
+### 节点搜索与候选浮层
+
+打开的候选列表随当前 Lineage 的结构更新重新计算。节点删除、转移或改名后，已有候选立即反映当前图；结构更新不重新打开用户已关闭的搜索浮层。
+
+输入框在当前 Lineage 内查找 Resident 和活动 Seed，输入本身只更新候选列表，不改变画布选择。点击候选或在搜索完成后按 Enter，才选中并缩放到对应节点；Resident 同时打开 Chat Workspace，候选列表立即关闭，不等待 Chat 加载。
+
+- 本地匹配即时执行，忽略大小写，按名称、显示名称、摘要、资源路径和 Resident ID 做子串匹配。
+- 输入至少两个字符并停顿 320 毫秒后，调用当前 Lineage 的 Resident 检索服务，补充向量、词法等匹配结果。新的查询使旧查询的迟到响应失效。
+- 完整 Resident ID 或唯一 ID 前缀优先；远程结果完成后，其余候选按远程结果、本地结果的顺序去重，最多显示八项。当前没有单独的“只用字符串”模式。
+- “深度”是显式执行的模型重排动作，至少需要两个字符；完成后自动聚焦排序首项。它与普通输入时的检索分别触发。
+
+候选列表由当前 HATG 实例拥有，通过共享 PortalOverlay 挂到页面顶层，定位在搜索框附近并限制在浏览器可视范围内，不受画布的裁剪和局部定位容器影响。位置、层级和关闭交互统一交给浮层组件；HATG 负责查询、结果和选择，不能通过全局重复 ID 查找其他实例的候选面板。
+
+候选浮层即使挂在页面顶层，也保留 HATG 的独立样式作用域，根元素与内部条目都由同一组件样式负责。列表采用紧凑的窄幅卡片：名称独占一行并在过长时省略，摘要使用次要文字颜色、最多两行；条目左对齐，悬停和键盘焦点有明确反馈。列表内容单独滚动，高度同时受组件上限和可用视口限制，不把整页撑宽，不用长摘要改变候选条目的宽度。
+
+Esc 或点击外部关闭候选时保留输入，取消待执行的检索与渲染，并忽略正在进行的查询后续返回；关闭或销毁 HATG 时清空搜索，销毁时释放浮层。迟到响应不能重新打开已关闭的列表或改变另一个 HATG 实例。
+
+### 跳转到 Leader
+
+**这只是视图导航。**
+- 入口从当前 Lineage 的 `leader_resident_id` 找到目标，并确认它仍是当前 Lineage 中可见的 Resident 节点；找不到时入口禁用。
+- 点击后，Workbench 在需要时先从 Workspace 视图切回 Context 视图，再用节点搜索的聚焦方式选中 Leader，并把它居中。
+- 这个操作不修改 Leader 配置或图的 revision，不产生指令，不启动 Resident，也不打开额外面板。
+
+### 加载、修改顺序与视图
+
+**加载：**
+- 模板加载最多等待 360 秒。成功后 Workbench 才可操作；失败时显示错误界面和重试按钮。
+- 冷启动时 HATG 的脚本并行下载、按依赖顺序执行。读取 Lineage 目录不等待宿主页面的首轮加载（Resident 侧栏、对话列表等）；只有这次读取失败（例如 SocietyService 仍在启动或恢复）时，才等待服务就绪后再读一次。
+- 宿主页面在运行时载入期间重复设置同一个打开目标时，共用正在进行的那次应用，同一个 Lineage 不读两遍。
+- 新建 Resident 时，动态模型目录尚未返回的账号可以暂时没有模型选项，表单其余字段照常渲染。目录返回后，按当前所选账号填充模型与推理档位，保留用户明确选择的账号；不借用其他账号的模型列表。
+- 可操作内容或错误界面出现后，加载才算完成。
+- 离开页面时取消未完成的加载，并清理计时器、错误标记和视图更新订阅。
+
+**修改按顺序提交。**
+- 同一页面的图修改请求按提交顺序逐个执行，每次读取最新的 Lineage revision。
+- 图是否接受修改，最终由服务端的乐观并发检查决定。
+- 批量删除走同一条流程。删除失败时，选中对象保持选中，并用提示条说明原因。
+- 删除成功后，画布不选中其他节点；被删除 Resident 的 Chat 显示它已删除，不改为打开 Leader。
+
+**图内 Resident 的身份变化会刷新成员集合。**
+- 收到当前图成员的身份变更通知时，页面重新读取当前 Lineage，并按返回的图更新节点与连线，无需刷新整页。
+- 通知只触发读取；节点是否仍属于图，由同一权限下的 Lineage 读取结果决定。已删除身份保留历史，不作为当前节点继续显示。
+- 被选中的节点从返回图中移除后（被删除，或当前用户失去访问权限），画布清除选择，不改选 Leader 或其他节点。Chat 仍停在这个 Resident 上，并按当前用户重新读取它：已删除时显示“该 Resident 已删除。”，无权读取时说明没有访问权限。当前用户从 Menu 把它转移到其他 Lineage 时，画布跟随它进入目标 Lineage 并继续选中它（decision_6591e7793116）。
+- 其他 Resident 的身份通知和仅运行状态的通知不触发成员集合重读。
+
+**视图适配：**
+- 已选中节点时，切换操作或检视镜头以该节点为中心，并按扣除遮挡后的画布宽高限制缩放。窄面板不强行套用固定倍率，保证卡片及端口保持可达；无选中节点时保留视野中心。
 - Function shelf 点击创建组件时，可视候选区域也扣除导航栏与 Inspector 的遮挡，不在被工具栏覆盖的区域选取候选位置；提交位置仍由服务端空间放置器按现有对象避让。
 - 创建组件完成后，按服务端返回的实际位置检查卡片与端口是否完整可见。若避让后落到视口外或被 Inspector 遮挡，自动调整镜头使新卡片完整显示；已经可见时保留镜头与拖放位置。
 - 缩放与搜索导航组采用相同的外框最小高度，单行并排时上下边缘对齐、内部控件垂直居中；窄面板按可用宽度换行，允许内容自然增高，保持控件完整可达。
@@ -728,6 +894,8 @@ flowchart LR
 **实际流程。** trigger_path_steps 保存 Event、Effect、算子和 Resident 投递步骤；trigger_path_step_edges 保存实际推进关系。分叉各自记录。空投递、过滤、错误及仅执行 Effect 的路径均有记录。路径在 Resident 交付处截止，Resident 后续发消息和调用指令不延长它；后续新 Event 创建新路径。Effect 完成事件也建立自己的路径，起因指向相应 Effect 步骤。
 
 **统一执行身份。** agent.executions 是 Resident 一次工作的唯一记录，agent.execution_inputs 保存接纳的输入。Mailbox 中仅等待的输入不预建 Execution。trigger_path_execution_links 由步骤指向已接纳输入的 Execution，允许多个路径关联同一次 Execution。Execution 不保存路径字段。准备、传输和进程恢复沿用同一个 execution_id；终态后的显式重新执行分配新 ID。
+
+**原输入的显式重试。** RequeueMessage 等原输入恢复入口完成原件、接收、成员与随行 info 校验后，若检查点指向已失败或按现有合同可恢复的已取消 Execution，保留其身份到新一轮预备。新 Execution 预留、primary/member 关联与 Agent 的 input_retry 不可变回执同事务提交；回执绑定原 Execution、新 Execution、Resident 与原主输入，校验同 actor、原 primary/member 身份及角色完整一致。原输入尚未预留 Execution 的合法 accepted orphan 不要求此回执。读关联时只按完整回执链识别新一轮独立重试，不把它追加到曾交付原 Execution 的历史 Trigger Path，不修改原路径、步骤、引用、失败或终态时间。一般终态路径仍不能增加 Execution；无回执、异 Resident、异 actor、错原输入、非允许终态或回执冲突一律拒绝。此规则不改变取消恢复的既有准入，也不自动复活任何取消任务；原输入恢复成功与报告等业务任务成功分别核验。
 
 **从未启动输入的迁移交接。** Execution owner 在原子撤回未被 Worker 认领的队列时，可保存 `execution_handoff` 持久回执，绑定原 Execution、Resident binding、迁移操作与唯一 replacement_execution_id。这种内部 cancelled 只终结旧物理执行，不终结原业务输入；原 Execution 与路径引用继续保留审计。路径结算、待恢复输入查询和失败投影须使用同一交接解释：候选尚未预留时仍等待，候选存在后只跟随指定候选的业务结果，不按“最近一次执行”猜测替代。仅 active 路径中已经完成接纳的 Resident 步骤可凭有效回执增加续接引用；要求同 Resident、同 actor、保留原 primary/member 输入，原执行未启动，新关联候选也未启动且尚未终态。新 Execution 的预留、输入关联和路径引用同事务提交，故障重入沿用指定 ID；已存在的同一引用幂等返回。无回执、身份不符、已启动原执行或真正终态路径不得借此续接，不重开已结束路径，不重投业务。真正完成、失败或取消的候选按其实际终态时间结算原输入。
 

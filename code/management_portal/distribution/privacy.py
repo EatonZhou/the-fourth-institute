@@ -64,6 +64,9 @@ def _human_text(text, users):
                       '显式配置的名单 `PORTAL_ROUTER_DEV_USERS`（发行副本默认为空）', text)
         text = re.sub(r'A locally registered username is the canonical User ID',
                       'A locally registered username is the canonical User ID', text)
+    # A name listed next to another person ("ET、weihao") is human context too.
+    people = '|'.join(re.escape(name) for name in sorted({LABEL, *filter(None, users)}, key=len, reverse=True))
+    listed = r'\s*(?:[、，,]|和|与|及|and)\s*'
     for user in sorted(set(users), key=len, reverse=True):
         if not user: continue
         escaped = re.escape(user)
@@ -72,6 +75,8 @@ def _human_text(text, users):
             text = re.sub(r'(?<![\w])'+escaped+r'(?=\s+(?:20\d{2}-)?\d{1,2}-\d{1,2})', LABEL, text)
             text = re.sub(r'((?:例如|e\.g\.|向|用户|账号|User|username|Ask|owner)\s*[`:]?\s*)'+escaped+r'(?![\w])',
                           lambda m:m[1]+LABEL, text, flags=re.I)
+            text = re.sub(r'(?<![\w])'+escaped+r'(?='+listed+r'(?:'+people+r')(?![\w]))', LABEL, text)
+            text = re.sub(r'((?<![\w])(?:'+people+r')'+listed+r')'+escaped+r'(?![\w])', lambda m:m[1]+LABEL, text)
             continue
         pattern = re.compile(r'(?<![\w./-])'+escaped+r'(?![\w/-]|\.[\w])')
         text = '\n'.join(line if re.search(r'copyright|©',line,re.I) else pattern.sub(LABEL,line)

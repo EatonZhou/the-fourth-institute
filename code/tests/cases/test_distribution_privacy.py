@@ -122,6 +122,13 @@ def test_all_identity_fields_and_brand_overlap():
     assert result['profile']=='live.example-test' and result['schema']=='example.example-test.v2'
 
 
+def test_short_identity_listed_with_other_people_is_anonymized():
+    """与其他用户并列的短用户名按人名替换，代码符号里的同名短词保留"""
+    users=['AB','CD','example-person']
+    text='保存后，失败时提醒：AB、example-person；抄送 CD 和 AB。AB.Element(); x = AB, y'
+    assert portable_text(text,users,environment=False)=='保存后，失败时提醒：TFI portal、TFI portal；抄送 TFI portal 和 TFI portal。AB.Element(); x = AB, y'
+
+
 def test_export_test_actor_requires_target_configuration(monkeypatch):
     from management_portal.distribution.privacy import release_code_text
     monkeypatch.delenv('PORTAL_TEST_ACTOR',raising=False)
