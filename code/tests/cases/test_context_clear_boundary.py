@@ -25,7 +25,7 @@ from management_portal.society_service import (
     resident_domain,
     resident_execution_work,
     resident_fork_domain,
-    resident_lifecycle_domain,
+    resident_lifecycle_steps_domain,
     resident_record_domain,
     resident_restart_domain,
     resident_session_backend_domain,
@@ -115,7 +115,7 @@ def _clear(resident_id: str, monkeypatch, *, expected_releases: int = 1) -> dict
     monkeypatch.setattr("management_portal.society_service.resident_execution_domain.resume_resident_execution",
                         lambda _resident_id: None)
     result = resident_domain.reset_resident_context(resident_id, "sample_admin")
-    assert resident_lifecycle_domain.resume_resident_lifecycle_operation(result["operation_id"])
+    assert resident_lifecycle_steps_domain.resume_resident_lifecycle_operation(result["operation_id"])
     assert [call["operation"] for call in released] == ["release"] * expected_releases
     return resident_record_domain.find_resident(resident_id)
 
@@ -254,7 +254,7 @@ def test_clearing_a_resident_marks_its_trace(future_creation_store, monkeypatch)
     result = resident_domain.reset_resident_context(resident_id, "sample_admin")
     # A message sent right after the clear is recorded before the mark is written.
     _recorded(store, resident_id, "segment_clear_mark_next_request", "2026-01-01T00:00:00Z")
-    assert resident_lifecycle_domain.resume_resident_lifecycle_operation(result["operation_id"])
+    assert resident_lifecycle_steps_domain.resume_resident_lifecycle_operation(result["operation_id"])
     cleared = resident_record_domain.find_resident(resident_id)
 
     after = _trace(store, resident_id)

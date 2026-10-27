@@ -118,7 +118,7 @@ def test_manual_close_does_not_need_a_session_or_stop_quota_execution(sessionles
         assert receipt["intake_state"] == "closed"
     current = resident_record_domain.find_resident(record["resident_id"])
     assert not resident_backend.record_session_id(current)
-    assert resident_lifecycle_domain.resident_intake_state(current) == "closed"
+    assert resident_record_domain.resident_intake_state(current) == "closed"
     assert resident_execution_work.read(current)["user_message_id"] == first
     assert not resident_execution_work.read(current).get("stop_requested_at")
     assert scheduler.snapshot(execution_id)["status"] == "queued"

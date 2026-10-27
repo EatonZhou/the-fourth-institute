@@ -13,6 +13,11 @@ from . import (
     resident_lineage,
     resident_store,
     resident_runtime_domain,
+    resident_lifecycle_domain,
+    resident_record_domain,
+    resident_session_backend_domain,
+    resident_watchboard_domain,
+    resident_workspace_domain,
 )
 from .domain_ports import execution_port
 from .resident_access import (
@@ -41,7 +46,6 @@ def _ensure_derived_resident_folder(
     record: dict[str, Any],
     resident: dict[str, Any],
 ) -> None:
-    from . import resident_record_domain, resident_runtime_domain, resident_workspace_domain
     target_resident_id = str(resident.get("resident_id") or "").strip()
     if not target_resident_id:
         return
@@ -93,7 +97,6 @@ def _ensure_derived_resident_folder(
 
 
 def _sync_resident_files(record: dict, resident: dict[str, Any]) -> None:
-    from . import resident_runtime_domain
     from .resident_settings_contract import stage_runtime_settings
     resident_backend.validate_resident_session_identity(resident)
     target_resident_id = str(resident.get("resident_id") or "")
@@ -116,7 +119,6 @@ def _persist_derived_resident(
     Their Resource identity is delivered from the transactional outbox after
     the canonical Resident fact commits.
     """
-    from . import resident_domain_common, resident_record_domain
 
     target_resident_id = resident_lineage.resident_id(resident)
     if not identity_contract.is_valid_id(target_resident_id, "resident"):
@@ -172,7 +174,6 @@ def _queue_derived_resident_session_creation(
     resident: dict[str, Any],
     actor: str,
 ) -> dict[str, Any]:
-    from . import resident_domain_common, resident_record_domain, resident_session_backend_domain
     if resident_backend.record_session_id(resident):
         return resident
     target_resident_id = str(resident.get("resident_id") or "")
@@ -232,7 +233,6 @@ def _ensure_derived_resident_session(
     resident: dict[str, Any],
     actor: str,
 ) -> dict[str, Any]:
-    from . import resident_domain_common, resident_session_backend_domain
     ensure_resident_supports_forks(record)
     resident.pop("backend_start_deferred", None)
     resident.pop("backend_start_gate", None)
@@ -272,12 +272,6 @@ def _create_resident_by_full_context_fork(
     compact_context: bool = False,
 ) -> dict[str, Any]:
     """Create a full Fork from a frozen PostgreSQL effective-context snapshot."""
-    from . import (
-        resident_domain_common,
-        resident_runtime_domain,
-        resident_session_backend_domain,
-        resident_watchboard_domain,
-    )
 
     ensure_resident_supports_forks(record)
     target_backend = _fork_target_backend(record, provider)
@@ -376,7 +370,6 @@ def _derived_resident_creation_result(
     actor: str,
 ) -> dict[str, Any]:
     """Return the stable result of a Resident derivation operation."""
-    from . import resident_lifecycle_domain
 
     created_resident_id = resident_lineage.resident_id(resident)
     selected_resident = {
@@ -404,7 +397,6 @@ def create_resident_full_context_fork(
     defer_backend_start: bool = False,
     fork_title: str = "",
 ) -> dict[str, Any]:
-    from . import resident_record_domain
     actor_id = canonical_actor_id(actor)
     if not actor_id:
         raise ValueError("需要登录后执行 Fork")
@@ -440,7 +432,6 @@ def create_resident_compacted_context_fork(
     fork_title: str = "",
 ) -> dict[str, Any]:
     """Create a child whose frozen effective context is compacted before use."""
-    from . import resident_record_domain
 
     actor_id = canonical_actor_id(actor)
     if not actor_id:
@@ -480,7 +471,6 @@ def _message_matches_selector(
 def _fork_provider_context_snapshot(
     record: Mapping[str, Any], *, through_message_id: str = "", through_turn_id: str = "",
 ) -> dict[str, Any]:
-    from . import resident_domain_common
     return execution_port.agent_context_snapshot(resident_domain_common.record_resident_id(record),
         through_message_id=through_message_id, through_turn_id=through_turn_id)
 
@@ -496,13 +486,7 @@ def create_resident_fork_from_message(
     provider: str = "",
     fork_title: str = "",
 ) -> dict[str, Any]:
-    from . import (
-        resident_access,
-        resident_domain_common,
-        resident_record_domain,
-        resident_runtime_domain,
-        resident_watchboard_domain,
-    )
+    from . import resident_access
     actor_id = canonical_actor_id(actor)
     if not actor_id:
         raise ValueError("需要登录后执行 Fork")
@@ -629,12 +613,6 @@ def create_resident_context_fork(
     provider: str = "",
     fork_title: str = "",
 ) -> dict[str, Any]:
-    from . import (
-        resident_domain_common,
-        resident_record_domain,
-        resident_runtime_domain,
-        resident_watchboard_domain,
-    )
     actor_id = canonical_actor_id(actor)
     if not actor_id:
         raise ValueError("需要登录后执行 Fork")
@@ -727,10 +705,6 @@ def initialize_resident_context_from_source(
     path prepares identity/history only; explicit Fork initialization keeps
     its separate lifecycle and recovery owner.
     """
-    from . import (
-        resident_domain_common,
-        resident_record_domain,
-    )
     source_target = resident_record_domain.resolve_resident_runtime_target(
         source_resident_id,
         actor,
@@ -782,7 +756,6 @@ def complete_derived_resident_identity(
     lineage_source: str = "",
     now: str = "",
 ) -> dict[str, Any]:
-    from . import resident_domain_common, resident_record_domain
     resident.setdefault("lineage_id", resident_lineage.lineage_id(record))
     resident.setdefault("source_resident_id", resident_domain_common.record_resident_id(record))
     if actor_id:
@@ -810,7 +783,6 @@ def inherit_derived_resident_runtime_from_source(
     *,
     target_workspace_authority: bool,
 ) -> None:
-    from . import resident_domain_common, resident_record_domain
     actor_id = canonical_actor_id(actor)
     source_settings = (
         resident_runtime_domain.derived_resident_runtime_defaults(source_record, source_resident, actor)

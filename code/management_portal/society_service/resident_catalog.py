@@ -215,9 +215,8 @@ class ResidentCatalog:
             raise ValueError("Resident deletion requires deleted_at")
         from . import resident_mailbox
         from .resident_lifecycle import ResidentLifecycleOperations
-        from . import resident_record_domain
         for record in records:
-            resident_record_domain.ensure_resident_agent(record, actor=str(record.get("deleted_by") or ""))
+            ensure_resident_agent(record, actor=str(record.get("deleted_by") or ""))
 
         def commit() -> list[str]:
             # Its Mailbox closes with the Resident; a repeated deletion finds it closed.
@@ -254,3 +253,17 @@ def get_catalog() -> ResidentCatalog:
             catalog = ResidentCatalog(root, state_store)
             _CATALOGS[key] = catalog
         return catalog
+
+
+def ensure_resident_agent(record: Mapping[str, Any], *, actor: str = "") -> dict[str, Any]:
+    """Establish the independent main Agent before registration or execution succeeds."""
+    from management_portal.execution.agent_data_store import get_agent_data_store
+
+    resident_id = str(record.get("resident_id") or "").strip()
+    identity_contract.validate_id(resident_id, "resident")
+    return get_agent_data_store().ensure_agent(
+        resident_id,
+        actor_ref=str(actor or record.get("created_by") or ""),
+        sequence_kind="agent_trace",
+        parent_agent_id=None,
+    )

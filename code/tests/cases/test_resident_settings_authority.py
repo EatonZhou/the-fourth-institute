@@ -10,6 +10,7 @@ from management_portal.society_service import resident_fork_context, resident_ru
 from management_portal.society_service import (
     resident_access,
     resident_execution_domain,
+    resident_execution_engine_domain,
     resident_record_domain,
     resident_restart_domain,
     resident_session_backend_domain,
@@ -229,7 +230,7 @@ def test_frozen_fork_creates_an_independent_session_after_source_is_gone(monkeyp
     calls = []
     monkeypatch.setattr(resident_runtime_domain, "resident_working_directory", lambda _: "/own-workspace")
     monkeypatch.setattr(resident_access, "has_resident_workspace_authority", lambda *_: True)
-    monkeypatch.setattr(resident_execution_domain, "resident_execution_runtime_options", lambda *_args, **_kwargs: {})
+    monkeypatch.setattr(resident_execution_engine_domain, "resident_execution_runtime_options", lambda *_args, **_kwargs: {})
     monkeypatch.setattr(resident_session_backend_domain, "run_backend_session_operation", lambda **kwargs: calls.append(kwargs) or {
         "backend_session_id": "independent-session", "backend_route_id": "one",
     })

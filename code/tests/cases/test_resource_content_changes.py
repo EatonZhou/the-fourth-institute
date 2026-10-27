@@ -17,8 +17,12 @@ from management_portal.resources.errors import ResourceVersionConflict
 from management_portal.resources.providers.knowledge import _update_knowledge
 from management_portal.resources.server import ResourceServiceServer
 from management_portal.resources.transport import ResourceServiceClient
-from management_portal.society_service import resident_conversation_stream, resident_resource_changes, resident_execution_work
-from management_portal.society_service import resident_execution_domain
+from management_portal.society_service import (
+    resident_conversation_stream,
+    resident_resource_changes,
+    resident_execution_work,
+    resident_execution_engine_domain,
+)
 from tests.cases.test_knowledge_versioning import KNOWLEDGE_ID, _markdown
 from tests.cases.test_resident_execution_protocol import resident_record
 from knowledge_board_lan import knowledge_backend
@@ -142,13 +146,13 @@ def test_resource_receipts_project_only_at_terminal_without_polling(receipt_stor
     monkeypatch.setattr(resident_resource_changes, "get_resource_service", lambda: service)
     monkeypatch.setattr(execution_events, "execution_projection_from_execution", lambda *a, **kw: {"outputs": []})
     resident_execution_work.write(resident_record, { "execution_id": execution_id, "actor": "CASE-A", "user_message_id": "msg-source", "submitted_at": "2026-10-14T00:00:00Z"})
-    resident_execution_domain._project_resident_execution_snapshot(resident_id,  execution_id, {"status": "running"})
+    resident_execution_engine_domain._project_resident_execution_snapshot(resident_id,  execution_id, {"status": "running"})
     service.execution_content_changes.assert_not_called()
-    resident_execution_domain._project_resident_execution_snapshot(resident_id,  execution_id, {"status": "completed"})
+    resident_execution_engine_domain._project_resident_execution_snapshot(resident_id,  execution_id, {"status": "completed"})
     service.execution_content_changes.assert_not_called()
     execution_service = Mock()
     execution_service.wait.return_value = {"status": "completed"}
-    resident_execution_domain.wait_for_resident_execution(
+    resident_execution_engine_domain.wait_for_resident_execution(
         execution_service, resident_id=resident_id,
         execution_id=execution_id, actor="CASE-A", user_message_id="msg-source",
     )
@@ -158,7 +162,7 @@ def test_resource_receipts_project_only_at_terminal_without_polling(receipt_stor
     message = repository.message(resident_id, part["output_id"])
     assert message["reply_to_message_id"] == "msg-source"
     assert message["content_parts"][0]["type"] == "resource_changes"
-    resident_execution_domain._project_resident_execution_snapshot(resident_id,  execution_id, {"status": "completed"})
+    resident_execution_engine_domain._project_resident_execution_snapshot(resident_id,  execution_id, {"status": "completed"})
     service.execution_content_changes.assert_called_once()
 
 

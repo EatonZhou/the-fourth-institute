@@ -16,6 +16,7 @@ from management_portal.society_service import (
     resident_backend,
     resident_conversation_stream,
     resident_execution_work,
+    resident_input_checkpoints,
     resident_input_recovery,
     resident_restart_domain,
     resident_work_recovery as recovery,
@@ -110,7 +111,7 @@ def test_automatic_limit_preserves_budget_but_allows_explicit_requeue(team, monk
         resident_input_recovery.requeue(resident_id, resident_id, message_id,
                                        portal_reason="environment_recovery", automatic=True)
         record = _record(resident_id)
-        resident_input_recovery.retain_input_checkpoint(record, resident_execution_work.read(record), [])
+        resident_input_checkpoints.retain_input_checkpoint(record, resident_execution_work.read(record), [])
         resident_execution_work.clear(record)
         resident_conversation_stream.get_repository().set_input_state(resident_id, message_id, "failed")
     with pytest.raises(MailboxConflict, match="两次"):

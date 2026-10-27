@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import pytest
 
-from management_portal.society_service import project_domain, resident_record_domain
+from management_portal.society_service import project_domain, resident_catalog, resident_record_domain
 from tests.cases.isa_test_support import ACTOR, ok, reset_kernels, run
 from tests.cases.test_resident_folder_creation_contract import future_creation_store  # noqa: F401 - fixture
 
@@ -142,7 +142,7 @@ def test_basic_resident_reads_do_not_ensure_agent(lineage, monkeypatch):
         lambda _operation: pytest.fail("read instruction entered an AgentData write transaction"),
     )
     monkeypatch.setattr(
-        resident_record_domain, "ensure_resident_agent",
+        resident_catalog, "ensure_resident_agent",
         lambda *_args, **_kwargs: pytest.fail("read instruction initialized an Agent"),
     )
     assert ok("GetResident", {"resident_id": worker})["resident"]["resident_id"] == worker

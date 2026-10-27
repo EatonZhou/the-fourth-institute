@@ -9,10 +9,14 @@ from . import (
     resident_access,
     resident_backend,
     resident_catalog,
+    resident_conversation_projection_domain,
     resident_conversation_stream,
     resident_execution_work,
+    resident_lifecycle_domain,
     resident_lineage,
+    resident_record_domain,
     resident_runtime_domain,
+    resident_watchboard_domain,
 )
 from .domain_ports import execution_port, resource_port
 from .resident_access import (
@@ -22,7 +26,6 @@ from .resident_access import (
 )
 from management_common.actor_identity import canonical_actor_id
 from management_common.database_time import instant
-from management_portal.execution import event_projection as execution_events
 from management_portal.execution.accounts import shared_account_configuration
 from management_portal.portal_access_control import is_active_user_or_resident
 from pathlib import Path
@@ -63,7 +66,6 @@ CONTEXT_PRESSURE_HOT_FALLBACK_TOKENS = max(
 
 
 def _lineage_summary(record: dict[str, Any], registry: dict[str, Any] | None = None) -> dict[str, Any]:
-    from . import resident_runtime_domain
     del registry
     identity = resident_runtime_domain.lineage_identity_record(record)
     lineage_node_ids = list(
@@ -83,7 +85,6 @@ def _annotate_resident_lineage_fields(
     record: dict[str, Any],
     registry: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    from . import resident_runtime_domain
     lineage_id = resident_lineage.lineage_id(record)
     record["lineage_id"] = lineage_id
     record["backend_capabilities"] = resident_runtime_domain.resident_backend_capabilities(record)
@@ -136,7 +137,6 @@ def _list_actor_conversation_records(
     resident_ids: Iterable[str] | None = None,
 ) -> dict[str, Any]:
     """Return exactly the Residents with conversation activity by actor."""
-    from . import resident_conversation_projection_domain
 
     actor_id = canonical_actor_id(actor)
     requested_ids = (
@@ -191,7 +191,6 @@ def list_resident_conversation_activity(
     page_token: str = "",
 ) -> dict[str, Any]:
     """Return actor-scoped Resident conversation activity facts."""
-    from . import resident_conversation_projection_domain
 
     if page_size is not None:
         if resident_ids is not None:
@@ -248,7 +247,6 @@ def get_resident_user_message_counts(
     resident_ids: Iterable[str],
     actor: str = "",
 ) -> dict[str, int]:
-    from . import resident_domain_common
     actor_id = canonical_actor_id(actor)
     requested = {
         str(resident_id or "").strip()
@@ -284,7 +282,6 @@ def get_resident_user_message_count(
 
 
 def _session_context_tokens(usage: object) -> int:
-    from . import resident_domain_common
     cleaned = resident_domain_common.clean_token_usage(usage)
     input_tokens = resident_domain_common.nonnegative_int(cleaned.get("input_tokens"), 0)
     cached_input_tokens = resident_domain_common.nonnegative_int(cleaned.get("cached_input_tokens"), 0)
@@ -305,7 +302,6 @@ def _session_context_pressure(
     model_context_window: object = 0,
     source: str = "",
 ) -> dict[str, Any]:
-    from . import resident_domain_common
     context_tokens = _session_context_tokens(usage)
     context_window = resident_domain_common.nonnegative_int(model_context_window, 0)
     if context_window and context_tokens > context_window:
@@ -353,7 +349,6 @@ def _session_context_pressure(
 def _active_execution_context_pressure(
     job: dict[str, Any],
 ) -> dict[str, Any]:
-    from . import resident_domain_common
     snapshot = resident_execution_work.execution_snapshot(job)
     checkpoint = (
         snapshot.get("checkpoint")
@@ -391,7 +386,6 @@ def _resident_scope_context_pressure(
     *,
     active_job: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    from . import resident_domain_common
     if isinstance(active_job, dict) and resident_execution_work.is_active(active_job):
         return _active_execution_context_pressure(active_job)
     usage_field = "last_token_usage"
@@ -428,7 +422,6 @@ def get_resident_context_pressures(
     resident_ids: list[str],
     actor: str = "",
 ) -> dict[str, dict[str, Any]]:
-    from . import resident_domain_common
     actor_id = canonical_actor_id(actor)
     requested = {
         str(resident_id or "").strip()
@@ -526,7 +519,6 @@ def _resolve_forward_target_by_resident_id(
     resident_id: str,
     actor_id: str,
 ) -> dict[str, Any]:
-    from . import resident_record_domain
     exact_id = str(resident_id or "").strip()
     record = resident_record_domain.find_resident(exact_id)
     if not record:
@@ -625,7 +617,6 @@ def _resident_conversation_activity(
     limit: int = RECENT_RESIDENT_MESSAGES,
 ) -> list[dict[str, Any]]:
     """Build the bounded Resource projection from canonical Messages."""
-    from . import resident_domain_common
 
     resident_id = resident_domain_common.record_resident_id(record)
     repository = resident_conversation_stream.get_repository()
@@ -734,7 +725,6 @@ def _resident_resource_activity(
 
 def get_resident_resource_projection(resident_id: str) -> dict[str, Any]:
     """Return the bounded cross-Resident work/status read model."""
-    from . import resident_lifecycle_domain, resident_record_domain
 
     target = resident_record_domain.resolve_resident_resource_target(resident_id)
     record = target.record
@@ -799,7 +789,6 @@ def _resident_workspace_public_record(
     actor: str,
 ) -> dict[str, Any]:
     """Project only Resident identity and workspace fields used by the Portal UI."""
-    from . import resident_domain_common, resident_record_domain, resident_runtime_domain
 
     resident_id = resident_domain_common.record_resident_id(record)
     public = {
@@ -855,79 +844,6 @@ def _resident_provider_session(
     }
 
 
-def runtime_activity_for_execution(
-    resident_id: str,
-    job: dict[str, Any] | None,
-    *,
-    transcript_projection: Mapping[str, Any] | None = None,
-) -> dict[str, Any]:
-    """Project transient Execution activity without mixing it into Chat."""
-
-    active_job = job if isinstance(job, dict) else {}
-    execution_id = resident_execution_work.submitted_execution_id(active_job)
-    if not execution_id:
-        return {
-            "live": bool(active_job),
-            "execution_id": execution_id,
-            "details": [],
-        }
-    projection = (
-        dict(transcript_projection)
-        if isinstance(transcript_projection, Mapping)
-        else execution_events.execution_projection_from_execution(
-            execution_id,
-            runtime_limit=execution_events.DEFAULT_RUNTIME_DETAIL_LIMIT,
-            message_limit=0,
-        )
-    )
-    return {
-        "live": True,
-        "execution_id": execution_id,
-        "details": [
-            {
-                "activity_id": str(item.get("id") or ""),
-                "resident_id": resident_id,
-                "message_id": str(active_job.get("user_message_id") or ""),
-                "kind": str(item.get("kind") or "activity"),
-                "status": (
-                    "running"
-                    if str(item.get("status") or "").strip().casefold()
-                    in {"running", "in_progress", "inprogress"}
-                    else "failed"
-                    if str(item.get("status") or "").strip().casefold()
-                    in {"failed", "error"}
-                    else "completed"
-                ),
-                "title": str(item.get("title") or ""),
-                "content": str(item.get("content") or ""),
-                "started_at": str(item.get("created_at") or ""),
-                "updated_at": str(item.get("created_at") or ""),
-                **(
-                    {"phase": str(item.get("phase") or "")}
-                    if str(item.get("phase") or "").strip()
-                    else {}
-                ),
-                # A running subagent's card, and the Execution it runs in
-                # (the Chat stops one run there).
-                **(
-                    {"native_plan": copy.deepcopy(item["native_plan"]),
-                     "execution_id": str(item.get("execution_id") or execution_id)}
-                    if isinstance(item.get("native_plan"), dict)
-                    else {}
-                ),
-                **(
-                    {"subagent": item["subagent"], "execution_id": str(item.get("execution_id") or execution_id)}
-                    if isinstance(item.get("subagent"), dict)
-                    else {}
-                ),
-            }
-            for item in projection.get("runtime_details") or []
-            if isinstance(item, dict)
-            and str(item.get("id") or "").strip()
-        ],
-    }
-
-
 def get_lineage_node_metadata(
     resident_id: str,
     actor: str = "",
@@ -946,7 +862,6 @@ def _resident_session_projection_from_record(
     actor: str,
 ) -> dict[str, Any]:
     """Own the one canonical projection shared by every Resident Chat surface."""
-    from . import resident_domain_common, resident_runtime_domain, resident_watchboard_domain
 
     actor_id = canonical_actor_id(actor)
     exact_resident_id = resident_domain_common.record_resident_id(record)
@@ -1002,7 +917,6 @@ def get_resident_session_projection(
     return detached committed views, so a Chat read does not need to serialize
     with unrelated reads from the same Lineage.
     """
-    from . import resident_record_domain
 
     actor_id = canonical_actor_id(actor)
     with resident_lineage.access_snapshot_scope():
@@ -1021,7 +935,6 @@ def _get_lineage_node_metadata(
     resident_id: str,
     actor: str,
 ) -> dict[str, Any]:
-    from . import resident_domain_common, resident_record_domain, resident_runtime_domain
     exact_resident_id = str(resident_id or "").strip()
     if not exact_resident_id:
         raise KeyError("resident not found")
@@ -1064,7 +977,6 @@ def load_projects_registry() -> list[dict[str, Any]]:
 
 
 def resident_lineage_resident(record: dict[str, Any]) -> dict[str, Any]:
-    from . import resident_domain_common
     resident_id = resident_domain_common.record_resident_id(record)
     return {
         "lineage_id": resident_lineage.lineage_id(record),

@@ -4,7 +4,11 @@ import pytest
 from management_portal.execution import resident_capability_assembly as assembly
 from management_portal.execution.harness import HarnessTool
 from management_portal.society_service import resident_execution_domain as execution
-from management_portal.society_service import resident_execution_work, resident_runtime_domain
+from management_portal.society_service import (
+    resident_execution_engine_domain,
+    resident_execution_work,
+    resident_runtime_domain,
+)
 from management_portal.society_service.errors import LineageConflictError
 from management_portal.society_service.isa import residents
 from tests.cases.test_prompt_injection import _invocation
@@ -38,7 +42,7 @@ def test_saved_request_carries_one_revision_and_prompt_provenance_after_settings
     job = {"execution_id": "execution-" + "7" * 24, "actor": "CASE-A", "message": "hello",
            "actual_sent_prompt": "hello", "prompt_cwd": str(resident_record["default_cwd"]), "queue": []}
     resident_execution_work.write(resident_record, job)
-    first = execution.durable_resident_execution_request(resident_record, job,
+    first = resident_execution_engine_domain.durable_resident_execution_request(resident_record, job,
         lambda: execution._build_resident_execution_request(resident_record, job))
     snapshot = first.runtime_options["resident_assembly"]
     current = residents.get_resident_settings(_invocation("GetResidentSettings", resident_id=rid))
@@ -50,7 +54,7 @@ def test_saved_request_carries_one_revision_and_prompt_provenance_after_settings
     execution.change_resident_runtime_settings(rid, "CASE-A", {"prompt_injection": {"preset": "pure"}})
     def forbidden():
         pytest.fail("recovery must not reassemble from changed settings")
-    recovered = execution.durable_resident_execution_request(resident_record, resident_execution_work.read(resident_record), forbidden)
+    recovered = resident_execution_engine_domain.durable_resident_execution_request(resident_record, resident_execution_work.read(resident_record), forbidden)
     assert recovered.to_payload() == first.to_payload()
 
 

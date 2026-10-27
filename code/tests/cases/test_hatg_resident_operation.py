@@ -7,8 +7,12 @@ from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
-from management_portal.society_service import invariant_locks, lineage_domain, resident_record_domain
-from management_portal.society_service import resident_lifecycle_domain
+from management_portal.society_service import (
+    invariant_locks,
+    lineage_domain,
+    resident_lifecycle_steps_domain,
+    resident_record_domain,
+)
 from tests.cases.isa_test_support import run
 from tests.cases.test_hatg_move_resident import ACTOR, execute, graph, request, teams  # noqa: F401 - teams is a fixture
 from tests.cases.test_resident_folder_creation_contract import future_creation_store  # noqa: F401 - fixture
@@ -44,7 +48,7 @@ def test_operation_pending_completed_and_polling_preserve_the_original_move(team
         "instruction_id": transfer.instruction_id,
     }
     operations = resident_record_domain.lifecycle_operations()
-    assert operations.run(operation_id, resident_lifecycle_domain.apply_resident_lifecycle_step) == member["resident_id"]
+    assert operations.run(operation_id, resident_lifecycle_steps_domain.apply_resident_lifecycle_step) == member["resident_id"]
     completed = query(operation_id)
     assert completed.result["terminal"] is True
     assert completed.result["status"] == completed.result["phase"] == "completed"
@@ -134,13 +138,13 @@ def test_operation_needs_read_permission_not_modify_permission(teams, transfer, 
 def test_operation_is_queryable_after_the_source_becomes_empty(teams, transfer):
     """源 Lineage 迁空后仍能查询最后一个成员的迁移操作"""
     operations = resident_record_domain.lifecycle_operations()
-    operations.run(transfer.result["operation_id"], resident_lifecycle_domain.apply_resident_lifecycle_step)
+    operations.run(transfer.result["operation_id"], resident_lifecycle_steps_domain.apply_resident_lifecycle_step)
     call = request((teams[0], teams[1], teams[0]), key="move-last-member")
     call["arguments"]["allow_empty_source"] = True
     last = execute(call).raise_for_error()
     assert graph(teams[0])["nodes"] == []
     assert observed(last["operation_id"])["terminal"] is False
-    operations.run(last["operation_id"], resident_lifecycle_domain.apply_resident_lifecycle_step)
+    operations.run(last["operation_id"], resident_lifecycle_steps_domain.apply_resident_lifecycle_step)
     assert observed(last["operation_id"])["terminal"] is True
     assert graph(teams[0])["nodes"] == []
 

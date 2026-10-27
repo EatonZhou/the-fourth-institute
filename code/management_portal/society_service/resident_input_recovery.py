@@ -1,20 +1,19 @@
-"""Input retry checkpoints; Agent execution_inputs owns execution history.
+"""Requeue stopped rounds from their checkpoints, and the Mailbox recovery view.
 
-Original preparation is retained at admission, before projection can fail.
+Checkpoints are kept by ``resident_input_checkpoints``.
 Stopped rounds and accepted requests without an execution location can requeue.
 Mailbox views read Execution outcomes and admitted message references from Agent.
 """
 from __future__ import annotations
 
 import copy
-import secrets
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
 
 
 from . import (
     resident_conversation_stream,
+    resident_input_checkpoints,
     resident_held_infos,
     resident_execution_work,
     resident_lineage,
@@ -24,118 +23,8 @@ from . import (
 from .resident_mailbox import MailboxConflict
 from .state_store import get_lineage_data_store
 
-MAX_CHECKPOINTS = 10
 REQUEUEABLE_STATES = frozenset({"cancelled", "failed"})
-FINISHED_STATES = frozenset({"completed", "failed", "cancelled"})
 PREVIEW_CHARS = 200
-
-
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
-
-
-def _address(record: Mapping[str, Any]) -> tuple[str, str]:
-    return resident_lineage.lineage_id(record), resident_lineage.resident_id(record)
-
-
-def checkpoints(record: Mapping[str, Any]) -> list[dict[str, Any]]:
-    """The checkpoints that can still go back to the queue, oldest first."""
-
-    try:
-        lineage_id, resident_id = _address(record)
-    except (KeyError, ValueError):
-        return []
-    if not lineage_id:
-        return []
-    state = get_lineage_data_store().resident_mailbox_progress.get(lineage_id, resident_id) or {}
-    return [dict(item) for item in state.get("checkpoints") or [] if isinstance(item, dict)]
-
-
-def queue_item(job: Mapping[str, Any]) -> dict[str, Any]:
-    """The original input, without Execution preparation fields."""
-
-    from .resident_execution_storage import queue_input
-    return queue_input(job)
-
-
-def retain_input_checkpoint(record: Mapping[str, Any], job: Mapping[str, Any], carried: list[Mapping[str, Any]]) -> None:
-    """Retain the input needed for requeue and attach its infos to the Execution.
-
-    Only inputs that someone sent are checkpoints: a /compact, a Fork's preparation,
-    a project creation and an isolated authorized call are not.
-    """
-
-    from . import resident_input_scope
-
-    message_id = str(job.get("user_message_id") or "").strip()
-    if not message_id or str(job.get("operation") or "") or resident_execution_work.is_compact(job):
-        return
-    lineage_id, resident_id = _address(record)
-    if not lineage_id or resident_input_scope.get(resident_id, message_id):
-        return
-    expected_execution_id = str(job.get("execution_id") or "")
-    durable = resident_execution_work.read(record)
-    # Stored preparation keeps the item as it was queued; the argument may
-    # carry a prompt rebuilt for this delivery.
-    source = durable if expected_execution_id and str(durable.get("execution_id") or "") == expected_execution_id else job
-    repository = resident_conversation_stream.get_repository()
-    completed: set[str] = set()
-    for entry in checkpoints(record):
-        if "item" not in entry:
-            continue
-        try:
-            if repository.input_state(resident_id, entry.get("message_id"))["state"] == "completed":
-                completed.add(str(entry.get("message_id") or ""))
-        except KeyError:
-            completed.add(str(entry.get("message_id") or ""))
-    entry = {
-        "message_id": message_id,
-        "execution_id": expected_execution_id,
-        "kind": "group" if source.get("mailbox_members") else "request",
-        "started_at": _now(),
-        "infos": [
-            {"message_id": str(item.get("message_id") or ""), "author_id": str(item.get("author_id") or ""),
-             "held_at": str(item.get("held_at") or "")}
-            for item in carried if item.get("message_id")
-        ],
-        "item": queue_item(source),
-    }
-    from management_portal.execution.agent_data_store import get_agent_data_store
-    from management_portal.execution.execution_inputs import attach
-    if carried:
-        attach(get_agent_data_store(), expected_execution_id, [
-            {"message_id":item["message_id"],"role":"info","accepted_at":item.get("held_at") or entry["started_at"]}
-            for item in carried if item.get("message_id")
-        ])
-    store = get_lineage_data_store()
-    with store.resident_mailbox_progress.transaction(lineage_id, resident_id) as state:
-        kept = [item for item in state.get("checkpoints") or [] if isinstance(item, dict)]
-        existing = next((item for item in kept if item.get("message_id") == message_id
-                         and item.get("execution_id") == expected_execution_id), None)
-        if existing is not None:
-            # Reservation captured the original input before any projection or
-            # prompt work. Later preparation may attach infos, not replace it.
-            if carried:
-                existing["infos"] = entry["infos"]
-            return
-        kept = [item for item in kept if item.get("message_id") != message_id]
-        for item in kept:
-            if item.get("message_id") in completed:
-                item.pop("item", None)
-        state["checkpoints"] = [*kept, entry][-MAX_CHECKPOINTS:]
-
-
-def recent_executions(resident_id: str) -> list[dict[str, Any]]:
-    from management_portal.execution.agent_data_store import get_agent_data_store
-    from management_portal.execution.execution_inputs import recent
-    return list(reversed(recent(get_agent_data_store(),resident_id,limit=MAX_CHECKPOINTS)))
-
-
-def _forget(record: Mapping[str, Any], message_id: str, previous: Mapping[str, Any], organizer: str) -> None:
-    lineage_id,resident_id = _address(record)
-    with get_lineage_data_store().resident_mailbox_progress.transaction(lineage_id,resident_id) as state:
-        state["checkpoints"] = [item for item in state.get("checkpoints") or []
-                           if isinstance(item,dict) and item.get("message_id") != message_id]
 
 
 def _restored_media(record: Mapping[str, Any], message_id: str, item: Mapping[str, Any]) -> list[dict[str, Any]]:
@@ -169,7 +58,7 @@ def _mailbox_input(entry: Mapping[str, Any]) -> dict[str, Any]:
     item = copy.deepcopy(entry.get("item") or {})
     if item.pop(STORED_INPUT_MESSAGE, False):
         item["input_message"] = copy.deepcopy(entry["message"])
-    return queue_item(item)
+    return resident_input_checkpoints.queue_item(item)
 
 
 def _accepted_checkpoint(record: Mapping[str, Any], message_id: str) -> dict[str, Any]:
@@ -328,13 +217,7 @@ def requeue(
     """
 
     from . import family_facade, invariant_locks
-    from . import (
-        resident_access,
-        resident_domain_common,
-        resident_input_queue_domain,
-        resident_lifecycle_domain,
-        resident_record_domain,
-    )
+    from . import resident_access, resident_domain_common, resident_input_queue_domain, resident_record_domain
     from . import resident_backend
 
     organizer = resident_mailbox.organizer_id(actor)
@@ -366,7 +249,7 @@ def requeue(
             ):
                 return resident_input_queue_domain.resident_operation_result(target.resident_id, message_id=message_id, message_ids=[message_id])
             raise MailboxConflict("这条消息已在等待或正在处理")
-        entry = next((item for item in checkpoints(record) if item.get("message_id") == message_id), None)
+        entry = next((item for item in resident_input_checkpoints.checkpoints(record) if item.get("message_id") == message_id), None)
         if entry is None:
             group_id = resident_mailbox.group_of(record, message_id)
             if group_id:
@@ -387,7 +270,7 @@ def requeue(
                 raise MailboxConflict("同一输入已自动恢复两次；如需继续，请显式恢复原消息")
         if not isinstance(entry.get("item"), dict):
             raise MailboxConflict("这一轮没有保留可放回的原始记录")
-        item = queue_item(entry["item"])
+        item = resident_input_checkpoints.queue_item(entry["item"])
         if str(item.get("user_message_id") or "") != message_id:
             raise MailboxConflict("恢复检查点的输入身份不一致")
         _validate_recovery_item(record, item, job)
@@ -417,7 +300,7 @@ def requeue(
         resident_held_infos.restore(record, infos)
         # Retire only the previous round's checkpoint. Reserving a new round
         # below captures its own original preparation in the same transaction.
-        _forget(record, message_id, previous, organizer)
+        resident_input_checkpoints.forget(record, message_id)
         if active:
             queue = resident_execution_work.normalized_queue(job)
             job["queue"] = [item, *queue]
@@ -425,7 +308,7 @@ def requeue(
             resident_execution_work.write(record, job)
         else:
             waiting = resident_execution_work.normalized_queue(job)
-            if resident_lifecycle_domain.resident_intake_state(record) == resident_state.INTAKE_CLOSED:
+            if resident_record_domain.resident_intake_state(record) == resident_state.INTAKE_CLOSED:
                 resident_execution_work.write(record, {"queue": [item, *waiting]})
             else:
                 next_job = {**item, "started_at": now, "updated_at": now, "error": "", "queue": waiting}
@@ -544,11 +427,11 @@ def view(resident_id: str, actor: str) -> dict[str, Any]:
 
     requeueable = {
         (str(item.get("message_id") or ""), str(item.get("execution_id") or "")): item.get("item")
-        for item in checkpoints(record)
+        for item in resident_input_checkpoints.checkpoints(record)
     }
     recorded = [
         {**entry, **({"item": requeueable[key]} if isinstance(requeueable.get(key), dict) else {})}
-        for entry in recent_executions(target.resident_id)
+        for entry in resident_input_checkpoints.recent_executions(target.resident_id)
         for key in [(str(entry.get("message_id") or ""), str(entry.get("execution_id") or ""))]
     ]
 
@@ -584,7 +467,7 @@ def view(resident_id: str, actor: str) -> dict[str, Any]:
         except KeyError:
             continue
         status = str(input_state.get("state") or "")
-        if status not in FINISHED_STATES:
+        if status not in resident_input_checkpoints.FINISHED_STATES:
             continue
         view_entry = {
             **round_view(round_id, entry),

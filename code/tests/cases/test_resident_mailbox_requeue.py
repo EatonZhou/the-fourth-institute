@@ -14,7 +14,7 @@ from management_portal.society_service import (
     resident_execution_work,
     resident_lifecycle_domain,
     resident_mailbox,
-    resident_input_recovery,
+    resident_input_checkpoints,
     resident_access,
     resident_domain_common,
     resident_record_domain,
@@ -92,7 +92,7 @@ def _round(resident_id: str, *, state: str = "cancelled", infos: tuple = (), tex
     store.begin_execution(execution_id=job["execution_id"], agent_id=resident_id, actor_ref=ACTOR,
                           provider=resident_backend.execution_provider(record), started_at=datetime.now(timezone.utc).isoformat())
     execution_inputs.attach(store, job["execution_id"], [{"message_id": message_id, "role": "primary", "accepted_at": resident_domain_common.now_iso()}])
-    resident_input_recovery.retain_input_checkpoint(record, job, carried)
+    resident_input_checkpoints.retain_input_checkpoint(record, job, carried)
     repository.set_input_state(resident_id, message_id, "running")
     if state != "running":
         store.finish_execution(job["execution_id"], status=state, finished_at=resident_domain_common.now_iso())
@@ -144,7 +144,7 @@ def test_a_stopped_round_goes_back_first_with_its_infos_and_their_senders(team):
     # The stop notice of that round stays in the Conversation; the round leaves the recent list.
     messages = repository.read_messages(resident_id)
     assert any(item.get("role") == "system" and item.get("reply_to_message_id") == stopped for item in messages)
-    assert stopped not in [item["message_id"] for item in resident_input_recovery.checkpoints(_record(resident_id))]
+    assert stopped not in [item["message_id"] for item in resident_input_checkpoints.checkpoints(_record(resident_id))]
     # Requeue preserves the completed Execution and gives the input a new queue position.
     assert execution_inputs.latest(get_agent_data_store(), resident_id, stopped)["status"] == "cancelled"
 
@@ -232,7 +232,7 @@ def test_only_those_who_organize_the_mailbox_put_a_round_back(team, monkeypatch)
 
     assert result.status != "committed" and result.error["code"] == "instruction.forbidden"
     assert resident_conversation_stream.get_repository().input_state(resident_id, stopped)["state"] == "cancelled"
-    assert stopped in [item["message_id"] for item in resident_input_recovery.checkpoints(_record(resident_id))]
+    assert stopped in [item["message_id"] for item in resident_input_checkpoints.checkpoints(_record(resident_id))]
 
 
 def test_a_stopped_group_goes_back_with_its_members(team):
@@ -253,7 +253,7 @@ def test_a_stopped_group_goes_back_with_its_members(team):
     store = get_agent_data_store()
     store.begin_execution(execution_id="execution-g", agent_id=resident_id, actor_ref=ACTOR, provider=resident_backend.execution_provider(record), started_at=resident_domain_common.now_iso())
     execution_inputs.attach(store, "execution-g", [{"message_id": group_id, "role": "primary", "accepted_at": resident_domain_common.now_iso()}])
-    resident_input_recovery.retain_input_checkpoint(record, {**group_item, "execution_id": "execution-g"}, [])
+    resident_input_checkpoints.retain_input_checkpoint(record, {**group_item, "execution_id": "execution-g"}, [])
     store.finish_execution("execution-g", status="cancelled")
     job["queue"] = []
     resident_execution_work.write(record, job)
@@ -312,7 +312,7 @@ def test_the_mailbox_lists_what_waits_what_runs_and_the_recent_rounds(team, monk
     running_info = _info(resident_id, STEWARD, "随当前一轮送达")
     _, carried = resident_held_infos.attach(record, "第 0 条")
     resident_held_infos.consume(record, carried, request_message_id=head)
-    resident_input_recovery.retain_input_checkpoint(record, resident_execution_work.read(record), carried)
+    resident_input_checkpoints.retain_input_checkpoint(record, resident_execution_work.read(record), carried)
     job = resident_execution_work.read(record)
     job["submitted_at"] = resident_domain_common.now_iso()
     get_agent_data_store().begin_execution(execution_id=job["execution_id"], agent_id=resident_id, actor_ref=ACTOR,
@@ -350,11 +350,11 @@ def test_rounds_keep_the_last_ten_and_drop_what_completed_rounds_no_longer_need(
     for index in range(12):
         _round(resident_id, state="completed" if index % 2 else "failed", text=f"第 {index} 轮")
     compact = {'execution_id': "job_compact", "user_message_id": "msg_" + uuid.uuid4().hex, 'operation': "backend_compact"}
-    resident_input_recovery.retain_input_checkpoint(_record(resident_id), compact, [])
+    resident_input_checkpoints.retain_input_checkpoint(_record(resident_id), compact, [])
 
-    recorded = resident_input_recovery.checkpoints(_record(resident_id))
+    recorded = resident_input_checkpoints.checkpoints(_record(resident_id))
 
-    assert len(recorded) == resident_input_recovery.MAX_CHECKPOINTS
+    assert len(recorded) == resident_input_checkpoints.MAX_CHECKPOINTS
     assert compact["user_message_id"] not in [item["message_id"] for item in recorded]
     # A completed round can never go back, so only its summary stays; the newest keeps its item until the next round.
     states = {item["message_id"]: resident_conversation_stream.get_repository().input_state(resident_id, item["message_id"])["state"]
@@ -363,7 +363,7 @@ def test_rounds_keep_the_last_ten_and_drop_what_completed_rounds_no_longer_need(
     assert not any("item" in item for item in recorded[:-1] if states[item["message_id"]] == "completed")
     # Every round stays in the round records; the Mailbox view reads the last ten from them.
     assert len(execution_inputs.recent(get_agent_data_store(), resident_id, limit=100)) == 12
-    assert [item["message_id"] for item in resident_input_recovery.recent_executions(resident_id)] == [
+    assert [item["message_id"] for item in resident_input_checkpoints.recent_executions(resident_id)] == [
         item["message_id"] for item in recorded
     ]
 

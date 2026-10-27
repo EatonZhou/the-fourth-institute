@@ -51,6 +51,7 @@ from management_portal.society_service import (
     resident_domain_common,
     resident_prompt_domain,
     resident_input_queue_domain,
+    resident_execution_engine_domain,
 )
 from management_portal.society_service import lifecycle
 from management_portal.society_service import resident_domain as backend
@@ -106,7 +107,7 @@ def test_resident_default_runtime_reaches_execution_contracts(monkeypatch, subte
             execution_id = 'execution-' + '4' * 24
             tool_detail = {'id': 'runtime:2:tool', 'kind': 'tool', 'title': 'Shell', 'content': 'pytest -q', 'status': 'completed'}
             monkeypatch.setattr(execution_events, 'execution_projection_from_execution', lambda *args, **kwargs: {'execution_id': execution_id, 'outputs': [{'output_id': 'output-owned-by-transcript'}], 'runtime_details': [tool_detail]})
-            activity = resident_directory_domain.runtime_activity_for_execution('resident_444444444444', {'execution_id': execution_id, 'status': 'running', 'submitted_at': '2026-10-14T00:00:00Z'})
+            activity = resident_execution_engine_domain.runtime_activity_for_execution('resident_444444444444', {'execution_id': execution_id, 'status': 'running', 'submitted_at': '2026-10-14T00:00:00Z'})
             assert activity == {'live': True, 'execution_id': execution_id, 'details': [{'activity_id': 'runtime:2:tool', 'resident_id': 'resident_444444444444', 'message_id': '', 'kind': 'tool', 'status': 'completed', 'title': 'Shell', 'content': 'pytest -q', 'started_at': '', 'updated_at': ''}]}
     with subtests.test(contract='test_a_running_subagent_activity_carries_its_card'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
@@ -114,7 +115,7 @@ def test_resident_default_runtime_reaches_execution_contracts(monkeypatch, subte
             card = {'tool_use_id': 'toolu_a', 'agent_type': 'Explore', 'status': 'running', 'steps': [{'kind': 'tool', 'tool_name': 'Bash', 'text': 'ls', 'error': False, 'running': True}]}
             subagent_detail = {'id': 'runtime-update:subagent:toolu_a', 'kind': 'subagent', 'title': '子 agent', 'content': 'Survey', 'status': 'running', 'subagent': card}
             monkeypatch.setattr(execution_events, 'execution_projection_from_execution', lambda *args, **kwargs: {'execution_id': execution_id, 'outputs': [], 'runtime_details': [subagent_detail]})
-            detail, = resident_directory_domain.runtime_activity_for_execution('resident_444444444444', {'execution_id': execution_id, 'status': 'running', 'submitted_at': '2026-10-14T00:00:00Z'})['details']
+            detail, = resident_execution_engine_domain.runtime_activity_for_execution('resident_444444444444', {'execution_id': execution_id, 'status': 'running', 'submitted_at': '2026-10-14T00:00:00Z'})['details']
             assert (detail['kind'], detail['status'], detail['subagent']) == ('subagent', 'running', card)
             published, = resident_conversation_stream.protocol_activities('resident_444444444444', [detail])
             assert published['subagent'] == card
@@ -331,17 +332,17 @@ def test_managed_backend_session_operation_uses_execution_work_correlation(
     monkeypatch.setattr(resident_session_backend_domain, "build_agent_session_request", build_request)
     monkeypatch.setattr(execution_port, "service", lambda: service)
     monkeypatch.setattr(
-        resident_execution_domain,
+        resident_execution_engine_domain,
         "durable_resident_execution_request",
         lambda _record, _job, factory: factory(),
     )
     monkeypatch.setattr(
-        resident_execution_domain,
+        resident_execution_engine_domain,
         "bind_or_resume_resident_execution",
         lambda *_args: "execution-managed",
     )
     monkeypatch.setattr(
-        resident_execution_domain,
+        resident_execution_engine_domain,
         "wait_for_resident_execution",
         lambda *_args, **_kwargs: {
             "status": "completed",
@@ -510,22 +511,22 @@ def test_execution_control_poll_reads_only_committed_resident_state(
         raise AssertionError("control polling must not hydrate resources or finalize bootstrap")
 
     assert (
-        resident_execution_domain._resident_execution_still_current(resident_id, "control-job"),
-        resident_execution_domain._resident_execution_cancellation_requested(resident_id, "control-job"),
+        resident_execution_engine_domain._resident_execution_still_current(resident_id, "control-job"),
+        resident_execution_engine_domain.resident_execution_cancellation_requested(resident_id, "control-job"),
     ) == expected
     # No cache: a newly committed Stop must be seen by the next poll.
     resident_execution_work.get_lineage_data_store().put_resident_execution_record(
         resident_id, {'execution_id': 'control-stop', 'actor': 'CASE-A', 'stop_requested_at': 'now'},
     )
-    assert resident_execution_domain._resident_execution_cancellation_requested(resident_id, "control-stop")
-    assert not resident_execution_domain._resident_execution_still_current(resident_id, "control-stop")
+    assert resident_execution_engine_domain.resident_execution_cancellation_requested(resident_id, "control-stop")
+    assert not resident_execution_engine_domain._resident_execution_still_current(resident_id, "control-stop")
 
 
 def test_execution_control_poll_rejects_missing_resident(control_record) -> None:
     """执行控制轮询对缺失 Resident 返回无效状态"""
     missing = "resident_ffffffffffff"
-    assert not resident_execution_domain._resident_execution_still_current(missing, "control-job")
-    assert not resident_execution_domain._resident_execution_cancellation_requested(missing, "control-job")
+    assert not resident_execution_engine_domain._resident_execution_still_current(missing, "control-job")
+    assert not resident_execution_engine_domain.resident_execution_cancellation_requested(missing, "control-job")
 
 
 def test_snapshot_and_history_pages_do_not_read_full_conversation(
@@ -749,7 +750,7 @@ def test_recovery_never_reopens_a_terminal_execution_work(
             return_value={"status": "failed"},
         ),
         mock.patch.object(
-            resident_execution_domain,
+            resident_execution_engine_domain,
             "_project_resident_execution_snapshot",
         ) as project,
     ):
@@ -842,7 +843,7 @@ def test_execution_display_message_reaches_transcript_and_notification(
 
     repository = resident_conversation_stream.get_repository()
     before_cursor = repository.current_projection(resident_id)["cursor"]
-    persisted = resident_execution_domain._persist_execution_display_messages(
+    persisted = resident_execution_engine_domain.persist_execution_display_messages(
         resident_id,
 
         execution_id,
@@ -908,7 +909,7 @@ def test_captured_outputs_enter_trace_and_publish_in_one_queue_order(resident_re
 
     assert all(store.chat_message(resident_id, item["output_id"]) is None for item in outputs)
     for output in outputs:
-        resident_execution_domain._persist_execution_display_messages(
+        resident_execution_engine_domain.persist_execution_display_messages(
             resident_id,  execution_id, [output],
         )
 
@@ -944,16 +945,16 @@ def test_running_snapshot_and_cancel_check_read_only_lightweight_job_controls(re
     monkeypatch.setattr(execution_events, 'execution_projection_from_execution',
                         lambda *_args, **_kwargs: {'outputs': [], 'runtime_details': []})
     observed = []
-    original = resident_execution_domain.resident_record_for_execution
+    original = resident_execution_engine_domain.resident_record_for_execution
 
     def read_record(identifier):
         observed.append(identifier)
         return original(identifier)
 
-    monkeypatch.setattr(resident_execution_domain, 'resident_record_for_execution', read_record)
-    assert resident_execution_domain._resident_execution_still_current(resident_id, execution_id)
+    monkeypatch.setattr(resident_execution_engine_domain, 'resident_record_for_execution', read_record)
+    assert resident_execution_engine_domain._resident_execution_still_current(resident_id, execution_id)
     assert observed == []
-    resident_execution_domain._project_resident_execution_snapshot(resident_id,  execution_id, {'status': 'running'})
+    resident_execution_engine_domain._project_resident_execution_snapshot(resident_id,  execution_id, {'status': 'running'})
     assert observed == [resident_id]
     assert repository.current_projection(resident_id)['state']['work_state'] == 'running'
 
@@ -978,18 +979,18 @@ def test_execution_message_callbacks_do_not_hydrate_resources(resident_record, m
         execution_events, "execution_projection_from_execution",
         lambda *_args, **_kwargs: {"outputs": [], "details": []},
     )
-    resident_execution_domain._project_resident_execution_snapshot(
+    resident_execution_engine_domain._project_resident_execution_snapshot(
         resident_id,  execution_id, {"execution_id": execution_id, "status": "running"},
     )
     output = {"output_id": "msg_" + "b" * 32, "text": "intermediate", "phase": "commentary"}
-    assert resident_execution_domain._persist_execution_display_messages(resident_id, "old-execution", [output]) == []
-    messages = resident_execution_domain._persist_execution_display_messages(resident_id,  execution_id, [output])
+    assert resident_execution_engine_domain.persist_execution_display_messages(resident_id, "old-execution", [output]) == []
+    messages = resident_execution_engine_domain.persist_execution_display_messages(resident_id,  execution_id, [output])
     assert len(messages) == 1
-    resident_execution_domain._advance_resident_execution_event_cursor(resident_id,  execution_id, 7)
-    resident_execution_domain._advance_resident_execution_event_cursor(resident_id,  execution_id, 3)
-    resident_execution_domain._advance_resident_execution_event_cursor(resident_id, "old-execution", 99)
-    assert resident_execution_domain._resident_execution_event_cursor(resident_id,  execution_id) == 7
-    assert resident_execution_domain._resident_execution_event_cursor(resident_id,  "old-execution") == 0
+    resident_execution_engine_domain._advance_resident_execution_event_cursor(resident_id,  execution_id, 7)
+    resident_execution_engine_domain._advance_resident_execution_event_cursor(resident_id,  execution_id, 3)
+    resident_execution_engine_domain._advance_resident_execution_event_cursor(resident_id, "old-execution", 99)
+    assert resident_execution_engine_domain._resident_execution_event_cursor(resident_id,  execution_id) == 7
+    assert resident_execution_engine_domain._resident_execution_event_cursor(resident_id,  "old-execution") == 0
     final = resident_input_queue_domain.build_message("agent", "final", message_id="msg_" + "c" * 32)
     assert resident_execution_domain._persist_execution_final_message(resident_id,  "old-execution", final) is None
     assert resident_execution_domain._persist_execution_final_message(resident_id,  execution_id, final)["message_id"] == final["message_id"]
@@ -1010,12 +1011,12 @@ def test_execution_message_callbacks_do_not_hydrate_resources(resident_record, m
 
     monkeypatch.setattr(resident_lifecycle_domain, "append_conversation_message", reject_poison)
     with pytest.raises(ValueError, match="test projection fault") as raised:
-        resident_execution_domain._persist_execution_display_messages(
+        resident_execution_engine_domain.persist_execution_display_messages(
             resident_id,  execution_id, [poison_output],
         )
     projection_error = raised.value
     assert projection_error._resident_projection_message_id == poison_message_id
-    resident_execution_domain._record_resident_projection_error(
+    resident_execution_engine_domain._record_resident_projection_error(
         resident_id,  execution_id, projection_error,
     )
     stored_job = resident_execution_work.read(resident_record)
@@ -1026,7 +1027,7 @@ def test_execution_message_callbacks_do_not_hydrate_resources(resident_record, m
         "last_event_sequence": 0,
         "updated_at": stored_job["conversation_projection_error"]["recorded_at"],
     }
-    assert resident_execution_domain._persist_execution_display_messages(
+    assert resident_execution_engine_domain.persist_execution_display_messages(
         resident_id,  execution_id, [poison_output],
     ) == []
     assert projection_attempts == 1
@@ -1059,15 +1060,15 @@ def test_execution_cursor_checkpoint_does_not_republish_runtime(
         store, "advance_resident_execution_cursor",
         wraps=store.advance_resident_execution_cursor,
     ) as persist:
-        resident_execution_domain._advance_resident_execution_event_cursor(resident_id,  execution_id, 7)
-        resident_execution_domain._advance_resident_execution_event_cursor(resident_id,  execution_id, 7)
-        resident_execution_domain._advance_resident_execution_event_cursor(resident_id,  execution_id, 3)
-        resident_execution_domain._advance_resident_execution_event_cursor(resident_id,  execution_id, 0)
-        resident_execution_domain._advance_resident_execution_event_cursor(resident_id, "old-execution", 99)
-        resident_execution_domain._advance_resident_execution_event_cursor(resident_id,  "old-execution", 99)
+        resident_execution_engine_domain._advance_resident_execution_event_cursor(resident_id,  execution_id, 7)
+        resident_execution_engine_domain._advance_resident_execution_event_cursor(resident_id,  execution_id, 7)
+        resident_execution_engine_domain._advance_resident_execution_event_cursor(resident_id,  execution_id, 3)
+        resident_execution_engine_domain._advance_resident_execution_event_cursor(resident_id,  execution_id, 0)
+        resident_execution_engine_domain._advance_resident_execution_event_cursor(resident_id, "old-execution", 99)
+        resident_execution_engine_domain._advance_resident_execution_event_cursor(resident_id,  "old-execution", 99)
     assert persist.call_count == 5
     assert resident_execution_work.read(resident_record) == {**before, "execution_event_cursor": 7}
-    assert resident_execution_domain._resident_execution_event_cursor(resident_id,  execution_id) == 7
+    assert resident_execution_engine_domain._resident_execution_event_cursor(resident_id,  execution_id) == 7
 
 
 def test_execution_cursor_checkpoint_failure_keeps_retry_position(
@@ -1086,10 +1087,10 @@ def test_execution_cursor_checkpoint_failure_keeps_retry_position(
     with mock.patch.object(
         store, "advance_resident_execution_cursor", side_effect=OSError("checkpoint unavailable"),
     ), pytest.raises(OSError, match="checkpoint unavailable"):
-        resident_execution_domain._advance_resident_execution_event_cursor(resident_id,  execution_id, 7)
-    assert resident_execution_domain._resident_execution_event_cursor(resident_id,  execution_id) == 3
-    resident_execution_domain._advance_resident_execution_event_cursor(resident_id,  execution_id, 7)
-    assert resident_execution_domain._resident_execution_event_cursor(resident_id,  execution_id) == 7
+        resident_execution_engine_domain._advance_resident_execution_event_cursor(resident_id,  execution_id, 7)
+    assert resident_execution_engine_domain._resident_execution_event_cursor(resident_id,  execution_id) == 3
+    resident_execution_engine_domain._advance_resident_execution_event_cursor(resident_id,  execution_id, 7)
+    assert resident_execution_engine_domain._resident_execution_event_cursor(resident_id,  execution_id) == 7
 
 
 def test_execution_display_message_replay_is_idempotent(
@@ -1113,13 +1114,13 @@ def test_execution_display_message_replay_is_idempotent(
         "created_at": "2026-08-17T00:00:00Z",
     }
 
-    first = resident_execution_domain._persist_execution_display_messages(
+    first = resident_execution_engine_domain.persist_execution_display_messages(
         resident_id,
 
         execution_id,
         [output],
     )
-    replay = resident_execution_domain._persist_execution_display_messages(
+    replay = resident_execution_engine_domain.persist_execution_display_messages(
         resident_id,
 
         execution_id,
@@ -1162,7 +1163,7 @@ def test_execution_display_batch_releases_state_lock_between_messages(resident_r
             yield {"output_id": "msg_" + f"{index:032x}", "text": f"update-{index}"}
 
     monkeypatch.setattr(resident_record_domain, "state_lock", observed_lock)
-    assert len(resident_execution_domain._persist_execution_display_messages(resident_id,  execution_id, outputs())) == 3
+    assert len(resident_execution_engine_domain.persist_execution_display_messages(resident_id,  execution_id, outputs())) == 3
 
 
 def test_execution_display_batch_refences_each_message(resident_record, monkeypatch):
@@ -1183,7 +1184,7 @@ def test_execution_display_batch_refences_each_message(resident_record, monkeypa
 
     monkeypatch.setattr(resident_lifecycle_domain, "append_conversation_message", replace_job_after_append)
     outputs = [{"output_id": "msg_" + f"{index:032x}", "text": f"update-{index}"} for index in range(3)]
-    assert len(resident_execution_domain._persist_execution_display_messages(resident_id,  execution_id, outputs)) == 1
+    assert len(resident_execution_engine_domain.persist_execution_display_messages(resident_id,  execution_id, outputs)) == 1
 
 
 def test_execution_display_batch_allows_stop_before_recovery_finishes(resident_record):
@@ -1219,7 +1220,7 @@ def test_execution_display_batch_allows_stop_before_recovery_finishes(resident_r
         yield {"output_id": "msg_" + "2" * 32, "text": "second recovery message"}
 
     try:
-        assert len(resident_execution_domain._persist_execution_display_messages(resident_id,  execution_id, outputs())) == 2
+        assert len(resident_execution_engine_domain.persist_execution_display_messages(resident_id,  execution_id, outputs())) == 2
     finally:
         if thread.ident is not None:
             thread.join(timeout=3)
@@ -1243,7 +1244,7 @@ def test_execution_waiter_uses_incremental_durable_projection(resident_record, m
     monkeypatch.setattr(execution_events, "execution_projection_from_execution",
                         lambda *_args, **_kwargs: pytest.fail("waiter scanned full historical projection"))
     batches = []
-    persist = resident_execution_domain._persist_execution_display_messages
+    persist = resident_execution_engine_domain.persist_execution_display_messages
 
     def observe(*args):
         batches.append(len(args[-1]))
@@ -1251,7 +1252,7 @@ def test_execution_waiter_uses_incremental_durable_projection(resident_record, m
             raise RuntimeError("temporary projection failure")
         return persist(*args)
 
-    monkeypatch.setattr(resident_execution_domain, "_persist_execution_display_messages", observe)
+    monkeypatch.setattr(resident_execution_engine_domain, "persist_execution_display_messages", observe)
 
     class Service:
         @staticmethod
@@ -1266,7 +1267,7 @@ def test_execution_waiter_uses_incremental_durable_projection(resident_record, m
             kwargs["on_snapshot"](snapshot)
             return snapshot
 
-    result = resident_execution_domain.wait_for_resident_execution(Service(), execution_id=execution_id,
+    result = resident_execution_engine_domain.wait_for_resident_execution(Service(), execution_id=execution_id,
                                                  actor="CASE-A", resident_id=resident_id)
     assert len(result["projection_errors"]) == int(fail_once)
     assert batches == ([1, 1, 1, 0] if fail_once else [1, 0, 1, 0])
@@ -1320,7 +1321,7 @@ def test_execution_snapshot_recovers_display_messages_from_durable_transcript(
     repository = resident_conversation_stream.get_repository()
     before_cursor = repository.current_projection(resident_id)["cursor"]
     for _ in range(2):
-        resident_execution_domain._project_resident_execution_snapshot(
+        resident_execution_engine_domain._project_resident_execution_snapshot(
             resident_id,
 
             execution_id,
@@ -1367,7 +1368,7 @@ def test_execution_snapshot_replay_keeps_message_time_and_unblocks_later_updates
         "text": "same message content", "created_at": "2026-09-07T07:49:42.724000Z",
     }
     repository = resident_conversation_stream.get_repository()
-    resident_execution_domain._persist_execution_display_messages(resident_id,  execution_id, [first])
+    resident_execution_engine_domain.persist_execution_display_messages(resident_id,  execution_id, [first])
     cursor = repository.current_projection(resident_id)["cursor"]
     replay = {**first, "created_at": "2026-09-07T07:52:43.881Z"}
     later = {**first, "output_id": "msg_90000000000000000000000000000001",
@@ -1375,7 +1376,7 @@ def test_execution_snapshot_replay_keeps_message_time_and_unblocks_later_updates
     monkeypatch.setattr(execution_events, "execution_projection_from_execution",
                         lambda *args, **kwargs: {"outputs": [replay, later], "runtime_details": []})
     for _ in range(2):
-        resident_execution_domain._project_resident_execution_snapshot(resident_id,  execution_id,
+        resident_execution_engine_domain._project_resident_execution_snapshot(resident_id,  execution_id,
                                                       {"status": "running"})
     messages = repository.read_messages(resident_id)
     assert [m["message_id"] for m in messages] == [first["output_id"], later["output_id"]]
@@ -1385,12 +1386,12 @@ def test_execution_snapshot_replay_keeps_message_time_and_unblocks_later_updates
                 if e["event_type"] == "conversation.message.appended"]
     assert len(appended) == 1
     with pytest.raises(ValueError, match="different immutable content"):
-        resident_execution_domain._persist_execution_display_messages(
+        resident_execution_engine_domain.persist_execution_display_messages(
             resident_id,  execution_id, [{**replay, "text": "changed body"}])
     resident_execution_work.write(resident_record, {**resident_execution_work.read(resident_record),
                                          "user_message_id": "msg_90000000000000000000000000000003"})
     with pytest.raises(ValueError, match="different immutable content"):
-        resident_execution_domain._persist_execution_display_messages(resident_id,  execution_id, [replay])
+        resident_execution_engine_domain.persist_execution_display_messages(resident_id,  execution_id, [replay])
 
 
 def test_execution_display_message_replay_rejects_identity_conflict(
@@ -1413,7 +1414,7 @@ def test_execution_display_message_replay_rejects_identity_conflict(
         "text": "first content",
         "created_at": "2026-08-17T00:00:00Z",
     }
-    resident_execution_domain._persist_execution_display_messages(
+    resident_execution_engine_domain.persist_execution_display_messages(
         resident_id,
 
         execution_id,
@@ -1421,7 +1422,7 @@ def test_execution_display_message_replay_rejects_identity_conflict(
     )
 
     with pytest.raises(ValueError, match="different immutable content"):
-        resident_execution_domain._persist_execution_display_messages(
+        resident_execution_engine_domain.persist_execution_display_messages(
             resident_id,
 
             execution_id,
@@ -1476,7 +1477,7 @@ def test_execution_display_messages_append_after_injected_user_message(
             "created_at": "2026-08-17T00:00:02Z",
         },
     ):
-        resident_execution_domain._persist_execution_display_messages(
+        resident_execution_engine_domain.persist_execution_display_messages(
             resident_id,
 
             execution_id,
@@ -1514,7 +1515,7 @@ def test_execution_final_message_follows_projected_updates(
         "content_parts": [{"type": "text", "text": "question"}],
         "created_at": "2026-08-17T00:00:00Z",
     })
-    resident_execution_domain._persist_execution_display_messages(
+    resident_execution_engine_domain.persist_execution_display_messages(
         resident_id,
 
         execution_id,
@@ -1525,7 +1526,7 @@ def test_execution_final_message_follows_projected_updates(
             "created_at": "2026-08-17T00:00:01Z",
         }],
     )
-    resident_execution_domain._persist_execution_display_messages(
+    resident_execution_engine_domain.persist_execution_display_messages(
         resident_id,
 
         execution_id,
@@ -3549,7 +3550,7 @@ def test_pending_active_turn_flush_retries_one_idempotent_append_after_commit_fa
     monkeypatch.setattr(resident_execution_work, "write", interrupt_first_commit)
 
     with pytest.raises(OSError, match="commit interruption"):
-        resident_execution_domain._flush_pending_active_turn_controls(
+        resident_execution_engine_domain._flush_pending_active_turn_controls(
             Service(),
             resident_id,
             execution_id,
@@ -3557,7 +3558,7 @@ def test_pending_active_turn_flush_retries_one_idempotent_append_after_commit_fa
 
     assert resident_execution_work.read(resident_record)["pending_active_turn_inputs"]
 
-    resident_execution_domain._flush_pending_active_turn_controls(
+    resident_execution_engine_domain._flush_pending_active_turn_controls(
         Service(),
         resident_id,
         execution_id,
@@ -3593,7 +3594,7 @@ def test_pending_active_turn_flush_does_not_append_after_stop_requested(
     )
     service = mock.Mock()
 
-    resident_execution_domain._flush_pending_active_turn_controls(
+    resident_execution_engine_domain._flush_pending_active_turn_controls(
         service,
         resident_id,
         execution_id,
@@ -4032,7 +4033,7 @@ def test_recovery_attaches_only_the_completion_waiter(
     def forbidden(*args, **kwargs):
         raise AssertionError("Recovery must not query or project remote execution")
     monkeypatch.setattr(resident_execution_work, "execution_snapshot", forbidden)
-    monkeypatch.setattr(resident_execution_domain, "_project_resident_execution_snapshot", forbidden)
+    monkeypatch.setattr(resident_execution_engine_domain, "_project_resident_execution_snapshot", forbidden)
     # An active Job with no attached waiter is what recovery attaches one to.
     resident_execution_work.write(resident_record, {"execution_id": "execution-" + "a" * 24, "actor": "CASE-A", "queue": []})
     monkeypatch.setattr(resident_execution_domain, "_prepare_resident_continuation", lambda _record, **_kwargs: (resident_id, "waiter"))
@@ -4897,14 +4898,14 @@ def test_execution_projection_failure_is_quarantined_without_terminalizing_execu
             return {"status": "completed", "result": {"status": "completed"}}
 
     monkeypatch.setattr(
-        resident_execution_domain,
+        resident_execution_engine_domain,
         "_project_resident_execution_snapshot",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(
             ValueError("Conversation message identity refers to different immutable content")
         ),
     )
     monkeypatch.setattr(
-        resident_execution_domain,
+        resident_execution_engine_domain,
         "_record_resident_projection_error",
         lambda *_args, event_sequence=0, **_kwargs: (
             recorded.append((str(_args[1]), event_sequence))
@@ -4912,17 +4913,17 @@ def test_execution_projection_failure_is_quarantined_without_terminalizing_execu
         ),
     )
     monkeypatch.setattr(
-        resident_execution_domain,
+        resident_execution_engine_domain,
         "_resident_execution_event_cursor",
         lambda *_args: 11,
     )
     monkeypatch.setattr(
-        resident_execution_domain,
+        resident_execution_engine_domain,
         "_advance_resident_execution_event_cursor",
         lambda *_args: advanced.append(int(_args[-1])),
     )
 
-    snapshot = resident_execution_domain.wait_for_resident_execution(
+    snapshot = resident_execution_engine_domain.wait_for_resident_execution(
         Service(),
         execution_id="execution-000000000000000000000706",
         actor="sample_admin",
@@ -4990,17 +4991,17 @@ def test_completed_codex_turn_separates_accounting_and_context_usage(
         lambda *_args: request,
     )
     monkeypatch.setattr(
-        resident_execution_domain,
+        resident_execution_engine_domain,
         "durable_resident_execution_request",
         lambda _record, _job, factory: factory(),
     )
     monkeypatch.setattr(
-        resident_execution_domain,
+        resident_execution_engine_domain,
         "bind_or_resume_resident_execution",
         lambda *_args: "execution-" + "8" * 24,
     )
     monkeypatch.setattr(
-        resident_execution_domain,
+        resident_execution_engine_domain,
         "wait_for_resident_execution",
         lambda *_args, **_kwargs: {
             "status": "completed",
@@ -5076,12 +5077,12 @@ def test_a_stopped_or_failed_turn_keeps_the_usage_its_execution_counted(
     monkeypatch.setattr("management_portal.execution.service.ExecutionService", Service)
     monkeypatch.setattr(resident_execution_domain, "_build_resident_execution_request", lambda *_args: request)
     monkeypatch.setattr(
-        resident_execution_domain, "durable_resident_execution_request", lambda _record, _job, factory: factory(),
+        resident_execution_engine_domain, "durable_resident_execution_request", lambda _record, _job, factory: factory(),
     )
     monkeypatch.setattr(
-        resident_execution_domain, "bind_or_resume_resident_execution", lambda *_args: "execution-" + "9" * 24,
+        resident_execution_engine_domain, "bind_or_resume_resident_execution", lambda *_args: "execution-" + "9" * 24,
     )
-    monkeypatch.setattr(resident_execution_domain, "wait_for_resident_execution", lambda *_args, **_kwargs: {
+    monkeypatch.setattr(resident_execution_engine_domain, "wait_for_resident_execution", lambda *_args, **_kwargs: {
         "status": status,
         "scheduler": {"updated_at": "2026-08-17T00:00:00Z"},
         "result": {
@@ -5170,12 +5171,12 @@ def test_completed_resident_turn_reuses_its_stable_final_message(
         lambda *_args: request,
     )
     monkeypatch.setattr(
-        resident_execution_domain,
+        resident_execution_engine_domain,
         "durable_resident_execution_request",
         lambda _record, _job, factory: factory(),
     )
     monkeypatch.setattr(
-        resident_execution_domain,
+        resident_execution_engine_domain,
         "bind_or_resume_resident_execution",
         lambda *_args: execution_id,
     )
@@ -5295,7 +5296,7 @@ def test_resident_submission_recovers_same_request_after_prebind_crash(
         "queue": [],
     }
     resident_execution_work.write(resident_record, job)
-    first = resident_execution_domain.durable_resident_execution_request(
+    first = resident_execution_engine_domain.durable_resident_execution_request(
         resident_record,
         job,
         lambda: resident_execution_domain._build_resident_execution_request(resident_record, job),
@@ -5307,14 +5308,14 @@ def test_resident_submission_recovers_same_request_after_prebind_crash(
     recovered_job = resident_execution_work.read(resident_record)
     assert recovered_job["execution_id"] == first.execution_id
     assert not recovered_job.get("submitted_at")
-    recovered = resident_execution_domain.durable_resident_execution_request(
+    recovered = resident_execution_engine_domain.durable_resident_execution_request(
         resident_record,
         recovered_job,
         mock.Mock(side_effect=PermissionError("Authorization configuration is unavailable")),
     )
     assert recovered.to_payload() == first.to_payload()
 
-    execution_id = resident_execution_domain.bind_or_resume_resident_execution(
+    execution_id = resident_execution_engine_domain.bind_or_resume_resident_execution(
         service,
         recovered,
         resident_record,
@@ -5333,8 +5334,8 @@ def test_resident_submission_recovers_same_request_after_prebind_crash(
         mock.patch.object(execution_port, "service", return_value=service),
         mock.patch.object(resident_execution_domain, "_build_resident_execution_request", side_effect=PermissionError("Authorization configuration is unavailable")) as build_turn,
         mock.patch.object(resident_session_backend_domain, "build_backend_session_operation_request", side_effect=PermissionError("Authorization configuration is unavailable")) as build_operation,
-        mock.patch.object(resident_execution_domain, "_flush_pending_active_turn_controls"),
-        mock.patch.object(resident_execution_domain, "wait_for_resident_execution", side_effect=RuntimeError("existing execution reached")) as wait,
+        mock.patch.object(resident_execution_engine_domain, "_flush_pending_active_turn_controls"),
+        mock.patch.object(resident_execution_engine_domain, "wait_for_resident_execution", side_effect=RuntimeError("existing execution reached")) as wait,
     ):
         for operation in ("turn", "compact"):
             with pytest.raises(RuntimeError, match="^existing execution reached$"):
@@ -5537,7 +5538,7 @@ def test_non_codex_resident_instructions_use_runtime_lifecycle(
     """非 codex Resident 系统指令按会话生命周期注入"""
     resident_record["backend"] = resident_backend
 
-    runtime_options = resident_execution_domain.resident_execution_runtime_options(
+    runtime_options = resident_execution_engine_domain.resident_execution_runtime_options(
         resident_record,
         {"actor": "CASE-A"},
         is_owner=True,
@@ -5615,7 +5616,7 @@ def test_started_event_projects_only_the_bound_execution_work(
     )
     resident_execution_work.write(resident_record, job)
 
-    resident_execution_domain._project_resident_execution_snapshot(
+    resident_execution_engine_domain._project_resident_execution_snapshot(
         "resident_aaaaaaaaaaaa",
 
         "execution-stale",
@@ -5625,7 +5626,7 @@ def test_started_event_projects_only_the_bound_execution_work(
     assert "status" not in stale
     assert "conversation_projection_error" in stale
 
-    resident_execution_domain._project_resident_execution_snapshot(
+    resident_execution_engine_domain._project_resident_execution_snapshot(
         "resident_aaaaaaaaaaaa",
 
         execution_id,
@@ -5661,12 +5662,12 @@ def test_late_execution_snapshot_cannot_restore_terminal_activity(
     repository = resident_conversation_stream.get_repository()
     repository.set_activities(resident_id, [_activity(resident_id, "stale")])
     monkeypatch.setattr(
-        resident_directory_domain,
+        resident_execution_engine_domain,
         "runtime_activity_for_execution",
         lambda _resident_id, _job: {"details": [_activity(resident_id, "late")]},
     )
 
-    resident_execution_domain._project_resident_execution_snapshot(
+    resident_execution_engine_domain._project_resident_execution_snapshot(
         resident_id,
 
         execution_id,
@@ -5710,20 +5711,20 @@ def test_terminal_execution_snapshot_latches_provider_status_until_delivery(
         },
     )
     monkeypatch.setattr(
-        resident_directory_domain,
+        resident_execution_engine_domain,
         "runtime_activity_for_execution",
         lambda _resident_id, _job: {
             "details": [_activity(resident_id, "stale")],
         },
     )
 
-    resident_execution_domain._project_resident_execution_snapshot(
+    resident_execution_engine_domain._project_resident_execution_snapshot(
         resident_id,
 
         execution_id,
         {"status": "completed"},
     )
-    resident_execution_domain._project_resident_execution_snapshot(
+    resident_execution_engine_domain._project_resident_execution_snapshot(
         resident_id,
 
         execution_id,
@@ -5768,7 +5769,7 @@ def test_snapshot_cannot_overwrite_a_concurrent_resident_transition(
         "execution_projection_from_execution",
         concurrent_transition,
     )
-    resident_execution_domain._project_resident_execution_snapshot(
+    resident_execution_engine_domain._project_resident_execution_snapshot(
         resident_id,  execution_id, {"status": "running"},
     )
     assert repository.current_projection(resident_id) == expected
@@ -5838,7 +5839,7 @@ def test_account_details_reads_current_states_without_reopening(resident_record,
     assert result["quota_exempt"] == 0
     assert result["closed_resident_ids"] == [resident_id]
     assert resident_record_domain.find_resident(resident_id) == before
-    assert resident_lifecycle_domain.resident_intake_state(before) == "closed"
+    assert resident_record_domain.resident_intake_state(before) == "closed"
     execution_client.configure_binding_quota_overrides.assert_not_called()
 
 
@@ -6022,7 +6023,7 @@ def test_quota_override_repairs_failed_sync_and_releases_existing_execution(resi
     assert result["quota_override_pending"]
     opened = resident_record_domain.find_resident(resident_id)
     assert opened["quota_reserve_override"]["enabled"]
-    assert resident_lifecycle_domain.resident_intake_state(opened) == "open"
+    assert resident_record_domain.resident_intake_state(opened) == "open"
     sync.side_effect = scheduler.configure_binding_quota_overrides
     resident_input_queue_domain.sync_resident_quota_overrides([opened])
     claimed = scheduler.claim(worker_id="quota-test", capabilities=["agent_session:codex"])
@@ -6068,7 +6069,7 @@ def test_capacity_queue_snapshot_projects_visible_queue_reason(
     )
     resident_execution_work.write(resident_record, job)
 
-    resident_execution_domain._project_resident_execution_snapshot(
+    resident_execution_engine_domain._project_resident_execution_snapshot(
         "resident_aaaaaaaaaaaa",
 
         execution_id,
@@ -6090,7 +6091,7 @@ def test_capacity_queue_snapshot_projects_visible_queue_reason(
     assert "status" not in stored
     assert "queue_reason" not in stored
 
-    resident_execution_domain._project_resident_execution_snapshot(
+    resident_execution_engine_domain._project_resident_execution_snapshot(
         "resident_aaaaaaaaaaaa",
 
         execution_id,
@@ -6126,7 +6127,7 @@ def test_session_binding_queue_snapshot_remains_visibly_queued(
     )
     resident_execution_work.write(resident_record, job)
 
-    resident_execution_domain._project_resident_execution_snapshot(
+    resident_execution_engine_domain._project_resident_execution_snapshot(
         "resident_aaaaaaaaaaaa",
 
         execution_id,
@@ -7418,7 +7419,7 @@ def test_stop_job_is_accepted_before_execution_binding(
     resident_delivery_work.drain(str(resident_record["resident_id"]))
     assert repository.current_projection(resident_id)["state"]["work_state"] == "stopping"
     with pytest.raises(backend.ResidentTurnCancelled):
-        resident_execution_domain.durable_resident_execution_request(
+        resident_execution_engine_domain.durable_resident_execution_request(
             resident_record,
             stored,
             lambda: pending_request,
@@ -7552,7 +7553,7 @@ def test_stop_after_request_construction_prevents_execution_submission(
 
     with (
         mock.patch.object(
-            resident_execution_domain,
+            resident_execution_engine_domain,
             "durable_resident_execution_request",
             side_effect=finish_request_construction,
         ),
@@ -8216,7 +8217,7 @@ def test_execution_message_append_runs_outside_the_execution_work_lock(
         "append_conversation_message",
         append_after_unlock,
     )
-    persisted = resident_execution_domain._persist_execution_display_messages(
+    persisted = resident_execution_engine_domain.persist_execution_display_messages(
         resident_id,
 
         execution_id,

@@ -23,6 +23,7 @@ from management_portal.society_service import (
     resident_state,
     resident_record_domain,
     resident_input_queue_domain,
+    resident_execution_engine_domain,
 )
 from tests.cases.test_session_restart import _restart_domain
 
@@ -83,8 +84,8 @@ def test_next_input_keeps_original_session_without_automatic_restart(monkeypatch
                         lambda: type("Ops", (), {"pending": staticmethod(lambda *_: False)})())
     monkeypatch.setattr(resident_delivery_work, "drain", lambda *_a: None)
     monkeypatch.setattr(family_quota, "ensure_role_reserve", lambda *_a: False)
-    monkeypatch.setattr(resident_execution_domain, "resident_record_for_execution", lambda *_a: record)
-    monkeypatch.setattr(resident_execution_domain, "_read_resident_execution_control", lambda *_a: job)
+    monkeypatch.setattr(resident_execution_engine_domain, "resident_record_for_execution", lambda *_a: record)
+    monkeypatch.setattr(resident_execution_engine_domain, "read_resident_execution_control", lambda *_a: job)
     monkeypatch.setattr(resident_execution_domain, "_active_resident_continuations", lambda: 0)
     monkeypatch.setattr(resident_execution_work, "read", lambda *_a: job)
     monkeypatch.setattr(resident_execution_work, "continuation_needed", lambda *_a: True)

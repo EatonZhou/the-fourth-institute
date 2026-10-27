@@ -76,7 +76,7 @@ def _event_input(lineage_id, event):
 
 
 def _observe(facade, incident):
-    from . import resident_lifecycle_domain, resident_record_domain
+    from . import resident_record_domain
     root = incident.get("request_message_id")
     if root:
         if _input(facade["resident_id"], root).get("state") == "cancelled":
@@ -92,11 +92,11 @@ def _observe(facade, incident):
     if status == "cancelled":
         return "cancelled", state
     record = resident_record_domain.find_resident(state["resident_id"])
-    if record and resident_lifecycle_domain.resident_intake_state(record) != "open":
+    if record and resident_record_domain.resident_intake_state(record) != "open":
         from . import resident_execution_work
         held = status == "running" and resident_execution_work.is_intake_held(resident_execution_work.read(record))
         if status in {"queued", "failed"} or held:
-            from . import resident_lifecycle_domain, resident_record_domain
+            from . import resident_record_domain
             if resident_record_domain.lifecycle_operations().pending(record["resident_id"]):
                 state.update(intake_state="closed", blocked_reason="session_restart")
                 return "waiting", state
@@ -114,9 +114,9 @@ def _blocked_queue_candidates(facade, resident_ids):
     its current relay holder before registering it, including nested Families.
     """
     from .resident_catalog import get_catalog
-    from . import resident_lifecycle_domain
+    from . import resident_record_domain
     closed = [r["resident_id"] for r in get_catalog().get_many(sorted(resident_ids))
-              if not r.get("deleted_at") and resident_lifecycle_domain.resident_intake_state(r) != "open"]
+              if not r.get("deleted_at") and resident_record_domain.resident_intake_state(r) != "open"]
     for rid, queue in resident_conversation_stream.get_repository().queues(closed).items():
         for item in queue["items"]:
             candidate = _candidate(facade, rid, item["message_id"])
@@ -158,8 +158,7 @@ def check(lineage_id, family_id, actor, *, event=None, escalate_reason=""):
     if actor not in {family["facade"], family["steward"]}:
         lineage_domain._ensure_manager(lineage, actor)
     facade = resident_record_domain.find_resident(family["facade"])
-    from . import resident_lifecycle_domain
-    if facade.get("deleted_at") or resident_lifecycle_domain.resident_intake_state(facade) != "open":
+    if facade.get("deleted_at") or resident_record_domain.resident_intake_state(facade) != "open":
         # Pausing the Family is explicit; closing one member is a repairable fault.
         ledger = get_lineage_data_store().family_relays.get(lineage_id, family["facade"]).get("supervision") or {}
         return {"family_id": block["id"], "paused": True,
@@ -224,11 +223,11 @@ def check(lineage_id, family_id, actor, *, event=None, escalate_reason=""):
             else:
                 notice.update(delivered=True, withdrawn=True)
         elif open_incidents and notice_state not in {"queued", "running"}:
-            from . import resident_lifecycle_domain, resident_record_domain
+            from . import resident_record_domain
             steward = resident_record_domain.find_resident(family["steward"])
-            if steward and resident_lifecycle_domain.resident_intake_state(steward) != "open" and resident_record_domain.lifecycle_operations().pending(family["steward"]):
+            if steward and resident_record_domain.resident_intake_state(steward) != "open" and resident_record_domain.lifecycle_operations().pending(family["steward"]):
                 pass  # Its lifecycle operation will restore intake; do not bypass it.
-            elif not steward or resident_lifecycle_domain.resident_intake_state(steward) != "open":
+            elif not steward or resident_record_domain.resident_intake_state(steward) != "open":
                 _escalate(lineage_id, family, open_incidents, "steward 不可接单，无法继续监督恢复")
             else:
                 for incident in open_incidents:

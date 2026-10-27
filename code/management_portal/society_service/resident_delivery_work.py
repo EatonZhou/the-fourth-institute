@@ -41,14 +41,6 @@ def enqueue_state(connection, resident_id, revision):
     )
 
 
-def wake(resident_id):
-    from .lifecycle import notify_execution_binding
-    try:
-        notify_execution_binding(resident_id)
-    except Exception:
-        LOGGER.exception("Resident delivery wake failed; durable work retained for %s", resident_id)
-
-
 def pending_ids():
     from .state_store import get_lineage_data_store
     with get_lineage_data_store().database.read() as connection:

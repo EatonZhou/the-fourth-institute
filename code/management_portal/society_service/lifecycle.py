@@ -71,3 +71,11 @@ def notify_execution_binding(resident_id: object) -> None:
                 LOGGER.exception("Resident execution wake failed for %s", clean_resident_id)
 
     invariant_locks.defer_until_state_unlock(notify)
+
+
+def wake_execution_binding(resident_id: object) -> None:
+    """Wake the coordinator for accepted delivery work; a failed wake leaves the durable work to its scan."""
+    try:
+        notify_execution_binding(resident_id)
+    except Exception:
+        LOGGER.exception("Resident delivery wake failed; durable work retained for %s", resident_id)

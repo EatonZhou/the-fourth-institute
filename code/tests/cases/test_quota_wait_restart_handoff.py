@@ -17,6 +17,7 @@ from management_portal.society_service import (
     resident_conversation_stream,
     resident_deferred_restart,
     resident_execution_domain,
+    resident_execution_engine_domain,
     resident_execution_work,
     resident_input_queue_domain,
     resident_record_domain,
@@ -263,12 +264,12 @@ def test_internal_handoff_terminal_does_not_project_user_cancellation(execution,
     scheduler, service, request, args = execution
     service.withdraw_unstarted(request.execution_id, **args)
     snapshot = scheduler.snapshot(request.execution_id)
-    monkeypatch.setattr(resident_execution_domain, 'resident_record_for_execution',
+    monkeypatch.setattr(resident_execution_engine_domain, 'resident_record_for_execution',
                         lambda *a: pytest.fail('handoff must not project a user terminal'))
-    resident_execution_domain._project_resident_execution_snapshot(RID, request.execution_id, snapshot)
-    monkeypatch.setattr(resident_execution_domain, '_resident_execution_event_cursor', lambda *a: 0)
+    resident_execution_engine_domain._project_resident_execution_snapshot(RID, request.execution_id, snapshot)
+    monkeypatch.setattr(resident_execution_engine_domain, '_resident_execution_event_cursor', lambda *a: 0)
     with pytest.raises(resident_restart_handoff.ExecutionHandedOff):
-        resident_execution_domain.wait_for_resident_execution(
+        resident_execution_engine_domain.wait_for_resident_execution(
             SimpleNamespace(wait=lambda *a, **kw: snapshot), execution_id=request.execution_id,
             actor='alice', resident_id=RID, user_message_id=MID,
         )

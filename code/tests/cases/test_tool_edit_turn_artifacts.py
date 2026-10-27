@@ -13,7 +13,11 @@ from management_common.provider_turn_artifacts import (
 )
 from management_portal.execution import backends
 from management_portal.execution.native_tool_events import tool_completed
-from management_portal.society_service import resident_conversation_stream, resident_execution_domain
+from management_portal.society_service import (
+    resident_conversation_stream,
+    resident_execution_domain,
+    resident_execution_engine_domain,
+)
 from tests.cases.test_resident_execution_protocol import resident_record  # noqa: F401 - fixture
 
 
@@ -179,7 +183,7 @@ def test_a_provider_without_native_review_reviews_the_snapshot_in_an_ordinary_tu
     repository.append_message(resident_id, {"message_id": "msg_tool_review", "role": "user", "content_parts": [
         {"type": "turn_review", "segment_id": part["segment_id"]},
     ]})
-    provider = resident_execution_domain._resident_execution_request_backend(resident_record)
+    provider = resident_execution_engine_domain.resident_execution_request_backend(resident_record)
     providers = resident_execution_domain.AGENT_PROVIDERS
     monkeypatch.setitem(providers, provider, dataclasses.replace(providers[provider], native_review=False))
     job = {"actor": "CASE-A", "job_id": "job_tool_review", "user_message_id": "msg_tool_review", "message": "审查指定轮次的修改快照"}

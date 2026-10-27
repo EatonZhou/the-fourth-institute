@@ -20,7 +20,7 @@ from . import (
     resident_state,
 )
 from . import resident_message_contract
-from .domain_ports import execution_port
+from .domain_ports import execution_port, resident_domain_port
 from .state_store import get_lineage_data_store
 
 
@@ -722,8 +722,7 @@ def _post_execution_commit(
             run_effect(lambda: notify_execution_binding(
                 resident_lineage.resident_id(record)
             ))
-    from . import resident_media_domain
-    run_effect(lambda: resident_media_domain.cleanup_expired_input_images(dict(record)))
+    run_effect(lambda: resident_domain_port.cleanup_expired_input_images(dict(record)))
     if first_error is not None:
         raise first_error
 
@@ -894,9 +893,9 @@ def write(
             # preparation. Closing intake later only holds subsequent inputs.
             job.setdefault("intake_admitted_at", _now_iso())
     if job.get("execution_id"):
-        from . import resident_record_domain
+        from . import resident_catalog
         from management_portal.execution.agent_data_store import get_agent_data_store
-        resident_record_domain.ensure_resident_agent(record, actor=request_actor(job))
+        resident_catalog.ensure_resident_agent(record, actor=request_actor(job))
         get_agent_data_store()
     # Admission also allocates a Conversation cursor. Use the same short
     # commit scope as streaming replies so their events cannot take one cursor.
@@ -911,15 +910,15 @@ def write(
         if is_active(job) and execution_id(job) != execution_id(previous):
             # Preserve accepted preparation before projection or prompt work
             # can fail and release it. The existing checkpoint owns retries.
-            from .resident_input_recovery import retain_input_checkpoint
+            from .resident_input_checkpoints import retain_input_checkpoint
             retain_input_checkpoint(record, committed_state, [])
     job.clear()
     job.update(committed_state)
     if delivery_message_id:
         # The durable outbox owns the slow effects. A missed wake is recovered
         # by the coordinator scan; the caller only waits for the commit.
-        from .resident_delivery_work import wake
-        invariant_locks.defer_until_state_unlock(lambda: wake(resident_lineage.resident_id(record)))
+        from .lifecycle import wake_execution_binding
+        invariant_locks.defer_until_state_unlock(lambda: wake_execution_binding(resident_lineage.resident_id(record)))
         return
     committed_record = copy.deepcopy(dict(record))
     committed_job = copy.deepcopy(job)

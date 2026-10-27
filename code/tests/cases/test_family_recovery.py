@@ -48,7 +48,7 @@ def test_continue_preserves_the_actual_relayed_input_after_execution(family, mon
     from management_portal.execution.agent_data_projection import AgentDataProjector
     from management_portal.execution.contracts import ExecutionRequest
     from management_portal.execution.session_manager import RuntimeSession
-    from management_portal.society_service import resident_input_recovery
+    from management_portal.society_service import resident_input_checkpoints
     from management_portal.society_service.domain_ports import execution_port
 
     root = _send(family, "保留真实转交封装和原始正文")
@@ -77,7 +77,7 @@ def test_continue_preserves_the_actual_relayed_input_after_execution(family, mon
                           actor_ref=job["actor"], provider="codex", started_at=now)
     execution_inputs.attach(store, job["execution_id"], [{"message_id": member_message,
                             "role": "primary", "accepted_at": now}])
-    resident_input_recovery.retain_input_checkpoint(record, job, [])
+    resident_input_checkpoints.retain_input_checkpoint(record, job, [])
     repository.commit_user_message(member_id, {**original, "activated_at": now})
     projector = AgentDataProjector(store)
     projector.begin(request, RuntimeSession(mode="stateless", binding_id="", backend_session_id="relay-recovery",
@@ -300,13 +300,13 @@ def test_historical_continue_does_not_hide_other_original_requests(family, prior
 
 def test_unavailable_member_checkpoint_reports_error_without_routing_continue(family):
     """Family 缺失原输入检查点时显示恢复失败"""
-    from management_portal.society_service import resident_input_recovery
+    from management_portal.society_service import resident_input_checkpoints
 
     root = _send(family, "已过期的执行")
     member_message, _ = _round(family["wrong"], state="failed", text="已过期的执行")
     family_facade.complete_relay((family["facade"], root), family["wrong"], member_message)
     # Checkpoints now belong to mailbox progress, not the execution-work snapshot.
-    resident_input_recovery._forget(_find_resident(family["wrong"]), member_message, {}, "sample_admin")
+    resident_input_checkpoints.forget(_find_resident(family["wrong"]), member_message)
     command = _send(family, "continue", quote=root)
     status = _view(family, command)
     assert status["status"] == "failed" and "检查点" in status["error"]

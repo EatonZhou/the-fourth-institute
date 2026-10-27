@@ -1,12 +1,19 @@
-"""Resident domain modules import each other only along recorded edges.
+"""Resident domain modules form layers: each imports only modules of lower layers.
 
-``society_service/resident_*domain*.py`` are being split into layers.  Most
-sibling imports sit inside function bodies, so a new cycle never fails at
-import time and only shows up when the function first runs.  The check parses
-every module, function bodies included, and compares the sibling modules each
-one imports with the recorded edge set.  A new edge fails; an edge that
-disappeared asks for the record to be tightened, so the set only shrinks while
-the split proceeds.
+``society_service/resident_*domain*.py`` split the Resident domain by
+responsibility.  ``LAYERS`` lists them bottom to top; a module may import a
+sibling only from a row below its own, so the modules have no cycles and
+modules of one row never import each other.  Sibling imports sit at module
+top, where a cycle would fail as soon as the module loads; the check still
+parses function bodies so an import placed there cannot hide an edge.  A new
+module needs a row.
+
+The other modules of the package sit between the layers.  When a Resident
+domain module imports one of them, the Resident domain modules that module
+imports must lie below the lowest row importing it, otherwise the two form a
+cycle through it.  A call that has to go up, such as a recovery driver
+restarting a session, goes through ``domain_ports.resident_domain_port``, which
+``resident_domain_host`` serves.
 
 A name used across modules is part of its module's interface and carries no
 leading underscore; importing or reading another module's ``_name`` fails.
@@ -23,33 +30,30 @@ ROOT = Path(__file__).resolve().parents[2]
 PACKAGE = "management_portal.society_service"
 SOURCE = ROOT / "management_portal" / "society_service"
 
-# Module short name -> sibling modules it imports.  Short names drop the
-# ``resident_`` prefix and ``_domain`` suffix; ``resident_domain`` is "domain".
-EDGES = {
-    "actual_sent": "conversation_projection record",
-    "conversation_projection": "domain_common",
-    "directory": "conversation_projection domain_common lifecycle record runtime watchboard",
-    "domain": "actual_sent conversation_projection directory domain_common execution fork intake lifecycle management record registration restart runtime watchboard workspace",
-    "domain_common": "",
-    "domain_host": "directory fork lifecycle management record registration restart workspace",
-    "execution": "directory domain_common input_queue lifecycle prompt record runtime session_backend",
-    "fork": "domain_common execution lifecycle record runtime session_backend watchboard workspace",
-    "input_queue": "domain_common lifecycle prompt record",
-    "intake": "domain_common input_queue lifecycle media prompt record runtime session_backend",
-    "lifecycle": "domain_common execution record restart runtime session_backend workspace",
-    "management": "conversation_projection domain_common input_queue intake lifecycle record workspace",
-    "media": "domain_common record",
-    "project": "",
-    "prompt": "domain_common record runtime",
-    "queue_control": "domain_common execution input_queue record",
-    "record": "domain_common",
-    "registration": "domain_common fork project record runtime session_backend workspace",
-    "restart": "conversation_projection domain_common execution input_queue record runtime session_backend",
-    "runtime": "domain_common record",
-    "session_backend": "domain_common execution record runtime",
-    "watchboard": "domain_common record",
-    "workspace": "domain_common lifecycle record",
-}
+# Bottom to top.  Short names drop the ``resident_`` prefix and ``_domain``
+# suffix; ``resident_domain`` is "domain".
+LAYERS = (
+    "domain_common project",
+    "record",
+    "lifecycle runtime conversation_projection media watchboard",
+    "prompt",
+    "input_queue",
+    "execution_engine",
+    "session_backend",
+    "execution",
+    "intake",
+    "workspace",
+    "restart",
+    "fork",
+    "registration",
+    "management",
+    "queue_control",
+    "directory actual_sent",
+    "lifecycle_steps",
+    "domain_host",
+    "domain",
+)
+LAYER = {name: row for row, names in enumerate(LAYERS) for name in names.split()}
 
 
 def _short(stem: str) -> str:
@@ -60,9 +64,9 @@ def _modules() -> dict[str, ast.Module]:
     return {path.stem: ast.parse(path.read_text(encoding="utf-8")) for path in sorted(SOURCE.glob("resident_*domain*.py"))}
 
 
-def _sibling_imports(stem: str, tree: ast.Module, stems: set[str]):
-    """Yield (line, sibling, imported name or None) for each sibling import."""
-    for node in ast.walk(tree):
+def _sibling_imports(stem: str, nodes, stems: set[str]):
+    """Yield (line, sibling, imported name or None) for each sibling import among ``nodes``."""
+    for node in nodes:
         if isinstance(node, ast.Import):
             for alias in node.names:
                 if alias.name.removeprefix(PACKAGE + ".") in stems - {stem}:
@@ -83,21 +87,86 @@ def _sibling_imports(stem: str, tree: ast.Module, stems: set[str]):
                 yield node.lineno, base, alias.name
 
 
-def test_sibling_imports_follow_recorded_edges():
+def test_sibling_imports_point_to_lower_layers():
+    """Resident 领域模块只导入更低层的兄弟模块"""
     modules = _modules()
     stems = set(modules)
-    assert {_short(stem) for stem in stems} == set(EDGES), "Record the edges of an added or removed Resident domain module in EDGES"
-    added, removed = [], []
+    assert {_short(stem) for stem in stems} == set(LAYER), "Give an added Resident domain module its row in LAYERS"
+    upward = [
+        f"{_short(stem)}:{line} -> {_short(sibling)}"
+        for stem, tree in modules.items()
+        for line, sibling, _name in _sibling_imports(stem, ast.walk(tree), stems)
+        if LAYER[_short(sibling)] >= LAYER[_short(stem)]
+    ]
+    assert not upward, f"Imports must point to a lower layer: {upward}"
+
+
+def test_sibling_imports_sit_at_module_top():
+    """Resident 领域模块在模块顶层导入兄弟模块"""
+    modules = _modules()
+    stems = set(modules)
+    nested = []
     for stem, tree in modules.items():
-        actual = {_short(sibling) for _line, sibling, _name in _sibling_imports(stem, tree, stems)}
-        recorded = set(EDGES[_short(stem)].split())
-        added += [f"{_short(stem)} -> {name}" for name in sorted(actual - recorded)]
-        removed += [f"{_short(stem)} -> {name}" for name in sorted(recorded - actual)]
-    assert not added, f"New imports between Resident domain modules: {added}"
-    assert not removed, f"These edges are gone; remove them from EDGES: {removed}"
+        top = {id(node) for node in tree.body}
+        inner = [node for node in ast.walk(tree) if id(node) not in top]
+        nested += [f"{stem}:{line} {sibling}" for line, sibling, _name in _sibling_imports(stem, inner, stems)]
+    assert not nested, f"Move these imports to the module top: {nested}"
+
+
+def _package_imports() -> dict[str, set[str]]:
+    """Module of the package (dotted, relative to it) -> package modules it imports, function bodies included."""
+    files = {}
+    for path in sorted(SOURCE.rglob("*.py")):
+        parts = path.relative_to(SOURCE).with_suffix("").parts
+        package = parts[:-1]
+        name = ".".join(package if parts[-1] == "__init__" else parts)
+        if name:
+            files[name] = (package, ast.parse(path.read_text(encoding="utf-8")))
+    edges = {}
+    for name, (package, tree) in files.items():
+        found = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                bases = [alias.name.removeprefix(PACKAGE + ".") for alias in node.names
+                         if alias.name.startswith(PACKAGE + ".")]
+                found.update(base for base in bases if base in files)
+                continue
+            if not isinstance(node, ast.ImportFrom):
+                continue
+            if node.level:
+                if node.level - 1 > len(package):
+                    continue
+                base = ".".join([*package[:len(package) - node.level + 1], *([node.module] if node.module else [])])
+            elif node.module == PACKAGE or str(node.module).startswith(PACKAGE + "."):
+                base = node.module.removeprefix(PACKAGE).removeprefix(".")
+            else:
+                continue
+            found.update(target for target in [base, *(f"{base}.{a.name}" if base else a.name for a in node.names)]
+                         if target in files)
+        edges[name] = found - {name}
+    return edges
+
+
+def test_modules_between_layers_import_only_lower_layers():
+    """Resident 领域模块导入的其他模块只导入更低层的 Resident 领域模块"""
+    edges = _package_imports()
+    stems = set(_modules())
+    upward = []
+    for name, targets in sorted(edges.items()):
+        if name in stems:
+            continue
+        importers = sorted((LAYER[_short(stem)], _short(stem)) for stem in stems if name in edges[stem])
+        if not importers:
+            continue
+        row, importer = importers[0]
+        reached = sorted(_short(target) for target in targets & stems if LAYER[_short(target)] >= row)
+        if reached:
+            upward.append(f"{name} (imported by {importer}) -> {reached}")
+    assert not upward, f"These modules import Resident domain modules at or above their importers: {upward}"
 
 
 def test_modules_use_only_public_names_of_siblings():
+    """Resident 领域模块只使用兄弟模块的公开名字"""
     modules = _modules()
     stems = set(modules)
     private = []
@@ -106,7 +175,7 @@ def test_modules_use_only_public_names_of_siblings():
         for node in ast.walk(tree):
             if isinstance(node, ast.ImportFrom) and (node.level, node.module) in {(1, None), (0, PACKAGE)}:
                 bound.update({alias.asname or alias.name: alias.name for alias in node.names if alias.name in stems})
-        for line, sibling, name in _sibling_imports(stem, tree, stems):
+        for line, sibling, name in _sibling_imports(stem, ast.walk(tree), stems):
             if name and name.startswith("_"):
                 private.append(f"{stem}:{line} imports {sibling}.{name}")
         for node in ast.walk(tree):

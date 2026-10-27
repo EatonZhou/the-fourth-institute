@@ -5,7 +5,12 @@ from __future__ import annotations
 import pytest
 
 from management_portal.execution.agent_data_store import get_agent_data_store
-from management_portal.society_service import lineage_domain, lineage_program_runtime, lineage_subgraph
+from management_portal.society_service import (
+    lineage_domain,
+    lineage_program_runtime,
+    lineage_subgraph,
+    resident_lifecycle_steps_domain,
+)
 from management_portal.society_service import resident_backend, resident_lifecycle_domain
 from management_portal.society_service import resident_record_domain
 from tests.cases.isa_test_support import ok, run
@@ -88,7 +93,7 @@ def test_move_connected_objects_preserves_identity_and_replays(teams, empty_targ
     assert status["status"] != "completed"
     transfer = result["operations"][0]["operation_id"]
     assert status["resident_operations"][0]["resident_id"] == member["resident_id"]
-    resident_record_domain.lifecycle_operations().run(transfer, resident_lifecycle_domain.apply_resident_lifecycle_step)
+    resident_record_domain.lifecycle_operations().run(transfer, resident_lifecycle_steps_domain.apply_resident_lifecycle_step)
     assert ok("GetMoveOperation", {"operation_id": result["operation_id"]})["status"] == "completed"
     current = resident_record_domain.find_resident(member["resident_id"])
     assert current["lineage_id"] == target["lineage_id"]

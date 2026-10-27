@@ -17,6 +17,7 @@ from management_portal.society_service import (
     resident_catalog,
     resident_conversation_stream,
     resident_execution_domain,
+    resident_execution_engine_domain,
 )
 from tests.cases.test_resident_folder_creation_contract import future_creation_store  # noqa: F401 - fixture
 
@@ -130,7 +131,7 @@ def test_first_api_binding_preserves_pending_input_provenance(future_creation_st
     old = store.execution(original["execution_id"])
     assert (old["provider"], old["status"]) == ("codex", "cancelled")
     assert store.execution(current["execution_id"])["provider"] == "deepseek_test"
-    request = resident_execution_domain.durable_resident_execution_request(record, current,
+    request = resident_execution_engine_domain.durable_resident_execution_request(record, current,
         lambda: resident_execution_domain._build_resident_execution_request(record, current))
     assert request.provider == "deepseek_test"
     assert request.execution_id == current["execution_id"]

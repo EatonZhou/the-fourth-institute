@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from management_portal.society_service import resident_domain, resident_lineage, resident_record_domain
+from management_portal.society_service import resident_catalog, resident_domain, resident_lineage, resident_record_domain
 
 
 from management_portal.society_service import resident_workspace_domain
@@ -20,7 +20,7 @@ def test_navigation_target_identity_read_does_not_initialize_agent(monkeypatch, 
         }
         monkeypatch.setattr(resident_record_domain, 'find_resident', lambda _id: record)
         monkeypatch.setattr(resident_record_domain, '_resident_visible_to_actor', lambda *_args: True)
-        monkeypatch.setattr(resident_record_domain, 'ensure_resident_agent',
+        monkeypatch.setattr(resident_catalog, 'ensure_resident_agent',
                             lambda _record: pytest.fail('navigation must not initialize Agent data'))
         assert resident_workspace_domain.resolve_resident_identity(record['resident_id'], 'sample_admin') == {
             'resident_id': record['resident_id'], 'lineage_id': record['lineage_id'],

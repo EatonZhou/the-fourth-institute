@@ -22,6 +22,7 @@ from management_portal.execution.contracts import ExecutionRequest
 from management_portal.execution.session_manager import RuntimeSession
 from management_portal.society_service import (
     resident_access,
+    resident_execution_engine_domain,
     resident_hatg_credentials,
     resident_prompt_domain,
     resident_record_domain,
@@ -223,7 +224,7 @@ def test_native_turn_keeps_resident_cli_environments_request_local(
             "resident_environment": resident_runtime_domain.resident_cli_environment(record),
         }
 
-    monkeypatch.setattr(resident_execution_domain, "resident_execution_runtime_options", runtime_options)
+    monkeypatch.setattr(resident_execution_engine_domain, "resident_execution_runtime_options", runtime_options)
     monkeypatch.setattr(resident_access, "has_resident_workspace_authority", lambda *a: full_access)
     route = mock.Mock(account_id="one", socket_path=tmp_path / "unused.sock")
     registry = mock.Mock()

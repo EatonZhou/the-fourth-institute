@@ -22,9 +22,11 @@ from . import (
     resident_execution_work,
     resident_input_queue_domain,
     resident_intake_domain,
+    resident_lifecycle_domain,
     resident_lineage,
     resident_record_domain,
     resident_state,
+    resident_workspace_domain,
 )
 from .domain_ports import resident_lineage_host_port
 from .resident_access import ensure_resident_visible_to_actor
@@ -63,7 +65,6 @@ def _change_resident_intake_state(
     *,
     allow_quota_override: bool = True,
 ) -> dict[str, Any]:
-    from . import resident_record_domain
     actor_id = canonical_actor_id(actor)
     if not actor_id:
         raise ValueError("需要登录后切换 Agent 接单状态")
@@ -94,7 +95,6 @@ def transition_resident_state(
     transition: str,
     allow_quota_override: bool = True,
 ) -> dict[str, Any]:
-    from . import resident_record_domain
     domain = str(state_domain or "").strip().lower() or resident_state.INTAKE_DOMAIN
     if domain != resident_state.INTAKE_DOMAIN:
         raise ValueError(f"Resident state module 不拥有状态域：{domain}")
@@ -115,7 +115,6 @@ def transition_resident_state(
 
 def reset_resident_context(resident_id: str, actor: str) -> dict:
     """Commit a context reset and durably schedule its external cleanup."""
-    from . import resident_domain_common, resident_lifecycle_domain, resident_record_domain
 
     actor_id = canonical_actor_id(actor)
     if not actor_id:
@@ -167,7 +166,6 @@ def rename_resident_title(
     actor: str,
     title: str,
 ) -> dict[str, Any]:
-    from . import resident_record_domain
     target = resident_record_domain.resolve_resident_runtime_target(
         resident_id,
         actor,
@@ -195,7 +193,6 @@ def _set_resident_title_locked(
     *,
     origin: str,
 ) -> dict[str, Any]:
-    from . import resident_domain_common, resident_record_domain, resident_workspace_domain
     resident_intake_domain.require_no_pending_lifecycle(str(record.get("resident_id") or ""))
     previous_workspace_path = str(record.get("workspace_path") or "")
     record["title"] = title
@@ -215,7 +212,6 @@ def adopt_generated_resident_title(
     title: str,
 ) -> bool:
     """Adopt a Lineage title while the exact Resident still has its generated name."""
-    from . import resident_record_domain
 
     actor_id = canonical_actor_id(actor)
     next_title = str(title or "").strip()
@@ -241,7 +237,6 @@ def adopt_generated_resident_title(
 
 def _rename_resident_title_record(resident_id: str, actor: str, title: str) -> dict:
     """Rename a Resident without changing its owners, workspace, or lineage."""
-    from . import resident_record_domain
     actor_id = canonical_actor_id(actor)
     next_title = str(title or "").strip()
     if not actor_id:
@@ -323,7 +318,6 @@ def move_resident_identities(
     scopes and supplies exact new identity projections to the graph callback.
     """
     from .resident_projection import _resident_lineage_node_projection
-    from . import resident_record_domain, resident_workspace_domain
     with ExitStack() as stack:
         for resident_id in sorted(resident_ids):
             stack.enter_context(resident_record_domain.state_lock(resident_id))
@@ -362,7 +356,6 @@ def update_resident(
     actor: str,
     payload: dict[str, Any],
 ) -> dict[str, Any]:
-    from . import resident_record_domain, resident_workspace_domain
     target = resident_record_domain.resolve_resident_runtime_target(
         resident_id,
         actor,

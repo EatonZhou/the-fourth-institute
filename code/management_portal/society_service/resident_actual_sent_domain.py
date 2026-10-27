@@ -1,7 +1,12 @@
 """Resident domain responsibilities: actual sent."""
 from __future__ import annotations
 
-from . import resident_backend, resident_conversation_stream
+from . import (
+    resident_backend,
+    resident_conversation_projection_domain,
+    resident_conversation_stream,
+    resident_record_domain,
+)
 from typing import Any
 
 
@@ -11,7 +16,6 @@ def read_actual_sent_prompt(
     message_id: str,
 ) -> dict[str, Any]:
     from .domain_ports import execution_port
-    from . import resident_conversation_projection_domain, resident_record_domain
     if not resident_conversation_projection_domain.can_view_actual_sent_prompts(actor, resident_id):
         raise PermissionError("无权读取实际发送内容")
     target = resident_record_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=True)

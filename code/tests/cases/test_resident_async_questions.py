@@ -15,6 +15,7 @@ from management_portal.society_service import resident_lifecycle_domain
 from management_portal.society_service import resident_session_backend_domain
 from management_portal.society_service import (
     resident_access,
+    resident_execution_engine_domain,
     resident_execution_work,
     resident_input_queue_domain,
     resident_prompt_domain,
@@ -43,7 +44,7 @@ def persist_question(record):
         "status": "running", "actor": "CASE-A", "queue": [],
      "submitted_at": "2026-10-14T00:00:00Z"})
     outputs = event_projection.execution_outputs_from_events([question_event()])
-    return resident_execution_domain._persist_execution_display_messages(
+    return resident_execution_engine_domain.persist_execution_display_messages(
         resident_id,  "execution-question", outputs,
     )[0]
 
@@ -73,8 +74,8 @@ def test_normal_provider_output_is_stored_as_typed_message(resident_record, phas
     item.pop("questions")
     outputs = event_projection.execution_outputs_from_events([event])
     if phase == "commentary":
-        source = resident_execution_domain._persist_execution_display_messages(resident_id,  "execution-question", outputs)[0]
-        replay = resident_execution_domain._persist_execution_display_messages(resident_id,  "execution-question", outputs)[0]
+        source = resident_execution_engine_domain.persist_execution_display_messages(resident_id,  "execution-question", outputs)[0]
+        replay = resident_execution_engine_domain.persist_execution_display_messages(resident_id,  "execution-question", outputs)[0]
     else:
         message = resident_input_queue_domain.build_message("agent", CARD_OUTPUT)
         source = resident_execution_domain._persist_execution_final_message(resident_id,  "execution-question", message)
@@ -161,7 +162,7 @@ def test_unanswered_card_preserves_runtime_and_does_not_block_final_output(resid
     })
     before = repository.snapshot(resident_id)
     outputs = event_projection.execution_outputs_from_events([question_event()])
-    source = resident_execution_domain._persist_execution_display_messages(
+    source = resident_execution_engine_domain.persist_execution_display_messages(
         resident_id,  "execution-question", outputs,
     )[0]
     after = repository.snapshot(resident_id)
@@ -347,7 +348,7 @@ def test_final_question_persists_without_duplicating_final_answer_text(resident_
     event = question_event("最终内容由原有结果链路保存")
     event["details"]["params"]["item"].update(id="item-final-question", phase="final_answer")
     outputs = event_projection.execution_outputs_from_events([event])
-    messages = resident_execution_domain._persist_execution_display_messages(
+    messages = resident_execution_engine_domain.persist_execution_display_messages(
         resident_record["resident_id"],  "execution-question", outputs,
     )
     assert len(messages) == 1

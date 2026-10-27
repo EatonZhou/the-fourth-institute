@@ -20,7 +20,7 @@ from management_portal.execution.provider_catalog import AGENT_PROVIDERS
 from management_portal.execution.session_manager import RuntimeSession
 from management_portal.society_service import (
     resident_access,
-    resident_execution_domain,
+    resident_execution_engine_domain,
     resident_fork_domain,
     resident_record_domain,
     resident_runtime_domain,
@@ -180,7 +180,7 @@ def test_registered_resident_derivation_uses_one_provider_neutral_seed(
         lambda *_args, **_kwargs: snapshot,
     )
     monkeypatch.setattr(
-        resident_execution_domain,
+        resident_execution_engine_domain,
         "resident_execution_runtime_options",
         lambda *_args, **_kwargs: {},
     )

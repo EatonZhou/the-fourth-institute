@@ -4,11 +4,16 @@ from pathlib import Path
 from typing import Any
 
 from . import (
+    family_quota,
     resident_directory_domain,
+    resident_execution_domain,
     resident_fork_domain,
+    resident_intake_domain,
     resident_lifecycle_domain,
+    resident_lifecycle_steps_domain,
     resident_lineage,
     resident_management_domain,
+    resident_media_domain,
     resident_record_domain,
     resident_registration_domain,
     resident_restart_domain,
@@ -22,10 +27,12 @@ class ResidentDomainHost:
     _delegates = {
         name: module
         for module, names in (
+            (family_quota, ("ensure_role_reserve", "reconcile_role_reserves")),
             (resident_directory_domain, (
                 "get_resident_user_message_count", "get_resident_user_message_counts",
                 "get_resident_context_pressures", "get_lineage_node_metadata",
             )),
+            (resident_execution_domain, ("resume_resident_execution",)),
             (resident_fork_domain, (
                 "create_resident_full_context_fork", "create_resident_compacted_context_fork",
                 "create_resident_fork_from_message",
@@ -35,9 +42,12 @@ class ResidentDomainHost:
                 "rename_resident_identity", "rename_resident_title", "update_resident",
                 "move_resident_identities",
             )),
+            (resident_intake_domain, ("deliver_resident_message_content",)),
             (resident_lifecycle_domain, (
                 "observe_committed_resident_transfer",
             )),
+            (resident_lifecycle_steps_domain, ("apply_resident_lifecycle_step",)),
+            (resident_media_domain, ("cleanup_expired_input_images",)),
             (resident_record_domain, ("sync_lineage_member_credentials",)),
             (resident_registration_domain, (
                 "register_resident", "confirm_resident_registration",

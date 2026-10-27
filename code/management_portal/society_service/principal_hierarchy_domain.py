@@ -114,8 +114,7 @@ def _finish_personal_ama(graph: dict[str, Any], owner_id: str) -> None:
     lineage_id = graph["lineage_id"]
     leader = str(graph.get("leader_resident_id") or "")
     if leader and resident_catalog.get_catalog().get(leader).get("registration_state") == "ready":
-        from . import resident_record_domain
-        resident_record_domain.ensure_resident_agent(resident_catalog.get_catalog().get(leader), actor=owner_id)
+        resident_catalog.ensure_resident_agent(resident_catalog.get_catalog().get(leader), actor=owner_id)
         return
     graphs._publish_lineage_resource_projection(
         lineage_id, None, creation=graphs._read_lineage_state(lineage_id),

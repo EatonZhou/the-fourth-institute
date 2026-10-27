@@ -18,6 +18,10 @@ from . import (
     resident_record_domain,
     resident_prompt_domain,
     resident_input_queue_domain,
+    resident_lifecycle_domain,
+    resident_media_domain,
+    resident_runtime_domain,
+    resident_session_backend_domain,
 )
 from .domain_ports import execution_port
 from .resident_access import (
@@ -27,7 +31,6 @@ from .resident_access import (
 from management_common.actor_identity import canonical_actor_id
 from management_common.skill_paths import normalize_additional_skills
 from management_portal.execution.provider_catalog import AGENT_PROVIDERS
-from management_portal.society_service.resident_execution_work import execution_status
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping
 import copy
@@ -47,7 +50,6 @@ def existing_resident_delivery(
     require_execution_binding: bool = False,
 ) -> bool:
     """Validate an idempotent retry and reject incomplete intake commits."""
-    from . import resident_lifecycle_domain, resident_record_domain
 
     repository = resident_conversation_stream.get_repository()
     message_id = str(message.get("message_id") or "").strip()
@@ -106,7 +108,6 @@ def _persist_synchronous_command_exchange(
     *,
     user_message: Mapping[str, Any] | None = None,
 ) -> None:
-    from . import resident_lifecycle_domain
     persisted_user_message = resident_lifecycle_domain.persist_resident_user_message(
         resident_id,
         dict(user_message) if isinstance(user_message, Mapping) else resident_input_queue_domain.build_message(
@@ -136,7 +137,6 @@ def _queue_resident_compaction(
     *,
     user_message: Mapping[str, Any] | None = None,
 ) -> None:
-    from . import resident_domain_common, resident_lifecycle_domain, resident_record_domain
     now = resident_domain_common.now_iso()
     resident_id = resident_domain_common.record_resident_id(record)
     session_id = resident_backend.record_session_id(record)
@@ -211,7 +211,6 @@ def _send_synchronous_provider_message(
     user_message: Mapping[str, Any],
 ) -> dict:
     """Record a deterministic provider invocation as one Agent Execution."""
-    from . import resident_domain_common, resident_lifecycle_domain, resident_record_domain
     provider = resident_execution_provider.provider_for(record)
     resident_id = resident_domain_common.record_resident_id(record)
 
@@ -297,7 +296,6 @@ def _resident_message_cwd(
     record: dict[str, Any],
     working_directory: object,
 ) -> Path:
-    from . import resident_record_domain, resident_runtime_domain
     raw = str(working_directory or "").strip()
     default = resident_runtime_domain.resident_working_directory(record)
     if not raw:
@@ -350,7 +348,6 @@ def _resident_message_delivery_result(
 def _save_admission_observations(record: Mapping[str, Any]) -> None:
     """Admission changes only these observations, never identity or Workspace."""
     from .resident_catalog import get_catalog
-    from . import resident_record_domain
     def write(connection):
         connection.execute("UPDATE residents SET updated_at=%s WHERE resident_id=%s",
                            (record["updated_at"], record["resident_id"]))
@@ -443,7 +440,6 @@ def _require_execution_account(
 
 @resident_lineage.access_snapshot_scope()
 def get_account_resident_summary(account_id: str, actor: str) -> dict[str, Any]:
-    from . import resident_domain_common
     operator = canonical_actor_id(actor)
     if not operator:
         raise PermissionError("需要登录后查看账号节点详情")
@@ -530,20 +526,8 @@ def persist_resident_input(
     protocol_input: Mapping[str, Any] | None = None,
     business_ref: str = "",
 ) -> dict:
-    from . import (
-        resident_domain_common,
-        resident_lifecycle_domain,
-        resident_record_domain,
-        resident_runtime_domain,
-    )
     from . import message_quotes
     from .outward_messages import speaking_for
-    from . import (
-        resident_media_domain,
-        resident_record_domain,
-        resident_runtime_domain,
-        resident_session_backend_domain,
-    )
     def _save_resident_record(record):
         if record.get("default_cwd"):
             return resident_record_domain.save_resident_record(record)
@@ -1063,7 +1047,7 @@ def persist_resident_input(
             _save_resident_record(record)
             return delivery_result()
         now = resident_domain_common.now_iso()
-        intake_state = resident_lifecycle_domain.resident_intake_state(record)
+        intake_state = resident_record_domain.resident_intake_state(record)
         user_item = resident_input_queue_domain.resident_user_message(
             resident_domain_common.record_resident_id(record),
             message,
@@ -1175,7 +1159,6 @@ def require_no_pending_lifecycle(resident_id: str) -> None:
 
 
 def last_user_message_text(resident_id: str) -> str:
-    from . import resident_domain_common
     message = resident_conversation_stream.get_repository().latest_message(
         resident_id,
         role="user",
@@ -1213,12 +1196,6 @@ def queue_bootstrap_resident_session(
     lineage_id: str = "",
     delivery_message_id: str = "",
 ) -> dict[str, Any]:
-    from . import (
-        resident_domain_common,
-        resident_lifecycle_domain,
-        resident_media_domain,
-        resident_prompt_domain,
-    )
     message = str(message or "")
     if not message.strip():
         raise ValueError("message required")
@@ -1280,12 +1257,12 @@ def queue_bootstrap_resident_session(
     if working_directory is not None:
         job["prompt_cwd"] = str(working_directory)
         job["working_directory"] = str(working_directory)
-    job[resident_state.INTAKE_FIELD] = resident_lifecycle_domain.resident_intake_state(record)
+    job[resident_state.INTAKE_FIELD] = resident_record_domain.resident_intake_state(record)
     if user_item:
         job["input_message"] = copy.deepcopy(user_item)
         persist = (
             resident_lifecycle_domain.persist_resident_user_message
-            if resident_lifecycle_domain.resident_intake_state(record) == resident_state.INTAKE_OPEN
+            if resident_record_domain.resident_intake_state(record) == resident_state.INTAKE_OPEN
             and activation_policy == "enqueue_and_trigger"
             else resident_lifecycle_domain.accept_resident_user_message
         )
@@ -1309,7 +1286,6 @@ def deliver_resident_message_content(
     **options: Any,
 ) -> dict[str, Any]:
     """Send to one exact Resident; genealogy never participates in routing."""
-    from . import resident_record_domain
 
     target = resident_record_domain.resolve_resident_admission_target(
         resident_id,

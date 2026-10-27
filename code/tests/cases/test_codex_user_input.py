@@ -17,11 +17,16 @@ from management_portal.execution.backends import _compact_provider_activity_even
 from management_portal.execution.contracts import ExecutionInputControl, ExecutionRequest, SessionOptions
 from management_portal.execution.event_projection import execution_outputs_from_events, append_execution_activity, execution_projection_from_path
 from management_portal.execution.session_manager import RuntimeSession
-from management_portal.society_service import resident_access, resident_protocol, resident_conversation_stream, execution_client
+from management_portal.society_service import (
+    resident_access,
+    resident_protocol,
+    resident_conversation_stream,
+    execution_client,
+    resident_execution_engine_domain,
+)
 from tests.cases.test_resident_execution_protocol import resident_record
 
 
-from management_portal.society_service import resident_execution_domain
 
 def request_params(blocking=True):
     return {"threadId": "thread-native", "turnId": "turn-native", "itemId": "item-native", "isBlocking": blocking,
@@ -212,7 +217,7 @@ def test_native_chat_projects_canonical_segments_from_redacted_activity(
     assert len(outputs) == 2
     resident_execution_work.write(resident_record, {
         "execution_id": request.execution_id, "actor": request.actor, "submitted_at": "2026-10-14T00:00:00Z"})
-    messages = resident_execution_domain._persist_execution_display_messages(
+    messages = resident_execution_engine_domain.persist_execution_display_messages(
         resident_id,  request.execution_id, outputs,
     )
     assert len(messages) == 2
@@ -224,7 +229,7 @@ def test_native_chat_projects_canonical_segments_from_redacted_activity(
         stored = store.chat_message(resident_id, message["message_id"])
         assert stored["content_parts"][0]["segment_id"] == canonical["segment_id"] != stored["segment_id"]
         assert canonical["questions"][0]["isSecret"] is False
-    replay = resident_execution_domain._persist_execution_display_messages(
+    replay = resident_execution_engine_domain.persist_execution_display_messages(
         resident_id,  request.execution_id, outputs,
     )
     assert [message["message_id"] for message in replay] == [message["message_id"] for message in messages]

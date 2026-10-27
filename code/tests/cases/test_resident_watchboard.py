@@ -84,7 +84,7 @@ class ResidentWatchboardTest(unittest.TestCase):
             self.addCleanup(patch.stop)
 
     def install(self):
-        plan = watchboard_lineage.installation_plan(self.record)
+        plan = resident_watchboard_domain.installation_plan(self.record)
         from management_portal.society_service.isa.definition import translate_changes
         lineage_program.normalize_graph_mutations(translate_changes(plan["install"])[0])
         for item in plan["files"]:
@@ -105,7 +105,7 @@ class ResidentWatchboardTest(unittest.TestCase):
         config = watchboard_lineage.root(self.record) / "config/config.yaml"
         config.write_text('{"custom": true}\n', encoding="utf-8")
         self.graph["revision"] += 1
-        removal = watchboard_lineage.installation_plan(self.record)
+        removal = resident_watchboard_domain.installation_plan(self.record)
         self.assertEqual({op["id"] for op in removal["remove"]}, old_ids)
         self.graph["program"] = {"components": [], "wires": []}
         self.graph["revision"] += 1
@@ -125,15 +125,15 @@ class ResidentWatchboardTest(unittest.TestCase):
 
     def test_installation_is_read_only_until_client_applies_files_and_graph(self):
         """生成 Watchboard 安装计划不写文件，客户端写入文件和图组件后才启用"""
-        plan = watchboard_lineage.installation_plan(self.record)
+        plan = resident_watchboard_domain.installation_plan(self.record)
         self.assertFalse(self.owned_workspace.exists())
         self.assertFalse(resident_watchboard_domain.has_watchboard(self.record))
         self.install()
         payload = backend.get_resident_watchboard(self.record["resident_id"], "CASE-A")
         self.assertTrue(payload["watchboard"]["enabled"])
         self.assertEqual(payload["watchboard"]["execution_model"], "lineage")
-        self.assertEqual(watchboard_lineage.installation_plan(self.record)["install"], [])
-        self.assertEqual(watchboard_lineage.installation_plan(self.record)["files"], [])
+        self.assertEqual(resident_watchboard_domain.installation_plan(self.record)["install"], [])
+        self.assertEqual(resident_watchboard_domain.installation_plan(self.record)["files"], [])
         self.assertEqual(self.record["backend"], "codex")
         self.assertNotIn("watchboard", self.record)
         for operation in plan["install"]:
@@ -190,18 +190,18 @@ class ResidentWatchboardTest(unittest.TestCase):
         self.assertEqual(board["commands"], [])
         self.assertEqual(board["configs"], [])
         self.assertEqual(board["manifest"]["error"], "")
-        self.assertTrue(watchboard_lineage.installation_plan(self.record)["remove"])
+        self.assertTrue(resident_watchboard_domain.installation_plan(self.record)["remove"])
 
     def test_effect_preserves_declared_timeout_and_omits_unspecified_timeout(self):
         """Watchboard 命令的 Effect 保留声明的超时，未声明时不设超时"""
-        plan = watchboard_lineage.installation_plan(self.record)
+        plan = resident_watchboard_domain.installation_plan(self.record)
         manifest = json.loads(next(item["content"] for item in plan["files"] if item["address"].endswith("agent.yaml")))
         manifest.pop("default_timeout_seconds")
         manifest["commands"] = {"long": {"timeout_seconds": 90000}, "unbounded": {}}
         path = self.owned_workspace / "watchboard/agent.yaml"
         path.parent.mkdir(parents=True)
         path.write_text(json.dumps(manifest))
-        plan = watchboard_lineage.installation_plan(self.record)
+        plan = resident_watchboard_domain.installation_plan(self.record)
         scripts = {item["value"]["title"]: item["value"]["config"]["script"] for item in plan["install"]
                    if item["kind"] == "component" and item["value"]["kind"] == "effect"}
         self.assertIn("timeout_seconds:=90000", scripts["Watchboard · long"])
@@ -210,12 +210,12 @@ class ResidentWatchboardTest(unittest.TestCase):
     def test_removal_detaches_graph_without_deleting_files(self):
         """移除 Watchboard 只拆除图组件，脚本文件保留"""
         self.install()
-        plan = watchboard_lineage.installation_plan(self.record)
+        plan = resident_watchboard_domain.installation_plan(self.record)
         self.assertTrue(plan["remove"])
         self.graph["program"] = {"components": [], "wires": []}
         self.assertFalse(resident_watchboard_domain.has_watchboard(self.record))
         self.assertTrue((self.owned_workspace / "watchboard/src/main.py").exists())
-        self.assertEqual(watchboard_lineage.installation_plan(self.record)["files"], [])
+        self.assertEqual(resident_watchboard_domain.installation_plan(self.record)["files"], [])
 
     def test_config_projection_uses_content_hash(self):
         """Watchboard 配置文件的版本号取内容的 sha256，地址是节点自有 Workspace 中的文件地址"""

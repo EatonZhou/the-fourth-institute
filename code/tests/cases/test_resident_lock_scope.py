@@ -12,6 +12,7 @@ from management_portal.society_service import (
     invariant_locks,
     resident_catalog,
     resident_execution_domain,
+    resident_execution_engine_domain,
     resident_execution_work,
     resident_input_queue_domain,
 )
@@ -50,13 +51,13 @@ def test_execution_polling_takes_no_resident_state_scope(bound_job, monkeypatch)
         yield
 
     monkeypatch.setattr(invariant_locks, "resident_lock", forbidden)
-    assert resident_execution_domain._resident_execution_still_current(resident_id, EXECUTION_ID)
-    assert not resident_execution_domain._resident_execution_cancellation_requested(resident_id, EXECUTION_ID)
+    assert resident_execution_engine_domain._resident_execution_still_current(resident_id, EXECUTION_ID)
+    assert not resident_execution_engine_domain.resident_execution_cancellation_requested(resident_id, EXECUTION_ID)
     assert resident_input_queue_domain.reconcile_queued_turn_inputs(resident_id, EXECUTION_ID)
-    resident_execution_domain._advance_resident_execution_event_cursor(resident_id, EXECUTION_ID, 7)
-    resident_execution_domain._advance_resident_execution_event_cursor(resident_id, EXECUTION_ID, 3)
-    assert resident_execution_domain._resident_execution_event_cursor(resident_id, EXECUTION_ID) == 7
-    resident_execution_domain._project_resident_execution_snapshot(resident_id, EXECUTION_ID, {"status": "running"})
+    resident_execution_engine_domain._advance_resident_execution_event_cursor(resident_id, EXECUTION_ID, 7)
+    resident_execution_engine_domain._advance_resident_execution_event_cursor(resident_id, EXECUTION_ID, 3)
+    assert resident_execution_engine_domain._resident_execution_event_cursor(resident_id, EXECUTION_ID) == 7
+    resident_execution_engine_domain._project_resident_execution_snapshot(resident_id, EXECUTION_ID, {"status": "running"})
 
 
 def test_a_terminal_snapshot_still_commits_under_the_state_scope(bound_job, monkeypatch):
@@ -73,7 +74,7 @@ def test_a_terminal_snapshot_still_commits_under_the_state_scope(bound_job, monk
     original = resident_execution_work.write
     monkeypatch.setattr(resident_execution_work, "write",
                         lambda record, job, **kwargs: (writes.append(held(resident_id)), original(record, job, **kwargs)))
-    resident_execution_domain._project_resident_execution_snapshot(resident_id, EXECUTION_ID, {"status": "completed"})
+    resident_execution_engine_domain._project_resident_execution_snapshot(resident_id, EXECUTION_ID, {"status": "completed"})
     assert writes == [True]
     assert resident_execution_work.read(bound_job)["execution_terminal_status"] == "completed"
 
@@ -92,7 +93,7 @@ def test_display_projection_reads_no_resident_record_under_the_state_scope(bound
     monkeypatch.setattr(catalog, "get", lambda identifier, **kwargs: (
         reads.append(held(resident_id)), original(identifier, **kwargs))[1])
     output = {"output_id": "msg_" + "e" * 32, "text": "intermediate", "phase": "commentary"}
-    messages = resident_execution_domain._persist_execution_display_messages(resident_id, EXECUTION_ID, [output])
+    messages = resident_execution_engine_domain.persist_execution_display_messages(resident_id, EXECUTION_ID, [output])
     assert [message["message_id"] for message in messages] == [output["output_id"]]
     assert True not in reads
     assert not resident_execution_work.read(bound_job).get(resident_execution_work.CONVERSATION_PROJECTION_INTENTS)

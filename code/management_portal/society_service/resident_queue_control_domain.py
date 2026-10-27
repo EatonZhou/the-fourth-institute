@@ -1,24 +1,29 @@
 """Resident domain responsibilities: queue control.
 
 What a user does to queued input: reorder, join the running turn, clear,
-cancel."""
+cancel, merge into one Mailbox group and split a group back."""
 from __future__ import annotations
-from typing import Any
+import copy
+from typing import Any, Iterable
 from management_common.actor_identity import canonical_actor_id
 from . import (
     family_facade,
+    invariant_locks,
+    resident_access,
     resident_conversation_stream,
     resident_domain_common,
     resident_execution_domain,
     resident_execution_work,
     resident_held_infos,
     resident_input_queue_domain,
+    resident_lifecycle_domain,
+    resident_mailbox,
     resident_record_domain,
 )
+from .resident_message_contract import message_identity
 
 
 def _cancel_resident_queue_item(resident_id: str, actor: str, queue_item_id: str) -> dict:
-    from . import resident_domain_common, resident_record_domain
     actor_id = canonical_actor_id(actor)
     if not actor_id:
         raise ValueError("需要登录后操作队列")
@@ -104,7 +109,6 @@ def reorder_resident_queue(
 ) -> dict[str, Any]:
     """Change only the waiting order; times, authors and contents stay as they were."""
 
-    from . import resident_domain_common, resident_record_domain
 
     actor_id = canonical_actor_id(actor)
     if not actor_id:
@@ -143,7 +147,6 @@ def inject_resident_queue_input_into_active_turn(
     actor: str,
     queue_item_id: str,
 ) -> dict[str, Any]:
-    from . import resident_record_domain
     target = resident_record_domain.resolve_resident_admission_target(
         resident_id,
         actor,
@@ -157,7 +160,6 @@ def inject_resident_queue_input_into_active_turn(
 
 
 def clear_resident_queued_inputs(resident_id: str, actor: str) -> dict[str, Any]:
-    from . import resident_domain_common, resident_record_domain
 
     target = resident_record_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=True)
     resident_id = target.resident_id
@@ -191,7 +193,6 @@ def cancel_resident_queued_input(
     actor: str,
     queue_item_id: str,
 ) -> dict[str, Any]:
-    from . import resident_record_domain
     target = resident_record_domain.resolve_resident_runtime_target(
         resident_id,
         actor,
@@ -203,3 +204,90 @@ def cancel_resident_queued_input(
         queue_item_id,
     )
     return dict(result)
+
+
+def merge_resident_queue_items(resident_id: str, actor: str, message_ids: Iterable[object]) -> dict[str, Any]:
+    """Replace the selected waiting items with one Mailbox group message at the earliest one's position."""
+
+    organizer = resident_mailbox.organizer_id(actor)
+    ids = resident_mailbox.ordered_ids(message_ids)
+    target = resident_record_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=True)
+    group_id = message_identity()
+    now = resident_domain_common.now_iso()
+    with resident_record_domain.state_lock(target.resident_id):
+        record = resident_record_domain.find_resident(target.resident_id)
+        if not record:
+            raise KeyError("resident not found")
+        if not resident_access.can_manage(record, organizer):
+            raise PermissionError("只有对该 Resident 有整理权限的主体可以合并消息")
+        job = resident_execution_work.read(record)
+        queue = resident_execution_work.normalized_queue(job) if resident_execution_work.is_active(job) else []
+        members = resident_mailbox.expand(queue, ids)
+        resident_mailbox.check_compatible(target.resident_id, members)
+        messages = {
+            str(item.get("user_message_id") or ""): dict(item.get("input_message") or {}) for item in members
+        }
+        group = resident_mailbox.group_message(group_id, members, organizer, now)
+        item = resident_mailbox.group_item(group, members, resident_mailbox.assembled_prompt(members, messages), organizer=organizer)
+        selected = set(ids)
+        position = min(index for index, entry in enumerate(queue) if str(entry.get("user_message_id") or "") in selected)
+        superseded = [
+            str(entry.get("user_message_id") or "") for entry in queue
+            if str(entry.get("user_message_id") or "") in selected and resident_mailbox.is_group_item(entry)
+        ]
+        remaining = [entry for entry in queue if str(entry.get("user_message_id") or "") not in selected]
+        remaining.insert(position, item)
+        job["queue"] = remaining
+        job["updated_at"] = now
+        resident_execution_work.write(record, job)
+        record["session_state"] = resident_record_domain.record_backend_session_state(record)
+        record["updated_at"] = now
+        resident_record_domain.save_resident_record(record)
+        invariant_locks.defer_until_state_unlock(lambda: resident_lifecycle_domain.accept_resident_user_message(target.resident_id, group))
+    member_ids = [str(entry.get("user_message_id") or "") for entry in members]
+    repository = resident_conversation_stream.get_repository()
+    for old_group in superseded:
+        # A selected group is expanded into the new one; its shell ends like a split.
+        repository.set_input_state(target.resident_id, old_group, "cancelled",
+                                   error={"code": resident_mailbox.SPLIT_REASON, "message": f"已并入 {group_id}"})
+    return resident_input_queue_domain.resident_operation_result(
+        target.resident_id, group_message_id=group_id, member_message_ids=member_ids, message_id=group_id,
+    )
+
+
+def split_resident_queue_item(resident_id: str, actor: str, group_id: str) -> dict[str, Any]:
+    """Put a waiting Mailbox group's members back at its position, in order; the group ends as cancelled."""
+
+    organizer = resident_mailbox.organizer_id(actor)
+    target = resident_record_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=True)
+    group_id = str(group_id or "").strip()
+    now = resident_domain_common.now_iso()
+    with resident_record_domain.state_lock(target.resident_id):
+        record = resident_record_domain.find_resident(target.resident_id)
+        if not record:
+            raise KeyError("resident not found")
+        if not resident_access.can_manage(record, organizer):
+            raise PermissionError("只有对该 Resident 有整理权限的主体可以拆分群体消息")
+        job = resident_execution_work.read(record)
+        queue = resident_execution_work.normalized_queue(job) if resident_execution_work.is_active(job) else []
+        position = next((index for index, entry in enumerate(queue)
+                         if str(entry.get("user_message_id") or "") == group_id), -1)
+        if position < 0:
+            raise resident_mailbox.MailboxConflict("这条群体消息已开始执行或不在等待队列中，不能拆分")
+        item = queue[position]
+        if not resident_mailbox.is_group_item(item):
+            raise resident_mailbox.MailboxConflict("这条消息不是群体消息")
+        members = [copy.deepcopy(entry) for entry in item["mailbox_members"]]
+        job["queue"] = queue[:position] + members + queue[position + 1:]
+        job["updated_at"] = now
+        resident_execution_work.write(record, job)
+        record["session_state"] = resident_record_domain.record_backend_session_state(record)
+        record["updated_at"] = now
+        resident_record_domain.save_resident_record(record)
+    resident_conversation_stream.get_repository().set_input_state(
+        target.resident_id, group_id, "cancelled", error={"code": resident_mailbox.SPLIT_REASON, "message": "Mailbox 拆分"},
+    )
+    member_ids = [str(entry.get("user_message_id") or "") for entry in members]
+    return resident_input_queue_domain.resident_operation_result(
+        target.resident_id, group_message_id=group_id, member_message_ids=member_ids, message_id=group_id,
+    )

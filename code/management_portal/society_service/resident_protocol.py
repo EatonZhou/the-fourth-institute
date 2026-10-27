@@ -5,7 +5,6 @@ import copy
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any
 
 from management_common.actor_identity import canonical_actor_id
@@ -1474,13 +1473,13 @@ def get_resident_events(
 
 def merge_resident_queue_items(resident_id: str, actor: str, message_ids: list[str]) -> dict[str, Any]:
     return _with_conversation_controls(
-        resident_mailbox.merge(resident_id, actor, message_ids), resident_id, actor,
+        resident_queue_control_domain.merge_resident_queue_items(resident_id, actor, message_ids), resident_id, actor,
     )
 
 
 def split_resident_queue_item(resident_id: str, actor: str, message_id: str) -> dict[str, Any]:
     return _with_conversation_controls(
-        resident_mailbox.split(resident_id, actor, message_id), resident_id, actor,
+        resident_queue_control_domain.split_resident_queue_item(resident_id, actor, message_id), resident_id, actor,
     )
 
 

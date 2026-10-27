@@ -52,6 +52,117 @@ def test_default_restart_preserves_without_model_turn(monkeypatch, isolated_port
         assert result['resume_failed_input'] is False
 
 
+def _fresh_bound_domain(monkeypatch):
+    from management_portal.execution.session_manager import SessionManager
+
+    real_session_record = resident_backend.session_record
+    record, operations, saved = _restart_domain(monkeypatch)
+    record['session_state'] = 'active'
+    store = AgentDataStore()
+    sessions = SessionManager(agent_data=store)
+    old = store.ensure_provider_session(provider='codex', backend_route_id='zero',
+                                        backend_session_id='old-native-thread',
+                                        agent_id=record['resident_id'], actor_ref='test')
+    store.bind_provider_session(resident_backend.execution_binding_id(record), old['provider_session_ref'])
+    monkeypatch.setattr(execution_port, 'sessions', lambda: sessions)
+    monkeypatch.setattr(resident_backend, 'session_record', real_session_record)
+    resets = []
+    def reset(agent_id, **kwargs):
+        resets.append((agent_id, kwargs))
+        return store.reset_provider_context(agent_id, **kwargs)
+    monkeypatch.setattr(execution_port, 'reset_provider_context', reset)
+    return record, operations, saved, store, resets
+
+
+def test_codex_fresh_defers_native_create_and_preserves_audit(monkeypatch, isolated_portal_case, tmp_path):
+    from unittest import mock
+    from management_portal.execution.backends import BackendContext, CodexBackend
+    from management_portal.execution.contracts import ExecutionRequest
+    from management_portal.society_service import resident_work_recovery as recovery
+    from tests.cases.test_agent_data_projection import _runtime_session, _invocation
+
+    with isolated_portal_case():
+        record, operations, saved, store, resets = _fresh_bound_domain(monkeypatch)
+        agent_id = record['resident_id']
+        before = store.agent_context_snapshot(agent_id)
+        original_segments = {row['segment_id']: store.segment(row['segment_id']) for row in before['segments']}
+        record['work_recovery'] = {'msg_failed': {'attempts': 1, 'pending_restart': {'idempotency_key': 'old'}}}
+        monkeypatch.setattr(recovery, 'latest_failed_input', lambda _: {'message_id': 'msg_failed'})
+        monkeypatch.setattr(recovery, 'resume_after_restart', lambda *_: pytest.fail('fresh false must not retry'))
+        payload = {'context_strategy': 'fresh', 'resume_failed_input': False, 'idempotency_key': 'lazy-fresh'}
+        result = domain.restart_resident_session(agent_id, 'alice', payload)
+        registry, client = mock.Mock(), mock.Mock()
+        registry.get.return_value = mock.Mock(account_id='zero', socket_path=tmp_path / 'fake.sock')
+        registry.candidates.return_value = [registry.get.return_value]
+        registry.find_thread_rollout.return_value = None
+        client.start_thread.return_value = {'thread': {'id': 'premature-native-thread'}}
+        client.run_turn.side_effect = AssertionError('fresh must not run a model')
+        backend = CodexBackend(account_registry=registry, client_factory=lambda _: client)
+        context = BackendContext(emit_event=lambda *_: None, cancellation_requested=lambda: False,
+                                 set_interrupt_target=lambda *_: None)
+        # Exercise any admitted native operation through the real adapter; only
+        # the app-server transport is a substitute, no live account is touched.
+        for operation in operations:
+            request = ExecutionRequest.from_payload(operation['step']['request'])
+            backend.execute(_invocation(request, _runtime_session(request, '', is_new=True)), context)
+        assert client.start_thread.call_count == 0
+        client.run_turn.assert_not_called()
+        assert operations == [] and result['configuration_only'] and result['status'] == 'completed'
+        assert record['session_state'] == 'pending_create' and result['model_operation'] is False
+        assert domain.get_resident_session_restart(agent_id, 'alice')['actual_binding'] == {}
+        assert store.agent_context_snapshot(agent_id)['segments'] == []
+        assert {segment_id: store.segment(segment_id) for segment_id in original_segments} == original_segments
+        assert recovery.recovery_entry(record, 'msg_failed')['disabled'] is True
+        assert len(resets) == 1 and resets[0][1]['reset_at'] == result['configured_at']
+        assert domain.restart_resident_session(agent_id, 'alice', payload) == result
+        assert len(resets) == 1 and operations == []
+
+
+@pytest.mark.parametrize('changed', ['configuration', 'binding'])
+def test_fresh_rechecks_source_before_clearing(monkeypatch, isolated_portal_case, changed):
+    with isolated_portal_case():
+        record, operations, saved, store, resets = _fresh_bound_domain(monkeypatch)
+        read_binding = resident_backend.session_record
+        original = copy.deepcopy(read_binding(record))
+        def change_at_check(current, *, expected_binding=None):
+            if expected_binding is not None:
+                if changed == 'configuration':
+                    record['execution_settings'] = {'model': 'changed-concurrently'}
+                    current['execution_settings'] = copy.deepcopy(record['execution_settings'])
+                else:
+                    replacement = store.ensure_provider_session(provider='codex', backend_route_id='zero',
+                        backend_session_id='concurrent-thread', agent_id=record['resident_id'], actor_ref='test')
+                    store.delete_provider_binding(original['binding_id'],
+                        expected_provider_session_ref=original['provider_session_ref'])
+                    store.bind_provider_session(original['binding_id'], replacement['provider_session_ref'])
+            return read_binding(current, expected_binding=expected_binding)
+        monkeypatch.setattr(resident_backend, 'session_record', change_at_check)
+        with pytest.raises((ValueError, RuntimeError), match='(configuration|binding).*changed'):
+            domain.restart_resident_session(record['resident_id'], 'alice', {'context_strategy': 'fresh'})
+        actual = read_binding(record)
+        assert actual['backend_session_id'] == ('old-native-thread' if changed == 'configuration' else 'concurrent-thread')
+        assert record['session_state'] == 'active' and saved == [] and operations == [] and resets == []
+        assert store.agent_context_snapshot(record['resident_id'])['segments']
+
+
+def test_fresh_save_failure_restores_detached_binding(monkeypatch, isolated_portal_case):
+    from management_portal.society_service import resident_record_domain
+    with isolated_portal_case():
+        record, operations, saved, store, resets = _fresh_bound_domain(monkeypatch)
+        original = copy.deepcopy(resident_backend.session_record(record))
+        def fail_save(*_args, **_kwargs):
+            raise RuntimeError('save failed')
+        monkeypatch.setattr(resident_record_domain, 'save_resident_record', fail_save)
+        with pytest.raises(RuntimeError, match='save failed'):
+            domain.restart_resident_session(record['resident_id'], 'alice', {'context_strategy': 'fresh'})
+        restored = resident_backend.session_record(record)
+        assert {k: v for k, v in restored.items() if k not in {'created_at', 'updated_at'}} == {
+            k: v for k, v in original.items() if k not in {'created_at', 'updated_at'}
+        }
+        assert record['session_state'] == 'active' and operations == [] and resets == []
+        assert store.agent_context_snapshot(record['resident_id'])['segments']
+
+
 def test_switch_rejects_context_reduction(monkeypatch, isolated_portal_case):
     with isolated_portal_case():
         record, operations, _ = _restart_domain(monkeypatch)

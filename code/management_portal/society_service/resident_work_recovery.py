@@ -13,8 +13,11 @@ from typing import Any, Mapping
 from management_portal.execution.provider_failures import (
     failure_code, is_egress_block_failure, is_network_failure, is_usage_limit_failure,
 )
-from . import resident_backend, resident_conversation_stream, resident_execution_work, resident_input_recovery
-from .domain_ports import execution_port
+from . import (
+    resident_backend, resident_conversation_stream, resident_execution_work, resident_input_checkpoints,
+    resident_input_recovery,
+)
+from .domain_ports import execution_port, resident_domain_port
 from .resident_account_policy import account_available, fallback_account
 
 MAX_RECOVERY_ATTEMPTS = 2
@@ -23,7 +26,7 @@ RECHECK_SECONDS = 600
 
 def latest_failed_input(record: Mapping[str, Any]) -> dict[str, Any]:
     """Only the latest round is eligible for automatic restart recovery."""
-    entries = resident_input_recovery.checkpoints(record)
+    entries = resident_input_checkpoints.checkpoints(record)
     if not entries:
         return {}
     entry = entries[-1]
@@ -42,7 +45,7 @@ def recovery_entry(record: Mapping[str, Any], message_id: str) -> dict[str, Any]
 
 def set_recovery_entry(record: dict[str, Any], message_id: str, **values: Any) -> None:
     # Retain counters for every round that can still be requeued.
-    retained = {str(e["message_id"]) for e in resident_input_recovery.recent_executions(str(record["resident_id"]))} | {message_id}
+    retained = {str(e["message_id"]) for e in resident_input_checkpoints.recent_executions(str(record["resident_id"]))} | {message_id}
     job = resident_execution_work.read(record)
     retained.add(str(job.get("user_message_id") or ""))
     retained.update(str(item.get("user_message_id") or "") for item in resident_execution_work.normalized_queue(job))
@@ -75,8 +78,8 @@ def resume_after_restart(record: dict[str, Any], restart: dict[str, Any]) -> Non
 
 def _intake_allows_recovery(record: Mapping[str, Any]) -> bool:
     from . import resident_state
-    from . import resident_lifecycle_domain
-    if resident_lifecycle_domain.resident_intake_state(dict(record)) == resident_state.INTAKE_OPEN:
+    from . import resident_record_domain
+    if resident_record_domain.resident_intake_state(dict(record)) == resident_state.INTAKE_OPEN:
         return True
     return False
 
@@ -143,7 +146,7 @@ def reconcile_failed_work(residents: list[dict[str, Any]] | None = None, *, jobs
 def _reconcile_failed_work(residents: list[dict[str, Any]], context: dict[str, Any]) -> int:
     """Recheck only eligible failed rounds; no model or sleeping worker required."""
     from . import family_facade, resident_catalog
-    from . import resident_record_domain, resident_restart_domain
+    from . import resident_record_domain
     from management_portal.execution.provider_egress import provider_network_state
 
     accounts = context.get("accounts")
@@ -193,7 +196,7 @@ def _reconcile_failed_work(residents: list[dict[str, Any]], context: dict[str, A
             route = str(resident_backend.execution_account(record, binding).get("backend_route_id") or "")
         pending = recovery.get("pending_restart")
         if pending:
-            resident_restart_domain.restart_resident_session(resident_id, resident_id, pending, portal_reason="steward_quota_recovery")
+            resident_domain_port.restart_resident_session(resident_id, resident_id, pending, portal_reason="steward_quota_recovery")
             with resident_record_domain.state_lock(resident_id):
                 current = resident_record_domain.find_resident(resident_id)
                 set_recovery_entry(current, message_id, pending_restart=None)
@@ -247,7 +250,7 @@ def _reconcile_failed_work(residents: list[dict[str, Any]], context: dict[str, A
                                    switch_attempts=switches + 1,
                                    tried_accounts=[*tried, str(target["account_id"])])
                 resident_record_domain.save_resident_record(current)
-            resident_restart_domain.restart_resident_session(resident_id, resident_id, payload, portal_reason="steward_quota_recovery")
+            resident_domain_port.restart_resident_session(resident_id, resident_id, payload, portal_reason="steward_quota_recovery")
             with resident_record_domain.state_lock(resident_id):
                 current = resident_record_domain.find_resident(resident_id)
                 set_recovery_entry(current, message_id, pending_restart=None)

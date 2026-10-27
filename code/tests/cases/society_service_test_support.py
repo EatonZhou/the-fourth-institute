@@ -130,7 +130,7 @@ def publish_registered_lineage_members(
     from management_portal.society_service import identity_contract
     from management_portal.society_service.lineage_storage import canonical_lineage_folder
     from management_portal.society_service.principal_hierarchy import classify_existing
-    from management_portal.society_service.resident_record_domain import ensure_resident_agent
+    from management_portal.society_service.resident_catalog import ensure_resident_agent
 
     store = resident_catalog.get_catalog().state_store
     nodes = [node for node in lineage.get("nodes") or []

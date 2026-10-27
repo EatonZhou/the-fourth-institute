@@ -4,6 +4,7 @@ import copy
 import logging
 import secrets
 from . import resident_catalog, resident_execution_work
+from .domain_ports import resident_domain_port
 
 def pending(record):
     return (record.get("session_restart") or {}).get("deferred") or {}
@@ -72,7 +73,7 @@ def cancel(record, restart_id):
 
 def advance(record):
     """Continue the original request, retaining its explicit or background origin."""
-    from . import resident_record_domain, resident_restart_domain
+    from . import resident_record_domain
     rid = str(record.get("resident_id") or "")
     if not pending(record):
         return False
@@ -100,7 +101,7 @@ def advance(record):
         if not handoff_unstarted_input(current):
             return False  # claimed/running work still finishes on its original route
     try:
-        receipt = resident_restart_domain.restart_resident_session(
+        receipt = resident_domain_port.restart_resident_session(
             rid, deferred["actor"], deferred["payload"], portal_reason=str(state.get("reason") or ""),
         )
     except Exception as exc:

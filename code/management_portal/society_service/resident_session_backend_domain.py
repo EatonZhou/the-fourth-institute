@@ -1,7 +1,13 @@
 """Resident domain responsibilities: session backend."""
 from __future__ import annotations
 
-from . import resident_backend, resident_execution_work
+from . import (
+    resident_backend,
+    resident_execution_engine_domain,
+    resident_execution_work,
+    resident_record_domain,
+    resident_runtime_domain,
+)
 from .domain_ports import execution_port
 from .resident_lifecycle import LifecycleAttemptFailed
 from dataclasses import replace
@@ -95,7 +101,6 @@ def run_backend_session_operation(
     agent_id: str = "",
     metadata: Mapping[str, object] | None = None,
 ) -> dict[str, Any]:
-    from . import resident_domain_common, resident_execution_domain, resident_record_domain
     managed_execution_work = bool(resident_record and execution_work)
     if preparation_id:
         if operation != "create" or managed_execution_work or operation_id:
@@ -133,18 +138,18 @@ def run_backend_session_operation(
             )
         exact_record = resident_record or {}
         exact_work = execution_work or {}
-        request = resident_execution_domain.durable_resident_execution_request(
+        request = resident_execution_engine_domain.durable_resident_execution_request(
             exact_record,
             exact_work,
             lambda: request,
         )
-        execution_id = resident_execution_domain.bind_or_resume_resident_execution(
+        execution_id = resident_execution_engine_domain.bind_or_resume_resident_execution(
             service,
             request,
             exact_record,
             exact_work,
         )
-        snapshot = resident_execution_domain.wait_for_resident_execution(
+        snapshot = resident_execution_engine_domain.wait_for_resident_execution(
             service,
             execution_id=execution_id,
             actor=actor,
@@ -229,7 +234,6 @@ def _materialize_queued_agent_data_fork(
     record: Mapping[str, Any],
     job: Mapping[str, Any],
 ) -> None:
-    from . import resident_domain_common
     spec = job.get("agent_data_fork")
     if not isinstance(spec, Mapping):
         return
@@ -244,7 +248,6 @@ def materialize_pending_agent_data_fork(
     resident: dict[str, Any],
     actor: str,
 ) -> None:
-    from . import resident_domain_common
     spec = resident.pop("_pending_agent_data_fork", None)
     if isinstance(spec, Mapping):
         materialize_agent_data_fork(resident_domain_common.record_resident_id(resident), spec, actor)
@@ -255,7 +258,7 @@ def create_exact_resident_session(
     job: dict[str, Any],
 ) -> dict[str, Any]:
     """Materialize one Resident's own Provider session from its creation job."""
-    from . import resident_access, resident_execution_domain, resident_runtime_domain
+    from . import resident_access
     creation_kind = str(job.get("operation") or "")
     if creation_kind != "context_fork_create":
         raise ValueError(f"unsupported Resident creation job: {creation_kind}")
@@ -271,7 +274,7 @@ def create_exact_resident_session(
         raise ValueError(f"{definition.label} does not support session creation")
     account = resident_backend.execution_account(record)
     route = str(account.get("backend_route_id") or "")
-    options = resident_execution_domain.resident_execution_runtime_options(record, job, is_owner=is_owner)
+    options = resident_execution_engine_domain.resident_execution_runtime_options(record, job, is_owner=is_owner)
     options.update(ephemeral=False, exclude_turns=True, thread_source="user")
     result = run_backend_session_operation(
         backend=definition.provider, operation="create", actor=actor, cwd=cwd,
@@ -357,7 +360,6 @@ def handle_resident_native_command(
     goal: object,
 ) -> dict[str, Any]:
     from management_portal.execution.slash_commands import _token_usage_content
-    from . import resident_runtime_domain
     backend = resident_backend.execution_backend(record)
     definition = AGENT_PROVIDERS[backend]
     native_result = definition.runtime_adapter().handle_native_command(

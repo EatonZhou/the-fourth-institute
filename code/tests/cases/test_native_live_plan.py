@@ -12,7 +12,7 @@ import unittest
 
 from management_common.provider_turn_artifacts import TurnArtifacts
 from management_portal.execution import event_projection as projection
-from management_portal.society_service import resident_directory_domain
+from management_portal.society_service import resident_execution_engine_domain
 from management_portal.society_service import resident_conversation_stream as stream
 from management_portal.resources.portal import portal_route_script
 
@@ -70,7 +70,7 @@ class NativePlanProjection(unittest.TestCase):
             self.assertFalse(any(r.get('native_plan') and r['status'] == 'running' for r in reopened.read()['runtime_details']))
             wire = []
             for snapshot in snapshots:
-                projected = resident_directory_domain.runtime_activity_for_execution('resident_planfixture', {
+                projected = resident_execution_engine_domain.runtime_activity_for_execution('resident_planfixture', {
                     'execution_id': reader.execution_id, 'submitted_at': '2026-10-27T00:00:00Z',
                     'user_message_id': 'msg_input',
                 }, transcript_projection=snapshot)

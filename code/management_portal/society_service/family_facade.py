@@ -24,6 +24,7 @@ from management_portal.execution.chat_position_index import RELAYED_COPY_PATTERN
 
 from . import family_storage, resident_conversation_stream, resident_lineage, resident_mailbox
 from .input_progress import event_input_ids, input_progress
+from .domain_ports import resident_domain_port
 from .state_store import get_lineage_data_store
 
 # AgentData leaves these copies out of the Mailbox activity it keeps.
@@ -161,11 +162,10 @@ def chat_presentation(facade: Mapping[str, Any]) -> dict[str, Any]:
         roster = family_storage.roles_of(connection, family_id)
     from . import resident_catalog, resident_execution_gate
     from .family_owners import recipients
-    from . import resident_lifecycle_domain
     role_ids = roster["router"] + roster["steward"]
     role_records = {r["resident_id"]: r for r in resident_catalog.get_catalog().get_many(role_ids)}
     gates = resident_execution_gate.project_states({
-        rid: {"state": {"intake_state": resident_lifecycle_domain.resident_intake_state(record)}}
+        rid: {"state": {"intake_state": resident_record_domain.resident_intake_state(record)}}
         for rid, record in role_records.items()
     }, resident_records=role_records)
     has_contact = bool(recipients(facade, creator_only=True))
@@ -222,8 +222,6 @@ def tell_steward(facade_id: str, steward_id: str, initiated_by: str, content: st
     from management_common.operation_identity import operation_identity_scope
     from management_common.principal import OperationIdentity
 
-    from . import resident_intake_domain
-
     if not options.pop("_family_rendered", False):
         from .family_tasks import render
         from . import resident_record_domain
@@ -235,7 +233,7 @@ def tell_steward(facade_id: str, steward_id: str, initiated_by: str, content: st
     sender = facade_id or initiated_by
     identity = OperationIdentity.for_actor(sender, initiated_by=initiated_by or sender)
     with operation_identity_scope(identity):
-        return resident_intake_domain.deliver_resident_message_content(steward_id, sender, content, **options)
+        return resident_domain_port.deliver_resident_message_content(steward_id, sender, content, **options)
 
 
 def forward_info(facade: Mapping[str, Any], message: Mapping[str, Any], actor: str) -> dict[str, Any] | None:

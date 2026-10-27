@@ -143,13 +143,13 @@ def test_component_only_batch_does_not_delete_resident_identities(deletion_set, 
 @pytest.mark.parametrize("entrypoint", ["DeleteResident", "ApplyLineageChanges", "rollback"])
 def test_resident_deletion_removes_only_its_watchboard(deletion_set, monkeypatch, entrypoint):
     """Resident 删除与自身 Watchboard 图清理原子提交，保留其他面板和普通组件。"""
-    from management_portal.society_service import watchboard_lineage
+    from management_portal.society_service import resident_watchboard_domain
 
     lineage_id, leader_id, ids, component_id, store = deletion_set
     installed = {}
     for resident_id in ids:
         record = resident_catalog.get_catalog().get(resident_id)
-        plan = watchboard_lineage.installation_plan(record, store.lineage_definition(lineage_id))
+        plan = resident_watchboard_domain.installation_plan(record, store.lineage_definition(lineage_id))
         result = run("ApplyLineageChanges", {
             "lineage_id": lineage_id, "operations": plan["install"],
         }, key="install-" + resident_id)

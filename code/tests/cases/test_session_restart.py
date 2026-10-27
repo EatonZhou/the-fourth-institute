@@ -25,7 +25,7 @@ from management_portal.society_service import (
     resident_access,
     resident_execution_domain,
     resident_input_queue_domain,
-    resident_lifecycle_domain,
+    resident_lifecycle_steps_domain,
     resident_management_domain,
     resident_record_domain,
     resident_runtime_domain,
@@ -556,28 +556,31 @@ def test_restart_options_show_unbound_residents_configured_account_contracts(mon
             assert saved[-1]['session_restart']['target'] == {'provider': 'claude', 'account_id': 'deepseek_primary'}
 
 
-@pytest.mark.parametrize("outcome", ["completed", "failed", "cancelled"])
-def test_fresh_restart_resets_model_context_only_after_success(monkeypatch, outcome):
-    """全新重启仅在初始化成功后重置模型上下文"""
+@pytest.mark.parametrize("save_failure", [False, True])
+def test_fresh_restart_resets_model_context_only_after_success(monkeypatch, save_failure):
+    """全新重启提交配置后清空上下文，下一输入才创建会话"""
     record, operations, _saved = _restart_domain(monkeypatch)
     resets = []
     monkeypatch.setattr(execution_port, "reset_provider_context", lambda *args, **kwargs: resets.append((args, kwargs)))
+    monkeypatch.setattr(resident_backend, "delete_session_identity", lambda *args, **kwargs: None)
+    monkeypatch.setattr(resident_backend, "restore_replaced_session", lambda *args, **kwargs: None)
     monkeypatch.setattr(resident_conversation_stream.get_repository(), "snapshot",
                         lambda *a, **kw: pytest.fail("Fresh restart must not read old conversation"))
-    result = resident_domain.restart_resident_session(record["resident_id"], "alice", {"context_strategy": "fresh"})
-    assert result["status"] == "accepted"
-    assert operations[0]["operation"] == "create" and not operations[0]["source_binding_id"]
-    if outcome != "completed":
-        monkeypatch.setattr(execution_port, "service", lambda: ExecutionStub(
-            resume=lambda *a, **kw: {"status": outcome, "result": {"status": outcome, "error": outcome}},
-        ))
-    if outcome == "cancelled":
-        record["session_restart"]["status"] = "cancelling"
-    resident_restart_domain.resume_resident_session_restart(operations[0]["step"])
-    assert bool(resets) is (outcome == "completed")
-    if resets:
+    if save_failure:
+        def fail_save(*args, **kwargs):
+            raise RuntimeError("configuration save failed")
+        monkeypatch.setattr(resident_record_domain, "save_resident_record", fail_save)
+        with pytest.raises(RuntimeError, match="configuration save failed"):
+            resident_domain.restart_resident_session(record["resident_id"], "alice", {"context_strategy": "fresh"})
+        assert resets == []
+    else:
+        result = resident_domain.restart_resident_session(record["resident_id"], "alice", {"context_strategy": "fresh"})
+        assert result["status"] == "completed" and result["configuration_only"]
+        assert record["session_state"] == "pending_create"
+        assert len(resets) == 1
         assert resets[0][0] == (record["resident_id"],)
-        assert resets[0][1]["reset_at"] == record["session_restart"]["submitted_at"]
+        assert resets[0][1]["reset_at"] == result["configured_at"]
+    assert operations == []
 
 
 def test_fresh_recovery_does_not_reassign_an_active_unbound_execution(monkeypatch):
@@ -928,14 +931,14 @@ def test_restart_real_outbox_recovers_one_execution_then_acknowledges(tmp_path, 
     receipt = resident_domain.restart_resident_session(record["resident_id"], "alice", {})
     assert receipt["status"] == "accepted" and submitted == []
     operation_id = outbox.ready()[0]
-    assert not outbox.run(operation_id, resident_lifecycle_domain.apply_resident_lifecycle_step)
+    assert not outbox.run(operation_id, resident_lifecycle_steps_domain.apply_resident_lifecycle_step)
     assert outbox.health()["last_error"] == "" and acknowledged == []
     recovered = ResidentLifecycleOperations(LineageDataStore())
     recovered.store.database.write(lambda connection: connection.execute(
         'UPDATE resident_lifecycle_operations SET available_at=to_timestamp(0) WHERE operation_id=%s', (operation_id,),
     ))
     snapshot.update(status="completed", result={"status": "completed", "backend_session_id": "session_new"})
-    assert recovered.run(operation_id, resident_lifecycle_domain.apply_resident_lifecycle_step) == record["resident_id"]
+    assert recovered.run(operation_id, resident_lifecycle_steps_domain.apply_resident_lifecycle_step) == record["resident_id"]
     assert len(submitted) == 1 and acknowledged == [submitted[0].execution_id]
     assert recovered.ready() == [] and record["session_restart"]["status"] == "completed"
 

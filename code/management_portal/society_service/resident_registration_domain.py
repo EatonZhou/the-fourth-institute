@@ -14,6 +14,9 @@ from . import (
     resource_client,
     resident_record_domain,
     resident_project_domain,
+    resident_runtime_domain,
+    resident_session_backend_domain,
+    resident_workspace_domain,
 )
 from .domain_ports import resident_lineage_host_port
 from .resident_access import can_manage_resident as _can_manage_resident, manage_refusal
@@ -80,14 +83,7 @@ def register_resident_and_lineage(
     personal Lineage outside any Project, created by the User alone.
     """
     from .resident_projection import _optional_absolute_paths, _resident_lineage_node_projection
-    from . import (
-        project_domain,
-        resident_domain_common,
-        resident_record_domain,
-        resident_runtime_domain,
-        resident_session_backend_domain,
-        resident_workspace_domain,
-    )
+    from . import project_domain
     actor_id = canonical_actor_id(actor)
     title = str(payload.get("title") or "").strip()
     if not title:

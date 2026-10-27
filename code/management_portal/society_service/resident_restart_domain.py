@@ -6,9 +6,15 @@ from .resident_restart_handoff import can_preserve as can_preserve_restart_input
 from . import (
     resident_backend,
     resident_catalog,
+    resident_conversation_projection_domain,
     resident_conversation_stream,
+    resident_execution_domain,
     resident_execution_provider,
     resident_execution_work,
+    resident_input_queue_domain,
+    resident_record_domain,
+    resident_runtime_domain,
+    resident_session_backend_domain,
     resident_state,
 )
 from .domain_ports import execution_port
@@ -76,7 +82,6 @@ class _SessionRestartSuperseded(Exception):
 
 
 def _pending_session_restart(record: dict[str, Any], intent: dict[str, Any]) -> dict[str, Any] | None:
-    from . import resident_domain_common, resident_record_domain
     if not resident_record_domain.lifecycle_operations().pending(resident_domain_common.record_resident_id(record)):
         return None
     previous = record.get("session_restart") or {}
@@ -106,7 +111,6 @@ def _admitted_session_restart(record: dict[str, Any], intent: dict[str, Any]) ->
 
 
 def _record_session_restart_phase(resident_id: str, restart_id: str, phase: str) -> None:
-    from . import resident_domain_common, resident_record_domain
     with resident_record_domain.state_lock(resident_id):
         current = resident_record_domain.find_resident(resident_id)
         state = (current or {}).get("session_restart") or {}
@@ -186,7 +190,6 @@ def _previous_compaction_summary(resident_id: str, *, since: str = "") -> str:
 
 
 def _source_session_context(record: dict[str, Any], limit: int = 18) -> str:
-    from . import resident_conversation_projection_domain, resident_domain_common
     session_id = resident_backend.record_session_id(record)
     if not session_id:
         return "(empty)"
@@ -214,7 +217,6 @@ def _session_restart_handoff_prompt(
     *,
     strategy: str,
 ) -> str:
-    from . import resident_record_domain
     messages = _session_restart_messages(detail)
     message_limit = 36 if strategy == "visible" else 12
     char_limit = 60_000 if strategy == "visible" else 24_000
@@ -284,7 +286,6 @@ def _session_restart_runtime_options(
     runtime_settings: Mapping[str, Any] | None = None,
     target_route: str = "",
 ) -> dict[str, Any]:
-    from . import resident_record_domain, resident_runtime_domain
     settings = copy.deepcopy(dict(runtime_settings if runtime_settings is not None
                                   else resident_runtime_domain.read_resident_runtime_settings(record)))
     return {
@@ -344,7 +345,6 @@ def _release_session_restart_quota_override(step: Mapping[str, Any]) -> None:
 
 
 def get_resident_runtime_route(resident_id: str, actor: str = "") -> dict[str, Any]:
-    from . import resident_record_domain
 
     target = resident_record_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=True)
     account = resident_backend.execution_account(target.record)
@@ -358,7 +358,7 @@ def get_resident_restart_options(
     resident_id: str,
     actor: str = "",
 ) -> dict[str, Any]:
-    from . import resident_access, resident_record_domain, resident_runtime_domain
+    from . import resident_access
     target = resident_record_domain.resolve_resident_runtime_target(
         resident_id,
         actor,
@@ -397,7 +397,6 @@ def get_resident_session_restart(
     actor: str = "",
 ) -> dict[str, Any]:
     """Return the narrow authoritative migration snapshot for HATG readers."""
-    from . import resident_record_domain
 
     target = resident_record_domain.resolve_resident_runtime_target(
         resident_id,
@@ -428,15 +427,7 @@ def restart_resident_session(
     ``portal_reason`` preserves the origin when a previously admitted restart
     resumes. Ordinary inputs do not trigger session replacement for tool metadata.
     """
-    from . import (
-        resident_access,
-        resident_domain_common,
-        resident_execution_domain,
-        resident_input_queue_domain,
-        resident_record_domain,
-        resident_runtime_domain,
-        resident_session_backend_domain,
-    )
+    from . import resident_access
 
     body = payload if isinstance(payload, dict) else {}
     operation = str(body.get("operation") or "restart")
@@ -517,7 +508,6 @@ def restart_resident_session(
     native_fields = ("collaboration_mode", "service_tier", "permission_preset")
     native_updates = {key: body[key] for key in native_fields if key in body}
     if target_provider == "provider_api":
-        from . import resident_runtime_domain
         from management_portal.execution.resident_configuration import API_RUNTIME_SETTINGS
         if native_updates:
             raise ValueError("Model API 不支持原生会话的 Mode、Speed 或 Permissions")
@@ -670,7 +660,7 @@ def restart_resident_session(
     restart_id = str(previous_restart['restart_id']) if deferred else f"restart_{secrets.token_hex(12)}"
     public_request_id = str(deferred['request_id']) if deferred else request_id
     configuration_only = (target_provider == "provider_api" or
-                          (strategy == "fresh" and (definition is None or "create" not in definition.operations)) or
+                          strategy == "fresh" or
                           (not source["has_session"] and not unbound_previous_session))
     if configuration_only:
         with resident_record_domain.state_lock(resident_id):
@@ -713,6 +703,8 @@ def restart_resident_session(
                 target_route,
                 runtime_settings=target_runtime_settings,
             )
+            if strategy == "fresh":
+                current["session_state"] = "pending_create"
             state = {
                 "operation": operation, "operation_id": restart_id,
                 "request_signature": preservation.request_signature(body),
@@ -892,7 +884,6 @@ def restart_resident_session(
 
 
 def resume_resident_session_restart(step: dict[str, Any]) -> None:
-    from . import resident_domain_common, resident_input_queue_domain, resident_record_domain
     resident_id, state = step["resident_id"], step["state"]
     saved = (resident_record_domain.find_resident(resident_id) or {}).get("session_restart") or {}
     if saved.get("restart_id") != state["restart_id"]:
@@ -1063,7 +1054,6 @@ def _supersede_session_restart(resident_id: str, actor_id: str, previous: Mappin
     The Lineage coordinator finishes the cancelled operation (it cancels the restart's execution, keeps the
     source session and reopens intake); only then can the new restart be admitted.
     """
-    from . import resident_record_domain
 
     _cancel_session_restart(resident_id, actor_id, str(previous.get("restart_id") or ""), reason="superseded")
     deadline = time.monotonic() + SESSION_RESTART_SUPERSEDE_SECONDS
@@ -1082,7 +1072,7 @@ def cancel_resident_session_restart(
     restart_id: str,
 ) -> dict[str, Any]:
     """Cancel one accepted Session migration without consulting quota."""
-    from . import resident_access, resident_record_domain
+    from . import resident_access
 
     actor_id = canonical_actor_id(actor)
     if not actor_id:
@@ -1100,7 +1090,7 @@ def _cancel_session_restart(
     *,
     reason: str = "",
 ) -> dict[str, Any]:
-    from . import resident_access, resident_domain_common, resident_record_domain
+    from . import resident_access
 
     expected_restart_id = str(restart_id or "").strip()
     if not expected_restart_id:

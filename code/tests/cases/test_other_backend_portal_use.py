@@ -21,6 +21,7 @@ import pytest
 
 from management_portal.execution import backends
 from management_portal.execution.accounts import resolve_account_configuration
+from management_portal.society_service import resident_execution_engine_domain
 
 
 def test_kimi_account_is_found_by_the_id_the_account_list_shows() -> None:
@@ -248,7 +249,7 @@ def test_restarted_session_is_created_where_the_residents_turns_look_for_it(monk
     """
     from pathlib import Path
 
-    from management_portal.society_service import resident_execution_domain, resident_restart_domain
+    from management_portal.society_service import resident_restart_domain
 
     record = {"resident_id": "resident_0123456789ab", "title": "Probe", "lineage_id": ""}
     monkeypatch.setattr(
@@ -259,5 +260,5 @@ def test_restarted_session_is_created_where_the_residents_turns_look_for_it(monk
         record, "claude", "sample_admin", runtime_settings={"model": "x"}, target_route="deepseek_primary",
     )
     assert restart["runtime_root"] == "/srv/residents/resident_0123456789ab/runtime/backend"
-    source = inspect.getsource(resident_execution_domain.resident_execution_runtime_options)
+    source = inspect.getsource(resident_execution_engine_domain.resident_execution_runtime_options)
     assert '"runtime_root": str(resident_record_domain.sessions_path(record) / "backend")' in source  # the same root for turns

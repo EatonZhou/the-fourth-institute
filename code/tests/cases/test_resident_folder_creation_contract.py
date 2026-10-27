@@ -45,6 +45,7 @@ from management_portal.society_service import (
     resident_domain_common,
     resident_input_queue_domain,
     resident_lifecycle_domain,
+    resident_lifecycle_steps_domain,
     resident_registration_domain,
     resident_session_backend_domain,
     resident_workspace_domain,
@@ -288,7 +289,7 @@ def test_member_move_commits_graphs_then_recovers_unlocked_file_transfer(future_
         raise OSError("temporary filesystem failure")
 
     monkeypatch.setattr(resident_workspace_transfer, "relocate", fail)
-    assert not operations.run(result["operation_id"], resident_lifecycle_domain.apply_resident_lifecycle_step)
+    assert not operations.run(result["operation_id"], resident_lifecycle_steps_domain.apply_resident_lifecycle_step)
     assert operations.pending(resident_id)
     assert original.exists()
     assert resident_lifecycle_domain.resident_has_pending_work(resident_id)
@@ -296,7 +297,7 @@ def test_member_move_commits_graphs_then_recovers_unlocked_file_transfer(future_
     operations.store.database.write(lambda c: c.execute(
         'UPDATE resident_lifecycle_operations SET available_at=to_timestamp(0) WHERE operation_id=%s', (result["operation_id"],),
     ))
-    assert operations.run(result["operation_id"], resident_lifecycle_domain.apply_resident_lifecycle_step) == resident_id, operations.health()
+    assert operations.run(result["operation_id"], resident_lifecycle_steps_domain.apply_resident_lifecycle_step) == resident_id, operations.health()
     assert not original.exists()
     assert (target / "keep.txt").read_text() == "preserve"
     assert not operations.pending(resident_id)
@@ -352,7 +353,7 @@ def test_reset_commits_intent_before_archiving_conversation(future_creation_stor
         resident_id, "after reset", "sample_admin", message_id="msg_22222222222222222222222222222222",
     )
     repository.commit_user_message(resident_id, new_message)
-    assert operations.run(result["operation_id"], resident_lifecycle_domain.apply_resident_lifecycle_step) == resident_id, operations.health()
+    assert operations.run(result["operation_id"], resident_lifecycle_steps_domain.apply_resident_lifecycle_step) == resident_id, operations.health()
     assert repository.context_reset_boundary(resident_id) == [new_message["message_id"]]
 
 
@@ -405,7 +406,7 @@ def test_failed_registration_archives_only_new_resident_folder(future_creation_s
     operations = resident_record_domain.lifecycle_operations()
     keys = operations.ready()
     assert len(keys) == 1
-    assert operations.run(keys[0], resident_lifecycle_domain.apply_resident_lifecycle_step)
+    assert operations.run(keys[0], resident_lifecycle_steps_domain.apply_resident_lifecycle_step)
     assert not created[0].exists()
     archives = list(created[0].parent.glob(f".aborted-{created[0].name}-*"))
     assert len(archives) == 1

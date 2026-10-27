@@ -3,8 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from management_portal.society_service import resident_domain
-from management_portal.society_service import resident_lifecycle_domain
+from management_portal.society_service import resident_domain, resident_lifecycle_steps_domain
 from management_portal.society_service import resident_record_domain
 from tests.cases.test_resident_folder_creation_contract import (
     _new_session_payload,
@@ -198,7 +197,7 @@ def test_workspace_document_failure_recovers_from_committed_bindings(
         refresh(record)
 
     monkeypatch.setattr(resident_workspace_domain, "refresh_resident_workspace_document", observe_projection)
-    assert operations.run(result["operation_id"], resident_lifecycle_domain.apply_resident_lifecycle_step) == resident_id
+    assert operations.run(result["operation_id"], resident_lifecycle_steps_domain.apply_resident_lifecycle_step) == resident_id
     assert refreshed == [current["workspace_bindings"]]
     assert not operations.pending(resident_id)
     assert document.read_bytes() != before_document

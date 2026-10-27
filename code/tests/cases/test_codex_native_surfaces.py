@@ -22,6 +22,7 @@ from management_portal.society_service import (
     invariant_locks,
     resident_conversation_stream,
     resident_domain,
+    resident_execution_engine_domain,
     resident_protocol,
     resident_record_domain,
 )
@@ -301,13 +302,13 @@ def test_turn_artifact_projection_keeps_canonical_snapshot(tmp_path, resident_re
     assert len(outputs) == 1
     resident_execution_work.write(resident_record, {
         "execution_id": request.execution_id, "actor": request.actor, "submitted_at": "2026-10-14T00:00:00Z"})
-    messages = resident_execution_domain._persist_execution_display_messages(resident_id,  request.execution_id, outputs)
+    messages = resident_execution_engine_domain.persist_execution_display_messages(resident_id,  request.execution_id, outputs)
     canonical = repository.agent_data.operation_record(messages[0]["content_parts"][0]["segment_id"])
     assert canonical["segment_type"] == "model"
     assert messages[0]["content_parts"] == [canonical["content"]]
     assert canonical["content"]["diff"] == "+token=synthetic-diff"
     assert canonical["content"]["plan"][1]["status"] == "pending"
-    replay = resident_execution_domain._persist_execution_display_messages(resident_id,  request.execution_id, outputs)
+    replay = resident_execution_engine_domain.persist_execution_display_messages(resident_id,  request.execution_id, outputs)
     assert [message["message_id"] for message in replay] == [message["message_id"] for message in messages]
 
 

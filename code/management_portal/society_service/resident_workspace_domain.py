@@ -7,6 +7,7 @@ from . import (
     invariant_locks,
     resident_backend,
     resident_catalog,
+    resident_lifecycle_domain,
     resident_lineage,
     resident_record_domain,
     resident_store,
@@ -73,7 +74,6 @@ def prepare_lineage_project_member_updates(
     source_folder: Path,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Project one Lineage project change into every canonical Resident fact."""
-    from . import resident_domain_common, resident_record_domain
 
     clean_lineage_id = str(lineage_id or "").strip()
     identity_contract.validate_id(clean_lineage_id, "lineage")
@@ -162,7 +162,6 @@ def prepare_lineage_project_member_updates(
 def persist_lineage_project_member_updates(
     records: Iterable[dict[str, Any]],
 ) -> None:
-    from . import resident_record_domain
     from .resident_workspace_storage import canonical_path
     catalog = resident_catalog.get_catalog()
 
@@ -216,7 +215,6 @@ def ensure_resident_file(
 
 
 def refresh_resident_workspace_document(record: dict[str, Any]) -> None:
-    from . import resident_record_domain
     resident_folder = resident_record_domain.resident_folder_path(record)
     resident_folder.mkdir(parents=True, exist_ok=True)
     resident_store.replace_file_text(
@@ -228,7 +226,6 @@ def refresh_resident_workspace_document(record: dict[str, Any]) -> None:
 def ensure_resident_workspace(record: dict) -> None:
     if record.get("deleted_at"):
         raise KeyError("resident not found")
-    from . import resident_record_domain
     resident_backend.validate_resident_session_identity(record)
     workspace = resident_record_domain.resident_workspace_path(record)
 
@@ -275,7 +272,6 @@ def _safe_workspace_location_for_delete(record: dict) -> Path:
 
 
 def _safe_lineage_workspace_for_delete(record: dict) -> Path:
-    from . import resident_domain_common
     resident_id = resident_domain_common.record_resident_id(record)
     lineage_id = resident_lineage.lineage_id(record)
     if not resident_id or not lineage_id:
@@ -294,7 +290,7 @@ def _prepare_resident_deletion(
     whole_lineage: bool = False,
     removed_family_ids: frozenset[str] = frozenset(),
 ) -> dict:
-    from . import resident_access, resident_domain_common, resident_lifecycle_domain, resident_record_domain
+    from . import resident_access
     actor_id = canonical_actor_id(actor)
     if not actor_id:
         raise ValueError("需要登录后删除")
@@ -416,7 +412,6 @@ def _commit_resident_deletions(
 
     A member deletion's graph removal is the caller's own graph transaction.
     """
-    from . import resident_record_domain
     catalog = resident_catalog.get_catalog()
     deleted_ids = {record["resident_id"] for plan in plans for record in plan["records"]}
     projection_revisions: dict[str, int] = {}
@@ -571,7 +566,6 @@ def delete_resident_identities(
 
 def delete_resident_lineage(resident_id: str, actor: str) -> dict:
     """Delete the complete Lineage identified by an existing member."""
-    from . import resident_domain_common
     previous = retry_deleted_resident(resident_id, actor)
     if previous is not None:
         return previous
@@ -597,7 +591,6 @@ def delete_resident_lineage(resident_id: str, actor: str) -> dict:
 
 def prepare_resident_lineage_move(record: dict[str, Any], target_lineage_id: str, actor_id: str) -> dict[str, Any]:
     """Compute identity and durable transfer intent; never move files in this scope."""
-    from . import resident_domain_common, resident_record_domain
     definition = resident_lineage_host_port.managed_lineage_definition(target_lineage_id, actor_id)
     # Existing member data supplies workspace defaults only. Identity,
     # placement and authority come from the target Lineage, including empty ones.
@@ -624,7 +617,6 @@ def prepare_resident_lineage_move(record: dict[str, Any], target_lineage_id: str
 
 
 def enqueue_resident_lineage_move(record: dict[str, Any], transfer: dict[str, Any], source_id: str, previous_path: str) -> str:
-    from . import resident_record_domain
     resident_id = record["resident_id"]
     target_id = resident_lineage.lineage_id(record)
     return resident_record_domain.lifecycle_operations().enqueue_transfer(resident_id, [
@@ -639,9 +631,7 @@ def enqueue_resident_lineage_move(record: dict[str, Any], transfer: dict[str, An
 def update_resident_record(resident_id: str, payload: dict, actor: str) -> dict:
     from . import resident_access
     from .resident_projection import _optional_absolute_paths, _resident_lineage_node_projection
-    from . import resident_domain_common, resident_record_domain
     from .resident_workspace_storage import canonical_path
-    from . import resident_record_domain
     actor_id = canonical_actor_id(actor)
     if not actor_id:
         raise ValueError("需要登录后编辑")
@@ -706,7 +696,6 @@ def update_resident_record(resident_id: str, payload: dict, actor: str) -> dict:
 
 
 def _save_resident_workspace_bindings(record: dict[str, Any]) -> str:
-    from . import resident_record_domain
     resident_id = str(record["resident_id"])
     operations = resident_record_domain.lifecycle_operations()
     if operations.pending(resident_id):
@@ -763,7 +752,7 @@ def add_resident_reference_workspace(
     purpose: str = "",
 ) -> dict[str, Any]:
     """Bind one existing directory as another Workspace for this Resident."""
-    from . import resident_access, resident_domain_common, resident_lifecycle_domain, resident_record_domain
+    from . import resident_access
     from .resident_workspace_storage import apply_binding_projection, canonical_path
     actor_id = canonical_actor_id(actor)
     if not actor_id:
@@ -819,7 +808,7 @@ def add_resident_reference_workspace(
             "workspace_paths": resident_record_domain.workspace_paths(record),
         }
 
-    if operation_id and not resident_record_domain.lifecycle_operations().run(operation_id, resident_lifecycle_domain.apply_resident_lifecycle_step):
+    if operation_id and not resident_record_domain.run_lifecycle_operation(operation_id):
         result.update(workspace_document_pending=True, operation_id=operation_id)
     return result
 
@@ -853,7 +842,7 @@ def remove_resident_reference_workspace(
     workspace_path: str = "",
 ) -> dict[str, Any]:
     """Unbind one non-owned Workspace without deleting its files."""
-    from . import resident_access, resident_domain_common, resident_lifecycle_domain, resident_record_domain
+    from . import resident_access
 
     actor_id = canonical_actor_id(actor)
     if not actor_id:
@@ -908,13 +897,12 @@ def remove_resident_reference_workspace(
             "files_deleted": False,
         }
 
-    if not resident_record_domain.lifecycle_operations().run(operation_id, resident_lifecycle_domain.apply_resident_lifecycle_step):
+    if not resident_record_domain.run_lifecycle_operation(operation_id):
         result.update(workspace_document_pending=True, operation_id=operation_id)
     return result
 
 
 def _get_resident_workspace_roots(resident_id: str, actor: str = "") -> dict:
-    from . import resident_domain_common
     actor_id = canonical_actor_id(actor)
     with resident_lineage.access_snapshot_scope():
         record = resident_record_domain.find_resident(resident_id)

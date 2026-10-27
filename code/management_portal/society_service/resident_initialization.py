@@ -12,7 +12,7 @@ import secrets
 from typing import Any, Mapping
 
 from . import resident_backend, resident_catalog, resident_conversation_stream, resident_execution_work, resident_state
-from .domain_ports import execution_port
+from .domain_ports import execution_port, resident_domain_port
 from .resident_fork_context import requires_initial_context_compaction, initial_context_compaction_completed
 
 
@@ -85,12 +85,12 @@ def view(resident_id: str, actor: str) -> dict[str, Any]:
 
 
 def retry(resident_id: str, actor: str) -> dict[str, Any]:
-    from . import resident_domain_common, resident_execution_domain, resident_record_domain
+    from . import resident_domain_common, resident_record_domain
     # Provider/AgentData reads happen outside the Resident state lock.
     record = _record(resident_id, actor)
     prior = resident_execution_work.read(record)
     if resident_execution_work.is_active(prior) and prior.get('operation') == 'context_fork_create':
-        resident_execution_domain.resume_resident_execution(resident_id)
+        resident_domain_port.resume_resident_execution(resident_id)
         return view(resident_id, actor)
     if not requires_initial_context_compaction(record):
         if prior.get('operation') != 'context_fork_create' or resident_backend.record_session_id(record):
@@ -145,13 +145,13 @@ def retry(resident_id: str, actor: str) -> dict[str, Any]:
         record.update(session_state='creating', last_error='', updated_at=now)
         resident_record_domain.save_resident_record(record)
     result = view(resident_id, actor)
-    resident_execution_domain.resume_resident_execution(resident_id)
+    resident_domain_port.resume_resident_execution(resident_id)
     return result
 
 
 def run(record: dict[str, Any], job: dict[str, Any], continuation_id: str) -> dict[str, Any]:
     from . import (
-        resident_execution_domain,
+        resident_execution_engine_domain,
         resident_record_domain,
         resident_runtime_domain,
         resident_session_backend_domain,
@@ -188,7 +188,7 @@ def run(record: dict[str, Any], job: dict[str, Any], continuation_id: str) -> di
 
     execution_port.fork_agent_data(rid, attempt['candidate_agent_id'], actor=actor, segment_ids=attempt['segment_ids'])
     from . import resident_domain_common
-    options = {**resident_execution_domain.resident_execution_runtime_options(record, job, is_owner=True), 'timeout_seconds': resident_domain_common.CODEX_COMPACT_TIMEOUT_SECONDS}
+    options = {**resident_execution_engine_domain.resident_execution_runtime_options(record, job, is_owner=True), 'timeout_seconds': resident_domain_common.CODEX_COMPACT_TIMEOUT_SECONDS}
     common = dict(backend=backend, actor=actor, cwd=resident_runtime_domain.resident_working_directory(record),
                   binding_id=attempt['candidate_binding_id'], backend_route_id=route,
                   runtime_options=options, agent_id=attempt['candidate_agent_id'])

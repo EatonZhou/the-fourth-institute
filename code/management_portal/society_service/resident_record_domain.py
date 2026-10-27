@@ -10,6 +10,7 @@ from . import (
     resident_catalog,
     resident_execution_work,
     resident_lineage,
+    resident_state,
 )
 from pathlib import Path
 from typing import Any, Mapping
@@ -20,7 +21,7 @@ import re
 from contextlib import contextmanager
 
 from . import resident_domain_common
-from .domain_ports import resident_lineage_host_port
+from .domain_ports import resident_domain_port, resident_lineage_host_port
 from .resident_access import (
     actor_can_manage_residents,
     resident_deliverable_to_actor as _resident_deliverable_to_actor,
@@ -371,7 +372,6 @@ def runtime_error_payload(
     code: str = "",
     details: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    from . import resident_domain_common
     raw = str(raw_error or "").strip()
     if not raw:
         return {}
@@ -395,7 +395,6 @@ def runtime_failure_summary(
     raw_error: str,
     runtime_error: dict[str, Any] | None = None,
 ) -> str:
-    from . import resident_domain_common
     details = runtime_error if isinstance(runtime_error, dict) else {}
     message = str(details.get("message") or raw_error or "").strip()
     folded = message.casefold()
@@ -433,21 +432,6 @@ def resident_quota_override(record: Mapping[str, Any]) -> dict[str, Any]:
     return copy.deepcopy(policy)
 
 
-def ensure_resident_agent(record: Mapping[str, Any], *, actor: str = "") -> dict[str, Any]:
-    """Establish the independent main Agent before registration or execution succeeds."""
-    from management_portal.execution.agent_data_store import get_agent_data_store
-    from . import identity_contract
-
-    resident_id = str(record.get("resident_id") or "").strip()
-    identity_contract.validate_id(resident_id, "resident")
-    return get_agent_data_store().ensure_agent(
-        resident_id,
-        actor_ref=str(actor or record.get("created_by") or ""),
-        sequence_kind="agent_trace",
-        parent_agent_id=None,
-    )
-
-
 @contextmanager
 def state_lock(resident_id: object):
     """Protect short state transitions of exactly one Resident."""
@@ -458,6 +442,11 @@ def state_lock(resident_id: object):
 
 def lifecycle_operations() -> ResidentLifecycleOperations:
     return ResidentLifecycleOperations(resident_catalog.get_catalog().state_store)
+
+
+def run_lifecycle_operation(operation_id: str) -> str:
+    """Run one journaled lifecycle operation with the step table the Resident domain host serves."""
+    return lifecycle_operations().run(operation_id, resident_domain_port.apply_resident_lifecycle_step)
 
 
 def resident_registration_projection_receipt(
@@ -651,7 +640,7 @@ def save_resident_record(record: dict, *, commit_configuration: bool = False, co
     except KeyError:
         previous = {}
     if not previous and resident_catalog.registration_ready(record):
-        ensure_resident_agent(record)
+        resident_catalog.ensure_resident_agent(record)
     identity_changed = (
         not isinstance(previous, dict)
         or not previous
@@ -706,3 +695,7 @@ def resident_workspace_path(record: dict) -> Path:
     if not path.is_absolute():
         raise ValueError("resident workspace_path must be absolute")
     return path.resolve(strict=False)
+
+
+def resident_intake_state(record: Mapping[str, Any]) -> str:
+    return resident_state.INTAKE_CLOSED if record.get("intake_open") is False else resident_state.INTAKE_OPEN

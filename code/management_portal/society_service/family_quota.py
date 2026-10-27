@@ -41,9 +41,9 @@ def _validate_migration(state: dict[str, Any]) -> None:
 
 
 def role_availability(record: dict[str, Any], *, execution_gate: dict[str, Any] | None = None) -> dict[str, Any]:
-    from . import resident_lifecycle_domain
+    from . import resident_record_domain
     state = role_migration(record)
-    intake = resident_lifecycle_domain.resident_intake_state(record)
+    intake = resident_record_domain.resident_intake_state(record)
     if intake != "open":
         return {"status": "paused", "reason": "接单已关闭；门面开放时平台将恢复，关闭门面可暂停 Family", "intake": intake}
     if state.get("account_wait"):
@@ -277,15 +277,15 @@ def _restore_role_intake(record: dict[str, Any]) -> dict[str, Any] | None:
     recreates a deleted role, requeues a cancelled input or restarts a Session.
     """
     from . import family_storage, resident_management_domain
-    from . import resident_lifecycle_domain, resident_record_domain
+    from . import resident_record_domain
     if not family_facade.is_operating_role(record) or record.get("deleted_at"):
         return None
     with get_lineage_data_store().database.read() as connection:
         facade_ids = family_storage.roles_of(connection, record["family"]["family_id"])["facade"]
     facade = resident_record_domain.find_resident(facade_ids[0]) if facade_ids else None
-    if not facade or facade.get("deleted_at") or resident_lifecycle_domain.resident_intake_state(facade) != "open":
+    if not facade or facade.get("deleted_at") or resident_record_domain.resident_intake_state(facade) != "open":
         return None
-    if resident_lifecycle_domain.resident_intake_state(record) != "open":
+    if resident_record_domain.resident_intake_state(record) != "open":
         if resident_record_domain.lifecycle_operations().pending(record["resident_id"]):
             return record  # The migration owns its temporary intake hold.
         resident_management_domain.transition_resident_state(record["resident_id"], record["resident_id"],
@@ -407,14 +407,14 @@ def check_role_availability(lineage_id: str, family_id: str, actor: str) -> dict
     """ISA entry for the Family's explicit operating-role supervision Effect."""
     from .templates.familize import read_family
     from . import lineage_domain
-    from . import resident_lifecycle_domain, resident_record_domain
+    from . import resident_record_domain
 
     lineage, block = read_family(lineage_id, family_id, actor)
     family = block["family"]
     if actor not in {family["facade"], family["steward"]}:
         lineage_domain._ensure_manager(lineage, actor)
     facade = resident_record_domain.find_resident(family["facade"])
-    if facade.get("deleted_at") or resident_lifecycle_domain.resident_intake_state(facade) != "open":
+    if facade.get("deleted_at") or resident_record_domain.resident_intake_state(facade) != "open":
         return {"family_id": block["id"], "paused": True, "waiting_count": 0}
     roles = [resident_record_domain.find_resident(family[role]) for role in ("router", "steward")]
     restore_role_intakes(roles)

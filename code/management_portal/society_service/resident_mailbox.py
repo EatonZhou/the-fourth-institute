@@ -24,11 +24,14 @@ sender may ask of it.  Messages from one sender run as that sender; a group
 of several senders runs as its organizer.  Only inputs whose execution is
 already fixed or separate are refused: claimed, injected into a running turn,
 control inputs such as /compact, and scoped inputs.
+
+The merge and split operations are ``resident_queue_control_domain``'s
+``merge_resident_queue_items`` and ``split_resident_queue_item``; this module holds
+the group model they share with delivery, requeue and the projections.
 """
 from __future__ import annotations
 
 import copy
-import secrets
 from datetime import datetime, timezone
 from typing import Any, Iterable, Mapping
 
@@ -167,7 +170,7 @@ def assembled_prompt(items: list[Mapping[str, Any]], messages: Mapping[str, Mapp
     return "\n\n".join([header, *sections])
 
 
-def _expand(queue: list[dict[str, Any]], message_ids: list[str]) -> list[dict[str, Any]]:
+def expand(queue: list[dict[str, Any]], message_ids: list[str]) -> list[dict[str, Any]]:
     """Selected top-level items; a selected group contributes its members, in order."""
 
     by_id = {str(item.get("user_message_id") or ""): item for item in queue}
@@ -463,101 +466,3 @@ def organizer_id(actor: str) -> str:
     if not actor_id:
         raise ValueError("需要登录后整理 Mailbox")
     return actor_id
-
-
-def _operation_result(resident_id: str, **fields: Any) -> dict[str, Any]:
-    from . import resident_input_queue_domain
-
-    return resident_input_queue_domain.resident_operation_result(resident_id, **fields)
-
-
-def merge(resident_id: str, actor: str, message_ids: Iterable[object]) -> dict[str, Any]:
-    """Replace the selected waiting items with one group message at the earliest one's position."""
-
-    from . import invariant_locks
-    from . import resident_access, resident_domain_common, resident_lifecycle_domain, resident_record_domain
-    from .resident_message_contract import message_identity
-    from . import resident_record_domain
-
-    organizer = organizer_id(actor)
-    ids = ordered_ids(message_ids)
-    target = resident_record_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=True)
-    group_id = message_identity()
-    now = resident_domain_common.now_iso()
-    with resident_record_domain.state_lock(target.resident_id):
-        record = resident_record_domain.find_resident(target.resident_id)
-        if not record:
-            raise KeyError("resident not found")
-        if not resident_access.can_manage(record, organizer):
-            raise PermissionError("只有对该 Resident 有整理权限的主体可以合并消息")
-        job = resident_execution_work.read(record)
-        queue = resident_execution_work.normalized_queue(job) if resident_execution_work.is_active(job) else []
-        members = _expand(queue, ids)
-        check_compatible(target.resident_id, members)
-        messages = {
-            str(item.get("user_message_id") or ""): dict(item.get("input_message") or {}) for item in members
-        }
-        group = group_message(group_id, members, organizer, now)
-        item = group_item(group, members, assembled_prompt(members, messages), organizer=organizer)
-        selected = set(ids)
-        position = min(index for index, entry in enumerate(queue) if str(entry.get("user_message_id") or "") in selected)
-        superseded = [
-            str(entry.get("user_message_id") or "") for entry in queue
-            if str(entry.get("user_message_id") or "") in selected and is_group_item(entry)
-        ]
-        remaining = [entry for entry in queue if str(entry.get("user_message_id") or "") not in selected]
-        remaining.insert(position, item)
-        job["queue"] = remaining
-        job["updated_at"] = now
-        resident_execution_work.write(record, job)
-        record["session_state"] = resident_record_domain.record_backend_session_state(record)
-        record["updated_at"] = now
-        resident_record_domain.save_resident_record(record)
-        invariant_locks.defer_until_state_unlock(lambda: resident_lifecycle_domain.accept_resident_user_message(target.resident_id, group))
-    member_ids = [str(entry.get("user_message_id") or "") for entry in members]
-    repository = resident_conversation_stream.get_repository()
-    for old_group in superseded:
-        # A selected group is expanded into the new one; its shell ends like a split.
-        repository.set_input_state(target.resident_id, old_group, "cancelled",
-                                   error={"code": SPLIT_REASON, "message": f"已并入 {group_id}"})
-    return _operation_result(target.resident_id, group_message_id=group_id, member_message_ids=member_ids,
-                             message_id=group_id)
-
-
-def split(resident_id: str, actor: str, group_id: str) -> dict[str, Any]:
-    """Put a waiting group's members back at its position, in order; the group ends as cancelled."""
-
-    from . import resident_access, resident_domain_common, resident_record_domain
-
-    organizer = organizer_id(actor)
-    target = resident_record_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=True)
-    group_id = str(group_id or "").strip()
-    now = resident_domain_common.now_iso()
-    with resident_record_domain.state_lock(target.resident_id):
-        record = resident_record_domain.find_resident(target.resident_id)
-        if not record:
-            raise KeyError("resident not found")
-        if not resident_access.can_manage(record, organizer):
-            raise PermissionError("只有对该 Resident 有整理权限的主体可以拆分群体消息")
-        job = resident_execution_work.read(record)
-        queue = resident_execution_work.normalized_queue(job) if resident_execution_work.is_active(job) else []
-        position = next((index for index, entry in enumerate(queue)
-                         if str(entry.get("user_message_id") or "") == group_id), -1)
-        if position < 0:
-            raise MailboxConflict("这条群体消息已开始执行或不在等待队列中，不能拆分")
-        item = queue[position]
-        if not is_group_item(item):
-            raise MailboxConflict("这条消息不是群体消息")
-        members = [copy.deepcopy(entry) for entry in item["mailbox_members"]]
-        job["queue"] = queue[:position] + members + queue[position + 1:]
-        job["updated_at"] = now
-        resident_execution_work.write(record, job)
-        record["session_state"] = resident_record_domain.record_backend_session_state(record)
-        record["updated_at"] = now
-        resident_record_domain.save_resident_record(record)
-    resident_conversation_stream.get_repository().set_input_state(
-        target.resident_id, group_id, "cancelled", error={"code": SPLIT_REASON, "message": "Mailbox 拆分"},
-    )
-    member_ids = [str(entry.get("user_message_id") or "") for entry in members]
-    return _operation_result(target.resident_id, group_message_id=group_id, member_message_ids=member_ids,
-                             message_id=group_id)

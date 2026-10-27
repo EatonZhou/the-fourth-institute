@@ -8,7 +8,14 @@ from concurrent.futures import ThreadPoolExecutor
 import pytest
 
 from management_portal.execution.agent_data_store import get_agent_data_store
-from management_portal.society_service import lineage_domain, project_domain, resident_backend, resident_domain, resident_lifecycle_domain
+from management_portal.society_service import (
+    lineage_domain,
+    project_domain,
+    resident_backend,
+    resident_domain,
+    resident_lifecycle_domain,
+    resident_lifecycle_steps_domain,
+)
 from management_portal.society_service import resident_record_domain
 from tests.cases.isa_test_support import ACTOR, ok, reset_kernels, run
 from tests.cases.test_resident_folder_creation_contract import (
@@ -108,7 +115,7 @@ def test_move_preserves_member_conversation_files_and_replays(teams, empty_targe
     assert operation["source_lineage_id"] == source["lineage_id"]
     assert operation["target_lineage_id"] == target["lineage_id"]
     operations = resident_record_domain.lifecycle_operations()
-    assert operations.run(first.result["operation_id"], resident_lifecycle_domain.apply_resident_lifecycle_step) == resident_id
+    assert operations.run(first.result["operation_id"], resident_lifecycle_steps_domain.apply_resident_lifecycle_step) == resident_id
     updated = resident_record_domain.find_resident(resident_id)
     assert updated["lineage_id"] == target["lineage_id"]
     assert resident_backend.record_session_id(updated) == session_id
@@ -171,19 +178,19 @@ def test_a_busy_resident_moves_and_its_folder_follows_when_the_running_turn_ends
     resident_id = member["resident_id"]
     monkeypatch.setattr(resident_lifecycle_domain, "resident_has_pending_work", lambda identity: identity == resident_id)
     running = {"value": True}
-    monkeypatch.setattr(resident_lifecycle_domain, "_resident_turn_running", lambda identity: running["value"])
+    monkeypatch.setattr(resident_lifecycle_domain, "resident_turn_running", lambda identity: running["value"])
     original = resident_record_domain.resident_folder_path(resident_record_domain.find_resident(resident_id))
     result = execute(request(teams)).raise_for_error()
     assert resident_id in {node["id"] for node in graph(target)["nodes"]}
     operations = resident_record_domain.lifecycle_operations()
     # While the turn runs, the folder stays where the turn is working and queued work waits.
-    assert operations.run(result["operation_id"], resident_lifecycle_domain.apply_resident_lifecycle_step) == ""
+    assert operations.run(result["operation_id"], resident_lifecycle_steps_domain.apply_resident_lifecycle_step) == ""
     assert original.exists() and operations.pending(resident_id)
     assert ok("GetMoveOperation", {"operation_id": result["operation_id"]})["terminal"] is False
     running["value"] = False
     operations.store.database.write(lambda connection: connection.execute(
         "UPDATE resident_lifecycle_operations SET available_at=to_timestamp(0) WHERE operation_id=%s", (result["operation_id"],)))
-    assert operations.run(result["operation_id"], resident_lifecycle_domain.apply_resident_lifecycle_step) == resident_id
+    assert operations.run(result["operation_id"], resident_lifecycle_steps_domain.apply_resident_lifecycle_step) == resident_id
     assert not original.exists()
     moved = resident_record_domain.find_resident(resident_id)
     assert resident_record_domain.resident_folder_path(moved).exists()

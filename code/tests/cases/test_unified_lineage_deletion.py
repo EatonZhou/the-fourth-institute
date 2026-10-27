@@ -16,6 +16,7 @@ from management_portal.society_service import (
     resident_conversation_stream,
     resident_domain,
     resident_domain_common,
+    resident_lifecycle_steps_domain,
     resident_lineage,
     resident_record_domain,
 )
@@ -234,7 +235,7 @@ def test_lineage_deletion_projection_precedes_blocked_provider_release(
     folder = data_root / "lineages" / LINEAGE_ID
     _write_lineage(folder)
     _write_resident_facts([_resident_record(ROOT_ID, folder)])
-    apply_step = resident_lifecycle_domain.apply_resident_lifecycle_step
+    apply_step = resident_lifecycle_steps_domain.apply_resident_lifecycle_step
     applied = []
     from management_portal.society_service.resident_lineage_host import ResidentLineageHost
     unbound = []
@@ -252,7 +253,7 @@ def test_lineage_deletion_projection_precedes_blocked_provider_release(
             raise TimeoutError("Provider release is unavailable")
         apply_step(operation_id, step)
 
-    monkeypatch.setattr(resident_lifecycle_domain, "apply_resident_lifecycle_step", blocked_release)
+    monkeypatch.setattr(resident_lifecycle_steps_domain, "apply_resident_lifecycle_step", blocked_release)
     lineage_domain.delete_lineage(LINEAGE_ID, "sample_admin")
     for operation_id in resident_domain.ready_resident_lifecycle_operations():
         assert not resident_domain.resume_resident_lifecycle_operation(operation_id)

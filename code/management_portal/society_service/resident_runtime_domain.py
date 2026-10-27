@@ -9,6 +9,7 @@ from . import (
     resident_execution_provider,
     resident_execution_work,
     resident_lineage,
+    resident_record_domain,
 )
 from .domain_ports import resident_lineage_host_port
 from .resident_access import can_manage_resident as _can_manage_resident
@@ -26,11 +27,6 @@ import os
 from management_portal.execution import resident_runtime_settings
 
 from . import resident_domain_common
-
-
-def resident_execution_session_key(record: dict[str, Any]) -> str:
-    from . import resident_domain_common
-    return f"resident:{resident_domain_common.record_resident_id(record)}"
 
 
 def resident_backend_capabilities(record: dict[str, Any]) -> dict[str, Any]:
@@ -162,7 +158,6 @@ def resident_backend_binding(record: dict[str, Any]) -> dict[str, Any]:
 
 
 def resident_folder_for_id(record: dict, target_resident_id: str) -> Path:
-    from . import resident_domain_common, resident_record_domain
     return resident_record_domain.resident_workspace_path(record) / "residents" / resident_domain_common.safe_id(target_resident_id)
 
 
@@ -175,7 +170,6 @@ def _resident_workspace_scope_record(
 def resident_media_workspace_roots(
     record: dict,
 ) -> tuple[Path, ...]:
-    from . import resident_record_domain
     workspace_record = _resident_workspace_scope_record(record)
     roots: list[Path] = []
     seen: set[str] = set()
@@ -195,7 +189,6 @@ def resident_media_workspace_roots(
 def resident_working_directory(
     record: dict,
 ) -> Path:
-    from . import resident_record_domain
     workspace_record = _resident_workspace_scope_record(record)
     candidate = resident_record_domain.resident_default_cwd_path(workspace_record)
     if not candidate:
@@ -248,7 +241,6 @@ def resident_runtime_identity_block(record: dict[str, Any]) -> str:
 def resident_title_map(
     identities: Iterable[tuple[str, str]],
 ) -> dict[tuple[str, str], str]:
-    from . import resident_domain_common
     requested = list(dict.fromkeys(
         (
             str(anchor_resident_id or "").strip(),
@@ -342,7 +334,6 @@ def _is_direct_family_resident(
     record: dict[str, Any],
     candidate: dict[str, Any],
 ) -> bool:
-    from . import resident_domain_common
     candidate_id = resident_lineage.resident_id(candidate)
     source_id = str(candidate.get("source_resident_id") or "").strip()
     return bool(
@@ -389,7 +380,6 @@ def resident_runtime_defaults(record: dict) -> dict[str, Any]:
 
 
 def read_resident_runtime_settings(record: dict) -> dict[str, Any]:
-    from . import resident_domain_common
 
     settings = resident_catalog.get_catalog().state_store.read_resident_execution_settings(
         resident_domain_common.record_resident_id(record),
@@ -414,7 +404,6 @@ def read_resident_runtime_settings(record: dict) -> dict[str, Any]:
 
 
 def write_resident_runtime_settings(record: dict, settings: dict[str, Any]) -> dict[str, Any]:
-    from . import resident_domain_common
 
     persisted = stage_runtime_settings(record, settings)
     store = resident_catalog.get_catalog().state_store
@@ -438,7 +427,6 @@ def reconcile_resident_codex_runtime_configuration(
     record: dict[str, Any],
 ) -> dict[str, Any]:
     """Persist adapter-normalized settings using one account and CAS path."""
-    from . import resident_domain_common, resident_record_domain
     definition = AGENT_PROVIDERS.get(resident_backend.execution_backend(record))
     if not definition:
         return record

@@ -29,7 +29,7 @@ from management_portal.execution.contracts import ExecutionRequest, SessionOptio
 from management_portal.execution.session_manager import RuntimeSession
 from tests.cases import capability_contracts
 from tests.cases.test_resident_execution_protocol import resident_record  # noqa: F401 - fixture
-from management_portal.society_service import resident_record_domain
+from management_portal.society_service import resident_execution_engine_domain, resident_record_domain
 
 AGENT = "resident_subagent_trace"
 SINCE = "2026-10-07T00:00:00.000Z"
@@ -142,7 +142,7 @@ def test_the_card_is_an_artifact_of_the_trace_shown_in_the_chat(tmp_path: Path, 
     """
     from management_common.provider_subagent_runs import run_item
     from management_portal.execution import event_projection
-    from management_portal.society_service import resident_execution_domain, resident_execution_work
+    from management_portal.society_service import resident_execution_work
 
     from management_portal.society_service import resident_workspace_domain
     resident_record["backend"] = "claude"
@@ -168,7 +168,7 @@ def test_the_card_is_an_artifact_of_the_trace_shown_in_the_chat(tmp_path: Path, 
     outputs = event_projection.execution_outputs_from_events([{
         "type": "provider_event", "execution_id": request.execution_id, "sequence": 1, "details": event,
     }])
-    message, = resident_execution_domain._persist_execution_display_messages(
+    message, = resident_execution_engine_domain.persist_execution_display_messages(
         resident_id,  request.execution_id, outputs,
     )
     part, = message["content_parts"]

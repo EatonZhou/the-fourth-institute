@@ -58,8 +58,8 @@ from .resident_lifecycle_domain import (
     ready_resident_lifecycle_operations,
     resident_aggregate_lineage_id,
     resident_lifecycle_health,
-    resume_resident_lifecycle_operation,
 )
+from .resident_lifecycle_steps_domain import resume_resident_lifecycle_operation
 
 from .resident_record_domain import (
     sync_lineage_member_credentials,

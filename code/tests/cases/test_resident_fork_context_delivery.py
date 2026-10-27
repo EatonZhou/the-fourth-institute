@@ -14,6 +14,7 @@ from management_portal.society_service import (
     resident_conversation_stream,
     resident_domain,
     resident_domain_common,
+    resident_execution_engine_domain,
     resident_execution_work,
     resident_input_queue_domain,
 )
@@ -413,8 +414,8 @@ def test_database_fork_creation_remains_a_prerequisite_after_reload(
         )
         return result
 
-    monkeypatch.setattr(resident_execution_domain, 'bind_or_resume_resident_execution', admit)
-    monkeypatch.setattr(resident_execution_domain, 'wait_for_resident_execution', lambda *_args, **_kwargs: {
+    monkeypatch.setattr(resident_execution_engine_domain, 'bind_or_resume_resident_execution', admit)
+    monkeypatch.setattr(resident_execution_engine_domain, 'wait_for_resident_execution', lambda *_args, **_kwargs: {
         'status': 'completed', 'result': {'status': 'completed',
             'backend_session_id': '01a00000-0000-7000-8000-000000000777', 'backend_route_id': 'zero'},
     })

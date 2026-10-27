@@ -16,6 +16,7 @@ from management_portal.codex_app_server_client import CodexAppServerClient, _Tur
 from management_portal.execution.contracts import ExecutionRequest, ExecutionResult
 from management_portal.execution.scheduler import Scheduler, SchedulerClient
 from management_portal.society_service import (
+    resident_execution_engine_domain,
     resident_execution_work,
     resident_input_queue_domain,
     resident_protocol,
@@ -364,11 +365,11 @@ def test_send_now_receipt_from_peer_scheduler_updates_live_queue(
             reconciled.set()
         first_snapshot.set()
 
-    monkeypatch.setattr(resident_execution_domain, "_project_resident_execution_snapshot", observe_snapshot)
+    monkeypatch.setattr(resident_execution_engine_domain, "_project_resident_execution_snapshot", observe_snapshot)
 
     def wait_for_execution():
         try:
-            resident_execution_domain.wait_for_resident_execution(
+            resident_execution_engine_domain.wait_for_resident_execution(
                 service, execution_id=request.execution_id, actor="CASE-A",
                 resident_id=resident_id,  persist_messages=False,
             )

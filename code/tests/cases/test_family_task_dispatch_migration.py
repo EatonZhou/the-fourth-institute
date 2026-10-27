@@ -33,8 +33,13 @@ def test_dispatch_intent_migration_rolls_back_on_incomplete_schema(configured_fa
         connection.execute("UPDATE lineage_meta SET value=%s WHERE key='schema'", (OLD_SCHEMA,))
         connection.execute("CREATE TABLE unexpected_dispatch_test (id TEXT)")
     database.write(incompatible)
-    with pytest.raises(ValueError, match="current contract"):
+    try:
+        with pytest.raises(ValueError, match="current contract"):
+            database.write(upgrade)
+        with database.read() as connection:
+            assert connection.execute("SELECT value FROM lineage_meta WHERE key='schema'").fetchone()["value"] == OLD_SCHEMA
+            assert connection.execute("SELECT to_regclass('family_task_dispatches') AS present").fetchone()["present"] is None
+    finally:
+        # Later tests of the session share this database; give them the current schema back.
+        database.write(lambda connection: connection.execute("DROP TABLE IF EXISTS unexpected_dispatch_test"))
         database.write(upgrade)
-    with database.read() as connection:
-        assert connection.execute("SELECT value FROM lineage_meta WHERE key='schema'").fetchone()["value"] == OLD_SCHEMA
-        assert connection.execute("SELECT to_regclass('family_task_dispatches') AS present").fetchone()["present"] is None

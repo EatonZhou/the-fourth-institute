@@ -167,7 +167,6 @@ def actual_sent_prompt_candidates(items: list[dict[str, Any]]) -> list[dict[str,
 
 
 def _actual_sent_prompt_matches(item: dict[str, Any], candidate: dict[str, Any]) -> bool:
-    from . import resident_domain_common
     item_id = str(item.get("message_id") or "")
     candidate_id = str(candidate.get("user_message_id") or "")
     if item_id and candidate_id and item_id == candidate_id:
@@ -257,7 +256,6 @@ def resident_conversation_messages(
     limit: int = resident_domain_common.MAX_TIMELINE_ITEMS,
 ) -> list[dict[str, Any]]:
     """Read canonical Messages without deriving a second transcript shape."""
-    from . import resident_domain_common
 
     resident_id = resident_domain_common.record_resident_id(record)
     return resident_conversation_stream.get_repository().read_messages(

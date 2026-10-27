@@ -10,7 +10,7 @@ from management_portal.society_service import (
     resident_conversation_stream,
     resident_execution_work,
     resident_mailbox,
-    resident_input_recovery,
+    resident_input_checkpoints,
     resident_media_domain,
     resident_record_domain,
     resident_input_queue_domain,
@@ -38,7 +38,7 @@ def test_catalog_deletion_archives_turn_and_queues_ack_atomically(tmp_path, monk
      "submitted_at": "2026-10-14T00:00:00Z"})
     get_agent_data_store().finish_execution("execution-finished", status="failed", finished_at="2026-10-14T00:00:00Z")
     catalog = resident_catalog.ResidentCatalog(tmp_path, store)
-    monkeypatch.setattr(resident_record_domain, 'ensure_resident_agent', lambda *a, **kw: None)
+    monkeypatch.setattr(resident_catalog, 'ensure_resident_agent', lambda *a, **kw: None)
     monkeypatch.setattr(resident_mailbox, 'close', lambda *a: None)
     tombstone = {**record, 'deleted_at': '2026-10-11T00:00:00Z', 'deleted_by': 'CASE-A'}
     if fail_delete:
@@ -85,7 +85,7 @@ def test_image_cleanup_preserves_active_unknown_and_recent_rounds(tmp_path, monk
     for name in names:
         (tmp_path / 'input_media' / name).mkdir(parents=True)
     monkeypatch.setattr(resident_record_domain, 'sessions_path', lambda r: tmp_path)
-    monkeypatch.setattr(resident_input_recovery, 'checkpoints', lambda r: [{'message_id': names[0]}])
+    monkeypatch.setattr(resident_input_checkpoints, 'checkpoints', lambda r: [{'message_id': names[0]}])
     states = {names[0]: 'failed', names[1]: 'completed', names[2]: 'cancelled', names[3]: 'running'}
     def state(rid, mid):
         assert invariant_locks.lock_held()
@@ -125,7 +125,7 @@ def test_image_cleanup_keeps_group_members_after_round_item_is_trimmed(tmp_path,
     (tmp_path / 'input_media' / info_id).mkdir(parents=True)
     (tmp_path / 'input_media' / message_id).mkdir(parents=True)
     monkeypatch.setattr(resident_record_domain, 'sessions_path', lambda r: tmp_path)
-    monkeypatch.setattr(resident_input_recovery, 'checkpoints', lambda r: [{'message_id': 'group_1', 'kind': 'group', 'infos': [{'message_id': info_id}]}])
+    monkeypatch.setattr(resident_input_checkpoints, 'checkpoints', lambda r: [{'message_id': 'group_1', 'kind': 'group', 'infos': [{'message_id': info_id}]}])
     monkeypatch.setattr(resident_mailbox, 'members_of', lambda r, mid: [message_id])
     monkeypatch.setattr(resident_conversation_stream, 'get_repository', lambda: SimpleNamespace(
         input_state=lambda *a: {'state': 'completed'},

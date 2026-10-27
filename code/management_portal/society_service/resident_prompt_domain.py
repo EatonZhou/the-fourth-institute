@@ -7,7 +7,13 @@ from typing import Any
 import json
 from management_common.actor_identity import canonical_actor_id
 from management_portal import agent_context_selection
-from . import resident_backend, resident_input_scope, resident_record_domain
+from . import (
+    resident_backend,
+    resident_domain_common,
+    resident_input_scope,
+    resident_record_domain,
+    resident_runtime_domain,
+)
 
 MAX_RUNTIME_CONTEXT_CHARS = 120_000
 
@@ -51,7 +57,6 @@ def _runtime_context_block(job: dict[str, Any]) -> str:
 def _reply_hint_block(record: dict[str, Any], job: dict[str, Any]) -> str:
     """How to answer a message a Family facade sent out (decision_44cf587c1721); "" for any other message."""
     from .outward_messages import reply_hint
-    from . import resident_domain_common
     business_ref = job.get("business_ref") or (job.get("input_message") or {}).get("business_ref")
     hint = reply_hint(resident_domain_common.record_resident_id(record), str(job.get("actor") or ""), str(job.get("user_message_id") or ""),
                       str(business_ref or ""))
@@ -101,7 +106,6 @@ def build_resident_prompt(record: dict[str, Any], job: dict[str, Any]) -> str:
     content and always travel with it.
     """
     from management_portal import prompt_injection
-    from . import resident_domain_common, resident_record_domain, resident_runtime_domain
     if resident_input_scope.get(resident_domain_common.record_resident_id(record), str(job.get("user_message_id") or "")):
         return str(job.get("raw_message") or job.get("message") or "")
     choices = prompt_injection.resolve(resident_runtime_domain.read_resident_runtime_settings(record).get("prompt_injection"))

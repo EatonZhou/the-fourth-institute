@@ -8,7 +8,12 @@ from concurrent.futures import ThreadPoolExecutor
 import pytest
 
 from management_portal.execution.agent_data_store import get_agent_data_store
-from management_portal.society_service import lineage_domain, resident_backend, resident_domain, resident_lifecycle_domain
+from management_portal.society_service import (
+    lineage_domain,
+    resident_backend,
+    resident_domain,
+    resident_lifecycle_steps_domain,
+)
 from management_portal.society_service import resident_record_domain
 from tests.cases.isa_test_support import ok, run
 from tests.cases.test_hatg_move_resident import (  # noqa: F401 - teams is a fixture
@@ -31,7 +36,7 @@ def empty_source_request(teams):
 def finish_transfers():
     operations = resident_record_domain.lifecycle_operations()
     for operation_id in operations.ready():
-        assert operations.run(operation_id, resident_lifecycle_domain.apply_resident_lifecycle_step)
+        assert operations.run(operation_id, resident_lifecycle_steps_domain.apply_resident_lifecycle_step)
 
 
 def test_move_last_member_preserves_identity_and_leaves_an_explicitly_deletable_source(teams):
@@ -62,7 +67,7 @@ def test_move_last_member_preserves_identity_and_leaves_an_explicitly_deletable_
     assert replay.replayed and replay.result["operation_id"] == first.result["operation_id"]
     assert graph(source) == after
     operations = resident_record_domain.lifecycle_operations()
-    assert operations.run(first.result["operation_id"], resident_lifecycle_domain.apply_resident_lifecycle_step) == resident_id
+    assert operations.run(first.result["operation_id"], resident_lifecycle_steps_domain.apply_resident_lifecycle_step) == resident_id
     current = resident_record_domain.find_resident(resident_id)
     assert current["owned_workspace_id"] == original["owned_workspace_id"]
     assert resident_backend.record_session_id(current) == session_id
@@ -88,7 +93,7 @@ def test_lineage_delete_waits_for_outgoing_and_incoming_workspace_transfers(team
     assert early.status == "failed" and "pending workspace transfer" in early.error["message"]
     assert graph(lineage) == before
     # Finishing the last member's move must not hide an earlier member's outbox.
-    assert operations.run(first.result["operation_id"], resident_lifecycle_domain.apply_resident_lifecycle_step)
+    assert operations.run(first.result["operation_id"], resident_lifecycle_steps_domain.apply_resident_lifecycle_step)
     again = run("DeleteLineage", {"lineage_id": lineage["lineage_id"]}, key="earlier-transfer-still-pending")
     assert again.status == "failed" and "pending workspace transfer" in again.error["message"]
     finish_transfers()

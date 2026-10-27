@@ -1,7 +1,13 @@
 """Resident domain responsibilities: media."""
 from __future__ import annotations
 
-from . import resident_backend, resident_message_contract, workspace_contracts
+from . import (
+    resident_backend,
+    resident_domain_common,
+    resident_message_contract,
+    resident_record_domain,
+    workspace_contracts,
+)
 from .workspace_attachments import authorize_attachment_read
 from management_portal.execution.provider_catalog import AGENT_PROVIDERS
 from management_common.actor_identity import canonical_actor_id
@@ -71,8 +77,7 @@ def _cleanup_resident_input_images(runtime_dir: Path, message_id: str) -> None:
 
 def cleanup_expired_input_images(record: dict[str, Any], *, dry_run: bool = False) -> list[str]:
     """Remove terminal input copies after they leave the requeue window."""
-    from . import resident_conversation_stream, resident_mailbox, resident_input_recovery
-    from . import resident_record_domain
+    from . import resident_conversation_stream, resident_input_checkpoints, resident_mailbox
 
     # Requeue uses this same lock: retry checkpoints and terminal states stay valid
     # until their staged copies have been removed.
@@ -82,7 +87,7 @@ def cleanup_expired_input_images(record: dict[str, Any], *, dry_run: bool = Fals
         if not root.is_dir() or root.is_symlink():
             return []
         retained: set[str] = set()
-        for entry in resident_input_recovery.checkpoints(record):
+        for entry in resident_input_checkpoints.checkpoints(record):
             retained.add(str(entry.get("message_id") or ""))
             retained.update(str(info.get("message_id") or "") for info in entry.get("infos") or [])
             if entry.get("kind") == "group":
@@ -101,7 +106,7 @@ def cleanup_expired_input_images(record: dict[str, Any], *, dry_run: bool = Fals
                 state = repository.input_state(record["resident_id"], message_id)
             except KeyError:
                 continue
-            if state.get("state") not in resident_input_recovery.FINISHED_STATES:
+            if state.get("state") not in resident_input_checkpoints.FINISHED_STATES:
                 continue
             if not dry_run:
                 _cleanup_resident_input_images(runtime_dir, message_id)
@@ -149,7 +154,6 @@ def resident_input_media(
     workspace_roots: Iterable[Path] = (),
 ) -> list[dict[str, str]]:
     """Validate local attachments before projecting files or native images."""
-    from . import resident_domain_common
 
     actor_id = canonical_actor_id(actor)
     explicit = selection is not None

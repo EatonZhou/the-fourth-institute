@@ -18,6 +18,7 @@ from . import (
     resident_domain_common,
     resident_execution_provider,
     resident_execution_work,
+    resident_lifecycle_domain,
     resident_message_contract,
     resident_prompt_domain,
     resident_record_domain,
@@ -126,7 +127,6 @@ def build_message(
     provider_response: Mapping[str, Any] | None = None,
     execution_id: str = "",
 ) -> dict[str, Any]:
-    from . import resident_domain_common
     if role not in {"user", "agent", "system"}:
         raise ValueError("Resident Message role must be user, agent, or system")
     identity = resident_message_contract.message_identity(message_id)
@@ -220,7 +220,6 @@ def persist_failed_execution_message(
     *,
     failed_at: str = "",
 ) -> dict[str, Any]:
-    from . import resident_domain_common, resident_lifecycle_domain, resident_record_domain
     message_id = resident_execution_work.failed_message_id(job, failed_at=failed_at)
     repository = resident_conversation_stream.get_repository()
     existing = repository.message(resident_id, message_id)
@@ -329,7 +328,6 @@ def _submit_active_turn_input(
     expected_execution_id: str,
 ) -> dict[str, Any]:
     """Submit one idempotent control to the Resident's exact active execution."""
-    from . import resident_domain_common, resident_record_domain
 
     resident_id = resident_domain_common.record_resident_id(record)
     with resident_record_domain.state_lock(resident_id):
@@ -423,7 +421,6 @@ def submit_active_turn_settings(
     source: str,
 ) -> dict[str, Any]:
     """Publish a Provider-native speed update to the exact active turn."""
-    from . import resident_domain_common, resident_record_domain
 
 
     resident_id = resident_domain_common.record_resident_id(record)
@@ -498,7 +495,6 @@ def commit_resident_intake_state(
     record: dict[str, Any], next_state: str, *,
     commit_configuration: bool = False,
 ) -> dict[str, Any]:
-    from . import resident_domain_common, resident_record_domain
     now = resident_domain_common.now_iso()
     target_id = resident_domain_common.record_resident_id(record)
     repository = resident_conversation_stream.get_repository()
@@ -528,7 +524,6 @@ def resident_execution_stopped_event(
     queue_continues: bool = False,
     backend_label: str = "Codex",
 ) -> dict[str, Any]:
-    from . import resident_domain_common
     content = (
         f"{actor} 已停止当前 {backend_label} 运行。"
         if actor else f"当前 {backend_label} 运行已取消。"
@@ -560,7 +555,6 @@ def resident_execution_stopped_event(
 
 def _running_turn_prompt(record: Mapping[str, Any], item: Mapping[str, Any]) -> dict[str, Any]:
     """An active turn already has context; inject only the new input."""
-    from . import resident_prompt_domain
     prompt_job = dict(item)
     prompt_job["message"] = str(item.get("effective_message") or item.get("raw_message") or item.get("message") or "")
     prompt = resident_prompt_domain.build_resident_prompt(dict(record), prompt_job)
@@ -599,7 +593,6 @@ def inject_queued_input_into_active_turn(
     ``delivered`` is a delivery injecting the input it has just queued: the
     sender needs only to be able to deliver to the Resident, not to read it.
     """
-    from . import resident_domain_common, resident_record_domain
     actor_id = canonical_actor_id(actor)
     message_id = str(queue_item_id or "").strip()
     if not actor_id:
@@ -618,8 +611,8 @@ def inject_queued_input_into_active_turn(
         existing = next((item for item in resident_execution_work.send_now_inputs(job)
                          if queue_item_matches(item, message_id)), None)
         if existing:
-            from .resident_delivery_work import wake
-            invariant_locks.defer_until_state_unlock(lambda: wake(resident_id))
+            from .lifecycle import wake_execution_binding
+            invariant_locks.defer_until_state_unlock(lambda: wake_execution_binding(resident_id))
             return accepted_delivery(resident_id, message_id, injected=False,
                                       already_injected=True, delivery_status="pending")
         held = resident_execution_work.is_execution_held(job)
@@ -679,7 +672,6 @@ def reconcile_queued_turn_inputs(
     Receipt RPCs are unlocked; commits revalidate the exact job and execution.
     An unavailable receipt must never be guessed to mean failed delivery.
     """
-    from . import resident_domain_common, resident_record_domain
     # Every Execution snapshot asks this; nearly all find nothing pending.
     # Read the committed control unlocked; each commit below revalidates.
     job = dict(resident_execution_work.read_control(resident_id).get("state") or {})
@@ -784,7 +776,6 @@ def reconcile_queued_turn_inputs(
 def withdraw_waiting_inputs(record, job, message_ids, now):
     """Under the Resident lock, end queued inputs and their groups atomically."""
     from . import resident_catalog, resident_mailbox
-    from . import resident_record_domain
 
     ids = set(message_ids)
     queue = resident_execution_work.normalized_queue(job)
