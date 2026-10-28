@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Any
 ROLES = ("member", "facade", "router", "steward")
 COLUMNS = {
-    "families": ("family_id", "lineage_id", "title", "goal", "previous_leader_id", "deleted_at", "human_familizer_id", "route_threshold", "review_interval_seconds", "lineage_scope", "resource_id", "created_at", "updated_at", "personal_ama_id", "history_before", "history_before_ordinal"),
+    "families": ("family_id", "lineage_id", "title", "goal", "previous_leader_id", "deleted_at", "human_familizer_id", "route_threshold", "review_interval_seconds", "lineage_scope", "resource_id", "created_at", "updated_at", "personal_ama_id", "history_before", "history_before_ordinal", "auto_migrate"),
     "family_residents": ("family_id", "resident_id", "role"),
 }
 RECOVERY_INDEXES = {"family_steward_recovery_idx": "ON family_residents(resident_id,family_id) WHERE role='steward'"}
@@ -29,7 +29,8 @@ def create_schema(connection: Any) -> None:
         created_at TIMESTAMPTZ NOT NULL, updated_at TIMESTAMPTZ NOT NULL,
         personal_ama_id TEXT NOT NULL DEFAULT '',
         history_before TEXT NOT NULL DEFAULT '',
-        history_before_ordinal BIGINT NOT NULL DEFAULT 0)
+        history_before_ordinal BIGINT NOT NULL DEFAULT 0,
+        auto_migrate BOOLEAN NOT NULL DEFAULT TRUE)
     """)
     connection.execute("CREATE INDEX families_lineage_idx ON families(lineage_id) WHERE deleted_at IS NULL")
     connection.execute("CREATE UNIQUE INDEX family_lineage_scope ON families(lineage_id) WHERE lineage_scope AND deleted_at IS NULL")
@@ -75,9 +76,9 @@ def store_program(connection: Any, lineage_id: str, definition: dict, now: str) 
             (family_id,lineage_id,family["title"],family.get("goal", ""),family.get("previous_leader_id", ""),
              family.get("human_familizer_id", ""),family.get("route_threshold", 60),family.get("review_interval_seconds", 86400),
              family.get("lineage_scope", False),resource_id,block.get("created_at") or now,now))
-        connection.execute("""UPDATE families SET personal_ama_id=%s,history_before=%s,history_before_ordinal=%s
+        connection.execute("""UPDATE families SET personal_ama_id=%s,history_before=%s,history_before_ordinal=%s,auto_migrate=%s
             WHERE family_id=%s""", (family.get("personal_ama_id", ""), family.get("history_before", ""),
-                                     family.get("history_before_ordinal", 0), family_id))
+                                     family.get("history_before_ordinal", 0), family.get("auto_migrate", True), family_id))
         roster = [(rid, "member") for rid in family.get("members", [])]
         roster.extend((family[role], role) for role in ROLES[1:] if family.get(role))
         resident_ids = [rid for rid, _ in roster]
@@ -249,3 +250,15 @@ def families_around(connection: Any, resident_id: str, *, max_hops: int = 4) -> 
         seen.add(row['family_id'])
         current = row['facade_id']
     return chain
+
+
+def auto_migration_enabled(record: dict) -> bool:
+    """The immediate Family owns its migration policy; ordinary Residents have none."""
+    family = record.get("family") or {}
+    if family.get("role") not in {"member", "router", "steward"} or record.get("deleted_at"):
+        return False
+    from .state_store import get_lineage_data_store
+    with get_lineage_data_store().database.read() as connection:
+        row = connection.execute("SELECT auto_migrate FROM families WHERE family_id=%s AND deleted_at IS NULL",
+                                 (family["family_id"],)).fetchone()
+    return bool(row and row["auto_migrate"])

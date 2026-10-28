@@ -10,7 +10,7 @@ from typing import Any, Mapping
 
 from management_portal.execution.provider_catalog import AGENT_PROVIDERS
 
-WEEKLY_RESERVE_PERCENT = 10.0
+MIGRATION_RESERVE_PERCENT = 10.0
 
 
 def _percent(value: Any) -> bool:
@@ -53,14 +53,14 @@ def account_available(account: Mapping[str, Any]) -> bool:
     )
 
 
-def sufficient_weekly_reserve(account: Mapping[str, Any]) -> bool:
+def sufficient_reserve(account: Mapping[str, Any]) -> bool:
     if not account_available(account):
         return False
-    weekly = weekly_remaining(account)
-    if weekly is not None:
+    remaining = reserve_remaining(account)
+    if remaining is not None:
         windows = (account.get("quota_reserve") or {}).get("windows") or []
-        return weekly > WEEKLY_RESERVE_PERCENT and all(
-            _percent(w.get("remaining_percent")) and w["remaining_percent"] > WEEKLY_RESERVE_PERCENT for w in windows)
+        return remaining > MIGRATION_RESERVE_PERCENT and all(
+            _percent(w.get("remaining_percent")) and w["remaining_percent"] > MIGRATION_RESERVE_PERCENT for w in windows)
     # Metered Agent accounts have no weekly quota. An unknown subscription
     # window must not masquerade as an unlimited metered account.
     quota = account.get("quota_reserve") or {}
@@ -69,13 +69,13 @@ def sufficient_weekly_reserve(account: Mapping[str, Any]) -> bool:
 
 
 def fallback_account(accounts: list[dict[str, Any]], provider: str, route: str,
-                     tried: list[str], *, weekly_reserve: bool = False) -> dict[str, Any]:
-    eligible = sufficient_weekly_reserve if weekly_reserve else account_available
+                     tried: list[str], *, reserve: bool = False) -> dict[str, Any]:
+    eligible = sufficient_reserve if reserve else account_available
     candidates = [a for a in accounts if eligible(a)
                   and (a.get("provider"), str(a.get("backend_route_id") or "")) != (provider, route)
                   and str(a.get("account_id") or "") not in tried]
     candidates.sort(key=lambda a: (a["provider"] != provider, a["provider"] != "codex",
-                                   -(weekly_remaining(a) or 0), str(a.get("account_id") or "")))
+                                   -(reserve_remaining(a) or 0), str(a.get("account_id") or "")))
     return candidates[0] if candidates else {}
 
 
@@ -99,3 +99,14 @@ def resident_account(record: Mapping[str, Any], accounts: list[dict[str, Any]]) 
         route = str(configured.get("backend_route_id") or "")
     return next((a for a in accounts if a.get("provider") == provider
                  and str(a.get("backend_route_id") or "") == route), {})
+
+
+def migration_target_options(account: Mapping[str, Any], source_provider: str) -> dict[str, Any]:
+    """Use the target's configured model when crossing Providers, never the old model."""
+    provider = str(account["provider"])
+    route = str(account.get("backend_route_id") or "")
+    options = {"target_provider": provider, "target_account": route, "context_strategy": "compact"}
+    if provider != source_provider:
+        model, _ = AGENT_PROVIDERS[provider].validate_settings(route, "")
+        options.update(model=model, reasoning_effort="")
+    return options

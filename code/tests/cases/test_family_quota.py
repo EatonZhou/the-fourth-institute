@@ -58,14 +58,14 @@ def test_reserve_targets_require_weekly_above_ten_or_a_funded_metered_agent():
     """
     candidates = [_account("one", 9), _account("two", 10), _account("three", 50, fresh=False),
                   _account("four", 45), _account("claude_one", 80, provider="claude")]
-    assert accounts_policy.fallback_account(candidates, "codex", "one", [], weekly_reserve=True)["backend_route_id"] == "four"
-    assert accounts_policy.fallback_account(candidates, "codex", "one", ["codex_four"], weekly_reserve=True)["provider"] == "claude"
+    assert accounts_policy.fallback_account(candidates, "codex", "one", [], reserve=True)["backend_route_id"] == "four"
+    assert accounts_policy.fallback_account(candidates, "codex", "one", ["codex_four"], reserve=True)["provider"] == "claude"
     metered = {"provider": "claude", "account_id": "deepseek_primary", "backend_route_id": "deepseek_primary",
                "quota_reserve": {"status": "available", "fresh": True, "remaining": 15,
                                  "remaining_balance": 15, "currency": "CNY"}}
-    assert accounts_policy.sufficient_weekly_reserve(metered)
+    assert accounts_policy.sufficient_reserve(metered)
     metered["quota_reserve"].pop("currency")
-    assert not accounts_policy.sufficient_weekly_reserve(metered)
+    assert not accounts_policy.sufficient_reserve(metered)
 
 
 @pytest.fixture
@@ -153,8 +153,8 @@ def test_low_weekly_request_waits_for_the_steward_then_relays_original_content_o
     assert len(resident_execution_work.normalized_queue(resident_execution_work.read(_record(f.member)))) == 0
 
 
-@pytest.mark.parametrize("weekly,short", [(10, 90), (70, 1)])
-def test_member_at_ten_percent_or_low_short_window_does_not_require_weekly_review(quota_family, weekly, short):
+@pytest.mark.parametrize("weekly,short", [(10, 90), (70, 11)])
+def test_member_with_available_windows_does_not_require_review(quota_family, weekly, short):
     """Family 周额度预防与监督
 
     :design: decision_44cf587c1721

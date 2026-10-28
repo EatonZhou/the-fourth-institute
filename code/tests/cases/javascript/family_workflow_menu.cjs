@@ -42,11 +42,12 @@ const {chromium} = require(path.join(code, 'management_portal/test_framework/tau
           if (hold) await new Promise(r => {window.release = r;});
           if (failNext) {failNext = false; throw Error('fixture rejected');}
           assertLocal(state.lineage.lineage_id === 'lineage_fixture');
-          for (const id of args.add_element_ids) {
+          for (const id of (args.add_element_ids || [])) {
             for (const b of state.lineage.function_blocks) b.elements = b.elements.filter(e => e.id !== id);
             family.elements.push({id, kind: id.startsWith('wire_') ? 'wire' : 'component', key: 'workflow:' + id});
           }
-          family.elements = family.elements.filter(e => !args.remove_element_ids.includes(e.id));
+          family.elements = family.elements.filter(e => !(args.remove_element_ids || []).includes(e.id));
+          if (typeof args.auto_migrate === "boolean") family.family.auto_migrate = args.auto_migrate;
           state.lineage.revision++;
           return {lineage: state.lineage};
         }});
@@ -128,6 +129,30 @@ const {chromium} = require(path.join(code, 'management_portal/test_framework/tau
       await p.evaluate(() => {state.programMutationInFlight = false; PortalI18n.apply('zh-CN'); menu.refreshFunctionBlockMenu();});
       await p.getByText('管理工作流', {exact:true}).waitFor();
       assert.equal(await form().getByRole('button', {name:'保存归属',exact:true}).count(), 1);
+      // Family automatic account migration defaults on; failures keep the server value.
+      await p.evaluate(() => menu.openFunctionBlockMenu('fbi_target', 'block'));
+      const toggle = () => p.locator('[data-family-auto-migrate]');
+      assert.equal(await toggle().getAttribute('aria-checked'), 'true');
+      await p.evaluate(() => {failNext = true;}); await toggle().click();
+      await p.waitForFunction(() => calls.length === 5 && !document.querySelector('[data-family-auto-migrate]').disabled);
+      assert.equal(await toggle().getAttribute('aria-checked'), 'true');
+      await p.evaluate(() => {hold = true;}); await toggle().click();
+      await p.waitForFunction(() => calls.length === 6);
+      assert.equal(await toggle().isDisabled(), true);
+      await toggle().dispatchEvent('click');
+      assert.equal(await p.evaluate(() => calls.length), 6);
+      await p.evaluate(() => {hold = false; release();});
+      await p.waitForFunction(() => document.querySelector('[data-family-auto-migrate]').getAttribute('aria-checked') === 'false');
+      const policyRequest = await p.evaluate(() => calls[5]);
+      assert.deepEqual(policyRequest.args, {family_id:'fbi_target', auto_migrate:false});
+      assert.equal(policyRequest.options.expectedVersion, 5);
+      await p.evaluate(() => {state.programMutationInFlight = true; menu.refreshFunctionBlockMenu();});
+      assert.equal(await toggle().isDisabled(), true);
+      await p.evaluate(() => {state.programMutationInFlight = false; menu.refreshFunctionBlockMenu();});
+      await toggle().click();
+      await p.waitForFunction(() => document.querySelector('[data-family-auto-migrate]').getAttribute('aria-checked') === 'true');
+      if (process.env.TAU_FAMILY_WORKFLOW_ARTIFACTS) await p.screenshot({path: path.join(process.env.TAU_FAMILY_WORKFLOW_ARTIFACTS, 'family-auto-migrate.png')});
+      await p.evaluate(() => menu.openFunctionBlockMenu('fbi_target', 'objects'));
       // Ordinary blocks get no Family ownership controls.
       await p.evaluate(() => {delete state.lineage.function_blocks[0].family; menu.refreshFunctionBlockMenu();});
       assert.equal(await form().count(), 0);
@@ -138,7 +163,7 @@ const {chromium} = require(path.join(code, 'management_portal/test_framework/tau
       await p.evaluate(() => {state.lineage.lineage_id = 'another_lineage';});
       await form().dispatchEvent('submit');
       await p.getByText('Lineage 已变化，请重新选择工作流。', {exact:true}).waitFor();
-      assert.equal(await p.evaluate(() => calls.length), 4);
+      assert.equal(await p.evaluate(() => calls.length), 7);
       console.log(JSON.stringify({status:'passed',native:'PortalResidentMenu/Overlay/DetailSurface/HATG menu/i18n/CSS',instruction_boundary:'isolated UpdateFamily fixture',formal_acceptance:false}));
     }
     assert.deepEqual(errors, []); assert.deepEqual(requests, []);

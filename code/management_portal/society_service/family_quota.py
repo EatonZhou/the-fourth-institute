@@ -1,10 +1,10 @@
-"""Family admission reviews and independent operating-role availability.
+"""Family admission reviews and automatic account availability.
 
 The facade retains a request until its steward explicitly releases it in two
-cases: the chosen member's weekly quota is low, or the Router found that no
+cases: the chosen member's limiting quota is low, or the Router found that no
 member's duties cover it - then the steward decides whether a new
 member takes it. Platform supervision restores Router/Steward intake and
-migrates their accounts before admitting the next turn.
+migrates Family executors' accounts before admitting the next turn.
 """
 from __future__ import annotations
 
@@ -12,10 +12,10 @@ import logging
 import time
 from typing import Any
 
-from . import family_facade, resident_execution_work, resident_message_contract
+from . import family_facade, family_storage, resident_execution_work, resident_message_contract
 from .domain_ports import execution_port
 from .resident_account_policy import (
-    WEEKLY_RESERVE_PERCENT, fallback_account, resident_account, weekly_remaining, sufficient_weekly_reserve,
+    MIGRATION_RESERVE_PERCENT, fallback_account, resident_account, sufficient_reserve, migration_target_options,
     reserve_remaining,
 )
 from .state_store import get_lineage_data_store
@@ -198,11 +198,11 @@ def _relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
         if not review:
             account = resident_account(resident_record_domain.find_resident(member_id) or {}, accounts)
             # The steward keeps its own reserve (ensure_role_reserve) and does not review itself.
-            remaining = None if to_steward or to_facade else weekly_remaining(account)
+            remaining = None if to_steward or to_facade else reserve_remaining(account)
             review = {"member_id": member_id, "account_id": account.get("account_id", ""),
-                      "weekly_remaining_percent": remaining, "created_at": family_facade._now()}
+                      "quota_remaining_percent": remaining, "created_at": family_facade._now()}
             entries[message_id] = review
-            if remaining is not None and remaining < WEEKLY_RESERVE_PERCENT:
+            if remaining is not None and remaining < MIGRATION_RESERVE_PERCENT:
                 review["status"] = "waiting"
         if to_facade and review.get("status") == "waiting":
             # Retire an earlier review of a facade's unused account, retaining
@@ -219,7 +219,7 @@ def _relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
                     facade_id=facade_id, steward_id=steward_id, initiated_by=actor,
                     content="", task_trigger="quota", task_facts={"facade": facade_id,
                         "message_id": message_id, "member_id": member_id, "account_id": review["account_id"],
-                        "weekly_remaining_percent": review["weekly_remaining_percent"]},
+                        "quota_remaining_percent": review.get("quota_remaining_percent")},
                     message_id=review_id, business_ref=f"{facade_id}/quota-review/{message_id}",
                 ))
             return {"status": "waiting_for_quota_review", "resident_id": facade_id,
@@ -294,13 +294,28 @@ def _restore_role_intake(record: dict[str, Any]) -> dict[str, Any] | None:
     return record
 
 
+def _reserve_candidate(record: dict[str, Any]) -> dict[str, Any] | None:
+    """All Family executors share admission; only internal roles auto-open intake."""
+    from . import resident_record_domain
+    from .resident_work_recovery import _intake_allows_recovery
+    if family_facade.is_operating_role(record):
+        return _restore_role_intake(record)
+    family = record.get("family") or {}
+    if family.get("role") != "member" or record.get("deleted_at") or not _intake_allows_recovery(record):
+        return None
+    with get_lineage_data_store().database.read() as connection:
+        facades = family_storage.roles_of(connection, family["family_id"])["facade"]
+    facade = resident_record_domain.find_resident(facades[0]) if facades else None
+    return record if facade and not facade.get("deleted_at") and _intake_allows_recovery(facade) else None
+
+
 def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] | None = None) -> bool:
     """Return whether the next turn must wait for a safe account migration."""
     from . import resident_record_domain, resident_restart_domain
     from .resident_work_recovery import _intake_allows_recovery
 
-    record = _restore_role_intake(record)
-    if not record:
+    record = _reserve_candidate(record)
+    if not record or not family_storage.auto_migration_enabled(record):
         return False
     resident_id = record["resident_id"]
     if resident_record_domain.lifecycle_operations().pending(resident_id):
@@ -330,8 +345,8 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
         with get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as state:
             state.pop("account_wait", None)
     remaining = reserve_remaining(account)
-    if (remaining is not None and remaining > WEEKLY_RESERVE_PERCENT
-            or remaining is None and sufficient_weekly_reserve(account)):
+    if (remaining is not None and remaining > MIGRATION_RESERVE_PERCENT
+            or remaining is None and sufficient_reserve(account)):
         if role_migration(record):
             with get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as healthy:
                 healthy.clear()
@@ -343,7 +358,7 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
     with resident_record_domain.state_lock(resident_id), get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as migration:
         current = resident_record_domain.find_resident(resident_id)
         if (not current or current["lineage_id"] != record["lineage_id"]
-                or not _intake_allows_recovery(current)):
+                or not _intake_allows_recovery(current) or not family_storage.auto_migration_enabled(current)):
             return False
         current_job = resident_execution_work.read(current)
         if (resident_account(current, accounts).get("account_id") != account.get("account_id")
@@ -361,15 +376,14 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
         payload = migration.get("pending_restart")
         if not payload and int(migration["attempts"]) < MAX_MIGRATIONS:
             target = fallback_account(accounts, str(account["provider"]), str(account.get("backend_route_id") or ""),
-                                      migration["tried_accounts"], weekly_reserve=True)
+                                      migration["tried_accounts"], reserve=True)
             if target:
                 migration["attempts"] += 1
                 migration["tried_accounts"].append(target["account_id"])
                 from .resident_work_recovery import latest_failed_input, recovery_entry
                 failed_id = str(latest_failed_input(current).get("message_id") or "")
-                resume_failed = not bool(recovery_entry(current, failed_id).get("disabled"))
-                payload = {"target_provider": target["provider"], "target_account": target.get("backend_route_id") or "",
-                           "context_strategy": "compact", "active_execution_policy": "wait", "resume_failed_input": resume_failed,
+                resume_failed = not resident_execution_work.is_active(current_job) and not bool(recovery_entry(current, failed_id).get("disabled"))
+                payload = {**migration_target_options(target, str(account["provider"])), "active_execution_policy": "wait", "resume_failed_input": resume_failed,
                            "idempotency_key": f"steward-reserve:{resident_id}:{epoch}:{migration['attempts']}"}
                 migration["pending_restart"] = payload
                 migration.update(status="migrating", reason="正在保留上下文并切换可用后端")
@@ -444,7 +458,10 @@ def reconcile_role_reserves(residents: list[dict[str, Any]] | None = None) -> in
     if residents is None:
         residents = resident_execution_work.pending_records()
     roles = []
-    for record in restore_role_intakes(residents):
+    for snapshot in residents:
+        record = _reserve_candidate(snapshot)
+        if not record or not family_storage.auto_migration_enabled(record):
+            continue
         job = resident_execution_work.read(record)
         if (resident_execution_work.is_active(job)
                 and resident_execution_work.can_preserve_for_session_restart(job)

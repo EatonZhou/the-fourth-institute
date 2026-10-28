@@ -377,10 +377,28 @@
   function remember(entry) {
     const key = recentKey(entry);
     if (!key || !entry?.resident_id) return false;
-    const normalized = { ...(entry || {}), key, t: Date.now() };
+    const previous = state.recent.find(item => recentKey(item) === key);
+    const normalized = { ...previous, ...entry, key, t: Date.now(),
+      title: String(entry.title || previous?.title || "").trim(),
+      lineage_id: String(entry.lineage_id || previous?.lineage_id || "").trim(),
+    };
     state.recent = [normalized, ...state.recent.filter(item => recentKey(item) !== key)].slice(0, RECENT_LIMIT);
     persistRecent();
     emit("recent");
+    return true;
+  }
+
+  // Repair display metadata without recording another command or restoring a
+  // shortcut the user has dismissed while its metadata request was in flight.
+  function updateRecentResident(resident) {
+    const item = state.recent.find(item => item.resident_id === resident?.resident_id);
+    if (!item) return false;
+    const title = String(resident.title || item.title || "").trim();
+    const lineageId = String(resident.lineage_id || item.lineage_id || "").trim();
+    if (title === item.title && lineageId === item.lineage_id) return false;
+    Object.assign(item, { title, lineage_id: lineageId });
+    persistRecent();
+    emit("recent-metadata");
     return true;
   }
 
@@ -1269,6 +1287,7 @@
     observeResidentRead,
     clear,
     remember,
+    updateRecentResident,
     dismissRecent,
     clearRecent,
     restoreRecent: restoreRecentEntries,

@@ -16,7 +16,7 @@ DECLARATIONS = (
         P("scope", "string", "selection（默认）或 lineage；后者覆盖整条 Lineage，可从空 Lineage 建立，后来新建的成员自动加入", enum=("selection", "lineage")),
         P("title", description="省略时：选区 Family 用随机一个成员的名称加 -family，整条 Lineage 的 Family 用 Lineage 标题；门面使用同一名称"),
         P("goal", description="Family 的共同目标，写入 steward 章程；省略时为空"),
-        P("parameters", "object", "route_threshold、review_interval_seconds"),
+        P("parameters", "object", "route_threshold、review_interval_seconds、auto_migrate（默认 true）"),
         P("resident_settings", "object", "新建角色的起始设置：{router|steward: {provider, account, settings}}"), *PLACEMENT,
     ), (R("family_id", description="Family 的 Function Block 键 fbi_…"), R("resource_id", description="Family 正式资源 ID：family_<12hex>；family_id 保留 Function Block 的 fbi_ 键"),
         R("facade_resident_id", description="Family 门面"), R("steward_resident_id", description="Family steward"),
@@ -52,6 +52,7 @@ DECLARATIONS = (
         P("title", description="新名称，门面同步改名；省略时不变"), P("goal", description="新的共同目标；省略时不变"),
         P("route_threshold", "integer", "Router 置信度低于此值时请 steward 复核；省略时不变", minimum=0, maximum=100),
         P("review_interval_seconds", "integer", "steward 周期回顾的间隔秒数；省略时不变", minimum=1),
+        P("auto_migrate", "boolean", "额度不足时自动切换 Family 成员、Router 和 Steward 的账号；默认开启，关闭不绕过额度保护；省略时不变"),
     ), (R("family_id", description="被更新的 Family 的 Function Block 键"), R("resource_id", description="Family 正式资源 ID family_…"),
         R("function_block", "object", "更新后的 Function Block：id、title、elements，以及 family（成员名册、goal、路由参数）"))),
 )

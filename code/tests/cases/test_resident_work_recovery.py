@@ -146,7 +146,8 @@ def _account(provider, route, remaining, **quota):
                               "windows": [{"window": "seven_day", "remaining_percent": remaining}], **quota}}
 
 
-def test_steward_quota_failure_migrates_without_calling_its_model(team, monkeypatch):
+@pytest.mark.parametrize("role,enabled", [("steward", True), ("member", True), ("steward", False), ("member", False)])
+def test_steward_quota_failure_migrates_without_calling_its_model(team, monkeypatch, role, enabled):
     """steward 额度耗尽时直接重启到有额度的账号并续跑失败输入，不调用其模型
 
     :design: decision_44cf587c1721, decision_c47a13e8b962
@@ -156,7 +157,13 @@ def test_steward_quota_failure_migrates_without_calling_its_model(team, monkeypa
     record = _record(resident_id)
     record["backend_route_id"] = "one"
     resident_record_domain.save_resident_record(record)
-    monkeypatch.setattr(family_facade, "is_operating_role", lambda r: r.get("resident_id") == resident_id)
+    from tests.cases.family_test_support import set_role
+    set_role(team.source["resident_id"], family_id="fbi_recovery", actor=ACTOR)
+    set_role(resident_id, family_id="fbi_recovery", role=role, actor=ACTOR)
+    from management_portal.society_service.state_store import get_lineage_data_store
+    get_lineage_data_store().database.write(lambda c: c.execute("UPDATE families SET auto_migrate=%s WHERE family_id='fbi_recovery'", (enabled,)))
+    from management_portal.society_service import resident_input_queue_domain
+    resident_input_queue_domain.commit_resident_intake_state(_record(team.source["resident_id"]), "open")
     accounts = [_account("codex", "one", 0), _account("claude", "claude_one", 90), _account("codex", "two", 80)]
     monkeypatch.setattr(execution_port, "service", lambda: SimpleNamespace(accounts=lambda: {"accounts": accounts}))
     calls = []
@@ -164,7 +171,11 @@ def test_steward_quota_failure_migrates_without_calling_its_model(team, monkeypa
         calls.append((target, actor, payload, kwargs))
         return {"status": "accepted"}
     monkeypatch.setattr(resident_restart_domain, "restart_resident_session", restart)
-    assert recovery.reconcile_failed_work([_record(resident_id)]) == 1
+    assert recovery.reconcile_failed_work([_record(resident_id)]) == int(enabled)
+    if not enabled:
+        assert calls == []
+        assert recovery.latest_failed_input(_record(resident_id))["message_id"] == message_id
+        return
     target, actor, payload, kwargs = calls[0]
     assert target == actor == resident_id
     assert payload["target_provider"] == "codex" and payload["target_account"] == "two"
@@ -303,7 +314,7 @@ def test_configuration_only_restart_preserves_recovery_origin(monkeypatch, autom
     calls = []
     monkeypatch.setattr(recovery, "resume_after_restart", lambda current, state: calls.append(dict(state)))
     state = resident_restart_domain.restart_resident_session(record["resident_id"], "alice", {
-        "target_provider": "claude", "context_strategy": "fresh", "resume_failed_input": True,
+        "target_provider": "claude", "model": "deepseek-v4-pro", "context_strategy": "fresh", "resume_failed_input": True,
     }, portal_reason="steward_quota_recovery" if automatic else "")
     assert state["configuration_only"] and not operations
     assert len(calls) == 1 and calls[0]["resume_message_id"] == "msg_original"
@@ -320,7 +331,7 @@ def test_failed_session_initialization_preserves_input_and_original_provider(mon
     monkeypatch.setattr(recovery, "latest_failed_input", lambda _: {"message_id": "msg_original"})
     monkeypatch.setattr(recovery, "resume_after_restart", lambda *_: pytest.fail("failed migration must not requeue"))
     resident_restart_domain.restart_resident_session(record["resident_id"], "alice", {
-        "target_provider": "claude", "context_strategy": "compact",
+        "target_provider": "claude", "model": "deepseek-v4-pro", "context_strategy": "compact",
     })
     monkeypatch.setattr(execution_port, "service", lambda: SimpleNamespace(
         resume=lambda *args, **kwargs: {"status": "failed", "result": {"status": "failed", "error": "network outage"}},
@@ -336,7 +347,11 @@ def test_steward_migration_intent_survives_interruption_without_new_request(team
     :design-point:
     """
     resident_id, message_id = _failed(team, monkeypatch, "You've hit your weekly limit")
-    monkeypatch.setattr(family_facade, "is_operating_role", lambda r: r.get("resident_id") == resident_id)
+    from tests.cases.family_test_support import set_role
+    set_role(team.source["resident_id"], family_id="fbi_recovery", actor=ACTOR)
+    set_role(resident_id, family_id="fbi_recovery", role="steward", actor=ACTOR)
+    from management_portal.society_service import resident_input_queue_domain
+    resident_input_queue_domain.commit_resident_intake_state(_record(team.source["resident_id"]), "open")
     accounts = [_account("codex", "one", 0), _account("codex", "two", 80)]
     monkeypatch.setattr(execution_port, "service", lambda: SimpleNamespace(accounts=lambda: {"accounts": accounts}))
     calls = []

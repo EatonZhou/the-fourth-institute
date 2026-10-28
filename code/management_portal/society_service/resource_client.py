@@ -402,6 +402,7 @@ def _family_resource_projection(family: Mapping[str, Any]) -> dict[str, Any]:
             "lineage_scope": family.get("lineage_scope", False),
             "route_threshold": family.get("route_threshold", 60),
             "review_interval_seconds": family.get("review_interval_seconds", 86400),
+            "auto_migrate": family.get("auto_migrate", True),
         }, created_at=family.get("created_at"), updated_at=family.get("updated_at"),
         deleted_at=family.get("deleted_at"),
     )}

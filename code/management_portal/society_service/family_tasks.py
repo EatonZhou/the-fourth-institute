@@ -80,7 +80,7 @@ TASKS = {
         "关闭整个 Family 门面表示暂停自维护，单个成员关闭不再自动免除恢复职责。",
         "核验并处理当前未解决故障。"),
     "quota": ("recheck_recovery", "steward", "业务成员额度不足",
-        "按需查看成员与后端额度，判断任务强度及可用账号；必要时 RestartSession 迁移并保留上下文，"
+        "先用 GetLineage 核对 Family.auto_migrate；关闭时不自动更换账号，等待原额度或用户明确授权。检查五小时、周等所有窗口，必要时 RestartSession(context_strategy=compact) 迁移；跨 Provider 须明确目标账号的默认 model，"
         "完成后 RelayFamilyMessage(quota_reviewed=true, reason=理由) 继续原请求。"
         "Router 和 Steward 自身的可用性由运行时保障；无可用后端时通知实际创建人。",
         "评估额度受限成员，安排原请求继续执行。"),
@@ -236,6 +236,9 @@ def render(record: dict, trigger: str, facts: dict, *, guide_version: str | None
     path, version, _ = guide(record, body, block)
     # Only these three placeholders are interpreted. Message content never becomes a template.
     prompt = entry["prompt"] + ("\n" + entry["guide"] if legacy_progress else "")
+    if entry["role"] == "steward":
+        enabled = block["family"].get("auto_migrate", True)
+        prompt += "\n行动前用 GetLineage 核对当前 auto_migrate。Family 自动转组：" + ("开启。" if enabled else "关闭。不得自动更换账号；等待额度恢复或用户明确授权。")
     return Template(prompt).substitute(facts=json.dumps(facts, ensure_ascii=False),
         guide_path=path, guide_version=version if guide_version is None else guide_version)
 

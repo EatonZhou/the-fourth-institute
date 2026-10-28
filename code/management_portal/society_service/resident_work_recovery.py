@@ -18,7 +18,8 @@ from . import (
     resident_input_recovery,
 )
 from .domain_ports import execution_port, resident_domain_port
-from .resident_account_policy import account_available, fallback_account
+from .resident_account_policy import account_available, fallback_account, migration_target_options
+from .family_storage import auto_migration_enabled
 
 MAX_RECOVERY_ATTEMPTS = 2
 RECHECK_SECONDS = 600
@@ -194,7 +195,11 @@ def _reconcile_failed_work(residents: list[dict[str, Any]], context: dict[str, A
                     or record.get("backend_route_id") or "")
         if usage and not route:
             route = str(resident_backend.execution_account(record, binding).get("backend_route_id") or "")
+        from .family_quota import _reserve_candidate
+        can_migrate = auto_migration_enabled(record) and bool(_reserve_candidate(record))
         pending = recovery.get("pending_restart")
+        if pending and not can_migrate:
+            continue
         if pending:
             resident_domain_port.restart_resident_session(resident_id, resident_id, pending, portal_reason="steward_quota_recovery")
             with resident_record_domain.state_lock(resident_id):
@@ -225,21 +230,19 @@ def _reconcile_failed_work(residents: list[dict[str, Any]], context: dict[str, A
                     automatic=True,
                 ))
             changed += 1
-        elif usage and family_facade.is_operating_role(record):
+        elif usage and can_migrate:
             switches = int(recovery.get("switch_attempts") or 0)
             if switches >= MAX_RECOVERY_ATTEMPTS:
                 _notify_steward_blocked(record, message_id, "steward 备用后端切换已失败两次")
                 continue
             tried = list(recovery.get("tried_accounts") or [])
-            target = fallback_account(accounts or [], provider, route, tried, weekly_reserve=True)
+            target = fallback_account(accounts or [], provider, route, tried, reserve=True)
             if not target:
                 _notify_steward_blocked(record, message_id, "没有已确认有可用额度的备用账号或后端")
                 continue
             # Reserve the migration intent before starting it. A crash retries
             # the same idempotent RestartSession, not a new initialization.
-            payload = {"target_provider": target["provider"],
-                       "target_account": str(target.get("backend_route_id") or ""),
-                       "context_strategy": "compact", "active_execution_policy": "wait",
+            payload = {**migration_target_options(target, provider), "active_execution_policy": "wait",
                        "resume_failed_input": True,
                        "idempotency_key": f"work-recovery:{message_id}:{switches + 1}"}
             with resident_record_domain.state_lock(resident_id):

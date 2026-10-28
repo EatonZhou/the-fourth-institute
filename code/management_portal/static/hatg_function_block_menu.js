@@ -392,6 +392,7 @@
       let titleDraft;
       const menuLineageId = state.lineage?.lineage_id;
       let workflowDraft = null, workflowPending = false, workflowError = "", disposed = false;
+      let migrationPending = false;
       const taskDrafts = new Map();
       const expandedTasks = new Set();
       let editingId = "";
@@ -407,7 +408,9 @@
         if (!block) { root.textContent = window.PortalI18n.t("这个 Function Block 已不在 Lineage 中。"); return; }
         setLabel(pane === "objects" ? window.PortalI18n.t("内部对象") : pane === "issues" ? window.PortalI18n.t("问题") : block.title || window.PortalI18n.t("Function Block"));
         const roles = familyRoles(block);
-        const readonly = state.programMutationInFlight || workflowPending;
+        const readonly = state.programMutationInFlight || workflowPending || migrationPending;
+        const revision = state.lineage.revision;
+        const autoMigrate = block.family?.auto_migrate !== false;
         if (roles && pane === "objects" && !workflowDraft) workflowDraft = {
           lineageId: menuLineageId, revision: state.lineage.revision, mode: "add", ids: new Set(), open: false,
         };
@@ -424,6 +427,7 @@
         ${failures.length ? window.PortalI18n.html`<p data-function-block-failure>内部出错：${esc(failures.map(component => component.title || component.id).join("、"))}</p>` : ""}
         <section class="functionBlockInstanceBindings"><span>来源模板</span><p>${esc(functionBlockSourceTitle(block))}</p>${block.template_id ? '<button class="portalButton" type="button" data-function-block-source>查看来源模板</button>' : ""}</section>
         ${functionBlockInsideResidentsHtml(block)}
+        ${roles ? window.PortalI18n.html`<section class="functionBlockInstanceBindings"><span>额度不足时自动转组</span><button class="portalButton" type="button" role="switch" aria-label="额度不足时自动转组" aria-checked="${autoMigrate}" data-family-auto-migrate${readonly ? " disabled" : ""}>${autoMigrate ? window.PortalI18n.t("开启") : window.PortalI18n.t("关闭")}</button><p>适用于成员、Router 和 Steward。开启时，在执行前按五小时、周等窗口的最低剩余额度切换可用账号，必要时切换 Provider。关闭后等待原账号额度恢复；已开始的迁移会继续完成。</p></section>` : ""}
         ${functionBlockOverviewWorkflowHtml(block, readonly, taskDrafts, expandedTasks)}
         <div class="programInspectorActions functionBlockInstanceActions">
           <button class="portalButton" type="button" data-function-block-save-template${readonly ? " disabled" : ""}>存为模板</button>
@@ -438,6 +442,16 @@
           Promise.resolve().then(callback).catch(error => toast(error.message || String(error), "error"));
         });
         const workflowForm = root.querySelector("[data-family-workflow-form]");
+        action("[data-family-auto-migrate]", async () => {
+          if (migrationPending || state.programMutationInFlight || workflowPending) return;
+          if (state.lineage?.lineage_id !== menuLineageId) { draw(); return; }
+          migrationPending = true; draw();
+          try {
+            await applyProgramMutation(() => executeHatgInstruction("UpdateFamily", {
+              family_id: block.id, auto_migrate: !autoMigrate,
+            }, { expectedVersion: revision }), "自动转组设置已保存。");
+          } finally { migrationPending = false; draw(); }
+        }, false);
         if (workflowForm) {
           const draft = workflowDraft;
           workflowForm.querySelector("[data-family-workflow-mode]").addEventListener("change", event => {

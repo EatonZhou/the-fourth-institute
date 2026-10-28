@@ -59,10 +59,6 @@
     return true;
   }
 
-  function rememberResidentShortcutSession(residentId, target = {}) {
-    rememberRecentAgentSession({ ...target, type: "resident", resident_id: residentId });
-  }
-
   function recentTimeMs(...values) {
     for (const value of values) {
       if (Number.isFinite(Number(value)) && Number(value) > 0) return Number(value);
@@ -112,6 +108,50 @@
     } = dependencies;
 
     let lineageActivityRail = null;
+    const metadataReads = new Set();
+
+    function recentResident(residentId, entry = {}) {
+      const candidates = [
+        residentRootForExactId(residentId),
+        residentExactId(state.detail?.resident) === residentId ? state.detail.resident : null,
+        window.PortalResidentProjection?.peek?.(residentId)?.resident,
+        window.PortalConversationStore?.entry?.(`resident:${residentId}`),
+        entry,
+      ];
+      return {
+        resident_id: residentId,
+        title: candidates.map(item => String(item?.title || "").trim())
+          .find(title => title && title !== residentId) || "",
+        lineage_id: candidates.map(item => String(item?.lineage_id || "").trim()).find(Boolean) || "",
+      };
+    }
+
+    function rememberResidentShortcutSession(residentId, target = {}) {
+      const previous = window.PortalConversationStore?.recent?.()
+        .find(item => item.resident_id === residentId);
+      const resident = recentResident(residentId, {
+        ...previous, ...target,
+        title: target.title || previous?.title,
+        lineage_id: target.lineage_id || previous?.lineage_id,
+      });
+      rememberRecentAgentSession({ ...resident, type: "resident" });
+    }
+
+    function restoreRecentTitle(residentId) {
+      const actor = window.PortalIdentity.username();
+      const key = `${actor}:${residentId}`;
+      if (!actor || metadataReads.has(key)) return;
+      metadataReads.add(key);
+      void window.PortalInstructionClient.execute("GetResident", { resident_id: residentId })
+        .then(result => {
+          if (window.PortalIdentity.username() !== actor) return;
+          if (result?.resident?.resident_id !== residentId) return;
+          window.PortalConversationStore.updateRecentResident(result.resident);
+        }).catch(() => {
+          // Keep the shortcut reachable when metadata cannot be read. A later
+          // page load can retry; an ID suffix remains distinguishable meanwhile.
+        });
+    }
 
     function dismissRecentAgentSession(key) {
       const cleanKey = String(key || "").trim();
@@ -133,9 +173,7 @@
       // Navigation is a display projection, not the authority for a recent
       // conversation's existence. Keep acknowledged targets reachable even
       // when hidden from Navigation; opening still checks current access.
-      const resident = residentRootForExactId(residentId)
-        || (residentExactId(state.detail?.resident) === residentId ? state.detail.resident : null)
-        || { resident_id: residentId, title: entry.title, lineage_id: entry.lineage_id };
+      const resident = recentResident(residentId, entry);
       const label = String(resident.title || resident.resident_id || "Resident").trim();
       const active = selectedResidentId() === residentId;
       return {
@@ -146,7 +184,7 @@
         derived: false,
         label,
         subtitle: "Resident",
-        glyph: recentTitleGlyph(label || "R"),
+        glyph: resident.title ? recentTitleGlyph(resident.title) : residentId.slice(-2).toUpperCase(),
         active,
         t: Number(entry.t || 0) || recentTimeMs(resident?.updated_at, resident?.created_at),
       };
@@ -205,6 +243,11 @@
     function renderActivityRecentRail() {
       if (!lineageActivityRail) return;
       const items = recentAgentSessionInfos().slice(0, RECENT_AGENT_SESSION_VISIBLE_LIMIT);
+      for (const item of items) {
+        const resident = recentResident(item.residentId);
+        if (resident.title) window.PortalConversationStore.updateRecentResident(resident);
+        else if (item.label === item.residentId) restoreRecentTitle(item.residentId);
+      }
       const glyphCounts = new Map();
       for (const item of items) glyphCounts.set(item.glyph, Number(glyphCounts.get(item.glyph) || 0) + 1);
       lineageActivityRail.setItems(items.map(item => ({
@@ -238,6 +281,6 @@
 
   window.PortalLineageWorkbenchRecent = Object.freeze({
     createRecent, dependencies: DEPENDENCIES, recentAgentSessionKey,
-    rememberResidentShortcutSession, recentTimeMs,
+    recentTimeMs,
   });
 })();
