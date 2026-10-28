@@ -31299,8 +31299,8 @@
     },
     {
       "path": "data/share_root/Skills/tfi-agent-rule/SKILL.md",
-      "sha256": "2341333e64a345b447dabb35b6214671451eb8c346db3c98cf5f3a3c1ca2a0c5",
-      "size": 14210
+      "sha256": "6770ed1cfc2183f95620136e4c6da2a5812e68c11efd401914ca8741f0517efd",
+      "size": 14926
     },
     {
       "path": "data/share_root/Skills/tfi-agent-rule/portal-codex-accounts.md",
@@ -31309,8 +31309,8 @@
     },
     {
       "path": "data/share_root/Skills/tfi-agent-rule/portal-context-injection.md",
-      "sha256": "cb5b98fab2798bbeb035a5a78ff6fba72122b7ab0b34a2894bb24f7594854177",
-      "size": 6451
+      "sha256": "a69ebc49d6783bd853dfed076e692d5a6a24eeca7edbf09200934de3f7044549",
+      "size": 6957
     },
     {
       "path": "data/share_root/Skills/tfi-agent-rule/portal-development.md",
@@ -31324,8 +31324,8 @@
     },
     {
       "path": "data/share_root/Skills/tfi-agent-rule/portal-resident.md",
-      "sha256": "ce5a2f67b9ebc60c11b1434db3e95668ae9c79e0e28c073a57756f4e404cd471",
-      "size": 6507
+      "sha256": "d6e62797211c561a5c1629837af822efdbd8c9c7568e1cda273bc9323a89e34a",
+      "size": 6597
     },
     {
       "path": "data/share_root/Skills/tfi-unified-id/SKILL.md",
