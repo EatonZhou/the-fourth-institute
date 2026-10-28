@@ -176,6 +176,8 @@ class AccountMonitor:
                 self.wakeup.wait(POLL_SECONDS)
 
     def snapshot(self):
+        from .account_migration_types import migration_type
+        from .provider_catalog import AGENT_PROVIDERS
         health = self.scheduler.health()
         partitions = health.get("capacity_partitions") or {}
         with self._lock:
@@ -198,6 +200,9 @@ class AccountMonitor:
                           "dispatch_interval_min_seconds": settings.get("dispatch_interval_min_seconds", health.get("dispatch_interval", {}).get("min_seconds", 2)),
                           "dispatch_interval_max_seconds": settings.get("dispatch_interval_max_seconds", health.get("dispatch_interval", {}).get("max_seconds", 6)),
                           "quota_reserve": quota, "close_threshold": settings.get("close_threshold"), "capabilities": {"scheduler_settings": True, "resident_details": True}})
+            items[-1]["kind"] = account.kind
+            if account.provider in AGENT_PROVIDERS:
+                items[-1]["migration_type"] = migration_type(items[-1])
         return {"schema": "tfi.execution-accounts.v1", "accounts": items,
                 "exchange_rates": self.billing.exchange_rates_snapshot(),
                 "refreshing": refreshing or any(item.get("refreshing") for item in items),

@@ -80,7 +80,7 @@ TASKS = {
         "关闭整个 Family 门面表示暂停自维护，单个成员关闭不再自动免除恢复职责。",
         "核验并处理当前未解决故障。"),
     "quota": ("recheck_recovery", "steward", "业务成员额度不足",
-        "先用 GetLineage 核对 Family.auto_migrate；关闭时不自动更换账号，等待原额度或用户明确授权。检查五小时、周等所有窗口，必要时 RestartSession(context_strategy=compact) 迁移；跨 Provider 须明确目标账号的默认 model，"
+        "先用 GetLineage 核对 Family.auto_migrate；关闭时不自动更换账号，等待原额度或用户明确授权。同种类可用账号优先，否则按 auto_migrate_priority 的种类顺序，未列种类排末尾；用 ListProviderAccounts.migration_type 区分订阅、服务账号及不同 API 接入，不能只按 harness 选择。检查五小时、周等所有窗口，必要时 RestartSession(context_strategy=compact) 迁移；跨 Provider 须明确目标账号的默认 model，"
         "完成后 RelayFamilyMessage(quota_reviewed=true, reason=理由) 继续原请求。"
         "Router 和 Steward 自身的可用性由运行时保障；无可用后端时通知实际创建人。",
         "评估额度受限成员，安排原请求继续执行。"),
@@ -239,6 +239,7 @@ def render(record: dict, trigger: str, facts: dict, *, guide_version: str | None
     if entry["role"] == "steward":
         enabled = block["family"].get("auto_migrate", True)
         prompt += "\n行动前用 GetLineage 核对当前 auto_migrate。Family 自动转组：" + ("开启。" if enabled else "关闭。不得自动更换账号；等待额度恢复或用户明确授权。")
+        prompt += "\n账号种类优先级 auto_migrate_priority：" + json.dumps(block["family"].get("auto_migrate_priority", []), ensure_ascii=False) + "。先选同种类可用账号，再按排序；空数组使用默认（订阅、服务账号、API）。读取 ListProviderAccounts 的 migration_type，不将同 harness 的不同 API 与订阅混为一类。"
     return Template(prompt).substitute(facts=json.dumps(facts, ensure_ascii=False),
         guide_path=path, guide_version=version if guide_version is None else guide_version)
 

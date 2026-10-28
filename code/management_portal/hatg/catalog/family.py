@@ -53,6 +53,7 @@ DECLARATIONS = (
         P("route_threshold", "integer", "Router 置信度低于此值时请 steward 复核；省略时不变", minimum=0, maximum=100),
         P("review_interval_seconds", "integer", "steward 周期回顾的间隔秒数；省略时不变", minimum=1),
         P("auto_migrate", "boolean", "额度不足时自动切换 Family 成员、Router 和 Steward 的账号；默认开启，关闭不绕过额度保护；省略时不变"),
+        P("auto_migrate_priority", "array", "账号种类优先级，取 ListProviderAccounts 的 migration_type.id；同种类优先，再按此顺序，未列出的种类按默认顺序补在末尾；空数组恢复默认", items={"type": "string"}),
     ), (R("family_id", description="被更新的 Family 的 Function Block 键"), R("resource_id", description="Family 正式资源 ID family_…"),
         R("function_block", "object", "更新后的 Function Block：id、title、elements，以及 family（成员名册、goal、路由参数）"))),
 )

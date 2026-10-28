@@ -15,7 +15,7 @@ function harness(flag) {
   const root = {contains: x => Object.values(nodes).includes(x),querySelector: s => nodes[s],querySelectorAll: () => [],
     set innerHTML(html) {this.html=html;nodes=Object.fromEntries(['[data-family-auto-migrate]','[data-family-settings-error]','[data-family-members]','[data-family-add]'].map(k=>[k,{disabled:false,hidden:true,focus(){},addEventListener(){}}]));}};
   const block={id:'fbi_one',family:{facade:'resident_facade',...(flag === undefined ? {} : {auto_migrate:flag})}};
-  const ctx=vm.createContext({nodeMenuContext:{residentId:'resident_facade',lineageId:'lineage_one',family:block},lineage:{function_blocks:[block]},familySettingsView:null,
+  const ctx=vm.createContext({nodeMenuContext:{residentId:'resident_facade',lineageId:'lineage_one',family:block},lineage:{function_blocks:[block]},familySettingsView:null,familyPriorityView:null,mountMigrationPriority:()=>({destroy(){}}),
     $id:()=>root,disposeFamilySettings(){},openFamilyMemberPicker(){},changeFamily(){},changed:async x=>notices.push(x),
     window:{PortalI18n:{t:x=>x,html:(p,...v)=>String.raw({raw:p},...v)},PortalChatWorkspace:{mountFamilyStatus:()=>({})},PortalResidentProjection:{invalidate(){}},
       PortalInstructionClient:{execute:async(name,args,options)=>{calls.push({name,args,options});if(name==='GetLineage')return{lineage:{revision:17,function_blocks:[block]}};return{function_block:{...block,family:{...block.family,auto_migrate:args.auto_migrate}}};}}}});

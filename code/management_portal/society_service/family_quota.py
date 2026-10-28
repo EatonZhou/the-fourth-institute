@@ -376,14 +376,14 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
         payload = migration.get("pending_restart")
         if not payload and int(migration["attempts"]) < MAX_MIGRATIONS:
             target = fallback_account(accounts, str(account["provider"]), str(account.get("backend_route_id") or ""),
-                                      migration["tried_accounts"], reserve=True)
+                                      migration["tried_accounts"], reserve=True, priority=family_storage.auto_migration_priority(current))
             if target:
                 migration["attempts"] += 1
                 migration["tried_accounts"].append(target["account_id"])
                 from .resident_work_recovery import latest_failed_input, recovery_entry
                 failed_id = str(latest_failed_input(current).get("message_id") or "")
                 resume_failed = not resident_execution_work.is_active(current_job) and not bool(recovery_entry(current, failed_id).get("disabled"))
-                payload = {**migration_target_options(target, str(account["provider"])), "active_execution_policy": "wait", "resume_failed_input": resume_failed,
+                payload = {**migration_target_options(target, str(account["provider"]), account), "active_execution_policy": "wait", "resume_failed_input": resume_failed,
                            "idempotency_key": f"steward-reserve:{resident_id}:{epoch}:{migration['attempts']}"}
                 migration["pending_restart"] = payload
                 migration.update(status="migrating", reason="正在保留上下文并切换可用后端")

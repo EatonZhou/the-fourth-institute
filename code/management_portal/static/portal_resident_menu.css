@@ -597,3 +597,10 @@
 .portalCapabilityApplication li { overflow-wrap: anywhere; padding: 8px; background: var(--surface-muted, #f5f7fa); border-radius: 6px; }
 .portalSessionRestartOverlay [data-runtime-panel] { min-width: 0; }
 .portalSessionRestartOverlay [data-runtime-panel] p { overflow-wrap: anywhere; }
+
+.familyMigrationPriority { margin:8px 0 14px; font-size:12px; color:var(--muted); }
+.familyMigrationPriority summary { cursor:pointer; }
+.familyMigrationPriority ol { padding-left:24px; }
+.familyMigrationPriority li { display:flex; align-items:center; gap:6px; margin:5px 0; }
+.familyMigrationPriority li > span { flex:1; min-width:0; overflow-wrap:anywhere; }
+.familyMigrationPriority li > button { flex:none; }

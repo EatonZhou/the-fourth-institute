@@ -428,6 +428,7 @@
         <section class="functionBlockInstanceBindings"><span>来源模板</span><p>${esc(functionBlockSourceTitle(block))}</p>${block.template_id ? '<button class="portalButton" type="button" data-function-block-source>查看来源模板</button>' : ""}</section>
         ${functionBlockInsideResidentsHtml(block)}
         ${roles ? window.PortalI18n.html`<div class="familyAutoMigrateSetting"><span>当前 AI 后端额度不足时自动转到别的后端</span><button class="portalButton residentMenuToggle" type="button" role="switch" aria-label="额度不足时自动转组" aria-checked="${autoMigrate}" data-family-auto-migrate${readonly ? " disabled" : ""}></button></div>` : ""}
+        ${roles ? "<div data-family-priority></div>" : ""}
         ${functionBlockOverviewWorkflowHtml(block, readonly, taskDrafts, expandedTasks)}
         <div class="programInspectorActions functionBlockInstanceActions">
           <button class="portalButton" type="button" data-function-block-save-template${readonly ? " disabled" : ""}>存为模板</button>
@@ -440,6 +441,11 @@
         const action = (selector, callback, closing = true) => root.querySelector(selector)?.addEventListener("click", () => {
           if (closing) close();
           Promise.resolve().then(callback).catch(error => toast(error.message || String(error), "error"));
+        });
+        const priorityRoot = root.querySelector('[data-family-priority]');
+        if (priorityRoot) window.PortalResidentMenu.mountMigrationPriority(priorityRoot, {
+          lineageId: menuLineageId, familyId: block.id, readonly,
+          saved: () => applyProgramMutation(() => window.PortalInstructionClient.execute("GetLineage", {lineage_id: menuLineageId}), "账号种类顺序已保存。"),
         });
         const workflowForm = root.querySelector("[data-family-workflow-form]");
         action("[data-family-auto-migrate]", async () => {

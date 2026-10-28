@@ -18,7 +18,7 @@ from . import (
     resident_input_recovery,
 )
 from .domain_ports import execution_port, resident_domain_port
-from .resident_account_policy import account_available, fallback_account, migration_target_options
+from .resident_account_policy import account_available, fallback_account, migration_target_options, resident_account
 from .family_storage import auto_migration_enabled
 
 MAX_RECOVERY_ATTEMPTS = 2
@@ -236,13 +236,14 @@ def _reconcile_failed_work(residents: list[dict[str, Any]], context: dict[str, A
                 _notify_steward_blocked(record, message_id, "steward 备用后端切换已失败两次")
                 continue
             tried = list(recovery.get("tried_accounts") or [])
-            target = fallback_account(accounts or [], provider, route, tried, reserve=True)
+            from .family_storage import auto_migration_priority
+            target = fallback_account(accounts or [], provider, route, tried, reserve=True, priority=auto_migration_priority(record))
             if not target:
                 _notify_steward_blocked(record, message_id, "没有已确认有可用额度的备用账号或后端")
                 continue
             # Reserve the migration intent before starting it. A crash retries
             # the same idempotent RestartSession, not a new initialization.
-            payload = {**migration_target_options(target, provider), "active_execution_policy": "wait",
+            payload = {**migration_target_options(target, provider, resident_account(record, accounts or [])), "active_execution_policy": "wait",
                        "resume_failed_input": True,
                        "idempotency_key": f"work-recovery:{message_id}:{switches + 1}"}
             with resident_record_domain.state_lock(resident_id):

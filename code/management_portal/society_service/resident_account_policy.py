@@ -10,6 +10,8 @@ from typing import Any, Mapping
 
 from management_portal.execution.provider_catalog import AGENT_PROVIDERS
 
+from management_portal.execution.account_migration_types import migration_type
+
 MIGRATION_RESERVE_PERCENT = 10.0
 
 
@@ -69,13 +71,21 @@ def sufficient_reserve(account: Mapping[str, Any]) -> bool:
 
 
 def fallback_account(accounts: list[dict[str, Any]], provider: str, route: str,
-                     tried: list[str], *, reserve: bool = False) -> dict[str, Any]:
+                     tried: list[str], *, reserve: bool = False, priority: list[str] | None = None) -> dict[str, Any]:
     eligible = sufficient_reserve if reserve else account_available
     candidates = [a for a in accounts if eligible(a)
                   and (a.get("provider"), str(a.get("backend_route_id") or "")) != (provider, route)
                   and str(a.get("account_id") or "") not in tried]
-    candidates.sort(key=lambda a: (a["provider"] != provider, a["provider"] != "codex",
-                                   -(reserve_remaining(a) or 0), str(a.get("account_id") or "")))
+    source = next((a for a in accounts if a.get("provider") == provider
+                   and str(a.get("backend_route_id") or "") == route), {"provider": provider})
+    source_type = migration_type(source)["id"]
+    order = {key: index for index, key in enumerate(priority or [])}
+    def rank(account):
+        kind = migration_type(account)
+        return (kind["id"] != source_type, order.get(kind["id"], len(order)),
+                kind["default_priority"], kind["id"], -(reserve_remaining(account) or 0),
+                str(account.get("account_id") or ""))
+    candidates.sort(key=rank)
     return candidates[0] if candidates else {}
 
 
@@ -101,12 +111,12 @@ def resident_account(record: Mapping[str, Any], accounts: list[dict[str, Any]]) 
                  and str(a.get("backend_route_id") or "") == route), {})
 
 
-def migration_target_options(account: Mapping[str, Any], source_provider: str) -> dict[str, Any]:
-    """Use the target's configured model when crossing Providers, never the old model."""
+def migration_target_options(account: Mapping[str, Any], source_provider: str, source_account: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    """Use the target model when crossing Providers or account kinds."""
     provider = str(account["provider"])
     route = str(account.get("backend_route_id") or "")
     options = {"target_provider": provider, "target_account": route, "context_strategy": "compact"}
-    if provider != source_provider:
+    if provider != source_provider or (source_account and migration_type(account)["id"] != migration_type(source_account)["id"]):
         model, _ = AGENT_PROVIDERS[provider].validate_settings(route, "")
         options.update(model=model, reasoning_effort="")
     return options

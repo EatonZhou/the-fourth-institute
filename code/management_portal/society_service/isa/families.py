@@ -38,7 +38,7 @@ def delete_family(inv):
 def update_family(inv):
     try:
         return family.update_family(inv.argument("lineage_id"), inv.argument("family_id"), inv.caller,
-            **{name: inv.argument(name) for name in ("title", "goal", "route_threshold", "review_interval_seconds", "auto_migrate")},
+            **{name: inv.argument(name) for name in ("title", "goal", "route_threshold", "review_interval_seconds", "auto_migrate", "auto_migrate_priority")},
             add_member_ids=inv.argument("add_member_ids") or [], remove_member_ids=inv.argument("remove_member_ids") or [],
             add_element_ids=inv.argument("add_element_ids") or [], remove_element_ids=inv.argument("remove_element_ids") or [])
     except ValueError as exc:

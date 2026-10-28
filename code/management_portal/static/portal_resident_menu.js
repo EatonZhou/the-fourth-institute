@@ -1,6 +1,64 @@
 (() => {
   "use strict";
   const esc = value => window.PortalUIPrimitives.escapeHtml(value);
+  // Both Family menus edit the same persisted policy using the account catalog's types.
+  function mountMigrationPriority(root, {lineageId, familyId, readonly = false, saved = () => {}}) {
+    let disposed = false, loaded = false, busy = false, baseline = [], order = [], types = new Map();
+    const current = () => !disposed && root.isConnected;
+    const t = value => window.PortalI18n.t(value);
+    const execute = (...args) => window.PortalInstructionClient.execute(...args);
+    root.innerHTML = `<details class="familyMigrationPriority"><summary>${esc(t("账号种类优先级"))}</summary><div data-priority-body></div></details>`;
+    const panel = root.querySelector('[data-priority-body]');
+    const defaults = () => [...types.values()].sort((a,b) => a.default_priority - b.default_priority || a.id.localeCompare(b.id)).map(item => item.id);
+    const expand = selected => [...new Set([...selected, ...defaults()])];
+    const draw = () => {
+      panel.innerHTML = `<p class="paneNote">${esc(t("先换同种类的可用账号，再按以下顺序切换。"))}</p>
+        <ol>${order.map((key, i) => `<li><span>${esc(types.get(key)?.label || key + '（当前不可用）')}</span><button class="portalButton is-compact" type="button" data-priority-move="${i}" data-direction="-1" aria-label="${esc(t('上移') + ' ' + (types.get(key)?.label || key))}"${readonly || busy || !i ? ' disabled' : ''}>↑</button><button class="portalButton is-compact" type="button" data-priority-move="${i}" data-direction="1" aria-label="${esc(t('下移') + ' ' + (types.get(key)?.label || key))}"${readonly || busy || i === order.length - 1 ? ' disabled' : ''}>↓</button></li>`).join('')}</ol>
+        <p role="alert" data-priority-error hidden></p>
+        <div><button type="button" class="portalButton is-compact" data-priority-save${readonly || busy ? ' disabled' : ''}>${esc(t('保存顺序'))}</button> <button type="button" class="portalButton is-compact" data-priority-cancel${busy ? ' disabled' : ''}>${esc(t('取消'))}</button> <button type="button" class="portalButton is-compact" data-priority-default${readonly || busy ? ' disabled' : ''}>${esc(t('恢复默认'))}</button></div>`;
+      panel.querySelectorAll('[data-priority-move]').forEach(button => button.onclick = () => {
+        const i = Number(button.dataset.priorityMove), j = i + Number(button.dataset.direction);
+        [order[i], order[j]] = [order[j], order[i]]; draw();
+        panel.querySelector(`[data-priority-move="${j}"][data-direction="${button.dataset.direction}"]`)?.focus();
+      });
+      panel.querySelector('[data-priority-cancel]').onclick = () => { order = expand(baseline); draw(); root.querySelector('details').open = false; };
+      panel.querySelector('[data-priority-default]').onclick = () => { order = defaults(); draw(); };
+      panel.querySelector('[data-priority-save]').onclick = async () => {
+        if (busy || readonly) return;
+        busy = true; draw();
+        try {
+          const snapshot = (await execute('GetLineage', {lineage_id: lineageId})).lineage;
+          if (!current()) return;
+          const block = snapshot.function_blocks.find(item => item.id === familyId);
+          if (!block) throw new Error(t('Family 已不存在，请重新打开菜单。'));
+          if (JSON.stringify(block.family.auto_migrate_priority || []) !== JSON.stringify(baseline)) throw new Error(t('顺序已被其他人修改，请重新打开菜单后保存。'));
+          const priority = JSON.stringify(order) === JSON.stringify(defaults()) ? [] : [...order];
+          const result = await execute('UpdateFamily', {lineage_id: lineageId, family_id: familyId, auto_migrate_priority: priority}, {expectedVersion: snapshot.revision});
+          if (!current()) return;
+          baseline = priority; busy = false; draw(); root.querySelector('details').open = false;
+          await saved(result);
+        } catch (error) {
+          if (!current()) return;
+          busy = false; draw(); const notice = panel.querySelector('[data-priority-error]'); notice.textContent = error.message; notice.hidden = false;
+        } finally { busy = false; }
+      };
+    };
+    root.querySelector('details').addEventListener('toggle', async () => {
+      if (!root.querySelector('details').open || loaded || busy) return;
+      busy = true; panel.textContent = t('正在读取账号种类…');
+      try {
+        const [catalog, graph] = await Promise.all([execute('ListProviderAccounts', {}), execute('GetLineage', {lineage_id: lineageId})]);
+        if (!current()) return;
+        const block = graph.lineage.function_blocks.find(item => item.id === familyId);
+        if (!block) throw new Error(t('Family 已不存在，请重新打开菜单。'));
+        types = new Map((catalog.accounts || []).filter(a => a.migration_type).map(a => [a.migration_type.id, a.migration_type]));
+        baseline = [...(block.family.auto_migrate_priority || [])]; order = expand(baseline); loaded = true; busy = false; draw();
+      } catch (error) { if (current()) panel.textContent = error.message; }
+      finally { busy = false; }
+    });
+    return {destroy() { disposed = true; }};
+  }
+
   const nodeResidentId = node => String(node?.resident_id || node?.id || "");
   const nodeIntakeState = node => node?.intake_state === "closed" ? "closed" : "open";
   const familyBlocks = lineage => (lineage?.function_blocks || []).filter(block => block.family);
@@ -436,8 +494,11 @@
 
     let groupPanelCleanup = null;
     let familySettingsView = null;
+    let familyPriorityView = null;
 
     function disposeFamilySettings() {
+      familyPriorityView?.destroy();
+      familyPriorityView = null;
       familySettingsView?.destroy();
       familySettingsView = null;
       $id("nodeMenuFamilySettings").replaceChildren();
@@ -449,6 +510,7 @@
       const autoMigrate = context.family.family.auto_migrate !== false;
       root.innerHTML = window.PortalI18n.html`<p class="paneNote">在这里查看和调整 Family 内部成员的工作状态、Backend、账号与接单设置。</p>
         <div class="familyAutoMigrateSetting"><span>当前 AI 后端额度不足时自动转到别的后端</span><button class="portalButton residentMenuToggle" type="button" role="switch" aria-label="额度不足时自动转组" aria-checked="${autoMigrate}" data-family-auto-migrate></button></div>
+        <div data-family-priority></div>
         <p role="alert" data-family-settings-error hidden></p>
         <div class="residentMenuMembersHeader"><strong>成员</strong><button class="portalButton is-compact" type="button" data-family-add aria-expanded="false" aria-controls="familyMemberPicker">＋ 添加成员</button></div>
         <div id="familyMemberPicker" class="residentMenuMemberPicker" hidden></div>
@@ -457,6 +519,15 @@
           <section><div><strong>Unfamilize · 保留成员</strong><p>解除组合，保留成员、子 Family 和业务工作流；移除门面、Router、Steward 与自动生成的协作结构。</p></div><button class="portalButton" type="button" data-family-action="unfamilize">Unfamilize</button></section>
           <section><div><strong>删除整个 Family</strong><p>停止并删除门面及内部所有成员、子 Family 和工作流，移除 Session；关联 Workspace 仅在没有其他存活 Resident 引用时回收，仍被引用的 Workspace 保留。对话和运行轨迹保留。</p></div><button class="portalButton is-danger" type="button" data-family-action="delete">删除整个 Family</button></section>
         </div>`;
+      familyPriorityView = mountMigrationPriority(root.querySelector('[data-family-priority]'), {
+        lineageId: context.lineageId, familyId: context.family.id,
+        saved: async result => {
+          if (nodeMenuContext !== context) return;
+          context.family = result.function_block;
+          window.PortalResidentProjection.invalidate(context.residentId);
+          await changed({type: "family-auto-migrate", residentId: context.residentId, lineageId: context.lineageId, result});
+        },
+      });
       familySettingsView = window.PortalChatWorkspace.mountFamilyStatus(context.residentId, root.querySelector("[data-family-members]"));
       root.querySelector("[data-family-auto-migrate]").addEventListener("click", () => saveFamilyAutoMigrate(context));
       root.querySelector("[data-family-add]").addEventListener("click", () => openFamilyMemberPicker(context));
@@ -1056,5 +1127,5 @@
     await instance.open({...options, node: {...node, id: residentId, backend: node.provider || node.backend, intake_state: runtime?.state?.intake_state || node.intake_state}, lineage});
     return instance;
   }
-  window.PortalResidentMenu = Object.freeze({open, removeFamily, retireResidents});
+  window.PortalResidentMenu = Object.freeze({open, removeFamily, retireResidents, mountMigrationPriority});
 })();

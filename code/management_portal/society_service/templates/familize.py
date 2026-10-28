@@ -53,10 +53,12 @@ def _block(body: dict, family_id: str) -> dict:
 
 
 def _values(values: Mapping) -> dict:
-    unknown = set(values) - {"goal", "route_threshold", "review_interval_seconds", "auto_migrate"}
+    unknown = set(values) - {"goal", "route_threshold", "review_interval_seconds", "auto_migrate", "auto_migrate_priority"}
     if unknown:
         raise TemplateError("未知 Family 参数：" + "、".join(sorted(unknown)))
-    resolved = {"goal": "", "route_threshold": 60, "review_interval_seconds": 86400, "auto_migrate": True, **values}
+    resolved = {"goal": "", "route_threshold": 60, "review_interval_seconds": 86400, "auto_migrate": True, "auto_migrate_priority": [], **values}
+    from management_portal.execution.account_migration_types import validate_priority
+    resolved["auto_migrate_priority"] = validate_priority(resolved["auto_migrate_priority"])
     if type(resolved["auto_migrate"]) is not bool:
         raise TemplateError("auto_migrate 必须是布尔值")
     for name in ("route_threshold", "review_interval_seconds"):
@@ -539,7 +541,7 @@ def familize(lineage_id: str, resident_ids: Iterable[str], actor: str, *, title:
 
 
 def update_family(lineage_id: str, family_id: str, actor: str, *, add_member_ids=(), remove_member_ids=(),
-                  title=None, goal=None, route_threshold=None, review_interval_seconds=None, auto_migrate=None,
+                  title=None, goal=None, route_threshold=None, review_interval_seconds=None, auto_migrate=None, auto_migrate_priority=None,
                   add_element_ids=(), remove_element_ids=()) -> dict:
     from .. import function_block_domain
     _, selected = read_family(lineage_id, family_id, actor)
@@ -553,8 +555,8 @@ def update_family(lineage_id: str, family_id: str, actor: str, *, add_member_ids
             raise TemplateError("同一成员不能同时加入和移出")
         members = list(dict.fromkeys([rid for rid in family["members"] if rid not in removed] + added))
         facts.validate_members(body, members, family_id=family_id)
-        values = _values({key: family[key] if value is None else value for key, value in
-                          (("goal", goal), ("route_threshold", route_threshold), ("review_interval_seconds", review_interval_seconds), ("auto_migrate", auto_migrate))})
+        values = _values({key: family.get(key, []) if value is None else value for key, value in
+                          (("goal", goal), ("route_threshold", route_threshold), ("review_interval_seconds", review_interval_seconds), ("auto_migrate", auto_migrate), ("auto_migrate_priority", auto_migrate_priority))})
         if title is not None and not str(title).strip():
             raise TemplateError("Family 名称不能为空")
         grouping = {"lineage_scope": family.get("lineage_scope", False), "family_id": family_id}
@@ -574,7 +576,7 @@ def update_family(lineage_id: str, family_id: str, actor: str, *, add_member_ids
                                 collect=bool(actually_added))
         ownership_only = bool(add_element_ids or remove_element_ids) and not (
             add_member_ids or remove_member_ids or any(value is not None for value in
-            (title, goal, route_threshold, review_interval_seconds, auto_migrate)))
+            (title, goal, route_threshold, review_interval_seconds, auto_migrate, auto_migrate_priority)))
         if not ownership_only:
             reconcile_in_body(body, block, actor)
             if review_interval_seconds is not None:

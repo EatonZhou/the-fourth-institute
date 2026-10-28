@@ -121,7 +121,7 @@ DECLARATIONS = (
         P("account_id", description="只读取这个执行账号；省略时读取全部"),
         P("refresh", "boolean", "先请求重新采集额度与余额"),
     ), (R("accounts", "array", "执行账号：account_id、provider、额度窗口或余额、login_state、max_concurrency、"
-          "派发间隔、close_threshold、registration…"),
+          "派发间隔、close_threshold、registration；Agent 账号包含 kind 和 migration_type（id、label、default_priority），用于自动迁移的账号种类排序"),
         R("default_routes", "object", description="Provider 到默认执行路由 ID 的映射")), owner="execution"),
     _d("ListProviders", FIXED, "列出 Provider、账号种类、能力与运行时状态。", (
         P("refresh", "boolean", "检查可用版本并保存观察；不安装或激活运行时"),
