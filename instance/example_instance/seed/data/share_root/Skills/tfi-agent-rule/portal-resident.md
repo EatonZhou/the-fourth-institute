@@ -22,7 +22,7 @@ Portal 可以提供 Resident 摘要、`resident.md`、Binding 投影、附加引
 
 ## 遵守与维护规范
 
-任务涉及 Portal 开发或发布时，先读取 `./portal-development.md` 和 `${code_root}/SPEC.md` 中的快速发布规范 `decision_08bb2d9141f9`。已配置开发站的所有 Resident 使用同一份 Dev worktree；Release worktree 同时存在，负责接收提交并推送远端。完成相关必要验证后按文件快速发布（不需要重启服务的修改，比如静态前端等，不触发逐项自动发布），允许同文件内其他 Resident 的并行修改随之发布；不另开任务分支或工作树，也不等待整个 Dev 干净或全量测试结束。
+任务涉及 Portal 开发或发布时，先读取 `./portal-development.md` 和 `${code_root}/SPEC.md` 中的快速发布规范 `decision_08bb2d9141f9`。已配置开发站的所有 Resident 使用同一份 Dev worktree；Release worktree 同时存在，负责接收提交并推送远端。完成相关必要验证后按文件自动快速发布，静态前端修改同样发布，但无需重启服务；完整发布范围只含无需重启的修改时按开发规则使用 `--no-activate` 并核对 Release HTTP 资源。允许同文件内其他 Resident 的并行修改随之发布；不另开任务分支或工作树，也不等待整个 Dev 干净或全量测试结束。
 
 执行 Portal 构建维护工作时，读取工程实际的 `SPEC.md` 与相关规范；新增或修改功能时同步相应当前规范。
 

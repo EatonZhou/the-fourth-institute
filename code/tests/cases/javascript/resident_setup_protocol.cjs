@@ -98,15 +98,15 @@ const plain = value => JSON.parse(JSON.stringify(value));
   assert.equal(w.document.querySelector('[data-switch-context]'), null, 'handoff does not require choosing an implementation strategy');
   assert.match(w.document.querySelector('[data-switch-context-status]').textContent, /无法完整保留/);
   assert.equal(changes.length, 3, 'selecting an account does not submit');
-  click('[data-session-restart-submit]'); await flush();
-  assert.equal(changes.length, 3, 'cross-provider switch requires a compatible model');
-  assert.match(errors.pop(), /请选择目标 Provider 的模型/);
-  select('[data-target-editor-host] [data-runtime-setting="model"]', 'm2');
+  const defaultModel = w.document.querySelector('[data-target-editor-host] [data-runtime-setting="model"]');
+  assert.equal(defaultModel.selectedOptions[0].textContent, 'm (default)');
+  assert.equal(defaultModel.value, '', 'the default option uses an inheritance value in the editor');
   click('[data-session-reload]'); await flush();
   assert.match(w.document.querySelector('[data-switch-context-description]').textContent, /遗漏细节/);
   assert.equal(w.document.querySelector('[data-session-restart-submit]').textContent, '交接并切换');
   click('[data-session-restart-submit]'); await flush();
-  assert.equal(changes[3].model, 'm2'); assert.equal(changes[3].target_provider, 'claude'); assert.equal(changes[3].context_strategy, 'compact');
+  assert.equal(changes.length, 4, 'the displayed catalog default is a valid choice for a cross-provider switch');
+  assert.equal(changes[3].model, 'm'); assert.equal(changes[3].target_provider, 'claude'); assert.equal(changes[3].context_strategy, 'compact');
   assert.equal(changes[3].operation, 'restart');
   cross.destroy();
   const handoff = api.createSessionRestartDialog();
@@ -118,6 +118,7 @@ const plain = value => JSON.parse(JSON.stringify(value));
   select('[data-session-target]', JSON.stringify(['claude', 'one'])); await flush();
   select('[data-target-editor-host] [data-runtime-setting="model"]', 'm2');
   click('[data-session-restart-submit]'); await flush();
+  assert.equal(changes.at(-1).model, 'm2', 'an explicit target model still overrides the catalog default');
   observe({restart: {status: 'accepted', restart_id: 'compact', operation: 'restart', context_strategy: 'compact', target: {provider: 'claude', account_id: 'claude_one'}}}); await flush();
   assert.equal(w.document.querySelector('[data-runtime-panel="switch_account"]').hidden, false);
   assert.equal(w.document.querySelector('[data-session-target]').disabled, true);
@@ -140,4 +141,31 @@ const plain = value => JSON.parse(JSON.stringify(value));
   }
   assert.deepEqual(errors, []);
   console.log('PASS preferred preservation, disclosed summary handoff, no blank fallback, cancellation, progress and settings drafts');
+  const defaults = api.createSessionRestartDialog();
+  defaults.open(config, async () => {throw new Error('parameter edits must not switch the session');}); await flush();
+  click('[data-runtime-view="parameters"]');
+  select('[data-runtime-panel="parameters"] [data-runtime-setting="model"]', '');
+  const beforeDefaultSave = saves.length;
+  click('[data-runtime-settings-submit]'); await flush();
+  assert.equal(saves.length, beforeDefaultSave + 1);
+  assert.equal(saves.at(-1).model, '', 'ordinary parameter edits must retain follow-default semantics');
+  defaults.destroy();
+  assert.deepEqual(errors, []);
+  const beforeInvalidDefault = changes.length;
+  for (const invalidDefault of ['', 'unavailable-model']) {
+    catalog.default_model = invalidDefault;
+    const invalid = api.createSessionRestartDialog();
+    try {
+      invalid.open(config, async values => {changes.push(values);}); await flush();
+      select('[data-session-target]', JSON.stringify(['claude', 'one'])); await flush();
+      click('[data-session-restart-submit]'); await flush();
+      assert.equal(changes.length, beforeInvalidDefault, 'an absent or unavailable default must not start a switch');
+      assert.match(errors.pop(), /默认模型未出现在此账号的 Provider 能力列表/);
+    } finally {
+      invalid.destroy();
+      catalog.default_model = 'm';
+    }
+  }
+  assert.deepEqual(errors, []);
+  console.log('PASS target default resolution, explicit model override, default inheritance and invalid catalog rejection');
 })().catch(error => {console.error(error); process.exitCode = 1;}).finally(async () => {await flush(); dom.window.close();});

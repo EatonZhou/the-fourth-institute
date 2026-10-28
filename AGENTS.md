@@ -16,17 +16,20 @@ All Residents edit its one shared **dev worktree**. Its **main worktree is Relea
 Both directories exist simultaneously; switching the Web entry does not checkout
 a branch. Do not create task branches or worktrees. Only Release pushes `main`.
 
-After a feature/fix and relevant necessary checks (except changes that do not
-require a service restart, such as static frontend changes), run `code/scripts/tfi_dev.py
+After a feature/fix and relevant necessary checks, run `code/scripts/tfi_dev.py
 publish --message "..." --path code/path` (repeat --path; --all explicitly includes
 all work). Publication is part of the authorized task. Do not wait for a clean Dev
 tree, other agents to finish, a full regression, or another approval. Selected files
 are committed as a whole: other agents' changes in those files, staged work and
 already committed ancestors may accompany the release. This is intentional. Keep
 later concurrent edits; never reset/stash them or reconstruct a pure personal diff.
-The exception skips automatic publication for each change, not the necessary checks.
-Determine restart needs from how the change takes effect, not from the publisher's
-current automatic restart behavior.
+Static frontend changes also publish automatically. If the complete publication
+contains only changes that take effect without restarting services, add
+`--no-activate` and verify the updated Release assets through HTTP. Include release
+unit expansion, staged changes and unpublished ancestors when checking that scope.
+If any included change requires a process reload, use normal activation for its
+responsible components. Determine restart needs from how the change takes effect,
+not from the publisher's current automatic restart behavior.
 
 Dev and Release Web share the installed database, accounts, sessions and backend
 services. Shared packages run from Dev; Web code runs from its own worktree. Use

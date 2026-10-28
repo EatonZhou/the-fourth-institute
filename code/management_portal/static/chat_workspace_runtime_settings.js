@@ -198,7 +198,8 @@
       return {
         element, model,
         read({complete = false} = {}) {
-          const selected = { model: String(model.value || "").trim() };
+          // A new provider session needs a concrete model; ordinary edits may inherit its default.
+          const selected = { model: String(model.value || (complete ? providerCatalog?.default_model : "") || "").trim() };
           const modelChanged = selected.model !== String(initialSettings.model || "");
           const effortChanged = effort.value !== String(initialSettings.reasoning_effort || "");
           if (!mode.closest(".portalRuntimeSettingsField").hidden) {
@@ -212,7 +213,7 @@
               && (complete || permissions.value !== String(initialSettings.permission_preset || ""))) {
               selected.permission_preset = String(permissions.value || "").trim();
             }
-            if (providerCatalog && (modelChanged || effortChanged)) {
+            if (providerCatalog && (complete || modelChanged || effortChanged)) {
               const selectedModel = model.value || providerCatalog.default_model;
               if (!providerCatalog.models.includes(selectedModel)) throw new Error("默认模型未出现在此账号的 Provider 能力列表中，请选择可用模型。");
               const selectedEffort = effort.value || providerCatalog.default_efforts_by_model?.[selectedModel] || providerCatalog.default_reasoning_effort;
