@@ -115,3 +115,17 @@ def test_priority_schema_migration_preserves_family_switch(quota_family):
         row = c.execute("SELECT auto_migrate, auto_migrate_priority FROM families WHERE family_id='fbi_test'").fetchone()
         assert dict(row) == {'auto_migrate': False, 'auto_migrate_priority': []}
         assert upgrade(c)['previous_schema'] == 'tfi.lineage-data.v64'
+
+
+def test_configured_adapter_preserves_registration_kind(monkeypatch):
+    from types import SimpleNamespace
+    from dataclasses import asdict
+    from management_portal.execution.account_adapters import ConfiguredAccounts
+    from management_portal.execution import account_registrations
+    from management_portal.execution.account_migration_types import migration_type
+    rows = [dict(account_id='free', route_id='free', kind='service', max_concurrency=1, config={}),
+            dict(account_id='paid', route_id='paid', kind='api_profile', max_concurrency=1, config={'api_id': 'openrouter_primary'})]
+    monkeypatch.setattr(account_registrations, 'registrations', lambda provider: rows)
+    accounts = ConfiguredAccounts(SimpleNamespace(provider='opencode')).accounts()
+    assert [a.kind for a in accounts] == ['service', 'api_profile']
+    assert [migration_type(asdict(a))['id'] for a in accounts] == ['opencode:service','opencode:api_profile:openrouter_primary']

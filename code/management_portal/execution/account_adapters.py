@@ -427,7 +427,7 @@ class ConfiguredAccounts:
     def accounts(self):
         return tuple(ExecutionAccount(row["account_id"], self.provider, row["route_id"],
                                       f"account:{row['account_id']}", row["max_concurrency"],
-                                      billing_account_id=row["config"].get("api_id", "")) for row in self._routes)
+                                      billing_account_id=row["config"].get("api_id", ""), kind=row["kind"]) for row in self._routes)
 
     def resolve(self, route_id, options, *, bound=False):
         route_id = route_id or str(options.get("provider_profile") or self.definition.default_route)
