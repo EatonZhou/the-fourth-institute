@@ -77,7 +77,8 @@ def prepare(inv):
 
 def _started_codex_catalog(row, *, timeout=30.0):
     """Wait for the socket after service start, without retrying model execution."""
-    from management_portal.codex_app_server_client import CodexAppServerUnavailable, client_for_socket
+    from management_portal.codex_app_server_client import client_for_socket
+    from management_portal.codex_app_server_protocol import CodexAppServerUnavailable
     from .account_hosting import codex_socket_path
 
     deadline = time.monotonic() + timeout
@@ -132,7 +133,7 @@ def check(inv):
             refresh([row])
         # Registration may precede runtime preparation. Starting an already
         # running instance is idempotent and preserves its existing login.
-        from management_portal.codex_app_server_client import CodexAppServerUnavailable
+        from management_portal.codex_app_server_protocol import CodexAppServerUnavailable
         try:
             account_hosting.start_codex_instance(row["account_id"])
         except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as exc:

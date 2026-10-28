@@ -9,7 +9,8 @@ from unittest.mock import Mock
 import pytest
 
 from management_common.provider_user_input import content_part
-from management_portal.codex_app_server_client import CodexAppServerClient, _TurnWaiter
+from management_portal.codex_app_server_client import CodexAppServerClient
+from management_portal.codex_app_server_protocol import TurnWaiter
 from management_portal.execution.agent_data_projection import AgentDataProjector
 from management_portal.execution.agent_data_store import AgentDataStore
 from management_portal.execution.activity_redaction import redact_sensitive_mapping
@@ -37,20 +38,20 @@ def request_params(blocking=True):
 def native_client(tmp_path):
     client = CodexAppServerClient(tmp_path / "absent.sock")
     sent, events = [], []
-    client._send = sent.append
+    client.rpc.send = sent.append
     client.user_inputs._send = sent.append
-    client._turn_waiters["thread-native"] = _TurnWaiter(thread_id="thread-native", turn_id="turn-native", event_callback=events.append)
+    client.work.turns["thread-native"] = TurnWaiter(thread_id="thread-native", turn_id="turn-native", event_callback=events.append)
     return client, sent, events
 
 
 def test_goal_accepts_user_input_requests(tmp_path):
     """Goal 接收原生用户提问并保持待回答状态"""
-    from management_portal.codex_app_server_client import _GoalWaiter
+    from management_portal.codex_app_server_protocol import GoalWaiter
 
     client, sent, events = native_client(tmp_path)
-    client._turn_waiters.clear()
-    client._goal_waiters['thread-native'] = _GoalWaiter('thread-native', event_callback=events.append)
-    client._answer_server_request(41, 'item/tool/requestUserInput', request_params())
+    client.work.turns.clear()
+    client.work.goals['thread-native'] = GoalWaiter('thread-native', event_callback=events.append)
+    client.events.answer_server_request(41, 'item/tool/requestUserInput', request_params())
     assert sent == []
     assert events[0]['params']['item']['user_input']['status'] == 'pending'
 
@@ -59,15 +60,15 @@ def test_goal_accepts_user_input_requests(tmp_path):
 def test_native_request_waits_for_real_response(tmp_path, blocking):
     """原生提问等待真实回答并在回答后拒绝重复响应"""
     client, sent, events = native_client(tmp_path)
-    client._dispatch_message({"id": 41, "method": "item/tool/requestUserInput", "params": request_params(blocking)})
+    client.rpc.dispatch_message({"id": 41, "method": "item/tool/requestUserInput", "params": request_params(blocking)})
     assert sent == []
     assert client.user_inputs.blocking("thread-native") is blocking
     part = events[0]["params"]["item"]["user_input"]
     answer = {"type": "user_input_response", "request_id": part["request_id"], "answers": {"scope": {"answers": ["定向"]}}}
     control = ExecutionInputControl.new(execution_id="execution-" + "1" * 24, actor="sample_admin", input=[answer], expected_turn_id="turn-native")
     callback = Mock()
-    client.steer_turn = Mock(side_effect=AssertionError("must not steer ordinary input"))
-    client._deliver_turn_control(thread_id="thread-native", waiter=client._turn_waiters["thread-native"],
+    client.controls.steer_turn = Mock(side_effect=AssertionError("must not steer ordinary input"))
+    client.controls.deliver_turn_control(thread_id="thread-native", waiter=client.work.turns["thread-native"],
                                 turn_control_provider=lambda: control.to_payload(), turn_control_result_callback=callback,
                                 cancellation_requested=None)
     assert sent == [{"id": 41, "result": {"answers": {"scope": {"answers": ["定向"]}}}}]
@@ -81,16 +82,16 @@ def test_native_request_waits_for_real_response(tmp_path, blocking):
 def test_pending_request_expires_or_cancels_without_empty_answers(tmp_path, ending):
     """原生提问结束或取消后不发送空答案"""
     client, sent, events = native_client(tmp_path)
-    client._answer_server_request(41, "item/tool/requestUserInput", request_params())
+    client.events.answer_server_request(41, "item/tool/requestUserInput", request_params())
     key = events[0]["params"]["item"]["user_input"]["request_id"]
     if ending == "resolved":
-        client._dispatch_notification("serverRequest/resolved", {"threadId": "thread-native", "requestId": 41})
+        client.events.dispatch_notification("serverRequest/resolved", {"threadId": "thread-native", "requestId": 41})
     elif ending == "completed":
-        client._dispatch_notification("turn/completed", {"threadId": "thread-native", "turn": {"id": "turn-native", "status": "completed"}})
+        client.events.dispatch_notification("turn/completed", {"threadId": "thread-native", "turn": {"id": "turn-native", "status": "completed"}})
     elif ending == "closed":
-        client._dispatch_notification("thread/closed", {"threadId": "thread-native"})
+        client.events.dispatch_notification("thread/closed", {"threadId": "thread-native"})
     elif ending == "disconnect":
-        client._disconnect(RuntimeError("lost connection"))
+        client.disconnect(RuntimeError("lost connection"))
     else:
         client.user_inputs.respond("thread-native", "turn-native", {"request_id": key, "action": "cancel"})
     results = [event["params"]["item"] for event in events if (event["params"].get("item") or {}).get("type") == "userInputResponse"]
@@ -103,7 +104,7 @@ def test_pending_request_expires_or_cancels_without_empty_answers(tmp_path, endi
 def test_wrong_turn_or_incomplete_answers_cannot_resolve_request(tmp_path):
     """线程不匹配或答案不完整时原生提问保持待回答"""
     client, sent, events = native_client(tmp_path)
-    client._answer_server_request(41, "item/tool/requestUserInput", request_params())
+    client.events.answer_server_request(41, "item/tool/requestUserInput", request_params())
     key = events[0]["params"]["item"]["user_input"]["request_id"]
     with pytest.raises(ValueError, match="different turn"):
         client.user_inputs.respond("another", "turn-native", {"request_id": key, "answers": {}})
@@ -121,7 +122,7 @@ def test_native_request_and_result_are_tool_segments_and_display_outputs(tmp_pat
     projector = AgentDataProjector(store)
     projector.begin(request, session)
     client, sent, native_events = native_client(tmp_path)
-    client._answer_server_request(41, "item/tool/requestUserInput", request_params())
+    client.events.answer_server_request(41, "item/tool/requestUserInput", request_params())
     key = native_events[0]["params"]["item"]["user_input"]["request_id"]
     client.user_inputs.respond("thread-native", "turn-native", {"request_id": key, "answers": {"scope": {"answers": ["定向"]}}})
     projected = []
@@ -179,12 +180,12 @@ def test_native_chat_projects_canonical_segments_from_redacted_activity(
     client, sent, native_events = native_client(tmp_path)
     params = request_params(blocking)
     params["questions"][0]["question"] = "检查 token=synthetic-question-value"
-    client._answer_server_request(41, "item/tool/requestUserInput", params)
+    client.events.answer_server_request(41, "item/tool/requestUserInput", params)
     assert not sent
     assert client.user_inputs.blocking("thread-native") is blocking
     key = native_events[0]["params"]["item"]["user_input"]["request_id"]
     if ending == "expired":
-        client._dispatch_notification("turn/completed", {
+        client.events.dispatch_notification("turn/completed", {
             "threadId": "thread-native", "turn": {"id": "turn-native", "status": "completed"},
         })
     elif ending == "cancelled":
@@ -324,13 +325,13 @@ def test_blocking_wait_does_not_consume_resume_reconciliation_timeout(tmp_path, 
     started = time.monotonic()
     def transport_request(method, params, **kwargs):
         if method == "thread/resume":
-            client._answer_server_request(41, "item/tool/requestUserInput", request_params())
+            client.events.answer_server_request(41, "item/tool/requestUserInput", request_params())
         return {}
-    monkeypatch.setattr(client, "request", transport_request)
-    monkeypatch.setattr(client, "_read_active_turn", lambda *args, **kwargs: {"id": "turn-native", "status": "inProgress"})
-    monkeypatch.setattr(client, "_read_task_complete_goal", lambda *args: None)
+    monkeypatch.setattr(client.rpc, "request", transport_request)
+    monkeypatch.setattr(client.reads, "read_active_turn", lambda *args, **kwargs: {"id": "turn-native", "status": "inProgress"})
+    monkeypatch.setattr(client.reads, "read_task_complete_goal", lambda *args: None)
     final = {"id": "turn-native", "status": "completed", "items": [{"id": "final", "type": "agentMessage", "phase": "final_answer", "text": "done"}]}
-    monkeypatch.setattr(client, "_read_terminal_turn", lambda *args: final)
+    monkeypatch.setattr(client.follower, "read_terminal_turn", lambda *args: final)
     def next_control():
         if time.monotonic() - started < .2:
             return None
@@ -350,9 +351,9 @@ def test_secret_input_returns_an_error_and_other_workers_requests_stay_unanswere
     client, sent, events = native_client(tmp_path)
     params = request_params()
     params["questions"][0]["isSecret"] = True
-    client._answer_server_request(41, "item/tool/requestUserInput", params)
+    client.events.answer_server_request(41, "item/tool/requestUserInput", params)
     # A request of a turn another Worker runs is that Worker's to answer.
-    client._turn_waiters.clear()
-    client._answer_server_request(42, "item/tool/requestUserInput", request_params())
+    client.work.turns.clear()
+    client.events.answer_server_request(42, "item/tool/requestUserInput", request_params())
     assert len(sent) == 1 and sent[0]["id"] == 41 and "error" in sent[0]
     assert events == []

@@ -11,7 +11,8 @@ import hashlib
 import base64
 import struct
 
-from management_portal.codex_app_server_client import CodexAppServerClient, _TurnWaiter
+from management_portal.codex_app_server_client import CodexAppServerClient
+from management_portal.codex_app_server_protocol import TurnWaiter
 from management_portal.kimi_live_events import KimiLiveItems, KimiLiveStream
 
 
@@ -25,12 +26,12 @@ def test_codex_routes_early_and_nested_children_without_mixing_other_threads(tmp
     :design-point:"""
     client = CodexAppServerClient(tmp_path / 'unused.sock')
     output = []
-    waiter = _TurnWaiter(thread_id='root', turn_id='t', event_callback=output.append)
-    client._turn_waiters['root'] = waiter
+    waiter = TurnWaiter(thread_id='root', turn_id='t', event_callback=output.append)
+    client.work.turns['root'] = waiter
     def message(thread, body):
-        client._dispatch_notification('item/completed', {'threadId': thread, 'turnId': 'child-turn', 'item': {'type': 'agentMessage', 'id': 'a', 'text': body}})
+        client.events.dispatch_notification('item/completed', {'threadId': thread, 'turnId': 'child-turn', 'item': {'type': 'agentMessage', 'id': 'a', 'text': body}})
     def spawn(parent, child, call):
-        client._dispatch_notification('item/completed', {'threadId': parent, 'turnId': 't' if parent == 'root' else 'child-turn', 'item': {
+        client.events.dispatch_notification('item/completed', {'threadId': parent, 'turnId': 't' if parent == 'root' else 'child-turn', 'item': {
             'id': call, 'type': 'collabAgentToolCall', 'tool': 'spawnAgent', 'status': 'completed', 'receiverThreadIds': [child]}})
     message('foreign', 'never belongs here')
     message('child', 'before spawn acknowledgement')
@@ -77,14 +78,14 @@ def test_codex_child_projection_failure_does_not_disconnect_the_parent(tmp_path)
     client = CodexAppServerClient(tmp_path / 'unused.sock')
     def reject(_event):
         raise ValueError('projection fixture')
-    client._turn_waiters['root'] = _TurnWaiter(thread_id='root', turn_id='t', event_callback=reject)
-    client._dispatch_notification('thread/started', {'thread': {
+    client.work.turns['root'] = TurnWaiter(thread_id='root', turn_id='t', event_callback=reject)
+    client.events.dispatch_notification('thread/started', {'thread': {
         'id': 'child', 'source': {'subAgent': {'thread_spawn': {'parent_thread_id': 'root'}}},
     }})
-    client._dispatch_notification('item/completed', {'threadId': 'child', 'item': {
+    client.events.dispatch_notification('item/completed', {'threadId': 'child', 'item': {
         'id': 'answer', 'type': 'agentMessage', 'text': 'child output',
     }})
-    assert client._turn_waiters['root'].error is None
+    assert client.work.turns['root'].error is None
 
 
 def test_codex_remembers_grandchild_source_before_parent_announcement(tmp_path):
@@ -93,13 +94,13 @@ def test_codex_remembers_grandchild_source_before_parent_announcement(tmp_path):
     :design-point:"""
     client = CodexAppServerClient(tmp_path / 'unused.sock')
     output = []
-    client._turn_waiters['root'] = _TurnWaiter(thread_id='root', turn_id='t', event_callback=output.append)
+    client.work.turns['root'] = TurnWaiter(thread_id='root', turn_id='t', event_callback=output.append)
     def started(child, parent):
-        client._dispatch_notification('thread/started', {'thread': {
+        client.events.dispatch_notification('thread/started', {'thread': {
             'id': child, 'source': {'subAgent': {'thread_spawn': {'parent_thread_id': parent}}},
         }})
     started('grandchild', 'child')
-    client._dispatch_notification('item/completed', {'threadId': 'grandchild', 'item': {
+    client.events.dispatch_notification('item/completed', {'threadId': 'grandchild', 'item': {
         'id': 'answer', 'type': 'agentMessage', 'text': 'early grandchild',
     }})
     assert not output
@@ -395,14 +396,14 @@ def test_codex_joins_a_subagent_thread_its_parent_reports_and_leaves_it_when_don
             joined.set()
             return {'thread': {'id': params['threadId'], 'agentNickname': 'Boyle'}}
         return {}
-    client.request = request
-    client._turn_waiters['root'] = _TurnWaiter(thread_id='root', turn_id='t', event_callback=output.append)
+    client.rpc.request = request
+    client.work.turns['root'] = TurnWaiter(thread_id='root', turn_id='t', event_callback=output.append)
     def activity(kind, call):
-        client._dispatch_notification('item/completed', {'threadId': 'root', 'turnId': 't', 'item': {
+        client.events.dispatch_notification('item/completed', {'threadId': 'root', 'turnId': 't', 'item': {
             'type': 'subAgentActivity', 'id': call, 'kind': kind, 'agentThreadId': 'child', 'agentPath': '/root/a'}})
     activity('started', 'call_spawn')
     assert joined.wait(5)
-    client._dispatch_notification('item/completed', {'threadId': 'child', 'turnId': 'c', 'item': {
+    client.events.dispatch_notification('item/completed', {'threadId': 'child', 'turnId': 'c', 'item': {
         'type': 'agentMessage', 'id': 'm', 'text': 'done'}})
     activity('completed', 'subagent-completed-child')
     for _ in range(50):
@@ -418,7 +419,7 @@ def test_codex_joins_a_subagent_thread_its_parent_reports_and_leaves_it_when_don
     # A subagent of a thread no turn here follows is not joined.
     activity_for_other = {'threadId': 'other', 'turnId': 'x', 'item': {
         'type': 'subAgentActivity', 'id': 'c2', 'kind': 'started', 'agentThreadId': 'child2'}}
-    client._dispatch_notification('item/completed', activity_for_other)
+    client.events.dispatch_notification('item/completed', activity_for_other)
     threading.Event().wait(0.2)
     assert all(params.get('threadId') != 'child2' for _, params in requests)
 

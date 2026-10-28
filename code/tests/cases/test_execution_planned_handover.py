@@ -6,7 +6,7 @@ from unittest import mock
 import pytest
 
 from management_common.json_columns import json_value
-from management_portal.codex_app_server_client import CodexTurnInterrupted
+from management_portal.codex_app_server_protocol import CodexTurnInterrupted
 from management_portal.execution import backends
 from management_portal.execution.contracts import ExecutionRecoveryDeferred, ExecutionRequest, SessionOptions
 from management_portal.execution.scheduler import Scheduler

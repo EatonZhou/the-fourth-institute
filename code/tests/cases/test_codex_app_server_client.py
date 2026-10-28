@@ -15,8 +15,8 @@ from pathlib import Path
 from unittest import mock
 
 
-from management_portal.codex_app_server_client import (
-    CodexAppServerClient,
+from management_portal.codex_app_server_client import CodexAppServerClient
+from management_portal.codex_app_server_protocol import (
     CodexAppServerError,
     CodexThreadNotFound,
     CodexTurnAuthenticationError,
@@ -27,14 +27,15 @@ from management_portal.codex_app_server_client import (
     CodexTurnInterrupted,
     CodexTurnRetryableFailure,
     CodexTurnSafetyBlocked,
-    _CompactWaiter,
-    _GoalWaiter,
-    _PendingRequest,
-    _TurnWaiter,
+    CompactWaiter,
+    GoalWaiter,
+    PendingRequest,
+    TurnWaiter,
     codex_final_agent_response,
-    _terminal_turn_error,
-    codex_thread_execution_lock,
+    terminal_turn_error,
 )
+from management_portal.codex_app_server_threads import codex_thread_execution_lock
+from management_portal.codex_app_server_turn_follow import CodexTurnFollower
 
 
 def test_running_turn_normalizes_message_identity_before_replay():
@@ -50,25 +51,40 @@ def test_running_turn_normalizes_message_identity_before_replay():
     transform = mock.Mock(return_value={**snapshot, "items": [
         {**message, "id": "msg_native", "status": "completed"}, completed, pending,
     ]})
-    waiter = _TurnWaiter("thread", turn_id="turn", turn_snapshot_transform=transform,
+    waiter = TurnWaiter("thread", turn_id="turn", turn_snapshot_transform=transform,
                          event_callback=events.append)
-    client.read_turn = mock.Mock(return_value=snapshot)
-    assert client._read_terminal_turn(waiter) is None
-    assert client._read_terminal_turn(waiter) is None
+    client.reads.read_turn = mock.Mock(return_value=snapshot)
+    assert client.follower.read_terminal_turn(waiter) is None
+    assert client.follower.read_terminal_turn(waiter) is None
     assert transform.call_args_list == [mock.call(snapshot), mock.call(snapshot)]
     assert [event["params"]["item"]["id"] for event in events] == ["msg_native", "done"]
+
+
+@pytest.mark.parametrize("rejected", [{"image_detail": "bad"}, {"collaboration_mode": "plan"}])
+def test_rejected_turn_input_leaves_no_turn_registered(rejected):
+    """被拒绝的轮次输入不会在线程上留下已登记的轮次和工具处理器
+
+    run_turn validates the turn's input before it registers the turn's waiter
+    and dynamic tool handler, so a rejected input leaves neither behind."""
+    client = CodexAppServerClient(Path("/unused.sock"))
+    client.rpc.request = mock.Mock(return_value={"thread": {"id": "thread"}, "data": []})
+    with pytest.raises(ValueError):
+        client.run_turn("thread", "hello", cwd="/tmp", dynamic_tool_handler=lambda params: {}, **rejected)
+    assert not client.work.turns
+    assert not client.work.dynamic_tool_handlers
+    assert client.snapshot()["busy_threads"] == 0
 
 
 def test_reconciliation_is_throttled_but_terminal_notification_wakes_it():
     """轮次对账按间隔节流，收到结束通知时立即对账
 
     :module: platform.core"""
-    waiter = _TurnWaiter("thread")
-    with mock.patch("management_portal.codex_app_server_client.time.monotonic", return_value=100):
-        assert CodexAppServerClient._turn_reconcile_due(waiter)
-        assert not CodexAppServerClient._turn_reconcile_due(waiter)
+    waiter = TurnWaiter("thread")
+    with mock.patch("management_portal.codex_app_server_turn_follow.time.monotonic", return_value=100):
+        assert CodexTurnFollower.turn_reconcile_due(waiter)
+        assert not CodexTurnFollower.turn_reconcile_due(waiter)
         waiter.event.set()
-        assert CodexAppServerClient._turn_reconcile_due(waiter)
+        assert CodexTurnFollower.turn_reconcile_due(waiter)
 
 
 class FakeAppServer:
@@ -721,7 +737,7 @@ class CodexAppServerClientTest(unittest.TestCase):
     def test_turn_control_updates_running_turn_speed_without_steering(self) -> None:
         """轮次控制可更新进行中轮次的 service_tier，不发 turn/steer"""
         client = CodexAppServerClient(self.socket_path)
-        waiter = _TurnWaiter(
+        waiter = TurnWaiter(
             thread_id="thread-speed",
             turn_id="turn-speed",
         )
@@ -732,14 +748,14 @@ class CodexAppServerClientTest(unittest.TestCase):
         results: list[tuple[dict, bool, str]] = []
 
         with mock.patch.object(
-            client,
+            client.controls,
             "update_turn_settings",
             return_value={"status": "applied"},
         ) as update_turn_settings, mock.patch.object(
-            client,
+            client.controls,
             "steer_turn",
         ) as steer_turn:
-            transition = client._deliver_turn_control(
+            transition = client.controls.deliver_turn_control(
                 thread_id=waiter.thread_id,
                 waiter=waiter,
                 turn_control_provider=lambda: control,
@@ -765,7 +781,7 @@ class CodexAppServerClientTest(unittest.TestCase):
         """清除快速档位时 turn/settings/update 以 JSON null 提交 serviceTier"""
         client = CodexAppServerClient(self.socket_path)
         with mock.patch.object(
-            client,
+            client.rpc,
             "request",
             return_value={"status": "applied"},
         ) as request:
@@ -783,7 +799,7 @@ class CodexAppServerClientTest(unittest.TestCase):
                 "turnId": "turn-speed",
                 "serviceTier": None,
             },
-            timeout=client.lifecycle_request_timeout_seconds,
+            timeout=client.timeouts.lifecycle,
             cancellation_requested=None,
         )
 
@@ -792,19 +808,19 @@ class CodexAppServerClientTest(unittest.TestCase):
 
     def test_turn_waiter_starts_non_idle_before_status_notification(self) -> None:
         """轮次等待器在收到状态通知前默认线程不空闲"""
-        self.assertFalse(_TurnWaiter(thread_id="thread-test").thread_idle)
+        self.assertFalse(TurnWaiter(thread_id="thread-test").thread_idle)
 
     def test_final_answer_closes_turn_control_channel(self) -> None:
         """已出现 final_answer 后关闭轮次控制通道，不再取后续控制输入"""
         client = CodexAppServerClient(self.socket_path)
-        waiter = _TurnWaiter(
+        waiter = TurnWaiter(
             thread_id="thread-test",
             turn_id="turn-test",
             final_answer_seen=True,
         )
         provider_calls: list[bool] = []
 
-        result = client._deliver_turn_control(
+        result = client.controls.deliver_turn_control(
             thread_id=waiter.thread_id,
             waiter=waiter,
             turn_control_provider=lambda: provider_calls.append(True),
@@ -819,16 +835,16 @@ class CodexAppServerClientTest(unittest.TestCase):
     def test_final_answer_start_closes_input_before_event_projection(self) -> None:
         """final_answer 条目开始时先停止接收输入，再投影事件"""
         client = CodexAppServerClient(self.socket_path)
-        waiter = _TurnWaiter(thread_id="thread-test", turn_id="turn-test")
-        client._turn_waiters[waiter.thread_id] = waiter
+        waiter = TurnWaiter(thread_id="thread-test", turn_id="turn-test")
+        client.work.turns[waiter.thread_id] = waiter
         control_provider = mock.Mock(return_value=None)
-        waiter.event_callback = lambda event: client._deliver_turn_control(
+        waiter.event_callback = lambda event: client.controls.deliver_turn_control(
             thread_id=waiter.thread_id, waiter=waiter,
             turn_control_provider=control_provider,
             turn_control_result_callback=None, cancellation_requested=None,
         )
         try:
-            client._dispatch_notification("item/started", {
+            client.events.dispatch_notification("item/started", {
                 "threadId": waiter.thread_id, "turnId": waiter.turn_id,
                 "item": {"id": "final", "type": "agentMessage", "phase": "final_answer", "text": ""},
             })
@@ -843,11 +859,11 @@ class CodexAppServerClientTest(unittest.TestCase):
     def test_commentary_and_other_turn_final_do_not_close_input(self) -> None:
         """commentary 或其他轮次的 final_answer 开始时，本轮仍继续接收输入"""
         client = CodexAppServerClient(self.socket_path)
-        waiter = _TurnWaiter(thread_id="thread-test", turn_id="turn-test")
-        client._turn_waiters[waiter.thread_id] = waiter
+        waiter = TurnWaiter(thread_id="thread-test", turn_id="turn-test")
+        client.work.turns[waiter.thread_id] = waiter
         try:
             for turn_id, phase in [(waiter.turn_id, "commentary"), ("other-turn", "final_answer")]:
-                client._dispatch_notification("item/started", {
+                client.events.dispatch_notification("item/started", {
                     "threadId": waiter.thread_id, "turnId": turn_id,
                     "item": {"id": "agent-item", "type": "agentMessage", "phase": phase, "text": ""},
                 })
@@ -861,8 +877,8 @@ class CodexAppServerClientTest(unittest.TestCase):
         try:
             for callback in (None, mock.Mock()):
                 with self.subTest(has_callback=callback is not None):
-                    waiter = _TurnWaiter(thread_id="thread-test", turn_id="turn-test", event_callback=callback)
-                    client._replay_completed_items(waiter, {
+                    waiter = TurnWaiter(thread_id="thread-test", turn_id="turn-test", event_callback=callback)
+                    client.follower.replay_completed_items(waiter, {
                         "id": waiter.turn_id, "status": "inProgress", "items": [{
                             "id": "final", "type": "agentMessage", "phase": "final_answer",
                             "status": "inProgress", "text": "partial final",
@@ -881,14 +897,14 @@ class CodexAppServerClientTest(unittest.TestCase):
     ) -> None:
         """轮次已完成时即使没有 final_answer 也关闭轮次控制通道"""
         client = CodexAppServerClient(self.socket_path)
-        waiter = _TurnWaiter(
+        waiter = TurnWaiter(
             thread_id="thread-test",
             turn_id="turn-test",
             completed={"turn": {"status": "completed"}},
         )
         provider_calls: list[bool] = []
 
-        result = client._deliver_turn_control(
+        result = client.controls.deliver_turn_control(
             thread_id=waiter.thread_id,
             waiter=waiter,
             turn_control_provider=lambda: provider_calls.append(True),
@@ -965,17 +981,17 @@ class CodexAppServerClientTest(unittest.TestCase):
                                "text": "The captured patch is correct."}
                 complete = {"id": parent, "status": "completed", "items": [result_item]}
                 child_running = {"id": child, "status": "inProgress", "items": []}
-                client.request = mock.Mock(return_value={"turn": {"id": parent, "status": "inProgress"}})
-                client._read_active_turn = mock.Mock(side_effect=(
+                client.rpc.request = mock.Mock(return_value={"turn": {"id": parent, "status": "inProgress"}})
+                client.reads.read_active_turn = mock.Mock(side_effect=(
                     [child_running, None] if resume else [None, child_running, None]
                 ))
-                client.read_turn = mock.Mock(side_effect=lambda thread, turn: (
+                client.reads.read_turn = mock.Mock(side_effect=lambda thread, turn: (
                     complete if turn == parent else {"id": child, "status": "interrupted", "items": []}
                 ))
                 events, starts = [], []
                 try:
                     with mock.patch.multiple(
-                        "management_portal.codex_app_server_client",
+                        "management_portal.codex_app_server_turn_follow",
                         TURN_ACTIVE_RECONCILE_INTERVAL_SECONDS=0.001,
                         TURN_COMPLETION_RECONCILE_INTERVAL_SECONDS=0.001,
                     ):
@@ -1000,14 +1016,14 @@ class CodexAppServerClientTest(unittest.TestCase):
         """按 ID 查找轮次时向更早的分页翻找，分页不前进时报错"""
         client = CodexAppServerClient(self.socket_path)
         expected = {"id": "review-parent", "status": "completed", "items": []}
-        client.request = mock.Mock(side_effect=[
+        client.rpc.request = mock.Mock(side_effect=[
             {"data": [{"id": "review-child", "status": "interrupted"}], "nextCursor": "older"},
             {"data": [expected], "nextCursor": "unneeded"},
         ])
         self.assertEqual(client.read_turn("thread", "review-parent"), expected)
-        self.assertEqual(client.request.call_args_list[1].args[1]["cursor"], "older")
-        self.assertEqual(client.request.call_count, 2)
-        client.request = mock.Mock(return_value={"data": [], "nextCursor": "loop"})
+        self.assertEqual(client.rpc.request.call_args_list[1].args[1]["cursor"], "older")
+        self.assertEqual(client.rpc.request.call_count, 2)
+        client.rpc.request = mock.Mock(return_value={"data": [], "nextCursor": "loop"})
         with self.assertRaisesRegex(CodexAppServerError, "pagination did not advance"):
             client.read_turn("thread", "absent")
         client.close()
@@ -1192,7 +1208,7 @@ class CodexAppServerClientTest(unittest.TestCase):
         control_results: list[tuple[dict, bool, str]] = []
 
         with mock.patch(
-            "management_portal.codex_app_server_client.TURN_CONTROL_POLL_INTERVAL_SECONDS",
+            "management_portal.codex_app_server_turn_follow.TURN_CONTROL_POLL_INTERVAL_SECONDS",
             0.01,
         ):
             result = client.run_turn(
@@ -1238,7 +1254,7 @@ class CodexAppServerClientTest(unittest.TestCase):
         client = CodexAppServerClient(self.socket_path)
 
         with mock.patch(
-            "management_portal.codex_app_server_client.TURN_CONTROL_POLL_INTERVAL_SECONDS",
+            "management_portal.codex_app_server_turn_follow.TURN_CONTROL_POLL_INTERVAL_SECONDS",
             0.01,
         ):
             result = client.run_turn(
@@ -1263,13 +1279,13 @@ class CodexAppServerClientTest(unittest.TestCase):
 
         with (
             mock.patch(
-                "management_portal.codex_app_server_client."
+                "management_portal.codex_app_server_turns."
                 "TURN_COMPACTION_CONFLICT_WAIT_SECONDS",
                 0.03,
             ),
             mock.patch(
-                "management_portal.codex_app_server_client."
-                "TURN_CONTROL_POLL_INTERVAL_SECONDS",
+                "management_portal.codex_app_server_turns."
+                "COMPACTION_RELEASE_POLL_INTERVAL_SECONDS",
                 0.005,
             ),
             self.assertRaises(CodexCompactionInProgress),
@@ -1304,7 +1320,7 @@ class CodexAppServerClientTest(unittest.TestCase):
         control_results: list[tuple[dict, bool, str]] = []
 
         with mock.patch(
-            "management_portal.codex_app_server_client.TURN_CONTROL_POLL_INTERVAL_SECONDS",
+            "management_portal.codex_app_server_turn_follow.TURN_CONTROL_POLL_INTERVAL_SECONDS",
             0.01,
         ):
             result = client.resume_turn(
@@ -1333,15 +1349,15 @@ class CodexAppServerClientTest(unittest.TestCase):
         thread_id = "019f0000-0000-7000-8000-000000000209"
         turn_id = "019f0000-0000-7000-8000-000000000210"
         client = CodexAppServerClient(self.socket_path)
-        client.request = mock.Mock(return_value={})
-        client._read_active_turn = mock.Mock(
+        client.rpc.request = mock.Mock(return_value={})
+        client.reads.read_active_turn = mock.Mock(
             return_value={"id": turn_id, "status": "inProgress"}
         )
-        client._read_task_complete_goal = mock.Mock(return_value=None)
-        client._read_terminal_turn = mock.Mock(return_value=None)
+        client.reads.read_task_complete_goal = mock.Mock(return_value=None)
+        client.follower.read_terminal_turn = mock.Mock(return_value=None)
 
         with mock.patch(
-            "management_portal.codex_app_server_client."
+            "management_portal.codex_app_server_turn_follow."
             "TURN_COMPLETION_RECONCILE_INTERVAL_SECONDS",
             0.01,
         ):
@@ -1353,7 +1369,7 @@ class CodexAppServerClientTest(unittest.TestCase):
                     timeout_seconds=0.03,
                 )
 
-        self.assertNotIn(thread_id, client._turn_waiters)
+        self.assertNotIn(thread_id, client.work.turns)
         client.close()
 
     def test_resume_turn_replays_items_completed_while_disconnected(self) -> None:
@@ -1389,21 +1405,21 @@ class CodexAppServerClientTest(unittest.TestCase):
             },
         ])
         client = CodexAppServerClient(self.socket_path)
-        client.request = mock.Mock(
+        client.rpc.request = mock.Mock(
             side_effect=lambda method, *_args, **_kwargs: (
                 next(snapshots)
                 if method == "thread/turns/list"
                 else {}
             )
         )
-        client._read_active_turn = mock.Mock(
+        client.reads.read_active_turn = mock.Mock(
             return_value={"id": turn_id, "status": "inProgress"}
         )
-        client._read_task_complete_goal = mock.Mock(return_value=None)
+        client.reads.read_task_complete_goal = mock.Mock(return_value=None)
         events: list[dict] = []
 
         with mock.patch(
-            "management_portal.codex_app_server_client."
+            "management_portal.codex_app_server_turn_follow."
             "TURN_COMPLETION_RECONCILE_INTERVAL_SECONDS",
             0.01,
         ):
@@ -1436,13 +1452,13 @@ class CodexAppServerClientTest(unittest.TestCase):
         compact_turn_id = "019f0000-0000-7000-8000-000000000206"
         successor_turn_id = "019f0000-0000-7000-8000-000000000207"
         client = CodexAppServerClient(self.socket_path)
-        client.request = mock.Mock(return_value={})
-        client._read_task_complete_goal = mock.Mock(return_value=None)
-        client._read_active_turn = mock.Mock(side_effect=[
+        client.rpc.request = mock.Mock(return_value={})
+        client.reads.read_task_complete_goal = mock.Mock(return_value=None)
+        client.reads.read_active_turn = mock.Mock(side_effect=[
             {"id": compact_turn_id, "status": "inProgress"},
             {"id": successor_turn_id, "status": "inProgress"},
         ])
-        client._read_terminal_turn = mock.Mock(side_effect=[
+        client.follower.read_terminal_turn = mock.Mock(side_effect=[
             {
                 "id": compact_turn_id,
                 "status": "completed",
@@ -1477,23 +1493,23 @@ class CodexAppServerClientTest(unittest.TestCase):
         thread_id = "019f0000-0000-7000-8000-000000000208"
         compact_turn_id = "019f0000-0000-7000-8000-000000000209"
         client = CodexAppServerClient(self.socket_path)
-        client.request = mock.Mock(return_value={})
-        client._read_task_complete_goal = mock.Mock(return_value=None)
+        client.rpc.request = mock.Mock(return_value={})
+        client.reads.read_task_complete_goal = mock.Mock(return_value=None)
         active_reads = iter([
             {"id": compact_turn_id, "status": "inProgress"},
             None,
         ])
-        client._read_active_turn = mock.Mock(
+        client.reads.read_active_turn = mock.Mock(
             side_effect=lambda _thread_id: next(active_reads, None)
         )
-        client._read_terminal_turn = mock.Mock(return_value={
+        client.follower.read_terminal_turn = mock.Mock(return_value={
             "id": compact_turn_id,
             "status": "completed",
             "items": [{"type": "contextCompaction"}],
         })
 
         with mock.patch(
-            "management_portal.codex_app_server_client."
+            "management_portal.codex_app_server_turn_follow."
             "TURN_SUCCESSOR_RECONCILE_GRACE_SECONDS",
             0.01,
         ), self.assertRaises(CodexTurnContinuationRequired) as raised:
@@ -1510,17 +1526,17 @@ class CodexAppServerClientTest(unittest.TestCase):
         thread_id = "019f0000-0000-7000-8000-000000000210"
         turn_id = "019f0000-0000-7000-8000-000000000211"
         client = CodexAppServerClient(self.socket_path)
-        client.request = mock.Mock(return_value={})
-        client._read_task_complete_goal = mock.Mock(return_value=None)
-        client._read_active_turn = mock.Mock(return_value=None)
-        client._read_terminal_turn = mock.Mock(return_value={
+        client.rpc.request = mock.Mock(return_value={})
+        client.reads.read_task_complete_goal = mock.Mock(return_value=None)
+        client.reads.read_active_turn = mock.Mock(return_value=None)
+        client.follower.read_terminal_turn = mock.Mock(return_value={
             "id": turn_id,
             "status": "completed",
             "items": [{"type": "reasoning"}],
         })
 
         with mock.patch(
-            "management_portal.codex_app_server_client."
+            "management_portal.codex_app_server_turn_follow."
             "TURN_SUCCESSOR_RECONCILE_GRACE_SECONDS",
             0.01,
         ), self.assertRaises(CodexTurnContinuationRequired) as raised:
@@ -1541,7 +1557,7 @@ class CodexAppServerClientTest(unittest.TestCase):
             self.socket_path,
             request_timeout_seconds=1,
         )
-        client.request_timeout_seconds = 0.02
+        client.timeouts.request = 0.02
 
         result = client.run_turn(
             "019f0000-0000-7000-8000-000000000210",
@@ -1560,9 +1576,9 @@ class CodexAppServerClientTest(unittest.TestCase):
         server.start()
         client = CodexAppServerClient(self.socket_path)
         try:
-            self.assertEqual(client.turn_start_request_timeout_seconds, 360.0)
-            self.assertEqual(client.lifecycle_request_timeout_seconds, 180.0)
-            with mock.patch.object(client, "request", wraps=client.request) as requests:
+            self.assertEqual(client.timeouts.turn_start, 360.0)
+            self.assertEqual(client.timeouts.lifecycle, 180.0)
+            with mock.patch.object(client.rpc, "request", wraps=client.rpc.request) as requests:
                 result = client.run_turn(
                     "019f0000-0000-7000-8000-000000000219", "hello", cwd="/tmp",
                 )
@@ -1577,8 +1593,8 @@ class CodexAppServerClientTest(unittest.TestCase):
         client = CodexAppServerClient(
             self.socket_path, turn_start_request_timeout_seconds=0.25,
         )
-        self.assertEqual(client.turn_start_request_timeout_seconds, 0.25)
-        self.assertEqual(client.lifecycle_request_timeout_seconds, 180.0)
+        self.assertEqual(client.timeouts.turn_start, 0.25)
+        self.assertEqual(client.timeouts.lifecycle, 180.0)
         client.close()
 
     def test_run_turn_resume_request_uses_lifecycle_timeout(self) -> None:
@@ -1611,7 +1627,7 @@ class CodexAppServerClientTest(unittest.TestCase):
         """等待进程内的线程锁时可以被取消"""
         client = CodexAppServerClient(self.socket_path)
         thread_id = "019f0000-0000-7000-8000-000000000214"
-        held_lock = client._thread_lock(thread_id)
+        held_lock = client.threads.lock_for(thread_id)
         held_lock.acquire()
         cancellation = threading.Event()
         waiting = threading.Event()
@@ -1620,7 +1636,7 @@ class CodexAppServerClientTest(unittest.TestCase):
         def wait_for_lock() -> None:
             waiting.set()
             try:
-                with client._locked_thread(
+                with client.threads.locked(
                     thread_id,
                     cancellation_requested=cancellation.is_set,
                 ):
@@ -1631,8 +1647,8 @@ class CodexAppServerClientTest(unittest.TestCase):
         waiter = threading.Thread(target=wait_for_lock, daemon=True)
         try:
             with mock.patch(
-                "management_portal.codex_app_server_client."
-                "TURN_CONTROL_POLL_INTERVAL_SECONDS",
+                "management_portal.codex_app_server_threads."
+                "THREAD_LOCK_POLL_INTERVAL_SECONDS",
                 0.01,
             ):
                 waiter.start()
@@ -1658,23 +1674,23 @@ class CodexAppServerClientTest(unittest.TestCase):
                 return {"turn": {"id": turn_id, "status": "inProgress"}}
             return {}
 
-        client.request = mock.Mock(side_effect=request)
-        client._read_active_turn = mock.Mock(return_value=None)
-        client._read_terminal_turn = mock.Mock(return_value=None)
+        client.rpc.request = mock.Mock(side_effect=request)
+        client.reads.read_active_turn = mock.Mock(return_value=None)
+        client.follower.read_terminal_turn = mock.Mock(return_value=None)
 
         with (
             mock.patch(
-                "management_portal.codex_app_server_client."
+                "management_portal.codex_app_server_turn_follow."
                 "TURN_COMPLETION_RECONCILE_INTERVAL_SECONDS",
                 0.001,
             ),
             mock.patch(
-                "management_portal.codex_app_server_client."
+                "management_portal.codex_app_server_turn_follow."
                 "TURN_ACTIVE_RECONCILE_INTERVAL_SECONDS",
                 0.001,
             ),
             mock.patch(
-                "management_portal.codex_app_server_client."
+                "management_portal.codex_app_server_turn_follow."
                 "TURN_ACCEPTED_MISSING_GRACE_SECONDS",
                 0.01,
             ),
@@ -1975,7 +1991,7 @@ class CodexAppServerClientTest(unittest.TestCase):
 
     def test_capacity_failure_is_typed_as_retryable(self) -> None:
         """模型容量不足的失败归类为可重试的 capacity 失败"""
-        error = _terminal_turn_error(
+        error = terminal_turn_error(
             "thread-capacity",
             {
                 "id": "turn-capacity",
@@ -1998,7 +2014,7 @@ class CodexAppServerClientTest(unittest.TestCase):
 
     def test_safety_block_failure_is_terminal_not_retryable(self) -> None:
         """安全系统拦截的失败归类为不可重试的 provider_safety_blocked"""
-        error = _terminal_turn_error(
+        error = terminal_turn_error(
             "thread-safety",
             {
                 "id": "turn-safety",
@@ -2047,7 +2063,7 @@ class CodexAppServerClientTest(unittest.TestCase):
             {"codexErrorInfo": "unauthorized"},
         ):
             with self.subTest(error=error):
-                failure = _terminal_turn_error("thread-auth", {
+                failure = terminal_turn_error("thread-auth", {
                     "id": "turn-auth", "status": "completed", "error": error,
                 })
                 self.assertIsInstance(failure, CodexTurnAuthenticationError)
@@ -2083,7 +2099,7 @@ class CodexAppServerClientTest(unittest.TestCase):
         """带安全策略错误码的轮次无论状态如何都按安全拦截处理"""
         for status in ("failed", "interrupted", "completed"):
             with self.subTest(status=status):
-                error = _terminal_turn_error("thread-safety", {
+                error = terminal_turn_error("thread-safety", {
                     "id": "turn-safety", "status": status,
                     "error": {"codexErrorInfo": "misalignmentPolicyViolation"},
                 })
@@ -2121,38 +2137,38 @@ class CodexAppServerClientTest(unittest.TestCase):
     def test_safety_error_survives_later_notifications_and_disconnect(self) -> None:
         """安全拦截错误不被之后的错误通知、systemError、完成通知或断线覆盖"""
         client = CodexAppServerClient(self.socket_path)
-        waiter = _TurnWaiter(thread_id="thread-safety", turn_id="turn-safety")
-        client._turn_waiters[waiter.thread_id] = waiter
-        client._dispatch_notification("error", {
+        waiter = TurnWaiter(thread_id="thread-safety", turn_id="turn-safety")
+        client.work.turns[waiter.thread_id] = waiter
+        client.events.dispatch_notification("error", {
             "threadId": waiter.thread_id, "turnId": waiter.turn_id,
             "willRetry": False, "error": {"codexErrorInfo": "cyberPolicy"},
         })
         original_error = waiter.error
         self.assertIsInstance(original_error, CodexTurnSafetyBlocked)
-        client._dispatch_notification("error", {
+        client.events.dispatch_notification("error", {
             "threadId": waiter.thread_id, "turnId": waiter.turn_id,
             "willRetry": False, "error": {"message": "stream disconnected"},
         })
-        client._dispatch_notification("thread/status/changed", {
+        client.events.dispatch_notification("thread/status/changed", {
             "threadId": waiter.thread_id, "status": {"type": "systemError"},
         })
-        client._dispatch_notification("turn/completed", {
+        client.events.dispatch_notification("turn/completed", {
             "threadId": waiter.thread_id,
             "turn": {"id": waiter.turn_id, "status": "completed", "items": []},
         })
-        client._disconnect(ConnectionError("transport closed"))
+        client.disconnect(ConnectionError("transport closed"))
         self.assertIs(waiter.error, original_error)
         client.close()
 
     def test_rpc_safety_rejection_preserves_terminal_details_on_disconnect(self) -> None:
         """RPC 被安全拦截后断线，请求仍保留不可重试的安全拦截错误"""
         client = CodexAppServerClient(self.socket_path)
-        pending = _PendingRequest()
-        client._pending[17] = pending
-        client._dispatch_message({"id": 17, "error": {
+        pending = PendingRequest()
+        client.rpc._pending[17] = pending
+        client.rpc.dispatch_message({"id": 17, "error": {
             "message": "This request was blocked by our safety systems.",
         }})
-        client._disconnect(ConnectionError("transport closed"))
+        client.disconnect(ConnectionError("transport closed"))
         self.assertIsInstance(pending.error, CodexTurnSafetyBlocked)
         self.assertIs(pending.error.error_details["retryable"], False)
         client.close()
@@ -2160,19 +2176,19 @@ class CodexAppServerClientTest(unittest.TestCase):
     def test_goal_and_compact_preserve_provider_safety_rejection(self) -> None:
         """goal 和压缩收到安全拦截错误后保留该错误，断线也不覆盖"""
         client = CodexAppServerClient(self.socket_path)
-        goal = _GoalWaiter(thread_id="thread-goal")
-        compact = _CompactWaiter(thread_id="thread-compact")
-        client._goal_waiters[goal.thread_id] = goal
-        client._compact_waiters[compact.thread_id] = compact
+        goal = GoalWaiter(thread_id="thread-goal")
+        compact = CompactWaiter(thread_id="thread-compact")
+        client.work.goals[goal.thread_id] = goal
+        client.work.compactions[compact.thread_id] = compact
         for waiter in (goal, compact):
-            client._dispatch_notification("error", {
+            client.events.dispatch_notification("error", {
                 "threadId": waiter.thread_id,
                 "error": {"message": "This request was blocked by our safety systems."},
                 "willRetry": True,
             })
             self.assertIsInstance(waiter.error, CodexTurnSafetyBlocked)
             self.assertTrue(waiter.event.is_set())
-        client._disconnect(ConnectionError("closed"))
+        client.disconnect(ConnectionError("closed"))
         for waiter in (goal, compact):
             self.assertIsInstance(waiter.error, CodexTurnSafetyBlocked)
         client.close()
@@ -2197,18 +2213,18 @@ class CodexAppServerClientTest(unittest.TestCase):
         """恢复轮次时安全拦截通知不被空的完成结果覆盖"""
         thread_id, turn_id = "thread-safety", "turn-safety"
         client = CodexAppServerClient(self.socket_path)
-        client.request = mock.Mock(return_value={})
-        client._read_task_complete_goal = mock.Mock(return_value=None)
-        client._read_active_turn = mock.Mock(return_value=None)
+        client.rpc.request = mock.Mock(return_value={})
+        client.reads.read_task_complete_goal = mock.Mock(return_value=None)
+        client.reads.read_active_turn = mock.Mock(return_value=None)
 
         def terminal_turn(_waiter):
-            client._dispatch_notification("error", {
+            client.events.dispatch_notification("error", {
                 "threadId": thread_id, "turnId": turn_id,
                 "error": {"codexErrorInfo": "misalignmentPolicyViolation"},
             })
             return {"id": turn_id, "status": "completed", "items": []}
 
-        client._read_terminal_turn = mock.Mock(side_effect=terminal_turn)
+        client.follower.read_terminal_turn = mock.Mock(side_effect=terminal_turn)
         try:
             with self.assertRaises(CodexTurnSafetyBlocked):
                 client.resume_turn(thread_id, turn_id, cwd="/tmp")
@@ -2242,19 +2258,19 @@ class CodexAppServerClientTest(unittest.TestCase):
         :design-point:
         """
         client = CodexAppServerClient(self.socket_path)
-        waiter = _TurnWaiter(thread_id="thread-error", turn_id="turn-current")
-        client._turn_waiters[waiter.thread_id] = waiter
+        waiter = TurnWaiter(thread_id="thread-error", turn_id="turn-current")
+        client.work.turns[waiter.thread_id] = waiter
         params = {
             "threadId": waiter.thread_id, "turnId": "turn-old", "willRetry": False,
             "error": {"message": "You've hit your usage limit."},
         }
-        client._dispatch_notification("error", params)
+        client.events.dispatch_notification("error", params)
         self.assertIsNone(waiter.error)
         self.assertFalse(waiter.event.is_set())
-        client._dispatch_notification("error", {**params, "turnId": waiter.turn_id})
+        client.events.dispatch_notification("error", {**params, "turnId": waiter.turn_id})
         original_error = waiter.error
         self.assertIsNotNone(original_error)
-        client._dispatch_notification("thread/status/changed", {
+        client.events.dispatch_notification("thread/status/changed", {
             "threadId": waiter.thread_id, "status": {"type": "systemError"},
         })
         self.assertIs(waiter.error, original_error)
@@ -2280,24 +2296,24 @@ class CodexAppServerClientTest(unittest.TestCase):
                     if method == "thread/resume":
                         return {"thread": {"id": "thread-error"}}
                     if method == "thread/turns/list":
-                        client._dispatch_notification("thread/tokenUsage/updated", {
+                        client.events.dispatch_notification("thread/tokenUsage/updated", {
                             "threadId": "thread-error", "turnId": "turn-old",
                             "tokenUsage": {"last": {"totalTokens": 900}},
                         })
                         return {"data": [old_turn], "nextCursor": None}
                     if method == "turn/start":
                         submitted.append(params["input"])
-                        client._dispatch_notification("turn/completed", {"threadId": "thread-error", "turn": old_turn})
-                        client._dispatch_notification("turn/started", {
+                        client.events.dispatch_notification("turn/completed", {"threadId": "thread-error", "turn": old_turn})
+                        client.events.dispatch_notification("turn/started", {
                             "threadId": "thread-error", "turn": {"id": "turn-new", "status": "inProgress"},
                         })
-                        client._dispatch_notification("turn/completed", {"threadId": "thread-error", "turn": new_turn})
+                        client.events.dispatch_notification("turn/completed", {"threadId": "thread-error", "turn": new_turn})
                         return {"turn": {"id": "turn-new", "status": "inProgress"}}
                     self.fail(f"unexpected Provider request: {method}")
 
-                client.request = request
+                client.rpc.request = request
                 try:
-                    with mock.patch("management_portal.codex_app_server_client.TURN_COMPLETION_RECONCILE_INTERVAL_SECONDS", 0.01):
+                    with mock.patch("management_portal.codex_app_server_turn_follow.TURN_COMPLETION_RECONCILE_INTERVAL_SECONDS", 0.01):
                         result = client.run_turn(
                             "thread-error", "new user input", cwd="/tmp",
                             event_callback=events.append, turn_started_callback=accepted.append,
@@ -2318,7 +2334,7 @@ class CodexAppServerClientTest(unittest.TestCase):
 
     def test_permission_failure_is_not_typed_as_retryable(self) -> None:
         """执行权限被拒的失败不归类为可重试"""
-        error = _terminal_turn_error(
+        error = terminal_turn_error(
             "thread-permission",
             {
                 "id": "turn-permission",
@@ -2341,7 +2357,7 @@ class CodexAppServerClientTest(unittest.TestCase):
         client = CodexAppServerClient(self.socket_path)
 
         with mock.patch(
-            "management_portal.codex_app_server_client.TURN_COMPLETION_RECONCILE_INTERVAL_SECONDS",
+            "management_portal.codex_app_server_turn_follow.TURN_COMPLETION_RECONCILE_INTERVAL_SECONDS",
             0.01,
         ):
             result = client.run_turn(
@@ -2376,14 +2392,14 @@ class CodexAppServerClientTest(unittest.TestCase):
         observed, finish, cancel = threading.Event(), threading.Event(), threading.Event()
         events, results, failures = [], [], []
         client = CodexAppServerClient(self.socket_path)
-        client.request = mock.Mock(return_value={"turn": {"id": turn_id, "status": "inProgress"}})
+        client.rpc.request = mock.Mock(return_value={"turn": {"id": turn_id, "status": "inProgress"}})
         def active_snapshot(*_args, **_kwargs):
-            waiter = client._turn_waiters.get(thread_id)
+            waiter = client.work.turns.get(thread_id)
             # The real active-turn query uses itemsView=summary by default.
             return {"id": turn_id, "status": "inProgress"} if waiter and waiter.turn_id and not finish.is_set() else None
 
-        client._read_active_turn = mock.Mock(side_effect=active_snapshot)
-        client.read_turn = mock.Mock(side_effect=lambda *_args: completed if finish.is_set() else active)
+        client.reads.read_active_turn = mock.Mock(side_effect=active_snapshot)
+        client.reads.read_turn = mock.Mock(side_effect=lambda *_args: completed if finish.is_set() else active)
 
         def receive(event):
             events.append(event)
@@ -2400,7 +2416,7 @@ class CodexAppServerClientTest(unittest.TestCase):
                 failures.append(error)
 
         with mock.patch.multiple(
-            "management_portal.codex_app_server_client",
+            "management_portal.codex_app_server_turn_follow",
             TURN_ACTIVE_RECONCILE_INTERVAL_SECONDS=0.01,
             TURN_COMPLETION_RECONCILE_INTERVAL_SECONDS=0.01,
         ):
@@ -2418,7 +2434,7 @@ class CodexAppServerClientTest(unittest.TestCase):
                 item_ids = [event.get("params", {}).get("item", {}).get("id") for event in events]
                 self.assertEqual(item_ids.count(progress["id"]), 1)
                 self.assertNotIn(partial["id"], item_ids)
-                self.assertEqual([call.args[0] for call in client.request.call_args_list].count("turn/start"), 1)
+                self.assertEqual([call.args[0] for call in client.rpc.request.call_args_list].count("turn/start"), 1)
             finally:
                 cancel.set()
                 runner.join(timeout=2)
@@ -2431,18 +2447,18 @@ class CodexAppServerClientTest(unittest.TestCase):
         for initial_delivery in ("notification", "snapshot"):
             with self.subTest(initial_delivery=initial_delivery):
                 callback = mock.Mock(side_effect=[RuntimeError("unavailable"), None])
-                waiter = _TurnWaiter(thread_id="thread-progress", turn_id="turn-progress", event_callback=callback)
-                client._turn_waiters[waiter.thread_id] = waiter
+                waiter = TurnWaiter(thread_id="thread-progress", turn_id="turn-progress", event_callback=callback)
+                client.work.turns[waiter.thread_id] = waiter
                 turn = {"id": waiter.turn_id, "status": "inProgress", "items": [item]}
                 if initial_delivery == "notification":
-                    client._dispatch_notification("item/completed", {
+                    client.events.dispatch_notification("item/completed", {
                         "threadId": waiter.thread_id, "turnId": waiter.turn_id, "item": item,
                     })
                 else:
-                    client._replay_completed_items(waiter, turn)
+                    client.follower.replay_completed_items(waiter, turn)
                 self.assertNotIn(item["id"], waiter.completed_item_ids)
-                client._replay_completed_items(waiter, turn)
-                client._replay_completed_items(waiter, turn)
+                client.follower.replay_completed_items(waiter, turn)
+                client.follower.replay_completed_items(waiter, turn)
                 self.assertEqual(callback.call_count, 2)
                 self.assertEqual(waiter.agent_messages, [item["text"]])
         client.close()
@@ -2451,16 +2467,16 @@ class CodexAppServerClientTest(unittest.TestCase):
         """重放进行中轮次的快照时，未完成的条目等到完成后才发出且只发一次"""
         client = CodexAppServerClient(self.socket_path)
         events = []
-        waiter = _TurnWaiter(thread_id="thread-progress", turn_id="turn-progress", event_callback=events.append)
+        waiter = TurnWaiter(thread_id="thread-progress", turn_id="turn-progress", event_callback=events.append)
         pending = {"id": "pending-command", "type": "commandExecution", "status": "inProgress"}
         unverified = {"id": "unverified-text", "type": "agentMessage", "text": ""}
         turn = {"id": waiter.turn_id, "status": "inProgress", "items": [pending, unverified]}
-        client._replay_completed_items(waiter, turn)
+        client.follower.replay_completed_items(waiter, turn)
         self.assertFalse(events)
         self.assertFalse(waiter.completed_item_ids)
         pending["status"] = "completed"
-        client._replay_completed_items(waiter, turn)
-        client._replay_completed_items(waiter, turn)
+        client.follower.replay_completed_items(waiter, turn)
+        client.follower.replay_completed_items(waiter, turn)
         self.assertEqual(len(events), 1)
         self.assertEqual(events[0]["params"]["item"]["id"], pending["id"])
         client.close()
@@ -2471,25 +2487,25 @@ class CodexAppServerClientTest(unittest.TestCase):
         :module: platform.core"""
         client = CodexAppServerClient(self.socket_path)
         events = []
-        waiter = _TurnWaiter(thread_id="thread-progress", turn_id="turn-progress", event_callback=events.append)
-        client._turn_waiters[waiter.thread_id] = waiter
+        waiter = TurnWaiter(thread_id="thread-progress", turn_id="turn-progress", event_callback=events.append)
+        client.work.turns[waiter.thread_id] = waiter
         for phase in ("commentary", "final_answer", None):
             with self.subTest(phase=phase):
                 events.clear()
                 item = {"id": f"message-{phase}", "type": "agentMessage", "phase": phase, "text": ""}
                 turn = {"id": waiter.turn_id, "status": "inProgress", "items": [item]}
-                client.read_turn = mock.Mock(return_value=turn)
-                self.assertIsNone(client._read_terminal_turn(waiter))
+                client.reads.read_turn = mock.Mock(return_value=turn)
+                self.assertIsNone(client.follower.read_terminal_turn(waiter))
                 self.assertFalse(events)
                 self.assertNotIn(item["id"], waiter.completed_item_ids)
 
                 # Native snapshots fill the text when the message completes;
                 # agentMessage has no status field, including while its turn runs.
                 item["text"] = "A complete progress update"
-                self.assertIsNone(client._read_terminal_turn(waiter))
-                self.assertIsNone(client._read_terminal_turn(waiter))
+                self.assertIsNone(client.follower.read_terminal_turn(waiter))
+                self.assertIsNone(client.follower.read_terminal_turn(waiter))
                 self.assertEqual(len(events), 1)
-                client._dispatch_notification("item/completed", {
+                client.events.dispatch_notification("item/completed", {
                     "threadId": waiter.thread_id, "turnId": waiter.turn_id, "item": item,
                 })
                 self.assertEqual(len(events), 1)
@@ -2508,7 +2524,7 @@ class CodexAppServerClientTest(unittest.TestCase):
         client = CodexAppServerClient(self.socket_path)
 
         with mock.patch(
-            "management_portal.codex_app_server_client."
+            "management_portal.codex_app_server_turn_follow."
             "TURN_ACTIVE_RECONCILE_INTERVAL_SECONDS",
             0.01,
         ):
@@ -2526,7 +2542,7 @@ class CodexAppServerClientTest(unittest.TestCase):
     def test_terminal_reconciliation_does_not_adopt_an_unrelated_completed_turn(self) -> None:
         """结束对账不把其他已完成轮次的回答当作本轮结果"""
         client = CodexAppServerClient(self.socket_path)
-        client.request = mock.Mock(return_value={
+        client.rpc.request = mock.Mock(return_value={
             "data": [{
                 "id": "019f0000-0000-7000-8000-000000000311",
                 "status": "completed",
@@ -2537,15 +2553,15 @@ class CodexAppServerClientTest(unittest.TestCase):
                 }],
             }],
         })
-        waiter = _TurnWaiter(
+        waiter = TurnWaiter(
             thread_id="019f0000-0000-7000-8000-000000000310",
             turn_id="019f0000-0000-7000-8000-000000000312",
             terminal_goal={"status": "completed"},
         )
 
-        self.assertIsNone(client._read_terminal_turn(waiter))
-        self.assertIsNone(client._read_terminal_goal_successor(waiter))
-        request = client.request.call_args.args
+        self.assertIsNone(client.follower.read_terminal_turn(waiter))
+        self.assertIsNone(client.follower.read_terminal_goal_successor(waiter))
+        request = client.rpc.request.call_args.args
         self.assertEqual(request[0], "thread/turns/list")
         self.assertEqual(request[1]["limit"], 5)
         client.close()
@@ -2553,14 +2569,14 @@ class CodexAppServerClientTest(unittest.TestCase):
     def test_thread_system_error_requires_a_logical_continuation(self) -> None:
         """线程进入 systemError 时本轮结束并要求续跑"""
         client = CodexAppServerClient(self.socket_path)
-        waiter = _TurnWaiter(
+        waiter = TurnWaiter(
             thread_id="thread-system-error",
             turn_id="turn-system-error",
         )
-        with client._state_lock:
-            client._turn_waiters[waiter.thread_id] = waiter
+        with client.state_lock:
+            client.work.turns[waiter.thread_id] = waiter
 
-        client._dispatch_notification(
+        client.events.dispatch_notification(
             "thread/status/changed",
             {
                 "threadId": waiter.thread_id,
@@ -2581,11 +2597,11 @@ class CodexAppServerClientTest(unittest.TestCase):
         thread_id = "thread-system-error-reconcile"
         turn_id = "turn-system-error-reconcile"
         client = CodexAppServerClient(self.socket_path)
-        client.request = mock.Mock(return_value={})
-        client._read_task_complete_goal = mock.Mock(return_value=None)
-        client._read_active_turn = mock.Mock(return_value=None)
-        client._read_terminal_turn = mock.Mock(return_value=None)
-        client._read_thread_status = mock.Mock(
+        client.rpc.request = mock.Mock(return_value={})
+        client.reads.read_task_complete_goal = mock.Mock(return_value=None)
+        client.reads.read_active_turn = mock.Mock(return_value=None)
+        client.follower.read_terminal_turn = mock.Mock(return_value=None)
+        client.reads.read_thread_status = mock.Mock(
             return_value={"type": "systemError"}
         )
 
@@ -2606,7 +2622,7 @@ class CodexAppServerClientTest(unittest.TestCase):
         client = CodexAppServerClient(self.socket_path)
 
         with mock.patch(
-            "management_portal.codex_app_server_client.TURN_COMPLETION_RECONCILE_INTERVAL_SECONDS",
+            "management_portal.codex_app_server_turn_follow.TURN_COMPLETION_RECONCILE_INTERVAL_SECONDS",
             0.01,
         ):
             result = client.run_turn(
@@ -2679,15 +2695,15 @@ class CodexAppServerClientTest(unittest.TestCase):
     def test_interrupt_turn_does_not_resubmit_an_observed_terminal_turn(self) -> None:
         """已观察到结束的轮次不再发送中断请求"""
         client = CodexAppServerClient(self.socket_path)
-        waiter = _TurnWaiter(thread_id="interrupt-thread", turn_id="interrupt-turn")
-        client._turn_waiters[waiter.thread_id] = waiter
+        waiter = TurnWaiter(thread_id="interrupt-thread", turn_id="interrupt-turn")
+        client.work.turns[waiter.thread_id] = waiter
         for status in ("completed", "interrupted", "failed"):
             with self.subTest(status=status):
                 waiter.completed = {
                     "threadId": waiter.thread_id,
                     "turn": {"id": waiter.turn_id, "status": status},
                 }
-                with mock.patch.object(client, "request", return_value={}) as request:
+                with mock.patch.object(client.rpc, "request", return_value={}) as request:
                     self.assertEqual(client.interrupt_turn(waiter.thread_id, waiter.turn_id), {})
                 request.assert_not_called()
         client.close()
@@ -2695,8 +2711,8 @@ class CodexAppServerClientTest(unittest.TestCase):
     def test_interrupt_turn_shares_one_inflight_control_and_waits_for_its_return(self) -> None:
         """并发中断共用一个进行中的 turn/interrupt 请求，并等它返回"""
         client = CodexAppServerClient(self.socket_path)
-        waiter = _TurnWaiter(thread_id="interrupt-thread", turn_id="interrupt-turn")
-        client._turn_waiters[waiter.thread_id] = waiter
+        waiter = TurnWaiter(thread_id="interrupt-thread", turn_id="interrupt-turn")
+        client.work.turns[waiter.thread_id] = waiter
         request_entered = threading.Event()
         release_request = threading.Event()
         started = [threading.Event(), threading.Event()]
@@ -2717,13 +2733,13 @@ class CodexAppServerClientTest(unittest.TestCase):
                 finished[index].set()
 
         threads = [threading.Thread(target=interrupt, args=(index,)) for index in range(2)]
-        with mock.patch.object(client, "request", side_effect=native_interrupt) as request:
+        with mock.patch.object(client.rpc, "request", side_effect=native_interrupt) as request:
             try:
                 threads[0].start()
                 self.assertTrue(request_entered.wait(1))
                 threads[1].start()
                 self.assertTrue(started[1].wait(1))
-                client._dispatch_notification("turn/completed", {
+                client.events.dispatch_notification("turn/completed", {
                     "threadId": waiter.thread_id,
                     "turn": {"id": waiter.turn_id, "status": "interrupted"},
                 })
@@ -2746,9 +2762,9 @@ class CodexAppServerClientTest(unittest.TestCase):
     def test_interrupt_turn_does_not_retry_an_ambiguous_control_in_same_waiter(self) -> None:
         """中断请求结果不明时，同一轮次不再重发中断"""
         client = CodexAppServerClient(self.socket_path)
-        waiter = _TurnWaiter(thread_id="interrupt-thread", turn_id="interrupt-turn")
-        client._turn_waiters[waiter.thread_id] = waiter
-        with mock.patch.object(client, "request", side_effect=TimeoutError("missing interrupt receipt")) as request:
+        waiter = TurnWaiter(thread_id="interrupt-thread", turn_id="interrupt-turn")
+        client.work.turns[waiter.thread_id] = waiter
+        with mock.patch.object(client.rpc, "request", side_effect=TimeoutError("missing interrupt receipt")) as request:
             for _attempt in range(2):
                 with self.assertRaisesRegex(TimeoutError, "missing interrupt receipt"):
                     client.interrupt_turn(waiter.thread_id, waiter.turn_id)
@@ -2764,12 +2780,12 @@ class CodexAppServerClientTest(unittest.TestCase):
                           {"turn": {"id": "interrupt-turn", "status": "inProgress"}},
                           {"turn": {"id": "interrupt-turn", "status": "unknown"}}):
             with self.subTest(completed=completed):
-                waiter = _TurnWaiter(thread_id="interrupt-thread", turn_id="interrupt-turn")
+                waiter = TurnWaiter(thread_id="interrupt-thread", turn_id="interrupt-turn")
                 waiter.thread_idle = True
                 waiter.final_answer_seen = True
                 waiter.completed = completed
-                client._turn_waiters[waiter.thread_id] = waiter
-                with mock.patch.object(client, "request", return_value={}) as request:
+                client.work.turns[waiter.thread_id] = waiter
+                with mock.patch.object(client.rpc, "request", return_value={}) as request:
                     client.interrupt_turn(waiter.thread_id, waiter.turn_id)
                 request.assert_called_once()
         client.close()
@@ -2777,9 +2793,9 @@ class CodexAppServerClientTest(unittest.TestCase):
     def test_interrupt_turn_control_is_scoped_to_thread_and_successor_turn(self) -> None:
         """中断控制按线程和轮次隔离，一个线程的中断等待不阻塞其他线程或后继轮次"""
         client = CodexAppServerClient(self.socket_path)
-        first = _TurnWaiter(thread_id="first-thread", turn_id="old-turn")
-        second = _TurnWaiter(thread_id="second-thread", turn_id="old-turn")
-        client._turn_waiters.update({first.thread_id: first, second.thread_id: second})
+        first = TurnWaiter(thread_id="first-thread", turn_id="old-turn")
+        second = TurnWaiter(thread_id="second-thread", turn_id="old-turn")
+        client.work.turns.update({first.thread_id: first, second.thread_id: second})
         entered = threading.Event()
         release = threading.Event()
         first_finished = threading.Event()
@@ -2798,7 +2814,7 @@ class CodexAppServerClientTest(unittest.TestCase):
                 first_finished.set()
 
         thread = threading.Thread(target=interrupt_first)
-        with mock.patch.object(client, "request", side_effect=native_interrupt) as request:
+        with mock.patch.object(client.rpc, "request", side_effect=native_interrupt) as request:
             try:
                 thread.start()
                 self.assertTrue(entered.wait(1))
@@ -2875,7 +2891,7 @@ class CodexAppServerClientTest(unittest.TestCase):
         self.assertEqual(result.response, "finished")
         self.assertNotIn("thread/resume", server.methods)
         self.assertNotIn("thread/turns/list", server.methods)
-        self.assertNotIn(started["thread"]["id"], client._unmaterialized_threads)
+        self.assertNotIn(started["thread"]["id"], client.threads._unmaterialized)
         client.close()
 
     def test_first_fork_turn_can_be_claimed_by_another_worker(self) -> None:
@@ -2892,18 +2908,18 @@ class CodexAppServerClientTest(unittest.TestCase):
             "ephemeral": False,
         })
         thread_id = forked["thread"]["id"]
-        with client._state_lock:
+        with client.state_lock:
             # A different worker does not inherit the creator's local cache.
-            client._thread_activity.clear()
-            client._thread_configs.clear()
-            client._unmaterialized_threads.clear()
+            client.threads._activity.clear()
+            client.threads._configs.clear()
+            client.threads._unmaterialized.clear()
 
         result = client.run_turn(thread_id, "hello", cwd="/tmp")
 
         self.assertEqual(result.response, "finished")
         self.assertIn("thread/resume", server.methods)
         self.assertIn("turn/start", server.methods)
-        self.assertNotIn(thread_id, client._unmaterialized_threads)
+        self.assertNotIn(thread_id, client.threads._unmaterialized)
         client.close()
 
     def test_loaded_thread_starts_next_turn_without_active_turn_preflight(self) -> None:
@@ -2940,7 +2956,7 @@ class CodexAppServerClientTest(unittest.TestCase):
             self.socket_path,
             request_timeout_seconds=1,
         )
-        client.request_timeout_seconds = 0.01
+        client.timeouts.request = 0.01
 
         started = client.start_thread({"cwd": "/tmp", "ephemeral": False})
         forked = client.fork_thread({"threadId": "thread-new", "ephemeral": False})
@@ -3042,25 +3058,25 @@ class CodexAppServerClientTest(unittest.TestCase):
             max_loaded_threads=2,
         )
         now = time.monotonic()
-        client._thread_activity = {
+        client.threads._activity = {
             "old": now - 6 * 60 * 60,
             "lru": now - 60,
             "recent": now - 30,
             "active": now - 7 * 60 * 60,
         }
-        client._turn_waiters["active"] = mock.Mock()
+        client.work.turns["active"] = mock.Mock()
         calls: list[str] = []
 
         def request(_method, params, **_kwargs):
             calls.append(params["threadId"])
             return {"status": "unsubscribed"}
 
-        with mock.patch.object(client, "request", side_effect=request):
-            client._unsubscribe_idle_threads()
+        with mock.patch.object(client.rpc, "request", side_effect=request):
+            client.threads.unsubscribe_idle()
 
         self.assertEqual(set(calls), {"old", "lru"})
-        self.assertIn("active", client._thread_activity)
-        self.assertIn("recent", client._thread_activity)
+        self.assertIn("active", client.threads._activity)
+        self.assertIn("recent", client.threads._activity)
 
     def test_unloaded_notifications_require_resume_before_the_next_turn(self) -> None:
         """线程卸载或关闭通知清除本地缓存，下一轮需要重新 resume"""
@@ -3070,15 +3086,15 @@ class CodexAppServerClientTest(unittest.TestCase):
         ]:
             with self.subTest(method=method):
                 client = CodexAppServerClient(self.socket_path)
-                client._thread_activity["persisted"] = time.monotonic()
-                client._thread_configs["persisted"] = "previous-config"
-                client._unmaterialized_threads.add("persisted")
-                lock = client._thread_lock("persisted")
-                client._dispatch_notification(method, {"threadId": "persisted", **extra})
-                self.assertNotIn("persisted", client._thread_activity)
-                self.assertNotIn("persisted", client._thread_configs)
-                self.assertNotIn("persisted", client._unmaterialized_threads)
-                self.assertIs(client._thread_lock("persisted"), lock)
+                client.threads._activity["persisted"] = time.monotonic()
+                client.threads._configs["persisted"] = "previous-config"
+                client.threads._unmaterialized.add("persisted")
+                lock = client.threads.lock_for("persisted")
+                client.events.dispatch_notification(method, {"threadId": "persisted", **extra})
+                self.assertNotIn("persisted", client.threads._activity)
+                self.assertNotIn("persisted", client.threads._configs)
+                self.assertNotIn("persisted", client.threads._unmaterialized)
+                self.assertIs(client.threads.lock_for("persisted"), lock)
 
     def test_explicit_missing_thread_response_invalidates_the_cached_thread(self) -> None:
         """app-server 明确回复线程不存在时清除该线程的本地缓存"""
@@ -3091,17 +3107,17 @@ class CodexAppServerClientTest(unittest.TestCase):
         ]:
             with self.subTest(error=error):
                 client = CodexAppServerClient(self.socket_path)
-                client._thread_activity["persisted"] = time.monotonic()
+                client.threads._activity["persisted"] = time.monotonic()
                 def reject(message):
-                    client._dispatch_message({
+                    client.rpc.dispatch_message({
                         "id": message["id"],
                         "error": {"code": -32600, "message": error},
                     })
-                with mock.patch.object(client, "_connect"), mock.patch.object(client, "_send", side_effect=reject):
+                with mock.patch.object(client.rpc, "connect"), mock.patch.object(client.rpc, "send", side_effect=reject):
                     with self.assertRaises(CodexAppServerError) as caught:
                         client.request("thread/fork", {"threadId": "persisted"})
                 self.assertEqual(isinstance(caught.exception, CodexThreadNotFound), missing)
-                self.assertEqual("persisted" not in client._thread_activity, missing)
+                self.assertEqual("persisted" not in client.threads._activity, missing)
 
     def test_failed_turn_start_does_not_restore_unloaded_cache(self) -> None:
         """线程已卸载导致 turn/start 失败时，不恢复已清除的线程缓存"""
@@ -3111,48 +3127,48 @@ class CodexAppServerClientTest(unittest.TestCase):
         ]:
             with self.subTest(notification=notification):
                 client = CodexAppServerClient(self.socket_path)
-                client._thread_activity["persisted"] = time.monotonic()
-                client._thread_configs["persisted"] = "previous-config"
-                lock = client._thread_lock("persisted")
+                client.threads._activity["persisted"] = time.monotonic()
+                client.threads._configs["persisted"] = "previous-config"
+                lock = client.threads.lock_for("persisted")
 
                 def reject(method, params, **kwargs):
                     self.assertEqual(method, "turn/start")
-                    client._dispatch_notification(notification, {"threadId": "persisted", **extra})
-                    self.assertNotIn("persisted", client._thread_activity)
-                    self.assertNotIn("persisted", client._thread_configs)
+                    client.events.dispatch_notification(notification, {"threadId": "persisted", **extra})
+                    self.assertNotIn("persisted", client.threads._activity)
+                    self.assertNotIn("persisted", client.threads._configs)
                     raise CodexAppServerError("thread not found: persisted")
 
-                with mock.patch.object(client, "request", side_effect=reject) as request:
+                with mock.patch.object(client.rpc, "request", side_effect=reject) as request:
                     with self.assertRaisesRegex(CodexAppServerError, "thread not found"):
                         client.run_turn("persisted", "one request", cwd=self.temp_dir.name)
                 self.assertEqual(request.call_count, 1)
-                self.assertNotIn("persisted", client._thread_activity)
-                self.assertNotIn("persisted", client._thread_configs)
-                self.assertNotIn("persisted", client._turn_waiters)
-                self.assertIs(client._thread_lock("persisted"), lock)
+                self.assertNotIn("persisted", client.threads._activity)
+                self.assertNotIn("persisted", client.threads._configs)
+                self.assertNotIn("persisted", client.work.turns)
+                self.assertIs(client.threads.lock_for("persisted"), lock)
 
     def test_idle_cleanup_skips_a_thread_acquired_after_candidate_selection(self) -> None:
         """空闲清理跳过选中后又被占用的线程"""
         client = CodexAppServerClient(self.socket_path, max_loaded_threads=1)
-        client._thread_activity["persisted"] = time.monotonic() - 1_000_000
-        lock = client._thread_lock("persisted")
+        client.threads._activity["persisted"] = time.monotonic() - 1_000_000
+        lock = client.threads.lock_for("persisted")
         lock.acquire()
         try:
-            with mock.patch.object(client, "request") as request:
-                client._unsubscribe_idle_threads()
+            with mock.patch.object(client.rpc, "request") as request:
+                client.threads.unsubscribe_idle()
                 request.assert_not_called()
         finally:
             lock.release()
-        self.assertIn("persisted", client._thread_activity)
+        self.assertIn("persisted", client.threads._activity)
 
     def test_idle_cleanup_preserves_goal_and_compaction_threads(self) -> None:
         """空闲清理不退订正在执行 goal 或压缩的线程"""
         client = CodexAppServerClient(self.socket_path, max_loaded_threads=1)
-        client._thread_activity = {name: time.monotonic() - 1_000_000 for name in ("goal", "compact")}
-        client._goal_waiters["goal"] = mock.Mock()
-        client._compact_waiters["compact"] = mock.Mock()
-        with mock.patch.object(client, "request") as request:
-            client._unsubscribe_idle_threads()
+        client.threads._activity = {name: time.monotonic() - 1_000_000 for name in ("goal", "compact")}
+        client.work.goals["goal"] = mock.Mock()
+        client.work.compactions["compact"] = mock.Mock()
+        with mock.patch.object(client.rpc, "request") as request:
+            client.threads.unsubscribe_idle()
             request.assert_not_called()
 
     def test_next_turn_resumes_the_same_persisted_thread_after_unload(self) -> None:
@@ -3161,8 +3177,8 @@ class CodexAppServerClientTest(unittest.TestCase):
         server.start()
         client = CodexAppServerClient(self.socket_path)
         try:
-            client._thread_activity["persisted"] = time.monotonic()
-            client._dispatch_notification("thread/status/changed", {
+            client.threads._activity["persisted"] = time.monotonic()
+            client.events.dispatch_notification("thread/status/changed", {
                 "threadId": "persisted", "status": {"type": "notLoaded"},
             })
             result = client.run_turn("persisted", "one request", cwd=self.temp_dir.name)
@@ -3182,23 +3198,23 @@ class CodexAppServerClientTest(unittest.TestCase):
             max_loaded_threads=1,
         )
         now = time.monotonic()
-        client._thread_activity = {
+        client.threads._activity = {
             "empty": now - 60,
             "materialized": now - 30,
         }
-        client._unmaterialized_threads.add("empty")
+        client.threads._unmaterialized.add("empty")
         calls: list[str] = []
 
         def request(_method, params, **_kwargs):
             calls.append(params["threadId"])
             return {"status": "unsubscribed"}
 
-        with mock.patch.object(client, "request", side_effect=request):
-            client._unsubscribe_idle_threads()
+        with mock.patch.object(client.rpc, "request", side_effect=request):
+            client.threads.unsubscribe_idle()
 
         self.assertEqual(calls, ["materialized"])
-        self.assertIn("empty", client._thread_activity)
-        self.assertIn("empty", client._unmaterialized_threads)
+        self.assertIn("empty", client.threads._activity)
+        self.assertIn("empty", client.threads._unmaterialized)
 
     def test_thread_execution_lock_serializes_independent_callers(self) -> None:
         """跨进程线程执行锁让独立调用方对同一线程依次执行"""
@@ -3284,12 +3300,12 @@ class CodexAppServerClientTest(unittest.TestCase):
             self.socket_path,
             request_timeout_seconds=0.01,
         )
-        client._transport = mock.Mock()
+        client.rpc._transport = mock.Mock()
         cancellation_requested = threading.Event()
         timer = threading.Timer(0.05, cancellation_requested.set)
         timer.start()
         try:
-            with mock.patch.object(client, "_send"):
+            with mock.patch.object(client.rpc, "send"):
                 with self.assertRaises(InterruptedError):
                     client.request(
                         "thread/resume",

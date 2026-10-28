@@ -296,7 +296,7 @@ def test_monitor_authentication_failure_and_recovery(isolated_login):
     :importance: P1
     """
     from management_portal.execution.account_monitor import AccountMonitor
-    from management_portal.codex_app_server_client import CodexTurnAuthenticationError
+    from management_portal.codex_app_server_protocol import CodexTurnAuthenticationError
     for provider, failure in (("codex", CodexTurnAuthenticationError("", "", "private detail")),
                               ("claude", RuntimeError("HTTP 401 unauthorized private detail"))):
         account = SimpleNamespace(account_id="monitor_" + provider, provider=provider, quota_policy="reserve",

@@ -248,7 +248,7 @@ def test_default_requires_successful_current_account_check(monkeypatch):
 @pytest.mark.parametrize("stage", ["start", "ready"])
 def test_failed_codex_service_reports_recovery_without_submitting(monkeypatch, stage):
     from management_portal.execution import account_hosting
-    from management_portal.codex_app_server_client import CodexAppServerUnavailable
+    from management_portal.codex_app_server_protocol import CodexAppServerUnavailable
     monkeypatch.setattr(setup, "account", lambda _: row("codex"))
     monkeypatch.setattr(updates, "runtime_available", lambda _: True)
     start = Mock(side_effect=OSError("private service detail") if stage == "start" else None)

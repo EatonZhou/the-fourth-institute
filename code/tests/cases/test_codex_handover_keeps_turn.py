@@ -12,7 +12,8 @@ from unittest import mock
 
 import pytest
 
-from management_portal.codex_app_server_client import CodexAppServerClient, CodexTurnDetached, _TurnWaiter
+from management_portal.codex_app_server_client import CodexAppServerClient
+from management_portal.codex_app_server_protocol import CodexTurnDetached, TurnWaiter
 from tests.cases.test_codex_interrupt_semantics import (
     NATIVE_BINARIES, OfflineResponsesServer, native_test_session,
 )
@@ -44,7 +45,7 @@ def test_codex_handover_prepares_without_native_interrupt(handover_claim):
     assert result.output["message"] == "finished"
     assert client.resume_turn.call_args.args == (checkpoint["backend_session_id"], checkpoint["turn_id"])
     client.run_turn.assert_not_called()
-    client.interrupt_turn.assert_not_called()
+    client.controls.interrupt_turn.assert_not_called()
 
 
 def test_detach_drains_started_dynamic_call_and_leaves_new_request_unanswered(tmp_path):
@@ -55,33 +56,33 @@ def test_detach_drains_started_dynamic_call_and_leaves_new_request_unanswered(tm
     :design-point:
     """
     client = CodexAppServerClient(tmp_path / "unused.sock")
-    client._send = mock.Mock()
+    client.rpc.send = mock.Mock()
     thread, turn = "thread", "turn"
     started, release = threading.Event(), threading.Event()
     def handle(_params):
         started.set()
         assert release.wait(3)
         return {"content": [{"type": "text", "text": "committed result"}], "isError": False}
-    client._turn_waiters[thread] = _TurnWaiter(thread_id=thread, turn_id=turn)
-    client._dynamic_tool_handlers[thread] = handle
-    client._answer_server_request(1, "item/tool/call", {"threadId": thread})
+    client.work.turns[thread] = TurnWaiter(thread_id=thread, turn_id=turn)
+    client.work.dynamic_tool_handlers[thread] = handle
+    client.events.answer_server_request(1, "item/tool/call", {"threadId": thread})
     assert started.wait(2)
     try:
-        client._detach_if_requested(thread, turn, lambda: True)
-        client._answer_server_request(2, "item/tool/call", {"threadId": thread})
-        client._send.assert_not_called()
+        client.work.detach_if_requested(thread, turn, lambda: True)
+        client.events.answer_server_request(2, "item/tool/call", {"threadId": thread})
+        client.rpc.send.assert_not_called()
     finally:
         release.set()
     # Join only this isolated dispatch thread via the client's tracked count.
     import time
     deadline = time.monotonic() + 3
-    while client._active_dynamic_calls and time.monotonic() < deadline:
+    while client.work.active_dynamic_calls and time.monotonic() < deadline:
         time.sleep(.01)
     with pytest.raises(CodexTurnDetached):
-        client._detach_if_requested(thread, turn, lambda: True)
-    assert client._send.call_count == 1
-    assert client._send.call_args.args[0]["id"] == 1
-    assert "result" in client._send.call_args.args[0]
+        client.work.detach_if_requested(thread, turn, lambda: True)
+    assert client.rpc.send.call_count == 1
+    assert client.rpc.send.call_args.args[0]["id"] == 1
+    assert "result" in client.rpc.send.call_args.args[0]
 
 
 def test_native_command_replay_keeps_real_call_identity_in_one_trace(isolated_portal_case):
@@ -102,10 +103,10 @@ def test_native_command_replay_keeps_real_call_identity_in_one_trace(isolated_po
             projector = AgentDataProjector(store)
             projector.begin(request, session, created_at="2026-10-09T03:52:43Z")
             client = CodexAppServerClient(Path("/tmp/unused-native-handover.sock"))
-            waiter = _TurnWaiter(thread_id="thread", turn_id="same-turn", event_callback=lambda event: projector.observe(
+            waiter = TurnWaiter(thread_id="thread", turn_id="same-turn", event_callback=lambda event: projector.observe(
                 provider="codex", backend_route_id="zero", backend_session_id="thread",
                 execution_id=request.execution_id, event=event))
-            client._replay_completed_items(waiter, {"id": "same-turn", "status": "completed", "items": items})
+            client.follower.replay_completed_items(waiter, {"id": "same-turn", "status": "completed", "items": items})
         segments = [store.segment(identity) for identity in store.sequence_segment_ids(store.trace_sequence_id(request.agent_id))]
         tools = [segment for segment in segments if segment["segment_type"] == "tool"]
         assert len(tools) == 2
@@ -175,15 +176,15 @@ def test_handover_detaches_goal_without_pausing_or_recreating_it(tmp_path):
     """
     client = CodexAppServerClient(tmp_path / "unused.sock")
     goal = {"objective": "original objective", "status": "active"}
-    client.request = mock.Mock(return_value={"goal": goal})
+    client.rpc.request = mock.Mock(return_value={"goal": goal})
     with pytest.raises(CodexTurnDetached):
         client.run_goal("thread", action="observe", detach_requested=lambda: True)
-    methods = [call.args[0] for call in client.request.call_args_list]
+    methods = [call.args[0] for call in client.rpc.request.call_args_list]
     assert "thread/goal/get" in methods
     assert "thread/goal/set" not in methods
     assert "turn/interrupt" not in methods
-    assert not client._goal_waiters
-    assert "thread" not in client._busy_threads
+    assert not client.work.goals
+    assert "thread" not in client.threads._busy
 
 
 def test_resume_detaches_while_native_user_input_is_pending(tmp_path):
@@ -194,14 +195,14 @@ def test_resume_detaches_while_native_user_input_is_pending(tmp_path):
     :design-point:
     """
     client = CodexAppServerClient(tmp_path / "unused.sock")
-    client.request = mock.Mock(return_value={})
-    client._read_active_turn = mock.Mock(return_value={"id": "accepted-turn", "status": "inProgress"})
+    client.rpc.request = mock.Mock(return_value={})
+    client.reads.read_active_turn = mock.Mock(return_value={"id": "accepted-turn", "status": "inProgress"})
     client.user_inputs.blocking = mock.Mock(return_value=True)
     with pytest.raises(CodexTurnDetached):
         client.resume_turn("thread", "accepted-turn", cwd=str(tmp_path),
                            detach_requested=lambda: True, timeout_seconds=1)
-    assert [call.args[0] for call in client.request.call_args_list] == ["thread/resume"]
-    assert not client._turn_waiters
+    assert [call.args[0] for call in client.rpc.request.call_args_list] == ["thread/resume"]
+    assert not client.work.turns
 
 
 

@@ -10,7 +10,7 @@ from unittest import mock
 
 import pytest
 
-from management_portal.codex_app_server_client import CodexTurnInterrupted, CodexTurnResult
+from management_portal.codex_app_server_protocol import CodexTurnInterrupted, CodexTurnResult
 from management_portal.execution.backends import BackendContext, CodexBackend
 from management_portal.execution.contracts import ExecutionRecoveryDeferred, InputMedia
 from management_portal.execution.codex_rollout_history import read_codex_turn_input_recorded

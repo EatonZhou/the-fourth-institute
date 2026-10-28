@@ -24,30 +24,31 @@ from management_portal.ai_provider_registry import (
 from management_portal.claude_code_client import shared_client as shared_claude_client
 from management_portal.resident_shell_environment import may_inherit_portal_database, portal_database_environment
 from .codex_history_delivery import CodexHistoryDelivery
-from management_portal.codex_app_server_client import (
+from management_portal.codex_app_server_client import client_for_socket, codex_token_usage_delta
+from management_portal.codex_app_server_compaction import (
     DEFAULT_COMPACT_NO_PROGRESS_TIMEOUT_SECONDS,
     DEFAULT_COMPACT_TOTAL_TIMEOUT_SECONDS,
+)
+from management_portal.codex_app_server_protocol import (
+    CodexAppServerError,
     CodexAppServerUnavailable,
     CodexCompactionInProgress,
-    CodexAppServerError,
-    CodexThreadWriterBusy,
-    CodexTurnContinuationRequired,
     CodexThreadNotFound,
-    thread_sandbox_from_policy,
+    CodexThreadWriterBusy,
     CodexTurnConnectionLost,
+    CodexTurnContinuationRequired,
     CodexTurnDetached,
     CodexTurnInterrupted,
     CodexTurnRetryableFailure,
-    _terminal_turn_error,
-    client_for_socket,
     codex_final_agent_response,
-    codex_token_usage_delta,
-    codex_thread_execution_lock,
     is_context_compaction_item,
+    terminal_turn_error,
+    thread_sandbox_from_policy,
 )
+from management_portal.codex_app_server_threads import codex_thread_execution_lock
 from management_portal import kimi_portal_tools
 from management_portal import codex_subagent_cards
-from management_portal.kimi_code_client import KimiCodeDetached, KimiCodeTurnFailed, KimiCodeUnavailable
+from management_portal.kimi_code_client import KimiCodeDetached
 from management_portal.native_agent_transport import NativeAgentDetached, NativeAgentUnavailable
 from management_portal.kimi_code_client import shared_client as shared_kimi_client
 from management_common.provider_turn_artifacts import ToolEditArtifacts
@@ -56,8 +57,6 @@ from management_common.provider_subagent_runs import PROGRESS_METHOD as SUBAGENT
 
 from .activity_redaction import redact_sensitive_mapping
 from .contracts import (
-    EXECUTION_INPUT_CONTROL_SCHEMA,
-    EXECUTION_TURN_SETTINGS_CONTROL_SCHEMA,
     ExecutionControlSignal,
     ExecutionRecoveryDeferred,
     ExecutionRequest,
@@ -141,31 +140,7 @@ def _bounded_wait_seconds(name: str, default: float) -> float:
     return max(1.0, configured)
 
 
-def _codex_compaction_wait_options() -> dict[str, float]:
-    return {
-        "timeout_seconds": _bounded_wait_seconds(
-            "PORTAL_CODEX_COMPACTION_TIMEOUT_SECONDS",
-            DEFAULT_COMPACT_TOTAL_TIMEOUT_SECONDS,
-        ),
-        "no_progress_timeout_seconds": _bounded_wait_seconds(
-            "PORTAL_CODEX_COMPACTION_NO_PROGRESS_TIMEOUT_SECONDS",
-            DEFAULT_COMPACT_NO_PROGRESS_TIMEOUT_SECONDS,
-        ),
-    }
-
-
 LOGGER = logging.getLogger(__name__)
-
-_CODEX_COMPACTION_PROMPT = (
-    "Summarize the current task state using only established facts. Include the active "
-    "request and completion criteria, constraints, verified progress and results, "
-    "remaining work, confirmed blockers, and essential resource references. Preserve "
-    "the distinction between completed actions and planned actions. Keep the summary "
-    "concise and factual."
-)
-
-
-
 
 _CONTEXT_USAGE_ALIASES = {
     "input_tokens": "inputTokens",
@@ -176,10 +151,10 @@ _CONTEXT_USAGE_ALIASES = {
 }
 
 
-def _codex_live_context_usage(
+def _live_context_usage(
     value: object,
 ) -> tuple[dict[str, int], int]:
-    """Normalize one Codex token notification's current context sample."""
+    """Normalize the current context sample of one ``thread/tokenUsage/updated`` payload."""
 
     payload = value if isinstance(value, dict) else {}
     current = (
@@ -773,6 +748,15 @@ class Backend(Protocol):
         runtime_options: dict[str, Any],
     ) -> bool:
         ...
+
+
+_CODEX_COMPACTION_PROMPT = (
+    "Summarize the current task state using only established facts. Include the active "
+    "request and completion criteria, constraints, verified progress and results, "
+    "remaining work, confirmed blockers, and essential resource references. Preserve "
+    "the distinction between completed actions and planned actions. Keep the summary "
+    "concise and factual."
+)
 
 
 def _model_api_entry(api_id: str, model: str) -> dict[str, Any]:
@@ -1558,844 +1542,199 @@ class CodexBackend:
         context: BackendContext,
         usage_scope: dict[str, Any],
     ) -> BackendResult:
-        # Planned detachment is separate from user cancellation. In-flight native
-        # commands keep running and the next owner follows this exact turn.
-        def provider_cancelled() -> bool:
-            return context.is_cancelled() and not (invocation.request.operation == "turn" and context.is_handover())
-
         request = invocation.request
-        options = request.runtime_options
-        goal_command = (
-            dict(options.get("goal"))
-            if isinstance(options.get("goal"), dict)
-            else {}
-        )
-        if goal_command and bool(options.get("ephemeral", False)):
+        if codex_goal_command(request.runtime_options) and bool(request.runtime_options.get("ephemeral", False)):
             raise ValueError("Codex native goals require a persistent thread")
-        (
-            route,
-            client,
-            thread_id,
-            system_context_bound_to_thread,
-        ) = (
-            self._resolve_client(
-                invocation,
-                context,
-            )
+        route, client, thread_id, system_context_bound_to_thread = self._resolve_client(invocation, context)
+        session = CodexSession(
+            invocation=invocation, context=context, route=route, client=client, thread_id=thread_id,
+            system_context_bound_to_thread=system_context_bound_to_thread,
         )
-        usage_scope.update(route=route, thread=lambda: thread_id)
-        available_harness_tool_names = set(
-            invocation.available_harness_tool_names
-        )
-        if invocation.is_new_backend_session:
-            available_harness_tool_names.update(
-                str(tool.name or "").strip()
-                for tool in invocation.harness_tools
-                if bool(getattr(tool, "expose_schema", True))
-                and str(tool.name or "").strip()
-            )
+        usage_scope.update(route=route, thread=lambda: session.thread_id)
         context.set_interrupt_target(
             thread_id,
             backend_route_id=route.account_id,
         )
         operation = request.operation
-        if operation == "release":
-            client.unsubscribe_thread(thread_id)
-            return BackendResult(
-                output={
-                    "message": "",
-                    "provider": self.provider_id,
-                    "operation": operation,
-                },
-                backend_route_id=route.account_id,
-            )
-        def history_delivery_for(references, *, agent_id=None, store=None):
-            return CodexHistoryDelivery(
-                references=references, route_id=route.account_id,
-                agent_id=agent_id or request.agent_id, actor=request.actor,
-                execution_id=request.execution_id, store=store,
-                send=lambda target, items: client.request(
-                    "thread/inject_items", {"threadId": target, "items": items},
-                    cancellation_requested=provider_cancelled,
-                ),
-            )
-
-        if operation == "create":
-            seed = request.metadata.get("fork_context_input") or {}
-            if seed:
-                if not request.metadata.get("preserve_session_context"):
-                    raise ValueError("Session creation history requires an explicit preservation operation")
-                from .agent_data_store import get_agent_data_store
-                from .session_history_import import validate_codex_preservation
-                store = get_agent_data_store()
-                validate_codex_preservation(store.fork_context_segments(seed["segments"]))
-                history_delivery_for(seed["segments"], store=store,
-                                     agent_id=seed["source_agent_id"]).initialize(thread_id)
-                # create has no turn for the projector to mark. Keep the
-                # acknowledged window attached to this session for later forks.
-                imported_session = store.ensure_provider_session(
-                    provider=self.provider_id, backend_route_id=route.account_id,
-                    backend_session_id=thread_id, agent_id=request.agent_id, actor_ref=request.actor,
-                )
-                store.record_context_received(seed["source_agent_id"], imported_session["provider_session_ref"],
-                    [item["segment_id"] for item in seed["segments"]], actor_ref=request.actor)
-            return BackendResult(
-                output={
-                    "message": "",
-                    "provider": self.provider_id,
-                    "operation": operation,
-                    "context_result": "preserved_import" if seed else "fresh",
-                },
-                backend_session_id=thread_id,
-                backend_route_id=route.account_id,
-                available_harness_tool_names=frozenset(
-                    available_harness_tool_names
-                ),
-            )
-        if operation == "fork":
-            sandbox, sandbox_policy = self._sandbox_options(options)
-            if not sandbox:
-                sandbox = thread_sandbox_from_policy(sandbox_policy)
-            params = {
-                "threadId": thread_id,
-                "ephemeral": bool(options.get("ephemeral", False)),
-                "excludeTurns": bool(options.get("exclude_turns", True)),
-                "threadSource": str(options.get("thread_source") or "user"),
-                "config": self._runtime_thread_config(request),
-            }
-            for source, target in (
-                ("cwd", "cwd"),
-                ("approval_policy", "approvalPolicy"),
-            ):
-                value = options.get(source)
-                if value not in (None, ""):
-                    params[target] = value
-            if sandbox:
-                params["sandbox"] = sandbox
-            try:
-                forked = client.fork_thread(
-                    params,
-                    cancellation_requested=provider_cancelled,
-                )
-            except CodexAppServerError as exc:
-                if not isinstance(exc, CodexThreadNotFound):
-                    raise
-                from .agent_data_store import get_agent_data_store
-
-                store = get_agent_data_store()
-                agent_id = str(request.metadata.get("resident_id") or request.agent_id)
-                snapshot = store.provider_context_snapshot(
-                    provider=self.provider_id, backend_route_id=route.account_id,
-                    backend_session_id=thread_id, agent_id=agent_id,
-                )
-                if not snapshot or not snapshot.get("segments"):
-                    raise
-                references = snapshot["segments"]
-                if request.metadata.get("preserve_session_context"):
-                    from .session_history_import import validate_codex_preservation
-                    validate_codex_preservation(references)
-                replacement = self._start_thread(
-                    client, request, context.is_cancelled, invocation.harness_tools,
-                )
-                delivery = history_delivery_for(references, agent_id=agent_id, store=store)
-                delivery.initialize(replacement)
-                context.emit("fork_source_restored", {
-                    "provider": self.provider_id, "source_thread_id": thread_id,
-                    "thread_id": replacement, "source": "agent_trace",
-                })
-                forked = {"thread": {"id": replacement}}
-            thread = (
-                forked.get("thread")
-                if isinstance(forked.get("thread"), dict)
-                else {}
-            )
-            forked_id = str(thread.get("id") or "")
-            if not forked_id:
-                raise RuntimeError("Codex thread/fork returned no thread id")
-            return BackendResult(
-                output={
-                    "message": "",
-                    "provider": self.provider_id,
-                    "operation": operation,
-                    "forked_from_session_id": thread_id,
-                },
-                backend_session_id=forked_id,
-                backend_route_id=route.account_id,
-            )
-        if operation == "compact":
-            self._write_execution_context(request)
-            fork_history = request.metadata.get("fork_context_input") or {}
-            if fork_history:
-                if (
-                    str(request.metadata.get("initial_context_policy") or "")
-                    != "compact_before_first_turn"
-                ):
-                    raise ValueError(
-                        "Fork context may only accompany compact_before_first_turn"
-                    )
-
-                history_delivery_for(fork_history["segments"]).initialize(thread_id)
-            previous_compaction = self._latest_compaction(route, thread_id)
-            try:
-                usage = client.compact_thread(
-                    thread_id,
-                    config=self._runtime_thread_config(request),
-                    cancellation_requested=provider_cancelled,
-                    **_codex_compaction_wait_options(),
-                )
-            except (TimeoutError, CodexAppServerUnavailable) as exc:
-                context.set_provider_recovery_state({"kind": "thread_writer_busy", "thread_id": thread_id})
-                raise ExecutionRecoveryDeferred(
-                    "Codex compaction recovery wait deadline reached"
-                ) from exc
-            self._record_new_compaction(
-                context=context,
-                route=route,
-                thread_id=thread_id,
-                previous_fingerprint=(
-                    previous_compaction.fingerprint
-                    if previous_compaction is not None
-                    else ""
-                ),
-                wait_seconds=1.0,
-                required=True,
-            )
-            return BackendResult(
-                output={
-                    "message": "",
-                    "provider": self.provider_id,
-                    "operation": operation,
-                },
-                backend_session_id=thread_id,
-                backend_route_id=route.account_id,
-                usage=dict(usage) if isinstance(usage, dict) else {},
-            )
+        handler = {
+            "release": self._release,
+            "create": self._create,
+            "fork": self._fork,
+            "compact": self._compact,
+        }.get(operation)
+        if handler is not None:
+            return handler(session)
         if operation != "turn":
             raise ValueError(f"unsupported Codex backend operation: {operation}")
-        sandbox, sandbox_policy = self._sandbox_options(options)
-        turn_options = {
-            key: options[key]
-            for key in (
-                "model",
-                "effort",
-                "summary",
-                "service_tier",
-                "collaboration_mode",
-                "permissions",
-                "approval_policy",
-                "approvals_reviewer",
-            )
-            if key in options and options[key] not in (None, "")
-        }
-        if sandbox:
-            turn_options["sandbox"] = sandbox
-        if sandbox_policy is not None:
-            turn_options["sandbox_policy"] = sandbox_policy
-        turn_options["cwd"] = request.cwd
-        turn_options["config"] = self._runtime_thread_config(request)
-        portal_message_id = str(
-            options.get("client_user_message_id") or ""
+        return CodexTurnRun(self, session, usage_scope).run()
+
+    def _operation_result(
+        self,
+        session: CodexSession,
+        output: Mapping[str, Any] | None = None,
+        **result: Any,
+    ) -> BackendResult:
+        """The result of an operation that runs no turn."""
+
+        return BackendResult(
+            output={
+                "message": "",
+                "provider": self.provider_id,
+                "operation": session.request.operation,
+                **(output or {}),
+            },
+            backend_route_id=session.route.account_id,
+            **result,
         )
-        if portal_message_id:
-            turn_options["client_user_message_id"] = portal_message_id
-        dynamic_tool_handler = self._harness_tool_dispatcher(
-            invocation.harness_tools,
-            invocation.tool_batch_processor,
+
+    def _release(self, session: CodexSession) -> BackendResult:
+        session.client.unsubscribe_thread(session.thread_id)
+        return self._operation_result(session)
+
+    def _create(self, session: CodexSession) -> BackendResult:
+        seed = session.request.metadata.get("fork_context_input") or {}
+        if seed:
+            self._import_session_history(session, seed)
+        return self._operation_result(
+            session,
+            {"context_result": "preserved_import" if seed else "fresh"},
+            backend_session_id=session.thread_id,
+            available_harness_tool_names=session.available_harness_tool_names(),
         )
-        if dynamic_tool_handler is not None:
-            turn_options["dynamic_tool_handler"] = dynamic_tool_handler
-        event_processor = invocation.provider_event_processor
-        if event_processor is not None or context.has_turn_control_provider():
-            def next_turn_control() -> dict[str, Any] | None:
-                external = context.next_turn_control()
-                if external is not None:
-                    return external
-                if event_processor is not None:
-                    return event_processor.next_control()
-                return None
 
-            def record_turn_control_result(
-                control: dict[str, Any],
-                delivered: bool,
-                error: str,
-            ) -> None:
-                if (
-                    schema_matches(control.get("schema"), "tfi.execution-input-control.v1")
-                    or schema_matches(control.get("schema"), "tfi.execution-turn-settings-control.v1")
-                ):
-                    context.record_turn_control_result(
-                        control,
-                        delivered,
-                        error,
-                    )
-                elif event_processor is not None:
-                    event_processor.record_control_result(
-                        control,
-                        delivered,
-                        error,
-                    )
-                    if delivered:
-                        report_harness_control(context, control)
+    def _import_session_history(self, session: CodexSession, seed: Mapping[str, Any]) -> None:
+        """Give a new thread the history its creation preserves from another session."""
 
-            turn_options["turn_control_provider"] = next_turn_control
-            turn_options["turn_control_result_callback"] = (
-                record_turn_control_result
-            )
-
-        provider_recovery_state = dict(
-            invocation.recovery_checkpoint.get("provider_recovery_state")
-            if isinstance(
-                invocation.recovery_checkpoint.get("provider_recovery_state"),
-                dict,
-            )
-            else {}
+        request = session.request
+        if not request.metadata.get("preserve_session_context"):
+            raise ValueError("Session creation history requires an explicit preservation operation")
+        from .agent_data_store import get_agent_data_store
+        from .session_history_import import validate_codex_preservation
+        store = get_agent_data_store()
+        validate_codex_preservation(store.fork_context_segments(seed["segments"]))
+        session.history_delivery(seed["segments"], store=store,
+                                 agent_id=seed["source_agent_id"]).initialize(session.thread_id)
+        # create has no turn for the projector to mark. Keep the
+        # acknowledged window attached to this session for later forks.
+        imported_session = store.ensure_provider_session(
+            provider=self.provider_id, backend_route_id=session.route.account_id,
+            backend_session_id=session.thread_id, agent_id=request.agent_id, actor_ref=request.actor,
         )
-        recovery_budget = CodexRecoveryBudget(provider_recovery_state)
-        original_input_recorded = provider_recovery_state.get("original_input_recorded") is True
-        provider_error_continue_count = int(
-            provider_recovery_state.get("provider_error_continue_count") or 0
-        )
-        continuation_count = 0
+        store.record_context_received(seed["source_agent_id"], imported_session["provider_session_ref"],
+            [item["segment_id"] for item in seed["segments"]], actor_ref=request.actor)
 
-        def persist_provider_recovery_state(
-            state: Mapping[str, Any] | None,
-        ) -> None:
-            nonlocal provider_recovery_state
-            provider_recovery_state = dict(state or {})
-            provider_recovery_state["recovery_budget"] = recovery_budget.snapshot()
-            provider_recovery_state["provider_error_continue_count"] = provider_error_continue_count
-            provider_recovery_state["original_input_recorded"] = original_input_recorded
-            context.set_provider_recovery_state(provider_recovery_state)
-
-        def reserve_recovery_attempt(reason: object) -> None:
-            recovery_budget.reserve_retry(reason)
-            persist_provider_recovery_state(provider_recovery_state)
-
-
-        def turn_started_callback(turn_id: str) -> None:
-            recovery_budget.turn_started(turn_id)
-            context.bind_input(
-                provider=self.provider_id,
-                backend_session_id=thread_id,
-                backend_route_id=route.account_id,
-                turn_id=turn_id,
+    def _fork(self, session: CodexSession) -> BackendResult:
+        try:
+            forked = session.client.fork_thread(
+                self._fork_params(session.request, session.thread_id),
+                cancellation_requested=session.provider_cancelled,
             )
-            original_turn_id = str(
-                provider_recovery_state.get("original_turn_id") or ""
-            )
-            if original_turn_id and str(turn_id or "") != original_turn_id:
-                persist_provider_recovery_state({})
-            else:
-                persist_provider_recovery_state(provider_recovery_state)
-
-        recovered_terminal = (
-            provider_recovery_state
-            if provider_recovery_state.get("kind") == "completed_turn"
-            else {}
-        )
-        recovered_turn_id = str(
-            recovered_terminal.get("turn_id") or ""
-        ).strip()
-        checkpoint_turn_id = str(
-            invocation.recovery_checkpoint.get("turn_id") or ""
-        ).strip()
-        recovered_response = str(
-            recovered_terminal.get("response") or ""
-        ).strip()
-        if (
-            recovered_turn_id
-            and recovered_turn_id == checkpoint_turn_id
-        ):
-            return BackendResult(
-                output={
-                    "message": recovered_response,
-                    "provider": self.provider_id,
-                    "turn_id": recovered_turn_id,
-                },
-                backend_session_id=thread_id,
-                backend_route_id=route.account_id,
-                usage=dict(
-                    recovered_terminal.get("usage")
-                    if isinstance(recovered_terminal.get("usage"), dict)
-                    else {}
-                ),
-                available_harness_tool_names=frozenset(
-                    available_harness_tool_names
-                ),
-            )
-
-        reported_usage_events: set[str] = set()
-        usage_scope["reported"] = reported_usage_events
-        compaction_event_observed = False
-        latest_token_usage: dict[str, Any] = {}
-        subagent_cards = codex_subagent_cards.for_thread(thread_id)
-        def event_callback(event: dict[str, Any]) -> None:
-            nonlocal compaction_event_observed
-            nonlocal latest_token_usage
-            nonlocal provider_error_continue_count
-            if recovery_budget.observe(event):
-                provider_error_continue_count = 0
-                persist_provider_recovery_state(provider_recovery_state)
-            method = str(event.get("method") or "")
-            params = event.get("params") if isinstance(event.get("params"), dict) else {}
-            item = params.get("item") if isinstance(params.get("item"), dict) else {}
-            if method == "thread/compacted" or (
-                method == "item/completed" and is_context_compaction_item(item)
-            ):
-                compaction_event_observed = True
-            turn = params.get("turn") if isinstance(params.get("turn"), dict) else {}
-            turn_id = str(turn.get("id") or params.get("turnId") or "")
-            if turn_id:
-                context.set_interrupt_target(
-                    thread_id,
-                    turn_id,
-                    route.account_id,
-                )
-            if event_processor is not None:
-                try:
-                    event_processor.process_event(event)
-                except Exception:
-                    logging.getLogger(__name__).exception("Codex Harness event observation failed")
-            if method == "thread/tokenUsage/updated":
-                if isinstance(params.get("tokenUsage"), dict):
-                    latest_token_usage = dict(params["tokenUsage"])
-                usage_event_id, usage_delta = codex_token_usage_delta(
-                    params.get("tokenUsage")
-                )
-                if (
-                    usage_event_id
-                    and usage_event_id not in reported_usage_events
-                ):
-                    reported_usage_events.add(usage_event_id)
-                    context.emit(
-                        "token_usage_delta",
-                        {
-                            "event_id": usage_event_id,
-                            "usage": usage_delta,
-                        },
-                    )
-                live_usage, context_window = _codex_live_context_usage(
-                    params.get("tokenUsage")
-                )
-                if live_usage or context_window:
-                    context.observe_context_usage(
-                        live_usage,
-                        context_window,
-                    )
-            child_event = params.get("event") if method == "subagent/event" else None
-            if isinstance(child_event, dict) and child_event.get("method") == "thread/tokenUsage/updated":
-                # A subagent's requests run in its own thread: they are the
-                # turn's usage too, though not the size of the turn's context.
-                child_params = child_event.get("params") if isinstance(child_event.get("params"), dict) else {}
-                child_event_id, child_delta = codex_token_usage_delta(child_params.get("tokenUsage"))
-                child_event_id = f"{params.get('traceKey') or ''}:{child_event_id}" if child_event_id else ""
-                if child_event_id and child_event_id not in reported_usage_events:
-                    reported_usage_events.add(child_event_id)
-                    context.emit("token_usage_delta", {"event_id": child_event_id, "usage": child_delta})
-            # Persist the provider notification itself. Reconstructed snapshots
-            # are display state, not another source of immutable reasoning.
-            if not (item.get("type") == "reasoning" and event.get("origin") == "turn_snapshot"):
-                context.observe_provider_event(event, provider=self.provider_id,
-                                               backend_session_id=thread_id, backend_route_id=route.account_id)
-            for card_event in subagent_cards.observe(event):
-                context.observe_provider_event(card_event, provider=self.provider_id,
-                                               backend_session_id=thread_id, backend_route_id=route.account_id)
-            if method == "turn/completed" and not goal_command:
-                completed_turn = (
-                    params.get("turn")
-                    if isinstance(params.get("turn"), dict)
-                    else {}
-                )
-                completed_turn_id = str(
-                    completed_turn.get("id") or turn_id
-                ).strip()
-                response = codex_final_agent_response(completed_turn, [])
-                if (
-                    completed_turn_id
-                    and str(completed_turn.get("status") or "")
-                    .strip()
-                    .casefold()
-                    == "completed"
-                    and response
-                ):
-                    # The app-server can emit its terminal event and still
-                    # leave the transport request blocked. Persist the
-                    # provider result at the event boundary so a replacement
-                    # worker can finish without reopening the whole thread.
-                    persist_provider_recovery_state({
-                        "kind": "completed_turn",
-                        "turn_id": completed_turn_id,
-                        "response": response,
-                        "usage": dict(latest_token_usage),
-                    })
-
-        def canonical_replay_turn(turn: dict[str, Any]) -> dict[str, Any]:
-            try:
-                return self._canonical_replay_turn(route.account_id, thread_id, turn)
-            except ExecutionRecoveryDeferred as exc:
-                # A replacement worker must not replenish this wait budget.
-                # Keep observing the accepted turn; never send a continuation
-                # just because its durable message identities are unavailable.
-                reserve_recovery_attempt(exc)
+        except CodexAppServerError as exc:
+            if not isinstance(exc, CodexThreadNotFound):
                 raise
+            replacement = self._restore_fork_source(session)
+            if replacement is None:
+                raise
+            forked = {"thread": {"id": replacement}}
+        thread = (
+            forked.get("thread")
+            if isinstance(forked.get("thread"), dict)
+            else {}
+        )
+        forked_id = str(thread.get("id") or "")
+        if not forked_id:
+            raise RuntimeError("Codex thread/fork returned no thread id")
+        return self._operation_result(
+            session,
+            {"forked_from_session_id": session.thread_id},
+            backend_session_id=forked_id,
+        )
 
-        turn_options["turn_snapshot_transform"] = canonical_replay_turn
-        turn_options["detach_requested"] = context.is_handover
-        previous_compaction = self._latest_compaction(route, thread_id)
+    @classmethod
+    def _fork_params(cls, request: ExecutionRequest, thread_id: str) -> dict[str, Any]:
+        options = request.runtime_options
+        sandbox, sandbox_policy = cls._sandbox_options(options)
+        if not sandbox:
+            sandbox = thread_sandbox_from_policy(sandbox_policy)
+        params = {
+            "threadId": thread_id,
+            "ephemeral": bool(options.get("ephemeral", False)),
+            "excludeTurns": bool(options.get("exclude_turns", True)),
+            "threadSource": str(options.get("thread_source") or "user"),
+            "config": cls._runtime_thread_config(request),
+        }
+        for source, target in (
+            ("cwd", "cwd"),
+            ("approval_policy", "approvalPolicy"),
+        ):
+            value = options.get(source)
+            if value not in (None, ""):
+                params[target] = value
+        if sandbox:
+            params["sandbox"] = sandbox
+        return params
 
+    def _restore_fork_source(self, session: CodexSession) -> str | None:
+        """Fork a source thread app-server lost from the history Portal kept of it.
 
-        def recovery_input(turn_id: str, continuation_prompt: str) -> str:
-            nonlocal original_input_recorded
-            if not original_input_recorded:
-                rollout = self.account_registry.find_thread_rollout(
-                    route.account_id, thread_id, include_archived=True,
-                )
-                recorded = read_codex_turn_input_recorded(rollout, turn_id, expected_prompt=invocation.user_prompt)
-                if recorded is None:
-                    reserve_recovery_attempt("native input delivery is not yet verifiable")
-                    raise ExecutionRecoveryDeferred(
-                        "Codex input delivery is not yet verifiable; original input retained",
-                        retry_after_seconds=5,
-                    )
-                original_input_recorded = recorded
-            if original_input_recorded:
-                return continuation_prompt
-            return (f"{invocation.system_context}\n\n{invocation.user_prompt}"
-                    if invocation.attach_system_context and not system_context_bound_to_thread
-                    else invocation.user_prompt)
+        The new thread receives the source's history from the agent trace;
+        ``None`` when Portal kept none.
+        """
 
-        def apply_turn_continuation(
-            continuation: CodexTurnContinuationRequired,
-            continuation_count: int,
-        ) -> str:
-            nonlocal provider_error_continue_count
-            rollout_path = self.account_registry.find_thread_rollout(
-                route.account_id, continuation.thread_id, include_archived=True,
-            )
-            terminal_error = (
-                read_codex_turn_error(rollout_path, continuation.turn_id)
-                if isinstance(rollout_path, (str, Path)) else None
-            )
-            if terminal_error:
-                failure = _terminal_turn_error(continuation.thread_id, {
-                    "id": continuation.turn_id,
-                    "status": "failed",
-                    "error": terminal_error,
-                })
-                if not isinstance(failure, CodexTurnRetryableFailure):
-                    raise failure from continuation
-            provider_error = continuation.reason == "provider_system_error"
-            if provider_error:
-                reserve_recovery_attempt(continuation)
-            policy = invocation.provider_error_recovery
-            harness_continue = bool(
-                provider_error
-                and policy is not None
-                and provider_error_continue_count
-                < policy.max_continue_attempts
-            )
-            if harness_continue:
-                continuation_prompt, provider_error_continue_count = provider_error_continuation(
-                    continuation.__cause__ or continuation,
-                    invocation=invocation, context=context,
-                    provider_id=self.provider_id, turn_started=True,
-                )
-            else:
-                continuation_prompt = INTERRUPTED_TURN_CONTINUATION
-            continuation_prompt = recovery_input(continuation.turn_id, continuation_prompt)
-            continuation_state = {
-                "kind": "turn_and_continue",
-                "phase": "ready_to_continue",
-                "original_turn_id": continuation.turn_id,
-                "reason": continuation.reason,
-                "continuation_prompt": continuation_prompt,
-                "input_delivery": "continued" if original_input_recorded else "resent",
-                "transition_count": continuation_count,
-                "previous_compaction_fingerprint": (
-                    previous_compaction.fingerprint
-                    if previous_compaction is not None
-                    else ""
-                ),
-                "effort": str(
-                    turn_options.get("effort") or ""
-                ).strip(),
-                "provider_error_continue_count": (
-                    provider_error_continue_count
-                ),
-            }
-            if continuation_count > 2:
-                if provider_error:
-                    # Requeue with the same outage budget. Only newly observed
-                    # work can replenish it, not another scheduler claim.
-                    persist_provider_recovery_state(continuation_state)
-                    raise ExecutionRecoveryDeferred(
-                        "Codex provider system error recovery deferred",
-                        retry_after_seconds=5,
-                    )
-                persist_provider_recovery_state({})
-                raise RuntimeError(
-                    "Codex provider continuation limit exceeded"
-                )
-            persist_provider_recovery_state(continuation_state)
-            context.set_turn_start_reason("provider_recovery")
-            return continuation_prompt
+        from .agent_data_store import get_agent_data_store
 
-        def recover_provider_failure(
-            failure: CodexTurnInterrupted | CodexTurnRetryableFailure,
-        ) -> CodexTurnContinuationRequired:
-            if provider_cancelled():
-                raise InterruptedError(
-                    f"Codex execution cancelled for {thread_id}"
-                ) from failure
-            policy = invocation.provider_error_recovery
-            if policy is None or policy.max_continue_attempts < 1:
-                raise failure
-            if provider_error_continue_count >= policy.max_continue_attempts:
-                reserve_recovery_attempt(failure)
-                persist_provider_recovery_state({
-                    "kind": "turn_and_continue",
-                    "phase": "ready_to_continue",
-                    "original_turn_id": failure.turn_id,
-                    "reason": "provider_system_error",
-                    "continuation_prompt": policy.continuation_prompt,
-                    "transition_count": continuation_count,
-                    "previous_compaction_fingerprint": (
-                        previous_compaction.fingerprint
-                        if previous_compaction is not None
-                        else ""
-                    ),
-                    "effort": str(
-                        turn_options.get("effort") or ""
-                    ).strip(),
-                    "provider_error_continue_count": provider_error_continue_count,
-                })
-                raise ExecutionRecoveryDeferred(
-                    "Codex provider recovery deferred after bounded "
-                    "automatic continuation",
-                    retry_after_seconds=5,
-                ) from failure
-            return CodexTurnContinuationRequired(
-                failure.thread_id or thread_id,
-                failure.turn_id,
-                "provider_system_error",
-            )
+        request = session.request
+        store = get_agent_data_store()
+        agent_id = str(request.metadata.get("resident_id") or request.agent_id)
+        snapshot = store.provider_context_snapshot(
+            provider=self.provider_id, backend_route_id=session.route.account_id,
+            backend_session_id=session.thread_id, agent_id=agent_id,
+        )
+        if not snapshot or not snapshot.get("segments"):
+            return None
+        references = snapshot["segments"]
+        if request.metadata.get("preserve_session_context"):
+            from .session_history_import import validate_codex_preservation
+            validate_codex_preservation(references)
+        replacement = self._start_thread(
+            session.client, request, session.context.is_cancelled, session.invocation.harness_tools,
+        )
+        delivery = session.history_delivery(references, agent_id=agent_id, store=store)
+        delivery.initialize(replacement)
+        session.context.emit("fork_source_restored", {
+            "provider": self.provider_id, "source_thread_id": session.thread_id,
+            "thread_id": replacement, "source": "agent_trace",
+        })
+        return replacement
 
-        def resume_accepted_turn(turn_id: str):
-            current_turn_id = str(turn_id or "").strip()
-            if not current_turn_id:
-                raise CodexAppServerUnavailable(
-                    "Codex accepted a turn but did not return its identity"
-                )
-            retry_delay = 0.25
-            reconnect_deadline = time.monotonic() + 540.0
-            while True:
-                if provider_cancelled():
-                    raise InterruptedError(
-                        f"Codex execution cancelled while reconnecting {thread_id}"
-                    )
-                try:
-                    return client.resume_turn(
-                        thread_id,
-                        current_turn_id,
-                        cwd=request.cwd,
-                        config=turn_options["config"],
-                        event_callback=event_callback,
-                        turn_started_callback=turn_started_callback,
-                        turn_snapshot_transform=turn_options["turn_snapshot_transform"],
-                        detach_requested=context.is_handover,
-                        cancellation_requested=provider_cancelled,
-                        dynamic_tool_handler=dynamic_tool_handler,
-                        turn_control_provider=turn_options.get(
-                            "turn_control_provider"
-                        ),
-                        turn_control_result_callback=turn_options.get(
-                            "turn_control_result_callback"
-                        ),
-                        timeout_seconds=None,
-                    )
-                except CodexTurnConnectionLost as exc:
-                    current_turn_id = str(
-                        exc.turn_id or current_turn_id
-                    ).strip()
-                except (CodexTurnInterrupted, CodexTurnRetryableFailure) as exc:
-                    raise recover_provider_failure(exc) from exc
-                except (CodexAppServerUnavailable, TimeoutError):
-                    pass
-                if time.monotonic() >= reconnect_deadline:
-                    persist_provider_recovery_state({"kind": "provider_reconnect", "turn_id": current_turn_id})
-                    raise ExecutionRecoveryDeferred("Codex app-server reconnect deadline reached", retry_after_seconds=5)
-                if context.is_handover():
-                    raise CodexTurnDetached(thread_id, current_turn_id)
-                time.sleep(retry_delay)
-                retry_delay = min(5.0, retry_delay * 2.0)
-
+    def _compact(self, session: CodexSession) -> BackendResult:
+        request, context, route = session.request, session.context, session.route
+        thread_id = session.thread_id
+        self._write_execution_context(request)
         fork_history = request.metadata.get("fork_context_input") or {}
-        history_delivery = None
-        if fork_history and not invocation.recovery_checkpoint.get("turn_id"):
-            history_delivery = history_delivery_for(fork_history["segments"])
+        if fork_history:
+            if (
+                str(request.metadata.get("initial_context_policy") or "")
+                != "compact_before_first_turn"
+            ):
+                raise ValueError(
+                    "Fork context may only accompany compact_before_first_turn"
+                )
 
-        def run_turn_recovering(
-            prompt: str,
-            *,
-            images: list[str] | None = None,
-            image_urls: list[str] | None = None,
-        ):
-            if provider_recovery_state.get("continuation_prompt") == prompt:
-                report_recovery_input(
-                    context, provider="codex", prompt=prompt,
-                    reason="provider_error" if provider_recovery_state.get("reason") == "provider_system_error" else "missing_final_response",
-                    input_delivery=str(provider_recovery_state.get("input_delivery") or "continued"),
-                    turn_id=str(provider_recovery_state.get("original_turn_id") or ""),
-                    image_count=len(images or []) + len(image_urls or []),
-                )
-            try:
-                return client.run_turn(
-                    thread_id,
-                    prompt,
-                    **({"review_target": options["review_target"]} if options.get("review_target") else {}),
-                    event_callback=event_callback,
-                    turn_started_callback=turn_started_callback,
-                    images=images,
-                    image_urls=image_urls,
-                    image_detail=str(options.get("input_image_detail") or "").strip().casefold() or None,
-                    cancellation_requested=provider_cancelled,
-                    **({"history_initializer": history_delivery.initialize} if history_delivery else {}),
-                    **turn_options,
-                )
-            except CodexCompactionInProgress as exc:
-                persist_provider_recovery_state({
-                    "kind": "thread_writer_busy",
-                    "thread_id": thread_id,
-                })
-                raise ExecutionRecoveryDeferred(
-                    str(exc),
-                    retry_after_seconds=exc.retry_after_seconds,
-                ) from exc
-            except CodexThreadWriterBusy as exc:
-                # The Provider rejected this input before accepting a turn.
-                # Reclaims must share the durable no-progress budget, otherwise
-                # a writer that never releases its thread loops forever.
-                reserve_recovery_attempt(exc)
-                persist_provider_recovery_state({
-                    "kind": "thread_writer_busy",
-                    "thread_id": thread_id,
-                })
-                raise ExecutionRecoveryDeferred(
-                    str(exc),
-                    retry_after_seconds=30,
-                ) from exc
-            except CodexTurnConnectionLost as exc:
-                reserve_recovery_attempt(exc)
-                return resume_accepted_turn(exc.turn_id)
-            except (CodexTurnInterrupted, CodexTurnRetryableFailure) as exc:
-                raise recover_provider_failure(exc) from exc
-
-        with self._compaction_recorded_on_failure(
-            context=context,
-            route=route,
-            thread_id=lambda: thread_id,
-            previous_compaction=lambda: previous_compaction,
-        ), codex_thread_execution_lock(
-            f"{route.account_id}:{thread_id}",
-            cancellation_requested=provider_cancelled,
-        ):
-            self._write_execution_context(request)
-            if provider_cancelled():
-                raise InterruptedError(
-                    f"Codex execution cancelled before turn start for {thread_id}"
-                )
-            recovery_turn_id = str(
-                invocation.recovery_checkpoint.get("turn_id") or ""
+            session.history_delivery(fork_history["segments"]).initialize(thread_id)
+        previous_compaction = self._latest_compaction(route, thread_id)
+        try:
+            usage = session.client.compact_thread(
+                thread_id,
+                config=self._runtime_thread_config(request),
+                cancellation_requested=session.provider_cancelled,
+                **self._compaction_wait_options(),
             )
-            if goal_command:
-                goal_action = "observe" if recovery_turn_id else str(goal_command.get("action") or "")
-                result = client.run_goal(
-                    thread_id,
-                    action=goal_action,
-                    objective=str(goal_command.get("objective") or ""),
-                    token_budget=(
-                        int(goal_command["token_budget"])
-                        if goal_command.get("token_budget") is not None
-                        else None
-                    ),
-                    cwd=request.cwd,
-                    config=turn_options["config"],
-                    dynamic_tool_handler=dynamic_tool_handler,
-                    event_callback=event_callback,
-                    cancellation_requested=provider_cancelled,
-                    detach_requested=context.is_handover,
-                )
-            else:
-                continuation_count = int(provider_recovery_state.get("transition_count") or 0)
-                turn_prompt = (
-                    f"{invocation.system_context}\n\n{invocation.user_prompt}"
-                    if invocation.attach_system_context and not system_context_bound_to_thread
-                    else invocation.user_prompt
-                )
-                turn_images = [item.source for item in request.input_media
-                               if item.media_type == "image" and item.source_type == "local_path"]
-                turn_image_urls = [item.source for item in request.input_media
-                                   if item.media_type == "image" and item.source_type == "url"]
-                if (recovery_turn_id
-                    and provider_recovery_state.get("original_turn_id") == recovery_turn_id
-                    and provider_recovery_state.get("phase") == "ready_to_continue"):
-                    turn_prompt = recovery_input(recovery_turn_id, str(provider_recovery_state["continuation_prompt"]))
-                    persist_provider_recovery_state({**provider_recovery_state, "continuation_prompt": turn_prompt,
-                                                     "input_delivery": "continued" if original_input_recorded else "resent"})
-                    recovery_turn_id = ""
-                    if original_input_recorded:
-                        turn_images = []
-                        turn_image_urls = []
-                    context.set_turn_start_reason("provider_recovery")
-                fork_thread_replaceable = history_delivery is not None
-                while True:
-                    try:
-                        if recovery_turn_id:
-                            result = resume_accepted_turn(recovery_turn_id)
-                        else:
-                            result = run_turn_recovering(turn_prompt, images=turn_images, image_urls=turn_image_urls)
-                        break
-                    except CodexTurnContinuationRequired as exc:
-                        continuation_count += 1
-                        turn_prompt = apply_turn_continuation(exc, continuation_count)
-                        recovery_turn_id = ""
-                        if original_input_recorded:
-                            turn_images = []
-                            turn_image_urls = []
-                    except CodexAppServerError as exc:
-                        if not (
-                            fork_thread_replaceable
-                            and isinstance(exc, CodexThreadNotFound)
-                        ):
-                            raise
-                        # A Fork child's thread has no turn yet, so it exists only in the
-                        # app-server's memory and a normal worker restart loses it. The Fork
-                        # window is immutable in PostgreSQL: import it into a new thread.
-                        from .session_manager import SessionManager
-                        sessions = SessionManager(agent_data=history_delivery.store)
-                        if sessions.has_accepted_input(invocation.session.binding_id, agent_id=request.agent_id):
-                            raise
-                        fork_thread_replaceable = False
-                        lost_thread_id = thread_id
-                        thread_id = self._start_thread(
-                            client, request, context.is_cancelled, invocation.harness_tools,
-                        )
-                        sessions.replace_unaccepted_session(
-                            request, invocation.session, backend_session_id=thread_id,
-                            backend_route_id=route.account_id,
-                        )
-                        context.emit("fork_thread_replaced", {
-                            "provider": self.provider_id, "lost_thread_id": lost_thread_id,
-                            "thread_id": thread_id,
-                        })
-        # A resumed provider turn can replay an older contextCompaction item.
-        # That notification is useful as a hint to reconcile the durable
-        # rollout, but it does not prove that this Execution created a new
-        # compaction.  Compaction projection is secondary to an otherwise
-        # completed user turn, so a stale replay must not replace the
-        # Provider's successful result with a Portal system failure.  Explicit
-        # compact operations keep their
-        # strict required=True checks above.
+        except (TimeoutError, CodexAppServerUnavailable) as exc:
+            context.set_provider_recovery_state({"kind": "thread_writer_busy", "thread_id": thread_id})
+            raise ExecutionRecoveryDeferred(
+                "Codex compaction recovery wait deadline reached"
+            ) from exc
         self._record_new_compaction(
             context=context,
             route=route,
@@ -2405,32 +1744,27 @@ class CodexBackend:
                 if previous_compaction is not None
                 else ""
             ),
-            wait_seconds=1.0 if compaction_event_observed else 0.0,
-            required=False,
+            wait_seconds=1.0,
+            required=True,
         )
-        usage = (
-            dict(result.token_usage)
-            if isinstance(result.token_usage, dict)
-            else {}
+        return self._operation_result(
+            session,
+            backend_session_id=thread_id,
+            usage=dict(usage) if isinstance(usage, dict) else {},
         )
-        return BackendResult(
-            output={
-                "message": str(result.response or ""),
-                "provider": self.provider_id,
-                "turn_id": str(result.turn_id or ""),
-                **(
-                    {"goal": dict(result.goal) if result.goal else None}
-                    if goal_command
-                    else {}
-                ),
-            },
-            backend_session_id=str(result.thread_id or thread_id),
-            backend_route_id=route.account_id,
-            usage=usage,
-            available_harness_tool_names=frozenset(
-                available_harness_tool_names
+
+    @staticmethod
+    def _compaction_wait_options() -> dict[str, float]:
+        return {
+            "timeout_seconds": _bounded_wait_seconds(
+                "PORTAL_CODEX_COMPACTION_TIMEOUT_SECONDS",
+                DEFAULT_COMPACT_TOTAL_TIMEOUT_SECONDS,
             ),
-        )
+            "no_progress_timeout_seconds": _bounded_wait_seconds(
+                "PORTAL_CODEX_COMPACTION_NO_PROGRESS_TIMEOUT_SECONDS",
+                DEFAULT_COMPACT_NO_PROGRESS_TIMEOUT_SECONDS,
+            ),
+        }
 
     def interrupt(
         self,
@@ -2471,6 +1805,794 @@ class CodexBackend:
                 except Exception:
                     paused = False
         return bool(turn_id) or paused
+
+
+def codex_goal_command(options: Mapping[str, Any]) -> dict[str, Any]:
+    """The native goal command a Codex turn carries (``runtime_options.goal``), or ``{}``."""
+
+    goal = options.get("goal")
+    return dict(goal) if isinstance(goal, dict) else {}
+
+
+@dataclass
+class CodexSession:
+    """The Codex thread one execution works on and the app-server that holds it."""
+
+    invocation: BackendInvocation
+    context: BackendContext
+    route: CodexAccountRoute
+    client: Any
+    thread_id: str
+    # The thread started with the session's system context as its developer instructions.
+    system_context_bound_to_thread: bool
+
+    @property
+    def request(self) -> ExecutionRequest:
+        return self.invocation.request
+
+    def provider_cancelled(self) -> bool:
+        # Planned detachment is separate from user cancellation. In-flight native
+        # commands keep running and the next owner follows this exact turn.
+        return self.context.is_cancelled() and not (self.request.operation == "turn" and self.context.is_handover())
+
+    def available_harness_tool_names(self) -> frozenset[str]:
+        """The Portal tools the thread offers; a new thread has this turn's tools."""
+
+        names = set(self.invocation.available_harness_tool_names)
+        if self.invocation.is_new_backend_session:
+            names.update(
+                str(tool.name or "").strip()
+                for tool in self.invocation.harness_tools
+                if bool(getattr(tool, "expose_schema", True))
+                and str(tool.name or "").strip()
+            )
+        return frozenset(names)
+
+    def history_delivery(
+        self,
+        references: Any,
+        *,
+        agent_id: str | None = None,
+        store: Any = None,
+    ) -> CodexHistoryDelivery:
+        request = self.request
+        return CodexHistoryDelivery(
+            references=references, route_id=self.route.account_id,
+            agent_id=agent_id or request.agent_id, actor=request.actor,
+            execution_id=request.execution_id, store=store,
+            send=lambda target, items: self.client.request(
+                "thread/inject_items", {"threadId": target, "items": items},
+                cancellation_requested=self.provider_cancelled,
+            ),
+        )
+
+
+CODEX_TURN_OPTION_KEYS = (
+    "model",
+    "effort",
+    "summary",
+    "service_tier",
+    "collaboration_mode",
+    "permissions",
+    "approval_policy",
+    "approvals_reviewer",
+)
+
+
+class CodexTurnRun:
+    """One Codex turn, or native goal command, of an execution and its recovery.
+
+    The run keeps the recovery state of the execution's earlier attempts: the
+    answer of a turn that completed, the accepted turn to follow again, or
+    the continuation to send after the Provider lost the turn.  Every change
+    of that state is checkpointed through the context.
+    """
+
+    def __init__(self, backend: CodexBackend, session: CodexSession, usage_scope: dict[str, Any]) -> None:
+        self.backend = backend
+        self.session = session
+        self.usage_scope = usage_scope
+        self.invocation = session.invocation
+        self.context = session.context
+        self.request = session.request
+        self.options = self.request.runtime_options
+        self.goal_command = codex_goal_command(self.options)
+        self.event_processor = self.invocation.provider_event_processor
+        self.turn_options = self._turn_options()
+        self.dynamic_tool_handler = self.turn_options.get("dynamic_tool_handler")
+        checkpointed = self.invocation.recovery_checkpoint.get("provider_recovery_state")
+        self.provider_recovery_state = dict(checkpointed if isinstance(checkpointed, dict) else {})
+        self.recovery_budget = CodexRecoveryBudget(self.provider_recovery_state)
+        self.original_input_recorded = self.provider_recovery_state.get("original_input_recorded") is True
+        self.provider_error_continue_count = int(
+            self.provider_recovery_state.get("provider_error_continue_count") or 0
+        )
+        self.continuation_count = 0
+        self.reported_usage_events: set[str] = set()
+        self.compaction_event_observed = False
+        self.latest_token_usage: dict[str, Any] = {}
+        self.subagent_cards: Any = None
+        self.previous_compaction: CodexCompaction | None = None
+        self.history_delivery: CodexHistoryDelivery | None = None
+
+    def _turn_options(self) -> dict[str, Any]:
+        """What ``run_turn`` and ``resume_turn`` are given besides the prompt."""
+
+        options = self.options
+        sandbox, sandbox_policy = self.backend._sandbox_options(options)
+        turn_options = {
+            key: options[key]
+            for key in CODEX_TURN_OPTION_KEYS
+            if key in options and options[key] not in (None, "")
+        }
+        if sandbox:
+            turn_options["sandbox"] = sandbox
+        if sandbox_policy is not None:
+            turn_options["sandbox_policy"] = sandbox_policy
+        turn_options["cwd"] = self.request.cwd
+        turn_options["config"] = self.backend._runtime_thread_config(self.request)
+        portal_message_id = str(
+            options.get("client_user_message_id") or ""
+        )
+        if portal_message_id:
+            turn_options["client_user_message_id"] = portal_message_id
+        dynamic_tool_handler = self.backend._harness_tool_dispatcher(
+            self.invocation.harness_tools,
+            self.invocation.tool_batch_processor,
+        )
+        if dynamic_tool_handler is not None:
+            turn_options["dynamic_tool_handler"] = dynamic_tool_handler
+        if self.event_processor is not None or self.context.has_turn_control_provider():
+            turn_options["turn_control_provider"] = self.next_turn_control
+            turn_options["turn_control_result_callback"] = self.record_turn_control_result
+        return turn_options
+
+    def next_turn_control(self) -> dict[str, Any] | None:
+        external = self.context.next_turn_control()
+        if external is not None:
+            return external
+        if self.event_processor is not None:
+            return self.event_processor.next_control()
+        return None
+
+    def record_turn_control_result(
+        self,
+        control: dict[str, Any],
+        delivered: bool,
+        error: str,
+    ) -> None:
+        if (
+            schema_matches(control.get("schema"), "tfi.execution-input-control.v1")
+            or schema_matches(control.get("schema"), "tfi.execution-turn-settings-control.v1")
+        ):
+            self.context.record_turn_control_result(
+                control,
+                delivered,
+                error,
+            )
+        elif self.event_processor is not None:
+            self.event_processor.record_control_result(
+                control,
+                delivered,
+                error,
+            )
+            if delivered:
+                report_harness_control(self.context, control)
+
+    def run(self) -> BackendResult:
+        recovered = self._recovered_result()
+        if recovered is not None:
+            return recovered
+        session = self.session
+        self.usage_scope["reported"] = self.reported_usage_events
+        self.subagent_cards = codex_subagent_cards.for_thread(session.thread_id)
+        self.turn_options["turn_snapshot_transform"] = self.canonical_replay_turn
+        self.turn_options["detach_requested"] = self.context.is_handover
+        self.previous_compaction = self.backend._latest_compaction(session.route, session.thread_id)
+        fork_history = self.request.metadata.get("fork_context_input") or {}
+        if fork_history and not self.invocation.recovery_checkpoint.get("turn_id"):
+            self.history_delivery = session.history_delivery(fork_history["segments"])
+        with self.backend._compaction_recorded_on_failure(
+            context=self.context,
+            route=session.route,
+            thread_id=lambda: session.thread_id,
+            previous_compaction=lambda: self.previous_compaction,
+        ), codex_thread_execution_lock(
+            f"{session.route.account_id}:{session.thread_id}",
+            cancellation_requested=session.provider_cancelled,
+        ):
+            self.backend._write_execution_context(self.request)
+            if session.provider_cancelled():
+                raise InterruptedError(
+                    f"Codex execution cancelled before turn start for {session.thread_id}"
+                )
+            recovery_turn_id = str(
+                self.invocation.recovery_checkpoint.get("turn_id") or ""
+            )
+            if self.goal_command:
+                result = self._run_goal(recovery_turn_id)
+            else:
+                result = self._run_turns(recovery_turn_id)
+        # A resumed provider turn can replay an older contextCompaction item.
+        # That notification is useful as a hint to reconcile the durable
+        # rollout, but it does not prove that this Execution created a new
+        # compaction.  Compaction projection is secondary to an otherwise
+        # completed user turn, so a stale replay must not replace the
+        # Provider's successful result with a Portal system failure.  Explicit
+        # compact operations keep their strict required=True checks.
+        self.backend._record_new_compaction(
+            context=self.context,
+            route=session.route,
+            thread_id=session.thread_id,
+            previous_fingerprint=self._previous_compaction_fingerprint(),
+            wait_seconds=1.0 if self.compaction_event_observed else 0.0,
+            required=False,
+        )
+        return self._result(result)
+
+    def _recovered_result(self) -> BackendResult | None:
+        """The answer an earlier attempt checkpointed for the turn it was following."""
+
+        recovered_terminal = (
+            self.provider_recovery_state
+            if self.provider_recovery_state.get("kind") == "completed_turn"
+            else {}
+        )
+        recovered_turn_id = str(
+            recovered_terminal.get("turn_id") or ""
+        ).strip()
+        checkpoint_turn_id = str(
+            self.invocation.recovery_checkpoint.get("turn_id") or ""
+        ).strip()
+        if not recovered_turn_id or recovered_turn_id != checkpoint_turn_id:
+            return None
+        return BackendResult(
+            output={
+                "message": str(recovered_terminal.get("response") or "").strip(),
+                "provider": self.backend.provider_id,
+                "turn_id": recovered_turn_id,
+            },
+            backend_session_id=self.session.thread_id,
+            backend_route_id=self.session.route.account_id,
+            usage=dict(
+                recovered_terminal.get("usage")
+                if isinstance(recovered_terminal.get("usage"), dict)
+                else {}
+            ),
+            available_harness_tool_names=self.session.available_harness_tool_names(),
+        )
+
+    def _result(self, result: Any) -> BackendResult:
+        usage = (
+            dict(result.token_usage)
+            if isinstance(result.token_usage, dict)
+            else {}
+        )
+        return BackendResult(
+            output={
+                "message": str(result.response or ""),
+                "provider": self.backend.provider_id,
+                "turn_id": str(result.turn_id or ""),
+                **(
+                    {"goal": dict(result.goal) if result.goal else None}
+                    if self.goal_command
+                    else {}
+                ),
+            },
+            backend_session_id=str(result.thread_id or self.session.thread_id),
+            backend_route_id=self.session.route.account_id,
+            usage=usage,
+            available_harness_tool_names=self.session.available_harness_tool_names(),
+        )
+
+    def _previous_compaction_fingerprint(self) -> str:
+        return self.previous_compaction.fingerprint if self.previous_compaction is not None else ""
+
+    def persist_recovery_state(self, state: Mapping[str, Any] | None) -> None:
+        self.provider_recovery_state = dict(state or {})
+        self.provider_recovery_state["recovery_budget"] = self.recovery_budget.snapshot()
+        self.provider_recovery_state["provider_error_continue_count"] = self.provider_error_continue_count
+        self.provider_recovery_state["original_input_recorded"] = self.original_input_recorded
+        self.context.set_provider_recovery_state(self.provider_recovery_state)
+
+    def reserve_recovery_attempt(self, reason: object) -> None:
+        self.recovery_budget.reserve_retry(reason)
+        self.persist_recovery_state(self.provider_recovery_state)
+
+    def turn_started(self, turn_id: str) -> None:
+        self.recovery_budget.turn_started(turn_id)
+        self.context.bind_input(
+            provider=self.backend.provider_id,
+            backend_session_id=self.session.thread_id,
+            backend_route_id=self.session.route.account_id,
+            turn_id=turn_id,
+        )
+        original_turn_id = str(
+            self.provider_recovery_state.get("original_turn_id") or ""
+        )
+        if original_turn_id and str(turn_id or "") != original_turn_id:
+            self.persist_recovery_state({})
+        else:
+            self.persist_recovery_state(self.provider_recovery_state)
+
+    def observe_event(self, event: dict[str, Any]) -> None:
+        """Observe one notification of the turn: usage, compaction, the Harness and AgentData."""
+
+        session = self.session
+        if self.recovery_budget.observe(event):
+            self.provider_error_continue_count = 0
+            self.persist_recovery_state(self.provider_recovery_state)
+        method = str(event.get("method") or "")
+        params = event.get("params") if isinstance(event.get("params"), dict) else {}
+        item = params.get("item") if isinstance(params.get("item"), dict) else {}
+        if method == "thread/compacted" or (
+            method == "item/completed" and is_context_compaction_item(item)
+        ):
+            self.compaction_event_observed = True
+        turn = params.get("turn") if isinstance(params.get("turn"), dict) else {}
+        turn_id = str(turn.get("id") or params.get("turnId") or "")
+        if turn_id:
+            self.context.set_interrupt_target(
+                session.thread_id,
+                turn_id,
+                session.route.account_id,
+            )
+        if self.event_processor is not None:
+            try:
+                self.event_processor.process_event(event)
+            except Exception:
+                LOGGER.exception("Codex Harness event observation failed")
+        if method == "thread/tokenUsage/updated":
+            self._observe_token_usage(params)
+        child_event = params.get("event") if method == "subagent/event" else None
+        if isinstance(child_event, dict) and child_event.get("method") == "thread/tokenUsage/updated":
+            self._observe_subagent_token_usage(params, child_event)
+        # Persist the provider notification itself. Reconstructed snapshots
+        # are display state, not another source of immutable reasoning.
+        if not (item.get("type") == "reasoning" and event.get("origin") == "turn_snapshot"):
+            self.context.observe_provider_event(event, provider=self.backend.provider_id,
+                                                backend_session_id=session.thread_id,
+                                                backend_route_id=session.route.account_id)
+        for card_event in self.subagent_cards.observe(event):
+            self.context.observe_provider_event(card_event, provider=self.backend.provider_id,
+                                                backend_session_id=session.thread_id,
+                                                backend_route_id=session.route.account_id)
+        if method == "turn/completed" and not self.goal_command:
+            self._checkpoint_completed_turn(params, turn_id)
+
+    def _observe_token_usage(self, params: dict[str, Any]) -> None:
+        if isinstance(params.get("tokenUsage"), dict):
+            self.latest_token_usage = dict(params["tokenUsage"])
+        usage_event_id, usage_delta = codex_token_usage_delta(
+            params.get("tokenUsage")
+        )
+        if (
+            usage_event_id
+            and usage_event_id not in self.reported_usage_events
+        ):
+            self.reported_usage_events.add(usage_event_id)
+            self.context.emit(
+                "token_usage_delta",
+                {
+                    "event_id": usage_event_id,
+                    "usage": usage_delta,
+                },
+            )
+        live_usage, context_window = _live_context_usage(
+            params.get("tokenUsage")
+        )
+        if live_usage or context_window:
+            self.context.observe_context_usage(
+                live_usage,
+                context_window,
+            )
+
+    def _observe_subagent_token_usage(self, params: dict[str, Any], child_event: dict[str, Any]) -> None:
+        # A subagent's requests run in its own thread: they are the
+        # turn's usage too, though not the size of the turn's context.
+        child_params = child_event.get("params") if isinstance(child_event.get("params"), dict) else {}
+        child_event_id, child_delta = codex_token_usage_delta(child_params.get("tokenUsage"))
+        child_event_id = f"{params.get('traceKey') or ''}:{child_event_id}" if child_event_id else ""
+        if child_event_id and child_event_id not in self.reported_usage_events:
+            self.reported_usage_events.add(child_event_id)
+            self.context.emit("token_usage_delta", {"event_id": child_event_id, "usage": child_delta})
+
+    def _checkpoint_completed_turn(self, params: dict[str, Any], turn_id: str) -> None:
+        completed_turn = (
+            params.get("turn")
+            if isinstance(params.get("turn"), dict)
+            else {}
+        )
+        completed_turn_id = str(
+            completed_turn.get("id") or turn_id
+        ).strip()
+        response = codex_final_agent_response(completed_turn, [])
+        if (
+            completed_turn_id
+            and str(completed_turn.get("status") or "")
+            .strip()
+            .casefold()
+            == "completed"
+            and response
+        ):
+            # The app-server can emit its terminal event and still
+            # leave the transport request blocked. Persist the
+            # provider result at the event boundary so a replacement
+            # worker can finish without reopening the whole thread.
+            self.persist_recovery_state({
+                "kind": "completed_turn",
+                "turn_id": completed_turn_id,
+                "response": response,
+                "usage": dict(self.latest_token_usage),
+            })
+
+    def canonical_replay_turn(self, turn: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return self.backend._canonical_replay_turn(
+                self.session.route.account_id, self.session.thread_id, turn,
+            )
+        except ExecutionRecoveryDeferred as exc:
+            # A replacement worker must not replenish this wait budget.
+            # Keep observing the accepted turn; never send a continuation
+            # just because its durable message identities are unavailable.
+            self.reserve_recovery_attempt(exc)
+            raise
+
+    def _first_turn_prompt(self) -> str:
+        """The turn's own input: the system context leads it when the thread does not hold it."""
+
+        invocation = self.invocation
+        return (f"{invocation.system_context}\n\n{invocation.user_prompt}"
+                if invocation.attach_system_context and not self.session.system_context_bound_to_thread
+                else invocation.user_prompt)
+
+    def recovery_input(self, turn_id: str, continuation_prompt: str) -> str:
+        """The continuation when Codex has the turn's input, otherwise the input itself."""
+
+        if not self.original_input_recorded:
+            rollout = self.backend.account_registry.find_thread_rollout(
+                self.session.route.account_id, self.session.thread_id, include_archived=True,
+            )
+            recorded = read_codex_turn_input_recorded(rollout, turn_id, expected_prompt=self.invocation.user_prompt)
+            if recorded is None:
+                self.reserve_recovery_attempt("native input delivery is not yet verifiable")
+                raise ExecutionRecoveryDeferred(
+                    "Codex input delivery is not yet verifiable; original input retained",
+                    retry_after_seconds=5,
+                )
+            self.original_input_recorded = recorded
+        if self.original_input_recorded:
+            return continuation_prompt
+        return self._first_turn_prompt()
+
+    def _continuation_state(
+        self,
+        *,
+        turn_id: str,
+        reason: str,
+        prompt: str,
+        input_delivery: str | None = None,
+    ) -> dict[str, Any]:
+        """The checkpoint of a turn that waits for its continuation."""
+
+        state: dict[str, Any] = {
+            "kind": "turn_and_continue",
+            "phase": "ready_to_continue",
+            "original_turn_id": turn_id,
+            "reason": reason,
+            "continuation_prompt": prompt,
+        }
+        if input_delivery is not None:
+            state["input_delivery"] = input_delivery
+        state.update({
+            "transition_count": self.continuation_count,
+            "previous_compaction_fingerprint": self._previous_compaction_fingerprint(),
+            "effort": str(
+                self.turn_options.get("effort") or ""
+            ).strip(),
+            "provider_error_continue_count": self.provider_error_continue_count,
+        })
+        return state
+
+    def apply_continuation(
+        self,
+        continuation: CodexTurnContinuationRequired,
+    ) -> str:
+        """The prompt that continues a turn that ended without an answer, or raise."""
+
+        rollout_path = self.backend.account_registry.find_thread_rollout(
+            self.session.route.account_id, continuation.thread_id, include_archived=True,
+        )
+        terminal_error = (
+            read_codex_turn_error(rollout_path, continuation.turn_id)
+            if isinstance(rollout_path, (str, Path)) else None
+        )
+        if terminal_error:
+            failure = terminal_turn_error(continuation.thread_id, {
+                "id": continuation.turn_id,
+                "status": "failed",
+                "error": terminal_error,
+            })
+            if not isinstance(failure, CodexTurnRetryableFailure):
+                raise failure from continuation
+        provider_error = continuation.reason == "provider_system_error"
+        if provider_error:
+            self.reserve_recovery_attempt(continuation)
+        policy = self.invocation.provider_error_recovery
+        harness_continue = bool(
+            provider_error
+            and policy is not None
+            and self.provider_error_continue_count
+            < policy.max_continue_attempts
+        )
+        if harness_continue:
+            continuation_prompt, self.provider_error_continue_count = provider_error_continuation(
+                continuation.__cause__ or continuation,
+                invocation=self.invocation, context=self.context,
+                provider_id=self.backend.provider_id, turn_started=True,
+            )
+        else:
+            continuation_prompt = INTERRUPTED_TURN_CONTINUATION
+        continuation_prompt = self.recovery_input(continuation.turn_id, continuation_prompt)
+        continuation_state = self._continuation_state(
+            turn_id=continuation.turn_id,
+            reason=continuation.reason,
+            prompt=continuation_prompt,
+            input_delivery="continued" if self.original_input_recorded else "resent",
+        )
+        if self.continuation_count > 2:
+            if provider_error:
+                # Requeue with the same outage budget. Only newly observed
+                # work can replenish it, not another scheduler claim.
+                self.persist_recovery_state(continuation_state)
+                raise ExecutionRecoveryDeferred(
+                    "Codex provider system error recovery deferred",
+                    retry_after_seconds=5,
+                )
+            self.persist_recovery_state({})
+            raise RuntimeError(
+                "Codex provider continuation limit exceeded"
+            )
+        self.persist_recovery_state(continuation_state)
+        self.context.set_turn_start_reason("provider_recovery")
+        return continuation_prompt
+
+    def recover_provider_failure(
+        self,
+        failure: CodexTurnInterrupted | CodexTurnRetryableFailure,
+    ) -> CodexTurnContinuationRequired:
+        """The continuation of a turn the Provider interrupted or failed, or raise."""
+
+        if self.session.provider_cancelled():
+            raise InterruptedError(
+                f"Codex execution cancelled for {self.session.thread_id}"
+            ) from failure
+        policy = self.invocation.provider_error_recovery
+        if policy is None or policy.max_continue_attempts < 1:
+            raise failure
+        if self.provider_error_continue_count >= policy.max_continue_attempts:
+            self.reserve_recovery_attempt(failure)
+            self.persist_recovery_state(self._continuation_state(
+                turn_id=failure.turn_id,
+                reason="provider_system_error",
+                prompt=policy.continuation_prompt,
+            ))
+            raise ExecutionRecoveryDeferred(
+                "Codex provider recovery deferred after bounded "
+                "automatic continuation",
+                retry_after_seconds=5,
+            ) from failure
+        return CodexTurnContinuationRequired(
+            failure.thread_id or self.session.thread_id,
+            failure.turn_id,
+            "provider_system_error",
+        )
+
+    def resume_accepted_turn(self, turn_id: str) -> Any:
+        """Follow the accepted turn again, reconnecting while app-server restarts."""
+
+        session = self.session
+        current_turn_id = str(turn_id or "").strip()
+        if not current_turn_id:
+            raise CodexAppServerUnavailable(
+                "Codex accepted a turn but did not return its identity"
+            )
+        retry_delay = 0.25
+        reconnect_deadline = time.monotonic() + 540.0
+        while True:
+            if session.provider_cancelled():
+                raise InterruptedError(
+                    f"Codex execution cancelled while reconnecting {session.thread_id}"
+                )
+            try:
+                return session.client.resume_turn(
+                    session.thread_id,
+                    current_turn_id,
+                    cwd=self.request.cwd,
+                    config=self.turn_options["config"],
+                    event_callback=self.observe_event,
+                    turn_started_callback=self.turn_started,
+                    turn_snapshot_transform=self.turn_options["turn_snapshot_transform"],
+                    detach_requested=self.context.is_handover,
+                    cancellation_requested=session.provider_cancelled,
+                    dynamic_tool_handler=self.dynamic_tool_handler,
+                    turn_control_provider=self.turn_options.get(
+                        "turn_control_provider"
+                    ),
+                    turn_control_result_callback=self.turn_options.get(
+                        "turn_control_result_callback"
+                    ),
+                    timeout_seconds=None,
+                )
+            except CodexTurnConnectionLost as exc:
+                current_turn_id = str(
+                    exc.turn_id or current_turn_id
+                ).strip()
+            except (CodexTurnInterrupted, CodexTurnRetryableFailure) as exc:
+                raise self.recover_provider_failure(exc) from exc
+            except (CodexAppServerUnavailable, TimeoutError):
+                pass
+            if time.monotonic() >= reconnect_deadline:
+                self.persist_recovery_state({"kind": "provider_reconnect", "turn_id": current_turn_id})
+                raise ExecutionRecoveryDeferred("Codex app-server reconnect deadline reached", retry_after_seconds=5)
+            if self.context.is_handover():
+                raise CodexTurnDetached(session.thread_id, current_turn_id)
+            time.sleep(retry_delay)
+            retry_delay = min(5.0, retry_delay * 2.0)
+
+    def run_turn_recovering(
+        self,
+        prompt: str,
+        *,
+        images: list[str] | None = None,
+        image_urls: list[str] | None = None,
+    ) -> Any:
+        """Run one turn; a turn app-server rejected or lost is deferred or followed again."""
+
+        session = self.session
+        state = self.provider_recovery_state
+        if state.get("continuation_prompt") == prompt:
+            report_recovery_input(
+                self.context, provider="codex", prompt=prompt,
+                reason="provider_error" if state.get("reason") == "provider_system_error" else "missing_final_response",
+                input_delivery=str(state.get("input_delivery") or "continued"),
+                turn_id=str(state.get("original_turn_id") or ""),
+                image_count=len(images or []) + len(image_urls or []),
+            )
+        try:
+            return session.client.run_turn(
+                session.thread_id,
+                prompt,
+                **({"review_target": self.options["review_target"]} if self.options.get("review_target") else {}),
+                event_callback=self.observe_event,
+                turn_started_callback=self.turn_started,
+                images=images,
+                image_urls=image_urls,
+                image_detail=str(self.options.get("input_image_detail") or "").strip().casefold() or None,
+                cancellation_requested=session.provider_cancelled,
+                **({"history_initializer": self.history_delivery.initialize} if self.history_delivery else {}),
+                **self.turn_options,
+            )
+        except CodexCompactionInProgress as exc:
+            self.persist_recovery_state({
+                "kind": "thread_writer_busy",
+                "thread_id": session.thread_id,
+            })
+            raise ExecutionRecoveryDeferred(
+                str(exc),
+                retry_after_seconds=exc.retry_after_seconds,
+            ) from exc
+        except CodexThreadWriterBusy as exc:
+            # The Provider rejected this input before accepting a turn.
+            # Reclaims must share the durable no-progress budget, otherwise
+            # a writer that never releases its thread loops forever.
+            self.reserve_recovery_attempt(exc)
+            self.persist_recovery_state({
+                "kind": "thread_writer_busy",
+                "thread_id": session.thread_id,
+            })
+            raise ExecutionRecoveryDeferred(
+                str(exc),
+                retry_after_seconds=30,
+            ) from exc
+        except CodexTurnConnectionLost as exc:
+            self.reserve_recovery_attempt(exc)
+            return self.resume_accepted_turn(exc.turn_id)
+        except (CodexTurnInterrupted, CodexTurnRetryableFailure) as exc:
+            raise self.recover_provider_failure(exc) from exc
+
+    def _run_goal(self, recovery_turn_id: str) -> Any:
+        goal_command = self.goal_command
+        goal_action = "observe" if recovery_turn_id else str(goal_command.get("action") or "")
+        return self.session.client.run_goal(
+            self.session.thread_id,
+            action=goal_action,
+            objective=str(goal_command.get("objective") or ""),
+            token_budget=(
+                int(goal_command["token_budget"])
+                if goal_command.get("token_budget") is not None
+                else None
+            ),
+            cwd=self.request.cwd,
+            config=self.turn_options["config"],
+            dynamic_tool_handler=self.dynamic_tool_handler,
+            event_callback=self.observe_event,
+            cancellation_requested=self.session.provider_cancelled,
+            detach_requested=self.context.is_handover,
+        )
+
+    def _run_turns(self, recovery_turn_id: str) -> Any:
+        """Run the turn and its continuations until one answers."""
+
+        self.continuation_count = int(self.provider_recovery_state.get("transition_count") or 0)
+        turn_prompt = self._first_turn_prompt()
+        input_media = self.request.input_media
+        turn_images = [item.source for item in input_media
+                       if item.media_type == "image" and item.source_type == "local_path"]
+        turn_image_urls = [item.source for item in input_media
+                           if item.media_type == "image" and item.source_type == "url"]
+        if (recovery_turn_id
+            and self.provider_recovery_state.get("original_turn_id") == recovery_turn_id
+            and self.provider_recovery_state.get("phase") == "ready_to_continue"):
+            turn_prompt = self.recovery_input(recovery_turn_id, str(self.provider_recovery_state["continuation_prompt"]))
+            self.persist_recovery_state({**self.provider_recovery_state, "continuation_prompt": turn_prompt,
+                                         "input_delivery": "continued" if self.original_input_recorded else "resent"})
+            recovery_turn_id = ""
+            if self.original_input_recorded:
+                turn_images = []
+                turn_image_urls = []
+            self.context.set_turn_start_reason("provider_recovery")
+        fork_thread_replaceable = self.history_delivery is not None
+        while True:
+            try:
+                if recovery_turn_id:
+                    return self.resume_accepted_turn(recovery_turn_id)
+                return self.run_turn_recovering(turn_prompt, images=turn_images, image_urls=turn_image_urls)
+            except CodexTurnContinuationRequired as exc:
+                self.continuation_count += 1
+                turn_prompt = self.apply_continuation(exc)
+                recovery_turn_id = ""
+                if self.original_input_recorded:
+                    turn_images = []
+                    turn_image_urls = []
+            except CodexAppServerError as exc:
+                if not (
+                    fork_thread_replaceable
+                    and isinstance(exc, CodexThreadNotFound)
+                ):
+                    raise
+                if not self._replace_lost_fork_thread():
+                    raise
+                fork_thread_replaceable = False
+
+    def _replace_lost_fork_thread(self) -> bool:
+        """Import the Fork window into a new thread when app-server lost the Fork child's.
+
+        A Fork child's thread has no turn yet, so it exists only in the
+        app-server's memory and a normal worker restart loses it.  The Fork
+        window is immutable in PostgreSQL.  False when the lost thread
+        already took input: it cannot be replaced.
+        """
+
+        from .session_manager import SessionManager
+
+        session = self.session
+        sessions = SessionManager(agent_data=self.history_delivery.store)
+        if sessions.has_accepted_input(self.invocation.session.binding_id, agent_id=self.request.agent_id):
+            return False
+        lost_thread_id = session.thread_id
+        session.thread_id = self.backend._start_thread(
+            session.client, self.request, self.context.is_cancelled, self.invocation.harness_tools,
+        )
+        sessions.replace_unaccepted_session(
+            self.request, self.invocation.session, backend_session_id=session.thread_id,
+            backend_route_id=session.route.account_id,
+        )
+        self.context.emit("fork_thread_replaced", {
+            "provider": self.backend.provider_id, "lost_thread_id": lost_thread_id,
+            "thread_id": session.thread_id,
+        })
+        return True
 
 
 def record_native_compaction(
@@ -2949,345 +3071,60 @@ class NativeSocketBackend:
         )
         context.set_interrupt_target(session.backend_session_id)
         if operation == "release":
-            closed = self.client_factory().close_session(
-                session_key,
-                session.backend_session_id,
-            ) or {}
-            if "active turn" in str(closed.get("reason") or ""):
-                # The live session would carry on into the key's next turn
-                # (its daemon reuses it), so it is not released yet; the
-                # release is retried once that turn has ended.
-                raise RuntimeError(f"{self.provider_id} session has an active turn; release it when the turn ends")
-            return BackendResult(
-                output={
-                    "message": "",
-                    "provider": self.provider_id,
-                    "operation": operation,
-                },
-            )
+            return self._release_session(invocation, session_key=session_key)
         if operation == "fork":
-            forked = self.client_factory().fork_session(
-                source_session_id=session.backend_session_id,
-                cwd=request.cwd,
-                config_dir=str(options.get("config_dir") or ""),
-                title=str(options.get("title") or ""),
-                provider_profile=route_id,
-            )
-            forked_id = str(forked.get("session_id") or "")
-            if not forked_id:
-                raise RuntimeError("Native session fork returned no session id")
-            return BackendResult(
-                output={
-                    "message": "",
-                    "provider": self.provider_id,
-                    "operation": operation,
-                    "forked_from_session_id": session.backend_session_id,
-                },
-                backend_session_id=forked_id,
-                backend_route_id=route_id,
-            )
+            return self._fork_session(invocation, route_id=route_id)
         if operation == "compact":
             return self.compact_native_session(invocation, context, session_key=session_key, route_id=route_id)
         if operation not in {"turn"}:
             raise ValueError(
                 f"unsupported native backend operation: {operation}"
             )
+        return NativeTurnRun(
+            self, invocation, context,
+            route_id=route_id, session_key=session_key, media_options=media_options,
+        ).run()
 
-        request_key = secrets.token_hex(6)
-        observed_session = {"id": session.backend_session_id}
-        pending_message: dict[str, dict[str, Any] | None] = {"event": None}
-        turn_started = {"value": False}
-        # The Harness reads the Provider's own tool calls in the common shape.
-        tool_events = NativeToolEventTranslator(request.cwd)
-        # Without a native turn diff, 本轮修改 comes from the file tools' calls.
-        tool_edits = ToolEditArtifacts(request.cwd)
-
-        def flush_pending_message(phase: str) -> None:
-            held = pending_message["event"]
-            pending_message["event"] = None
-            if held is not None:
-                deliver(_with_answer_phase(held, phase))
-
-        def event_callback(event: dict[str, Any]) -> None:
-            if self.scopes_item_ids:
-                event = request_scoped_item_event(event, turn_id, request_key)
-            if self.marks_answer_phases:
-                deliver(event)
-                return
-            # Hold each agent message until the next item or the end of the
-            # turn shows whether it was the answer.
-            method = str(event.get("method") or "")
-            if _unphased_agent_message(event):
-                flush_pending_message("commentary")
-                pending_message["event"] = event
-                return
-            if method in {"item/started", "item/completed"}:
-                flush_pending_message("commentary")
-            elif method == "turn/completed":
-                params = event.get("params") if isinstance(event.get("params"), dict) else {}
-                turn = params.get("turn") if isinstance(params.get("turn"), dict) else {}
-                completed = str(turn.get("status") or "completed") == "completed"
-                flush_pending_message("final_answer" if completed else "commentary")
-            deliver(event)
-
-        def deliver(event: dict[str, Any]) -> None:
-            method = str(event.get("method") or "")
-            params = event.get("params") if isinstance(event.get("params"), dict) else {}
-            thread = params.get("thread") if isinstance(params.get("thread"), dict) else {}
-            session_id = str(
-                params.get("threadId")
-                or params.get("sessionId")
-                or thread.get("id")
-                or session.backend_session_id
-                or ""
-            )
-            if session_id:
-                observed_session["id"] = session_id
-            turn = (
-                params.get("turn")
-                if isinstance(params.get("turn"), dict)
-                else {}
-            )
-            event_turn_id = str(
-                turn.get("id") or params.get("turnId") or ""
-            )
-            if method == "turn/started":
-                turn_started["value"] = True
-                if event_turn_id:
-                    observed_session["turn_id"] = event_turn_id
-                context.bind_input(
-                    provider=self.provider_id,
-                    backend_session_id=session_id,
-                    turn_id=event_turn_id,
-                    provider_message_id=str(params.get("userMessageId") or event_turn_id),
-                )
-                input_pump.turn_started(event_turn_id or turn_id, turn_id, request.execution_id)
-            elif method == "turn/completed":
-                input_pump.turn_ended()
-            elif method == "turn/recovered":
-                # The daemon no longer had the turn and sent this input instead.
-                report_recovery_input(
-                    context, provider=self.provider_id, reason="turn_interrupted",
-                    prompt=str(params.get("prompt") or ""),
-                    input_delivery=str(params.get("delivery") or "continued"),
-                    turn_id=str(params.get("turnId") or turn_id),
-                    image_count=int(params.get("imageCount") or 0),
-                )
-                return
-            if session_id:
-                context.set_interrupt_target(session_id, observed_session.get("turn_id") or running_turn_id)
-            if method == "thread/tokenUsage/updated":
-                from .harness_capabilities import CONTEXT_USAGE_EVENTS
-                if CONTEXT_USAGE_EVENTS in AGENT_PROVIDERS[self.provider_id].harness:
-                    usage, window = _codex_live_context_usage(params.get("tokenUsage"))
-                    context.observe_context_usage(usage, window)
-                    _report_tool_events(invocation, [event])
-            translated = tool_events.translate(event)
-            for tool_event in translated:
-                tool_edits.observe(tool_event)
-            if method == "turn/completed":
-                _observe_tool_edit_artifacts(
-                    context, tool_edits, provider=self.provider_id, session_id=session_id,
-                    turn_id=event_turn_id or turn_id, status=str(turn.get("status") or "completed"),
-                )
-            context.observe_provider_event(
-                event,
-                provider=self.provider_id,
-                backend_session_id=session_id,
-            )
-            if getattr(invocation, "provider_event_processor", None) is not None:
-                # Text and reasoning between tool calls are progress too.
-                _report_tool_events(invocation, translated or [provider_activity()])
-
-        turn_id = str(options.get("turn_id") or request.execution_id)
-        if not self.scopes_item_ids and invocation.recovery_checkpoint.get("turn_id"):
-            turn_id = str(invocation.recovery_checkpoint["turn_id"])
-
-        def deliver_turn_input(run_turn_id: str, items: list[dict[str, Any]], control_id: str) -> tuple[bool, str]:
-            return self.deliver_turn_input(
-                session_key=session_key,
-                session_id=str(observed_session["id"] or session.backend_session_id or ""),
-                turn_id=run_turn_id,
-                items=items,
-                control_id=control_id,
-            )
-
-        # Send now and the loop governor's reminders reach a running turn
-        # only where the Provider takes input between the steps of a turn.
-        input_pump = TurnInputPump(
-            context=context,
-            event_processor=getattr(invocation, "provider_event_processor", None),
-            deliver=deliver_turn_input,
-        ) if AGENT_PROVIDERS[self.provider_id].active_turn_input else _NO_TURN_INPUT
-        tool_catalog, tool_callback = self.prepare_turn_tools(invocation, context)
-        client_options = self.client_turn_options(invocation, context, tool_catalog)
-        context.set_interrupt_target(
-            session.backend_session_id,
-            turn_id,
-        )
-        self.prepare_native_session(
-            session_key=session_key,
-            backend_session_id=session.backend_session_id,
-            options=options,
-        )
-        observed_usage: ObservedTurnUsage | None = None
-
-        def run_turn(
-            prompt: str, run_turn_id: str, session_id: str, media: dict[str, Any], continue_prompt: str = "",
-        ) -> Any:
-            return self.client_factory().run_turn(
-                session_key=session_key,
-                session_id=session_id,
-                prompt=prompt,
-                cwd=request.cwd,
-                config_dir=str(options.get("config_dir") or ""),
-                provider_profile=route_id,
-                model=str(options.get("model") or ""),
-                effort=str(options.get("effort") or ""),
-                is_owner=bool(options.get("is_owner", False)),
-                permission_profile=request.permission_profile,
-                permission_mode=str(options.get("permission_mode") or ""),
-                system_prompt_append=(
-                    full_system_context(invocation)
-                    if AGENT_PROVIDERS[self.provider_id].system_context_every_turn
-                    else invocation.system_context
-                    if invocation.attach_system_context
-                    else ""
-                ),
-                add_dirs=[
-                    str(item)
-                    for item in options.get("add_dirs") or []
-                    if str(item)
-                ],
-                turn_id=run_turn_id,
-                event_callback=event_callback,
-                tools=tool_catalog,
-                tool_callback=tool_callback,
-                resident_environment=dict(options.get("resident_environment") or {}),
-                inherit_portal_database=may_inherit_portal_database(request),
-                **media,
-                **self.compaction_options(options, session.backend_session_id),
-                **client_options,
-                **self.handover_options(context),
-                **({"continue_prompt": continue_prompt} if continue_prompt else {}),
-            )
-
-        # A turn an earlier attempt started stays that turn.  Under the same
-        # turn id the Provider's process attaches to it while it runs (a
-        # Worker handover left it running); a turn that is no longer running
-        # is continued in the same session with "continue" once the Provider
-        # had taken its input.  Only an input it never took is sent.
-        recovery_checkpoint = getattr(invocation, "recovery_checkpoint", None) or {}
-        handover = recovery_checkpoint.get("worker_handover")
-        reattaching = bool(
-            AGENT_PROVIDERS[self.provider_id].handover_keeps_turn
-            and isinstance(handover, dict)
-            and handover.get("turn_kept_running")
-            and handover.get("turn_id") == turn_id
-        )
-        running_turn_id = turn_id
-        running_prompt, running_media = invocation.user_prompt, media_options
-        continue_prompt = INTERRUPTED_TURN_CONTINUATION if recovery_checkpoint.get("turn_id") else ""
-        if continue_prompt:
-            recovery_state = recovery_checkpoint.get("provider_recovery_state")
-            continued = int((recovery_state or {}).get("provider_error_continue_count") or 0) if isinstance(recovery_state, dict) else 0
-            if continued:
-                # The turn running then was a continuation after a Provider
-                # error, whose input was a continuation too.
-                if self.scopes_item_ids:
-                    running_turn_id = f"{turn_id}:continue{continued}"
-                running_prompt, running_media = continuation_prompt_of(invocation), {}
-        try:
-            with input_pump, self.turn_scope(session.backend_session_id, tool_catalog, tool_callback):
-                if recovery_checkpoint.get("turn_id") and context.is_cancelled():
-                    raise InterruptedError("execution cancelled before attaching to its turn")
-                if reattaching:
-                    turn_started["value"] = True
-                    input_pump.turn_started(running_turn_id, turn_id, request.execution_id)
-                    context.emit("worker_handover_continuing", {
-                        "provider": self.provider_id, "previous_turn_id": running_turn_id,
-                        "input_delivery": "kept_running",
-                    })
-                try:
-                    result = run_turn(
-                        running_prompt, running_turn_id, session.backend_session_id, running_media, continue_prompt,
-                    )
-                except NativeAgentDetached:
-                    raise
-                except Exception as exc:  # noqa: BLE001 - re-raised unless the turn may be continued
-                    # The Provider failed after it took the turn: carry on in the
-                    # same session, as the Harness recovery policy allows.
-                    input_pump.turn_ended()
-                    failure: Exception = exc
-                    while True:
-                        prompt, attempt = provider_error_continuation(
-                            failure, invocation=invocation, context=context,
-                            provider_id=self.provider_id, turn_started=turn_started["value"],
-                        )
-                        flush_pending_message("commentary")
-                        client = self.client_factory()
-                        report_recovery_input(
-                            context, provider=self.provider_id, reason="provider_error", prompt=prompt,
-                            input_delivery="continued", turn_id=f"{turn_id}:continue{attempt}",
-                        )
-                        try:
-                            result = run_provider_continuation(
-                                lambda: run_turn(
-                                    prompt, f"{turn_id}:continue{attempt}",
-                                    str(observed_session["id"] or session.backend_session_id), {},
-                                ),
-                                context=context,
-                                unavailable=(getattr(client, "unavailable_type", NativeAgentUnavailable),),
-                            )
-                            break
-                        except Exception as again:  # noqa: BLE001 - only an unavailable egress goes on
-                            # The egress can go away again before the
-                            # continuation is answered; the recovery policy
-                            # decides whether another one goes out.
-                            if not (is_egress_block_failure(again) or is_network_failure(again)):
-                                raise
-                            failure = again
-            observed_session["id"] = str(result.session_id or observed_session["id"] or "")
-            flush_pending_message("final_answer")
-        except NativeAgentDetached as exc:
-            # The Scheduler requeues the Execution; the next Worker attaches.
-            raise ExecutionRecoveryDeferred(
-                f"Worker handover: the {self.provider_id} turn keeps running for the next Worker"
-            ) from exc
-        finally:
-            # A message still held when the turn failed was not an answer.
-            flush_pending_message("commentary")
-            # A long turn can compact several times before it fails; the
-            # Provider session keeps those compactions either way.
-            self.record_provider_compaction(
-                context=context,
-                backend_session_id=str(observed_session["id"] or ""),
-                backend_route_id=route_id,
-                config_dir=str(options.get("config_dir") or ""),
-            )
-            # What the Provider's own record of the turn holds beyond the
-            # events Portal received.
-            # Every request the turn made is used, also when the turn failed.
-            observed_usage = self.observe_turn_usage(
-                context=context,
-                backend_session_id=str(observed_session["id"] or ""),
-                config_dir=str(options.get("config_dir") or ""),
-            )
-            report_request_usage(context, observed_usage)
-        usage = self.turn_usage(result, observed_usage)
-        _report_context_usage(invocation, usage)
+    def _release_session(self, invocation: BackendInvocation, *, session_key: str) -> BackendResult:
+        closed = self.client_factory().close_session(
+            session_key,
+            invocation.session.backend_session_id,
+        ) or {}
+        if "active turn" in str(closed.get("reason") or ""):
+            # The live session would carry on into the key's next turn
+            # (its daemon reuses it), so it is not released yet; the
+            # release is retried once that turn has ended.
+            raise RuntimeError(f"{self.provider_id} session has an active turn; release it when the turn ends")
         return BackendResult(
             output={
-                "message": str(result.response or ""),
+                "message": "",
                 "provider": self.provider_id,
-                "turn_id": str(result.turn_id or ""),
+                "operation": invocation.request.operation,
             },
-            backend_session_id=str(
-                result.session_id or session.backend_session_id
-            ),
+        )
+
+    def _fork_session(self, invocation: BackendInvocation, *, route_id: str) -> BackendResult:
+        request, session = invocation.request, invocation.session
+        options = request.runtime_options
+        forked = self.client_factory().fork_session(
+            source_session_id=session.backend_session_id,
+            cwd=request.cwd,
+            config_dir=str(options.get("config_dir") or ""),
+            title=str(options.get("title") or ""),
+            provider_profile=route_id,
+        )
+        forked_id = str(forked.get("session_id") or "")
+        if not forked_id:
+            raise RuntimeError("Native session fork returned no session id")
+        return BackendResult(
+            output={
+                "message": "",
+                "provider": self.provider_id,
+                "operation": request.operation,
+                "forked_from_session_id": session.backend_session_id,
+            },
+            backend_session_id=forked_id,
             backend_route_id=route_id,
-            usage=usage,
-            available_harness_tool_names=frozenset(tool["name"] for tool in tool_catalog),
         )
 
     def compact_native_session(
@@ -3442,6 +3279,359 @@ class NativeSocketBackend:
         self, *, session_key: str, backend_session_id: str, options: Mapping[str, Any] | None = None,
     ) -> None:
         """Adapters whose daemon keeps a live session per key align it here."""
+
+
+class NativeTurnRun:
+    """One turn of a native-socket Provider, from its first input to its answer.
+
+    The run delivers the Provider's events (with answer phases and
+    request-scoped item ids where the Provider needs them), hands Send-now
+    input to the running turn, continues a turn the Provider failed after
+    taking it, and records the turn's compactions and usage whatever its end.
+    """
+
+    def __init__(
+        self,
+        backend: NativeSocketBackend,
+        invocation: BackendInvocation,
+        context: BackendContext,
+        *,
+        route_id: str,
+        session_key: str,
+        media_options: dict[str, Any],
+    ) -> None:
+        self.backend = backend
+        self.invocation = invocation
+        self.context = context
+        self.request = invocation.request
+        self.session = invocation.session
+        self.options = self.request.runtime_options
+        self.route_id = route_id
+        self.session_key = session_key
+        self.media_options = media_options
+        self.provider = AGENT_PROVIDERS[backend.provider_id]
+        self.request_key = secrets.token_hex(6)
+        self.observed_session_id = self.session.backend_session_id
+        self.observed_turn_id = ""
+        # An agent message held until the next event shows whether it was the answer.
+        self.pending_message: dict[str, Any] | None = None
+        self.turn_started = False
+        # The Harness reads the Provider's own tool calls in the common shape.
+        self.tool_events = NativeToolEventTranslator(self.request.cwd)
+        # Without a native turn diff, 本轮修改 comes from the file tools' calls.
+        self.tool_edits = ToolEditArtifacts(self.request.cwd)
+        self.turn_id = str(self.options.get("turn_id") or self.request.execution_id)
+        if not backend.scopes_item_ids and invocation.recovery_checkpoint.get("turn_id"):
+            self.turn_id = str(invocation.recovery_checkpoint["turn_id"])
+        self.running_turn_id = self.turn_id
+        # Send now and the loop governor's reminders reach a running turn
+        # only where the Provider takes input between the steps of a turn.
+        self.input_pump = TurnInputPump(
+            context=context,
+            event_processor=getattr(invocation, "provider_event_processor", None),
+            deliver=self._deliver_turn_input,
+        ) if self.provider.active_turn_input else _NO_TURN_INPUT
+        self.tool_catalog, self.tool_callback = backend.prepare_turn_tools(invocation, context)
+        self.client_options = backend.client_turn_options(invocation, context, self.tool_catalog)
+        context.set_interrupt_target(
+            self.session.backend_session_id,
+            self.turn_id,
+        )
+        backend.prepare_native_session(
+            session_key=session_key,
+            backend_session_id=self.session.backend_session_id,
+            options=self.options,
+        )
+
+    def _deliver_turn_input(self, run_turn_id: str, items: list[dict[str, Any]], control_id: str) -> tuple[bool, str]:
+        return self.backend.deliver_turn_input(
+            session_key=self.session_key,
+            session_id=str(self.observed_session_id or self.session.backend_session_id or ""),
+            turn_id=run_turn_id,
+            items=items,
+            control_id=control_id,
+        )
+
+    def run(self) -> BackendResult:
+        backend, context, invocation = self.backend, self.context, self.invocation
+        session = self.session
+        # A turn an earlier attempt started stays that turn.  Under the same
+        # turn id the Provider's process attaches to it while it runs (a
+        # Worker handover left it running); a turn that is no longer running
+        # is continued in the same session with "continue" once the Provider
+        # had taken its input.  Only an input it never took is sent.
+        recovery_checkpoint = getattr(invocation, "recovery_checkpoint", None) or {}
+        reattaching = self._reattaching(recovery_checkpoint)
+        running_prompt, running_media = invocation.user_prompt, self.media_options
+        continue_prompt = INTERRUPTED_TURN_CONTINUATION if recovery_checkpoint.get("turn_id") else ""
+        if continue_prompt:
+            recovery_state = recovery_checkpoint.get("provider_recovery_state")
+            continued = int((recovery_state or {}).get("provider_error_continue_count") or 0) if isinstance(recovery_state, dict) else 0
+            if continued:
+                # The turn running then was a continuation after a Provider
+                # error, whose input was a continuation too.
+                if backend.scopes_item_ids:
+                    self.running_turn_id = f"{self.turn_id}:continue{continued}"
+                running_prompt, running_media = continuation_prompt_of(invocation), {}
+        observed_usage: ObservedTurnUsage | None = None
+        try:
+            with self.input_pump, backend.turn_scope(session.backend_session_id, self.tool_catalog, self.tool_callback):
+                if recovery_checkpoint.get("turn_id") and context.is_cancelled():
+                    raise InterruptedError("execution cancelled before attaching to its turn")
+                if reattaching:
+                    self._attach_kept_turn()
+                try:
+                    result = self._run_provider_turn(
+                        running_prompt, self.running_turn_id, session.backend_session_id, running_media, continue_prompt,
+                    )
+                except NativeAgentDetached:
+                    raise
+                except Exception as exc:  # noqa: BLE001 - re-raised unless the turn may be continued
+                    result = self._continue_failed_turn(exc)
+            self.observed_session_id = str(result.session_id or self.observed_session_id or "")
+            self._flush_pending("final_answer")
+        except NativeAgentDetached as exc:
+            # The Scheduler requeues the Execution; the next Worker attaches.
+            raise ExecutionRecoveryDeferred(
+                f"Worker handover: the {backend.provider_id} turn keeps running for the next Worker"
+            ) from exc
+        finally:
+            observed_usage = self._record_turn_effects()
+        usage = backend.turn_usage(result, observed_usage)
+        _report_context_usage(invocation, usage)
+        return BackendResult(
+            output={
+                "message": str(result.response or ""),
+                "provider": backend.provider_id,
+                "turn_id": str(result.turn_id or ""),
+            },
+            backend_session_id=str(
+                result.session_id or session.backend_session_id
+            ),
+            backend_route_id=self.route_id,
+            usage=usage,
+            available_harness_tool_names=frozenset(tool["name"] for tool in self.tool_catalog),
+        )
+
+    def _reattaching(self, recovery_checkpoint: Mapping[str, Any]) -> bool:
+        """Whether a Worker handover left this turn running for this attempt to attach to."""
+
+        handover = recovery_checkpoint.get("worker_handover")
+        return bool(
+            self.provider.handover_keeps_turn
+            and isinstance(handover, dict)
+            and handover.get("turn_kept_running")
+            and handover.get("turn_id") == self.turn_id
+        )
+
+    def _attach_kept_turn(self) -> None:
+        self.turn_started = True
+        self.input_pump.turn_started(self.running_turn_id, self.turn_id, self.request.execution_id)
+        self.context.emit("worker_handover_continuing", {
+            "provider": self.backend.provider_id, "previous_turn_id": self.running_turn_id,
+            "input_delivery": "kept_running",
+        })
+
+    def _continue_failed_turn(self, exc: Exception) -> Any:
+        """Carry the turn on in the same session after the Provider failed it, as the recovery policy allows."""
+
+        backend, context = self.backend, self.context
+        self.input_pump.turn_ended()
+        failure: Exception = exc
+        while True:
+            prompt, attempt = provider_error_continuation(
+                failure, invocation=self.invocation, context=context,
+                provider_id=backend.provider_id, turn_started=self.turn_started,
+            )
+            self._flush_pending("commentary")
+            client = backend.client_factory()
+            continuation_turn_id = f"{self.turn_id}:continue{attempt}"
+            report_recovery_input(
+                context, provider=backend.provider_id, reason="provider_error", prompt=prompt,
+                input_delivery="continued", turn_id=continuation_turn_id,
+            )
+            try:
+                return run_provider_continuation(
+                    lambda: self._run_provider_turn(
+                        prompt, continuation_turn_id,
+                        str(self.observed_session_id or self.session.backend_session_id), {},
+                    ),
+                    context=context,
+                    unavailable=(getattr(client, "unavailable_type", NativeAgentUnavailable),),
+                )
+            except Exception as again:  # noqa: BLE001 - only an unavailable egress goes on
+                # The egress can go away again before the
+                # continuation is answered; the recovery policy
+                # decides whether another one goes out.
+                if not (is_egress_block_failure(again) or is_network_failure(again)):
+                    raise
+                failure = again
+
+    def _record_turn_effects(self) -> ObservedTurnUsage | None:
+        """Record what the turn left, however it ended; the usage the Provider recorded."""
+
+        backend, options = self.backend, self.options
+        # A message still held when the turn failed was not an answer.
+        self._flush_pending("commentary")
+        # A long turn can compact several times before it fails; the
+        # Provider session keeps those compactions either way.
+        backend.record_provider_compaction(
+            context=self.context,
+            backend_session_id=str(self.observed_session_id or ""),
+            backend_route_id=self.route_id,
+            config_dir=str(options.get("config_dir") or ""),
+        )
+        # What the Provider's own record of the turn holds beyond the
+        # events Portal received.
+        # Every request the turn made is used, also when the turn failed.
+        observed_usage = backend.observe_turn_usage(
+            context=self.context,
+            backend_session_id=str(self.observed_session_id or ""),
+            config_dir=str(options.get("config_dir") or ""),
+        )
+        report_request_usage(self.context, observed_usage)
+        return observed_usage
+
+    def _run_provider_turn(
+        self, prompt: str, run_turn_id: str, session_id: str, media: dict[str, Any], continue_prompt: str = "",
+    ) -> Any:
+        backend, invocation, request, options = self.backend, self.invocation, self.request, self.options
+        return backend.client_factory().run_turn(
+            session_key=self.session_key,
+            session_id=session_id,
+            prompt=prompt,
+            cwd=request.cwd,
+            config_dir=str(options.get("config_dir") or ""),
+            provider_profile=self.route_id,
+            model=str(options.get("model") or ""),
+            effort=str(options.get("effort") or ""),
+            is_owner=bool(options.get("is_owner", False)),
+            permission_profile=request.permission_profile,
+            permission_mode=str(options.get("permission_mode") or ""),
+            system_prompt_append=(
+                full_system_context(invocation)
+                if self.provider.system_context_every_turn
+                else invocation.system_context
+                if invocation.attach_system_context
+                else ""
+            ),
+            add_dirs=[
+                str(item)
+                for item in options.get("add_dirs") or []
+                if str(item)
+            ],
+            turn_id=run_turn_id,
+            event_callback=self.observe_event,
+            tools=self.tool_catalog,
+            tool_callback=self.tool_callback,
+            resident_environment=dict(options.get("resident_environment") or {}),
+            inherit_portal_database=may_inherit_portal_database(request),
+            **media,
+            **backend.compaction_options(options, self.session.backend_session_id),
+            **self.client_options,
+            **backend.handover_options(self.context),
+            **({"continue_prompt": continue_prompt} if continue_prompt else {}),
+        )
+
+    def _flush_pending(self, phase: str) -> None:
+        held = self.pending_message
+        self.pending_message = None
+        if held is not None:
+            self._deliver(_with_answer_phase(held, phase))
+
+    def observe_event(self, event: dict[str, Any]) -> None:
+        """Take one event of the Provider's turn."""
+
+        if self.backend.scopes_item_ids:
+            event = request_scoped_item_event(event, self.turn_id, self.request_key)
+        if self.backend.marks_answer_phases:
+            self._deliver(event)
+            return
+        # Hold each agent message until the next item or the end of the
+        # turn shows whether it was the answer.
+        method = str(event.get("method") or "")
+        if _unphased_agent_message(event):
+            self._flush_pending("commentary")
+            self.pending_message = event
+            return
+        if method in {"item/started", "item/completed"}:
+            self._flush_pending("commentary")
+        elif method == "turn/completed":
+            params = event.get("params") if isinstance(event.get("params"), dict) else {}
+            turn = params.get("turn") if isinstance(params.get("turn"), dict) else {}
+            completed = str(turn.get("status") or "completed") == "completed"
+            self._flush_pending("final_answer" if completed else "commentary")
+        self._deliver(event)
+
+    def _deliver(self, event: dict[str, Any]) -> None:
+        backend, context, invocation = self.backend, self.context, self.invocation
+        method = str(event.get("method") or "")
+        params = event.get("params") if isinstance(event.get("params"), dict) else {}
+        thread = params.get("thread") if isinstance(params.get("thread"), dict) else {}
+        session_id = str(
+            params.get("threadId")
+            or params.get("sessionId")
+            or thread.get("id")
+            or self.session.backend_session_id
+            or ""
+        )
+        if session_id:
+            self.observed_session_id = session_id
+        turn = (
+            params.get("turn")
+            if isinstance(params.get("turn"), dict)
+            else {}
+        )
+        event_turn_id = str(
+            turn.get("id") or params.get("turnId") or ""
+        )
+        if method == "turn/started":
+            self.turn_started = True
+            if event_turn_id:
+                self.observed_turn_id = event_turn_id
+            context.bind_input(
+                provider=backend.provider_id,
+                backend_session_id=session_id,
+                turn_id=event_turn_id,
+                provider_message_id=str(params.get("userMessageId") or event_turn_id),
+            )
+            self.input_pump.turn_started(event_turn_id or self.turn_id, self.turn_id, self.request.execution_id)
+        elif method == "turn/completed":
+            self.input_pump.turn_ended()
+        elif method == "turn/recovered":
+            # The daemon no longer had the turn and sent this input instead.
+            report_recovery_input(
+                context, provider=backend.provider_id, reason="turn_interrupted",
+                prompt=str(params.get("prompt") or ""),
+                input_delivery=str(params.get("delivery") or "continued"),
+                turn_id=str(params.get("turnId") or self.turn_id),
+                image_count=int(params.get("imageCount") or 0),
+            )
+            return
+        if session_id:
+            context.set_interrupt_target(session_id, self.observed_turn_id or self.running_turn_id)
+        if method == "thread/tokenUsage/updated":
+            from .harness_capabilities import CONTEXT_USAGE_EVENTS
+            if CONTEXT_USAGE_EVENTS in self.provider.harness:
+                usage, window = _live_context_usage(params.get("tokenUsage"))
+                context.observe_context_usage(usage, window)
+                _report_tool_events(invocation, [event])
+        translated = self.tool_events.translate(event)
+        for tool_event in translated:
+            self.tool_edits.observe(tool_event)
+        if method == "turn/completed":
+            _observe_tool_edit_artifacts(
+                context, self.tool_edits, provider=backend.provider_id, session_id=session_id,
+                turn_id=event_turn_id or self.turn_id, status=str(turn.get("status") or "completed"),
+            )
+        context.observe_provider_event(
+            event,
+            provider=backend.provider_id,
+            backend_session_id=session_id,
+        )
+        if getattr(invocation, "provider_event_processor", None) is not None:
+            # Text and reasoning between tool calls are progress too.
+            _report_tool_events(invocation, translated or [provider_activity()])
 
 
 class ClaudeBackend(NativeSocketBackend):

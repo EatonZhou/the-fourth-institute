@@ -10,8 +10,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from management_portal.codex_app_server_client import (
-    CodexAppServerClient,
+from management_portal.codex_app_server_client import CodexAppServerClient
+from management_portal.codex_app_server_protocol import (
     CodexAppServerError,
     CodexTurnAuthenticationError,
     CodexTurnContinuationRequired,
@@ -347,7 +347,7 @@ def test_codex_completion_read_rejects_invalid_saved_turn(tmp_path, record_prope
         assert len(reads) == 1 and reads[0]["params"]["threadId"] == "fixture-thread"
         assert reads[0]["params"]["itemsView"] == "full"
         assert server.methods.count("turn/start") == 1
-        assert not client._turn_waiters and not client._busy_threads
+        assert not client.work.turns and not client.threads._busy
         if isinstance(raised.value, CodexTurnContinuationRequired):
             assert raised.value.reason == "missing_final_response"
             assert raised.value.turn_id == server.last_turn["id"]
@@ -374,7 +374,7 @@ def test_codex_completion_read_preserves_cancellation(tmp_path, record_property,
                 assert len(after_completion_reads(server)) == (1 if cancel_at == "read" else 0)
                 assert server.methods.count("turn/start") == 1
                 assert server.methods.count("turn/interrupt") <= 1
-                assert not client._turn_waiters and not client._busy_threads
+                assert not client.work.turns and not client.threads._busy
             finally:
                 client.close()
                 server.thread.join(timeout=2)

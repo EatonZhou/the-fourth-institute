@@ -9,7 +9,8 @@ from unittest import mock
 
 import pytest
 
-from management_portal.codex_app_server_client import CodexAppServerClient, _TurnWaiter
+from management_portal.codex_app_server_client import CodexAppServerClient
+from management_portal.codex_app_server_protocol import TurnWaiter
 from management_portal.execution.agent_data_projection import AgentDataProjector
 from management_portal.execution.agent_data_store import AgentDataStore
 from management_portal.execution.backends import BackendContext, BackendInvocation, CodexBackend
@@ -78,12 +79,12 @@ def test_inline_review_replays_only_the_native_outer_message_once(tmp_path):
     backend = _backend(path)
     client = CodexAppServerClient(tmp_path / "unused.sock")
     events = []
-    client.read_turn = mock.Mock(return_value=_snapshot("review-parent"))
-    waiter = _TurnWaiter(thread_id="thread-one", turn_id="review-parent", event_callback=events.append,
+    client.reads.read_turn = mock.Mock(return_value=_snapshot("review-parent"))
+    waiter = TurnWaiter(thread_id="thread-one", turn_id="review-parent", event_callback=events.append,
                         turn_snapshot_transform=lambda turn: backend._canonical_replay_turn("zero", "thread-one", turn))
     try:
         for _ in range(2):
-            assert client._read_terminal_turn(waiter)["status"] == "completed"
+            assert client.follower.read_terminal_turn(waiter)["status"] == "completed"
         assert [event["params"]["item"]["id"] for event in events] == ["msg_review_native"]
         outputs = execution_outputs_from_events([
             {"sequence": index, "execution_id": "execution-" + "1" * 24,
@@ -103,22 +104,22 @@ def _live_review(tmp_path, callback=None):
     backend = _backend(path)
     client = CodexAppServerClient(tmp_path / "unused.sock")
     events = []
-    waiter = _TurnWaiter("thread-one", turn_id="review-parent",
+    waiter = TurnWaiter("thread-one", turn_id="review-parent",
                         event_callback=callback or events.append,
                         turn_snapshot_transform=lambda turn: backend._canonical_replay_turn("zero", "thread-one", turn))
-    client._turn_waiters[waiter.thread_id] = waiter
+    client.work.turns[waiter.thread_id] = waiter
     return path, client, waiter, events
 
 
 def _notify_review_message(client, **identity):
-    client._dispatch_notification("item/completed", {
+    client.events.dispatch_notification("item/completed", {
         "threadId": "thread-one", "turnId": "review-parent",
         "item": {"id": "msg_review_native", "type": "agentMessage", "text": "审查完成"}, **identity,
     })
 
 
 def _finish_live_review(client, waiter):
-    return client._follow_turn(waiter, turn_started_callback=None, cancellation_requested=None,
+    return client.follower.follow(waiter, turn_started_callback=None, cancellation_requested=None,
                               detach_requested=None, turn_control_provider=None,
                               turn_control_result_callback=None, deadline=time.monotonic() + 2)
 
@@ -135,9 +136,9 @@ def test_live_unphased_review_uses_one_canonical_final_before_completion(tmp_pat
             turn["items"] = [{"id": "msg_review_native" if snapshot_kind == "native" else "item-45",
                               "type": "agentMessage", "text": "审查完成"}]
         if snapshot_kind == "poll-before-terminal":
-            client.read_turn = mock.Mock(return_value={**_snapshot(waiter.turn_id), "status": "inProgress"})
-            assert client._read_terminal_turn(waiter) is None
-        client._dispatch_notification("turn/completed", {"threadId": waiter.thread_id, "turn": turn})
+            client.reads.read_turn = mock.Mock(return_value={**_snapshot(waiter.turn_id), "status": "inProgress"})
+            assert client.follower.read_terminal_turn(waiter) is None
+        client.events.dispatch_notification("turn/completed", {"threadId": waiter.thread_id, "turn": turn})
         result = _finish_live_review(client, waiter)
         assert result.response == "审查完成"
         messages = [event["params"]["item"] for event in events if event["method"] == "item/completed"]
@@ -163,14 +164,14 @@ def test_live_review_cannot_acknowledge_or_resend_without_native_boundaries(tmp_
         elif missing == "identity": records[6]["payload"]["item"].pop("id")
         else: records[6]["payload"]["thread_id" if missing == "wrong-thread" else "turn_id"] = "unrelated"
         _write(path, records)
-        client.request = mock.Mock(side_effect=AssertionError("must not send another provider request"))
+        client.rpc.request = mock.Mock(side_effect=AssertionError("must not send another provider request"))
         _notify_review_message(client)
-        client._dispatch_notification("turn/completed", {"threadId": waiter.thread_id,
+        client.events.dispatch_notification("turn/completed", {"threadId": waiter.thread_id,
             "turn": {"id": waiter.turn_id, "status": "completed", "items": []}})
         with pytest.raises(ExecutionRecoveryDeferred):
             _finish_live_review(client, waiter)
         assert events == [] and waiter.unphased_items and waiter.completed_item_ids == set()
-        client.request.assert_not_called()
+        client.rpc.request.assert_not_called()
     finally:
         client.close()
 
@@ -183,10 +184,10 @@ def test_live_review_projection_failure_retries_same_identity_without_final_fall
             raise RuntimeError("temporary projection failure")
         captured.append(event)
     path, client, waiter, _ = _live_review(tmp_path, observe)
-    client._wait_for_turn_signal = mock.Mock(return_value=True)
+    client.follower.wait_for_turn_signal = mock.Mock(return_value=True)
     try:
         _notify_review_message(client)
-        client._dispatch_notification("turn/completed", {"threadId": waiter.thread_id,
+        client.events.dispatch_notification("turn/completed", {"threadId": waiter.thread_id,
             "turn": {"id": waiter.turn_id, "status": "completed", "items": []}})
         assert _finish_live_review(client, waiter).response == "审查完成"
         assert [event["method"] for event in captured[1:]] == ["item/completed", "turn/completed"]
@@ -207,7 +208,7 @@ def test_live_review_projection_completion_has_no_synthetic_second_message(tmp_p
         path, client, waiter, _ = _live_review(case_path, observe)
         try:
             _notify_review_message(client)
-            client._dispatch_notification("turn/completed", {"threadId": waiter.thread_id,
+            client.events.dispatch_notification("turn/completed", {"threadId": waiter.thread_id,
                 "turn": {"id": waiter.turn_id, "status": "completed", "items": []}})
             result = _finish_live_review(client, waiter)
             final = projector.complete(execution_id=request.execution_id, backend_session_id="thread-one",
@@ -236,17 +237,17 @@ def test_live_unphased_ordinary_messages_preserve_distinct_ids_and_explicit_phas
         _write(path, [_start(waiter.turn_id), _message("one", "same"), _message("two", "same"),
                       _message("final", "done", "final_answer")])
         for identity in ["one", "two"]:
-            client._dispatch_notification("item/completed", {"threadId": waiter.thread_id,
+            client.events.dispatch_notification("item/completed", {"threadId": waiter.thread_id,
                 "turnId": waiter.turn_id, "item": {"id": identity, "type": "agentMessage", "text": "same"}})
         _notify_review_message(client, threadId="unrelated")
         _notify_review_message(client, turnId="unrelated")
         assert set(waiter.unphased_items) == {"one", "two"} and events == []
         # Real phased progress is still immediate and needs no reconciliation.
-        client._dispatch_notification("item/completed", {"threadId": waiter.thread_id,
+        client.events.dispatch_notification("item/completed", {"threadId": waiter.thread_id,
             "turnId": waiter.turn_id, "item": {"id": "progress", "type": "agentMessage",
                                                 "text": "progress", "phase": "commentary"}})
         assert len(events) == 1 and events[0]["params"]["item"]["id"] == "progress"
-        client._dispatch_notification("turn/completed", {"threadId": waiter.thread_id,
+        client.events.dispatch_notification("turn/completed", {"threadId": waiter.thread_id,
             "turn": {"id": waiter.turn_id, "status": "completed", "items": []}})
         assert _finish_live_review(client, waiter).response == "done"
         assert [(event["params"]["item"]["id"], event["params"]["item"]["phase"])
@@ -304,7 +305,7 @@ def test_restarted_worker_replays_native_message_identity_without_text_dedup_con
         client = CodexAppServerClient(tmp_path / "unused.sock")
         events: list[dict] = []
         transform = lambda turn: backend._canonical_replay_turn("zero", "thread-one", turn)
-        client.read_turn = mock.Mock(return_value=_snapshot(count=2))
+        client.reads.read_turn = mock.Mock(return_value=_snapshot(count=2))
 
         # First worker saw the real notification. A replacement has no waiter cache.
         events.append({"method": "item/completed", "params": {"turnId": "turn-one", "item": {
@@ -312,10 +313,10 @@ def test_restarted_worker_replays_native_message_identity_without_text_dedup_con
             "text": "同样的中间消息",
         }}})
         for status in ("inProgress", "completed"):
-            client.read_turn.return_value = {**_snapshot(count=2), "status": status}
-            waiter = _TurnWaiter(thread_id="thread-one", turn_id="turn-one",
+            client.reads.read_turn.return_value = {**_snapshot(count=2), "status": status}
+            waiter = TurnWaiter(thread_id="thread-one", turn_id="turn-one",
                                  event_callback=events.append, turn_snapshot_transform=transform)
-            client._read_terminal_turn(waiter)
+            client.follower.read_terminal_turn(waiter)
         outputs = execution_outputs_from_events([
             {"sequence": index, "execution_id": "execution-" + "1" * 24,
              "type": "provider_event", "details": event}
@@ -386,7 +387,7 @@ def test_restarted_worker_replays_native_message_identity_without_text_dedup_con
         request, session = _request_session()
         store = AgentDataStore()
         client = CodexAppServerClient(tmp_path / "unused.sock")
-        client.read_turn = mock.Mock(return_value=_snapshot(count=3))
+        client.reads.read_turn = mock.Mock(return_value=_snapshot(count=3))
         backend = _backend(path)
         first_ids = []
         for worker in range(3):
@@ -413,10 +414,10 @@ def test_restarted_worker_replays_native_message_identity_without_text_dedup_con
                 }}})
                 first_ids = store.sequence_segment_ids(store.trace_sequence_id(request.agent_id))
             else:
-                client.read_turn.return_value = {
+                client.reads.read_turn.return_value = {
                     **_snapshot(count=3), "status": "inProgress" if worker == 1 else "completed",
                 }
-                client._read_terminal_turn(_TurnWaiter(
+                client.follower.read_terminal_turn(TurnWaiter(
                     thread_id="thread-one", turn_id="turn-one", event_callback=observe,
                     turn_snapshot_transform=lambda turn: backend._canonical_replay_turn("zero", "thread-one", turn),
                 ))
@@ -492,20 +493,20 @@ def test_active_replay_uses_only_durable_messages_and_waits_for_partial_output(t
             backend = _backend(path)
             client = CodexAppServerClient(tmp_path / "unused.sock")
             events = []
-            waiter = _TurnWaiter(
+            waiter = TurnWaiter(
                 thread_id="thread-one", turn_id="turn-one", event_callback=events.append,
                 turn_snapshot_transform=lambda snapshot: backend._canonical_replay_turn("zero", "thread-one", snapshot),
             )
-            client.read_turn = mock.Mock(return_value=turn)
+            client.reads.read_turn = mock.Mock(return_value=turn)
             for _attempt in range(2):
-                assert client._read_terminal_turn(waiter) is None
+                assert client.follower.read_terminal_turn(waiter) is None
             assert [event["params"]["item"]["id"] for event in events] == (["msg_native_one"] if native_ready else [])
             _write(path, [_start("turn-one"), _message("msg_native_one"), _message("msg_native_two")])
             tool["status"] = "completed"
-            assert client._read_terminal_turn(waiter) is None
+            assert client.follower.read_terminal_turn(waiter) is None
             assert [event["params"]["item"]["id"] for event in events] == ["msg_native_one", "msg_native_two", tool["id"]]
-            client.read_turn.return_value = {**turn, "status": "completed"}
-            assert client._read_terminal_turn(waiter)["status"] == "completed"
+            client.reads.read_turn.return_value = {**turn, "status": "completed"}
+            assert client.follower.read_terminal_turn(waiter)["status"] == "completed"
             assert len(events) == 3
             client.close()
 

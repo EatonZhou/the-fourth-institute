@@ -7,7 +7,7 @@ import pytest
 from management_portal.execution.account_adapters import CodexAccounts
 from management_portal.execution.accounts import ExecutionAccounts
 from management_portal.execution.account_monitor import AccountMonitor
-from management_portal.codex_app_server_client import CodexTurnAuthenticationError
+from management_portal.codex_app_server_protocol import CodexTurnAuthenticationError
 
 
 def monitor(monkeypatch):

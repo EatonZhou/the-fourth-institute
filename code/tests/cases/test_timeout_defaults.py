@@ -28,8 +28,8 @@ class TimeoutDefaultsTests(unittest.TestCase):
     def test_codex_defaults_and_explicit_overrides_are_not_scaled_twice(self):
         default = CodexAppServerClient("/tmp/not-connected.sock")
         self.assertEqual(
-            (default.request_timeout_seconds, default.lifecycle_request_timeout_seconds,
-             default.turn_start_request_timeout_seconds),
+            (default.timeouts.request, default.timeouts.lifecycle,
+             default.timeouts.turn_start),
             (90, 180, 360),
         )
         explicit = CodexAppServerClient(
@@ -37,8 +37,8 @@ class TimeoutDefaultsTests(unittest.TestCase):
             lifecycle_request_timeout_seconds=11, turn_start_request_timeout_seconds=13,
         )
         self.assertEqual(
-            (explicit.request_timeout_seconds, explicit.lifecycle_request_timeout_seconds,
-             explicit.turn_start_request_timeout_seconds),
+            (explicit.timeouts.request, explicit.timeouts.lifecycle,
+             explicit.timeouts.turn_start),
             (7, 11, 13),
         )
 

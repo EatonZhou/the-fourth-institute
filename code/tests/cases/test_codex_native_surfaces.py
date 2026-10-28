@@ -48,14 +48,14 @@ def form_params():
 def test_native_approval_routes_once_and_never_fabricates_answer(tmp_path, method, action):
     """原生审批请求只按用户回复发送一次，不代为回答，之后再回复视为过期"""
     client, sent, events = native_client(tmp_path)
-    client._answer_server_request(99, method, approval_params())
+    client.events.answer_server_request(99, method, approval_params())
     assert sent == []
     assert client.user_inputs.blocking("thread-native")
     request = events[0]["params"]["item"]["user_input"]
     response = {"type": "user_input_response", "request_id": request["request_id"], "interaction_response": True, "action": action}
     control = ExecutionInputControl.new(execution_id="execution-" + "c" * 24, actor="test-actor", input=[response], expected_turn_id="turn-native")
     callback = Mock()
-    client._deliver_turn_control(thread_id="thread-native", waiter=client._turn_waiters["thread-native"],
+    client.controls.deliver_turn_control(thread_id="thread-native", waiter=client.work.turns["thread-native"],
                                 turn_control_provider=lambda: control.to_payload(), turn_control_result_callback=callback,
                                 cancellation_requested=None)
     callback.assert_called_once_with(control.to_payload(), True, "")
@@ -76,7 +76,7 @@ def test_native_approval_routes_once_and_never_fabricates_answer(tmp_path, metho
 def test_mcp_form_correlates_original_wire_request(tmp_path, action):
     """MCP 表单的接受、拒绝或取消回复按原始请求 ID 发回"""
     client, sent, events = native_client(tmp_path)
-    client._answer_server_request("mcp-wire", MCP_METHOD, form_params())
+    client.events.answer_server_request("mcp-wire", MCP_METHOD, form_params())
     assert not sent
     request = events[0]["params"]["item"]["user_input"]
     content = {"count": 2, "region": "west", "enabled": False} if action == "accept" else None
@@ -99,7 +99,7 @@ def test_native_terminal_outcome_survives_request_query(
     store = repository.agent_data
     execution_id = "execution-" + "d" * 24
     client, sent, events = native_client(tmp_path)
-    client._answer_server_request(71, method, form_params() if method == MCP_METHOD else approval_params())
+    client.events.answer_server_request(71, method, form_params() if method == MCP_METHOD else approval_params())
     part = input_part(events[0]["params"]["item"], execution_id)
 
     def persist(value):
@@ -155,7 +155,7 @@ def test_native_terminal_outcome_survives_request_query(
 def test_mcp_invalid_form_does_not_consume_request(tmp_path, content):
     """不合法的 MCP 表单回复报错，原请求仍等待回答"""
     client, sent, events = native_client(tmp_path)
-    client._answer_server_request(11, MCP_METHOD, form_params())
+    client.events.answer_server_request(11, MCP_METHOD, form_params())
     key = events[0]["params"]["item"]["user_input"]["request_id"]
     with pytest.raises(ValueError, match="MCP"):
         client.user_inputs.respond("thread-native", "turn-native", {"request_id": key, "action": "accept", "content": content})
@@ -166,29 +166,29 @@ def test_mcp_invalid_form_does_not_consume_request(tmp_path, content):
 def test_unsafe_mcp_url_is_rejected_without_a_card(tmp_path, url):
     """不安全的 MCP URL 直接拒绝，不生成卡片"""
     client, sent, events = native_client(tmp_path)
-    client._answer_server_request(3, MCP_METHOD, {**form_params(), "mode": "url", "elicitationId": "test", "url": url})
+    client.events.answer_server_request(3, MCP_METHOD, {**form_params(), "mode": "url", "elicitationId": "test", "url": url})
     assert sent[0]["error"]["code"] == -32602 and not events
 
 
 def test_mcp_cancelled_expired_and_nonblocking(tmp_path):
     """非阻塞 MCP 表单在服务端已处理后标为过期，不阻塞轮次也不回复"""
     client, sent, events = native_client(tmp_path)
-    client._answer_server_request(3, MCP_METHOD, {**form_params(), "isBlocking": False})
+    client.events.answer_server_request(3, MCP_METHOD, {**form_params(), "isBlocking": False})
     assert not client.user_inputs.blocking("thread-native")
-    client._dispatch_notification("serverRequest/resolved", {"threadId": "thread-native", "requestId": 3})
+    client.events.dispatch_notification("serverRequest/resolved", {"threadId": "thread-native", "requestId": 3})
     assert not sent and events[-1]["params"]["item"]["user_input"]["status"] == "expired"
 
 
 def test_approval_rejects_extra_grants_and_secret_mcp_forms(tmp_path):
     """审批回复不能追加额外权限，含 writeOnly 机密字段的 MCP 表单被拒绝"""
     client, sent, events = native_client(tmp_path)
-    client._answer_server_request(3, "item/permissions/requestApproval", approval_params())
+    client.events.answer_server_request(3, "item/permissions/requestApproval", approval_params())
     part = events[0]["params"]["item"]["user_input"]
     with pytest.raises(ValueError, match="additional permissions"):
         validate_response({"request_id": part["request_id"], "action": "accept", "content": {"network": True}}, [], part["interaction"])
     params = form_params()
     params["requestedSchema"]["properties"]["credential"] = {"type": "string", "writeOnly": True}
-    client._answer_server_request(4, MCP_METHOD, params)
+    client.events.answer_server_request(4, MCP_METHOD, params)
     assert sent[-1]["error"]["code"] == -32602
 
 

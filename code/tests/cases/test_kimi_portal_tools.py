@@ -27,6 +27,7 @@ import pytest
 
 from management_portal import kimi_code_server, kimi_portal_tools
 from management_portal.execution import backends
+from management_portal.kimi_code_client import KimiCodeUnavailable
 from management_portal.execution.harness import HarnessTool
 from management_portal.execution.harness_capabilities import PORTAL_TOOLS
 from management_portal.execution.kimi_tool_gateway import KimiToolGateway, publish_catalog
@@ -331,7 +332,7 @@ def test_tools_portal_cannot_vouch_for_stay_off() -> None:
     不能确认来源与授权的工具在 Kimi 会话中保持关闭。
     """
     client = SimpleNamespace(
-        update_session_profile=mock.Mock(side_effect=backends.KimiCodeUnavailable("down")), session_tools=mock.Mock(),
+        update_session_profile=mock.Mock(side_effect=KimiCodeUnavailable("down")), session_tools=mock.Mock(),
     )
     assert _settle(client, []) == [f"{PREFIX}*"]
     assert _settle(client, [_tool("hatg_instruction")]) == []

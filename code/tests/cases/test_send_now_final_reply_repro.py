@@ -12,7 +12,8 @@ from unittest import mock
 
 import pytest
 
-from management_portal.codex_app_server_client import CodexAppServerClient, _TurnWaiter
+from management_portal.codex_app_server_client import CodexAppServerClient
+from management_portal.codex_app_server_protocol import TurnWaiter
 from management_portal.execution.contracts import ExecutionRequest, ExecutionResult
 from management_portal.execution.scheduler import Scheduler, SchedulerClient
 from management_portal.society_service import (
@@ -45,7 +46,7 @@ def test_send_now_uses_next_turn_if_final_reply_closed_input(
     )
     provider = CodexAppServerClient(tmp_path / "unused-provider.sock")
     steer = mock.Mock(return_value={})
-    monkeypatch.setattr(provider, "steer_turn", steer)
+    monkeypatch.setattr(provider.controls, "steer_turn", steer)
     monkeypatch.setattr(execution_port, "service", lambda: service)
     try:
         worker.register()
@@ -94,14 +95,14 @@ def test_send_now_uses_next_turn_if_final_reply_closed_input(
                 },
             }],
          "submitted_at": "2026-10-14T00:00:00Z"})
-        waiter = _TurnWaiter(
+        waiter = TurnWaiter(
             thread_id="thread-repro", turn_id="turn-repro",
             final_answer_seen=close_phase == "before_send",
         )
-        provider._turn_waiters[waiter.thread_id] = waiter
+        provider.work.turns[waiter.thread_id] = waiter
 
         def start_final_answer():
-            provider._dispatch_notification("item/started", {
+            provider.events.dispatch_notification("item/started", {
                 "threadId": waiter.thread_id,
                 "turnId": waiter.turn_id,
                 "item": {"id": "final-stream", "type": "agentMessage", "phase": "final_answer", "text": ""},
@@ -142,7 +143,7 @@ def test_send_now_uses_next_turn_if_final_reply_closed_input(
                 start_final_answer()
             return controls.pop(0) if controls else None
 
-        provider._deliver_turn_control(
+        provider.controls.deliver_turn_control(
             thread_id=waiter.thread_id, waiter=waiter,
             turn_control_provider=next_control,
             turn_control_result_callback=acknowledge, cancellation_requested=None,

@@ -340,7 +340,7 @@ def test_source_binding_changes_before_fork_preparation(isolated_portal_case):
 def test_preservation_fork_refuses_lossy_native_reasoning(tmp_path, isolated_portal_case):
     from dataclasses import replace
     from unittest import mock
-    from management_portal.codex_app_server_client import CodexThreadNotFound
+    from management_portal.codex_app_server_protocol import CodexThreadNotFound
     from management_portal.execution.backends import BackendContext, CodexBackend
     from tests.cases.test_agent_data_projection import _turn_request, _runtime_session, _invocation
 

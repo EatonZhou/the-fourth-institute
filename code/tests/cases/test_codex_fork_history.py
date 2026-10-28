@@ -271,7 +271,7 @@ def test_codex_backend_delivers_database_items_separately_from_first_user_messag
 @pytest.mark.parametrize("forked", [True, False])
 def test_a_lost_zero_turn_fork_thread_is_replaced_on_the_first_turn(tmp_path, forked):
     """Fork 子 Resident 未用过的线程丢失时首轮换新线程并导入历史，普通会话丢失仍报错"""
-    from management_portal.codex_app_server_client import CodexAppServerError, CodexThreadNotFound
+    from management_portal.codex_app_server_protocol import CodexAppServerError, CodexThreadNotFound
     from management_portal.execution.agent_data_projection import AgentDataProjector
     from management_portal.execution.session_manager import SessionManager
 
@@ -375,7 +375,7 @@ def test_explicit_fork_recovers_a_missing_source_only_from_recorded_context(tmp_
     :importance: P1
     :design: decision_b1ab45c4b3ec
     """
-    from management_portal.codex_app_server_client import CodexAppServerError, CodexThreadNotFound
+    from management_portal.codex_app_server_protocol import CodexAppServerError, CodexThreadNotFound
     from tests.cases.live_trace_support import AGENT, _turn
 
     store, _, _, _ = _turn('codex')

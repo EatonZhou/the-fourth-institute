@@ -12,7 +12,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from management_portal.codex_app_server_client import CodexAppServerUnavailable
+from management_portal.codex_app_server_protocol import CodexAppServerUnavailable
 from management_portal.execution import account_setup
 
 

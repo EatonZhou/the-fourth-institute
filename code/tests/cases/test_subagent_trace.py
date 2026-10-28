@@ -238,29 +238,30 @@ def test_codex_subagent_cards_follow_the_child_threads(tmp_path: Path) -> None:
     :importance: P2
     :design: decision_b1ab45c4b3ec
     """
-    from management_portal.codex_app_server_client import CodexAppServerClient, _TurnWaiter
+    from management_portal.codex_app_server_client import CodexAppServerClient
+    from management_portal.codex_app_server_protocol import TurnWaiter
     from management_portal.codex_subagent_cards import CodexSubagentCards
 
     client = CodexAppServerClient(tmp_path / "unused.sock")
     output: list[dict] = []
-    client._turn_waiters["root"] = _TurnWaiter(thread_id="root", turn_id="t", event_callback=output.append)
+    client.work.turns["root"] = TurnWaiter(thread_id="root", turn_id="t", event_callback=output.append)
     followed: list[str] = []
-    client._follow_child, client._release_child = followed.append, lambda child: None
+    client.subagents.follow, client.subagents.release = followed.append, lambda child: None
 
     def child_started(child: str, parent: str = "root") -> None:
-        client._dispatch_notification("thread/started", {"thread": {
+        client.events.dispatch_notification("thread/started", {"thread": {
             "id": child, "agentNickname": "Boyle", "agentRole": None, "model": "gpt-6.1-sol",
             "source": {"subAgent": {"thread_spawn": {"parent_thread_id": parent, "depth": 1}}}}})
 
     def item(thread: str, method: str, body: dict) -> None:
-        client._dispatch_notification(method, {"threadId": thread, "turnId": "t" if thread == "root" else "c", "item": body})
+        client.events.dispatch_notification(method, {"threadId": thread, "turnId": "t" if thread == "root" else "c", "item": body})
 
     def activity(child: str, kind: str, call: str) -> None:
         item("root", "item/completed", {"type": "subAgentActivity", "id": call, "kind": kind, "agentThreadId": child,
                                         "agentPath": "/root/count_files", "model": "gpt-6.1-sol" if kind == "started" else None})
 
     command = {"type": "commandExecution", "id": "exec-1", "command": "/bin/bash -lc 'sleep 6 && ls | wc -l'"}
-    client._dispatch_notification("turn/started", {"threadId": "root", "turn": {"id": "t", "status": "inProgress"}})
+    client.events.dispatch_notification("turn/started", {"threadId": "root", "turn": {"id": "t", "status": "inProgress"}})
     child_started("child-a")
     activity("child-a", "started", "call_spawn_a")
     item("child-a", "item/started", {**command, "status": "inProgress"})
@@ -277,7 +278,7 @@ def test_codex_subagent_cards_follow_the_child_threads(tmp_path: Path) -> None:
     activity("child-a", "interacted", "call_followup_a")
     child_started("child-a")
     # The thread's total counts its first run too; the follow-up's card counts only its own requests.
-    client._dispatch_notification("thread/tokenUsage/updated", {"threadId": "child-a", "turnId": "c2", "tokenUsage": {
+    client.events.dispatch_notification("thread/tokenUsage/updated", {"threadId": "child-a", "turnId": "c2", "tokenUsage": {
         "total": {"totalTokens": 1700, "inputTokens": 1600, "cachedInputTokens": 900, "outputTokens": 100, "reasoningOutputTokens": 0},
         "last": {"totalTokens": 700, "inputTokens": 650, "cachedInputTokens": 300, "outputTokens": 50, "reasoningOutputTokens": 0}}})
     item("child-a", "item/completed", {"type": "agentMessage", "id": "m2", "text": "32 css files", "phase": "final_answer"})
@@ -333,29 +334,30 @@ def test_codex_subagent_cards_carry_the_task_the_token_use_and_when_each_step_ra
 
     :importance: P2
     """
-    from management_portal.codex_app_server_client import CodexAppServerClient, _TurnWaiter
+    from management_portal.codex_app_server_client import CodexAppServerClient
+    from management_portal.codex_app_server_protocol import TurnWaiter
     from management_portal.codex_subagent_cards import CodexSubagentCards
 
     client = CodexAppServerClient(tmp_path / "unused.sock")
     output: list[dict] = []
-    client._turn_waiters["root"] = _TurnWaiter(thread_id="root", turn_id="t", event_callback=output.append)
-    client._follow_child = client._release_child = lambda child: None
-    client.request = lambda method, params, **options: {"thread": {
+    client.work.turns["root"] = TurnWaiter(thread_id="root", turn_id="t", event_callback=output.append)
+    client.subagents.follow = client.subagents.release = lambda child: None
+    client.rpc.request = lambda method, params, **options: {"thread": {
         "id": "child-a", "preview": "Count the files under src/", "agentNickname": "Boyle", "model": "gpt-6.1-sol",
     }} if method == "thread/resume" else {}
 
     def child(method: str, **params) -> None:
-        client._dispatch_notification(method, {"threadId": "child-a", "turnId": "child-turn", **params})
+        client.events.dispatch_notification(method, {"threadId": "child-a", "turnId": "child-turn", **params})
 
     def activity(kind: str, call: str) -> None:
-        client._dispatch_notification("item/completed", {"threadId": "root", "turnId": "t", "item": {
+        client.events.dispatch_notification("item/completed", {"threadId": "root", "turnId": "t", "item": {
             "type": "subAgentActivity", "id": call, "kind": kind, "agentThreadId": "child-a", "agentPath": "/root/count"}})
 
     command = {"type": "commandExecution", "id": "exec-1", "command": "ls src | wc -l"}
-    client._dispatch_notification("turn/started", {"threadId": "root", "turn": {"id": "t", "status": "inProgress"}})
+    client.events.dispatch_notification("turn/started", {"threadId": "root", "turn": {"id": "t", "status": "inProgress"}})
     activity("started", "call_spawn_a")
     # The client joins the running child thread (``thread/resume``), which says who it is and its task.
-    CodexAppServerClient._follow_child(client, "child-a")
+    type(client.subagents).follow(client.subagents, "child-a")
     child("item/started", startedAtMs=1791732242000, item={**command, "status": "inProgress"})
     child("item/completed", completedAtMs=1791732243500, item={**command, "status": "completed", "exitCode": 0})
     child("thread/tokenUsage/updated", tokenUsage={
@@ -397,14 +399,15 @@ def test_codex_stops_one_subagent_by_interrupting_its_own_thread_while_the_turn_
 
     :importance: P2
     """
-    from management_portal.codex_app_server_client import CodexAppServerClient, _TurnWaiter
+    from management_portal.codex_app_server_client import CodexAppServerClient
+    from management_portal.codex_app_server_protocol import TurnWaiter
     from management_portal.codex_subagent_cards import CodexSubagentCards
 
     client = CodexAppServerClient(tmp_path / "unused.sock")
     output: list[dict] = []
-    waiter = _TurnWaiter(thread_id="root", turn_id="t", event_callback=output.append)
-    client._turn_waiters["root"] = waiter
-    client._follow_child = client._release_child = lambda child: None
+    waiter = TurnWaiter(thread_id="root", turn_id="t", event_callback=output.append)
+    client.work.turns["root"] = waiter
+    client.subagents.follow = client.subagents.release = lambda child: None
     requests: list[tuple[str, dict]] = []
 
     def request(method: str, params: dict, **options) -> dict:
@@ -414,22 +417,22 @@ def test_codex_stops_one_subagent_by_interrupting_its_own_thread_while_the_turn_
             return {"data": [{"id": "turn-b", "status": "inProgress"}] if params["threadId"] == "child-b" else []}
         return {}
 
-    client.request = request
+    client.rpc.request = request
 
     def activity(child: str, kind: str) -> None:
-        client._dispatch_notification("item/completed", {"threadId": "root", "turnId": "t", "item": {
+        client.events.dispatch_notification("item/completed", {"threadId": "root", "turnId": "t", "item": {
             "type": "subAgentActivity", "id": f"{kind}-{child}", "kind": kind, "agentThreadId": child}})
 
-    client._dispatch_notification("turn/started", {"threadId": "root", "turn": {"id": "t", "status": "inProgress"}})
+    client.events.dispatch_notification("turn/started", {"threadId": "root", "turn": {"id": "t", "status": "inProgress"}})
     for name in ("child-a", "child-b", "child-c"):
         activity(name, "started")
-    client._dispatch_notification("item/started", {"threadId": "child-a", "turnId": "turn-a", "item": {
+    client.events.dispatch_notification("item/started", {"threadId": "child-a", "turnId": "turn-a", "item": {
         "type": "commandExecution", "id": "exec-1", "command": "sleep 60", "status": "inProgress"}})
     results: list[tuple[str, bool, str]] = []
 
     def stop(child: str) -> None:
         control = {"control_id": f"stop-{child}", "input": [{"type": "subagent_stop", "tool_use_id": child}]}
-        client._deliver_turn_control(
+        client.controls.deliver_turn_control(
             thread_id="root", waiter=waiter, turn_control_provider=lambda: control,
             turn_control_result_callback=lambda taken, applied, error: results.append((taken["control_id"], applied, error)),
             cancellation_requested=None,
@@ -446,8 +449,8 @@ def test_codex_stops_one_subagent_by_interrupting_its_own_thread_while_the_turn_
 
     # The parent hears nothing of an interrupt from outside: the child's own turn ends the card.
     # The aborted command's item comes after that turn and starts no new card.
-    client._dispatch_notification("turn/completed", {"threadId": "child-a", "turn": {"id": "turn-a", "status": "interrupted"}})
-    client._dispatch_notification("item/completed", {"threadId": "child-a", "turnId": "turn-a", "item": {
+    client.events.dispatch_notification("turn/completed", {"threadId": "child-a", "turn": {"id": "turn-a", "status": "interrupted"}})
+    client.events.dispatch_notification("item/completed", {"threadId": "child-a", "turnId": "turn-a", "item": {
         "type": "commandExecution", "id": "exec-1", "command": "sleep 60", "status": "failed", "exitCode": 130}})
     cards = CodexSubagentCards("root")
     events = [extra for event in output for extra in cards.observe(event)]
@@ -459,8 +462,8 @@ def test_codex_stops_one_subagent_by_interrupting_its_own_thread_while_the_turn_
     stop("child-a")
     assert results[-1] == ("stop-child-a", False, "subagent_not_running")
     # Given more work, the child runs again under a new card.
-    client._dispatch_notification("turn/started", {"threadId": "child-a", "turn": {"id": "turn-a2", "status": "inProgress"}})
-    client._dispatch_notification("item/started", {"threadId": "child-a", "turnId": "turn-a2", "item": {
+    client.events.dispatch_notification("turn/started", {"threadId": "child-a", "turn": {"id": "turn-a2", "status": "inProgress"}})
+    client.events.dispatch_notification("item/started", {"threadId": "child-a", "turnId": "turn-a2", "item": {
         "type": "commandExecution", "id": "exec-2", "command": "ls", "status": "inProgress"}})
     again = [extra for event in output[-2:] for extra in cards.observe(event)]
     assert [event["params"]["item"]["run"]["status"] for event in again] == ["running"]

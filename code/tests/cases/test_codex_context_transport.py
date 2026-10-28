@@ -5,7 +5,8 @@ from unittest import mock
 import pytest
 
 from management_common.execution_context_file import execution_context
-from management_portal.codex_app_server_client import CodexAppServerClient, CodexThreadWriterBusy
+from management_portal.codex_app_server_client import CodexAppServerClient
+from management_portal.codex_app_server_protocol import CodexThreadWriterBusy
 from management_portal.execution.backends import CodexBackend
 from management_portal.execution.contracts import ExecutionRequest, SessionOptions
 
@@ -72,12 +73,12 @@ def test_new_input_cannot_adopt_another_active_turn():
     client = CodexAppServerClient()
     active = {'id': 'other-turn', 'status': 'inProgress', 'items': [
         {'type': 'userMessage', 'clientId': 'other-input'}]}
-    with mock.patch.object(client, 'request', return_value={}) as rpc, \
-            mock.patch.object(client, '_read_active_turn', return_value=active):
+    with mock.patch.object(client.rpc, 'request', return_value={}) as rpc, \
+            mock.patch.object(client.reads, 'read_active_turn', return_value=active):
         with pytest.raises(CodexThreadWriterBusy):
             client.run_turn('thread', 'new input', cwd='/tmp', client_user_message_id='my-input')
     assert all(call.args[0] != 'turn/start' for call in rpc.call_args_list)
-    assert not client._turn_waiters
+    assert not client.work.turns
 
 
 def test_cancel_during_start_interrupts_the_turn_from_buffered_notification():
@@ -85,12 +86,12 @@ def test_cancel_during_start_interrupts_the_turn_from_buffered_notification():
     client = CodexAppServerClient()
     def request(method, params, **kwargs):
         if method == 'turn/start':
-            client._dispatch_notification('turn/started', {'threadId': 'thread', 'turn': {'id': 'accepted'}})
+            client.events.dispatch_notification('turn/started', {'threadId': 'thread', 'turn': {'id': 'accepted'}})
             raise InterruptedError('cancelled before start response')
         return {}
-    with mock.patch.object(client, 'request', side_effect=request), \
-            mock.patch.object(client, '_read_active_turn', return_value=None), \
-            mock.patch.object(client, 'interrupt_turn') as interrupt:
+    with mock.patch.object(client.rpc, 'request', side_effect=request), \
+            mock.patch.object(client.reads, 'read_active_turn', return_value=None), \
+            mock.patch.object(client.controls, 'interrupt_turn') as interrupt:
         with pytest.raises(InterruptedError):
             client.run_turn('thread', 'input', cwd='/tmp', client_user_message_id='my-input')
     interrupt.assert_called_once_with('thread', 'accepted')
@@ -98,27 +99,27 @@ def test_cancel_during_start_interrupts_the_turn_from_buffered_notification():
 
 def test_snapshot_rejoins_children_and_restores_cards_after_disconnect():
     """断线后快照重放重新跟踪子 agent 线程并恢复卡片，且只跟踪一次"""
-    from management_portal.codex_app_server_client import _TurnWaiter
+    from management_portal.codex_app_server_protocol import TurnWaiter
     from management_portal.codex_subagent_cards import CodexSubagentCards
 
     client = CodexAppServerClient()
-    client._followed_children.add('child')
-    client._child_threads['child'] = ('parent', 'activity')
-    client._disconnect(RuntimeError('connection lost'))
-    assert not client._followed_children and not client._child_threads
+    client.subagents._followed_children.add('child')
+    client.subagents._child_threads['child'] = ('parent', 'activity')
+    client.disconnect(RuntimeError('connection lost'))
+    assert not client.subagents._followed_children and not client.subagents._child_threads
     cards = CodexSubagentCards('parent')
     projected = []
-    waiter = _TurnWaiter('parent', turn_id='turn',
+    waiter = TurnWaiter('parent', turn_id='turn',
                          event_callback=lambda event: projected.extend(cards.observe(event)))
-    client._turn_waiters['parent'] = waiter
+    client.work.turns['parent'] = waiter
     turn = {'id': 'turn', 'status': 'inProgress', 'items': [{
         'id': 'activity', 'type': 'subAgentActivity', 'kind': 'started',
         'agentThreadId': 'child', 'agentPath': '/root/worker', 'model': 'test-model',
     }]}
-    with mock.patch('management_portal.codex_app_server_client.threading.Thread') as follow:
-        client._replay_completed_items(waiter, turn)
-        client._replay_completed_items(waiter, turn)
-    assert client._followed_children == {'child'}
+    with mock.patch('management_portal.codex_app_server_subagents.threading.Thread') as follow:
+        client.follower.replay_completed_items(waiter, turn)
+        client.follower.replay_completed_items(waiter, turn)
+    assert client.subagents._followed_children == {'child'}
     follow.assert_called_once()
     assert follow.call_args.kwargs['args'] == ('child',)
     assert len(projected) == 1
@@ -127,15 +128,15 @@ def test_snapshot_rejoins_children_and_restores_cards_after_disconnect():
 
 def test_completed_notification_preserves_real_final_items_for_checkpoint():
     """turn/completed 通知条目为空时补回已完成的 final_answer 条目供检查点读取"""
-    from management_portal.codex_app_server_client import _TurnWaiter, codex_final_agent_response
+    from management_portal.codex_app_server_protocol import TurnWaiter, codex_final_agent_response
 
     client = CodexAppServerClient()
     events = []
-    client._turn_waiters['thread'] = _TurnWaiter('thread', turn_id='turn', event_callback=events.append)
+    client.work.turns['thread'] = TurnWaiter('thread', turn_id='turn', event_callback=events.append)
     for item_id, phase, text in [('comment', 'commentary', 'working'), ('final', 'final_answer', 'answer')]:
-        client._dispatch_notification('item/completed', {'threadId': 'thread', 'turnId': 'turn',
+        client.events.dispatch_notification('item/completed', {'threadId': 'thread', 'turnId': 'turn',
             'item': {'id': item_id, 'type': 'agentMessage', 'phase': phase, 'text': text}})
-    client._dispatch_notification('turn/completed', {'threadId': 'thread',
+    client.events.dispatch_notification('turn/completed', {'threadId': 'thread',
         'turn': {'id': 'turn', 'status': 'completed', 'items': []}})
     assert codex_final_agent_response(events[-1]['params']['turn'], []) == 'answer'
     assert [item['id'] for item in events[-1]['params']['turn']['items']] == ['final']
@@ -144,12 +145,12 @@ def test_completed_notification_preserves_real_final_items_for_checkpoint():
 @pytest.mark.parametrize('status', ['usageLimited', 'budgetLimited'])
 def test_goal_limit_status_is_terminal(status):
     """goal 状态为 usageLimited 或 budgetLimited 时视为结束"""
-    from management_portal.codex_app_server_client import _GoalWaiter
+    from management_portal.codex_app_server_protocol import GoalWaiter
 
     client = CodexAppServerClient()
-    waiter = _GoalWaiter('thread')
-    client._goal_waiters['thread'] = waiter
-    client._dispatch_notification('thread/goal/updated', {'threadId': 'thread', 'goal': {'status': status}})
+    waiter = GoalWaiter('thread')
+    client.work.goals['thread'] = waiter
+    client.events.dispatch_notification('thread/goal/updated', {'threadId': 'thread', 'goal': {'status': status}})
     assert waiter.event.is_set()
     assert waiter.goal['status'] == status
 

@@ -58,7 +58,7 @@ def test_real_codex_start_initialize_catalog_and_cleanup(tmp_path, monkeypatch, 
         return actual_spawn(command, **{**kwargs, "env": clean})
     monkeypatch.setattr(host, "spawn_process", spawn)
     monkeypatch.setattr(portal_network, "saved_proxy_environment", lambda: {})
-    monkeypatch.setattr(client_module, "connect_transport", lambda path: host.connect_transport(path, platform="darwin"))
+    monkeypatch.setattr("management_portal.codex_app_server_rpc.connect_transport", lambda path: host.connect_transport(path, platform="darwin"))
     stop, errors = threading.Event(), []
     def run():
         try:

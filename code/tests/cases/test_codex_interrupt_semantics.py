@@ -13,10 +13,8 @@ from pathlib import Path
 
 import pytest
 
-from management_portal.codex_app_server_client import (
-    CodexAppServerClient,
-    CodexTurnInterrupted,
-)
+from management_portal.codex_app_server_client import CodexAppServerClient
+from management_portal.codex_app_server_protocol import CodexTurnInterrupted
 from management_portal.execution.backends import CodexBackend, _CODEX_COMPACTION_PROMPT
 
 
@@ -266,7 +264,7 @@ def test_native_auto_compaction_keeps_one_turn_and_completed_tool(binary_path: s
     }})
     with native_test_session(binary_path, tmp_path, model_server, config) as (client, thread_id, codex_home):
         turn_ids: list[str] = []
-        with mock.patch.object(client, "request", wraps=client.request) as requests:
+        with mock.patch.object(client.rpc, "request", wraps=client.rpc.request) as requests:
             result = client.run_turn(
                 thread_id, "Complete the tool operation and report the result.",
                 cwd=str(tmp_path), config=config, turn_started_callback=turn_ids.append,

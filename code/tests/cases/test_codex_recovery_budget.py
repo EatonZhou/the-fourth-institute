@@ -9,7 +9,7 @@ from unittest import mock
 
 import pytest
 
-from management_portal.codex_app_server_client import (
+from management_portal.codex_app_server_protocol import (
     CodexAppServerUnavailable,
     CodexThreadWriterBusy,
     CodexTurnAuthenticationError,

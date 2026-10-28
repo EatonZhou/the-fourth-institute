@@ -26,7 +26,7 @@ from management_common.portal_database import portal_database
 from management_portal.agent_prompt_context import (
     portal_system_instructions,
 )
-from management_portal.codex_app_server_client import (
+from management_portal.codex_app_server_protocol import (
     CodexCompactionInProgress,
     CodexThreadWriterBusy,
     CodexTurnConnectionLost,

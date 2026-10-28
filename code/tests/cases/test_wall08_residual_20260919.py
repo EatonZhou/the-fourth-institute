@@ -256,17 +256,17 @@ def test_codex_client_cache_is_per_socket_and_controls_keep_exact_turn(tmp_path,
     second = owner.client_for_socket(tmp_path / "second.sock")
     try:
         assert owner.client_for_socket(tmp_path / "first.sock") is first
-        assert second is not first and first._state_lock is not second._state_lock
-        assert first._thread_lock("same-native-id") is not second._thread_lock("same-native-id")
+        assert second is not first and first.state_lock is not second.state_lock
+        assert first.threads.lock_for("same-native-id") is not second.threads.lock_for("same-native-id")
         transport = Mock(return_value={"accepted": True})
-        monkeypatch.setattr(first, "request", transport)
+        monkeypatch.setattr(first.rpc, "request", transport)
         inputs = [{"type": "text", "text": "synthetic"}, {"type": "image", "url": "data:image/png;base64,Zml4dHVyZQ=="}]
         first.steer_turn("native", "exact-turn", inputs)
         assert transport.call_args.args == ("turn/steer", {"threadId": "native", "expectedTurnId": "exact-turn", "input": inputs})
         with pytest.raises(ValueError, match="required"):
             first.steer_turn("native", "", inputs)
         assert transport.call_count == 1
-        assert not second._thread_activity
+        assert not second.threads._activity
     finally:
         first.close()
         second.close()

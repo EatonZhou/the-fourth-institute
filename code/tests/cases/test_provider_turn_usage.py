@@ -19,7 +19,8 @@ from types import SimpleNamespace
 from unittest import mock
 
 from management_portal.execution import backends
-from management_portal.codex_app_server_client import _merge_turn_token_usage, codex_token_usage_delta
+from management_portal.codex_app_server_protocol import merge_turn_token_usage
+from management_portal.codex_app_server_client import codex_token_usage_delta
 from management_portal.execution.provider_turn_usage import (
     claude_turn_usage,
     kimi_reported_usage,
@@ -287,7 +288,7 @@ def test_codex_compaction_estimate_is_a_context_size_not_usage() -> None:
 
     assert codex_token_usage_delta(estimate) == ("", {})
     assert codex_token_usage_delta(request)[1] == {"last": request["last"]}
-    merged = _merge_turn_token_usage(_merge_turn_token_usage({}, request), estimate)
+    merged = merge_turn_token_usage(merge_turn_token_usage({}, request), estimate)
     assert merged["last"] == request["last"]
     assert merged["context"] == {"totalTokens": 14970}
 
