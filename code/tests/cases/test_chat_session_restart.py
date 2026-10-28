@@ -6,6 +6,7 @@
 import json
 from pathlib import Path
 import subprocess
+import pytest
 
 from management_portal.resources.portal import portal_route_script
 
@@ -16,7 +17,7 @@ def test_session_restart_dialog_tracks_cancels_and_retries():
     相同稳定账号不创建操作，切换保留上下文并等待在途工作，不复发失败输入。
     参数和能力分别保存，后台刷新不覆盖草稿；版本冲突拒绝覆盖新设置。
     显式重新开始允许 preserve/fresh，受理后锁定操作并可取消或重试同一待确认请求。
-    无法完整保留上下文的目标禁止默认提交，必须明确选择有损交接或空白开始。
+    自动优先完整保留；不支持时展示摘要影响，由交接并切换按钮提交，不自动空白开始。
     未知交付不标失败，完成操作退出旧失败横幅。
     """
     for script in ["chat_session_restart.cjs", "resident_setup_protocol.cjs", "resident_setup_contract.cjs"]:
@@ -26,3 +27,15 @@ def test_session_restart_dialog_tracks_cancels_and_retries():
             capture_output=True, text=True, timeout=60,
         )
         assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_runtime_settings_card_layout_and_actions():
+    """真实共享弹窗样式下保持尺寸、滚动与退出交互，并验证保存、交接和显式空白重启。"""
+    runtime = Path(__file__).resolve().parents[2] / 'management_portal/test_framework/tau_runtime/node_modules/playwright'
+    if not runtime.is_dir():
+        pytest.skip('requires the Portal browser test runtime')
+    result = subprocess.run(
+        ['node', str(Path(__file__).with_name('javascript') / 'resident_runtime_layout.browser.cjs')],
+        capture_output=True, text=True, timeout=60,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
