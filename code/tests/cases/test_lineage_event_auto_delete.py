@@ -221,7 +221,6 @@ def test_recurring_timer_commits_final_tick_before_auto_delete(runtime_store, mo
     monkeypatch.setattr(lineage_domain, "datetime", Clock)
     created = support.create_lineage_with_resident_members({
         "title": "Recurring source retirement", "project_id": "project_test", "nodes": [_worker(WORK_A)],
-        "run_as_principal": {"kind": "user", "id": ACTOR},
         "program": {"components": [_component(
             SOURCE, "event_source", event_type="time.reached", schedule_mode="recurring",
             recurrence_kind="interval", interval_seconds=60, misfire_policy="coalesce_latest",

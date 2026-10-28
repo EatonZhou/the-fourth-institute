@@ -40,6 +40,14 @@ def event(actor=USER, *, initiator="", kind="manual.triggered"):
     return primitives.make_event(kind, identity=OperationIdentity.for_actor(actor, initiated_by=initiator).to_dict())
 
 
+def test_new_message_arrival_author_does_not_delegate_human_authority():
+    from management_portal.society_service import lineage_message_events
+    identity = lineage_message_events._sender_identity(RESIDENT, USER)
+    arrival = primitives.make_event("resident.message_received", payload={"author_id": USER}, identity=identity)
+    assert contexts.event_context(arrival, RESIDENT).caller == RESIDENT
+    assert arrival.payload["author_id"] == USER
+
+
 def test_automatic_scope_replaces_and_restores_the_ambient_identity():
     """自动作用域内改用指定身份，退出后恢复外层身份"""
     outer_identity = OperationIdentity.for_actor(OTHER)
@@ -151,7 +159,8 @@ def lineage(kind=None, *, configured=True, absorption=False, identifier=LINEAGE)
     if kind:
         result["program"]["components"] = [{"id": SOURCE, "kind": "event_source", "config": {"event_type": kind}}]
     if configured:
-        result["run_as_principal"] = {"kind": "user", "id": USER}
+        result["leader_resident_id"] = RESIDENT
+        result["nodes"] = [{"id": RESIDENT}]
     if absorption:
         result["edges"] = [{"type": "absorption", "absorption": {"target_message_id": "message_saved"}}]
     return result
@@ -223,26 +232,26 @@ def test_all_idle_observations_share_one_activity_scan(monkeypatch):
 
 
 @pytest.mark.parametrize("configured", [False, True])
-def test_absorption_only_lineages_recover_with_optional_user(monkeypatch, configured):
-    """只含吸收边的 Lineage 不要求 run_as_principal 即可恢复，未配置时以 portal 身份运行"""
+def test_absorption_only_lineages_require_leader_for_new_work(monkeypatch, configured):
+    """新吸收工作使用 Leader；没有 Leader 时阻断且不重试。"""
     ports, calls, scans = polling_ports(monkeypatch, [lineage(configured=configured, absorption=True)])
     result = polling.poll_all_system_events(ports=ports)
     assert result["failed"] == 0
-    assert result["blocked"] == 0
+    assert result["blocked"] == (0 if configured else 1)
     assert result["retry_lineage_ids"] == result["failure_samples"] == []
-    assert calls == [("recover", LINEAGE, USER if configured else "portal", {})]
-    assert result["blocked_lineages"] == {}
+    assert calls == ([("recover", LINEAGE, RESIDENT, {})] if configured else [])
+    assert bool(result["blocked_lineages"]) is (not configured)
 
 
-@pytest.mark.parametrize("unavailable", ["inactive", "deleted", "non_user"])
+@pytest.mark.parametrize("unavailable", ["missing", "non_member", "non_resident"])
 def test_automatic_configuration_blocks_without_retry_then_recovers(monkeypatch, live_users, unavailable):
-    """自动运行身份停用、已删除或不是用户时 Lineage 被阻断且不重试，改正后恢复"""
+    """缺失、离图或非 Resident 的 Leader 阻断新观测，修正后恢复。"""
     definition = lineage("time.reached", configured=unavailable != "missing")
-    if unavailable == "non_user":
-        definition["run_as_principal"] = {"kind": "resident", "id": RESIDENT}
-    elif unavailable in {"inactive", "deleted"}:
-        monkeypatch.setattr(live_users, "is_active" if unavailable == "inactive" else "is_configured",
-                            lambda actor: actor != USER)
+    if unavailable == "non_member":
+        definition["nodes"] = []
+    elif unavailable == "non_resident":
+        definition["leader_resident_id"] = USER
+    definition["run_as_principal"] = {"kind": "user", "id": USER}
     # Neither the reader nor creator metadata can supply unattended authority.
     definition.update(created_by=USER)
     before = deepcopy(definition)
@@ -253,7 +262,7 @@ def test_automatic_configuration_blocks_without_retry_then_recovers(monkeypatch,
         error = str(caught.value)
         direct = polling.reconcile_system_events_as_service(LINEAGE, ports=ports)
         result = polling.poll_all_system_events(ports=ports)
-    assert "run_as_principal" in error
+    assert "Leader" in error
     assert direct == {"lineage_id": LINEAGE, "status": "blocked", "error": error,
                       "event_count": 0, "events": []}
     assert result["checked"] == 1 and result["blocked"] == 1
@@ -262,11 +271,12 @@ def test_automatic_configuration_blocks_without_retry_then_recovers(monkeypatch,
     assert result["retry_lineage_ids"] == result["failure_samples"] == []
     assert definition == before and calls == scans == []
 
-    definition["run_as_principal"] = {"kind": "user", "id": OTHER}
+    definition["leader_resident_id"] = RESIDENT
+    definition["nodes"] = [{"id": RESIDENT}]
     result = polling.poll_all_system_events(ports=ports)
     assert result["blocked"] == result["failed"] == 0
     assert result["blocked_lineages"] == {} and result["emitted"] == 1
-    assert calls == [("observe", LINEAGE, OTHER, {"resident_activity_snapshot": None})]
+    assert calls == [("observe", LINEAGE, RESIDENT, {"resident_activity_snapshot": None})]
 
 
 @pytest.mark.parametrize("error_type", [OSError, PermissionError])
@@ -288,18 +298,21 @@ def test_operational_failure_is_retryable_not_configuration_blocked(monkeypatch,
         "error_type": error_type.__name__, "error": "operation failed after valid identity"}]
 
 
-def test_accepted_event_recovers_and_new_observations_need_no_user(monkeypatch):
-    """已接收的事件按保存的身份恢复，新观测不需配置用户，以 portal 身份执行"""
+@pytest.mark.parametrize("has_leader", [False, True])
+def test_accepted_event_recovers_even_when_new_observations_have_no_leader(monkeypatch, has_leader):
+    """旧事件按保存身份恢复；新观测独立使用 Leader，空图只阻断新观测。"""
     saved = event(OTHER)
     stored = {LINEAGE: {"event_wires": {WIRE: {"pending_events": [{"event": saved.to_dict()}]}}}}
     before = deepcopy(stored)
-    ports, calls, scans = polling_ports(monkeypatch, [lineage("time.reached", configured=False)], stored=stored)
+    ports, calls, scans = polling_ports(monkeypatch, [lineage("time.reached", configured=has_leader)], stored=stored)
     result = polling.poll_all_system_events(ports=ports)
-    assert calls == [("recover", LINEAGE, OTHER, {"recovery_only": True, "drain": True}),
-                     ("observe", LINEAGE, "portal", {"resident_activity_snapshot": None})]
-    assert result["recovered"] == result["emitted"] == 1
-    assert result["failed"] == result["blocked"] == 0
-    assert result["blocked_lineages"] == {}
+    expected = [("recover", LINEAGE, OTHER, {"recovery_only": True, "drain": True})]
+    if has_leader:
+        expected.append(("observe", LINEAGE, RESIDENT, {"resident_activity_snapshot": None}))
+    assert calls == expected
+    assert result["recovered"] == 1 and result["emitted"] == int(has_leader)
+    assert result["failed"] == 0 and result["blocked"] == int(not has_leader)
+    assert bool(result["blocked_lineages"]) is (not has_leader)
     assert result["retry_lineage_ids"] == result["failure_samples"] == []
     assert stored == before and scans == []
 

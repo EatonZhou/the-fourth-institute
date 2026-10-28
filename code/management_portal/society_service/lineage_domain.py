@@ -452,7 +452,7 @@ def _record_lineage_deletion_error(
 
 
 def _lineage_runtime_actor(lineage: dict[str, Any]) -> str:
-    """Resolve an optional automation User, otherwise observe as Portal."""
+    """Resolve the current Lineage Leader for new unattended work."""
     from .lineage_automation_identity import runtime_actor
     return runtime_actor(lineage)
 
@@ -922,8 +922,8 @@ def _normalize_lineage_payload(
     resident_references: dict[str, dict[str, Any]] | None = None,
     reconnect_removed_inheritance: bool = True,
 ) -> dict[str, Any]:
-    from . import lineage_automation_identity
-    lineage_automation_identity.requested(payload, previous, actor)
+    if "run_as_principal" in payload:
+        raise ValueError("run_as_principal 已移除；自动运行使用 Lineage Leader 的身份")
     return _normalize_lineage_shape(
         payload, previous, actor, resident_references=resident_references,
         reconnect_removed_inheritance=reconnect_removed_inheritance,
@@ -3405,12 +3405,8 @@ def update_lineage_metadata(
                 {**_clone_json(current), "fragments": payload["fragments"]}, current, actor_id,
             )["fragments"]
         previous_project_id = _text(current.get("project_id"), 120)
-        from . import lineage_automation_identity
-        run_as = lineage_automation_identity.requested(payload, current, actor_id)
-        if run_as is None:
-            lineage.pop("run_as_principal", None)
-        else:
-            lineage["run_as_principal"] = run_as
+        if "run_as_principal" in payload:
+            raise ValueError("run_as_principal 已移除；自动运行使用 Lineage Leader 的身份")
         project_id = _requested_lineage_project_id(
             payload,
             current,

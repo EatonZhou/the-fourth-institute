@@ -62,7 +62,7 @@ class _IsolatedPortalAccess:
 
 
 def _install_isolated_portal_access(monkeypatch) -> None:
-    from management_portal.society_service import lineage_automation_identity, lineage_instruction_context
+    from management_portal.society_service import lineage_instruction_context
     access = _IsolatedPortalAccess()
     canonical_factory = portal_access_control.get_portal_access_store
     canonical_replacement = (
@@ -76,7 +76,6 @@ def _install_isolated_portal_access(monkeypatch) -> None:
         canonical_replacement,
     )
     for module in (
-        lineage_automation_identity,
         lineage_instruction_context,
         effect_failure_notifications,
         lineage_domain,

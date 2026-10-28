@@ -4,7 +4,7 @@
   if (window.PortalHatgLineageDialogs) return;
 
   // The open Lineage's own dialogs: creating and editing a Lineage with its
-  // project and run-as identity, moving a subgraph into another Lineage, and
+  // project and Leader, moving a subgraph into another Lineage, and
   // deleting the Lineage.
   const DEPENDENCIES = Object.freeze([
     "$id", "clearCanvasSelection", "clone", "closeModal", "currentHatgComponentOptions",
@@ -190,49 +190,9 @@
       }
     }
 
-    function readLineageRunAsInput() {
-      const value = $id("lineageRunAsInput").value;
-      return value ? JSON.parse(value) : null;
-    }
-
-    async function loadLineageRunAsUsers(options = {}) {
-      try {
-        const users = await window.PortalLineageCatalogs.users(options);
-        state.users = Array.isArray(users) ? users : [];
-        state.usersCatalogError = "";
-      } catch (error) {
-        state.usersCatalogError = String(error.message || error);
-      }
-      if (!$id("lineageModal")?.hidden) renderLineageRunAsOptions(readLineageRunAsInput());
-      return state.users || [];
-    }
-
-    function renderLineageRunAsOptions(principal = null) {
-      const select = $id("lineageRunAsInput");
-      const selected = principal == null ? "" : JSON.stringify(principal);
-      const options = (state.users || []).filter(user => user.id).map(user => ({
-        value: JSON.stringify({ kind: "user", id: user.id }),
-        label: user.name && user.name !== user.id ? `${user.name} · ${user.id}` : user.id,
-      }));
-      if (selected && !options.some(option => option.value === selected)) {
-        options.unshift({ value: selected, label: `${principal.kind || "?"} · ${principal.id || "?"}（当前配置，用户目录未列出）` });
-      }
-      select.innerHTML = [
-        window.PortalI18n.html`<option value="">未指定（Resident 使用自身权限）</option>`,
-        ...options.map(option => window.PortalI18n.html`<option value="${esc(option.value)}">${esc(option.label)}</option>`),
-      ].join("");
-      select.value = selected;
-      $id("lineageRunAsCatalogStatus").textContent = state.usersCatalogError
-        ? window.PortalI18n.text`用户目录读取失败：${state.usersCatalogError}。已保留当前选择；重新打开设置可重试。`
-        : "";
-    }
-
-    function prepareLineageRunAsForm(principal) {
-      renderLineageRunAsOptions(principal);
+    function clearLineageFormError() {
       $id("lineageFormError").hidden = true;
       $id("lineageFormError").textContent = "";
-      // Reuse the shared catalog; keep the user's selection if the read finishes later.
-      void loadLineageRunAsUsers({ force: Boolean(state.usersCatalogError) });
     }
 
     function openCreateLineageModal(projectId = "") {
@@ -247,7 +207,7 @@
       $id("lineageDeleteZone").hidden = true;
       $id("lineageSubmitBtn").textContent = window.PortalI18n.t("创建 Lineage");
       $id("lineageForm").dataset.mode = "create";
-      prepareLineageRunAsForm(null);
+      clearLineageFormError();
       openModal("lineageModal");
     }
 
@@ -269,7 +229,7 @@
       $id("lineageForm").dataset.mode = "edit";
       $id("lineageForm").dataset.lineageId = state.lineage.lineage_id;
       $id("lineageForm").dataset.revision = String(state.lineage.revision);
-      prepareLineageRunAsForm(state.lineage.run_as_principal ?? null);
+      clearLineageFormError();
       openModal("lineageModal");
     }
 
@@ -288,14 +248,12 @@
       setBusy(button, true, mode === "create" ? "创建中…" : "保存中…");
       try {
         $id("lineageFormError").hidden = true;
-        const runAsPrincipal = readLineageRunAsInput();
         if (mode === "create") {
           const lineage = await societyService.createLineage({
             title,
             description,
             project_id: projectId,
             familize: $id("lineageFamilizeInput").checked,
-            definition: { run_as_principal: runAsPrincipal },
           });
           state.lineages.unshift({
             lineage_id: lineage.lineage_id, title, description, project_id: projectId,
@@ -315,13 +273,11 @@
             description,
             project_id: projectId,
             leader_resident_id: $id("lineageLeaderInput").value,
-            run_as_principal: runAsPrincipal,
             expected_version: Number(event.currentTarget.dataset.revision),
           })).lineage || {};
           if (String(saved?.project_id || "") !== projectId) {
             throw new Error("后端未提交所选项目，请刷新后重试");
           }
-          state.lineage.run_as_principal = clone(saved.run_as_principal ?? null);
           [
             "title",
             "description",
@@ -380,7 +336,7 @@
     return Object.freeze({
       renderLineageProjectOptions, subgraphMoveBusy, renewSubgraphMoveIntent,
       previewSubgraphMove, loadSubgraphMoveTargets, openSubgraphMove, submitSubgraphMove,
-      loadLineageRunAsUsers, openCreateLineageModal, openEditLineageModal, submitLineageForm,
+      openCreateLineageModal, openEditLineageModal, submitLineageForm,
       deleteCurrentLineage,
     });
   }

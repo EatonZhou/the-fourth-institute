@@ -391,7 +391,7 @@ def sync_generated_structure(lineage_id: str) -> dict:
     The roster and values decide generated structure; ordinarily only Familize
     and UpdateFamily regenerate it. A template change in code reaches existing
     Families here instead. The edit runs as the Lineage's unattended identity
-    (its run_as_principal User, otherwise Portal), so it reaches personal
+    (its current Leader), so it reaches personal
     assistants too. A Lineage already in step commits nothing.
     """
     domain = _domain()

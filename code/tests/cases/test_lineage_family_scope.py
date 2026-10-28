@@ -12,8 +12,6 @@ def scoped(lineage_id):
 
 def test_empty_lineage_family_auto_joins_and_can_be_removed(lineage, charters):
     """Lineage 级 Family 自动纳入后建的 Resident，重复建立返回同一 Family，可撤销"""
-    ok('UpdateLineage', {'lineage_id': lineage,
-                         'changes': {'run_as_principal': {'kind': 'user', 'id': 'sample_admin'}}})
     made = ok('Familize', {'lineage_id': lineage, 'scope': 'lineage'}, key='scope')
     assert made['member_resident_ids'] == []
     assert graph(lineage)['leader_resident_id'] == made['facade_resident_id']

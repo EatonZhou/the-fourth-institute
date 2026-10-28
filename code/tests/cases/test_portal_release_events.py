@@ -40,7 +40,6 @@ def test_reconciliation_preserves_each_publication_and_recovers_cursor(primitive
     facts.record(publication(50))
     current = support.create_lineage_with_resident_members({
         'title': 'release facts', 'nodes': [_worker(WORK_A)],
-        'run_as_principal': {'kind': 'user', 'id': ACTOR},
         'program': {'components': [{'id': 'event_source_release', 'kind': 'event_source',
                                    'config': {'event_type': events.EVENT}}], 'wires': []}}, ACTOR)
     lineage_id = current['lineage_id']
@@ -69,7 +68,6 @@ def test_failed_acceptance_retries_identical_event(primitive_store, monkeypatch)
     support.install_registered_lineage_members(monkeypatch)
     current = support.create_lineage_with_resident_members({
         'title': 'release retry', 'nodes': [_worker(WORK_A)],
-        'run_as_principal': {'kind': 'user', 'id': ACTOR},
         'program': {'components': [{'id': 'event_source_release', 'kind': 'event_source',
                                    'config': {'event_type': events.EVENT}}], 'wires': []}}, ACTOR)
     lineage_id = current['lineage_id']
@@ -89,7 +87,6 @@ def test_coalesced_backlog_picks_latest_beyond_one_page_and_keeps_cursor(primiti
     support.install_registered_lineage_members(monkeypatch)
     current = support.create_lineage_with_resident_members({
         'title': 'release backlog', 'nodes': [_worker(WORK_A)],
-        'run_as_principal': {'kind': 'user', 'id': ACTOR},
         'program': {'components': [{'id': 'event_source_release', 'kind': 'event_source',
             'config': {'event_type': events.EVENT, 'misfire_policy': 'coalesce_latest'}}],
             'wires': []}}, ACTOR)

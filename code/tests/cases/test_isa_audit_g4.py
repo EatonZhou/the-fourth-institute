@@ -28,7 +28,7 @@ def registered_members(monkeypatch):
 
 def make_lineage(components=None, wires=None):
     return support.create_lineage_with_resident_members({
-        "title": "G4 audit","run_as_principal": {"kind": "user", "id": ACTOR},
+        "title": "G4 audit",
         "nodes": [_worker(WORK_A), _worker(WORK_B)],
         "program": {"components": components or [], "wires": wires or []},
     }, ACTOR)

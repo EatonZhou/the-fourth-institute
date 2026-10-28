@@ -128,7 +128,9 @@ def _sender_identity(actor_id: str, author_id: str) -> dict[str, Any] | None:
     if not author_id:
         return None
     try:
-        return OperationIdentity.for_actor(actor_id, initiated_by=author_id).to_dict()
+        # Arrival authorship is provenance, not delegated execution authority.
+        # Keep it in the event payload; new automation runs as the Leader.
+        return OperationIdentity.for_actor(actor_id).to_dict()
     except ValueError:
         return None
 

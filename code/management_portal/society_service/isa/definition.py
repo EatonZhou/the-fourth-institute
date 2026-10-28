@@ -16,7 +16,7 @@ from .common import domain, lineage_revision, placement, store
 STREAM_POLL_SECONDS = 1.0
 STREAM_HEARTBEAT_SECONDS = 15.0
 LINEAGE_CHANGE_FIELDS = frozenset({
-    "title", "description", "project_id", "leader_resident_id", "run_as_principal", "fragments",
+    "title", "description", "project_id", "leader_resident_id", "fragments",
 })
 
 
@@ -28,9 +28,9 @@ def create_lineage(inv: Invocation) -> dict[str, Any]:
         if inv.argument(name) is not None:
             payload[name] = inv.argument(name)
     definition = inv.argument("definition") or {}
-    unknown = sorted(set(definition) - {"nodes", "edges", "program", "run_as_principal"})
+    unknown = sorted(set(definition) - {"nodes", "edges", "program"})
     if unknown:
-        raise invalid("definition 只包含 nodes、edges、program、run_as_principal", unknown_fields=unknown)
+        raise invalid("definition 只包含 nodes、edges、program", unknown_fields=unknown)
     payload.update(copy.deepcopy(definition))
     lineage = domain().create_lineage(payload, inv.caller)
     lineage_id = str(lineage.get("lineage_id") or "")

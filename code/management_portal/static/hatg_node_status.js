@@ -58,17 +58,13 @@
       return { state: runtime.state || "unknown", label: runtime.state === "listening" ? "监听中" : "等待运行状态", reason: "" };
     }
 
-    function syncProgramRunAsGuidance(panel) {
-      const note = panel?.querySelector("[data-event-run-as-note]");
+    function syncProgramLeaderGuidance(panel) {
+      const note = panel?.querySelector("[data-event-leader-note]");
       if (!note) return;
-      const eventType = panel.querySelector('[name="event_type"]')?.value;
-      const section = panel.querySelector("[data-event-run-as]");
-      section.hidden = eventType !== "time.reached";
-      const principal = state.lineage?.run_as_principal;
-      const explicit = principal?.kind === "user" && String(principal.id || "").trim();
-      note.textContent = explicit
-        ? window.PortalI18n.text`自动运行 User：${principal.id}。时间事件以此 User 的身份和权限执行。`
-        : window.PortalI18n.t("未指定 User。时间事件可正常自动触发，Resident 使用自身身份和权限执行。");
+      const leaderId = String(state.lineage?.leader_resident_id || "").trim();
+      note.textContent = leaderId
+        ? window.PortalI18n.text`自动运行使用 Leader（${leaderId}）的身份和权限。`
+        : window.PortalI18n.t("尚未设置 Leader，请先在 Lineage 设置中设置 Leader，再启用自动运行。");
     }
 
     function programComponentPaused(component) {
@@ -110,7 +106,7 @@
           status.textContent = [window.PortalI18n.t(presentation.label), presentation.reason].filter(Boolean).join(" · ");
           status.dataset.eventState = presentation.state;
         }
-        syncProgramRunAsGuidance(panel);
+        syncProgramLeaderGuidance(panel);
       }
     }
 
@@ -335,7 +331,7 @@
     }
 
     return Object.freeze({
-      programEventSourceStatus, syncProgramRunAsGuidance, programComponentPaused,
+      programEventSourceStatus, syncProgramLeaderGuidance, programComponentPaused,
       programComponentSwitchHtml, syncProgramComponentSwitch, toggleProgramComponent,
       programExecutionExplanationHtml, nodeExecutionGate, nodeIntakeState, nodeWorkPresentation,
       hatgNodeControl, hatgNodeHoverActions, nodeMessageCountText, nodeContextPressure,

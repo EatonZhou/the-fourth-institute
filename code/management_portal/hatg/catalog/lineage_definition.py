@@ -23,17 +23,17 @@ DECLARATIONS = (
         R("title", description="Lineage 名称，超出 140 字截断"),
         P("description", description="Lineage 说明；同时建立 Family 时作为其目标"),
         R("project_id", description="新 Lineage 所属的 Project"),
-        P("leader_resident_id", description="Leader Resident，须是 definition 中的成员节点；省略时没有 Leader"),
-        P("definition", "object", "初始成员、组件和连线；run_as_principal: {kind: user, id: 用户名} 可选；未配置 User 时自动事件正常触发，Resident 使用自身身份和权限执行"),
+        P("leader_resident_id", description="Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"),
+        P("definition", "object", "初始成员、组件和连线；自动任务使用当前 Leader Resident 的身份及权限；没有 Leader 时等待成员加入"),
         P("familize", "boolean", "同时建立 Lineage 范围的 Family；省略为 false"),
     ), (R("lineage_id", description="新 Lineage 的 ID"),
         P("family_id", description="同时建立的 Family；familize 为 true 时返回")), mutates=True, target="project_id", decides=(On("project_id", "project"),)),
     _d("GetLineage", "读取一个 Lineage 规范化后的完整定义。", (R("lineage_id", description="要读取的 Lineage"),), (
         R("lineage", "object", "元数据、成员节点、组件、连线、工作区交接、Function Block 实例；revision 可用作定义修改的 expected_version"),
     )),
-    _d("UpdateLineage", "修改 Lineage 的名称、说明、所属项目、Leader、自动运行身份、碎片或头像。", (
+    _d("UpdateLineage", "修改 Lineage 的名称、说明、所属项目、Leader、碎片或头像。", (
         R("lineage_id", description="要修改的 Lineage"),
-        R("changes", "object", "title、description、project_id、leader_resident_id、run_as_principal、fragments、avatar；avatar 为 {sprite_index: 0–41}、{upload_id}（CreateUpload purpose=avatar 的已完成上传）或 null（恢复为名称首字）；可选 User 身份为 {kind: user, id: 用户名}，null 清除后 Resident 使用自身身份和权限；指定他人须是管理员，显式配置只接受已启用的 User；fragments 是碎片的完整新列表，每项 {id?, content, attachments?}，省略 id 的项是新碎片，列表中没有的碎片被删除"),
+        R("changes", "object", "title、description、project_id、leader_resident_id、fragments、avatar；avatar 为 {sprite_index: 0–41}、{upload_id}（CreateUpload purpose=avatar 的已完成上传）或 null（恢复为名称首字）；fragments 是碎片的完整新列表，每项 {id?, content, attachments?}，省略 id 的项是新碎片，列表中没有的碎片被删除"),
     ), (R("lineage", "object", "修改后的元数据与碎片"),), mutates=True),
     _d("UpdateLineageLayout", "保存 Lineage 画布上成员、组件和 Function Block 实例的坐标；只推进布局版本，不改定义 revision，也不重新编译。", (
         R("lineage_id", description="要保存布局的 Lineage"),

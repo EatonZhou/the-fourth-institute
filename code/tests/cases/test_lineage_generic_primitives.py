@@ -955,7 +955,6 @@ def test_all_idle_events_fire_only_on_nonzero_to_zero_transitions(
     created = lineage_domain.create_lineage(
         {
             "title": "Resident activity Events",
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "nodes": [
                 _worker(WORK_A),
                 _worker(WORK_B),
@@ -1031,7 +1030,7 @@ def test_context_pressure_event_fires_once_per_threshold_entry(
         sessions: list[str],
         actor: str,
     ) -> dict[str, dict[str, object]]:
-        assert actor == ACTOR
+        assert actor == WORK_A
         observed_sessions.append(set(sessions))
         return {
             WORK_A: {
@@ -1061,7 +1060,6 @@ def test_context_pressure_event_fires_once_per_threshold_entry(
     created = lineage_domain.create_lineage(
         {
             "title": "Resident context pressure Event",
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "nodes": [_worker(WORK_A), _worker(WORK_B)],
             "program": {
                 "components": [
@@ -1172,7 +1170,6 @@ def test_work_duration_event_is_edge_triggered_per_job(
     created = lineage_domain.create_lineage(
         {
             "title": "Resident work duration Event",
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "nodes": [_worker(WORK_A), _worker(WORK_B)],
             "program": {
                 "components": [
@@ -1274,7 +1271,7 @@ def test_work_duration_event_is_edge_triggered_per_job(
     assert crossed_event["payload"]["trigger_path_id"].startswith("trigger_path_")
     assert crossed_event == {
         "id": crossed["events"][0]["event"]["id"],
-        "identity": OperationIdentity.for_actor(ACTOR).to_dict(),
+        "identity": OperationIdentity.for_actor(WORK_A).to_dict(),
         "type": "resident.work_duration_exceeded",
         "subject_resident_id": WORK_A,
         "occurred_at": "2026-08-02T10:01:01Z",
@@ -1313,7 +1310,6 @@ def test_queue_pressure_event_supports_both_metrics_and_rearms(
     created = lineage_domain.create_lineage(
         {
             "title": "Resident queue pressure Events",
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "nodes": [_worker(WORK_A), _worker(WORK_B)],
             "program": {
                 "components": [
@@ -1499,7 +1495,6 @@ def test_state_condition_event_initial_policy_and_false_to_true_edges(
     created = lineage_domain.create_lineage(
         {
             "title": "Graph State condition Events",
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "nodes": [_worker(WORK_A), _worker(WORK_B)],
             "program": {
                 "components": [
@@ -2240,7 +2235,6 @@ def test_resident_state_event_observes_intake_changes(
     created = lineage_domain.create_lineage(
         {
             "title": "Resident state Events",
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "nodes": [_worker(WORK_A), _worker(WORK_B)],
             "program": {
                 "components": [
@@ -2591,7 +2585,6 @@ def test_system_event_worker_baselines_history_and_recovers_only_a_new_completio
     created = lineage_test_support.create_lineage_with_resident_members(
         {
             "title": "Recover generic completion route",
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "nodes": [
                 _worker(WORK_A, "Source worker"),
                 _worker(WORK_B, "Target worker"),
@@ -2765,7 +2758,6 @@ def test_completion_without_an_output_wire_is_not_replayed_after_connecting(
     created = lineage_test_support.create_lineage_with_resident_members(
         {
             "title": "Unrouted completion disappears",
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "nodes": [_worker(WORK_A), _worker(WORK_B)],
             "program": {
                 "components": [
@@ -2834,13 +2826,13 @@ def test_completion_without_an_output_wire_is_not_replayed_after_connecting(
     assert sent == [WORK_B]
 
 
-@pytest.mark.parametrize("configured_user", [False, True])
+@pytest.mark.parametrize("leader", [WORK_A, WORK_B])
 def test_time_and_file_events_directly_trigger_an_ordinary_resident_once(
     primitive_store: Path,
     monkeypatch: pytest.MonkeyPatch,
-    configured_user: bool,
+    leader: str,
 ) -> None:
-    """到点事件和文件变更事件各直接触发普通 Resident 一次，是否配置运行用户都一样"""
+    """到点事件和文件变更事件各直接触发普通 Resident 一次，均以当前 Leader 身份执行"""
     sent: list[str] = []
     monkeypatch.setattr(
         lineage_test_support,
@@ -2853,7 +2845,7 @@ def test_time_and_file_events_directly_trigger_an_ordinary_resident_once(
     created = lineage_domain.create_lineage(
         {
             "title": "Foundational system Events",
-            "run_as_principal": {"kind": "user", "id": ACTOR} if configured_user else None,
+            "leader_resident_id": leader,
             "nodes": [_worker(WORK_A), _worker(WORK_B)],
             "program": {
                 "components": [

@@ -209,7 +209,7 @@
   });
 
   const {
-    programEventSourceStatus, syncProgramRunAsGuidance, programComponentPaused,
+    programEventSourceStatus, syncProgramLeaderGuidance, programComponentPaused,
     programComponentSwitchHtml, syncProgramComponentSwitch, toggleProgramComponent,
     programExecutionExplanationHtml, nodeExecutionGate, nodeIntakeState, nodeWorkPresentation,
     hatgNodeControl, hatgNodeHoverActions, nodeMessageCountText, nodeContextPressure,
@@ -299,7 +299,7 @@
 
   const {
     renderLineageProjectOptions, subgraphMoveBusy, renewSubgraphMoveIntent, previewSubgraphMove,
-    loadSubgraphMoveTargets, openSubgraphMove, submitSubgraphMove, loadLineageRunAsUsers,
+    loadSubgraphMoveTargets, openSubgraphMove, submitSubgraphMove,
     openCreateLineageModal, openEditLineageModal, submitLineageForm, deleteCurrentLineage,
   } = hatgModule("PortalHatgLineageDialogs").createLineageDialogs({
     $id, clearCanvasSelection, clone, closeModal,
@@ -359,7 +359,7 @@
     programExecutionExplanationHtml, programFeature, programResourceAddressHtml, publishLocation,
     refreshFunctionBlockMenu, renderControls, renderLineageSurface, seedById,
     selectProgramComponent, setBusy, setSyncStatus, societyService, state,
-    syncProgramComponentSwitch, syncProgramRunAsGuidance, toast, toggleProgramComponent,
+    syncProgramComponentSwitch, syncProgramLeaderGuidance, toast, toggleProgramComponent,
     // The canvas view is created after this part.
     renderGraph: (...args) => renderGraph(...args),
   });
@@ -623,10 +623,9 @@
     const catalogOptions = { force: options.forceCatalogs === true };
     return Promise.all([
       window.PortalLineageCatalogs.residents(catalogOptions).catch(() => ({ residents: [] })),
-      loadLineageRunAsUsers(catalogOptions),
       window.PortalLineageCatalogs.projectCatalog(catalogOptions).catch(() => ({ projects: [] })),
       window.PortalLineageCatalogs.agentBackends(catalogOptions).catch(() => null),
-    ]).then(([residents, _users, projects, backendCatalog]) => {
+    ]).then(([residents, projects, backendCatalog]) => {
       const nextResidents = Array.isArray(residents?.residents) ? residents.residents : [];
       if (residents?.account_selection) {
         state.accountSelection = residents.account_selection;

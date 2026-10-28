@@ -203,10 +203,10 @@ def _event_explanation(
     if runtime.get("state") == "blocked":
         reason = _text(runtime.get("error"))
         return _explanation(
-            component_id, "event_source", "blocked", "自动运行身份不可用",
+            component_id, "event_source", "blocked", "自动运行 Leader 不可用",
             tone="danger", why=reason, blocked_reason=reason,
             last_action=last_action,
-            next_action="修复已配置的自动运行 User，或清除该配置，让 Resident 使用自身身份和权限。",
+            next_action="在 Lineage 中加入 Resident 或设置有效的 Leader；自动任务使用 Leader 自己的权限。",
         )
     if not outgoing:
         return _explanation(

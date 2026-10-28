@@ -80,7 +80,6 @@ def test_reconcile_reports_when_a_recurring_source_is_next_due(
     )
     lineage_id = lineage_domain.create_lineage(
         {
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "title": "Recurring wake",
             "nodes": [_worker(WORK_A)],
             "program": {
@@ -128,7 +127,6 @@ def test_an_exhausted_source_needs_no_wake(
     )
     lineage_id = lineage_domain.create_lineage(
         {
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "title": "Fires once",
             "nodes": [_worker(WORK_A)],
             "program": {
@@ -273,7 +271,6 @@ def test_an_event_wire_can_keep_background_work_in_the_session(
     def create(config: dict) -> str:
         return lineage_domain.create_lineage(
             {
-                "run_as_principal": {"kind": "user", "id": ACTOR},
                 "title": "Session wake",
                 "nodes": [_worker(WORK_A)],
                 "program": {

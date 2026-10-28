@@ -507,11 +507,8 @@ def _normalize_lineage_payload(
     if "principal_hierarchy" in previous:
         from .principal_hierarchy import scope_after_project_change
         hierarchy_fields["principal_hierarchy"] = scope_after_project_change(previous["principal_hierarchy"], project_id)
-    from . import lineage_automation_identity
-    run_as = lineage_automation_identity.normalize(payload.get("run_as_principal", previous.get("run_as_principal")))
     return {
         "schema": ports.lineage_folder_schema,
-        **({"run_as_principal": run_as} if run_as is not None else {}),
         "schema_version": ports.schema_version,
         **hierarchy_fields,
         "lineage_id": str(previous.get("lineage_id") or ""),

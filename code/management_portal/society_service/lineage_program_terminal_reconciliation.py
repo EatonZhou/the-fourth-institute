@@ -1043,7 +1043,7 @@ def _terminal_dispatcher(
     actor: str,
     ports: ProgramTerminalPorts,
 ) -> tuple[str, dict[str, Any] | None]:
-    """Keep a trusted request initiator; unattended observations use the configured User."""
+    """Keep a trusted request initiator; unattended observations use the current Leader."""
     from management_common.principal import actor_principal
     from .lineage_instruction_context import current_event_identity
 
@@ -1220,7 +1220,7 @@ def dispatch_resident_terminal_observers(
 
     The catalog owns the reverse observer index, so this hot path touches only
     Lineages that actually watch the exact Resident and terminal type.  Each
-    observer executes under its explicit run_as_principal; downstream Effects retain
+    observer executes under its current Leader identity; downstream Effects retain
     their normal target-Lineage authorization checks.
     """
     _lineage_catalog_store = ports.directory.lineage_catalog_store

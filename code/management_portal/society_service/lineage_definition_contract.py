@@ -18,7 +18,6 @@ LINEAGE_DEFINITION_FIELDS = frozenset({
     "description",
     "leader_resident_id",
     "principal_hierarchy",
-    "run_as_principal",
     "nodes",
     "edges",
     "program",
@@ -92,10 +91,6 @@ def validate_definition(
         lineage_scope(definition["principal_hierarchy"], project_id=str(definition.get("project_id") or ""))
     if definition.get("schema_version") != 1:
         raise ValueError("Lineage definition schema_version must be 1")
-    if "run_as_principal" in definition:
-        from .lineage_automation_identity import normalize
-        if normalize(definition["run_as_principal"]) != definition["run_as_principal"]:
-            raise ValueError("Lineage run_as_principal must use a canonical User identity")
     membership = str(definition.get("lineage_membership") or "").strip()
     if membership not in LINEAGE_MEMBERSHIP_VALUES:
         raise ValueError("Lineage membership is invalid")

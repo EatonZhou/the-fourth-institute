@@ -354,7 +354,6 @@ def test_owner_reconcile_skips_a_lineage_deleted_after_catalog_read(
         {
             **sample_lineage_payload(),
             "title": "Delete race",
-            "run_as_principal": {"kind": "user", "id": "sample_admin"},
             "program": {"components": [{"id": "event_source_delete_race", "kind": "event_source",
                          "config": {"event_type": "time.reached", "schedule_mode": "countdown", "delay_seconds": 60}}], "wires": []},
         },
@@ -381,10 +380,8 @@ def test_owner_reconcile_skips_a_lineage_deleted_after_catalog_read(
     }
 
 
-def test_scheduler_uses_service_without_configured_resident(lineage_store, monkeypatch):
-    """无自动事件源的 Lineage 不观测，定时器未配置运行身份时以 portal 身份观测
-
-    Neither a Resident executor nor a User is required to observe a timer."""
+def test_scheduler_waits_for_leader_and_then_uses_it(lineage_store, monkeypatch):
+    """空图不观测；带自动事件源的空图等待 Leader，成员注册后按 Leader 执行。"""
     created = lineage_domain.create_lineage({"title": "Service poll", "nodes": [], "edges": []}, "sample_admin")
     calls = []
     monkeypatch.setattr(lineage_domain, "reconcile_lineage_system_events",
@@ -397,18 +394,19 @@ def test_scheduler_uses_service_without_configured_resident(lineage_store, monke
     ], "wires": []}}, "sample_admin")
     result = lineage_domain.reconcile_lineage_system_events_as_service(created["lineage_id"])
     assert result["event_count"] == 0
-    assert calls == [(created["lineage_id"], "portal")]
-    lineage_domain.update_lineage_metadata(created["lineage_id"], {
-        "run_as_principal": {"kind": "user", "id": "sample_admin"},
-    }, "sample_admin")
+    assert result["status"] == "blocked" and calls == []
+    leader = "resident_aaaaaaaaaaaa"
+    nodes = [{"id": leader}]
+    lineage_test_support.publish_registered_lineage_members({**created, "nodes": nodes})
+    lineage_domain.update_lineage(created["lineage_id"], {**created, "nodes": nodes, "leader_resident_id": leader}, "sample_admin")
     lineage_domain.reconcile_lineage_system_events_as_service(created["lineage_id"])
-    assert calls == [(created["lineage_id"], "portal"), (created["lineage_id"], "sample_admin")]
+    assert calls == [(created["lineage_id"], leader)]
 
 
 def test_configured_automation_still_checks_principal(lineage_store, monkeypatch):
-    """配置了 run_as_principal 的 Lineage 对账时仍检查运行身份是否获准"""
+    """有 Leader 的 Lineage 对账仍检查运行身份是否获准。"""
     created = lineage_domain.create_lineage(
-        {**sample_lineage_payload(), "run_as_principal": {"kind": "user", "id": "sample_admin"},
+        {**sample_lineage_payload(),
          "program": {"components": [{"id": "event_source_principal", "kind": "event_source",
                       "config": {"event_type": "time.reached", "schedule_mode": "countdown", "delay_seconds": 60}}], "wires": []}},
         "sample_admin",

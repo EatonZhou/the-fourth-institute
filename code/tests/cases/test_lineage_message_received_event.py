@@ -110,16 +110,16 @@ def test_sources_watch_a_resident_and_the_event_type_is_registered():
     assert event.payload["relay_depth"] == 0
 
 
-def test_sender_becomes_the_initiator_of_the_event():
-    """消息发送者成为到达 Event 的发起者
+def test_new_arrival_uses_observing_leader_as_initiator():
+    """新到达事件由观察它的 Leader 发起。
 
-    到达 Event 的身份以 Lineage 自动运行身份执行，发起者记为原发送者。
+    原发送者记录在业务 payload，不向自动执行委托其权限。
 
     :design: decision_44cf587c1721
     """
     identity = events._sender_identity("resident_aaaaaaaaaaaa", "CASE-A")
 
-    assert identity["initiated_by"]["id"] == "CASE-A"
+    assert identity["initiated_by"]["id"] == "resident_aaaaaaaaaaaa"
     assert events._sender_identity("resident_aaaaaaaaaaaa", "") is None
 
 
@@ -179,7 +179,6 @@ def test_reconciliation_emits_each_new_message_once(primitive_store, conversatio
     :design: decision_44cf587c1721, decision_4adcc1ff2f2c
     """
     current = support.create_lineage_with_resident_members({
-        "run_as_principal": {"kind": "user", "id": ACTOR},
         "title": "message received",
         "nodes": [_worker(WORK_A), _worker(WORK_B)],
         "program": {
@@ -207,7 +206,7 @@ def test_reconciliation_emits_each_new_message_once(primitive_store, conversatio
     assert emitted[0]["payload"]["author_id"] == "CASE-A"
     assert emitted[0]["payload"]["relay_depth"] == 0
     assert emitted[1]["payload"]["relay_depth"] == 1
-    assert emitted[0]["identity"]["initiated_by"]["id"] == "CASE-A"
+    assert emitted[0]["identity"]["initiated_by"]["id"] == WORK_A
     assert all(item["event"]["payload"]["message_id"] not in {"msg_a", "msg_b"} for item in reconcile())
 
 
@@ -293,7 +292,6 @@ def test_an_arrival_is_dispatched_at_once_and_the_pass_only_moves_past_it(primit
     from management_portal.society_service import lineage_program_polling, lineage_program_runtime
 
     current = support.create_lineage_with_resident_members({
-        "run_as_principal": {"kind": "user", "id": ACTOR},
         "title": "message received push",
         "nodes": [_worker(WORK_A), _worker(WORK_B)],
         "program": {
@@ -310,8 +308,8 @@ def test_an_arrival_is_dispatched_at_once_and_the_pass_only_moves_past_it(primit
         },
     }, ACTOR)
     lineage_id = current["lineage_id"]
-    monkeypatch.setattr(lineage_program_polling, "_runtime_lineage", lambda clean_id, ports: ({"lineage_id": clean_id}, ""))
-    monkeypatch.setattr(lineage_domain, "_lineage_runtime_actor", lambda lineage: ACTOR)
+    monkeypatch.setattr(lineage_program_polling, "_runtime_lineage",
+                        lambda clean_id, ports: ({**current, "leader_resident_id": WORK_A}, ""))
 
     def fire_count():
         source = lineage_program_runtime.read_runtime(lineage_id)["event_sources"].get("event_source_inbox") or {}
@@ -325,7 +323,7 @@ def test_an_arrival_is_dispatched_at_once_and_the_pass_only_moves_past_it(primit
 
     assert pushed["status"] == "dispatched"
     event = pushed["events"][0]["event"]
-    assert event["payload"]["message_id"] == "msg_a" and event["identity"]["initiated_by"]["id"] == "CASE-A"
+    assert event["payload"]["message_id"] == "msg_a" and event["identity"]["initiated_by"]["id"] == WORK_A
     assert fire_count() == 1
     assert lineage_domain.dispatch_message_arrival(lineage_id, WORK_B, "msg_a")["status"] == "none"  # not watched
     assert [item["status"] for item in pushed["events"][0]["results"]] == ["executed"]
@@ -352,7 +350,6 @@ def test_empty_family_preserves_arrivals_until_members_return(primitive_store, c
     monkeypatch.setattr(resident_held_infos, "is_info", lambda *_: False)
     conversation.log.clear()
     current = support.create_lineage_with_resident_members({
-        "run_as_principal": {"kind": "user", "id": ACTOR},
         "title": "Empty Family", "nodes": [_worker(WORK_A), _worker(WORK_B)],
         "program": {"components": [{"id": "event_source_inbox", "kind": "event_source",
                                     "config": {"event_type": "resident.message_received"}}],
@@ -373,5 +370,5 @@ def test_empty_family_preserves_arrivals_until_members_return(primitive_store, c
     members.append(WORK_B)
     emitted = [*reconcile(), *reconcile()]
     assert [item["event"]["payload"]["message_id"] for item in emitted] == ["msg_a", "msg_b"]
-    assert emitted[0]["event"]["identity"]["initiated_by"]["id"] == "CASE-A"
+    assert emitted[0]["event"]["identity"]["initiated_by"]["id"] == WORK_A
     assert reconcile() == []

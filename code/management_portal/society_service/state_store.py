@@ -28,7 +28,7 @@ from .runtime_read_models import (
 )
 
 
-LINEAGE_DATA_SCHEMA = "tfi.lineage-data.v62"
+LINEAGE_DATA_SCHEMA = "tfi.lineage-data.v63"
 LINEAGE_TIMER_LEASE_KEY = "lineage_timer_lease"
 # Projects whose principal graph a membership transaction must re-project
 # when it finishes; None outside such a transaction.
@@ -48,7 +48,6 @@ DEFINITION_STRUCTURAL_FIELDS = frozenset({
     *DEFINITION_COLLECTION_FIELDS,
 })
 DEFINITION_COLUMN_FIELDS = frozenset({
-    "run_as_principal",
     "schema",
     "schema_version",
     "lineage_id",
@@ -624,7 +623,7 @@ class LineageDataStore:
         ).fetchone()
         if (
             schema is None
-            or not schema_matches(schema["value"], "tfi.lineage-data.v62")
+            or not schema_matches(schema["value"], LINEAGE_DATA_SCHEMA)
             or not lineage_data_schema_matches(connection)
         ):
             raise RuntimeError("Lineage data database does not match its schema")

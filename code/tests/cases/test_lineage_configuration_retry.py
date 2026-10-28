@@ -3,6 +3,7 @@
 :design: decision_5ff0cb51ed84
 """
 from types import SimpleNamespace
+from dataclasses import replace
 
 import pytest
 
@@ -15,8 +16,6 @@ from management_portal.society_service.coordinator import LineageCoordinator
 def ports(monkeypatch):
     definition = {'lineage_id': 'lineage_config', 'program': {'components': [
         {'id': 'timer', 'config': {'event_type': 'time.reached'}}]}}
-    monkeypatch.setattr(identity, 'get_portal_access_store', lambda: SimpleNamespace(
-        is_configured=lambda who: who == 'sample_admin', is_active=lambda who: who == 'sample_admin'))
     monkeypatch.setattr(polling, 'recovery_lineage_ids', lambda **_: ['lineage_config'])
     monkeypatch.setattr(polling.lineage_program_runtime, 'read_runtime', lambda _: {})
     monkeypatch.setattr(polling.lineage_program_runtime, 'pending_resident_handoffs', lambda _: [])
@@ -29,12 +28,12 @@ def ports(monkeypatch):
     return definition, value
 
 
-@pytest.mark.parametrize('principal', ['sample_admin', {'kind': 'resident', 'id': 'resident_aaaaaaaaaaaa'},
-                                     {'kind': 'user', 'id': 'disabled'}])
-def test_invalid_config_is_blocked_without_retry_and_graph_change_recovers(ports, principal):
+@pytest.mark.parametrize('leader', ['', 'sample_admin', 'resident_aaaaaaaaaaaa'])
+def test_invalid_config_is_blocked_without_retry_and_graph_change_recovers(ports, leader):
     """运行身份配置无效时 Lineage 被阻断且不重试，改正配置并通知后解除阻断"""
     definition, bindings = ports
-    definition['run_as_principal'] = principal
+    definition['leader_resident_id'] = leader
+    definition['nodes'] = []
     coordinator = LineageCoordinator(resume_residents=lambda: {}, resume_resident=lambda _: {},
         reconcile_all=lambda: polling.poll_all_system_events(ports=bindings),
         reconcile_lineage=lambda lid: polling.reconcile_system_events_as_service(lid, ports=bindings))
@@ -44,11 +43,13 @@ def test_invalid_config_is_blocked_without_retry_and_graph_change_recovers(ports
     assert coordinator.snapshot()['last_reconcile']['failed'] == 0
     coordinator._reconcile_one('lineage_config')
     assert coordinator.snapshot()['retry_lineage_ids'] == []
-    definition['run_as_principal'] = {'kind': 'user', 'id': 'sample_admin'}
+    definition['leader_resident_id'] = 'resident_aaaaaaaaaaaa'
+    definition['nodes'] = [{'id': 'resident_aaaaaaaaaaaa'}]
     coordinator.notify_lineage('lineage_config')
     coordinator._reconcile_one('lineage_config')
     assert not coordinator.snapshot()['blocked_lineages']
-    assert coordinator.snapshot()['retry_lineage_ids'] == ['lineage_config']
+    assert coordinator.snapshot()['retry_lineage_ids'] == []
+    assert coordinator.snapshot()['wake_lineage_ids'] == ['lineage_config']
 
 
 def test_only_explicit_configuration_failure_stops_retries():
@@ -74,13 +75,14 @@ def test_recovery_only_does_not_request_new_automation_authority(ports):
     assert result['failed'] == 0 and not result['blocked_lineages'] and not result['retry_lineage_ids']
 
 
-def test_full_poll_keeps_transient_errors_retryable(ports, monkeypatch):
-    """账户服务暂时不可用时，完整轮询把 Lineage 记为可重试而非配置阻断"""
+def test_full_poll_keeps_transient_errors_retryable(ports):
+    """有合法 Leader 后观测服务暂时不可用仍可重试，不是配置阻断。"""
     _, bindings = ports
-    def unavailable(_):
-        raise ConnectionError('account service unavailable')
-    monkeypatch.setattr(identity, 'get_portal_access_store', lambda: SimpleNamespace(is_configured=unavailable))
-    ports[0]['run_as_principal'] = {'kind': 'user', 'id': 'sample_admin'}
+    def unavailable(*args, **kwargs):
+        raise ConnectionError('observation service unavailable')
+    bindings = replace(bindings, reconcile_lineage_system_events=unavailable)
+    ports[0]['leader_resident_id'] = 'resident_aaaaaaaaaaaa'
+    ports[0]['nodes'] = [{'id': 'resident_aaaaaaaaaaaa'}]
     result = polling.poll_all_system_events(ports=bindings)
     assert result['failed'] == 1 and not result['blocked_lineages']
     assert result['retry_lineage_ids'] == ['lineage_config']

@@ -1,4 +1,4 @@
-"""Publication facts carry configured authority through an Effect's RunScript."""
+"""Publication facts carry the registered Leader through a real Effect."""
 from copy import deepcopy
 from types import SimpleNamespace
 import pytest
@@ -7,16 +7,19 @@ from management_common.operation_identity import current_operation_identity, ope
 from management_common.principal import OperationIdentity
 from management_common import portal_release_events as facts
 from management_portal.hatg import routing
-from management_portal.society_service import lineage_domain, trigger_paths
+from management_portal.society_service import lineage_domain
 from management_portal.society_service.script_runs.service import ACTIVATION
-from tests.cases.test_lineage_generic_primitives import primitive_store  # noqa: F401
+from tests.cases.isa_test_support import ok
+from tests.cases.test_isa_lineage_lifecycle import future_creation_store, lineage, resident, graph  # noqa: F401
 
 
-@pytest.mark.parametrize("configured_user", [False, True])
-def test_publication_reaches_runscript_without_ambient_identity(primitive_store, monkeypatch, configured_user):
-    """发布事件触发的 RunScript 以配置用户或 portal 身份运行，不沿用外层身份，同一发布只运行一次"""
-    current = lineage_domain.create_lineage({
-        "title": "publication authority", "run_as_principal": {"kind": "user", "id": "sample_admin"} if configured_user else None,
+@pytest.mark.parametrize("change_leader", [False, True])
+def test_publication_reaches_runscript_without_ambient_identity(lineage, monkeypatch, change_leader):
+    """真实注册和事件→Effect链路使用当前 Leader，外层 User 不提供委托。"""
+    first = resident(lineage, "Leader")
+    second = resident(lineage, "Successor")
+    lineage_domain.update_lineage(lineage, {
+        **graph(lineage),
         "program": {"components": [
             {"id": "event_source_release_identity", "kind": "event_source",
              "config": {"event_type": "portal.release_published"}},
@@ -26,10 +29,12 @@ def test_publication_reaches_runscript_without_ambient_identity(primitive_store,
                       "source": "event_source_release_identity", "source_port": "output",
                       "target": "effect_release_identity", "target_port": "invoke", "config": {}}]},
     }, "sample_admin")
-    lineage_id = current["lineage_id"]
     observed = []
+    original_execute = routing.execute
 
     def execute(call, context):
+        if call["instruction"] != "RunScript":
+            return original_execute(call, context)
         observed.append({"call": deepcopy(call), "caller": context.caller,
                          "activation": deepcopy(ACTIVATION.get()),
                          "identity": current_operation_identity().to_dict()})
@@ -38,16 +43,18 @@ def test_publication_reaches_runscript_without_ambient_identity(primitive_store,
 
     monkeypatch.setattr(routing, "execute", execute)
     monkeypatch.setattr(routing, "release_recovery", lambda *args, **kwargs: None)
-    lineage_domain.reconcile_lineage_system_events(lineage_id, "sample_admin")
+    lineage_domain.reconcile_lineage_system_events(lineage, "sample_admin")
+    if change_leader:
+        ok("UpdateLineage", {"lineage_id": lineage, "changes": {"leader_resident_id": second}})
     facts.record({"ok": True, "status": "completed", "commit": "a" * 40,
                   "active_commit": "a" * 40, "parent_commit": "b" * 40,
                   "started_at": 100, "completed_at": 101, "origin": "direct"})
-    with operation_identity_scope(OperationIdentity.for_actor("someone_else")):
-        result = lineage_domain.reconcile_lineage_system_events(lineage_id, "sample_admin")
-        assert current_operation_identity().principal.id == "someone_else"
+    with operation_identity_scope(OperationIdentity.for_actor("sample_admin")):
+        result = lineage_domain.reconcile_lineage_system_events(lineage, "sample_admin")
+        assert current_operation_identity().principal.id == "sample_admin"
     assert len(observed) == 1
     call = observed[0]
-    actor = "sample_admin" if configured_user else "portal"
+    actor = second if change_leader else first
     expected = OperationIdentity.for_actor(actor).to_dict()
     assert call["call"]["instruction"] == "RunScript"
     assert call["caller"] == actor
@@ -55,6 +62,8 @@ def test_publication_reaches_runscript_without_ambient_identity(primitive_store,
     assert call["activation"]["trigger_type"] == "portal.release_published"
     assert call["identity"] == expected
     assert result["event_count"] == 1
-    # A second poll reuses the publication cursor, without launching a second script.
-    assert lineage_domain.reconcile_lineage_system_events(lineage_id, "sample_admin")["event_count"] == 0
+    assert result["events"][0]["event"]["identity"] == expected
+    # A later Leader change does not re-run an accepted publication.
+    ok("UpdateLineage", {"lineage_id": lineage, "changes": {"leader_resident_id": first if change_leader else second}})
+    assert lineage_domain.reconcile_lineage_system_events(lineage, "sample_admin")["event_count"] == 0
     assert len(observed) == 1

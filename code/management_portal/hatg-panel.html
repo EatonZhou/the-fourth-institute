@@ -329,13 +329,8 @@
           <label id="lineageFamilizeField" class="lineageCheckField"><input id="lineageFamilizeInput" type="checkbox" checked /><span><strong><!--portal-i18n:"将 Lineage Familize"-->将 Lineage Familize</strong><small><!--portal-i18n:"建立统一门面；之后新建的成员自动加入。"-->建立统一门面；之后新建的成员自动加入。</small></span></label>
           <label id="lineageLeaderField" hidden><!--portal-i18n:"Leader\n            "-->Leader
             <select id="lineageLeaderInput"></select>
-            <small><!--portal-i18n:"选择负责协调的 Resident；保存设置不会向它发送消息。"-->选择负责协调的 Resident；保存设置不会向它发送消息。</small>
+            <small><!--portal-i18n:"Leader 负责协调，自动运行使用它的身份和权限；保存设置不会向它发送消息。"-->Leader 负责协调，自动运行使用它的身份和权限；保存设置不会向它发送消息。</small>
           </label>
-          <label><span><!--portal-i18n:"自动运行 User（可选）"-->自动运行 User（可选）</span>
-            <select id="lineageRunAsInput" aria-describedby="lineageRunAsHint lineageRunAsCatalogStatus"></select>
-            <small id="lineageRunAsHint"><!--portal-i18n:"User 为可选配置。未指定时自动事件正常触发，Resident 使用自身身份和权限执行；指定后按该 User 的权限执行。"-->User 为可选配置。未指定时自动事件正常触发，Resident 使用自身身份和权限执行；指定后按该 User 的权限执行。</small>
-          </label>
-          <p id="lineageRunAsCatalogStatus" role="status"></p>
           <p id="lineageFormError" role="alert" hidden></p>
           <div class="dangerZone" id="lineageDeleteZone" hidden>
             <div><strong><!--portal-i18n:"删除 Lineage"-->删除 Lineage</strong><span><!--portal-i18n:"Lineage 和成员标记为已删除，停止运行并清理自有工作区；对话与运行轨迹保留。"-->Lineage 和成员标记为已删除，停止运行并清理自有工作区；对话与运行轨迹保留。</span></div>

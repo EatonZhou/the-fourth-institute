@@ -19,8 +19,6 @@ const dom = new JSDOM(html, { url: 'https://portal.test/lineage', runScripts: 'o
 const context = dom.getInternalVMContext();
 const w = dom.window;
 const $ = id => w.document.getElementById(id);
-// The run-as identity the Lineage form will submit.
-const runAsInput = () => JSON.parse($('lineageRunAsInput').value || 'null');
 Object.assign(w, {
   CSS: { escape: String }, console,
   PortalUIPrimitives: { randomUUID, escapeHtml: value => String(value ?? '').replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;') },
@@ -32,21 +30,21 @@ Object.assign(w, {
 vm.runInContext(read('portal_state.js'), context);
 let server = {
   lineage_id: 'lineage_123456789abc', title: 'Schedule', project_id: 'project_test', revision: 4,
-  nodes: [], edges: [], seeds: [], function_blocks: [], owner: 'owner-must-not-be-used', leader_resident_id: 'resident_other',
-  run_as_principal: null,
+  nodes: [{ id: 'resident_other', title: 'Team Leader' }, { id: 'resident_next', title: 'Next Leader' }],
+  edges: [], seeds: [], function_blocks: [], owner: 'owner-must-not-be-used', leader_resident_id: 'resident_other',
+  run_as_principal: { kind: 'user', id: 'legacy-user-must-not-be-used' },
   program: { components: [{ id: 'event_source_123456789abc', kind: 'event_source', title: 'Time', config: { event_type: 'time.reached' } }], wires: [] },
   program_event_source_runtime: { event_source_123456789abc: { state: 'listening', paused: false, exhausted: false } },
 };
 const calls = [];
 let rejection = null;
-let catalogRejection = false;
+let userCatalogReads = 0;
 w.PortalAPI = { get: async url => {
   if (url === '/static/lineage_primitive_definitions.json') return JSON.parse(read('lineage_primitive_definitions.json'));
   throw new Error(`Unexpected read ${url}`);
 } };
 w.PortalLineageCatalogs = {
-  // /api/users is the public id/name/type catalog, not management's username directory.
-  users: async () => { if (catalogRejection) throw new Error('User catalog denied'); return [{ id: 'selected-user', name: 'Chosen User', type: 'human' }, { id: 'other-user', name: 'other-user', type: 'human' }]; },
+  users: async () => { userCatalogReads++; throw new Error('User catalog must not be requested'); },
   residents: async () => ({ residents: [] }), projectCatalog: async () => ({ projects: [{ id: 'project_test', name: 'Test project' }] }),
   agentBackends: async () => ({}), populateBackends() {},
 };
@@ -55,16 +53,17 @@ w.PortalInstructionClient = { execute: async (name, args, controls) => {
   if (rejection && name === 'UpdateLineage') throw rejection;
   if (name === 'GetLineage') {
     const lineage = plain(server);
-    if (lineage.run_as_principal === null) delete lineage.run_as_principal;
     return { lineage };
   }
   if (name === 'GetLineageDiagnostics') return { diagnostics: [] };
   if (name === 'CreateLineage') {
-    server = { ...server, title: args.title, run_as_principal: args.definition.run_as_principal };
+    assert.equal(Object.hasOwn(args, 'run_as_principal'), false);
+    assert.equal(Object.hasOwn(args.definition || {}, 'run_as_principal'), false);
+    server = { ...server, title: args.title };
     return { lineage_id: server.lineage_id };
   }
   if (name === 'UpdateLineage') {
-    assert.equal(controls.expectedVersion, 4, 'the form carries its opening revision');
+    assert.equal(Object.hasOwn(args.changes, 'run_as_principal'), false);
     server = { ...server, ...args.changes, revision: 5, program_event_source_runtime: { event_source_123456789abc: {
       state: 'listening',
     } } };
@@ -93,40 +92,54 @@ api.state.projects = [{ id: 'project_test', name: 'Test project' }];
 api.state.lineages = [];
 api.activateLineageEdits(server.lineage_id);
 const submit = () => api.submitLineageForm({ preventDefault() {}, currentTarget: $('lineageForm') });
-const choose = id => { $('lineageRunAsInput').value = id ? JSON.stringify({ kind: 'user', id }) : ''; };
 
 (async () => {
   await w.PortalLineageProgram.loadPrimitiveDefinitions();
   api.openCreateLineageModal('project_test');
   await tick();
-  assert.equal($('lineageRunAsInput').value, '', 'neither owner nor leader supplies a default');
-  choose('selected-user');
+  assert.equal($('lineageRunAsInput'), null, 'creation has no automatic identity control');
+  assert.equal(userCatalogReads, 0);
+  await api.loadLineageAuxiliaryCatalogs();
+  assert.equal(userCatalogReads, 0, 'page startup also has no User catalog dependency');
+  $('lineageNameInput').value = 'Created without identity';
   $('lineageFamilizeInput').checked = false;
   await submit();
-  assert.deepEqual(calls.find(c => c.name === 'CreateLineage').args.definition, { run_as_principal: { kind: 'user', id: 'selected-user' } });
-  assert.equal(api.state.lineage.run_as_principal.id, 'selected-user', 'creation re-reads the saved identity');
+  const created = calls.find(c => c.name === 'CreateLineage');
+  assert.equal(created.args.title, 'Created without identity');
+  assert.equal(created.args.familize, false);
+  assert.equal(created.args.definition, undefined);
+  assert.equal(api.state.lineage.title, created.args.title, 'creation re-reads the saved graph');
+
+  api.openCreateLineageModal('project_test');
+  assert.equal($('lineageFamilizeInput').checked, true);
+  await submit();
+  assert.equal(calls.filter(c => c.name === 'CreateLineage').at(-1).args.familize, true);
 
   api.openEditLineageModal();
   await tick();
-  assert.equal(runAsInput().id, 'selected-user');
-  choose(null);
+  assert.equal($('lineageLeaderInput').value, 'resident_other');
+  $('lineageLeaderInput').value = 'resident_next';
   await submit();
-  assert.equal(calls.find(c => c.name === 'UpdateLineage').args.changes.run_as_principal, null, 'clear is explicit, not omitted');
-  assert.equal(api.state.lineage.run_as_principal, null);
-  assert.equal(api.programEventSourceStatus('event_source_123456789abc').state, 'listening', 'clearing optional User keeps the timer runnable');
-  assert.match($('lineageRunAsInput').querySelector('option[value=""]').textContent, /Resident 使用自身权限/);
+  const saved = calls.find(c => c.name === 'UpdateLineage');
+  assert.equal(saved.args.changes.leader_resident_id, 'resident_next');
+  assert.equal(saved.controls.expectedVersion, 4, 'the form carries its opening revision');
+  assert.equal(api.state.lineage.leader_resident_id, 'resident_next');
+  assert.equal(userCatalogReads, 0, 'editing a legacy definition does not fetch its User');
+  await w.PortalSocietyService.createClient().updateMetadata({
+    lineage_id: server.lineage_id, title: 'Metadata only', run_as_principal: { kind: 'user', id: 'stale-client-value' },
+  });
+  assert.equal(Object.hasOwn(calls.filter(c => c.name === 'UpdateLineage').at(-1).args.changes, 'run_as_principal'), false);
 
   // Permission rejection retains user draft and the server error in the open form.
   api.openEditLineageModal();
   await tick();
-  choose('other-user');
-  rejection = Object.assign(new Error('Cannot act as selected User'), { code: 'instruction.forbidden' });
+  $('lineageNameInput').value = 'Unsaved name';
+  rejection = Object.assign(new Error('Cannot edit Lineage'), { code: 'instruction.forbidden' });
   await submit();
   assert.equal($('lineageModal').hidden, false);
-  assert.equal(runAsInput().id, 'other-user');
+  assert.equal($('lineageNameInput').value, 'Unsaved name');
   assert.equal($('lineageFormError').hidden, false);
-  assert.match($('lineageFormError').textContent, /Cannot act as/);
-  assert.equal(api.state.lineage.run_as_principal, null);
+  assert.match($('lineageFormError').textContent, /Cannot edit Lineage/);
 
   // Updating the live graph must not upgrade the version attached to an old draft.
   const openingRevision = $('lineageForm').dataset.revision;
@@ -142,30 +155,27 @@ const choose = id => { $('lineageRunAsInput').value = id ? JSON.stringify({ kind
   assert.equal(api.state.lineage.revision, server.revision, 'formal version conflict refreshes the graph');
   rejection = null;
 
-  // A missing catalog entry cannot silently clear an existing explicit identity.
-  api.state.lineage.run_as_principal = { kind: 'user', id: 'no-longer-listed' };
-  catalogRejection = true;
-  api.openEditLineageModal();
-  await tick();
-  assert.equal(runAsInput().id, 'no-longer-listed');
-  assert.match($('lineageRunAsCatalogStatus').textContent, /User catalog denied/);
-  catalogRejection = false;
-
-  api.state.lineage = plain({ ...server, revision: 4, run_as_principal: null });
+  api.state.lineage = plain({ ...server, revision: 4 });
   api.state.selectedProgramObjectId = 'event_source_123456789abc';
   api.renderProgramInspector();
   const panel = $('programInspectorPanel');
   assert.match(panel.querySelector('[data-event-listening-status]').textContent, /监听中/);
-  assert.match(panel.querySelector('[data-event-run-as-note]').textContent, /Resident 使用自身身份和权限/);
-  assert.equal(panel.querySelector('[data-event-run-as]').hidden, false);
-  panel.querySelector('[data-event-run-as-settings]').click();
+  assert.match(panel.querySelector('[data-event-leader-note]').textContent, /Leader.*resident_next/);
+  assert.equal(panel.querySelector('[data-event-leader-note]').textContent.includes('legacy-user'), false);
+  assert.equal(panel.querySelector('[data-event-leader]').hidden, false);
+  panel.querySelector('[data-event-leader-settings]').click();
   await tick();
   assert.equal($('lineageModal').hidden, false, 'Time guidance opens actual settings');
-  assert.equal(w.document.activeElement.id, 'lineageRunAsInput');
-  choose('selected-user');
+  assert.equal(w.document.activeElement.id, 'lineageLeaderInput');
+  $('lineageLeaderInput').value = 'resident_other';
   await submit();
   assert.match(panel.querySelector('[data-event-listening-status]').textContent, /监听中/);
-  assert.match(panel.querySelector('[data-event-run-as-note]').textContent, /selected-user/);
+  assert.match(panel.querySelector('[data-event-leader-note]').textContent, /resident_other/);
+  api.state.lineage.leader_resident_id = '';
+  api.syncProgramComponentSwitch(panel, api.state.lineage.program.components[0]);
+  assert.match(panel.querySelector('[data-event-leader-note]').textContent, /设置 Leader/);
+  assert.equal(panel.querySelector('[data-event-leader-note]').textContent.includes('owner-must-not-be-used'), false);
+  assert.equal(userCatalogReads, 0);
 
   for (const [runtime, label] of [
     [{ state: 'blocked', error: 'Access revoked' }, '自动触发受阻'],
@@ -221,6 +231,6 @@ const choose = id => { $('lineageRunAsInput').value = id ? JSON.stringify({ kind
   }
   renderSources([{ ...pendingSource, event_type: 'file.changed', config: { path: '/workspace/input' } }]);
   assert.equal(host.textContent.includes('等待调度生成计划'), false, 'file listeners do not wait for a Time plan');
-  console.log('PASS: explicit identity create/read/clear, permission and CAS errors, catalog preservation, Time settings and blocked/paused/exhausted/Home plan rendering');
+  console.log('PASS: creation/settings omit run-as and User reads; legacy identity ignored; Leader guidance/navigation; permission/CAS drafts and runtime/Home states');
   dom.window.close();
 })().catch(error => { dom.window.close(); console.error(error); process.exitCode = 1; });

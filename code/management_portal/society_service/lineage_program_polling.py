@@ -222,7 +222,7 @@ def reconcile_system_events_as_service(
     *,
     ports: ProgramPollingPorts,
 ) -> dict[str, Any]:
-    """Reconcile observations with the Lineage's optional User identity."""
+    """Reconcile observations with the Lineage's current Leader identity."""
 
     clean_id = str(lineage_id or "").strip()
     lineage, status = _runtime_lineage(clean_id, ports=ports)

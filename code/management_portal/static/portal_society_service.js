@@ -104,7 +104,7 @@
       updateMetadata(payload = {}) {
         const lineageId = requiredLineageId(payload.lineage_id);
         const changes = pick(payload, [
-          "title", "description", "project_id", "leader_resident_id", "run_as_principal",
+          "title", "description", "project_id", "leader_resident_id",
         ]);
         return mutate(lineageId, "UpdateLineage", { lineage_id: lineageId, changes }, payload, "lineage-update");
       },

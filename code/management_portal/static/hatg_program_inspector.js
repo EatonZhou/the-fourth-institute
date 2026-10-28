@@ -18,7 +18,7 @@
     "programResourceAddressHtml", "publishLocation", "refreshFunctionBlockMenu",
     "renderControls", "renderGraph", "renderLineageSurface", "seedById",
     "selectProgramComponent", "setBusy", "setSyncStatus", "societyService", "state",
-    "syncProgramComponentSwitch", "syncProgramRunAsGuidance", "toast", "toggleProgramComponent",
+    "syncProgramComponentSwitch", "syncProgramLeaderGuidance", "toast", "toggleProgramComponent",
   ]);
 
   function canonicalProgramResidentId(value) {
@@ -152,7 +152,7 @@
       programExecutionExplanationHtml, programFeature, programResourceAddressHtml,
       publishLocation, refreshFunctionBlockMenu, renderControls, renderGraph,
       renderLineageSurface, seedById, selectProgramComponent, setBusy, setSyncStatus,
-      societyService, state, syncProgramComponentSwitch, syncProgramRunAsGuidance, toast,
+      societyService, state, syncProgramComponentSwitch, syncProgramLeaderGuidance, toast,
       toggleProgramComponent,
     } = dependencies;
 
@@ -903,7 +903,7 @@
     }
 
     function syncProgramEventInspectorFields(panel) {
-      syncProgramRunAsGuidance(panel);
+      syncProgramLeaderGuidance(panel);
       const eventType = panel?.querySelector('[name="event_type"]')?.value
         || programPrimitiveDefaultType("event");
       const deliverySubjectKind = panel?.querySelector('[name="delivery_subject_kind"]')?.value || "event_source";
@@ -1144,9 +1144,9 @@
           ${programResourceAddressHtml("component", component.id)}
           <label><span>名称</span><input name="title" maxlength="120" value="${esc(component.title || "")}" required${readonly ? " disabled" : ""}></label>
           ${programPrimitiveInspectorHtml(component, "event", eventType, config, readonly)}
-          <section class="programInspectorNote" data-event-run-as>
-            <p data-event-run-as-note></p>
-            <button type="button" data-event-run-as-settings${readonly ? " disabled" : ""}>设置自动运行 User</button>
+          <section class="programInspectorNote" data-event-leader>
+            <p data-event-leader-note></p>
+            <button type="button" data-event-leader-settings${readonly ? " disabled" : ""}>设置 Leader</button>
           </section>
           ${exhaustionNote}
           ${programExecutionExplanationHtml(component.id)}
@@ -1176,9 +1176,9 @@
           },
         );
         syncProgramEventInspectorFields(panel);
-        panel.querySelector("[data-event-run-as-settings]")?.addEventListener("click", () => {
+        panel.querySelector("[data-event-leader-settings]")?.addEventListener("click", () => {
           openEditLineageModal();
-          $id("lineageRunAsInput").focus();
+          $id("lineageLeaderInput").focus();
         });
         if (!hasCanonicalConfig) {
           const emit = panel.querySelector("[data-program-emit]");

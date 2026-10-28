@@ -270,8 +270,6 @@ def test_unsent_notice_is_durable_but_withdrawn_after_task_recovers(team):
 
 def test_generated_supervision_graph_compiles_and_uses_own_family_context(team):
     """Family 监督图可编译且内部通知使用本 Family 门面"""
-    ok("UpdateLineage", {"lineage_id": team.lineage,
-                         "changes": {"run_as_principal": {"kind": "user", "id": "sample_admin"}}})
     diagnostics = ok("GetLineageDiagnostics", {"lineage_id": team.lineage})["diagnostics"]
     assert not [d for d in diagnostics if d["level"] == "error"]
     view = graph(team.lineage)

@@ -31,7 +31,6 @@ def _watched_by_two(event_type: str, config: dict | None = None) -> dict:
     return lineage_domain.create_lineage(
         {
             "title": "Watch several Residents",
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "nodes": [_worker(WORK_A), _worker(WORK_B), _worker(WORK_C)],
             "program": {
                 "components": [

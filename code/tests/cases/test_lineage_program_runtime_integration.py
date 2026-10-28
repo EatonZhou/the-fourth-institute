@@ -388,7 +388,7 @@ def test_queued_route_deliveries_share_the_message_budget(runtime_store: Path, m
     monkeypatch.setattr(lineage_test_support, "NODE_MESSAGE_SENDER", send)
     monkeypatch.setattr(lineage_test_support, "RESIDENT_MESSAGE_EVIDENCE_RESOLVER", lambda resident, message, actor: {"reply": message})
     lineage = lineage_test_support.create_lineage_with_resident_members({
-        "title": "Queued delivery budget", "run_as_principal": {"kind": "user", "id": ACTOR},
+        "title": "Queued delivery budget",
         "nodes": [_worker(PRODUCER_A), _worker(WORK_A)],
         "program": {"components": [], "wires": [
             _wire("wire_queued_limit", "route", PRODUCER_A, WORK_A,
@@ -428,12 +428,11 @@ def test_terminal_fact_reaches_observer_in_another_lineage(
         ),
     )
     source = lineage_test_support.create_lineage_with_resident_members(
-        {"run_as_principal": {"kind": "user", "id": ACTOR}, "title": "Source Lineage", "nodes": [_worker(WORK_A)]},
+        { "title": "Source Lineage", "nodes": [_worker(WORK_A)]},
         ACTOR,
     )
     observer = lineage_test_support.create_lineage_with_resident_members(
         {
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "title": "External observer Lineage",
             "nodes": [_worker(WORK_B)],
             "program": {
@@ -505,12 +504,11 @@ def test_effect_executes_against_external_residents_owned_lineage(
         ),
     )
     lineage_test_support.create_lineage_with_resident_members(
-        {"run_as_principal": {"kind": "user", "id": ACTOR}, "title": "Effect target Lineage", "nodes": [_worker(WORK_B)]},
+        { "title": "Effect target Lineage", "nodes": [_worker(WORK_B)]},
         ACTOR,
     )
     authoring = lineage_test_support.create_lineage_with_resident_members(
         {
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "title": "Effect authoring Lineage",
             "nodes": [_worker(WORK_A)],
             "program": {
@@ -613,7 +611,6 @@ def test_resident_invoke_and_effect_share_isa_delivery_and_durable_path(runtime_
         components.append(_deliver("effect_delivery"))
         wires.append(_wire("wire_target", "target", "effect_delivery", WORK_B))
     lineage = lineage_test_support.create_lineage_with_resident_members({
-        "run_as_principal": {"kind": "user", "id": ACTOR},
         "title": "Canonical Resident delivery", "nodes": [_worker(WORK_B)],
         "program": {"components": components, "wires": wires},
     }, ACTOR)
@@ -680,7 +677,6 @@ def test_send_prompt_accepts_canonical_resident_delivery_acknowledgement_contrac
 def _fixed_work_finished_program() -> dict:
     return lineage_test_support.create_lineage_with_resident_members(
         {
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "title": "Work-finished source contract",
             "nodes": [
                 _producer(PRODUCER_A, "Continue under the matched contract."),
@@ -733,7 +729,6 @@ def _direct_work_finished_program(
 ) -> dict:
     return lineage_test_support.create_lineage_with_resident_members(
         {
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "title": "Durable work-finished delivery",
             "nodes": [_worker(WORK_A), _worker(WORK_B)],
             "program": {
@@ -1006,7 +1001,6 @@ def test_completion_starts_a_new_path_and_does_not_wait_for_descendant_execution
     )
     created = lineage_test_support.create_lineage_with_resident_members(
         {
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "title": "Ordinary Agent Packet run",
             "nodes": [_worker(WORK_A), _worker(WORK_B)],
             "program": {
@@ -1123,7 +1117,6 @@ def test_packet_to_agent_uses_invoke_queue_and_route_envelope_policy(
     )
     created = lineage_test_support.create_lineage_with_resident_members(
         {
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "title": "Packet direct Invoke queue",
             "nodes": [
                 _producer(PRODUCER_A, "Apply the exact queued packet."),
@@ -1224,7 +1217,6 @@ def test_backlog_consumes_pending_event_with_existing_resident_invocation(
     )
     created = lineage_test_support.create_lineage_with_resident_members(
         {
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "title": "Recover delivered packet pending",
             "nodes": [_producer(PRODUCER_A, "Apply once."), _worker(WORK_A)],
             "program": {
@@ -1297,7 +1289,6 @@ def test_selector_route_preserves_origin_role_in_agent_envelope(
     )
     created = lineage_test_support.create_lineage_with_resident_members(
         {
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "title": "Selector preserves Packet producer",
             "nodes": [
                 _producer(PRODUCER_A, "ROUTE_ALPHA"),
@@ -1428,7 +1419,6 @@ def test_packet_to_reducer_honors_invoke_edge_envelope_policy(
     )
     created = lineage_test_support.create_lineage_with_resident_members(
         {
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "title": "Packet Reducer Invoke envelope",
             "nodes": [
                 _producer(PRODUCER_A, "One exact packet."),
@@ -1512,7 +1502,6 @@ def test_reconcile_recovers_exact_program_reducer_job_once(
     )
     created = lineage_test_support.create_lineage_with_resident_members(
         {
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "title": "Program reducer restart recovery",
             "nodes": [
                 _producer(PRODUCER_A, "Critique."),
@@ -1673,7 +1662,6 @@ def test_reconcile_recovers_ordinary_program_resident_terminal_once(
     )
     created = lineage_test_support.create_lineage_with_resident_members(
         {
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "title": f"Program Resident {terminal_status} recovery",
             "nodes": [_worker(WORK_A)],
             "program": {
@@ -1780,7 +1768,6 @@ def test_reconcile_baselines_program_subject_then_recovers_next_completion_once(
     )
     created = lineage_test_support.create_lineage_with_resident_members(
         {
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "title": "Program-only source recovery",
             "nodes": [
                 _worker(WORK_A),
@@ -1879,7 +1866,6 @@ def test_connecting_completion_wire_baselines_before_reconciler_can_replay(
     )
     created = lineage_test_support.create_lineage_with_resident_members(
         {
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "title": "Atomic completion subscription",
             "nodes": [_worker(WORK_A), _worker(WORK_B)],
             "program": {
@@ -2000,7 +1986,6 @@ def test_default_drop_discards_event_for_busy_ordinary_resident(
     )
     created = lineage_test_support.create_lineage_with_resident_members(
         {
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "title": "Default drop for busy Resident",
             "nodes": [_worker(WORK_A)],
             "program": {
@@ -2071,7 +2056,6 @@ def test_pending_delivery_commands_edit_delete_and_deliver_independently(
         "invoke_profiles": {profile: {"arguments": {"prompt": {"value": "DEFAULT"}}}},
     }))
     created = lineage_test_support.create_lineage_with_resident_members({
-        "run_as_principal": {"kind": "user", "id": ACTOR},
         "title": "Pending Invocation controls", "nodes": [_worker(WORK_A)],
         "program": {"components": components, "wires": wires},
     }, ACTOR)
@@ -2140,7 +2124,6 @@ def test_a_waiting_event_goes_when_the_target_turn_fails(
     monkeypatch.setattr(lineage_test_support, "NODE_MESSAGE_SENDER", send)
     created = lineage_test_support.create_lineage_with_resident_members(
         {
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "title": "Event waits for a failing Resident",
             "nodes": [_worker(WORK_A)],
             "program": {
@@ -2187,7 +2170,6 @@ def test_latest_wire_delivers_only_newest_event_when_worker_becomes_idle(
     monkeypatch.setattr(lineage_test_support, "NODE_MESSAGE_SENDER", send)
     created = lineage_test_support.create_lineage_with_resident_members(
         {
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "title": "Latest event wire",
             "nodes": [_worker(WORK_A)],
             "program": {
@@ -2381,7 +2363,6 @@ def test_file_and_time_program_sources_reconcile_without_replay(
     monkeypatch.setattr(lineage_test_support, "NODE_MESSAGE_SENDER", send)
     created = lineage_test_support.create_lineage_with_resident_members(
         {
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "title": "Program file event",
             "nodes": [
                 _worker(WORK_A),
@@ -2490,7 +2471,6 @@ def test_file_and_time_program_sources_reconcile_without_replay(
     time_target = "resident_123456abcdef"
     due = lineage_test_support.create_lineage_with_resident_members(
         {
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "title": "Program time event",
             "nodes": [
                 _worker(time_target),
@@ -2586,7 +2566,6 @@ def test_countdown_timer_is_reconciled_when_due_by_runtime_repair(
     )
     created = lineage_test_support.create_lineage_with_resident_members(
         {
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "title": "Countdown runtime repair",
             "nodes": [_worker(WORK_A)],
             "program": {
@@ -2664,7 +2643,6 @@ def test_recurring_schedule_recovers_pending_after_restart_and_reconcile_is_idem
     )
     created = lineage_test_support.create_lineage_with_resident_members(
         {
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "title": "Recurring restart recovery",
             "nodes": [_worker(WORK_A)],
             "program": {
@@ -2759,7 +2737,6 @@ def test_recurring_jitter_due_time_survives_reconcile_and_runtime_reload(
     )
     created = lineage_test_support.create_lineage_with_resident_members(
         {
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "title": "Recurring jitter persistence",
             "nodes": [_worker(WORK_A)],
             "program": {
@@ -2825,7 +2802,7 @@ def test_created_recurring_jitter_survives_store_restart_and_revision_change(
 
     monkeypatch.setattr(lineage_program_runtime, "datetime", Clock)
     lineage_id = lineage_test_support.create_lineage_with_resident_members(
-        {"run_as_principal": {"kind": "user", "id": ACTOR}, "title": "Recurring jitter revision fence"}, ACTOR
+        {"nodes": [_worker(WORK_A)], "title": "Recurring jitter revision fence"}, ACTOR
     )["lineage_id"]
     draws = iter([7, 4, 2])
     monkeypatch.setattr(
@@ -2942,7 +2919,6 @@ def test_recurring_pause_preserves_due_cursor_and_resume_skips_the_paused_window
     )
     created = lineage_test_support.create_lineage_with_resident_members(
         {
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "title": "Recurring pause and resume",
             "nodes": [_worker(WORK_A)],
             "program": {
@@ -3034,7 +3010,7 @@ def test_recurring_jitter_coalesces_once_and_fences_old_generation(
             return cls.current if tz is None else cls.current.astimezone(tz)
 
     monkeypatch.setattr(lineage_program_runtime, "datetime", Clock)
-    lineage_id = lineage_test_support.create_lineage_with_resident_members({"run_as_principal": {"kind": "user", "id": ACTOR}, "title": "Recurring jitter coalescing"}, ACTOR)["lineage_id"]
+    lineage_id = lineage_test_support.create_lineage_with_resident_members({"nodes": [_worker(WORK_A)], "title": "Recurring jitter coalescing"}, ACTOR)["lineage_id"]
     draws = iter([0, 10, 2, 3])
     monkeypatch.setattr(lineage_recurring_schedule.secrets, "randbelow", lambda upper: next(draws))
     config = {
@@ -3082,7 +3058,7 @@ def test_recurring_jitter_skip_keeps_latest_occurrence_until_its_due_time(
             return cls.current if tz is None else cls.current.astimezone(tz)
 
     monkeypatch.setattr(lineage_program_runtime, "datetime", Clock)
-    lineage_id = lineage_test_support.create_lineage_with_resident_members({"run_as_principal": {"kind": "user", "id": ACTOR}, "title": "Recurring jitter skip"}, ACTOR)["lineage_id"]
+    lineage_id = lineage_test_support.create_lineage_with_resident_members({"nodes": [_worker(WORK_A)], "title": "Recurring jitter skip"}, ACTOR)["lineage_id"]
     draws = iter([0, 10, 3])
     monkeypatch.setattr(lineage_recurring_schedule.secrets, "randbelow", lambda upper: next(draws))
     config = {
@@ -3128,7 +3104,6 @@ def test_recurring_schedule_coalesces_misfires_with_payload_metadata(
     )
     created = lineage_test_support.create_lineage_with_resident_members(
         {
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "title": "Recurring misfire coalescing",
             "nodes": [_worker(WORK_A)],
             "program": {
@@ -3202,7 +3177,6 @@ def test_recurring_overlap_is_bounded_while_target_is_busy(
     )
     created = lineage_test_support.create_lineage_with_resident_members(
         {
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "title": f"Recurring overlap {overlap_policy}",
             "nodes": [_worker(WORK_A)],
             "program": {
@@ -3259,7 +3233,7 @@ def test_recurring_generation_fences_pending_occurrence_on_config_change(
 
     monkeypatch.setattr(lineage_program_runtime, "datetime", Clock)
     lineage_id = lineage_test_support.create_lineage_with_resident_members(
-        {"run_as_principal": {"kind": "user", "id": ACTOR}, "title": "Recurring generation"},
+        {"nodes": [_worker(WORK_A)], "title": "Recurring generation"},
         ACTOR,
     )["lineage_id"]
     first_config = {
@@ -3322,7 +3296,6 @@ def test_recurring_config_change_fences_old_generation_wire_backlog(
     )
     created = lineage_test_support.create_lineage_with_resident_members(
         {
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "title": "Recurring generation backlog fence",
             "nodes": [_worker(WORK_A)],
             "program": {
@@ -3402,7 +3375,7 @@ def test_recurring_skip_misfire_advances_without_replaying_old_windows(
 
     monkeypatch.setattr(lineage_program_runtime, "datetime", Clock)
     lineage_id = lineage_test_support.create_lineage_with_resident_members(
-        {"run_as_principal": {"kind": "user", "id": ACTOR}, "title": "Recurring skip"},
+        {"nodes": [_worker(WORK_A)], "title": "Recurring skip"},
         ACTOR,
     )["lineage_id"]
     config = {
@@ -3460,7 +3433,6 @@ def test_recurring_max_fires_advances_schedule_and_reset_only_restores_budget(
     )
     created = lineage_test_support.create_lineage_with_resident_members(
         {
-            "run_as_principal": {"kind": "user", "id": ACTOR},
             "title": "Recurring fire budget",
             "nodes": [_worker(WORK_A)],
             "program": {
@@ -3531,7 +3503,6 @@ def test_one_shot_time_source_reports_its_pending_time_until_it_fires(runtime_st
     """一次性时间源触发前展示待执行时间且触发后清空"""
     monkeypatch.setattr(lineage_test_support, "NODE_MESSAGE_SENDER", lambda node, prompt, actor: {"message_id": "job_at"})
     created = lineage_test_support.create_lineage_with_resident_members({
-        "run_as_principal": {"kind": "user", "id": ACTOR},
         "title": "One-shot time", "nodes": [_worker(WORK_A)],
         "program": {
             "components": [_component("event_source_oneshot", "event_source", event_type="time.reached",

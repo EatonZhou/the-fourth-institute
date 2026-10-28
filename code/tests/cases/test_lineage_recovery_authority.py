@@ -71,7 +71,7 @@ def test_component_edit_finishes_while_recovery_waits_for_resident_evidence(runt
     """恢复等待 Resident 输入证据期间，组件编辑不被阻塞即可完成"""
     monkeypatch.setattr(support, "NODE_MESSAGE_SENDER", lambda *_: {"message_id": "msg_slow_recovery"})
     graph = support.create_lineage_with_resident_members({
-        "title": "Recovery admission", "run_as_principal": {"kind": "user", "id": ACTOR},
+        "title": "Recovery admission",
         "nodes": [_worker(WORK_A)],
         "program": {
             "components": [_component("event_source_manual", "event_source", event_type="manual.triggered")],

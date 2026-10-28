@@ -37,7 +37,7 @@ const report = {scope:'Native HATG template, program/primitive Inspector, manife
         normalizeOptionalLimit:PortalLineageProgram.normalizeOptionalLimit,
         programComponentSwitchHtml:()=>'',programResourceAddressHtml:()=>'',programExecutionExplanationHtml:()=>'',
         programEventSourceRuntime:()=>({}),programEventSourceStatus:()=>({label:'等待',reason:''}),
-        syncProgramRunAsGuidance:()=>{},manualProgramEventKey:id=>id,setBusy:(n,b)=>{n.disabled=b;},
+        syncProgramLeaderGuidance:()=>{},manualProgramEventKey:id=>id,setBusy:(n,b)=>{n.disabled=b;},
       });
       const inspector=module.createProgramInspector(deps);
       window.renderLocalInspector=()=>{

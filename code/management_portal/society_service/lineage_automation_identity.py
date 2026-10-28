@@ -1,16 +1,13 @@
-"""Optional User authority for unattended Lineage work.
+"""Resolve unattended Lineage work from its current Leader binding.
 
-The definition stores an identity, never a credential snapshot. Configuration
-uses the editor's current authority; execution resolves a configured User anew.
-Without one, Portal observes the graph and each Resident uses its own authority.
+This chooses the actor, not its permissions. Accepted Events retain their own
+stored identity; this resolver is only for new unattended work.
 """
 from __future__ import annotations
 
 from collections.abc import Mapping
 
-from management_common.principal import Principal, actor_principal
-from management_portal import permission_system
-from management_portal.portal_access_control import get_portal_access_store
+from .identity_contract import is_valid_id
 
 
 # These observations create new activations; derived events retain their
@@ -25,65 +22,27 @@ AUTOMATIC_EVENT_TYPES = {
 }
 
 
-def normalize(value: object) -> dict[str, str] | None:
-    if value is None:
-        return None
-    if not isinstance(value, Mapping):
-        raise ValueError("run_as_principal must be a User principal object or null")
-    principal = Principal.from_dict(value)
-    if principal.kind != "user":
-        raise ValueError("run_as_principal requires a User")
-    return principal.to_dict()
-
-
-def _require_active(principal: Mapping[str, str]) -> str:
-    identifier = principal["id"]
-    access = get_portal_access_store()
-    if not access.is_configured(identifier) or not access.is_active(identifier):
-        raise PermissionError(f"run_as_principal User is unavailable or inactive: {identifier}")
-    return identifier
-
-
-def requested(payload: Mapping, previous: Mapping, actor: str) -> dict[str, str] | None:
-    """Validate a definition edit; ordinary edits preserve a disabled identity.
-
-    Setting a different User requires that UpdateUser would pass on that
-    User, judged on the editor's own permissions. Owner/creator metadata and operation
-    attribution cannot authorize impersonation.
-    """
-    before = normalize(previous.get("run_as_principal"))
-    if "run_as_principal" not in payload:
-        return before
-    after = normalize(payload["run_as_principal"])
-    if after == before or after is None:
-        return after
-    editor = actor_principal(actor)
-    target = Principal.from_dict(after)
-    if editor != target and not permission_system.permitted_ids(editor.id, "UpdateUser", "user_id", [target.id]):
-        raise PermissionError("Setting another User as run_as_principal requires permission for UpdateUser on that User")
-    _require_active(after)
-    return after
-
 
 class AutomationConfigurationError(PermissionError):
-    """Configuration must change before unattended activation can succeed."""
+    """The graph needs a valid Leader before new unattended work can start."""
 
 
 def runtime_actor(lineage: Mapping) -> str:
-    """Resolve explicit live authority, independently of ambient turn identity."""
-    try:
-        principal = normalize(lineage.get("run_as_principal"))
-        if principal is None:
-            return "portal"
-        return _require_active(principal)
-    except (PermissionError, ValueError) as exc:
-        raise AutomationConfigurationError(str(exc)) from exc
+    """Use the graph's Leader (the facade for a Lineage-wide Family)."""
+    leader = str(lineage.get("leader_resident_id") or "").strip()
+    if not leader:
+        raise AutomationConfigurationError("Lineage 尚无 Leader；加入 Resident 后自动运行才能开始")
+    members = {str(node.get("id") or "") for node in lineage.get("nodes") or []
+               if isinstance(node, Mapping)}
+    if not is_valid_id(leader, "resident") or leader not in members:
+        raise AutomationConfigurationError("Lineage Leader 必须是当前图中的有效 Resident")
+    return leader
 
 
 def readiness_error(lineage: Mapping) -> str:
-    """Explain the same live authority check used by polling, without mutation."""
+    """Explain the same Leader check used by polling, without mutation."""
     try:
         runtime_actor(lineage)
-    except (PermissionError, ValueError) as exc:
+    except AutomationConfigurationError as exc:
         return str(exc)
     return ""

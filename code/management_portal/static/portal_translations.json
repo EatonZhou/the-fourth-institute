@@ -36167,9 +36167,9 @@
     "en": "Choose the original request, then send continue with the quote.",
     "zh-CN": "选择要恢复的原请求，引用后发送 continue。"
   },
-  "选择负责协调的 Resident；保存设置不会向它发送消息。": {
-    "en": "Select the Resident responsible for coordination; saving settings will not send it a message.",
-    "zh-CN": "选择负责协调的 Resident；保存设置不会向它发送消息。"
+  "Leader 负责协调，自动运行使用它的身份和权限；保存设置不会向它发送消息。": {
+    "en": "The Leader coordinates the Lineage. Automatic execution uses its identity and permissions; saving settings does not send it a message.",
+    "zh-CN": "Leader 负责协调，自动运行使用它的身份和权限；保存设置不会向它发送消息。"
   },
   "选择转发": {
     "en": "Select forward",
@@ -39067,10 +39067,6 @@
     "en": "Resident semantic search",
     "zh-CN": "Resident 语义搜索"
   },
-  "User 为可选配置。未指定时自动事件正常触发，Resident 使用自身身份和权限执行；指定后按该 User 的权限执行。": {
-    "en": "A run-as user is optional. Without one, automatic events run with the Resident's own identity and permissions. If specified, they run with that user's permissions.",
-    "zh-CN": "User 为可选配置。未指定时自动事件正常触发，Resident 使用自身身份和权限执行；指定后按该 User 的权限执行。"
-  },
   "Workspace 名称": {
     "en": "Workspace name",
     "zh-CN": "Workspace 名称"
@@ -39535,13 +39531,9 @@
     "en": "Not ready: navigation initialization",
     "zh-CN": "未完成：导航初始化"
   },
-  "未指定 User。时间事件可正常自动触发，Resident 使用自身身份和权限执行。": {
-    "en": "No User specified. Time events can still trigger automatically; Residents run with their own identity and permissions.",
-    "zh-CN": "未指定 User。时间事件可正常自动触发，Resident 使用自身身份和权限执行。"
-  },
-  "未指定（Resident 使用自身权限）": {
-    "en": "Not specified (Residents use their own permissions)",
-    "zh-CN": "未指定（Resident 使用自身权限）"
+  "尚未设置 Leader，请先在 Lineage 设置中设置 Leader，再启用自动运行。": {
+    "en": "No Leader is set. Set a Leader in Lineage settings before enabling automatic execution.",
+    "zh-CN": "尚未设置 Leader，请先在 Lineage 设置中设置 Leader，再启用自动运行。"
   },
   "本机缺少：{p0}。安装会下载模型并安装 Python 包，完成后自动开启。": {
     "en": "This device is missing: {p0}. Installation will download models and install Python packages, then enable semantic search.",
@@ -39663,10 +39655,6 @@
     "en": "Message body",
     "zh-CN": "消息正文"
   },
-  "用户目录读取失败：{p0}。已保留当前选择；重新打开设置可重试。": {
-    "en": "Unable to read the user directory: {p0}. Your selection is retained; reopen settings to retry.",
-    "zh-CN": "用户目录读取失败：{p0}。已保留当前选择；重新打开设置可重试。"
-  },
   "目录没有变化。": {
     "en": "The directories have not changed.",
     "zh-CN": "目录没有变化。"
@@ -39735,13 +39723,9 @@
     "en": "Automatic recovery attempts are exhausted. Please retry manually.",
     "zh-CN": "自动恢复次数已用完，请手动重试。"
   },
-  "自动运行 User（可选）": {
-    "en": "Run-as user (optional)",
-    "zh-CN": "自动运行 User（可选）"
-  },
-  "自动运行 User：{p0}。时间事件以此 User 的身份和权限执行。": {
-    "en": "Automatic execution User: {p0}. Time events run with this User's identity and permissions.",
-    "zh-CN": "自动运行 User：{p0}。时间事件以此 User 的身份和权限执行。"
+  "自动运行使用 Leader（{p0}）的身份和权限。": {
+    "en": "Automatic execution uses the Leader's identity and permissions ({p0}).",
+    "zh-CN": "自动运行使用 Leader（{p0}）的身份和权限。"
   },
   "草稿尚未保存，请核对后点击保存，再继续连线。": {
     "en": "The draft is not saved. Review it and click Save before continuing to connect nodes.",
@@ -39771,9 +39755,9 @@
     "en": "Discussion subject",
     "zh-CN": "讨论对象"
   },
-  "设置自动运行 User": {
-    "en": "Set automatic execution User",
-    "zh-CN": "设置自动运行 User"
+  "设置 Leader": {
+    "en": "Set Leader",
+    "zh-CN": "设置 Leader"
   },
   "该 Provider 暂无可用账号。": {
     "en": "No accounts are available for this Provider.",
