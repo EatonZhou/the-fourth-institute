@@ -581,6 +581,7 @@ CREATE TABLE lineage.families (
     personal_ama_id text DEFAULT ''::text NOT NULL,
     history_before text DEFAULT ''::text NOT NULL,
     history_before_ordinal bigint DEFAULT 0 NOT NULL,
+    auto_migrate boolean DEFAULT true NOT NULL,
     CONSTRAINT families_resource_id_check CHECK ((resource_id ~ '^family_[0-9a-f]{12}$'::text))
 );
 
@@ -10614,7 +10615,7 @@ INSERT INTO "lineage"."lineage_layout_positions" ("lineage_id","object_id","x","
 
 
 
-INSERT INTO "lineage"."lineage_meta" ("key","value") VALUES ('schema','tfi.lineage-data.v60');
+INSERT INTO "lineage"."lineage_meta" ("key","value") VALUES ('schema','tfi.lineage-data.v62');
 
 INSERT INTO "lineage"."lineage_node_references" ("lineage_id","node_id") VALUES ('lineage_0e350f5b5c3d','resident_03eb8a8bda0b');
 
@@ -19663,4 +19664,15 @@ ALTER TABLE ONLY workbenches.versions
 --
 -- PostgreSQL database dump complete
 --
+
+--
+-- Name: family_task_dispatches; Type: TABLE; Schema: lineage; Owner: -
+--
+
+CREATE TABLE lineage.family_task_dispatches (
+    lineage_id text NOT NULL REFERENCES lineage.lineages(lineage_id),
+    message_id text NOT NULL,
+    intent_json jsonb NOT NULL,
+    PRIMARY KEY (lineage_id, message_id)
+);
 

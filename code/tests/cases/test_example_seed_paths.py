@@ -20,6 +20,39 @@ from prepare_install import inventory
 
 
 class ExamplePaths(unittest.TestCase):
+    def test_public_seed_bootstraps_current_lineage_schema(self):
+        """Both installer choices must satisfy Society's real startup contract."""
+        import psycopg
+        from psycopg.rows import dict_row
+        from tests.cases.postgres_test_database import start_disposable_cluster
+        from management_portal.society_service.state_store import (
+            LINEAGE_DATA_SCHEMA, lineage_data_schema_matches,
+        )
+        from scripts.tfi_seed_selection import plan
+        from scripts.tfi_release_install import map_directories
+
+        # An independent disposable server: never import public data into a
+        # Portal instance or the other tests' shared schemas.
+        dsn = start_disposable_cluster()
+        original = self.manifest['engineering']
+        for included in (True, False):
+            with self.subTest(include_examples=included):
+                _, selected, _ = plan(self.seed, original, include_examples=included)
+                sql = selected if selected is not None else (
+                    self.seed / original['database']['path']).read_text(encoding='utf-8')
+                sql = map_directories(sql, {
+                    entry['placeholder']: '/isolated-seed/' + entry['root']
+                    for entry in original['directory_mappings']
+                })
+                with psycopg.connect(dsn, row_factory=dict_row) as connection:
+                    connection.execute(sql, prepare=False)
+                    connection.execute('SET search_path TO lineage')
+                    self.assertEqual(connection.execute(
+                        "SELECT value FROM lineage_meta WHERE key='schema'"
+                    ).fetchone()['value'], LINEAGE_DATA_SCHEMA)
+                    self.assertTrue(lineage_data_schema_matches(connection))
+                    connection.rollback()
+
     def test_seed_metadata_initializes_only_storage_schema(self):
         """Installed instances acquire their own leases and normalize their state."""
         from scripts.tfi_seed_selection import inserts

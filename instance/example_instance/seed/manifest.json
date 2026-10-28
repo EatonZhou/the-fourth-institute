@@ -4882,7 +4882,7 @@
     "database": {
       "path": "database/distribution.sql",
       "format": "postgresql-sql",
-      "sha256": "7ecc36d8dc0a29989ace93774a84b2e787d5a0d90aeccf7669b4d259e6fa7cf8"
+      "sha256": "240d8e196475826c066d24d535aaea37fd905b875a73b70b261bb28c29c4dff3"
     },
     "files": {
       "share_root": "data/share_root",
@@ -31829,8 +31829,8 @@
     },
     {
       "path": "database/distribution.sql",
-      "sha256": "7ecc36d8dc0a29989ace93774a84b2e787d5a0d90aeccf7669b4d259e6fa7cf8",
-      "size": 3121156
+      "sha256": "240d8e196475826c066d24d535aaea37fd905b875a73b70b261bb28c29c4dff3",
+      "size": 3121506
     }
   ]
 }
