@@ -951,6 +951,11 @@ def _facade_reply(
     request_message_id: str,
 ) -> dict[str, Any]:
     projected = copy.deepcopy(dict(reply))
+    # Interactive requests belong to the worker's execution, including their
+    # answered/expired state. Project that state before changing authorship.
+    resident_conversation_stream.get_repository()._tool_status_messages(
+        [projected], resident_id=str(relay.get("resident_id") or ""),
+    )
     for part in projected.get("content_parts") or []:
         if isinstance(part, dict) and part.get("type") == "async_questions":
             # The facade shows the member's set as the member has it: open

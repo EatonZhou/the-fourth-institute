@@ -110,6 +110,21 @@ def _conversation_controls(
 
 
 
+def _request_source(target, message_id: str) -> tuple[str, dict[str, Any] | None]:
+    """Resolve only a message carried by this conversation's durable relay."""
+    repository = resident_conversation_stream.get_repository()
+    resident_id = target.resident_id
+    message = repository.message(resident_id, message_id)
+    if message is None and family_facade.is_facade(target.record):
+        found = family_facade.relayed_reply(target.record, message_id)
+        if found is not None:
+            state = family_facade.project_input_state(target.record, found["request_message_id"], {})
+            if state.get("state") == "cancelled":
+                raise ValueError("原请求已取消，不能回答其问题")
+            return found["worker_id"], found["reply"]
+    return resident_id, message
+
+
 def respond_resident_user_input(resident_id: str, actor: str, payload: dict[str, Any]) -> dict[str, Any]:
     from management_common.provider_user_input import validate_response
     from management_common.provider_interactions import INTERACTIVE_TOOL_NAMES
@@ -119,13 +134,13 @@ def respond_resident_user_input(resident_id: str, actor: str, payload: dict[str,
     if not resident_access.can_manage_resident(target.record, actor):
         raise PermissionError("当前对话无回答权限")
     repository = resident_conversation_stream.get_repository()
-    message = repository.message(resident_id, str(payload.get("message_id") or ""))
+    resident_id, message = _request_source(target, str(payload.get("message_id") or ""))
     if question_set(message) is not None:
         # A question set in a message is answered by an answer message; this
         # request only closes it unanswered, without telling the Resident.
         if payload.get("action") != "cancel":
             raise ValueError("消息中的问题组用回答消息作答；这里只能关闭（action=cancel）")
-        repository.close_question_set(target.resident_id, message["message_id"], actor=actor)
+        repository.close_question_set(resident_id, message["message_id"], actor=actor)
         return {"status": "cancelled"}
     parts = (message or {}).get("content_parts") or []
     request = next((part for part in parts if part.get("type") == "tool_call"
@@ -188,6 +203,8 @@ def _scan_requests(resident_id: str, actor: str) -> list[dict[str, Any]]:
     repository = resident_conversation_stream.get_repository()
     messages = repository.public_messages(target.resident_id, limit=REQUEST_SCAN_MESSAGES)
     messages = repository._tool_status_messages(messages, resident_id=target.resident_id)
+    if family_facade.is_facade(target.record):
+        messages = family_facade.project_messages(target.record, messages)
     return _request_items(target.resident_id, messages)
 
 
@@ -207,10 +224,10 @@ def list_resident_requests(resident_ids: list[str], actor: str) -> list[dict[str
 def get_resident_request(resident_id: str, actor: str, message_id: str) -> dict[str, Any]:
     target = _target(resident_id, actor)
     repository = resident_conversation_stream.get_repository()
-    message = repository.message(target.resident_id, message_id)
+    holder_id, message = _request_source(target, message_id)
     if message is None:
         raise KeyError(f"消息不存在：{message_id}")
-    messages = repository._tool_status_messages([message], resident_id=target.resident_id)
+    messages = repository._tool_status_messages([message], resident_id=holder_id)
     items = _request_items(target.resident_id, messages)
     if not items:
         raise KeyError(f"消息 {message_id} 不是等待回答的请求")

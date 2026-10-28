@@ -3850,7 +3850,13 @@ class AgentDataStore:
                                {_POSITION_METADATA} AS metadata_json
                         FROM chat_message_positions position
                         WHERE position.sequence_id=requested.sequence_id AND position.reply_to=requested.message_id
-                          AND position.segment_type='model' AND position.reply_candidate
+                          AND position.segment_type='model'
+                          AND (position.reply_candidate OR EXISTS (
+                              SELECT 1 FROM jsonb_array_elements(
+                                  COALESCE(({_POSITION_METADATA})#>'{{message,parts}}', '[]'::jsonb)
+                              ) part WHERE part->>'type' IN ('tool_call','tool_result')
+                                AND part->>'tool_name' IN ('request_user_input','request_approval','mcp_elicitation')
+                          ))
                           AND position.reply_to IS NOT NULL AND position.source_kind<>'sync'
                           AND position.ordinal > requested.after_ordinal AND position.ordinal <= requested.until_ordinal
                           AND {_SHOWN_POSITION}

@@ -2559,6 +2559,39 @@
           "task_prompt": "范围与授权：仅验收本次 Portal Workbenches 目录、打开/设置/创建入口改版。使用框架提供的 已配置并核验的受测实例、真实 Chromium 与 <test-actor> 会话，先真实使用，后源码诊断；不 mock、不注入业务状态或修改产品脚本。不要运行投影工坊生成、反投影、模型调用、真实消息发送或开发投影三区内部理解任务。测试执行者的 HATG 工具始终使用自己的 Resident 身份。\n\n运行前记录本 Run 唯一标记 [TAU:<run_id>:<module_id>]、实际受测实例 build、相关页面与脚本响应身份/摘要、受测路径及 <test-actor> 身份。从首页真实可见导航进入 Workbenches 目录，不直接深链替代这一验收步骤；后续打开/返回由真实界面完成。实际版本与调度给定 ready build 不符时保存差异并停止依赖该版本的结论，不把旧截图或磁盘源码摘要冒充本次实际加载字节。\n\n用户目标是从目录找到合适工作台并理解可执行操作：辨认可读工作台卡片的名称、说明、内置/自定义属性和当前状态；搜索可见工作台的实际标题，核对结果与公开资源身份。输入唯一不存在的标记确认无结果提示，再通过可见清空操作恢复；搜索与状态筛选组合后结果应同时满足条件，清空和切回全部能恢复，不把加载中误判为无结果。状态术语和可选项以当前产品与规范为准，记录实际筛选依据；缺少可验证的数据分支如实注明，不能凭按钮存在宣称通过。\n\n核对内置入口及已发布自定义工作台的打开操作：进入正确目标，返回目录后能继续理解当前位置。设置应有明确入口，与“打开”语义区分，打开设置显示所选对象而不是目录底部的模糊附带表单；查看既有业务对象设置时只读，退出不保存、不改绑定/owner/导航、不启停内置工作台。\n\n从明确的创建入口开始，确认创建上下文和退出方式清楚、目录不是同时展开的编辑表单。通过真实 UI 读取团队选择结果，验证加载完成、可读团队名称与真实ID匹配；遇到无权限或空结果应得到可理解提示。不得为填满选项创建新团队或Resident、不得改现有团队。必要时在允许范围内通过真实创建操作建立带完整Run标记的自有最小工作台草稿，复用框架固定TAU Lineage作为可读绑定；提交前保存唯一意图，响应不明先按标记/已受理ID查收，禁止重复创建。草稿需在目录可检索、状态与实际一致，打开自己样本的设置后可对它的标题/说明做一项可逆编辑并保存回读，再返回目录核对更新。样本不发布、不设置顶栏/默认入口、不启用业务流程；若当前创建只提供会生成或发送的路径，停在确认前；入口行为与后述独立草稿夹具验收分别记录，不以辅助建样冒充 UI 创建。测试数据辅助读取与真实用户路径分别记录。\n\n对同一目录任务以常用桌面与约390 CSS px窄屏验收：关键内容和入口无不可达的横向溢出，长名称与状态可辨认，搜索/清空/筛选/卡片动作可用。用键盘完成搜索、清空、筛选、选择并打开/返回设置或创建入口；检查焦点可见、顺序合理、控件名称可理解、没有键盘陷阱。弹层按其真实交互契约核对关闭后焦点；独立页面核对返回路径，不强加某一种布局。不要仅用DOM可点击替代截图和实际读者判断。\n\n证据与判定：每个原动作及其对应加载完成/可见结果当场计时，记录请求状态、生命周期和未归因失败，不用工具等待时间推断产品性能。保存并实际查看关键桌面/窄屏截图；记录每段host/build身份，刷新或热更新后分段，不拼接成同一版本通过。问题写清影响、复现、实际/预期、版本、证据与责任；即使绕路完成也保留摩擦。逐项标明已验证、失败、前置不足与未覆盖；不因不存在样本而跳过目录草稿断言，也不把未执行的 AI 生成功能算作通过。\n\n清理：finally 仅删除本Run标记且确属本次创建的工作台/测试资源，核对删除和目录不再命中；不删除既有工作台、团队、消息或其他Run资源。关闭自己浏览器、helper/host和临时profile，保留截图、网络、精确对象ID与清理回执。创建受理状态未明时先查清归属，不能扩大清理。禁止在TAU内部启动新Run或Campaign。\n目录草稿样本准备与创建入口的边界：本用例不执行 AI 生成，因此创建入口验收止于正常 UI 展示正确创建上下文、团队选择与可返回目录。若当前创建页面只提供 AI 生成，这一事实不要求新增产品手工创建路径，也不授权执行模型。目录的草稿筛选、草稿标记和设置保存仍必须实测：没有自己的现成草稿时，允许在单独标记为 fixture_setup 的步骤，通过正式 RegisterResource 创建至多一个带完整 Run 标记的最小 workbench 草稿，先读取当前资源类型 schema，绑定框架固定 TAU Lineage，不创建团队或 Resident，不发布、不改导航、不添加外部脚本或流程；测试执行者始终以自己身份调用。保存原受理回执和精确 ID；未知结果先按原 ID/标记查收，不重投。通过真实目录 UI 搜索该草稿、组合状态筛选、查看标记、打开设置并只对自己样本做一项可逆编辑，保存回读。辅助建样不能作为 UI 创建成功证据，报告分别列明入口、fixture_setup、目录草稿行为。权限不足则保留阻断，不借其他身份或修改权限方案。finally 通过正式资源入口只删除这个样本，并核对目录不再命中；原来因样本不足的失败不回填。\nWALL 顶栏返回操作，在原点击前安装被动 click/navigation 观察，保存命中元素、defaultPrevented、原导航开始及目标内容 ready。若无导航就保留原失败与原因，不在 action 结束后用直接 goto 替代此验收点。\n首次导航前用共享 openPortal 安装观察器，WALL返回点击与目标真实可见内容ready必须放在同一个 browserObserver.action 回调内。统一 tau-browser-observations.jsonl 的 click_observed 已记录 capture/after_dispatch或卸载阶段、click_id、目标标签和DOM层级位置、链接公共路径、default_prevented、原document及action身份；优先保留这些原始记录，不用仅监听特定按钮的自制点击器。点击命中图标或非交互遮罩也应在统一证据中保留；capture时的false不能替代后续dispatch结果，终态缺失仍明确缺口。真实可见区域按当前页面选取，WALL可有多个main，不能把全页main唯一性当ready。被动DOM与截图查明当前区域后再准备原动作的ready谓词；原失败不覆盖。\n原动作取证准备：在唯一一次保存前确认实际挂载控件已启用、已编辑字段确实有变更，并根据当前加载实现确认原请求的 method、公开 endpoint 和精确样本 ID；预先安装匹配该真实请求的观察，不凭名称猜响应、也不把预览请求当保存回执。保存 action 同时包含该原始回执与本样本字段/版本/可见预览 ready，若未观察到提交则保留未知并按原 ID 只读查收，禁止为补证重复保存。WALL 初次打开的 ready 应针对实际业务区域，并包含扫描中、读取中、加载中、aria-busy 等真实状态退出；先被动确认该区域再准备谓词。导航菜单首次展开必须位于主导航之外；原鼠标按下/松开/点击与导航 ready 连续记录，键盘恢复只作辅助，不抵消鼠标失败。\nV 轮原动作契约修正：工作台设置的真实保存是 POST /api/workbenches/update，监听原请求中的精确工作台 ID 及该原响应；不要等待并不存在的 ISA UpdateResource，也不重发 Save 补回执。团队读取的 Lineage ID 可以是表单控件 value，结合真实团队标题、成员列表与加载态退出核验，不能只在 innerText 搜索 ID。WALL 的实际业务根为 wallDesignView，标题可能是 Design and improvement；先确认实际项目选择和目标公开身份，再以该区域的扫描/读取完成和真实点列表准备原 ready，不硬编码其它项目名称。窄屏截图必须在同一原动作已确认内容 ready 后取得，加载态截图不能算可读性通过。原指针生命周期、鼠标导航和键盘路径的要求保持不变。\nW 轮夹具创建契约：RegisterResource 的 workbench 模板是业务内容片段，不是完整 HTML 文档；禁止 <!doctype>、html/head/body/nav/base 和宿主品牌/导航/全局主题。最小样本可为 <section data-tau-workbench-fixture=\"完整Run标记\"><h2>完整Run标记</h2><p>本轮独有的目录草稿</p></section>，不用脚本或宿主样式。提交前用当前 workbench_projections.content.validate_content 对精确拟提交模板做离线只读校验，并通过当前资源类型 schema 检查其他字段；这些准备不能算注册成功。仍只允许一次正式注册，保留原回执和 ID，未知结果先只读查收。通过真实目录 UI 验证草稿标记/筛选和同一草稿的设置保存回读，finally 正式删除自己的样本。历史 projection.template 失败及原网络未知项不改写。\nX 原辅助器缺口修正：注册自有夹具后的首次 Refresh workbenches 必须在同一原 action 内等候目标卡片及当时可见卡片的团队摘要达到实际 ready；仅卡片出现但仍 Loading team 不算完成，不用之后的摘要补首次耗时。Filter 每次操作前检查当前是否展开及真实 radio/菜单语义，关闭后先通过可见按钮重新打开；导航名称可能动态附加路径，使用实际角色与明确目标范围，不以过早的固定完整名称判缺失。窄屏键盘检查围绕目标控件记录 Tab/Shift+Tab 与 activeElement，可按当前实际焦点选择方向，不能把进入共享 Mailbox 的全页 65 次扫描上限算键盘陷阱；若必须恢复，保留首次失败及原耗时。原 stream 取消仅在唯一 request/transport 与同一 document/frame 的实际关闭回执相符时归因，未匹配仍 unknown，不按 URL 或邻近时间豁免。\nZ 原 Save/导航辅助器修正：设置保存成功后 preview 会销毁并重新挂载 iframe；保存前准备基于稳定宿主与当前 iframe 的 FrameLocator（或在同一 callback 内重取新 frame），不能持有旧 Frame 再以 detached 误判保存失败。唯一一次 Save 的 callback 同时保留 POST /api/workbenches/update 原回执、精确样本 revision/字段及新挂载预览 ready；旧 frame 销毁仅作原生命周期事实，不重按 Save 补证。工作台目录已为当前导航时，点击 Workbenches 可能直接激活并关闭菜单，应等目标目录内容 ready，不要求菜单持续可见；在不同导航上下文才核对打开菜单。团队选择使用实际 input/datalist、实际 value 及加载后的可读团队/成员，不等待不存在的 listbox/dialog 或把输入前的未加载视图算失败。所有这些 locator、scope、重挂载等待先通过纯 helper/只读 DOM 预检，不增加业务输入；原动作未知错误与历史 failed 不回填。"
         }
       ]
+    },
+    {
+      "id": "test_7b148f8e9d63",
+      "key": "tau.resident.family-settings-questions",
+      "title": "Family 门面额度开关与问题卡片答复",
+      "description": "通过真实门面 Settings 切换自动转组并验证门面问题、答复归属和刷新。",
+      "importance": "P1",
+      "module": "resident.conversation",
+      "aspects": [
+        "ui",
+        "functional",
+        "behavior"
+      ],
+      "is_design_point": false,
+      "design_refs": [
+        "decision_89b9df038a95",
+        "decision_9ad68dd077d4"
+      ],
+      "lifecycle": "active",
+      "implementations": [
+        {
+          "id": "impl-tau-family-settings-questions",
+          "runner": "tau",
+          "entrypoint": "tau:family-settings-questions",
+          "source": "tests/cases/tau_cases.json",
+          "profiles": [
+            "live.controlled"
+          ],
+          "risk": "external-side-effects",
+          "lineage_fixture": "需在本轮独立临时团队创建成员与 Family，验证新 Family 默认设置并隔离自动化提问，不触碰既有业务。",
+          "task_prompt": "使用受测实例、真实 Chromium 与框架 test-actor 会话，只检查本例。所有自建对象带完整 [TAU:<run_id>:<module_id>] 标记。使用框架 portal.action 记录真实点击至提交/可见结果的耗时和原回执，实际查看截图。不得 mock API、注入业务状态、访问其他业务对象或递归发起 TAU。\n通过 UI 新建本轮临时 Lineage 与一名 Codex 普通成员，再由 UI Familize。双击门面 Resident 打开 Menu，选择 Settings（不是 Function Block 概览）。在成员列表上方找到“额度不足时自动转组”开关，新 Family 默认开启；原生点击关闭，等待 UpdateFamily 成功，记录 family_id、lineage_id 与 auto_migrate=false；关闭菜单重新打开/刷新后仍关闭。再开启并验证保存与刷新后仍开启。窄屏检查开关、说明和成员区域可达、不横向遮挡。保存截图。\n打开同一 Family 门面 Chat，发送明确任务：请先调用 request_user_input_async 提问一个选择题（如范围：Small 或 All），保持提问卡片，等我的回答后只回复“收到：<我的选择>”。如该工具不可用，用正式 portal-question 输出块提出同一选择题；不要当普通文字问题处理。等待门面出现真实问题卡片，记录门面原输入 ID、卡片消息 ID、answer_message_id、family_reply.resident_id。不得进入成员 Chat 代替门面回答。刷新后卡片仍可答，从门面选择 Small，等待回答真实送达提问成员及其“收到：Small”回复；通过正式 GetConversation/GetInputState 核对源问题、原答复身份、成员归属和仅一份答复，不使用标题猜归属。刷新后原卡片显示已回答；尝试重复动作不能产生第二轮答复。若原生 request_user_input 可用，可额外以同样方式验证原生卡片 AnswerResidentRequest 进入原 Execution 的控制渠道；不可用则明确未覆盖，不伪造原生问题。\n成功或失败均删除本轮临时 Lineage、关闭本轮浏览器及辅助进程；不删除其他对象。保留步骤、截图、请求/回执 ID、实际界面结果、失败和未覆盖项；结束输出正式 PORTAL_TAU_RESULT。"
+        }
+      ]
     }
   ]
 }

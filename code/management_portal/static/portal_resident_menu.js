@@ -446,7 +446,12 @@
     function renderFamilySettings(context) {
       disposeFamilySettings();
       const root = $id("nodeMenuFamilySettings");
+      const autoMigrate = context.family.family.auto_migrate !== false;
       root.innerHTML = window.PortalI18n.html`<p class="paneNote">在这里查看和调整 Family 内部成员的工作状态、Backend、账号与接单设置。</p>
+        <section class="residentMenuFamilyActions">
+          <section><div><strong>额度不足时自动转组</strong><p>适用于成员、Router 和 Steward。开启时，在执行前按五小时、周等窗口的最低剩余额度切换可用账号，必要时切换 Provider。关闭后等待原账号额度恢复；已开始的迁移会继续完成。</p></div><button class="portalButton" type="button" role="switch" aria-label="额度不足时自动转组" aria-checked="${autoMigrate}" data-family-auto-migrate>${autoMigrate ? window.PortalI18n.t("开启") : window.PortalI18n.t("关闭")}</button></section>
+        </section>
+        <p role="alert" data-family-settings-error hidden></p>
         <div class="residentMenuMembersHeader"><strong>成员</strong><button class="portalButton is-compact" type="button" data-family-add aria-expanded="false" aria-controls="familyMemberPicker">＋ 添加成员</button></div>
         <div id="familyMemberPicker" class="residentMenuMemberPicker" hidden></div>
         <div data-family-members></div>
@@ -455,8 +460,45 @@
           <section><div><strong>删除整个 Family</strong><p>停止并删除门面及内部所有成员、子 Family 和工作流，移除 Session；关联 Workspace 仅在没有其他存活 Resident 引用时回收，仍被引用的 Workspace 保留。对话和运行轨迹保留。</p></div><button class="portalButton is-danger" type="button" data-family-action="delete">删除整个 Family</button></section>
         </div>`;
       familySettingsView = window.PortalChatWorkspace.mountFamilyStatus(context.residentId, root.querySelector("[data-family-members]"));
+      root.querySelector("[data-family-auto-migrate]").addEventListener("click", () => saveFamilyAutoMigrate(context));
       root.querySelector("[data-family-add]").addEventListener("click", () => openFamilyMemberPicker(context));
       root.querySelectorAll("[data-family-action]").forEach(button => button.addEventListener("click", () => changeFamily(button.dataset.familyAction)));
+    }
+
+    async function saveFamilyAutoMigrate(context) {
+      if (nodeMenuContext !== context || context.busy || context.saving) return;
+      const root = $id("nodeMenuFamilySettings");
+      const button = root.querySelector("[data-family-auto-migrate]");
+      const errorLine = root.querySelector("[data-family-settings-error]");
+      const current = () => nodeMenuContext === context && root.contains(button);
+      const autoMigrate = context.family.family.auto_migrate === false;
+      context.busy = true;
+      button.disabled = true;
+      errorLine.hidden = true;
+      try {
+        const snapshot = (await window.PortalInstructionClient.execute("GetLineage", {lineage_id: context.lineageId})).lineage;
+        if (!current()) return;
+        const family = snapshot.function_blocks.find(block => block.id === context.family.id && block.family?.facade === context.residentId);
+        if (!family) throw new Error(window.PortalI18n.t("Family 已变化，请重新打开菜单。"));
+        const result = await window.PortalInstructionClient.execute("UpdateFamily", {
+          lineage_id: context.lineageId, family_id: family.id, auto_migrate: autoMigrate,
+        }, {expectedVersion: snapshot.revision});
+        if (!current()) return;
+        context.family = result.function_block;
+        lineage = {...lineage, function_blocks: (lineage.function_blocks || []).map(block => block.id === family.id ? result.function_block : block)};
+        window.PortalResidentProjection.invalidate(context.residentId);
+        renderFamilySettings(context);
+        root.querySelector("[data-family-auto-migrate]").focus();
+        await changed({type: "family-auto-migrate", residentId: context.residentId, lineageId: context.lineageId, result});
+      } catch (error) {
+        if (nodeMenuContext === context) {
+          const notice = root.querySelector("[data-family-settings-error]");
+          notice.textContent = error.message; notice.hidden = false;
+        }
+      } finally {
+        context.busy = false;
+        if (current()) button.disabled = false;
+      }
     }
 
     async function openFamilyMemberPicker(context) {
