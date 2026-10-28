@@ -72,13 +72,14 @@ const flush = async () => { for (let i = 0; i < 10; i++) await new Promise(r => 
   assert(!button.disabled);
   const form = w.document.querySelector('dialog[aria-label="新增执行账号"] form');
   assert(form, 'Home entry opens the existing account registration form through Management');
-  assert.equal(form.elements.max_concurrency.value, '1');
+  assert(!form.elements.max_concurrency, 'initial settings are assigned without advanced fields');
   form.elements.account_id.value = 'first-ai';
   form.dispatchEvent(new w.Event('submit', {bubbles: true, cancelable: true})); await flush();
   const registered = calls.filter(c => c.name === 'RegisterProviderAccount');
   assert.equal(registered.length, 1);
   assert.equal(registered[0].args.account_id, 'first-ai');
   assert.equal(registered[0].args.provider, 'codex');
+  assert.equal(registered[0].args.max_concurrency, 1);
   assert(w.document.querySelector('[data-backend-setup-status]'), 'Saving continues to the existing account setup flow');
   panel.destroy(); panel = null;
   w.PortalNav.openPermissionManagement = async () => { throw Error('navigation failed'); };

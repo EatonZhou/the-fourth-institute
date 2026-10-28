@@ -828,6 +828,7 @@ def prepare_runtime(provider: str) -> dict:
         state, save = locked
         state.setdefault("preparations", {})[provider] = {
             "status": "preparing", "owner": business_tasks.process_identity(),
+            "started_at": datetime.now(timezone.utc).isoformat(), "phase": "prerequisites",
             "updated_at": datetime.now(timezone.utc).isoformat()}
         save()
 
@@ -837,10 +838,15 @@ def prepare_runtime(provider: str) -> dict:
                 return
             state, save = locked
             result = state.setdefault("preparations", {}).setdefault(provider, {})
+            def report_phase(name):
+                result.update(phase=name, updated_at=datetime.now(timezone.utc).isoformat())
+                save()
             try:
+                report_phase("prerequisites")
                 with phase("prerequisites"):
                     runtime.prepare_prerequisites()
                 if _runtime_installed(runtime):
+                    report_phase("service_activation")
                     with phase("service_activation"):
                         runtime.ensure_ready()
                     result.update(status="ready", source="existing")
@@ -849,12 +855,14 @@ def prepare_runtime(provider: str) -> dict:
                     if pending_root and (Path(pending_root) / ".portal-validated").is_file():
                         root = Path(pending_root)
                     else:
+                        report_phase("download")
                         with phase("download"):
                             versions = runtime.available()
+                        report_phase("dependency_install")
                         with phase("dependency_install"):
                             root = runtime.stage(versions)
                     state.setdefault("pending", {})[provider] = str(root)
-                    save()
+                    report_phase("service_activation")
                     if _activate(provider, runtime, root, prepare=True):
                         state["pending"].pop(provider, None)
                         result.update(status="ready", source="installed")

@@ -305,8 +305,21 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     let timer, progressTimer, closed = false, checking = false, working = false, setup = null;
     let preparationRequested = false, setupFailed = false;
     let progressMessage = "", startedAt = 0;
-    const {view, form} = newEditor("接入并启用 AI", () => { closed = true; clearTimeout(timer); clearInterval(progressTimer); });
+    const {view, form} = newEditor("接入并启用 AI", () => { closed = true; clearTimeout(timer); clearInterval(progressTimer); clearInterval(preparationTimer); });
     form.append(node("p", accountId));
+    const preparationPhases = {prerequisites: "检查系统依赖", download: "获取运行环境版本", dependency_install: "下载并安装运行依赖",
+      executable_validation: "校验运行程序", service_activation: "启动并检查后台服务"};
+    const stages = node("ol", undefined, {class: "backendSetupStages", "data-backend-setup-stages": ""});
+    const stageRows = ["准备运行环境", "登录授权", "测试连接"].map(label => {const row = node("li", t(label)); stages.append(row); return row;});
+    const preparationDetail = node("p", "", {class: "backendHint", "data-backend-preparation-detail": ""});
+    const elapsed = node("p", "", {class: "backendHint", "data-backend-preparation-elapsed": ""});
+    const openedAt = Date.now();
+    const preparationTimer = setInterval(() => {
+      if (closed || !setup || setup.runtime_ready || !["preparing", "pending", "busy"].includes(setup.preparation?.status)) return;
+      const start = Date.parse(setup.preparation?.started_at) || openedAt;
+      elapsed.textContent = t("已等待 {p0} 秒", {p0: Math.max(0, Math.floor((Date.now() - start) / 1000))});
+    }, 1000);
+    form.append(stages, preparationDetail, elapsed);
     const status = node("p", "", {role: "status", "data-backend-setup-status": ""});
     const nextStep = node("p", "", {"data-backend-check-next-step": "", hidden: true});
     const checkDetail = node("p", "", {class: "backendHint", "data-backend-check-detail": "", hidden: true});
@@ -345,6 +358,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       checkLog.hidden = showLog.hidden = true; checkLog.value = "";
       showLog.textContent = t("显示详细日志"); showLog.setAttribute("aria-expanded", "false");
       checking = true; model.disabled = true; useDefault.disabled = true; setButtons();
+      stageRows[2].textContent = t("测试连接") + " · " + t("进行中");
       try {
         const receipt = await execute("CheckProviderAccount", {account_id: accountId, model: model.value.trim()});
         if (closed) return;
@@ -390,6 +404,17 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       const result = await execute("GetProviderAccountSetup", {account_id: accountId});
       if (closed) return;
       setup = result.setup;
+      const preparation = setup.preparation || {};
+      const failed = ["failed", "interrupted"].includes(preparation.status);
+      const authenticated = ["logged_in", "succeeded", "not_applicable"].includes(setup.login_state);
+      stageRows[0].textContent = t("准备运行环境") + " · " + t(setup.runtime_ready ? "已完成" : failed ? "失败，可重试" : "进行中");
+      stageRows[1].textContent = t("登录授权") + " · " + t(authenticated ? "已完成" : setup.runtime_ready ? "等待授权" : "等待环境就绪");
+      stageRows[2].textContent = t("测试连接") + " · " + t(authenticated && setup.runtime_ready ? "等待你开始测试" : "等待前置步骤");
+      const diagnostic = preparation.diagnostic || {};
+      preparationDetail.textContent = [t(preparationPhases[preparation.phase] || ""), t(preparation.message || ""),
+        failed && diagnostic.kind ? t("错误类别：{p0}", {p0: diagnostic.kind}) : "",
+        diagnostic.rollback_failed ? t("自动恢复未完成，请联系管理员。") : ""].filter(Boolean).join(" · ");
+      elapsed.hidden = setup.runtime_ready || failed;
       const nextChoices = JSON.stringify(setup.models || []);
       if (nextChoices !== modelChoices) {
         modelChoices = nextChoices;
@@ -435,6 +460,8 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       try {
         const result = await execute("GetProviderAccountCheck", {account_id: accountId, execution_id: executionId});
         if (closed) return;
+        stageRows[2].textContent = t("测试连接") + " · " + t(result.check.passed ? "已完成" :
+          ["failed", "cancelled", "completed"].includes(result.check.status) ? "失败，可重试" : "进行中");
         status.textContent = t(result.check.message);
         if (!["completed", "failed", "cancelled"].includes(result.check.status)) {
           progressMessage = result.check.message;
@@ -478,9 +505,9 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     if (!canRegister) throw new Error(t("你没有新增 AI 账号的权限。"));
     if (!providersReady || !state.providers.length) throw new Error(t("Provider 列表不可用，请刷新后重试。"));
     const {view, form} = newEditor("新增执行账号");
-    form.append(node("p", t("选择接入方式并保存，Portal 会自动完成环境准备。需要时登录授权，随后可测试连接。"), {class: "backendHint"}));
+    form.append(node("p", t("在这里添加可用的 Agent 后端，作为 Portal Resident 的来源。"), {class: "backendHint"}));
     const id = field(form, "账号名称", "account_id", "", {required: true, pattern: "[a-z][a-z0-9_\\-]{0,127}", autocomplete: "off", placeholder: "my-ai"});
-    hint(id, "这是你在 Portal 中使用的唯一名称，不是服务商的登录邮箱。以小写字母开头，只用小写字母、数字、下划线或短横线，最多 128 字符。");
+    hint(id, "为这个 Agent 后端添加指代名称。");
     const providers = preferredKind ? state.providers.filter(p => p.kinds.includes(preferredKind)) : state.providers;
     const provider = select(form, "AI 后端", "provider", providers.map(p => [p.provider, p.title || p.provider]));
     const kind = select(form, "接入方式", "kind", []);
@@ -493,35 +520,36 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
           const reuse = field(extra, "复用本机已有登录", "reuse_local_login", "", {type: "checkbox"});
           reuse.checked = true;
           hint(reuse, "使用运行 Portal 的 Linux 用户已有授权；保留终端原配置，不导入聊天历史。取消勾选可登录其他账号。");
-        } else extra.append(node("p", t("保存后按页面提示打开浏览器完成授权。不要在这里填写订阅密码或 API Key。"), {class: "backendHint"}));
+        }
       }
       if (kind.value === "service") extra.append(node("p", t("复用 Provider 已有的服务配置和授权。")));
       form.querySelector('[type="submit"]').disabled = false;
-      const options = advanced(extra);
-      if (kind.value === "subscription_login" && provider.value === "codex") {
-        field(options, "备用账号（逗号分隔）", "fallback_account_ids"); field(options, "默认路线", "is_default", "", {type: "checkbox"});
-      } else if (kind.value === "subscription_login" && provider.value === "claude") {
-        claudeCatalogFields(extra, localLogin?.available ? {default_model: localLogin.default_model || ""} : {}, options);
+      if (kind.value === "subscription_login" && provider.value === "claude") {
+        const model = field(extra, "默认模型", "default_model", localLogin?.default_model || "sonnet", {readOnly: true});
+        hint(model, "已自动选择默认模型，接入后可在模型目录中修改。");
       } else if (kind.value === "api_profile") {
         const backend = state.providers.find(p => p.provider === provider.value) || {};
         const compatible = state.apis.filter(item => !backend.api_protocol || (item.harness_protocols || []).includes(backend.api_protocol));
-        const api = select(extra, "模型 API", "api_id", [["", t("选择已登记的模型 API")], ...compatible.map(api => [api.api_id, api.api_id])]);
-        api.required = true;
-        hint(api, "选择已保存的接口。还没有接口？关闭此窗口，使用页面顶部的“新增模型 API”。");
+        extra.append(button("新建模型 API 并接入", () => {
+          if (id.value && !id.reportValidity()) return;
+          apiEditor(null, {newAccountId: id.value.trim(), newProvider: provider.value});
+        }, !canWrite));
+        if (compatible.length) {
+          const api = select(extra, "使用已有模型 API", "api_id", compatible.map(api => [api.api_id, `${api.api_id} · ${api.default_model}`]));
+          api.required = true;
+        } else {
+          extra.append(node("p", t("还没有可用的模型 API。点击上方按钮，填写接口地址、API Key 和模型即可继续。"), {class: "backendHint"}));
+          form.querySelector('[type="submit"]').disabled = true;
+        }
         if (backend.api_protocol && backend.api_protocol !== "openai_chat") {
           extra.append(node("small", t("只列出声明了 {p0} 协议的接口；可在模型 API 的高级设置中勾选。", {p0: backend.api_protocol}), {class: "backendHint"}));
         }
-        if (provider.value === "codex") field(options, "默认路线", "is_default", "", {type: "checkbox"});
-        field(options, "路线（可选）", "route_id");
-        const secret = field(options, "更换 API Key（可选）", "secret", "", {type: "password", autocomplete: "new-password"});
-        hint(secret, "留空沿用已保存的密钥。填写后替换所选接口的 API Key，提交后不回显。");
       }
-      field(options, "初始并发上限", "max_concurrency", "1", {type: "number", min: "1", max: "256", step: "1", required: true});
-      extra.append(options.parentElement);
     };
     const renderKinds = () => {
       kind.replaceChildren(...(state.providers.find(p => p.provider === provider.value)?.kinds || []).map(value => node("option", t(kinds[value] || value), {value})));
       if (preferredKind) kind.value = preferredKind;
+      kind.parentElement.hidden = kind.options.length < 2;
       renderFields();
     };
     saveButton(form); provider.addEventListener("change", renderKinds); kind.addEventListener("change", renderFields); renderKinds();
@@ -532,27 +560,19 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       if (kind.value === "subscription_login" && form.elements.reuse_local_login) {
         config.reuse_local_login = form.elements.reuse_local_login.checked;
       }
-      if (kind.value === "subscription_login" && provider.value === "codex") {
-        config.fallback_account_ids = value("fallback_account_ids").split(",").map(v => v.trim()).filter(Boolean);
-        config.is_default = form.elements.is_default.checked;
-      }
       if (kind.value === "subscription_login" && provider.value === "claude") {
-        try { Object.assign(config, readClaudeCatalog(form)); }
-        catch (error) { form.querySelector('[role="alert"]').textContent = errorText(error); return; }
+        config.default_model = value("default_model");
+        config.models = [{id: config.default_model}];
       }
       if (kind.value === "api_profile") {
         config.api_id = value("api_id");
-        if (provider.value === "codex") config.is_default = form.elements.is_default.checked;
+        if (!config.api_id) return;
       }
-      const args = {account_id: id.value.trim(), provider: provider.value, kind: kind.value, config, max_concurrency: Number(value("max_concurrency"))};
-      if (value("route_id")) args.route_id = value("route_id").trim();
-      const secret = form.elements.namedItem("secret");
-      if (secret?.value) args.secret = secret.value;
-      if (secret) secret.value = "";
+      const args = {account_id: id.value.trim(), provider: provider.value, kind: kind.value, config, max_concurrency: 1};
       void run(async () => {
-        try { await execute("RegisterProviderAccount", args); } finally { delete args.secret; }
+        await execute("RegisterProviderAccount", args);
         view.close(); await refresh("accounts"); setupEditor(args.account_id);
-      }, Boolean(args.secret));
+      });
     });
   }
   function concurrencyEditor(account) {
@@ -563,7 +583,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       view.close(); await refresh("accounts");
     }); });
   }
-  function apiEditor(api = null, {accountId: setupAccountId = ""} = {}) {
+  function apiEditor(api = null, {accountId: setupAccountId = "", newAccountId = "", newProvider = "provider_api"} = {}) {
     const {view, form} = newEditor(api ? "编辑模型 API" : "新增模型 API");
     form.append(node("p", t(api ? "修改连接信息。API Key 留空时保留当前密钥。" : "复制服务商给你的三项信息即可。连接名称和账号关联会自动完成。"), {class: "backendHint"}));
     const url = field(form, "接口基础地址（Base URL）", "base_url", api?.base_url || "", {type: "url", required: true, placeholder: "https://api.example.com/v1"});
@@ -630,7 +650,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     options.append(probeResults);
     const enabled = field(options, "启用此接口", "enabled", "", {type: "checkbox"}); enabled.checked = api?.enabled !== false;
     const canCreateAccount = !api && canRegister && state.providers.some(p => p.provider === "provider_api" && p.kinds.includes("api_profile"));
-    const account = canCreateAccount ? field(options, "AI 账号名称（可选）", "account_id", "", {pattern: "[a-z][a-z0-9_\\-]{0,127}", placeholder: t("留空使用连接名称")}) : null;
+    const account = canCreateAccount ? field(options, "AI 账号名称（可选）", "account_id", newAccountId, {pattern: "[a-z][a-z0-9_\\-]{0,127}", placeholder: t("留空使用连接名称")}) : null;
     const register = canCreateAccount ? field(options, "同时添加为 AI 账号，继续接入与测试", "register_account", "", {type: "checkbox"}) : null;
     if (register) { register.checked = true; hint(register, "用于 Resident 对话。保存后选择模型并测试，可设为默认 AI；直连模型 API 不提供工具执行。测试会发起模型调用，可能产生费用。"); }
     const harness = register ? select(form, "Agent 运行器", "harness", []) : null;
@@ -639,7 +659,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       if (!harness) return;
       const protocols = new Set(["openai_chat", ...(responses.checked ? ["openai_responses"] : []),
         ...(anthropic.checked ? ["anthropic_messages"] : [])]);
-      const previous = harness.value;
+      const previous = harness.value || newProvider;
       harness.replaceChildren(node("option", t("直连模型（只对话，不执行工具）"), {value: "provider_api"}),
         ...state.providers.filter(p => p.api_protocol && p.kinds.includes("api_profile"))
           .map(p => {
@@ -648,9 +668,14 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
             return node("option", (p.title || p.provider) + (supported ? "" : ` — ${t("需要协议")} ${protocol}`),
               {value: p.provider, disabled: !supported});
           }));
-      harness.value = [...harness.options].some(option => option.value === previous && !option.disabled) ? previous : "provider_api";
+      const available = [...harness.options].some(option => option.value === previous && !option.disabled);
+      if (!available && newProvider !== "provider_api") {
+        harness.prepend(node("option", t("请确认接口协议，再选择运行器"), {value: ""}));
+        harness.value = ""; harness.required = true;
+      } else harness.value = available ? previous : "provider_api";
     };
     renderHarnesses();
+    if (harness && [...harness.options].some(option => option.value === newProvider && !option.disabled)) harness.value = newProvider;
     responses.addEventListener("change", renderHarnesses);
     anthropic.addEventListener("change", () => { showAnthropic(); renderHarnesses(); });
     let createdId = "";

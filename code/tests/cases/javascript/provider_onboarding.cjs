@@ -29,7 +29,7 @@ window.PortalInstructionClient = {execute: async (name, args, options) => {
       if (setupError) throw new Error('暂时无法读取接入状态');
       if (holdSetup) await new Promise(resolve => { finishSetup = resolve; });
       return {setup: {provider, enabled: true, runtime_ready: !missing,
-        preparation: {status: missing ? preparation : 'ready', message: preparation === 'failed' ? '环境准备失败' : ''},
+        preparation: {status: missing ? preparation : 'ready', phase: 'dependency_install', started_at: new Date().toISOString(), message: preparation === 'failed' ? '环境准备失败' : ''},
         login_state: loginState, supports_tools: true, models: emptyCatalog ? [] : [{id: 'model'}], default_model: emptyCatalog ? '' : 'model'}};
     case 'CheckProviderAccount':
       if (holdCheck) return new Promise(resolve => { finishCheck = resolve; });
@@ -83,6 +83,8 @@ const click = text => {
   assert.deepEqual(calls.filter(call => call.name === 'UpdateBackendRole').map(call => call.options.expectedVersion), [0, 1]);
   missing = true; fail = true; prepareResult = 'preparing'; calls.length = 0;
   click('接入与测试'); await flush();
+  assert.match(window.document.querySelector('[data-backend-preparation-detail]').textContent, /下载并安装运行依赖/);
+  assert.match(window.document.querySelector('[data-backend-setup-stages]').textContent, /准备运行环境.*进行中/);
   assert([...window.document.querySelectorAll('button')].find(el => el.textContent === '测试并完成').disabled);
   assert.equal(calls.filter(call => call.name === 'PrepareProviderRuntime').length, 1);
   const preparingStatus = window.document.querySelector('[data-backend-setup-status]');

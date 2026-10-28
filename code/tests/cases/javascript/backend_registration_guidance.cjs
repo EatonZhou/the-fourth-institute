@@ -13,6 +13,7 @@ window.PortalInstructionClient = {execute: async (name, args) => {
   switch (name) {
     case 'ListProviders': return {providers: [
       {provider: 'codex', title: 'Codex', kinds: ['subscription_login']},
+      {provider: 'claude', title: 'Claude Code', kinds: ['subscription_login']},
       {provider: 'provider_api', title: 'Model API', kinds: ['api_profile']}]};
     case 'ListProviderAccounts': return {accounts};
     case 'ListBackendRoles': return {roles: []};
@@ -38,11 +39,21 @@ const click = text => {const b = [...window.document.querySelectorAll('button')]
   click('接入订阅账号');
   let form = window.document.querySelector('dialog form');
   assert.equal(form.elements.kind.value, 'subscription_login');
-  assert.match(form.textContent, /浏览器.*授权/);
+  assert.match(form.textContent, /添加可用的 Agent 后端/);
+  assert(!form.querySelector('details'));
   assert(!form.querySelector('[name=secret]'));
-  click('关闭'); click('新增模型 API');
+  click('关闭'); click('新增执行账号');
+  form = window.document.querySelector('dialog form');
+  form.elements.account_id.value = 'example-api';
+  form.elements.provider.value = 'provider_api';
+  form.elements.provider.dispatchEvent(new window.Event('change'));
+  assert(form.elements.kind.parentElement.hidden, 'a single access method does not need a dropdown');
+  assert(!form.elements.api_id, 'an empty API registry must offer creation rather than an empty select');
+  assert(form.querySelector('[type=submit]').disabled);
+  click('新建模型 API 并接入');
   form = window.document.querySelector('dialog form');
   assert.match(form.textContent, /API Key/);
+  assert.equal(form.elements.account_id.value, 'example-api', 'the account name survives API creation');
   assert.match(form.textContent, /连接名称/);
   assert(form.elements.api_id.closest('details'), 'internal connection name is optional advanced configuration');
   assert(form.elements.register_account.closest('details'), 'users do not need to understand account linkage');
@@ -124,6 +135,19 @@ const click = text => {const b = [...window.document.querySelectorAll('button')]
   assert.match(generated.api_id, /^api-[a-z0-9-]+$/);
   assert.equal(calls.filter(c => c.name === 'RegisterProviderAccount').at(-1).args.config.api_id, generated.api_id);
   assert(window.document.querySelector('[data-backend-setup-status]'));
+  click('关闭'); click('接入订阅账号');
+  form = window.document.querySelector('dialog form');
+  form.elements.provider.value = 'claude';
+  form.elements.provider.dispatchEvent(new window.Event('change'));
+  assert.equal(form.elements.default_model.value, 'sonnet');
+  assert(form.elements.default_model.readOnly);
+  assert(!form.querySelector('details'));
+  form.elements.account_id.value = 'native-claude';
+  submit(); await flush();
+  const native = calls.filter(c => c.name === 'RegisterProviderAccount').at(-1).args;
+  assert.equal(native.config.default_model, 'sonnet');
+  assert.deepEqual(native.config.models, [{id: 'sonnet'}]);
+  assert.equal(native.max_concurrency, 1);
   panel.destroy();
   const readonly = await context.mount(window.document.querySelector('main'), {me: {access: {allows: {}}}});
   for (const title of ['接入订阅账号', '新增模型 API']) {

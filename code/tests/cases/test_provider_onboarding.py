@@ -119,6 +119,34 @@ def test_a_broken_codex_on_path_is_left_alone_while_portal_prepares_its_own(monk
     assert "Missing optional dependency" in broken.read_text()
 
 
+def test_preparation_publishes_phase_before_blocking_work(monkeypatch, tmp_path):
+    from management_portal import business_tasks
+    observed = []
+
+    def observe(expected):
+        state = json.loads((tmp_path / "provider-updates.json").read_text())
+        progress = state["preparations"]["claude"]
+        assert progress["status"] == "preparing"
+        assert progress["phase"] == expected
+        assert progress["started_at"] <= progress["updated_at"]
+        observed.append(expected)
+
+    runtime = Mock()
+    runtime.prepare_prerequisites.side_effect = lambda: observe("prerequisites")
+    runtime.available.side_effect = lambda: observe("download") or {}
+    runtime.stage.side_effect = lambda versions: observe("dependency_install") or tmp_path / "runtime"
+    monkeypatch.setattr(updates, "STATE_ROOT", tmp_path)
+    monkeypatch.setattr(updates, "runtimes", lambda: {"claude": runtime})
+    monkeypatch.setattr(updates, "_runtime_installed", lambda runtime: False)
+    monkeypatch.setattr(updates, "runtime_available", lambda name: False)
+    monkeypatch.setattr(updates, "_activate", lambda *args, **kwargs: observe("service_activation") or True)
+    monkeypatch.setattr(business_tasks, "start", lambda task_id, work: work())
+    updates.prepare_runtime("claude")
+    assert observed == ["prerequisites", "download", "dependency_install", "service_activation"]
+    result = json.loads((tmp_path / "provider-updates.json").read_text())["preparations"]["claude"]
+    assert result["status"] == "ready" and "phase" not in result
+
+
 def test_missing_runtime_preparation_can_retry(monkeypatch, tmp_path, caplog):
     from management_portal import business_tasks
     runtime = Mock()

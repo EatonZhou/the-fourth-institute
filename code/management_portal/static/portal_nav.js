@@ -1109,18 +1109,6 @@
     card.querySelector("[data-portal-welcome-open]").addEventListener("click", dismiss);
     card.querySelector("[data-portal-welcome-dismiss]").addEventListener("click", dismiss);
     document.body.append(card);
-    // Every account gets its own Ask Me Anything Resident; offer it as the first conversation.
-    window.PortalIdentity?.listUIAssociations?.("lineage-workbench.personal-ama").then(data => {
-      const items = Array.isArray(data?.items) ? data.items : [];
-      const residentId = String((items.find(item => item?.key === "primary") || items[0])?.value?.resident_id || "").trim();
-      if (!residentId || !card.isConnected) return;
-      const link = document.createElement("a");
-      link.className = "portalButton is-compact";
-      link.href = `/lineage?resident=${encodeURIComponent(residentId)}`;
-      link.dataset.portalWelcomeAma = "";
-      link.textContent = window.PortalI18n.t("和 Ask Me Anything 对话");
-      card.querySelector(".portalWelcomeActions").insertBefore(link, card.querySelector("[data-portal-welcome-dismiss]"));
-    }).catch(() => {});
   }
 
   function setUserMenuData(menu, data = {}, route = null) {

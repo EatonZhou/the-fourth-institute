@@ -1,4 +1,84 @@
 {
+  "下载并安装运行依赖": {
+    "zh-CN": "下载并安装运行依赖",
+    "en": "Downloading and installing dependencies"
+  },
+  "为这个 Agent 后端添加指代名称。": {
+    "zh-CN": "为这个 Agent 后端添加指代名称。",
+    "en": "Give this Agent backend a name."
+  },
+  "使用已有模型 API": {
+    "zh-CN": "使用已有模型 API",
+    "en": "Use an existing model API"
+  },
+  "启动并检查后台服务": {
+    "zh-CN": "启动并检查后台服务",
+    "en": "Starting and checking background services"
+  },
+  "在这里添加可用的 Agent 后端，作为 Portal Resident 的来源。": {
+    "zh-CN": "在这里添加可用的 Agent 后端，作为 Portal Resident 的来源。",
+    "en": "Add an Agent backend here for Portal Residents to use."
+  },
+  "失败，可重试": {
+    "zh-CN": "失败，可重试",
+    "en": "Failed; retry available"
+  },
+  "已自动选择默认模型，接入后可在模型目录中修改。": {
+    "zh-CN": "已自动选择默认模型，接入后可在模型目录中修改。",
+    "en": "A default model is selected automatically. You can change it in the model catalog after setup."
+  },
+  "新建模型 API 并接入": {
+    "zh-CN": "新建模型 API 并接入",
+    "en": "Create and connect a model API"
+  },
+  "校验运行程序": {
+    "zh-CN": "校验运行程序",
+    "en": "Validating the runtime"
+  },
+  "检查系统依赖": {
+    "zh-CN": "检查系统依赖",
+    "en": "Checking system dependencies"
+  },
+  "登录授权": {
+    "zh-CN": "登录授权",
+    "en": "Sign in and authorize"
+  },
+  "等待你开始测试": {
+    "zh-CN": "等待你开始测试",
+    "en": "Waiting for you to start the test"
+  },
+  "等待前置步骤": {
+    "zh-CN": "等待前置步骤",
+    "en": "Waiting for earlier steps"
+  },
+  "等待授权": {
+    "zh-CN": "等待授权",
+    "en": "Waiting for authorization"
+  },
+  "等待环境就绪": {
+    "zh-CN": "等待环境就绪",
+    "en": "Waiting for the runtime"
+  },
+  "自动恢复未完成，请联系管理员。": {
+    "zh-CN": "自动恢复未完成，请联系管理员。",
+    "en": "Automatic recovery did not complete. Please contact an administrator."
+  },
+  "获取运行环境版本": {
+    "zh-CN": "获取运行环境版本",
+    "en": "Checking available runtime versions"
+  },
+  "请确认接口协议，再选择运行器": {
+    "zh-CN": "请确认接口协议，再选择运行器",
+    "en": "Confirm the API protocol, then select a runner"
+  },
+  "还没有可用的模型 API。点击上方按钮，填写接口地址、API Key 和模型即可继续。": {
+    "zh-CN": "还没有可用的模型 API。点击上方按钮，填写接口地址、API Key 和模型即可继续。",
+    "en": "No model API is available yet. Use the button above to enter the endpoint, API key and model."
+  },
+  "错误类别：{p0}": {
+    "zh-CN": "错误类别：{p0}",
+    "en": "Error category: {p0}"
+  },
   "正在转换演示文稿，首次打开可能需要一些时间…": {
     "zh-CN": "正在转换演示文稿，首次打开可能需要一些时间…",
     "en": "Preparing presentation preview. The first conversion may take a moment…"
