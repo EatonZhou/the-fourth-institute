@@ -427,7 +427,7 @@
         ${failures.length ? window.PortalI18n.html`<p data-function-block-failure>内部出错：${esc(failures.map(component => component.title || component.id).join("、"))}</p>` : ""}
         <section class="functionBlockInstanceBindings"><span>来源模板</span><p>${esc(functionBlockSourceTitle(block))}</p>${block.template_id ? '<button class="portalButton" type="button" data-function-block-source>查看来源模板</button>' : ""}</section>
         ${functionBlockInsideResidentsHtml(block)}
-        ${roles ? window.PortalI18n.html`<section class="functionBlockInstanceBindings"><span>额度不足时自动转组</span><button class="portalButton" type="button" role="switch" aria-label="额度不足时自动转组" aria-checked="${autoMigrate}" data-family-auto-migrate${readonly ? " disabled" : ""}>${autoMigrate ? window.PortalI18n.t("开启") : window.PortalI18n.t("关闭")}</button><p>适用于成员、Router 和 Steward。开启时，在执行前按五小时、周等窗口的最低剩余额度切换可用账号，必要时切换 Provider。关闭后等待原账号额度恢复；已开始的迁移会继续完成。</p></section>` : ""}
+        ${roles ? window.PortalI18n.html`<div class="familyAutoMigrateSetting"><span>当前 AI 后端额度不足时自动转到别的后端</span><button class="portalButton residentMenuToggle" type="button" role="switch" aria-label="额度不足时自动转组" aria-checked="${autoMigrate}" data-family-auto-migrate${readonly ? " disabled" : ""}></button></div>` : ""}
         ${functionBlockOverviewWorkflowHtml(block, readonly, taskDrafts, expandedTasks)}
         <div class="programInspectorActions functionBlockInstanceActions">
           <button class="portalButton" type="button" data-function-block-save-template${readonly ? " disabled" : ""}>存为模板</button>

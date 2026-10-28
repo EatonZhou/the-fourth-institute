@@ -75,7 +75,7 @@
               <div class="residentMenuName"><strong id="nodeMenuName"></strong><button class="portalButton is-icon is-quiet" id="nodeMenuRename" type="button" aria-label="重命名" data-portal-icon="edit"></button></div>
               <div id="nodeMenuRenameFields" hidden><label><span id="nodeSettingsNameLabel">Resident 名称</span><input id="nodeSettingsName" form="nodeSettingsForm" maxlength="120" autocomplete="off" /></label><button class="portalButton" type="submit" form="nodeSettingsForm">保存名称</button><button class="portalButton" type="button" id="nodeMenuRenameCancel">取消</button></div>
               <div class="residentMenuMeta">
-                <div class="residentMenuIdRow"><code id="nodeResidentIdentityReadout"></code><section id="nodeSettingsIntake"><button class="portalButton is-compact" id="nodeSettingsIntakeToggle" type="button" aria-label="切换接单状态"><span id="nodeSettingsIntakeState">OPEN</span></button><span id="nodeSettingsIntakeHint" class="residentMenuIntakeHint"></span></section></div>
+                <div class="residentMenuIdRow"><code id="nodeResidentIdentityReadout"></code><section id="nodeSettingsIntake"><button class="portalButton is-compact residentMenuToggle" id="nodeSettingsIntakeToggle" type="button" aria-label="切换接单状态"><span id="nodeSettingsIntakeState">OPEN</span></button><span id="nodeSettingsIntakeHint" class="residentMenuIntakeHint"></span></section></div>
                 <div class="residentMenuLineage"><span id="nodeLineageIdentityReadout"></span><button class="portalButton is-compact" id="transferNodeBtn" type="button" aria-expanded="false" aria-controls="nodeTransferFields">Move</button></div>
               </div>
               <div id="nodeTransferFields" hidden><p>转移保留 Resident 身份与会话，并迁移自有 Workspace。未保存的名称不会提交。</p><p id="nodeTransferFamily" hidden></p><label class="portalField"><span>目标 Lineage</span><select id="nodeTransferTarget" disabled><option value="">加载中…</option></select></label><p id="nodeTransferStatus" role="status"></p><button class="portalButton is-primary" id="nodeTransferConfirmBtn" type="button" disabled>确认转移</button></div>
@@ -448,9 +448,7 @@
       const root = $id("nodeMenuFamilySettings");
       const autoMigrate = context.family.family.auto_migrate !== false;
       root.innerHTML = window.PortalI18n.html`<p class="paneNote">在这里查看和调整 Family 内部成员的工作状态、Backend、账号与接单设置。</p>
-        <section class="residentMenuFamilyActions">
-          <section><div><strong>额度不足时自动转组</strong><p>适用于成员、Router 和 Steward。开启时，在执行前按五小时、周等窗口的最低剩余额度切换可用账号，必要时切换 Provider。关闭后等待原账号额度恢复；已开始的迁移会继续完成。</p></div><button class="portalButton" type="button" role="switch" aria-label="额度不足时自动转组" aria-checked="${autoMigrate}" data-family-auto-migrate>${autoMigrate ? window.PortalI18n.t("开启") : window.PortalI18n.t("关闭")}</button></section>
-        </section>
+        <div class="familyAutoMigrateSetting"><span>当前 AI 后端额度不足时自动转到别的后端</span><button class="portalButton residentMenuToggle" type="button" role="switch" aria-label="额度不足时自动转组" aria-checked="${autoMigrate}" data-family-auto-migrate></button></div>
         <p role="alert" data-family-settings-error hidden></p>
         <div class="residentMenuMembersHeader"><strong>成员</strong><button class="portalButton is-compact" type="button" data-family-add aria-expanded="false" aria-controls="familyMemberPicker">＋ 添加成员</button></div>
         <div id="familyMemberPicker" class="residentMenuMemberPicker" hidden></div>

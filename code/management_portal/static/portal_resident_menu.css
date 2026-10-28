@@ -15,6 +15,9 @@
 .residentMenuFamilyActions > section > div { flex: 1; min-width: 0; }
 .residentMenuFamilyActions p { margin: 6px 0 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
 .residentMenuFamilyActions button { flex-shrink: 0; }
+.familyAutoMigrateSetting { display:flex; align-items:center; gap:8px; margin:12px 0; font-size:12px; line-height:1.5; color:var(--muted); }
+.familyAutoMigrateSetting > span { min-width:0; }
+.familyAutoMigrateSetting > button { flex:none; }
 .residentMenuMembersHeader { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:12px 0 8px; font-size:13px; }
 .residentMenuMemberPicker { margin-bottom:12px; padding:12px; border:1px solid var(--border); border-radius:10px; background:var(--panel-2); }
 .residentMenuMemberPicker[hidden] { display:none; }
@@ -453,12 +456,12 @@
 .residentMenuIntakeHint { display:none; }
 #nodeSettingsIntake[data-state=open] button { color:var(--success,#2a9a6a); }
 #nodeSettingsIntake[data-state=closed] button { color:var(--muted); }
-#nodeSettingsIntakeToggle { display:inline-flex; align-items:center; gap:6px; min-width:0; min-height:28px; padding:3px 4px; border:0; box-shadow:none; background:transparent; font-size:11px; justify-content:center; cursor:pointer; }
+.residentMenuToggle { display:inline-flex; align-items:center; gap:6px; min-width:0; min-height:28px; padding:3px 4px; border:0; box-shadow:none; background:transparent; font-size:11px; justify-content:center; cursor:pointer; }
 #transferNodeBtn { flex:none; min-height:26px; padding:3px 9px; border:0; box-shadow:none; background:var(--panel-2); color:var(--muted); font-size:11px; }
 #transferNodeBtn:hover { background:color-mix(in srgb, var(--accent) 9%, var(--panel)); color:var(--accent); }
-#nodeSettingsIntakeToggle::before { content:""; flex:none; width:24px; height:14px; border-radius:7px; background:radial-gradient(circle at 7px 7px, var(--panel,#fff) 0 5px, transparent 5.5px), var(--muted); }
-#nodeSettingsIntakeToggle[aria-checked="true"]::before { background:radial-gradient(circle at 17px 7px, var(--panel,#fff) 0 5px, transparent 5.5px), var(--success,#2a9a6a); }
-#nodeSettingsIntakeToggle:disabled { cursor:wait; }
+.residentMenuToggle::before { content:""; flex:none; width:24px; height:14px; border-radius:7px; background:radial-gradient(circle at 7px 7px, var(--panel,#fff) 0 5px, transparent 5.5px), var(--muted); }
+.residentMenuToggle[aria-checked="true"]::before { background:radial-gradient(circle at 17px 7px, var(--panel,#fff) 0 5px, transparent 5.5px), var(--success,#2a9a6a); }
+.residentMenuToggle:disabled { cursor:wait; }
 #nodeMenuRenameFields:not([hidden]) { display:flex; gap:8px; align-items:end; flex-wrap:wrap; }
 #nodeMenuRenameFields label { flex:1; }
 .nodeSettingsSurface .nodeSettingsBody { grid-template-columns:var(--menu-rail-width) minmax(0,1fr); }
