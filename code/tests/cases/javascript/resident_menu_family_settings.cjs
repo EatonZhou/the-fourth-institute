@@ -3,11 +3,11 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 const source = fs.readFileSync(require('node:path').join(__dirname, '../../../management_portal/static/portal_resident_menu.js'), 'utf8');
-function fn(name) {
-  const start = source.search(new RegExp('    (?:async )?function ' + name + '\\('));
+function fn(name, text = source) {
+  const start = text.search(new RegExp('    (?:async )?function ' + name + '\\('));
   assert(start >= 0);
-  const end = source.indexOf('\n    }', start);
-  return source.slice(start, end + 6);
+  const end = text.indexOf('\n    }', start);
+  return text.slice(start, end + 6);
 }
 function harness(flag) {
   const calls=[], notices=[];
@@ -40,4 +40,21 @@ test('duplicate click is ignored and switching menus during read cannot mutate a
   const context=h.ctx.nodeMenuContext;const running=h.ctx.saveFamilyAutoMigrate(context);
   await h.ctx.saveFamilyAutoMigrate(context);assert.equal(h.calls.length,1);
   h.ctx.nodeMenuContext={residentId:'other'};finish({lineage:{revision:17,function_blocks:[context.family]}});await running;assert.equal(h.calls.length,1);
+});
+
+test('saved Family policy refreshes the canvas snapshot used to reopen the menu',async()=>{
+  const h=harness();
+  const state={lineage:{lineage_id:'lineage_one',function_blocks:[h.ctx.nodeMenuContext.family]}};
+  Object.assign(h.ctx,{state,removeSelectedNode(){},renderGraph(){},revealUnfamilizedMember(){},
+    commitLineage:value=>{state.lineage=value},
+    societyService:{loadLineage:async id=>{assert.equal(id,'lineage_one');return h.ctx.lineage;}}});
+  const dialogs=fs.readFileSync(require('node:path').join(__dirname,'../../../management_portal/static/hatg_resident_dialogs.js'),'utf8');
+  vm.runInContext(fn('residentMenuHandlers',dialogs),h.ctx);
+  h.ctx.changed=h.ctx.residentMenuHandlers().onChanged;
+  await h.ctx.saveFamilyAutoMigrate(h.ctx.nodeMenuContext);
+  // Reopening receives the canvas snapshot, not the previous dialog-local copy.
+  h.ctx.lineage=state.lineage;
+  h.ctx.nodeMenuContext.family=state.lineage.function_blocks[0];
+  h.ctx.renderFamilySettings(h.ctx.nodeMenuContext);
+  assert.match(h.root.html,/aria-checked="false"/);
 });

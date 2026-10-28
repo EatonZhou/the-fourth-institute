@@ -193,7 +193,7 @@
             commitLineage(result.lineage);
           } else if (type === "intake") {
             renderGraph();
-          } else if (type === "delete-family" || type === "unfamilize" || type === "family-members") {
+          } else if (type === "delete-family" || type === "unfamilize" || type === "family-members" || type === "family-auto-migrate") {
             window.PortalResidentProjection?.invalidate?.(residentId);
             commitLineage(await societyService.loadLineage(lineageId));
             if (type === "unfamilize") revealUnfamilizedMember(lineageId, result);
