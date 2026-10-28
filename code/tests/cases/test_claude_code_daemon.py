@@ -41,6 +41,58 @@ def _untimed(steps: list[dict]) -> list[dict]:
 
 class ClaudeCodeDaemonTest(unittest.IsolatedAsyncioTestCase):
 
+    async def test_health_is_ready_before_accounts_are_registered(self):
+        """新实例的 daemon 就绪不依赖账号登记、默认路由或密钥。"""
+        with mock.patch.dict(os.environ):
+            os.environ.pop("PORTAL_CLAUDE_CODE_PROVIDER_PROFILE", None)
+            daemon = daemon_module.ClaudeCodeDaemon()
+        with (
+            mock.patch.object(daemon_module, "_provider_environment", side_effect=AssertionError("must not read credentials")) as environment,
+            mock.patch.object(daemon_module, "_provider_profile", side_effect=AssertionError("must not read registry")) as profile,
+        ):
+            health = await daemon.health()
+        self.assertEqual(daemon.default_profile, "")
+        self.assertEqual(health["status"], "ok")
+        self.assertEqual(health["health_scope"], "runtime")
+        self.assertTrue(health["runtime_ready"])
+        self.assertEqual(health["provider_profile"], "")
+        self.assertIsNone(health["provider_ready"])
+        self.assertEqual(health["provider_check_status"], "not_checked")
+        self.assertEqual(health["authentication_status"], "not_checked")
+        self.assertEqual(health["provider_error"], "")
+        self.assertEqual(health["enabled_models"], [])
+        environment.assert_not_called()
+        profile.assert_not_called()
+
+    async def test_health_does_not_claim_authentication_for_configured_routes(self):
+        """配置了失效路由或未登录的订阅账号，都不能从 health 推断账号结果。"""
+        for route in ("missing-route", "unauthenticated-subscription"):
+            with self.subTest(route=route), mock.patch.dict(os.environ, {"PORTAL_CLAUDE_CODE_PROVIDER_PROFILE": route}):
+                daemon = daemon_module.ClaudeCodeDaemon()
+                with mock.patch.object(daemon_module, "_provider_environment", side_effect=ValueError("private endpoint and token")) as environment:
+                    health = await daemon.health()
+                self.assertEqual(health["status"], "ok")
+                self.assertEqual(health["provider_profile"], route)
+                self.assertIsNone(health["provider_ready"])
+                self.assertEqual(health["authentication_status"], "not_checked")
+                self.assertNotIn("private endpoint", json.dumps(health))
+                environment.assert_not_called()
+
+    async def test_health_preserves_runtime_capacity_when_busy(self):
+        """服务已就绪且容量已满时，不把 busy 混成账号或服务失败。"""
+        daemon = daemon_module.ClaudeCodeDaemon()
+        daemon.max_concurrency = 1
+        daemon._sessions["busy"] = daemon_module.SessionHandle(
+            key="busy", signature=(), client=mock.Mock(), active_turn_id="turn",
+        )
+        health = await daemon.health()
+        self.assertEqual(health["status"], "ok")
+        self.assertTrue(health["runtime_ready"])
+        self.assertEqual(health["active"], 1)
+        self.assertEqual(health["loaded_sessions"], 1)
+        self.assertFalse(health["available"])
+        self.assertTrue(health["capabilities"]["harness_tools"])
+
     async def test_context_usage_reports_current_window_and_rejects_stale_turn(self):
         """上下文用量按当前窗口上报，轮次已过期或读取失败时不上报
 

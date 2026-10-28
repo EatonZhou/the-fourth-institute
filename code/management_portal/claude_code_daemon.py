@@ -60,7 +60,9 @@ def _app_server_version() -> str:
 
 
 APP_SERVER_VERSION = _app_server_version()
-DEFAULT_PROVIDER_PROFILE = "deepseek_primary"
+# A deployment may explicitly configure a fallback, but fresh installations
+# have no account/route until onboarding. Requests normally select their route.
+DEFAULT_PROVIDER_PROFILE = ""
 OWNER_TOOLS = ["Read", "Write", "Edit", "Glob", "Grep", "Bash", "NotebookEdit", "WebFetch", "WebSearch"]
 NON_OWNER_TOOLS = ["Read", "Glob", "Grep", "WebFetch", "WebSearch"]
 NON_OWNER_DISALLOWED_TOOLS = ["Write", "Edit", "Bash", "NotebookEdit"]
@@ -1696,23 +1698,26 @@ class ClaudeCodeDaemon:
         async with self._sessions_lock:
             loaded = len(self._sessions)
             active = sum(1 for handle in self._sessions.values() if handle.active_turn_id)
-        provider_error = ""
-        enabled_models: list[str] = []
-        try:
-            _provider_env, profile = _provider_environment(self.default_profile)
-            enabled_models = AIProviderRegistry.models(profile)
-        except Exception as exc:
-            provider_error = str(exc)[:500]
+        # This is daemon readiness, not an account check. Looking up a route
+        # here requires registration/secrets before users can even log in, and
+        # constructing its environment never proves authentication anyway.
+        # Keep this endpoint independent of registry, credentials and network.
         return {
-            "status": "ok" if not provider_error else "degraded",
+            "status": "ok",
+            "health_scope": "runtime",
+            "runtime_ready": True,
             "backend": "claude",
             "app_server_version": APP_SERVER_VERSION,
             "protocol_version": APP_SERVER_PROTOCOL_VERSION,
             "capabilities": {"harness_tools": True, "resident_environment": True, "account_usage": True, "input_media": True, "auto_compact_window": True, "turn_steer": True, "session_compact": True, "turn_reattach": True, "turn_continue": True, "subagent_switch": True},
             "provider_profile": self.default_profile,
-            "provider_ready": not provider_error,
-            "provider_error": provider_error,
-            "enabled_models": enabled_models,
+            # Retain legacy keys, with null meaning untested rather than an
+            # assertion that an account is authenticated or a route is broken.
+            "provider_ready": None,
+            "provider_check_status": "not_checked",
+            "authentication_status": "not_checked",
+            "provider_error": "",
+            "enabled_models": [],
             "max_concurrency": self.max_concurrency,
             "active": active,
             "available": active < self.max_concurrency,
