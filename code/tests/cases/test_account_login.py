@@ -188,6 +188,29 @@ def test_initial_login_probe_failure_is_safe_and_does_not_cache_logged_out(isola
     assert login.get_login_state(registration) == "logged_in"
 
 
+def test_kimi_missing_runtime_keeps_registration_and_onboarding_readable(isolated_login, monkeypatch):
+    """A fresh Kimi account must reach preparation before its server exists."""
+    from management_portal import permission_system
+    from management_portal.kimi_code_client import KimiCodeUnavailable
+    from management_portal.execution import isa, account_setup
+
+    registration = {"account_id": "fresh_kimi", "route_id": "fresh_kimi", "provider": "kimi",
+                    "kind": "subscription_login", "enabled": True, "config": {}}
+    monkeypatch.setattr(login, "provider_logged_in", Mock(side_effect=KimiCodeUnavailable("runtime missing")))
+    monkeypatch.setattr(permission_system, "allows", lambda *_: False)
+    assert isa._registration_public(registration, "alice")["login_state"] == "unavailable"
+    monkeypatch.setattr(account_setup, "account", lambda _: registration)
+    monkeypatch.setattr(account_setup.provider_updates, "preparation_status", lambda _: {"status": "missing"})
+    monkeypatch.setattr(account_setup, "catalog", Mock(side_effect=KimiCodeUnavailable("runtime missing")))
+    observation = account_setup.get_setup(SimpleNamespace(argument=lambda _: "fresh_kimi"))["setup"]
+    assert observation["runtime_ready"] is False
+    assert observation["preparation"] == {"status": "missing"}
+    assert observation["login_state"] == "unavailable"
+    assert isolated_login.login_state("fresh_kimi", default=None) is None
+    monkeypatch.setattr(login, "provider_logged_in", lambda *_: False)
+    assert login.get_login_state(registration) == "logged_out"
+
+
 @pytest.mark.parametrize("transport", [None, "unix", "tcp"])
 def test_claude_code_submission_is_ephemeral_and_single_session(isolated_login, monkeypatch, capsys, transport):
     """同账号复用活跃登录，另一服务实例提交授权码后由 Provider 确认成功且不回显

@@ -127,6 +127,7 @@ def login_store():
 
 
 def get_login_state(registration):
+    from management_portal.native_agent_transport import NativeAgentUnavailable
     if registration.get("kind") != "subscription_login":
         return "not_applicable"
     store, account_id = login_store(), registration["account_id"]
@@ -138,7 +139,7 @@ def get_login_state(registration):
     observed_at = now()
     try:
         logged_in = provider_logged_in(registration["provider"], account_id)
-    except (OSError, ValueError, subprocess.TimeoutExpired, InstructionError):
+    except (OSError, ValueError, subprocess.TimeoutExpired, InstructionError, NativeAgentUnavailable):
         state = store.login_state(account_id, default=None)
         if state is not None:
             return state
