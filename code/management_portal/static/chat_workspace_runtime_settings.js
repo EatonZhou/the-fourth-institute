@@ -544,7 +544,10 @@
         '<form class="portalDetailForm portalRuntimeSettingsForm" data-session-restart-form>' +
         '<p class="portalRuntimeSettingsHint" data-session-restart-source></p><div data-resident-backend-notices role="status" hidden></div>' +
         '<section data-runtime-panel="switch_account"><label class="portalRuntimeSettingsField"><span>目标账号</span><select data-session-target></select></label>' +
-        '<p>保留当前有效上下文，等待正在运行的工作完成。切换失败时继续保留原会话。</p>' +
+        '<p>等待正在运行的工作完成后切换。切换失败时继续保留原会话。</p>' +
+        '<p data-switch-context-status role="status"></p>' +
+        '<label class="portalRuntimeSettingsField" data-switch-context-field hidden><span>无法完整保留上下文，请明确选择</span><select data-switch-context></select></label>' +
+        '<p data-switch-context-description role="status"></p>' +
         '<div data-target-editor-host hidden><p>请选择目标 Provider 的模型。</p></div></section>' +
         '<section data-runtime-panel="parameters" hidden><div data-runtime-editor-host></div>' +
         '<p>保存后从下一轮生效，不会重新开始会话。执行沙箱控制 Provider 的本机执行；Portal 资源访问仍按 Portal 权限检查。</p></section>' +
@@ -563,6 +566,7 @@
       document.body.append(overlay);
       const find = selector => overlay.querySelector(selector);
       const form = find("form"), target = find("[data-session-target]"), strategy = find('[data-session-restart="strategy"]');
+      const switchContext = find("[data-switch-context]");
       const submit = find("[data-session-restart-submit]"), cancel = find("[data-session-restart-cancel]");
       const saveButton = find("[data-runtime-settings-submit]"), capabilityButton = find("[data-capability-submit]");
       const source = find("[data-session-restart-source]"), saveHint = find("[data-runtime-save-hint]");
@@ -587,6 +591,25 @@
         return provider === current.source?.provider && canonicalAccount(provider, account) === canonicalAccount(provider, current.source?.account_id);
       };
       const crossProvider = () => selected()[0] && selected()[0] !== current.source?.provider;
+      const targetContextOptions = () => {
+        const [provider, account] = selected();
+        return current.accounts?.[provider]?.find(row => row.id === account || row.account_id === account)?.context_options || [];
+      };
+      const contextChoice = () => targetContextOptions().find(row => row.id === switchContext.value && row.enabled);
+      const renderContext = () => {
+        const choices = targetContextOptions();
+        const preserve = choices.find(row => row.id === "preserve");
+        const needsChoice = !!target.value && !sameAccount() && !preserve?.enabled;
+        find("[data-switch-context-status]").textContent = window.PortalI18n.t(!target.value || sameAccount() ? ""
+          : preserve?.description || "尚未获得目标账号的上下文能力，请关闭后重新打开设置。");
+        find("[data-switch-context-field]").hidden = !needsChoice;
+        switchContext.replaceChildren(new Option(window.PortalI18n.t("请选择交接方式；不选择则不切换"), ""), ...choices.map(row => {
+          const option = new Option(window.PortalI18n.t(row.label), row.id);
+          option.disabled = !row.enabled; return option;
+        }));
+        // A new target never inherits consent to reduce another target's context.
+        switchContext.value = preserve?.enabled ? "preserve" : "";
+      };
       const dialog = window.PortalUI.createDialogController({
         modal: overlay, manageHidden: true, escapeClose: true, backdropClose: true,
         initialFocus: () => target,
@@ -604,14 +627,17 @@
           button.setAttribute("aria-pressed", String(button.dataset.runtimeView === view));
           button.hidden = ["parameters", "capabilities"].includes(button.dataset.runtimeView) && !current.onSave;
         });
-        target.disabled = locked; strategy.disabled = locked;
+        target.disabled = locked; strategy.disabled = locked; switchContext.disabled = locked;
         editor.element.disabled = locked; targetEditor.element.disabled = locked;
         capabilities.disabled(locked);
         saveButton.hidden = view !== "parameters" || !current.onSave; saveButton.disabled = locked;
         capabilityButton.hidden = view !== "capabilities" || !current.onSave; capabilityButton.disabled = locked;
         submit.hidden = !["switch_account", "restart"].includes(view);
-        submit.disabled = submitting || !restart || (tracking && !retry) || (!retry && view === "switch_account" && (!target.value || sameAccount() || (crossProvider() && !targetReady)));
-        submit.textContent = window.PortalI18n.t(retry ? "重试同一请求" : submitting ? "正在提交…" : purpose[view]);
+        const choice = contextChoice();
+        find("[data-switch-context-description]").textContent = window.PortalI18n.t(choice && choice.id !== "preserve" ? choice.description : "");
+        submit.disabled = submitting || !restart || (tracking && !retry) || (!retry && view === "switch_account" && (!target.value || sameAccount() || !choice || (crossProvider() && !targetReady)));
+        const switchLabel = {compact: "精简交接并切换", visible: "交接可见对话并切换", fresh: "空白开始并切换"}[choice?.id] || "切换账号";
+        submit.textContent = window.PortalI18n.t(retry ? "重试同一请求" : submitting ? "正在提交…" : view === "switch_account" ? switchLabel : purpose[view]);
         cancel.hidden = !tracking; cancel.disabled = submitting || restartView.restart?.status === "cancelling";
       };
       const loadTarget = async () => {
@@ -624,7 +650,7 @@
         try {
           const catalog = await restartService.runtimeCatalog({backend: provider, accountId: canonicalAccount(provider, account)});
           if (revision !== catalogRevision || overlay.hidden) return;
-          targetEditor.open({}, {catalog, showApiAccount: false, hint: "选择目标模型后再切换；不自动压缩或摘要交接。"});
+          targetEditor.open({}, {catalog, showApiAccount: false, hint: "请选择目标模型；上下文按上方明确选择的方式处理。"});
           targetReady = true;
         } catch (error) {
           if (revision === catalogRevision) window.PortalUI.toast(window.PortalUI.errorMessage("读取目标模型", error), "error");
@@ -635,7 +661,8 @@
         view = button.dataset.runtimeView; saveHint.textContent = ""; update();
       }));
       overlay.querySelectorAll("[data-session-restart-close]").forEach(button => button.addEventListener("click", () => close({source: "button"})));
-      target.addEventListener("change", () => {requestKey = requestId(); void loadTarget();});
+      target.addEventListener("change", () => {requestKey = requestId(); renderContext(); void loadTarget();});
+      switchContext.addEventListener("change", () => {requestKey = requestId(); update();});
       saveButton.addEventListener("click", async () => {
         if (saveButton.disabled || !current.onSave) return;
         try {
@@ -690,9 +717,9 @@
           submitting = true; update();
           const result = restartView.restart?.status === "confirming"
             ? await restartService.retrySessionRestart(current.resident_id)
-            : await restart({operation: isSwitch ? "switch_account" : "restart",
+            : await restart({operation: isSwitch && contextChoice()?.id === "preserve" ? "switch_account" : "restart",
               target_provider: provider, target_account: account,
-              context_strategy: isSwitch ? "preserve" : strategy.value,
+              context_strategy: isSwitch ? contextChoice().id : strategy.value,
               active_execution_policy: "wait", resume_failed_input: false, ...runtime, idempotency_key: requestKey});
           current.restart = result; restartView.restart = result;
           tracking = sessionRestartActive(result); progress.update(restartView);
@@ -720,6 +747,7 @@
           target.replaceChildren(new Option(window.PortalI18n.t("选择目标账号"), ""), ...groups);
           const sourceAccount = current.accounts?.[current.source?.provider]?.find(row => row.id === current.source.account_id || row.account_id === current.source.account_id);
           target.value = sourceAccount ? JSON.stringify([current.source.provider, sourceAccount.id]) : "";
+          renderContext();
           const label = current.providers?.find(row => row.id === current.source?.provider)?.label || current.source?.provider || "";
           source.textContent = "当前：" + label + " · " + (sourceAccount?.label || current.source?.account_id || "未绑定账号");
           find("[data-session-binding-fields]").innerHTML = [
@@ -734,11 +762,17 @@
             unobserve = restartService.observeSessionRestart(current.resident_id, value => {
               const wasTracking = tracking;
               restartView = value; tracking = sessionRestartActive(value.restart);
-              if (tracking && value.restart?.operation) view = value.restart.operation;
               if (tracking && value.restart?.target) {
                 const endpoint = value.restart.target;
                 const row = current.accounts?.[endpoint.provider]?.find(item => item.id === endpoint.account_id || item.account_id === endpoint.account_id);
-                if (row) target.value = JSON.stringify([endpoint.provider, row.id]);
+                if (row) {
+                  const value = JSON.stringify([endpoint.provider, row.id]);
+                  if (target.value !== value) {target.value = value; renderContext();}
+                }
+                if (value.restart.operation) view = sameAccount() ? value.restart.operation : "switch_account";
+                if (value.restart.context_strategy) switchContext.value = value.restart.context_strategy;
+              } else if (tracking && value.restart?.operation) {
+                view = value.restart.operation;
               }
               progress.update(value); update();
               if (wasTracking && ["completed", "cancelled"].includes(value.restart?.status)) close({accepted: true});

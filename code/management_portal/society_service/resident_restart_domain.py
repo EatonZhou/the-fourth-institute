@@ -27,6 +27,7 @@ from management_portal.execution.accounts import (
 )
 from management_portal.execution.contracts import ExecutionRequest
 from management_portal.execution.provider_catalog import AGENT_PROVIDERS
+from dataclasses import dataclass, replace
 from typing import Any, Mapping
 import copy
 import hashlib
@@ -41,6 +42,67 @@ SESSION_RESTART_STRATEGIES = frozenset(
     {"preserve", "smart", "native", "compact", "visible", "fresh"}
 )
 SESSION_RESTART_ACTIVE_EXECUTION_POLICIES = frozenset({"wait", "cancel"})
+# Runtime settings a restart request may choose for the target session.
+SESSION_RESTART_SETTING_FIELDS = (
+    "model", "reasoning_effort", "collaboration_mode", "service_tier", "permission_preset",
+    "prompt_context", "backend_options",
+)
+
+
+@dataclass(frozen=True)
+class _RestartTarget:
+    """The Provider and account route a restart moves the Resident's session to, from its current ones."""
+
+    source_provider: str
+    source_route: str
+    provider: str
+    route: str
+    definition: Any
+    account: dict[str, Any]
+
+    @property
+    def same_route(self) -> bool:
+        return self.source_provider == self.provider and self.source_route == self.route
+
+
+@dataclass(frozen=True)
+class _ActiveWork:
+    """What a restart does with the Resident's active work before it replaces the session."""
+
+    record: dict[str, Any]
+    reassigned_execution_id: str = ""
+    preserved_execution_id: str = ""
+    preserved_message_id: str = ""
+    # The restart waits for the running turn to end (resident_deferred_restart).
+    scheduled: dict[str, Any] | None = None
+
+
+@dataclass(frozen=True)
+class _SessionRestart:
+    """One admitted RestartSession: what it replaces, where it goes and how context moves there."""
+
+    resident_id: str
+    target_resident_id: str
+    actor_id: str
+    body: dict[str, Any]
+    portal_reason: str
+    intake_transition_id: str
+    request_id: str
+    public_request_id: str
+    restart_id: str
+    deferred: dict[str, Any]
+    operation: str
+    requested_strategy: str
+    strategy: str
+    intent: dict[str, Any]
+    source: dict[str, Any]
+    target: _RestartTarget
+    target_runtime_settings: dict[str, Any]
+    source_binding: dict[str, Any]
+    source_configuration: Any
+    failed_input: dict[str, Any]
+    resume_message_id: str
+    work: _ActiveWork
 
 
 def _session_restart_provider(value: object) -> str:
@@ -369,17 +431,20 @@ def get_resident_restart_options(
     if not resident_access.can_manage(record, actor_id):
         raise manage_refusal(record)
     source = resident_backend.session_record(record)
+    source_snapshot = _session_restart_source(record, source)
+    has_context = source_snapshot["has_session"] or _unbound_previous_context(record, source_snapshot)
     catalog = runtime_configuration_catalog()["backends"]
     return {
         "resident_id": target.resident_id,
-        "source": _session_restart_source(record, source),
+        "source": source_snapshot,
         "restart": copy.deepcopy(record.get("session_restart") or {}),
         "runtime_settings": resident_runtime_domain.read_resident_runtime_settings(record),
         "choose_runtime_settings": True,
         "preservation_capabilities": preservation.preservation_capabilities(),
         "providers": [{"id": row["provider"], "label": row.get("label", row["provider"]),
                        "operations": row.get("operations", [])} for row in catalog],
-        "accounts": {row["provider"]: [{"id": route["backend_route_id"], "account_id": route.get("account_id", ""), "label": route["label"]} for route in row["routes"]]
+        "accounts": {row["provider"]: [{"id": route["backend_route_id"], "account_id": route.get("account_id", ""), "label": route["label"],
+                                      "context_options": preservation.context_options(source_snapshot, row["provider"], route["backend_route_id"], has_context=has_context)} for route in row["routes"]]
                      for row in catalog},
         "strategies": [
             {"id": "preserve", "label": "完整保留上下文", "recommended": True},
@@ -430,14 +495,7 @@ def restart_resident_session(
     from . import resident_access
 
     body = payload if isinstance(payload, dict) else {}
-    operation = str(body.get("operation") or "restart")
-    if operation not in {"switch_account", "restart"}:
-        raise ValueError("operation 必须是 switch_account 或 restart")
-    requested_strategy = str(body.get("context_strategy") or "preserve").strip().lower()
-    if operation == "switch_account" and requested_strategy != "preserve":
-        raise ValueError("switch_account requires context_strategy=preserve")
-    if operation == "switch_account" and body.get("resume_failed_input"):
-        raise ValueError("账号切换不重派失败输入；请对具体输入单独重试")
+    operation, requested_strategy = _requested_restart(body)
     actor_id = canonical_actor_id(actor)
     if not actor_id:
         raise ValueError("需要登录后重启 session")
@@ -461,17 +519,99 @@ def restart_resident_session(
         previous_restart = record.get("session_restart") or {}
         from .resident_deferred_restart import pending as deferred_restart
         deferred = deferred_restart(record)
-        if request_id and deferred.get("request_id") == request_id:
-            preservation.check_replay(previous_restart, body)
-            return copy.deepcopy(previous_restart)
-        if deferred and request_id != (deferred.get("payload") or {}).get("idempotency_key"):
-            raise ValueError("已有等待本轮结束的迁移，请先取消原迁移")
-        if request_id and previous_restart.get("request_id") == request_id:
-            preservation.check_replay(previous_restart, body)
-            return copy.deepcopy(previous_restart)
+        replayed = _replayed_restart(previous_restart, deferred, request_id, body)
+        if replayed is not None:
+            return replayed
         source_binding = resident_backend.session_record(record)
         source_configuration = preservation.configuration_version(record)
     source = _session_restart_source(record, source_binding)
+    source_provider, target_provider = _restart_providers(body, source)
+    if requested_strategy not in SESSION_RESTART_STRATEGIES:
+        raise ValueError("未知的 session 重启上下文策略")
+    active_execution_policy = str(body.get("active_execution_policy") or "wait").strip().lower()
+    if active_execution_policy not in SESSION_RESTART_ACTIVE_EXECUTION_POLICIES:
+        raise ValueError("active_execution_policy 必须是 wait 或 cancel")
+    restart_target = _restart_target(body, source, source_provider, target_provider)
+    if operation == "switch_account" and restart_target.same_route:
+        return _unchanged_restart(resident_id, operation, source_binding)
+    target_runtime_settings = _target_runtime_settings(record, body, restart_target, actor_id)
+    strategy, unbound_previous_session = _restart_strategy(
+        resident_id, record, source, restart_target, requested_strategy,
+    )
+    intent = _restart_intent(body, operation, source, restart_target, strategy, active_execution_policy)
+    failed_input = _failed_input_to_resume(record, body, intent, restart_target)
+    pending = _pending_restart(resident_id, actor_id, record, intent)
+    if pending:
+        return pending
+    work = _settle_active_work(
+        record, target.resident_id, actor_id, body, source, restart_target, intent,
+        active_execution_policy=active_execution_policy, portal_reason=portal_reason,
+    )
+    if work.scheduled is not None:
+        return work.scheduled
+    restart = _SessionRestart(
+        resident_id=resident_id,
+        target_resident_id=target.resident_id,
+        actor_id=actor_id,
+        body=body,
+        portal_reason=portal_reason,
+        intake_transition_id=intake_transition_id,
+        request_id=request_id,
+        # A deferred request advances the same operation, including after a lost
+        # handoff response. Its public identity must not become a second restart.
+        public_request_id=str(deferred['request_id']) if deferred else request_id,
+        restart_id=str(previous_restart['restart_id']) if deferred else f"restart_{secrets.token_hex(12)}",
+        deferred=deferred,
+        operation=operation,
+        requested_strategy=requested_strategy,
+        strategy=strategy,
+        intent=intent,
+        source=source,
+        target=restart_target,
+        target_runtime_settings=target_runtime_settings,
+        source_binding=source_binding,
+        source_configuration=source_configuration,
+        failed_input=failed_input,
+        resume_message_id=str(failed_input.get("message_id") or "") if intent["resume_failed_input"] else "",
+        work=work,
+    )
+    if (restart_target.provider == "provider_api" or strategy == "fresh"
+            or (not source["has_session"] and not unbound_previous_session)):
+        return _configure_session_target(restart)
+    return _admit_session_replacement(restart)
+
+
+def _requested_restart(body: Mapping[str, Any]) -> tuple[str, str]:
+    """The requested operation and context strategy, checked against each other."""
+
+    operation = str(body.get("operation") or "restart")
+    if operation not in {"switch_account", "restart"}:
+        raise ValueError("operation 必须是 switch_account 或 restart")
+    requested_strategy = str(body.get("context_strategy") or "preserve").strip().lower()
+    if operation == "switch_account" and requested_strategy != "preserve":
+        raise ValueError("switch_account requires context_strategy=preserve")
+    if operation == "switch_account" and body.get("resume_failed_input"):
+        raise ValueError("账号切换不重派失败输入；请对具体输入单独重试")
+    return operation, requested_strategy
+
+
+def _replayed_restart(
+    previous_restart: Mapping[str, Any], deferred: Mapping[str, Any], request_id: str, body: Mapping[str, Any],
+) -> dict[str, Any] | None:
+    """The restart a repeated request already started; None for a new request."""
+
+    if request_id and deferred.get("request_id") == request_id:
+        preservation.check_replay(previous_restart, body)
+        return copy.deepcopy(previous_restart)
+    if deferred and request_id != (deferred.get("payload") or {}).get("idempotency_key"):
+        raise ValueError("已有等待本轮结束的迁移，请先取消原迁移")
+    if request_id and previous_restart.get("request_id") == request_id:
+        preservation.check_replay(previous_restart, body)
+        return copy.deepcopy(previous_restart)
+    return None
+
+
+def _restart_providers(body: Mapping[str, Any], source: Mapping[str, Any]) -> tuple[str, str]:
     source_provider = _session_restart_provider(source["provider"])
     target_provider = _session_restart_provider(
         body.get("target_provider") or source_provider
@@ -480,26 +620,42 @@ def restart_resident_session(
         not isinstance(body.get("model"), str) or not body["model"].strip()
     ):
         raise ValueError("跨 Provider 切换必须明确指定目标 model")
-    if requested_strategy not in SESSION_RESTART_STRATEGIES:
-        raise ValueError("未知的 session 重启上下文策略")
-    active_execution_policy = str(body.get("active_execution_policy") or "wait").strip().lower()
-    if active_execution_policy not in SESSION_RESTART_ACTIVE_EXECUTION_POLICIES:
-        raise ValueError("active_execution_policy 必须是 wait 或 cancel")
+    return source_provider, target_provider
 
+
+def _restart_target(
+    body: Mapping[str, Any], source: Mapping[str, Any], source_provider: str, target_provider: str,
+) -> _RestartTarget:
     source_route = source["account_id"]
-    definition = AGENT_PROVIDERS.get(target_provider)
     requested_route = str(body.get("target_account") or (source_route if source_provider == target_provider else ""))
     if target_provider == "provider_api" and not requested_route:
         raise ValueError("请选择 Model API 账号")
     selected_account = resolve_account_configuration(requested_route if target_provider == "provider_api" else target_provider, requested_route)
-    target_route = requested_route if target_provider == "provider_api" else str(selected_account.get("backend_route_id") or "")
-    if operation == "switch_account" and source_provider == target_provider and source_route == target_route:
-        return {"status": "completed", "phase": "unchanged", "no_op": True,
-                "operation": operation, "operation_id": "", "restart_id": "", "resident_id": resident_id,
-                "context_strategy": "preserve", "context_result": "unchanged",
-                "actual_binding": copy.deepcopy(source_binding), "model_operation": False}
+    return _RestartTarget(
+        source_provider=source_provider,
+        source_route=source_route,
+        provider=target_provider,
+        route=requested_route if target_provider == "provider_api" else str(selected_account.get("backend_route_id") or ""),
+        definition=AGENT_PROVIDERS.get(target_provider),
+        account=selected_account,
+    )
+
+
+def _unchanged_restart(resident_id: str, operation: str, source_binding: Mapping[str, Any]) -> dict[str, Any]:
+    return {"status": "completed", "phase": "unchanged", "no_op": True,
+            "operation": operation, "operation_id": "", "restart_id": "", "resident_id": resident_id,
+            "context_strategy": "preserve", "context_result": "unchanged",
+            "actual_binding": copy.deepcopy(source_binding), "model_operation": False}
+
+
+def _target_runtime_settings(
+    record: dict[str, Any], body: Mapping[str, Any], target: _RestartTarget, actor_id: str,
+) -> dict[str, Any]:
+    """The runtime settings the Resident has on the target: its current ones reconciled with the request."""
+
+    definition, target_provider, target_route = target.definition, target.provider, target.route
     current_settings = resident_runtime_domain.read_resident_runtime_settings(record)
-    if source_provider != target_provider:
+    if target.source_provider != target_provider:
         # Portal intent survives Provider changes. Provider model/transport
         # parameters are reconciled independently against the destination.
         current_settings = {key: copy.deepcopy(current_settings[key]) for key in (
@@ -537,36 +693,50 @@ def restart_resident_session(
     if definition and native_updates:
         checked = definition.runtime_adapter().validate_updates(definition, target_route, target_runtime_settings, native_updates)
         target_runtime_settings = definition.runtime_adapter().reconcile(definition, target_route, {**target_runtime_settings, **checked})
+    return target_runtime_settings
 
+
+def _unbound_previous_context(record: Mapping[str, Any], source: Mapping[str, Any]) -> bool:
+    # A failed input can leave history before the Provider session was bound.
+    # Cleared context never makes an old session eligible for handoff again.
+    return source["provider"] == "provider_api" or (not source["has_session"] and bool(
+        execution_port.latest_provider_session_ref(
+            record["resident_id"], since=str(record.get("context_reset_at") or ""),
+        )
+    ))
+
+
+def _restart_strategy(
+    resident_id: str,
+    record: dict[str, Any],
+    source: Mapping[str, Any],
+    target: _RestartTarget,
+    requested_strategy: str,
+) -> tuple[str, bool]:
+    """How context moves to the new session, and whether an unbound previous session holds work."""
+
+    target_provider = target.provider
     same_native_route = (
-        source_provider == target_provider
-        and definition is not None and "fork" in definition.operations
-        and source_route == target_route
+        target.source_provider == target_provider
+        and target.definition is not None and "fork" in target.definition.operations
+        and target.source_route == target.route
     )
     # A turn that failed before its session was bound still left a Provider
     # session with the Resident's work in it.  Restarting such a Resident hands
     # that work to a new session instead of only changing its configuration.
     # The sessions released when the context was cleared hold no such work.
-    unbound_previous_session = source_provider == "provider_api" or (not source["has_session"] and bool(
-        execution_port.latest_provider_session_ref(
-            resident_id, since=str(record.get("context_reset_at") or ""),
-        )
-    ))
+    unbound_previous_session = _unbound_previous_context(record, source)
     strategy = requested_strategy
     if target_provider == "provider_api" and strategy == "native":
         raise ValueError("Model API 不支持 Provider 原生 Fork")
     if strategy == "smart":
         strategy = "preserve"  # Compatibility never implies a lossy handoff.
-    preserve_context = strategy == "preserve"
-    if preserve_context and (source["has_session"] or unbound_previous_session):
-        if source_provider != target_provider:
-            raise ValueError("Cannot preserve full context across these Providers; original session retained")
+    if strategy == "preserve" and (source["has_session"] or unbound_previous_session):
+        error = preservation.preserve_route_error(source, target_provider, target.route, has_context=True)
+        if error:
+            raise ValueError(error)
         if same_native_route and source["has_session"]:
             strategy = "native"
-        elif target_provider == "codex":
-            strategy = "preserve"
-        elif target_provider != "provider_api" or source_route != target_route:
-            raise ValueError("目标账号不支持完整上下文导入，原会话已保留")
     if target_provider == "provider_api" and strategy in {"compact", "visible"}:
         raise ValueError("Model API does not support an explicit session handoff operation")
     if source["has_session"] and strategy == "native" and not same_native_route:
@@ -577,294 +747,307 @@ def restart_resident_session(
         raise ValueError(
             "上一个 Provider session 尚未绑定，不能原生 Fork；请使用智能选择或精简交接"
         )
+    return strategy, unbound_previous_session
+
+
+def _restart_intent(
+    body: Mapping[str, Any],
+    operation: str,
+    source: Mapping[str, Any],
+    target: _RestartTarget,
+    strategy: str,
+    active_execution_policy: str,
+) -> dict[str, Any]:
+    """What the restart asks for; an unfinished restart with the same intent is the same restart."""
 
     intent = {
         "operation": operation,
-        "source_generation": source["generation"], "target_provider": target_provider,
-        "target_account": target_route, "context_strategy": strategy, "active_execution_policy": active_execution_policy,
+        "source_generation": source["generation"], "target_provider": target.provider,
+        "target_account": target.route, "context_strategy": strategy, "active_execution_policy": active_execution_policy,
         "resume_failed_input": body.get("resume_failed_input", False),
-        **({"runtime_settings": {key: body[key] for key in ("model", "reasoning_effort", "collaboration_mode", "service_tier", "permission_preset", "prompt_context", "backend_options") if key in body}}
-           if any(key in body for key in ("model", "reasoning_effort", "collaboration_mode", "service_tier", "permission_preset", "prompt_context", "backend_options")) else {}),
+        **({"runtime_settings": {key: body[key] for key in SESSION_RESTART_SETTING_FIELDS if key in body}}
+           if any(key in body for key in SESSION_RESTART_SETTING_FIELDS) else {}),
     }
     if not isinstance(intent["resume_failed_input"], bool):
         raise ValueError("resume_failed_input 必须是 boolean")
+    return intent
+
+
+def _failed_input_to_resume(
+    record: dict[str, Any], body: Mapping[str, Any], intent: Mapping[str, Any], target: _RestartTarget,
+) -> dict[str, Any]:
     from .resident_work_recovery import latest_failed_input
     # An explicit opt-out must also suppress an older automatic recovery choice.
     # An omitted choice keeps the default non-retry path free of unrelated inputs.
-    failed_input = latest_failed_input(record) if (
-        body.get("resume_failed_input") is False
-        or intent["resume_failed_input"] and (
-            source_provider != target_provider or source_route != target_route
-        )
-    ) else {}
-    resume_message_id = str(failed_input.get("message_id") or "") if intent["resume_failed_input"] else ""
+    if body.get("resume_failed_input") is False or intent["resume_failed_input"] and not target.same_route:
+        return latest_failed_input(record)
+    return {}
+
+
+def _pending_restart(
+    resident_id: str, actor_id: str, record: dict[str, Any], intent: dict[str, Any],
+) -> dict[str, Any] | None:
+    """The unfinished restart with this intent, after cancelling one with another intent."""
+
     try:
         with resident_record_domain.state_lock(resident_id):
-            pending = _pending_session_restart(resident_record_domain.find_resident(resident_id) or record, intent)
+            return _pending_session_restart(resident_record_domain.find_resident(resident_id) or record, intent)
     except _SessionRestartSuperseded as superseded:
         _supersede_session_restart(resident_id, actor_id, superseded.previous)
         with resident_record_domain.state_lock(resident_id):
-            pending = _admitted_session_restart(resident_record_domain.find_resident(resident_id) or record, intent)
-    if pending:
-        return pending
+            return _admitted_session_restart(resident_record_domain.find_resident(resident_id) or record, intent)
+
+
+def _settle_active_work(
+    record: dict[str, Any],
+    resident_id: str,
+    actor_id: str,
+    body: dict[str, Any],
+    source: dict[str, Any],
+    target: _RestartTarget,
+    intent: dict[str, Any],
+    *,
+    active_execution_policy: str,
+    portal_reason: str,
+) -> _ActiveWork:
+    """Keep, move, wait for or cancel the active work, as the restart's policy and the work allow."""
 
     current_job = resident_execution_work.read(record)
-    reassigned_execution_id = ""
-    preserved_execution_id = ""
-    preserved_held_message_id = ""
+    if not current_job or not resident_execution_work.is_active(current_job):
+        return _ActiveWork(record)
+    if active_execution_policy == "wait" and can_preserve_restart_input(record, current_job):
+        # Intake may already be closed while durable inputs wait for a new
+        # session, or admission may be waiting for a safe account. Such
+        # inputs have not entered Execution, so session migration
+        # can preserve their message/execution identities.
+        return _ActiveWork(
+            record,
+            preserved_execution_id=str(current_job.get("execution_id") or ""),
+            preserved_message_id=str(current_job.get("user_message_id") or ""),
+        )
+    if active_execution_policy == "wait":
+        candidate_execution_id = resident_execution_work.submitted_execution_id(current_job)
+        can_preserve_queued_execution = (
+            not source["has_session"]
+            and target.source_provider == target.provider
+            and bool(target.route)
+            and bool(candidate_execution_id)
+            and str(current_job.get("status") or "") != "running"
+        )
+        if not can_preserve_queued_execution:
+            from .resident_deferred_restart import schedule
+            return _ActiveWork(record, scheduled=schedule(record, actor_id, body, source, intent, portal_reason=portal_reason))
+        execution_port.service().reassign_queued_route(
+            candidate_execution_id,
+            actor=resident_execution_work.request_actor(current_job),
+            backend_route_id=target.route,
+            performed_by=actor_id,
+        )
+        return _ActiveWork(record, reassigned_execution_id=candidate_execution_id)
+    resident_execution_domain.request_resident_execution_cancellation(
+        resident_id,
+        actor_id,
+        str(current_job.get("user_message_id") or ""),
+    )
+    refreshed = resident_record_domain.resolve_resident_runtime_target(
+        resident_id,
+        actor_id,
+        require_visible=True,
+    ).record
+    current_job = resident_execution_work.read(refreshed)
     if current_job and resident_execution_work.is_active(current_job):
-        if active_execution_policy == "wait" and can_preserve_restart_input(record, current_job):
-            # Intake may already be closed while durable inputs wait for a new
-            # session, or admission may be waiting for a safe account. Such
-            # inputs have not entered Execution, so session migration
-            # can preserve their message/execution identities.
-            preserved_execution_id = str(current_job.get("execution_id") or "")
-            preserved_held_message_id = str(current_job.get("user_message_id") or "")
-        elif active_execution_policy == "wait":
-            candidate_execution_id = resident_execution_work.submitted_execution_id(current_job)
-            can_preserve_queued_execution = (
-                not source["has_session"]
-                and source_provider == target_provider
-                and bool(target_route)
-                and bool(candidate_execution_id)
-                and str(current_job.get("status") or "") != "running"
-            )
-            if not can_preserve_queued_execution:
-                from .resident_deferred_restart import schedule
-                return schedule(record, actor_id, body, source, intent, portal_reason=portal_reason)
-            execution_port.service().reassign_queued_route(
-                candidate_execution_id,
-                actor=resident_execution_work.request_actor(current_job),
-                backend_route_id=target_route,
-                performed_by=actor_id,
-            )
-            reassigned_execution_id = candidate_execution_id
-        else:
-            resident_execution_domain.request_resident_execution_cancellation(
-                target.resident_id,
-                actor_id,
-                str(current_job.get("user_message_id") or ""),
-            )
-            refreshed = resident_record_domain.resolve_resident_runtime_target(
-                target.resident_id,
-                actor_id,
-                require_visible=True,
-            ).record
-            current_job = resident_execution_work.read(refreshed)
-            if current_job and resident_execution_work.is_active(current_job):
-                raise RuntimeError("当前工作正在停止，请稍后重试 session 重启")
-            record = refreshed
+        raise RuntimeError("当前工作正在停止，请稍后重试 session 重启")
+    return _ActiveWork(refreshed)
 
-    # A deferred request advances the same operation, including after a lost
-    # handoff response. Its public identity must not become a second restart.
-    restart_id = str(previous_restart['restart_id']) if deferred else f"restart_{secrets.token_hex(12)}"
-    public_request_id = str(deferred['request_id']) if deferred else request_id
-    configuration_only = (target_provider == "provider_api" or
-                          strategy == "fresh" or
-                          (not source["has_session"] and not unbound_previous_session))
-    if configuration_only:
-        with resident_record_domain.state_lock(resident_id):
-            current = copy.deepcopy(resident_record_domain.find_resident(resident_id) or {})
-            if not current:
-                raise KeyError("resident not found")
-            if not portal_reason and not resident_access.can_manage(current, actor_id):
-                raise manage_refusal(current)
-            previous = current.get("session_restart") or {}
-            if request_id and previous.get("request_id") == request_id:
-                preservation.check_replay(previous, body)
-                return copy.deepcopy(previous)
-            pending = _admitted_session_restart(current, intent)
-            if pending:
-                return pending
-            current_binding = resident_backend.session_record(current, expected_binding=source_binding)
-            if preservation.configuration_version(current) != source_configuration:
-                raise ValueError("Resident configuration changed before session preparation")
-            if bool(current_binding) != bool(source_binding):
-                raise ValueError("当前 Session 已变化，请刷新后重试")
-            active_now = resident_execution_work.read(current)
-            same_held_job = bool(
-                preserved_execution_id
-                and resident_execution_work.is_active(active_now)
-                and can_preserve_restart_input(current, active_now)
-                and str(active_now.get("execution_id") or "") == preserved_execution_id
-                and str(active_now.get("user_message_id") or "") == preserved_held_message_id
+
+def _is_preserved_held_job(record: dict[str, Any], job: dict[str, Any], execution_id: str, message_id: str) -> bool:
+    """Whether ``job`` is still the held input a restart keeps across the session switch."""
+
+    return bool(
+        execution_id
+        and resident_execution_work.is_active(job)
+        and can_preserve_restart_input(record, job)
+        and str(job.get("execution_id") or "") == execution_id
+        and str(job.get("user_message_id") or "") == message_id
+    )
+
+
+def _check_unchanged_since_admission(
+    current: dict[str, Any], restart: _SessionRestart, *, reassigned_execution_id: str = "",
+) -> None:
+    """Under the Resident lock: the configuration, session and work the restart was admitted for still stand."""
+
+    current_binding = resident_backend.session_record(current, expected_binding=restart.source_binding)
+    if preservation.configuration_version(current) != restart.source_configuration:
+        raise ValueError("Resident configuration changed before session preparation")
+    if bool(current_binding) != bool(restart.source_binding):
+        raise ValueError("当前 Session 已变化，请刷新后重试")
+    active_now = resident_execution_work.read(current)
+    same_held_job = _is_preserved_held_job(
+        current, active_now, restart.work.preserved_execution_id, restart.work.preserved_message_id,
+    )
+    if resident_execution_work.is_active(active_now) and (
+        not same_held_job
+        and (
+            not reassigned_execution_id
+            or resident_execution_work.submitted_execution_id(active_now) != reassigned_execution_id
+        )
+    ):
+        raise ValueError("Resident 已开始新的工作，请稍后重试")
+
+
+def _configure_session_target(restart: _SessionRestart) -> dict[str, Any]:
+    """A restart that needs no prepared session only changes the Resident's Provider configuration."""
+
+    from . import resident_access
+
+    resident_id, actor_id, target = restart.resident_id, restart.actor_id, restart.target
+    with resident_record_domain.state_lock(resident_id):
+        current = copy.deepcopy(resident_record_domain.find_resident(resident_id) or {})
+        if not current:
+            raise KeyError("resident not found")
+        if not restart.portal_reason and not resident_access.can_manage(current, actor_id):
+            raise manage_refusal(current)
+        previous = current.get("session_restart") or {}
+        if restart.request_id and previous.get("request_id") == restart.request_id:
+            preservation.check_replay(previous, restart.body)
+            return copy.deepcopy(previous)
+        pending = _admitted_session_restart(current, restart.intent)
+        if pending:
+            return pending
+        _check_unchanged_since_admission(current, restart, reassigned_execution_id=restart.work.reassigned_execution_id)
+        _apply_resident_session_target(
+            current,
+            target.provider,
+            target.route,
+            runtime_settings=restart.target_runtime_settings,
+        )
+        if restart.strategy == "fresh":
+            current["session_state"] = "pending_create"
+        state = _configured_restart_state(restart)
+        current["session_restart"] = state
+        current["updated_at"] = state["configured_at"]
+        replacement = None
+        try:
+            if target.provider == "provider_api" or restart.strategy == "fresh":
+                replacement = _detach_previous_session(current, restart.source_binding)
+            resident_catalog.get_catalog().state_store.transaction(
+                lambda: _commit_session_configuration(current, state, restart)
             )
-            if resident_execution_work.is_active(active_now) and (
-                not same_held_job
-                and (
-                    not reassigned_execution_id
-                    or resident_execution_work.submitted_execution_id(active_now) != reassigned_execution_id
-                )
-            ):
-                raise ValueError("Resident 已开始新的工作，请稍后重试")
-            _apply_resident_session_target(
-                current,
-                target_provider,
-                target_route,
-                runtime_settings=target_runtime_settings,
-            )
-            if strategy == "fresh":
-                current["session_state"] = "pending_create"
-            state = {
-                "operation": operation, "operation_id": restart_id,
-                "request_signature": preservation.request_signature(body),
-                "context_result": "fresh" if strategy == "fresh" else "preserved",
-                "model_operation": False,
-                "status": "completed", "phase": "completed", "configuration_only": True,
-                "restart_id": restart_id, "request_id": public_request_id,
-                "resident_id": target.resident_id,
-                "source": {"provider": source_provider, "account_id": source_route},
-                "target": {"provider": target_provider, "account_id": target_route},
-                "provider": target_provider, "account_id": target_route,
-                "previous_session_retained": source["has_session"],
-                "context_strategy": strategy,
-                "active_execution_reassigned": bool(reassigned_execution_id),
-                "execution_id": reassigned_execution_id,
-                "configured_by": actor_id, "configured_at": resident_domain_common.now_iso(),
-                "resume_message_id": resume_message_id,
-                "resume_failed_input": intent["resume_failed_input"],
-                "failed_message_id": str(failed_input.get("message_id") or ""),
-            }
-            if portal_reason:
-                state["reason"] = portal_reason
-            current["session_restart"] = state
-            if deferred:
-                state["deferred"] = copy.deepcopy(deferred)
-                state["execution_request_id"] = request_id
-            current["updated_at"] = state["configured_at"]
-            def commit_configuration():
-                resident_record_domain.save_resident_record(current, commit_configuration=True)
-                if strategy == "fresh":
-                    execution_port.reset_provider_context(resident_id, actor_ref=actor_id, reset_at=state["configured_at"])
-                refreshed = current
-                if failed_input:
-                    from .resident_work_recovery import resume_after_restart, set_recovery_entry
-                    if not intent["resume_failed_input"]:
-                        set_recovery_entry(current, str(failed_input["message_id"]), disabled=True)
-                        resident_record_domain.save_resident_record(current)
-                    else:
-                        resume_after_restart(current, state)
-                        refreshed = resident_record_domain.find_resident(resident_id)
-                        refreshed["session_restart"] = state
-                        resident_record_domain.save_resident_record(refreshed)
-                if intake_transition_id and refreshed.get("intake_transition_id") == intake_transition_id:
-                    resident_input_queue_domain.commit_resident_intake_state(refreshed, resident_state.INTAKE_OPEN)
-            replacement = None
-            try:
-                if target_provider == "provider_api" or strategy == "fresh":
-                    if source_binding:
-                        resident_backend.delete_session_identity(current, expected_provider_session_ref=str(source_binding.get("provider_session_ref") or ""))
-                        replacement = {"previous_binding": source_binding, "current_binding": {
-                            "binding_id": resident_backend.execution_binding_id(current), "provider_session_ref": "", "detached": True}}
-                    native_goal = current.get("codex_goal")
-                    if isinstance(native_goal, dict) and native_goal.get("status") == "active":
-                        current["codex_goal"] = {**native_goal, "status": "paused", "paused_reason": "session_restart"}
-                resident_catalog.get_catalog().state_store.transaction(commit_configuration)
-            except Exception:
-                if replacement is not None:
-                    resident_backend.restore_replaced_session(record, replacement)
-                raise
-        if intake_transition_id:
-            resident_execution_domain.resume_resident_execution(resident_id)
-        return copy.deepcopy(state)
-    prepared_binding_id = f"session-restart:{restart_id}"
+        except Exception:
+            if replacement is not None:
+                resident_backend.restore_replaced_session(restart.work.record, replacement)
+            raise
+    if restart.intake_transition_id:
+        resident_execution_domain.resume_resident_execution(resident_id)
+    return copy.deepcopy(state)
+
+
+def _configured_restart_state(restart: _SessionRestart) -> dict[str, Any]:
+    target, strategy = restart.target, restart.strategy
+    reassigned_execution_id = restart.work.reassigned_execution_id
+    state = {
+        "operation": restart.operation, "operation_id": restart.restart_id,
+        "request_signature": preservation.request_signature(restart.body),
+        "context_result": "fresh" if strategy == "fresh" else "preserved",
+        "model_operation": False,
+        "status": "completed", "phase": "completed", "configuration_only": True,
+        "restart_id": restart.restart_id, "request_id": restart.public_request_id,
+        "resident_id": restart.target_resident_id,
+        "source": {"provider": target.source_provider, "account_id": target.source_route},
+        "target": {"provider": target.provider, "account_id": target.route},
+        "provider": target.provider, "account_id": target.route,
+        "previous_session_retained": restart.source["has_session"],
+        "context_strategy": strategy,
+        "active_execution_reassigned": bool(reassigned_execution_id),
+        "execution_id": reassigned_execution_id,
+        "configured_by": restart.actor_id, "configured_at": resident_domain_common.now_iso(),
+        "resume_message_id": restart.resume_message_id,
+        "resume_failed_input": restart.intent["resume_failed_input"],
+        "failed_message_id": str(restart.failed_input.get("message_id") or ""),
+    }
+    if restart.portal_reason:
+        state["reason"] = restart.portal_reason
+    if restart.deferred:
+        state["deferred"] = copy.deepcopy(restart.deferred)
+        state["execution_request_id"] = restart.request_id
+    return state
+
+
+def _detach_previous_session(current: dict[str, Any], source_binding: dict[str, Any]) -> dict[str, Any] | None:
+    """Release the session a configuration-only restart leaves behind; its paused goal stays paused.
+
+    Returns the replacement to restore when the configuration commit fails.
+    """
+
+    replacement = None
+    if source_binding:
+        resident_backend.delete_session_identity(current, expected_provider_session_ref=str(source_binding.get("provider_session_ref") or ""))
+        replacement = {"previous_binding": source_binding, "current_binding": {
+            "binding_id": resident_backend.execution_binding_id(current), "provider_session_ref": "", "detached": True}}
+    native_goal = current.get("codex_goal")
+    if isinstance(native_goal, dict) and native_goal.get("status") == "active":
+        current["codex_goal"] = {**native_goal, "status": "paused", "paused_reason": "session_restart"}
+    return replacement
+
+
+def _commit_session_configuration(current: dict[str, Any], state: dict[str, Any], restart: _SessionRestart) -> None:
+    resident_id = restart.resident_id
+    resident_record_domain.save_resident_record(current, commit_configuration=True)
+    if restart.strategy == "fresh":
+        execution_port.reset_provider_context(resident_id, actor_ref=restart.actor_id, reset_at=state["configured_at"])
+    refreshed = current
+    if restart.failed_input:
+        from .resident_work_recovery import resume_after_restart, set_recovery_entry
+        if not restart.intent["resume_failed_input"]:
+            set_recovery_entry(current, str(restart.failed_input["message_id"]), disabled=True)
+            resident_record_domain.save_resident_record(current)
+        else:
+            resume_after_restart(current, state)
+            refreshed = resident_record_domain.find_resident(resident_id)
+            refreshed["session_restart"] = state
+            resident_record_domain.save_resident_record(refreshed)
+    if restart.intake_transition_id and refreshed.get("intake_transition_id") == restart.intake_transition_id:
+        resident_input_queue_domain.commit_resident_intake_state(refreshed, resident_state.INTAKE_OPEN)
+
+
+def _admit_session_replacement(restart: _SessionRestart) -> dict[str, Any]:
+    """Prepare a new session as a lifecycle operation; the Resident switches to it when it is ready."""
+
+    resident_id, record = restart.resident_id, restart.work.record
+    prepared_binding_id = f"session-restart:{restart.restart_id}"
     quota_override: dict[str, Any] = {}
     quota_admission: dict[str, Any] = {}
-    if selected_account.get("quota_protection_enabled") is True:
-        quota_admission = _account_session_open_quota(selected_account)
+    if restart.target.account.get("quota_protection_enabled") is True:
+        quota_admission = _account_session_open_quota(restart.target.account)
         quota_override = {
             "binding_id": prepared_binding_id,
             "revision": 1,
             "enabled": True,
         }
     prompt = ""
-    if strategy in {"compact", "visible"}:
+    if restart.strategy in {"compact", "visible"}:
         prompt = _session_restart_handoff_prompt(
-                record,
-                resident_conversation_stream.get_repository().snapshot(target.resident_id, history_limit=36),
-                strategy=strategy,
-            )
-    injection_record = {**record, "backend": target_provider, "backend_route_id": target_route}
-    request = resident_session_backend_domain.build_backend_session_operation_request(
-        backend=target_provider, operation=("fork" if strategy == "native" else
-                                           "turn" if strategy in {"compact", "visible"} else "create"),
-        actor=actor_id, cwd=resident_runtime_domain.resident_working_directory(record), prompt=prompt,
-        binding_id=prepared_binding_id, correlation_id=restart_id,
-        source_binding_id=resident_backend.execution_binding_id(record) if strategy == "native" else "",
-        backend_route_id=target_route,
-        runtime_options=_session_restart_runtime_options(
             record,
-            target_provider,
-            actor_id,
-            runtime_settings=target_runtime_settings,
-            target_route=target_route,
-        ),
-        # The prepared binding does not name the Resident, and the new thread
-        # keeps the tools it starts with: without this it never has hatg_instruction.
-        metadata={"resident_id": target.resident_id, "preserve_session_context": strategy in {"native", "preserve"},
-                  "expected_source_binding": copy.deepcopy(source_binding)},
-        system_instructions=(
-            resident_execution_domain.resident_system_instructions(injection_record, {}, settings=target_runtime_settings)
-            if strategy != "native" else None
-        ),
-    )
-    state = {
-        "operation": operation, "operation_id": restart_id,
-        "request_signature": preservation.request_signature(body),
-        "source_configuration": source_configuration,
-        "model_operation": strategy in {"compact", "visible"},
-        "context_result": "pending",
-        "status": "accepted", "phase": "accepted", "restart_id": restart_id, "request_id": public_request_id,
-        "intent": intent, "execution_id": request.execution_id, "submitted_by": actor_id,
-        "resident_id": target.resident_id, "requested_strategy": requested_strategy,
-        "context_strategy": strategy, "submitted_at": resident_domain_common.now_iso(),
-        "source": {"provider": source_provider, "account_id": source_route},
-        "target": {"provider": target_provider, "account_id": target_route},
-        "target_runtime_settings": copy.deepcopy(target_runtime_settings),
-        "quota_admission": copy.deepcopy(quota_admission),
-        "previous_session_retained": True,
-        "resume_message_id": resume_message_id,
-        "resume_failed_input": intent["resume_failed_input"],
-        "failed_message_id": str(failed_input.get("message_id") or ""),
-    }
-    if portal_reason:
-        state["reason"] = portal_reason
-    if deferred:
-        state["deferred"] = copy.deepcopy(deferred)
-        state["execution_request_id"] = request_id
-    if preserved_execution_id:
-        state["preserved_held_input"] = {
-            "execution_id": preserved_execution_id,
-            "message_id": preserved_held_message_id,
-        }
+            resident_conversation_stream.get_repository().snapshot(restart.target_resident_id, history_limit=36),
+            strategy=restart.strategy,
+        )
+    request = _session_operation_request(restart, prompt, prepared_binding_id)
+    state = _accepted_restart_state(restart, request, quota_admission)
     with resident_record_domain.state_lock(resident_id):
         current = copy.deepcopy(resident_record_domain.find_resident(resident_id) or {})
         if not current:
             raise KeyError("resident not found")
-        pending = _admitted_session_restart(current, intent)
+        pending = _admitted_session_restart(current, restart.intent)
         if pending:
             return pending
-        current_binding = resident_backend.session_record(current, expected_binding=source_binding)
-        if preservation.configuration_version(current) != source_configuration:
-            raise ValueError("Resident configuration changed before session preparation")
-        if bool(current_binding) != bool(source_binding):
-            raise ValueError("当前 Session 已变化，请刷新后重试")
-        active_now = resident_execution_work.read(current)
-        same_held_job = bool(
-            preserved_execution_id
-            and resident_execution_work.is_active(active_now)
-            and can_preserve_restart_input(current, active_now)
-            and str(active_now.get("execution_id") or "") == preserved_execution_id
-            and str(active_now.get("user_message_id") or "") == preserved_held_message_id
-        )
-        if resident_execution_work.is_active(active_now) and not same_held_job:
-            raise ValueError("Resident 已开始新的工作，请稍后重试")
-        if strategy == "preserve":
-            from dataclasses import replace
+        _check_unchanged_since_admission(current, restart)
+        if restart.strategy == "preserve":
             request = replace(request, metadata={**request.metadata,
-                "fork_context_input": preservation.canonical_seed(current, source_binding)})
+                "fork_context_input": preservation.canonical_seed(current, restart.source_binding)})
+
         def commit():
-            transition_id = intake_transition_id
+            transition_id = restart.intake_transition_id
             if current.get("intake_open") is not False:
                 resident_input_queue_domain.commit_resident_intake_state(current, resident_state.INTAKE_CLOSED)
                 current.update(resident_record_domain.find_resident(resident_id))
@@ -874,13 +1057,80 @@ def restart_resident_session(
             resident_record_domain.lifecycle_operations().enqueue(resident_id, [{
                 "kind": "session_restart", "resident_id": resident_id,
                 "request": request.to_payload(), "state": state,
-                "record": copy.deepcopy(current), "source_binding": source_binding,
+                "record": copy.deepcopy(current), "source_binding": restart.source_binding,
                 "prepared_binding_id": prepared_binding_id,
                 "intake_transition_id": transition_id,
                 "quota_override": quota_override,
-            }, {"kind": "execution_ack", "execution_id": request.execution_id, "actor": actor_id}])
+            }, {"kind": "execution_ack", "execution_id": request.execution_id, "actor": restart.actor_id}])
         resident_catalog.get_catalog().state_store.transaction(commit)
     return copy.deepcopy(state)
+
+
+def _session_operation_request(restart: _SessionRestart, prompt: str, prepared_binding_id: str) -> ExecutionRequest:
+    """The Execution that prepares the new session: a native Fork, a handoff turn or a plain creation."""
+
+    record, strategy = restart.work.record, restart.strategy
+    target_provider, target_route = restart.target.provider, restart.target.route
+    injection_record = {**record, "backend": target_provider, "backend_route_id": target_route}
+    return resident_session_backend_domain.build_backend_session_operation_request(
+        backend=target_provider, operation=("fork" if strategy == "native" else
+                                           "turn" if strategy in {"compact", "visible"} else "create"),
+        actor=restart.actor_id, cwd=resident_runtime_domain.resident_working_directory(record), prompt=prompt,
+        binding_id=prepared_binding_id, correlation_id=restart.restart_id,
+        source_binding_id=resident_backend.execution_binding_id(record) if strategy == "native" else "",
+        backend_route_id=target_route,
+        runtime_options=_session_restart_runtime_options(
+            record,
+            target_provider,
+            restart.actor_id,
+            runtime_settings=restart.target_runtime_settings,
+            target_route=target_route,
+        ),
+        # The prepared binding does not name the Resident, and the new thread
+        # keeps the tools it starts with: without this it never has hatg_instruction.
+        metadata={"resident_id": restart.target_resident_id, "preserve_session_context": strategy in {"native", "preserve"},
+                  "expected_source_binding": copy.deepcopy(restart.source_binding)},
+        system_instructions=(
+            resident_execution_domain.resident_system_instructions(injection_record, {}, settings=restart.target_runtime_settings)
+            if strategy != "native" else None
+        ),
+    )
+
+
+def _accepted_restart_state(
+    restart: _SessionRestart, request: ExecutionRequest, quota_admission: dict[str, Any],
+) -> dict[str, Any]:
+    target, strategy = restart.target, restart.strategy
+    state = {
+        "operation": restart.operation, "operation_id": restart.restart_id,
+        "request_signature": preservation.request_signature(restart.body),
+        "source_configuration": restart.source_configuration,
+        "model_operation": strategy in {"compact", "visible"},
+        "context_result": "pending",
+        "status": "accepted", "phase": "accepted", "restart_id": restart.restart_id, "request_id": restart.public_request_id,
+        "intent": restart.intent, "execution_id": request.execution_id, "submitted_by": restart.actor_id,
+        "resident_id": restart.target_resident_id, "requested_strategy": restart.requested_strategy,
+        "context_strategy": strategy, "submitted_at": resident_domain_common.now_iso(),
+        "source": {"provider": target.source_provider, "account_id": target.source_route},
+        "target": {"provider": target.provider, "account_id": target.route},
+        "target_runtime_settings": copy.deepcopy(restart.target_runtime_settings),
+        "quota_admission": copy.deepcopy(quota_admission),
+        "previous_session_retained": True,
+        "resume_message_id": restart.resume_message_id,
+        "resume_failed_input": restart.intent["resume_failed_input"],
+        "failed_message_id": str(restart.failed_input.get("message_id") or ""),
+    }
+    if restart.portal_reason:
+        state["reason"] = restart.portal_reason
+    if restart.deferred:
+        state["deferred"] = copy.deepcopy(restart.deferred)
+        state["execution_request_id"] = restart.request_id
+    if restart.work.preserved_execution_id:
+        state["preserved_held_input"] = {
+            "execution_id": restart.work.preserved_execution_id,
+            "message_id": restart.work.preserved_message_id,
+        }
+    return state
 
 
 def resume_resident_session_restart(step: dict[str, Any]) -> None:
@@ -961,13 +1211,10 @@ def resume_resident_session_restart(step: dict[str, Any]) -> None:
                     raise ValueError("Resident configuration changed while preparing candidate session")
                 active_now = resident_execution_work.read(current)
                 preserved_held_input = state.get("preserved_held_input") or {}
-                same_held_job = bool(
-                    preserved_held_input.get("execution_id")
-                    and resident_execution_work.is_active(active_now)
-                    and can_preserve_restart_input(current, active_now)
-                    and str(active_now.get("execution_id") or "") == str(preserved_held_input["execution_id"])
-                    and str(active_now.get("user_message_id") or "")
-                    == str(preserved_held_input.get("message_id") or "")
+                same_held_job = _is_preserved_held_job(
+                    current, active_now,
+                    str(preserved_held_input.get("execution_id") or ""),
+                    str(preserved_held_input.get("message_id") or ""),
                 )
                 if resident_execution_work.is_active(active_now) and not same_held_job:
                     raise ValueError("Resident 已开始新的工作，不能替换其 Session")

@@ -213,13 +213,52 @@ def test_cross_provider_requires_explicit_model_before_side_effects(monkeypatch,
 
 def test_cross_provider_preserve_refuses_lossy_import(monkeypatch, isolated_portal_case):
     with isolated_portal_case():
-        record, operations, _ = _restart_domain(monkeypatch)
+        record, operations, saved = _restart_domain(monkeypatch)
+        original = copy.deepcopy(record)
         with pytest.raises(ValueError, match='preserv|保留'):
             domain.restart_resident_session(record['resident_id'], 'alice', {
                 'operation': 'switch_account', 'target_provider': 'claude', 'target_account': 'deepseek_primary',
                 'model': 'deepseek-v4-pro',
             })
-        assert operations == []
+        assert operations == [] and saved == [] and record == original
+
+
+@pytest.mark.parametrize('has_session,previous_session', [(True, False), (False, True), (False, False)])
+def test_switch_options_report_context_limits_without_reducing_context(monkeypatch, isolated_portal_case, has_session, previous_session):
+    with isolated_portal_case():
+        record, operations, saved = _restart_domain(monkeypatch)
+        if not has_session:
+            monkeypatch.setattr(resident_backend, 'session_record', lambda *_: {})
+        monkeypatch.setattr(execution_port, 'latest_provider_session_ref', lambda *a, **kw: 'unbound-history' if previous_session else '')
+        monkeypatch.setattr(domain, 'runtime_configuration_catalog', lambda: {'backends': [
+            {'provider': provider, 'routes': [{'backend_route_id': route, 'account_id': route, 'label': route}]}
+            for provider, route in [('codex', 'one'), ('claude', 'deepseek_primary'), ('provider_api', 'api-one')]
+        ]})
+        options = domain.get_resident_restart_options(record['resident_id'], 'alice')
+        codex = options['accounts']['codex'][0]['context_options']
+        claude = {row['id']: row for row in options['accounts']['claude'][0]['context_options']}
+        api = {row['id']: row for row in options['accounts']['provider_api'][0]['context_options']}
+        assert codex[0]['id'] == 'preserve' and codex[0]['enabled']
+        assert claude['preserve']['enabled'] is (not has_session and not previous_session)
+        assert claude['compact']['enabled'] and claude['visible']['enabled'] and claude['fresh']['enabled']
+        assert '细节' in claude['compact']['description'] and '工具过程' in claude['visible']['description']
+        assert not api['compact']['enabled'] and not api['visible']['enabled'] and api['fresh']['enabled']
+        assert operations == [] and saved == [], 'reading choices never starts a session or discards context'
+
+
+@pytest.mark.parametrize('strategy', ['compact', 'visible'])
+def test_explicit_cross_provider_handoff_prepares_before_changing_source(monkeypatch, isolated_portal_case, strategy):
+    with isolated_portal_case():
+        record, operations, _ = _restart_domain(monkeypatch)
+        original_binding = copy.deepcopy(resident_backend.session_record(record))
+        receipt = domain.restart_resident_session(record['resident_id'], 'alice', {
+            'operation': 'restart', 'target_provider': 'claude', 'target_account': 'deepseek_primary',
+            'model': 'deepseek-v4-pro', 'context_strategy': strategy,
+        })
+        assert receipt['status'] == 'accepted' and receipt['model_operation']
+        assert receipt['context_strategy'] == strategy and receipt['resume_failed_input'] is False
+        assert operations[-1]['operation'] == 'turn'
+        assert resident_backend.session_record(record) == original_binding
 
 
 def test_account_switch_freezes_effective_window_without_model(monkeypatch, isolated_portal_case):

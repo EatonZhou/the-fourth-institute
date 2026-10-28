@@ -20,10 +20,16 @@ w.PortalResidentService = {runtimeAccounts: async () => ({accounts: []}), runtim
   retrySessionRestart: async () => ({status: 'accepted', restart_id: 'same'})};
 w.PortalUI.toast = message => errors.push(String(message));
 const api = w.PortalChatWorkspaceRuntimeSettings.createRuntimeSettings({escapeHtml: w.PortalUIPrimitives.escapeHtml});
+const contextOptions = enabled => [
+  {id: 'preserve', label: '完整保留', enabled, description: enabled ? '不压缩上下文' : '这两个 Provider 无法完整保留上下文'},
+  {id: 'compact', label: '精简交接', enabled: true, description: '可能遗漏细节和工具过程'},
+  {id: 'visible', label: '仅可见对话', enabled: true, description: '不含完整工具过程'},
+  {id: 'fresh', label: '空白开始', enabled: true, description: '不携带当前上下文'},
+];
 const config = {resident_id: 'fixture', choose_runtime_settings: true, runtime_settings: {model: 'm'}, runtime_catalog: catalog,
   source: {provider: 'codex', account_id: 'two', has_session: true},
   providers: [{id: 'codex', label: 'Codex'}, {id: 'claude', label: 'Claude'}],
-  accounts: {codex: [{id: 'two', account_id: 'codex_two', label: 'two'}, {id: 'three', account_id: 'codex_three', label: 'three'}], claude: [{id: 'one', account_id: 'claude_one', label: 'one'}]},
+  accounts: {codex: [{id: 'two', account_id: 'codex_two', label: 'two', context_options: contextOptions(true)}, {id: 'three', account_id: 'codex_three', label: 'three', context_options: contextOptions(true)}], claude: [{id: 'one', account_id: 'claude_one', label: 'one', context_options: contextOptions(false)}]},
   onSave: async values => {saves.push(values); return {settings: values};}};
 const flush = async () => {for (let i = 0; i < 8; i++) await new Promise(resolve => setTimeout(resolve, 0));};
 const click = selector => w.document.querySelector(selector).click();
@@ -89,13 +95,50 @@ const plain = value => JSON.parse(JSON.stringify(value));
   const cross = api.createSessionRestartDialog();
   cross.open(config, async values => {changes.push(plain(values)); return {status: 'completed'};}); await flush();
   select('[data-session-target]', JSON.stringify(['claude', 'one'])); await flush();
+  assert.equal(w.document.querySelector('[data-session-restart-submit]').disabled, true, 'unsupported full preservation waits for explicit context choice');
+  assert.equal(w.document.querySelector('[data-switch-context]').value, '', 'never automatically select compact/visible/fresh');
+  assert.equal(w.document.querySelector('[data-switch-context] option[value="preserve"]').disabled, true);
+  assert.match(w.document.querySelector('[data-switch-context-status]').textContent, /无法完整保留/);
+  click('[data-session-restart-submit]'); await flush();
+  assert.equal(changes.length, 3, 'no mutation before context choice');
+  select('[data-switch-context]', 'compact');
   click('[data-session-restart-submit]'); await flush();
   assert.equal(changes.length, 3, 'cross-provider switch requires an explicit compatible model');
   assert.match(errors.pop(), /请选择目标 Provider 的模型/);
   select('[data-target-editor-host] [data-runtime-setting="model"]', 'm2');
+  click('[data-session-reload]'); await flush();
+  assert.equal(w.document.querySelector('[data-switch-context]').value, 'compact', 'refresh preserves explicit choice');
+  assert.match(w.document.querySelector('[data-switch-context-description]').textContent, /遗漏细节/);
+  assert.equal(w.document.querySelector('[data-session-restart-submit]').textContent, '精简交接并切换');
   click('[data-session-restart-submit]'); await flush();
-  assert.equal(changes[3].model, 'm2'); assert.equal(changes[3].target_provider, 'claude'); assert.equal(changes[3].context_strategy, 'preserve');
+  assert.equal(changes[3].model, 'm2'); assert.equal(changes[3].target_provider, 'claude'); assert.equal(changes[3].context_strategy, 'compact');
+  assert.equal(changes[3].operation, 'restart', 'a lossy handoff is an explicit restart, not a preserving account switch');
   cross.destroy();
+  for (const strategy of ['visible', 'fresh']) {
+    const explicit = api.createSessionRestartDialog();
+    explicit.open(config, async values => {changes.push(plain(values)); return {status: 'accepted', restart_id: strategy};}); await flush();
+    select('[data-session-target]', JSON.stringify(['claude', 'one'])); await flush();
+    select('[data-switch-context]', strategy);
+    select('[data-session-target]', JSON.stringify(['codex', 'three'])); await flush();
+    select('[data-session-target]', JSON.stringify(['claude', 'one'])); await flush();
+    assert.equal(w.document.querySelector('[data-switch-context]').value, '', 'changing targets resets consent to context reduction');
+    select('[data-switch-context]', strategy);
+    select('[data-target-editor-host] [data-runtime-setting="model"]', 'm2');
+    click('[data-session-restart-submit]'); await flush();
+    assert.equal(changes.at(-1).context_strategy, strategy); assert.equal(changes.at(-1).operation, 'restart');
+    observe({restart: {status: 'accepted', restart_id: strategy, operation: 'restart', context_strategy: strategy, target: {provider: 'claude', account_id: 'claude_one'}}}); await flush();
+    assert.equal(w.document.querySelector('[data-runtime-panel="switch_account"]').hidden, false, 'handoff progress retains the selected target and context explanation');
+    assert.equal(w.document.querySelector('[data-switch-context]').disabled, true);
+    explicit.destroy();
+  }
+  const beforeCancel = changes.length;
+  const cancelChoice = api.createSessionRestartDialog();
+  cancelChoice.open(config, async values => {changes.push(values);}); await flush();
+  select('[data-session-target]', JSON.stringify(['claude', 'one'])); await flush();
+  select('[data-switch-context]', 'fresh');
+  click('[data-session-restart-close]'); await flush();
+  assert.equal(changes.length, beforeCancel, 'closing context selection does not modify the session');
+  cancelChoice.destroy();
   assert.deepEqual(errors, []);
-  console.log('PASS same-account no-op; independent parameter/capability save; unknown delivery; refresh draft; preserve switch; explicit fresh restart');
+  console.log('PASS preserving switch, explicit compact/visible/fresh handoff, target change resets consent, cancellation, progress and settings drafts');
 })().catch(error => {console.error(error); process.exitCode = 1;}).finally(async () => {await flush(); dom.window.close();});
