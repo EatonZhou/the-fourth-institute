@@ -636,3 +636,14 @@ def test_execution_projection_keeps_messages_outside_bounded_activity_window(
         item["kind"] == "command"
         for item in projection["runtime_details"]
     )
+
+
+def test_provider_event_with_a_malformed_item_has_no_card() -> None:
+    """Provider 事件的 item 不是对象时不生成卡片，也不中断其余事件的投影"""
+    events = [
+        (1, {"type": "provider_event", "details": {"method": "item/completed", "params": {"item": "malformed"}}}),
+        (2, {"type": "provider_event", "details": {"method": "subagent/progress", "params": {"item": ["malformed"]}}}),
+        (3, {"type": "service_completed", "details": {}}),
+    ]
+    details = event_projection.runtime_details_from_objects(events, include_updates=True)
+    assert [detail["kind"] for detail in details] == ["completed"]
