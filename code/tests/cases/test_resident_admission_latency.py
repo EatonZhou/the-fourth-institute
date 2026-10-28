@@ -273,13 +273,13 @@ def test_admission_and_streaming_state_preserve_event_cursor_order(input_deliver
     rid = input_delivery["resident_id"]
     repository = resident_conversation_stream.get_repository()
     entered, release, writer_started = threading.Event(), threading.Event(), threading.Event()
-    record_event = repository._record_event
+    record_event = repository.events.record_event
     def pause_initial_input(connection, resident_id, event_type, payload, **kwargs):
         if kwargs.get("subject_id") == "msg_" + "a" * 32:
             entered.set()
             assert release.wait(5)
         return record_event(connection, resident_id, event_type, payload, **kwargs)
-    monkeypatch.setattr(repository, "_record_event", pause_initial_input)
+    monkeypatch.setattr(repository.events, "record_event", pause_initial_input)
     def publish_state():
         writer_started.set()
         return repository.set_state(rid, {"work_state": "running", "active_message_id": "msg_" + "b" * 32,

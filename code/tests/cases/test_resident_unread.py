@@ -141,7 +141,7 @@ def test_addressed_message_notifies_only_recipient_and_clear_removes_flag(chat):
     assert not unread('CASE-A')
     say(chat, 'outward-next', 'agent', recipients=[{'kind': 'user', 'id': 'CASE-A'}])
     assert unread('CASE-A')
-    chat.state_store.database.write(lambda connection: chat._record_event(
+    chat.state_store.database.write(lambda connection: chat.events.record_event(
         connection, RESIDENT, stream.CONTEXT_CLEARED, {'context_cleared': True},
     ))
     assert not unread('CASE-A')
@@ -158,7 +158,7 @@ def test_unread_write_rolls_back_with_conversation_event(chat):
     say(chat, 'request')
     with pytest.raises(RuntimeError):
         with chat.state_store.database.transaction() as connection:
-            chat._record_event(connection, RESIDENT, stream.INPUT_STATE_CHANGED, {
+            chat.events.record_event(connection, RESIDENT, stream.INPUT_STATE_CHANGED, {
                 'input_state': {'message_id': 'request', 'state': 'failed',
                                 'updated_at': '2026-10-15T10:00:01Z'},
             })

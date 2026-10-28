@@ -454,88 +454,93 @@ def _newest_first(activity: Mapping[str, datetime]) -> list[tuple[str, datetime]
     return ordered
 
 
-class ResidentConversationRepository:
-    """Persistence authority for Resident messages, state and ordered events."""
+def _resident_id(value: object) -> str:
+    resident_id = str(value or "").strip()
+    if not resident_id.startswith("resident_"):
+        raise ValueError("Resident protocol requires a Resident ID")
+    return resident_id
 
-    def __init__(self, state_store: LineageDataStore, agent_data: AgentDataStore) -> None:
+
+def _message_id(message: Mapping[str, Any]) -> str:
+    message_id = str(message.get("message_id") or "").strip()
+    if not message_id:
+        raise ValueError("Conversation message requires message_id")
+    return message_id
+
+
+def _default_state() -> dict[str, Any]:
+    return {
+        "work_state": "idle",
+        "active_message_id": "",
+        "queued_count": 0,
+        "intake_state": "open",
+    }
+
+
+def _state(
+    value: Mapping[str, Any],
+    *,
+    strict: bool,
+) -> dict[str, Any]:
+    work_state = str(value.get("work_state") or "idle").strip().casefold()
+    intake_state = str(value.get("intake_state") or "open").strip().casefold()
+    work_phase = str(value.get("work_phase") or "").strip().casefold()
+    active_message_id = str(value.get("active_message_id") or "").strip()
+    try:
+        queued_count = max(0, int(value.get("queued_count") or 0))
+    except (TypeError, ValueError):
+        if strict:
+            raise ValueError("Resident State queued_count must be an integer")
+        queued_count = 0
+    if work_state not in WORK_STATES:
+        if strict:
+            raise ValueError(f"Unsupported Resident work_state: {work_state}")
+        work_state = "idle"
+    if intake_state not in INTAKE_STATES:
+        if strict:
+            raise ValueError(f"Unsupported Resident intake_state: {intake_state}")
+        intake_state = "open"
+    if work_phase and work_phase not in WORK_PHASES:
+        if strict:
+            raise ValueError(f"Unsupported Resident work_phase: {work_phase}")
+        work_phase = ""
+    if work_phase in {"waiting_capacity", "waiting_dispatch", "waiting_quota"} and work_state != "queued":
+        work_phase = ""
+    if work_phase == "starting_session" and work_state not in {"queued", "running"}:
+        work_phase = ""
+    if work_state == "idle":
+        active_message_id = ""
+    state = {
+        "work_state": work_state,
+        "active_message_id": active_message_id,
+        "queued_count": queued_count,
+        "intake_state": intake_state,
+    }
+    if work_phase:
+        state["work_phase"] = work_phase
+    return state
+
+
+class ConversationEvents:
+    """The ordered event log of each Resident Conversation, its cursor and its readers."""
+
+    def __init__(
+        self,
+        state_store: LineageDataStore,
+        agent_data: AgentDataStore,
+        repository: "ResidentConversationRepository",
+    ) -> None:
         self.state_store = state_store
         self.agent_data = agent_data
+        self.repository = repository
 
     @contextmanager
-    def _protocol_scope(self, resident_id: str):
+    def protocol_scope(self, resident_id: str):
         """Serialize short Conversation commits independently of Resident jobs."""
         with invariant_locks.resident_conversation_lock(resident_id):
             yield
 
-    @staticmethod
-    def _resident_id(value: object) -> str:
-        resident_id = str(value or "").strip()
-        if not resident_id.startswith("resident_"):
-            raise ValueError("Resident protocol requires a Resident ID")
-        return resident_id
-
-    @staticmethod
-    def _message_id(message: Mapping[str, Any]) -> str:
-        message_id = str(message.get("message_id") or "").strip()
-        if not message_id:
-            raise ValueError("Conversation message requires message_id")
-        return message_id
-
-    @staticmethod
-    def _default_state() -> dict[str, Any]:
-        return {
-            "work_state": "idle",
-            "active_message_id": "",
-            "queued_count": 0,
-            "intake_state": "open",
-        }
-
-    @classmethod
-    def _state(
-        cls,
-        value: Mapping[str, Any],
-        *,
-        strict: bool,
-    ) -> dict[str, Any]:
-        work_state = str(value.get("work_state") or "idle").strip().casefold()
-        intake_state = str(value.get("intake_state") or "open").strip().casefold()
-        work_phase = str(value.get("work_phase") or "").strip().casefold()
-        active_message_id = str(value.get("active_message_id") or "").strip()
-        try:
-            queued_count = max(0, int(value.get("queued_count") or 0))
-        except (TypeError, ValueError):
-            if strict:
-                raise ValueError("Resident State queued_count must be an integer")
-            queued_count = 0
-        if work_state not in WORK_STATES:
-            if strict:
-                raise ValueError(f"Unsupported Resident work_state: {work_state}")
-            work_state = "idle"
-        if intake_state not in INTAKE_STATES:
-            if strict:
-                raise ValueError(f"Unsupported Resident intake_state: {intake_state}")
-            intake_state = "open"
-        if work_phase and work_phase not in WORK_PHASES:
-            if strict:
-                raise ValueError(f"Unsupported Resident work_phase: {work_phase}")
-            work_phase = ""
-        if work_phase in {"waiting_capacity", "waiting_dispatch", "waiting_quota"} and work_state != "queued":
-            work_phase = ""
-        if work_phase == "starting_session" and work_state not in {"queued", "running"}:
-            work_phase = ""
-        if work_state == "idle":
-            active_message_id = ""
-        state = {
-            "work_state": work_state,
-            "active_message_id": active_message_id,
-            "queued_count": queued_count,
-            "intake_state": intake_state,
-        }
-        if work_phase:
-            state["work_phase"] = work_phase
-        return state
-
-    def _ensure_conversation(self, connection: Any, resident_id: str) -> None:
+    def ensure_conversation(self, connection: Any, resident_id: str) -> None:
         self.state_store._lock_active_resident(connection, resident_id)
         connection.execute(
             'INSERT INTO conversation_states(resident_id) SELECT %s WHERE EXISTS ('
@@ -550,7 +555,7 @@ class ResidentConversationRepository:
             raise KeyError(f"Resident not found: {resident_id}")
 
     @staticmethod
-    def _event_exists(
+    def event_exists(
         connection: Any,
         resident_id: str,
         event_type: str,
@@ -561,7 +566,7 @@ class ResidentConversationRepository:
             (resident_id, event_type, subject_id),
         ).fetchone() is not None
 
-    def _record_event(
+    def record_event(
         self,
         connection: Any,
         resident_id: str,
@@ -571,8 +576,8 @@ class ResidentConversationRepository:
         subject_id: str = "",
         once: bool = False,
     ) -> dict[str, Any] | None:
-        self._ensure_conversation(connection, resident_id)
-        if once and self._event_exists(connection, resident_id, event_type, subject_id):
+        self.ensure_conversation(connection, resident_id)
+        if once and self.event_exists(connection, resident_id, event_type, subject_id):
             return None
         row = connection.execute(
             'SELECT cursor FROM conversation_states WHERE resident_id = %s',
@@ -597,8 +602,210 @@ class ResidentConversationRepository:
             (resident_id, cursor, event_type, subject_id, occurred_at, _json(event["payload"])),
         )
         from . import resident_unread
-        resident_unread.project_event(self, connection, event)
+        resident_unread.project_event(self.repository, connection, event)
         return event
+
+    def execution_settings_changed(
+        self,
+        resident_id: object,
+        settings: Mapping[str, Any],
+    ) -> dict[str, Any] | None:
+        """Publish a change receipt; current settings remain owned by Residents."""
+        stream_id = _resident_id(resident_id)
+
+        def write(connection: Any) -> dict[str, Any]:
+            self.ensure_conversation(connection, stream_id)
+            return self.record_event(
+                connection, stream_id, RUNTIME_SETTINGS_CHANGED,
+                {"runtime_settings": dict(settings)},
+            )
+
+        with self.protocol_scope(stream_id):
+            return self.state_store.database.write(write)
+
+    @staticmethod
+    def told_queue(connection: Any, resident_id: str) -> dict[str, Any]:
+        """The queue the last queue event told watchers; empty before the first."""
+
+        row = connection.execute(
+            "SELECT payload_json FROM conversation_events WHERE resident_id = %s AND event_type = %s "
+            "AND subject_id = '' ORDER BY cursor DESC LIMIT 1",
+            (resident_id, QUEUE_CHANGED),
+        ).fetchone()
+        if row is None:
+            return {"resident_id": resident_id, "items": []}
+        return json_value(row["payload_json"]).get("queue") or {}
+
+    def context_reset_boundary(self, resident_id: object) -> list[str]:
+        return self.agent_data.displayed_chat_message_ids(_resident_id(resident_id))
+
+    def archive_context(
+        self, resident_id: object, *, archived_at: str = "",
+        message_ids: Sequence[str] | None = None,
+    ) -> list[str]:
+        """Tell the Conversation that a clear ended these messages' place in the Chat.
+
+        The clear itself is the context reset mark in the trace
+        (``AgentDataStore.record_context_reset``): the Chat is what comes
+        after the last one.  Announcing the same clear again sends the same
+        events once more, which readers apply idempotently.
+        """
+
+        stream_id = _resident_id(resident_id)
+        del archived_at
+        selected_ids = (
+            [str(value) for value in message_ids]
+            if message_ids is not None
+            else self.context_reset_boundary(stream_id)
+        )
+        def write(connection: Any) -> None:
+            for message_id in selected_ids:
+                self.record_event(
+                    connection,
+                    stream_id,
+                    MESSAGE_UPDATED,
+                    {"message_id": message_id, "removed": True},
+                    subject_id=message_id,
+                )
+            # The lifecycle owner has recorded the reset boundary before this
+            # projection. Announce it even when there are no displayed messages:
+            # a Fork's inheritance card still needs the completed clear fact.
+            self.record_event(
+                connection, stream_id, CONTEXT_CLEARED, {"context_cleared": True},
+            )
+        with self.protocol_scope(stream_id):
+            self.state_store.database.write(write)
+        return selected_ids
+
+    def prune_event_deliveries(self, *, older_than: str, limit: int = 5000) -> int:
+        """Delete relay work items for events that occurred before ``older_than``.
+
+        Each instance's relay starts at the tail and follows within seconds;
+        the events themselves stay in conversation_events.
+        """
+
+        def delete(connection: Any) -> int:
+            return int(connection.execute(
+                'DELETE FROM conversation_event_delivery WHERE sequence IN ('
+                'SELECT delivery.sequence FROM conversation_event_delivery AS delivery '
+                'JOIN conversation_events AS event ON event.resident_id = delivery.resident_id '
+                'AND event.cursor = delivery.cursor WHERE event.occurred_at < %s '
+                'ORDER BY delivery.sequence LIMIT %s)',
+                (str(older_than), max(1, int(limit))),
+            ).rowcount or 0)
+
+        return self.state_store.database.write(delete)
+
+    def events_after(
+        self,
+        resident_id: object,
+        after_cursor: object,
+        *,
+        limit: int = 500,
+    ) -> dict[str, Any]:
+        stream_id = _resident_id(resident_id)
+        cursor = max(0, int(after_cursor or 0))
+        safe_limit = max(1, min(int(limit or 500), 2000))
+        with self.state_store.database.read() as connection:
+            state = connection.execute(
+                'SELECT cursor FROM conversation_states WHERE resident_id = %s',
+                (stream_id,),
+            ).fetchone()
+            if state is None:
+                resident = connection.execute(
+                    'SELECT 1 FROM residents WHERE resident_id = %s',
+                    (stream_id,),
+                ).fetchone()
+                if resident is None:
+                    raise KeyError(stream_id)
+                # A registered, unused Resident has an empty stream. Reads must
+                # not create runtime state just to let its first watcher attach.
+                return {
+                    "resident_id": stream_id,
+                    "after_cursor": cursor,
+                    "cursor": 0,
+                    "events": [],
+                }
+            rows = connection.execute(
+                'SELECT * FROM conversation_events WHERE resident_id = %s AND cursor > %s ORDER BY cursor LIMIT %s',
+                (stream_id, cursor, safe_limit),
+            ).fetchall()
+        events = self.hydrate_events([
+            {
+                "schema": RESIDENT_CONVERSATION_SCHEMA,
+                "event_type": str(row["event_type"]),
+                "resident_id": stream_id,
+                "cursor": int(row["cursor"]),
+                "occurred_at": iso_time(row["occurred_at"]),
+                "payload": json_value(row["payload_json"]),
+            }
+            for row in rows
+        ])
+        return {
+            "resident_id": stream_id,
+            "after_cursor": cursor,
+            "cursor": int(state["cursor"] or 0),
+            "events": events,
+        }
+
+    def hydrate_events(self, events: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Fill events read from the log with what the trace holds now.
+
+        A message event carries the message (the log keeps only its header);
+        a finished input's state carries its final reply.  A message the trace
+        no longer has leaves its event without payload, for the reader to
+        take a Snapshot instead.
+        """
+
+        from . import resident_mailbox
+
+        wanted: dict[str, tuple[set[str], set[str]]] = {}
+        for event in events:
+            payload = event.get("payload") or {}
+            messages, inputs = wanted.setdefault(str(event["resident_id"]), (set(), set()))
+            if event["event_type"] in {MESSAGE_APPENDED, MESSAGE_UPDATED} and isinstance(payload.get("message"), Mapping):
+                messages.add(str(payload["message"].get("message_id") or ""))
+            elif event["event_type"] == INPUT_STATE_CHANGED and isinstance(payload.get("input_state"), Mapping):
+                if payload["input_state"].get("state") in TERMINAL_INPUT_STATES:
+                    inputs.add(str(payload["input_state"].get("message_id") or ""))
+        finals = self.agent_data.chat_final_replies_many(
+            {resident_id: sorted(inputs) for resident_id, (_messages, inputs) in wanted.items() if inputs},
+        )
+        found: dict[str, tuple[dict[str, dict[str, Any]], dict[str, tuple[str, str]]]] = {}
+        for resident_id, (message_ids, _inputs) in wanted.items():
+            stored = self.agent_data.trace_chat_messages(resident_id, sorted(message_ids)) if message_ids else {}
+            messages = {message_id: _message_from_storage(message) for message_id, message in stored.items()}
+            resident_mailbox.project_messages(resident_id, list(messages.values()), repository=self.repository)
+            found[resident_id] = (messages, finals.get(resident_id, {}))
+        for event in events:
+            payload = event.get("payload") or {}
+            messages, replies = found.get(str(event["resident_id"]), ({}, {}))
+            if event["event_type"] in {MESSAGE_APPENDED, MESSAGE_UPDATED} and isinstance(payload.get("message"), Mapping):
+                stored = messages.get(str(payload["message"].get("message_id") or ""))
+                if stored is None:
+                    event.pop("payload", None)
+                    event["payload_omitted"] = True
+                else:
+                    event["payload"] = {**payload, "message": copy.deepcopy(stored)}
+            elif event["event_type"] == INPUT_STATE_CHANGED and isinstance(payload.get("input_state"), Mapping):
+                state = dict(payload["input_state"])
+                state["reply_message_ids"] = _final_reply(state.get("state"), replies.get(str(state.get("message_id") or "")))
+                event["payload"] = {**payload, "input_state": state}
+        return events
+
+
+class ConversationMessages:
+    """The messages of each Resident Conversation: accepted into its Mailbox, delivered into its trace."""
+
+    def __init__(
+        self,
+        state_store: LineageDataStore,
+        agent_data: AgentDataStore,
+        events: ConversationEvents,
+    ) -> None:
+        self.state_store = state_store
+        self.agent_data = agent_data
+        self.events = events
 
     def commit_user_message(
         self,
@@ -622,7 +829,7 @@ class ResidentConversationRepository:
     ) -> dict[str, Any]:
         """Keep a Message that waits in the Mailbox; it enters the trace when it is delivered."""
 
-        stream_id = self._resident_id(resident_id)
+        stream_id = _resident_id(resident_id)
         public_input = protocol_message(message)
         if public_input["role"] != "user":
             raise ValueError("Only user messages use the intake acceptance protocol")
@@ -632,7 +839,7 @@ class ResidentConversationRepository:
         if shown is not None:
             stored = shown
         else:
-            with self._protocol_scope(stream_id):
+            with self.events.protocol_scope(stream_id):
                 stored, _inserted = self.state_store.mailbox_accept(stream_id, payload)
         return self._validate_stored_message_identity(stored, public_input)
 
@@ -644,7 +851,7 @@ class ResidentConversationRepository:
         """Validate an idempotent replay without mutating the stream or storage."""
 
         public_input = protocol_message(message)
-        stored = self._stored_message(resident_id, public_input["message_id"])
+        stored = self.stored_message(resident_id, public_input["message_id"])
         if stored is None:
             raise KeyError(str(public_input["message_id"]))
         return self._validate_stored_message_identity(stored, public_input)
@@ -676,7 +883,7 @@ class ResidentConversationRepository:
         execution_id: str,
         content_parts: Sequence[Mapping[str, Any]],
     ) -> list[dict[str, Any]]:
-        stream_id = self._resident_id(resident_id)
+        stream_id = _resident_id(resident_id)
         parts = copy.deepcopy([dict(part) for part in content_parts])
         identity_fields = (
             "type", "tool_name", "segment_id", "result_segment_id",
@@ -727,7 +934,7 @@ class ResidentConversationRepository:
         occurrences and keeps their ancestry outside the current trace.
         """
 
-        stream_id = self._resident_id(resident_id)
+        stream_id = _resident_id(resident_id)
         public_input = protocol_message(message)
         public_input.pop("activated_at", None)
         message_id = str(public_input["message_id"])
@@ -755,14 +962,14 @@ class ResidentConversationRepository:
         check(existing)
         if existing is not None:
             with self.state_store.database.read() as connection:
-                if self._event_exists(connection, stream_id, MESSAGE_APPENDED, message_id):
+                if self.events.event_exists(connection, stream_id, MESSAGE_APPENDED, message_id):
                     # A requeued message that ran again leaves the Mailbox now.
                     waiting = self.state_store.mailbox_entry(stream_id, message_id)
                     if waiting is not None and waiting["place"] == "pending":
                         self.state_store.mailbox_forget(stream_id, [message_id], places=("pending",))
                     return _message_from_storage(existing)
 
-        with self._protocol_scope(stream_id):
+        with self.events.protocol_scope(stream_id):
             waiting = self.state_store.mailbox_entry(stream_id, message_id)
             waiting_message = (waiting or {}).get("message") or {}
             check(waiting_message if waiting_message.get("content_parts") is not None else None)
@@ -786,7 +993,7 @@ class ResidentConversationRepository:
             public = _message_from_storage(persisted)
 
             def write(connection: Any) -> None:
-                self._record_event(
+                self.events.record_event(
                     connection,
                     stream_id,
                     MESSAGE_APPENDED,
@@ -833,7 +1040,7 @@ class ResidentConversationRepository:
             ))
         return members
 
-    def _tool_status_messages(self, messages: list[dict[str, Any]], *, resident_id: str) -> list[dict[str, Any]]:
+    def tool_status_messages(self, messages: list[dict[str, Any]], *, resident_id: str) -> list[dict[str, Any]]:
         for message in messages:
             if message.get("role") != "agent":
                 continue
@@ -860,13 +1067,13 @@ class ResidentConversationRepository:
         return messages
 
     def message(self, resident_id: object, message_id: object) -> dict[str, Any] | None:
-        stored = self._stored_message(resident_id, message_id)
+        stored = self.stored_message(resident_id, message_id)
         return _message_from_storage(stored) if stored is not None else None
 
-    def _stored_message(self, resident_id: object, message_id: object) -> dict[str, Any] | None:
+    def stored_message(self, resident_id: object, message_id: object) -> dict[str, Any] | None:
         """A message of the Resident's Chat, or one waiting in its Mailbox."""
 
-        stream_id = self._resident_id(resident_id)
+        stream_id = _resident_id(resident_id)
         target = str(message_id or "").strip()
         if not target:
             return None
@@ -882,49 +1089,12 @@ class ResidentConversationRepository:
     def waiting(self, resident_id: object, message_id: object) -> bool:
         """Whether the message waits in the Resident's Mailbox (accepted, not delivered)."""
 
-        return self.state_store.mailbox_entry(self._resident_id(resident_id), str(message_id or "").strip()) is not None
-
-    def question_set_state(self, resident_id: object, message_id: object) -> str:
-        """``answered``, ``closed`` or ``open``: the state of the question set an Agent message asks.
-
-        A set is answered once its answer message exists and stays open until
-        then: later messages, a person's included, and later question sets
-        leave it answerable.  A person may close it unanswered instead; its
-        answer slot then holds a cancelled input state.  The Chat derives the
-        same state.
-        """
-
-        stream_id = self._resident_id(resident_id)
-        source_id = str(message_id or "").strip()
-        questions = question_set(self.message(stream_id, source_id))
-        if questions is None or self.agent_data.chat_message_ordinal(stream_id, source_id) is None:
-            raise ValueError("该 Resident 中的问题不存在或已不可用")
-        answer_id = questions["answer_message_id"]
-        if self._stored_message(stream_id, answer_id) is not None:
-            return "answered"
-        try:
-            slot = self.input_state(stream_id, answer_id)
-        except KeyError:
-            return "open"
-        return "closed" if (slot.get("error") or {}).get("code") == QUESTION_SET_CLOSED else "open"
-
-    def close_question_set(self, resident_id: object, message_id: object, *, actor: str) -> str:
-        """Close an open question set unanswered; nothing is sent to the Resident."""
-
-        state = self.question_set_state(resident_id, message_id)
-        if state == "answered":
-            raise ValueError("这组问题已回答")
-        if state == "open":
-            questions = question_set(self.message(resident_id, message_id))
-            self.set_input_state(resident_id, questions["answer_message_id"], "cancelled", error={
-                "code": QUESTION_SET_CLOSED, "message": "这组问题已关闭，不再回答", "closed_by": str(actor or ""),
-            })
-        return "closed"
+        return self.state_store.mailbox_entry(_resident_id(resident_id), str(message_id or "").strip()) is not None
 
     def message_business_ref(self, resident_id: object, message_id: object) -> str:
         """The business record a delivered Message belongs to; empty when none was given."""
 
-        stored = self._stored_message(resident_id, message_id)
+        stored = self.stored_message(resident_id, message_id)
         return str((stored or {}).get("business_ref") or "").strip()
 
     def public_message(
@@ -937,17 +1107,6 @@ class ResidentConversationRepository:
             raise KeyError(str(message_id or ""))
         return stored
 
-    def message_provenance(
-        self,
-        resident_id: object,
-        message_id: object,
-    ) -> dict[str, str]:
-        """Return private execution provenance for one durable Message."""
-
-        return self.agent_data.chat_message_provenance(
-            self._resident_id(resident_id), str(message_id or "").strip(),
-        )
-
     def artifact(
         self,
         resident_id: object,
@@ -958,7 +1117,7 @@ class ResidentConversationRepository:
         if not target.endswith(suffix):
             raise KeyError(target)
         message_id = target[:-len(suffix)]
-        stored = self._stored_message(resident_id, message_id)
+        stored = self.stored_message(resident_id, message_id)
         response = stored.get("provider_response") if stored else None
         if not isinstance(response, Mapping):
             raise KeyError(target)
@@ -983,7 +1142,7 @@ class ResidentConversationRepository:
         key = str(trace_ref or "").strip()
         if not key:
             raise KeyError(key)
-        child_id = self.agent_data.subagent_id(self._resident_id(resident_id), key)
+        child_id = self.agent_data.subagent_id(_resident_id(resident_id), key)
         sequence_id = self.agent_data.trace_sequence_id(child_id) if self.agent_data.agent(child_id) else ""
         if not sequence_id:
             raise KeyError(key)
@@ -1005,13 +1164,13 @@ class ResidentConversationRepository:
     ) -> dict[str, Any]:
         """Replace a delivered message where it stands in the trace by a new version of it."""
 
-        stream_id = self._resident_id(resident_id)
+        stream_id = _resident_id(resident_id)
         target = str(message_id or "").strip()
         if not target:
             raise ValueError("Conversation message update requires message_id")
-        with self._protocol_scope(stream_id):
+        with self.events.protocol_scope(stream_id):
             replacement = protocol_message(message or {})
-            if self._message_id(replacement) != target:
+            if _message_id(replacement) != target:
                 raise ValueError("Conversation message update identity changed")
             stored = self.agent_data.chat_message(stream_id, target) or {}
             # Display fields come from the new version; other private fields stay.
@@ -1023,7 +1182,7 @@ class ResidentConversationRepository:
             )
             public = _message_from_storage(persisted)
             event = self.state_store.database.write(
-                lambda connection: self._record_event(
+                lambda connection: self.events.record_event(
                     connection,
                     stream_id,
                     MESSAGE_UPDATED,
@@ -1033,146 +1192,58 @@ class ResidentConversationRepository:
             )
         return {**event, "payload": {"message": public}} if event else {}
 
-    def _set_projection(
+
+class ConversationInputs:
+    """Where each input stands, its final replies and the question sets that wait for an answer."""
+
+    def __init__(
         self,
-        resident_id: object,
-        *,
-        column: str,
-        value: object,
-        event_type: str,
-        payload_key: str,
-    ) -> dict[str, Any] | None:
-        stream_id = self._resident_id(resident_id)
-        encoded = _json(value)
-        stored = json_value(encoded)
+        state_store: LineageDataStore,
+        agent_data: AgentDataStore,
+        events: ConversationEvents,
+        messages: ConversationMessages,
+    ) -> None:
+        self.state_store = state_store
+        self.agent_data = agent_data
+        self.events = events
+        self.messages = messages
 
-        def write(connection: Any) -> dict[str, Any] | None:
-            self._ensure_conversation(connection, stream_id)
-            row = connection.execute(
-                f"SELECT cursor, {column} FROM conversation_states WHERE resident_id = %s",
-                (stream_id,),
-            ).fetchone()
-            if row is not None and json_value(row[column]) == stored:
-                return None
-            connection.execute(
-                f"UPDATE conversation_states SET {column} = %s WHERE resident_id = %s",
-                (encoded, stream_id),
-            )
-            if event_type in LIVE_EVENT_TYPES:
-                # Delivered on commit to every instance's event relay.
-                connection.execute(
-                    "SELECT pg_notify(%s, current_schema() || ':' || %s)",
-                    (LIVE_CHANNEL, stream_id),
-                )
-                return live_activity_event(stream_id, int(row["cursor"] or 0), value)
-            return self._record_event(
-                connection,
-                stream_id,
-                event_type,
-                {payload_key: copy.deepcopy(value)},
-            )
+    def question_set_state(self, resident_id: object, message_id: object) -> str:
+        """``answered``, ``closed`` or ``open``: the state of the question set an Agent message asks.
 
-        with self._protocol_scope(stream_id):
-            # Replayed runtime projections must not queue behind the shared
-            # writer while holding this Resident's cancellation/state lock.
-            # A changed/missing row still uses the authoritative write check.
-            with self.state_store.database.read_current() as connection:
-                row = connection.execute(
-                    f"SELECT c.{column} FROM residents AS r "
-                    "LEFT JOIN conversation_states AS c ON c.resident_id = r.resident_id "
-                    "WHERE r.resident_id = %s AND r.deleted_at IS NULL",
-                    (stream_id,),
-                ).fetchone()
-                if row is None:
-                    raise KeyError(stream_id)
-                if row is not None and json_value(row[column]) == stored:
-                    return None
-            event = self.state_store.database.write(write)
-        return event
-
-    def set_state(self, resident_id: object, state: Mapping[str, Any]) -> dict[str, Any] | None:
-        return self._set_projection(
-            resident_id,
-            column="state_json",
-            value=self._state(state, strict=True),
-            event_type=STATE_CHANGED,
-            payload_key="state",
-        )
-
-    def set_activities(self, resident_id: object, activities: object) -> dict[str, Any] | None:
-        stream_id = self._resident_id(resident_id)
-        return self._set_projection(
-            stream_id,
-            column="activity_json",
-            value=protocol_activities(stream_id, activities),
-            event_type=ACTIVITY_CHANGED,
-            payload_key="activities",
-        )
-
-    def queues(self, resident_ids: Iterable[object]) -> dict[str, dict[str, Any]]:
-        """Each Resident's waiting queue, read from its Mailbox (decision_b5d349190743).
-
-        Nothing keeps a copy of it: the queue is the Mailbox's queue rows, behind
-        a Job head that is held.
+        A set is answered once its answer message exists and stays open until
+        then: later messages, a person's included, and later question sets
+        leave it answerable.  A person may close it unanswered instead; its
+        answer slot then holds a cancelled input state.  The Chat derives the
+        same state.
         """
 
-        from .resident_execution_work import public_queue
+        stream_id = _resident_id(resident_id)
+        source_id = str(message_id or "").strip()
+        questions = question_set(self.messages.message(stream_id, source_id))
+        if questions is None or self.agent_data.chat_message_ordinal(stream_id, source_id) is None:
+            raise ValueError("该 Resident 中的问题不存在或已不可用")
+        answer_id = questions["answer_message_id"]
+        if self.messages.stored_message(stream_id, answer_id) is not None:
+            return "answered"
+        try:
+            slot = self.input_state(stream_id, answer_id)
+        except KeyError:
+            return "open"
+        return "closed" if (slot.get("error") or {}).get("code") == QUESTION_SET_CLOSED else "open"
 
-        selected = list(dict.fromkeys(self._resident_id(item) for item in resident_ids))
-        jobs = self.state_store.resident_execution_records(selected)
-        return {
-            resident_id: protocol_queue(resident_id, public_queue(self, resident_id, jobs.get(resident_id) or {}))
-            for resident_id in selected
-        }
+    def close_question_set(self, resident_id: object, message_id: object, *, actor: str) -> str:
+        """Close an open question set unanswered; nothing is sent to the Resident."""
 
-    @staticmethod
-    def _told_queue(connection: Any, resident_id: str) -> dict[str, Any]:
-        """The queue the last queue event told watchers; empty before the first."""
-
-        row = connection.execute(
-            "SELECT payload_json FROM conversation_events WHERE resident_id = %s AND event_type = %s "
-            "AND subject_id = '' ORDER BY cursor DESC LIMIT 1",
-            (resident_id, QUEUE_CHANGED),
-        ).fetchone()
-        if row is None:
-            return {"resident_id": resident_id, "items": []}
-        return json_value(row["payload_json"]).get("queue") or {}
-
-    def publish_queue(self, resident_id: object) -> dict[str, Any] | None:
-        """Record a queue event when the Mailbox's queue is not the one watchers were told."""
-
-        stream_id = self._resident_id(resident_id)
-        queue = self.queues([stream_id])[stream_id]
-
-        def write(connection: Any) -> dict[str, Any] | None:
-            self._ensure_conversation(connection, stream_id)
-            if self._told_queue(connection, stream_id) == queue:
-                return None
-            return self._record_event(connection, stream_id, QUEUE_CHANGED, {"queue": queue})
-
-        with self._protocol_scope(stream_id):
-            with self.state_store.database.read_current() as connection:
-                if self._told_queue(connection, stream_id) == queue:
-                    return None
-            return self.state_store.database.write(write)
-
-    def execution_settings_changed(
-        self,
-        resident_id: object,
-        settings: Mapping[str, Any],
-    ) -> dict[str, Any] | None:
-        """Publish a change receipt; current settings remain owned by Residents."""
-        stream_id = self._resident_id(resident_id)
-
-        def write(connection: Any) -> dict[str, Any]:
-            self._ensure_conversation(connection, stream_id)
-            return self._record_event(
-                connection, stream_id, RUNTIME_SETTINGS_CHANGED,
-                {"runtime_settings": dict(settings)},
-            )
-
-        with self._protocol_scope(stream_id):
-            return self.state_store.database.write(write)
+        state = self.question_set_state(resident_id, message_id)
+        if state == "answered":
+            raise ValueError("这组问题已回答")
+        if state == "open":
+            questions = question_set(self.messages.message(resident_id, message_id))
+            self.set_input_state(resident_id, questions["answer_message_id"], "cancelled", error={
+                "code": QUESTION_SET_CLOSED, "message": "这组问题已关闭，不再回答", "closed_by": str(actor or ""),
+            })
+        return "closed"
 
     def set_input_state(
         self,
@@ -1186,7 +1257,7 @@ class ResidentConversationRepository:
         """Record where an input stands.  Its replies are not given: they are
         the trace's messages answering it (``reply_to_message_id``)."""
 
-        stream_id = self._resident_id(resident_id)
+        stream_id = _resident_id(resident_id)
         target = str(message_id or "").strip()
         clean_state = str(state or "").strip().casefold()
         if not target:
@@ -1198,7 +1269,7 @@ class ResidentConversationRepository:
             previous = _input_state_value(current) if current is not None else None
             stored = copy.deepcopy(previous)
             if previous is not None:
-                self._with_outcomes_many({stream_id: [previous]})
+                self.with_outcomes_many({stream_id: [previous]})
             existing_error = dict((previous or {}).get("error") or {})
             error_value = dict(error) if error is not None else existing_error
             value = {
@@ -1229,7 +1300,7 @@ class ResidentConversationRepository:
             return value, True
 
         def write(connection: Any) -> dict[str, Any]:
-            self._ensure_conversation(connection, stream_id)
+            self.events.ensure_conversation(connection, stream_id)
             current = connection.execute(
                 'SELECT * FROM conversation_input_states WHERE resident_id = %s AND message_id = %s',
                 (stream_id, target),
@@ -1249,9 +1320,9 @@ class ResidentConversationRepository:
                 # publish its header again so live readers rehydrate the footer.
                 replies = self.agent_data.chat_final_replies_many({stream_id: [target]})
                 for reply_id in _final_reply(clean_state, replies.get(stream_id, {}).get(target)):
-                    self._record_event(connection, stream_id, MESSAGE_UPDATED,
+                    self.events.record_event(connection, stream_id, MESSAGE_UPDATED,
                                        {"message": {"message_id": reply_id}}, subject_id=reply_id)
-            self._record_event(
+            self.events.record_event(
                 connection,
                 stream_id,
                 INPUT_STATE_CHANGED,
@@ -1267,7 +1338,7 @@ class ResidentConversationRepository:
                 permission_system.end_task_credentials(connection, stream_id, target)
             return value
 
-        with self._protocol_scope(stream_id):
+        with self.events.protocol_scope(stream_id):
             with self.state_store.database.read_current() as connection:
                 current = connection.execute(
                     'SELECT inputs.* FROM conversation_input_states AS inputs JOIN conversation_states AS conversations USING (resident_id) WHERE inputs.resident_id = %s AND inputs.message_id = %s',
@@ -1284,7 +1355,7 @@ class ResidentConversationRepository:
         The receipt lookup and commit share the Conversation scope with requeue;
         a reopened input or new active turn must retain its current state.
         """
-        with self._protocol_scope(resident_id):
+        with self.events.protocol_scope(resident_id):
             try:
                 value = self.input_state(resident_id, message_id)
             except KeyError:
@@ -1299,7 +1370,7 @@ class ResidentConversationRepository:
         self._with_replies_many({resident_id: values})
         return list(values)
 
-    def _with_outcomes_many(self, values_by_resident: Mapping[str, Sequence[dict[str, Any]]]) -> None:
+    def with_outcomes_many(self, values_by_resident: Mapping[str, Sequence[dict[str, Any]]]) -> None:
         terminal = self.state_store.terminal_input_receipts([
             (resident_id, str(value['message_id']))
             for resident_id, values in values_by_resident.items() for value in values
@@ -1314,8 +1385,9 @@ class ResidentConversationRepository:
                         value['error'] = dict(receipt.get('runtime_error') or value.get('error') or {
                             'code': 'execution_failed', 'message': receipt.get('error') or 'Resident execution failed',
                         })
+
     def _with_replies_many(self, values_by_resident: Mapping[str, Sequence[dict[str, Any]]]) -> None:
-        self._with_outcomes_many(values_by_resident)
+        self.with_outcomes_many(values_by_resident)
         self._fill_replies_many(values_by_resident)
 
     def _fill_replies_many(self, values_by_resident: Mapping[str, Sequence[dict[str, Any]]]) -> None:
@@ -1341,13 +1413,13 @@ class ResidentConversationRepository:
         keeps the notices of the round that ended.
         """
 
-        stream_id = self._resident_id(resident_id)
+        stream_id = _resident_id(resident_id)
         target = str(message_id or "").strip()
         if not target:
             raise ValueError("Input State requires message_id")
 
         def write(connection: Any) -> dict[str, Any]:
-            self._ensure_conversation(connection, stream_id)
+            self.events.ensure_conversation(connection, stream_id)
             current = connection.execute(
                 'SELECT state, updated_at FROM conversation_input_states WHERE resident_id = %s AND message_id = %s',
                 (stream_id, target),
@@ -1356,7 +1428,7 @@ class ResidentConversationRepository:
                 raise KeyError(target)
             observed = {"message_id": target, "state": str(current["state"]),
                         "updated_at": iso_time(current["updated_at"])}
-            self._with_outcomes_many({stream_id: [observed]})
+            self.with_outcomes_many({stream_id: [observed]})
             if observed["state"] == "queued":
                 return observed
             if observed["state"] not in TERMINAL_INPUT_STATES:
@@ -1371,10 +1443,10 @@ class ResidentConversationRepository:
                 'updated_at = %s WHERE resident_id = %s AND message_id = %s',
                 ("queued", _json({}), value["updated_at"], stream_id, target),
             )
-            self._record_event(connection, stream_id, INPUT_STATE_CHANGED, {"input_state": value}, subject_id=target)
+            self.events.record_event(connection, stream_id, INPUT_STATE_CHANGED, {"input_state": value}, subject_id=target)
             return value
 
-        with self._protocol_scope(stream_id):
+        with self.events.protocol_scope(stream_id):
             value = self.state_store.database.write(write)
         return self._with_replies(stream_id, [value])[0]
 
@@ -1387,12 +1459,12 @@ class ResidentConversationRepository:
             (resident_id, message_id, utc_now()),
         ).fetchone()
         if row is not None:
-            self._record_event(connection, resident_id, INPUT_STATE_CHANGED,
+            self.events.record_event(connection, resident_id, INPUT_STATE_CHANGED,
                                {"input_state": {"message_id": message_id, "state": "queued", "updated_at": iso_time(row["updated_at"])}},
                                subject_id=message_id)
 
     def input_state(self, resident_id: object, message_id: object) -> dict[str, Any]:
-        key = (self._resident_id(resident_id), str(message_id or "").strip())
+        key = (_resident_id(resident_id), str(message_id or "").strip())
         found = self.input_states_by_id([key])
         if key not in found:
             raise KeyError(key[1])
@@ -1467,7 +1539,7 @@ class ResidentConversationRepository:
         states: Sequence[str] = (),
         limit: int = 0,
     ) -> list[dict[str, Any]]:
-        stream_id = self._resident_id(resident_id)
+        stream_id = _resident_id(resident_id)
         requested_states = tuple(dict.fromkeys(
             str(item or "").strip().lower()
             for item in states
@@ -1495,7 +1567,7 @@ class ResidentConversationRepository:
         with self.state_store.database.read() as connection:
             rows = connection.execute(statement, parameters).fetchall()
         values = [_input_state_value(row) for row in rows]
-        self._with_outcomes_many({stream_id: values})
+        self.with_outcomes_many({stream_id: values})
         values = [value for value in values if not requested_states or value["state"] in requested_states]
         values.sort(key=lambda value: (value["updated_at"], value["message_id"]), reverse=True)
         if safe_limit:
@@ -1510,7 +1582,7 @@ class ResidentConversationRepository:
         """Read the latest reply or failure outcome, excluding control receipts."""
 
         requested = {
-            self._resident_id(resident_id): tuple(dict.fromkeys(
+            _resident_id(resident_id): tuple(dict.fromkeys(
                 str(message_id or "").strip()
                 for message_id in (
                     message_ids
@@ -1541,7 +1613,7 @@ class ResidentConversationRepository:
         values_by_resident: dict[str, list[dict[str, Any]]] = {}
         for row in rows:
             values_by_resident.setdefault(str(row["resident_id"]), []).append(_input_state_value(row))
-        self._with_outcomes_many(values_by_resident)
+        self.with_outcomes_many(values_by_resident)
         values_by_resident = {
             resident_id: [value for value in values if value["state"] in TERMINAL_INPUT_STATES]
             for resident_id, values in values_by_resident.items()
@@ -1585,7 +1657,7 @@ class ResidentConversationRepository:
             batch_size = min(batch_size * 8, 64)
         return result
 
-    def _input_states_for_snapshot(
+    def input_states_for_snapshot(
         self,
         connection: Any,
         resident_id: str,
@@ -1612,11 +1684,479 @@ class ResidentConversationRepository:
         rows.sort(key=lambda row: (row["updated_at"], str(row["message_id"])))
         return self._with_replies(resident_id, [_input_state_value(row) for row in rows])
 
+
+class ConversationProjection:
+    """Each Resident's current work state, activities and queue, and the snapshots that show them with recent messages."""
+
+    def __init__(
+        self,
+        state_store: LineageDataStore,
+        agent_data: AgentDataStore,
+        events: ConversationEvents,
+        messages: ConversationMessages,
+        inputs: ConversationInputs,
+        repository: "ResidentConversationRepository",
+    ) -> None:
+        self.state_store = state_store
+        self.agent_data = agent_data
+        self.events = events
+        self.messages = messages
+        self.inputs = inputs
+        self.repository = repository
+
+    def _set_projection(
+        self,
+        resident_id: object,
+        *,
+        column: str,
+        value: object,
+        event_type: str,
+        payload_key: str,
+    ) -> dict[str, Any] | None:
+        stream_id = _resident_id(resident_id)
+        encoded = _json(value)
+        stored = json_value(encoded)
+
+        def write(connection: Any) -> dict[str, Any] | None:
+            self.events.ensure_conversation(connection, stream_id)
+            row = connection.execute(
+                f"SELECT cursor, {column} FROM conversation_states WHERE resident_id = %s",
+                (stream_id,),
+            ).fetchone()
+            if row is not None and json_value(row[column]) == stored:
+                return None
+            connection.execute(
+                f"UPDATE conversation_states SET {column} = %s WHERE resident_id = %s",
+                (encoded, stream_id),
+            )
+            if event_type in LIVE_EVENT_TYPES:
+                # Delivered on commit to every instance's event relay.
+                connection.execute(
+                    "SELECT pg_notify(%s, current_schema() || ':' || %s)",
+                    (LIVE_CHANNEL, stream_id),
+                )
+                return live_activity_event(stream_id, int(row["cursor"] or 0), value)
+            return self.events.record_event(
+                connection,
+                stream_id,
+                event_type,
+                {payload_key: copy.deepcopy(value)},
+            )
+
+        with self.events.protocol_scope(stream_id):
+            # Replayed runtime projections must not queue behind the shared
+            # writer while holding this Resident's cancellation/state lock.
+            # A changed/missing row still uses the authoritative write check.
+            with self.state_store.database.read_current() as connection:
+                row = connection.execute(
+                    f"SELECT c.{column} FROM residents AS r "
+                    "LEFT JOIN conversation_states AS c ON c.resident_id = r.resident_id "
+                    "WHERE r.resident_id = %s AND r.deleted_at IS NULL",
+                    (stream_id,),
+                ).fetchone()
+                if row is None:
+                    raise KeyError(stream_id)
+                if row is not None and json_value(row[column]) == stored:
+                    return None
+            event = self.state_store.database.write(write)
+        return event
+
+    def set_state(self, resident_id: object, state: Mapping[str, Any]) -> dict[str, Any] | None:
+        return self._set_projection(
+            resident_id,
+            column="state_json",
+            value=_state(state, strict=True),
+            event_type=STATE_CHANGED,
+            payload_key="state",
+        )
+
+    def set_activities(self, resident_id: object, activities: object) -> dict[str, Any] | None:
+        stream_id = _resident_id(resident_id)
+        return self._set_projection(
+            stream_id,
+            column="activity_json",
+            value=protocol_activities(stream_id, activities),
+            event_type=ACTIVITY_CHANGED,
+            payload_key="activities",
+        )
+
+    def queues(self, resident_ids: Iterable[object]) -> dict[str, dict[str, Any]]:
+        """Each Resident's waiting queue, read from its Mailbox (decision_b5d349190743).
+
+        Nothing keeps a copy of it: the queue is the Mailbox's queue rows, behind
+        a Job head that is held.
+        """
+
+        from .resident_execution_work import public_queue
+
+        selected = list(dict.fromkeys(_resident_id(item) for item in resident_ids))
+        jobs = self.state_store.resident_execution_records(selected)
+        return {
+            resident_id: protocol_queue(resident_id, public_queue(self.repository, resident_id, jobs.get(resident_id) or {}))
+            for resident_id in selected
+        }
+
+    def publish_queue(self, resident_id: object) -> dict[str, Any] | None:
+        """Record a queue event when the Mailbox's queue is not the one watchers were told."""
+
+        stream_id = _resident_id(resident_id)
+        queue = self.queues([stream_id])[stream_id]
+
+        def write(connection: Any) -> dict[str, Any] | None:
+            self.events.ensure_conversation(connection, stream_id)
+            if self.events.told_queue(connection, stream_id) == queue:
+                return None
+            return self.events.record_event(connection, stream_id, QUEUE_CHANGED, {"queue": queue})
+
+        with self.events.protocol_scope(stream_id):
+            with self.state_store.database.read_current() as connection:
+                if self.events.told_queue(connection, stream_id) == queue:
+                    return None
+            return self.state_store.database.write(write)
+
+    def _current_projection_from_row(
+        self,
+        resident_id: str,
+        row: Any | None,
+        queue: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        if row is None:
+            return {
+                "resident_id": resident_id,
+                "state": _default_state(),
+                "activities": [],
+                "queue": dict(queue),
+                "runtime_settings": self.state_store.read_resident_execution_settings(resident_id) or {},
+                "cursor": 0,
+            }
+        return {
+            "resident_id": resident_id,
+            "state": _state(
+                json_value(row["state_json"]) or _default_state(),
+                strict=False,
+            ),
+            "activities": protocol_activities(
+                resident_id,
+                json_value(row["activity_json"]),
+            ),
+            "queue": dict(queue),
+            "runtime_settings": self.state_store.read_resident_execution_settings(resident_id) or {},
+            "cursor": int(row["cursor"] or 0),
+        }
+
+    def current_projection(self, resident_id: object) -> dict[str, Any]:
+        stream_id = _resident_id(resident_id)
+        with self.state_store.database.read() as connection:
+            row = connection.execute(
+                'SELECT * FROM conversation_states WHERE resident_id = %s',
+                (stream_id,),
+            ).fetchone()
+            if row is None:
+                resident = connection.execute(
+                    'SELECT 1 FROM residents WHERE resident_id = %s',
+                    (stream_id,),
+                ).fetchone()
+                if resident is None:
+                    raise KeyError(stream_id)
+        return self._current_projection_from_row(stream_id, row, self.queues([stream_id])[stream_id])
+
+    def activities(self, resident_id: object) -> list[dict[str, Any]]:
+        """Read only the transient Activity projection, as the snapshot shows it."""
+
+        stream_id = _resident_id(resident_id)
+        with self.state_store.database.read() as connection:
+            row = connection.execute(
+                'SELECT activity_json FROM conversation_states WHERE resident_id = %s',
+                (stream_id,),
+            ).fetchone()
+        if row is None:
+            return []
+        return protocol_activities(stream_id, json_value(row["activity_json"]))
+
+    def published_state(self, resident_id):
+        """Last UI notification, used only to avoid re-publishing its content."""
+        with self.state_store.database.read() as connection:
+            row = connection.execute('SELECT state_json FROM conversation_states WHERE resident_id=%s', (_resident_id(resident_id),)).fetchone()
+        return _state(json_value(row['state_json']), strict=False) if row else _default_state()
+
+    def current_state(self, resident_id):
+        stream_id = _resident_id(resident_id)
+        values = self.states([stream_id])
+        if stream_id not in values:
+            raise KeyError(stream_id)
+        return values[stream_id]
+
+    def current_projections(
+        self,
+        resident_ids: Iterable[object],
+    ) -> dict[str, dict[str, Any]]:
+        """Read complete current projections for multiple Residents atomically."""
+
+        selected = list(dict.fromkeys(
+            _resident_id(resident_id)
+            for resident_id in resident_ids
+        ))
+        if not selected:
+            return {}
+        rows: dict[str, Any] = {}
+        existing: set[str] = set()
+        with self.state_store.database.read() as connection:
+            for offset in range(0, len(selected), 500):
+                batch = selected[offset:offset + 500]
+                placeholders = ",".join("%s" for _ in batch)
+                for row in connection.execute(
+                    "SELECT * FROM conversation_states "
+                    f"WHERE resident_id IN ({placeholders})",
+                    batch,
+                ).fetchall():
+                    rows[str(row["resident_id"])] = row
+                existing.update(
+                    str(row["resident_id"])
+                    for row in connection.execute(
+                        "SELECT resident_id FROM residents "
+                        f"WHERE resident_id IN ({placeholders}) AND deleted_at IS NULL",
+                        batch,
+                    ).fetchall()
+                )
+        queues = self.queues([resident_id for resident_id in selected if resident_id in existing])
+        return {
+            resident_id: self._current_projection_from_row(resident_id, rows.get(resident_id), queues[resident_id])
+            for resident_id in queues
+        }
+
+    def states(self, resident_ids):
+        """Derive work from the active turn/queue and intake from the Resident."""
+        from . import resident_execution_work, resident_execution_storage
+        from .domain_ports import execution_port
+        selected = list(dict.fromkeys(_resident_id(item) for item in resident_ids))
+        if not selected:
+            return {}
+        with self.state_store.database.read_transaction() as connection:
+            rows = connection.execute('SELECT resident_id,intake_open FROM residents WHERE resident_id=ANY(%s) AND deleted_at IS NULL',(selected,)).fetchall()
+            turns = resident_execution_storage.read(connection, selected, content=False)
+            queued = {}
+            for row in connection.execute(
+                "SELECT resident_id,message_id FROM resident_mailbox WHERE resident_id=ANY(%s) AND place='queue' ORDER BY resident_id,position", (selected,),
+            ).fetchall():
+                queued.setdefault(row['resident_id'], []).append({'user_message_id': row['message_id']})
+        requested = {job['execution_id']: job['actor'] for _revision,job in turns.values() if resident_execution_work.submitted_execution_id(job) and job.get('actor') and resident_execution_work.is_active(job) and not resident_execution_work.completion_applied(job) and not job.get('stop_requested_at')}
+        snapshots = {}
+        entries = list(requested.items())
+        for offset in range(0,len(entries),500):
+            snapshots.update(execution_port.service().states(dict(entries[offset:offset+500])))
+        result = {}
+        for row in rows:
+            resident_id = row['resident_id']
+            job = turns.get(resident_id,(0,{}))[1]
+            job['queue'] = queued.get(resident_id,[])
+            intake = 'closed' if row['intake_open'] is False else 'open'
+            job['intake_state'] = intake
+            result[resident_id] = resident_execution_work.conversation_state(job,intake_state=intake,snapshot=snapshots.get(job.get('execution_id'),{}))
+        return result
+
+    def state_snapshots(
+        self,
+        resident_ids: Iterable[object],
+    ) -> dict[str, dict[str, Any]]:
+        selected = list(dict.fromkeys(
+            _resident_id(resident_id)
+            for resident_id in resident_ids
+        ))
+        if not selected:
+            return {}
+        rows: dict[str, Any] = {}
+        latest_input_states: dict[str, dict[str, Any]] = {}
+        existing: set[str] = set()
+        input_kinds = sorted(INPUT_STATES)
+        with self.state_store.database.read() as connection:
+            for offset in range(0, len(selected), 500):
+                batch = selected[offset:offset + 500]
+                placeholders = ",".join("%s" for _ in batch)
+                for row in connection.execute(
+                    "SELECT resident_id, cursor, state_json FROM conversation_states "
+                    f"WHERE resident_id IN ({placeholders})",
+                    batch,
+                ).fetchall():
+                    rows[str(row["resident_id"])] = row
+                existing.update(
+                    str(row["resident_id"])
+                    for row in connection.execute(
+                        "SELECT resident_id FROM residents "
+                        f"WHERE resident_id IN ({placeholders}) AND deleted_at IS NULL",
+                        batch,
+                    ).fetchall()
+                )
+                for input_row in connection.execute(
+                    # The (resident, state, updated_at) index yields at most
+                    # one candidate per state. LATERAL runs that lookup once
+                    # per (resident, state) pair; a correlated subquery joined
+                    # back to the table can be re-evaluated for every history
+                    # row when the planner has no statistics yet.
+                    "WITH requested(resident_id) AS (VALUES "
+                    + ",".join('(%s)' for _ in batch)
+                    + "), kinds(state) AS (VALUES "
+                    + ",".join('(%s)' for _ in input_kinds)
+                    + ") SELECT latest.resident_id, latest.message_id, latest.state, latest.updated_at "
+                    "FROM requested CROSS JOIN kinds CROSS JOIN LATERAL ("
+                    "SELECT candidate.resident_id, candidate.message_id, candidate.state, candidate.updated_at "
+                    "FROM conversation_input_states AS candidate "
+                    "WHERE candidate.resident_id = requested.resident_id "
+                    "AND candidate.state = kinds.state "
+                    "ORDER BY candidate.updated_at DESC, candidate.message_id DESC LIMIT 1"
+                    ") AS latest",
+                    [*batch, *input_kinds],
+                ).fetchall():
+                    resident_id = str(input_row["resident_id"])
+                    value = {
+                        "message_id": str(input_row["message_id"]),
+                        "state": str(input_row["state"]),
+                        "updated_at": iso_time(input_row["updated_at"]),
+                    }
+                    current = latest_input_states.get(resident_id)
+                    if current is None or (
+                        value["updated_at"], value["message_id"]
+                    ) > (current["updated_at"], current["message_id"]):
+                        latest_input_states[resident_id] = value
+        self.inputs.with_outcomes_many({resident_id: [value] for resident_id, value in latest_input_states.items()})
+        live_states = self.states(selected)
+        return {
+            resident_id: {
+                "resident_id": resident_id,
+                "state": (
+                    live_states[resident_id]
+                ),
+                "cursor": (
+                    int(rows[resident_id]["cursor"] or 0)
+                    if resident_id in rows
+                    else 0
+                ),
+                "latest_input_state": dict(
+                    latest_input_states.get(resident_id) or {}
+                ),
+            }
+            for resident_id in selected
+            if resident_id in existing
+        }
+
+    def _snapshot_cursor(self, resident_id: str) -> int:
+        with self.state_store.database.read() as connection:
+            row = connection.execute(
+                'SELECT cursor FROM conversation_states WHERE resident_id = %s',
+                (resident_id,),
+            ).fetchone()
+        return int(row["cursor"] or 0) if row is not None else 0
+
+    def _snapshot_projection(
+        self,
+        resident_id: str,
+        messages: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        queue = self.queues([resident_id])[resident_id]
+        with self.state_store.database.read() as connection:
+            row = connection.execute(
+                'SELECT * FROM conversation_states WHERE resident_id = %s',
+                (resident_id,),
+            ).fetchone()
+            if row is None:
+                resident = connection.execute(
+                    'SELECT 1 FROM residents WHERE resident_id = %s',
+                    (resident_id,),
+                ).fetchone()
+                if resident is None:
+                    raise KeyError(resident_id)
+                return {
+                    "state": _default_state(),
+                    "input_states": [],
+                    "activities": [],
+                    "queue": queue,
+                    "runtime_settings": self.state_store.read_resident_execution_settings(resident_id) or {},
+                    "cursor": 0,
+                }
+            return {
+                "input_states": self.inputs.input_states_for_snapshot(
+                    connection,
+                    resident_id,
+                    visible_message_input_ids(messages),
+                ),
+                "state": _state(
+                    json_value(row["state_json"]) or _default_state(),
+                    strict=False,
+                ),
+                "activities": protocol_activities(
+                    resident_id,
+                    json_value(row["activity_json"]),
+                ),
+                "queue": queue,
+                "runtime_settings": self.state_store.read_resident_execution_settings(resident_id) or {},
+                "cursor": int(row["cursor"] or 0),
+            }
+
+    def snapshot(
+        self,
+        resident_id: object,
+        *,
+        history_limit: int = DEFAULT_HISTORY_LIMIT,
+    ) -> dict[str, Any]:
+        stream_id = _resident_id(resident_id)
+        limit = max(1, min(int(history_limit or DEFAULT_HISTORY_LIMIT), MAX_HISTORY_LIMIT))
+        # A page snapshot is a read projection, not a writer command. Read the
+        # two stores without the Conversation or Resident locks and retry once
+        # when the durable event cursor changes while the page is assembled.
+        # Keep the cursor captured BEFORE the message page. On a busy second
+        # attempt, the projection may include commits absent from that page;
+        # claiming its later cursor would make those messages unrecoverable.
+        for attempt in range(2):
+            before_cursor = self._snapshot_cursor(stream_id)
+            page = self.agent_data.read_chat_message_page(
+                stream_id,
+                limit=limit,
+            )
+            selected = page.get("messages") or []
+            messages = self.messages.tool_status_messages(
+                [_message_from_storage(item) for item in selected],
+                resident_id=stream_id,
+            )
+            projection = self._snapshot_projection(stream_id, messages)
+            if projection["cursor"] == before_cursor or attempt:
+                break
+        return {
+            "schema": RESIDENT_CONVERSATION_SCHEMA,
+            "resident_id": stream_id,
+            "messages": messages,
+            "state": projection["state"],
+            "input_states": projection["input_states"],
+            "activities": projection["activities"],
+            "queue": projection["queue"],
+            "runtime_settings": projection["runtime_settings"],
+            "cursor": before_cursor,
+            "next_page_token": (
+                str(page.get("next_before_ordinal"))
+                if page.get("next_before_ordinal")
+                else ""
+            ),
+        }
+
+
+class ConversationHistory:
+    """Read-only pages and searches of the messages of Resident Conversations."""
+
+    def __init__(
+        self,
+        state_store: LineageDataStore,
+        agent_data: AgentDataStore,
+        messages: ConversationMessages,
+        inputs: ConversationInputs,
+    ) -> None:
+        self.state_store = state_store
+        self.agent_data = agent_data
+        self.messages = messages
+        self.inputs = inputs
+
     def read_messages(self, resident_id: object, *, limit: int = 0) -> list[dict[str, Any]]:
         return [
             _message_from_storage(message)
             for message in self.agent_data.read_chat_messages(
-                self._resident_id(resident_id),
+                _resident_id(resident_id),
                 limit=limit,
             )
         ]
@@ -1634,7 +2174,7 @@ class ResidentConversationRepository:
         return [
             _message_from_storage(message)
             for message in self.agent_data.chat_replies(
-                self._resident_id(resident_id),
+                _resident_id(resident_id),
                 str(message_id or "").strip(),
                 until_message_id=str(until_message_id or "").strip(),
                 limit=limit,
@@ -1647,7 +2187,7 @@ class ResidentConversationRepository:
         *,
         role: str = "",
     ) -> dict[str, Any] | None:
-        stream_id = self._resident_id(resident_id)
+        stream_id = _resident_id(resident_id)
         stored = self.agent_data.latest_chat_message(stream_id, role=role)
         if stored is not None and stored.get("grouped_into_message_id"):
             # A group's members come just before it: the group is the newest message.
@@ -1665,7 +2205,7 @@ class ResidentConversationRepository:
     def messages_before_input(self, resident_id: str, message_id: str, *, limit: int) -> list[dict]:
         """Bound history to a durable input identity and the current context reset."""
         return [_message_from_storage(message) for message in self.agent_data.read_chat_messages_through_turn(
-            self._resident_id(resident_id), [message_id], limit=limit, include_turn=False,
+            _resident_id(resident_id), [message_id], limit=limit, include_turn=False,
         )]
 
     def messages_through_turn(
@@ -1678,7 +2218,7 @@ class ResidentConversationRepository:
         return [
             _message_from_storage(message)
             for message in self.agent_data.read_chat_messages_through_turn(
-                self._resident_id(resident_id),
+                _resident_id(resident_id),
                 message_ids,
                 limit=limit,
             )
@@ -1691,7 +2231,7 @@ class ResidentConversationRepository:
         *,
         limit: int = DEFAULT_HISTORY_LIMIT,
     ) -> dict[str, Any]:
-        stream_id = self._resident_id(resident_id)
+        stream_id = _resident_id(resident_id)
         safe_limit = max(1, min(int(limit or DEFAULT_HISTORY_LIMIT), MAX_HISTORY_LIMIT))
         try:
             before_ordinal = int(str(page_token or "").strip())
@@ -1705,9 +2245,9 @@ class ResidentConversationRepository:
             limit=safe_limit,
         )
         next_boundary = page.get("next_before_ordinal")
-        messages = self._tool_status_messages([_message_from_storage(item) for item in page.get("messages") or []], resident_id=stream_id)
+        messages = self.messages.tool_status_messages([_message_from_storage(item) for item in page.get("messages") or []], resident_id=stream_id)
         with self.state_store.database.read() as connection:
-            input_states = self._input_states_for_snapshot(
+            input_states = self.inputs.input_states_for_snapshot(
                 connection, stream_id, visible_message_input_ids(messages),
             )
         return {
@@ -1727,7 +2267,7 @@ class ResidentConversationRepository:
     ) -> dict[str, Any]:
         """What ``sender`` typed in the Resident's conversation, newest first, for the input history."""
 
-        stream_id = self._resident_id(resident_id)
+        stream_id = _resident_id(resident_id)
         safe_limit = max(1, min(int(limit or 50), MAX_HISTORY_LIMIT))
         token = str(page_token or "").strip()
         before_ordinal = None
@@ -1757,7 +2297,7 @@ class ResidentConversationRepository:
         limit: int = 50,
     ) -> dict[str, Any]:
         requested = [
-            self._resident_id(item)
+            _resident_id(item)
             for item in resident_ids
             if str(item or "").strip()
         ]
@@ -1818,115 +2358,13 @@ class ResidentConversationRepository:
             "next_page_token": str(next_offset) if next_offset < len(matches) else "",
         }
 
-    def _current_projection_from_row(
-        self,
-        resident_id: str,
-        row: Any | None,
-        queue: Mapping[str, Any],
-    ) -> dict[str, Any]:
-        if row is None:
-            return {
-                "resident_id": resident_id,
-                "state": self._default_state(),
-                "activities": [],
-                "queue": dict(queue),
-                "runtime_settings": self.state_store.read_resident_execution_settings(resident_id) or {},
-                "cursor": 0,
-            }
-        return {
-            "resident_id": resident_id,
-            "state": self._state(
-                json_value(row["state_json"]) or self._default_state(),
-                strict=False,
-            ),
-            "activities": protocol_activities(
-                resident_id,
-                json_value(row["activity_json"]),
-            ),
-            "queue": dict(queue),
-            "runtime_settings": self.state_store.read_resident_execution_settings(resident_id) or {},
-            "cursor": int(row["cursor"] or 0),
-        }
 
-    def current_projection(self, resident_id: object) -> dict[str, Any]:
-        stream_id = self._resident_id(resident_id)
-        with self.state_store.database.read() as connection:
-            row = connection.execute(
-                'SELECT * FROM conversation_states WHERE resident_id = %s',
-                (stream_id,),
-            ).fetchone()
-            if row is None:
-                resident = connection.execute(
-                    'SELECT 1 FROM residents WHERE resident_id = %s',
-                    (stream_id,),
-                ).fetchone()
-                if resident is None:
-                    raise KeyError(stream_id)
-        return self._current_projection_from_row(stream_id, row, self.queues([stream_id])[stream_id])
+class ConversationActivity:
+    """What one actor did across Resident Conversations: activity times, summaries and change signatures."""
 
-    def activities(self, resident_id: object) -> list[dict[str, Any]]:
-        """Read only the transient Activity projection, as the snapshot shows it."""
-
-        stream_id = self._resident_id(resident_id)
-        with self.state_store.database.read() as connection:
-            row = connection.execute(
-                'SELECT activity_json FROM conversation_states WHERE resident_id = %s',
-                (stream_id,),
-            ).fetchone()
-        if row is None:
-            return []
-        return protocol_activities(stream_id, json_value(row["activity_json"]))
-
-    def published_state(self, resident_id):
-        """Last UI notification, used only to avoid re-publishing its content."""
-        with self.state_store.database.read() as connection:
-            row = connection.execute('SELECT state_json FROM conversation_states WHERE resident_id=%s', (self._resident_id(resident_id),)).fetchone()
-        return self._state(json_value(row['state_json']), strict=False) if row else self._default_state()
-
-    def current_state(self, resident_id):
-        stream_id = self._resident_id(resident_id)
-        values = self.states([stream_id])
-        if stream_id not in values:
-            raise KeyError(stream_id)
-        return values[stream_id]
-
-    def current_projections(
-        self,
-        resident_ids: Iterable[object],
-    ) -> dict[str, dict[str, Any]]:
-        """Read complete current projections for multiple Residents atomically."""
-
-        selected = list(dict.fromkeys(
-            self._resident_id(resident_id)
-            for resident_id in resident_ids
-        ))
-        if not selected:
-            return {}
-        rows: dict[str, Any] = {}
-        existing: set[str] = set()
-        with self.state_store.database.read() as connection:
-            for offset in range(0, len(selected), 500):
-                batch = selected[offset:offset + 500]
-                placeholders = ",".join("%s" for _ in batch)
-                for row in connection.execute(
-                    "SELECT * FROM conversation_states "
-                    f"WHERE resident_id IN ({placeholders})",
-                    batch,
-                ).fetchall():
-                    rows[str(row["resident_id"])] = row
-                existing.update(
-                    str(row["resident_id"])
-                    for row in connection.execute(
-                        "SELECT resident_id FROM residents "
-                        f"WHERE resident_id IN ({placeholders}) AND deleted_at IS NULL",
-                        batch,
-                    ).fetchall()
-                )
-        queues = self.queues([resident_id for resident_id in selected if resident_id in existing])
-        return {
-            resident_id: self._current_projection_from_row(resident_id, rows.get(resident_id), queues[resident_id])
-            for resident_id in queues
-        }
+    def __init__(self, state_store: LineageDataStore, agent_data: AgentDataStore) -> None:
+        self.state_store = state_store
+        self.agent_data = agent_data
 
     # Aggregates count the Chat (the trace) and the Mailbox: a message that
     # waits there was sent to the Resident as much as one it read.
@@ -1942,7 +2380,7 @@ class ResidentConversationRepository:
         ]
 
     def user_message_counts(self, resident_ids: Sequence[object]) -> dict[str, int]:
-        requested = [self._resident_id(item) for item in resident_ids if str(item or "").strip()]
+        requested = [_resident_id(item) for item in resident_ids if str(item or "").strip()]
         counts = self.agent_data.chat_user_counts(requested)
         for entry in self._waiting(requested):
             counts[entry["resident_id"]] = counts.get(entry["resident_id"], 0) + 1
@@ -1993,7 +2431,7 @@ class ResidentConversationRepository:
     ) -> dict[str, str]:
         requested = (
             None if resident_ids is None else [
-                self._resident_id(item) for item in resident_ids
+                _resident_id(item) for item in resident_ids
                 if str(item or "").strip()
             ]
         )
@@ -2070,7 +2508,7 @@ class ResidentConversationRepository:
         excluded_business_ref: str = "",
     ) -> dict[str, dict[str, Any]]:
         requested = [
-            self._resident_id(item)
+            _resident_id(item)
             for item in resident_ids
             if str(item or "").strip()
         ]
@@ -2098,13 +2536,13 @@ class ResidentConversationRepository:
         return summaries
 
     def signature(self, resident_id: object) -> str:
-        return self.signatures([resident_id]).get(self._resident_id(resident_id), "")
+        return self.signatures([resident_id]).get(_resident_id(resident_id), "")
 
     def signatures(self, resident_ids: Sequence[object]) -> dict[str, str]:
         """A value that changes whenever a Resident's Chat or Mailbox changes."""
 
         requested = [
-            self._resident_id(item)
+            _resident_id(item)
             for item in resident_ids
             if str(item or "").strip()
         ]
@@ -2120,65 +2558,44 @@ class ResidentConversationRepository:
             ).hexdigest()
         return signatures
 
+
+class ResidentConversationRepository:
+    """Persistence authority for Resident messages, state and ordered events.
+
+    Each responsibility is a component; the repository is their published
+    interface and serves every method from the component that owns it.
+    """
+
+    def __init__(self, state_store: LineageDataStore, agent_data: AgentDataStore) -> None:
+        self.state_store = state_store
+        self.agent_data = agent_data
+        self.events = ConversationEvents(state_store, agent_data, self)
+        self.messages = ConversationMessages(state_store, agent_data, self.events)
+        self.inputs = ConversationInputs(state_store, agent_data, self.events, self.messages)
+        self.projection = ConversationProjection(state_store, agent_data, self.events, self.messages, self.inputs, self)
+        self.history = ConversationHistory(state_store, agent_data, self.messages, self.inputs)
+        self.activity = ConversationActivity(state_store, agent_data)
+
+    # Event log
+
+    def execution_settings_changed(
+        self,
+        resident_id: object,
+        settings: Mapping[str, Any],
+    ) -> dict[str, Any] | None:
+        return self.events.execution_settings_changed(resident_id, settings)
+
     def context_reset_boundary(self, resident_id: object) -> list[str]:
-        return self.agent_data.displayed_chat_message_ids(self._resident_id(resident_id))
+        return self.events.context_reset_boundary(resident_id)
 
     def archive_context(
         self, resident_id: object, *, archived_at: str = "",
         message_ids: Sequence[str] | None = None,
     ) -> list[str]:
-        """Tell the Conversation that a clear ended these messages' place in the Chat.
-
-        The clear itself is the context reset mark in the trace
-        (``AgentDataStore.record_context_reset``): the Chat is what comes
-        after the last one.  Announcing the same clear again sends the same
-        events once more, which readers apply idempotently.
-        """
-
-        stream_id = self._resident_id(resident_id)
-        del archived_at
-        selected_ids = (
-            [str(value) for value in message_ids]
-            if message_ids is not None
-            else self.context_reset_boundary(stream_id)
-        )
-        def write(connection: Any) -> None:
-            for message_id in selected_ids:
-                self._record_event(
-                    connection,
-                    stream_id,
-                    MESSAGE_UPDATED,
-                    {"message_id": message_id, "removed": True},
-                    subject_id=message_id,
-                )
-            # The lifecycle owner has recorded the reset boundary before this
-            # projection. Announce it even when there are no displayed messages:
-            # a Fork's inheritance card still needs the completed clear fact.
-            self._record_event(
-                connection, stream_id, CONTEXT_CLEARED, {"context_cleared": True},
-            )
-        with self._protocol_scope(stream_id):
-            self.state_store.database.write(write)
-        return selected_ids
+        return self.events.archive_context(resident_id, archived_at=archived_at, message_ids=message_ids)
 
     def prune_event_deliveries(self, *, older_than: str, limit: int = 5000) -> int:
-        """Delete relay work items for events that occurred before ``older_than``.
-
-        Each instance's relay starts at the tail and follows within seconds;
-        the events themselves stay in conversation_events.
-        """
-
-        def delete(connection: Any) -> int:
-            return int(connection.execute(
-                'DELETE FROM conversation_event_delivery WHERE sequence IN ('
-                'SELECT delivery.sequence FROM conversation_event_delivery AS delivery '
-                'JOIN conversation_events AS event ON event.resident_id = delivery.resident_id '
-                'AND event.cursor = delivery.cursor WHERE event.occurred_at < %s '
-                'ORDER BY delivery.sequence LIMIT %s)',
-                (str(older_than), max(1, int(limit))),
-            ).rowcount or 0)
-
-        return self.state_store.database.write(delete)
+        return self.events.prune_event_deliveries(older_than=older_than, limit=limit)
 
     def events_after(
         self,
@@ -2187,262 +2604,197 @@ class ResidentConversationRepository:
         *,
         limit: int = 500,
     ) -> dict[str, Any]:
-        stream_id = self._resident_id(resident_id)
-        cursor = max(0, int(after_cursor or 0))
-        safe_limit = max(1, min(int(limit or 500), 2000))
-        with self.state_store.database.read() as connection:
-            state = connection.execute(
-                'SELECT cursor FROM conversation_states WHERE resident_id = %s',
-                (stream_id,),
-            ).fetchone()
-            if state is None:
-                resident = connection.execute(
-                    'SELECT 1 FROM residents WHERE resident_id = %s',
-                    (stream_id,),
-                ).fetchone()
-                if resident is None:
-                    raise KeyError(stream_id)
-                # A registered, unused Resident has an empty stream. Reads must
-                # not create runtime state just to let its first watcher attach.
-                return {
-                    "resident_id": stream_id,
-                    "after_cursor": cursor,
-                    "cursor": 0,
-                    "events": [],
-                }
-            rows = connection.execute(
-                'SELECT * FROM conversation_events WHERE resident_id = %s AND cursor > %s ORDER BY cursor LIMIT %s',
-                (stream_id, cursor, safe_limit),
-            ).fetchall()
-        events = self.hydrate_events([
-            {
-                "schema": RESIDENT_CONVERSATION_SCHEMA,
-                "event_type": str(row["event_type"]),
-                "resident_id": stream_id,
-                "cursor": int(row["cursor"]),
-                "occurred_at": iso_time(row["occurred_at"]),
-                "payload": json_value(row["payload_json"]),
-            }
-            for row in rows
-        ])
-        return {
-            "resident_id": stream_id,
-            "after_cursor": cursor,
-            "cursor": int(state["cursor"] or 0),
-            "events": events,
-        }
+        return self.events.events_after(resident_id, after_cursor, limit=limit)
 
     def hydrate_events(self, events: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """Fill events read from the log with what the trace holds now.
+        return self.events.hydrate_events(events)
 
-        A message event carries the message (the log keeps only its header);
-        a finished input's state carries its final reply.  A message the trace
-        no longer has leaves its event without payload, for the reader to
-        take a Snapshot instead.
-        """
+    # Messages
 
-        from . import resident_mailbox
+    def commit_user_message(
+        self,
+        resident_id: object,
+        message: Mapping[str, Any],
+        *,
+        activated_at: str = "",
+    ) -> dict[str, Any]:
+        return self.messages.commit_user_message(resident_id, message, activated_at=activated_at)
 
-        wanted: dict[str, tuple[set[str], set[str]]] = {}
-        for event in events:
-            payload = event.get("payload") or {}
-            messages, inputs = wanted.setdefault(str(event["resident_id"]), (set(), set()))
-            if event["event_type"] in {MESSAGE_APPENDED, MESSAGE_UPDATED} and isinstance(payload.get("message"), Mapping):
-                messages.add(str(payload["message"].get("message_id") or ""))
-            elif event["event_type"] == INPUT_STATE_CHANGED and isinstance(payload.get("input_state"), Mapping):
-                if payload["input_state"].get("state") in TERMINAL_INPUT_STATES:
-                    inputs.add(str(payload["input_state"].get("message_id") or ""))
-        finals = self.agent_data.chat_final_replies_many(
-            {resident_id: sorted(inputs) for resident_id, (_messages, inputs) in wanted.items() if inputs},
-        )
-        found: dict[str, tuple[dict[str, dict[str, Any]], dict[str, tuple[str, str]]]] = {}
-        for resident_id, (message_ids, _inputs) in wanted.items():
-            stored = self.agent_data.trace_chat_messages(resident_id, sorted(message_ids)) if message_ids else {}
-            messages = {message_id: _message_from_storage(message) for message_id, message in stored.items()}
-            resident_mailbox.project_messages(resident_id, list(messages.values()), repository=self)
-            found[resident_id] = (messages, finals.get(resident_id, {}))
-        for event in events:
-            payload = event.get("payload") or {}
-            messages, replies = found.get(str(event["resident_id"]), ({}, {}))
-            if event["event_type"] in {MESSAGE_APPENDED, MESSAGE_UPDATED} and isinstance(payload.get("message"), Mapping):
-                stored = messages.get(str(payload["message"].get("message_id") or ""))
-                if stored is None:
-                    event.pop("payload", None)
-                    event["payload_omitted"] = True
-                else:
-                    event["payload"] = {**payload, "message": copy.deepcopy(stored)}
-            elif event["event_type"] == INPUT_STATE_CHANGED and isinstance(payload.get("input_state"), Mapping):
-                state = dict(payload["input_state"])
-                state["reply_message_ids"] = _final_reply(state.get("state"), replies.get(str(state.get("message_id") or "")))
-                event["payload"] = {**payload, "input_state": state}
-        return events
+    def accept_user_message(
+        self,
+        resident_id: object,
+        message: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        return self.messages.accept_user_message(resident_id, message)
+
+    def validate_message_identity(
+        self,
+        resident_id: object,
+        message: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        return self.messages.validate_message_identity(resident_id, message)
+
+    def execution_content_parts(
+        self,
+        resident_id: object,
+        execution_id: str,
+        content_parts: Sequence[Mapping[str, Any]],
+    ) -> list[dict[str, Any]]:
+        return self.messages.execution_content_parts(resident_id, execution_id, content_parts)
+
+    def append_message(
+        self,
+        resident_id: object,
+        message: Mapping[str, Any],
+        *,
+        activated_at: str = "",
+    ) -> dict[str, Any]:
+        return self.messages.append_message(resident_id, message, activated_at=activated_at)
+
+    def _tool_status_messages(self, messages: list[dict[str, Any]], *, resident_id: str) -> list[dict[str, Any]]:
+        return self.messages.tool_status_messages(messages, resident_id=resident_id)
+
+    def message(self, resident_id: object, message_id: object) -> dict[str, Any] | None:
+        return self.messages.message(resident_id, message_id)
+
+    def _stored_message(self, resident_id: object, message_id: object) -> dict[str, Any] | None:
+        return self.messages.stored_message(resident_id, message_id)
+
+    def waiting(self, resident_id: object, message_id: object) -> bool:
+        return self.messages.waiting(resident_id, message_id)
+
+    def message_business_ref(self, resident_id: object, message_id: object) -> str:
+        return self.messages.message_business_ref(resident_id, message_id)
+
+    def public_message(
+        self,
+        resident_id: object,
+        message_id: object,
+    ) -> dict[str, Any]:
+        return self.messages.public_message(resident_id, message_id)
+
+    def artifact(
+        self,
+        resident_id: object,
+        artifact_id: object,
+    ) -> dict[str, Any]:
+        return self.messages.artifact(resident_id, artifact_id)
+
+    def subagent_run(
+        self,
+        resident_id: object,
+        trace_ref: object,
+        *,
+        offset: int = 0,
+        limit: int = 200,
+    ) -> dict[str, Any]:
+        return self.messages.subagent_run(resident_id, trace_ref, offset=offset, limit=limit)
+
+    def update_message(
+        self,
+        resident_id: object,
+        message_id: object,
+        *,
+        message: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        return self.messages.update_message(resident_id, message_id, message=message)
+
+    # Inputs and question sets
+
+    def question_set_state(self, resident_id: object, message_id: object) -> str:
+        return self.inputs.question_set_state(resident_id, message_id)
+
+    def close_question_set(self, resident_id: object, message_id: object, *, actor: str) -> str:
+        return self.inputs.close_question_set(resident_id, message_id, actor=actor)
+
+    def set_input_state(
+        self,
+        resident_id: object,
+        message_id: object,
+        state: str,
+        *,
+        error: Mapping[str, Any] | None = None,
+        updated_at: str = "",
+    ) -> dict[str, Any]:
+        return self.inputs.set_input_state(resident_id, message_id, state, error=error, updated_at=updated_at)
+
+    def publish_archived_input_state(self, resident_id: str, message_id: str) -> None:
+        return self.inputs.publish_archived_input_state(resident_id, message_id)
+
+    def reopen_input(self, resident_id: object, message_id: object) -> dict[str, Any]:
+        return self.inputs.reopen_input(resident_id, message_id)
+
+    def record_accepted_input(self, connection, resident_id: str, message_id: str) -> None:
+        return self.inputs.record_accepted_input(connection, resident_id, message_id)
+
+    def input_state(self, resident_id: object, message_id: object) -> dict[str, Any]:
+        return self.inputs.input_state(resident_id, message_id)
+
+    def input_states_by_id(
+        self, requests: Sequence[tuple[str, str]],
+    ) -> dict[tuple[str, str], dict[str, Any]]:
+        return self.inputs.input_states_by_id(requests)
+
+    def reply_rounds(
+        self, requests: Sequence[tuple[str, str]], *, limit: int = 20,
+    ) -> dict[tuple[str, str], dict[str, Any]]:
+        return self.inputs.reply_rounds(requests, limit=limit)
+
+    def input_states(
+        self,
+        resident_id: object,
+        *,
+        states: Sequence[str] = (),
+        limit: int = 0,
+    ) -> list[dict[str, Any]]:
+        return self.inputs.input_states(resident_id, states=states, limit=limit)
+
+    def latest_notifiable_input_states_for_messages(
+        self,
+        message_ids_by_resident: Mapping[object, object],
+    ) -> dict[str, dict[str, Any]]:
+        return self.inputs.latest_notifiable_input_states_for_messages(message_ids_by_resident)
+
+    # Current state and snapshots
+
+    def set_state(self, resident_id: object, state: Mapping[str, Any]) -> dict[str, Any] | None:
+        return self.projection.set_state(resident_id, state)
+
+    def set_activities(self, resident_id: object, activities: object) -> dict[str, Any] | None:
+        return self.projection.set_activities(resident_id, activities)
+
+    def queues(self, resident_ids: Iterable[object]) -> dict[str, dict[str, Any]]:
+        return self.projection.queues(resident_ids)
+
+    def publish_queue(self, resident_id: object) -> dict[str, Any] | None:
+        return self.projection.publish_queue(resident_id)
+
+    def current_projection(self, resident_id: object) -> dict[str, Any]:
+        return self.projection.current_projection(resident_id)
+
+    def activities(self, resident_id: object) -> list[dict[str, Any]]:
+        return self.projection.activities(resident_id)
+
+    def published_state(self, resident_id):
+        return self.projection.published_state(resident_id)
+
+    def current_state(self, resident_id):
+        return self.projection.current_state(resident_id)
+
+    def current_projections(
+        self,
+        resident_ids: Iterable[object],
+    ) -> dict[str, dict[str, Any]]:
+        return self.projection.current_projections(resident_ids)
 
     def states(self, resident_ids):
-        """Derive work from the active turn/queue and intake from the Resident."""
-        from . import resident_execution_work, resident_execution_storage
-        from .domain_ports import execution_port
-        selected = list(dict.fromkeys(self._resident_id(item) for item in resident_ids))
-        if not selected:
-            return {}
-        with self.state_store.database.read_transaction() as connection:
-            rows = connection.execute('SELECT resident_id,intake_open FROM residents WHERE resident_id=ANY(%s) AND deleted_at IS NULL',(selected,)).fetchall()
-            turns = resident_execution_storage.read(connection, selected, content=False)
-            queued = {}
-            for row in connection.execute(
-                "SELECT resident_id,message_id FROM resident_mailbox WHERE resident_id=ANY(%s) AND place='queue' ORDER BY resident_id,position", (selected,),
-            ).fetchall():
-                queued.setdefault(row['resident_id'], []).append({'user_message_id': row['message_id']})
-        requested = {job['execution_id']: job['actor'] for _revision,job in turns.values() if resident_execution_work.submitted_execution_id(job) and job.get('actor') and resident_execution_work.is_active(job) and not resident_execution_work.completion_applied(job) and not job.get('stop_requested_at')}
-        snapshots = {}
-        entries = list(requested.items())
-        for offset in range(0,len(entries),500):
-            snapshots.update(execution_port.service().states(dict(entries[offset:offset+500])))
-        result = {}
-        for row in rows:
-            resident_id = row['resident_id']
-            job = turns.get(resident_id,(0,{}))[1]
-            job['queue'] = queued.get(resident_id,[])
-            intake = 'closed' if row['intake_open'] is False else 'open'
-            job['intake_state'] = intake
-            result[resident_id] = resident_execution_work.conversation_state(job,intake_state=intake,snapshot=snapshots.get(job.get('execution_id'),{}))
-        return result
+        return self.projection.states(resident_ids)
 
     def state_snapshots(
         self,
         resident_ids: Iterable[object],
     ) -> dict[str, dict[str, Any]]:
-        selected = list(dict.fromkeys(
-            self._resident_id(resident_id)
-            for resident_id in resident_ids
-        ))
-        if not selected:
-            return {}
-        rows: dict[str, Any] = {}
-        latest_input_states: dict[str, dict[str, Any]] = {}
-        existing: set[str] = set()
-        input_kinds = sorted(INPUT_STATES)
-        with self.state_store.database.read() as connection:
-            for offset in range(0, len(selected), 500):
-                batch = selected[offset:offset + 500]
-                placeholders = ",".join("%s" for _ in batch)
-                for row in connection.execute(
-                    "SELECT resident_id, cursor, state_json FROM conversation_states "
-                    f"WHERE resident_id IN ({placeholders})",
-                    batch,
-                ).fetchall():
-                    rows[str(row["resident_id"])] = row
-                existing.update(
-                    str(row["resident_id"])
-                    for row in connection.execute(
-                        "SELECT resident_id FROM residents "
-                        f"WHERE resident_id IN ({placeholders}) AND deleted_at IS NULL",
-                        batch,
-                    ).fetchall()
-                )
-                for input_row in connection.execute(
-                    # The (resident, state, updated_at) index yields at most
-                    # one candidate per state. LATERAL runs that lookup once
-                    # per (resident, state) pair; a correlated subquery joined
-                    # back to the table can be re-evaluated for every history
-                    # row when the planner has no statistics yet.
-                    "WITH requested(resident_id) AS (VALUES "
-                    + ",".join('(%s)' for _ in batch)
-                    + "), kinds(state) AS (VALUES "
-                    + ",".join('(%s)' for _ in input_kinds)
-                    + ") SELECT latest.resident_id, latest.message_id, latest.state, latest.updated_at "
-                    "FROM requested CROSS JOIN kinds CROSS JOIN LATERAL ("
-                    "SELECT candidate.resident_id, candidate.message_id, candidate.state, candidate.updated_at "
-                    "FROM conversation_input_states AS candidate "
-                    "WHERE candidate.resident_id = requested.resident_id "
-                    "AND candidate.state = kinds.state "
-                    "ORDER BY candidate.updated_at DESC, candidate.message_id DESC LIMIT 1"
-                    ") AS latest",
-                    [*batch, *input_kinds],
-                ).fetchall():
-                    resident_id = str(input_row["resident_id"])
-                    value = {
-                        "message_id": str(input_row["message_id"]),
-                        "state": str(input_row["state"]),
-                        "updated_at": iso_time(input_row["updated_at"]),
-                    }
-                    current = latest_input_states.get(resident_id)
-                    if current is None or (
-                        value["updated_at"], value["message_id"]
-                    ) > (current["updated_at"], current["message_id"]):
-                        latest_input_states[resident_id] = value
-        self._with_outcomes_many({resident_id: [value] for resident_id, value in latest_input_states.items()})
-        live_states = self.states(selected)
-        return {
-            resident_id: {
-                "resident_id": resident_id,
-                "state": (
-                    live_states[resident_id]
-                ),
-                "cursor": (
-                    int(rows[resident_id]["cursor"] or 0)
-                    if resident_id in rows
-                    else 0
-                ),
-                "latest_input_state": dict(
-                    latest_input_states.get(resident_id) or {}
-                ),
-            }
-            for resident_id in selected
-            if resident_id in existing
-        }
-
-    def _snapshot_cursor(self, resident_id: str) -> int:
-        with self.state_store.database.read() as connection:
-            row = connection.execute(
-                'SELECT cursor FROM conversation_states WHERE resident_id = %s',
-                (resident_id,),
-            ).fetchone()
-        return int(row["cursor"] or 0) if row is not None else 0
-
-    def _snapshot_projection(
-        self,
-        resident_id: str,
-        messages: list[dict[str, Any]],
-    ) -> dict[str, Any]:
-        queue = self.queues([resident_id])[resident_id]
-        with self.state_store.database.read() as connection:
-            row = connection.execute(
-                'SELECT * FROM conversation_states WHERE resident_id = %s',
-                (resident_id,),
-            ).fetchone()
-            if row is None:
-                resident = connection.execute(
-                    'SELECT 1 FROM residents WHERE resident_id = %s',
-                    (resident_id,),
-                ).fetchone()
-                if resident is None:
-                    raise KeyError(resident_id)
-                return {
-                    "state": self._default_state(),
-                    "input_states": [],
-                    "activities": [],
-                    "queue": queue,
-                    "runtime_settings": self.state_store.read_resident_execution_settings(resident_id) or {},
-                    "cursor": 0,
-                }
-            return {
-                "input_states": self._input_states_for_snapshot(
-                    connection,
-                    resident_id,
-                    visible_message_input_ids(messages),
-                ),
-                "state": self._state(
-                    json_value(row["state_json"]) or self._default_state(),
-                    strict=False,
-                ),
-                "activities": protocol_activities(
-                    resident_id,
-                    json_value(row["activity_json"]),
-                ),
-                "queue": queue,
-                "runtime_settings": self.state_store.read_resident_execution_settings(resident_id) or {},
-                "cursor": int(row["cursor"] or 0),
-            }
+        return self.projection.state_snapshots(resident_ids)
 
     def snapshot(
         self,
@@ -2450,44 +2802,122 @@ class ResidentConversationRepository:
         *,
         history_limit: int = DEFAULT_HISTORY_LIMIT,
     ) -> dict[str, Any]:
-        stream_id = self._resident_id(resident_id)
-        limit = max(1, min(int(history_limit or DEFAULT_HISTORY_LIMIT), MAX_HISTORY_LIMIT))
-        # A page snapshot is a read projection, not a writer command. Read the
-        # two stores without the Conversation or Resident locks and retry once
-        # when the durable event cursor changes while the page is assembled.
-        # Keep the cursor captured BEFORE the message page. On a busy second
-        # attempt, the projection may include commits absent from that page;
-        # claiming its later cursor would make those messages unrecoverable.
-        for attempt in range(2):
-            before_cursor = self._snapshot_cursor(stream_id)
-            page = self.agent_data.read_chat_message_page(
-                stream_id,
-                limit=limit,
-            )
-            selected = page.get("messages") or []
-            messages = self._tool_status_messages(
-                [_message_from_storage(item) for item in selected],
-                resident_id=stream_id,
-            )
-            projection = self._snapshot_projection(stream_id, messages)
-            if projection["cursor"] == before_cursor or attempt:
-                break
-        return {
-            "schema": RESIDENT_CONVERSATION_SCHEMA,
-            "resident_id": stream_id,
-            "messages": messages,
-            "state": projection["state"],
-            "input_states": projection["input_states"],
-            "activities": projection["activities"],
-            "queue": projection["queue"],
-            "runtime_settings": projection["runtime_settings"],
-            "cursor": before_cursor,
-            "next_page_token": (
-                str(page.get("next_before_ordinal"))
-                if page.get("next_before_ordinal")
-                else ""
-            ),
-        }
+        return self.projection.snapshot(resident_id, history_limit=history_limit)
+
+    # History
+
+    def read_messages(self, resident_id: object, *, limit: int = 0) -> list[dict[str, Any]]:
+        return self.history.read_messages(resident_id, limit=limit)
+
+    def replies(
+        self,
+        resident_id: object,
+        message_id: object,
+        *,
+        until_message_id: object = "",
+        limit: int = 20,
+    ) -> list[dict[str, Any]]:
+        return self.history.replies(resident_id, message_id, until_message_id=until_message_id, limit=limit)
+
+    def latest_message(
+        self,
+        resident_id: object,
+        *,
+        role: str = "",
+    ) -> dict[str, Any] | None:
+        return self.history.latest_message(resident_id, role=role)
+
+    def public_messages(
+        self,
+        resident_id: object,
+        *,
+        limit: int = 0,
+    ) -> list[dict[str, Any]]:
+        return self.history.public_messages(resident_id, limit=limit)
+
+    def messages_before_input(self, resident_id: str, message_id: str, *, limit: int) -> list[dict]:
+        return self.history.messages_before_input(resident_id, message_id, limit=limit)
+
+    def messages_through_turn(
+        self,
+        resident_id: object,
+        message_ids: Sequence[object],
+        *,
+        limit: int,
+    ) -> list[dict[str, Any]]:
+        return self.history.messages_through_turn(resident_id, message_ids, limit=limit)
+
+    def messages_page(
+        self,
+        resident_id: object,
+        page_token: object,
+        *,
+        limit: int = DEFAULT_HISTORY_LIMIT,
+    ) -> dict[str, Any]:
+        return self.history.messages_page(resident_id, page_token, limit=limit)
+
+    def input_history_page(
+        self,
+        resident_id: object,
+        sender: object,
+        page_token: object = "",
+        *,
+        limit: int = 50,
+    ) -> dict[str, Any]:
+        return self.history.input_history_page(resident_id, sender, page_token, limit=limit)
+
+    def search_messages(
+        self,
+        resident_ids: Sequence[object],
+        query: object,
+        *,
+        page_token: object = "",
+        limit: int = 50,
+    ) -> dict[str, Any]:
+        return self.history.search_messages(resident_ids, query, page_token=page_token, limit=limit)
+
+    # Activity across Conversations
+
+    def user_message_counts(self, resident_ids: Sequence[object]) -> dict[str, int]:
+        return self.activity.user_message_counts(resident_ids)
+
+    def dismissed_activity(self, actor: str) -> dict[str, datetime]:
+        return self.activity.dismissed_activity(actor)
+
+    def actor_activity(
+        self,
+        actor: object,
+        resident_ids: Sequence[object] | None = None,
+    ) -> dict[str, str]:
+        return self.activity.actor_activity(actor, resident_ids)
+
+    def actor_activity_page(
+        self, actor: object, *, limit: int = 50, page_token: str = "",
+    ) -> dict[str, Any]:
+        return self.activity.actor_activity_page(actor, limit=limit, page_token=page_token)
+
+    def iter_actor_activity_pages(
+        self, actor: object, *, limit: int = 50, page_token: str = "",
+    ) -> Iterator[dict[str, Any]]:
+        return self.activity.iter_actor_activity_pages(actor, limit=limit, page_token=page_token)
+
+    def activity_page_token(self, resident_id: str, latest_at: str) -> str:
+        return self.activity.activity_page_token(resident_id, latest_at)
+
+    def conversation_summaries(
+        self,
+        resident_ids: Sequence[object],
+        actor: object,
+        *,
+        excluded_business_ref: str = "",
+    ) -> dict[str, dict[str, Any]]:
+        return self.activity.conversation_summaries(resident_ids, actor, excluded_business_ref=excluded_business_ref)
+
+    def signature(self, resident_id: object) -> str:
+        return self.activity.signature(resident_id)
+
+    def signatures(self, resident_ids: Sequence[object]) -> dict[str, str]:
+        return self.activity.signatures(resident_ids)
 
 
 def get_repository() -> ResidentConversationRepository:

@@ -101,7 +101,7 @@ def test_snapshot_concurrent_writes_on_both_attempts_remain_replayable(repositor
     """快照读取期间持续写入时快照仍能完成，之后的消息可从游标重放补齐"""
     resident_id = "resident_111111111111"
     repository.commit_user_message(resident_id, message(1))
-    projection = repository._snapshot_projection
+    projection = repository.projection._snapshot_projection
     writes = []
 
     def append_after_page(*args):
@@ -110,7 +110,7 @@ def test_snapshot_concurrent_writes_on_both_attempts_remain_replayable(repositor
         writes.append(index)
         return projection(*args)
 
-    monkeypatch.setattr(repository, "_snapshot_projection", append_after_page)
+    monkeypatch.setattr(repository.projection, "_snapshot_projection", append_after_page)
     snapshot = repository.snapshot(resident_id)
     assert writes == [2, 3], "snapshot must finish even while writers keep appending"
     visible = {item["message_id"] for item in snapshot["messages"]}
@@ -176,14 +176,14 @@ def test_reset_recovery_preserves_new_messages_and_finishes_archive_projection(r
     }
     operation_id = operations.enqueue(resident_id, [step])
     repository.commit_user_message(resident_id, message(2))
-    original = repository._record_event
+    original = repository.events.record_event
 
     def broken_projection(*args, **kwargs):
         if args[2] == MESSAGE_UPDATED:
             raise RuntimeError("crash after AgentData archive")
         return original(*args, **kwargs)
 
-    monkeypatch.setattr(repository, "_record_event", broken_projection)
+    monkeypatch.setattr(repository.events, "record_event", broken_projection)
     assert not operations.run(operation_id, resident_lifecycle_steps_domain.apply_resident_lifecycle_step)
     assert operations.pending(resident_id)
     assert repository.context_reset_boundary(resident_id) == [message(2)["message_id"]]
@@ -261,8 +261,8 @@ def test_snapshot_is_lock_free_even_while_the_execution_work_scope_is_held(
     resident_id = "resident_111111111111"
     repository.commit_user_message(resident_id, message(1))
     monkeypatch.setattr(
-        repository,
-        "_protocol_scope",
+        repository.events,
+        "protocol_scope",
         lambda *_args, **_kwargs: pytest.fail("snapshot acquired the writer scope"),
     )
     job_entered = threading.Event()

@@ -34,7 +34,7 @@ from .resident_fork_context import (
     requires_initial_context_compaction as _requires_initial_context_compaction,
 )
 from .resident_runtime_payload import runtime_settings_updates_from_payload as _runtime_settings_updates_from_payload
-from dataclasses import replace
+from dataclasses import dataclass, field, replace
 from management_common.actor_identity import canonical_actor_id
 from management_portal.execution.contracts import ExecutionRequest, InputMedia
 from management_portal.execution.provider_catalog import AGENT_PROVIDERS
@@ -480,352 +480,30 @@ def run_resident_execution(resident_id: str, continuation_id: str) -> None:
         _run_resident_execution_scoped(resident_id, continuation_id)
 
 
+@dataclass
+class _ContinuationJob:
+    """The Job a continuation works on and its Resident, as last read under the Resident lock.
+
+    A failure is recorded against this Job; a delivery that submitted a new
+    Execution through its own job copy rebinds it.
+    """
+
+    record: dict[str, Any] = field(default_factory=dict)
+    job: dict[str, Any] = field(default_factory=dict)
+
+
 def _run_resident_execution_scoped(resident_id: str, continuation_id: str) -> None:
+    """Run the Resident's Jobs one after another while each finished Job advances the queue."""
+
     terminal_applied_job: dict[str, Any] = {}
     try:
         while True:
-            current_job: dict[str, Any] = {}
-            record_snapshot: dict[str, Any] = {}
+            claimed = _ContinuationJob()
             try:
-                with resident_record_domain.state_lock(resident_id):
-                    record = resident_record_domain.find_resident(resident_id) or {}
-                    if not record:
-                        return
-                    job = resident_execution_work.read(record)
-                    if not resident_execution_work.matches_continuation(job, continuation_id):
-                        return
-                    if resident_restart_handoff.pending(record, job):
-                        return
-                    from .resident_default_backend import bind_before_execution
-                    bind_before_execution(record, str(job.get("actor") or ""))
-                    job = resident_execution_work.read(record)
-                    dispatched_at = str(job.get("dispatched_at") or resident_domain_common.now_iso())
-                    job["dispatched_at"] = dispatched_at
-                    current_job = dict(job)
-                    record_snapshot = dict(record)
-
-                resident_catalog.ensure_resident_agent(record_snapshot, actor=str(current_job.get("actor") or ""))
-                if resident_domain_port.ensure_role_reserve(record_snapshot):
+                if not _claim_job(resident_id, continuation_id, claimed):
                     return
-
-                if str(current_job.get("operation") or "") in {
-                    "context_fork_create",
-                }:
-                    existing_session_id = resident_backend.record_session_id(
-                        record_snapshot
-                    )
-                    recovery_result = None
-                    if current_job.get('initialization_recovery'):
-                        from .resident_initialization import run as recover_initialization
-                        recovery_result = recover_initialization(record_snapshot, current_job, continuation_id)
-                        thread = recovery_result['thread']
-                    elif (
-                        _requires_initial_context_compaction(record_snapshot)
-                        and existing_session_id
-                    ):
-                        if not current_job.get('initial_compaction_operation_id'):
-                            raise RuntimeError('已有会话的首轮压缩状态未知；请使用 RetryResidentInitialization 恢复')
-                        existing_session = resident_backend.session_record_for_binding(
-                            resident_backend.execution_binding_id(record_snapshot)
-                        )
-                        thread = {
-                            "id": existing_session_id,
-                            "sessionId": existing_session_id,
-                            "backend_route_id": str(
-                                existing_session.get("backend_route_id")
-                                or record_snapshot.get("backend_route_id")
-                                or ""
-                            ),
-                        }
-                    else:
-                        thread = resident_session_backend_domain.create_exact_resident_session(
-                            record_snapshot,
-                            current_job,
-                        )
-                    if not resident_backend.session_id(
-                        thread.get("sessionId") or thread.get("id")
-                    ):
-                        raise RuntimeError(
-                            f"{resident_backend.backend_label(record_snapshot)} "
-                            "Resident creation returned no session id"
-                        )
-
-                    initial_compaction: dict[str, Any] = {}
-                    if recovery_result is not None:
-                        initial_compaction = recovery_result
-                    elif _requires_initial_context_compaction(record_snapshot):
-                        initial_compaction = _compact_inherited_resident_context(
-                            record_snapshot,
-                            current_job,
-                            thread,
-                            continuation_id=continuation_id,
-                        )
-
-                    applied_creation_job: dict[str, Any] = {}
-                    with resident_record_domain.state_lock(resident_id):
-                        record = resident_record_domain.find_resident(resident_id) or {}
-                        if not record:
-                            return
-                        job = resident_execution_work.read(record)
-                        if not resident_execution_work.matches_continuation(
-                            job,
-                            continuation_id,
-                        ):
-                            return
-                        now = resident_domain_common.now_iso()
-                        record.update({
-                            "session_state": "active",
-                            "last_error": "",
-                            "updated_at": now,
-                        })
-                        record.pop("last_runtime_error", None)
-                        record["backend_route_id"] = str(thread.get("backend_route_id") or record.get("backend_route_id") or "")
-                        record["session_created_via"] = "execution_service"
-                        if _requires_initial_context_compaction(record):
-                            compacted_at = resident_domain_common.now_iso()
-                            record.update({
-                                "context_compaction_state": "completed",
-                                "context_compacted_at": compacted_at,
-                            })
-                            record = _with_compacted_context_usage(
-                                record,
-                                initial_compaction.get("usage")
-                                if isinstance(initial_compaction.get("usage"), dict)
-                                else {},
-                            )
-                        _mark_completion_applied(job, now)
-                        resident_execution_work.write(record, job)
-                        resident_record_domain.save_resident_record(record, commit_configuration=True)
-                        applied_creation_job = dict(job)
-
-                    if _finalize_applied_execution(
-                        resident_id,
-                        continuation_id,
-                        applied_creation_job,
-                    ):
-                        continue
+                if not _run_claimed_job(resident_id, continuation_id, claimed):
                     return
-
-                if _completion_applied(current_job):
-                    if _finalize_applied_execution(
-                        resident_id,
-                        continuation_id,
-                        current_job,
-                    ):
-                        continue
-                    return
-
-
-                if (
-                    current_job.get("bootstrap_session")
-                    and not resident_backend.record_session_id(record_snapshot)
-                ):
-                    job_actor = resident_execution_work.request_actor(current_job)
-                    completed_bootstrap_job = current_job
-                    updated_record = complete_bootstrap_codex_session(
-                        record_snapshot,
-                        current_job,
-                    )
-                    with resident_record_domain.state_lock(resident_id):
-                        record = resident_record_domain.find_resident(resident_id) or {}
-                        if not record:
-                            return
-                        update_keys = [
-                            "session_created_via",
-                            "session_state",
-                            "last_token_usage",
-                            "last_token_usage_at",
-                            "last_turn_usage",
-                            "last_turn_usage_at",
-                            "last_model_context_window",
-                            "last_error",
-                            "updated_at",
-                        ]
-                        for key in update_keys:
-                            if key in updated_record:
-                                record[key] = updated_record[key]
-                        record.pop("last_runtime_error", None)
-                        resident_record_domain.save_resident_record(record)
-                        persisted_job = resident_execution_work.read(record)
-                        applied = str(persisted_job.get("execution_id") or "") == str(
-                            completed_bootstrap_job.get("execution_id") or ""
-                        )
-                        if applied:
-                            _mark_completion_applied(
-                                persisted_job,
-                                str(updated_record.get("updated_at") or resident_domain_common.now_iso()),
-                            )
-                            resident_execution_work.write(record, persisted_job)
-                            completed_bootstrap_job = dict(persisted_job)
-                    if not applied:
-                        # Another command replaced the Job during the turn.
-                        resident_input_queue_domain.acknowledge_execution(completed_bootstrap_job)
-                        return
-                    # Messages that arrived during the first turn wait in its
-                    # queue; the shared finalizer starts the next one.
-                    queue_advanced = _finalize_applied_execution(
-                        resident_id,
-                        continuation_id,
-                        completed_bootstrap_job,
-                    )
-                    if _lineage_notifiable_execution(
-                        completed_bootstrap_job
-                    ):
-                        _notify_lineage_message_completed(
-                            resident_id,
-                            str(
-                                completed_bootstrap_job.get("actor")
-                                or job_actor
-                            ),
-                            str(
-                                completed_bootstrap_job.get("user_message_id")
-                                or ""
-                            ),
-                            completed_at=str(
-                                updated_record.get("updated_at")
-                                or resident_domain_common.now_iso()
-                            ),
-                            **_lineage_terminal_fact_fields(
-                                completed_bootstrap_job
-                            ),
-                        )
-                    if queue_advanced:
-                        continue
-                    return
-
-                if resident_execution_work.is_compact(current_job):
-                    scope_label = str(current_job.get("compact_scope_label") or "Resident Session")
-                    compact_updated, compact_detail = _compact_resident_backend(record_snapshot, current_job)
-                    with resident_record_domain.state_lock(resident_id):
-                        record = resident_record_domain.find_resident(resident_id) or {}
-                        if not record:
-                            return
-                        job = resident_execution_work.read(record)
-                        if not resident_execution_work.matches_continuation(job, continuation_id):
-                            return
-                        now = resident_domain_common.now_iso()
-                        resident_lifecycle_domain.append_conversation_message(
-                            resident_domain_common.record_resident_id(record),
-                            resident_input_queue_domain.compact_portal_command_message(
-                                resident_session_backend_domain.compact_portal_result(
-                                    "completed",
-                                    scope_label,
-                                    backend_label=resident_backend.backend_label(record),
-                                    detail=compact_detail,
-                                ),
-                                str(current_job.get("actor") or ""),
-                                reply_to_message_id=str(
-                                    current_job.get("user_message_id") or ""
-                                ),
-                            ),
-                        )
-                        resident_conversation_stream.get_repository().set_input_state(
-                            resident_domain_common.record_resident_id(record),
-                            str(current_job.get("user_message_id") or ""),
-                            "completed",
-                        )
-                        for key in (
-                            "last_token_usage",
-                            "last_token_usage_at",
-                            "last_model_context_window",
-                        ):
-                            if key in compact_updated:
-                                record[key] = compact_updated[key]
-                        record["updated_at"] = now
-                        resident_record_domain.save_resident_record(record)
-                        _mark_completion_applied(job, now)
-                        resident_execution_work.write(record, job)
-
-                    if not resident_input_queue_domain.acknowledge_execution(current_job):
-                        return
-
-                    with resident_record_domain.state_lock(resident_id):
-                        record = resident_record_domain.find_resident(resident_id) or {}
-                        if not record:
-                            return
-                        job = resident_execution_work.read(record)
-                        if not resident_execution_work.matches_continuation(
-                            job,
-                            continuation_id,
-                        ) or str(job.get("execution_id") or "") != str(current_job.get("execution_id") or ""):
-                            return
-                        now = resident_domain_common.now_iso()
-                        queue = resident_execution_work.waiting_input_queue(job)
-                        if queue:
-                            next_job = queue.pop(0)
-                            resident_execution_work.promote_queue_item(
-                                job,
-                                next_job,
-                                queue,
-                                now,
-                                retain_continuation=True,
-                            )
-                            record["session_state"] = resident_record_domain.record_backend_session_state(record)
-                            resident_execution_work.write(record, job)
-                            resident_record_domain.save_resident_record(record)
-                            continue
-                        record["session_state"] = "active"
-                        record["last_error"] = ""
-                        record["updated_at"] = now
-                        resident_record_domain.save_resident_record(record)
-                        resident_execution_work.clear(record)
-                    return
-
-                assistant_item, updated_record = send_to_resident_backend(
-                    record_snapshot,
-                    current_job,
-                )
-
-                with resident_record_domain.state_lock(resident_id):
-                    record = resident_record_domain.find_resident(resident_id) or {}
-                    if not record:
-                        return
-                    job = resident_execution_work.read(record)
-                    if not resident_execution_work.matches_continuation(job, continuation_id):
-                        return
-                    for key in (
-                        "session_state",
-                        "last_token_usage",
-                        "last_token_usage_at",
-                        "last_turn_usage",
-                        "last_turn_usage_at",
-                        "last_model_context_window",
-                        "last_error",
-                    ):
-                        if key in updated_record:
-                            record[key] = updated_record[key]
-                    now = resident_domain_common.now_iso()
-                    record["session_state"] = "active"
-                    record["updated_at"] = now
-                    resident_record_domain.save_resident_record(record)
-                    _mark_completion_applied(job, now)
-                    resident_execution_work.write(record, job)
-                    # Delivery may have submitted a new Execution through its
-                    # own job copy. Finalize the persisted binding, not the
-                    # pre-delivery snapshot which can still lack its ID.
-                    current_job = dict(job)
-
-                queue_advanced = _finalize_applied_execution(
-                    resident_id,
-                    continuation_id,
-                    current_job,
-                )
-                _notify_lineage_message_completed(
-                    resident_id,
-                    str(
-                        current_job.get("actor")
-                        or record_snapshot.get("created_by")
-                        or ""
-                    ),
-                    str(current_job.get("user_message_id") or ""),
-                    completed_at=str(
-                        assistant_item.get("created_at") or now
-                    ),
-                    **_lineage_terminal_fact_fields(current_job),
-                )
-                if queue_advanced:
-                    continue
-                return
             except resident_restart_handoff.ExecutionHandedOff:
                 return
             except resident_domain_common.ResidentTurnCancelled as exc:
@@ -837,134 +515,552 @@ def _run_resident_execution_scoped(resident_id: str, continuation_id: str) -> No
                     continue
                 return
             except Exception as exc:
-                if not resident_input_queue_domain.reconcile_queued_turn_inputs(
-                    resident_id, str(current_job.get("execution_id") or ""), turn_finished=True,
-                ):
-                    return
-                error_message = resident_backend_failure_message(record_snapshot, str(exc))
-                with resident_record_domain.state_lock(resident_id):
-                    try:
-                        record = resident_record_domain.find_resident(resident_id) or {}
-                        if record:
-                            job = resident_execution_work.read(record)
-                            if not resident_execution_work.matches_continuation(job, continuation_id):
-                                return
-                            now = resident_domain_common.now_iso()
-                            runtime_error = resident_record_domain.runtime_error_payload(
-                                error_message,
-                                code=getattr(exc, "error_code", ""),
-                                details=getattr(exc, "error_details", None),
-                            )
-                            failed_usage = getattr(exc, "usage", None)
-                            resident_input_queue_domain.persist_failed_execution_message(
-                                resident_id,
-                                job,
-                                error_message,
-                                runtime_error,
-                                failed_at=now,
-                            )
-                            if failed_usage:
-                                record["last_turn_usage"] = dict(failed_usage)
-                                record["last_turn_usage_at"] = now
-                            terminal_applied_job = dict(job)
-                            if resident_execution_work.is_compact(current_job):
-                                scope_label = str(current_job.get("compact_scope_label") or "Resident Session")
-                                resident_lifecycle_domain.append_conversation_message(
-                                    resident_domain_common.record_resident_id(record),
-                                    resident_input_queue_domain.compact_portal_command_message(
-                                        resident_session_backend_domain.compact_portal_result(
-                                            "failed",
-                                            scope_label,
-                                            error_message,
-                                            backend_label=resident_backend.backend_label(record),
-                                        ),
-                                        str(current_job.get("actor") or ""),
-                                        reply_to_message_id=str(
-                                            current_job.get("user_message_id") or ""
-                                        ),
-                                    ),
-                                )
-                                resident_conversation_stream.get_repository().set_input_state(
-                                    resident_domain_common.record_resident_id(record),
-                                    str(current_job.get("user_message_id") or ""),
-                                    "failed",
-                                    error=runtime_error,
-                                )
-                            if str(current_job.get("operation") or "") not in {
-                                "context_fork_create",
-                            } and resident_input_queue_domain.promote_queue_after_failed_execution(
-                                job,
-                                resident_id,
-                                now,
-                                error_message,
-                                runtime_error,
-                            ):
-                                record["session_state"] = resident_record_domain.record_backend_session_state(record)
-                                record["last_error"] = ""
-                                record.pop("last_runtime_error", None)
-                                record["updated_at"] = now
-                                resident_execution_work.write(record, job)
-                                resident_record_domain.save_resident_record(record)
-                                if _lineage_notifiable_execution(
-                                    current_job
-                                ):
-                                    _notify_lineage_message_terminal(
-                                        resident_id,
-                                        str(
-                                            current_job.get("actor")
-                                            or record.get("created_by")
-                                            or ""
-                                        ),
-                                        str(current_job.get("user_message_id") or ""),
-                                        terminal_status="failed",
-                                        completed_at=now,
-                                        **_lineage_terminal_fact_fields(
-                                            current_job
-                                        ),
-                                    )
-                                return
-                            record["session_state"] = (
-                                "failed" if current_job.get('operation') == 'context_fork_create'
-                                else "active" if resident_backend.record_session_id(record) else "failed"
-                            )
-                            record["last_error"] = error_message[:1000]
-                            record["last_runtime_error"] = runtime_error
-                            record["updated_at"] = now
-                            job.update({
-                                "outcome": "failed",
-                                "error": error_message[:1000],
-                                "runtime_error": runtime_error,
-                                "updated_at": now,
-                                "finished_at": now,
-                            })
-                            resident_execution_work.write(record, job)
-                            resident_record_domain.save_resident_record(record)
-                            if _lineage_notifiable_execution(current_job):
-                                _notify_lineage_message_terminal(
-                                    resident_id,
-                                    str(
-                                        current_job.get("actor")
-                                        or record.get("created_by")
-                                        or ""
-                                    ),
-                                    str(current_job.get("user_message_id") or ""),
-                                    terminal_status="failed",
-                                    completed_at=now,
-                                    **_lineage_terminal_fact_fields(
-                                        current_job
-                                    ),
-                                )
-                    except Exception as recovery_exc:
-                        print(
-                            "Resident continuation recovery failed: "
-                            f"{type(recovery_exc).__name__}: {recovery_exc}",
-                            file=sys.stderr,
-                        )
+                terminal_applied_job = _settle_failed_job(resident_id, continuation_id, claimed, exc)
                 return
     finally:
         if terminal_applied_job:
             resident_input_queue_domain.acknowledge_execution(terminal_applied_job)
         finish_resident_continuation(resident_id)
+
+
+def _claim_job(resident_id: str, continuation_id: str, claimed: _ContinuationJob) -> bool:
+    """Read the continuation's Job and bind its backend; False when the continuation has nothing to run."""
+
+    with resident_record_domain.state_lock(resident_id):
+        record = resident_record_domain.find_resident(resident_id) or {}
+        if not record:
+            return False
+        job = resident_execution_work.read(record)
+        if not resident_execution_work.matches_continuation(job, continuation_id):
+            return False
+        if resident_restart_handoff.pending(record, job):
+            return False
+        from .resident_default_backend import bind_before_execution
+        bind_before_execution(record, str(job.get("actor") or ""))
+        job = resident_execution_work.read(record)
+        dispatched_at = str(job.get("dispatched_at") or resident_domain_common.now_iso())
+        job["dispatched_at"] = dispatched_at
+        claimed.job = dict(job)
+        claimed.record = dict(record)
+    return True
+
+
+def _run_claimed_job(resident_id: str, continuation_id: str, claimed: _ContinuationJob) -> bool:
+    """Run the claimed Job as what it is; True when the queue advanced to a next Job of this continuation."""
+
+    record_snapshot, current_job = claimed.record, claimed.job
+    resident_catalog.ensure_resident_agent(record_snapshot, actor=str(current_job.get("actor") or ""))
+    if resident_domain_port.ensure_role_reserve(record_snapshot):
+        return False
+    if str(current_job.get("operation") or "") in {
+        "context_fork_create",
+    }:
+        return _create_resident_session(resident_id, continuation_id, record_snapshot, current_job)
+    if _completion_applied(current_job):
+        return _finalize_applied_execution(
+            resident_id,
+            continuation_id,
+            current_job,
+        )
+    if (
+        current_job.get("bootstrap_session")
+        and not resident_backend.record_session_id(record_snapshot)
+    ):
+        return _run_bootstrap_turn(resident_id, continuation_id, record_snapshot, current_job)
+    if resident_execution_work.is_compact(current_job):
+        return _run_compaction(resident_id, continuation_id, record_snapshot, current_job)
+    return _run_turn(resident_id, continuation_id, claimed)
+
+
+def _create_resident_session(
+    resident_id: str, continuation_id: str, record_snapshot: dict[str, Any], current_job: dict[str, Any],
+) -> bool:
+    """A ``context_fork_create`` Job creates the Resident's session, compacting inherited context first."""
+
+    thread, initial_compaction = _created_session_thread(record_snapshot, current_job, continuation_id)
+    applied_creation_job: dict[str, Any] = {}
+    with resident_record_domain.state_lock(resident_id):
+        record = resident_record_domain.find_resident(resident_id) or {}
+        if not record:
+            return False
+        job = resident_execution_work.read(record)
+        if not resident_execution_work.matches_continuation(
+            job,
+            continuation_id,
+        ):
+            return False
+        now = resident_domain_common.now_iso()
+        record.update({
+            "session_state": "active",
+            "last_error": "",
+            "updated_at": now,
+        })
+        record.pop("last_runtime_error", None)
+        record["backend_route_id"] = str(thread.get("backend_route_id") or record.get("backend_route_id") or "")
+        record["session_created_via"] = "execution_service"
+        if _requires_initial_context_compaction(record):
+            compacted_at = resident_domain_common.now_iso()
+            record.update({
+                "context_compaction_state": "completed",
+                "context_compacted_at": compacted_at,
+            })
+            record = _with_compacted_context_usage(
+                record,
+                initial_compaction.get("usage")
+                if isinstance(initial_compaction.get("usage"), dict)
+                else {},
+            )
+        _mark_completion_applied(job, now)
+        resident_execution_work.write(record, job)
+        resident_record_domain.save_resident_record(record, commit_configuration=True)
+        applied_creation_job = dict(job)
+    return _finalize_applied_execution(
+        resident_id,
+        continuation_id,
+        applied_creation_job,
+    )
+
+
+def _created_session_thread(
+    record_snapshot: dict[str, Any], current_job: dict[str, Any], continuation_id: str,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """The created (or recovered) session thread, and the initial compaction of inherited context."""
+
+    existing_session_id = resident_backend.record_session_id(
+        record_snapshot
+    )
+    recovery_result = None
+    if current_job.get('initialization_recovery'):
+        from .resident_initialization import run as recover_initialization
+        recovery_result = recover_initialization(record_snapshot, current_job, continuation_id)
+        thread = recovery_result['thread']
+    elif (
+        _requires_initial_context_compaction(record_snapshot)
+        and existing_session_id
+    ):
+        if not current_job.get('initial_compaction_operation_id'):
+            raise RuntimeError('已有会话的首轮压缩状态未知；请使用 RetryResidentInitialization 恢复')
+        existing_session = resident_backend.session_record_for_binding(
+            resident_backend.execution_binding_id(record_snapshot)
+        )
+        thread = {
+            "id": existing_session_id,
+            "sessionId": existing_session_id,
+            "backend_route_id": str(
+                existing_session.get("backend_route_id")
+                or record_snapshot.get("backend_route_id")
+                or ""
+            ),
+        }
+    else:
+        thread = resident_session_backend_domain.create_exact_resident_session(
+            record_snapshot,
+            current_job,
+        )
+    if not resident_backend.session_id(
+        thread.get("sessionId") or thread.get("id")
+    ):
+        raise RuntimeError(
+            f"{resident_backend.backend_label(record_snapshot)} "
+            "Resident creation returned no session id"
+        )
+    initial_compaction: dict[str, Any] = {}
+    if recovery_result is not None:
+        initial_compaction = recovery_result
+    elif _requires_initial_context_compaction(record_snapshot):
+        initial_compaction = _compact_inherited_resident_context(
+            record_snapshot,
+            current_job,
+            thread,
+            continuation_id=continuation_id,
+        )
+    return thread, initial_compaction
+
+
+def _run_bootstrap_turn(
+    resident_id: str, continuation_id: str, record_snapshot: dict[str, Any], current_job: dict[str, Any],
+) -> bool:
+    """The first turn of a Resident without a session creates the session as it runs."""
+
+    job_actor = resident_execution_work.request_actor(current_job)
+    updated_record = complete_bootstrap_codex_session(
+        record_snapshot,
+        current_job,
+    )
+    applied = _apply_bootstrap_turn(resident_id, current_job, updated_record)
+    if applied is None:
+        return False
+    is_current, completed_bootstrap_job = applied
+    if not is_current:
+        # Another command replaced the Job during the turn.
+        resident_input_queue_domain.acknowledge_execution(completed_bootstrap_job)
+        return False
+    # Messages that arrived during the first turn wait in its
+    # queue; the shared finalizer starts the next one.
+    queue_advanced = _finalize_applied_execution(
+        resident_id,
+        continuation_id,
+        completed_bootstrap_job,
+    )
+    if _lineage_notifiable_execution(
+        completed_bootstrap_job
+    ):
+        _notify_lineage_message_completed(
+            resident_id,
+            str(
+                completed_bootstrap_job.get("actor")
+                or job_actor
+            ),
+            str(
+                completed_bootstrap_job.get("user_message_id")
+                or ""
+            ),
+            completed_at=str(
+                updated_record.get("updated_at")
+                or resident_domain_common.now_iso()
+            ),
+            **_lineage_terminal_fact_fields(
+                completed_bootstrap_job
+            ),
+        )
+    return queue_advanced
+
+
+def _apply_bootstrap_turn(
+    resident_id: str, current_job: dict[str, Any], updated_record: dict[str, Any],
+) -> tuple[bool, dict[str, Any]] | None:
+    """Store the first turn's session facts; whether its Job is still the current one, and that Job.
+
+    None when the Resident is gone.
+    """
+
+    completed_bootstrap_job = current_job
+    with resident_record_domain.state_lock(resident_id):
+        record = resident_record_domain.find_resident(resident_id) or {}
+        if not record:
+            return None
+        update_keys = [
+            "session_created_via",
+            "session_state",
+            "last_token_usage",
+            "last_token_usage_at",
+            "last_turn_usage",
+            "last_turn_usage_at",
+            "last_model_context_window",
+            "last_error",
+            "updated_at",
+        ]
+        for key in update_keys:
+            if key in updated_record:
+                record[key] = updated_record[key]
+        record.pop("last_runtime_error", None)
+        resident_record_domain.save_resident_record(record)
+        persisted_job = resident_execution_work.read(record)
+        applied = str(persisted_job.get("execution_id") or "") == str(
+            completed_bootstrap_job.get("execution_id") or ""
+        )
+        if applied:
+            _mark_completion_applied(
+                persisted_job,
+                str(updated_record.get("updated_at") or resident_domain_common.now_iso()),
+            )
+            resident_execution_work.write(record, persisted_job)
+            completed_bootstrap_job = dict(persisted_job)
+    return applied, completed_bootstrap_job
+
+
+def _run_compaction(
+    resident_id: str, continuation_id: str, record_snapshot: dict[str, Any], current_job: dict[str, Any],
+) -> bool:
+    """A ``/compact`` Job compacts the backend session and reports the result in the Conversation."""
+
+    compact_updated, compact_detail = _compact_resident_backend(record_snapshot, current_job)
+    if not _apply_compaction(resident_id, continuation_id, current_job, compact_updated, compact_detail):
+        return False
+    if not resident_input_queue_domain.acknowledge_execution(current_job):
+        return False
+    with resident_record_domain.state_lock(resident_id):
+        record = resident_record_domain.find_resident(resident_id) or {}
+        if not record:
+            return False
+        job = resident_execution_work.read(record)
+        if not resident_execution_work.matches_continuation(
+            job,
+            continuation_id,
+        ) or str(job.get("execution_id") or "") != str(current_job.get("execution_id") or ""):
+            return False
+        now = resident_domain_common.now_iso()
+        queue = resident_execution_work.waiting_input_queue(job)
+        if queue:
+            next_job = queue.pop(0)
+            resident_execution_work.promote_queue_item(
+                job,
+                next_job,
+                queue,
+                now,
+                retain_continuation=True,
+            )
+            record["session_state"] = resident_record_domain.record_backend_session_state(record)
+            resident_execution_work.write(record, job)
+            resident_record_domain.save_resident_record(record)
+            return True
+        record["session_state"] = "active"
+        record["last_error"] = ""
+        record["updated_at"] = now
+        resident_record_domain.save_resident_record(record)
+        resident_execution_work.clear(record)
+    return False
+
+
+def _apply_compaction(
+    resident_id: str,
+    continuation_id: str,
+    current_job: dict[str, Any],
+    compact_updated: dict[str, Any],
+    compact_detail: str,
+) -> bool:
+    """Record a finished compaction; False when the continuation no longer owns the Job."""
+
+    scope_label = str(current_job.get("compact_scope_label") or "Resident Session")
+    with resident_record_domain.state_lock(resident_id):
+        record = resident_record_domain.find_resident(resident_id) or {}
+        if not record:
+            return False
+        job = resident_execution_work.read(record)
+        if not resident_execution_work.matches_continuation(job, continuation_id):
+            return False
+        now = resident_domain_common.now_iso()
+        resident_lifecycle_domain.append_conversation_message(
+            resident_domain_common.record_resident_id(record),
+            resident_input_queue_domain.compact_portal_command_message(
+                resident_session_backend_domain.compact_portal_result(
+                    "completed",
+                    scope_label,
+                    backend_label=resident_backend.backend_label(record),
+                    detail=compact_detail,
+                ),
+                str(current_job.get("actor") or ""),
+                reply_to_message_id=str(
+                    current_job.get("user_message_id") or ""
+                ),
+            ),
+        )
+        resident_conversation_stream.get_repository().set_input_state(
+            resident_domain_common.record_resident_id(record),
+            str(current_job.get("user_message_id") or ""),
+            "completed",
+        )
+        for key in (
+            "last_token_usage",
+            "last_token_usage_at",
+            "last_model_context_window",
+        ):
+            if key in compact_updated:
+                record[key] = compact_updated[key]
+        record["updated_at"] = now
+        resident_record_domain.save_resident_record(record)
+        _mark_completion_applied(job, now)
+        resident_execution_work.write(record, job)
+    return True
+
+
+def _run_turn(resident_id: str, continuation_id: str, claimed: _ContinuationJob) -> bool:
+    """An ordinary Job is a turn of the Resident's backend session."""
+
+    record_snapshot = claimed.record
+    assistant_item, updated_record = send_to_resident_backend(
+        record_snapshot,
+        claimed.job,
+    )
+    with resident_record_domain.state_lock(resident_id):
+        record = resident_record_domain.find_resident(resident_id) or {}
+        if not record:
+            return False
+        job = resident_execution_work.read(record)
+        if not resident_execution_work.matches_continuation(job, continuation_id):
+            return False
+        for key in (
+            "session_state",
+            "last_token_usage",
+            "last_token_usage_at",
+            "last_turn_usage",
+            "last_turn_usage_at",
+            "last_model_context_window",
+            "last_error",
+        ):
+            if key in updated_record:
+                record[key] = updated_record[key]
+        now = resident_domain_common.now_iso()
+        record["session_state"] = "active"
+        record["updated_at"] = now
+        resident_record_domain.save_resident_record(record)
+        _mark_completion_applied(job, now)
+        resident_execution_work.write(record, job)
+        # Delivery may have submitted a new Execution through its
+        # own job copy. Finalize the persisted binding, not the
+        # pre-delivery snapshot which can still lack its ID.
+        claimed.job = dict(job)
+    current_job = claimed.job
+    queue_advanced = _finalize_applied_execution(
+        resident_id,
+        continuation_id,
+        current_job,
+    )
+    _notify_lineage_message_completed(
+        resident_id,
+        str(
+            current_job.get("actor")
+            or record_snapshot.get("created_by")
+            or ""
+        ),
+        str(current_job.get("user_message_id") or ""),
+        completed_at=str(
+            assistant_item.get("created_at") or now
+        ),
+        **_lineage_terminal_fact_fields(current_job),
+    )
+    return queue_advanced
+
+
+def _settle_failed_job(
+    resident_id: str, continuation_id: str, claimed: _ContinuationJob, exc: Exception,
+) -> dict[str, Any]:
+    """Record the claimed Job's failure and move the queue past it.
+
+    Returns the Job whose failure was applied, which the continuation
+    acknowledges as it ends; empty when none was applied.
+    """
+
+    current_job = claimed.job
+    if not resident_input_queue_domain.reconcile_queued_turn_inputs(
+        resident_id, str(current_job.get("execution_id") or ""), turn_finished=True,
+    ):
+        return {}
+    error_message = resident_backend_failure_message(claimed.record, str(exc))
+    terminal_applied_job: dict[str, Any] = {}
+    with resident_record_domain.state_lock(resident_id):
+        try:
+            record = resident_record_domain.find_resident(resident_id) or {}
+            if not record:
+                return terminal_applied_job
+            job = resident_execution_work.read(record)
+            if not resident_execution_work.matches_continuation(job, continuation_id):
+                return terminal_applied_job
+            now = resident_domain_common.now_iso()
+            runtime_error = resident_record_domain.runtime_error_payload(
+                error_message,
+                code=getattr(exc, "error_code", ""),
+                details=getattr(exc, "error_details", None),
+            )
+            failed_usage = getattr(exc, "usage", None)
+            resident_input_queue_domain.persist_failed_execution_message(
+                resident_id,
+                job,
+                error_message,
+                runtime_error,
+                failed_at=now,
+            )
+            if failed_usage:
+                record["last_turn_usage"] = dict(failed_usage)
+                record["last_turn_usage_at"] = now
+            terminal_applied_job = dict(job)
+            if resident_execution_work.is_compact(current_job):
+                _report_failed_compaction(record, current_job, error_message, runtime_error)
+            _close_failed_job(resident_id, current_job, record, job, now, error_message, runtime_error)
+        except Exception as recovery_exc:
+            print(
+                "Resident continuation recovery failed: "
+                f"{type(recovery_exc).__name__}: {recovery_exc}",
+                file=sys.stderr,
+            )
+    return terminal_applied_job
+
+
+def _report_failed_compaction(
+    record: dict[str, Any], current_job: dict[str, Any], error_message: str, runtime_error: dict[str, Any],
+) -> None:
+    scope_label = str(current_job.get("compact_scope_label") or "Resident Session")
+    resident_lifecycle_domain.append_conversation_message(
+        resident_domain_common.record_resident_id(record),
+        resident_input_queue_domain.compact_portal_command_message(
+            resident_session_backend_domain.compact_portal_result(
+                "failed",
+                scope_label,
+                error_message,
+                backend_label=resident_backend.backend_label(record),
+            ),
+            str(current_job.get("actor") or ""),
+            reply_to_message_id=str(
+                current_job.get("user_message_id") or ""
+            ),
+        ),
+    )
+    resident_conversation_stream.get_repository().set_input_state(
+        resident_domain_common.record_resident_id(record),
+        str(current_job.get("user_message_id") or ""),
+        "failed",
+        error=runtime_error,
+    )
+
+
+def _close_failed_job(
+    resident_id: str,
+    current_job: dict[str, Any],
+    record: dict[str, Any],
+    job: dict[str, Any],
+    now: str,
+    error_message: str,
+    runtime_error: dict[str, Any],
+) -> None:
+    """Promote the next waiting input after a failed turn, or leave the Resident with the failure."""
+
+    if str(current_job.get("operation") or "") not in {
+        "context_fork_create",
+    } and resident_input_queue_domain.promote_queue_after_failed_execution(
+        job,
+        resident_id,
+        now,
+        error_message,
+        runtime_error,
+    ):
+        record["session_state"] = resident_record_domain.record_backend_session_state(record)
+        record["last_error"] = ""
+        record.pop("last_runtime_error", None)
+        record["updated_at"] = now
+        resident_execution_work.write(record, job)
+        resident_record_domain.save_resident_record(record)
+    else:
+        record["session_state"] = (
+            "failed" if current_job.get('operation') == 'context_fork_create'
+            else "active" if resident_backend.record_session_id(record) else "failed"
+        )
+        record["last_error"] = error_message[:1000]
+        record["last_runtime_error"] = runtime_error
+        record["updated_at"] = now
+        job.update({
+            "outcome": "failed",
+            "error": error_message[:1000],
+            "runtime_error": runtime_error,
+            "updated_at": now,
+            "finished_at": now,
+        })
+        resident_execution_work.write(record, job)
+        resident_record_domain.save_resident_record(record)
+    if _lineage_notifiable_execution(current_job):
+        _notify_lineage_message_terminal(
+            resident_id,
+            str(
+                current_job.get("actor")
+                or record.get("created_by")
+                or ""
+            ),
+            str(current_job.get("user_message_id") or ""),
+            terminal_status="failed",
+            completed_at=now,
+            **_lineage_terminal_fact_fields(
+                current_job
+            ),
+        )
 
 
 def _active_resident_continuations() -> int:

@@ -83,7 +83,7 @@ def test_latest_execution_failure_details_are_scoped_to_its_input(tmp_path, stat
     if status != 'queued':
         agent.finish_execution('current', status=status, finished_at='2026-10-22T00:00:02Z')
     with store.database.transaction() as connection:
-        ResidentConversationRepository(store, agent)._ensure_conversation(connection, resident)
+        ResidentConversationRepository(store, agent).events.ensure_conversation(connection, resident)
         for message, error in [('unrelated-input', 'wrong error'), ('input-current', 'The read operation timed out')]:
             connection.execute(
                 'INSERT INTO conversation_input_states(resident_id,message_id,state,error_json,updated_at) '

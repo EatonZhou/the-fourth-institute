@@ -28,8 +28,8 @@ def family(facade, monkeypatch):
     store = repo.state_store
     source_states = {}
     repo._fixture_activity_states = source_states
-    live_states = repo.states
-    monkeypatch.setattr(repo, "states", lambda ids: {
+    live_states = repo.projection.states
+    monkeypatch.setattr(repo.projection, "states", lambda ids: {
         rid: copy.deepcopy(source_states.get(rid, value)) for rid, value in live_states(ids).items()
     })
     for rid in (ROUTER, STEWARD, MEMBER, DELETED, INNER):

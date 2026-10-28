@@ -30,20 +30,20 @@ def test_completed_clear_projects_inheritance_after_archive_and_preserves_new_in
     }
     repository.commit_user_message(resident_id, message(2))
     before = repository.snapshot(resident_id)["cursor"]
-    original = repository._record_event
+    original = repository.events.record_event
 
     def fail_completion(*args, **kwargs):
         if args[2] == CONTEXT_CLEARED:
             raise RuntimeError("clear event commit failed")
         return original(*args, **kwargs)
 
-    monkeypatch.setattr(repository, "_record_event", fail_completion)
+    monkeypatch.setattr(repository.events, "record_event", fail_completion)
     with pytest.raises(RuntimeError, match="clear event commit failed"):
         resident_lifecycle_steps_domain.apply_resident_lifecycle_step("clear:0", step)
     # Removal and completed-clear projection must roll back together. Recovery
     # uses the durable cutoff, never clearing input which arrived after it.
     assert repository.events_after(resident_id, before)["events"] == []
-    monkeypatch.setattr(repository, "_record_event", original)
+    monkeypatch.setattr(repository.events, "record_event", original)
     resident_lifecycle_steps_domain.apply_resident_lifecycle_step("clear:0", step)
     events = repository.events_after(resident_id, before)["events"]
     assert [event["event_type"] for event in events] == [MESSAGE_UPDATED] * old_count + [CONTEXT_CLEARED]

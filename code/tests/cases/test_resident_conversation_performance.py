@@ -46,7 +46,7 @@ def history_repository(tmp_path, monkeypatch):
     })
     with repository.state_store.database.transaction() as connection:
         for resident_id in (A, B):
-            repository._ensure_conversation(connection, resident_id)
+            repository.events.ensure_conversation(connection, resident_id)
         connection.executemany(
             'INSERT INTO conversation_input_states VALUES (%s, %s, %s, %s, %s)',
             (
@@ -115,7 +115,7 @@ def test_snapshot_input_query_visits_page_and_active_inputs_only(history_reposit
     repository = history_repository
     with query_work(repository, monkeypatch) as work:
         with repository.state_store.database.read() as connection:
-            inputs = repository._input_states_for_snapshot(connection, A, visible_ids)
+            inputs = repository.inputs.input_states_for_snapshot(connection, A, visible_ids)
     expected_ids = {"queued", "running"} | set(visible_ids)
     assert {item["message_id"] for item in inputs} == expected_ids
     assert len(inputs) == len(expected_ids)
@@ -183,7 +183,7 @@ def test_latest_input_tie_break_and_snapshot_large_page_preserve_protocol(histor
         )
     assert repository.state_snapshots([A])[A]["latest_input_state"]["message_id"] == "zzz"
     with repository.state_store.database.read() as connection:
-        inputs = repository._input_states_for_snapshot(connection, A, [f"old_{index:06d}" for index in range(1000)])
+        inputs = repository.inputs.input_states_for_snapshot(connection, A, [f"old_{index:06d}" for index in range(1000)])
     assert len(inputs) == 1002
     assert len({item["message_id"] for item in inputs}) == 1002
 

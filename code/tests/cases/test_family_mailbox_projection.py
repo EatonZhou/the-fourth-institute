@@ -271,8 +271,9 @@ def test_multiple_relay_requests_batch_group_and_reply_reads(grouped_family, mon
     _run_group(case)
     calls = {"rounds": [], "states": [], "groups": []}
     repository_type = type(case.repository)
+    inputs_type = type(case.repository.inputs)
     original_rounds = repository_type.reply_rounds
-    original_states = repository_type.input_states_by_id
+    original_states = inputs_type.input_states_by_id
     data_type = type(case.repository.agent_data)
     original_groups = data_type.message_groups
 
@@ -292,7 +293,7 @@ def test_multiple_relay_requests_batch_group_and_reply_reads(grouped_family, mon
         return original_groups(self, resident_id, message_ids)
 
     monkeypatch.setattr(repository_type, "reply_rounds", rounds)
-    monkeypatch.setattr(repository_type, "input_states_by_id", states)
+    monkeypatch.setattr(inputs_type, "input_states_by_id", states)
     monkeypatch.setattr(data_type, "message_groups", groups)
     projected = _messages(case)
     assert all(item["relay"]["state"] == "running" for item in projected if item["role"] == "user")

@@ -535,9 +535,7 @@ def restart_resident_session(
     if operation == "switch_account" and restart_target.same_route:
         return _unchanged_restart(resident_id, operation, source_binding)
     target_runtime_settings = _target_runtime_settings(record, body, restart_target, actor_id)
-    strategy, unbound_previous_session = _restart_strategy(
-        resident_id, record, source, restart_target, requested_strategy,
-    )
+    strategy, unbound_previous_session = _restart_strategy(record, source, restart_target, requested_strategy)
     intent = _restart_intent(body, operation, source, restart_target, strategy, active_execution_policy)
     failed_input = _failed_input_to_resume(record, body, intent, restart_target)
     pending = _pending_restart(resident_id, actor_id, record, intent)
@@ -707,7 +705,6 @@ def _unbound_previous_context(record: Mapping[str, Any], source: Mapping[str, An
 
 
 def _restart_strategy(
-    resident_id: str,
     record: dict[str, Any],
     source: Mapping[str, Any],
     target: _RestartTarget,

@@ -138,7 +138,7 @@ def test_relay_uses_committed_sequence_and_never_reuses_deleted_tail(tmp_path):
     assert second[0][1]['cursor'] == 2
     relay._remember(*second[0])
     with pytest.raises(RuntimeError), repository.state_store.database.transaction() as connection:
-        repository._record_event(connection, RESIDENT, 'resident.state.changed', {'state': {}})
+        repository.events.record_event(connection, RESIDENT, 'resident.state.changed', {'state': {}})
         raise RuntimeError('rollback')
     assert relay._events_after(second[0][0]) == []
 

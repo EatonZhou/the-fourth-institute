@@ -81,7 +81,7 @@ def test_deleted_identity_is_absent_from_live_reads_but_history_is_read_only(del
     for read in (repo.states, repo.state_snapshots, repo.current_projections):
         assert read([RID]) == {}
     assert repo.current_projection(RID)["resident_id"] == RID
-    assert "state" in repo._snapshot_projection(RID, [])
+    assert "state" in repo.projection._snapshot_projection(RID, [])
     assert _stored_state(repo) == before
 
 
@@ -94,7 +94,7 @@ def test_deleted_identity_cannot_create_or_update_live_state(deleted_repository)
     repo = deleted_repository
     before = _stored_state(repo)
     with pytest.raises(KeyError):
-        repo.state_store.database.write(lambda connection: repo._ensure_conversation(connection, RID))
+        repo.state_store.database.write(lambda connection: repo.events.ensure_conversation(connection, RID))
     with pytest.raises(KeyError):
         repo.set_state(RID, {"work_state": "running", "intake_state": "open"})
     assert _stored_state(repo) == before
@@ -168,7 +168,7 @@ def test_conversation_admission_holds_identity_lock_until_writer_commits(active_
 
     with ThreadPoolExecutor(max_workers=1) as workers:
         with repo.state_store.database.transaction() as connection:
-            repo._ensure_conversation(connection, rid)
+            repo.events.ensure_conversation(connection, rid)
             with pytest.raises(psycopg.errors.LockNotAvailable):
                 workers.submit(delete_with_timeout).result(timeout=3)
         # Commit releases the identity lock; a subsequent deletion succeeds.

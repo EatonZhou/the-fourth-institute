@@ -3898,7 +3898,7 @@ def test_conversation_replay_does_not_acquire_writer_locks(
     def forbidden_write(*args, **kwargs):
         raise AssertionError("Committed replay must not acquire a writer lock")
 
-    monkeypatch.setattr(repository, "_protocol_scope", forbidden_write)
+    monkeypatch.setattr(repository.events, "protocol_scope", forbidden_write)
     monkeypatch.setattr(repository.state_store.database, "write", forbidden_write)
     monkeypatch.setattr(repository.agent_data.database, "write", forbidden_write)
     assert repository.append_message(resident_id, message) == persisted

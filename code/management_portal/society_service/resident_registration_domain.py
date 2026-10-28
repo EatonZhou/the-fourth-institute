@@ -21,7 +21,6 @@ from . import (
 from .domain_ports import resident_lineage_host_port
 from .resident_access import can_manage_resident as _can_manage_resident, manage_refusal
 from . import resident_domain_common, resident_fork_domain
-from contextlib import ExitStack
 from management_common.actor_identity import canonical_actor_id, same_actor as _same_actor
 from management_portal.execution.accounts import resolve_account_configuration
 from management_portal.execution.provider_catalog import AGENT_PROVIDERS
@@ -82,14 +81,67 @@ def register_resident_and_lineage(
     ``personal_owner`` registers that User's own Ask Me Anything: a new
     personal Lineage outside any Project, created by the User alone.
     """
-    from .resident_projection import _optional_absolute_paths, _resident_lineage_node_projection
-    from . import project_domain
     actor_id = canonical_actor_id(actor)
     title = str(payload.get("title") or "").strip()
     if not title:
         raise ValueError("title 为必填")
-
     project_id = str(payload.get("project_id") or "").strip()
+    personal_member_owner = _check_registration_authority(
+        payload, actor_id, project_id,
+        lineage_node=lineage_node, project_principal=project_principal, personal_owner=personal_owner,
+    )
+    payload, awaiting_default = _with_default_backend(payload)
+    backend = str(payload.get("backend") or "codex").strip() or "codex"
+    mode = str(payload.get("mode") or "new_session").strip().lower()
+    execution_provider = resident_execution_provider.validate_registration(
+        backend,
+        mode,
+    )
+    backend_route_id = _registration_route(payload, backend, awaiting_default)
+    _refuse_supplied_session_ids(payload)
+    record, workspace_path = _new_resident_record(
+        payload, actor_id,
+        title=title, project_id=project_id, backend=backend, backend_route_id=backend_route_id,
+        synchronous=execution_provider.capabilities.synchronous_delivery,
+        project_principal=project_principal, owner=personal_owner or personal_member_owner,
+    )
+    if awaiting_default:
+        from management_portal.execution.resident_runtime_settings import normalize_settings
+        runtime_settings = normalize_settings({"backend": backend, **payload["runtime_settings"]})
+    else:
+        runtime_settings = resident_runtime_domain.resident_runtime_settings_from_register_payload(
+            record, payload, actor_id, record["created_at"],
+        )
+    registered_lineage = _publish_registration(
+        record, payload, workspace_path, runtime_settings, actor_id,
+        lineage_node=lineage_node, personal_owner=personal_owner, creation_key=creation_key,
+    )
+    # Resource acknowledgement is outside state locks. A failed publication
+    # retains the committed identity and outbox for exact-identity recovery.
+    _confirm_registered_resident_resources(
+        record, committed_revision=int(registered_lineage["revision"]),
+    )
+    with resident_record_domain.state_lock(record["resident_id"]):
+        current = resident_lineage.find(record["resident_id"])
+        if current is None:
+            raise KeyError("Resident deleted after registration")
+    return current, registered_lineage
+
+
+def _check_registration_authority(
+    payload: dict[str, Any],
+    actor_id: str,
+    project_id: str,
+    *,
+    lineage_node: dict[str, Any] | None,
+    project_principal: bool,
+    personal_owner: str,
+) -> str:
+    """Check that the actor may register the Resident where it asks.
+
+    Returns the owner of the personal Lineage the Resident joins; empty for any other Lineage.
+    """
+
     personal_member_owner = ""
     if lineage_node is not None:
         home = resident_lineage_host_port.lineage_access_projection(str(payload.get("lineage_id") or ""))
@@ -121,29 +173,31 @@ def register_resident_and_lineage(
             lineage_identity.get("project_id") or ""
         ):
             raise PermissionError("Resident 只能在所属 Lineage 的当前 Project 内创建成员")
-    else:
-        pass
+    return personal_member_owner
+
+
+def _with_default_backend(payload: dict[str, Any]) -> tuple[dict[str, Any], bool]:
+    """A registration that names no backend gets the default backend role's; True while none is configured."""
+
+    if payload.get("backend"):
+        return payload, False
+    from management_portal.execution.account_registrations import role_configuration
+    from management_portal.hatg.contracts import InstructionError
     awaiting_default = False
-    if not payload.get("backend"):
-        from management_portal.execution.account_registrations import role_configuration
-        from management_portal.hatg.contracts import InstructionError
-        try:
-            configured = role_configuration()
-        except InstructionError as error:
-            if error.details.get("reason") != "backend_role.default_missing":
-                raise
-            # User enrollment creates an AMA before the first AI is added.
-            # Keep its identity and mailbox available until a default exists.
-            awaiting_default = True
-            configured = {"backend": "codex", "backend_route_id": "", "runtime_settings": {"backend_role": "default"}}
-        payload = {**payload, **configured, "runtime_settings": {
-            **configured["runtime_settings"], **(payload.get("runtime_settings") or {})}}
-    backend = str(payload.get("backend") or "codex").strip() or "codex"
-    mode = str(payload.get("mode") or "new_session").strip().lower()
-    execution_provider = resident_execution_provider.validate_registration(
-        backend,
-        mode,
-    )
+    try:
+        configured = role_configuration()
+    except InstructionError as error:
+        if error.details.get("reason") != "backend_role.default_missing":
+            raise
+        # User enrollment creates an AMA before the first AI is added.
+        # Keep its identity and mailbox available until a default exists.
+        awaiting_default = True
+        configured = {"backend": "codex", "backend_route_id": "", "runtime_settings": {"backend_role": "default"}}
+    return {**payload, **configured, "runtime_settings": {
+        **configured["runtime_settings"], **(payload.get("runtime_settings") or {})}}, awaiting_default
+
+
+def _registration_route(payload: dict[str, Any], backend: str, awaiting_default: bool) -> str:
     requested_backend_route_id = str(
         payload.get("backend_route_id") or ""
     ).strip()
@@ -156,6 +210,10 @@ def register_resident_and_lineage(
     if definition and not awaiting_default:
         account = resolve_account_configuration(definition.provider, requested_backend_route_id)
         backend_route_id = str(account.get("backend_route_id") or "")
+    return backend_route_id
+
+
+def _refuse_supplied_session_ids(payload: dict[str, Any]) -> None:
     supplied_session_fields = sorted(
         {
             str(key)
@@ -171,6 +229,24 @@ def register_resident_and_lineage(
             "Resident registration does not accept backend Session IDs: "
             + ", ".join(supplied_session_fields)
         )
+
+
+def _new_resident_record(
+    payload: dict[str, Any],
+    actor_id: str,
+    *,
+    title: str,
+    project_id: str,
+    backend: str,
+    backend_route_id: str,
+    synchronous: bool,
+    project_principal: bool,
+    owner: str,
+) -> tuple[dict[str, Any], Path]:
+    """The unpublished identity of the new Resident, and its Lineage Folder."""
+
+    from .resident_projection import _optional_absolute_paths
+    from . import project_domain
     workspace_paths = _optional_absolute_paths(payload.get("workspace_paths"))
     if project_id:
         project_path = str(project_domain.project_root_for_id(project_id).resolve(strict=False))
@@ -186,29 +262,20 @@ def register_resident_and_lineage(
     if source_resident_id:
         identity_contract.validate_id(source_resident_id, "resident")
     lineage_folder_raw = str(payload.get("lineage_folder_path") or "").strip()
-
     if lineage_folder_raw:
         workspace_path = safe_absolute_path(lineage_folder_raw)
-        workspace_root = workspace_path.parent
     else:
-
         workspace_path = resident_lineage_host_port.canonical_lineage_folder(
             lineage_id
         ).resolve(strict=False)
-        workspace_root = workspace_path.parent
+    workspace_root = workspace_path.parent
     requested_workspace_bindings = [
         copy.deepcopy(item)
         for item in payload.get("workspace_bindings") or []
         if isinstance(item, dict) and str(item.get("path") or "").strip()
     ]
-
     now = resident_domain_common.now_iso()
-    session_state = (
-        "active"
-        if execution_provider.capabilities.synchronous_delivery
-        else "pending_create"
-    )
-
+    session_state = "active" if synchronous else "pending_create"
     record = {
         "resident_id": resident_id,
         "folder_schema": resident_domain_common.LINEAGE_FOLDER_SCHEMA_VERSION,
@@ -231,22 +298,34 @@ def register_resident_and_lineage(
     }
     if project_principal:
         record["principal_hierarchy"] = {"level": "project", "category": "project_leader", "scope_ids": [project_id]}
-    if personal_owner or personal_member_owner:
-        registered_owner = personal_owner or personal_member_owner
-        record["principal_hierarchy"] = {"level": "user", "category": "personal_ama", "scope_ids": [registered_owner]}
-        record["personal_owner_id"] = registered_owner
-
+    if owner:
+        record["principal_hierarchy"] = {"level": "user", "category": "personal_ama", "scope_ids": [owner]}
+        record["personal_owner_id"] = owner
     if source_resident_id:
         record["source_resident_id"] = source_resident_id
     resident_record_domain.apply_resident_resource_identity(record)
     resident_record_domain.set_resident_owned_workspace_binding(record)
     resident_workspace_domain.set_resident_reference_bindings(record, [*workspace_paths, *[item["path"] for item in requested_workspace_bindings]])
-    if awaiting_default:
-        from management_portal.execution.resident_runtime_settings import normalize_settings
-        runtime_settings = normalize_settings({"backend": backend, **payload["runtime_settings"]})
-    else:
-        runtime_settings = resident_runtime_domain.resident_runtime_settings_from_register_payload(record, payload, actor_id, now)
+    return record, workspace_path
 
+
+def _publish_registration(
+    record: dict[str, Any],
+    payload: dict[str, Any],
+    workspace_path: Path,
+    runtime_settings: dict[str, Any],
+    actor_id: str,
+    *,
+    lineage_node: dict[str, Any] | None,
+    personal_owner: str,
+    creation_key: str,
+) -> dict[str, Any] | None:
+    """Prepare the Resident's folders and context, then commit its identity and Lineage membership.
+
+    A failure before the commit aborts the prepared registration; returns the Lineage the Resident joined.
+    """
+
+    resident_id = record["resident_id"]
     resident_folder = resident_record_domain.resident_folder_path(record)
     # Existing files are never owned by an aborted registration, even when
     # its Lineage Folder was explicitly supplied by the caller.
@@ -257,11 +336,12 @@ def register_resident_and_lineage(
         "source": str(resident_folder) if owned_folder else "",
         "target": str(resident_folder.with_name(f".aborted-{resident_id}-{operation_id}")),
     }]) as preparation_id:
-        workspace_path.mkdir(parents=True, exist_ok=bool(lineage_folder_raw))
+        folder_supplied = bool(str(payload.get("lineage_folder_path") or "").strip())
+        workspace_path.mkdir(parents=True, exist_ok=folder_supplied)
         resident_workspace_domain.ensure_resident_workspace(record)
         resident_runtime_domain.write_resident_runtime_settings(record, runtime_settings)
-
         if bool(payload.get("initialize_from_source")):
+            source_resident_id = str(payload.get("source_resident_id") or "").strip()
             if not source_resident_id:
                 raise ValueError(
                     "initialize_from_source requires source_resident_id"
@@ -274,58 +354,64 @@ def register_resident_and_lineage(
                 preparation_id=preparation_id,
             )
             resident_session_backend_domain.materialize_pending_agent_data_fork(record, actor_id)
+        return _commit_registration(
+            record, actor_id, operations, preparation_id,
+            joins_canonical_lineage=not folder_supplied, lineage_node=lineage_node,
+            personal_owner=personal_owner, creation_key=creation_key,
+        )
 
-        # Only the publication of identity and membership is serialized. No
-        # workspace preparation, native Fork or Provider wait holds this scope.
-        registered_lineage = None
-        def commit_registration() -> None:
-            nonlocal registered_lineage
-            if not lineage_folder_raw:
-                projection = _resident_lineage_node_projection(record)
-                if personal_owner:
-                    projection["lineage_membership"] = "personal"
-                registered_lineage = resident_lineage_host_port.initialize_resident_lineage(
-                    projection, actor_id,
-                )
-            record["registration_state"] = "resource_pending"
-            if lineage_node is not None:
-                registered_lineage = resident_lineage_host_port.add_registered_resident_node(
-                    _resident_lineage_node_projection(record), actor_id,
-                    node_options=lineage_node,
-                )
-                if registered_lineage is None:
-                    raise ValueError("Target Lineage is no longer available")
-            resident_record_domain.save_resident_record(record)
-            if creation_key:
-                # Identity, graph membership, publication outbox and request
-                # association must become visible in the same domain commit.
-                with resident_catalog.get_catalog().state_store.resident_creation_operations.transaction(lineage_id, creation_key) as receipt:
-                    receipt["resident_id"] = resident_id
-            operations.commit_preparation(preparation_id)
 
-        with invariant_locks.lineage_scope(lineage_id, operation="resident.register.commit"):
-            # Serialize only this identity; unrelated registrations remain independent.
-            registration_locks = {f"resident-registration:{resident_id}"}
-            with ExitStack() as lock_stack:
-                for lock_name in sorted(registration_locks):
-                    lock_stack.enter_context(
-                        invariant_locks.catalog_lock(
-                            lock_name,
-                            operation="resident.register.commit",
-                        )
-                    )
-                resident_catalog.get_catalog().state_store.transaction(commit_registration)
+def _commit_registration(
+    record: dict[str, Any],
+    actor_id: str,
+    operations: Any,
+    preparation_id: str,
+    *,
+    joins_canonical_lineage: bool,
+    lineage_node: dict[str, Any] | None,
+    personal_owner: str,
+    creation_key: str,
+) -> dict[str, Any] | None:
+    """Publish identity and Lineage membership in one domain commit.
 
-    # Resource acknowledgement is outside state locks. A failed publication
-    # retains the committed identity and outbox for exact-identity recovery.
-    _confirm_registered_resident_resources(
-        record, committed_revision=int(registered_lineage["revision"]),
-    )
-    with resident_record_domain.state_lock(resident_id):
-        current = resident_lineage.find(resident_id)
-        if current is None:
-            raise KeyError("Resident deleted after registration")
-    return current, registered_lineage
+    Only this publication is serialized. No workspace preparation, native
+    Fork or Provider wait holds its scope.
+    """
+
+    from .resident_projection import _resident_lineage_node_projection
+    resident_id, lineage_id = record["resident_id"], record["lineage_id"]
+    registered_lineage = None
+
+    def commit_registration() -> None:
+        nonlocal registered_lineage
+        if joins_canonical_lineage:
+            projection = _resident_lineage_node_projection(record)
+            if personal_owner:
+                projection["lineage_membership"] = "personal"
+            registered_lineage = resident_lineage_host_port.initialize_resident_lineage(
+                projection, actor_id,
+            )
+        record["registration_state"] = "resource_pending"
+        if lineage_node is not None:
+            registered_lineage = resident_lineage_host_port.add_registered_resident_node(
+                _resident_lineage_node_projection(record), actor_id,
+                node_options=lineage_node,
+            )
+            if registered_lineage is None:
+                raise ValueError("Target Lineage is no longer available")
+        resident_record_domain.save_resident_record(record)
+        if creation_key:
+            # Identity, graph membership, publication outbox and request
+            # association must become visible in the same domain commit.
+            with resident_catalog.get_catalog().state_store.resident_creation_operations.transaction(lineage_id, creation_key) as receipt:
+                receipt["resident_id"] = resident_id
+        operations.commit_preparation(preparation_id)
+
+    with invariant_locks.lineage_scope(lineage_id, operation="resident.register.commit"):
+        # Serialize only this identity; unrelated registrations remain independent.
+        with invariant_locks.catalog_lock(f"resident-registration:{resident_id}", operation="resident.register.commit"):
+            resident_catalog.get_catalog().state_store.transaction(commit_registration)
+    return registered_lineage
 
 
 def unique_resident_id() -> str:

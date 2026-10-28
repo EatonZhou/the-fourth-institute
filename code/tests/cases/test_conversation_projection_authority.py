@@ -768,7 +768,7 @@ def test_event_log_keeps_message_headers_and_readers_get_the_trace_body(isolated
         assert texts == ["final answer", "final answer"]
 
         # A message the trace does not have leaves its event without payload.
-        repository.state_store.database.write(lambda connection: repository._record_event(
+        repository.state_store.database.write(lambda connection: repository.events.record_event(
             connection, RESIDENT, MESSAGE_APPENDED, {"message": {"message_id": "message_gone", "role": "user"}},
             subject_id="message_gone",
         ))
@@ -817,7 +817,7 @@ def test_input_replies_are_the_trace_messages_answering_it(isolated_portal_case)
             and event["payload"]["input_state"]["state"] != "running"
         }
         assert finished == {"asked": ["answer"], "command": ["receipt"], "broken": ["failure_notice"]}
-        assert repository.snapshot(RESIDENT)["input_states"] == repository._with_replies(
+        assert repository.snapshot(RESIDENT)["input_states"] == repository.inputs._with_replies(
             RESIDENT, [{key: value for key, value in item.items() if key != "reply_message_ids"}
                        for item in sorted(repository.input_states(RESIDENT),
                                           key=lambda item: (item["updated_at"], item["message_id"]))],
