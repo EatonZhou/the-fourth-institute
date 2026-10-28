@@ -5,7 +5,7 @@ import re
 import pytest
 
 from management_portal.execution.backends import CodexBackend
-from management_portal.execution.harness_native_loop import _NativeToolLoopRuntime
+from management_portal.execution.harness_native_loop import NativeToolLoopRuntime
 from management_portal.society_service.templates.builtins import definitions
 
 FORBIDDEN_GUIDANCE = re.compile(
@@ -36,7 +36,7 @@ def test_generated_runtime_control_describes_current_task(
         "read_checkpoint",
     ]:
         with subtests.test(reason=reason), isolated_portal_case():
-            runtime = _NativeToolLoopRuntime(
+            runtime = NativeToolLoopRuntime(
                 checkpoint_interval=80,
                 max_checkpoints=4,
                 duplicate_read_threshold=2,
@@ -49,9 +49,9 @@ def test_generated_runtime_control_describes_current_task(
                 emit=lambda _event: None,
             )
             if reason.endswith("pressure") or reason == "tool_call_checkpoint":
-                runtime._queue_control(reason)
+                runtime.controls.queue_safety(reason)
             else:
-                runtime._queue_granularity_control(reason, discovery_targets=5)
+                runtime.granularity.request_steer(reason, discovery_targets=5)
             control = runtime.next_control()
             assert control is not None
             prompt = "\n".join(

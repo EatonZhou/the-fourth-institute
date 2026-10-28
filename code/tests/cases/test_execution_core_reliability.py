@@ -113,7 +113,7 @@ def test_submission_retry_uses_original_request_before_preparation():
     item = request()
     server = object.__new__(ExecutionServiceServer)
     server.scheduler = store
-    server._changed = lambda value: value
+    server.publish_change = lambda value: value
     prepared = []
     def prepare(value):
         prepared.append(value)

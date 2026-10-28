@@ -13,7 +13,6 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any, Callable, Mapping, cast
 
-from .activity_redaction import redact_sensitive_mapping
 from ..ai_provider_registry import AIProviderRegistry, shared_ai_provider_registry
 from .config import (
     execution_service_socket,
@@ -25,11 +24,11 @@ from .contracts import (
     ExecutionInputControl,
     ExecutionTurnSettingsControl,
     ExecutionRequest,
-    ExecutionResult,
     ExecutionServiceHealth,
     ExecutionSnapshot,
 )
 from .scheduler import Scheduler
+from .service_rpc import RPC_HANDLERS
 from .session_manager import SessionManager
 from .transport import (
     CONTROL_REQUEST_TIMEOUT_SECONDS,
@@ -38,7 +37,6 @@ from .transport import (
     ExecutionResponseUnknown,
 )
 from management_portal.notifications import (
-    business_projection_subject,
     get_notification_publisher,
     notification_subject,
 )
@@ -48,7 +46,6 @@ from management_portal.execution.event_projection import (
 )
 
 
-EXECUTION_SERVICE_SCHEMA = "tfi.execution-service.v1"
 TERMINAL_EXECUTION_RETENTION_SECONDS = 24 * 60 * 60
 EXECUTION_MAINTENANCE_INTERVAL_SECONDS = 5.0
 # Turns a Provider takes on its own are counted from its own records
@@ -73,9 +70,9 @@ class ExecutionWaitTimeout(TimeoutError):
         super().__init__(f"ExecutionService observation budget exhausted for {execution_id}{suffix}")
 
 
-def _terminal_snapshot_has_matching_result(
-    snapshot: Mapping[str, Any],
-) -> bool:
+def _terminal_without_result(snapshot: Mapping[str, Any]) -> bool:
+    """A terminal snapshot whose ExecutionResult does not carry the same status."""
+
     status = str(snapshot.get("status") or "").strip().lower()
     if status not in TERMINAL_STATUSES:
         return False
@@ -84,7 +81,7 @@ def _terminal_snapshot_has_matching_result(
         if isinstance(snapshot.get("result"), Mapping)
         else {}
     )
-    return str(result.get("status") or "").strip().lower() == status
+    return str(result.get("status") or "").strip().lower() != status
 
 
 class ExecutionPreparation:
@@ -135,6 +132,90 @@ def _execution_activity_signature(execution_id: str) -> tuple[int, int] | None:
     except OSError:
         return None
     return stat.st_ino, stat.st_size
+
+
+def _pause_before_retry(deadline: float | None) -> None:
+    retry_delay = 0.25
+    if deadline is not None:
+        retry_delay = min(retry_delay, max(0.0, deadline - time.monotonic()))
+    if retry_delay > 0:
+        time.sleep(retry_delay)
+
+
+class _ExecutionObservation:
+    """One waiter's cursor over an Execution and what it last projected."""
+
+    def __init__(self, execution_id: str, after_sequence: int) -> None:
+        self.execution_id = execution_id
+        self.after_sequence = max(0, int(after_sequence))
+        self.after_updated_at = ""
+        self.snapshot: dict[str, Any] = {}
+        self._projected: dict[str, Any] | None = None
+        self._activity_signature: tuple[int, int] | None = None
+
+    def wait_params(self, actor: str, wait_seconds: float) -> dict[str, Any]:
+        return {
+            "execution_id": str(self.execution_id or ""),
+            "actor": str(actor or ""),
+            "after_sequence": self.after_sequence,
+            "after_updated_at": self.after_updated_at,
+            "timeout_seconds": wait_seconds,
+            "include_events": True,
+            "include_result": True,
+            "quiet_reply": True,
+        }
+
+    def deliver(
+        self,
+        snapshot: dict[str, Any],
+        *,
+        on_events: Callable[[list[dict[str, Any]]], None] | None,
+        on_snapshot: Callable[[dict[str, Any]], bool | None] | None,
+    ) -> None:
+        """Hand a settled snapshot's new events and changes to the observer."""
+
+        self.snapshot = snapshot
+        events = [
+            dict(item)
+            for item in snapshot.get("events") or []
+            if isinstance(item, dict)
+        ]
+        if events:
+            self.after_sequence = max(
+                self.after_sequence,
+                max(int(item.get("sequence") or 0) for item in events),
+            )
+            if on_events is not None:
+                on_events(events)
+        self._project(snapshot, events, on_snapshot)
+        self.after_updated_at = str(
+            (snapshot.get("scheduler") or {}).get("updated_at")
+            or self.after_updated_at
+        )
+
+    def _project(
+        self,
+        snapshot: dict[str, Any],
+        events: list[dict[str, Any]],
+        on_snapshot: Callable[[dict[str, Any]], bool | None] | None,
+    ) -> None:
+        projected = {key: value for key, value in snapshot.items() if key != "events"}
+        # A Provider activity (for example "Command started") is appended to
+        # the shared activity log and announced only to the ExecutionService
+        # the Worker reports to; Dev and Release share PostgreSQL, not memory.
+        # A quiet tool changes neither events nor the row, so the growing log
+        # itself is a change worth projecting.
+        activity_signature = _execution_activity_signature(self.execution_id)
+        if on_snapshot is None or not (
+            events
+            or projected != self._projected
+            or activity_signature != self._activity_signature
+        ):
+            return
+        observed = copy.deepcopy(projected)
+        if on_snapshot(dict(snapshot)) is not False:
+            self._projected = observed
+            self._activity_signature = activity_signature
 
 
 class ExecutionService:
@@ -432,13 +513,9 @@ class ExecutionService:
             if timeout_seconds is not None
             else None
         )
-        after_sequence = max(0, int(after_sequence))
-        after_updated_at = ""
+        observation = _ExecutionObservation(execution_id, after_sequence)
         cancel_sent = False
         last_control_plane_error = ""
-        snapshot: dict[str, Any] = {}
-        last_projected_snapshot: dict[str, Any] | None = None
-        last_activity_signature: tuple[int, int] | None = None
         while deadline is None or time.monotonic() < deadline:
             remaining = (
                 max(0.1, deadline - time.monotonic())
@@ -464,16 +541,7 @@ class ExecutionService:
                         )
                 reply = self.client.request(
                     "execution.wait",
-                    {
-                        "execution_id": str(execution_id or ""),
-                        "actor": str(actor or ""),
-                        "after_sequence": after_sequence,
-                        "after_updated_at": after_updated_at,
-                        "timeout_seconds": wait_seconds,
-                        "include_events": True,
-                        "include_result": True,
-                        "quiet_reply": True,
-                    },
+                    observation.wait_params(actor, wait_seconds),
                     timeout=wait_seconds + 6,
                 )
                 last_control_plane_error = ""
@@ -483,100 +551,63 @@ class ExecutionService:
                 # turn, so preserve the same execution identity and cursor
                 # until the service is reachable again.
                 last_control_plane_error = str(exc)
-                retry_delay = 0.25
-                if deadline is not None:
-                    retry_delay = min(
-                        retry_delay,
-                        max(0.0, deadline - time.monotonic()),
-                    )
-                if retry_delay > 0:
-                    time.sleep(retry_delay)
+                _pause_before_retry(deadline)
                 continue
-            reply = reply if isinstance(reply, dict) else {}
-            if reply.get("unchanged") is True:
-                # Nothing changed since the last full snapshot; its events
-                # were already handled.
-                reply = (
-                    {**snapshot, "events": []}
-                    if snapshot
-                    else dict(self.status(
-                        execution_id,
-                        actor=actor,
-                        after_sequence=after_sequence,
-                        include_events=True,
-                        include_result=True,
-                    ))
-                )
-            snapshot = reply
-            terminal_status = str(snapshot.get("status") or "").strip().lower()
-            if (
-                terminal_status in TERMINAL_STATUSES
-                and not _terminal_snapshot_has_matching_result(snapshot)
-            ):
-                # A business waiter may overlap another process finishing and
-                # acknowledging the same job.  Do not project an incomplete
-                # terminal observation: confirm against the canonical row so
-                # a stale terminal projection cannot end a live Execution.
-                snapshot = dict(
-                    self.status(
-                        execution_id,
-                        actor=actor,
-                        after_sequence=after_sequence,
-                        include_events=True,
-                        include_result=True,
-                    )
-                )
-                confirmed_status = str(
-                    snapshot.get("status") or ""
-                ).strip().lower()
-                if (
-                    confirmed_status in TERMINAL_STATUSES
-                    and not _terminal_snapshot_has_matching_result(snapshot)
-                ):
-                    raise RuntimeError(
-                        "ExecutionService returned a terminal state without "
-                        "its matching ExecutionResult"
-                    )
-            events = [
-                dict(item)
-                for item in snapshot.get("events") or []
-                if isinstance(item, dict)
-            ]
-            if events:
-                after_sequence = max(
-                    after_sequence,
-                    max(int(item.get("sequence") or 0) for item in events),
-                )
-                if on_events is not None:
-                    on_events(events)
-            projected_snapshot = {key: value for key, value in snapshot.items() if key != "events"}
-            # A Provider activity (for example "Command started") is appended to
-            # the shared activity log and announced only to the ExecutionService
-            # the Worker reports to; Dev and Release share PostgreSQL, not memory.
-            # A quiet tool changes neither events nor the row, so the growing log
-            # itself is a change worth projecting.
-            activity_signature = _execution_activity_signature(execution_id)
-            if on_snapshot is not None and (
-                events
-                or projected_snapshot != last_projected_snapshot
-                or activity_signature != last_activity_signature
-            ):
-                observed_snapshot = copy.deepcopy(projected_snapshot)
-                if on_snapshot(dict(snapshot)) is not False:
-                    last_projected_snapshot = observed_snapshot
-                    last_activity_signature = activity_signature
-            after_updated_at = str(
-                (snapshot.get("scheduler") or {}).get("updated_at")
-                or after_updated_at
+            snapshot = self._settled_snapshot(
+                execution_id, actor, observation,
+                reply if isinstance(reply, dict) else {},
             )
+            observation.deliver(snapshot, on_events=on_events, on_snapshot=on_snapshot)
             if str(snapshot.get("status") or "") in TERMINAL_STATUSES:
                 return snapshot
         if deadline is None:
             raise RuntimeError("unreachable execution wait state")
         raise ExecutionWaitTimeout(
-            execution_id, snapshot=snapshot, after_sequence=after_sequence,
+            execution_id, snapshot=observation.snapshot,
+            after_sequence=observation.after_sequence,
             control_plane_error=last_control_plane_error,
         )
+
+    def _settled_snapshot(
+        self,
+        execution_id: str,
+        actor: str,
+        observation: _ExecutionObservation,
+        reply: dict[str, Any],
+    ) -> dict[str, Any]:
+        """The full snapshot a wait reply stands for, terminal only with its result."""
+
+        def canonical() -> dict[str, Any]:
+            return dict(self.status(
+                execution_id,
+                actor=actor,
+                after_sequence=observation.after_sequence,
+                include_events=True,
+                include_result=True,
+            ))
+
+        snapshot = reply
+        if reply.get("unchanged") is True:
+            # Nothing changed since the last full snapshot; its events were
+            # already handled.
+            snapshot = (
+                {**observation.snapshot, "events": []}
+                if observation.snapshot
+                else canonical()
+            )
+        if not _terminal_without_result(snapshot):
+            return snapshot
+        # A business waiter may overlap another process finishing and
+        # acknowledging the same job.  Do not project an incomplete terminal
+        # observation: confirm against the canonical row so a stale terminal
+        # projection cannot end a live Execution.
+        snapshot = canonical()
+        if _terminal_without_result(snapshot):
+            raise RuntimeError(
+                "ExecutionService returned a terminal state without "
+                "its matching ExecutionResult"
+            )
+        return snapshot
 
     def acknowledge(self, execution_id: str, *, actor: str) -> dict[str, Any]:
         result = self.client.request(
@@ -815,14 +846,9 @@ class ExecutionServiceServer(LocalServiceSocketMixin, socketserver.ThreadingTCPS
         if not self.preserve_socket and self.endpoint.is_unix:
             self.socket_path.unlink(missing_ok=True)
 
-    @staticmethod
-    def _required(params: dict[str, Any], key: str) -> str:
-        value = str(params.get(key) or "").strip()
-        if not value:
-            raise ValueError(f"{key} is required")
-        return value
+    def publish_change(self, snapshot: dict[str, Any]) -> dict[str, Any]:
+        """Announce a changed Execution to its observers; return the snapshot."""
 
-    def _changed(self, snapshot: dict[str, Any]) -> dict[str, Any]:
         execution_id = str(snapshot.get("execution_id") or "")
         if execution_id:
             request = (
@@ -842,7 +868,28 @@ class ExecutionServiceServer(LocalServiceSocketMixin, socketserver.ThreadingTCPS
             )
         return snapshot
 
-    def _record_accounted_usage(self, snapshot: Mapping[str, Any]) -> None:
+    def project_activity(
+        self,
+        execution_id: str,
+        event_type: str,
+        activity: dict[str, Any],
+    ) -> None:
+        """Append a Worker's activity to the shared log and announce it."""
+
+        activity_path = execution_activity_path(execution_id)
+        if activity_path is None:
+            raise RuntimeError("execution activity binding is invalid")
+        append_execution_activity(activity_path, [activity])
+        self.notification_publisher.publish(
+            notification_subject("execution", execution_id, scope="activity"),
+            {
+                "kind": "activity",
+                "type": event_type,
+                "actor": str(activity.get("actor") or ""),
+            },
+        )
+
+    def record_accounted_usage(self, snapshot: Mapping[str, Any]) -> None:
         """Give an ended Execution's record the usage the Scheduler counted for it."""
 
         result = snapshot.get("result") if isinstance(snapshot.get("result"), dict) else {}
@@ -889,409 +936,15 @@ class ExecutionServiceServer(LocalServiceSocketMixin, socketserver.ThreadingTCPS
                     else {}
                 ),
             )
-            self._record_accounted_usage(snapshot)
+            self.record_accounted_usage(snapshot)
             if changed:
-                self._changed(snapshot)
+                self.publish_change(snapshot)
 
     def dispatch(self, method: str, params: dict[str, Any]) -> Any:
-        if method in {"settings.get", "settings.update"}:
-            from management_portal import permission_system
-            instruction = "UpdateExecutionSettings" if method == "settings.update" else "GetExecutionSettings"
-            if not permission_system.allows(self._required(params, "actor"), instruction):
-                raise PermissionError(f"无权执行 {instruction}")
-            if method == "settings.update":
-                return self.request_timing.configure(params.get("model_request_timing_enabled"))
-            return self.request_timing.settings.get()
-        if method == "health":
-            scheduler_health = self.scheduler.health()
-            health: ExecutionServiceHealth = {
-                "ok": True,
-                "schema": EXECUTION_SERVICE_SCHEMA,
-                "instance": self.instance,
-                "build_id": self.build_id,
-                "scheduler": scheduler_health,
-                "notifications": self.notification_publisher.health(),
-                "agent_data": self.agent_data.health(),
-            }
-            return health
-        if method == "accounts.usage":
-            return self.quota_monitor.usage_snapshot()
-        if method == "accounts.list":
-            if params.get("force_refresh"):
-                self.quota_monitor.request_refresh()
-            return self.quota_monitor.snapshot()
-        if method == "accounts.resolve":
-            return self.accounts.configuration(self._required(params, "provider"), str(params.get("backend_route_id") or ""), params.get("runtime_options") or {})
-        if method == "runtime.catalog":
-            return self.accounts.runtime_catalog(str(params.get("account_id") or ""), backend=str(params.get("backend") or ""), include_backends=bool(params.get("include_backends")))
-        if method == "execution.submit":
-            request = ExecutionRequest.from_payload(params)
-            return self._changed(self.scheduler.submit(request, prepare=self.preparation.prepare))
-        if method == "execution.states":
-            executions = params.get("executions")
-            if not isinstance(executions, dict) or len(executions) > 500:
-                raise ValueError("execution.states requires at most 500 execution/actor pairs")
-            if not all(isinstance(key,str) and key and isinstance(actor,str) and actor for key,actor in executions.items()):
-                raise ValueError("execution.states requires execution and actor IDs")
-            return self.scheduler.states(executions)
-        if method == "execution.status":
-            execution_id = self._required(params, "execution_id")
-            actor = str(params.get("actor") or "")
-            result = self.scheduler.snapshot(
-                execution_id,
-                after_sequence=int(params.get("after_sequence") or 0),
-                include_events=bool(params.get("include_events", True)),
-                include_result=bool(params.get("include_result", True)),
-            )
-            request = (
-                result.get("request")
-                if isinstance(result.get("request"), dict)
-                else {}
-            )
-            if actor and str(
-                request.get("actor") or result.get("actor") or ""
-            ) != actor:
-                raise KeyError(execution_id)
-            return result
-        if method == "execution.record":
-            execution_id = self._required(params, "execution_id")
-            actor = self._required(params, "actor")
-            result = self.agent_data.execution(execution_id)
-            if result is None or result["actor_ref"] != actor:
-                raise KeyError(execution_id)
-            return result
-        if method == "execution.token_usage":
-            return self.scheduler.token_usage(
-                start_hour=self._required(params, "start_hour"),
-                end_hour=self._required(params, "end_hour"),
-                provider=self._required(params, "provider"),
-                include_accounts=params.get("include_accounts") is True,
-            )
-        if method == "execution.wait":
-            execution_id = self._required(params, "execution_id")
-            actor = self._required(params, "actor")
-            # The row's actor is the submitted request's actor. Reading only
-            # it keeps each poll from parsing the whole request under the
-            # Scheduler lock.
-            if self.scheduler.actor_of(execution_id) != actor:
-                raise KeyError(execution_id)
-            result = self.scheduler.wait_for_change(
-                execution_id,
-                after_updated_at=str(params.get("after_updated_at") or ""),
-                after_sequence=int(params.get("after_sequence") or 0),
-                include_events=bool(params.get("include_events", True)),
-                include_result=bool(params.get("include_result", True)),
-                timeout_seconds=min(
-                    60.0,
-                    max(0.1, float(params.get("timeout_seconds") or 30.0)),
-                ),
-                quiet_reply=params.get("quiet_reply") is True,
-            )
-            return result
-        if method == "execution.input.append":
-            control = ExecutionInputControl.from_payload(params)
-            return self.scheduler.submit_input_control(control)
-        if method == "execution.turn_settings.update":
-            control = ExecutionTurnSettingsControl.from_payload(params)
-            return self.scheduler.submit_turn_settings_control(control)
-        if method == "execution.input.get":
-            control_id = self._required(params, "control_id")
-            agent_id = self._required(params, "agent_id")
-            receipt = self.scheduler.input_control(control_id)
-            if receipt is None:
-                return None
-            execution = self.agent_data.execution(str(receipt["execution_id"]))
-            if not execution or execution.get("agent_id") != agent_id:
-                raise KeyError(control_id)
-            return receipt
-        if method == "execution.unstarted.withdraw":
-            return self.scheduler.withdraw_unstarted(**{
-                key: self._required(params, key) for key in
-                ("execution_id", "actor", "binding_id", "operation_id", "replacement_execution_id", "performed_by")
-            })
-        if method == "execution.cancel":
-            execution_id = self._required(params, "execution_id")
-            actor = self._required(params, "actor")
-            snapshot = self.scheduler.cancel(
-                execution_id,
-                actor=actor,
-                reason=str(params.get("reason") or ""),
-                performed_by=str(params.get("performed_by") or actor),
-                **({"queued_only": True} if params.get("queued_only") is True else {}),
-            )
-            return self._changed(snapshot)
-        if method == "execution.priority":
-            execution_id = self._required(params, "execution_id")
-            actor = self._required(params, "actor")
-            priority = int(params.get("priority") or 0)
-            snapshot = self.scheduler.set_priority(
-                execution_id,
-                actor=actor,
-                priority=priority,
-                performed_by=str(params.get("performed_by") or actor),
-            )
-            return self._changed(snapshot)
-        if method == "execution.route.reassign":
-            execution_id = self._required(params, "execution_id")
-            actor = self._required(params, "actor")
-            backend_route_id = self._required(params, "backend_route_id")
-            snapshot = self.scheduler.reassign_queued_route(
-                execution_id,
-                actor=actor,
-                backend_route_id=backend_route_id,
-                performed_by=str(params.get("performed_by") or actor),
-            )
-            return self._changed(snapshot)
-        if method == "execution.acknowledge":
-            result = self.scheduler.acknowledge(
-                self._required(params, "execution_id"),
-                actor=self._required(params, "actor"),
-            )
-            return result
-        if method == "scheduler.worker.register":
-            return self.scheduler.register_worker(
-                worker_id=self._required(params, "worker_id"),
-                build_id=self._required(params, "build_id"),
-                capabilities=[
-                    str(item)
-                    for item in params.get("capabilities") or []
-                    if str(item)
-                ],
-                pid=int(params.get("pid") or 0),
-                state=self._required(params, "state"),
-            )
-        if method == "scheduler.worker.activate":
-            return self.scheduler.activate_worker(
-                self._required(params, "worker_id"),
-                previous_worker_id=str(params.get("previous_worker_id") or ""),
-            )
-        if method == "scheduler.worker.state":
-            self.scheduler.set_worker_state(
-                self._required(params, "worker_id"),
-                self._required(params, "state"),
-            )
-            return {"ok": True}
-        if method == "scheduler.worker.handover":
-            return self.scheduler.handover_worker(
-                self._required(params, "worker_id")
-            )
-        if method == "scheduler.worker.unregister":
-            return {
-                "ok": True,
-                "removed": self.scheduler.unregister_worker(
-                    self._required(params, "worker_id")
-                ),
-            }
-        if method == "scheduler.claim.wait":
-            claim_params = {
-                "worker_id": self._required(params, "worker_id"),
-                "capabilities": [
-                    str(item)
-                    for item in params.get("capabilities") or []
-                    if str(item)
-                ],
-                "lease_seconds": int(params.get("lease_seconds") or 270),
-            }
-            claim_params["timeout_seconds"] = min(
-                30.0,
-                max(0.1, float(params.get("timeout_seconds") or 15.0)),
-            )
-            claimed = self.scheduler.claim_wait(
-                **claim_params,
-            )
-            execution = (
-                claimed.get("execution")
-                if isinstance(claimed.get("execution"), dict)
-                else None
-            )
-            if execution is not None:
-                self._changed(execution)
-            return claimed
-        if method == "scheduler.start":
-            execution_id = self._required(params, "execution_id")
-            worker_id = self._required(params, "worker_id")
-            snapshot = self._changed(
-                self.scheduler.start(
-                    execution_id,
-                    worker_id=worker_id,
-                    claim_token=self._required(params, "claim_token"),
-                )
-            )
-            return snapshot
-        if method == "scheduler.heartbeat":
-            return self.scheduler.heartbeat(
-                self._required(params, "execution_id"),
-                worker_id=self._required(params, "worker_id"),
-                claim_token=self._required(params, "claim_token"),
-                lease_seconds=int(params.get("lease_seconds") or 270),
-            )
-        if method == "scheduler.handover.prepare":
-            return self.scheduler.prepare_handover(
-                self._required(params, "execution_id"),
-                worker_id=self._required(params, "worker_id"),
-                claim_token=self._required(params, "claim_token"),
-            )
-        if method == "scheduler.requeue":
-            snapshot = self.scheduler.requeue_claim(
-                self._required(params, "execution_id"),
-                worker_id=self._required(params, "worker_id"),
-                claim_token=self._required(params, "claim_token"),
-                reason=str(params.get("reason") or ""),
-                retry_after_seconds=float(
-                    params.get("retry_after_seconds") or 0
-                ),
-            )
-            return self._changed(snapshot)
-        if method == "scheduler.control.wait":
-            return self.scheduler.wait_for_worker_control(
-                self._required(params, "execution_id"),
-                worker_id=self._required(params, "worker_id"),
-                claim_token=self._required(params, "claim_token"),
-                timeout_seconds=min(
-                    60.0,
-                    max(
-                        0.1,
-                        float(params.get("timeout_seconds") or 30.0),
-                    ),
-                ),
-            )
-        if method == "scheduler.input.complete":
-            receipt = self.scheduler.complete_input_control(
-                self._required(params, "control_id"),
-                execution_id=self._required(params, "execution_id"),
-                worker_id=self._required(params, "worker_id"),
-                claim_token=self._required(params, "claim_token"),
-                delivered=bool(params.get("delivered")),
-                error=str(params.get("error") or ""),
-            )
-            if receipt.get("status") == "delivered":
-                from .appended_input_projection import materialize_delivered_input
-
-                materialize_delivered_input(self.agent_data, receipt)
-            return receipt
-        if method == "scheduler.event":
-            details = params.get("details")
-            execution_id = self._required(params, "execution_id")
-            worker_id = self._required(params, "worker_id")
-            event_type = self._required(params, "event_type")
-            if event_type == "token_usage_delta":
-                detail_payload = (
-                    dict(details) if isinstance(details, dict) else {}
-                )
-                return self.scheduler.record_token_usage_delta(
-                    execution_id,
-                    worker_id=worker_id,
-                    claim_token=self._required(params, "claim_token"),
-                    event_id=self._required(detail_payload, "event_id"),
-                    usage=detail_payload.get("usage"),
-                    # Adapters that read usage from a Provider session file
-                    # after the turn report when each request was made.
-                    occurred_at=str(detail_payload.get("occurred_at") or ""),
-                )
-            event_details = dict(details) if isinstance(details, dict) else {}
-            if event_type == "provider_event":
-                event_details = redact_sensitive_mapping(event_details)
-            activity = self.scheduler.append_event(
-                execution_id,
-                worker_id=worker_id,
-                claim_token=self._required(params, "claim_token"),
-                event_type=event_type,
-                details=event_details,
-            )
-            activity_path = execution_activity_path(execution_id)
-            if activity_path is None:
-                raise RuntimeError("execution activity binding is invalid")
-            append_execution_activity(activity_path, [activity])
-            self.notification_publisher.publish(
-                notification_subject(
-                    "execution",
-                    self._required(params, "execution_id"),
-                    scope="activity",
-                ),
-                {
-                    "kind": "activity",
-                    "type": event_type,
-                    "actor": str(activity.get("actor") or ""),
-                },
-            )
-            return {"ok": True}
-        if method == "scheduler.checkpoint":
-            checkpoint = params.get("checkpoint")
-            if not isinstance(checkpoint, dict):
-                raise ValueError("execution checkpoint must be an object")
-            return self._changed(self.scheduler.checkpoint(
-                self._required(params, "execution_id"),
-                worker_id=self._required(params, "worker_id"),
-                claim_token=self._required(params, "claim_token"),
-                checkpoint=checkpoint,
-            ))
-        if method == "scheduler.capacity.reassign":
-            return self._changed(self.scheduler.reassign_capacity(
-                self._required(params, "execution_id"),
-                worker_id=self._required(params, "worker_id"),
-                claim_token=self._required(params, "claim_token"),
-                backend_route_id=self._required(
-                    params,
-                    "backend_route_id",
-                ),
-            ))
-        if method == "scheduler.quota_states":
-            return self.scheduler.binding_quota_states(params.get("bindings"))
-        if method == "scheduler.quota_overrides.configure":
-            return self._changed(self.scheduler.configure_binding_quota_overrides(params.get("policies")))
-        if method == "scheduler.quota_overrides.forget":
-            return self.scheduler.forget_binding_quota_overrides(params.get("binding_ids"))
-        if method == "scheduler.capacity.configure":
-            account_id = self._required(params, "account_id")
-            account = self.accounts.get(account_id)
-            for key in (
-                "max_concurrency",
-                "dispatch_interval_min_seconds",
-                "dispatch_interval_max_seconds",
-            ):
-                if key not in params:
-                    raise ValueError(f"{key} is required")
-            setting = self.scheduler.configure_capacity(
-                account.capacity_key,
-                params.get("max_concurrency"),
-                float(params.get("dispatch_interval_min_seconds") or 0),
-                float(params.get("dispatch_interval_max_seconds") or 0),
-                actor=self._required(params, "actor"),
-                close_threshold=params.get("close_threshold"),
-            )
-            return {
-                "ok": True,
-                "account_id": account.account_id,
-                "close_threshold": setting.get("close_threshold"),
-                "max_concurrency": int(setting["limit"]),
-                "dispatch_interval_min_seconds": float(
-                    setting["dispatch_interval_min_seconds"]
-                ),
-                "dispatch_interval_max_seconds": float(
-                    setting["dispatch_interval_max_seconds"]
-                ),
-                "updated_by": str(setting["updated_by"]),
-                "updated_at": str(setting["updated_at"]),
-            }
-        if method == "scheduler.finish":
-            result = params.get("result")
-            if not isinstance(result, dict):
-                raise ValueError("execution result must be an object")
-            execution_result = ExecutionResult.from_payload(result)
-            finished = self.scheduler.finish(
-                execution_result,
-                worker_id=self._required(params, "worker_id"),
-                claim_token=self._required(params, "claim_token"),
-            )
-            self._record_accounted_usage(finished)
-            snapshot = self._changed(finished)
-            if execution_result.usage:
-                self.notification_publisher.publish(
-                    business_projection_subject("token-usage", "snapshot"),
-                    {"kind": "changed", "fields": ["usage"]},
-                )
-            return snapshot
-        raise ValueError(f"unsupported ExecutionService method: {method}")
+        handler = RPC_HANDLERS.get(method)
+        if handler is None:
+            raise ValueError(f"unsupported ExecutionService method: {method}")
+        return handler(self, params)
 
 
 def get_execution_service() -> ExecutionService:

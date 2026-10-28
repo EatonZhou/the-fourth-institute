@@ -396,9 +396,9 @@ def test_the_pump_stops_with_the_turn() -> None:
 
 
 def _latency_runtime(now: list[float]):
-    from management_portal.execution.harness_native_loop import _NativeToolLoopRuntime
+    from management_portal.execution.harness_native_loop import NativeToolLoopRuntime
 
-    return _NativeToolLoopRuntime(
+    return NativeToolLoopRuntime(
         checkpoint_interval=500, max_checkpoints=5, duplicate_read_threshold=100,
         large_output_bytes=16 * 1024 * 1024, granularity_strategy="off", fragmented_read_batch_threshold=4,
         discovery_target_threshold=4, confirm_singleton_reads=2, max_granularity_steers=1,

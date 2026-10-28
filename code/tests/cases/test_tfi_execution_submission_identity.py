@@ -78,7 +78,7 @@ def test_rpc_exact_retry_reuses_original_payload_digest_and_receipt(prepared):
         return replace(value, priority=8, metadata={**value.metadata, "prepared": True}) if prepared else value
     server = object.__new__(ExecutionServiceServer)
     server.scheduler = queue
-    server._changed = lambda value: value
+    server.publish_change = lambda value: value
     server.preparation = SimpleNamespace(prepare=prepare)
     first = server.dispatch("execution.submit", first_payload)
     before = durable_rows(queue, store, original.execution_id)

@@ -18,7 +18,6 @@ from .harness_capabilities import (
     invocation_capabilities,
     unmet_requirement,
 )
-from .harness_effectiveness import classify_failure
 
 
 AGENT_HARNESS_RUNTIME_KEY = "agent_harness"
@@ -317,6 +316,24 @@ def harness_feature_config(
     return dict(config) if isinstance(config, dict) else {}
 
 
+def controlled_policy_overrides(overrides: object, metadata: Any) -> dict[str, object]:
+    """Validated policy parameter overrides of a controlled paired experiment.
+
+    Only such an experiment names its own overrides; any other request that
+    carries them is refused.
+    """
+
+    from .harness_policy_table import HARNESS_EXPERIMENT_SCHEMA, validate_overrides
+
+    if not (
+        schema_matches(metadata.get("experiment_schema"), HARNESS_EXPERIMENT_SCHEMA)
+        and str(metadata.get("experiment_run_id") or "").strip()
+        and str(metadata.get("experiment_pair_id") or "").strip()
+    ):
+        raise ValueError("AgentHarness policy_overrides are only accepted in a controlled experiment")
+    return validate_overrides(overrides)
+
+
 def harness_feature_enabled(invocation: Any, feature_id: str) -> bool:
     return harness_feature_config(invocation, feature_id).get("enabled") is True
 
@@ -405,6 +422,19 @@ def attach_harness_tools(
         changed,
         "harness_tools_attached",
     )
+
+
+def feature_supports_operation(feature: Any, operation: str) -> bool:
+    raw_operations = getattr(
+        feature,
+        "supported_operations",
+        frozenset({"turn"}),
+    )
+    return str(operation or "") in {
+        str(item or "").strip()
+        for item in raw_operations
+        if str(item or "").strip()
+    }
 
 
 class HarnessFeature(Protocol):
@@ -519,17 +549,10 @@ class AgentHarness:
             raise ValueError(f"unsupported AgentHarness mode: {raw_mode}")
         config["mode"] = raw_mode
         if "policy_overrides" in config:
-            from .harness_policy_table import HARNESS_EXPERIMENT_SCHEMA
-            from .harness_policy_table import validate_overrides
-
-            metadata = getattr(request, "metadata", None) or {}
-            if not (
-                schema_matches(metadata.get("experiment_schema"), "tfi.agent-harness-live-experiment.v1")
-                and str(metadata.get("experiment_run_id") or "").strip()
-                and str(metadata.get("experiment_pair_id") or "").strip()
-            ):
-                raise ValueError("AgentHarness policy_overrides are only accepted in a controlled experiment")
-            config["policy_overrides"] = validate_overrides(config["policy_overrides"])
+            config["policy_overrides"] = controlled_policy_overrides(
+                config["policy_overrides"],
+                getattr(request, "metadata", None) or {},
+            )
         return config
 
     def unavailable_features(self, invocation: Any) -> dict[str, str]:
@@ -655,17 +678,14 @@ class AgentHarness:
     def _record_attempt_plan(
         self,
         context: Any,
-        *,
-        original: Any,
-        prepared: Any,
+        invocation: Any,
         config: dict[str, Any],
-    ) -> Any:
+    ) -> None:
         """Record the first attempt's plan for later recovery."""
 
-        checkpoint = getattr(original, "recovery_checkpoint", None)
+        checkpoint = getattr(invocation, "recovery_checkpoint", None)
         if not (isinstance(checkpoint, dict) and checkpoint.get("turn_id")):
-            self._record_plan(context, original, config)
-        return prepared
+            self._record_plan(context, invocation, config)
 
     @staticmethod
     def _with_capabilities(invocation: Any, provider: Any) -> Any:
@@ -792,23 +812,9 @@ class AgentHarness:
         return decision is not None or any(
             isinstance(feature_configs.get(feature_id), dict)
             and feature_configs[feature_id].get("enabled") is True
-            and self._supports_operation(feature, operation)
+            and feature_supports_operation(feature, operation)
             for feature_id, feature in self._features.items()
         )
-
-
-    @staticmethod
-    def _supports_operation(feature: HarnessFeature, operation: str) -> bool:
-        raw_operations = getattr(
-            feature,
-            "supported_operations",
-            frozenset({"turn"}),
-        )
-        return str(operation or "") in {
-            str(item or "").strip()
-            for item in raw_operations
-            if str(item or "").strip()
-        }
 
     def prepare_invocation(self, invocation: Any, provider: Any = None) -> Any:
         """Resolve this turn's plan and restore the session's Harness tools."""
@@ -855,621 +861,47 @@ class AgentHarness:
         context: Any,
         execute: Callable[[Any, Any], Any],
     ) -> Any:
+        from .harness_turn import HarnessTurn
+
         invocation = self._with_capabilities(invocation, provider)
-        from .harness_observer import ContextSavingsObserver
-
-        started_ns = time.monotonic_ns()
-        current_invocation = invocation
-        reports: list[dict[str, Any]] = []
-        observer = ContextSavingsObserver(
-            provider=provider,
-            invocation=invocation,
-        )
+        turn = HarnessTurn(provider=provider, invocation=invocation, context=context)
         config, adaptive_decision = self._effective_config(invocation)
-        adaptive_turn_runtime: Any = None
-        if adaptive_decision is not None:
-            begin_turn = getattr(self._adaptive_controller, "begin_turn", None)
-            if callable(begin_turn):
-                try:
-                    adaptive_turn_runtime = begin_turn(adaptive_decision)
-                except Exception:
-                    adaptive_turn_runtime = None
-        raw_feature_configs = config.get("features")
-        feature_configs = (
-            raw_feature_configs
-            if isinstance(raw_feature_configs, dict)
-            else {}
+        plan = turn.plan(
+            self._features,
+            config,
+            decision=adaptive_decision,
+            controller=self._adaptive_controller,
         )
-        operation = str(
-            getattr(getattr(invocation, "request", None), "operation", "")
-            or ""
-        )
-        enabled_features: list[tuple[str, HarnessFeature, dict[str, Any]]] = []
-        for feature_id, feature in self._features.items():
-            raw_feature_config = feature_configs.get(feature_id)
-            feature_config = (
-                raw_feature_config
-                if isinstance(raw_feature_config, dict)
-                else {}
-            )
-            if (
-                feature_config.get("enabled") is not True
-                or not self._supports_operation(feature, operation)
-            ):
-                continue
-            enabled_features.append((
-                feature_id,
-                feature,
-                dict(feature_config),
-            ))
-        # Features the plan asked for but this Adapter cannot run: the report
-        # keeps the missing capability instead of silently dropping them.
-        for feature_id, raw_feature_config in feature_configs.items():
-            if (
-                feature_id in self._features
-                and isinstance(raw_feature_config, dict)
-                and raw_feature_config.get("unavailable")
-            ):
-                reports.append({
-                    "feature_id": feature_id,
-                    "lifecycle": "plan",
-                    "status": "skipped",
-                    "action_applied": False,
-                    "reason": str(raw_feature_config["unavailable"]),
-                    "prepare_ms": 0.0,
-                    "metrics": {},
-                })
-
-        before_turn_features = [
-            item
-            for item in enabled_features
-            if (
-                not callable(getattr(item[1], "after_tool_batch", None))
-                or harness_timing_includes(
-                    item[2],
-                    HARNESS_TIMING_BEFORE_TURN,
-                    default=str(
-                        getattr(
-                            item[1],
-                            "default_timing",
-                            HARNESS_TIMING_BEFORE_TURN,
-                        )
-                    ),
-                )
-                or (
-                    bool(getattr(
-                        item[1],
-                        "requires_before_turn_setup_for_after_tool_batch",
-                        False,
-                    ))
-                    and harness_timing_includes(
-                        item[2],
-                        HARNESS_TIMING_AFTER_TOOL_BATCH,
-                        default=str(
-                            getattr(
-                                item[1],
-                                "default_timing",
-                                HARNESS_TIMING_BEFORE_TURN,
-                            )
-                        ),
-                    )
-                )
-            )
-        ]
-        if getattr(invocation, "recovery_checkpoint", {}).get("turn_id"):
-            recovering = {
-                name for name, definition in HARNESS_FEATURES.items()
-                if definition.rewrites_model_input
-            }
-            for feature_id, _feature, _config in before_turn_features:
-                if feature_id in recovering:
-                    reports.append({
-                        "feature_id": feature_id,
-                        "lifecycle": "before_turn",
-                        "status": "skipped",
-                        "action_applied": False,
-                        "reason": "turn_recovery_in_progress",
-                        "prepare_ms": 0.0,
-                        "metrics": {},
-                    })
-            before_turn_features = [
-                item for item in before_turn_features if item[0] not in recovering
-            ]
-        after_tool_batch_features = [
-            item
-            for item in enabled_features
-            if callable(getattr(item[1], "after_tool_batch", None))
-            and harness_timing_includes(
-                item[2],
-                HARNESS_TIMING_AFTER_TOOL_BATCH,
-                default=str(
-                    getattr(
-                        item[1],
-                        "default_timing",
-                        HARNESS_TIMING_BEFORE_TURN,
-                    )
-                ),
-            )
-        ]
-        def run_feature(
-            item: tuple[str, HarnessFeature, dict[str, Any]],
-        ) -> None:
-            nonlocal current_invocation
-            feature_id, feature, feature_config = item
-            effective_feature_config = feature_config
-            if adaptive_turn_runtime is not None:
-                try:
-                    effective_feature_config = (
-                        adaptive_turn_runtime.feature_config(
-                            feature_id,
-                            feature_config,
-                        )
-                    )
-                except Exception:
-                    effective_feature_config = feature_config
-            feature_started_ns = time.monotonic_ns()
-            try:
-                outcome = feature.apply(
-                    observer=observer,
-                    provider=provider,
-                    invocation=current_invocation,
-                    context=context,
-                    config=effective_feature_config,
-                )
-            except (InterruptedError, ExecutionControlSignal):
-                raise
-            except Exception as exc:
-                report = {
-                    "feature_id": feature_id,
-                    "lifecycle": HARNESS_TIMING_BEFORE_TURN,
-                    "status": "failed_open",
-                    "action_applied": False,
-                    "reason": type(exc).__name__,
-                    "prepare_ms": round(
-                        (time.monotonic_ns() - feature_started_ns) / 1_000_000,
-                        3,
-                    ),
-                    "metrics": {},
-                }
-                reports.append(report)
-                observer.record_feature(
-                    feature_id,
-                    status=report["status"],
-                    metrics=report["metrics"],
-                )
-                return
-            current_invocation = outcome.invocation
-            report = {
-                "feature_id": feature_id,
-                "lifecycle": HARNESS_TIMING_BEFORE_TURN,
-                "status": str(outcome.status or "skipped"),
-                "action_applied": (
-                    bool(outcome.action_applied)
-                    if outcome.action_applied is not None
-                    else str(outcome.status or "skipped") == "applied"
-                ),
-                "reason": str(outcome.reason or ""),
-                "prepare_ms": round(
-                    (time.monotonic_ns() - feature_started_ns) / 1_000_000,
-                    3,
-                ),
-                "metrics": dict(outcome.metrics),
-            }
-            reports.append(report)
-            observer.record_feature(
-                feature_id,
-                status=report["status"],
-                metrics=report["metrics"],
-            )
-
-        for item in before_turn_features:
-            run_feature(item)
-
-        current_invocation = self._record_attempt_plan(
-            context,
-            original=invocation,
-            prepared=current_invocation,
-            config=config,
-        )
-
-        step_report_lock = threading.Lock()
-        step_feature_states: dict[str, dict[str, Any]] = {
-            feature_id: {}
-            for feature_id, _feature, _feature_config in (
-                after_tool_batch_features
-            )
-        }
-        step_reports: dict[str, dict[str, Any]] = {
-            feature_id: {
-                "feature_id": feature_id,
-                "lifecycle": HARNESS_TIMING_AFTER_TOOL_BATCH,
-                "status": "skipped",
-                "reason": "no_tool_batches",
-                "prepare_ms": 0.0,
-                "metrics": {
-                    "tool_batch_count": 0,
-                    "tool_result_count": 0,
-                    "applied_batch_count": 0,
-                    "failed_open_batch_count": 0,
-                },
-            }
-            for feature_id, _feature, _feature_config in (
-                after_tool_batch_features
-            )
-        }
-        step_lifecycle_metrics: dict[str, Any] = {
-            "tool_batch_count": 0,
-            "tool_result_count": 0,
-            "plain_text_result_count": 0,
-            "image_or_multimodal_result_count": 0,
-            "structured_result_count": 0,
-            "failed_result_count": 0,
-            "source_counts": {},
-        }
-
-        def process_tool_batch(
-            batch: AgentLoopToolBatch,
-        ) -> AgentLoopToolBatch:
-            if not isinstance(batch, AgentLoopToolBatch):
-                raise TypeError("AgentHarness tool batch contract required")
-            with step_report_lock:
-                before_tokens = observer.observe_tool_batch_before(
-                    tuple(item.result for item in batch.items)
-                )
-                step_lifecycle_metrics["tool_batch_count"] += 1
-                step_lifecycle_metrics["tool_result_count"] += len(
-                    batch.items
-                )
-                source_counts = step_lifecycle_metrics["source_counts"]
-                for item in batch.items:
-                    source = str(item.source or "unknown")
-                    source_counts[source] = int(
-                        source_counts.get(source) or 0
-                    ) + 1
-                    classification = _tool_result_classification(
-                        item.result
-                    )
-                    metric_key = {
-                        "plain_text": "plain_text_result_count",
-                        "image_or_multimodal": (
-                            "image_or_multimodal_result_count"
-                        ),
-                        "failed": "failed_result_count",
-                    }.get(classification, "structured_result_count")
-                    step_lifecycle_metrics[metric_key] += 1
-                current_batch = batch
-                if adaptive_turn_runtime is not None:
-                    try:
-                        adaptive_turn_runtime.observe_tool_batch(
-                            batch=batch,
-                            context_pressure_percent=(
-                                observer.context_pressure_percent
-                            ),
-                        )
-                    except Exception:
-                        pass
-                for feature_id, feature, feature_config in (
-                    after_tool_batch_features
-                ):
-                    report = step_reports[feature_id]
-                    metrics = report["metrics"]
-                    metrics["tool_batch_count"] += 1
-                    metrics["tool_result_count"] += len(
-                        current_batch.items
-                    )
-                    effective_feature_config = feature_config
-                    if adaptive_turn_runtime is not None:
-                        try:
-                            effective_feature_config = (
-                                adaptive_turn_runtime.feature_config(
-                                    feature_id,
-                                    feature_config,
-                                )
-                            )
-                        except Exception:
-                            effective_feature_config = feature_config
-                    feature_started_ns = time.monotonic_ns()
-                    try:
-                        transformed = feature.after_tool_batch(
-                            observer=observer,
-                            batch=current_batch,
-                            provider=provider,
-                            invocation=current_invocation,
-                            context=context,
-                            config=effective_feature_config,
-                            state=step_feature_states[feature_id],
-                        )
-                        if not isinstance(
-                            transformed,
-                            AgentLoopToolBatchTransform,
-                        ):
-                            raise TypeError(
-                                "after_tool_batch must return "
-                                "AgentLoopToolBatchTransform"
-                            )
-                    except (InterruptedError, ExecutionControlSignal):
-                        raise
-                    except Exception as exc:
-                        metrics["failed_open_batch_count"] += 1
-                        if report["status"] != "applied":
-                            report["status"] = "failed_open"
-                            report["reason"] = type(exc).__name__
-                        else:
-                            report["reason"] = (
-                                "applied_with_failed_open_batches:"
-                                f"{type(exc).__name__}"
-                            )
-                    else:
-                        current_batch = transformed.batch
-                        if transformed.applied:
-                            metrics["applied_batch_count"] += 1
-                            report["status"] = "applied"
-                        elif report["status"] != "applied":
-                            report["status"] = "skipped"
-                        if transformed.applied or report["status"] != "applied":
-                            report["reason"] = str(
-                                transformed.reason or report["reason"]
-                            )
-                        _accumulate_numeric_metrics(
-                            metrics,
-                            transformed.metrics,
-                        )
-                        if adaptive_turn_runtime is not None:
-                            try:
-                                adaptive_turn_runtime.record_feature_result(
-                                    feature_id,
-                                    applied=bool(transformed.applied),
-                                    metrics=transformed.metrics,
-                                )
-                            except Exception:
-                                pass
-                    report["prepare_ms"] = round(
-                        float(report["prepare_ms"])
-                        + (
-                            time.monotonic_ns() - feature_started_ns
-                        ) / 1_000_000,
-                        3,
-                    )
-                observer.observe_tool_batch_after(
-                    tuple(item.result for item in current_batch.items),
-                    before_tokens=before_tokens,
-                )
-                return current_batch
-
-        if after_tool_batch_features:
-            output_bytes_cap = 64 * 1024
-            for _feature_id, feature, feature_config in (
-                after_tool_batch_features
-            ):
-                capture_bytes = getattr(
-                    feature,
-                    "tool_output_capture_bytes",
-                    None,
-                )
-                if not callable(capture_bytes):
-                    continue
-                try:
-                    output_bytes_cap = max(
-                        output_bytes_cap,
-                        int(capture_bytes(feature_config)),
-                    )
-                except (TypeError, ValueError):
-                    continue
-            current_invocation = replace(
-                current_invocation,
-                tool_batch_processor=AgentLoopToolBatchProcessor(
-                    process=process_tool_batch,
-                    output_bytes_cap=output_bytes_cap,
-                ),
-            )
-
-        prepared_reports = [
-            {
-                **report,
-                "metrics": dict(report.get("metrics") or {}),
-            }
-            for report in reports
-        ]
-        prepared_details: dict[str, Any] = {
-            "lifecycle": "before_provider",
-            "status": "prepared",
-            "provider": str(getattr(provider, "provider_id", "") or ""),
-            "capabilities": sorted(capabilities_of(current_invocation, provider)),
-            "features": prepared_reports,
-            "applied_feature_count": len({
-                str(report.get("feature_id") or "")
-                for report in prepared_reports
-                if report.get("status") == "applied"
-                and str(report.get("feature_id") or "")
-            }),
-            "applied_lifecycle_count": sum(
-                1
-                for report in prepared_reports
-                if report.get("status") == "applied"
-            ),
-            "prepare_wall_ms": round(
-                (time.monotonic_ns() - started_ns) / 1_000_000,
-                3,
-            ),
-            "measurement_model_calls": 0,
-        }
-        if adaptive_decision is not None:
-            prepared_details["adaptive_policy"] = adaptive_decision.report()
-            if adaptive_turn_runtime is not None:
-                try:
-                    prepared_details["adaptive_policy"]["turn_runtime"] = (
-                        adaptive_turn_runtime.report()
-                    )
-                except Exception as exc:
-                    prepared_details["adaptive_policy"][
-                        "turn_runtime_error"
-                    ] = type(exc).__name__
+        turn.run_before_turn(plan.before_turn)
+        self._record_attempt_plan(context, invocation, config)
+        turn.attach_tool_batches(plan.after_tool_batch)
+        prepared_details, prepared_reports = turn.prepared_details()
         # This event deliberately precedes the provider call. A stalled or
         # cancelled provider must not erase evidence about which strategies
         # transformed the invocation that the provider actually received.
         self._emit(context, "agent_harness_prepared", prepared_details)
         observe_invocation = getattr(context, "observe_invocation", None)
         if callable(observe_invocation):
-            observe_invocation(current_invocation, prepared_reports)
+            observe_invocation(turn.invocation, prepared_reports)
 
         provider_started_ns = time.monotonic_ns()
         status = "completed"
         result: Any = None
         execution_error: BaseException | None = None
         try:
-            result = execute(current_invocation, context)
+            result = execute(turn.invocation, context)
             return result
         except BaseException as exc:
             status = "failed"
             execution_error = exc
             raise
         finally:
-            finished_ns = time.monotonic_ns()
-            with step_report_lock:
-                finalized_step_reports = [
-                    {
-                        **report,
-                        "metrics": dict(report["metrics"]),
-                    }
-                    for report in step_reports.values()
-                ]
-            reports.extend(finalized_step_reports)
-            for report in finalized_step_reports:
-                observer.record_feature(
-                    (
-                        f"{report['feature_id']}:"
-                        f"{HARNESS_TIMING_AFTER_TOOL_BATCH}"
-                    ),
-                    status=report["status"],
-                    metrics=report["metrics"],
-                )
-            provider_event_loop: dict[str, Any] = {}
-            event_processor = getattr(
-                current_invocation,
-                "provider_event_processor",
-                None,
+            details = turn.completed_details(
+                status=status,
+                result=result,
+                error=execution_error,
+                provider_started_ns=provider_started_ns,
             )
-            if isinstance(event_processor, AgentLoopProviderEventProcessor):
-                try:
-                    provider_event_loop = dict(event_processor.report())
-                except Exception as exc:
-                    provider_event_loop = {
-                        "report_error": type(exc).__name__,
-                    }
-                for report in reports:
-                    if report.get("feature_id") != event_processor.feature_id:
-                        continue
-                    report["metrics"] = {
-                        **dict(report.get("metrics") or {}),
-                        **provider_event_loop,
-                    }
-                    observer.record_feature(
-                        event_processor.feature_id,
-                        status=str(report.get("status") or "skipped"),
-                        metrics=report["metrics"],
-                    )
-                    break
-            provider_usage = _numeric_observation(
-                getattr(result, "usage", None)
-            )
-            details = {
-                "lifecycle": "after_turn",
-                "status": status,
-                "provider": str(
-                    getattr(provider, "provider_id", "") or ""
-                ),
-                "capabilities": sorted(
-                    capabilities_of(current_invocation, provider)
-                ),
-                "features": reports,
-                "applied_feature_count": len({
-                    str(report.get("feature_id") or "")
-                    for report in reports
-                    if report.get("status") == "applied"
-                    and str(report.get("feature_id") or "")
-                }),
-                "applied_lifecycle_count": sum(
-                    1
-                    for report in reports
-                    if report.get("status") == "applied"
-                ),
-                "provider_wall_ms": round(
-                    (finished_ns - provider_started_ns) / 1_000_000,
-                    3,
-                ),
-                "total_wall_ms": round(
-                    (finished_ns - started_ns) / 1_000_000,
-                    3,
-                ),
-                "measurement_model_calls": 0,
-                "after_tool_batch_count": max(
-                    (
-                        int(report["metrics"].get("tool_batch_count") or 0)
-                        for report in finalized_step_reports
-                    ),
-                    default=0,
-                ),
-                "after_tool_batch": {
-                    **step_lifecycle_metrics,
-                    "source_counts": dict(
-                        step_lifecycle_metrics["source_counts"]
-                    ),
-                },
-                "provider_event_loop": provider_event_loop,
-                "context_savings": observer.report(
-                    invocation=current_invocation
-                ),
-            }
-            if provider_usage:
-                details["provider_usage"] = provider_usage
-            if execution_error is not None:
-                details["error_type"] = type(execution_error).__name__
-                details["failure_kind"] = classify_failure(
-                    "failed",
-                    execution_error,
-                )
-            if adaptive_decision is not None:
-                details["adaptive_policy"] = adaptive_decision.report()
-                if adaptive_turn_runtime is not None:
-                    try:
-                        details["adaptive_policy"]["turn_runtime"] = (
-                            adaptive_turn_runtime.report()
-                        )
-                    except Exception as exc:
-                        details["adaptive_policy"]["turn_runtime_error"] = (
-                            type(exc).__name__
-                        )
-                try:
-                    details["adaptive_policy"]["state_updated"] = bool(
-                        self._adaptive_controller.observe(
-                            decision=adaptive_decision,
-                            details=details,
-                            result=result,
-                        )
-                    )
-                except Exception as exc:
-                    details["adaptive_policy"]["state_updated"] = False
-                    details["adaptive_policy"]["state_error"] = (
-                        type(exc).__name__
-                    )
-            else:
-                # A hand-set plan's component reports are kept as well; the
-                # completion event below is not stored anywhere.
-                observe_manual = getattr(
-                    self._adaptive_controller,
-                    "observe_manual",
-                    None,
-                )
-                if callable(observe_manual):
-                    try:
-                        observe_manual(
-                            invocation=current_invocation,
-                            features=feature_configs,
-                            details=details,
-                            result=result,
-                        )
-                    except Exception:
-                        pass
             decision_key = self._decision_key(invocation)
             if decision_key:
                 with self._adaptive_decisions_lock:
@@ -1479,29 +911,6 @@ class AgentHarness:
                 "agent_harness_completed",
                 details,
             )
-
-
-def _tool_result_classification(result: object) -> str:
-    """Classify a provider-neutral result without interpreting its content."""
-
-    if not isinstance(result, dict) or result.get("success") is not True:
-        return "failed"
-    content_items = result.get("contentItems")
-    if not isinstance(content_items, list) or not content_items:
-        return "structured"
-    item_types = {
-        str(item.get("type") or "")
-        for item in content_items
-        if isinstance(item, dict)
-    }
-    if item_types == {"inputText"} and all(
-        isinstance(item, dict) and isinstance(item.get("text"), str)
-        for item in content_items
-    ):
-        return "plain_text"
-    if any("image" in item_type.casefold() for item_type in item_types):
-        return "image_or_multimodal"
-    return "structured"
 
 
 def default_agent_harness(
@@ -1528,36 +937,3 @@ def default_agent_harness(
         default_enabled_feature_ids=DEFAULT_ENABLED_AGENT_HARNESS_FEATURE_IDS,
         adaptive_controller=AdaptiveHarnessController(artifact_store=offloading.artifact_store),
     )
-
-
-def _numeric_observation(value: object, *, depth: int = 0) -> dict[str, Any]:
-    if depth > 3 or not isinstance(value, dict):
-        return {}
-    observed: dict[str, Any] = {}
-    for raw_key, raw_value in list(value.items())[:100]:
-        key = str(raw_key or "")[:80]
-        if not key:
-            continue
-        if isinstance(raw_value, bool):
-            continue
-        if isinstance(raw_value, (int, float)):
-            observed[key] = raw_value
-            continue
-        nested = _numeric_observation(raw_value, depth=depth + 1)
-        if nested:
-            observed[key] = nested
-    return observed
-
-
-def _accumulate_numeric_metrics(
-    target: dict[str, Any],
-    incoming: dict[str, Any],
-) -> None:
-    for raw_key, value in dict(incoming or {}).items():
-        key = str(raw_key or "").strip()
-        if not key:
-            continue
-        if isinstance(value, bool) or not isinstance(value, (int, float)):
-            target[key] = value
-            continue
-        target[key] = target.get(key, 0) + value

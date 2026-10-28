@@ -16,7 +16,7 @@ from typing import Any
 
 from management_common.provider_subagent_runs import PROGRESS_METHOD, run_item
 from management_portal.execution import harness_capabilities as capabilities
-from management_portal.execution.harness_native_loop import NATIVE_TOOL_ITEM_TYPES
+from management_portal.execution.harness_native_items import NATIVE_TOOL_ITEM_TYPES
 
 # test_catalog_declares_what_the_adapter_class_implements checks these on the class.
 CLASS_CHECKED = frozenset({capabilities.AUTO_COMPACT_THRESHOLD})

@@ -45,7 +45,7 @@ def test_settings_require_admin_at_isa_and_rpc(monkeypatch, admin):
     :design-point:
     """
     module = request_timing.RequestTimingModule()
-    server = SimpleNamespace(request_timing=module, _required=ExecutionServiceServer._required)
+    server = SimpleNamespace(request_timing=module)
     server.dispatch = lambda method, params: ExecutionServiceServer.dispatch(server, method, params)
     monkeypatch.setattr(isa, '_SERVER', server)
     monkeypatch.setattr('management_portal.permission_system.allows', lambda actor, instruction, arguments=None: actor == 'admin' and admin)

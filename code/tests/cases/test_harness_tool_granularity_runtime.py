@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from management_portal.execution import harness_native_loop
+from management_portal.execution import harness_native_items
 from management_portal.execution.harness_native_loop import (
-    _NativeToolLoopRuntime,
+    NativeToolLoopRuntime,
 )
 from management_portal.execution.harness_auto_policy import (
     AdaptiveHarnessController,
@@ -22,8 +22,8 @@ def _runtime(
     max_checkpoints: int = 5,
     adaptive_turn_runtime: Any = None,
     planned_limits: dict | None = None,
-) -> _NativeToolLoopRuntime:
-    return _NativeToolLoopRuntime(
+) -> NativeToolLoopRuntime:
+    return NativeToolLoopRuntime(
         checkpoint_interval=500,
         max_checkpoints=max_checkpoints,
         duplicate_read_threshold=duplicate_read_threshold,
@@ -223,7 +223,7 @@ def _event(method: str, item: dict[str, Any]) -> dict[str, Any]:
 
 
 def _complete_batch(
-    runtime: _NativeToolLoopRuntime,
+    runtime: NativeToolLoopRuntime,
     *items: dict[str, Any],
 ) -> None:
     for item in items:
@@ -290,8 +290,8 @@ def test_turn_policy_triggers_cumulative_native_output_pressure_contracts(tmp_pa
         _complete_batch(runtime, output)
 
         report = runtime.report()
-        assert runtime.fragmented_read_batch_threshold == 5
-        assert runtime.confirm_singleton_reads == 3
+        assert runtime.granularity.fragmented_read_batch_threshold == 5
+        assert runtime.granularity.confirm_singleton_reads == 3
 
         _complete_batch(runtime, _read_item("serial-a", "src/a.py"))
         _complete_batch(runtime, _read_item("serial-b", "src/b.py"))
@@ -580,7 +580,7 @@ def test_runtime_reserves_long_turn_control_capacity_for_critical_pressure_contr
             "context_pressure",
             "compaction_churn",
         ):
-            runtime._queue_control(reason)
+            runtime.controls.queue_safety(reason)
 
         controls = []
         while control := runtime.next_control():
@@ -675,8 +675,8 @@ def test_off_strategy_keeps_discovery_scan_off_shared_reader(
         raise AssertionError("off strategy must not scan discovery output")
 
     monkeypatch.setattr(
-        harness_native_loop,
-        "_discovery_target_count",
+        harness_native_items,
+        "discovery_target_count",
         unexpected_scan,
     )
     runtime = _runtime("off")

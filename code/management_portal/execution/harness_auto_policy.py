@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from management_common.format_tags import schema_matches
-
 import json
 import re
 import threading
@@ -17,13 +15,13 @@ from management_common.json_columns import json_text, json_value
 from management_common.portal_database import portal_database
 from management_common.database_time import instant
 
-from .harness import capabilities_of
+from .harness import capabilities_of, controlled_policy_overrides
+from .harness_auto_selection import PlanInputs, select_features
 from .harness_capabilities import (
     ACTIVE_TURN_INPUT,
     NATIVE_TOOL_EVENTS,
     PORTAL_TOOLS,
     TURN_REASONING_EFFORT,
-    Requirement,
 )
 from .harness_effectiveness import (
     HarnessEffectivenessStore,
@@ -37,8 +35,8 @@ from .harness_evolution import (
     PolicyCellCache,
     assign_arm,
 )
-from .harness_policy_table import HARNESS_EXPERIMENT_SCHEMA
 from .harness_policy_table import (
+    HarnessPolicyParameters,
     context_budget_tokens,
     policy_parameters,
     validate_overrides,
@@ -53,11 +51,9 @@ EXPERIMENT_ARM = "experiment"
 LARGE_INPUT_IMAGE_BYTES = 1024 * 1024
 
 from .harness_tool_semantics import inline_media_bytes
-from .harness import HARNESS_FEATURES
 from .harness_artifact_recall import artifact_scope_for_invocation
 from ..resource_refs import extract_resource_addresses
 
-BUILTIN_HARNESS_FEATURE_IDS = frozenset(name for name, definition in HARNESS_FEATURES.items() if definition.adaptive)
 _REPO_ACTION_RE = re.compile(
     r"(?:实现|修改|修复|重构|代码|测试|排查|开发|优化|迁移|"
     r"implement|modify|fix|refactor|code|test|debug|develop|"
@@ -73,6 +69,237 @@ _REPO_OBJECT_RE = re.compile(
     r"\.rs\b|\.java\b)",
     re.IGNORECASE,
 )
+
+
+def _names_repository_work(prompt: str) -> bool:
+    return bool(_REPO_ACTION_RE.search(prompt) and _REPO_OBJECT_RE.search(prompt))
+
+
+@dataclass(frozen=True)
+class _TurnRequest:
+    """What a turn's invocation tells the policy."""
+
+    provider: str
+    operation: str
+    execution_id: str
+    cwd: str
+    prompt: str
+    input_media: tuple[object, ...]
+    metadata: Mapping[str, Any]
+    # What the Backend's Adapter declares it can do; the policy never asks
+    # which Backend this is.
+    capabilities: frozenset[str]
+    scope: str
+    configured_reasoning_effort: str
+    # Only a controlled paired experiment names its own parameter overrides.
+    experiment_overrides: dict[str, object] | None
+    portal_tool_count: int
+    portal_tools_expected: bool
+    is_new_backend_session: bool
+    resource_reference: bool
+
+    @classmethod
+    def read(cls, invocation: Any) -> _TurnRequest:
+        request = getattr(invocation, "request", None)
+        runtime_options = getattr(request, "runtime_options", None)
+        runtime_options = (
+            runtime_options if isinstance(runtime_options, dict) else {}
+        )
+        harness_options = runtime_options.get("agent_harness")
+        harness_options = (
+            harness_options if isinstance(harness_options, dict) else {}
+        )
+        metadata = getattr(request, "metadata", None)
+        metadata = metadata if isinstance(metadata, Mapping) else {}
+        capabilities = capabilities_of(invocation)
+        experiment_overrides = harness_options.get("policy_overrides")
+        if experiment_overrides is not None:
+            experiment_overrides = controlled_policy_overrides(experiment_overrides, metadata)
+        portal_tool_count = len(tuple(getattr(invocation, "harness_tools", ()) or ()))
+        prompt = str(getattr(invocation, "user_prompt", "") or "")
+        return cls(
+            provider=str(getattr(request, "provider", "") or ""),
+            operation=str(getattr(request, "operation", "") or ""),
+            execution_id=str(getattr(request, "execution_id", "") or ""),
+            cwd=str(getattr(request, "cwd", "") or ""),
+            prompt=prompt,
+            input_media=tuple(getattr(request, "input_media", ()) or ()),
+            metadata=metadata,
+            capabilities=capabilities,
+            scope=artifact_scope_for_invocation(invocation),
+            configured_reasoning_effort=str(
+                runtime_options.get("effort") or ""
+            ).strip().casefold(),
+            experiment_overrides=experiment_overrides,
+            portal_tool_count=portal_tool_count,
+            # The plan is made before the Harness tools are mounted, so the
+            # count misses them.  A Resident turn always gets the ISA tool,
+            # and a session keeps the tools it has seen; their results pass
+            # through the tool-batch features, which therefore have to be
+            # planned.
+            portal_tools_expected=bool(
+                portal_tool_count
+                or (
+                    PORTAL_TOOLS in capabilities
+                    and (
+                        str(metadata.get("resident_id") or "").startswith("resident_")
+                        or getattr(invocation, "available_harness_tool_names", None)
+                    )
+                )
+            ),
+            is_new_backend_session=bool(
+                getattr(invocation, "is_new_backend_session", False)
+                or getattr(getattr(invocation, "session", None), "is_new_backend_session", False)
+            ),
+            resource_reference=bool(extract_resource_addresses(prompt)),
+        )
+
+    @property
+    def turn_steering(self) -> bool:
+        return (
+            ACTIVE_TURN_INPUT in self.capabilities
+            and NATIVE_TOOL_EVENTS in self.capabilities
+        )
+
+    @property
+    def adaptive_reasoning(self) -> bool:
+        # Lowering the effort for one turn only pays where the session keeps
+        # running; elsewhere a changed effort restarts the Provider session.
+        return TURN_REASONING_EFFORT in self.capabilities
+
+    @property
+    def prompt_tokens_estimated(self) -> int:
+        return max(1, len(self.prompt) // 4)
+
+    @property
+    def long_prompt(self) -> bool:
+        return self.prompt_tokens_estimated >= 24_000
+
+
+@dataclass(frozen=True)
+class _SessionHistory:
+    """The cold-start hints the session's earlier turns left for this one."""
+
+    turn_index: int
+    tool_calls: int
+    output_bytes: int
+    duplicate_reads: int
+    discovery_hold: int
+    image_hold: int
+    output_hold: int
+    duplicate_hold: int
+    fragmented: bool
+    last_context_pressure_percent: float
+    last_context_window_tokens: int
+    last_input_tokens: int
+
+    @classmethod
+    def read(cls, state: Mapping[str, Any]) -> _SessionHistory:
+        discovery_hold = _int(state.get("discovery_hold_turns"))
+        return cls(
+            turn_index=max(1, _int(state.get("turn_count")) + 1),
+            tool_calls=max(
+                _int(state.get("last_tool_calls")),
+                round(_bounded_float(state.get("ewma_tool_calls"))),
+            ),
+            output_bytes=max(
+                _int(state.get("last_output_bytes")),
+                round(_bounded_float(state.get("ewma_output_bytes"))),
+            ),
+            duplicate_reads=max(
+                _int(state.get("last_duplicate_reads")),
+                round(_bounded_float(state.get("ewma_duplicate_reads"))),
+            ),
+            discovery_hold=discovery_hold,
+            image_hold=_int(state.get("image_hold_turns")),
+            output_hold=_int(state.get("large_output_hold_turns")),
+            duplicate_hold=_int(state.get("duplicate_hold_turns")),
+            fragmented=bool(
+                discovery_hold > 0
+                or _int(state.get("last_singleton_read_streak")) >= 5
+                or _int(state.get("last_discovery_opportunities")) >= 2
+            ),
+            last_context_pressure_percent=_bounded_float(
+                state.get("last_context_pressure_percent")
+            ),
+            last_context_window_tokens=_int(state.get("last_context_window_tokens")),
+            last_input_tokens=_int(state.get("last_input_tokens")),
+        )
+
+    def context_pressure(self, parameters: HarnessPolicyParameters) -> float:
+        pressure = self.last_context_pressure_percent
+        # A Backend with a bounded compaction threshold fills its context
+        # budget long before it fills the model's window.
+        context_budget = context_budget_tokens(
+            parameters,
+            self.last_context_window_tokens,
+        )
+        if context_budget and parameters.compaction_max_context_tokens:
+            pressure = max(pressure, min(
+                100.0,
+                self.last_input_tokens * 100.0 / context_budget,
+            ))
+        return pressure
+
+
+def _decision_signals(
+    turn: _TurnRequest,
+    history: _SessionHistory,
+    inputs: PlanInputs,
+    media: Mapping[str, int],
+    reasoning_quality: Mapping[str, Any],
+    assignment: ArmAssignment,
+) -> dict[str, Any]:
+    """What the decision reports about the turn it planned."""
+
+    return {
+        "context_pressure_percent": round(inputs.context_pressure_percent, 2),
+        "previous_tool_calls": history.tool_calls,
+        "previous_output_bytes": history.output_bytes,
+        "previous_duplicate_reads": history.duplicate_reads,
+        "current_media_count": inputs.current_media_count,
+        "current_media_source_bytes_total": media["total"],
+        "current_media_source_bytes_max": media["maximum"],
+        "current_media_large_image_count": media["large_count"],
+        "large_input_image_signal": bool(media["large_count"] > 0),
+        "portal_tool_count": turn.portal_tool_count,
+        "portal_tools_expected": turn.portal_tools_expected,
+        "prompt_tokens_estimated": turn.prompt_tokens_estimated,
+        "configured_reasoning_effort": inputs.configured_reasoning_effort,
+        "initial_reasoning_effort": inputs.initial_reasoning_effort,
+        "adaptive_reasoning_effort": turn.adaptive_reasoning,
+        "reasoning_task_complexity": inputs.reasoning_task_complexity,
+        "reasoning_quality_guard": inputs.reasoning_quality_guard,
+        "reasoning_quality_sample_count": int(
+            reasoning_quality.get("sample_count") or 0
+        ),
+        "reasoning_quality_failure_rate": float(
+            reasoning_quality.get("failure_rate") or 0.0
+        ),
+        "resource_reference": turn.resource_reference,
+        "repo_task_signal": inputs.repo_task,
+        "fragmented_discovery_signal": inputs.fragmented,
+        "history_protection_signal": inputs.history_protection,
+        "is_new_backend_session": turn.is_new_backend_session,
+        "operation": turn.operation,
+        "queue_wait_ms": _bounded_float(
+            turn.metadata.get("execution_queue_wait_ms")
+        ),
+        "queue_wait_observed": (
+            "execution_queue_wait_ms" in turn.metadata
+            and turn.metadata.get("execution_queue_wait_ms") is not None
+        ),
+        "cross_turn_feedback_role": "cold_start_only",
+        **assignment.signals(),
+        "policy_variant": assignment.arm,
+        "policy_selection_source": (
+            "controlled_experiment"
+            if assignment.arm == EXPERIMENT_ARM
+            else "policy_cell"
+        ),
+        "capabilities": sorted(turn.capabilities),
+        "turn_steering_available": turn.turn_steering,
+    }
 
 
 def _adaptive_reasoning_effort(
@@ -559,436 +786,137 @@ class AdaptiveHarnessController:
         invocation: Any,
         configured_features: Mapping[str, object],
     ) -> AdaptiveHarnessDecision:
-        request = getattr(invocation, "request", None)
-        provider = str(getattr(request, "provider", "") or "")
-        operation = str(getattr(request, "operation", "") or "")
-        prompt = str(getattr(invocation, "user_prompt", "") or "")
-        input_media = tuple(getattr(request, "input_media", ()) or ())
-        runtime_options = getattr(request, "runtime_options", None)
-        runtime_options = (
-            runtime_options if isinstance(runtime_options, dict) else {}
-        )
-        harness_options = runtime_options.get("agent_harness")
-        harness_options = (
-            harness_options if isinstance(harness_options, dict) else {}
-        )
-        metadata = getattr(request, "metadata", None)
-        metadata = metadata if isinstance(metadata, Mapping) else {}
-        # The policy never asks which Backend this is.  It reads what the
-        # Backend's Adapter declares it can do.
-        capabilities = capabilities_of(invocation)
-        turn_steering = (
-            ACTIVE_TURN_INPUT in capabilities
-            and NATIVE_TOOL_EVENTS in capabilities
-        )
+        turn = _TurnRequest.read(invocation)
+        history = _SessionHistory.read(self.state_store.load(turn.scope))
         # How the features are used on this Backend: measured parameters,
         # looked up in one table.
-        parameters = policy_parameters(provider)
-        # The read-batch advice goes either into the turn as a reminder or
-        # into the prompt as a standing policy, never both.
-        granularity_by_reminder = (
-            turn_steering and parameters.granularity_reminders_during_turn
-        )
-        # A turn's parameter overrides come from the arm of its cell.  Only a
-        # controlled paired experiment names its own.
-        experiment_overrides = harness_options.get("policy_overrides")
-        if experiment_overrides is not None:
-            if not (
-                schema_matches(metadata.get("experiment_schema"), "tfi.agent-harness-live-experiment.v1")
-                and str(metadata.get("experiment_run_id") or "").strip()
-                and str(metadata.get("experiment_pair_id") or "").strip()
-            ):
-                raise ValueError(
-                    "AgentHarness policy_overrides are only accepted in a controlled experiment"
-                )
-            experiment_overrides = validate_overrides(experiment_overrides)
-        portal_tool_count = len(tuple(getattr(invocation, "harness_tools", ()) or ()))
-        # The plan is made before the Harness tools are mounted, so the count
-        # above misses them.  A Resident turn always gets the ISA tool, and a
-        # session keeps the tools it has seen; their results pass through the
-        # tool-batch features, which therefore have to be planned.
-        portal_tools_expected = bool(
-            portal_tool_count
-            or (
-                PORTAL_TOOLS in capabilities
-                and (
-                    str(metadata.get("resident_id") or "").startswith("resident_")
-                    or getattr(invocation, "available_harness_tool_names", None)
-                )
-            )
-        )
-        scope = artifact_scope_for_invocation(invocation)
-        state = self.state_store.load(scope)
-        turn_index = max(1, _int(state.get("turn_count")) + 1)
-
-        def context_pressure(parameters: Any) -> tuple[float, int]:
-            pressure = _bounded_float(state.get("last_context_pressure_percent"))
-            # A Backend with a bounded compaction threshold fills its context
-            # budget long before it fills the model's window.
-            context_budget = context_budget_tokens(
-                parameters,
-                _int(state.get("last_context_window_tokens")),
-            )
-            if context_budget and parameters.compaction_max_context_tokens:
-                pressure = max(pressure, min(
-                    100.0,
-                    _int(state.get("last_input_tokens")) * 100.0 / context_budget,
-                ))
-            return pressure, context_budget
-
-        pressure, context_budget = context_pressure(parameters)
-        tool_calls = max(
-            _int(state.get("last_tool_calls")),
-            round(_bounded_float(state.get("ewma_tool_calls"))),
-        )
-        output_bytes = max(
-            _int(state.get("last_output_bytes")),
-            round(_bounded_float(state.get("ewma_output_bytes"))),
-        )
-        duplicates = max(
-            _int(state.get("last_duplicate_reads")),
-            round(_bounded_float(state.get("ewma_duplicate_reads"))),
-        )
-        discovery_hold = _int(state.get("discovery_hold_turns"))
-        image_hold = _int(state.get("image_hold_turns"))
-        output_hold = _int(state.get("large_output_hold_turns"))
-        duplicate_hold = _int(state.get("duplicate_hold_turns"))
-        is_new_session = bool(
-            getattr(invocation, "is_new_backend_session", False)
-            or getattr(getattr(invocation, "session", None), "is_new_backend_session", False)
-        )
-        resource_reference = bool(extract_resource_addresses(prompt))
-        current_media_count = len(input_media)
-        input_media_source_bytes = _local_input_media_source_bytes(input_media)
-        large_input_images = bool(
-            input_media_source_bytes["large_count"] > 0
-        )
-        prompt_tokens_estimated = max(1, len(prompt) // 4)
-        configured_reasoning_effort = str(
-            runtime_options.get("effort") or ""
-        ).strip().casefold()
-        # Lowering the effort for one turn only pays where the session keeps
-        # running; elsewhere a changed effort restarts the Provider session.
-        adaptive_reasoning_enabled = (
-            TURN_REASONING_EFFORT in capabilities
-        )
-        has_artifacts = self._has_artifacts(scope)
-        repo_available = self._repo_available(
-            str(getattr(request, "cwd", "") or "")
-        )
+        backend_parameters = policy_parameters(turn.provider)
+        media = _local_input_media_source_bytes(turn.input_media)
+        has_artifacts = self._has_artifacts(turn.scope)
         repo_task = bool(
-            repo_available
-            and (
-                (
-                    _REPO_ACTION_RE.search(prompt)
-                    and _REPO_OBJECT_RE.search(prompt)
-                )
-                or discovery_hold > 0
-            )
+            self._repo_available(turn.cwd)
+            and (_names_repository_work(turn.prompt) or history.discovery_hold > 0)
         )
-        fragmented = bool(
-            discovery_hold > 0
-            or _int(state.get("last_singleton_read_streak")) >= 5
-            or _int(state.get("last_discovery_opportunities")) >= 2
-        )
-        long_prompt = prompt_tokens_estimated >= 24_000
-        reasoning_task_complexity = bool(
-            repo_task or long_prompt or resource_reference
-        )
-        quality_family = load_family({
-            "current_media_count": current_media_count,
-            "current_media_large_image_count": input_media_source_bytes[
-                "large_count"
-            ],
-            "prompt_tokens_estimated": prompt_tokens_estimated,
-            "portal_tool_count": portal_tool_count,
-            "previous_tool_calls": tool_calls,
-            "context_pressure_percent": pressure,
+        family = load_family({
+            "current_media_count": len(turn.input_media),
+            "current_media_large_image_count": media["large_count"],
+            "prompt_tokens_estimated": turn.prompt_tokens_estimated,
+            "portal_tool_count": turn.portal_tool_count,
+            "previous_tool_calls": history.tool_calls,
+            "context_pressure_percent": history.context_pressure(backend_parameters),
             "repo_task_signal": repo_task,
         })
-        # The cell of this turn is its Provider and load family; the arm it
-        # runs brings the parameters that differ from the Backend's.
-        cell = None
-        if experiment_overrides is not None:
-            assignment = ArmAssignment(
-                f"{provider}/{quality_family}", EXPERIMENT_ARM, 0,
-                dict(experiment_overrides),
-            )
-        else:
-            cell = PolicyCellCache.shared().lookup(provider, quality_family)
-            assignment = assign_arm(
-                cell,
-                provider=provider,
-                workload_family=quality_family,
-                session_key=scope or str(getattr(request, "execution_id", "") or ""),
-            )
-        override_error = ""
-        if assignment.overrides:
-            try:
-                parameters = with_overrides(parameters, assignment.overrides)
-            except ValueError as exc:
-                # A cell this code cannot run never fails the turn.
-                override_error = str(exc)[:200]
-                fallback = validate_overrides(cell.champion) if cell is not None else {}
-                parameters = with_overrides(parameters, fallback)
-                assignment = ArmAssignment(assignment.cell, CHAMPION, assignment.version, fallback)
-            pressure, context_budget = context_pressure(parameters)
+        assignment, parameters, override_error = self._policy_arm(
+            turn, family, backend_parameters,
+        )
+        pressure = history.context_pressure(parameters)
+        task_complexity = bool(repo_task or turn.long_prompt or turn.resource_reference)
         reasoning_quality = self.effectiveness_store.reasoning_quality_signal(
-            scope=scope,
-            provider=provider,
-            workload_family=quality_family,
-        ) if adaptive_reasoning_enabled else {}
-        reasoning_quality_guard = bool(reasoning_quality.get("guard"))
-        initial_reasoning_effort = (
-            _adaptive_reasoning_effort(
-                configured_reasoning_effort,
-                context_pressure_percent=pressure,
-                task_complexity=reasoning_task_complexity,
-                quality_guard=reasoning_quality_guard,
-                downgrade_pressure_percent=parameters.reasoning_downgrade_pressure_percent,
-            )
-            if adaptive_reasoning_enabled
-            else configured_reasoning_effort
-        )
-        high_tool_load = tool_calls >= parameters.high_tool_load_calls
-        protect_pressure = parameters.protect_history_pressure_percent
-        history_protection = bool(
-            pressure >= protect_pressure
-            or output_hold > 0
-            or duplicate_hold > 0
-            or image_hold > 0
-        )
-        features = {
-            str(feature_id): dict(config)
-            for raw_feature_id, raw_config in configured_features.items()
-            if (feature_id := str(raw_feature_id or "").strip())
-            for config in [raw_config if isinstance(raw_config, dict) else {}]
-        }
-        provider_error_continue_enabled = (
-            features.get("provider_error_continue", {}).get("enabled", True)
-            is True
-        )
-        reasons: dict[str, str] = {}
-        for feature_id in BUILTIN_HARNESS_FEATURE_IDS:
-            features.setdefault(feature_id, {})["enabled"] = False
-
-        def select(
-            feature_id: str,
-            enabled: bool,
-            reason: str,
-            **overrides: Any,
-        ) -> None:
-            config = features.setdefault(feature_id, {})
-            config.update(overrides)
-            config["enabled"] = enabled
-            if enabled:
-                reasons[feature_id] = reason
-
-        checkpoint_interval = (
-            55
-            if high_tool_load or fragmented
-            else 80
-        )
-        select(
-            "native_tool_loop_governor",
-            True,
-            "selective_current_turn_feedback_loop",
-            checkpoint_interval=checkpoint_interval,
-            max_checkpoints=5,
-            duplicate_read_threshold=4 if duplicate_hold else 6 if fragmented else 8,
-            large_output_bytes=32 * 1024 if output_hold or pressure >= 60 else 64 * 1024,
-            granularity_strategy=(
-                "auto" if granularity_by_reminder or not turn_steering else "off"
+            scope=turn.scope,
+            provider=turn.provider,
+            workload_family=family,
+        ) if turn.adaptive_reasoning else {}
+        quality_guard = bool(reasoning_quality.get("guard"))
+        inputs = PlanInputs(
+            parameters=parameters,
+            context_pressure_percent=pressure,
+            high_tool_load=history.tool_calls >= parameters.high_tool_load_calls,
+            fragmented=history.fragmented,
+            history_protection=bool(
+                pressure >= parameters.protect_history_pressure_percent
+                or history.output_hold > 0
+                or history.duplicate_hold > 0
+                or history.image_hold > 0
             ),
-            cumulative_output_bytes=96 * 1024 if history_protection else 256 * 1024,
-            media_pressure_bytes=256 * 1024 if image_hold else 512 * 1024,
-            max_granularity_steers=2,
-            failure_threshold=3,
-            post_steer_read_batches=4,
-            context_pressure_threshold_percent=70,
-            provider_latency_threshold_seconds=600,
-            configured_reasoning_effort=configured_reasoning_effort,
-            initial_reasoning_effort=initial_reasoning_effort,
-            reasoning_task_complexity=reasoning_task_complexity,
-            reasoning_quality_guard=reasoning_quality_guard,
-            timing="before_turn",
-        )
-        select(
-            "provider_error_continue",
-            provider_error_continue_enabled,
-            "bounded_provider_error_recovery",
-            timing="before_turn",
-        )
-        select(
-            "early_context_compaction",
-            bool(history_protection or long_prompt),
-            "selective_provider_context_guard",
-            policy_threshold_percent=parameters.compaction_threshold_percent,
-            max_context_tokens=parameters.compaction_max_context_tokens,
-            # Existing high-pressure sessions compact before their next
-            # expensive model call. The runtime controller remains armed
-            # so growth during this Portal turn has an observed fallback.
-        )
-        select(
-            "unified_resource_recall",
-            resource_reference,
-            "resource_recall_contract",
-            timing="before_turn",
-        )
-
-        offload_history = bool(output_hold or pressure >= protect_pressure)
-        offload_enabled = bool(
-            portal_tools_expected or offload_history or has_artifacts
-        )
-        offload_base = parameters.offload_trigger_bytes
-        offload_threshold = (
-            offload_base // 2
-            if pressure >= 65 or output_hold
-            else offload_base * 3 // 4
-            if pressure >= 45
-            else offload_base
-        )
-        select(
-            "tool_output_offloading",
-            offload_enabled,
-            (
-                "intercept_large_portal_tool_outputs"
-                if portal_tools_expected
-                else "current_turn_large_output_interceptor"
+            output_hold=history.output_hold,
+            duplicate_hold=history.duplicate_hold,
+            image_hold=history.image_hold,
+            turn_steering=turn.turn_steering,
+            granularity_by_reminder=(
+                turn.turn_steering and parameters.granularity_reminders_during_turn
             ),
-            offload_trigger_bytes=offload_threshold,
-            timing="after_tool_batch",
+            portal_tools_expected=turn.portal_tools_expected,
+            has_artifacts=has_artifacts,
+            current_media_count=len(turn.input_media),
+            resource_reference=turn.resource_reference,
+            long_prompt=turn.long_prompt,
+            repo_task=repo_task,
+            configured_reasoning_effort=turn.configured_reasoning_effort,
+            initial_reasoning_effort=(
+                _adaptive_reasoning_effort(
+                    turn.configured_reasoning_effort,
+                    context_pressure_percent=pressure,
+                    task_complexity=task_complexity,
+                    quality_guard=quality_guard,
+                    downgrade_pressure_percent=parameters.reasoning_downgrade_pressure_percent,
+                )
+                if turn.adaptive_reasoning
+                else turn.configured_reasoning_effort
+            ),
+            reasoning_task_complexity=task_complexity,
+            reasoning_quality_guard=quality_guard,
         )
-        select(
-            "hash_aware_read_dedup",
-            bool(
-                portal_tools_expected
-                or history_protection
-                or fragmented
-            ),
-            (
-                "intercept_exact_duplicate_portal_reads"
-                if portal_tools_expected
-                else "current_turn_duplicate_read_interceptor"
-            ),
-            min_output_tokens=128 if duplicate_hold or pressure >= 65 else 256,
-            timing="after_tool_batch",
+        features, reasons = select_features(configured_features, inputs)
+        signals = _decision_signals(
+            turn, history, inputs, media, reasoning_quality, assignment,
         )
-        select(
-            "artifact_search_and_slice",
-            has_artifacts,
-            "session_has_offloaded_artifacts",
-            timing="before_turn",
-        )
-        select(
-            "inline_media_history",
-            bool(
-                current_media_count
-                or image_hold > 0
-                or portal_tools_expected
-            ),
-            "current_turn_inline_media_budget_interceptor",
-            timing="after_tool_batch",
-            max_tool_image_edge=1536,
-            tool_image_jpeg_quality=82,
-        )
-        # The read-batch advice: a reminder during the turn where the Backend
-        # takes one and the parameter table says so, else a standing prompt
-        # policy (the only way where the Provider takes no input during a turn).
-        select(
-            "tool_call_granularity",
-            bool(
-                not granularity_by_reminder
-                and (repo_task or fragmented or high_tool_load)
-            ),
-            "prompt_policy_without_turn_steering"
-            if not turn_steering
-            else "prompt_policy_by_backend_parameter",
-            timing="before_turn",
-        )
-
-        # The same signals choose the same features on every Backend; what a
-        # Backend's Adapter cannot do is then taken out, with the reason.
-        unavailable = {}
-
-        # Third-party feature contracts remain explicit because this controller
-        # has no cost/effect model for them.
-        for feature_id, config in features.items():
-            if feature_id in BUILTIN_HARNESS_FEATURE_IDS:
-                continue
-            if config.get("enabled") is True:
-                reasons[feature_id] = "external_feature_explicit_contract"
-
-        signals = {
-            "context_pressure_percent": round(pressure, 2),
-            "previous_tool_calls": tool_calls,
-            "previous_output_bytes": output_bytes,
-            "previous_duplicate_reads": duplicates,
-            "current_media_count": current_media_count,
-            "current_media_source_bytes_total": input_media_source_bytes[
-                "total"
-            ],
-            "current_media_source_bytes_max": input_media_source_bytes[
-                "maximum"
-            ],
-            "current_media_large_image_count": input_media_source_bytes[
-                "large_count"
-            ],
-            "large_input_image_signal": large_input_images,
-            "portal_tool_count": portal_tool_count,
-            "portal_tools_expected": portal_tools_expected,
-            "prompt_tokens_estimated": prompt_tokens_estimated,
-            "configured_reasoning_effort": configured_reasoning_effort,
-            "initial_reasoning_effort": initial_reasoning_effort,
-            "adaptive_reasoning_effort": adaptive_reasoning_enabled,
-            "reasoning_task_complexity": reasoning_task_complexity,
-            "reasoning_quality_guard": reasoning_quality_guard,
-            "reasoning_quality_sample_count": int(
-                reasoning_quality.get("sample_count") or 0
-            ),
-            "reasoning_quality_failure_rate": float(
-                reasoning_quality.get("failure_rate") or 0.0
-            ),
-            "resource_reference": resource_reference,
-            "repo_task_signal": repo_task,
-            "fragmented_discovery_signal": fragmented,
-            "history_protection_signal": history_protection,
-            "is_new_backend_session": is_new_session,
-            "operation": operation,
-            "queue_wait_ms": _bounded_float(
-                metadata.get("execution_queue_wait_ms")
-            ),
-            "queue_wait_observed": (
-                "execution_queue_wait_ms" in metadata
-                and metadata.get("execution_queue_wait_ms") is not None
-            ),
-            "cross_turn_feedback_role": "cold_start_only",
-            **assignment.signals(),
-            "policy_variant": assignment.arm,
-            "policy_selection_source": (
-                "controlled_experiment"
-                if assignment.arm == EXPERIMENT_ARM
-                else "policy_cell"
-            ),
-            "capabilities": sorted(capabilities),
-            "turn_steering_available": turn_steering,
-        }
         if override_error:
             signals["policy_override_error"] = override_error
         signals["load_family"] = load_family(signals)
         return AdaptiveHarnessDecision(
-            scope=scope,
-            turn_index=turn_index,
-
+            scope=turn.scope,
+            turn_index=history.turn_index,
             features=features,
             signals=signals,
             reasons=reasons,
-            feedback_scope_available=bool(scope),
-            execution_id=str(getattr(request, "execution_id", "") or ""),
-            provider=provider,
-            capabilities=tuple(sorted(capabilities)),
-            unavailable=unavailable,
+            feedback_scope_available=bool(turn.scope),
+            execution_id=turn.execution_id,
+            provider=turn.provider,
+            capabilities=tuple(sorted(turn.capabilities)),
+            # The same signals choose the same features on every Backend; what
+            # a Backend's Adapter cannot do is then taken out, with the reason.
+            unavailable={},
         )
+
+    @staticmethod
+    def _policy_arm(
+        turn: _TurnRequest,
+        family: str,
+        parameters: HarnessPolicyParameters,
+    ) -> tuple[ArmAssignment, HarnessPolicyParameters, str]:
+        """The arm this turn runs, the parameters it brings, and why an arm was refused.
+
+        The cell of a turn is its Provider and load family; the arm it runs
+        brings the parameters that differ from the Backend's.
+        """
+
+        cell = None
+        if turn.experiment_overrides is not None:
+            assignment = ArmAssignment(
+                f"{turn.provider}/{family}", EXPERIMENT_ARM, 0,
+                dict(turn.experiment_overrides),
+            )
+        else:
+            cell = PolicyCellCache.shared().lookup(turn.provider, family)
+            assignment = assign_arm(
+                cell,
+                provider=turn.provider,
+                workload_family=family,
+                session_key=turn.scope or turn.execution_id,
+            )
+        if not assignment.overrides:
+            return assignment, parameters, ""
+        try:
+            return assignment, with_overrides(parameters, assignment.overrides), ""
+        except ValueError as exc:
+            # A cell this code cannot run never fails the turn.
+            override_error = str(exc)[:200]
+            fallback = validate_overrides(cell.champion) if cell is not None else {}
+            return (
+                ArmAssignment(assignment.cell, CHAMPION, assignment.version, fallback),
+                with_overrides(parameters, fallback),
+                override_error,
+            )
 
     @staticmethod
     def begin_turn(

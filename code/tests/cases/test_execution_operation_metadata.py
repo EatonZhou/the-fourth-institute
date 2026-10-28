@@ -30,7 +30,7 @@ def request(operation="turn"):
 
 
 def service(store):
-    server = SimpleNamespace(agent_data=store, _required=ExecutionServiceServer._required)
+    server = SimpleNamespace(agent_data=store)
     return ExecutionService(client=SimpleNamespace(request=lambda method, params:
         ExecutionServiceServer.dispatch(server, method, params)))
 

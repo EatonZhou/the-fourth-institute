@@ -38,10 +38,8 @@ from management_portal.execution.harness_early_compaction import (
 )
 from management_portal.execution.harness_artifacts import HarnessArtifactStore
 from management_portal.execution.harness_inline_media import InlineMediaHistoryFeature
-from management_portal.execution.harness_native_loop import (
-    NativeToolLoopGovernorFeature,
-    _approximate_inline_media_bytes,
-)
+from management_portal.execution.harness_native_items import approximate_inline_media_bytes
+from management_portal.execution.harness_native_loop import NativeToolLoopGovernorFeature
 from management_portal.execution.harness_provider_error_continue import (
     ProviderErrorContinueFeature,
 )
@@ -1483,7 +1481,7 @@ def test_offloaded_artifact_recall_survives_disabling_the_plugin_contracts(tmp_p
         image_path = tmp_path / "large.png"
         image_path.write_bytes(b"x" * 600_001)
 
-        estimated = _approximate_inline_media_bytes({
+        estimated = approximate_inline_media_bytes({
             "type": "imageView",
             "path": str(image_path),
         })

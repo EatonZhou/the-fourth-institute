@@ -80,256 +80,132 @@ class ExecutionWorker:
         *,
         lease_seconds: int = 270,
     ) -> dict[str, Any]:
+        return _ClaimedExecution(self, claim, lease_seconds=lease_seconds).run()
+
+
+_CLAIM_LOST_REASON = "execution claim ownership changed"
+_HANDOVER_REASON = "worker generation handover"
+
+
+class _ClaimedExecution:
+    """One claimed Execution in this Worker, from start to its terminal report.
+
+    A heartbeat thread keeps the lease and relays the Scheduler's controls
+    (cancellation, handover, turn input) while the runtime executes the
+    request; every Scheduler write is scoped to the claim and fenced when the
+    claim is lost.
+    """
+
+    def __init__(
+        self,
+        worker: ExecutionWorker,
+        claim: dict[str, Any],
+        *,
+        lease_seconds: int,
+    ) -> None:
         execution = (
             claim.get("execution")
             if isinstance(claim.get("execution"), dict)
             else {}
         )
-        execution_id = str(execution.get("execution_id") or "")
-        claim_token = str(claim.get("claim_token") or "")
-        recovery_checkpoint = (
+        self._worker = worker
+        self._execution = execution
+        self.execution_id = str(execution.get("execution_id") or "")
+        self.claim_token = str(claim.get("claim_token") or "")
+        self.recovery_checkpoint = (
             dict(execution.get("checkpoint"))
             if isinstance(execution.get("checkpoint"), dict)
             else {}
         )
-        if not execution_id or not claim_token:
+        if not self.execution_id or not self.claim_token:
             raise ValueError("claimed execution identity is incomplete")
-
-        cancelled = threading.Event()
-        heartbeat_stop = threading.Event()
-        ownership_lost = threading.Event()
-        planned_handover = threading.Event()
-        turn_controls: queue.Queue[dict[str, Any]] = queue.Queue()
-        seen_turn_controls: set[str] = set()
-        turn_control_lock = threading.Lock()
-        receipt_lock = threading.Lock()
-        checkpoint_lock = threading.Lock()
-        lease_deadline = time.monotonic() + float(lease_seconds)
-        queue_wait_ms = _elapsed_since_iso_ms(str(execution.get("created_at") or ""))
-
-        def cancellation_requested() -> bool:
-            return cancelled.is_set()
-
-        def enqueue_turn_controls(payload: object) -> None:
-            controls = payload if isinstance(payload, list) else []
-            with turn_control_lock:
-                for control in controls:
-                    if not isinstance(control, dict):
-                        continue
-                    control_id = str(control.get("control_id") or "").strip()
-                    if not control_id or control_id in seen_turn_controls:
-                        continue
-                    seen_turn_controls.add(control_id)
-                    turn_controls.put(dict(control))
-
-        def fence(*, interrupt_provider: bool = True) -> None:
-            if heartbeat_stop.is_set():
-                return
-            ownership_lost.set()
-            cancelled.set()
-            try:
-                if interrupt_provider:
-                    self.runtime.interrupt(execution_id)
-            except Exception:
-                pass
-
-        def heartbeat_loop() -> None:
-            nonlocal lease_deadline
-            heartbeat_interval = max(5.0, min(30.0, float(lease_seconds) / 3))
-
-            def interrupt_cancelled_turn() -> None:
-                # The cancellation flag records intent, not delivery. A lost
-                # reply or a Provider still starting must be retried while this
-                # Worker owns the execution, until execute() actually returns.
-                try:
-                    self.runtime.interrupt(execution_id)
-                except Exception:
-                    LOGGER.warning("Cancellation interrupt failed for %s; will retry", execution_id)
-
-            def prepare_handover() -> bool:
-                status = self.scheduler.prepare_handover(execution_id, claim_token)
-                if status.get("cancel_requested"):
-                    cancelled.set()
-                    return False
-                if not status.get("ready"):
-                    heartbeat_stop.wait(0.25)
-                    return False
-                planned_handover.set()
-                fence(interrupt_provider=bool(status.get("interrupt_required", True)))
-                return True
-
-            while not heartbeat_stop.is_set():
-                try:
-                    if not cancelled.is_set() and self.shutdown_requested() and prepare_handover():
-                        return
-                    if cancelled.is_set():
-                        if heartbeat_stop.wait(heartbeat_interval):
-                            return
-                        status = {}
-                    else:
-                        status = self.scheduler.wait_for_control(
-                            execution_id, claim_token,
-                            timeout_seconds=min(heartbeat_interval, 0.25) if self.shutdown_requested() else heartbeat_interval,
-                        )
-                    if heartbeat_stop.is_set():
-                        return
-                    if status.get("cancel_requested"):
-                        cancelled.set()
-                    interrupt_attempted = cancelled.is_set()
-                    if interrupt_attempted:
-                        interrupt_cancelled_turn()
-                    if not cancelled.is_set() and (self.shutdown_requested() or status.get("handover_requested")):
-                        if prepare_handover():
-                            return
-                    elif not cancelled.is_set():
-                        enqueue_turn_controls(status.get("turn_controls"))
-                    if time.monotonic() >= lease_deadline:
-                        fence()
-                        return
-                    status = self.scheduler.heartbeat(
-                        execution_id,
-                        claim_token,
-                        lease_seconds,
-                    )
-                    lease_deadline = time.monotonic() + float(lease_seconds)
-                    if status.get("cancel_requested"):
-                        cancelled.set()
-                        if not interrupt_attempted:
-                            interrupt_cancelled_turn()
-                except ExecutionClaimOwnershipLost:
-                    fence()
-                    return
-                except (ExecutionServiceUnavailable, ExecutionResponseUnknown):
-                    if time.monotonic() >= lease_deadline:
-                        fence()
-                        return
-                    if heartbeat_stop.wait(1.0):
-                        return
-                except BaseException:
-                    fence()
-                    return
-
-        heartbeat = threading.Thread(
-            target=heartbeat_loop,
-            name=f"execution-heartbeat-{execution_id}",
+        self.lease_seconds = lease_seconds
+        self.cancelled = threading.Event()
+        self.heartbeat_stop = threading.Event()
+        self.ownership_lost = threading.Event()
+        self.planned_handover = threading.Event()
+        self._turn_controls: queue.Queue[dict[str, Any]] = queue.Queue()
+        self._seen_turn_controls: set[str] = set()
+        self._turn_control_lock = threading.Lock()
+        self._receipt_lock = threading.Lock()
+        self._checkpoint_lock = threading.Lock()
+        self.lease_deadline = time.monotonic() + float(lease_seconds)
+        self._queue_wait_ms = _elapsed_since_iso_ms(str(execution.get("created_at") or ""))
+        self._heartbeat = threading.Thread(
+            target=self._heartbeat_loop,
+            name=f"execution-heartbeat-{self.execution_id}",
             daemon=True,
         )
-        heartbeat.start()
 
-        def claim_scoped(call: Any, *, retry_unknown: bool = False) -> Any:
-            # A missing service socket is not a Provider failure. Retain the
-            # operation while the independent heartbeat maintains our lease.
-            # Only idempotent writes may be replayed after a lost response;
-            # an event append, for example, could already have been accepted.
-            while True:
-                if time.monotonic() >= lease_deadline:
-                    fence()
-                if ownership_lost.is_set():
-                    raise ExecutionClaimOwnershipLost("execution claim ownership changed")
-                try:
-                    return call()
-                except ExecutionClaimOwnershipLost:
-                    fence()
-                    raise
-                except ExecutionResponseUnknown:
-                    if not retry_unknown:
-                        raise
-                except ExecutionServiceUnavailable:
-                    pass
-                ownership_lost.wait(max(0.0, min(0.25, lease_deadline - time.monotonic())))
+    def run(self) -> dict[str, Any]:
+        self._heartbeat.start()
+        result, deferred_reason = self._execute()
+        if self.planned_handover.is_set() and not deferred_reason:
+            released = self._release_for_handover()
+            if released is not None:
+                return released
+        if self.ownership_lost.is_set():
+            self._heartbeat.join(timeout=6)
+            return self._outcome("claim_lost", _CLAIM_LOST_REASON)
+        if deferred_reason:
+            self._heartbeat.join(timeout=6)
+            return self._outcome("requeued", deferred_reason)
+        if result is None:
+            self._heartbeat.join(timeout=6)
+            raise RuntimeError("execution produced no terminal result")
+        return self._finish(result)
 
-        def checkpoint_provider(checkpoint: dict[str, Any]) -> None:
-            payload = deepcopy(checkpoint)
-            # Keep an interrupted write ahead of subsequent snapshots. A late
-            # retry must not replace a newer checkpoint from another callback.
-            with checkpoint_lock:
-                claim_scoped(
-                    lambda: self.scheduler.checkpoint(execution_id, claim_token, payload),
-                    retry_unknown=True,
-                )
+    def fence(self, *, interrupt_provider: bool = True) -> None:
+        if self.heartbeat_stop.is_set():
+            return
+        self.ownership_lost.set()
+        self.cancelled.set()
+        try:
+            if interrupt_provider:
+                self._worker.runtime.interrupt(self.execution_id)
+        except Exception:
+            pass
 
-        def emit_event(
-            event_type: str,
-            details: dict[str, Any],
-        ) -> None:
-            if event_type == "provider_event" and planned_handover.is_set():
-                details = {**details, "interruption_reason": "worker_handover"}
-            claim_scoped(
-                lambda: self.scheduler.emit(
-                    execution_id,
-                    claim_token,
-                    event_type,
-                    details,
-                )
-            )
-
-        def next_turn_control() -> dict[str, Any] | None:
+    def claim_scoped(self, call: Any, *, retry_unknown: bool = False) -> Any:
+        # A missing service socket is not a Provider failure. Retain the
+        # operation while the independent heartbeat maintains our lease.
+        # Only idempotent writes may be replayed after a lost response;
+        # an event append, for example, could already have been accepted.
+        while True:
+            if time.monotonic() >= self.lease_deadline:
+                self.fence()
+            if self.ownership_lost.is_set():
+                raise ExecutionClaimOwnershipLost(_CLAIM_LOST_REASON)
             try:
-                return turn_controls.get_nowait()
-            except queue.Empty:
-                return None
+                return call()
+            except ExecutionClaimOwnershipLost:
+                self.fence()
+                raise
+            except ExecutionResponseUnknown:
+                if not retry_unknown:
+                    raise
+            except ExecutionServiceUnavailable:
+                pass
+            self.ownership_lost.wait(max(0.0, min(0.25, self.lease_deadline - time.monotonic())))
 
-        def record_turn_control_result(
-            control: dict[str, Any],
-            delivered: bool,
-            error: str,
-        ) -> None:
-            control_id = str(control.get("control_id") or "").strip()
-            if not control_id:
-                return
-            # Retain the Provider's answer across transport failures. Replaying
-            # this idempotent receipt must never deliver the input a second time.
-            with receipt_lock:
-                while not ownership_lost.is_set():
-                    try:
-                        claim_scoped(lambda: self.scheduler.complete_input_control(
-                            execution_id, claim_token, control_id,
-                            delivered=delivered, error=error,
-                        ))
-                        return
-                    except (ExecutionServiceUnavailable, ExecutionResponseUnknown, OSError):
-                        ownership_lost.wait(0.25)
+    def _execute(self) -> tuple[ExecutionResult | None, str]:
+        """Run the request; the terminal result, or why the claim was given back."""
 
+        scheduler = self._worker.scheduler
         result: ExecutionResult | None = None
         deferred_reason = ""
         try:
-            claim_scoped(lambda: self.scheduler.start(execution_id, claim_token), retry_unknown=True)
-            request = ExecutionRequest.from_payload(execution.get("request"))
-            if request.execution_id != execution_id:
-                raise ValueError("claimed execution identity is incomplete")
-            request = replace(
-                request,
-                metadata={
-                    **dict(request.metadata or {}),
-                    "execution_queue_wait_ms": queue_wait_ms,
-                },
+            self.claim_scoped(
+                lambda: scheduler.start(self.execution_id, self.claim_token),
+                retry_unknown=True,
             )
-            backend_result = self.runtime.execute(
+            request = self._request()
+            backend_result = self._worker.runtime.execute(
                 request,
-                RuntimeContext(
-                    accepted_at=str(execution.get("created_at") or ""),
-                    emit_event=emit_event,
-                    cancellation_requested=cancellation_requested,
-                    handover_requested=ownership_lost.is_set,
-                    reassign_backend_route=lambda backend_route_id: (
-                        claim_scoped(
-                            lambda: self.scheduler.reassign_capacity(
-                                execution_id,
-                                claim_token,
-                                backend_route_id,
-                            )
-                        )
-                    ),
-                    checkpoint_provider=checkpoint_provider,
-                    recovery_checkpoint=recovery_checkpoint,
-                    turn_control_provider=next_turn_control,
-                    turn_control_result_callback=(
-                        record_turn_control_result
-                    ),
-                ),
+                self._runtime_context(),
             )
             result = ExecutionResult(
-                execution_id=execution_id,
+                execution_id=self.execution_id,
                 status="completed",
                 output=dict(backend_result.output),
                 backend_session_id=backend_result.backend_session_id,
@@ -337,107 +213,109 @@ class ExecutionWorker:
                 usage=dict(backend_result.usage),
             )
         except ExecutionRecoveryDeferred as exc:
-            with receipt_lock:
-                pass
-            heartbeat_stop.set()
-            if planned_handover.is_set():
-                heartbeat.join()
-            deferred_reason = (
-                "worker generation handover"
-                if planned_handover.is_set()
-                else str(exc or "provider recovery deferred")
-            )
-            try:
-                retry_after_seconds = float(
-                    getattr(exc, "retry_after_seconds", 0) or 0
-                )
-                if retry_after_seconds > 0:
-                    self.scheduler.requeue(
-                        execution_id,
-                        claim_token,
-                        deferred_reason,
-                        retry_after_seconds=retry_after_seconds,
-                    )
-                else:
-                    self.scheduler.requeue(
-                        execution_id,
-                        claim_token,
-                        deferred_reason,
-                    )
-                if planned_handover.is_set():
-                    # A successful fenced requeue released our own claim. The
-                    # local detach flag is not evidence that another owner stole it.
-                    ownership_lost.clear()
-            except ExecutionClaimOwnershipLost:
-                ownership_lost.set()
+            deferred_reason = self._defer(exc)
         except (ExecutionCancelled, InterruptedError) as exc:
             result = ExecutionResult(
-                execution_id=execution_id,
+                execution_id=self.execution_id,
                 status="cancelled",
                 error=str(exc),
             )
         except ExecutionClaimOwnershipLost:
-            ownership_lost.set()
+            self.ownership_lost.set()
         except BaseException as exc:
-            result = ExecutionResult(
-                execution_id=execution_id,
-                status="failed",
-                error=str(exc),
-                error_code=str(
-                    getattr(exc, "error_code", "") or ""
-                ),
-                error_details=(
-                    dict(getattr(exc, "error_details", {}))
-                    if isinstance(
-                        getattr(exc, "error_details", {}),
-                        dict,
-                    )
-                    else {}
-                ),
-            )
+            result = _failed_result(self.execution_id, exc)
         finally:
             # A Provider call can end while its input pump still persists a
             # receipt. Keep the lease alive until that receipt is acknowledged.
-            with receipt_lock:
+            with self._receipt_lock:
                 pass
-            heartbeat_stop.set()
-        if planned_handover.is_set() and not deferred_reason:
-            heartbeat.join()
-            try:
-                released = self.scheduler.requeue(
-                    execution_id, claim_token, "worker generation handover",
+            self.heartbeat_stop.set()
+        return result, deferred_reason
+
+    def _request(self) -> ExecutionRequest:
+        request = ExecutionRequest.from_payload(self._execution.get("request"))
+        if request.execution_id != self.execution_id:
+            raise ValueError("claimed execution identity is incomplete")
+        return replace(
+            request,
+            metadata={
+                **dict(request.metadata or {}),
+                "execution_queue_wait_ms": self._queue_wait_ms,
+            },
+        )
+
+    def _runtime_context(self) -> RuntimeContext:
+        return RuntimeContext(
+            accepted_at=str(self._execution.get("created_at") or ""),
+            emit_event=self._emit_event,
+            cancellation_requested=self.cancelled.is_set,
+            handover_requested=self.ownership_lost.is_set,
+            reassign_backend_route=self._reassign_backend_route,
+            checkpoint_provider=self._checkpoint,
+            recovery_checkpoint=self.recovery_checkpoint,
+            turn_control_provider=self._next_turn_control,
+            turn_control_result_callback=self._record_turn_control_result,
+        )
+
+    def _defer(self, exc: ExecutionRecoveryDeferred) -> str:
+        """Give the claim back for a later attempt; return the reason."""
+
+        with self._receipt_lock:
+            pass
+        self.heartbeat_stop.set()
+        if self.planned_handover.is_set():
+            self._heartbeat.join()
+        deferred_reason = (
+            _HANDOVER_REASON
+            if self.planned_handover.is_set()
+            else str(exc or "provider recovery deferred")
+        )
+        try:
+            retry_after_seconds = float(
+                getattr(exc, "retry_after_seconds", 0) or 0
+            )
+            if retry_after_seconds > 0:
+                self._worker.scheduler.requeue(
+                    self.execution_id,
+                    self.claim_token,
+                    deferred_reason,
+                    retry_after_seconds=retry_after_seconds,
                 )
-                return {
-                    "execution_id": execution_id,
-                    "status": (
-                        "cancelled" if released.get("status") == "cancelled"
-                        else "requeued"
-                    ),
-                    "reason": "worker generation handover",
-                }
-            except (ExecutionClaimOwnershipLost, ExecutionServiceUnavailable):
-                ownership_lost.set()
-        if ownership_lost.is_set():
-            heartbeat.join(timeout=6)
-            return {
-                "execution_id": execution_id,
-                "status": "claim_lost",
-                "reason": "execution claim ownership changed",
-            }
-        if deferred_reason:
-            heartbeat.join(timeout=6)
-            return {
-                "execution_id": execution_id,
-                "status": "requeued",
-                "reason": deferred_reason,
-            }
-        if result is None:
-            heartbeat.join(timeout=6)
-            raise RuntimeError("execution produced no terminal result")
+            else:
+                self._worker.scheduler.requeue(
+                    self.execution_id,
+                    self.claim_token,
+                    deferred_reason,
+                )
+            if self.planned_handover.is_set():
+                # A successful fenced requeue released our own claim. The
+                # local detach flag is not evidence that another owner stole it.
+                self.ownership_lost.clear()
+        except ExecutionClaimOwnershipLost:
+            self.ownership_lost.set()
+        return deferred_reason
+
+    def _release_for_handover(self) -> dict[str, Any] | None:
+        """Requeue for the next Worker generation; None when the claim is gone."""
+
+        self._heartbeat.join()
+        try:
+            released = self._worker.scheduler.requeue(
+                self.execution_id, self.claim_token, _HANDOVER_REASON,
+            )
+        except (ExecutionClaimOwnershipLost, ExecutionServiceUnavailable):
+            self.ownership_lost.set()
+            return None
+        return self._outcome(
+            "cancelled" if released.get("status") == "cancelled" else "requeued",
+            _HANDOVER_REASON,
+        )
+
+    def _finish(self, result: ExecutionResult) -> dict[str, Any]:
         try:
             while True:
                 try:
-                    snapshot = self.scheduler.finish(result, claim_token)
+                    snapshot = self._worker.scheduler.finish(result, self.claim_token)
                     break
                 except (ExecutionServiceUnavailable, ExecutionResponseUnknown):
                     # Keep the already-produced result across a rolling socket
@@ -445,31 +323,197 @@ class ExecutionWorker:
                     # execute the accepted Provider input again. A lost reply
                     # may mean finish committed; its cleared claim then fences
                     # the next attempt without a second terminal transition.
-                    remaining = lease_deadline - time.monotonic()
+                    remaining = self.lease_deadline - time.monotonic()
                     if remaining <= 0:
                         raise
-                    if ownership_lost.wait(min(0.25, remaining)):
-                        raise ExecutionClaimOwnershipLost("execution claim ownership changed")
-                    if time.monotonic() >= lease_deadline:
+                    if self.ownership_lost.wait(min(0.25, remaining)):
+                        raise ExecutionClaimOwnershipLost(_CLAIM_LOST_REASON)
+                    if time.monotonic() >= self.lease_deadline:
                         raise
         except ExecutionClaimOwnershipLost:
-            return {
-                "execution_id": execution_id,
-                "status": "claim_lost",
-                "reason": "execution claim ownership changed",
-            }
+            return self._outcome("claim_lost", _CLAIM_LOST_REASON)
         finally:
             # Publishing the terminal state wakes the blocking control wait,
             # so the heartbeat can be reclaimed without paying its join
             # timeout on every successful execution.
-            heartbeat.join(timeout=6)
+            self._heartbeat.join(timeout=6)
         return {
-            "execution_id": execution_id,
+            "execution_id": self.execution_id,
             "status": result.status,
             "result": result.to_payload(),
             "snapshot": snapshot,
         }
 
+    def _outcome(self, status: str, reason: str) -> dict[str, Any]:
+        return {
+            "execution_id": self.execution_id,
+            "status": status,
+            "reason": reason,
+        }
+
+    def _heartbeat_loop(self) -> None:
+        heartbeat_interval = max(5.0, min(30.0, float(self.lease_seconds) / 3))
+        while not self.heartbeat_stop.is_set():
+            try:
+                if self._heartbeat_once(heartbeat_interval):
+                    return
+            except ExecutionClaimOwnershipLost:
+                self.fence()
+                return
+            except (ExecutionServiceUnavailable, ExecutionResponseUnknown):
+                if time.monotonic() >= self.lease_deadline:
+                    self.fence()
+                    return
+                if self.heartbeat_stop.wait(1.0):
+                    return
+            except BaseException:
+                self.fence()
+                return
+
+    def _heartbeat_once(self, heartbeat_interval: float) -> bool:
+        """Relay one control wait and renew the lease; True ends the heartbeat."""
+
+        worker = self._worker
+        if not self.cancelled.is_set() and worker.shutdown_requested() and self._prepare_handover():
+            return True
+        if self.cancelled.is_set():
+            if self.heartbeat_stop.wait(heartbeat_interval):
+                return True
+            status = {}
+        else:
+            status = worker.scheduler.wait_for_control(
+                self.execution_id, self.claim_token,
+                timeout_seconds=min(heartbeat_interval, 0.25) if worker.shutdown_requested() else heartbeat_interval,
+            )
+        if self.heartbeat_stop.is_set():
+            return True
+        if status.get("cancel_requested"):
+            self.cancelled.set()
+        interrupt_attempted = self.cancelled.is_set()
+        if interrupt_attempted:
+            self._interrupt_cancelled_turn()
+        if not self.cancelled.is_set() and (worker.shutdown_requested() or status.get("handover_requested")):
+            if self._prepare_handover():
+                return True
+        elif not self.cancelled.is_set():
+            self._enqueue_turn_controls(status.get("turn_controls"))
+        if time.monotonic() >= self.lease_deadline:
+            self.fence()
+            return True
+        status = worker.scheduler.heartbeat(
+            self.execution_id,
+            self.claim_token,
+            self.lease_seconds,
+        )
+        self.lease_deadline = time.monotonic() + float(self.lease_seconds)
+        if status.get("cancel_requested"):
+            self.cancelled.set()
+            if not interrupt_attempted:
+                self._interrupt_cancelled_turn()
+        return False
+
+    def _interrupt_cancelled_turn(self) -> None:
+        # The cancellation flag records intent, not delivery. A lost reply or
+        # a Provider still starting must be retried while this Worker owns
+        # the execution, until execute() actually returns.
+        try:
+            self._worker.runtime.interrupt(self.execution_id)
+        except Exception:
+            LOGGER.warning("Cancellation interrupt failed for %s; will retry", self.execution_id)
+
+    def _prepare_handover(self) -> bool:
+        status = self._worker.scheduler.prepare_handover(self.execution_id, self.claim_token)
+        if status.get("cancel_requested"):
+            self.cancelled.set()
+            return False
+        if not status.get("ready"):
+            self.heartbeat_stop.wait(0.25)
+            return False
+        self.planned_handover.set()
+        self.fence(interrupt_provider=bool(status.get("interrupt_required", True)))
+        return True
+
+    def _enqueue_turn_controls(self, payload: object) -> None:
+        controls = payload if isinstance(payload, list) else []
+        with self._turn_control_lock:
+            for control in controls:
+                if not isinstance(control, dict):
+                    continue
+                control_id = str(control.get("control_id") or "").strip()
+                if not control_id or control_id in self._seen_turn_controls:
+                    continue
+                self._seen_turn_controls.add(control_id)
+                self._turn_controls.put(dict(control))
+
+    def _next_turn_control(self) -> dict[str, Any] | None:
+        try:
+            return self._turn_controls.get_nowait()
+        except queue.Empty:
+            return None
+
+    def _record_turn_control_result(
+        self,
+        control: dict[str, Any],
+        delivered: bool,
+        error: str,
+    ) -> None:
+        control_id = str(control.get("control_id") or "").strip()
+        if not control_id:
+            return
+        # Retain the Provider's answer across transport failures. Replaying
+        # this idempotent receipt must never deliver the input a second time.
+        with self._receipt_lock:
+            while not self.ownership_lost.is_set():
+                try:
+                    self.claim_scoped(lambda: self._worker.scheduler.complete_input_control(
+                        self.execution_id, self.claim_token, control_id,
+                        delivered=delivered, error=error,
+                    ))
+                    return
+                except (ExecutionServiceUnavailable, ExecutionResponseUnknown, OSError):
+                    self.ownership_lost.wait(0.25)
+
+    def _checkpoint(self, checkpoint: dict[str, Any]) -> None:
+        payload = deepcopy(checkpoint)
+        # Keep an interrupted write ahead of subsequent snapshots. A late
+        # retry must not replace a newer checkpoint from another callback.
+        with self._checkpoint_lock:
+            self.claim_scoped(
+                lambda: self._worker.scheduler.checkpoint(self.execution_id, self.claim_token, payload),
+                retry_unknown=True,
+            )
+
+    def _emit_event(self, event_type: str, details: dict[str, Any]) -> None:
+        if event_type == "provider_event" and self.planned_handover.is_set():
+            details = {**details, "interruption_reason": "worker_handover"}
+        self.claim_scoped(
+            lambda: self._worker.scheduler.emit(
+                self.execution_id,
+                self.claim_token,
+                event_type,
+                details,
+            )
+        )
+
+    def _reassign_backend_route(self, backend_route_id: str) -> Any:
+        return self.claim_scoped(
+            lambda: self._worker.scheduler.reassign_capacity(
+                self.execution_id,
+                self.claim_token,
+                backend_route_id,
+            )
+        )
+
+
+def _failed_result(execution_id: str, exc: BaseException) -> ExecutionResult:
+    error_details = getattr(exc, "error_details", {})
+    return ExecutionResult(
+        execution_id=execution_id,
+        status="failed",
+        error=str(exc),
+        error_code=str(getattr(exc, "error_code", "") or ""),
+        error_details=dict(error_details) if isinstance(error_details, dict) else {},
+    )
 
 
 class ExecutionWorkerDaemon:

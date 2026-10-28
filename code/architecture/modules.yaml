@@ -240,6 +240,7 @@ modules:
       - "execution"
     code_paths:
       - "management_portal/execution/service.py"
+      - "management_portal/execution/service_rpc.py"
       - "management_portal/execution/client.py"
       - "management_portal/execution/isa.py"
       - "management_portal/execution/service_lifecycle.py"
