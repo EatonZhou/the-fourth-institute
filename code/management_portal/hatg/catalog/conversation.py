@@ -40,6 +40,7 @@ DECLARATIONS = (
         "Family 的成员或 steward 发给 Family 以外的用户或 Resident 时，以门面身份发出。回复不会自动送回，收件方自己决定是否回复。"
         "收件 Resident 回复门面发来的消息时，门面把回复直接交给写那条消息的成员：在处理那条消息的一轮里发给门面，"
         "平台自动认作回复；之后的轮次用 reply_to_message_id 指明。"
+        "经收件关系核验的回信仅获准引用对应发件记录，无需读取整个门面对话的权限。"
     ), (
         P("resident_id", description="收件 Resident；与 user_id 二选一"),
         P("user_id", description="把消息发给这位用户；只有 Resident 可以使用，消息只包含文字和资源引用"),

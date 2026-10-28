@@ -16,8 +16,11 @@ import pytest
 
 from management_portal.society_service import (
     family_facade,
+    message_quotes,
     outward_messages,
+    resident_access,
     resident_execution_work,
+    resident_record_domain,
 )
 from management_portal.society_service.resident_prompt_domain import (
     build_resident_prompt as _build_resident_prompt,
@@ -55,6 +58,95 @@ def _answer(case, text, key, **arguments):
 
 def _routed(case, message_id):
     return family_facade.quoted_member(_find_resident(case["facade"]), _stored(case["facade"], message_id))
+
+
+@pytest.fixture
+def private_sent_out(sent_out):
+    """The facade accepts messages but its Conversation belongs to its owner."""
+    record = _find_resident(sent_out["facade"])
+    resident_record_domain.save_resident_record({**record, "personal_owner_id": "sample_admin"})
+    record = _find_resident(sent_out["facade"])
+    assert resident_access.resident_deliverable_to_actor(record, sent_out["outsider"])
+    assert not resident_access.resident_visible_to_actor(record, sent_out["outsider"])
+    return sent_out
+
+
+@pytest.mark.parametrize("automatic", [True, False], ids=["current-turn", "explicit-later-turn"])
+def test_received_delegation_can_be_answered_without_reading_private_facade(private_sent_out, automatic):
+    """合法回信只授权引用已收到的委托，不要求查看私人门面。"""
+    case = private_sent_out
+    if automatic:
+        case["turn"].append(case["asked"])
+    arguments = {} if automatic else {"reply_to_message_id": case["asked"]}
+    result = _answer(case, "已完成委托。", "private-reply", **arguments).raise_for_error()
+    assert _stored(case["facade"], result["message_id"])["quote"] == {
+        "message_id": case["record"], "author_id": case["facade"], "text": "接口什么时候能冻结？"}
+    assert _routed(case, result["message_id"]) == case["member"]
+    assert not {"messages", "queue", "state", "controls"}.intersection(result)
+    assert _answer(case, "已完成委托。", "private-reply", **arguments).raise_for_error()["message_id"] == result["message_id"]
+    assert not resident_access.resident_visible_to_actor(_find_resident(case["facade"]), case["outsider"])
+
+
+def test_private_reply_entitlement_does_not_authorize_ordinary_quotes(private_sent_out):
+    """回信授权不能用于普通引用，也不能改引另一条私人消息。"""
+    case = private_sent_out
+    _answer(case, "完成。", "authorized", reply_to_message_id=case["asked"]).raise_for_error()
+    private_message = "msg_00000000000003a1"
+    _say(case["facade"], private_message, "未对外发送的私人消息")
+    for quoted_id in (case["record"], private_message):
+        refused = run("DeliverMessage", {"resident_id": case["facade"],
+                      "message": {**_text("普通引用"), "quote": {"message_id": quoted_id}}},
+                      actor=case["outsider"])
+        assert refused.error["code"] == "instruction.forbidden"
+    with pytest.raises(PermissionError, match="不能读取"):
+        message_quotes.accept(_find_resident(case["facade"]), {"message_id": private_message},
+                              reader=case["outsider"], message_id="msg_00000000000003a2",
+                              reply_source_message_id=case["asked"])
+    forged = run("DeliverMessage", {"resident_id": case["facade"],
+                 "message": {**_text("伪造投递证明"), "quote": {"message_id": private_message},
+                             "reply_source_message_id": case["asked"]}}, actor=case["outsider"])
+    assert forged.error["code"] == "instruction.invalid_arguments"
+
+
+def test_someone_elses_delegation_cannot_be_claimed_by_copying_its_message(private_sent_out):
+    """只有真实收件人及正式转交链可以回复委托，消息 ID 或正文副本不是授权。"""
+    case = private_sent_out
+    stranger = _register("未受托者")["resident_id"]
+    arguments = {"resident_id": case["facade"], "message": _text("冒领回复"),
+                 "reply_to_message_id": case["asked"]}
+    refused = run("DeliverMessage", arguments, actor=stranger)
+    assert refused.error["code"] == "instruction.invalid_arguments"
+    _say(stranger, case["asked"], "接口什么时候能冻结？", role="user", author_id=case["facade"])
+    refused = run("DeliverMessage", arguments, actor=stranger)
+    assert refused.error["code"] == "instruction.invalid_arguments"
+
+
+def test_received_reply_keeps_entitlement_when_its_sender_speaks_as_a_family(private_sent_out, monkeypatch):
+    """受托者经自己的 Family 回信，引用仍按实际受托者核验。"""
+    case = private_sent_out
+    replying_facade = _register("协作者门面")["resident_id"]
+    set_role(replying_facade, family_id="fbi_reply00002", actor="sample_admin")
+    monkeypatch.setattr(outward_messages, "speaking_identity", lambda *_: replying_facade)
+    result = _answer(case, "由团队交付。", "family-reply", reply_to_message_id=case["asked"]).raise_for_error()
+    stored = _stored(case["facade"], result["message_id"])
+    assert result["sender_id"] == replying_facade
+    assert stored["author_id"] == replying_facade
+    assert stored["quote"]["message_id"] == case["record"]
+    assert _routed(case, result["message_id"]) == case["member"]
+
+
+def test_private_delegation_received_through_a_family_relay_can_be_answered(private_sent_out, monkeypatch):
+    """正式转交链上的实际承接成员可回信，仍不开放原门面对话。"""
+    case = private_sent_out
+    helper = _register("承接成员")["resident_id"]
+    copy_id = "msg_00000000000003b1"
+    _say(helper, copy_id, "接口什么时候能冻结？", role="user", author_id=case["facade"])
+    monkeypatch.setattr(family_facade, "relay_sources_of", lambda member_id, message_id: (
+        [(case["outsider"], case["asked"])] if (member_id, message_id) == (helper, copy_id) else []))
+    result = run("DeliverMessage", {"resident_id": case["facade"], "message": _text("转交后完成。"),
+                 "reply_to_message_id": copy_id}, actor=helper).raise_for_error()
+    assert _stored(case["facade"], result["message_id"])["quote"]["message_id"] == case["record"]
+    assert _routed(case, result["message_id"]) == case["member"]
 
 
 def test_an_answer_sent_during_the_turn_on_the_question_goes_back_to_its_member(sent_out):

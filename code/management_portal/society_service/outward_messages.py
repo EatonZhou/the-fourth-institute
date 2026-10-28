@@ -31,6 +31,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
+from dataclasses import replace
 from datetime import datetime, timezone
 from typing import Any, Mapping
 
@@ -340,14 +341,16 @@ def _turn_messages(resident_id: str) -> list[str]:
     ) if mid]
 
 
-def reply_quote(sender_id: str, recipient_id: str, reply_to: str = "") -> dict[str, str] | None:
+def reply_quote(sender_id: str, recipient_id: str, reply_to: str = "") -> tuple[dict[str, str], str] | None:
     """The quote that makes a message to a facade the reply to one the facade sent the sender.
 
     ``reply_to`` names the message the sender received.  Without it, a
     message sent during the turn that works on a message from this facade
     replies to it, when exactly one of the turn's messages came from there.
     The facade then hands the reply straight to the member that wrote the
-    message, as for any quote of its record.
+    message, as for any quote of its record. Return the quote and its received
+    source ID together: intake checks this single-message entitlement without
+    requiring access to the facade's entire Conversation.
     """
 
     if reply_to:
@@ -356,12 +359,15 @@ def reply_quote(sender_id: str, recipient_id: str, reply_to: str = "") -> dict[s
             raise ValueError(f"reply_to_message_id 需要是 Family 门面发给你的消息：{reply_to}")
         if target[0] != recipient_id:
             raise ValueError(f"这条消息由 {target[0]} 发来，回复它要发给 {target[0]}")
-        return {"message_id": target[1]}
+        return {"message_id": target[1]}, reply_to
     found = {
-        target[1] for item in _turn_messages(sender_id)
+        target[1]: item for item in _turn_messages(sender_id)
         if (target := reply_target(sender_id, item)) is not None and target[0] == recipient_id
     }
-    return {"message_id": found.pop()} if len(found) == 1 else None
+    if len(found) == 1:
+        record_id, received_id = next(iter(found.items()))
+        return {"message_id": record_id}, received_id
+    return None
 
 
 def reply_hint(resident_id: str, actor: str, message_id: str, business_ref: str = "") -> str:
@@ -389,15 +395,18 @@ def reply_hint(resident_id: str, actor: str, message_id: str, business_ref: str 
     )
 
 
-def _as_reply(payload: Mapping[str, Any], sender_id: str, recipient_id: str, reply_to: str, *, plain: bool) -> Mapping[str, Any]:
-    """The payload with the quote that makes it a reply; unchanged when it names its own quote or replies to nothing."""
+def _as_reply(payload: Mapping[str, Any], sender_id: str, recipient_id: str, reply_to: str, *, plain: bool) -> tuple[Mapping[str, Any], str]:
+    """The reply payload and its received source, kept outside caller-supplied message fields."""
 
     message = payload.get("message") if isinstance(payload.get("message"), Mapping) else {}
     carries_none = "quote" in message or payload.get("activation_policy") == "attach_to_next" or not plain
     if reply_to and carries_none:
         raise ValueError("reply_to_message_id 不和 quote 同用；info 消息、Router 转交和授权调用的输入也不带它")
-    quote = None if carries_none else reply_quote(sender_id, recipient_id, reply_to)
-    return {**payload, "message": {**message, "quote": quote}} if quote else payload
+    reply = None if carries_none else reply_quote(sender_id, recipient_id, reply_to)
+    if reply is None:
+        return payload, ""
+    quote, received_id = reply
+    return {**payload, "message": {**message, "quote": quote}}, received_id
 
 
 def deliver_to_resident(
@@ -420,7 +429,10 @@ def deliver_to_resident(
         family_facade.parse_relay_mark(getattr(delivery_context, "business_ref", "")) is None
         and not resident_input_scope.permits(recipient_id, sender_id, message_id)
     )
-    payload = _as_reply(payload, sender_id, recipient_id, str(reply_to or "").strip(), plain=plain)
+    payload, received_id = _as_reply(payload, sender_id, recipient_id, str(reply_to or "").strip(), plain=plain)
+    delivery_context = replace(
+        delivery_context or resident_protocol.ResidentDeliveryContext(), reply_source_message_id=received_id,
+    )
     speaker = sender_id
     if plain:
         speaker = speaking_identity(sender_id, {"kind": "resident", "id": recipient_id})

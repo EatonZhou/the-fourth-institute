@@ -59,12 +59,15 @@ def accept(
     reader: str,
     message_id: str,
     relay_source: tuple[str, str] | None = None,
+    reply_source_message_id: str = "",
 ) -> dict[str, str]:
     """The quote a delivered user message carries, checked and filled in; empty when it quotes nothing.
 
     A retry keeps the quote accepted the first time.  A Family Router's relay
     that names no quote carries the facade message's, pointed at the member's
-    own Conversation where it has the quoted message.
+    own Conversation where it has the quoted message. A Family reply carries
+    its received source separately; it authorizes only the matching outward
+    record, without opening the rest of the facade Conversation.
     """
 
     resident_id = str(record.get("resident_id") or "")
@@ -81,7 +84,12 @@ def accept(
         raise ValueError("quote.message_id 需要指向这段对话中的另一条消息")
     if kept.get("message_id") == quoted_id:
         return kept
-    if not resident_access.resident_visible_to_actor(dict(record), reader):
+    from . import outward_messages
+
+    received_reply = bool(reply_source_message_id) and outward_messages.reply_target(
+        reader, reply_source_message_id,
+    ) == (resident_id, quoted_id)
+    if not received_reply and not resident_access.resident_visible_to_actor(dict(record), reader):
         raise PermissionError("发送者不能读取被引用的消息")
     quote = quote_of(record, quoted_id)
     if not quote:

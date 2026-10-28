@@ -55,10 +55,12 @@ WORKING_DIRECTORY_FIELD = "working_directory"
 
 @dataclass(frozen=True)
 class ResidentDeliveryContext:
-    """Where a delivered message comes from: its Lineage, run and business record."""
+    """Trusted delivery provenance, separate from the caller's message fields."""
 
     lineage_id: str = ""
     business_ref: str = ""
+    # A Family reply's source in the actual sender's Conversation, not the facade's.
+    reply_source_message_id: str = ""
 
 
 def _target(resident_id: str, actor: str) -> resident_domain_common.ResidentRuntimeTarget:
@@ -371,6 +373,7 @@ def deliver_resident_input(
             message_id=message_id,
             protocol_input=message,
             business_ref=trusted_context.business_ref,
+            reply_source_message_id=trusted_context.reply_source_message_id,
         ) or {}
     if resident_input_scope.permits(resident_id, actor, message_id):
         return {key: result[key] for key in ("resident_id", "message_id", "message", "input_state", "cursor") if key in result}
