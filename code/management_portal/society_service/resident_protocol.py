@@ -407,7 +407,7 @@ SENDER_RECEIPT = ("resident_id", "message_id", "message", "input_state", "accept
 
 def _reads_resident(resident_id: str, actor: str) -> bool:
     try:
-        record = resident_catalog.get_catalog().get(resident_id)
+        record = resident_catalog.get_catalog().get_admission(resident_id)
     except KeyError:
         return False
     return resident_access.resident_visible_to_actor(dict(record), canonical_actor_id(actor))
