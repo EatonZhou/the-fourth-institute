@@ -689,11 +689,13 @@
       .watchboard {
         display: none;
         flex: 0 0 var(--watchboard-dashboard-w, 360px);
+        min-height: 0;
         min-width: 250px;
         max-width: min(60%, 1280px);
         border-left: 1px solid var(--border);
         background: color-mix(in srgb, var(--panel-2) 64%, var(--panel));
         overflow: auto;
+        overscroll-behavior: contain;
       }
       .watchboardSplitter {
         display: none;
@@ -733,6 +735,12 @@
       .watchboard.collapsed .watchboardBody {
         display: none;
       }
+      .watchboard.collapsed .watchboardHead {
+        min-height: 37px;
+        padding: 0 1px;
+        border-bottom: 0;
+      }
+      .watchboard.collapsed .watchboardTitle { display: none; }
       .watchboardHead {
         position: sticky;
         top: 0;
@@ -740,7 +748,8 @@
         display: flex;
         align-items: center;
         gap: 6px;
-        padding: 9px 8px;
+        min-height: 38px;
+        padding: 2px 8px;
         border-bottom: 1px solid var(--border);
         background: var(--panel-2);
       }
@@ -1218,7 +1227,9 @@
           flex: 0 0 auto;
           min-width: 0;
           max-width: none;
-          max-height: min(50%, 320px);
+          /* The composer/question card is outside this body. Reserve most of
+             the remaining body for messages, even in a short split panel. */
+          max-height: max(38px, min(35%, 240px));
           border-left: 0;
           border-top: 1px solid var(--border);
         }
@@ -1227,35 +1238,12 @@
           max-width: none;
           max-height: 38px;
         }
-      }
-      @media (max-width: 1180px) {
-        .watchboard {
-          flex-basis: min(38%, 320px);
-          min-width: 230px;
-        }
+        .watchboard.collapsed .watchboardTitle { display: block; }
       }
       @media (max-width: 720px) {
         .residentFormGrid { grid-template-columns: 1fr; }
         .residentRuntimeGrid { grid-template-columns: 1fr 1fr; }
         .forkCreateModeGrid { grid-template-columns: 1fr; }
-      }
-      @media (max-width: 780px) {
-        .watchboardSplitter.open {
-          display: none;
-        }
-        .watchboard.open {
-          flex: 0 0 auto;
-          max-width: none;
-          min-width: 0;
-          max-height: 320px;
-          border-left: 0;
-          border-top: 1px solid var(--border);
-        }
-        .watchboard.collapsed {
-          flex-basis: 38px;
-          max-width: none;
-          width: 100%;
-        }
       }
 
 /* Principal hierarchy uses the existing Agent cards and Portal icon controls. */
