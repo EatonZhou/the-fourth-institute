@@ -4,6 +4,7 @@ import json
 import sys
 import threading
 import time
+import traceback
 from concurrent.futures import Future, ThreadPoolExecutor, wait
 from datetime import datetime, timezone
 from typing import Any, Callable
@@ -94,6 +95,7 @@ class LineageCoordinator:
         self._lineage_wakes: dict[str, float] = {}
         self._active_lineages: set[str] = set()
         self._running_full_reconcile = False
+        self._traced_errors: set[str] = set()
         self._state: dict[str, Any] = {
             "started_at": "",
             "last_recovery_at": "",
@@ -406,17 +408,24 @@ class LineageCoordinator:
             )
             return snapshot
 
-    def _record_error(self, exc: BaseException) -> None:
+    def _record_error(self, exc: BaseException, scope: str = "") -> None:
         message = f"{exc.__class__.__name__}: {exc}"
         if exc.__cause__ is not None:
             # A domain error wraps the store's reason, such as which object conflicted.
             message += f" (caused by {exc.__cause__.__class__.__name__}: {exc.__cause__})"
-        message = message[:2000]
+        # Name the Lineage or Resident: one Lineage's reconcile failed every
+        # five minutes for three days as a bare "KeyError: 'resident not found'".
+        message = (f"{scope}: {message}" if scope else message)[:2000]
         with self._lock:
             changed = message != self._state.get("last_error")
             self._state["last_error"] = message
+            first = message not in self._traced_errors
+            if first and len(self._traced_errors) < 200:
+                self._traced_errors.add(message)
         if changed:
             print(f"SocietyService coordinator failed: {message}", file=sys.stderr)
+            if first:
+                traceback.print_exception(exc, file=sys.stderr)
 
     def _recover(self) -> None:
         try:
@@ -470,7 +479,7 @@ class LineageCoordinator:
         try:
             result = dict(self._resume_resident(resident_id) or {})
         except Exception as exc:
-            self._record_error(exc)
+            self._record_error(exc, resident_id)
             return
         with self._lock:
             self._state["last_recovery"] = result
@@ -524,7 +533,7 @@ class LineageCoordinator:
             self._block_lineage(lineage_id, str(exc))
             return
         except Exception as exc:
-            self._record_error(exc)
+            self._record_error(exc, lineage_id)
             with self._lock:
                 failures = min(self._reconcile_failures.get(lineage_id, 0) + 1, 7)
                 self._reconcile_failures[lineage_id] = failures

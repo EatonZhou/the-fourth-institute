@@ -89,6 +89,27 @@ def test_change_finder_reports_what_changed_since_a_moment(tmp_path: Path) -> No
     assert str(reviews) in resource_source_changes.find_changes(request)["changed"]
 
 
+def test_a_request_larger_than_a_pipe_reaches_a_finder_that_starts_slowly(tmp_path, monkeypatch):
+    """来源变更请求大于管道容量、查找子进程启动较慢时，查找仍能完成
+
+    The paper index sends one path per paper (about 300 KB for 4,000). On a
+    busy host the child read its standard input after the first 0.1 s wait,
+    the rest of the request was never written, and every paper scan hung for
+    the full 900 s (eight times between 10-26 and 10-29).
+    """
+    slow = tmp_path / "slow_finder.py"
+    slow.write_text("import runpy, time\ntime.sleep(0.5)\n"
+                    f"runpy.run_path({str(backend._SOURCE_CHANGE_FINDER)!r}, run_name='__main__')\n", encoding="utf-8")
+    monkeypatch.setattr(backend, "_SOURCE_CHANGE_FINDER", slow)
+    monkeypatch.setattr(backend, "SOURCE_CHANGE_TIMEOUT_SECONDS", 20.0)
+    paths = [str(tmp_path / "items" / f"package-{index:05d}" / "manifest.json") for index in range(4000)]
+    request = {"since": time.time(), "trees": [], "files": [], "paths": paths}
+    assert len(json.dumps(request)) > 256 * 1024
+    started = time.monotonic()
+    assert backend._find_source_changes(request)["missing"] == sorted(paths)
+    assert time.monotonic() - started < 10
+
+
 def test_change_finder_pipe_is_utf8_with_windows_default_encoding(tmp_path):
     """中文路径的变更结果不依赖 Windows 控制台或隔离进程的默认编码。"""
     root = tmp_path / "中文 空格"

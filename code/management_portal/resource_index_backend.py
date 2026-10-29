@@ -9,6 +9,7 @@ import queue
 import re
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 from collections.abc import Iterator
@@ -153,26 +154,32 @@ def _find_source_changes(request: dict[str, Any]) -> dict[str, Any]:
     """Run resource_source_changes.py on ``request`` in a child process."""
     check_scan_cancelled()
     command = [sys.executable, "-I", str(_SOURCE_CHANGE_FINDER)]
-    with subprocess.Popen(
-        command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-    ) as process:
-        payload = json.dumps(request, ensure_ascii=False).encode("utf-8")
-        deadline = time.monotonic() + SOURCE_CHANGE_TIMEOUT_SECONDS
-        try:
-            while True:
-                check_scan_cancelled()
-                remaining = deadline - time.monotonic()
-                if remaining <= 0:
-                    raise subprocess.TimeoutExpired(command, SOURCE_CHANGE_TIMEOUT_SECONDS)
-                try:
-                    stdout, stderr = process.communicate(payload, timeout=min(0.1, remaining))
-                    break
-                except subprocess.TimeoutExpired:
-                    payload = None  # communicate retains the already supplied input.
-        except BaseException:
-            process.kill()
-            process.communicate()
-            raise
+    # The request lists every indexed source (4,000 papers is about 300 KB),
+    # more than a pipe holds. communicate() writes input only on its first
+    # call, so a child that started reading after that call's 0.1 s never got
+    # the rest and the scan hung until the timeout. A file needs no writer.
+    with tempfile.TemporaryFile() as request_file:
+        request_file.write(json.dumps(request, ensure_ascii=False).encode("utf-8"))
+        request_file.seek(0)
+        with subprocess.Popen(
+            command, stdin=request_file, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        ) as process:
+            deadline = time.monotonic() + SOURCE_CHANGE_TIMEOUT_SECONDS
+            try:
+                while True:
+                    check_scan_cancelled()
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        raise subprocess.TimeoutExpired(command, SOURCE_CHANGE_TIMEOUT_SECONDS)
+                    try:
+                        stdout, stderr = process.communicate(timeout=min(0.1, remaining))
+                        break
+                    except subprocess.TimeoutExpired:
+                        continue
+            except BaseException:
+                process.kill()
+                process.communicate()
+                raise
     check_scan_cancelled()
     if process.returncode != 0:
         raise RuntimeError(

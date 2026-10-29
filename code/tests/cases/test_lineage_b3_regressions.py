@@ -72,6 +72,33 @@ def test_failed_lineage_reconcile_keeps_a_retry_wake():
     assert 0 < retries[0][1] <= 300
 
 
+def test_failed_lineage_reconcile_names_the_lineage_and_logs_its_traceback_once(capsys):
+    """Lineage 对账失败的日志写明是哪个 Lineage，并在第一次出现时附带调用栈
+
+    For three days (10-26 to 10-29) one Lineage's reconcile failed every five
+    minutes as a bare "KeyError: 'resident not found'", with no Lineage and
+    no traceback in the log.
+
+    :module: spec.design-governance"""
+    def fail(_):
+        raise KeyError("resident not found")
+
+    worker = coordinator.LineageCoordinator(
+        reconcile_all=lambda: {}, reconcile_lineage=fail,
+        resume_residents=lambda: {}, resume_resident=lambda _: {},
+    )
+    worker._schedule_lineage_retry = lambda *args: None
+    worker._reconcile_one("lineage_111111111111")
+    first = capsys.readouterr().err
+    assert "coordinator failed: lineage_111111111111: KeyError: 'resident not found'" in first
+    assert "Traceback (most recent call last)" in first and "in fail" in first
+    assert worker.snapshot()["last_error"] == "lineage_111111111111: KeyError: 'resident not found'"
+    worker._recover_resident("resident_111111111111")  # a success between failures clears last_error
+    worker._reconcile_one("lineage_111111111111")
+    again = capsys.readouterr().err
+    assert "coordinator failed: lineage_111111111111" in again and "Traceback" not in again
+
+
 @pytest.mark.parametrize("status", ["completed", "failed"])
 def test_watch_trigger_path_uses_revisions_and_stops_at_terminal(monkeypatch, status):
     """监听触发路径按修订游标输出更新，路径完成或失败后停止"""
