@@ -51,7 +51,11 @@ def team(resident="", lineages=(), running=0):
 
 
 def use(monkeypatch, index, teams):
+    from management_portal import avatar_store
+
     monkeypatch.setattr(resource_isa, "_service", lambda: index)
+    monkeypatch.setattr(avatar_store, "get_scope_avatar",
+                        lambda kind, object_id: {"kind": "sprite", "sprite_index": 3} if object_id == "Zeta" else None)
     calls = []
 
     def project_teams(project_ids, actor):
@@ -85,7 +89,7 @@ def test_project_list_carries_registry_fields_and_signals_in_registry_order(monk
     zeta, alpha = result["projects"]
     assert zeta == {"project_id": "Zeta", "status": "active", "project_type": "academic",
                     "description": "Zeta description", "ddl": "2026-12-31", "tags": ["robot"],
-                    "project_resident_id": "resident_000000000001", "lineage_count": 1, "resident_count": 4,
+                    "avatar": {"kind": "sprite", "sprite_index": 3}, "project_resident_id": "resident_000000000001", "lineage_count": 1, "resident_count": 4,
                     "running_resident_count": 2, "last_changed_at": "2026-10-09T00:00:00Z"}
     assert (alpha["project_id"], alpha["status"], alpha["lineage_count"]) == ("Alpha", "paused", 0)
     assert alpha["last_changed_at"] == "2026-10-05T00:00:00Z"

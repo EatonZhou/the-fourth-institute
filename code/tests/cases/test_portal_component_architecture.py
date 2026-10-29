@@ -14,7 +14,7 @@ WORKBENCH_HOSTS = (
     ROOT / "management_portal" / "repo_workspace.html",
     ROOT / "management_portal" / "paper.html",
     ROOT / "knowledge_board_lan" / "knowledge_board.html",
-    ROOT / "project_board_lan" / "projects_board.html",
+    ROOT / "management_portal" / "projects.html",
     ROOT / "management_portal" / "test_demo_components.html",
     ROOT / "management_portal" / "workbenches.html",
 )
@@ -43,8 +43,7 @@ MIGRATED_ESCAPE_HELPERS = (
     "portal_preview_runtime.js",
     "portal_file_tree.js",
     "resource_backup.js",
-    "project_board.js",
-    "project_page.js",
+    "project_common.js",
 )
 
 # Modules that take elementOf and staticAssetUrl from PortalUIPrimitives instead of their own copies.
@@ -83,8 +82,7 @@ MIGRATED_DATE_HELPERS = (
     "portal_board_shell.js",
     "resource_catalog.js",
     "article_workspace.js",
-    "project_board.js",
-    "project_page.js",
+    "project_common.js",
     "hatg_panel.js",
     "repo_workspace.js",
     "portal_agent_inbox.js",

@@ -87,13 +87,14 @@ def chat_workspace_unit(root: Path) -> tuple[str, ...]:
     return (SCRIPT_GROUPS, *(f'management_portal{source}' for source in listed))
 
 
-# The Paper, Article and Repo pages each load their root script after the
-# module scripts it creates its parts from. The page lists them, so the page,
+# The Paper, Article, Repo and Projects pages each load their root script after
+# the module scripts it creates its parts from. The page lists them, so the page,
 # its style sheet and every script it loads by the page's prefix are one unit.
 RESOURCE_PAGES = (
     ('management_portal/paper.html', 'paper'),
     ('management_portal/article_workspace.html', 'article_workspace'),
     ('management_portal/repo_workspace.html', 'repo_workspace'),
+    ('management_portal/projects.html', 'project'),
 )
 
 

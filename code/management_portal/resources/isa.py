@@ -810,14 +810,19 @@ def _member_projects(item: dict[str, Any]) -> list[str]:
 
 
 def _project_fields(record: dict[str, Any]) -> dict[str, Any]:
+    from management_portal.avatar_store import get_scope_avatar
+
     attributes = record.get("attributes") or {}
+    project_id = str(record.get("resource_id") or "")
     return {
-        "project_id": str(record.get("resource_id") or ""),
+        "project_id": project_id,
         "status": str(attributes.get("status") or ""),
         "project_type": str(attributes.get("project_type") or ""),
         "description": str(record.get("summary") or ""),
         "ddl": str(attributes.get("ddl") or ""),
         "tags": [str(tag) for tag in attributes.get("tags") or []],
+        # Without its own avatar a Project shows its initial.
+        "avatar": get_scope_avatar("project", project_id) if project_id else None,
     }
 
 

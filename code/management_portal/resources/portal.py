@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Mapping
+from functools import cache
 from urllib.parse import parse_qs, quote, unquote, urlsplit
 
 from management_common.resource_identity import get_resource_type_registry
@@ -10,6 +11,9 @@ KNOWLEDGE_ENTRY_TYPES = frozenset({
     "meeting", "question", "idea", "insight", "decision", "plan", "thinking",
     "risk", "concept", "information", "patent", "material", "todo", "review",
 })
+# The core pages of each type.  An installed feature with its own page for a
+# type replaces the entry (``resource.portal_routes``): with the Projects page a
+# Project opens there instead of in the knowledge filtered by it.
 RESOURCE_PORTAL_ROUTES = {
     **{kind: ("/resource/knowledge", "item") for kind in KNOWLEDGE_ENTRY_TYPES},
     **{kind: (f"/resource/{kind}", "item") for kind in ("skill", "repo", "article", "experiment", "device")},
@@ -36,9 +40,21 @@ NAVIGATION_REFERENCE_ROUTES = {
 }
 
 
+@cache
+def portal_routes() -> dict[str, tuple[str, str]]:
+    """Resource type -> (page path, identity parameter), the installed features' pages included."""
+    from management_portal import portal_features
+
+    routes = dict(RESOURCE_PORTAL_ROUTES)
+    for _feature, contributed in portal_features.contributions("resource.portal_routes"):
+        routes.update(contributed)
+    return routes
+
+
 def portal_route_contract() -> dict:
+    routes = portal_routes()
     identity_parameters = {
-        parameter for _, parameter in RESOURCE_PORTAL_ROUTES.values()
+        parameter for _, parameter in routes.values()
     } | {
         route["parameter"] for route in NAVIGATION_REFERENCE_ROUTES.values()
     } | {"semantic"}
@@ -57,7 +73,7 @@ def portal_route_contract() -> dict:
                     else ""
                 ),
             }
-            for kind, (path, parameter) in sorted(RESOURCE_PORTAL_ROUTES.items())
+            for kind, (path, parameter) in sorted(routes.items())
         ],
         "identity_parameters": sorted(identity_parameters),
         "content_route": {"path": "/api/resources/content", "parameter": "address"},
@@ -87,7 +103,7 @@ def portal_url_for_address(address: object, resource_type: object = "") -> str:
     clean_type = str(resource_type or inferred_type).strip()
     if clean_type != inferred_type:
         return ""
-    route = RESOURCE_PORTAL_ROUTES.get(clean_type)
+    route = portal_routes().get(clean_type)
     if not route:
         return ""
     path, parameter = route
@@ -107,7 +123,8 @@ def portal_url_for_resource(
     metadata = dict(record or {})
     metadata.update(metadata.get("attributes") or {})
     if clean_type == "project" and clean_id:
-        path, parameter = RESOURCE_PORTAL_ROUTES["project"]
+        # A Project ID is its name, not a typed resource ID.
+        path, parameter = portal_routes()["project"]
         return f"{path}?{parameter}={quote(clean_id, safe='')}"
     if clean_type == "review" and metadata.get("paper_id"):
         return portal_url_for_address(metadata["paper_id"], "paper")
@@ -125,11 +142,11 @@ def portal_url_for_search(search_id: str, record: Mapping) -> str:
     surface = str(record.get("surface") or "")
     if surface == "knowledge":
         scope = str(record.get("resource_scope") or "knowledge")
-        path = "/resource/knowledge" if scope == "knowledge" else RESOURCE_PORTAL_ROUTES[scope][0]
+        path = "/resource/knowledge" if scope == "knowledge" else portal_routes()[scope][0]
     elif surface == "wall":
         return f"/wall?project={quote(str(record.get('project') or ''), safe='')}&semantic={encoded}"
     else:
-        path = RESOURCE_PORTAL_ROUTES[surface][0].rstrip("/")
+        path = portal_routes()[surface][0].rstrip("/")
     return f"{path}?semantic={encoded}"
 
 

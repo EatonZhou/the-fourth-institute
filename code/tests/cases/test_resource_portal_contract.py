@@ -50,7 +50,7 @@ def test_published_script_contains_the_authoritative_contract_contracts(subtests
         assert portal_url_for_resource('review_0123456789ab', 'review', record={'attributes': {'paper_id': 'paper_aaaaaaaaaaaa'}}) == '/paper?paper=paper_aaaaaaaaaaaa'
         assert portal_url_for_resource('search_0123456789ab', 'search', record={'surface': 'knowledge', 'resource_scope': 'skill'}) == '/resource/skill?semantic=search_0123456789ab'
         assert portal_url_for_resource('search_0123456789ab', 'search', record={'attributes': {'surface': 'wall', 'project': 'A & B'}}) == '/wall?project=A%20%26%20B&semantic=search_0123456789ab'
-        assert portal_url_for_resource('A & B', 'project') == '/resource/knowledge?project=A%20%26%20B'
+        assert portal_url_for_resource('A & B', 'project') == '/projects?project=A%20%26%20B'
     with subtests.test(contract='test_nested_destination_keeps_the_resolved_child_url'), isolated_portal_case() as case_path:
         address = 'repo_0123456789ab/file/README.md'
         location = '/api/resources/content?address=repo_0123456789ab%2Ffile%2FREADME.md'

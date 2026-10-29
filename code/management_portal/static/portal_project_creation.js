@@ -24,6 +24,11 @@
               <option value="personal">个人项目</option><option value="other">其他项目</option>
             </select></label>
             <label class="portalField"><span>说明（可选）</span><textarea name="description" rows="3"></textarea></label>
+            <label class="portalField"><span id="projectCreationStatusLabel">状态</span><select name="status" aria-labelledby="projectCreationStatusLabel">
+              <option value="active">进行中</option><option value="not_started">未开始</option>
+            </select></label>
+            <label class="portalField"><span>标签（可选）</span><input name="tags" placeholder="robotics, paper" autocomplete="off" /></label>
+            <label class="portalField"><span>截止时间（可选）</span><input name="ddl" placeholder="2026-12-31 18:00" autocomplete="off" /></label>
             <p>创建后，你将拥有这个 Project 的管理权限。</p>
             <p role="alert" data-project-error hidden></p>
           </div>
@@ -57,14 +62,19 @@
         if (!payload.id) { form.elements.id.focus(); return; }
         busy = true;
         error.hidden = true;
+        const tags = [...new Set(String(payload.tags || "").split(/[,，\s]+/).map(tag => tag.trim()).filter(Boolean))];
+        const ddl = String(payload.ddl || "").trim();
         void window.PortalUI.runMutation({
           key: "project:create", button: form.querySelector('[type="submit"]'), busyLabel: "创建中…",
           notifyError: false, retry: false,
           run: () => window.PortalInstructionClient.execute("CreateProject", {
             project_id: payload.id,
             project_type: payload.project_type,
+            status: payload.status,
             language: window.PortalI18n.locale(),
             ...(String(payload.description || "").trim() ? { description: String(payload.description).trim() } : {}),
+            ...(tags.length ? { tags } : {}),
+            ...(ddl ? { ddl } : {}),
           }, { idempotencyKey: `project-create:${payload.id}:${globalThis.PortalUIPrimitives.randomUUID()}` }),
           onSuccess: result => {
             resolve(result);

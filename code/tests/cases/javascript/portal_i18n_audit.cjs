@@ -126,11 +126,11 @@ test('dynamic UI messages keep user values and parameter-looking text intact', a
 test('deadline rendering uses English singular/plural through the actual project formatter', async t => {
   const w = await harness(t);
   w.PortalUI = { formatDateTime: date => date.toISOString() };
-  w.eval('const text = value => String(value || "");' + functionSource('management_portal/static/project_board.js', 'parseDeadline') + functionSource('management_portal/static/project_board.js', 'formatDeadline') + ';window.auditDeadline=formatDeadline;');
-  w.global = w;
+  w.PortalUIPrimitives = { escapeHtml: value => String(value) };
+  w.eval(fs.readFileSync(path.join(root, 'management_portal/static/project_common.js'), 'utf8'));
   const now = new Date(2026, 9, 20);
   for (const [day, expected] of [[19, 'Overdue by 1 day'], [18, 'Overdue by 2 days'], [21, '1 day remaining'], [22, '2 days remaining']]) {
-    assert.equal(w.auditDeadline(new Date(2026, 9, day).toISOString(), now).label, expected);
+    assert.equal(w.PortalProjectCommon.formatDeadline(`2026-10-${day}`, now).label, expected);
   }
 });
 

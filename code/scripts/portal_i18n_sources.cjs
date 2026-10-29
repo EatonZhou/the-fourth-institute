@@ -28,7 +28,7 @@ function discover(directory, result = []) {
   }
   return result;
 }
-const directories = ["management_portal/static", "knowledge_board_lan", "project_board_lan", "management_portal/test_framework/page"];
+const directories = ["management_portal/static", "knowledge_board_lan", "management_portal/test_framework/page"];
 const files = [...new Set([...directories.flatMap(name => discover(path.join(root, name))), ...fs.readdirSync(path.join(root, "management_portal")).filter(name => name.endsWith(".html")).map(name => path.join(root, "management_portal", name))])];
 
 function excluded(p) {

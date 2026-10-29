@@ -9,7 +9,7 @@ const babelParse = (source, filename) => babelParser.parse(source, {
 const root = path.resolve(__dirname, "..");
 const uiWords = new Set("Resource Project Future Paper Workbenches Save Cancel Close Copy Delete Edit Refresh Menu Settings Appearance System Full Reduced Continue Password Username Login Name Status Search Title Type Loading Content Description Send Stop Resume Pause Tools Queue Back Default Device Repo Article Experiment Skill Knowledge Backup Create Open Apply Reset Terminal Select Clear Upload Download Done Enabled Disabled Off On User Users None All Run Draft Publish Help Test Home Preview Auto Light Dark Fire Forest Sci-Fi Decision Idea Information Insight Issue Review Thinking Workspace Untitled Summary Actions Details Unread Read Yes No".split(" "));
 const files = [];
-for (const directory of ["management_portal/static", "management_portal/test_framework/page", "knowledge_board_lan", "project_board_lan", "management_portal"]) {
+for (const directory of ["management_portal/static", "management_portal/test_framework/page", "knowledge_board_lan", "management_portal"]) {
   for (const name of fs.readdirSync(path.join(root, directory))) if (/\.(js|html)$/.test(name) && !/portal_translations|portal_i18n/.test(name)) files.push(path.join(root, directory, name));
 }
 let removed = 0;

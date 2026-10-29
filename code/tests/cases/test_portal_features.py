@@ -195,8 +195,8 @@ def test_installed_features_serve_their_routes_before_the_shell_fallbacks():
 
     routes = shell._portal_route_definitions()
     contributed = {key for key, _ in portal_features.contributions("web.routes")}
-    assert contributed == {"paper", "article", "repo", "backup", "wall", "test_framework", "notice_board"}
-    assert not ({"projects", "robolab"} & contributed)
+    assert contributed == {"paper", "projects", "article", "repo", "backup", "wall", "test_framework", "notice_board"}
+    assert "robolab" not in contributed
     fallbacks = [index for index, route in enumerate(routes) if route.group == "portal-fallback"]
     paths = [route.path for route in routes]
     for path in ("/paper/api/library", "/api/articles", "/api/wall/", "/test/api/run",
@@ -248,7 +248,7 @@ def test_pages_carry_the_installed_features_navigation_and_workbenches():
 
     manifest = frontend_manifest.manifest()
     assert [(item["id"], item.get("order"), item.get("section")) for item in manifest["navigation"]] == [
-        ("paper", 40, None), ("backup", None, "resource")]
+        ("paper", 40, None), ("projects", 20, None), ("backup", None, "resource")]
     assert {name: (item["path"], item["initialize"]) for name, item in manifest["workbenches"].items()} == {
         "development": ("/development", False), "studio": ("/workbenches?panel=studio", False),
         "paper": ("/paper", True), "wall": ("/development?view=wall", True), "test": ("/development?view=test", True)}

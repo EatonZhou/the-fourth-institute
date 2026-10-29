@@ -172,7 +172,7 @@ def main():
                     collect_definition(child)
     collect_definition(manifest)
     if args.annotate:
-        for directory in ["management_portal", "knowledge_board_lan", "project_board_lan"]:
+        for directory in ["management_portal", "knowledge_board_lan"]:
             for path in (ROOT / directory).glob("*.html"):
                 raw = path.read_text()
                 if "portal-i18n:" in raw:

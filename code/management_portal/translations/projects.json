@@ -1,654 +1,104 @@
 {
-  "/share/Projects/ExampleProject": {
-    "en": "/share/Projects/ExampleProject",
-    "zh-CN": "/share/Projects/ExampleProject"
-  },
-  "Accountability": {
-    "en": "Accountability",
-    "zh-CN": "问责"
-  },
-  "At a glance": {
-    "en": "At a glance",
-    "zh-CN": "概览"
-  },
-  "Capability delivery matrix": {
-    "en": "Capability delivery matrix",
-    "zh-CN": "能力交付矩阵"
-  },
-  "Conflicted": {
-    "en": "Conflicted",
-    "zh-CN": "冲突"
-  },
-  "Deep evidence": {
-    "en": "Deep evidence",
-    "zh-CN": "深度证据"
-  },
-  "Evidence Preview": {
-    "en": "Evidence Preview",
-    "zh-CN": "证据预览"
-  },
-  "Interfaces": {
-    "en": "Interfaces",
-    "zh-CN": "Interfaces"
-  },
-  "Logout": {
-    "en": "Logout",
-    "zh-CN": "退出登录"
-  },
-  "NEEDS ATTENTION": {
-    "en": "NEEDS ATTENTION",
-    "zh-CN": "需要关注"
-  },
-  "NEXT · CONFIRMED": {
-    "en": "NEXT · CONFIRMED",
-    "zh-CN": "下一步 · 已确认"
-  },
-  "NEXT · PROPOSED": {
-    "en": "NEXT · PROPOSED",
-    "zh-CN": "下一步 · 已提议"
-  },
-  "No Project State is available.": {
-    "en": "No Project State is available.",
-    "zh-CN": "无可用 Project State。"
-  },
-  "PROJECT UNDERSTANDING": {
-    "en": "PROJECT UNDERSTANDING",
-    "zh-CN": "项目理解"
-  },
-  "People": {
-    "en": "People",
-    "zh-CN": "人员"
-  },
-  "Project Chat": {
-    "en": "Project Chat",
-    "zh-CN": "项目聊天"
-  },
-  "Project Chat · shared Chat Workspace": {
-    "en": "Project Chat · shared Chat Workspace",
-    "zh-CN": "项目聊天 · 共享聊天工作区"
-  },
-  "Project Page 加载失败": {
-    "en": "Project Page load failed",
-    "zh-CN": "Project Page 加载失败"
-  },
-  "Project State · summary.md · Project Chat": {
-    "en": "Project State · summary.md · Project Chat",
-    "zh-CN": "项目状态 · summary.md · 项目聊天"
-  },
-  "Project State 不完整": {
-    "en": "Project State is incomplete",
-    "zh-CN": "Project State 不完整"
-  },
-  "Project State 加载失败": {
-    "en": "Project State load failed",
-    "zh-CN": "Project State 加载失败"
-  },
-  "Project State 尚未发布": {
-    "en": "Project State has not been published yet",
-    "zh-CN": "Project State 尚未发布"
-  },
-  "Project State 尚未形成下一步建议。": {
-    "en": "Project State has not yet formed a next-step suggestion.",
-    "zh-CN": "Project State 尚未形成下一步建议。"
-  },
-  "Project State 尚未给出这一信息。": {
-    "en": "Project State has not yet provided this information.",
-    "zh-CN": "Project State 尚未给出这一信息。"
-  },
-  "Project State 无法读取": {
-    "en": "Project State cannot be read",
-    "zh-CN": "Project State 无法读取"
-  },
-  "Project State 没有能力交付条目。": {
-    "en": "Project State has no capability to deliver entries.",
-    "zh-CN": "Project State 没有能力交付条目。"
-  },
-  "Project chat workspace": {
-    "en": "Project chat workspace",
-    "zh-CN": "项目聊天工作区"
-  },
-  "Project detail views": {
-    "en": "Project detail views",
-    "zh-CN": "项目详情视图"
-  },
-  "Project evidence preview": {
-    "en": "Project evidence preview",
-    "zh-CN": "项目证据预览"
-  },
-  "Project filters": {
-    "en": "Project filters",
-    "zh-CN": "项目筛选器"
-  },
-  "Project link": {
-    "en": "Project link",
-    "zh-CN": "Project 链接"
-  },
-  "Project navigation": {
-    "en": "Project navigation",
-    "zh-CN": "项目导航"
-  },
-  "Project overview": {
-    "en": "Project overview",
-    "zh-CN": "项目概览"
-  },
-  "Project page sections": {
-    "en": "Project page sections",
-    "zh-CN": "项目页面分区"
-  },
-  "Project scope unknown": {
-    "en": "Project scope unknown",
-    "zh-CN": "Project 作用域未知"
-  },
-  "Project summary": {
-    "en": "Project summary",
-    "zh-CN": "项目摘要"
-  },
-  "Projects Board": {
-    "en": "Projects Board",
-    "zh-CN": "项目看板"
-  },
-  "Proposed": {
-    "en": "Proposed",
-    "zh-CN": "Proposed"
-  },
-  "Provisional": {
-    "en": "Provisional",
-    "zh-CN": "Provisional"
-  },
-  "Relation unknown": {
-    "en": "Relation unknown",
-    "zh-CN": "关系未知"
-  },
-  "Research Map": {
-    "en": "Research Map",
-    "zh-CN": "研究地图"
-  },
-  "Research Map 加载失败": {
-    "en": "Unable to load Research Map",
-    "zh-CN": "研究路线图加载失败"
-  },
-  "Research Map 数据格式无效。": {
-    "en": "Invalid Research Map data.",
-    "zh-CN": "研究路线图数据格式无效。"
-  },
-  "Responsibility unknown": {
-    "en": "Responsibility unknown",
-    "zh-CN": "责任未知"
-  },
-  "Role unknown": {
-    "en": "Role unknown",
-    "zh-CN": "角色未知"
-  },
-  "SUCCESS CRITERIA": {
-    "en": "SUCCESS CRITERIA",
-    "zh-CN": "成功标准"
-  },
-  "Synthesis": {
-    "en": "Synthesis",
-    "zh-CN": "已完成方向"
-  },
-  "Topic": {
-    "en": "Topic",
-    "zh-CN": "主题"
-  },
-  "Unknown date": {
-    "en": "Unknown date",
-    "zh-CN": "未知日期"
-  },
-  "Unnamed Resident": {
-    "en": "Unnamed Resident",
-    "zh-CN": "未命名 Resident"
-  },
-  "WHERE WE ARE": {
-    "en": "WHERE WE ARE",
-    "zh-CN": "当前阶段"
-  },
-  "Workstreams": {
-    "en": "Workstreams",
-    "zh-CN": "Workstreams"
-  },
-  "markdownBody projectSummaryBody": {
-    "en": "markdownBody projectSummaryBody",
-    "zh-CN": "markdownBody projectSummaryBody"
-  },
-  "name / id / tags / description / path": {
-    "en": "name / id / tags / description / path",
-    "zh-CN": "名称 / ID / 标签 / 描述 / 路径"
-  },
-  "projectPageEvidenceChip": {
-    "en": "projectPageEvidenceChip",
-    "zh-CN": "projectPageEvidenceChip"
-  },
-  "projectSummaryBody projectSummaryStateHost": {
-    "en": "projectSummaryBody projectSummaryStateHost",
-    "zh-CN": "projectSummaryBody projectSummaryStateHost"
-  },
-  "projectSummaryEditor": {
-    "en": "projectSummaryEditor",
-    "zh-CN": "projectSummaryEditor"
-  },
-  "projectSummaryEditorLayout": {
-    "en": "projectSummaryEditorLayout",
-    "zh-CN": "projectSummaryEditorLayout"
-  },
-  "research, dev": {
-    "en": "research, dev",
-    "zh-CN": "研究、开发"
-  },
-  "resident unknown": {
-    "en": "resident unknown",
-    "zh-CN": "resident 未知"
-  },
-  "summary.md 已保存": {
-    "en": "summary.md saved",
-    "zh-CN": "summary.md 已保存"
-  },
-  "一眼看懂这个项目": {
-    "en": "Understand this project at a glance",
-    "zh-CN": "一眼看懂这个项目"
-  },
-  "下一步与需要的决定": {
-    "en": "Next steps and decisions needed",
-    "zh-CN": "下一步与需要的决定"
-  },
-  "五阶段状态": {
-    "en": "Five-stage status",
-    "zh-CN": "五阶段状态"
-  },
-  "交付走到哪一步": {
-    "en": "How far the delivery has progressed",
-    "zh-CN": "交付走到哪一步"
-  },
-  "今天截止": {
-    "en": "Due today",
-    "zh-CN": "今天截止"
-  },
-  "从 Overview 中选择 evidence file。": {
-    "en": "Select an evidence file from Overview.",
-    "zh-CN": "从 Overview 中选择 evidence file。"
-  },
-  "优先阅读": {
-    "en": "Read first",
-    "zh-CN": "优先阅读"
-  },
-  "使用“新建项目”创建第一项工作。": {
-    "en": "Use \"New Project\" to create your first work item.",
-    "zh-CN": "使用“新建项目”创建第一项工作。"
-  },
-  "保存 summary.md 失败": {
-    "en": "Failed to save summary.md",
-    "zh-CN": "保存 summary.md 失败"
-  },
-  "保存中...": {
-    "en": "Saving...",
-    "zh-CN": "保存中..."
-  },
-  "候选行动": {
-    "en": "Candidate actions",
-    "zh-CN": "候选行动"
-  },
-  "先看方向、进展与需要你介入的地方，再进入证据和执行细节。": {
-    "en": "First look at direction, progress, and where you need to intervene, then go into evidence and execution details.",
-    "zh-CN": "先看方向、进展与需要你介入的地方，再进入证据和执行细节。"
-  },
-  "决策与 Material Timeline": {
-    "en": "Decisions and Material Timeline",
-    "zh-CN": "决策与 Material Timeline"
-  },
-  "创建中...": {
-    "en": "Creating...",
-    "zh-CN": "创建中..."
-  },
-  "创建目录、初始化 summary.md，并写入 projects.yaml": {
-    "en": "Create directory, initialize summary.md, and write projects.yaml",
-    "zh-CN": "创建目录、初始化 summary.md，并写入 projects.yaml"
-  },
-  "加载中...": {
-    "en": "Loading...",
-    "zh-CN": "加载中..."
-  },
-  "只有同时具备 owner、交付物与验收条件的计划，才应被视为项目承诺。": {
-    "en": "Only plans that have an owner, deliverables, and acceptance criteria should be considered project commitments.",
-    "zh-CN": "只有同时具备 owner、交付物与验收条件的计划，才应被视为项目承诺。"
-  },
-  "在共享 Preview 中打开证据": {
-    "en": "Open evidence in shared Preview",
-    "zh-CN": "在共享 Preview 中打开证据"
-  },
-  "复制链接": {
-    "en": "Copy link",
-    "zh-CN": "复制链接"
-  },
-  "尚无研究任务": {
-    "en": "No research tasks yet",
-    "zh-CN": "尚无研究任务"
-  },
-  "尚未填写项目简介。": {
-    "en": "Project description has not been filled in yet.",
-    "zh-CN": "尚未填写项目简介。"
-  },
-  "尚未归属的责任": {
-    "en": "Unassigned responsibility",
-    "zh-CN": "尚未归属的责任"
-  },
-  "尚未登记 Project-level Resident": {
-    "en": "Project-level Resident not yet registered",
-    "zh-CN": "尚未登记 Project-level Resident"
-  },
-  "尚未登记能力": {
-    "en": "Capability not yet registered",
-    "zh-CN": "尚未登记能力"
-  },
-  "尚未设置截止时间": {
-    "en": "Deadline not yet set",
-    "zh-CN": "尚未设置截止时间"
-  },
-  "已确认的下一步": {
-    "en": "Confirmed next steps",
-    "zh-CN": "已确认的下一步"
-  },
-  "已规划": {
-    "en": "Planned",
-    "zh-CN": "已规划"
-  },
-  "开放 TODO": {
-    "en": "Open TODO",
-    "zh-CN": "开放 TODO"
-  },
-  "开放问题": {
-    "en": "Open questions",
-    "zh-CN": "开放问题"
-  },
-  "当前 summary.md 尚未保存，确定关闭？": {
-    "en": "The current summary.md has not been saved. Are you sure you want to close?",
-    "zh-CN": "当前 summary.md 尚未保存，确定关闭？"
-  },
-  "当前认知焦点": {
-    "en": "Current cognitive focus",
-    "zh-CN": "当前认知焦点"
-  },
-  "当前阶段尚未形成可靠判断。": {
-    "en": "The current stage has not yet formed a reliable judgment.",
-    "zh-CN": "当前阶段尚未形成可靠判断。"
-  },
-  "待人审": {
-    "en": "Pending human review",
-    "zh-CN": "待人审"
-  },
-  "待推进": {
-    "en": "To advance",
-    "zh-CN": "待推进"
-  },
-  "截止时间（留空清除）": {
-    "en": "Deadline (leave blank to clear)",
-    "zh-CN": "截止时间（留空清除）"
-  },
-  "打开 Project Chat": {
-    "en": "Open Project Chat",
-    "zh-CN": "打开 Project Chat"
-  },
-  "按异常与未知状态排序": {
-    "en": "Sort by abnormal and unknown status",
-    "zh-CN": "按异常与未知状态排序"
-  },
-  "新建项目": {
-    "en": "New project",
-    "zh-CN": "新建项目"
-  },
-  "无已登记事项": {
-    "en": "No registered items",
-    "zh-CN": "无已登记事项"
-  },
-  "无法加载 Project State。": {
-    "en": "Unable to load Project State.",
-    "zh-CN": "无法加载 Project State。"
-  },
-  "无法读取 Project State。": {
-    "en": "Unable to read Project State.",
-    "zh-CN": "无法读取 Project State。"
-  },
-  "日期无效": {
-    "en": "Invalid date",
-    "zh-CN": "日期无效"
-  },
-  "暂无关联证据": {
-    "en": "No related evidence yet",
-    "zh-CN": "暂无关联证据"
-  },
-  "最需要补证据的能力": {
-    "en": "Capabilities most in need of evidence",
-    "zh-CN": "最需要补证据的能力"
-  },
-  "未命名事项": {
-    "en": "Unnamed item",
-    "zh-CN": "未命名事项"
-  },
-  "未命名关注项": {
-    "en": "Unnamed watch item",
-    "zh-CN": "未命名关注项"
-  },
-  "未命名决策": {
-    "en": "Unnamed decision",
-    "zh-CN": "未命名决策"
-  },
-  "未命名变更": {
-    "en": "Unnamed change",
-    "zh-CN": "未命名变更"
-  },
-  "未命名能力": {
-    "en": "Unnamed capability",
-    "zh-CN": "未命名能力"
-  },
-  "未命名里程碑": {
-    "en": "Untitled Milestone",
-    "zh-CN": "未命名里程碑"
-  },
-  "未命名项目": {
-    "en": "Untitled Project",
-    "zh-CN": "未命名项目"
-  },
-  "架构边界与依赖": {
-    "en": "Architecture boundaries and dependencies",
-    "zh-CN": "架构边界与依赖"
-  },
-  "查看 Summary": {
-    "en": "View Summary",
-    "zh-CN": "查看 Summary"
-  },
-  "查看需要收口的治理事项": {
-    "en": "View governance items that need closure",
-    "zh-CN": "查看需要收口的治理事项"
-  },
-  "正在加载 Project State。": {
-    "en": "Loading Project State.",
-    "zh-CN": "正在加载 Project State。"
-  },
-  "正在加载 Research Map。": {
-    "en": "Loading Research Map.",
-    "zh-CN": "正在加载研究路线图。"
-  },
-  "正在加载项目摘要。": {
-    "en": "Loading project summary.",
-    "zh-CN": "正在加载项目摘要。"
-  },
-  "正在整理项目简报。": {
-    "en": "Preparing project brief.",
-    "zh-CN": "正在整理项目简报。"
-  },
-  "正在整理项目视图": {
-    "en": "Organizing project view",
-    "zh-CN": "正在整理项目视图"
-  },
-  "正在读取项目方向、交付证据和需要人介入的事项。": {
-    "en": "Reading project direction, delivery evidence, and items needing human intervention.",
-    "zh-CN": "正在读取项目方向、交付证据和需要人介入的事项。"
-  },
-  "正式阶段未登记": {
-    "en": "Formal stage not registered",
-    "zh-CN": "正式阶段未登记"
-  },
-  "没有 material timeline。": {
-    "en": "No material timeline.",
-    "zh-CN": "没有 material timeline。"
-  },
-  "没有候选行动": {
-    "en": "No candidate actions",
-    "zh-CN": "没有候选行动"
-  },
-  "没有匹配的项目": {
-    "en": "No matching projects",
-    "zh-CN": "没有匹配的项目"
-  },
-  "没有当前关注项。": {
-    "en": "No current focus items.",
-    "zh-CN": "没有当前关注项。"
-  },
-  "清除搜索或标签筛选后再试。": {
-    "en": "Clear search or tag filters and try again.",
-    "zh-CN": "清除搜索或标签筛选后再试。"
-  },
-  "点击 Project State 中的文件证据，在这里使用共享 Preview 打开。": {
-    "en": "Click file evidence in Project State to open it here with the shared Preview.",
-    "zh-CN": "点击 Project State 中的文件证据，在这里使用共享 Preview 打开。"
-  },
-  "点击“编辑”创建 summary.md。": {
-    "en": "Click \"Edit\" to create summary.md.",
-    "zh-CN": "点击“编辑”创建 summary.md。"
-  },
-  "点击设置": {
-    "en": "Click to configure",
-    "zh-CN": "点击设置"
-  },
-  "知识与证据健康度": {
-    "en": "Knowledge and evidence health",
-    "zh-CN": "知识与证据健康度"
-  },
-  "背景和边界": {
-    "en": "Background and scope",
-    "zh-CN": "背景和边界"
-  },
-  "设置截止时间": {
-    "en": "Set deadline",
-    "zh-CN": "设置截止时间"
-  },
-  "证据、决策与认知健康": {
-    "en": "Evidence, decisions, and cognitive health",
-    "zh-CN": "证据、决策与认知健康"
-  },
-  "证据与不确定性": {
-    "en": "Evidence and uncertainty",
-    "zh-CN": "证据与不确定性"
-  },
-  "证据已覆盖": {
-    "en": "Evidence covered",
-    "zh-CN": "证据已覆盖"
-  },
-  "证据盲区": {
-    "en": "Evidence blind spots",
-    "zh-CN": "证据盲区"
-  },
-  "读取 summary.md 失败。": {
-    "en": "Failed to read summary.md.",
-    "zh-CN": "读取 summary.md 失败。"
-  },
-  "谁在负责什么": {
-    "en": "Who is responsible for what",
-    "zh-CN": "谁在负责什么"
-  },
-  "还没有已确认里程碑": {
-    "en": "No confirmed milestones yet",
-    "zh-CN": "还没有已确认里程碑"
-  },
-  "还没有项目": {
-    "en": "No projects yet",
-    "zh-CN": "还没有项目"
-  },
-  "这个项目还没有 Research Map。": {
-    "en": "This project has no Research Map yet.",
-    "zh-CN": "这个项目还没有研究路线图。"
-  },
-  "这个项目还没有发布 Project State。可以先阅读 Summary，或进入 Chat 补齐项目认知。": {
-    "en": "This project has not yet published a Project State. You can read the Summary first, or enter Chat to fill in project understanding.",
-    "zh-CN": "这个项目还没有发布 Project State。可以先阅读 Summary，或进入 Chat 补齐项目认知。"
-  },
-  "这是认知层建议，不代表项目承诺。": {
-    "en": "This is a cognitive-layer suggestion and does not represent a project commitment.",
-    "zh-CN": "这是认知层建议，不代表项目承诺。"
-  },
-  "这里不会从私有 Session 或 Resident Memory 猜测团队。": {
-    "en": "The team will not be guessed from private Sessions or Resident Memory here.",
-    "zh-CN": "这里不会从私有 Session 或 Resident Memory 猜测团队。"
-  },
-  "进入项目": {
-    "en": "Enter project",
-    "zh-CN": "进入项目"
-  },
-  "选择 Research Map": {
-    "en": "Select Research Map",
-    "zh-CN": "选择研究路线图"
-  },
-  "需要人来决定": {
-    "en": "Needs a human decision",
-    "zh-CN": "需要人来决定"
-  },
-  "项目关键信号": {
-    "en": "Project key signals",
-    "zh-CN": "项目关键信号"
-  },
-  "项目关键数量": {
-    "en": "Project key counts",
-    "zh-CN": "项目关键数量"
-  },
-  "项目列表仍可继续浏览；请重试刚才的操作。": {
-    "en": "The project list remains browsable; please retry the previous operation.",
-    "zh-CN": "项目列表仍可继续浏览；请重试刚才的操作。"
-  },
-  "项目总览": {
-    "en": "Project overview",
-    "zh-CN": "项目总览"
-  },
-  "项目摘要加载失败": {
-    "en": "Failed to load project summary",
-    "zh-CN": "项目摘要加载失败"
-  },
-  "项目标签": {
-    "en": "Project tags",
-    "zh-CN": "项目标签"
-  },
-  "项目概况": {
-    "en": "Project summary",
-    "zh-CN": "项目概况"
-  },
-  "项目目标尚未定义。": {
-    "en": "Project goal is not yet defined.",
-    "zh-CN": "项目目标尚未定义。"
-  },
-  "项目简报尚未发布": {
-    "en": "Project brief not yet published",
-    "zh-CN": "项目简报尚未发布"
-  },
-  "项目级成功标准尚未定义。": {
-    "en": "Project-level success criteria are not yet defined.",
-    "zh-CN": "项目级成功标准尚未定义。"
-  },
-  "可以围绕这个项目的目标、summary、任务和后续计划展开讨论。": {
-    "en": "Discuss this project's goals, summary, tasks, and next steps.",
-    "zh-CN": "可以围绕这个项目的目标、summary、任务和后续计划展开讨论。"
-  },
-  "还剩 {p0} 天": {
-    "en": "{p0} days remaining",
-    "zh-CN": "还剩 {p0} 天"
-  },
-  "还剩 1 天": {
-    "en": "1 day remaining",
-    "zh-CN": "还剩 1 天"
-  },
-  "已逾期 {p0} 天": {
-    "en": "Overdue by {p0} days",
-    "zh-CN": "已逾期 {p0} 天"
-  },
-  "已逾期 1 天": {
-    "en": "Overdue by 1 day",
-    "zh-CN": "已逾期 1 天"
-  }
+  "Project overview": {"en": "Project overview", "zh-CN": "项目概览"},
+  "Project summary": {"en": "Project summary", "zh-CN": "项目摘要"},
+  "Project Resident": {"en": "Project Resident", "zh-CN": "Project Resident"},
+  "个项目": {"en": "projects", "zh-CN": "个项目"},
+  "个进行中": {"en": "active", "zh-CN": "个进行中"},
+  "个 Resident 正在工作": {"en": "Residents working", "zh-CN": "个 Resident 正在工作"},
+  "搜索项目": {"en": "Search projects", "zh-CN": "搜索项目"},
+  "搜索项目、说明或标签": {"en": "Search projects, descriptions or tags", "zh-CN": "搜索项目、说明或标签"},
+  "全部标签": {"en": "All tags", "zh-CN": "全部标签"},
+  "项目类型": {"en": "Project type", "zh-CN": "项目类型"},
+  "项目状态": {"en": "Project status", "zh-CN": "项目状态"},
+  "新建项目": {"en": "New project", "zh-CN": "新建项目"},
+  "已完成与归档": {"en": "Done and archived", "zh-CN": "已完成与归档"},
+  "未开始与暂停": {"en": "Not started and paused", "zh-CN": "未开始与暂停"},
+  "打开项目 {p0}": {"en": "Open project {p0}", "zh-CN": "打开项目 {p0}"},
+  "还没有说明": {"en": "No description yet", "zh-CN": "还没有说明"},
+  "{p0} 个正在工作": {"en": "{p0} working", "zh-CN": "{p0} 个正在工作"},
+  "{p0} 个团队": {"en": "{p0} teams", "zh-CN": "{p0} 个团队"},
+  "{p0}更新": {"en": "Updated {p0}", "zh-CN": "{p0}更新"},
+  "没有符合筛选条件的项目": {"en": "No projects match the filters", "zh-CN": "没有符合筛选条件的项目"},
+  "换个关键词，或清除类型和标签筛选。": {"en": "Try other words, or clear the type and tag filters.", "zh-CN": "换个关键词，或清除类型和标签筛选。"},
+  "还没有项目": {"en": "No projects yet", "zh-CN": "还没有项目"},
+  "新建一个项目，把知识、团队和资源放在一起。": {"en": "Create a project to keep its knowledge, teams and resources together.", "zh-CN": "新建一个项目，把知识、团队和资源放在一起。"},
+  "项目列表读取失败": {"en": "Could not read the projects", "zh-CN": "项目列表读取失败"},
+  "今天截止": {"en": "Due today", "zh-CN": "今天截止"},
+  "还剩 1 天": {"en": "1 day remaining", "zh-CN": "还剩 1 天"},
+  "还剩 {p0} 天": {"en": "{p0} days remaining", "zh-CN": "还剩 {p0} 天"},
+  "已逾期 1 天": {"en": "Overdue by 1 day", "zh-CN": "已逾期 1 天"},
+  "已逾期 {p0} 天": {"en": "Overdue by {p0} days", "zh-CN": "已逾期 {p0} 天"},
+  "日期无效": {"en": "Invalid date", "zh-CN": "日期无效"},
+  "刚刚": {"en": "just now", "zh-CN": "刚刚"},
+  "Design": {"en": "Design", "zh-CN": "Design"},
+  "洞察": {"en": "Insights", "zh-CN": "洞察"},
+  "资料": {"en": "Information", "zh-CN": "资料"},
+  "计划": {"en": "Plans", "zh-CN": "计划"},
+  "概念": {"en": "Concepts", "zh-CN": "概念"},
+  "待办": {"en": "To-dos", "zh-CN": "待办"},
+  "评审": {"en": "Reviews", "zh-CN": "评审"},
+  "会议": {"en": "Meetings", "zh-CN": "会议"},
+  "专利": {"en": "Patents", "zh-CN": "专利"},
+  "论文": {"en": "Papers", "zh-CN": "论文"},
+  "仓库": {"en": "Repos", "zh-CN": "仓库"},
+  "实验": {"en": "Experiments", "zh-CN": "实验"},
+  "文章": {"en": "Articles", "zh-CN": "文章"},
+  "数据集": {"en": "Datasets", "zh-CN": "数据集"},
+  "测试": {"en": "Tests", "zh-CN": "测试"},
+  "讨论组": {"en": "Chatrooms", "zh-CN": "讨论组"},
+  "研究方向": {"en": "Research directions", "zh-CN": "研究方向"},
+  "正在读取项目…": {"en": "Reading the project…", "zh-CN": "正在读取项目…"},
+  "项目不存在，或你没有读取它的权限": {"en": "The project does not exist, or you may not read it", "zh-CN": "项目不存在，或你没有读取它的权限"},
+  "项目读取失败": {"en": "Could not read the project", "zh-CN": "项目读取失败"},
+  "返回项目列表": {"en": "Back to projects", "zh-CN": "返回项目列表"},
+  "项目导航": {"en": "Project navigation", "zh-CN": "项目导航"},
+  "复制链接": {"en": "Copy link", "zh-CN": "复制链接"},
+  "已复制项目链接": {"en": "Project link copied", "zh-CN": "已复制项目链接"},
+  "编辑信息": {"en": "Edit details", "zh-CN": "编辑信息"},
+  "改名": {"en": "Rename", "zh-CN": "改名"},
+  "删除项目": {"en": "Delete project", "zh-CN": "删除项目"},
+  "资源": {"en": "Resources", "zh-CN": "资源"},
+  "最近变化": {"en": "Recent changes", "zh-CN": "最近变化"},
+  "Resident · {p0} 个正在工作": {"en": "Residents · {p0} working", "zh-CN": "Resident · {p0} 个正在工作"},
+  "概况": {"en": "Overview", "zh-CN": "概况"},
+  "还没有 summary.md。写下项目的目标、现状和下一步，或请 Project Resident 起草。": {"en": "No summary.md yet. Write the project's goal, where it stands and what comes next, or ask the Project Resident to draft it.", "zh-CN": "还没有 summary.md。写下项目的目标、现状和下一步，或请 Project Resident 起草。"},
+  "协调这个项目里各 Lineage 的 Leader；右侧对话就是和它说话。": {"en": "It coordinates the Leaders of this project's Lineages; the conversation on the right is with it.", "zh-CN": "协调这个项目里各 Lineage 的 Leader；右侧对话就是和它说话。"},
+  "打开 HATG": {"en": "Open HATG", "zh-CN": "打开 HATG"},
+  "Project Resident 尚未就绪：项目主体还没有初始化完成。": {"en": "The Project Resident is not ready: the project's principal has not finished initializing.", "zh-CN": "Project Resident 尚未就绪：项目主体还没有初始化完成。"},
+  "{p0} 名成员": {"en": "{p0} members", "zh-CN": "{p0} 名成员"},
+  "正在读取当前重点…": {"en": "Reading the current focus…", "zh-CN": "正在读取当前重点…"},
+  "还没有 Leader": {"en": "No Leader yet", "zh-CN": "还没有 Leader"},
+  "在 Society 中管理": {"en": "Manage in Society", "zh-CN": "在 Society 中管理"},
+  "还没有 Lineage。在 Society 中为这个项目添加 Lineage，组建团队。": {"en": "No Lineages yet. Add Lineages to this project in Society to form its teams.", "zh-CN": "还没有 Lineage。在 Society 中为这个项目添加 Lineage，组建团队。"},
+  "正在工作": {"en": "Working", "zh-CN": "正在工作"},
+  "还没有工作摘要。": {"en": "No work summary yet.", "zh-CN": "还没有工作摘要。"},
+  "研究与工程": {"en": "Research and engineering", "zh-CN": "研究与工程"},
+  "这个项目还没有资源。": {"en": "This project has no resources yet.", "zh-CN": "这个项目还没有资源。"},
+  "还没有变化。": {"en": "No changes yet.", "zh-CN": "还没有变化。"},
+  "{p0} 的 Project Resident": {"en": "{p0}'s Project Resident", "zh-CN": "{p0} 的 Project Resident"},
+  "{p0} · Project Resident": {"en": "{p0} · Project Resident", "zh-CN": "{p0} · Project Resident"},
+  "和 Project Resident 讨论这个项目：方向、进展、团队和下一步。": {"en": "Discuss this project with its Project Resident: directions, progress, teams and next steps.", "zh-CN": "和 Project Resident 讨论这个项目：方向、进展、团队和下一步。"},
+  "收起对话": {"en": "Hide conversation", "zh-CN": "收起对话"},
+  "展开对话": {"en": "Show conversation", "zh-CN": "展开对话"},
+  "概况还有未保存的修改，确定离开？": {"en": "The overview has unsaved changes. Leave anyway?", "zh-CN": "概况还有未保存的修改，确定离开？"},
+  "编辑 {p0}": {"en": "Edit {p0}", "zh-CN": "编辑 {p0}"},
+  "项目头像": {"en": "Project avatar", "zh-CN": "项目头像"},
+  "为 {p0} 改名": {"en": "Rename {p0}", "zh-CN": "为 {p0} 改名"},
+  "项目 ID 就是项目的名称。改名会移动项目目录，并一起改写 Portal 中的引用；历史消息保留原文。": {"en": "A project's ID is its name. Renaming moves the project directory and rewrites the references in Portal; past messages keep their text.", "zh-CN": "项目 ID 就是项目的名称。改名会移动项目目录，并一起改写 Portal 中的引用；历史消息保留原文。"},
+  "新的项目 ID": {"en": "New project ID", "zh-CN": "新的项目 ID"},
+  "检查": {"en": "Check", "zh-CN": "检查"},
+  "确认改名": {"en": "Rename", "zh-CN": "确认改名"},
+  "改名失败：{p0}": {"en": "Rename failed: {p0}", "zh-CN": "改名失败：{p0}"},
+  "目录：{p0} → {p1}": {"en": "Directory: {p0} → {p1}", "zh-CN": "目录：{p0} → {p1}"},
+  "Portal 数据：{p0} 行（{p1} 张表）": {"en": "Portal data: {p0} rows ({p1} tables)", "zh-CN": "Portal 数据：{p0} 行（{p1} 张表）"},
+  "暂停接单的 Resident：{p0} 个": {"en": "Residents paused while renaming: {p0}", "zh-CN": "暂停接单的 Resident：{p0} 个"},
+  "{p0}：{p1} 项随之改用新 ID": {"en": "{p0}: {p1} items move to the new ID", "zh-CN": "{p0}：{p1} 项随之改用新 ID"},
+  "Portal 之外提到旧目录的服务脚本：{p0} 个，需另行检查": {"en": "Service scripts outside Portal naming the old directory: {p0}; check them separately", "zh-CN": "Portal 之外提到旧目录的服务脚本：{p0} 个，需另行检查"},
+  "{p0} 个 Resident 正在执行，等它们结束后再改名。": {"en": "{p0} Residents are running; rename after they finish.", "zh-CN": "{p0} 个 Resident 正在执行，等它们结束后再改名。"},
+  "项目目录正被 Portal 之外的挂载或服务使用：": {"en": "The project directory is in use by mounts or services outside Portal: ", "zh-CN": "项目目录正被 Portal 之外的挂载或服务使用："},
+  "删除后不能恢复。": {"en": "A deleted project cannot be restored.", "zh-CN": "删除后不能恢复。"},
+  "{p0} 个 Lineage 与其中的 {p1} 个 Resident 一起删除": {"en": "{p0} Lineages are deleted together with their {p1} Residents", "zh-CN": "{p0} 个 Lineage 与其中的 {p1} 个 Resident 一起删除"},
+  "项目目录中的文件删除；其他 Resident 仍在使用的 Workspace 保留": {"en": "Files in the project directory are deleted; Workspaces other Residents still use are kept", "zh-CN": "项目目录中的文件删除；其他 Resident 仍在使用的 Workspace 保留"},
+  "项目下的资源登记注销；论文等共享库中的对象保留，只去掉与这个项目的关联": {"en": "The project's resources are unregistered; objects in shared libraries such as papers stay and only lose their link to this project", "zh-CN": "项目下的资源登记注销；论文等共享库中的对象保留，只去掉与这个项目的关联"},
+  "输入项目 ID「{p0}」确认": {"en": "Type the project ID \"{p0}\" to confirm", "zh-CN": "输入项目 ID「{p0}」确认"}
 }

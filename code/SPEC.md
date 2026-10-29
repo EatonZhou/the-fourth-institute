@@ -120,6 +120,7 @@
 - [资源详情中的私有 AI 对话](/r/decision_58db6282c244)
 - [知识库归档：把材料整理成项目知识](/r/decision_4666241592d4)
 - [Project 的创建、Summary 与删除](/r/decision_4648f7fa3295)
+- [项目页：项目列表、项目页与 Project Resident 对话](/r/decision_46c37026e8ea)
 - [WALL 语义搜索](/r/decision_1a2730dcd3d1)
 - [Home 页的信息结构与加载方式](/r/decision_00546e28e1e0)
 - [Portal Pulse 与个人动态发布](/r/decision_865ac8ebef25)

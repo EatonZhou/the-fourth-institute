@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title data-portal-site-title="[&quot;Project&quot;]" data-portal-site-separator=" · ">Project</title>
+    <link rel="stylesheet" href="/static/portal_components.css" />
+    <link rel="stylesheet" href="/static/portal_workbench.css" />
+    <link rel="stylesheet" href="/static/portal_design_system.css" data-portal-skin="default" />
+    <link rel="stylesheet" href="/static/portal_themes.css" data-portal-skin-provider="themes" />
+    <link rel="stylesheet" href="/static/portal_resident_avatar.css" />
+    <link rel="stylesheet" href="/static/portal_image_editor.css" />
+    <link rel="stylesheet" href="/static/projects.css" />
+    <script src="/static/portal_state.js"></script>
+    <script src="/static/portal_text.js"></script>
+    <script src="/static/portal_translations.js"></script>
+    <script src="/static/portal_i18n.js"></script>
+    <script defer src="/static/portal_api.js"></script>
+    <script defer src="/static/portal_page_state.js"></script>
+    <script defer src="/static/portal_instruction_client.js"></script>
+    <script defer src="/static/portal_society_service.js"></script>
+    <script defer src="/static/portal_resident_service.js"></script>
+    <script defer src="/static/portal_identity.js"></script>
+    <script defer src="/static/portal_overlay.js"></script>
+    <script defer src="/static/portal_events.js"></script>
+    <script defer src="/static/portal_refresh_coordinator.js"></script>
+    <script defer src="/static/resident_protocol.js"></script>
+    <script defer src="/static/portal_conversation_store.js"></script>
+    <script defer src="/static/portal_command_registry.js"></script>
+    <script defer src="/static/portal_ui.js"></script>
+    <script defer src="/static/portal_ui_primitives.js"></script>
+    <script defer src="/static/portal_form_controls.js"></script>
+    <script defer src="/static/portal_detail_surface.js"></script>
+    <script defer src="/static/portal_resident_avatar.js"></script>
+    <script defer src="/static/portal_user_avatar.js"></script>
+    <script defer src="/static/portal_avatar_editor.js"></script>
+    <script defer src="/static/portal_workbench_context.js"></script>
+    <script defer src="/static/portal_editor_open_service.js"></script>
+    <script defer src="/static/portal_workbench.js"></script>
+    <script defer src="/static/portal_command_palette.js"></script>
+    <script defer src="/static/portal_theme.js"></script>
+    <script defer src="/static/portal_nav.js"></script>
+    <script defer src="/static/portal_resource_routes.js"></script>
+    <script defer src="/static/portal_preview_contract.js"></script>
+    <script defer src="/static/portal_resource_chips.js"></script>
+    <script defer src="/static/portal_file_links.js"></script>
+    <script defer src="/static/resident_projection.js"></script>
+    <script defer src="/static/portal_image_editor.js"></script>
+    <script defer src="/static/portal_resident_runtime_controller.js"></script>
+    <script defer data-portal-script-group="chat-workspace"></script>
+    <script defer src="/static/markdown.js"></script>
+    <script defer src="/static/portal_project_creation.js"></script>
+    <script defer src="/static/project_common.js"></script>
+    <script defer src="/static/project_list.js"></script>
+    <script defer src="/static/project_settings.js"></script>
+    <script defer src="/static/project_home.js"></script>
+    <script defer src="/static/projects.js"></script>
+  </head>
+  <body class="portalBoardShell projectsShell">
+    <header class="portalSiteHeader" data-portal-site-header data-portal-nav-active="projects"></header>
+    <div class="projectsWorkspace" id="projectsWorkspace">
+      <main class="projectsMain portalPageFrame" id="projectsMain" aria-live="polite">
+        <div class="portalAsyncState" data-state="loading" data-density="panel" role="status">
+          <span class="portalAsyncStateIcon" aria-hidden="true"></span>
+          <span class="portalAsyncStateMessage"><!--portal-i18n:"正在读取项目…"-->正在读取项目…</span>
+        </div>
+      </main>
+      <aside class="projectsChat" id="projectsChat" aria-label="Project Resident" hidden data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Project Resident&quot;}">
+        <div class="projectsChatHead">
+          <span class="projectsChatTitle" id="projectsChatTitle"></span>
+          <button class="portalButton is-compact" id="projectsChatToggle" type="button" data-portal-icon="chat" aria-expanded="true">
+            <span><!--portal-i18n:"收起对话"-->收起对话</span>
+          </button>
+        </div>
+        <div class="projectsChatBody" id="projectsChatBody"></div>
+      </aside>
+    </div>
+  </body>
+</html>

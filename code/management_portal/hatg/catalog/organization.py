@@ -31,13 +31,13 @@ DECLARATIONS = (
         P("language", description="新项目种子文档的语言，默认 zh-CN；仅用于初始化，不改写既有正文", enum=("zh-CN", "en")),
     ), (PROJECT,), mutates=True, owner="resource"),
     _d("ListProjects", FIXED, "列出调用者能看到的全部 Project：登记信息，以及团队规模、正在运行的 Resident 数和最近一次变化的时间。", (), (
-        R("projects", "array", "按登记顺序排列；每项 project_id、status、project_type、description、ddl、tags、"
+        R("projects", "array", "按登记顺序排列；每项 project_id、status、project_type、description、ddl、tags、avatar（没有时为 null）、"
           "project_resident_id（Project 层 Lineage 的 Leader）、lineage_count（普通 Lineage 数）、resident_count、"
           "running_resident_count，以及 last_changed_at（项目下资源最近一次修改的时间，没有资源时为空）"),
         R("status_vocab", "array", "项目可用的状态", items={"type": "string"}),
     ), owner="resource"),
     _d("GetProject", ON_PROJECT, "读取 Project 的登记信息、summary.md、团队、各类资源的数量和最近修改的资源。", (R("project_id", description="要读取的 Project"),), (
-        R("project", "object", "Project 的资源记录，另带 status、project_type、description、ddl 与 tags"),
+        R("project", "object", "Project 的资源记录，另带 status、project_type、description、ddl、tags 与 avatar"),
         R("summary", "object", "summary.md 的内容（不存在时标明）"),
         R("team", "object", "project_resident_id、project_lineage_id、resident_count、running_resident_count，以及 lineages："
           "每个普通 Lineage 的 lineage_id、title、leader_resident_id、member_count 与 running_count；只含调用者能读的 Lineage"),
