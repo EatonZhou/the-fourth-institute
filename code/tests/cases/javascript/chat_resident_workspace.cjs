@@ -205,6 +205,46 @@ async function residentChat() {
   try {
     sessionActions();
     await residentChat();
+    // Use the complete Resident panel and its real message menu, including the
+    // ResidentChatWorkspace adapter between the panel and shared controller.
+    const root = w.document.createElement('section');
+    w.document.body.append(root);
+    const failures = [];
+    const onError = event => { failures.push(event.error?.message || event.message); event.preventDefault(); };
+    w.addEventListener('error', onError);
+    w.PortalResidentService.inputHistory = async () => ({entries: []});
+    w.PortalAPI = {get: async () => ({config: {}, restart: null})};
+    w.PortalInstructionClient = {execute: async () => ({entries: [], items: []})};
+    const panel = chat.panelPackage.create({root, id: 'quotePanel', autoLoad: false,
+      target: {resident_id: 'resident_111111111111'}, onError: error => failures.push(error.message)});
+    const snapshot = {messages: [
+      {message_id: 'reply_before', role: 'agent', content_parts: [{type: 'text', text: 'Earlier part'}]},
+      {message_id: 'reply_selected', role: 'agent', origin: {sender: {id: 'resident_222222222222'}},
+        content_parts: [{type: 'text', text: 'Selected reply'}]},
+      {message_id: 'reply_after', role: 'agent', content_parts: [{type: 'text', text: 'Later part'}]},
+    ], controls: {can_send: true}, queue: {items: []}};
+    panel.protocol = {snapshot: () => snapshot, destroy() {}};
+    panel.residentProjection = {resident: {resident_id: 'resident_111111111111'},
+      chat_workspace: {schema: 'portal.chat_workspace.v3', target: {kind: 'resident', id: 'resident_111111111111'},
+        header: {title: 'Quote regression'}, messages: [], composer: {can_send: true}}};
+    try {
+      panel.applySnapshot(snapshot);
+      const menu = root.querySelector('[data-portal-message-menu="reply_selected"]');
+      assert.ok(menu, 'a reply has its actual action menu');
+      menu.querySelector('[data-portal-message-action="quote"]').click();
+      await settle();
+      assert.deepEqual(failures, [], 'the panel menu reports no adapter failure');
+      assert.equal(panel.workspace.quote()?.message_id, 'reply_selected');
+      assert.equal(panel.workspace.quote()?.author_id, 'resident_222222222222');
+      assert.equal(panel.workspace.quote()?.text, 'Selected reply');
+      const bar = root.querySelector('[data-composer-quote-host]');
+      assert.equal(bar.hidden, false, 'clicking Quote visibly opens the composer quote bar');
+      menu.querySelector('[data-portal-message-action="pin"]').click();
+      root.querySelector('[data-composer-quote-cancel]').click();
+      root.querySelector('[data-pinned-action="quote"]').click();
+      assert.equal(panel.workspace.quote()?.message_id, 'reply_selected', 'header quote selects the same reply');
+      assert.doesNotMatch(bar.textContent, /Earlier part|Later part/);
+    } finally { panel.destroy(); w.removeEventListener('error', onError); }
   } finally {
     observers.forEach(observer => observer.disconnect());
     await settle();

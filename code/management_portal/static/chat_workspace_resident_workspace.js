@@ -121,6 +121,7 @@
       payload() { return this.controller?.payload?.() || { text: "", plainText: "", attachments: [], refs: normalizeRefs({}) }; }
       refreshRefs() { return this.controller?.refreshRefs?.(); }
       quote() { return this.controller?.quote?.() || null; }
+      messageQuoteTarget(key) { return this.controller?.messageQuoteTarget?.(key) || null; }
       setQuote(quote) { return this.controller?.setQuote?.(quote) || false; }
       clearQuote(options) { return this.controller?.clearQuote?.(options) || false; }
       revealMessage(messageId) { return this.controller?.revealMessage?.(messageId) || Promise.resolve(false); }
