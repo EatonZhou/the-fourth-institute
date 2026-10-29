@@ -58,6 +58,21 @@ def test_a_failed_claude_tool_result_is_projected_as_failed() -> None:
     ]
 
 
+def test_reasoning_of_two_executions_with_one_item_id_stays_apart() -> None:
+    """两个 Execution 中同一 id 的思考各占一处
+
+    思考与 Agent 消息一样按 Execution 区分：同一投影里两个 Execution 用了相同的 reasoning item id，
+    两段思考各自显示，不互相覆盖；同一 Execution 内的更新仍替换原来的那一处。
+    """
+    def reasoning(execution_id, text, method="item/completed"):
+        return {"execution_id": execution_id, "type": "provider_event", "details": {
+            "method": method, "params": {"item": {"id": "0:main:1:1:0:0:thinking", "type": "reasoning", "content": [text]}}}}
+
+    events = [reasoning("exec_a", "first draft", "item/updated"), reasoning("exec_a", "first"), reasoning("exec_b", "second")]
+    details = event_projection.runtime_details_from_objects(enumerate(events, 1))
+    assert [(row["kind"], row["content"]) for row in details] == [("reasoning", "first"), ("reasoning", "second")]
+
+
 def test_backend_start_reason_is_consumed_only_by_a_new_turn() -> None:
     """轮次开始原因只由新 turn 消耗，同一 turn 重复上报沿用原因，之后默认为继续执行"""
     activities = []

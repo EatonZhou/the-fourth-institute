@@ -159,7 +159,7 @@ def _reasoning(event: ItemEvent, details: RuntimeDetails) -> None:
     item_id = str(event.item.get("id") or "").strip()
     details.add_update(
         event.context.detail(kind="reasoning", title="Thinking", content=_item_text(event.item), status=event.status()),
-        item_id, replace_previous=bool(item_id),
+        event.context.scoped(item_id), replace_previous=bool(item_id),
     )
 
 
