@@ -22,7 +22,7 @@ def test_runtime_status_treats_schema_marker_mismatch_as_non_terminal_contracts(
         assert payload['terminal'] is False
         assert payload['agent_data']['compatible'] is True
     with subtests.test(contract='test_runtime_status_expects_the_marker_its_store_creates'), isolated_portal_case() as case_path:
-        from management_portal.execution.agent_data_store import AGENT_DATA_SCHEMA
+        from management_common.agent_data_schema import AGENT_DATA_SCHEMA
         monkeypatch.setenv('PORTAL_EXPECTED_AGENT_DATA_SCHEMA', 'tfi.agent-data.v7')
         monkeypatch.setattr(runtime_status, '_actual_agent_data_schema', lambda: AGENT_DATA_SCHEMA)
         payload = runtime_status.portal_runtime_status()

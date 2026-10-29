@@ -4,8 +4,9 @@
 :design: decision_b1ab45c4b3ec
 """
 from tests.cases.agent_data_test_support import session_transcript_ids
+from management_portal.execution import agent_data_contexts
 from management_portal.execution.agent_data_store import AgentDataStore
-from management_portal.execution.agent_data_projection import persist_provider_compaction
+from management_portal.execution.agent_data_session_capture import persist_provider_compaction
 from management_portal.execution.session_manager import RuntimeSession, SessionManager
 from tests.cases.test_session_transcript_from_trace import AGENT as TRACE_AGENT, _session, _turn as session_turn
 
@@ -41,14 +42,14 @@ def test_context_reads_only_the_tail_after_compaction(monkeypatch) -> None:
                                if store.segment(identity)["segment_type"] == "compaction"):]
     def reject_full_read(*_args, **_kwargs):
         raise AssertionError("context must not materialize the whole transcript")
-    read_rows = store.trace_rows
+    read_rows = agent_data_contexts.trace_rows
     fetched = []
     def read_tail(connection, sequence_id, **options):
         page = read_rows(connection, sequence_id, **options)
         fetched.extend(page)
         return page
-    monkeypatch.setattr(store, "_session_transcript_ids", reject_full_read)
-    monkeypatch.setattr(store, "trace_rows", read_tail)
+    monkeypatch.setattr(agent_data_contexts, "session_transcript_ids", reject_full_read)
+    monkeypatch.setattr(agent_data_contexts, "trace_rows", read_tail)
     assert store.session_context_ids(session_ref) == expected
     assert len(fetched) <= 256
     fetched.clear()

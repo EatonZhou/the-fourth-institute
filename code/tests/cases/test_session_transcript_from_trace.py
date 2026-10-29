@@ -10,9 +10,9 @@ transcript from its last compaction on.
 :importance: P1
 """
 from __future__ import annotations
-from tests.cases.agent_data_test_support import session_transcript_ids
+from tests.cases.agent_data_test_support import patch_store_clock, session_transcript_ids
 
-from management_portal.execution.agent_data_projection import persist_provider_compaction
+from management_portal.execution.agent_data_session_capture import persist_provider_compaction
 from management_portal.execution.agent_data_store import AgentDataStore
 
 AGENT = "resident_trace_transcript"
@@ -114,7 +114,7 @@ def test_recovered_turn_does_not_bring_back_what_a_compaction_replaced(monkeypat
     :importance: P2
     """
     # The transformed input is prepared before the replies/compaction below.
-    monkeypatch.setattr('management_portal.execution.agent_data_store.utc_now', lambda: '2026-10-01T00:02:01Z')
+    patch_store_clock(monkeypatch, lambda: '2026-10-01T00:02:01Z')
     store = AgentDataStore()
     session_ref = _session(store, "thread-main")
     first = _turn(store, session_ref, 1)

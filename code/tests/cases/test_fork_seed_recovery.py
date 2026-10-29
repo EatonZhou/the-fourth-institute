@@ -19,7 +19,7 @@ from unittest import mock
 import pytest
 
 from management_portal.execution import backends
-from management_portal.execution.agent_data_projection import persist_provider_compaction
+from management_portal.execution.agent_data_session_capture import persist_provider_compaction
 from management_portal.execution.agent_data_store import AgentDataStore
 from management_portal.execution.backends import BackendInvocation
 from management_portal.execution.context_seed import CONTEXT_SEED_SCHEMA, realize_portable_seed

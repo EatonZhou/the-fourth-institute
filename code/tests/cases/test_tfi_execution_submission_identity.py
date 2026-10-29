@@ -14,7 +14,8 @@ from management_common.json_columns import json_value
 from management_common.principal import execution_identity
 from management_portal.execution.agent_data_store import AgentDataStore, get_agent_data_store
 from management_portal.execution.contracts import ExecutionRequest
-from management_portal.execution.scheduler import Scheduler, _json
+from management_portal.execution.scheduler import Scheduler
+from management_portal.execution.scheduler_rows import compact_json
 from management_portal.execution.service import ExecutionServiceServer
 
 
@@ -82,7 +83,7 @@ def test_rpc_exact_retry_reuses_original_payload_digest_and_receipt(prepared):
     server.preparation = SimpleNamespace(prepare=prepare)
     first = server.dispatch("execution.submit", first_payload)
     before = durable_rows(queue, store, original.execution_id)
-    saved_digest = hashlib.sha256(_json(first_payload).encode()).hexdigest()
+    saved_digest = hashlib.sha256(compact_json(first_payload).encode()).hexdigest()
     assert before[1]["value"] == saved_digest
     assert json_value(before[2]["data_json"])["request_digest"] == saved_digest
     server.preparation.prepare = forbid_prepare

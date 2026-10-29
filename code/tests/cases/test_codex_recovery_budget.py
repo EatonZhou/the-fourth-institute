@@ -466,7 +466,7 @@ def test_worker_requeue_budget(tmp_path: Path, failure_kind: str, progress_call:
             # Reopen the database, so an in-memory counter cannot pass this test.
             scheduler = Scheduler(**scheduler_options)
             server.scheduler = scheduler
-            with mock.patch("management_portal.execution.scheduler.time.time", return_value=time.time() + 31):
+            with mock.patch("time.time", return_value=time.time() + 31):
                 claim = scheduler.claim(worker_id="dev:budget-test", capabilities=["agent_session:codex"])
             assert claim["claimed"], scheduler.snapshot(request.execution_id)
             checkpoint = claim["execution"].get("checkpoint") or {}

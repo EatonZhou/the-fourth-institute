@@ -3,13 +3,15 @@ from __future__ import annotations
 from pathlib import Path
 
 from tests.cases.database_test_support import connect
+from tests.cases.execution_test_support import patch_scheduler_clock
 
 from management_portal.execution.contracts import (
     ExecutionRequest,
     ExecutionResult,
     SessionOptions,
 )
-from management_portal.execution.scheduler import Scheduler, normalize_token_usage
+from management_portal.execution.scheduler import Scheduler
+from management_portal.execution.scheduler_usage import normalize_token_usage, remaining_normalized_usage
 
 
 WORKER_ID = "dev:usage-worker"
@@ -26,8 +28,8 @@ def test_anthropic_cache_usage_is_complete_and_normalization_is_idempotent():
         "input_tokens": 110, "output_tokens": 5, "cached_input_tokens": 60, "total_tokens": 115,
     }
     assert normalize_token_usage(normalized) == normalized
-    assert Scheduler._remaining_normalized_usage(native, normalized) == {}
-    assert Scheduler._remaining_normalized_usage(native, {
+    assert remaining_normalized_usage(native, normalized) == {}
+    assert remaining_normalized_usage(native, {
         "input_tokens": 100, "cached_input_tokens": 60, "total_tokens": 100,
     }) == {"input_tokens": 10, "output_tokens": 5, "total_tokens": 15}
 
@@ -79,10 +81,7 @@ def test_scheduler_aggregates_provider_usage_by_hour_and_resident(
 ) -> None:
     """调度器按小时和 Resident 汇总 Provider 用量"""
     scheduler = _scheduler()
-    monkeypatch.setattr(
-        "management_portal.execution.scheduler.execution_timestamp",
-        lambda: "2026-08-03T12:34:56.000Z",
-    )
+    patch_scheduler_clock(monkeypatch, lambda: "2026-08-03T12:34:56.000Z")
     resident_id = "resident_0123456789ab"
     for index, usage in enumerate(
         (
@@ -150,10 +149,7 @@ def test_scheduler_classifies_non_resident_usage_as_others(
 ) -> None:
     """不属于 Resident 的执行用量归入 others"""
     scheduler = _scheduler()
-    monkeypatch.setattr(
-        "management_portal.execution.scheduler.execution_timestamp",
-        lambda: "2026-08-03T13:01:00.000Z",
-    )
+    patch_scheduler_clock(monkeypatch, lambda: "2026-08-03T13:01:00.000Z")
     _complete(
         scheduler,
         ExecutionRequest.new(
@@ -193,10 +189,7 @@ def test_scheduler_classifies_non_resident_usage_as_others(
 def test_all_provider_usage_includes_api_calls_and_deepseek_cache(tmp_path, monkeypatch):
     """Provider 用量汇总包含 API 调用和 deepseek 缓存"""
     scheduler = _scheduler()
-    monkeypatch.setattr(
-        "management_portal.execution.scheduler.execution_timestamp",
-        lambda: "2026-09-23T08:10:00Z",
-    )
+    patch_scheduler_clock(monkeypatch, lambda: "2026-09-23T08:10:00Z")
     resident_id = "resident_0123456789ab"
     for provider in ("codex", "kimi", "deepseek", "openrouter"):
         is_codex = provider == "codex"
@@ -237,10 +230,7 @@ def test_scheduler_records_live_usage_in_observation_hour_without_double_countin
     :design-point:
     """
     current_time = ["2026-08-03T12:10:00.000Z"]
-    monkeypatch.setattr(
-        "management_portal.execution.scheduler.execution_timestamp",
-        lambda: current_time[0],
-    )
+    patch_scheduler_clock(monkeypatch, lambda: current_time[0])
     scheduler = _scheduler()
     resident_id = "resident_0123456789ab"
     request = ExecutionRequest.new(
@@ -364,7 +354,7 @@ def test_a_finished_execution_reports_the_usage_it_counted_for_all_its_requests(
     :importance: P1
     :design: decision_f1331d57be89
     """
-    monkeypatch.setattr("management_portal.execution.scheduler.execution_timestamp", lambda: "2026-08-03T12:10:00.000Z")
+    patch_scheduler_clock(monkeypatch, lambda: "2026-08-03T12:10:00.000Z")
     scheduler = _scheduler()
     request = ExecutionRequest.new(
         actor="sample_admin", prompt="long turn", service_type="agent_session", provider="codex",
@@ -410,7 +400,7 @@ def test_a_cancellation_the_scheduler_finalizes_still_reports_the_counted_usage(
 
     :design: decision_f1331d57be89
     """
-    monkeypatch.setattr("management_portal.execution.scheduler.execution_timestamp", lambda: "2026-08-03T12:10:00.000Z")
+    patch_scheduler_clock(monkeypatch, lambda: "2026-08-03T12:10:00.000Z")
     scheduler = _scheduler()
     request = ExecutionRequest.new(
         actor="sample_admin", prompt="long turn", service_type="agent_session", provider="codex",
@@ -424,11 +414,11 @@ def test_a_cancellation_the_scheduler_finalizes_still_reports_the_counted_usage(
         "inputTokens": 200_000, "cachedInputTokens": 190_000, "outputTokens": 500, "totalTokens": 200_500,
     }}, **owner)
     scheduler.cancel(request.execution_id, actor="sample_admin", reason="stopped")
-    with scheduler._lock, connect(scheduler) as connection:
+    with scheduler.changes.lock, connect(scheduler) as connection:
         row = connection.execute(
             "SELECT * FROM executions WHERE execution_id = %s", (request.execution_id,),
         ).fetchone()
-        scheduler._finalize_released_cancellation(connection, row, error="worker gone", details={})
+        scheduler.recovery.finalize_released_cancellation(connection, row, error="worker gone", details={})
         connection.commit()
 
     result = scheduler.snapshot(request.execution_id)["result"]
@@ -452,7 +442,7 @@ def test_the_service_gives_the_ended_execution_record_its_counted_usage(tmp_path
     from management_portal.execution.agent_data_store import AgentDataStore
     from management_portal.execution.service import ExecutionServiceServer
 
-    monkeypatch.setattr("management_portal.execution.scheduler.execution_timestamp", lambda: "2026-08-03T12:10:00.000Z")
+    patch_scheduler_clock(monkeypatch, lambda: "2026-08-03T12:10:00.000Z")
     scheduler, store = _scheduler(), AgentDataStore()
     request = ExecutionRequest.new(
         actor="sample_admin", prompt="long turn", service_type="agent_session", provider="codex",
@@ -516,11 +506,11 @@ def test_scheduler_keeps_old_hourly_token_buckets() -> None:
 def test_api_usage_uses_registry_account_and_backend_without_provider_branches(monkeypatch):
     """API 调用用量按注册表的厂商和账号记账，旧的无账号记录保留原身份"""
     from management_portal.ai_provider_registry import shared_ai_provider_registry
-    monkeypatch.setattr("management_portal.execution.scheduler.execution_timestamp", lambda: "2026-09-27T08:00:00Z")
+    patch_scheduler_clock(monkeypatch, lambda: "2026-09-27T08:00:00Z")
     scheduler = _scheduler()
     monkeypatch.setattr(shared_ai_provider_registry, "get", lambda name: {"id": name, "provider": "future_backend"})
     monkeypatch.setattr(shared_ai_provider_registry, "entries", lambda: [{"id": name, "provider": "future_backend", "enabled": True} for name in ["future_primary", "future_secondary"]])
-    with scheduler._connect() as connection:
+    with scheduler.changes.connect() as connection:
         # A row recorded before the ledger kept accounts: the account is empty.
         connection.execute("INSERT INTO execution_account_usage_hourly VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                            ("2026-09-27T08:00:00Z", "future_primary", "", "others", 20, 5, 0, 0, 20, "2026-09-27T08:00:00Z"))
@@ -589,7 +579,7 @@ def test_usage_catalog_preserves_same_account_name_under_distinct_backends(monke
     # through the real database without guessing missing accounts.
     scheduler = Scheduler(accounts=accounts)
     hour = "2026-09-27T08:00:00Z"
-    with scheduler._connect() as connection:
+    with scheduler.changes.connect() as connection:
         for provider, account, tokens in [
             ("claude", "claude_one", 10), ("anthropic", "claude_one", 30),
             ("anthropic", "api_one", 40), ("kimi", "kimi_default", 50),
@@ -649,7 +639,7 @@ def test_turns_claude_code_takes_on_its_own_count_for_the_resident_once(tmp_path
         + request("m3", "2026-08-03T11:00:00.000Z", 300)  # an Execution reported it
         + request("m4", "2026-08-03T11:59:30.000Z", 400)  # not settled yet
     )
-    monkeypatch.setattr("management_portal.execution.scheduler.execution_timestamp", lambda: "2026-08-03T11:00:05.000Z")
+    patch_scheduler_clock(monkeypatch, lambda: "2026-08-03T11:00:05.000Z")
     scheduler = _scheduler()
     reported = ExecutionRequest.new(
         actor="sample_admin", prompt="turn", service_type="agent_session", provider="codex", operation="turn",

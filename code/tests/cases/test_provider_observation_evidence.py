@@ -6,6 +6,7 @@ import time
 
 import pytest
 
+from management_portal.execution import agent_data_contexts, agent_data_trace_edits
 from management_portal.execution import agent_data_store as data_module
 from management_portal.execution.agent_data_store import AgentDataStore
 from management_portal.execution.agent_data_projection import AgentDataProjector
@@ -119,14 +120,14 @@ def test_snapshot_does_not_mix_positions_and_receipts_from_a_concurrent_transfor
     store, agent = AgentDataStore(), "resident_concurrent_positions"
     ids = [store.put_segment(segment_type="input", content=f"private-{i}") for i in range(3)]
     store.append_agent_segments(agent, ids, actor_ref="test-actor")
-    original = store._agent_trace
+    original = agent_data_contexts.agent_trace
     with ThreadPoolExecutor(max_workers=1) as executor:
         def read_then_commit(connection, target):
             trace = original(connection, target)
             executor.submit(transform, store, agent, ids[:2]).result(timeout=10)
             return trace
         with monkeypatch.context() as patch:
-            patch.setattr(store, "_agent_trace", read_then_commit)
+            patch.setattr(agent_data_contexts, "agent_trace", read_then_commit)
             before = observe(store, agent)
     after = observe(store, agent)
     assert [(p["ordinal"], p["segment_id"]) for p in before["trace"]["positions"]["entries"]] == list(enumerate(ids, 1))
@@ -142,13 +143,13 @@ def test_receipt_failure_rolls_back_and_replay_never_rewrites_consumed_positions
     store, agent = AgentDataStore(), "resident_atomic_positions"
     old = store.put_segment(segment_type="input", content="private-body")
     store.append_agent_segments(agent, [old], actor_ref="test-actor")
-    original = data_module.put_operation
+    original = agent_data_trace_edits.put_operation
     def fail(connection, **kwargs):
         if kwargs["kind"] == "trace_transformation":
             raise RuntimeError("receipt unavailable")
         return original(connection, **kwargs)
     with monkeypatch.context() as patch:
-        patch.setattr(data_module, "put_operation", fail)
+        patch.setattr(agent_data_trace_edits, "put_operation", fail)
         with pytest.raises(RuntimeError, match="receipt unavailable"):
             transform(store, agent, [old])
     assert store.sequence_segment_ids(store.trace_sequence_id(agent)) == [old]
@@ -208,7 +209,7 @@ def test_bounds_old_server_and_field_allowlists_remain_explicit(monkeypatch):
     store.append_agent_segments(agent, ids, actor_ref="test-actor")
     transform(store, agent, [ids[0]], "segment_first")
     transform(store, agent, [ids[1]], "segment_second")
-    monkeypatch.setattr(data_module, "CONTEXT_EVIDENCE_POSITION_LIMIT", 1)
+    monkeypatch.setattr(agent_data_contexts, "CONTEXT_EVIDENCE_POSITION_LIMIT", 1)
     snapshot = store.context_evidence_snapshot(agent)
     snapshot["trace_positions"]["entries"][0]["private_extra"] = "private-extra"
     snapshot["transformations"][0]["private_extra"] = "private-extra"

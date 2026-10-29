@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from management_portal.execution import agent_data_projection as projection_module
+from management_portal.execution import agent_data_output_capture
 from management_portal.execution.agent_data_projection import AgentDataProjector
 from management_portal.execution.agent_data_store import AgentDataStore
 from management_portal.execution.contracts import ExecutionRequest, SessionOptions
@@ -90,7 +90,7 @@ def test_replaying_legacy_segments_does_not_backfill_native_evidence(monkeypatch
     """旧片段重放不改写不可变元数据，也不追补以前未记录的原生事实"""
     _, _, _, send, evidence = capture()
     with monkeypatch.context() as old_writer:
-        old_writer.setattr(projection_module, "_provider_observation_metadata", lambda *args: {})
+        old_writer.setattr(agent_data_output_capture, "_provider_observation_metadata", lambda *args: {})
         send(model("native-old-message"))
         send(command("native-old-command", exitCode=0))
     before = evidence()

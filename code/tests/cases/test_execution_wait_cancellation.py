@@ -68,7 +68,7 @@ def test_cancelled_claim_release_always_commits_a_terminal_result(tmp_path: Path
         assert handover["requeued_execution_ids"] == [request.execution_id]
         assert handover["blocked_execution_ids"] == []
     else:
-        with scheduler._connect() as connection:
+        with scheduler.changes.connect() as connection:
             connection.execute('UPDATE executions SET lease_expires_at=to_timestamp(1) WHERE execution_id=%s',
                                (request.execution_id,))
         scheduler.maintain()
@@ -219,7 +219,7 @@ def test_terminal_wait_observes_another_scheduler_generation(
     snapshot = old.snapshot(request.execution_id, include_events=False)
     waiting = threading.Event()
     result: dict = {}
-    original_wait = old._condition.wait
+    original_wait = old.changes.signal("execution").wait
 
     def observed_wait(timeout=None):
         waiting.set()
@@ -232,7 +232,7 @@ def test_terminal_wait_observes_another_scheduler_generation(
         ))
 
     waiter = threading.Thread(target=observe, daemon=True)
-    with mock.patch.object(old._condition, "wait", side_effect=observed_wait):
+    with mock.patch.object(old.changes.signal("execution"), "wait", side_effect=observed_wait):
         try:
             waiter.start()
             assert waiting.wait(1)

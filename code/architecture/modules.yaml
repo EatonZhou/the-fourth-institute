@@ -664,7 +664,7 @@ modules:
     responsibility: "维护请求、调度租约与并发配额，拥有执行账号登记与 Backend 角色映射，归集账号容量和用量观察，向 Worker 提供可恢复领取。"
     instruction_owners: []
     code_paths:
-      - "management_portal/execution/scheduler.py"
+      - "management_portal/execution/scheduler*.py"
       - "management_portal/execution/requests.py"
       - "management_portal/execution/submission_identity.py"
       - "management_portal/execution/execution_*.py"

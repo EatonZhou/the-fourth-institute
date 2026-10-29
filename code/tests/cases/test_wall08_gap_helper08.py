@@ -82,7 +82,7 @@ def claim_request(scheduler, request, worker_id):
 
 
 def request_row(scheduler, execution_id):
-    with scheduler._connect() as connection:
+    with scheduler.changes.connect() as connection:
         return dict(connection.execute('SELECT * FROM executions WHERE execution_id=%s', (execution_id,)).fetchone())
 
 
@@ -94,12 +94,12 @@ def test_capacity_full_destination_rejects_atomically_then_releases_source_slot(
     second = request_for('helper-b')
     second_owner = claim_request(scheduler, second, 'helper08-capacity-worker')
     before = request_row(scheduler, first.execution_id)
-    events_before = list(scheduler._transient_event_items[first.execution_id])
+    events_before = list(scheduler.changes._transient_event_items[first.execution_id])
     rejected = scheduler.reassign_capacity(first.execution_id, **first_owner, backend_route_id='helper-b')
     assert rejected == {'accepted': False, 'capacity_key': 'codex:helper-a',
                         'changed': False, 'reason': 'capacity_full'}
     assert request_row(scheduler, first.execution_id) == before
-    assert list(scheduler._transient_event_items[first.execution_id]) == events_before
+    assert list(scheduler.changes._transient_event_items[first.execution_id]) == events_before
     scheduler.finish(ExecutionResult(execution_id=second.execution_id, status='completed', output={}), **second_owner)
     moved = scheduler.reassign_capacity(first.execution_id, **first_owner, backend_route_id='helper-b')
     assert moved == {'accepted': True, 'capacity_key': 'codex:helper-b', 'changed': True}
@@ -183,17 +183,17 @@ def test_ttl_prunes_usage_events_but_preserves_hourly_usage_and_all_agentdata():
                     for table in tables}
 
     before = all_agentdata()
-    with scheduler._connect() as connection:
+    with scheduler.changes.connect() as connection:
         hourly = [tuple(row) for row in connection.execute('SELECT * FROM execution_account_usage_hourly')]
         assert hourly
         assert connection.execute('SELECT COUNT(*) FROM execution_token_usage_events').fetchone()[0] == 1
     scheduler.acknowledge(request.execution_id, actor=request.actor)
-    with scheduler._connect() as connection:
+    with scheduler.changes.connect() as connection:
         connection.execute('UPDATE executions SET updated_at=%s WHERE execution_id=%s',
                            ('2000-01-01T00:00:00.000Z', request.execution_id))
         connection.commit()
     assert scheduler.prune_terminal(older_than_epoch=978307200) == 1
-    with scheduler._connect() as connection:
+    with scheduler.changes.connect() as connection:
         assert connection.execute('SELECT COUNT(*) FROM execution_token_usage_events').fetchone()[0] == 0
         assert [tuple(row) for row in connection.execute('SELECT * FROM execution_account_usage_hourly')] == hourly
     assert all_agentdata() == before

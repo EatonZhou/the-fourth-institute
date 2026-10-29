@@ -5,8 +5,8 @@
 :design: decision_b1ab45c4b3ec
 """
 import pytest
-from management_portal.execution.agent_data_projection import live_tool_segment_id
-from management_portal.execution.agent_data_store import SegmentIdentityConflict
+from management_portal.execution.agent_data_output_capture import live_tool_segment_id
+from management_portal.execution.agent_data_segments import SegmentIdentityConflict
 from tests.cases.test_agent_data_projection import _deliver_captured_message
 
 from tests.cases.live_trace_support import AGENT, _turn

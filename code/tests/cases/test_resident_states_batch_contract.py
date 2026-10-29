@@ -11,6 +11,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from management_portal.execution import agent_data_chat, agent_data_chat_activity, agent_data_chat_writes
 from management_portal.execution.agent_data_store import AgentDataStore, finish_conversation_summary
 from management_portal.society_service import (
     family_activity, resident_access, resident_catalog, resident_conversation_stream,
@@ -147,8 +148,9 @@ def test_summary_scans_user_facts_once_preserving_reset_relay_and_recipient_fact
     say('relay', '2026-10-08T00:00:05Z', business_ref='family-relay:copy')
     say('addressed', '2026-10-08T00:00:06Z', role='agent',
         recipients=[{'kind': 'user', 'id': 'CASE-A'}])
-    monkeypatch.setattr(store, '_user_message_summaries', lambda *a, **kw: pytest.fail('duplicate user-message scan'))
-    monkeypatch.setattr(store, '_message_contents', lambda *a, **kw: pytest.fail('summary read message bodies'))
+    monkeypatch.setattr(store.chat_activity, 'user_message_summaries', lambda *a, **kw: pytest.fail('duplicate user-message scan'))
+    for module in (agent_data_chat, agent_data_chat_writes):
+        monkeypatch.setattr(module, 'message_contents', lambda *a, **kw: pytest.fail('summary read message bodies'))
     statements, metadata_reads = [], []
     original_snapshot = store.database.snapshot
     @contextmanager
@@ -156,12 +158,12 @@ def test_summary_scans_user_facts_once_preserving_reset_relay_and_recipient_fact
         with original_snapshot() as connection:
             yield guard_queries(connection, statements=statements)
     monkeypatch.setattr(store.database, 'snapshot', measured_snapshot)
-    for name in ('_trace_ids', '_chat_floors'):
-        original = getattr(store, name)
+    for name in ('trace_ids', 'chat_floors'):
+        original = getattr(agent_data_chat_activity, name)
         def measured(*a, _name=name, _original=original, **kw):
             metadata_reads.append(_name)
             return _original(*a, **kw)
-        monkeypatch.setattr(store, name, measured)
+        monkeypatch.setattr(agent_data_chat_activity, name, measured)
     summaries = store.chat_conversation_summaries([rid, empty, rid], actor,
         excluded_business_ref=r'^family-relay:', finish=finish)
     raw = {'user_message_count': 3, 'last_user_actor': 'sample_admin',
@@ -171,7 +173,7 @@ def test_summary_scans_user_facts_once_preserving_reset_relay_and_recipient_fact
            'actor_addressed_at': '2026-10-08T00:00:06Z' if actor else ''}
     assert summaries[rid] == (finish_conversation_summary(raw) if finish else raw)
     assert summaries[empty]['user_message_count'] == 0
-    assert metadata_reads == ['_trace_ids', '_chat_floors']
+    assert metadata_reads == ['trace_ids', 'chat_floors']
     assert len([sql for sql in statements if 'as actor_requests' in sql]) == 1
     assert len([sql for sql in statements if 'as last_actor' in sql]) == 1
 

@@ -9,7 +9,7 @@ import json
 import pytest
 
 from management_portal.execution.agent_data_store import get_agent_data_store
-from management_portal.execution.agent_data_projection import persist_provider_compaction
+from management_portal.execution.agent_data_session_capture import persist_provider_compaction
 from management_portal.execution.service import ExecutionService
 from management_portal.society_service import (
     lineage_domain,

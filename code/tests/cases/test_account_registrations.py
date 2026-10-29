@@ -248,9 +248,9 @@ def test_new_registration_refreshes_scheduler_defaults_without_overwriting_setti
                                "route_id": "two", "max_concurrency": 3}, "alice")
     store.update_registration("codex_one", {"max_concurrency": 1}, 1, "alice")
     accounts._refreshed_at = 0
-    with scheduler._connect() as connection:
-        assert scheduler._capacity_limit(connection, "codex:two") == 3
-        assert scheduler._capacity_limit(connection, "codex:one") == 4
+    with scheduler.changes.connect() as connection:
+        assert scheduler.capacity.capacity_limit(connection, "codex:two") == 3
+        assert scheduler.capacity.capacity_limit(connection, "codex:one") == 4
     assert "codex:two" in scheduler.quota_capacity_keys
 
 

@@ -10,6 +10,7 @@ from management_portal.execution.agent_data_store import AgentDataStore
 from management_portal.execution.accounts import ExecutionAccounts
 from management_portal.execution.contracts import ExecutionRequest, ExecutionResult
 from management_portal.execution.scheduler import Scheduler
+from management_portal.execution.scheduler_views import SchedulerViews
 from management_portal.execution.service import ExecutionService, ExecutionServiceServer, ExecutionWaitTimeout
 from management_portal.execution.transport import ExecutionServiceClient, ExecutionServiceUnavailable
 
@@ -137,13 +138,13 @@ def test_quiet_polls_of_a_running_turn_do_not_read_the_whole_execution(control_p
     plane.scheduler.submit(request)
     execution_id, token = start(plane)
     full_reads = [0]
-    original_snapshot = Scheduler.snapshot
+    original_snapshot = SchedulerViews.snapshot
 
     def counted_snapshot(self, *args, **kwargs):
         full_reads[0] += 1
         return original_snapshot(self, *args, **kwargs)
 
-    monkeypatch.setattr(Scheduler, "snapshot", counted_snapshot)
+    monkeypatch.setattr(SchedulerViews, "snapshot", counted_snapshot)
     projected: list[dict] = []
     with pytest.raises(ExecutionWaitTimeout) as caught:
         plane.service.wait(

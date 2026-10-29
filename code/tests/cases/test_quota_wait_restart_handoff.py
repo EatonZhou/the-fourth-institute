@@ -74,7 +74,7 @@ def test_withdraw_receipt_survives_ack_retention_and_keeps_actor_scope(execution
 ])
 def test_withdraw_refuses_claim_history_checkpoint_and_stop(execution, change):
     scheduler, service, request, args = execution
-    with scheduler._connect() as connection:
+    with scheduler.changes.connect() as connection:
         connection.execute('UPDATE executions SET ' + change + ' WHERE execution_id=%s', (request.execution_id,))
         connection.commit()
     assert service.withdraw_unstarted(request.execution_id, **args)['withdrawn'] is False

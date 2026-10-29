@@ -10,10 +10,10 @@ from pathlib import Path
 import psycopg
 import pytest
 
-from management_portal.execution.agent_data_store import (
-    AGENT_DATA_SCHEMA,
-    AgentDataStore,
-)
+from management_common.agent_data_schema import AGENT_DATA_SCHEMA
+from management_portal.execution import agent_data_traces
+from management_portal.execution.agent_data_store import AgentDataStore
+from tests.cases.agent_data_test_support import patch_store_clock
 
 
 AT = "2026-08-23T00:00:00Z"
@@ -1057,7 +1057,7 @@ def test_postgres_sequence_append_locks_parent_before_allocating_ordinal():
             self.inserted.extend(parameters)
 
     connection = Connection()
-    additions = AgentDataStore._append_sequence_ids(
+    additions = agent_data_traces.append_sequence_ids(
         connection,
         sequence={"sequence_id": "sequence_test"},
         segment_ids=["segment_new"],
@@ -1088,9 +1088,8 @@ def test_conversation_summary_reuses_only_current_committed_trace_facts(monkeypa
     :design-point:
     """
     from concurrent.futures import ThreadPoolExecutor
-    from management_portal.execution import agent_data_store
 
-    monkeypatch.setattr(agent_data_store, "utc_now", lambda: AT)
+    patch_store_clock(monkeypatch, lambda: AT)
     store, writer = AgentDataStore(), AgentDataStore()
     original_snapshot = store.database.snapshot
     statements = []
@@ -1103,7 +1102,7 @@ def test_conversation_summary_reuses_only_current_committed_trace_facts(monkeypa
     monkeypatch.setattr(store.database, "snapshot", observed_snapshot)
     first = _chat("message_first", "user", "first", author_id="sample_admin", created_at=AT)
     writer.display_chat_message("resident_one", first)
-    writer.database.write(lambda connection: writer._locked_trace(connection, "resident_child", "sample_admin"))
+    writer.database.write(lambda connection: agent_data_traces.locked_trace(connection, "resident_child", "sample_admin"))
     assert store.chat_conversation_summaries(["resident_child"], "sample_admin")["resident_child"]["user_message_count"] == 0
     writer.fork_agent(source_agent_id="resident_one", target_agent_id="resident_child",
                       segment_ids=writer.sequence_segment_ids(writer.trace_sequence_id("resident_one")), actor_ref="sample_admin")
@@ -1263,7 +1262,7 @@ def test_a_message_stays_in_the_newest_context_until_a_compaction_a_clear_or_a_n
     :module: execution.persistence
     """
 
-    from management_portal.execution.agent_data_projection import persist_provider_compaction
+    from management_portal.execution.agent_data_session_capture import persist_provider_compaction
 
     store = AgentDataStore()
     agent_id = "resident_message_in_context"

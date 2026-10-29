@@ -6,10 +6,11 @@ from pathlib import Path
 import psycopg
 import pytest
 
-from management_portal.execution.agent_data_store import (
+from management_portal.execution import agent_data_chat_activity, agent_data_traces
+from management_portal.execution.agent_data_store import AgentDataStore
+from management_portal.execution.agent_data_tables import (
     CHAT_READ_INDEX_SQL,
     CHAT_STATISTICS_SQL,
-    AgentDataStore,
     agent_data_schema_matches,
 )
 from management_portal.society_service import resident_domain
@@ -137,8 +138,8 @@ def test_actor_activity_seeks_index_without_reading_message_bodies(tmp_path, mon
 
     with store.database.read_transaction() as connection:
         connection.execute("SET LOCAL enable_seqscan=off")
-        traces = list(store._trace_ids(connection, ["resident_target"]).values()) if targeted else None
-        plans = [str(row[0]) for row in AgentDataStore._activity_rows(Explain(connection), "CASE-A", traces)]
+        traces = list(agent_data_traces.trace_ids(connection, ["resident_target"]).values()) if targeted else None
+        plans = [str(row[0]) for row in agent_data_chat_activity.activity_rows(Explain(connection), "CASE-A", traces)]
     # The activity kept per trace and person is found by its index; no message is read.
     assert any("Index" in plan and "chat_actor_activity" in plan for plan in plans)
     assert not any("segments" in plan or "chat_message_positions" in plan for plan in plans)

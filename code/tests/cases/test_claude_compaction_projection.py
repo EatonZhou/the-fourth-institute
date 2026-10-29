@@ -13,10 +13,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from management_portal.execution.agent_data_projection import (
-    AgentDataProjector,
-    persist_provider_compaction,
-)
+from management_portal.execution.agent_data_projection import AgentDataProjector
+from management_portal.execution.agent_data_session_capture import persist_provider_compaction
 from management_portal.execution.agent_data_store import AgentDataStore
 from management_portal.execution.backends import BackendInvocation, ClaudeBackend
 from management_portal.execution.claude_transcript_compaction import (

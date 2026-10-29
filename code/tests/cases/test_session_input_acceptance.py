@@ -6,6 +6,7 @@ from contextlib import contextmanager
 
 import pytest
 
+from management_portal.execution import agent_data_executions
 from management_portal.execution.agent_data_store import AgentDataStore
 
 
@@ -43,7 +44,7 @@ def test_receipt_survives_execution_history_loss_without_replaying_context(tmp_p
     ids = store.sequence_segment_ids(store.trace_sequence_id('resident_one'))
     assert ids == []
     with store.database.read() as connection:
-        receipt = store._session_input_acceptance(connection, ref, "resident_one")
+        receipt = agent_data_executions.session_input_acceptance(connection, ref, "resident_one")
     assert receipt["evidence_execution_id"] == "execution-one"
     assert store.session_context_ids(ref) == []
     assert session_transcript_ids(store, ref) == []
@@ -68,13 +69,13 @@ def test_receipt_is_scoped_to_session_route_and_agent_and_is_immutable(tmp_path)
     _execution(store, ref)
     store.record_input_acceptance("execution-one", agent_id="resident_one", provider_turn_id="turn-one")
     with store.database.read() as connection:
-        before = store._session_input_acceptance(connection, ref, "resident_one")
+        before = agent_data_executions.session_input_acceptance(connection, ref, "resident_one")
     store.record_input_acceptance("execution-one", agent_id="resident_one", provider_turn_id="turn-one")
     store.finish_execution("execution-one", status="failed")
     _execution(store, ref, execution="execution-two")
     store.record_input_acceptance("execution-two", agent_id="resident_one", provider_turn_id="turn-two")
     with store.database.read() as connection:
-        assert store._session_input_acceptance(connection, ref, "resident_one") == before
+        assert agent_data_executions.session_input_acceptance(connection, ref, "resident_one") == before
     for number, route in enumerate(("zero", "one")):
         target = f"empty-{number}"
         _session(store, route=route, session="thread-new" if route == "zero" else "thread-one", binding=target)
@@ -95,7 +96,7 @@ def test_acceptance_and_receipt_rollback_together(tmp_path, monkeypatch):
     _execution(store, ref)
     def broken(*args, **kwargs):
         raise RuntimeError("receipt write failed")
-    monkeypatch.setattr(store, "_record_session_input_acceptance", broken)
+    monkeypatch.setattr(agent_data_executions, "record_session_input_acceptance", broken)
     with pytest.raises(RuntimeError, match="receipt write failed"):
         store.record_input_acceptance("execution-one", agent_id="resident_one", provider_turn_id="turn-one")
     assert store.execution("execution-one")["provider_turn_id"] == ""

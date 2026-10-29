@@ -8,7 +8,7 @@ import pytest
 
 from management_common.json_columns import json_value
 from management_portal.execution.agent_data_store import AgentDataStore, get_agent_data_store
-from management_portal.execution import execution_inputs
+from management_portal.execution import agent_data_executions, execution_inputs
 from management_portal.execution.contracts import ExecutionRequest, ExecutionResult, SessionOptions
 from management_portal.execution.scheduler import Scheduler
 from management_portal.execution.service import ExecutionService, ExecutionServiceServer
@@ -118,11 +118,11 @@ def test_admission_operation_failure_rolls_back_queue_and_long_term_fact(stack, 
     """写入提交记录后入队失败时，队列项和长期提交记录一起回滚"""
     store, scheduler = stack
     req = request()
-    original = AgentDataStore.record_execution_submission_in
+    original = agent_data_executions.record_execution_submission_in
     def fail(connection, value, **kwargs):
         original(connection, value, **kwargs)
         raise RuntimeError("after durable operation insert, before queue commit")
-    monkeypatch.setattr(AgentDataStore, "record_execution_submission_in", staticmethod(fail))
+    monkeypatch.setattr(agent_data_executions, "record_execution_submission_in", fail)
     with pytest.raises(RuntimeError, match="before queue commit"):
         scheduler.submit(req)
     assert store.execution(req.execution_id) is None

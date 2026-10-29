@@ -8,7 +8,8 @@ from copy import deepcopy
 import pytest
 
 from management_portal.execution.agent_data_projection import AgentDataProjector
-from management_portal.execution.agent_data_store import AgentDataStore, SegmentIdentityConflict
+from management_portal.execution.agent_data_segments import SegmentIdentityConflict
+from management_portal.execution.agent_data_store import AgentDataStore
 from tests.cases.test_agent_data_projection import _invocation, _runtime_session, _turn_request
 
 

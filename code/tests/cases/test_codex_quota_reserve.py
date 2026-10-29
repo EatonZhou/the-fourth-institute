@@ -66,7 +66,7 @@ def test_codex_reports_a_used_up_plan_and_its_credits(payload, exhausted):
 @pytest.fixture
 def scheduler(tmp_path):
     result = Scheduler(quota_reserve_enabled=True, capacity_limits={"codex:one": 8, "codex:two": 8}, dispatch_interval_min_seconds=0, dispatch_interval_max_seconds=0)
-    with result._connect() as connection:
+    with result.changes.connect() as connection:
         connection.execute("DELETE FROM execution_store_meta WHERE key LIKE 'quota:%%' OR key LIKE 'quota_override:%%'")
         connection.commit()
     result.register_worker(worker_id="quota-worker", build_id="test", capabilities=["agent_session:codex"])

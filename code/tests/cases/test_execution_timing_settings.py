@@ -2,7 +2,7 @@
 from types import SimpleNamespace
 import pytest
 from management_portal.execution import isa, request_timing
-from management_portal.execution.agent_data_projection import _model_timing
+from management_portal.execution.agent_data_output_capture import model_timing
 from management_portal.execution.service import ExecutionServiceServer
 from management_portal.execution.service_settings import ExecutionSettings
 from management_portal.hatg.contracts import InstructionError
@@ -17,16 +17,16 @@ def test_switch_preserves_observed_completion_and_never_invents_dispatch():
     module = request_timing.RequestTimingModule()
     value = {'started_at': START, 'finished_at': FINISH, 'content': 'never copied'}
     assert request_timing.observed_timing(value) == {'started_at': START, 'finished_at': FINISH}
-    assert _model_timing({}, FINISH) == {'started_at': '', 'finished_at': FINISH}
+    assert model_timing({}, FINISH) == {'started_at': '', 'finished_at': FINISH}
     module.configure(False)
     assert ExecutionSettings().get() == {
         'model_request_timing_enabled': False, 'harness_recording_enabled': True,
         'harness_retention_days': 30, 'permission_system_enabled': True,
     }
-    assert _model_timing(value, FINISH) == {'started_at': '', 'finished_at': FINISH}
+    assert model_timing(value, FINISH) == {'started_at': '', 'finished_at': FINISH}
     assert value['started_at'] == START
     module.configure(True)
-    assert _model_timing(value, FINISH) == {'started_at': START, 'finished_at': FINISH}
+    assert model_timing(value, FINISH) == {'started_at': START, 'finished_at': FINISH}
 
 
 def test_setting_failure_drops_only_the_optional_observation(monkeypatch):
@@ -34,7 +34,7 @@ def test_setting_failure_drops_only_the_optional_observation(monkeypatch):
     def broken(*args, **kwargs):
         raise RuntimeError('observation unavailable')
     monkeypatch.setattr(request_timing, 'ExecutionSettings', broken)
-    assert _model_timing({'started_at': START}, FINISH) == {'started_at': '', 'finished_at': FINISH}
+    assert model_timing({'started_at': START}, FINISH) == {'started_at': '', 'finished_at': FINISH}
 
 
 @pytest.mark.parametrize('admin', [False, True])

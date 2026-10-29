@@ -18,10 +18,8 @@ from types import SimpleNamespace
 import pytest
 
 from management_portal.execution import chat_position_index
-from management_portal.execution.agent_data_store import (
-    AgentDataStore,
-    agent_data_schema_matches,
-)
+from management_portal.execution.agent_data_store import AgentDataStore
+from management_portal.execution.agent_data_tables import agent_data_schema_matches
 from management_portal.society_service import (
     outward_messages,
     resident_access,

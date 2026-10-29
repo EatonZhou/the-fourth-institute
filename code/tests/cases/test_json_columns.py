@@ -15,15 +15,15 @@ from management_portal.execution import (
     agent_data_store, harness_auto_policy, harness_effectiveness, harness_evolution, harness_evolution_evaluation,
     scheduler as scheduler_module,
 )
-from management_portal.execution.agent_data_store import (
-    AgentDataStore, CHAT_READ_INDEX_SQL, CHAT_STATISTICS_SQL,
-)
+from management_portal.execution.agent_data_store import AgentDataStore
+from management_portal.execution.agent_data_tables import CHAT_READ_INDEX_SQL, CHAT_STATISTICS_SQL
 from management_portal.execution.agent_operations import put_operation
 from management_portal.execution.contracts import (
     ExecutionInputControl, ExecutionRequest, ExecutionResult, SessionOptions,
 )
 from management_portal.execution.conversation_projection import CHAT_SEGMENT
 from management_portal.execution.harness_evolution_offline import TurnCalls, turn_calls_from_rows
+from management_portal.execution.scheduler_rows import row_payload
 from management_portal.hatg.contracts import InstructionCall
 from management_portal.hatg.store import ExecutionStore
 from management_portal.society_service import (
@@ -525,16 +525,16 @@ def test_execution_runtime_reads_and_writes_both_column_types(legacy, monkeypatc
         scheduler.submit_input_control(control)
     last = {"inputTokens": 7, "cachedInputTokens": 0, "outputTokens": 2, "totalTokens": 9}
     scheduler.record_token_usage_delta(request.execution_id, event_id="request-0", usage={"last": last}, **owner)
-    scheduler._scheduling_memo.clear()
-    with scheduler._connect() as connection:
-        [(_, scheduling)] = scheduler._active_scheduling_requests(connection)
+    scheduler.active_requests._scheduling_memo.clear()
+    with scheduler.changes.connect() as connection:
+        [(_, scheduling)] = scheduler.active_requests.scheduling_requests(connection)
     assert scheduling["session"]["binding_id"] == "binding_json"
     scheduler.finish(ExecutionResult(execution_id=request.execution_id, status="completed",
                                      output={"message": "done"}, usage={"last": last}), **owner)
 
     def stored():
         with scheduler.database.read() as connection:
-            return scheduler._row_payload(connection.execute("SELECT * FROM executions").fetchone())
+            return row_payload(connection.execute("SELECT * FROM executions").fetchone())
 
     finished = stored()
     assert finished["request"]["prompt"] == "a�b"
@@ -561,14 +561,14 @@ def test_execution_runtime_reads_and_writes_both_column_types(legacy, monkeypatc
     assert scheduler.cancel(queued.execution_id, actor="sample_admin")["status"] == "cancelled"
     scheduler.submit(running)
     assert scheduler.claim(worker_id=WORKER, capabilities=["agent_session:codex"])["claimed"]
-    with scheduler._connect() as connection:
-        assert [item for item, _ in scheduler._active_scheduling_requests(connection, uncancelled=True)] == [
+    with scheduler.changes.connect() as connection:
+        assert [item for item, _ in scheduler.active_requests.scheduling_requests(connection, uncancelled=True)] == [
             running.execution_id]
     scheduler.cancel(running.execution_id, actor="sample_admin")
     states = scheduler.states({queued.execution_id: "sample_admin", running.execution_id: "sample_admin"})
     assert [states[item.execution_id]["scheduler"]["cancel_requested"] for item in (queued, running)] == [True, True]
-    with scheduler._connect() as connection:
-        assert scheduler._active_scheduling_requests(connection, uncancelled=True) == []
+    with scheduler.changes.connect() as connection:
+        assert scheduler.active_requests.scheduling_requests(connection, uncancelled=True) == []
     with scheduler.database.read() as connection:
         assert {table: column_types(connection, table, columns) for table, columns in RUNTIME_COLUMNS.items()} == {
             table: {column: "text" if legacy else "jsonb" for column in columns} for table, columns in RUNTIME_COLUMNS.items()

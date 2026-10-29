@@ -51,7 +51,7 @@ def claude_claim(tmp_path):
 
 
 def _checkpoint(scheduler, execution_id):
-    with scheduler._connect() as connection:
+    with scheduler.changes.connect() as connection:
         row = connection.execute(
             'SELECT checkpoint_json FROM executions WHERE execution_id = %s', (execution_id,),
         ).fetchone()

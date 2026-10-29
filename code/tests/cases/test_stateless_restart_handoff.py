@@ -55,7 +55,7 @@ def test_stateless_withdraw_and_claim_have_only_one_winner(execution):
 ])
 def test_stateless_claim_checkpoint_or_stop_is_never_withdrawn(execution, change):
     scheduler, service, request, args = execution
-    with scheduler._connect() as connection:
+    with scheduler.changes.connect() as connection:
         connection.execute('UPDATE executions SET ' + change + ' WHERE execution_id=%s', (request.execution_id,))
         connection.commit()
     before = scheduler.snapshot(request.execution_id)

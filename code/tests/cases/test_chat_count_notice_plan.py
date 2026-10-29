@@ -3,7 +3,8 @@
 import json
 
 from management_portal.execution import chat_position_index
-from management_portal.execution.agent_data_store import AgentDataStore, CHAT_COUNT_SQL
+from management_portal.execution.agent_data_chat import CHAT_COUNT_SQL
+from management_portal.execution.agent_data_store import AgentDataStore
 
 
 def _plan_nodes(node):

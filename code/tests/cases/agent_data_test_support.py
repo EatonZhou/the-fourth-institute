@@ -1,5 +1,21 @@
+import importlib
+
+from management_portal.execution import agent_data_contexts
 from management_portal.society_service import resident_backend
 from management_portal.society_service.domain_ports import execution_port
+
+
+# The record families of AgentDataStore that stamp their rows with the clock.
+STORE_CLOCK_MODULES = (
+    "agent_data_chat_writes", "agent_data_contexts", "agent_data_executions", "agent_data_forks",
+    "agent_data_segments", "agent_data_sessions", "agent_data_trace_edits", "agent_data_traces",
+)
+
+
+def patch_store_clock(monkeypatch, clock):
+    """Make AgentDataStore read the current time from ``clock``."""
+    for name in STORE_CLOCK_MODULES:
+        monkeypatch.setattr(importlib.import_module(f"management_portal.execution.{name}"), "utc_now", clock)
 
 
 def sequence_members(store, sequence_id):
@@ -8,7 +24,7 @@ def sequence_members(store, sequence_id):
 
 def session_transcript_ids(store, session_ref, *, agent_id=""):
     with store.database.read() as connection:
-        return store._session_transcript_ids(connection, session_ref, agent_id=agent_id)
+        return agent_data_contexts.session_transcript_ids(connection, session_ref, agent_id=agent_id)
 
 
 def session_route_id(record):

@@ -389,7 +389,7 @@ class ExecutionRuntime:
         """Interrupt the Provider work a lost Worker left running, then end.
 
         The scheduler hands such an execution to a new Worker only for this
-        (see ``Scheduler._requeue_abandoned_provider_work``): nothing is run
+        (see ``LeaseRecovery.requeue_abandoned_provider_work``): nothing is run
         again.  The interrupt is addressed with what the lost Worker
         checkpointed, else with the session the execution is bound to; it
         ends the Provider's active turn (or operation) in that session.  The

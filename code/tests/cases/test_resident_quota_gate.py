@@ -4,7 +4,6 @@
 """
 from types import SimpleNamespace
 import time
-from management_portal.execution import scheduler as scheduler_module
 
 import pytest
 
@@ -15,6 +14,7 @@ from management_portal.society_service.domain_ports import execution_port
 from tests.cases.test_conversation_account_resolution_batch import catalog, populate, ACTOR
 from tests.cases.test_codex_quota_reserve import scheduler, sample, submit, claim
 from tests.cases.agent_data_test_support import register_session
+from tests.cases.execution_test_support import patch_scheduler_time
 
 
 def test_idle_quota_gate_preserves_manual_intake_and_original_queue(catalog, scheduler, monkeypatch):
@@ -39,7 +39,7 @@ def test_idle_quota_gate_preserves_manual_intake_and_original_queue(catalog, sch
     assert claim(scheduler)['reason'] == 'quota_reserve'
     scheduler.update_account_quota('codex_one', {'status': 'unknown', 'observed_at': 0})
     with monkeypatch.context() as clock:
-        clock.setattr(scheduler_module, 'time', SimpleNamespace(time=lambda: time.time() + 61))
+        patch_scheduler_time(clock, SimpleNamespace(time=lambda: time.time() + 61))
         assert resident_protocol.get_resident_states(ids[:1], ACTOR)['items'][0]['state']['execution_gate']['reason'] == 'quota_recovery_unconfirmed'
     scheduler.update_account_quota('codex_one', sample(10))
     assert resident_protocol.get_resident_states(ids[:1], ACTOR)['items'][0]['state']['execution_gate']['state'] == 'open'
@@ -128,7 +128,7 @@ def test_invalid_or_empty_gate_requests_do_not_read_accounts_or_database(schedul
     def forbidden(*args, **kwargs):
         raise AssertionError('invalid requests must not read accounts or database')
     monkeypatch.setattr(scheduler.accounts, 'accounts', forbidden)
-    monkeypatch.setattr(scheduler, '_connect', forbidden)
+    monkeypatch.setattr(scheduler.changes, 'connect', forbidden)
     assert scheduler.binding_quota_states({}) == {}
     for invalid in ([], {'invalid binding': 'codex_one'}, {'resident:r': ''},
                     {f'resident:resident_{n:012x}': 'codex_one' for n in range(501)}):

@@ -12,20 +12,26 @@ from management_common.json_columns import json_value
 from management_common.portal_database import portal_database
 from management_portal import runtime_status
 from management_portal.execution.agent_data_store import AgentDataStore, get_agent_data_store
+from management_portal.execution.agent_data_tables import initialize_agent_data
 from management_portal.execution.context_seed import context_seed
 from management_portal.execution.contracts import ExecutionRequest
 from management_portal.execution.scheduler import Scheduler
 from management_portal.society_service.state_store import LineageDataStore
 
 
-@pytest.mark.parametrize('factory,table,tag,schema', [
-    (AgentDataStore, 'agent_store_meta', 'tfi.agent-data.v18', 'writer_agent'),
-    (LineageDataStore, 'lineage_meta', 'tfi.lineage-data.v60', 'writer_lineage'),
+# The schema initialization each store runs at startup.
+STORE_INITIALIZERS = {'AgentDataStore': initialize_agent_data, 'LineageDataStore': LineageDataStore._initialize}
+
+
+@pytest.mark.parametrize('store,table,tag,schema', [
+    ('AgentDataStore', 'agent_store_meta', 'tfi.agent-data.v18', 'writer_agent'),
+    ('LineageDataStore', 'lineage_meta', 'tfi.lineage-data.v60', 'writer_lineage'),
 ])
-def test_new_marker_and_existing_alias_startup_are_distinct(factory, table, tag, schema):
+def test_new_marker_and_existing_alias_startup_are_distinct(store, table, tag, schema):
     """新库写规范标记，旧前缀与错版本均拒绝且不改写值和行版本。"""
+    initialize = STORE_INITIALIZERS[store]
     database = portal_database(schema=schema)
-    database.write(factory._initialize)
+    database.write(initialize)
     def row():
         with database.read() as connection:
             return dict(connection.execute(
@@ -37,10 +43,10 @@ def test_new_marker_and_existing_alias_startup_are_distinct(factory, table, tag,
         before = row()
         if marker != tag:
             with pytest.raises(RuntimeError, match='does not match its schema'):
-                database.write(factory._initialize)
+                database.write(initialize)
         else:
-            database.write(factory._initialize)
-            database.write(factory._initialize)
+            database.write(initialize)
+            database.write(initialize)
         assert row() == before
 
 

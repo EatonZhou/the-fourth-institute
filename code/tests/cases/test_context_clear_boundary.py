@@ -19,7 +19,7 @@ import pytest
 
 from management_portal.execution import backends
 from management_portal.execution.agent_data_store import AgentDataStore, get_agent_data_store
-from management_portal.execution.agent_data_projection import persist_provider_compaction
+from management_portal.execution.agent_data_session_capture import persist_provider_compaction
 from management_portal.society_service import (
     project_domain,
     resident_domain,

@@ -5,6 +5,7 @@ from typing import Any, Mapping
 
 from management_common.principal import message_origin
 
+from . import agent_data_segments, agent_data_traces
 from .agent_data_store import AgentDataStore, canonical_json, stable_segment_id
 from .contracts import ExecutionInputControl, InputMedia
 from .agent_data_input import input_message
@@ -41,7 +42,7 @@ def materialize_delivered_input(
         if execution["provider_turn_id"] != control.expected_turn_id or not execution["provider_session_ref"]:
             raise ValueError("Appended input receipt does not match its Provider execution")
         agent_id = str(execution["agent_id"])
-        trace = store._agent_trace(connection, agent_id)
+        trace = agent_data_traces.agent_trace(connection, agent_id)
         if trace is None:
             raise ValueError("Appended input execution has no Agent Trace")
         trace_id = str(trace["sequence_id"])
@@ -60,13 +61,13 @@ def materialize_delivered_input(
             raise ValueError("Appended input source is outside the Agent Trace")
         linked_source = source_id if source_ordinal is not None else ""
         content = input_message(text, [InputMedia(**item) for item in media]) if media else text
-        store._insert_segment(
+        agent_data_segments.insert_segment(
             connection, segment_id=segment_id, segment_type="input", content=content,
             started_at=delivered_at, finished_at=delivered_at,
             status="completed", created_by_actor_ref=control.actor, performed_by_actor_ref=control.actor,
             content_type="application/json" if media else "text/plain; charset=utf-8", created_by_agent_id=agent_id,
             execution_id=control.execution_id, metadata={
-                **(store._read_segment_row(connection, linked_source)["metadata"] if linked_source else {}),
+                **(agent_data_segments.read_segment(connection, linked_source)["metadata"] if linked_source else {}),
                 "role": "user", "kind": "appended_provider_input", "control_id": control.control_id,
                 "provider_turn_id": control.expected_turn_id,
                 "input_media": media,
@@ -86,11 +87,11 @@ def materialize_delivered_input(
         if ordinal(segment_id) is None:
             if source_ordinal is not None:
                 connection.execute("UPDATE sequence_segments SET segment_id=%s WHERE sequence_id=%s AND segment_id=%s", (segment_id, trace_id, source_id))
-                store._touch_sequence(connection, trace_id, control.actor)
+                agent_data_traces.touch_sequence(connection, trace_id, control.actor)
                 from . import chat_position_index
                 chat_position_index.refresh_sequence(connection, trace_id)
             else:
-                store._append_sequence_ids(
+                agent_data_traces.append_sequence_ids(
                     connection, sequence=trace, segment_ids=[segment_id], actor_ref=control.actor,
                 )
         return {"segment_id": segment_id, "provider_turn_id": control.expected_turn_id}

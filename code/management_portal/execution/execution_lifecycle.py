@@ -122,6 +122,7 @@ def scheduler_transition(connection: Any, execution_id: str, event_type: str, at
     if event_type not in {"queued", "completed", "failed", "cancelled"}:
         return
     # Initialization is strict/versioned and cached by the domain owner.
+    from . import agent_data_executions
     from .agent_data_store import get_agent_data_store
     get_agent_data_store()
     table = '"' + _database_schema("agent") + '".executions'
@@ -149,7 +150,7 @@ def scheduler_transition(connection: Any, execution_id: str, event_type: str, at
         if digest is None:
             raise ValueError("Execution admission requires its original request digest")
         with _agent_transaction(connection) as agent_connection:
-            get_agent_data_store().record_execution_submission_in(
+            agent_data_executions.record_execution_submission_in(
                 agent_connection, ExecutionRequest.from_payload(request), request_digest=str(digest["value"]),
                 submitted_at=at,
             )

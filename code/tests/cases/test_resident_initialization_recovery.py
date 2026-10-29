@@ -20,7 +20,7 @@ from tests.cases.test_resident_folder_creation_contract import (
 from tests.cases.test_resident_fork_context_delivery import _record_provider_turn
 from management_portal.society_service import resident_initialization, resident_backend
 from management_portal.society_service.domain_ports import execution_port
-from management_portal.execution.agent_data_projection import persist_provider_compaction
+from management_portal.execution.agent_data_session_capture import persist_provider_compaction
 from tests.cases.isa_test_support import isolated_instruction_store, run
 import hashlib
 from tests.cases.permission_test_support import permissions, Fact
@@ -223,17 +223,17 @@ def test_promotion_rolls_back_binding_and_trace_together(compacted_child, monkey
     prefix = store.frozen_fork_segments(record['resident_id'])
     calls = []
     monkeypatch.setattr(resident_session_backend_domain, 'run_backend_session_operation', candidate_backend(calls))
-    place = store.place_in_trace_before
+    place = store.trace_edits.place_in_trace_before
     def fail_after_placement(*args, **kwargs):
         place(*args, **kwargs)
         raise RuntimeError('injected failure before promotion commit')
-    monkeypatch.setattr(store, 'place_in_trace_before', fail_after_placement)
+    monkeypatch.setattr(store.trace_edits, 'place_in_trace_before', fail_after_placement)
     current = execute(record)
     assert current['context_compaction_state'] != 'completed'
     assert resident_backend.session_record(record)['provider_session_ref'] == old_ref
     assert store.frozen_fork_segments(record['resident_id']) == prefix
     assert not store.initialization_session_fact(record['resident_id'], resident_backend.execution_binding_id(record))['receipt']
-    monkeypatch.setattr(store, 'place_in_trace_before', place)
+    monkeypatch.setattr(store.trace_edits, 'place_in_trace_before', place)
     assert resident_initialization.retry(record['resident_id'], 'sample_admin')['initialization_id'] == first['initialization_id']
     assert execute(record)['context_compaction_state'] == 'completed'
     assert [c['operation'] for c in calls] == ['create', 'compact']

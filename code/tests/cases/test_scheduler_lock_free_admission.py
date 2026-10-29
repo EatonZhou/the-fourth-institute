@@ -54,13 +54,14 @@ def submit(scheduler, *, binding_id="", service_type="agent_session"):
 
 
 class PausedClaim:
-    """Run worker-a's claim in a thread and hold it inside ``method`` until released."""
+    """Run worker-a's claim in a thread and hold it inside ``component.method`` until released."""
 
-    def __init__(self, scheduler, monkeypatch, method):
+    def __init__(self, scheduler, monkeypatch, component, method):
         self.entered = threading.Event()
         self.release = threading.Event()
         self.result = {}
-        original = getattr(scheduler, method)
+        owner = getattr(scheduler, component)
+        original = getattr(owner, method)
 
         def pause(*args, **kwargs):
             value = original(*args, **kwargs)
@@ -69,7 +70,7 @@ class PausedClaim:
                 assert self.release.wait(10)
             return value
 
-        monkeypatch.setattr(scheduler, method, pause)
+        monkeypatch.setattr(owner, method, pause)
         self.thread = threading.Thread(
             target=lambda: self.result.update(scheduler.claim(worker_id="worker-a", capabilities=CAPABILITIES)),
             daemon=True,
@@ -98,7 +99,8 @@ def claim_within(scheduler, seconds, worker_id="worker-b"):
     return result, time.monotonic() - started
 
 
-@pytest.mark.parametrize("pause_in", ["_fair_queue_order", "_reserve_capacity_dispatch"])
+@pytest.mark.parametrize("pause_in", [("admission", "fair_queue_order"), ("capacity", "reserve_capacity_dispatch")],
+                         ids=["fair_queue_order", "reserve_capacity_dispatch"])
 @pytest.mark.parametrize("claimer", ["same_process", "peer_process"])
 def test_a_paused_claim_does_not_hold_up_other_workers(scheduler, monkeypatch, claimer, pause_in):
     """一个 Worker 的领取停顿时，其他 Worker 照常领取
@@ -114,7 +116,7 @@ def test_a_paused_claim_does_not_hold_up_other_workers(scheduler, monkeypatch, c
     second = submit(scheduler, binding_id="resident:second")
     other = scheduler if claimer == "same_process" else new_scheduler()
 
-    with PausedClaim(scheduler, monkeypatch, pause_in) as paused:
+    with PausedClaim(scheduler, monkeypatch, *pause_in) as paused:
         result, _elapsed = claim_within(other, 3)
         assert result["claimed"] is True
     assert paused.result["claimed"] is True
@@ -135,7 +137,7 @@ def test_concurrent_claims_never_run_one_binding_twice(scheduler, monkeypatch):
     submit(scheduler, binding_id="resident:shared")
 
     # worker-a holds its claim of the first execution open, uncommitted.
-    with PausedClaim(scheduler, monkeypatch, "_reserve_capacity_dispatch") as paused:
+    with PausedClaim(scheduler, monkeypatch, "capacity", "reserve_capacity_dispatch") as paused:
         result, _elapsed = claim_within(scheduler, 3)
         assert result["claimed"] is False
     assert paused.result["claimed"] is True
@@ -154,7 +156,7 @@ def test_an_execution_is_claimed_once_when_claims_race(scheduler, monkeypatch):
     execution_id = submit(scheduler, service_type="chat_completion")
 
     # worker-b skips the row worker-a is claiming instead of waiting for it.
-    with PausedClaim(scheduler, monkeypatch, "_reserve_capacity_dispatch") as paused:
+    with PausedClaim(scheduler, monkeypatch, "capacity", "reserve_capacity_dispatch") as paused:
         result, _elapsed = claim_within(scheduler, 3)
     assert paused.result["claimed"] is True
     assert paused.result["execution"]["execution_id"] == execution_id
@@ -174,7 +176,7 @@ def test_claims_leave_expired_leases_to_maintenance(scheduler, monkeypatch):
     assert claimed["claimed"] is True
 
     later = time.time() + 60
-    monkeypatch.setattr("management_portal.execution.scheduler.time.time", lambda: later)
+    monkeypatch.setattr("time.time", lambda: later)
     assert scheduler.claim(worker_id="worker-b", capabilities=CAPABILITIES)["claimed"] is False
 
     assert scheduler.maintain()["recovered_expired_leases"] == 1
@@ -196,7 +198,7 @@ def test_unattributed_usage_counts_a_range_once_when_counters_race(scheduler, mo
     }
     usage = [("request-1", {"input_tokens": 10, "output_tokens": 2}, "2026-10-16T01:00:00Z")]
     entered, release = threading.Event(), threading.Event()
-    original = scheduler._record_token_usage
+    original = scheduler.usage.record_token_usage
     first_thread = []
 
     def pause(*args, **kwargs):
@@ -205,7 +207,7 @@ def test_unattributed_usage_counts_a_range_once_when_counters_race(scheduler, mo
             assert release.wait(10)
         return original(*args, **kwargs)
 
-    monkeypatch.setattr(scheduler, "_record_token_usage", pause)
+    monkeypatch.setattr(scheduler.usage, "record_token_usage", pause)
     counts = {}
 
     def count(name):

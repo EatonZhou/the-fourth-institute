@@ -35,7 +35,7 @@ class Adapter:
 def scheduler():
     result = Scheduler(accounts=ExecutionAccounts((Adapter(),)), quota_reserve_enabled=True,
                        dispatch_interval_min_seconds=0, dispatch_interval_max_seconds=0)
-    with result._connect() as connection:
+    with result.changes.connect() as connection:
         for account in result.accounts.accounts():
             for prefix in ('quota', 'quota_threshold'):
                 connection.execute('DELETE FROM execution_store_meta WHERE key=%s', (f'{prefix}:{account.capacity_key}',))
@@ -319,7 +319,7 @@ def test_zero_releases_queued_work_and_does_not_cancel_on_empty_balance(schedule
     pending = submit(scheduler, account)
     assert claim(scheduler)['reason'] == 'quota_reserve'
     # Disabling the threshold releases an old hold without another observation.
-    with scheduler._connect() as connection:
+    with scheduler.changes.connect() as connection:
         import json
         row = connection.execute('SELECT value FROM execution_store_meta WHERE key=%s',
                                  (f'quota:account:{account}',)).fetchone()

@@ -131,7 +131,7 @@ def test_round4_terminal_pruning_cascades_controls_but_retains_agent_data(isolat
                                      output={'message': 'synthetic terminal'}), **owner)
     assert scheduler.input_control(control.control_id)['status'] == 'failed'
     scheduler.acknowledge(request.execution_id, actor=request.actor)
-    with scheduler._connect() as connection:
+    with scheduler.changes.connect() as connection:
         connection.execute('UPDATE executions SET updated_at=%s WHERE execution_id=%s',
                            ('2000-01-01T00:00:00.000Z', request.execution_id))
         connection.commit()
@@ -139,7 +139,7 @@ def test_round4_terminal_pruning_cascades_controls_but_retains_agent_data(isolat
     with pytest.raises(KeyError):
         scheduler.snapshot(request.execution_id)
     assert scheduler.input_control(control.control_id) is None
-    assert request.execution_id not in scheduler._transient_event_items
+    assert request.execution_id not in scheduler.changes._transient_event_items
     assert isolated_rpc.manager.provider_binding('retention-binding')['backend_session_id'] == 'synthetic-native-retained'
 
 
@@ -199,7 +199,7 @@ def test_round4_concurrent_event_sequences_remain_unique_after_recursive_redacti
 
     with ThreadPoolExecutor(max_workers=2) as pool:
         assert list(pool.map(send, range(4))) == [{'ok': True}] * 4
-    events = [event for event in isolated_rpc.scheduler._transient_event_items[request.execution_id]
+    events = [event for event in isolated_rpc.scheduler.changes._transient_event_items[request.execution_id]
               if event['type'] == 'provider_event']
     sequences = [event['sequence'] for event in events]
     assert len(events) == 4 and len(set(sequences)) == 4 and sequences == sorted(sequences)

@@ -30,10 +30,11 @@ from management_portal.execution.provider_turn_usage import (
     read_dsh_turn_usage,
     read_kimi_turn_usage,
 )
-from management_portal.execution.scheduler import normalize_token_usage
+from management_portal.execution.scheduler_usage import normalize_token_usage
 from management_portal.society_service.resident_domain_common import (
     execution_token_usage_contract as _execution_token_usage_contract,
 )
+from tests.cases.execution_test_support import patch_scheduler_clock
 
 SESSION = "0d1c2b3a-4e5f-4a6b-8c7d-9e0f1a2b3c4d"
 
@@ -299,7 +300,7 @@ def test_a_request_read_after_the_turn_is_recorded_in_the_hour_it_was_made(monke
     from management_portal.execution.service import ExecutionServiceServer
     from tests.cases.test_execution_token_usage import WORKER_ID, _scheduler
 
-    monkeypatch.setattr("management_portal.execution.scheduler.execution_timestamp", lambda: "2026-10-01T12:30:00.000Z")
+    patch_scheduler_clock(monkeypatch, lambda: "2026-10-01T12:30:00.000Z")
     scheduler = _scheduler()
     request = ExecutionRequest.new(
         actor="sample_admin", prompt="long turn", service_type="agent_session", provider="codex", operation="turn",

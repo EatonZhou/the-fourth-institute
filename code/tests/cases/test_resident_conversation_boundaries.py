@@ -326,7 +326,7 @@ def test_a_delivered_message_with_a_business_ref_replays_as_the_same_identity():
     """带 business_ref 的投递消息经存储往返后不可变字段不变，重投视为同一条
 
     :design: decision_2fe6fd5367fb"""
-    from management_portal.execution.agent_data_store import _canonical_chat_message
+    from management_portal.execution.agent_data_messages import canonical_chat_message
     from management_portal.society_service import resident_conversation_stream as stream
 
     # business_ref is kept with the input (job / input state), not on the Message itself,
@@ -334,7 +334,7 @@ def test_a_delivered_message_with_a_business_ref_replays_as_the_same_identity():
     delivered = {"message_id": "msg_0123456789abcdef0123456789abcdef", "role": "user",
                  "content_parts": [{"type": "text", "text": "推荐一个 Resident"}],
                  "created_at": "2026-09-29T08:00:00Z", "business_ref": "which-resident:job-1"}
-    stored = stream._message_from_storage(_canonical_chat_message(stream._message_for_storage(delivered)))
+    stored = stream._message_from_storage(canonical_chat_message(stream._message_for_storage(delivered)))
     assert stream._immutable_message_fields(stored) == stream._immutable_message_fields(delivered)
 
 

@@ -68,7 +68,7 @@ def _conversations() -> tuple[AgentDataStore, list[str]]:
 def _summaries(store: AgentDataStore, agents: list[str]) -> dict[str, Any]:
     relay = family_facade.RELAY_REF.pattern
     requested = [*agents, "resident_summary_missing"]
-    store._conversation_summaries_cache.clear()
+    store.chat_activity._conversation_summaries_cache.clear()
     return {
         "summaries": store.chat_conversation_summaries(requested, "@CASE-A", excluded_business_ref=relay),
         "unfiltered": store.chat_conversation_summaries(requested, "case-a", finish=False),

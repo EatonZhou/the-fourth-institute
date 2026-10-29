@@ -477,7 +477,7 @@ def test_scheduler_capacity_setting_releases_an_obsolete_dispatch_window(
     """重新配置容量时按新派发间隔释放旧的等待窗口，下一条执行可立即认领"""
     now = 1_000.0
     monkeypatch.setattr(
-        "management_portal.execution.scheduler.time.time",
+        "time.time",
         lambda: now,
     )
     scheduler = Scheduler(
@@ -558,12 +558,12 @@ def test_scheduler_event_cursor_advances_across_service_replacement_contracts(tm
     with subtests.test(contract='test_scheduler_event_cursor_advances_across_service_replacement'), isolated_portal_case() as case_path:
         tmp_path = case_path
         first = Scheduler()
-        with first._condition:
-            first_event = first._event(None, "execution-one", "provider_event")
+        with first.changes.signal("execution"):
+            first_event = first.changes.event(None, "execution-one", "provider_event")
 
         replacement = Scheduler()
-        with replacement._condition:
-            replacement_event = replacement._event(
+        with replacement.changes.signal("execution"):
+            replacement_event = replacement.changes.event(
                 None,
                 "execution-one",
                 "provider_event",
@@ -6066,7 +6066,7 @@ def test_execution_preparation_uses_existing_binding_route_contracts(tmp_path, s
         )
         capabilities = ["chat_completion"]
         with mock.patch(
-            "management_portal.execution.scheduler.time.time",
+            "time.time",
             return_value=100.0,
         ):
             scheduler.register_worker(
@@ -6082,7 +6082,7 @@ def test_execution_preparation_uses_existing_binding_route_contracts(tmp_path, s
             )
 
         with mock.patch(
-            "management_portal.execution.scheduler.time.time",
+            "time.time",
             return_value=131.0,
         ):
             assert scheduler.claim(
@@ -6105,7 +6105,7 @@ def test_execution_preparation_uses_existing_binding_route_contracts(tmp_path, s
             worker_heartbeat_timeout_seconds=30,
         )
         with mock.patch(
-            "management_portal.execution.scheduler.time.time",
+            "time.time",
             return_value=100.0,
         ):
             scheduler.register_worker(
@@ -6115,7 +6115,7 @@ def test_execution_preparation_uses_existing_binding_route_contracts(tmp_path, s
             )
 
         with mock.patch(
-            "management_portal.execution.scheduler.time.time",
+            "time.time",
             return_value=131.0,
         ):
             health = scheduler.health()
@@ -6137,7 +6137,7 @@ def test_scheduler_dispatch_intervals_are_independent_by_capacity_key(
 ) -> None:
     """各容量分区独立计算派发间隔，账号单独配置的间隔只作用于该账号"""
     monkeypatch.setattr(
-        "management_portal.execution.scheduler.time.time",
+        "time.time",
         lambda: 2_000.0,
     )
     scheduler = Scheduler(
@@ -6196,7 +6196,7 @@ def test_scheduler_dispatch_intervals_are_independent_by_capacity_key(
         scheduler.submit(request)
 
     with mock.patch(
-        "management_portal.execution.scheduler.random.uniform",
+        "random.uniform",
         side_effect=lambda lower, upper: (lower + upper) / 2,
     ) as interval:
         claims = [
@@ -6240,7 +6240,7 @@ def test_session_release_bypasses_model_dispatch_interval(
 ) -> None:
     """会话 release 走会话控制分区，不受模型派发间隔限制"""
     monkeypatch.setattr(
-        "management_portal.execution.scheduler.time.time",
+        "time.time",
         lambda: 2_000.0,
     )
     scheduler = Scheduler(
@@ -6646,7 +6646,7 @@ def test_worker_registration_atomically_fences_replaced_generation_contracts(tmp
             "claim_token": claimed["claim_token"],
         }
         worker_scheduler.start(request.execution_id, **owner)
-        original_claim = worker_scheduler.claim
+        original_claim = worker_scheduler.claims.claim
         wait_result: dict[str, object] = {}
         first_check = threading.Event()
 
@@ -6662,7 +6662,7 @@ def test_worker_registration_atomically_fences_replaced_generation_contracts(tmp
             ))
 
         with mock.patch.object(
-            worker_scheduler,
+            worker_scheduler.claims,
             "claim",
             side_effect=observed_claim,
         ) as claim_call:
@@ -7249,7 +7249,7 @@ def test_peer_scheduler_control_changes_wake_waiters_promptly(
         worker_scheduler.submit_input_control(control)
     result = {}
     waiting = threading.Event()
-    condition = worker_scheduler._worker_control_changed
+    condition = worker_scheduler.changes.signal("control")
     original_wait = condition.wait
 
     def observe_wait(timeout):
