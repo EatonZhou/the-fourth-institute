@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Any, Mapping
 
-from . import resident_conversation_stream
+from . import resident_conversation_records
 
 # A queue change moves the place of every waiting input; only the first ones are reported.
 MAX_QUEUED_INPUTS = 20
@@ -63,24 +63,24 @@ def event_input_ids(event: Mapping[str, Any]) -> list[str]:
 
     payload = event.get("payload") if isinstance(event.get("payload"), Mapping) else {}
     event_type = str(event.get("event_type") or "")
-    if event_type == resident_conversation_stream.INPUT_STATE_CHANGED:
+    if event_type == resident_conversation_records.INPUT_STATE_CHANGED:
         input_state = payload.get("input_state") if isinstance(payload.get("input_state"), Mapping) else {}
         message_id = str(input_state.get("message_id") or "")
-    elif event_type in {resident_conversation_stream.MESSAGE_APPENDED, resident_conversation_stream.MESSAGE_UPDATED}:
+    elif event_type in {resident_conversation_records.MESSAGE_APPENDED, resident_conversation_records.MESSAGE_UPDATED}:
         message = payload.get("message") if isinstance(payload.get("message"), Mapping) else {}
         if message.get("role") != "agent":
             return []
         message_id = str(message.get("reply_to_message_id") or "")
-    elif event_type == resident_conversation_stream.STATE_CHANGED:
+    elif event_type == resident_conversation_records.STATE_CHANGED:
         state = payload.get("state") if isinstance(payload.get("state"), Mapping) else {}
         message_id = str(state.get("active_message_id") or "")
-    elif event_type == resident_conversation_stream.ACTIVITY_CHANGED:
+    elif event_type == resident_conversation_records.ACTIVITY_CHANGED:
         message_id = next((
             str(item.get("message_id") or "")
             for item in payload.get("activities") or []
             if isinstance(item, Mapping) and item.get("message_id")
         ), "")
-    elif event_type == resident_conversation_stream.QUEUE_CHANGED:
+    elif event_type == resident_conversation_records.QUEUE_CHANGED:
         # A waiting input's place moves with the queue.
         queue = payload.get("queue") if isinstance(payload.get("queue"), Mapping) else {}
         ids = [

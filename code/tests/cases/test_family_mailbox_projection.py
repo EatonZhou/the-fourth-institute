@@ -15,6 +15,7 @@ from management_portal.society_service import (
 )
 from tests.cases.family_test_support import set_role
 from management_portal.society_service.resident_execution_storage import queue_input
+from management_portal.society_service import resident_conversation_records
 from tests.cases.test_cross_owner_storage_integration import ACTOR, owners  # noqa: F401
 from tests.cases.test_wall04_residual_20260919 import instruction, team  # noqa: F401
 from tests.cases.test_resident_mailbox import _queue
@@ -166,13 +167,13 @@ def test_running_group_projects_relay_reply_progress_and_runtime(grouped_family,
         family_facade._UNMARKED.pop((resident_id, message_id), None)
     targets = family_facade.projection_targets({
         "resident_id": case.member_id,
-        "event_type": resident_conversation_stream.MESSAGE_APPENDED,
+        "event_type": resident_conversation_records.MESSAGE_APPENDED,
         "payload": {"message": reply},
     })
     assert set(targets) == ({case.facade_id, inner_id} if inner_id else {case.facade_id})
     state_targets = family_facade.projection_targets({
         "resident_id": case.member_id,
-        "event_type": resident_conversation_stream.INPUT_STATE_CHANGED,
+        "event_type": resident_conversation_records.INPUT_STATE_CHANGED,
         "payload": {"input_state": {"message_id": case.group_id, "state": "running"}},
     })
     assert set(state_targets) == set(targets)

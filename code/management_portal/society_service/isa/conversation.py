@@ -9,7 +9,7 @@ from management_portal.hatg.contracts import InstructionError, invalid, not_foun
 from management_portal.hatg.kernel import Invocation
 
 from .common import domain, lineage_of_resident, protocol
-from ..resident_conversation_stream import DEFAULT_HISTORY_LIMIT
+from .. import resident_conversation_records
 
 
 STREAM_POLL_SECONDS = 1.0
@@ -256,7 +256,7 @@ def get_conversation(inv: Invocation) -> dict[str, Any]:
     result = protocol().get_resident_conversation_snapshot(
         inv.argument("resident_id"),
         inv.caller,
-        history_limit=int(inv.argument("history_limit") or DEFAULT_HISTORY_LIMIT),
+        history_limit=int(inv.argument("history_limit") or resident_conversation_records.DEFAULT_HISTORY_LIMIT),
         input_message_id=inv.argument("input_message_id") or "",
         include_inheritance=True,
         include_inherited_context=inv.argument("include_inherited_context") is True,

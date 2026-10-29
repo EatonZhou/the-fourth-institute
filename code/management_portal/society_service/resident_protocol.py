@@ -37,6 +37,7 @@ from . import (
 from . import resident_fork_inheritance, resident_message_contract, resident_input_scope
 from .input_progress import input_progress
 from . import resident_execution_gate
+from . import resident_conversation_records
 
 
 FORWARD_MESSAGE_LIMIT = 20
@@ -153,7 +154,7 @@ def respond_resident_user_input(resident_id: str, actor: str, payload: dict[str,
     service = execution_client.service()
     control_id = "control-" + request["request_id"][:24]
     response = validate_response({**payload, "request_id": request["request_id"]}, request["questions"], request.get("interaction"))
-    current = repository._tool_status_messages([message], resident_id=resident_id)[0]["content_parts"]
+    current = repository.tool_status_messages([message], resident_id=resident_id)[0]["content_parts"]
     if any(part.get("type") == "tool_call" and part.get("status") != "pending" for part in current):
         raise ValueError("此请求已回答、取消或失效")
     receipt = service.append_input(
@@ -202,7 +203,7 @@ def _scan_requests(resident_id: str, actor: str) -> list[dict[str, Any]]:
         return []
     repository = resident_conversation_stream.get_repository()
     messages = repository.public_messages(target.resident_id, limit=REQUEST_SCAN_MESSAGES)
-    messages = repository._tool_status_messages(messages, resident_id=target.resident_id)
+    messages = repository.tool_status_messages(messages, resident_id=target.resident_id)
     if family_facade.is_facade(target.record):
         messages = family_facade.project_messages(target.record, messages)
     return _request_items(target.resident_id, messages)
@@ -227,7 +228,7 @@ def get_resident_request(resident_id: str, actor: str, message_id: str) -> dict[
     holder_id, message = _request_source(target, message_id)
     if message is None:
         raise KeyError(f"消息不存在：{message_id}")
-    messages = repository._tool_status_messages([message], resident_id=holder_id)
+    messages = repository.tool_status_messages([message], resident_id=holder_id)
     items = _request_items(target.resident_id, messages)
     if not items:
         raise KeyError(f"消息 {message_id} 不是等待回答的请求")
@@ -836,7 +837,7 @@ def get_resident_conversation_snapshot(
     resident_id: str,
     actor: str = "",
     *,
-    history_limit: int = resident_conversation_stream.DEFAULT_HISTORY_LIMIT,
+    history_limit: int = resident_conversation_records.DEFAULT_HISTORY_LIMIT,
     input_message_id: str = "",
     include_inheritance: bool = False,
     include_inherited_context: bool = False,
@@ -892,7 +893,7 @@ def get_conversation_messages(
     actor: str,
     page_token: str,
     *,
-    limit: int = resident_conversation_stream.DEFAULT_HISTORY_LIMIT,
+    limit: int = resident_conversation_records.DEFAULT_HISTORY_LIMIT,
 ) -> dict[str, Any]:
     target = _target(resident_id, actor)
     from . import personal_history
@@ -1498,7 +1499,7 @@ def get_resident_events(
         limit=limit,
     )
     state_events = [event for event in result.get("events") or []
-                    if event.get("event_type") == resident_conversation_stream.STATE_CHANGED
+                    if event.get("event_type") == resident_conversation_records.STATE_CHANGED
                     and isinstance((event.get("payload") or {}).get("state"), Mapping)]
     states = resident_execution_gate.project_state_sequence(
         target.resident_id, [event["payload"]["state"] for event in state_events],

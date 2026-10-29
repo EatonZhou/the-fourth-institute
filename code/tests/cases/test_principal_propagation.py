@@ -13,8 +13,8 @@ from management_portal.hatg.contracts import InstructionContext, InstructionErro
 from management_portal.society_service import lineage_domain, lineage_primitives, resident_input_queue_domain
 from management_portal.society_service import resident_lifecycle_domain
 from management_portal.society_service import resident_session_backend_domain
-from management_portal.society_service.resident_conversation_stream import protocol_message
 from management_portal.society_service import lineage_aggregate
+from management_portal.society_service import resident_conversation_records
 from tests.cases.isa_test_support import isolated_instruction_store, ok, publish_test_members, run  # noqa: F401 - fixture
 from tests.cases.model_api_test_support import DEEPSEEK_PRIMARY, register_apis
 from tests.cases.test_resident_conversation_boundaries import repository
@@ -58,10 +58,10 @@ def test_instruction_cannot_split_author_and_authenticated_principal_contracts(s
             ExecutionRequest.from_payload(forged)
     with subtests.test(contract='test_legacy_messages_keep_unknown_origin_and_existing_author'), isolated_portal_case() as case_path:
         message = {'message_id': 'msg_' + 'b' * 32, 'role': 'user', 'author_id': 'alice', 'content_parts': [{'type': 'text', 'text': 'legacy'}], 'created_at': ''}
-        assert protocol_message(message) == message
+        assert resident_conversation_records.protocol_message(message) == message
         forged = {**message, 'origin': message_origin(SENDER)}
         with pytest.raises(ValueError, match='disagrees'):
-            protocol_message(forged)
+            resident_conversation_records.protocol_message(forged)
     with subtests.test(contract='test_operation_context_is_isolated_and_reset_on_failure'), isolated_portal_case() as case_path:
         identity = OperationIdentity.for_actor(SENDER, initiated_by='alice')
         with operation_identity_scope(identity):

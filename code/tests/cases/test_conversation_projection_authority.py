@@ -11,13 +11,8 @@ from management_common.postgres_database import PostgresConnection
 from management_portal.execution.agent_data_store import AgentDataStore
 from management_portal.society_service import resident_conversation_event_relay
 from management_portal.society_service.resident_conversation_stream import (
-    INPUT_STATE_CHANGED,
-    MAX_INLINE_NOTIFICATION_BYTES,
-    MESSAGE_APPENDED,
-    MESSAGE_UPDATED,
     ResidentConversationRepository,
-    conversation_event_notification,
-)
+    )
 from management_portal.society_service.resident_conversation_event_relay import (
     ResidentConversationEventRelay,
 )
@@ -26,6 +21,7 @@ from management_portal.society_service.state_store import (
     LINEAGE_DATA_SCHEMA,
     LineageDataStore,
 )
+from management_portal.society_service import resident_conversation_records
 from tests.cases.database_test_support import register_owned_workspace
 
 
@@ -86,7 +82,7 @@ def test_append_is_ordered_and_idempotent_contracts(tmp_path, subtests, isolated
         ]
         events = repository.events_after(RESIDENT, 0)["events"]
         assert [event["cursor"] for event in events] == [1, 2]
-        assert events[0]["event_type"] == MESSAGE_APPENDED
+        assert events[0]["event_type"] == resident_conversation_records.MESSAGE_APPENDED
         assert events[0]["payload"]["message"]["message_id"] == "message_1"
     with subtests.test(contract='test_accepted_input_joins_sequence_only_when_activated'), isolated_portal_case() as case_path:
         repository = _repository(case_path)
@@ -687,11 +683,11 @@ def test_large_notification_omits_only_inline_payload() -> None:
         "schema": "tfi.resident-messages-state.v1",
         "resident_id": RESIDENT,
         "cursor": 4,
-        "event_type": MESSAGE_APPENDED,
+        "event_type": resident_conversation_records.MESSAGE_APPENDED,
         "occurred_at": "2026-08-23T00:00:00Z",
-        "payload": {"message": {"content_parts": [{"type": "text", "text": "x" * (MAX_INLINE_NOTIFICATION_BYTES + 1)}]}},
+        "payload": {"message": {"content_parts": [{"type": "text", "text": "x" * (resident_conversation_records.MAX_INLINE_NOTIFICATION_BYTES + 1)}]}},
     }
-    notification = conversation_event_notification(event)
+    notification = resident_conversation_records.conversation_event_notification(event)
     assert notification["payload_omitted"] is True
     assert notification["cursor"] == 4
     assert "payload" not in notification
@@ -703,14 +699,14 @@ def test_notification_rejects_noncurrent_event_schema(schema: object) -> None:
     event = {
         "resident_id": RESIDENT,
         "cursor": 4,
-        "event_type": MESSAGE_APPENDED,
+        "event_type": resident_conversation_records.MESSAGE_APPENDED,
         "occurred_at": "2026-08-23T00:00:00Z",
         "payload": {},
     }
     if schema is not None:
         event["schema"] = schema
     with pytest.raises(ValueError, match="unsupported Resident Conversation event schema"):
-        conversation_event_notification(event)
+        resident_conversation_records.conversation_event_notification(event)
 
 
 def test_snapshot_is_read_only(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -745,7 +741,7 @@ def test_event_log_keeps_message_headers_and_readers_get_the_trace_body(isolated
         repository.append_message(RESIDENT, reply)
 
         # The log keeps who each message is and what it answers, not its body.
-        assert _stored_payloads(repository, MESSAGE_APPENDED) == [
+        assert _stored_payloads(repository, resident_conversation_records.MESSAGE_APPENDED) == [
             {"message": {"message_id": "message_1", "role": "user"}},
             {"message": {"message_id": "message_2", "role": "agent", "reply_to_message_id": "message_1"}},
         ]
@@ -758,7 +754,7 @@ def test_event_log_keeps_message_headers_and_readers_get_the_trace_body(isolated
         repository.update_message(RESIDENT, "message_2", message={
             **reply, "content_parts": [{"type": "text", "text": "final answer"}],
         })
-        assert _stored_payloads(repository, MESSAGE_UPDATED) == [
+        assert _stored_payloads(repository, resident_conversation_records.MESSAGE_UPDATED) == [
             {"message": {"message_id": "message_2", "role": "agent", "reply_to_message_id": "message_1"}},
         ]
         texts = [
@@ -769,7 +765,7 @@ def test_event_log_keeps_message_headers_and_readers_get_the_trace_body(isolated
 
         # A message the trace does not have leaves its event without payload.
         repository.state_store.database.write(lambda connection: repository.events.record_event(
-            connection, RESIDENT, MESSAGE_APPENDED, {"message": {"message_id": "message_gone", "role": "user"}},
+            connection, RESIDENT, resident_conversation_records.MESSAGE_APPENDED, {"message": {"message_id": "message_gone", "role": "user"}},
             subject_id="message_gone",
         ))
         missing = repository.events_after(RESIDENT, 3)["events"]
@@ -809,11 +805,11 @@ def test_input_replies_are_the_trace_messages_answering_it(isolated_portal_case)
 
         # The log keeps the state; readers get the replies from the trace.
         assert all("reply_message_ids" not in payload["input_state"]
-                   for payload in _stored_payloads(repository, INPUT_STATE_CHANGED))
+                   for payload in _stored_payloads(repository, resident_conversation_records.INPUT_STATE_CHANGED))
         finished = {
             event["payload"]["input_state"]["message_id"]: event["payload"]["input_state"]["reply_message_ids"]
             for event in repository.events_after(RESIDENT, 0)["events"]
-            if event["event_type"] == INPUT_STATE_CHANGED
+            if event["event_type"] == resident_conversation_records.INPUT_STATE_CHANGED
             and event["payload"]["input_state"]["state"] != "running"
         }
         assert finished == {"asked": ["answer"], "command": ["receipt"], "broken": ["failure_notice"]}

@@ -25,6 +25,7 @@ import re
 from typing import Any, Callable, Iterable, Mapping
 
 from . import lineage_primitives, lineage_program, lineage_program_runtime, resident_conversation_stream
+from . import resident_conversation_records
 
 MESSAGE_RECEIVED_EVENT = "resident.message_received"
 ARRIVAL_STATES = frozenset({"queued", "running"})
@@ -72,7 +73,7 @@ def message_arrivals(events: Iterable[Mapping[str, Any]]) -> list[dict[str, Any]
     arrivals: list[dict[str, Any]] = []
     seen: set[str] = set()
     for event in events:
-        if str(event.get("event_type") or "") != resident_conversation_stream.INPUT_STATE_CHANGED:
+        if str(event.get("event_type") or "") != resident_conversation_records.INPUT_STATE_CHANGED:
             continue
         payload = event.get("payload") if isinstance(event.get("payload"), Mapping) else {}
         state = payload.get("input_state") if isinstance(payload.get("input_state"), Mapping) else {}

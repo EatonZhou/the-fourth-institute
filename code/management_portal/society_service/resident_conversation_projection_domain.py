@@ -5,6 +5,7 @@ from management_common.principal import is_user_or_resident
 
 from . import resident_backend, resident_conversation_stream, resident_domain_common
 from .domain_ports import execution_port
+from . import resident_conversation_records
 from difflib import SequenceMatcher
 from management_common.actor_identity import canonical_actor_id
 import re
@@ -51,7 +52,7 @@ def _terminal_input_unread_signature(
         not actor_id
         or not message_id
         or state_message_id != message_id
-        or terminal_state not in resident_conversation_stream.TERMINAL_INPUT_STATES
+        or terminal_state not in resident_conversation_records.TERMINAL_INPUT_STATES
     ):
         return signature
     reply_ids = [

@@ -63,7 +63,7 @@ def permits_message(repository, resident_id: str, actor: str, message_id: str) -
 
 
 def select_snapshot(snapshot: dict, message_id: str, repository, resident_id: str, *, history_limit: int = 200) -> dict:
-    from .resident_conversation_stream import DEFAULT_HISTORY_LIMIT, MAX_HISTORY_LIMIT
+    from .resident_conversation_records import DEFAULT_HISTORY_LIMIT, MAX_HISTORY_LIMIT
 
     value = copy.deepcopy(snapshot)
     state = repository.input_state(resident_id, message_id)

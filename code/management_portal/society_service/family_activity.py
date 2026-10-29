@@ -5,6 +5,7 @@ from typing import Any, Mapping
 
 from . import family_facade, family_storage, resident_conversation_stream, resident_lineage
 from .state_store import get_lineage_data_store
+from . import resident_conversation_records
 
 
 class _FamilyRead:
@@ -89,8 +90,8 @@ def project_states(
 
 def projection_targets(event: Mapping[str, Any]) -> list[str]:
     """Wake facade viewers for any participant's work/queue transition."""
-    if event.get("event_type") not in {resident_conversation_stream.STATE_CHANGED,
-                                      resident_conversation_stream.QUEUE_CHANGED}:
+    if event.get("event_type") not in {resident_conversation_records.STATE_CHANGED,
+                                      resident_conversation_records.QUEUE_CHANGED}:
         return []
     resident_id = str(event.get("resident_id") or "")
     if not resident_id:

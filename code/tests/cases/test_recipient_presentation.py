@@ -6,7 +6,8 @@ import subprocess
 
 from management_common import principal_presentation
 from management_portal.resources.portal import portal_route_script
-from management_portal.society_service.resident_conversation_stream import protocol_message
+
+from management_portal.society_service import resident_conversation_records
 
 
 def test_recipient_labels_are_scoped_read_only_and_escape_in_chat(monkeypatch):
@@ -21,7 +22,7 @@ def test_recipient_labels_are_scoped_read_only_and_escape_in_chat(monkeypatch):
                   ('user', 'tfi-exported-user'), ('user', 'ordinary-user'),
                   ('user', 'unsafe-label')])]
     before = copy.deepcopy(inputs)
-    messages = [protocol_message(m) for m in inputs]
+    messages = [resident_conversation_records.protocol_message(m) for m in inputs]
     assert inputs == before
     assert messages[0]['recipient_labels'] == {'user': {'tfi-exported-user': 'TFI portal'}}
     assert 'recipient_labels' not in messages[1]
@@ -51,14 +52,14 @@ def test_sender_and_recipient_share_labels_without_account_lookup(monkeypatch):
         source = {'message_id': 'sender_' + identity, 'role': 'user',
                   'content_parts': [{'type': 'text', 'text': 'Historical message'}],
                   'origin': message_origin(identity)}
-        message = protocol_message(source)
+        message = resident_conversation_records.protocol_message(source)
         assert message['origin'] == source['origin']
         if identity == 'tfi-exported-user':
             assert message['sender_label'] == 'TFI portal'
         else:
             assert 'sender_label' not in message
         messages.append(message)
-    legacy = protocol_message({'message_id': 'legacy', 'role': 'user',
+    legacy = resident_conversation_records.protocol_message({'message_id': 'legacy', 'role': 'user',
         'author_id': 'tfi-exported-user', 'content_parts': [{'type': 'text', 'text': 'Legacy'}]})
     assert legacy['sender_label'] == 'TFI portal'
     assert legacy['author_id'] == 'tfi-exported-user' and 'origin' not in legacy

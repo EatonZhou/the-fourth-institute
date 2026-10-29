@@ -19,6 +19,7 @@ from management_portal.society_service import (
 from management_portal.society_service import resident_directory_domain
 from management_portal.society_service import resident_domain as backend
 from management_portal.society_service.resident_record_domain import find_resident as _find_resident
+from management_portal.society_service import resident_conversation_records
 from tests.cases.test_resident_execution_protocol import VALID_PNG_BYTES as PNG
 from tests.cases.test_resident_execution_protocol import input_delivery, resident_record  # noqa: F401
 from tests.cases.permission_test_support import Fact, permissions  # noqa: F401
@@ -691,7 +692,7 @@ def test_cancelled_family_request_hides_only_undelivered_content(facade, monkeyp
     repository.set_input_state(MEMBER, copy_id, "cancelled", updated_at="2026-10-15T08:40:46Z")
 
     assert family_facade.projection_targets({
-        "event_type": resident_conversation_stream.INPUT_STATE_CHANGED, "resident_id": MEMBER,
+        "event_type": resident_conversation_records.INPUT_STATE_CHANGED, "resident_id": MEMBER,
         "payload": {"input_state": {"message_id": copy_id, "state": "cancelled"}},
     }) == [facade_id]
 
@@ -730,7 +731,7 @@ def test_a_facade_refreshes_when_its_request_moves_up_in_the_member_queue(facade
     """
 
     facade_id = _relayed(facade, monkeypatch)
-    queue = resident_conversation_stream.QUEUE_CHANGED
+    queue = resident_conversation_records.QUEUE_CHANGED
 
     def moved(*message_ids):
         return family_facade.projection_targets({"event_type": queue, "resident_id": MEMBER, "payload": {
@@ -740,7 +741,7 @@ def test_a_facade_refreshes_when_its_request_moves_up_in_the_member_queue(facade
     assert moved("msg_00000000000000d1", "msg_00000000000000e4") == [facade_id]
     assert moved("msg_00000000000000d1") == []
     assert family_facade.projection_targets({
-        "event_type": resident_conversation_stream.MESSAGE_APPENDED, "resident_id": MEMBER,
+        "event_type": resident_conversation_records.MESSAGE_APPENDED, "resident_id": MEMBER,
         "payload": {"message": {"role": "agent", "reply_to_message_id": "msg_00000000000000e4"}},
     }) == [facade_id]
 
@@ -831,7 +832,7 @@ def test_a_nested_family_follows_the_relay_chain_to_the_member_doing_the_work(mo
     titles = {outer: "外层", inner: "内层 Family", MEMBER: "前端"}
 
     class Repository:
-        def _tool_status_messages(self, messages, *, resident_id):
+        def tool_status_messages(self, messages, *, resident_id):
             return messages
 
         def message_business_ref(self, resident_id, message_id):
@@ -1005,7 +1006,7 @@ def test_the_facade_conversation_reads_like_a_resident_answering_its_requests(mo
     reads = []
 
     class Repository:
-        def _tool_status_messages(self, messages, *, resident_id):
+        def tool_status_messages(self, messages, *, resident_id):
             return messages
 
         def message_business_ref(self, resident_id, message_id):
@@ -1137,8 +1138,8 @@ def test_facade_viewers_hear_when_a_member_works_on_a_relayed_message(monkeypatc
         def publish(self, subject, payload):
             published.append((subject, payload))
 
-    event = {"schema": resident_conversation_stream.RESIDENT_CONVERSATION_SCHEMA,
-             "event_type": resident_conversation_stream.INPUT_STATE_CHANGED, "resident_id": MEMBER, "cursor": 7,
+    event = {"schema": resident_conversation_records.RESIDENT_CONVERSATION_SCHEMA,
+             "event_type": resident_conversation_records.INPUT_STATE_CHANGED, "resident_id": MEMBER, "cursor": 7,
              "occurred_at": "2026-10-03T10:00:00Z", "payload": {"input_state": {"message_id": "msg_0000000000000e01"}}}
     monkeypatch.setattr(family_facade, "projection_targets", lambda item: ["resident_ffffffffffff"] if item is event else [])
     relay = ResidentConversationEventRelay(object(), Publisher())

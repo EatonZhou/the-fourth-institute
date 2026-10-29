@@ -10,10 +10,11 @@ import pytest
 from management_portal.execution.agent_data_store import AgentDataStore
 from management_portal.society_service import invariant_locks
 from management_portal.society_service.resident_conversation_stream import (
-    MESSAGE_UPDATED, ResidentConversationRepository,
+    ResidentConversationRepository,
 )
 from management_portal.society_service.resident_lifecycle import ResidentLifecycleOperations
 from management_portal.society_service.state_store import LineageDataStore
+from management_portal.society_service import resident_conversation_records
 
 
 @pytest.fixture
@@ -179,7 +180,7 @@ def test_reset_recovery_preserves_new_messages_and_finishes_archive_projection(r
     original = repository.events.record_event
 
     def broken_projection(*args, **kwargs):
-        if args[2] == MESSAGE_UPDATED:
+        if args[2] == resident_conversation_records.MESSAGE_UPDATED:
             raise RuntimeError("crash after AgentData archive")
         return original(*args, **kwargs)
 
@@ -196,7 +197,7 @@ def test_reset_recovery_preserves_new_messages_and_finishes_archive_projection(r
     assert not operations.pending(resident_id)
     assert recovered.context_reset_boundary(resident_id) == [message(2)["message_id"]]
     events = recovered.events_after(resident_id, 0)["events"]
-    assert any(event["event_type"] == MESSAGE_UPDATED and event["payload"] == {
+    assert any(event["event_type"] == resident_conversation_records.MESSAGE_UPDATED and event["payload"] == {
         "message_id": message(1)["message_id"], "removed": True,
     } for event in events)
     assert not operations.run(operation_id, lambda *_: pytest.fail("finished reset replayed"))
@@ -327,15 +328,14 @@ def test_a_delivered_message_with_a_business_ref_replays_as_the_same_identity():
 
     :design: decision_2fe6fd5367fb"""
     from management_portal.execution.agent_data_messages import canonical_chat_message
-    from management_portal.society_service import resident_conversation_stream as stream
 
     # business_ref is kept with the input (job / input state), not on the Message itself,
     # so an idempotent redelivery compares equal to what storage returns.
     delivered = {"message_id": "msg_0123456789abcdef0123456789abcdef", "role": "user",
                  "content_parts": [{"type": "text", "text": "推荐一个 Resident"}],
                  "created_at": "2026-09-29T08:00:00Z", "business_ref": "which-resident:job-1"}
-    stored = stream._message_from_storage(canonical_chat_message(stream._message_for_storage(delivered)))
-    assert stream._immutable_message_fields(stored) == stream._immutable_message_fields(delivered)
+    stored = resident_conversation_records.message_from_storage(canonical_chat_message(resident_conversation_records.message_for_storage(delivered)))
+    assert resident_conversation_records.immutable_message_fields(stored) == resident_conversation_records.immutable_message_fields(delivered)
 
 
 def test_activity_is_current_state_and_never_an_event_record(repository):
@@ -356,7 +356,7 @@ def test_activity_is_current_state_and_never_an_event_record(repository):
         assert event["live"] is True and event["cursor"] == cursor
         assert event["payload"]["activities"][0]["content"] == f"step {index}"
     events = repository.events_after(resident_id, 0)["events"]
-    assert resident_conversation_stream.ACTIVITY_CHANGED not in {item["event_type"] for item in events}
+    assert resident_conversation_records.ACTIVITY_CHANGED not in {item["event_type"] for item in events}
     snapshot = repository.snapshot(resident_id)
     assert snapshot["cursor"] == cursor
     assert snapshot["activities"][0]["content"] == "step 2"

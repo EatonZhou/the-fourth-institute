@@ -234,7 +234,7 @@ def test_native_chat_projects_canonical_segments_from_redacted_activity(
         resident_id,  request.execution_id, outputs,
     )
     assert [message["message_id"] for message in replay] == [message["message_id"] for message in messages]
-    visible = repository._tool_status_messages(messages, resident_id=resident_id)
+    visible = repository.tool_status_messages(messages, resident_id=resident_id)
     assert visible[0]["content_parts"][0]["status"] == ending
     assert store.segment(outputs[0]["content_parts"][0]["segment_id"])["content"]["status"] == "pending"
     assert not client.user_inputs.blocking("thread-native")
@@ -316,7 +316,7 @@ def test_native_response_permission_source_binding_and_bounded_status(resident_r
         resident_protocol.respond_resident_user_input(resident_id, "CASE-A", payload)
     malformed = {"role": "user", "content_parts": [{"type": "tool_call", "tool_name": "request_user_input"}]}
     monkeypatch.setattr(store, "segment", Mock(side_effect=AssertionError("user content cannot query tool requests")))
-    assert repository._tool_status_messages([malformed], resident_id=resident_id) == [malformed]
+    assert repository.tool_status_messages([malformed], resident_id=resident_id) == [malformed]
 
 
 def test_blocking_wait_does_not_consume_resume_reconciliation_timeout(tmp_path, monkeypatch):

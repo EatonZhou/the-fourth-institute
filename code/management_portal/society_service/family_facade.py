@@ -971,7 +971,7 @@ def _facade_reply(
     projected = copy.deepcopy(dict(reply))
     # Interactive requests belong to the worker's execution, including their
     # answered/expired state. Project that state before changing authorship.
-    resident_conversation_stream.get_repository()._tool_status_messages(
+    resident_conversation_stream.get_repository().tool_status_messages(
         [projected], resident_id=str(relay.get("resident_id") or ""),
     )
     for part in projected.get("content_parts") or []:

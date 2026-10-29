@@ -66,6 +66,7 @@ from management_portal.execution.service import ExecutionService
 from management_portal.execution.session_manager import SessionManager
 from management_portal.society_service import execution_client
 from management_portal.society_service import lineage_aggregate
+from management_portal.society_service import resident_conversation_records
 from tests.cases.society_service_test_support import install_resource_boundary
 
 
@@ -118,10 +119,10 @@ def test_resident_default_runtime_reaches_execution_contracts(monkeypatch, subte
             monkeypatch.setattr(execution_events, 'execution_projection_from_execution', lambda *args, **kwargs: {'execution_id': execution_id, 'outputs': [], 'runtime_details': [subagent_detail]})
             detail, = resident_execution_engine_domain.runtime_activity_for_execution('resident_444444444444', {'execution_id': execution_id, 'status': 'running', 'submitted_at': '2026-10-14T00:00:00Z'})['details']
             assert (detail['kind'], detail['status'], detail['subagent']) == ('subagent', 'running', card)
-            published, = resident_conversation_stream.protocol_activities('resident_444444444444', [detail])
+            published, = resident_conversation_records.protocol_activities('resident_444444444444', [detail])
             assert published['subagent'] == card
             # Only a subagent activity carries a card.
-            other, = resident_conversation_stream.protocol_activities('resident_444444444444', [{**detail, 'kind': 'tool'}])
+            other, = resident_conversation_records.protocol_activities('resident_444444444444', [{**detail, 'kind': 'tool'}])
             assert 'subagent' not in other
     with subtests.test(contract='test_actual_sent_prompt_decorates_canonical_user_message'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
@@ -3989,7 +3990,7 @@ def test_conversation_native_controls_follow_snapshot_and_events(resident_record
                     assert raw_receipt == before_receipt
         assert repository.current_projection(resident_id) == original_projection
         assert repository.events_after(resident_id, event["cursor"] - 1) == original_events
-        notification = resident_conversation_stream.conversation_event_notification(event)
+        notification = resident_conversation_records.conversation_event_notification(event)
         assert notification["payload_omitted"] is True
         assert "payload" not in notification
         assert "controls" not in repository.events_after(resident_id, event["cursor"] - 1)["events"][0]["payload"]

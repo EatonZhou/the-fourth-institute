@@ -9,6 +9,8 @@ from management_portal import chatroom_backend
 import management_portal.resources.isa as resource_isa
 from tests.cases.test_resident_execution_protocol import input_delivery, resident_record  # noqa: F401
 
+from management_portal.society_service import resident_conversation_records
+
 
 ALICE = "alice"
 BOB = "bob"
@@ -821,12 +823,12 @@ def test_the_society_service_tells_a_chatroom_when_a_called_residents_input_move
     def event(event_type, payload):
         return {"event_type": event_type, "resident_id": HELPER, "payload": payload}
 
-    activity = event(stream.ACTIVITY_CHANGED, {"activities": [{"activity_id": "act_1", "message_id": "msg_called"}]})
+    activity = event(resident_conversation_records.ACTIVITY_CHANGED, {"activities": [{"activity_id": "act_1", "message_id": "msg_called"}]})
     relay._publish_chatroom_progress(activity)
-    relay._publish_chatroom_progress(event(stream.QUEUE_CHANGED, {"queue": {"items": [
+    relay._publish_chatroom_progress(event(resident_conversation_records.QUEUE_CHANGED, {"queue": {"items": [
         {"message_id": "msg_direct"}, {"message_id": "msg_called"},
     ]}}))
-    relay._publish_chatroom_progress(event(stream.STATE_CHANGED, {"state": {"active_message_id": "msg_direct"}}))
+    relay._publish_chatroom_progress(event(resident_conversation_records.STATE_CHANGED, {"state": {"active_message_id": "msg_direct"}}))
     assert woken == [{"business_ref": "chatroom_aaaaaaaaaaaa/msg_1", "resident_id": HELPER, "message_id": "msg_called"}] * 2
     # A message's business_ref never changes, so each is read once.
     assert sorted(reads) == [(HELPER, "msg_called"), (HELPER, "msg_direct")]

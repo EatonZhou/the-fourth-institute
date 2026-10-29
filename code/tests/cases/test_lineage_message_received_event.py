@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from management_portal.society_service import lineage_message_events as events
 from management_portal.society_service import lineage_primitives
-from management_portal.society_service.resident_conversation_stream import INPUT_STATE_CHANGED, QUEUE_CHANGED
+from management_portal.society_service.resident_conversation_records import INPUT_STATE_CHANGED, QUEUE_CHANGED
 
 
 def _input(cursor: int, message_id: str, state: str) -> dict:

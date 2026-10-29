@@ -15,6 +15,7 @@ from management_portal.execution.contracts import (
 from management_portal.execution.context_seed import context_seed
 from management_portal.execution.agent_data_store import AgentDataStore
 from management_portal.society_service.state_store import LINEAGE_DATA_SCHEMA, LineageDataStore
+from management_portal.society_service import resident_conversation_records
 
 
 @pytest.fixture(params=['archive', 'tfi', 'wrong_version'])
@@ -163,13 +164,12 @@ def test_society_readers_keep_non_schema_validation(tmp_path, monkeypatch, names
 @pytest.mark.parametrize('reader', ['evidence', 'notification'])
 def test_conversation_readers(namespace, reader):
     from management_portal.society_service.resident_context.evidence import project_conversation_messages
-    from management_portal.society_service.resident_conversation_stream import conversation_event_notification
     value = {'schema': tagged('archive.resident-messages-state.v1', namespace),
              'messages': [], 'input_states': [], 'event_type': 'message.appended',
              'resident_id': 'resident_aaaaaaaaaaaa', 'cursor': 5}
     before = deepcopy(value)
     result = checked(namespace, lambda: (project_conversation_messages(value)
-        if reader == 'evidence' else conversation_event_notification(value)))
+        if reader == 'evidence' else resident_conversation_records.conversation_event_notification(value)))
     if namespace == 'tfi':
         assert result == ([] if reader == 'evidence' else value)
     assert value == before

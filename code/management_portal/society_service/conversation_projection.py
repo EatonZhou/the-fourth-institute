@@ -7,7 +7,7 @@ from typing import Any
 from urllib.parse import unquote
 
 from . import identity_contract, resident_protocol, resource_client
-from .resident_conversation_stream import DEFAULT_HISTORY_LIMIT
+from . import resident_conversation_records
 
 
 DEFAULT_CONTEXT_MAX_MESSAGES = 160
@@ -89,13 +89,13 @@ def _snapshot(resource_id: str, actor: str, *, max_messages: int) -> dict[str, A
     snapshot = resident_protocol.get_resident_conversation_snapshot(
         resource_id,
         actor,
-        history_limit=DEFAULT_HISTORY_LIMIT,
+        history_limit=resident_conversation_records.DEFAULT_HISTORY_LIMIT,
     )
     messages = _normalize_messages(snapshot.get("messages"))
     token = str(snapshot.get("next_page_token") or "")
     while token:
         page = resident_protocol.get_conversation_messages(
-            resource_id, actor, token, limit=DEFAULT_HISTORY_LIMIT,
+            resource_id, actor, token, limit=resident_conversation_records.DEFAULT_HISTORY_LIMIT,
         )
         older = _normalize_messages(page.get("messages"))
         # Older pages contribute their count and comparison digest. Keep text

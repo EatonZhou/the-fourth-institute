@@ -12,6 +12,7 @@ import pytest
 
 from management_portal.society_service import family_activity, family_facade, resident_protocol
 from management_portal.society_service import resident_conversation_stream
+from management_portal.society_service import resident_conversation_records
 from tests.cases.family_test_support import mock_family_rosters
 from tests.cases.test_family_facade import facade, input_delivery, resident_record  # noqa: F401
 
@@ -127,6 +128,6 @@ def test_unrelayed_member_state_changes_refresh_the_facade(family):
     """非转交任务的成员状态变化也刷新门面"""
     facade, _, _, _ = family
     for rid in (MEMBER, ROUTER, STEWARD):
-        assert family_facade.projection_targets({'resident_id': rid, 'event_type': resident_conversation_stream.STATE_CHANGED,
+        assert family_facade.projection_targets({'resident_id': rid, 'event_type': resident_conversation_records.STATE_CHANGED,
                                                 'payload': {'state': {'work_state': 'running'}}}) == [facade['resident_id']]
-    assert family_activity.projection_targets({'resident_id': MEMBER, 'event_type': resident_conversation_stream.ACTIVITY_CHANGED}) == []
+    assert family_activity.projection_targets({'resident_id': MEMBER, 'event_type': resident_conversation_records.ACTIVITY_CHANGED}) == []

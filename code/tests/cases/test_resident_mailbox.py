@@ -23,6 +23,7 @@ from management_portal.society_service import (
     resident_queue_control_domain,
 )
 from management_portal.society_service import resident_protocol
+from management_portal.society_service import resident_conversation_records
 from management_portal.resources.portal import portal_route_script
 from tests.cases.test_cross_owner_storage_integration import ACTOR, owners  # noqa: F401 - fixture
 from tests.cases.test_wall04_residual_20260919 import instruction, team  # noqa: F401 - fixture
@@ -79,7 +80,7 @@ def test_delivered_mailbox_group_has_original_bodies_before_snapshot_refresh(tea
         events = repository.events_after(resident_id, before["cursor"])["events"]
         delivered = [event["payload"]["message"] for event in events
                      if event["event_type"] in {
-                         resident_conversation_stream.MESSAGE_APPENDED, resident_conversation_stream.MESSAGE_UPDATED,
+                         resident_conversation_records.MESSAGE_APPENDED, resident_conversation_records.MESSAGE_UPDATED,
                      } and event.get("payload", {}).get("message", {}).get("message_id") == group_id]
         assert len(delivered) == 2  # appended and updated must both keep the body
     else:

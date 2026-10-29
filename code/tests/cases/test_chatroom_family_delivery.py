@@ -16,6 +16,7 @@ from management_portal.society_service import (
     resident_protocol,
     resident_record_domain,
 )
+from management_portal.society_service import resident_conversation_records
 from tests.cases.family_test_support import set_role
 from tests.cases.permission_test_support import permissions  # noqa: F401
 from tests.cases.test_family_facade import MEMBER, _register_test_member
@@ -78,7 +79,7 @@ def test_chatroom_waits_for_family_work_and_projects_its_terminal(delivery_resid
     wakes = []
     monkeypatch.setattr(chatroom, "_publish", lambda room, **kwargs: wakes.append((room["chatroom_id"], kwargs)))
     relay = resident_conversation_event_relay.ResidentConversationEventRelay(object(), SimpleNamespace(publish=lambda *_: None))
-    relay._publish_chatroom_progress({"resident_id": MEMBER, "event_type": resident_conversation_stream.ACTIVITY_CHANGED,
+    relay._publish_chatroom_progress({"resident_id": MEMBER, "event_type": resident_conversation_records.ACTIVITY_CHANGED,
                                      "payload": {"activities": [activity]}})
     assert wakes == [(room_id, {"fields": ["progress"], "inbox": False})]
     reply_id = "msg_33333333333333333333333333333333"
@@ -87,7 +88,7 @@ def test_chatroom_waits_for_family_work_and_projects_its_terminal(delivery_resid
             "reply_to_message_id": member_input, "content_parts": [{"type": "text", "text": "Fixed"}]})
     terminal = "completed" if outcome == "empty" else outcome
     repo.set_input_state(MEMBER, member_input, terminal, error={"message": "Worker stopped"} if terminal != "completed" else {})
-    event = {"resident_id": MEMBER, "event_type": resident_conversation_stream.INPUT_STATE_CHANGED,
+    event = {"resident_id": MEMBER, "event_type": resident_conversation_records.INPUT_STATE_CHANGED,
              "payload": {"input_state": {"message_id": member_input, "state": terminal}}}
     # Completion reaches the Chatroom without a viewer polling; repeated events are harmless.
     relay._publish_chatroom_progress(event)
@@ -136,6 +137,6 @@ def test_nested_family_state_and_events_follow_the_original_request(monkeypatch)
     wakes = []
     monkeypatch.setattr(chatroom, "handle_resident_progress", lambda **kw: wakes.append(kw))
     relay = resident_conversation_event_relay.ResidentConversationEventRelay(object(), SimpleNamespace(publish=lambda *_: None))
-    relay._publish_chatroom_progress({"resident_id": worker, "event_type": resident_conversation_stream.STATE_CHANGED,
+    relay._publish_chatroom_progress({"resident_id": worker, "event_type": resident_conversation_records.STATE_CHANGED,
                                      "payload": {"state": {"active_message_id": leaf}}})
     assert wakes == [{"resident_id": outer, "message_id": original, "business_ref": refs[(outer, original)]}]

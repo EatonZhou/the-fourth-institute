@@ -13,7 +13,7 @@ import unittest
 from management_common.provider_turn_artifacts import TurnArtifacts
 from management_portal.execution import event_projection as projection
 from management_portal.society_service import resident_execution_engine_domain
-from management_portal.society_service import resident_conversation_stream as stream
+from management_portal.society_service import resident_conversation_records
 from management_portal.resources.portal import portal_route_script
 
 
@@ -74,21 +74,21 @@ class NativePlanProjection(unittest.TestCase):
                     'execution_id': reader.execution_id, 'submitted_at': '2026-10-27T00:00:00Z',
                     'user_message_id': 'msg_input',
                 }, transcript_projection=snapshot)
-                activities = stream.protocol_activities('resident_planfixture', projected['details'])
+                activities = resident_conversation_records.protocol_activities('resident_planfixture', projected['details'])
                 self.assertEqual(activities[0]['native_plan'], snapshot['runtime_details'][0]['native_plan'])
                 self.assertEqual(activities[0]['message_id'], 'msg_input')
                 activities[0]['native_plan']['plan'][0]['status'] = 'changed-copy'
                 self.assertNotEqual(projected['details'][0]['native_plan']['plan'][0]['status'], 'changed-copy')
-                wire.append({'runtime_details': stream.protocol_activities('resident_planfixture', projected['details'])})
+                wire.append({'runtime_details': resident_conversation_records.protocol_activities('resident_planfixture', projected['details'])})
             row = wire[0]['runtime_details'][0]
             for field, value in [('execution_id', 'execution-other'), ('thread_id', ''), ('message_id', ''), ('diff', '+final')]:
                 invalid = copy.deepcopy(row)
                 invalid['native_plan'][field] = value
                 with self.subTest(field=field), self.assertRaises(ValueError):
-                    stream.protocol_activity(invalid)
-            self.assertNotIn('native_plan', stream.protocol_activity({**row, 'status': 'completed'}))
+                    resident_conversation_records.protocol_activity(invalid)
+            self.assertNotIn('native_plan', resident_conversation_records.protocol_activity({**row, 'status': 'completed'}))
             with self.assertRaises(ValueError):
-                stream.protocol_activities('resident_wrong', [row])
+                resident_conversation_records.protocol_activities('resident_wrong', [row])
             browser = subprocess.run(
                 ['node', str(Path(__file__).with_name('javascript') / 'native_plan_live.cjs')],
                 input=json.dumps({'routeScript': portal_route_script().decode(), 'snapshots': wire, 'finalMessage': final_message}),

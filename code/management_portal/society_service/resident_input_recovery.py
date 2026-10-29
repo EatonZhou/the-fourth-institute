@@ -22,6 +22,7 @@ from . import (
 )
 from .resident_mailbox import MailboxConflict
 from .state_store import get_lineage_data_store
+from . import resident_conversation_records
 
 REQUEUEABLE_STATES = frozenset({"cancelled", "failed"})
 PREVIEW_CHARS = 200
@@ -124,8 +125,8 @@ def _validate_recovery_item(record: Mapping[str, Any], item: Mapping[str, Any], 
         except KeyError:
             stored = repository.agent_data.group_source_message(resident_id, message_id)
             if stored is not None:
-                public = resident_conversation_stream._message_from_storage(stored)
-                fields = resident_conversation_stream._immutable_message_fields
+                public = resident_conversation_records.message_from_storage(stored)
+                fields = resident_conversation_records.immutable_message_fields
                 if fields(public) != fields(message):
                     raise MailboxConflict(f"原消息前像冲突：{message_id}")
         expected = [str(m.get("message_id") or "") for p in message["content_parts"]
@@ -165,7 +166,7 @@ def _validate_recovery_infos(
     store = get_lineage_data_store()
     states = repository.input_states_by_id([(resident_id, mid) for mid in ids])
     receipts = store.terminal_input_receipts([(resident_id, mid) for mid in ids])
-    fields = resident_conversation_stream._immutable_message_fields
+    fields = resident_conversation_records.immutable_message_fields
     for info, message_id in zip(infos, ids):
         message = repository.message(resident_id, message_id)
         state = states.get((resident_id, message_id))
@@ -190,7 +191,7 @@ def _validate_recovery_infos(
                 or (waiting and (waiting["place"] != "info" or waiting["group_id"]))):
             raise MailboxConflict(f"info 已有其他执行位置或归属：{message_id}")
         if waiting:
-            public = resident_conversation_stream._message_from_storage(waiting["message"])
+            public = resident_conversation_records.message_from_storage(waiting["message"])
             if fields(public) != fields(message) or waiting["author_id"] != message["author_id"]:
                 raise MailboxConflict(f"info 原消息前像冲突：{message_id}")
         # Consumption completes the info independently of its carrier's outcome.

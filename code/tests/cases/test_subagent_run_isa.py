@@ -11,6 +11,7 @@ from unittest.mock import Mock
 import pytest
 
 from management_portal.society_service import execution_client, resident_access, resident_conversation_stream, resident_protocol
+from management_portal.society_service import resident_conversation_records
 from tests.cases.test_resident_execution_protocol import resident_record  # noqa: F401
 from tests.cases.test_subagent_trace import _turn
 
@@ -101,13 +102,13 @@ def test_a_running_subagents_activity_names_its_execution() -> None:
 
     :importance: P2
     """
-    activity = resident_conversation_stream.protocol_activity({
+    activity = resident_conversation_records.protocol_activity({
         "activity_id": "runtime-update:execution-live:subagent:toolu_agent", "resident_id": "resident_aaaaaaaaaaaa",
         "kind": "subagent", "status": "running", "execution_id": "execution-live",
         "subagent": {"tool_use_id": "toolu_agent", "description": "Survey"},
     })
     assert activity["execution_id"] == "execution-live" and activity["subagent"]["tool_use_id"] == "toolu_agent"
-    other = resident_conversation_stream.protocol_activity({
+    other = resident_conversation_records.protocol_activity({
         "activity_id": "a1", "resident_id": "resident_aaaaaaaaaaaa", "kind": "tool", "status": "running", "execution_id": "execution-live",
     })
     assert "execution_id" not in other

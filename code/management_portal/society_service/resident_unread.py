@@ -4,23 +4,25 @@ from __future__ import annotations
 from management_common.principal import actor_principal, message_recipients
 from management_portal import conversation_receipt_store
 
+from . import resident_conversation_records
+
 
 def project_event(repository, connection, event):
-    from . import family_facade, resident_conversation_stream as stream
+    from . import family_facade
 
     kind, resident_id = event['event_type'], event['resident_id']
     payload = event['payload']
     key = 'resident:' + resident_id
-    if kind == stream.CONTEXT_CLEARED:
+    if kind == resident_conversation_records.CONTEXT_CLEARED:
         conversation_receipt_store.catch_up(connection, key)
         return
     value = payload.get('input_state') or {}
-    if kind in {stream.MESSAGE_APPENDED, stream.MESSAGE_UPDATED}:
+    if kind in {resident_conversation_records.MESSAGE_APPENDED, resident_conversation_records.MESSAGE_UPDATED}:
         header = payload.get('message') or {}
         message_id = str(header.get('message_id') or '')
         if not message_id:
             return
-        message = repository._stored_message(resident_id, message_id) or {}
+        message = repository.stored_message(resident_id, message_id) or {}
         conversation_receipt_store.alert(connection, [
             recipient['id'] for recipient in message_recipients(message)
             if recipient['kind'] in {'user', 'resident'}
@@ -32,14 +34,14 @@ def project_event(repository, connection, event):
             'SELECT * FROM conversation_input_states WHERE resident_id=%s AND message_id=%s',
             (resident_id, request_id),
         ).fetchone()
-        value = stream._input_state_value(row) if row else {}
-    elif kind != stream.INPUT_STATE_CHANGED:
+        value = resident_conversation_records.input_state_value(row) if row else {}
+    elif kind != resident_conversation_records.INPUT_STATE_CHANGED:
         return
-    if value.get('state') not in stream.TERMINAL_INPUT_STATES:
+    if value.get('state') not in resident_conversation_records.TERMINAL_INPUT_STATES:
         return
     request_id = value['message_id']
     replies = repository.agent_data.chat_final_replies_many({resident_id: [request_id]})
-    reply_ids = stream._final_reply(value['state'], replies.get(resident_id, {}).get(request_id))
+    reply_ids = resident_conversation_records.final_reply(value['state'], replies.get(resident_id, {}).get(request_id))
     if value['state'] == 'completed':
         headers = repository.agent_data.chat_message_headers([resident_id], message_ids=reply_ids) if reply_ids else []
         reply_ids = [item['message_id'] for item in headers
@@ -49,7 +51,7 @@ def project_event(repository, connection, event):
             return
     sources = [(resident_id, request_id), *family_facade.relay_sources_of(resident_id, request_id)]
     for target, source_id in sources:
-        request = repository._stored_message(target, source_id) or {}
+        request = repository.stored_message(target, source_id) or {}
         # A relay copy belongs to the facade's conversation with the sender.
         if family_facade.parse_relay_mark(str(request.get('business_ref') or '')):
             continue

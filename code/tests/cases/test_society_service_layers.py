@@ -75,10 +75,13 @@ LAYERS = (
     __init__ business_fact_views execution_client input_progress lifecycle lineage_access_policy
     lineage_human_notifications lineage_recovery_policy lost_terminal_facts personal_assistant
     resident_account_policy resident_api_context resident_catalog resident_context.service
-    resident_context.source resident_conversation_stream resident_domain_common resident_execution_provider
-    resident_fork_context resident_input_scope resident_lifecycle resident_policy_facts
-    resident_released_executions resident_resource_projection resident_session_preservation
-    resident_usage_projection resource_client transport workspace_attachments workspace_domain
+    resident_context.source resident_conversation_activity resident_conversation_events
+    resident_conversation_history resident_conversation_inputs resident_conversation_messages
+    resident_conversation_records resident_conversation_state resident_conversation_stream
+    resident_domain_common resident_execution_provider resident_fork_context resident_input_scope
+    resident_lifecycle resident_policy_facts resident_released_executions resident_resource_projection
+    resident_session_preservation resident_usage_projection resource_client transport workspace_attachments
+    workspace_domain
     """,
     # The stored Lineage aggregate and its Program runtime: Events, trigger paths, Effects and switches.
     """
@@ -150,12 +153,12 @@ UPWARD = {
     ("resident_delivery_storage", "resident_conversation_stream"):
         "kept by resident_conversation_stream: an admitted delivery writes its input receipt there, above state_store",
     ("__init__", "server"): "get_society_service builds the in-process service in local mode",
-    ("resident_conversation_stream", "resident_execution_work"):
-        "kept by resident_conversation_stream: it calls up from functions",
-    ("resident_conversation_stream", "resident_mailbox"):
-        "kept by resident_conversation_stream: it calls up from functions",
-    ("resident_conversation_stream", "resident_unread"):
-        "kept by resident_conversation_stream: it calls up from functions",
+    ("resident_conversation_events", "resident_mailbox"):
+        "the events a reader receives carry the inputs' Mailbox state",
+    ("resident_conversation_events", "resident_unread"):
+        "recording an event projects the unread count of its Conversation in the same transaction",
+    ("resident_conversation_state", "resident_execution_work"):
+        "the queue and work state are read from the Mailbox and the Resident's execution work",
     ("script_runs.service", "isa.common"): "it resolves a Resident's Lineage with isa.common.lineage_of_resident",
     ("family_facade", "family_activity"):
         "kept by resident_protocol: it reads both project_snapshot and family_activity.project_states",

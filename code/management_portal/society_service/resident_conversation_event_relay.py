@@ -12,13 +12,9 @@ from management_portal.notifications import notification_subject
 
 from . import family_facade, resident_conversation_stream
 from .input_progress import event_input_ids
-from .resident_conversation_stream import (
-    LIVE_CHANNEL,
-    RESIDENT_CONVERSATION_SCHEMA,
-    conversation_event_notification,
-    live_activity_event,
-)
+from .resident_conversation_records import LIVE_CHANNEL, RESIDENT_CONVERSATION_SCHEMA, conversation_event_notification, live_activity_event
 from .state_store import LineageDataStore
+from . import resident_conversation_records
 
 
 LOGGER = logging.getLogger(__name__)
@@ -223,7 +219,7 @@ class ResidentConversationEventRelay:
                     chatroom_backend.handle_resident_progress(
                         business_ref=business_ref, resident_id=source_id, message_id=message_id,
                     )
-                    if event.get("event_type") == resident_conversation_stream.INPUT_STATE_CHANGED:
+                    if event.get("event_type") == resident_conversation_records.INPUT_STATE_CHANGED:
                         # Members carry a Family relay ref, not the Chatroom ref.
                         # Reconcile the original call even with no browser open;
                         # GetInputState decides whether routing or work finished.

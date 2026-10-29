@@ -8,7 +8,7 @@ import pytest
 
 from tests.cases.test_resident_conversation_boundaries import repository, message
 from management_portal.society_service import resident_lifecycle_steps_domain
-from management_portal.society_service.resident_conversation_stream import CONTEXT_CLEARED, MESSAGE_UPDATED
+from management_portal.society_service.resident_conversation_records import CONTEXT_CLEARED, MESSAGE_UPDATED
 
 
 @pytest.mark.parametrize("old_count", [0, 1])

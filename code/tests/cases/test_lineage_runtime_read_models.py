@@ -51,7 +51,7 @@ def test_terminal_round_replaces_an_orphaned_running_input_without_overriding_re
         assert connection.execute('SELECT state FROM conversation_input_states WHERE resident_id=%s AND message_id=%s',
                                   (RESIDENT, message_id)).fetchone()['state'] == outcome
     # A requeue in the receipt's clock tick must still supersede that round.
-    monkeypatch.setattr('management_portal.society_service.resident_conversation_stream.utc_now',
+    monkeypatch.setattr('management_portal.society_service.resident_conversation_inputs.utc_now',
                         lambda: '2026-10-10T00:00:01Z')
     assert repository.reopen_input(RESIDENT, message_id)['state'] == 'queued'
     repository.publish_archived_input_state(RESIDENT, message_id)

@@ -26,6 +26,7 @@ from typing import Any, Collection, Mapping
 
 from . import resident_conversation_stream, resident_lineage
 from .state_store import get_lineage_data_store
+from . import resident_conversation_records
 from management_common.clock import utc_now_iso
 
 MAX_HELD_INFOS = 200
@@ -37,9 +38,9 @@ def _resident(record: Mapping[str, Any]) -> str:
 
 
 def _storage(message: Mapping[str, Any]) -> dict[str, Any]:
-    public = resident_conversation_stream.protocol_message(message)
+    public = resident_conversation_records.protocol_message(message)
     public.pop("activated_at", None)
-    return resident_conversation_stream._message_for_storage(public, private_fields=message)
+    return resident_conversation_records.message_for_storage(public, private_fields=message)
 
 
 def hold(record: Mapping[str, Any], message: Mapping[str, Any], *, first: bool = False) -> None:

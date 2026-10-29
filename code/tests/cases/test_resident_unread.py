@@ -7,6 +7,7 @@ import pytest
 from management_portal import conversation_read_state as reads
 from management_portal import conversation_receipt_store as receipts
 from management_portal.society_service import resident_conversation_stream as stream
+from management_portal.society_service import resident_conversation_records
 from tests.cases.test_agent_conversation_index_backend import _register_protocol_resident
 
 
@@ -142,7 +143,7 @@ def test_addressed_message_notifies_only_recipient_and_clear_removes_flag(chat):
     say(chat, 'outward-next', 'agent', recipients=[{'kind': 'user', 'id': 'CASE-A'}])
     assert unread('CASE-A')
     chat.state_store.database.write(lambda connection: chat.events.record_event(
-        connection, RESIDENT, stream.CONTEXT_CLEARED, {'context_cleared': True},
+        connection, RESIDENT, resident_conversation_records.CONTEXT_CLEARED, {'context_cleared': True},
     ))
     assert not unread('CASE-A')
 
@@ -158,7 +159,7 @@ def test_unread_write_rolls_back_with_conversation_event(chat):
     say(chat, 'request')
     with pytest.raises(RuntimeError):
         with chat.state_store.database.transaction() as connection:
-            chat.events.record_event(connection, RESIDENT, stream.INPUT_STATE_CHANGED, {
+            chat.events.record_event(connection, RESIDENT, resident_conversation_records.INPUT_STATE_CHANGED, {
                 'input_state': {'message_id': 'request', 'state': 'failed',
                                 'updated_at': '2026-10-15T10:00:01Z'},
             })

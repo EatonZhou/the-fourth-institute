@@ -8,6 +8,8 @@ from management_portal.execution.agent_data_projection import AgentDataProjector
 from management_portal.execution.message_projection import wrap_message, unwrap_message
 from tests.cases.test_agent_data_projection import _turn_request, _runtime_session, _invocation, _deliver_captured_message
 
+from management_portal.society_service import resident_conversation_records
+
 
 def message(identity, body):
     return {"message_id": identity, "role": "user", "author_id": "sample_admin",
@@ -34,7 +36,6 @@ def test_turn_footer_projects_execution_usage_only_on_final_answer(raw_usage):
     :design-point:"""
     from tests.cases.live_trace_support import _turn
     from tests.cases.test_live_trace_ingress import _emit
-    from management_portal.society_service.resident_conversation_stream import _message_from_storage
     store, projector, request, _ = _turn("codex")
     _emit(projector, request, {"id": "progress", "type": "agentMessage", "phase": "commentary", "text": "working"})
     final_segment_id = projector.complete(execution_id=request.execution_id, backend_session_id="thread-native",
@@ -47,7 +48,7 @@ def test_turn_footer_projects_execution_usage_only_on_final_answer(raw_usage):
     agent_messages = [m for m in messages if m["role"] == "agent"]
     assert not agent_messages[0].get("usage")
     final = agent_messages[-1]
-    assert _message_from_storage(final)["usage"] == {
+    assert resident_conversation_records.message_from_storage(final)["usage"] == {
         "input_tokens": 1234, "output_tokens": 56, "reasoning_output_tokens": 12, "total_tokens": 1290,
         **{key: raw_usage[key] for key in ("api_id", "model") if key in raw_usage},
     }
