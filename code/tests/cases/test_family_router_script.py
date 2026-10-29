@@ -256,7 +256,7 @@ def test_a_complete_router_choice_missing_only_the_closing_tag_relays_once():
 def test_the_family_block_builds_the_router_from_a_resident_and_two_effects():
     """内置 Family 模块用 Router Resident 加两个 Effect 实现路由
 
-    Family 模块新建 router 槽位（Codex，初始模型 gpt-6.1-sol、推理强度 low，不指定账号，之后是 Resident 自己的设置）；门面收到消息的连线并行激活 Router Effect，Router 的 proposal 连线激活转交 Effect 且不把理由附进消息；模块不再有 router_api_id / router_model 参数，也不调用 CompleteChat。
+    Family 模块新建 router 槽位（Codex，初始模型 gpt-6.1-sol、推理强度 medium，不指定账号，之后是 Resident 自己的设置）；门面收到消息的连线并行激活 Router Effect，Router 的 proposal 连线激活转交 Effect 且不把理由附进消息；模块不再有 router_api_id / router_model 参数，也不调用 CompleteChat。
 
     :design: decision_44cf587c1721, decision_5b5653c3eaa5
     """

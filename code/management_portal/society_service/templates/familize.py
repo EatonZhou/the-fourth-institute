@@ -22,11 +22,12 @@ REWIRED_KINDS = frozenset({"route", "target"})
 ROLE_STOP_WAIT_SECONDS = 90.0
 # Replaying 10-29 Router requests in fresh sessions, gpt-5.6-luna mostly
 # answered without a <packet>, which sends the request to route review;
-# gpt-6.1-sol at low effort chose like the sol-high Routers, in less time.
+# gpt-6.1-sol at medium effort chose like the real Routers most often, and
+# as fast as at low effort.
 RESIDENT_ROLES = [
     {"key": "steward", "title": "steward", "from": "new", "provider": "codex"},
     {"key": "router", "title": "Router", "from": "new", "provider": "codex",
-     "settings": {"model": "gpt-6.1-sol", "reasoning_effort": "low"}},
+     "settings": {"model": "gpt-6.1-sol", "reasoning_effort": "medium"}},
 ]
 
 
