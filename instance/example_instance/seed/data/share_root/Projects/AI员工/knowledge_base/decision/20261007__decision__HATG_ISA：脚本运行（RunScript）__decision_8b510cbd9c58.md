@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-10-07'
 version:
-  number: 28
-  created_at: "2026-10-07T03:07:05Z"
+  number: 29
+  created_at: '2026-10-07T03:07:05Z'
   created_by:
-    user: "weihao"
-    agent: "resident_dfadf5a85ef9"
-  updated_at: "2026-10-21T18:16:02Z"
+    user: tfi-exported-user
+    agent: resident_dfadf5a85ef9
+  updated_at: '2026-10-27T12:54:12Z'
   updated_by:
-    user: ""
-    agent: "resident_977d1a613d44"
+    user: ''
+    agent: resident_73cb83291316
 importance: 9
 metaness: 2
 ai_generated: false
@@ -106,7 +106,7 @@ Lineage 中有一类工作只需要按明确规则执行，不需要模型判断
 
 脚本以 Portal 服务所属的操作系统账号直接在主机上运行。它能访问该用户可访问的全部文件、凭证目录、本地服务套接字和网络，使用真实 HOME、PATH 与主机 /tmp，不隔离 PID、IPC 或 UTS。能调用 RunScript 的主体因此拥有该服务账号的主机权限；这是部署采用的能力边界。
 
-默认方案要求对所属 Lineage 有 `@admin`（weihao 2026-10-19）。Lineage 在 R 树中挂在所属 Project 下，所以 Project 的 admin（默认方案中包括该 Project 的 Resident）能在本 Project 的 Lineage 中运行脚本，对其他 Project 的 Lineage 只有 viewer，不能运行；不属于 Project 的 Lineage 按它在 R 树中的位置判定。判定用的 Lineage 与运行所属的 Lineage 由同一段代码确定：Effect 内取激活的 Lineage，Resident 省略 `lineage_id` 时取其所在 Lineage，User 省略时以缺少 `lineage_id` 拒绝；省略参数不会落到其他节点或免检。weihao 2026-10-19 接受“项目 admin 通过 RunScript 得到无沙箱的主机脚本能力”：例如 Resident 可以用 RunScript 编译文章，不需要为编译另设指令。以 Portal 服务身份运行的 Effect 不经过权限判定。脚本调用 ISA 时仍逐次以发起者为执行者、按发起者自身的权限检查相应指令。
+默认方案要求对所属 Lineage 有 `@admin`（TFI portal 2026-10-19）。Lineage 在 R 树中挂在所属 Project 下，所以 Project 的 admin（默认方案中包括该 Project 的 Resident）能在本 Project 的 Lineage 中运行脚本，对其他 Project 的 Lineage 只有 viewer，不能运行；不属于 Project 的 Lineage 按它在 R 树中的位置判定。判定用的 Lineage 与运行所属的 Lineage 由同一段代码确定：Effect 内取激活的 Lineage，Resident 省略 `lineage_id` 时取其所在 Lineage，User 省略时以缺少 `lineage_id` 拒绝；省略参数不会落到其他节点或免检。TFI portal 2026-10-19 接受“项目 admin 通过 RunScript 得到无沙箱的主机脚本能力”：例如 Resident 可以用 RunScript 编译文章，不需要为编译另设指令。以 Portal 服务身份运行的 Effect 不经过权限判定。脚本调用 ISA 时仍逐次以发起者为执行者、按发起者自身的权限检查相应指令。
 
 - **每次运行交由 Portal 进程外的原生执行单元。** Linux 使用用户级 systemd 临时单元，保留 KillMode=control-group 与 5 秒停止宽限；macOS 启动独立会话的 runner，持久记录 PID，取消时核对进程身份后向其进程组发送 SIGTERM。Portal 重启或发布不会中断已启动的脚本。Windows 的逐运行本地 ISA relay 尚未实现，RunScript 在准入前明确拒绝。
 - **Linux 环境来自用户级 systemd 管理器，同时显式传入发起服务配置的规范站点与路径变量；macOS runner 仅继承 HOME、PATH、语言与相同路径白名单。** 路径白名单为 PORTAL_SITE_CONFIG、PORTAL_PATHS_CONFIG、PORTAL_RELEASE_ROOT 与 portal_paths.ENV_KEYS 中的路径变量；只传入发起服务环境实际存在的项，Linux 每项使用独立的 --setenv 参数。不得通配转发 PORTAL_* 或补读旧环境变量。runner 再向脚本加入 PORTAL_SCRIPT_*、PORTAL_ISA_SOCKET、PATH、PYTHONPATH、NODE_PATH。Portal 不将服务进程的数据库连接或密钥环境变量加入该白名单；这不限制脚本直接访问主机。

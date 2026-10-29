@@ -99,6 +99,20 @@ const { observeBrowser } = require('../../../management_portal/test_framework/ta
     assert.equal(replacedDown.document_id, replacedUp.document_id);
     assert.equal(replacedDown.action_id, replacedUp.action_id);
     assert.ok(!captures.some(row => row.action_id === replacedDown.action_id), 'missing native click stays missing');
+    // Receipts arrive asynchronously. Actions that end on their original
+    // document keep every receipt of their input, including the later
+    // dispatch sample, instead of leaking it into the next action.
+    const actionIds = new Map(rows.filter(row => row.kind === 'action_started').map(row => [row.name, row.action_id]));
+    const inputId = row => row.click_id || row.pointer_event_id;
+    for (const [name, inputs] of [['blocked-return', [firstDown, firstUp, blocked]],
+      ['overlay-hit', [pointerCaptures[2], pointerCaptures[3], captures[1]]],
+      ['target-replaced-between-down-up', [replacedDown, replacedUp]]]) {
+      for (const input of inputs) {
+        const receipts = [...pointers, ...clicks].filter(row => inputId(row) === inputId(input));
+        assert.deepEqual(receipts.map(row => row.stage), ['capture', 'after_dispatch']);
+        for (const row of receipts) assert.equal(row.action_id, actionIds.get(name), `${name} receipts stay in their action`);
+      }
+    }
     const finalNavigation = clicks.filter(row => row.click_id === captures[2].click_id && row.stage !== 'capture');
     assert.equal(finalNavigation.length, 1, 'navigation preserves its original dispatch result');
     assert.equal(finalNavigation[0].default_prevented, false);

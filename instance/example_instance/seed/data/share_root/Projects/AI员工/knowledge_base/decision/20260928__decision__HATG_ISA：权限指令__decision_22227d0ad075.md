@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 64
+  number: 65
   created_at: '2026-09-28T10:45:00Z'
   created_by:
     user: tfi-exported-user
     agent: resident_2a1fc6cd272d
-  updated_at: '2026-10-19T08:32:04Z'
+  updated_at: '2026-10-27T12:48:20Z'
   updated_by:
     user: ''
-    agent: resident_d43295e5e043
+    agent: resident_73cb83291316
 importance: 8
 metaness: 2
 ai_generated: false

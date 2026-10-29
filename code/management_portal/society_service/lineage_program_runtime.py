@@ -2678,7 +2678,16 @@ def migrate_stored_runtime() -> dict[str, Any]:
     migrated = 0
     for lineage_id in lineage_ids:
         with program_work_storage.transaction(database, lineage_id) as runtime:
-            for field in program_work_storage.ITEM_FIELDS:
+            # Touch the fields in lock order, as every runtime writer does:
+            # the expiry notices come between the wires and the operators.
+            for field in program_work_storage.LOCK_ORDER:
+                if field == "expired_deliveries":
+                    expired = runtime[field]
+                    value = _normalize_object(field, "", expired) if expired else []
+                    if value != expired:
+                        migrated += 1
+                        runtime[field] = value
+                    continue
                 objects = runtime[field]
                 for key in list(objects):
                     value = _normalize_object(field, key, objects[key])
@@ -2688,11 +2697,6 @@ def migrate_stored_runtime() -> dict[str, Any]:
                             del objects[key]
                         else:
                             objects[key] = value
-            expired = runtime["expired_deliveries"]
-            value = _normalize_object("expired_deliveries", "", expired) if expired else []
-            if value != expired:
-                migrated += 1
-                runtime["expired_deliveries"] = value
     database.write(lambda connection: connection.execute(
         "INSERT INTO lineage_meta(key, value) VALUES (%s, %s) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
         (_NORMALIZATION_KEY, str(RUNTIME_NORMALIZATION)),

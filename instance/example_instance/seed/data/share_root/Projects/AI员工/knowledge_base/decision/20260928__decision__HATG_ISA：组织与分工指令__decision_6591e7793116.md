@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 43
+  number: 46
   created_at: '2026-09-28T10:45:00Z'
   created_by:
     user: tfi-exported-user
     agent: resident_2a1fc6cd272d
-  updated_at: '2026-10-19T20:21:34Z'
+  updated_at: '2026-10-29T11:24:16Z'
   updated_by:
     user: ''
-    agent: resident_8586ec083cd0
+    agent: resident_dbfb834a0539
 importance: 8
 metaness: 2
 ai_generated: false
@@ -22,7 +22,7 @@ links:
   - ${code_root}/management_portal/society_service/application_target_configuration.py
   related:
   - decision_2fe6fd5367fb
-  - decision_9b94f218a188
+  - decision_46c37026e8ea
   - decision_4648f7fa3295
   - decision_898b8911a2ff
   - decision_3e07c6d35cac
@@ -53,8 +53,9 @@ links:
 | 指令 | 改变状态 | 作用 | 默认方案要求 |
 | --- | --- | --- | --- |
 | `CreateProject` | 是 | 创建一个 Project 及其目录 | 免检 |
-| `GetProject` | 否 | 读取 Project 信息、摘要与 Project State | 对 `project_id` 有 @viewer |
-| `UpdateProject` | 是 | 修改 Project 的状态、截止日期、类型、摘要或头像 | 对 `project_id` 有 @admin |
+| `ListProjects` | 否 | 列出能看到的 Project，带团队规模与最近变化 | 对“共享”有 @viewer |
+| `GetProject` | 否 | 读取 Project 信息、摘要、团队、资源数量与最近修改的资源 | 对 `project_id` 有 @viewer |
+| `UpdateProject` | 是 | 修改 Project 的状态、截止日期、类型、说明、标签、摘要或头像 | 对 `project_id` 有 @admin |
 | `DeleteProject` | 是 | 删除一个 Project 及其全部内容 | 对 `project_id` 有 @admin |
 | `RenameProject` | 是 | 修改 Project 的 ID 并移动项目目录，Portal 中的引用一起改 | 对 `project_id` 有 @admin |
 | `GetKnowledgeTags` | 否 | 读取 Project 登记中的知识标签 | 对“共享”有 @viewer |
@@ -77,19 +78,41 @@ Project 的资源操作由 ResourceService 执行；GetKnowledgeTags 与 UpdateK
 - 创建后短暂等待资源索引收录新项目，随后内部幂等创建 Project 层 Lineage 和 Leader；通过 RegisterResource 注册 Project 也执行同一流程。
 - 项目登记完成而主体初始化失败时，返回可重试的恢复回执。使用原幂等键重试只补齐主体，不重复创建项目目录。前端读取导航里的既有主体，不在打开项目时创建。
 
+### `ListProjects`
+
+**列出调用者能看到的全部 Project：登记信息，以及团队规模、正在运行的 Resident 数和最近一次变化的时间。**
+
+- 参数：无。
+- 结果：`projects` 按项目登记的顺序排列，每项包括：
+  - 登记字段：`project_id`、`status`、`project_type`、`description`、`ddl`、`tags`；
+  - 团队：`project_resident_id`（Project 层 Lineage 的 Leader）、`lineage_count`（普通 Lineage 数）、`resident_count`、`running_resident_count`；
+  - `last_changed_at`：项目下资源最近一次修改的时间，项目还没有资源时为空。
+  另有 `status_vocab`：项目可用的状态。
+- 列表只含调用者能读的 Project。团队数字只统计调用者能读的 Lineage：Project 层 Lineage 和普通 Lineage 计入，个人和 User 层 Lineage 不计入。Project 层 Lineage 的画布中引用的子 Lineage Leader 只算作其所在 Lineage 的成员。
+- 项目页的列表（decision_46c37026e8ea）、Society 与 HATG 的项目选择都读这条指令。
+
 ### `GetProject`
 
-**读取 Project 信息、摘要与 Project State。**
+**读取 Project 的登记信息、`summary.md`、团队、各类资源的数量和最近修改的资源。**
 
-- 参数：`project_id`。
-- 结果：项目信息、`summary.md` 的内容（不存在时标明）与 Project State 页面投影（decision_9b94f218a188）。
+- 参数：`project_id`；`include_resources`（可选，默认 true）。为 false 时不统计项目下的资源，`resource_counts` 与 `recent_changes` 为空：统计要逐一检查调用者能读的资源，是这条指令最慢的部分，只需登记信息与团队的读取跳过它。
+- 结果：
+  - `project`：项目的资源记录，另带 `status`、`project_type`、`description`、`ddl` 与 `tags`；
+  - `summary`：`summary.md` 的内容，不存在时标明；
+  - `team`：`project_resident_id`、`project_lineage_id`、`resident_count`、`running_resident_count`，以及 `lineages`。`lineages` 列出每个普通 Lineage 的 `lineage_id`、`title`、`leader_resident_id`、`member_count` 与 `running_count`，计入规则与 `ListProjects` 相同；
+  - `resource_counts`：资源类型到数量的映射；
+  - `recent_changes`：最近修改的资源，新的在前，最多 20 项，每项为 `resource_id`、`resource_type`、`title`、`url`、`modified_at`；
+  - `status_vocab`：项目可用的状态，与 `ListProjects` 相同。
+- `resource_counts` 与 `recent_changes` 不含 Lineage、Resident、Workspace 和 Family，团队另由 `team` 给出。两者都只含调用者能读的资源。
+- 团队由 SocietyService 的 Project 领域给出；Resident 的实时状态和工作摘要由调用者另外读取（`ListResidentStates`、`GetResidentSummaries`）。
 
 ### `UpdateProject`
 
-**修改 Project 的状态、截止日期、类型、摘要或头像。**
+**修改 Project 的状态、截止日期、类型、说明、标签、摘要或头像。**
 
-- 参数：`project_id`、`changes`（可以包含 `status`、`ddl`、`project_type`、`summary` 与 `avatar`）。
+- 参数：`project_id`、`changes`（可以包含 `status`、`ddl`、`project_type`、`description`、`tags`、`summary` 与 `avatar`）。
 - 结果：修改后的项目信息；修改了头像时带上保存后的 `avatar`。
+- `description` 去掉首尾空白后保存；`tags` 是字符串数组，去掉空白、空项和重复项后整体替换原标签。
 - `summary` 以完整文本替换 `summary.md`；不存在时创建。
 - `avatar` 为 `{"sprite_index": 0–41}`、`{"upload_id": …}`（`CreateUpload` 用途 `avatar` 的已完成上传）或 `null`（回到名称首字），见 decision_5bc3fdfc7eec。DeleteProject 同时删除头像，RenameProject 把头像移到新 ID 下。
 
@@ -174,7 +197,7 @@ DeliverMessage 使用明确的 resident_id。GetDutyBindings、UpdateDutyBinding
 
 所有应用的配置都保存在 lineage schema 的核心表 `application_targets` 中，每个应用一行，以应用名为键。每行在 `resident_id` 或 `lineage_id` 中填一个，指向该应用的目标 Resident 或 Lineage；另外记录修订号、是否暂停接收、原因、修改者和修改时间。表本身不限定应用名，也不限定检索范围或资源类型，允许哪些应用由代码声明：
 
-- 核心应用由 `application_targets.py` 声明，包括 `resident_discovery`、`resident_summary`、`semantic_search:<surface>` 和 `resource_chat:<resource_type>`。
+- 核心应用由 `application_targets.py` 声明，包括 `resident_discovery`、`resident_summary`、`semantic_search:<surface>` 和 `resource_chat:<resource_type>`。资源聊天覆盖知识条目、Skill、仓库、文章、实验和设备；Project 没有资源聊天，项目对话是 Project Resident（decision_46c37026e8ea）。
 - 功能应用由功能通过 `application.targets` 接入点声明（decision_15aab18c0ab3）：Notice Board 声明 `notice_classifier`，目标是 Resident；Test 声明 `tau`，目标是 Lineage，并支持暂停接收。
 
 声明里写明目标类型，读取时也按这个类型取值，Lineage 应用不能当作 Resident 读取。打包时去掉某个功能后，它的应用名不再被接受，但它在表里的行保留，只是没人再读；去掉功能不需要改 schema。
@@ -197,7 +220,8 @@ Notice Board 分类与 Which Resident 推荐的功能开关由当前目标 Resid
 | 指令名 | arguments 参数名 |
 | --- | --- |
 | `CreateProject` | `project_id`、`project_type`、`description`、`status`、`ddl`、`tags`、`language` |
-| `GetProject` | `project_id` |
+| `ListProjects` | 无 |
+| `GetProject` | `project_id`、`include_resources` |
 | `UpdateProject` | `project_id`、`changes` |
 | `DeleteProject` | `project_id` |
 | `RenameProject` | `project_id`、`new_project_id`、`dry_run` |

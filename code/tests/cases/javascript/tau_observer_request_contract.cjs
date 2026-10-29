@@ -322,9 +322,12 @@ async function resourceContract(observe) {
 async function residentContract(observe) {
   const resident_id = 'resident_111111111111';
   const actualReads = [];
-  const window = {};
+  // The service subscribes to portal:change on load and tags projection reads
+  // with a request ID; neither is part of this contract.
+  const window = { addEventListener() {} };
   vm.runInNewContext(fs.readFileSync(path.join(__dirname,
-    '../../../management_portal/static/portal_resident_service.js'), 'utf8'), { window, URLSearchParams });
+    '../../../management_portal/static/portal_resident_service.js'), 'utf8'),
+    { window, URLSearchParams, PortalUIPrimitives: { randomUUID: () => 'request-fixture' } });
   const client = window.PortalResidentService.createClient({ api: {
     get: async url => { actualReads.push({ url: `${url}&token=query-secret` }); return {}; },
   }});

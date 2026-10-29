@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-10-01'
 version:
-  number: 155
+  number: 158
   created_at: '2026-10-01'
   created_by:
     user: ''
     agent: resident_4b1da6140cf2
-  updated_at: '2026-10-19T21:35:30Z'
+  updated_at: '2026-10-29T15:50:45Z'
   updated_by:
     user: ''
-    agent: resident_6199a7a36480
+    agent: resident_24014e2b9bf6
 importance: 8
 ai_generated: false
 links:
@@ -69,7 +69,7 @@ Family 是一种特殊 Function Block，不新增执行主体层级。门面、R
 | Steward Resident | 判断职责缺口、组织调整、Mailbox 整理与故障恢复；归纳成员时间层，按需汇总门面 |
 | 平台与运行图 | 监听事件、绑定原请求、校验投递、保存状态、执行无模型巡检和恢复升级 |
 
-一条门面请求的典型过程是：有效引用或单成员直接转交；多成员需选择时，Effect 发精简任务给 Router，再依据 Packet 转交；职责缺口交 Steward 安排。零成员保留原输入等待。转交后的执行与回复跟随同一原请求；低额度、关闭接单、改派和取消不能另造替代业务任务。
+一条门面请求的典型过程是：引用成员消息的请求交回该成员，Family 以外的 Resident 接着发来的请求交给承接它上一条请求的成员；其余请求（包括单成员和空业务名册）由 Effect 发精简任务给 Router，再依据 Packet 转交；职责缺口交 Steward 安排。零成员保留原输入等待。转交后的执行与回复跟随同一原请求；低额度、关闭接单、改派和取消不能另造替代业务任务。
 
 Router、Steward 使用自身 Provider 会话与设置。完整指南只在会话首轮注入，后续发本轮目标、必要事实、指南路径及版本；资料由角色按需读取。首轮与逐轮模板、直接服务派发和自动 Event 的区别由工作流专题精确定义。
 
@@ -94,7 +94,7 @@ CreateResident/ForkResident 优先遵循显式 family_id；否则成员或 Stewa
 | 指令 | 改变状态 | 责任 | 默认方案要求 |
 | --- | --- | --- | --- |
 | `Familize` | 是 | 建立组合、角色、内部运行图与入口，完成必要的 leader 交接 | 对 `lineage_id` 有 @contributor |
-| `UpdateFamily` | 是 | 修改成员、名称、目标、route_threshold、review_interval_seconds 和普通元素归属 | 对 `lineage_id` 有 @contributor |
+| `UpdateFamily` | 是 | 修改成员、名称、目标、route_threshold、review_interval_seconds、自动转组开关 auto_migrate、账号种类优先级 auto_migrate_priority 和普通元素归属 | 对 `lineage_id` 有 @contributor |
 | `Unfamilize` | 是 | 解除组合，保留业务成员、子 Family 与普通工作流 | 对 `lineage_id` 有 @contributor |
 | `DeleteFamily` | 是 | 删除整个 Family 及内部业务对象 | 对 `lineage_id` 有 @admin |
 
@@ -107,6 +107,17 @@ UpdateFamily.add_element_ids/remove_element_ids 处理当前 Lineage 的普通�
 新增成员时可自动收纳专属连通组：其 Resident 边界非空且全部在 Family 递归范围内，没有其他块所有权冲突。共享分支和边界不明的脚本不猜归属，可以显式收纳。普通参数更新不自动收回用户移出的元素；不以标题、应用名或缓存判断所有权。
 
 收纳不改变 Event、Effect、连线 ID、业务配置、游标、暂停状态和执行目标。外部入口与内部工作流的界线按结构范围确定：范围外指向新增成员的入口改接门面，范围内显式执行目标保留；即使连线存放在别的块也依语义判断。不得为 Familize 重建缺失工作流或把业务 Effect 的执行者换成门面。
+
+auto_migrate 与 auto_migrate_priority 只决定额度不足时是否自动更换成员、Router、Steward 的账号及备用账号种类的顺序，不改变名册和结构；判定与恢复规则见 记忆、队列与故障恢复。
+
+## 个人聊天偏好
+
+| 指令 | 改变状态 | 责任 | 默认方案要求 |
+| --- | --- | --- | --- |
+| `GetFamilyChatPreferences` | 否 | 读取调用者本人在该门面上设为 Mute 的成员和 Solo 成员 | 对 `resident_id` 有 @viewer |
+| `UpdateFamilyChatPreferences` | 是 | 开启或关闭调用者本人对一个业务成员的 Mute 或 Solo | 对 `resident_id` 有 @viewer |
+
+两条指令的 `resident_id` 是 Family 门面，只读写实际调用者自己的偏好；可以查看门面的用户即可管理自己的偏好。偏好只约束调用者此后发出的普通消息的承接者及其门面对话中显示哪些成员的往来，不改变成员接单状态、名册、原消息、权限或其他用户的偏好。多个 Mute、单个 Solo、Solo 期间与 Mute 的关系、问题卡片与引用的处理由 消息路由与对外对话 维护。
 
 ## leader 与权限
 
@@ -139,6 +150,7 @@ Steward 的管理能力来自权限模板对当前 Family 所在 Lineage 的授�
 | 时间层摘要与覆盖 | Resident 摘要领域；Family 内按角色分工写入 |
 | 账号准入、Session 迁移 | Execution 与 Restart/lifecycle |
 | Family 恢复、额度复核与升级记录 | Family 监督领域 |
+| 用户个人的 Mute／Solo 偏好，及按原输入冻结的路由约束 | family_chat_preferences、family_chat_inputs |
 
 families 的 family_id 与 function_block_id 相同，resource_id 是持久的正式资源身份。family_residents 保存 member/facade/router/steward；普通 Resident 更新不能覆写归属。完整图和 Family 专表在同一事务更新，读取时附加只读 function_blocks[].family 投影，不在普通块配置里再存一份名册。
 
@@ -164,4 +176,6 @@ Family 的正式资源类型为 family，归属当前 Lineage 并投影 Project�
 | `Familize` | `lineage_id`、`resident_ids`、`scope`、`title`、`goal`、`parameters`、`resident_settings`、`near_resident_id`、`placement`、`x`、`y` |
 | `Unfamilize` | `lineage_id`、`family_id`、`successor_resident_id`、`rewire_to_resident_id` |
 | `DeleteFamily` | `lineage_id`、`family_id` |
-| `UpdateFamily` | `lineage_id`、`family_id`、`add_member_ids`、`remove_member_ids`、`add_element_ids`、`remove_element_ids`、`title`、`goal`、`route_threshold`、`review_interval_seconds` |
+| `UpdateFamily` | `lineage_id`、`family_id`、`add_member_ids`、`remove_member_ids`、`add_element_ids`、`remove_element_ids`、`title`、`goal`、`route_threshold`、`review_interval_seconds`、`auto_migrate`、`auto_migrate_priority` |
+| `GetFamilyChatPreferences` | `resident_id` |
+| `UpdateFamilyChatPreferences` | `resident_id`、`member_id`、`control`、`enabled` |

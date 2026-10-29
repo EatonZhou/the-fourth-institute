@@ -26,15 +26,15 @@ links:
   - decision_898b8911a2ff
   - thinking_ca8f397a47de
 version:
-  number: 66
+  number: 68
   created_at: '2026-09-28T10:45:00Z'
   created_by:
     user: tfi-exported-user
     agent: resident_2a1fc6cd272d
-  updated_at: '2026-10-19T18:54:31Z'
+  updated_at: '2026-10-29T15:50:58Z'
   updated_by:
     user: ''
-    agent: resident_4b1da6140cf2
+    agent: resident_24014e2b9bf6
 metaness: 2
 ---
 # HATG ISA：Resident 指令
@@ -47,7 +47,7 @@ Resident 是可以跨多次模型会话持续存在的 Agent 身份。系统中�
 
 - **Resident 身份**：稳定的 `resident_*` ID、名称、所属 Lineage、固定拥有的自有工作区，以及系统分配的头像。每个 Resident 只属于一个 Lineage，由 `lineage_id` 表达当前归属，并在该 Lineage 中显示为一个节点。Resident 不保存恒定的 membership 分类；Lineage 自身的 `formal/personal` 分类保留。身份与成员归属见 decision_0f57656a2acd，Resident Folder 与自有工作区见 decision_ccb99a00eebd。
 - **Agent 与主 trace**：AgentData 中与 Resident 同 ID 的独立 Agent，以及记录它的消息和执行历史的主轨迹。主 trace 可以为空，模型会话尚未建立时也存在；存储与读取规则见 decision_b1ab45c4b3ec。
-- **运行设置**：Resident 使用的 Provider、账号路线、模型、推理强度、服务等级、权限预设、是否注入初始指令、是否允许子 Agent、Agent Harness 设置和协作模式。
+- **运行设置**：Resident 使用的 Provider、账号路线、模型、推理强度、服务等级、权限预设、是否注入初始指令、是否允许子 Agent、Agent Harness 设置、能力配置（工具、MCP 与 Skill 的选用）和协作模式。设置带版本号 `settings_revision`，并发保存按版本拒绝过期提交。
 - **模型会话**：Resident 当前使用的 Provider 会话。Resident 身份长期不变，模型会话可以重启或迁移到另一个 Provider 或账号。会话迁移的策略与恢复见 decision_c47a13e8b962。
 - **工作区绑定**：Resident 与工作目录之间的关联。自有工作区是默认启动目录，不能解除；其他目录通过绑定加入。规则见 decision_8838269736d3。
 - **Seed**：Lineage 中尚未成为 Resident 的候选组件，记录一个想法或方案；它从哪个 Resident 的工作出发由候选 Fork 关系表达（decision_4637ca4a69e2）。Seed 的创建、修改和放弃使用 Lineage 定义指令（decision_4637ca4a69e2），提升为 Resident 使用本类的 `PromoteSeed`。
@@ -75,7 +75,7 @@ Resident 是可以跨多次模型会话持续存在的 Agent 身份。系统中�
 | `PreviewPromptInjection` | 否 | 预览一轮实际带上的注入内容 | 对 `resident_id` 有 @viewer |
 | `GetResidentInitialization` | 否 | 读取既有初始化状态与执行身份 | 对 `resident_id` 有 @viewer |
 | `RetryResidentInitialization` | 是 | 恢复初始化并保留原队列 | 对 `resident_id` 有 @contributor |
-| `RestartSession` | 是 | 切换 Provider 或账号，并建立新的模型会话 | 对 `resident_id` 有 @contributor |
+| `RestartSession` | 是 | 切换账号或 Provider（默认完整保留上下文），或显式重新开始模型会话 | 对 `resident_id` 有 @contributor |
 | `GetSessionRestart` | 否 | 读取会话重启进度 | 对 `resident_id` 有 @viewer |
 | `CancelSessionRestart` | 是 | 取消尚未完成的会话重启 | 对 `resident_id` 有 @contributor |
 | `BindWorkspace` | 是 | 为 Resident 绑定一个工作目录 | 对 `resident_id` 有 @contributor |
@@ -243,20 +243,23 @@ Family 内部检查成员摘要的 CheckResidentWorkSummary 和读取门面汇�
 - 参数：`resident_id`。
 - 结果：
   - `settings`：当前运行设置。页面设置面板读取的是同一份设置；其中 `prompt_injection` 是保存的原值（`{preset}` 或自定义时的 `{preset: custom, parts}`）。
+  - `settings_revision`：当前设置版本，保存时作为 `UpdateResidentSettings` 的 `expected_revision`。
+  - `application`：逐项配置的生效时机与实际交付观察；未观察到不等于缺失。
   - `prompt_injection`：Prompt 注入的读法。`preset`、`preset_label` 为当前预设；`presets` 为可选的预设；`parts` 为六个类别，每项给出 `id`、`label`、`description`、当前时机 `choice`、可选时机 `choices`，以及它在当前 Provider 中的位置 `placement`。位置由 Provider 决定，不能修改。各类别、时机和预设的含义见 decision_ef1d6c925955。
 
 ### `UpdateResidentSettings`
 
 **修改 Resident 的运行设置。**
 
-- 参数：`resident_id`、`changes`。`changes` 只接受以下字段：`model`、`reasoning_effort`、`service_tier`、`permission_preset`、`prompt_injection`、`allow_subagents`、`agent_harness`、`collaboration_mode`、`prompt_context`、`backend_options` 和仅供 Model API 使用的 `backend_route_id`。字段取值由目标 Provider 校验。
+- 参数：`resident_id`、`expected_revision`（可选，读取时得到的 `settings_revision`）、`changes`。`changes` 只接受以下字段：`model`、`reasoning_effort`、`service_tier`、`permission_preset`、`prompt_injection`、`allow_subagents`、`agent_harness`、`capability_config`、`collaboration_mode`、`prompt_context`、`backend_options` 和仅供 Model API 使用的 `backend_route_id`。字段取值由目标 Provider 校验。
 - `changes.prompt_injection` 给出 `preset`（`standard`、`full`、`minimal`、`pure`、`custom`）、`parts`（要改的类别及其时机），至少一项：
   - 只给 `preset` 时，设置换成这个预设。
   - 给了 `parts` 时，在所给预设上修改；没给预设时，在当前设置上修改。结果记为自定义；与某个预设完全相同时，记为该预设。
   - 非法的类别或时机直接报错。下一轮生效。
-- 结果：保存后的设置、`next_turn_fields`（从下一轮才生效的字段），以及与 `GetResidentSettings` 相同的 `prompt_injection` 读法。
+- 结果：保存后的设置、新的 `settings_revision`、`application`（逐项生效状态，不表示后端已接受）、`next_turn_fields`（从下一轮才生效的字段），以及与 `GetResidentSettings` 相同的 `prompt_injection` 读法。
 - 修改设置不会中断当前工作。`collaboration_mode` 只适用于 Codex，取值 `default` 或 `plan`，从下一轮开始生效。重复保存相同的值不产生变化。
-- 这条指令不改变 Lineage 定义，也不接受版本前提。原生后端切换 Provider 或账号需要迁移模型会话，使用 `RestartSession`。Model API 无原生会话，允许通过 `changes.backend_route_id` 选择登记的 API 账号，并与模型、上下文及协议参数在同一事务中保存；失败时全部回滚，从下一轮生效。账号只存放在 Resident 配置中，不复制到运行设置。
+- 设置按版本条件保存：`expected_revision` 与当前 `settings_revision` 不一致时拒绝，调用者重新读取并合并后再提交；省略只为兼容旧调用，页面保存总是携带已读版本。版本覆盖完整运行配置，规则见 decision_8b2fa224616b。
+- 这条指令不改变 Lineage 定义。原生后端切换 Provider 或账号需要迁移模型会话，使用 `RestartSession`。Model API 无原生会话，允许通过 `changes.backend_route_id` 选择登记的 API 账号，并与模型、上下文及协议参数在同一事务中保存；失败时全部回滚，从下一轮生效。账号只存放在 Resident 配置中，不复制到运行设置。
 - Model API 的 `prompt_context` 可配置系统提示、预设消息及 `history: {enabled, max_tokens}`；`backend_options` 保存协议参数、超时和重试。新建文本类 Resident 默认携带历史，新建 Jev 默认关闭；已有记录缺少历史设置时保持关闭。Settings 的能力展示、历史选择与 Jev 题型规则见 decision_6c2f91a7d84e。
 - 目标是 Family 门面时，读取和修改的是这个 Family 的 Router Resident 的设置；门面自己不运行，没有独立设置。
 
@@ -292,25 +295,24 @@ Family 内部检查成员摘要的 CheckResidentWorkSummary 和读取门面汇�
 
 ### `RestartSession`
 
-**切换 Resident 的 Backend 或账号；原生目标建立新会话，Model API 目标直接保存调用配置，并按选定策略决定历史边界。**
+**切换 Resident 的账号或 Backend，或显式重新开始会话；原生目标建立新会话，Model API 目标直接保存调用配置，并按选定的上下文方案决定历史边界。**
 
-- 参数：`resident_id`、`provider`（可选，登记的 Agent Provider 或 `provider_api`）、`account_id`（可选）、`model` 与 `reasoning_effort`（可选，必须在目标账号能力内）、`context_strategy`（可选）、`active_execution_policy`（可选）、`resume_failed_input`（可选，默认 true）。
+- 参数：`resident_id`；`operation`（可选，`switch_account` 切换账号并保留上下文，`restart` 显式重新开始会话，默认 `restart`）；`provider`（可选，登记的 Agent Provider 或 `provider_api`，省略时保持当前 Provider）、`account_id`（可选）；`model` 与 `reasoning_effort`（可选，必须在目标账号能力内；同 Provider 省略 `model` 时保持当前模型，跨 Provider 须明确选择）；`collaboration_mode`、`service_tier`、`permission_preset`（可选，目标会话的运行设置，切换成功后生效；`service_tier` 为空字符串时使用默认等级）；`context_strategy`、`active_execution_policy`（可选）；`resume_failed_input`（可选，默认 `false`）。
+- `context_strategy` 取值：`preserve`（默认，用可验证的原生完整 Fork 或严格的历史导入保留有效上下文，不执行模型轮次；无法完整保留时拒绝并保持原绑定，不降级为其他方案）、`native`（仅同 Provider、同账号的原生 Fork）、`compact` 与 `visible`（明确选择的有损模型交接）、`fresh`（清空有效上下文，下一条真实输入时才建会话，页面对话保留）；`smart` 只为旧调用保留，等同 `preserve`。`operation=switch_account` 只接受 `preserve`，目标与当前账号相同时不做任何操作。各方案的条件与上限见 decision_c47a13e8b962。
 - Model API 目标额外接受 `prompt_context` 与 `backend_options`，与账号、模型统一校验并保存；推理参数只在目标模型支持时放入 `backend_options.parameters`。跨入 Model API 须显式选择 API 登记账号。原生目标不接受这两个 API 专用参数。
-- 原生 → Model API 不发初始化请求，解除当前原生绑定但保留旧会话；配置提交失败恢复旧绑定。Model API → 原生先初始化新会话，成功后切换，失败保留原配置。目标为 Model API 时 `native` 无效；其他非 `fresh` 方案均按历史开关及预算读取规范会话记录；`fresh` 只重置模型历史边界，页面对话保留。迁移过程、恢复和接单规则见 decision_c47a13e8b962。
-- `context_strategy` 取值：`smart`（由系统选择合适方式）、`native`（Provider 原生延续）、`compact`（压缩后带入）、`visible`（带入可见对话）、`fresh`（不带入历史）。
-- Codex 会话只拥有它创建时的 Harness 工具，原生延续不能补上新工具。当前会话缺少 `hatg_instruction` 时（包括早于工具记录的会话），`smart` 选择 `compact`，不选择 `native`。
-- Portal 也会自行替换这类会话：Codex Resident 的下一条消息尚未进入 Execution 时，Portal 先关闭接单，让消息等待，再以 `compact` 发起一次重启（记录 `reason: harness_tools`，由这条消息的发送者提交，不需要 owner 权限）。新会话就绪或重启失败后接单重新打开，消息继续执行；重启被拒绝时消息立即在原会话执行。每个会话只尝试一次，同一 Resident 每天最多一次，已进入执行的工作和 `/compact` 不触发替换。
+- 原生与 Model API 之间不能完整保留上下文：有上下文时 `preserve` 被拒绝，原绑定不变。目标为 Model API 时不接受 `native`、`compact` 与 `visible`；原生 → Model API 不发初始化请求，解除当前原生绑定但保留旧会话，配置提交失败恢复旧绑定。Model API → 原生先初始化新会话，成功后切换，失败保留原配置。迁移过程、恢复和接单规则见 decision_c47a13e8b962。
+- `resume_failed_input` 为 `true` 时，`restart` 换到其他账号或 Provider 后恢复最近一条失败输入；`switch_account` 不接受 `true`，失败输入由具体任务的恢复入口处理。省略或 `false` 时切换不重试失败输入。
 - `active_execution_policy` 取值：`wait`（默认，当前工作已进入执行时持久保存迁移安排，返回 accepted／waiting_current_turn；本轮继续，后续接单暂停，平台扫描在本轮结束后按原调用者重新鉴权并提交迁移）或 `cancel`（先请求停止当前工作，停止确认后重试）。关闭页面或平台重启不丢失等待安排；可通过 CancelSessionRestart 取消，只有原来开放且此后没有人工接单操作时才恢复接单。尚未执行的保留消息随新会话继续。等待安排存在时相同请求幂等返回，修改目标须先取消原安排；已经提交的迁移继续沿用原有替换规则。尚无会话的同 Provider 排队执行可以直接调整账号，规则见 decision_c47a13e8b962。
-- 结果：重启 ID 与当前进度。切换完成前继续保留原会话；完成后新会话成为当前会话，所选 Provider 和账号写入 Resident 的运行设置。
+- 结果：`restart_id`、`status`，以及 `operation_id`（稳定操作 ID；账号未变的 `switch_account` 为空）、`operation`、`phase`（等待、准备、导入、提交或终态阶段）、`context_result`（`pending`、`preserved`、`fresh`、`summarized` 或 `unchanged`）和 `actual_binding`（当前实际使用的绑定，失败时为原绑定）。切换完成前继续保留原会话；完成后新会话成为当前会话，所选 Provider、账号及随请求给出的运行设置写入 Resident 的运行设置。
 - 这个 Resident 已有一次尚未完成的重启时，相同参数返回已有重启记录；不同参数先取消已有重启，等生命周期清理完成后按新参数开始。清理超过本次调用的等待期限时返回冲突，调用者稍后重试。其他生命周期操作尚未完成时也返回冲突。
-- Resident 还没有模型会话时，这条指令直接保存 Provider 与账号选择。Portal 页面的“Session 操作”面板使用这条指令。
+- Resident 还没有模型会话时，这条指令直接保存 Provider 与账号选择。Portal 运行设置卡片的“账号切换”与“重新开始会话”使用这条指令。
 
 ### `GetSessionRestart`
 
 **读取 Resident 最近一次会话重启的进度。**
 
 - 参数：`resident_id`。
-- 结果：重启 ID、状态、来源会话与目标会话。页面的“只刷新数据”重新加载对话；Session 操作面板通过会话选项接口读取可选 Provider、账号、方案和重启进度。
+- 结果：重启 ID、状态、来源会话与目标会话，以及最近一次操作的 `operation_id`、`operation`、`phase`、`context_result` 和独立于原始来源与目标的 `actual_binding`。页面的“只刷新数据”重新加载对话；运行设置卡片通过会话选项接口读取可选 Provider、账号、方案和重启进度。
 
 ### `CancelSessionRestart`
 
@@ -365,11 +367,11 @@ Family 内部检查成员摘要的 CheckResidentWorkSummary 和读取门面汇�
 | `SubmitResidentSummary` | `claim_id`、`summary` |
 | `ReleaseResidentSummaryJob` | `claim_id`、`reason` |
 | `GetResidentSettings` | `resident_id` |
-| `UpdateResidentSettings` | `resident_id`、`changes` |
+| `UpdateResidentSettings` | `resident_id`、`expected_revision`、`changes` |
 | `PreviewPromptInjection` | `resident_id`、`turn` |
 | `GetResidentInitialization` | `resident_id` |
 | `RetryResidentInitialization` | `resident_id` |
-| `RestartSession` | `resident_id`、`provider`、`account_id`、`model`、`reasoning_effort`、`prompt_context`、`backend_options`、`context_strategy`、`active_execution_policy`、`resume_failed_input` |
+| `RestartSession` | `resident_id`、`operation`、`provider`、`account_id`、`model`、`reasoning_effort`、`collaboration_mode`、`service_tier`、`permission_preset`、`prompt_context`、`backend_options`、`context_strategy`、`active_execution_policy`、`resume_failed_input` |
 | `GetSessionRestart` | `resident_id` |
 | `CancelSessionRestart` | `resident_id`、`restart_id` |
 | `BindWorkspace` | `resident_id`、`path`、`purpose` |

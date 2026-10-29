@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 51
-  created_at: "2026-09-28T10:45:00Z"
+  number: 52
+  created_at: '2026-09-28T10:45:00Z'
   created_by:
-    user: "weihao"
-    agent: "resident_2a1fc6cd272d"
-  updated_at: "2026-10-22T08:00:00Z"
+    user: tfi-exported-user
+    agent: resident_2a1fc6cd272d
+  updated_at: '2026-10-29T15:50:55Z'
   updated_by:
-    user: "huanyu"
-    agent: ""
+    user: ''
+    agent: resident_24014e2b9bf6
 importance: 8
 metaness: 2
 ai_generated: false
@@ -22,10 +22,10 @@ links:
   - ${code_root}/management_portal/web_isa.py
   - ${code_root}/management_portal/hatg/catalog/environment.py
   - ${code_root}/tests/cases/test_isa_g7_audit.py
-  - ${code_root}/scripts/publish_portal_release.py
+  - ${code_root}/scripts/tfi_dev.py
   - ${code_root}/tests/cases/test_portal_web_isa_environment.py
   - ${code_root}/scripts/portal_services
-  - ${code_root}/scripts/publish_portal_release
+  - ${code_root}/scripts/tfi_development_runtime.py
   - ${code_root}/management_portal/agent_status_backend.py
   - ${code_root}/management_portal/execution/backends.py
   related:
@@ -34,7 +34,7 @@ links:
   - decision_4dea0db1f45a
   - decision_898b8911a2ff
   - decision_08bb2d9141f9
-  - decision_850e6248d680
+  - decision_ab9880dc4c9d
   - decision_37f98f8fcb4b
   - decision_99bb5dc0f96b
   - decision_ed57c4ad1001
@@ -52,12 +52,12 @@ links:
 
 ## 操作的对象
 
-- **Portal 服务**：Portal 的 Dev 与 Release 两个实例，以及每个实例中的组件：Web、ResourceService、ExecutionService、ExecutionWorker 与 SocietyService。服务的滚动部署、重启通知和恢复编排见 decision_08bb2d9141f9、decision_850e6248d680 与 decision_37f98f8fcb4b，运行状态投影见 decision_99bb5dc0f96b。
+- **Portal 服务**：Portal 的 Dev 与 Release 两个实例，以及每个实例中的组件：Web、ResourceService、ExecutionService、ExecutionWorker 与 SocietyService。发布与激活见 decision_08bb2d9141f9 与 decision_ab9880dc4c9d，重启与恢复编排见 decision_37f98f8fcb4b，运行状态与服务健康见 decision_99bb5dc0f96b。
 - **设备**：Portal 监控的 GPU 与磁盘。设备本身是登记资源，登记和修改使用资源指令（decision_ad3e21094f14）；本类读取设备的运行状态，并为 Portal 管理员打开 Portal 主机或 Device 的 Terminal。状态的采集与展示见 decision_ed57c4ad1001。
 - **执行设置**：由 ExecutionService 保存的全系统设置，包括模型请求计时代理开关；仅管理员可读取或修改。
 - **执行账号**：Resident 调用模型时使用的 Provider 账号，例如各个 Codex 账号。每个账号有额度窗口、余额或可用性、调度设置（最大并发、两次派发之间的随机间隔、关闭接单的额度阈值）以及绑定在它上面的 Resident。额度与调度见 decision_4dea0db1f45a 和 decision_8ac0b5a6c0e5。
 - **用量**：执行过程中记录的 token 用量，按 Resident、Lineage、账号和时间归因。统计口径见 decision_fc26f883773d。
-- **模型接口**：LLM API Registry 中登记的普通模型 HTTP 接口，包括地址、默认模型、超时和密钥文件引用。一次调用以消息列表为输入、以完整回答为输出，不建立会话。见 decision_6c2f91a7d84e。
+- **模型接口**：LLM API Registry 中登记的普通模型 HTTP 接口，包括地址、默认模型、超时、密钥文件引用，以及它为 Agent Harness 提供的协议。一次调用以消息列表为输入、以完整回答为输出，不建立会话。见 decision_6c2f91a7d84e。
 
 ## 指令一览
 
@@ -128,7 +128,7 @@ Portal 服务指令由 Portal Web 执行。Dev 与 Release 两个实例各有自
 **读取 Portal 实例与各组件的运行状态。**
 
 - 参数：`instance`（可选，`dev` 或 `release`；省略时读取全部实例）。
-- 结果：每个组件的运行状态、运行版本与健康检查；Release 同时提供当前发布 manifest，其中记录已激活的发布。该查询展示当前运行状态，部署尝试与重启失败的详情由部署流程的运行记录提供。
+- 结果：`instances`，每个实例一项，经配对运行时读取该实例 Web 的 `/api/health`：`ok` 与 `runtime_ok`（Web 可连接且报告的实例名一致）、`web`（健康接口内容，含构建标识、启动时间以及 ExecutionService 与 SocietyService 健康）、`source`（该实例 Web 运行的源码目录）、`shared_source` 与 `shared_services`（共享后台服务的源码目录和单元名）；某个实例读取失败时该项为 `ok: false` 和错误。该查询展示当前运行状态；发布激活的结果记录在激活 receipt 与 `runtime/development-activation.json` 中，重启失败的详情记录在执行重启的单元日志中（decision_99bb5dc0f96b）。
 
 ### `GetRuntimeCapacity`
 
@@ -137,7 +137,7 @@ Portal 服务指令由 Portal Web 执行。Dev 与 Release 两个实例各有自
 结果为 `capacity`，新输出 schema 是 `tfi.runtime-capacity.v1`；读取方只接受该精确格式，`observed_at` 是本次开始采样的 UTC 时间。三个来源顺序采集，各自返回 `status=ok|unavailable`；某源异常只返回安全错误码，成功来源继续保留。这是当前观察，不是跨服务事务快照。
 
 - `database`：`connections` 为 PostgreSQL 实例全部 client backend 连接数，含当前观察连接；`max_connections` 为总槽数，`reserved_connections` 包括普通保留与超级用户保留槽，`usable_connections` 是两者相减。`used_percent` 为连接数除以普通可用槽数，可超过 100%，不截断。查询使用短只读连接，退出或异常都释放连接及其数据库句柄。
-- `disks.filesystems`：仅观察本机 `/`、`/share`、`/data` 中存在的路径，按文件系统设备号去重，返回 `key`、代表路径 `path`、`total_bytes`、`free_bytes` 与 `used_percent`。使用率按总容量减可用容量计算，包含预留空间，不扫描文件、不连接远程服务器。
+- `disks.filesystems`：仅观察本机 `/`、`${share_root}`、`/data` 中存在的路径，按文件系统设备号去重，返回 `key`、代表路径 `path`、`total_bytes`、`free_bytes` 与 `used_percent`。使用率按总容量减可用容量计算，包含预留空间，不扫描文件、不连接远程服务器。
 - `execution_queue`：复用 ExecutionService 的健康读取；`queued_count` 来自 scheduler 的 queued 状态计数，包含配额、派发间隔与绑定等待；`active_count` 使用该服务的活动数量，`max_concurrency` 使用全部 capacity 分区限制之和 `total_capacity`。单个默认分区上限不能代表总并发，排队数也不能代表可立即派发数量。
 
 预警阈值、持续时间、去重和恢复由 Portal System 的运行容量流程负责，见 decision_5ff0cb51ed84。
@@ -146,19 +146,20 @@ Portal 服务指令由 Portal Web 执行。Dev 与 Release 两个实例各有自
 
 **重启一个 Portal 实例，或实例中的指定组件。**
 
-- 参数：`instance`（`dev` 或 `release`）、`components`（可选，取值为 `web`、`resource`、`execution-service`、`execution-worker`、`lineage`）。Dev 省略时由部署流程按自上次成功部署以来的源码变化选择组件；Release 省略时重启 `web`、`resource`、`execution-service`、`lineage`。
-- 结果：`request_id` 与 `components`。Dev 返回已排队请求的 ID 和显式组件；空组件列表表示部署流程执行时计算变化范围。Release 返回本次异步启动的关联 ID 与请求组件，后续运行结果由服务控制流程记录。
-- 重启前，打开 Portal 的浏览器显示固定 5 秒的重启倒计时。ExecutionWorker 采用平滑换代，正在执行的模型任务交接给新一代 Worker。
-- Dev 提交持久部署请求，Release 启动异步服务控制流程；指令返回后，部署流程按组件执行（decision_08bb2d9141f9）。调用者通过 `GetPortalStatus` 读取当前健康状态；请求受理或进程启动本身只说明重启已经发起。重启的组件包括 Portal Web 自身时，指令先返回结果，再开始重启。
+- 参数：`instance`（`dev` 或 `release`）、`components`（可选，取值为 `web`、`resource`、`execution-service`、`execution-worker`、`lineage`）。省略时两个实例都重启 `web`、`resource`、`execution-service`、`lineage`；`web` 指所选实例的 Web，其余组件是两个实例共用的后台服务。
+- 结果：`request_id` 与 `components`。`request_id` 形如 `tfi-pair-restart-<uuid>`，也是执行这次重启的临时 systemd 单元名；`components` 是调用者给出的组件，省略时为空列表。
+- 重启不向浏览器发倒计时；打开的页面在实时连接重连后发现新进程并重新加载。选中 `execution-worker` 时向 Worker Manager 发 USR1，即使构建标识相同也换代，正在执行的模型任务交接给新一代 Worker（decision_075f66430606）。
+- 指令校验组件后用 `systemd-run --user` 启动该单元并立即返回；单元按组件顺序重启，最后检查所选实例 Web 的健康（decision_37f98f8fcb4b）。调用者通过 `GetPortalStatus` 读取当前健康状态，失败详情查看该单元日志；指令返回只说明重启已经发起。重启的组件包括 Portal Web 自身时，指令先返回结果，再开始重启。
+- 独立 TFI 实例没有配对运行时，指令返回错误，服务由 `install_tfi_release` 管理。
 
 ### `PublishRelease`
 
 **把调用者指定的 Dev 代码同步到 Release，并返回发布提交。**
 
-- 参数：`message`（本次发布的提交说明）、`paths`（要发布的文件或目录列表，删除也会同步）或 `all`（为 `true` 时发布全部受 Git 管理的源码），二者必须且只能提供一个。
-- 结果：发布提交 ID、同步的路径、Release 发布后的健康状态，以及推送到各 Git 远端的结果 `push`。
-- 只能在 Dev 实例上执行；发给 Release 实例时返回错误。
-- 指令只提交发布动作；选择范围、撰写提交说明与验证功能由调用者完成。提交、合并发布批次、Release 激活、共享组件和各远端推送的顺序与失败语义统一见 decision_08bb2d9141f9。`push` 单独反映各远端结果，不能仅凭指令受理或部分步骤完成推断全部发布成功。
+- 参数：`message`（本次发布的提交说明）、`paths`（要发布的文件或目录列表，路径相对仓库的 `code/` 目录，删除也会同步）或 `all`（为 `true` 时发布全部受 Git 管理的源码），二者必须且只能提供一个。
+- 结果：`commit`（发布提交 ID）、`paths`（Release 相对上次发布改变的文件，包含 Dev 上已有的其他提交）、`health`（`status: pending` 与激活 receipt 的路径 `receipt`）和 `push`（推送结果 `ok` 与远端名 `remote`）。
+- 未配置配对运行时时，只能在 Dev 实例上执行，发给 Release 实例返回 `instruction.forbidden`；配置了配对运行时的实例（本站）两个实例都可以执行。
+- 指令只提交发布动作；选择范围、撰写提交说明与验证功能由调用者完成。提交、Release 快进、推送和激活的顺序与失败语义统一见 decision_08bb2d9141f9。指令在激活排队后返回，服务是否已加载新代码以 `health.receipt` 指向的 receipt 为准；`push` 单独反映推送结果，不能仅凭指令受理或部分步骤完成推断全部发布成功。
 
 ## 设备
 

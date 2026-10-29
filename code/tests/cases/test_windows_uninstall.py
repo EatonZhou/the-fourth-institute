@@ -226,12 +226,15 @@ def test_windows_removal_uses_extended_paths(original, expected):
 
 def test_deep_preparation_cache_is_removed_while_launcher_is_locked(platform):
     """清理用户报告的超长准备路径，同时保留正在使用的启动锁和运行时。"""
-    relative = (
+    workspace = (
         ".build/example_instance-windows/engineering/data/share_root/Agents/"
         "lineage_75e3399f4877/residents/resident_2461a452e3f7/workspace/"
-        "lenia-core/code/src/local_learning/method_renewal_local_plasticity/anticipatory_io.py"
     )
-    target = Path(uninstall._native_path(platform / relative))
+    project = "lenia-core/code/src/local_learning/method_renewal_local_plasticity/anticipatory_io.py"
+    # The reported path passed 260 characters under the user's install root;
+    # pad it so a short temporary root still crosses that limit.
+    padding = "p" * max(1, 262 - len(str(platform / workspace / project)))
+    target = Path(uninstall._native_path(platform / workspace / padding / project))
     target.parent.mkdir(parents=True)
     target.write_bytes(b"example code")
     assert len(str(target)) > 260

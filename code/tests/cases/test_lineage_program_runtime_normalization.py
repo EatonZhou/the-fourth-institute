@@ -119,6 +119,28 @@ def test_reads_trust_stored_runtime_once_this_rule_migrated_it(database, monkeyp
     }
 
 
+def test_migration_locks_runtime_objects_in_lock_order(database, caplog):
+    """迁移已存运行时数据时按锁顺序加锁
+
+    Every runtime writer locks a Lineage's objects in LOCK_ORDER, which puts
+    the expiry notices between the wires and the operators. A migration that
+    locks the notices after the operators can deadlock with such a writer.
+    """
+    with work.transaction(database, LINEAGE) as state:
+        state["event_sources"] = {"source": {"consumed_cursors": ["one", "one"]}}
+        state["expired_deliveries"] = [{"event_source_id": "source", "wire_id": "wire", "cursor": "expired_cursor",
+                                        "event": {}, "expired_at": "2026-10-29T00:00:00Z"}]
+        state["operators"] = {"operator": {"cursor": "checkpoint"}}
+    database.write(lambda connection: connection.execute(
+        "INSERT INTO lineage_meta(key, value) VALUES (%s, %s)",
+        (runtime._NORMALIZATION_KEY, str(runtime.RUNTIME_NORMALIZATION - 1)),
+    ))
+    caplog.clear()
+    with caplog.at_level("WARNING", logger=work.__name__):
+        assert runtime.migrate_stored_runtime()["lineages"] == 1
+    assert not [record for record in caplog.records if "out of order" in record.getMessage()]
+
+
 def test_reads_normalize_when_another_rule_wrote_the_stored_runtime(database, monkeypatch):
     """已存数据由别的规则版本写入时读取仍做规范化
 

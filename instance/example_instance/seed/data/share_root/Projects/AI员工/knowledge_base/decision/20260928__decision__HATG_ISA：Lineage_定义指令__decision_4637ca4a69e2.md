@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 42
+  number: 44
   created_at: '2026-09-28T10:45:00Z'
   created_by:
     user: tfi-exported-user
     agent: resident_2a1fc6cd272d
-  updated_at: '2026-10-19T19:43:58Z'
+  updated_at: '2026-10-28T15:19:11Z'
   updated_by:
-    user: tfi-exported-user
-    agent: resident_865c3c24f251
+    user: ''
+    agent: resident_2e9ea0072551
 importance: 8
 metaness: 2
 ai_generated: false
@@ -137,11 +137,12 @@ Lineage 不保存待确认的修改方案。需要先让人确认的团队结构
 
 ### `UpdateLineage`
 
-**修改 Lineage 的名称、说明、所属项目、Leader、自动运行身份、头像或碎片。**
+**修改 Lineage 的名称、说明、所属项目、Leader、头像或碎片。**
 
 - 参数：`lineage_id`、`changes`。`changes.fragments` 是碎片的完整新列表：每项 `{id?, content, attachments?}`，省略 `id` 的是新碎片，列表中不再出现的碎片被删除。`changes.avatar` 为 `{"sprite_index": 0–41}`、`{"upload_id": …}`（`CreateUpload` 用途 `avatar` 的已完成上传）或 `null`（回到名称首字）；头像保存在定义之外，只改头像不产生新的定义 revision（decision_5bc3fdfc7eec）。DeleteLineage 同时删除头像。
 - 结果：修改后的元数据与碎片。
 - 只修改名称时，成员、组件、连线和权限配置保持不变。
+- 自动任务直接使用 `leader_resident_id` 指向的 Resident，不另配置运行 User；`CreateLineage.definition` 与 `UpdateLineage.changes` 均不接受 `run_as_principal`。整条 Family 化时复用门面作为 Leader；没有成员的 Lineage 等待首个 Resident 加入后才启动新自动任务。
 - Society 页面保存碎片时携带所读定义的 revision 作为 `expected_version`。另一处先改了定义时，这次保存以 `instruction.conflict` 拒绝，页面重新读取后由用户再保存，不会用旧列表覆盖别人刚写的碎片。
 
 ### `UpdateLineageLayout`

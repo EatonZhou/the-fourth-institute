@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 53
+  number: 55
   created_at: '2026-09-28T10:45:00Z'
   created_by:
     user: tfi-exported-user
     agent: resident_2a1fc6cd272d
-  updated_at: '2026-10-19T19:59:40Z'
+  updated_at: '2026-10-27T12:48:40Z'
   updated_by:
-    user: tfi-exported-user
-    agent: resident_865c3c24f251
+    user: ''
+    agent: resident_73cb83291316
 importance: 8
 metaness: 2
 ai_generated: false
@@ -128,6 +128,8 @@ links:
 
 - `trace` 给出完整轨迹的 Segment 数量和类型分布；`effective_context` 给出应用压缩及重置边界后的数量、首尾 Segment ID、类型分布及压缩 replacement history 摘要。排队而尚未投递的输入不计入有效窗口。
 - `trace.positions`（`tfi.trace-position-evidence.v1`）给出同一只读 `repeatable read` 快照中的 `trace_id`、`trace_updated_at`、`sampled_at`、`consistency=repeatable_read_read_only` 及按 ordinal 排列的 `entries`。每项只包含 `ordinal`、`segment_id`、`segment_type`、`content_sha256`、`message_id`、`execution_id`、`segment_started_at`、`segment_finished_at`、`provider_session_ref`、`provider_turn_id`、`provider`、`backend_route_id`、`backend_session_id`。最多返回当前 trace 最前 2,000 项，超过时 `truncated=true`；完整数量仍由 `trace.segment_count` 给出。原生会话与 turn 只从该 Segment 的实际 Execution 关联读取，不能用当前 Resident 配置填补。缺失时间为 null；时间含义遵循 decision_25eb93d803a4，不将 Segment 完成、首 token 或 Execution 总跨度解释为一次原生模型请求的起止。
+- `trace.positions.entries` 可选的 `provider_item_id` 是首次捕获 Provider 消息或工具事件时实际收到的 item ID；它与该条目的 Execution、原生会话及 turn 一起用于核对身份。无原生 ID、合成的最终回复和以前未记录该事实的片段均省略此字段，不以文本、内容摘要、内部 Segment ID 或重放来补造；合法同文但不同原生 ID 的消息分别保留。
+- `effective_context.tool_observations` 至多返回 200 条工具身份、状态与起止时间，超出时标记 `truncated`。有实际捕获时返回 `provider_item_id`；原生 commandExecution 的 `command_sha256` 是完整命令 UTF-8 字节的 SHA-256，`observed_exit_code` 只取原生事件携带的整数退出码，完成状态不能代替缺失退出码；原生等待仍可返回已观测的 `observed_duration_ms`。诊断不返回命令正文、参数或输出，不猜测缺失或格式错误的事实。相同原生事件重放不改写已存在片段及其原有证据缺口。
 - `transformations` 返回该 Resident 最新至多 2,000 条持久转换事实。每项包含 `schema=tfi.trace-transformation.v1`、`receipt_id`、`trace_id`、`operation_id`、`operation_type`、`recorded_at`、`execution_id`、`sources[{ordinal, segment_id, message_id, content_sha256}]`、`target_segment_id`、`target_ordinal`。这些来源与位置由 AgentData 在转换事务中保存，不由诊断读取重建；新输入即刻准备后仍可按实际输入 ID、Execution ID 核对原位置与版本链。当前 trace 快照只能说明当前状态，不能代替旧转换事实。超过上限时 `transformations_truncated=true`，调用方不得据截断结果宣称完整。
 - `transformations_available` 表示后端是否支持读取这类事实，不代表历史完整。滚动加载期间旧 Execution 后端没有相关字段时，`trace.positions=null`、`transformations_available=false`；后端支持但没有记录时返回空列表，仍不能证明历史没有发生转换。外层事务隔离条件不满足时诊断读取失败，不降级为混合时点。该读取不执行模型、不触发转换、不补写历史，沿用现有 Resident 可见性和实际模型输入读取资格，不授予全局运行设置权限。
 - Codex 历史摘要使用实际导入器相同的序列化规则，提供 SHA-256、序列化字节数、原生 item/内容分段类型计数、消息文字 UTF-8 字节数和图片 URL UTF-8 字节数。图片 URL 大小包含 data URL 编码开销，单独统计，不当作普通文字大小或解码图片大小。工具映射按 call_id 统计调用及返回，最多列出 200 个 ID，超出时标记截断，并保留全量未配对计数。无法按 Codex 结构转换的有效窗口明确标记 unavailable。

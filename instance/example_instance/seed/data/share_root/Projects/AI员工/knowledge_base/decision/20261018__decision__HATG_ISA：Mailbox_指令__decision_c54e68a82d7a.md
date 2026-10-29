@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-10-18'
 version:
-  number: 11
+  number: 12
   created_at: '2026-10-18'
   created_by:
     user: ''
     agent: resident_7765faecc45a
-  updated_at: '2026-10-20T00:58:58Z'
+  updated_at: '2026-10-20T18:03:19Z'
   updated_by:
     user: ''
-    agent: resident_6199a7a36480
+    agent: resident_2e9ea0072551
 importance: 5
 ai_generated: false
 links:
@@ -217,3 +217,8 @@ Resident 的添加能力不授予读取、修改、删除或调序用户已有�
 | `CreateNotification` | `title`、`message`、`recipients`、`lineage_id`、`severity`、`notification_id` |
 
 格式名与版本须精确匹配当前规范值，校验规则见 decision_86aed2f0e8c7；本篇同时校验各字段和结构版本，不接受历史前缀或其他版本。
+
+
+### 原输入恢复与 Trigger Path 终态
+
+显式恢复失败或按既有合同可恢复的取消轮次时，沿原 ID、作者、时间、正文、成员及 info 恢复；预留新的 Execution 时同事务记录 input_retry 回执，绑定确切原执行与新执行。原 Trigger Path 保持原交付及终态事实，后续新执行属于原输入的独立重试，不追加到历史路径，不重开或清除历史终态。普通关联仍受终态禁止约束；只有恢复 owner 的完整、同 Resident/actor/原 primary/member 身份回执链才能识别独立重试。没有原 Execution 的合法 accepted orphan 沿现有接收恢复合同处理，不人为要求 Execution。接口参数、默认权限和取消恢复准入均不变；重复调用继续只保留一个执行位置。详见 decision_4adcc1ff2f2c 的运行恢复边界。

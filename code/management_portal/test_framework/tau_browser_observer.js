@@ -245,6 +245,23 @@ async function observeBrowser(context, { evidenceDir }) {
     try { await frame.evaluate(() => window.__portalTauObservation?.flush()); }
     catch { write({ kind: 'observation_gap', ...location(frameState(frame)), reason: 'document_unavailable_for_final_snapshot' }); }
   };
+  // Input receipts reach Node through an asynchronous binding, after the input
+  // command itself has returned. Keep the action open until every current
+  // document has delivered the receipts it already emitted; otherwise a late
+  // receipt is stamped with the next action or with none.
+  const settleInputReceipts = async (page, action) => {
+    try {
+      const frames = page.isClosed?.() ? [] : page.frames();
+      await Promise.all(frames.map(async frame => {
+        let timer;
+        const deadline = new Promise(resolve => { timer = setTimeout(resolve, 2000, 'deadline'); });
+        const outcome = await Promise.race([deadline, frame.evaluate(() => window.__portalTauObservation?.settle?.())
+          .then(() => 'settled', () => 'unavailable')]).finally(() => clearTimeout(timer));
+        if (outcome !== 'settled') write({ kind: 'observation_gap', ...location(frameState(frame)), action_id: action.id,
+          reason: outcome === 'deadline' ? 'input_receipts_unsettled_at_action_end' : 'document_unavailable_for_action_input_receipts' });
+      }));
+    } catch { write({ kind: 'observation_gap', action_id: action.id, reason: 'page_unavailable_for_action_input_receipts' }); }
+  };
   listen(context, 'page', page => pageState(page));
   listen(context, 'request', start);
   listen(context, 'response', response => {
@@ -463,7 +480,14 @@ async function observeBrowser(context, { evidenceDir }) {
     bytes[8] = (bytes[8] & 0x3f) | 0x80;
     const hex = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
     const token = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
-    const emit = data => window.__portalTauObservationRecord({ token, at: Date.now(), ...data }).catch(() => {});
+    // Each binding promise settles only after the observer has written the
+    // receipt, so an action can wait for receipts this document already sent.
+    const deliveries = new Set();
+    const emit = data => {
+      const delivery = window.__portalTauObservationRecord({ token, at: Date.now(), ...data }).catch(() => {});
+      deliveries.add(delivery);
+      delivery.then(() => deliveries.delete(delivery));
+    };
     // Capture all hit targets, including a nested icon and non-interactive
     // overlays. No labels, IDs, text, values or raw URLs enter the evidence.
     const nodes = new WeakMap(), pendingInputs = new Map();
@@ -617,7 +641,14 @@ async function observeBrowser(context, { evidenceDir }) {
       const remaining = observer?.takeRecords() || []; if (remaining.length) entries(remaining);
       connections(window.PortalEvents?.closedStreams?.() || []);
     };
-    window.__portalTauObservation = { flush };
+    // Runs as its own task, after every input dispatch that registered a
+    // pending sample, so those samples are final. Uses no page timers, which a
+    // page clock may pause.
+    const settle = async () => {
+      for (const sequence of [...pendingInputs.keys()]) finishInput(sequence, 'after_dispatch');
+      await Promise.all([...deliveries]);
+    };
+    window.__portalTauObservation = { flush, settle };
     emit({ kind: 'document_started', time_origin: performance.timeOrigin });
     for (const eventType of ['error', 'unhandledrejection']) window.addEventListener(eventType, event => {
       // No message, arbitrary rejection value or raw filename/stack crosses
@@ -672,7 +703,7 @@ async function observeBrowser(context, { evidenceDir }) {
   await context.addInitScript({ content: `(${documentObserver.toString()})((${createPathSanitizer.toString()})(${JSON.stringify([...residentReadRoutes.keys()])}), (${createErrorLocationSanitizer.toString()})(${JSON.stringify(errorSourcePaths)}));` });
   for (const page of context.pages()) pageState(page);
   write({ kind: 'capture_started', clocks: { observed_at_ms: 'node_epoch_ms', resource_values: 'browser_time_origin_plus_relative_ms' },
-    limitations: ['No request bodies, arbitrary headers or query strings are persisted; only Portal EventSource and instruction transport identities are retained', 'Request/document association during navigation can be unconfirmed', 'Document destruction can prevent unload/Portal receipt delivery; absence does not prove no close occurred', 'Portal transport identity is matched only to a unique request in the same frame/document; native reconnects remain ambiguous, ResourceTiming lacks transport identity', 'Browser timing is not backend execution timing', 'server_timing_ms contains only allowlisted response-header durations: portal_queue is Web executor wait; portal_handler includes RPC/cache wait and excludes body upload/response streaming; portal_conv_* stages are request-local conversation read durations including RPC/cache waits, not database CPU time', 'Zero browser sizes/phases may reflect reuse, cache or restricted exposure; never infer zero server cost'] });
+    limitations: ['No request bodies, arbitrary headers or query strings are persisted; only Portal EventSource and instruction transport identities are retained', 'Request/document association during navigation can be unconfirmed', 'Document destruction can prevent unload/Portal receipt delivery; absence does not prove no close occurred', 'An action ends only after documents still current at its end deliver their input receipts; a document replaced during the action may deliver late receipts outside it', 'Portal transport identity is matched only to a unique request in the same frame/document; native reconnects remain ambiguous, ResourceTiming lacks transport identity', 'Browser timing is not backend execution timing', 'server_timing_ms contains only allowlisted response-header durations: portal_queue is Web executor wait; portal_handler includes RPC/cache wait and excludes body upload/response streaming; portal_conv_* stages are request-local conversation read durations including RPC/cache waits, not database CPU time', 'Zero browser sizes/phases may reflect reuse, cache or restricted exposure; never infer zero server cost'] });
   return {
     file,
     requestId(request) { return requests.get(request)?.id || null; },
@@ -695,9 +726,12 @@ async function observeBrowser(context, { evidenceDir }) {
         error = safeError(caught);
         throw caught;
       } finally {
+        // Receipt settlement is observer overhead, not part of the operation.
+        const duration = performance.now() - started;
+        await settleInputReceipts(page, action);
         actions.delete(page);
         write({ kind: 'action_finished', action_id: action.id, name, status, error,
-          ...location(frameState(page.mainFrame())), duration_ms: performance.now() - started,
+          ...location(frameState(page.mainFrame())), duration_ms: duration,
           request_ids: action.request_ids,
           request_association: 'observed_in_explicit_page_action_scope',
           causality: 'not_inferred_background_requests_may_share_scope' });
