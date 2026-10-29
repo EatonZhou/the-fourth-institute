@@ -87,6 +87,15 @@ def test_reconciliation_is_throttled_but_terminal_notification_wakes_it():
         assert CodexTurnFollower.turn_reconcile_due(waiter)
 
 
+def _provider_events(events: list[dict]) -> list[dict]:
+    """The Provider's notifications without Portal's start receipt.
+
+    The receipt follows the start request's response on the caller's thread,
+    while the reader thread may already deliver the turn's later notifications.
+    """
+    return [event for event in events if event["method"] != "portal/provider_request_accepted"]
+
+
 class FakeAppServer:
     def __init__(
         self,
@@ -943,7 +952,7 @@ class CodexAppServerClientTest(unittest.TestCase):
         self.assertIn("thread/resume", server.methods)
         self.assertEqual(server.methods.count("thread/resume"), 1)
         self.assertEqual(server.methods.count("turn/start"), 2)
-        self.assertEqual(events[-1]["method"], "turn/completed")
+        self.assertEqual(_provider_events(events)[-1]["method"], "turn/completed")
         client.close()
 
     def test_native_review_uses_review_start_and_shared_turn_lifecycle(self) -> None:
@@ -965,7 +974,7 @@ class CodexAppServerClientTest(unittest.TestCase):
                 "turnId": result.turn_id, "rpcMethod": "review/start",
             })
             self.assertNotIn("Review captured diff", json.dumps(receipts))
-            self.assertEqual(events[-1]["method"], "turn/completed")
+            self.assertEqual(_provider_events(events)[-1]["method"], "turn/completed")
         finally:
             client.close()
 
@@ -2369,9 +2378,10 @@ class CodexAppServerClientTest(unittest.TestCase):
 
         self.assertEqual(result.response, "finished")
         self.assertIn("thread/turns/list", server.methods)
-        self.assertEqual(events[-2]["method"], "thread/status/changed")
-        self.assertEqual(events[-1]["method"], "turn/completed")
-        self.assertEqual(events[-1]["params"]["turn"]["id"], result.turn_id)
+        provider_events = _provider_events(events)
+        self.assertEqual(provider_events[-2]["method"], "thread/status/changed")
+        self.assertEqual(provider_events[-1]["method"], "turn/completed")
+        self.assertEqual(provider_events[-1]["params"]["turn"]["id"], result.turn_id)
         client.close()
 
     def test_active_turn_recovers_progress_before_completion_without_notifications(self) -> None:
@@ -2638,8 +2648,9 @@ class CodexAppServerClientTest(unittest.TestCase):
             "019f0000-0000-7000-8000-000000000298",
         )
         self.assertIn("thread/turns/list", server.methods)
-        self.assertEqual(events[-2]["method"], "thread/goal/updated")
-        self.assertEqual(events[-1]["method"], "turn/completed")
+        provider_events = _provider_events(events)
+        self.assertEqual(provider_events[-2]["method"], "thread/goal/updated")
+        self.assertEqual(provider_events[-1]["method"], "turn/completed")
         client.close()
 
     def test_resume_turn_recovers_completed_turn_from_already_blocked_goal(self) -> None:
