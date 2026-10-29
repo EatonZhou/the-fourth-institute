@@ -46,6 +46,8 @@ CREATE TABLE IF NOT EXISTS notes (note_id TEXT PRIMARY KEY, project_id TEXT NOT 
  revision BIGINT NOT NULL, noted_at TIMESTAMPTZ NOT NULL, noted_by TEXT NOT NULL, kind TEXT NOT NULL, text TEXT NOT NULL,
  refs JSONB NOT NULL);
 CREATE INDEX IF NOT EXISTS notes_direction_idx ON notes(project_id, direction_id, noted_at);
+CREATE TABLE IF NOT EXISTS automation (project_id TEXT PRIMARY KEY, lineage_id TEXT NOT NULL,
+ installed_at TIMESTAMPTZ NOT NULL, installed_by TEXT NOT NULL);
 """
 
 
@@ -344,6 +346,41 @@ def history(project_id: str, *, after: int = 0, limit: int = 100) -> list[dict[s
             for row in rows]
 
 
+def activity(project_id: str, *, since: str, until: str, exclude: str = "") -> list[dict[str, Any]]:
+    """Revisions committed after ``since`` up to ``until``, oldest first, leaving out those of ``exclude``."""
+    with database().read() as connection:
+        rows = connection.execute(
+            "SELECT revision, changed_at, changed_by, changes FROM revisions WHERE project_id=%s"
+            " AND changed_at > %s AND changed_at <= %s AND changed_by <> %s ORDER BY revision",
+            (project_id, since, until, exclude)).fetchall()
+    return [{"revision": row["revision"], "changed_at": _iso(row["changed_at"]), "changed_by": row["changed_by"],
+             "changes": row["changes"]} for row in rows]
+
+
+def notes_by_id(project_id: str, note_ids: Iterable[str]) -> dict[str, dict[str, Any]]:
+    ids = sorted({str(item) for item in note_ids if item})
+    if not ids:
+        return {}
+    with database().read() as connection:
+        rows = connection.execute("SELECT note_id, kind, text, refs FROM notes WHERE project_id=%s AND note_id = ANY(%s)",
+                                  (project_id, ids)).fetchall()
+    return {row["note_id"]: dict(row) for row in rows}
+
+
+def automation(project_id: str) -> dict[str, Any] | None:
+    """Where the map's daily digest was installed, or None before it was."""
+    with database().read() as connection:
+        row = connection.execute("SELECT lineage_id, installed_at, installed_by FROM automation WHERE project_id=%s",
+                                 (project_id,)).fetchone()
+    return {**dict(row), "installed_at": _iso(row["installed_at"])} if row else None
+
+
+def record_automation(project_id: str, lineage_id: str, *, actor: str) -> None:
+    with database().transaction(key=project_id) as connection:
+        connection.execute("INSERT INTO automation VALUES (%s,%s,%s,%s) ON CONFLICT (project_id) DO NOTHING",
+                           (project_id, lineage_id, _now(), actor))
+
+
 def apply(project_id: str, expected_revision: int, changes: list[Any], *, actor: str, resident: bool,
           goal: str = "") -> dict[str, Any]:
     """Commit ``changes`` as the next revision, refusing a map that moved past ``expected_revision``."""
@@ -433,7 +470,7 @@ def project_relations(project_id: str, new_project_id: str = "", *, write: bool 
             "SELECT direction_id FROM directions WHERE project_id=%s ORDER BY direction_id", (project_id,)).fetchall()]
         if not write:
             return ids
-        tables = ("maps", "revisions", "directions", "notes")
+        tables = ("maps", "revisions", "directions", "notes", "automation")
         if new_project_id:
             for table in tables:
                 connection.execute(f"UPDATE {table} SET project_id=%s WHERE project_id=%s", (new_project_id, project_id))

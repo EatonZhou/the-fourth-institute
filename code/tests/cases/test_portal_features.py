@@ -94,7 +94,7 @@ FEATURE_INSTRUCTIONS = {
     "UpdateChatroomMessage", "RetractChatroomMessage", "UpdateChatroomReaction", "CreateChatroomMessage",
     "MarkChatroomRead", "GetPulse", "PublishPulseItem", "BindTelepusContactForUser",
     "UnbindTelepusContactForUser", "GetTelepusStatus", "SetTelepusEnabled",
-    "GetResearchMap", "ApplyResearchMapChanges", "ListResearchMapChanges", "UpdateResearchMapLayout",
+    "GetResearchMap", "ApplyResearchMapChanges", "ListResearchMapChanges", "UpdateResearchMapLayout", "GetResearchMapDigest",
 }
 from management_portal.permission_system.scheme import repository
 from management_portal.permission_system.scheme.compiler import SchemeError, compile_scheme

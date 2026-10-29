@@ -570,6 +570,9 @@
     "GetResearchMap": {
       "a": "@viewer"
     },
+    "GetResearchMapDigest": {
+      "a": "@viewer"
+    },
     "GetResidentRequest": {
       "a": "@viewer"
     },

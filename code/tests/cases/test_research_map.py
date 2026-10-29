@@ -118,11 +118,14 @@ def test_the_store_keeps_revisions_history_layout_and_project_identity():
     assert store.direction(direction_id) == {"project_id": project, "created_by": "alice", "removed": False}
     assert {"resource_id": direction_id, "resource_type": "direction", "project_id": project,
             "created_by": "alice"} in store.permission_records()
+    store.record_automation(project, "lineage_000000000001", actor="alice")
     assert store.project_relations(project, "Renamed", write=False) == [direction_id]
     store.project_relations(project, "Renamed")
     assert store.read("Renamed")["revision"] == 2 and store.read(project)["revision"] == 0
+    assert store.automation("Renamed")["lineage_id"] == "lineage_000000000001" and store.automation(project) is None
     store.project_relations("Renamed")
     assert store.read("Renamed")["revision"] == 0 and store.direction(direction_id) is None
+    assert store.automation("Renamed") is None
 
 
 class Resources:
@@ -190,6 +193,88 @@ def test_handlers_read_outputs_check_teams_and_tell_open_pages(monkeypatch):
     with pytest.raises(InstructionError) as missing:
         web.get_research_map(invocation(project_id="NoSuchProject"))
     assert missing.value.code == "instruction.not_found"
+
+
+def test_the_digest_lists_what_others_changed_and_produced(monkeypatch):
+    """GetResearchMapDigest 只列出别人提交的修订与新产出，按方向汇总并写成整理请求；没有动静时 count 为 0、不写请求"""
+    from management_portal import resources
+
+    project, steward = "DigestProject", "resident_00000000000a"
+    first = store.apply(project, 0, [{"op": "add_direction", "key": "a", "title": "Speed", "stance": "focus"},
+                                     {"op": "add_direction", "key": "b", "title": "Quiet"}], actor="alice", resident=False)
+    speed, quiet = first["created"]["a"], first["created"]["b"]
+    store.apply(project, 1, [{"op": "add_note", "direction_id": quiet, "kind": "note", "text": "tidied"}], actor=steward,
+                resident=True)
+    store.apply(project, 2, [{"op": "update_direction", "direction_id": speed, "fields": {"stance": "watch"}},
+                             {"op": "add_note", "direction_id": speed, "kind": "decision", "text": "pause until the gripper",
+                              "refs": ["todo_0123456789ab"]}], actor="alice", resident=False)
+    records = [
+        {"resource_id": project, "resource_type": "project", "summary": "Fast arms", "attributes": {}},
+        {"resource_id": "experiment_0123456789ab", "resource_type": "experiment", "title": "Grip test", "url": "/r/e",
+         "source": {"modified_at": "2026-10-28T00:00:00Z"},
+         "attributes": {"project_ids": [project], "relations": [{"kind": "related", "target_id": quiet}]}},
+    ]
+    monkeypatch.setattr(resources, "get_resource_service", lambda: Resources(records))
+
+    digest = web.get_research_map_digest(invocation(caller=steward, project_id=project, since="2026-10-01T00:00:00Z"))
+    assert (digest["count"], digest["revision"], digest["since"]) == (2, 3, "2026-10-01T00:00:00Z")
+    by_id = {entry["direction_id"]: entry for entry in digest["directions"]}
+    assert [change["summary"] for change in by_id[speed]["changes"]] == [
+        "新增方向（主攻）", "姿态改为观望", "决定：pause until the gripper（引用 todo_0123456789ab）"]
+    assert by_id[quiet]["changes"] == [{"revision": 1, "changed_at": by_id[quiet]["changes"][0]["changed_at"],
+                                        "changed_by": "alice", "summary": "新增方向（探索）"}], "the caller's own note is not news"
+    assert [output["resource_id"] for output in by_id[quiet]["outputs"]] == ["experiment_0123456789ab"]
+    assert "《Speed》" in digest["prompt"] and "write-research-map/daily-tidy.md" in digest["prompt"]
+    assert "新产出：experiment《Grip test》experiment_0123456789ab" in digest["prompt"]
+
+    later = web.get_research_map_digest(invocation(caller=steward, project_id=project, since=digest["until"]))
+    assert (later["count"], later["directions"], later["prompt"]) == (0, [], "")
+    with pytest.raises(InstructionError) as wrong:
+        web.get_research_map_digest(invocation(project_id=project, since="yesterday"))
+    assert wrong.value.code == "instruction.invalid_arguments"
+
+
+def test_the_first_map_change_draws_the_daily_digest_into_the_project_lineage(monkeypatch):
+    """第一次修改地图时在 Project 层 Lineage 画出每日整理（定时 Event → Effect → Project Resident），只画一次，失败不影响地图修改"""
+    from management_portal import isa_client, research_map_automation as automation, society_service
+    from management_portal.society_service.lineage_program import effect_script_analysis
+
+    calls, components = [], []
+
+    def call(actor, instruction, arguments=None, **options):
+        calls.append((actor, instruction, arguments, options))
+        if instruction == "GetLineage":
+            return {"lineage": {"revision": 7, "program": {"components": list(components)}}}
+        return {"created_ids": ["x"]}
+
+    monkeypatch.setattr(isa_client, "call", call)
+    monkeypatch.setattr(society_service, "get_society_service", lambda: SimpleNamespace(project=SimpleNamespace(
+        project_teams=lambda ids, actor: {ids[0]: {"project_lineage_id": "lineage_000000000001",
+                                                   "project_resident_id": "resident_00000000000a", "lineages": []}})))
+    assert automation.ensure("AutoProject", "alice") == "installed"
+    applied = [entry for entry in calls if entry[1] == "ApplyLineageChanges"]
+    assert len(applied) == 1 and applied[0][3]["version"] == 7
+    operations = applied[0][2]["operations"]
+    event, effect, invoke, target = (operation["value"] for operation in operations)
+    assert event["config"]["event_type"] == "time.reached" and event["config"]["calendar_frequency"] == "daily"
+    assert invoke["config"]["invoke_profiles"]["effect"]["arguments"] == {"lineage_id": {"value": "lineage_000000000001"}}
+    assert (target["source"], target["target"]) == ("$ref:digest_effect", "resident_00000000000a")
+    analysis = effect_script_analysis({"script": effect["config"]["script"], "endpoint_names": ["target"],
+                                       "endpoints": {"target": "resident_00000000000a"}})
+    assert analysis.diagnostics == []
+
+    calls.clear()
+    assert automation.ensure("AutoProject", "alice") == "installed" and calls == [], "drawn once"
+
+    components.append({"client_key": automation.key("event")})
+    assert automation.ensure("DrawnByHand", "alice") == "installed"
+    assert [entry[1] for entry in calls] == ["GetLineage"] and store.automation("DrawnByHand")
+
+    def refuse(actor, instruction, arguments=None, **options):
+        raise InstructionError("instruction.forbidden", "no")
+
+    monkeypatch.setattr(isa_client, "call", refuse)
+    assert automation.ensure("Refused", "bob") == "failed" and store.automation("Refused") is None
 
 
 def test_knowledge_entries_record_what_they_name_as_related(tmp_path):

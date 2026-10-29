@@ -71,6 +71,20 @@ DECLARATIONS = (
           "direction_id、parent_id、title、stance、teams）"),
         NEXT_CURSOR(),
     )),
+    _d("GetResearchMapDigest", "汇总研究地图在一段时间内的新动静：调用者以外的人或 Resident 提交的修订（人的决定、团队的进展与批注、新方向）和新产出，"
+       "按方向列出，并写成交给 Project Resident 整理的一段文字。Project 层 Lineage 的每日整理用它判断是否需要叫醒 Project Resident。", (
+        R("project_id", description="要汇总的 Project"),
+        P("since", description="从这个时间之后算起（ISO 8601）；省略或为空时取最近 24 小时"),
+    ), (
+        R("project_id", description="汇总的 Project"),
+        R("since", description="实际起算时间"), R("until", description="汇总截止的时间，下一次从这里算起"),
+        R("revision", "integer", "地图当前的修订号"),
+        R("count", "integer", "有新动静的方向数，加上目标的修改；为 0 时没有需要整理的内容"),
+        R("directions", "array", "有新动静的方向：direction_id、title、stance、teams、changes（revision、changed_at、changed_by、"
+          "summary）、outputs（resource_id、resource_type、title、url、modified_at）"),
+        R("goal_changes", "array", "目标的修改：revision、changed_at、changed_by、summary"),
+        R("prompt", description="交给 Project Resident 的整理请求；count 为 0 时为空"),
+    )),
     _d("UpdateResearchMapLayout", "保存研究地图画布上方向的位置；位置不是地图的修订。", (
         R("project_id", description="地图所属的 Project"),
         R("positions", "object", "direction_id → {x, y}；值为 null 时恢复自动排布"),
