@@ -11,9 +11,10 @@ import pytest
 from management_portal.execution import backends, native_harness_tools, native_options
 from management_portal.execution import resident_capability_assembly as assembly
 from management_portal.execution import resident_mcp
-from management_portal.execution.contracts import ExecutionRequest
+from management_portal.execution.contracts import ExecutionRecoveryDeferred, ExecutionRequest
 from management_portal.execution.harness import HarnessTool
 from management_portal.execution.session_manager import RuntimeSession
+from management_portal.native_agent_transport import NativeAgentDetached
 
 
 REF = "resource_test"
@@ -159,6 +160,17 @@ def test_error_or_cancelled_turn_never_reports_sent(runtime, error):
     observed = deliveries(runtime)
     assert len(observed) == 1
     assert observed[0]["delivery"] == "unknown" and observed[0]["acceptance"] == "unknown"
+
+
+def test_turn_left_to_the_next_worker_reports_no_delivery(runtime):
+    """交给下一个 Worker 的轮次不报告交付证据
+
+    Worker 交接时轮次仍在运行，接手的 Worker 在轮次结束后报告交付；退役 Worker 不写失败证据。
+    """
+    runtime.state.error = NativeAgentDetached("left")
+    with pytest.raises(ExecutionRecoveryDeferred):
+        runtime.service.execute(invocation(), runtime.context)
+    assert deliveries(runtime) == []
 
 
 @pytest.mark.parametrize("operation", ["create", "fork"])

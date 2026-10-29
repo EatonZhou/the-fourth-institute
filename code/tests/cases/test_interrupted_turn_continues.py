@@ -307,9 +307,16 @@ def _kimi_invocation(checkpoint: dict):
     )
 
 
+KIMI_HOME = Path("/nonexistent/kimi-account")
+
+
 def _patched_kimi(client):
+    from management_portal import kimi_account_runtime
+
+    # The invocation's route names a Kimi account; its client is the fake.
     return (
-        mock.patch.object(backends, "shared_kimi_client", return_value=client),
+        mock.patch.object(kimi_account_runtime, "client_for_route", return_value=client),
+        mock.patch.object(kimi_account_runtime, "remember_session"),
         mock.patch.object(backends.KimiBackend, "record_provider_compaction"),
         mock.patch.object(backends.KimiBackend, "settle_portal_tools", return_value=[]),
         mock.patch.object(backends.KimiBackend, "observe_turn_usage", return_value=None),
@@ -323,6 +330,7 @@ def test_the_next_kimi_worker_follows_the_kept_prompt() -> None:
     交接保留的 Kimi prompt 由新 Worker 接回，不发送新输入，并记录 worker_handover_continuing。
     """
     client = SimpleNamespace(
+        home=KIMI_HOME,
         run_turn=mock.Mock(return_value=SimpleNamespace(response="done", turn_id="prompt-7", session_id="session_kimi", usage={})),
     )
     context = _context()
@@ -345,7 +353,7 @@ def test_a_kimi_worker_that_stops_following_requeues_the_execution() -> None:
 
     Kimi 客户端因交接离开后，Adapter 报告可恢复的延期，执行交回队列。
     """
-    client = SimpleNamespace(run_turn=mock.Mock(side_effect=KimiCodeDetached("left")))
+    client = SimpleNamespace(home=KIMI_HOME, run_turn=mock.Mock(side_effect=KimiCodeDetached("left")))
     patches = _patched_kimi(client)
     with ExitStack() as stack:
         for patch in patches:

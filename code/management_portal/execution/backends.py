@@ -3377,6 +3377,7 @@ class NativeTurnRun:
                     self.running_turn_id = f"{self.turn_id}:continue{continued}"
                 running_prompt, running_media = continuation_prompt_of(invocation), {}
         observed_usage: ObservedTurnUsage | None = None
+        detached = False
         try:
             with self.input_pump, backend.turn_scope(session.backend_session_id, self.tool_catalog, self.tool_callback):
                 if recovery_checkpoint.get("turn_id") and context.is_cancelled():
@@ -3395,11 +3396,15 @@ class NativeTurnRun:
             self._flush_pending("final_answer")
         except NativeAgentDetached as exc:
             # The Scheduler requeues the Execution; the next Worker attaches.
+            detached = True
             raise ExecutionRecoveryDeferred(
                 f"Worker handover: the {backend.provider_id} turn keeps running for the next Worker"
             ) from exc
         finally:
-            observed_usage = self._record_turn_effects()
+            # A turn left running has not ended, and this Worker's claim is
+            # released: the Worker that attaches records what it leaves.
+            if not detached:
+                observed_usage = self._record_turn_effects()
         usage = backend.turn_usage(result, observed_usage)
         _report_context_usage(invocation, usage)
         return BackendResult(
@@ -4293,6 +4298,9 @@ class AgentSessionService:
                                    prepared.request.execution_id, exc_info=True)
             try:
                 result = provider.execute(prepared, backend_context)
+            except ExecutionRecoveryDeferred:
+                # The turn goes on in a later attempt, which observes its delivery.
+                raise
             except Exception:
                 observe(completed=False)
                 raise

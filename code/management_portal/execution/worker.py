@@ -156,7 +156,9 @@ class _ClaimedExecution:
         return self._finish(result)
 
     def fence(self, *, interrupt_provider: bool = True) -> None:
-        if self.heartbeat_stop.is_set():
+        # The first fence decides about the Provider turn. Later lease checks
+        # must not interrupt it again, nor a turn a handover left running.
+        if self.heartbeat_stop.is_set() or self.ownership_lost.is_set():
             return
         self.ownership_lost.set()
         self.cancelled.set()

@@ -1257,6 +1257,15 @@ class AgentDataProjector:
             # An anonymous observation has its own identity. Equal tool bodies
             # do not prove it is the same event as another observation.
             call_id = uuid.uuid4().hex
+        if event.get("origin") == "turn_snapshot":
+            # A Worker that takes over a running turn replays its snapshot,
+            # where long command output is cut short. A tool the live events
+            # already recorded keeps that record.
+            segment_id = live_tool_segment_id(self._output_scope(projection), call_id)
+            if self.store.has_segment(segment_id):
+                self._append_output(projection, segment_id, projection.request.provider)
+                projection.persisted_segments.add(segment_id)
+                return
         state = projection.tools.setdefault(call_id, {})
         state.update(_json_safe(tool))
         state["tool_type"] = tool_type

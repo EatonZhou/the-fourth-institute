@@ -5,6 +5,7 @@
 :design: decision_b1ab45c4b3ec
 """
 import pytest
+from management_portal.execution.agent_data_projection import live_tool_segment_id
 from management_portal.execution.agent_data_store import SegmentIdentityConflict
 from tests.cases.test_agent_data_projection import _deliver_captured_message
 
@@ -79,6 +80,27 @@ def test_conflicting_event_identity_is_rejected_in_the_same_running_turn(kind):
     before = store.read_sequence(store.trace_sequence_id(request.agent_id))["segments"]
     with pytest.raises(SegmentIdentityConflict):
         _emit(projector, request, {**item, field: ["changed"] if kind == "reasoning" else "changed"})
+    assert store.read_sequence(store.trace_sequence_id(request.agent_id))["segments"] == before
+
+
+def test_turn_snapshot_replay_keeps_the_live_tool_record():
+    """接手后的快照重放保留实时工具记录
+
+    Worker 接手运行中的轮次后按快照补投已完成的条目，快照里的长命令输出被截短。
+    上一个 Worker 实时记下的工具记录保留，补投视为已送达，不再按内容冲突反复失败。
+    """
+    store, projector, request, _ = _turn("codex")
+    live = {"id": "exec-long", "type": "commandExecution", "command": "rg pattern", "status": "completed",
+            "exitCode": 0, "aggregatedOutput": "match\n" * 40000}
+    _emit(projector, request, live)
+    segment_id = live_tool_segment_id(request.execution_id, "exec-long")
+    recorded = store.segment(segment_id)
+    before = store.read_sequence(store.trace_sequence_id(request.agent_id))["segments"]
+    snapshot = {"method": "item/completed", "origin": "turn_snapshot", "params": {
+        "turnId": "turn", "item": {**live, "aggregatedOutput": "match\n" * 100}}}
+    projector.observe(provider=request.provider, backend_route_id="one", backend_session_id="thread-native",
+                      execution_id=request.execution_id, event=snapshot)
+    assert store.segment(segment_id) == recorded
     assert store.read_sequence(store.trace_sequence_id(request.agent_id))["segments"] == before
 
 

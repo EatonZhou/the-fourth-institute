@@ -20,6 +20,7 @@ import pytest
 from management_common.json_columns import json_value
 from management_portal.execution import backends
 from management_portal.execution.contracts import ExecutionRecoveryDeferred, ExecutionRequest, SessionOptions
+from management_portal.execution.provider_turn_usage import ObservedTurnUsage, RequestUsage
 from management_portal.execution.scheduler import Scheduler
 from management_portal.native_agent_transport import NativeAgentClient, NativeAgentDetached
 from tests.cases.model_api_test_support import claude_subscription, register_apis
@@ -203,7 +204,13 @@ def test_a_detached_worker_requeues_the_execution():
     """
     client = mock.Mock()
     client.run_turn.side_effect = NativeAgentDetached("left")
+    context = _context()
+    usage = ObservedTurnUsage(turn={}, requests=(RequestUsage("claude:msg_1", {"input_tokens": 1}, ""),))
     with mock.patch.object(backends, "shared_claude_client", return_value=client), \
+            mock.patch.object(backends.ClaudeBackend, "observe_turn_usage", return_value=usage), \
             mock.patch("management_portal.execution.native_harness_tools.prepare_tools", return_value=([], None)):
         with pytest.raises(ExecutionRecoveryDeferred):
-            backends.ClaudeBackend().execute(_invocation({}), _context())
+            backends.ClaudeBackend().execute(_invocation({}), context)
+    # The turn has not ended and this Worker's claim is released: the
+    # Worker that attaches records the turn's usage and compactions.
+    assert "token_usage_delta" not in [call.args[0] for call in context.emit.call_args_list]
