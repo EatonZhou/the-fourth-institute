@@ -2,15 +2,12 @@ from __future__ import annotations
 
 import re
 from typing import Any
+from management_common.text_values import stripped_text
 
 SCHEMA = "portal.chat_workspace.v3"
 DEFAULT_COMPOSER_HINT = "Ctrl/⌘ + Enter 发送；右键消息可引用、转发；/portal-help 查看指令"
 RUNTIME_DETAIL_SUMMARY_CHARS = 420
 RUNTIME_MESSAGE_CHARS = 12_000
-
-
-def _string(value: object) -> str:
-    return str(value or "").strip()
 
 
 def _list(value: object) -> list[Any]:
@@ -27,8 +24,8 @@ def chat_target(
     target_id: str,
     lineage_id: str = "",
 ) -> dict[str, str]:
-    kind = _string(target_kind)
-    target = _string(target_id)
+    kind = stripped_text(target_kind)
+    target = stripped_text(target_id)
     if kind not in {"resident", "workspace", "knowledge_item"}:
         raise ValueError("unknown Chat Workspace target kind")
     if not target:
@@ -36,7 +33,7 @@ def chat_target(
     return {
         "kind": kind,
         "id": target,
-        "lineage_id": _string(lineage_id),
+        "lineage_id": stripped_text(lineage_id),
     }
 
 
@@ -47,7 +44,7 @@ def _messages(value: object) -> list[dict[str, Any]]:
     for item in items:
         if not isinstance(item, dict):
             raise ValueError("Chat Workspace messages must be objects")
-        identity = _string(item.get("id"))
+        identity = stripped_text(item.get("id"))
         if not identity:
             raise ValueError("MessageIdentity missing from Chat Workspace message")
         if identity in identities:
@@ -105,10 +102,10 @@ def contract(
     target_payload = chat_target_from_payload(target)
     payload = {
         "schema": SCHEMA,
-        "workspace_key": _string(workspace_key) or "chat_workspace",
-        "surface": _string(surface),
-        "title": _string(title) or "Chat Workspace",
-        "subtitle": _string(subtitle),
+        "workspace_key": stripped_text(workspace_key) or "chat_workspace",
+        "surface": stripped_text(surface),
+        "title": stripped_text(title) or "Chat Workspace",
+        "subtitle": stripped_text(subtitle),
         "target": target_payload,
         "capabilities": list(capabilities or []),
         "messages": _messages(messages),
@@ -123,9 +120,9 @@ def contract(
         "actions": _dict(actions),
         "extensions": _dict(extensions),
         "rendering": {
-            "empty_text": _string(empty_text),
-            "user_name": _string(user_name),
-            "assistant_name": _string(assistant_name) or "Agent",
+            "empty_text": stripped_text(empty_text),
+            "user_name": stripped_text(user_name),
+            "assistant_name": stripped_text(assistant_name) or "Agent",
         },
     }
     if header:
@@ -142,9 +139,9 @@ def chat_target_from_payload(value: object) -> dict[str, str]:
             + ", ".join(sorted(unknown))
         )
     return chat_target(
-        target_kind=_string(raw.get("kind")),
-        target_id=_string(raw.get("id")),
-        lineage_id=_string(raw.get("lineage_id")),
+        target_kind=stripped_text(raw.get("kind")),
+        target_id=stripped_text(raw.get("id")),
+        lineage_id=stripped_text(raw.get("lineage_id")),
     )
 
 
@@ -161,15 +158,15 @@ def message(
     runtime_details: list[Any] | None = None,
     **extra: Any,
 ) -> dict[str, Any]:
-    identity = _string(message_id)
+    identity = stripped_text(message_id)
     if not identity:
         raise ValueError("MessageIdentity is required")
     item = {
         "id": identity,
-        "role": _string(role) or "assistant",
-        "name": _string(name),
+        "role": stripped_text(role) or "assistant",
+        "name": stripped_text(name),
         "content": str(content or ""),
-        "created_at": _string(created_at),
+        "created_at": stripped_text(created_at),
         "pending": bool(pending),
     }
     if context_refs:
@@ -187,7 +184,7 @@ def message(
 
 def runtime_detail(detail: dict[str, Any]) -> dict[str, Any]:
     projected = dict(detail)
-    kind = _string(detail.get("kind"))
+    kind = stripped_text(detail.get("kind"))
     content = str(detail.get("content") or "")
     if kind == "update" and detail.get("status") in {"running", "in_progress", "inprogress"}:
         content = content[-RUNTIME_MESSAGE_CHARS:]

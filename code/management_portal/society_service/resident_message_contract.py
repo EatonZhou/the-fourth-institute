@@ -8,6 +8,7 @@ import secrets
 from collections.abc import Mapping
 
 from management_common.message_identity import derived_message_identity  # noqa: F401 - shared message identity
+from management_common.text_values import stripped_text
 
 
 MESSAGE_IDENTITY_PATTERN = re.compile(r"msg_[0-9a-f]{16,64}")
@@ -58,12 +59,8 @@ def activation_policy(value: object = None) -> str:
     return policy
 
 
-def _string(value: object) -> str:
-    return str(value or "").strip()
-
-
 def message_identity(value: object = "") -> str:
-    identity = _string(value)
+    identity = stripped_text(value)
     if identity and not MESSAGE_IDENTITY_PATTERN.fullmatch(identity):
         raise ValueError("invalid MessageIdentity")
     return identity or f"msg_{secrets.token_hex(16)}"
@@ -73,9 +70,9 @@ def delivered_message_id(response: object) -> str:
     """Read only the identity acknowledged for this delivery, never a projection tail."""
     if not isinstance(response, Mapping):
         return ""
-    direct = _string(response.get("message_id"))
+    direct = stripped_text(response.get("message_id"))
     message = response.get("message")
-    nested = _string(message.get("message_id")) if isinstance(message, Mapping) else ""
+    nested = stripped_text(message.get("message_id")) if isinstance(message, Mapping) else ""
     if direct and nested and direct != nested:
         raise ValueError("Resident delivery acknowledgement has conflicting message IDs")
     return direct or nested

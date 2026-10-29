@@ -9,12 +9,9 @@ from typing import Any, Iterable
 import yaml
 
 from management_common.scan_cancellation import check_scan_cancelled, walk_paths
+from management_common.text_values import stripped_text
 from management_portal import paper_backend
-from management_portal.resource_index_backend import (
-    ChangeSet, RESOURCE_IDENTITY, _PathsAdapter, _dedupe, _known_path,
-    _path_modified_at, _resolved_path, _resolved_root, _text, _watch_tree,
-    resource_record,
-)
+from management_portal.resource_index_backend import ChangeSet, RESOURCE_IDENTITY, _PathsAdapter, _dedupe, _known_path, _path_modified_at, _resolved_path, _resolved_root, _watch_tree, resource_record
 from management_portal.resources.schema import resource_relation
 
 # Snapshot the loaded projection; later disk edits take effect after reload.
@@ -93,8 +90,8 @@ class PaperManifestAdapter(_PathsAdapter):
         return _paper_watch_directories()
 
     def _record_for_paper(self, paper: dict[str, Any]) -> dict[str, Any]:
-        paper_id = _text(paper.get("id"))
-        manifest_path = _text(paper.get("_manifest_path"))
+        paper_id = stripped_text(paper.get("id"))
+        manifest_path = stripped_text(paper.get("_manifest_path"))
         attributes = {
             key: value for key, value in paper.items() if key in _PAPER_ATTRIBUTE_FIELDS
         }
@@ -165,7 +162,7 @@ class PaperManifestAdapter(_PathsAdapter):
         changed_paths = tuple(paths)
         items_root = _resolved_root(self.roots[0])
         previous_by_manifest = {
-            _known_path(_text((record.get("source") or {}).get("path"))): record
+            _known_path(stripped_text((record.get("source") or {}).get("path"))): record
             for record in previous
         }
         manifests_by_package = {
@@ -198,14 +195,14 @@ class PaperManifestAdapter(_PathsAdapter):
             previous_record = previous_by_manifest.get(manifest_path)
             if not manifest_path.is_file():
                 if previous_record:
-                    deletes.append(_text(previous_record.get("resource_id")))
+                    deletes.append(stripped_text(previous_record.get("resource_id")))
                 continue
             try:
                 upserts.append(self._record_for_manifest(_paper_store_path(manifest_path)))
             except Exception as exc:
                 resource_errors.append(
                     {
-                        "resource_id": _text(
+                        "resource_id": stripped_text(
                             (previous_record or {}).get("resource_id")
                         ),
                         "path": str(manifest_path),
@@ -279,8 +276,8 @@ class PaperReviewAdapter(_PathsAdapter):
                     raise ValueError(f"invalid Paper review frontmatter: {path}")
                 metadata = dict(loaded)
                 body_start = end + 1
-        review_id = _text(metadata.get("review_id"))
-        paper_id = _text(metadata.get("paper_id"))
+        review_id = stripped_text(metadata.get("review_id"))
+        paper_id = stripped_text(metadata.get("paper_id"))
         RESOURCE_IDENTITY.validate(review_id, "review")
         RESOURCE_IDENTITY.validate(paper_id, "paper")
 
@@ -312,8 +309,8 @@ class PaperReviewAdapter(_PathsAdapter):
         }
 
     def _record_for_review(self, review: dict[str, Any], path: Path) -> dict[str, Any]:
-        review_id = _text(review.get("review_id"))
-        paper_id = _text(review.get("paper_id"))
+        review_id = stripped_text(review.get("review_id"))
+        paper_id = stripped_text(review.get("paper_id"))
         RESOURCE_IDENTITY.validate(review_id, "review")
         RESOURCE_IDENTITY.validate(paper_id, "paper")
         if not path.is_file():
@@ -332,13 +329,13 @@ class PaperReviewAdapter(_PathsAdapter):
             facets=["review", "paper"],
             attributes={
                 "project_ids": list(paper.get("project_ids") or []),
-                "created_by": _text(review.get("created_by")),
+                "created_by": stripped_text(review.get("created_by")),
                 "relations": [resource_relation("review_of", paper_id)],
-                "status": _text(review.get("status")),
+                "status": stripped_text(review.get("status")),
                 "created_at": review.get("created_at") or 0,
                 "paper_id": paper_id,
-                "overall_recommendation": _text(review.get("overall_recommendation")),
-                "confidence": _text(review.get("confidence")),
+                "overall_recommendation": stripped_text(review.get("overall_recommendation")),
+                "confidence": stripped_text(review.get("confidence")),
             },
             search_terms=[
                 paper_id,
@@ -364,9 +361,9 @@ class PaperReviewAdapter(_PathsAdapter):
         previous_by_path = {
             _known_path(source_path): record
             for record in previous_records
-            if (source_path := _text((record.get("source") or {}).get("path")))
+            if (source_path := stripped_text((record.get("source") or {}).get("path")))
         }
-        previous_by_id = {_text(record.get("resource_id")): record for record in previous_records}
+        previous_by_id = {stripped_text(record.get("resource_id")): record for record in previous_records}
         markdown_paths: set[Path] = set()
         for raw_path in paths:
             path = _known_path(raw_path)
@@ -383,7 +380,7 @@ class PaperReviewAdapter(_PathsAdapter):
             live_reviews: dict[str, dict[str, Any]] | None = None
             for path in sorted(markdown_paths, key=str):
                 previous_record = previous_by_path.get(path)
-                previous_id = _text((previous_record or {}).get("resource_id"))
+                previous_id = stripped_text((previous_record or {}).get("resource_id"))
                 if not path.is_file():
                     if previous_id:
                         deletes.append(previous_id)
@@ -395,13 +392,13 @@ class PaperReviewAdapter(_PathsAdapter):
                         {"resource_id": previous_id, "path": str(path), "error": str(exc)[:1000]}
                     )
                     continue
-                review_id = _text(review.get("review_id"))
+                review_id = stripped_text(review.get("review_id"))
                 owner = previous_by_id.get(review_id)
                 if owner is not None and owner is not previous_record:
                     return None
                 if live_reviews is None:
                     live_reviews = {
-                        _text(item.get("review_id")): dict(item)
+                        stripped_text(item.get("review_id")): dict(item)
                         for item in paper_backend._all_reviews()
                         if isinstance(item, dict)
                     }
@@ -459,7 +456,7 @@ class PaperReviewAdapter(_PathsAdapter):
                         {"path": str(path), "error": str(exc)[:1000]}
                     )
                     continue
-                review_id = _text(review.get("review_id"))
+                review_id = stripped_text(review.get("review_id"))
                 if review_id in reviews_by_id:
                     reviews_by_id.pop(review_id, None)
                     rejected_ids.add(review_id)
@@ -476,7 +473,7 @@ class PaperReviewAdapter(_PathsAdapter):
                 reviews_by_id[review_id] = (review, path)
             for review in live_reviews:
                 check_scan_cancelled()
-                review_id = _text(review.get("review_id"))
+                review_id = stripped_text(review.get("review_id"))
                 try:
                     RESOURCE_IDENTITY.validate(review_id, "review")
                     path = paper_backend._review_markdown_path(review)
@@ -512,7 +509,7 @@ class PaperReviewAdapter(_PathsAdapter):
                 except Exception as exc:
                     resource_errors.append(
                         {
-                            "resource_id": _text(review.get("review_id")),
+                            "resource_id": stripped_text(review.get("review_id")),
                             "path": str(path),
                             "error": str(exc)[:1000],
                         }

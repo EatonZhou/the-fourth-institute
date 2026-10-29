@@ -2,6 +2,7 @@ from __future__ import annotations
 from management_common.product_environment import read_product_env
 from management_common.portal_paths import PORTAL_ROOT, path as portal_path
 from management_common.clock import utc_now_iso
+from management_common.text_values import stripped_text
 
 import functools
 import mimetypes
@@ -53,15 +54,11 @@ PRUNED_DIR_NAMES = {
 }
 
 
-def _clean(value: object) -> str:
-    return str(value or "").strip()
-
-
 def _dedupe_strings(values: Iterable[object]) -> list[str]:
     output: list[str] = []
     seen: set[str] = set()
     for value in values:
-        item = _clean(value)
+        item = stripped_text(value)
         if not item:
             continue
         key = item.casefold()
@@ -74,7 +71,7 @@ def _dedupe_strings(values: Iterable[object]) -> list[str]:
 
 def _is_repo_id(value: object) -> bool:
     try:
-        _RESOURCE_SERVICE.validate_id(_clean(value), "repo")
+        _RESOURCE_SERVICE.validate_id(stripped_text(value), "repo")
     except ValueError:
         return False
     return True
@@ -82,7 +79,7 @@ def _is_repo_id(value: object) -> bool:
 
 def normalize_remote_url(raw_url: object, *, checkout: Path | None = None) -> str:
     """Return a stable comparison key without changing the stored remote URL."""
-    value = _clean(raw_url)
+    value = stripped_text(raw_url)
     if not value:
         return ""
     value = value.rstrip("/")
@@ -320,9 +317,9 @@ def group_logical_repos(checkouts: Iterable[dict[str, Any]]) -> list[list[dict[s
     groups: list[list[dict[str, Any]]] = []
     key_to_group: dict[tuple[str, str], int] = {}
     for checkout in checkouts:
-        keys = [("common", _clean(checkout.get("git_common_dir")))]
+        keys = [("common", stripped_text(checkout.get("git_common_dir")))]
         if checkout.get("identity_remote"):
-            keys.append(("origin", _clean(checkout.get("identity_remote"))))
+            keys.append(("origin", stripped_text(checkout.get("identity_remote"))))
         matching = {key_to_group[key] for key in keys if key in key_to_group}
         if not matching:
             group_index = len(groups)
@@ -350,9 +347,9 @@ def _record_match_keys(record: dict[str, Any]) -> Iterator[tuple[str, str]]:
     for checkout in record.get("checkouts") or []:
         if not isinstance(checkout, dict):
             continue
-        path = _clean(checkout.get("path"))
-        common = _clean(checkout.get("git_common_dir"))
-        origin = _clean(checkout.get("identity_remote"))
+        path = stripped_text(checkout.get("path"))
+        common = stripped_text(checkout.get("git_common_dir"))
+        origin = stripped_text(checkout.get("identity_remote"))
         if path:
             yield ("path", registry_sync.resolved_path(path))
         if common:
@@ -361,15 +358,15 @@ def _record_match_keys(record: dict[str, Any]) -> Iterator[tuple[str, str]]:
             yield ("origin", origin)
     for remote in record.get("remotes") or []:
         if isinstance(remote, dict) and remote.get("is_identity") and remote.get("normalized_url"):
-            yield ("origin", _clean(remote.get("normalized_url")))
+            yield ("origin", stripped_text(remote.get("normalized_url")))
 
 
 def _checkout_match_keys(checkout: dict[str, Any]) -> Iterator[tuple[str, str]]:
     """A checkout belongs to the record holding its path, its Git directory or its identity remote."""
     yield ("path", registry_sync.resolved_path(checkout["path"]))
-    if _clean(checkout.get("git_common_dir")):
+    if stripped_text(checkout.get("git_common_dir")):
         yield ("git_common_dir", registry_sync.resolved_path(checkout["git_common_dir"]))
-    origin = _clean(checkout.get("identity_remote"))
+    origin = stripped_text(checkout.get("identity_remote"))
     if origin:
         yield ("origin", origin)
 
@@ -442,19 +439,19 @@ def _checkout_role(path: str) -> str:
 
 def _canonical_checkout(checkouts: list[dict[str, Any]]) -> str:
     role_rank = {"canonical": 0, "clone": 1, "reference": 2, "experiment": 3, "archive": 4}
-    available = [item for item in checkouts if Path(_clean(item.get("path"))).is_dir()]
+    available = [item for item in checkouts if Path(stripped_text(item.get("path"))).is_dir()]
     pool = available or checkouts
     if not pool:
         return ""
     selected = min(
         pool,
         key=lambda item: (
-            role_rank.get(_clean(item.get("role")), 9),
-            len(_clean(item.get("path"))),
-            _clean(item.get("path")).casefold(),
+            role_rank.get(stripped_text(item.get("role")), 9),
+            len(stripped_text(item.get("path"))),
+            stripped_text(item.get("path")).casefold(),
         ),
     )
-    return _clean(selected.get("path"))
+    return stripped_text(selected.get("path"))
 
 
 def _repo_name(group: list[dict[str, Any]]) -> str:
@@ -463,7 +460,7 @@ def _repo_name(group: list[dict[str, Any]]) -> str:
         for remote in checkout.get("remotes") or []:
             if remote.get("name") != "origin":
                 continue
-            tail = _clean(remote.get("url")).rstrip("/").rsplit("/", 1)[-1].rsplit(":", 1)[-1]
+            tail = stripped_text(remote.get("url")).rstrip("/").rsplit("/", 1)[-1].rsplit(":", 1)[-1]
             if tail.casefold().endswith(".git"):
                 tail = tail[:-4]
             # Overleaf uses opaque hexadecimal project keys as remote paths;
@@ -474,7 +471,7 @@ def _repo_name(group: list[dict[str, Any]]) -> str:
 
 
 def _opaque_repo_name(value: object) -> bool:
-    name = _clean(value)
+    name = stripped_text(value)
     return bool(
         re.fullmatch(r"[0-9a-fA-F]{16,64}", name)
         or name.casefold().endswith(".bundle")
@@ -482,7 +479,7 @@ def _opaque_repo_name(value: object) -> bool:
 
 
 def _ownership(group: list[dict[str, Any]]) -> str:
-    identity_remotes = [_clean(item.get("identity_remote")) for item in group]
+    identity_remotes = [stripped_text(item.get("identity_remote")) for item in group]
     if any(item for item in identity_remotes):
         return "external"
     return "unknown"
@@ -520,10 +517,10 @@ def _merge_record(
     remote_keys: set[tuple[str, str]] = set()
     current_remote_names: set[str] = set()
     for checkout in group:
-        identity = _clean(checkout.get("identity_remote"))
+        identity = stripped_text(checkout.get("identity_remote"))
         for remote in checkout.get("remotes") or []:
-            normalized = _clean(remote.get("normalized_url"))
-            key = (_clean(remote.get("name")), normalized)
+            normalized = stripped_text(remote.get("normalized_url"))
+            key = (stripped_text(remote.get("name")), normalized)
             if not normalized or key in remote_keys:
                 continue
             remote_keys.add(key)
@@ -531,8 +528,8 @@ def _merge_record(
             remotes.append(
                 {
                     "name": key[0],
-                    "url": _clean(remote.get("url")),
-                    "push_url": _clean(remote.get("push_url")),
+                    "url": stripped_text(remote.get("url")),
+                    "push_url": stripped_text(remote.get("push_url")),
                     "normalized_url": normalized,
                     "is_identity": normalized == identity,
                 }
@@ -540,12 +537,12 @@ def _merge_record(
     for remote in previous.get("remotes") or []:
         if not isinstance(remote, dict):
             continue
-        key = (_clean(remote.get("name")), _clean(remote.get("normalized_url")))
+        key = (stripped_text(remote.get("name")), stripped_text(remote.get("normalized_url")))
         if not key[1] or key in remote_keys or key[0] in current_remote_names:
             continue
         remote_keys.add(key)
         remotes.append(dict(remote))
-    remotes.sort(key=lambda item: (_clean(item.get("name")), _clean(item.get("normalized_url"))))
+    remotes.sort(key=lambda item: (stripped_text(item.get("name")), stripped_text(item.get("normalized_url"))))
 
     detected_projects: list[str] = []
     for checkout in merged_checkouts:
@@ -553,7 +550,7 @@ def _merge_record(
     project_ids = _dedupe_strings(
         [*previous.get("project_ids", []), *explicit_project_ids, *detected_projects]
     )
-    previous_name = _clean(previous.get("name"))
+    previous_name = stripped_text(previous.get("name"))
     detected_name = _repo_name(group)
     name = (
         detected_name
@@ -568,24 +565,24 @@ def _merge_record(
         "id": repo_id,
         "type": "repo",
         "name": name,
-        "ownership": _clean(previous.get("ownership")) or _ownership(group),
+        "ownership": stripped_text(previous.get("ownership")) or _ownership(group),
         "push_enabled": previous.get("push_enabled") is not False,
-        "ssh_key": _clean(previous.get("ssh_key")),
-        "status": _clean(previous.get("status")) or "active",
+        "ssh_key": stripped_text(previous.get("ssh_key")),
+        "status": stripped_text(previous.get("status")) or "active",
         "project_ids": project_ids,
         "canonical_checkout": _canonical_checkout(merged_checkouts),
         "remotes": remotes,
         "checkouts": merged_checkouts,
-        "created_at": _clean(previous.get("created_at")) or now,
+        "created_at": stripped_text(previous.get("created_at")) or now,
         "updated_at": now,
     }
-    description = _clean(previous.get("description"))
+    description = stripped_text(previous.get("description"))
     if description:
         record["description"] = description
         description_generation = previous.get("description_generation")
         if isinstance(description_generation, dict):
             record["description_generation"] = dict(description_generation)
-    upstream_repo_id = _clean(previous.get("upstream_repo_id"))
+    upstream_repo_id = stripped_text(previous.get("upstream_repo_id"))
     if upstream_repo_id:
         record["upstream_repo_id"] = upstream_repo_id
     return record
@@ -598,7 +595,7 @@ def _repo_writer() -> Iterator[Any]:
 
 
 def _put_repo(writer: Any, record: dict[str, Any]) -> None:
-    repo_id = _clean(record.get("id"))
+    repo_id = stripped_text(record.get("id"))
     if not _is_repo_id(repo_id):
         raise ValueError(f"invalid repo id: {repo_id}")
     writer.put(REPO_COLLECTION, repo_id, record)
@@ -686,23 +683,23 @@ def update_repo_remote(
     url: str = "",
     push_url: str = "",
 ) -> dict[str, Any]:
-    clean_name = _clean(name)
+    clean_name = stripped_text(name)
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", clean_name):
         raise ValueError("remote name contains unsupported characters")
     record = get_repo_record(repo_id)
     require_git_source(record)
-    checkout = Path(_clean(_select_checkout(record).get("path")))
+    checkout = Path(stripped_text(_select_checkout(record).get("path")))
     existing_names = set(
         _run_git(checkout, "remote", check=False).splitlines()
     )
-    if clean_name not in existing_names and not _clean(url):
+    if clean_name not in existing_names and not stripped_text(url):
         raise ValueError("fetch URL required when adding a remote")
     if clean_name in existing_names:
-        if _clean(url):
-            _run_git(checkout, "remote", "set-url", "--", clean_name, _clean(url))
+        if stripped_text(url):
+            _run_git(checkout, "remote", "set-url", "--", clean_name, stripped_text(url))
     else:
-        _run_git(checkout, "remote", "add", "--", clean_name, _clean(url))
-    if _clean(push_url):
+        _run_git(checkout, "remote", "add", "--", clean_name, stripped_text(url))
+    if stripped_text(push_url):
         _run_git(
             checkout,
             "remote",
@@ -710,7 +707,7 @@ def update_repo_remote(
             "--push",
             "--",
             clean_name,
-            _clean(push_url),
+            stripped_text(push_url),
         )
     return register_repo_checkout(checkout, repo_id=repo_id)
 
@@ -724,22 +721,22 @@ def update_repo_description(
     model: str = "",
 ) -> dict[str, Any]:
     """Persist a concise Repo description without changing its Git checkout."""
-    clean_description = re.sub(r"\s+", " ", _clean(description))
+    clean_description = re.sub(r"\s+", " ", stripped_text(description))
     if not clean_description:
         raise ValueError("repo description required")
     if len(clean_description) > 240:
         raise ValueError("repo description is too long")
-    clean_signature = _clean(source_signature)
+    clean_signature = stripped_text(source_signature)
     if clean_signature and not re.fullmatch(r"[0-9a-f]{64}", clean_signature):
         raise ValueError("repo description source signature is invalid")
 
     with _repo_writer() as writer:
         record = _locked_repo(writer, repo_id)
         record["description"] = clean_description
-        if _clean(provider) or _clean(model) or clean_signature:
+        if stripped_text(provider) or stripped_text(model) or clean_signature:
             record["description_generation"] = {
-                "provider": _clean(provider),
-                "model": _clean(model),
+                "provider": stripped_text(provider),
+                "model": stripped_text(model),
                 "generated_at": utc_now_iso(),
                 "source_signature": clean_signature,
             }
@@ -772,7 +769,7 @@ def update_repo_ssh_key(
     ssh_key: str,
 ) -> dict[str, Any]:
     """Persist the SSH identity filename selected for this Repo."""
-    clean_key = _clean(ssh_key)
+    clean_key = stripped_text(ssh_key)
     if clean_key and (
         Path(clean_key).name != clean_key
         or not clean_key.startswith("id_")
@@ -810,12 +807,12 @@ def _select_checkout(record: dict[str, Any]) -> dict[str, Any]:
     if repo_source_kind(record) == "exported_tree":
         return {"path": str(_exported_tree_root(record))}
     checkouts = [item for item in record.get("checkouts") or [] if isinstance(item, dict)]
-    canonical = _clean(record.get("canonical_checkout"))
+    canonical = stripped_text(record.get("canonical_checkout"))
     for item in checkouts:
-        if _clean(item.get("path")) == canonical and Path(canonical).is_dir():
+        if stripped_text(item.get("path")) == canonical and Path(canonical).is_dir():
             return item
     for item in checkouts:
-        path = _clean(item.get("path"))
+        path = stripped_text(item.get("path"))
         if path and Path(path).is_dir():
             return item
     if checkouts:
@@ -848,20 +845,20 @@ def resolve_indexed_resource_address(
     source = record.get("source") if isinstance(record.get("source"), dict) else {}
     attributes = record.get("attributes") if isinstance(record.get("attributes"), dict) else {}
     deleted = any(
-        _clean(value.get("status")) == "deleted" or _clean(value.get("deleted_at"))
+        stripped_text(value.get("status")) == "deleted" or stripped_text(value.get("deleted_at"))
         for value in (record, attributes)
     )
-    source_path = Path(_clean(source.get("path"))).expanduser().resolve(strict=False)
+    source_path = Path(stripped_text(source.get("path"))).expanduser().resolve(strict=False)
     result: dict[str, Any] = {
         "schema": "tfi.resource_resolution.v2",
         "address": clean_address,
         "root_id": root_id,
-        "resource_type": _clean(record.get("resource_type")),
-        "target_kind": _clean(record.get("resource_type")) or "resource",
+        "resource_type": stripped_text(record.get("resource_type")),
+        "target_kind": stripped_text(record.get("resource_type")) or "resource",
         "record": record,
-        "portal_url": _clean(record.get("url")),
-        "resolved_path": str(source_path) if _clean(source.get("path")) else "",
-        "exists": not deleted and (source_path.exists() if _clean(source.get("path")) else True),
+        "portal_url": stripped_text(record.get("url")),
+        "resolved_path": str(source_path) if stripped_text(source.get("path")) else "",
+        "exists": not deleted and (source_path.exists() if stripped_text(source.get("path")) else True),
     }
     if not separator:
         return result
@@ -869,7 +866,7 @@ def resolve_indexed_resource_address(
     parts = suffix.split("/")
     if len(parts) < 2 or parts[0] != "file":
         raise ValueError(f"unsupported nested resource address: {clean_address}")
-    raw_root = _clean(attributes.get("content_root"))
+    raw_root = stripped_text(attributes.get("content_root"))
     if not raw_root:
         raise ValueError(f"resource does not expose nested files: {root_id}")
     content_root = Path(raw_root).expanduser().resolve(strict=False)
@@ -891,12 +888,12 @@ def resolve_indexed_resource_address(
 
 
 def resolve_repo_address(address: str) -> dict[str, Any]:
-    clean_address = unquote(_clean(address)).strip("/")
+    clean_address = unquote(stripped_text(address)).strip("/")
     root_id, separator, suffix = clean_address.partition("/")
     _RESOURCE_SERVICE.validate_id(root_id, "repo")
     record = get_repo_record(root_id)
     checkout = _select_checkout(record)
-    checkout_root = Path(_clean(checkout.get("path"))).resolve(strict=False)
+    checkout_root = Path(stripped_text(checkout.get("path"))).resolve(strict=False)
     result: dict[str, Any] = {
         "schema": "tfi.resource_resolution.v2",
         "address": clean_address,
@@ -961,7 +958,7 @@ def read_resolved_resource_content(
     max_bytes: int = 4 * 1024 * 1024,
 ) -> tuple[bytes, str, dict[str, Any]]:
     kind = resolved["target_kind"]
-    resolved_path = _clean(resolved.get("resolved_path"))
+    resolved_path = stripped_text(resolved.get("resolved_path"))
     if kind == "file" or (
         kind not in {"git_file", "article_section"}
         and resolved_path

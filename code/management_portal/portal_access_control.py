@@ -16,6 +16,7 @@ from typing import Any, Callable, Iterable, Iterator, Mapping
 
 
 from management_common.principal import is_user_or_resident, validate_user_id
+from management_common.text_values import stripped_text
 from management_portal.permission_system.categories import CATEGORIES as USER_CATEGORIES, DEFAULT as USER_CATEGORY_DEFAULT
 
 
@@ -40,14 +41,6 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
-def _text(value: object) -> str:
-    return str(value or "").strip()
-
-
-
-
-
-
 def _normalize_user(username: str, value: object) -> dict[str, Any]:
     if value is None:
         raw: Mapping[str, Any] = {}
@@ -63,11 +56,11 @@ def _normalize_user(username: str, value: object) -> dict[str, Any]:
     }
     if not new_user and (set(raw) - allowed_fields or not allowed_fields <= set(raw)):
         raise ValueError("Portal user does not match current contract")
-    status = _text(raw.get("status") or "active").casefold()
+    status = stripped_text(raw.get("status") or "active").casefold()
     if status not in USER_STATUSES:
         raise ValueError("Portal user status is invalid")
     # Portal 管理员, 一般用户 or 实习用户 (decision_600ae27b0538 §2); the permission scheme places Users by it.
-    category = _text(raw.get("category")) or USER_CATEGORY_DEFAULT
+    category = stripped_text(raw.get("category")) or USER_CATEGORY_DEFAULT
     if category not in USER_CATEGORIES:
         raise ValueError("Portal user category is invalid")
     try:
@@ -76,13 +69,13 @@ def _normalize_user(username: str, value: object) -> dict[str, Any]:
         raise ValueError("Portal user session_version is invalid") from None
     return {
         "username": username,
-        "display_name": _text(raw.get("display_name")) or username,
-        "email": _text(raw.get("email")),
+        "display_name": stripped_text(raw.get("display_name")) or username,
+        "email": stripped_text(raw.get("email")),
         "status": status,
         "session_version": session_version,
-        "created_at": _text(raw.get("created_at")),
-        "updated_at": _text(raw.get("updated_at")),
-        "updated_by": _text(raw.get("updated_by")),
+        "created_at": stripped_text(raw.get("created_at")),
+        "updated_at": stripped_text(raw.get("updated_at")),
+        "updated_by": stripped_text(raw.get("updated_by")),
         "category": category,
     }
 
@@ -130,14 +123,14 @@ class PortalAccessStore:
         if not isinstance(users, Mapping):
             raise ValueError("Portal access users must be an object")
         for raw_username, value in users.items():
-            username = _text(raw_username)
+            username = stripped_text(raw_username)
             if not USERNAME_RE.fullmatch(username):
                 raise ValueError("Portal access username is invalid")
             normalized_users[username] = _normalize_user(username, value)
         return {
             "schema": ACCESS_SCHEMA,
             "users": normalized_users,
-            "updated_at": _text(payload.get("updated_at")),
+            "updated_at": stripped_text(payload.get("updated_at")),
         }
 
     def _read_uncached(self) -> dict[str, Any]:
@@ -159,7 +152,7 @@ class PortalAccessStore:
         return copy.deepcopy(self._current())
 
     def user(self, username: object) -> dict[str, Any]:
-        actor = _text(username)
+        actor = stripped_text(username)
         # Copy only this user: a read-access check calls this several times per
         # record, and copying every user each time dominated large queries.
         configured = self._current()["users"].get(actor)
@@ -175,21 +168,21 @@ class PortalAccessStore:
         return self._current()["users"].get(actor) or _normalize_user(actor, None)
 
     def is_configured(self, username: object) -> bool:
-        return _text(username) in self._current()["users"]
+        return stripped_text(username) in self._current()["users"]
 
     @staticmethod
     def is_service_actor(username: object) -> bool:
         """Return whether the identity is an internal Portal service principal."""
 
-        return _text(username).casefold() in PORTAL_SERVICE_ACTORS
+        return stripped_text(username).casefold() in PORTAL_SERVICE_ACTORS
 
     def is_active(self, username: object) -> bool:
-        actor = _text(username)
+        actor = stripped_text(username)
         return bool(actor and self._account(actor)["status"] == "active")
 
 
     def session_version(self, username: object) -> int:
-        return int(self._account(_text(username)).get("session_version") or 0)
+        return int(self._account(stripped_text(username)).get("session_version") or 0)
 
 
 
@@ -205,7 +198,7 @@ class PortalAccessStore:
         for item in project_registry.projects():
             if not isinstance(item, Mapping):
                 continue
-            project_id = _text(item.get("id"))
+            project_id = stripped_text(item.get("id"))
             if not project_id:
                 continue
             catalog.append({"id": project_id})
@@ -217,9 +210,9 @@ class PortalAccessStore:
     def list_users(self, credential_usernames: Iterable[object] = ()) -> list[dict[str, Any]]:
         configured = self.snapshot()["users"]
         names = {
-            _text(value)
+            stripped_text(value)
             for value in credential_usernames
-            if _text(value)
+            if stripped_text(value)
         } | set(configured)
         return [
             user
@@ -258,9 +251,9 @@ class PortalAccessStore:
             )
             now = _now_iso()
             if display_name is not None:
-                current["display_name"] = _text(display_name) or clean_username
+                current["display_name"] = stripped_text(display_name) or clean_username
             if email is not None:
-                normalized_email = _text(email)
+                normalized_email = stripped_text(email)
                 if normalized_email and (
                     len(normalized_email) > 254
                     or not EMAIL_RE.fullmatch(normalized_email)
@@ -271,13 +264,13 @@ class PortalAccessStore:
                         other_username
                         for other_username, other in payload["users"].items()
                         if other_username != clean_username
-                        and _text(other.get("email")).casefold() == normalized_email.casefold()
+                        and stripped_text(other.get("email")).casefold() == normalized_email.casefold()
                     ), "")
                     if duplicate:
                         raise ValueError("email address is already assigned to another user")
                 current["email"] = normalized_email
             if status is not None:
-                normalized_status = _text(status).casefold()
+                normalized_status = stripped_text(status).casefold()
                 if normalized_status not in {"active", "disabled"}:
                     raise ValueError("status must be active or disabled")
                 current["status"] = normalized_status
@@ -288,7 +281,7 @@ class PortalAccessStore:
                 revoke_user_tokens(clean_username)
             current["created_at"] = current["created_at"] or now
             current["updated_at"] = now
-            current["updated_by"] = _text(actor)
+            current["updated_by"] = stripped_text(actor)
             payload["users"][clean_username] = current
             self._write(payload)
         self.audit(
@@ -310,7 +303,7 @@ class PortalAccessStore:
         ``before_commit`` gets the open transaction, for records that commit
         with the account (the User's place in the permission trees).
         """
-        clean_username = _text(username)
+        clean_username = stripped_text(username)
         if category not in USER_CATEGORIES:
             raise ValueError("Portal user category is invalid")
         with self._writing() as connection:
@@ -320,7 +313,7 @@ class PortalAccessStore:
                 raise KeyError(clean_username)
             if current["category"] == category:
                 return False
-            current.update({"category": category, "updated_at": _now_iso(), "updated_by": _text(actor)})
+            current.update({"category": category, "updated_at": _now_iso(), "updated_by": stripped_text(actor)})
             self._write(payload)
             if before_commit is not None:
                 before_commit(connection)
@@ -333,7 +326,7 @@ class PortalAccessStore:
         """
         from management_portal import permission_system
 
-        clean_username = _text(username)
+        clean_username = stripped_text(username)
         if not USERNAME_RE.fullmatch(clean_username):
             raise ValueError("invalid username")
         with self._writing() as connection:
@@ -352,7 +345,7 @@ class PortalAccessStore:
                     "session_version": current["session_version"] + 1,
                     "created_at": current["created_at"] or now,
                     "updated_at": now,
-                    "updated_by": _text(actor),
+                    "updated_by": stripped_text(actor),
                     "category": USER_CATEGORY_DEFAULT,
                 }
             )
@@ -372,9 +365,9 @@ class PortalAccessStore:
     ) -> None:
         event = {
             "at": _now_iso(),
-            "actor": _text(actor),
-            "action": _text(action),
-            "target": _text(target),
+            "actor": stripped_text(actor),
+            "action": stripped_text(action),
+            "target": stripped_text(target),
             "details": dict(details or {}),
         }
         with access_audit_store.database().transaction() as connection:
@@ -438,7 +431,7 @@ class PortalCredentialStore:
         payload = self.state.read({})
         if not isinstance(payload, Mapping):
             raise RuntimeError("Portal credentials are unreadable")
-        return {_text(username): _text(value) for username, value in payload.items() if _text(username) and _text(value)}
+        return {stripped_text(username): stripped_text(value) for username, value in payload.items() if stripped_text(username) and stripped_text(value)}
 
     @staticmethod
     def validate_password(password: str) -> None:
@@ -494,7 +487,7 @@ class PortalCredentialStore:
             self.state.replace(users)
 
     def delete_user(self, username: str) -> bool:
-        clean_username = _text(username)
+        clean_username = stripped_text(username)
         if not USERNAME_RE.fullmatch(clean_username):
             raise ValueError("invalid username")
         with self.state.transaction():

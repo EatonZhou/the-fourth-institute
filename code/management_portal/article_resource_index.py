@@ -3,7 +3,8 @@ import hashlib
 from pathlib import Path
 
 from management_portal import article_identity_backend
-from management_portal.resource_index_backend import _text, resource_record
+from management_portal.resource_index_backend import resource_record
+from management_common.text_values import stripped_text
 
 # Snapshot the loaded projection; later disk edits take effect after reload.
 PROJECTION_CODE_FINGERPRINT = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
@@ -17,8 +18,8 @@ class ArticleRegistryProjection:
         return article_identity_backend._validated_article(resource_id, raw)
 
     def project(self, item, *, adapter):
-        resource_id = _text(item.get("resource_id") or item.get("id"))
-        projects = [_text(value) for value in item.get("project_ids") or [] if _text(value)]
+        resource_id = stripped_text(item.get("resource_id") or item.get("id"))
+        projects = [stripped_text(value) for value in item.get("project_ids") or [] if stripped_text(value)]
         roots = [value for value in item.get("roots") or [] if isinstance(value, dict)]
         return resource_record(
             resource_id=resource_id, resource_type="article",
@@ -26,11 +27,11 @@ class ArticleRegistryProjection:
             adapter=adapter, modified_at=item.get("updated_at") or item.get("created_at"),
             facets=["article"],
             attributes={
-                "project_ids": projects, "canonical_root": _text(item.get("canonical_root")),
-                "primary_file": _text(item.get("primary_file")), "status": _text(item.get("status")),
+                "project_ids": projects, "canonical_root": stripped_text(item.get("canonical_root")),
+                "primary_file": stripped_text(item.get("primary_file")), "status": stripped_text(item.get("status")),
             },
             search_terms=[*projects, item.get("canonical_root"), item.get("primary_file"),
-                          *[_text(value.get("path")) for value in roots]],
+                          *[stripped_text(value.get("path")) for value in roots]],
         )
 
 

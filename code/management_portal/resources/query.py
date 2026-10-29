@@ -12,10 +12,7 @@ from .contracts import ResourceQuery, empty_query_result
 from management_portal.portal_access_control import (
     PortalAccessStore,
 )
-
-
-def _text(value: object) -> str:
-    return str(value or "").strip()
+from management_common.text_values import stripped_text
 
 
 def _copy(value: object) -> Any:
@@ -60,13 +57,13 @@ def _score(record: Mapping[str, Any], query: str) -> float:
             record.get("title"),
             record.get("summary"),
         )
-    summary = _text(record.get("summary")).casefold()
+    summary = stripped_text(record.get("summary")).casefold()
     identity_terms = {
-        _text(record.get("resource_id")).casefold(),
-        _text(record.get("title")).casefold(),
+        stripped_text(record.get("resource_id")).casefold(),
+        stripped_text(record.get("title")).casefold(),
     }
     for value in values:
-        term = _text(value).casefold()
+        term = stripped_text(value).casefold()
         if not term:
             continue
         if term == summary and term not in identity_terms:
@@ -100,7 +97,7 @@ def _exact_resource_id(
         return ""
     return (
         query.q
-        if any(_text(record.get("resource_id")) == query.q for record in records)
+        if any(stripped_text(record.get("resource_id")) == query.q for record in records)
         else ""
     )
 
@@ -116,7 +113,7 @@ def _matches_filters(
             if isinstance(raw_value, (list, tuple, set, frozenset))
             else (raw_value,)
         )
-        actual = {_text(value) for value in values if _text(value)}
+        actual = {stripped_text(value) for value in values if stripped_text(value)}
         if expected and not (expected & actual):
             return False
     return True
@@ -134,7 +131,7 @@ def _matches_query(
 ) -> bool:
     if (
         exact_resource_id
-        and _text(record.get("resource_id")) != exact_resource_id
+        and stripped_text(record.get("resource_id")) != exact_resource_id
     ):
         return False
     if include_access and not resource_is_readable(
@@ -144,10 +141,10 @@ def _matches_query(
         access_policy=access_policy,
     ):
         return False
-    resource_type = _text(record.get("resource_type"))
+    resource_type = stripped_text(record.get("resource_type"))
     if query.resource_types and resource_type not in query.resource_types:
         return False
-    facets = {_text(value) for value in record.get("facets") or ()}
+    facets = {stripped_text(value) for value in record.get("facets") or ()}
     if query.facets and not query.facets.issubset(facets):
         return False
     attributes = (
@@ -155,10 +152,10 @@ def _matches_query(
         if isinstance(record.get("attributes"), Mapping)
         else {}
     )
-    status = _text(attributes.get("status"))
+    status = stripped_text(attributes.get("status"))
     if not query.statuses and status.casefold() == "deleted":
         return False
-    projects = {_text(value) for value in attributes.get("project_ids") or ()}
+    projects = {stripped_text(value) for value in attributes.get("project_ids") or ()}
     if query.projects and not (query.projects & projects):
         return False
     if query.statuses and status not in query.statuses:
@@ -177,11 +174,11 @@ def prefilter_query_candidates(
     exact_resource_id = _exact_resource_id(candidates, query)
     selected: list[Mapping[str, Any]] = []
     for record in candidates:
-        if exact_resource_id and _text(record.get("resource_id")) != exact_resource_id:
+        if exact_resource_id and stripped_text(record.get("resource_id")) != exact_resource_id:
             continue
-        if query.resource_types and _text(record.get("resource_type")) not in query.resource_types:
+        if query.resource_types and stripped_text(record.get("resource_type")) not in query.resource_types:
             continue
-        facets = {_text(value) for value in record.get("facets") or ()}
+        facets = {stripped_text(value) for value in record.get("facets") or ()}
         if query.facets and not query.facets.issubset(facets):
             continue
         if query.q and _score(record, query.q) <= 0:
@@ -243,9 +240,9 @@ def query_records(
         ranked.append((score, record))
     rank_key = lambda row: (
         -row[0],
-        _text(row[1].get("resource_type")),
-        _text(row[1].get("title")).casefold(),
-        _text(row[1].get("resource_id")),
+        stripped_text(row[1].get("resource_type")),
+        stripped_text(row[1].get("title")).casefold(),
+        stripped_text(row[1].get("resource_id")),
     )
     result = empty_query_result(query, index_updated_at=index_updated_at)
     result["total"] = len(ranked)

@@ -5,6 +5,7 @@ from management_common.format_tags import schema_matches
 from management_common.portal_paths import path as portal_path
 from management_common.site_config import read_site_config
 from management_common.clock import utc_now_iso
+from management_common.text_values import stripped_text
 
 import copy
 import json
@@ -65,10 +66,6 @@ _RECORD_FIELDS = frozenset(
         "updated_at",
     }
 )
-def _text(value: object) -> str:
-    return str(value or "").strip()
-
-
 def _string_list(value: object, *, field: str) -> list[str]:
     if value is None:
         return []
@@ -77,7 +74,7 @@ def _string_list(value: object, *, field: str) -> list[str]:
     output: list[str] = []
     seen: set[str] = set()
     for raw in value:
-        clean = _text(raw)
+        clean = stripped_text(raw)
         key = clean.casefold()
         if clean and key not in seen:
             seen.add(key)
@@ -97,7 +94,7 @@ def _device_password_path(
     device_id: str,
     secret_root: str | Path | None = None,
 ) -> Path:
-    clean_id = _text(device_id)
+    clean_id = stripped_text(device_id)
     _RESOURCE_SERVICE.validate_id(clean_id, "device")
     return Path(secret_root or DEFAULT_DEVICE_SECRET_ROOT).expanduser() / f"{clean_id}.ssh-password"
 
@@ -129,7 +126,7 @@ def save_device_ssh_password(
         path.chmod(0o600)
     finally:
         temporary.unlink(missing_ok=True)
-    return {"resource_id": _text(device_id), "credential_saved": True}
+    return {"resource_id": stripped_text(device_id), "credential_saved": True}
 
 
 def delete_device_ssh_password(
@@ -141,7 +138,7 @@ def delete_device_ssh_password(
     existed = path.exists()
     path.unlink(missing_ok=True)
     return {
-        "resource_id": _text(device_id),
+        "resource_id": stripped_text(device_id),
         "credential_saved": False,
         "deleted": existed,
     }
@@ -181,13 +178,13 @@ def _normalize_record(raw: dict[str, Any], document_id: str) -> dict[str, Any]:
     if not schema_matches(raw.get("schema"), "tfi.device.v1"):
         raise ValueError(f"device registry {document_id} has an invalid schema")
 
-    device_id = _text(raw.get("device_id"))
+    device_id = stripped_text(raw.get("device_id"))
     _RESOURCE_SERVICE.validate_id(device_id, "device")
     if document_id != device_id:
         raise ValueError(f"device registry document does not match device_id: {document_id}")
 
-    name = _text(raw.get("name"))
-    device_kind = _text(raw.get("device_kind"))
+    name = stripped_text(raw.get("name"))
+    device_kind = stripped_text(raw.get("device_kind"))
     if not name:
         raise ValueError(f"device registry {document_id} has no name")
     if not _KIND_RE.fullmatch(device_kind):
@@ -201,7 +198,7 @@ def _normalize_record(raw: dict[str, Any], document_id: str) -> dict[str, Any]:
             + ", ".join(unknown_network)
         )
     network = {
-        "primary_ip": _text(network.get("primary_ip")),
+        "primary_ip": stripped_text(network.get("primary_ip")),
         "mac_addresses": _string_list(
             network.get("mac_addresses"),
             field="network.mac_addresses",
@@ -234,15 +231,15 @@ def _normalize_record(raw: dict[str, Any], document_id: str) -> dict[str, Any]:
             ) from exc
         if not 1 <= ssh_port <= 65535:
             raise ValueError(f"device registry {document_id} has an invalid SSH port")
-    ssh_host = _text(ssh.get("host"))
+    ssh_host = stripped_text(ssh.get("host"))
     if ssh_host and not _SSH_HOST_RE.fullmatch(ssh_host):
         raise ValueError(f"device registry {document_id} has an invalid SSH host")
     normalized_ssh = {
         "host": ssh_host,
-        "config_path": _text(ssh.get("config_path")),
-        "user": _text(ssh.get("user")),
+        "config_path": stripped_text(ssh.get("config_path")),
+        "user": stripped_text(ssh.get("user")),
         "port": ssh_port,
-        "identity_file": _text(ssh.get("identity_file")),
+        "identity_file": stripped_text(ssh.get("identity_file")),
     }
     if any(value not in ("", None) for value in normalized_ssh.values()) and not ssh_host:
         raise ValueError(
@@ -264,11 +261,11 @@ def _normalize_record(raw: dict[str, Any], document_id: str) -> dict[str, Any]:
             f"device registry {document_id} has an invalid expected_gpu_count"
         ) from exc
     monitor = {
-        "kind": _text(monitor.get("kind")),
+        "kind": stripped_text(monitor.get("kind")),
         "expected_gpu_count": expected_gpu_count,
     }
 
-    parent_device_id = _text(raw.get("parent_device_id"))
+    parent_device_id = stripped_text(raw.get("parent_device_id"))
     if parent_device_id:
         _RESOURCE_SERVICE.validate_id(parent_device_id, "device")
 
@@ -282,7 +279,7 @@ def _normalize_record(raw: dict[str, Any], document_id: str) -> dict[str, Any]:
             raise ValueError(f"device registry {document_id} has a negative gpu_index")
 
     if device_kind == "gpu_server":
-        if parent_device_id or gpu_index is not None or _text(raw.get("gpu_uuid")):
+        if parent_device_id or gpu_index is not None or stripped_text(raw.get("gpu_uuid")):
             raise ValueError(f"GPU server {device_id} cannot be a child GPU")
         if monitor["kind"] != "nvidia_smi" or expected_gpu_count < 1:
             raise ValueError(f"GPU server {device_id} has no valid monitor configuration")
@@ -291,9 +288,9 @@ def _normalize_record(raw: dict[str, Any], document_id: str) -> dict[str, Any]:
     elif device_kind == "gpu":
         if not parent_device_id:
             raise ValueError(f"GPU {device_id} has no parent_device_id")
-        if gpu_index is None or not _text(raw.get("gpu_uuid")):
+        if gpu_index is None or not stripped_text(raw.get("gpu_uuid")):
             raise ValueError(f"GPU {device_id} has no stable index and UUID")
-        if not _text(raw.get("model")):
+        if not stripped_text(raw.get("model")):
             raise ValueError(f"GPU {device_id} has no model")
         if monitor["kind"] or expected_gpu_count:
             raise ValueError(f"GPU {device_id} cannot define a server monitor")
@@ -302,20 +299,20 @@ def _normalize_record(raw: dict[str, Any], document_id: str) -> dict[str, Any]:
         "schema": REGISTRY_SCHEMA,
         "device_id": device_id,
         "name": name,
-        "description": _text(raw.get("description")),
+        "description": stripped_text(raw.get("description")),
         "device_kind": device_kind,
-        "lifecycle": _text(raw.get("lifecycle")) or "active",
-        "hostname": _text(raw.get("hostname")),
-        "location": _text(raw.get("location")),
+        "lifecycle": stripped_text(raw.get("lifecycle")) or "active",
+        "hostname": stripped_text(raw.get("hostname")),
+        "location": stripped_text(raw.get("location")),
         "network": network,
         "access_methods": access_methods,
         "monitor": monitor,
         "parent_device_id": parent_device_id,
         "gpu_index": gpu_index,
-        "gpu_uuid": _text(raw.get("gpu_uuid")),
-        "model": _text(raw.get("model")),
-        "created_at": _text(raw.get("created_at")),
-        "updated_at": _text(raw.get("updated_at")),
+        "gpu_uuid": stripped_text(raw.get("gpu_uuid")),
+        "model": stripped_text(raw.get("model")),
+        "created_at": stripped_text(raw.get("created_at")),
+        "updated_at": stripped_text(raw.get("updated_at")),
     }
 
 
@@ -423,8 +420,8 @@ def register_device(
 ) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise ValueError("device registration payload must be an object")
-    name = _text(payload.get("name"))
-    device_kind = _text(payload.get("device_kind")) or "device"
+    name = stripped_text(payload.get("name"))
+    device_kind = stripped_text(payload.get("device_kind")) or "device"
     if not name:
         raise ValueError("device name required")
     if not _KIND_RE.fullmatch(device_kind):
@@ -451,13 +448,13 @@ def register_device(
             "schema": REGISTRY_SCHEMA,
             "device_id": device_id,
             "name": name,
-            "description": _text(payload.get("description")),
+            "description": stripped_text(payload.get("description")),
             "device_kind": device_kind,
-            "lifecycle": _text(payload.get("lifecycle")) or "active",
-            "hostname": _text(payload.get("hostname")),
-            "location": _text(payload.get("location")),
+            "lifecycle": stripped_text(payload.get("lifecycle")) or "active",
+            "hostname": stripped_text(payload.get("hostname")),
+            "location": stripped_text(payload.get("location")),
             "network": {
-                "primary_ip": _text(payload.get("primary_ip")),
+                "primary_ip": stripped_text(payload.get("primary_ip")),
                 "mac_addresses": [],
             },
             "access_methods": _mapping(
@@ -468,7 +465,7 @@ def register_device(
             "parent_device_id": "",
             "gpu_index": None,
             "gpu_uuid": "",
-            "model": _text(payload.get("model")),
+            "model": stripped_text(payload.get("model")),
             "created_at": now,
             "updated_at": now,
         }
@@ -484,7 +481,7 @@ def register_device(
 def unregister_device(
     device_id: str,
 ) -> dict[str, Any]:
-    clean_id = _text(device_id)
+    clean_id = stripped_text(device_id)
     _RESOURCE_SERVICE.validate_id(clean_id, "device")
     with get_registry_store().writer(DEVICE_COLLECTION) as writer:
         records, errors = _validate_registry(writer.documents(DEVICE_COLLECTION))
@@ -532,14 +529,14 @@ def effective_ssh_access(
 ) -> dict[str, Any]:
     records = load_device_records()
     by_id = {item["device_id"]: item for item in records}
-    current = by_id.get(_text(device_id))
+    current = by_id.get(stripped_text(device_id))
     if current is None:
         raise KeyError(device_id)
     visited: set[str] = set()
     while current and current["device_id"] not in visited:
         visited.add(current["device_id"])
         ssh = ssh_access_for_record(current)
-        if _text(ssh.get("host")):
+        if stripped_text(ssh.get("host")):
             via_resource_id = current["device_id"]
             return {
                 **copy.deepcopy(ssh),
@@ -549,7 +546,7 @@ def effective_ssh_access(
                     secret_root=secret_root,
                 ),
             }
-        current = by_id.get(_text(current.get("parent_device_id")))
+        current = by_id.get(stripped_text(current.get("parent_device_id")))
     raise ValueError("device has no SSH access method")
 
 
@@ -568,7 +565,7 @@ def test_ssh_connection(
     password_path = _device_password_path(via_resource_id)
     use_password = bool(ssh["credential_saved"])
     command = ["ssh"]
-    config_path = _text(ssh.get("config_path"))
+    config_path = stripped_text(ssh.get("config_path"))
     if config_path:
         command.extend(["-F", str(Path(config_path).expanduser())])
     command.extend(
@@ -588,11 +585,11 @@ def test_ssh_connection(
     ssh_port = ssh.get("port")
     if ssh_port:
         command.extend(["-p", str(ssh_port)])
-    identity_file = _text(ssh.get("identity_file"))
+    identity_file = stripped_text(ssh.get("identity_file"))
     if identity_file:
         command.extend(["-i", str(Path(identity_file).expanduser())])
-    ssh_host = _text(ssh.get("host"))
-    ssh_user = _text(ssh.get("user"))
+    ssh_host = stripped_text(ssh.get("host"))
+    ssh_user = stripped_text(ssh.get("user"))
     target = f"{ssh_user}@{ssh_host}" if ssh_user else ssh_host
     started = time.monotonic()
     run_options: dict[str, Any] = {}
@@ -621,8 +618,8 @@ def test_ssh_connection(
         message = (
             "SSH 连接成功"
             if reachable
-            else _text(completed.stderr).splitlines()[-1][:300]
-            if _text(completed.stderr)
+            else stripped_text(completed.stderr).splitlines()[-1][:300]
+            if stripped_text(completed.stderr)
             else f"SSH 退出码 {completed.returncode}"
         )
     except subprocess.TimeoutExpired:
@@ -632,7 +629,7 @@ def test_ssh_connection(
         reachable = False
         message = str(exc)
     return {
-        "resource_id": _text(device_id),
+        "resource_id": stripped_text(device_id),
         "via_resource_id": via_resource_id,
         "reachable": reachable,
         "latency_ms": round((time.monotonic() - started) * 1000),
@@ -675,7 +672,7 @@ def _read_status_store(status_path: str | Path | None = None) -> dict[str, Any]:
         return _empty_status_store()
     return {
         "schema": STATUS_SCHEMA,
-        "updated_at": _text(payload.get("updated_at")),
+        "updated_at": stripped_text(payload.get("updated_at")),
         "servers": copy.deepcopy(servers),
     }
 
@@ -685,7 +682,7 @@ def cached_gpu_server_status(
     *,
     status_path: str | Path | None = None,
 ) -> dict[str, Any] | None:
-    clean_id = _text(device_id)
+    clean_id = stripped_text(device_id)
     _RESOURCE_SERVICE.validate_id(clean_id, "device")
     with _STATUS_LOCK:
         store = _read_status_store(status_path)
@@ -701,12 +698,12 @@ def store_gpu_server_status(
     *,
     status_path: str | Path | None = None,
 ) -> dict[str, Any]:
-    clean_id = _text(device_id)
+    clean_id = stripped_text(device_id)
     _RESOURCE_SERVICE.validate_id(clean_id, "device")
     if not isinstance(payload, dict):
         raise ValueError("GPU server status must be an object")
     stored = copy.deepcopy(payload)
-    if _text(stored.get("device_id")) != clean_id:
+    if stripped_text(stored.get("device_id")) != clean_id:
         raise ValueError("GPU server status device_id does not match its cache key")
     path = Path(status_path or DEFAULT_STATUS_PATH).expanduser()
     now = time.time()
@@ -732,13 +729,13 @@ def load_device_observations(
         if not isinstance(entry, dict) or not isinstance(entry.get("payload"), dict):
             continue
         payload = copy.deepcopy(entry["payload"])
-        if _text(payload.get("device_id")) != server_id:
+        if stripped_text(payload.get("device_id")) != server_id:
             continue
         observations[server_id] = payload
         for gpu in payload.get("gpus") if isinstance(payload.get("gpus"), list) else []:
             if not isinstance(gpu, dict):
                 continue
-            gpu_id = _text(gpu.get("device_id"))
+            gpu_id = stripped_text(gpu.get("device_id"))
             if not _RESOURCE_SERVICE.is_valid_id(gpu_id, "device"):
                 continue
             observations[gpu_id] = copy.deepcopy(gpu)

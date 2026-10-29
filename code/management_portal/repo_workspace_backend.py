@@ -4,6 +4,7 @@ from management_common.secure_paths import relative_parts
 from management_common.product_environment import mirror_product_env
 from management_common import file_permissions
 from management_common.clock import utc_now_iso
+from management_common.text_values import stripped_text
 
 import hashlib
 import json
@@ -226,10 +227,6 @@ def _repo_lock(repo_id: str) -> threading.RLock:
         return _LOCKS.setdefault(repo_id, threading.RLock())
 
 
-def _clean(value: object) -> str:
-    return str(value or "").strip()
-
-
 def _safe_relative_path(value: object, *, allow_empty: bool = False) -> str:
     raw = str(value or "").strip()
     if not raw:
@@ -374,7 +371,7 @@ def _git(
 
 
 def _redact_url(value: object) -> str:
-    raw = _clean(value)
+    raw = stripped_text(value)
     if not raw or "://" not in raw:
         return raw
     try:
@@ -403,7 +400,7 @@ def _redact_text(value: object) -> str:
 
 
 def _remote_auth_context_from_url(value: object) -> dict[str, str]:
-    raw = _clean(value)
+    raw = stripped_text(value)
     context = {
         "protocol": "",
         "host": "",
@@ -462,7 +459,7 @@ def _remote_auth_context_from_url(value: object) -> dict[str, str]:
 
 
 def _remote_web_url(value: object) -> str:
-    raw = _clean(value)
+    raw = stripped_text(value)
     if not raw or re.match(r"^[A-Za-z]:[\\/]", raw):
         return ""
     context = _remote_auth_context_from_url(raw)
@@ -612,7 +609,7 @@ def _available_ssh_keys() -> list[str]:
 
 
 def _repo_ssh_identity(record: dict[str, Any]) -> Path | None:
-    key_name = _clean(record.get("ssh_key"))
+    key_name = stripped_text(record.get("ssh_key"))
     if not key_name:
         return None
     if key_name not in _available_ssh_keys():
@@ -1166,9 +1163,9 @@ def _push_remote_name(
     if not remotes:
         return ""
     remote_names = {
-        _clean(item.get("name"))
+        stripped_text(item.get("name"))
         for item in remotes
-        if _clean(item.get("name"))
+        if stripped_text(item.get("name"))
     }
     upstream = _git(
         checkout,
@@ -1183,7 +1180,7 @@ def _push_remote_name(
         return upstream_remote
     if "origin" in remote_names:
         return "origin"
-    return _clean(remotes[0].get("name"))
+    return stripped_text(remotes[0].get("name"))
 
 
 def _automation_status_payload(
@@ -1208,7 +1205,7 @@ def _automation_status_payload(
         blocked_reason = "detached HEAD 无法自动 push"
     return {
         "id": repo_id,
-        "name": _clean(record.get("name")) or checkout.name,
+        "name": stripped_text(record.get("name")) or checkout.name,
         "dirty": dirty,
         "change_count": len(status["changes"]),
         "conflict_count": conflicts,
@@ -1222,9 +1219,9 @@ def _automation_status_payload(
         "remote_count": len(remotes),
         "remote": remote,
         "remote_names": [
-            _clean(item.get("name"))
+            stripped_text(item.get("name"))
             for item in remotes
-            if _clean(item.get("name"))
+            if stripped_text(item.get("name"))
         ],
         "writable": writable,
         "actionable": dirty and not blocked_reason,
@@ -1238,7 +1235,7 @@ def repo_automation_status(
     ordered_ids: list[str] = []
     seen: set[str] = set()
     for value in repo_ids:
-        repo_id = _clean(value)
+        repo_id = stripped_text(value)
         if not re.fullmatch(r"repo_[0-9a-f]{12}", repo_id) or repo_id in seen:
             continue
         seen.add(repo_id)
@@ -1446,15 +1443,15 @@ def repo_overview(
     overview = {
         "schema": "tfi.repo-workspace.v1",
         "id": repo_id,
-        "name": _clean(record.get("name")) or checkout.name,
-        "description": _clean(record.get("description")),
-        "ownership": _clean(record.get("ownership")),
+        "name": stripped_text(record.get("name")) or checkout.name,
+        "description": stripped_text(record.get("description")),
+        "ownership": stripped_text(record.get("ownership")),
         "source_kind": resource_identity_backend.repo_source_kind(record),
         "capabilities": capabilities,
-        "project_ids": [_clean(value) for value in record.get("project_ids") or [] if _clean(value)],
+        "project_ids": [stripped_text(value) for value in record.get("project_ids") or [] if stripped_text(value)],
         "checkout_path": str(checkout),
         "checkout_writable": capabilities["write_files"],
-        "updated_at": _clean(record.get("updated_at")),
+        "updated_at": stripped_text(record.get("updated_at")),
     }
     if not capabilities["git"]:
         return {
@@ -1490,7 +1487,7 @@ def repo_overview(
     return {
         **overview,
         "push_enabled": record.get("push_enabled") is not False,
-        "ssh_key": _clean(record.get("ssh_key")),
+        "ssh_key": stripped_text(record.get("ssh_key")),
         "available_ssh_keys": _available_ssh_keys(),
         "current_branch": current_branch,
         "detached": not bool(current_branch),
@@ -1767,7 +1764,7 @@ def search_repo_files(
     limit: int = MAX_SEARCH_RESULTS,
 ) -> dict[str, Any]:
     _record, checkout = _checkout(repo_id)
-    clean_query = _clean(query)
+    clean_query = stripped_text(query)
     if not clean_query:
         return {"id": repo_id, "query": "", "results": [], "truncated": False}
     bounded_limit = min(MAX_SEARCH_RESULTS, max(1, int(limit)))
@@ -1820,7 +1817,7 @@ def list_repo_commits(
     relative = _safe_relative_path(path, allow_empty=True)
     bounded_limit = min(100, max(1, int(limit)))
     bounded_offset = max(0, int(offset))
-    clean_revision = _clean(revision) or "HEAD"
+    clean_revision = stripped_text(revision) or "HEAD"
     verified = _git(
         checkout,
         "rev-parse",
@@ -2049,7 +2046,7 @@ def read_commit(
     sha: str,
 ) -> dict[str, Any]:
     _record, checkout = _checkout(repo_id)
-    clean_sha = _clean(sha)
+    clean_sha = stripped_text(sha)
     verified = _git(
         checkout,
         "rev-parse",
@@ -2221,7 +2218,7 @@ def write_repo_file(
         if target.exists() and target.is_dir():
             raise ValueError(f"path is a directory: {relative}")
         current = target.read_bytes() if target.is_file() else b""
-        clean_expected = _clean(expected_hash)
+        clean_expected = stripped_text(expected_hash)
         if clean_expected and hashlib.sha256(current).hexdigest() != clean_expected:
             raise RepoWorkspaceConflict(
                 "文件已被其他操作修改，请刷新后重新编辑。"
@@ -2259,7 +2256,7 @@ def create_repo_entry(
     content: str = "",
 ) -> dict[str, Any]:
     relative = _safe_relative_path(path)
-    clean_kind = _clean(kind).casefold()
+    clean_kind = stripped_text(kind).casefold()
     if clean_kind not in {"file", "directory"}:
         raise ValueError("entry kind must be file or directory")
     with _repo_lock(repo_id):
@@ -2331,7 +2328,7 @@ def delete_repo_file(
 
 
 def _looks_sensitive_path(value: object) -> bool:
-    relative = _clean(value).replace("\\", "/").casefold()
+    relative = stripped_text(value).replace("\\", "/").casefold()
     if not relative:
         return False
     name = PurePosixPath(relative).name
@@ -2363,7 +2360,7 @@ def _commit_change_context(
     changes = list(status.get("changes") or [])
     sensitive_paths = sorted(
         {
-            _clean(item.get("path"))
+            stripped_text(item.get("path"))
             for item in changes
             if _looks_sensitive_path(item.get("path"))
         }
@@ -2378,7 +2375,7 @@ def _commit_change_context(
     pathspecs: list[str] = []
     for item in changes:
         for key in ("path", "original_path"):
-            path = _clean(item.get(key))
+            path = stripped_text(item.get(key))
             if path and path not in pathspecs:
                 pathspecs.append(path)
     diff_args = [
@@ -2418,7 +2415,7 @@ def _commit_change_context(
     for item in changes:
         if not item.get("untracked"):
             continue
-        relative = _clean(item.get("path"))
+        relative = stripped_text(item.get("path"))
         try:
             target = _target(checkout, relative, must_exist=True)
             stat = target.stat()
@@ -2449,12 +2446,12 @@ def _commit_change_context(
     if truncated:
         diff_text += "\n\n[diff context truncated by TFI Portal]"
     status_lines = [
-        f"{_clean(item.get('code')):>2} {_clean(item.get('path'))}"
+        f"{stripped_text(item.get('code')):>2} {stripped_text(item.get('path'))}"
         for item in changes
     ]
     return {
         "repo_id": repo_id,
-        "repo_name": _clean(record.get("name")) or checkout.name,
+        "repo_name": stripped_text(record.get("name")) or checkout.name,
         "branch": _branch_name(checkout) or "(detached HEAD)",
         "change_count": len(changes),
         "status": "\n".join(status_lines),
@@ -2470,25 +2467,25 @@ def _commit_provider_model(api: dict[str, Any]) -> str:
         item
         for item in api.get("models") or []
         if isinstance(item, dict)
-        and _clean(item.get("id")) in AIProviderRegistry.models(api)
+        and stripped_text(item.get("id")) in AIProviderRegistry.models(api)
     ]
-    default_model = _clean(api.get("default_model"))
+    default_model = stripped_text(api.get("default_model"))
     if default_model and any(
-        _clean(item.get("id")) == default_model
+        stripped_text(item.get("id")) == default_model
         for item in enabled_models
     ):
         return default_model
     for item in enabled_models:
-        roles = {_clean(role) for role in item.get("roles") or []}
+        roles = {stripped_text(role) for role in item.get("roles") or []}
         if "coding" in roles or "routine_coding" in roles:
-            return _clean(item.get("id"))
+            return stripped_text(item.get("id"))
     if enabled_models:
-        return _clean(enabled_models[0].get("id"))
+        return stripped_text(enabled_models[0].get("id"))
     return default_model
 
 
 def _commit_llm_config(provider_id: str) -> dict[str, Any]:
-    clean_provider = _clean(provider_id) or DEFAULT_COMMIT_PROVIDER
+    clean_provider = stripped_text(provider_id) or DEFAULT_COMMIT_PROVIDER
     try:
         apis = AIProviderRegistry().entries()
     except Exception as exc:
@@ -2499,7 +2496,7 @@ def _commit_llm_config(provider_id: str) -> dict[str, Any]:
         (
             item
             for item in apis
-            if _clean(item.get("id")) == clean_provider
+            if stripped_text(item.get("id")) == clean_provider
         ),
         None,
     )
@@ -2507,7 +2504,7 @@ def _commit_llm_config(provider_id: str) -> dict[str, Any]:
         raise CommitMessageGenerationError(
             f"LLM provider 不可用：{clean_provider}"
         )
-    if _clean(api.get("kind")) != "openai_compatible_chat":
+    if stripped_text(api.get("kind")) != "openai_compatible_chat":
         raise CommitMessageGenerationError(
             f"LLM provider 不支持 chat completion：{clean_provider}"
         )
@@ -2530,7 +2527,7 @@ def _normalize_generated_commit(value: object) -> dict[str, Any]:
     subject = re.sub(
         r"[\x00\r\n]+",
         " ",
-        _clean(
+        stripped_text(
             payload.get("subject")
             or payload.get("title")
             or payload.get("message")
@@ -2553,8 +2550,8 @@ def _normalize_generated_commit(value: object) -> dict[str, Any]:
     return {
         "subject": subject,
         "reason": reason,
-        "provider": _clean(payload.get("provider")),
-        "model": _clean(payload.get("model")),
+        "provider": stripped_text(payload.get("provider")),
+        "model": stripped_text(payload.get("model")),
         "usage": (
             dict(payload.get("usage"))
             if isinstance(payload.get("usage"), dict)
@@ -2783,15 +2780,15 @@ def _repo_description_context(
     repo_id: str,
 ) -> dict[str, Any]:
     record, checkout = _checkout(repo_id)
-    repo_name = _clean(record.get("name")) or checkout.name
+    repo_name = stripped_text(record.get("name")) or checkout.name
     evidence_sections: list[str] = []
     signature = hashlib.sha256()
     signature.update(repo_id.encode("utf-8"))
     signature.update(b"\0")
-    signature.update(_clean(record.get("name")).encode("utf-8", errors="replace"))
+    signature.update(stripped_text(record.get("name")).encode("utf-8", errors="replace"))
     signature.update(b"\0")
     for project_id in record.get("project_ids") or []:
-        signature.update(_clean(project_id).encode("utf-8", errors="replace"))
+        signature.update(stripped_text(project_id).encode("utf-8", errors="replace"))
         signature.update(b"\0")
 
     remaining = MAX_DESCRIPTION_CONTEXT_BYTES
@@ -2849,9 +2846,9 @@ def _repo_description_context(
         "id": repo_id,
         "name": repo_name,
         "project_ids": [
-            _clean(value)
+            stripped_text(value)
             for value in record.get("project_ids") or []
-            if _clean(value)
+            if stripped_text(value)
         ],
         "evidence": "\n\n".join(evidence_sections),
         "source_signature": signature.hexdigest(),
@@ -2859,7 +2856,7 @@ def _repo_description_context(
 
 
 def _normalize_repo_description(value: object) -> str:
-    text = re.sub(r"\s+", " ", _clean(value))
+    text = re.sub(r"\s+", " ", stripped_text(value))
     text = re.sub(
         r"^(?:description|summary|简介|描述)\s*[:：]\s*",
         "",
@@ -2911,18 +2908,18 @@ def _parse_repo_descriptions(
     values: dict[str, object] = {}
     if isinstance(raw_descriptions, dict):
         values = {
-            _clean(repo_id): description
+            stripped_text(repo_id): description
             for repo_id, description in raw_descriptions.items()
         }
     elif isinstance(raw_descriptions, list):
         values = {
-            _clean(item.get("id") or item.get("repo_id")): (
+            stripped_text(item.get("id") or item.get("repo_id")): (
                 item.get("description") or item.get("summary")
             )
             for item in raw_descriptions
             if isinstance(item, dict)
         }
-    expected = {_clean(repo_id) for repo_id in expected_ids if _clean(repo_id)}
+    expected = {stripped_text(repo_id) for repo_id in expected_ids if stripped_text(repo_id)}
     output: dict[str, str] = {}
     for repo_id, description in values.items():
         if repo_id not in expected:
@@ -3053,7 +3050,7 @@ def _normalize_description_generator_result(
     descriptions = payload.get("descriptions", payload)
     if isinstance(descriptions, list):
         descriptions = {
-            _clean(item.get("id") or item.get("repo_id")): (
+            stripped_text(item.get("id") or item.get("repo_id")): (
                 item.get("description") or item.get("summary")
             )
             for item in descriptions
@@ -3072,8 +3069,8 @@ def _normalize_description_generator_result(
             continue
     return {
         "descriptions": normalized,
-        "provider": _clean(payload.get("provider")) or "test",
-        "model": _clean(payload.get("model")),
+        "provider": stripped_text(payload.get("provider")) or "test",
+        "model": stripped_text(payload.get("model")),
         "usage": (
             dict(payload.get("usage"))
             if isinstance(payload.get("usage"), dict)
@@ -3093,14 +3090,14 @@ def generate_repo_descriptions(
     ) = None,
 ) -> dict[str, Any]:
     requested = [
-        _clean(repo_id)
+        stripped_text(repo_id)
         for repo_id in repo_ids
-        if _clean(repo_id)
+        if stripped_text(repo_id)
     ]
     requested = list(dict.fromkeys(requested))
     if not requested:
         requested = [
-            _clean(record.get("id"))
+            stripped_text(record.get("id"))
             for record in resource_identity_backend.load_repo_records()
         ]
     if len(requested) > MAX_DESCRIPTION_REQUEST_REPOS:
@@ -3121,7 +3118,7 @@ def generate_repo_descriptions(
         for repo_id in requested:
             try:
                 record = resource_identity_backend.get_repo_record(repo_id)
-                if _clean(record.get("description")) and not force:
+                if stripped_text(record.get("description")) and not force:
                     skipped.append(repo_id)
                     continue
                 contexts.append(_repo_description_context(repo_id))
@@ -3165,7 +3162,7 @@ def generate_repo_descriptions(
                     )
                     continue
                 current = resource_identity_backend.get_repo_record(repo_id)
-                if _clean(current.get("description")) and not force:
+                if stripped_text(current.get("description")) and not force:
                     skipped.append(repo_id)
                     continue
                 updated = resource_identity_backend.update_repo_description(
@@ -3178,7 +3175,7 @@ def generate_repo_descriptions(
                 generated_records.append(
                     {
                         "id": repo_id,
-                        "description": _clean(updated.get("description")),
+                        "description": stripped_text(updated.get("description")),
                         "provider": result["provider"],
                         "model": result["model"],
                         "source_signature": context["source_signature"],
@@ -3314,7 +3311,7 @@ def auto_commit_repo(
             "reason": generated["reason"],
             "ai": {
                 "provider": generated["provider"]
-                or (_clean(provider_id) or DEFAULT_COMMIT_PROVIDER),
+                or (stripped_text(provider_id) or DEFAULT_COMMIT_PROVIDER),
                 "model": generated["model"],
                 "usage": generated["usage"],
             },
@@ -3336,7 +3333,7 @@ def commit_repo_changes(
     description: str = "",
     actor: str = "",
 ) -> dict[str, Any]:
-    clean_message = _clean(message)
+    clean_message = stripped_text(message)
     if not clean_message:
         raise ValueError("commit message required")
     if "\n" in clean_message or len(clean_message) > 200:
@@ -3361,7 +3358,7 @@ def commit_repo_changes(
         )
         if not staged:
             raise RepoWorkspaceConflict("当前工作区没有可提交的变更。")
-        author = re.sub(r"[\x00\r\n]+", " ", _clean(actor)).strip() or compatibility_value("repo_git_author_name", "TFI Portal")
+        author = re.sub(r"[\x00\r\n]+", " ", stripped_text(actor)).strip() or compatibility_value("repo_git_author_name", "TFI Portal")
         email_local = re.sub(r"[^A-Za-z0-9._-]+", "-", author).strip("-") or "portal"
         args = [
             "-c",
@@ -3597,7 +3594,7 @@ def commit_scoped_git_changes(
     description: str = "",
     actor: str = "",
 ) -> dict[str, Any]:
-    clean_message = _clean(message)
+    clean_message = stripped_text(message)
     if not clean_message:
         raise ValueError("commit message required")
     if "\n" in clean_message or len(clean_message) > 200:
@@ -3628,7 +3625,7 @@ def commit_scoped_git_changes(
             raise RepoWorkspaceConflict(
                 "仓库暂存区还包含 Article 目录之外的文件；请先提交或取消暂存这些文件，Portal 不会混合提交。"
             )
-        author = re.sub(r"[\x00\r\n]+", " ", _clean(actor)).strip() or compatibility_value("repo_git_author_name", "TFI Portal")
+        author = re.sub(r"[\x00\r\n]+", " ", stripped_text(actor)).strip() or compatibility_value("repo_git_author_name", "TFI Portal")
         email_local = re.sub(r"[^A-Za-z0-9._-]+", "-", author).strip("-") or "portal"
         args = [
             "-c",
@@ -3659,8 +3656,8 @@ def update_repo_branch(
     *,
     start_point: str = "HEAD",
 ) -> dict[str, Any]:
-    clean_operation = _clean(operation).casefold()
-    clean_name = _clean(name)
+    clean_operation = stripped_text(operation).casefold()
+    clean_name = stripped_text(name)
     if clean_operation not in {"create", "switch"}:
         raise ValueError("branch operation must be create or switch")
     if not clean_name:
@@ -3673,7 +3670,7 @@ def update_repo_branch(
             _validate_branch_name(checkout, clean_name)
             if any(item["name"] == clean_name for item in _branch_records(checkout)):
                 raise RepoWorkspaceConflict(f"分支已存在：{clean_name}")
-            clean_start = _clean(start_point) or "HEAD"
+            clean_start = stripped_text(start_point) or "HEAD"
             _git(checkout, "switch", "-c", clean_name, clean_start)
         else:
             if not any(item["name"] == clean_name for item in _branch_records(checkout)):
@@ -3694,7 +3691,7 @@ def sync_repo(
     credential_root: str | Path | None = None,
     credential_key_path: str | Path | None = None,
 ) -> dict[str, Any]:
-    clean_operation = _clean(operation).casefold()
+    clean_operation = stripped_text(operation).casefold()
     if clean_operation not in {"fetch", "pull", "push"}:
         raise ValueError("sync operation must be fetch, pull, or push")
     with _repo_lock(repo_id):
@@ -3706,13 +3703,13 @@ def sync_repo(
             )
         remotes = _remote_records(checkout)
         remote_names = {item["name"] for item in remotes}
-        clean_remote = _clean(remote)
+        clean_remote = stripped_text(remote)
         if clean_remote and clean_remote not in remote_names:
             raise ValueError(f"unknown remote: {clean_remote}")
         if not remotes:
             raise RepoWorkspaceConflict("当前 Repo 尚未配置 remote。")
         current_branch = _branch_name(checkout)
-        clean_branch = _clean(branch) or current_branch
+        clean_branch = stripped_text(branch) or current_branch
         if clean_operation in {"pull", "push"} and not current_branch:
             raise RepoWorkspaceConflict("detached HEAD 状态不能 Pull 或 Push。")
         if clean_operation in {"pull", "push"}:
@@ -3909,6 +3906,6 @@ def delete_repo_credential(
     _checkout(repo_id)
     return repo_credentials_backend.delete_credential(
         actor,
-        _clean(credential_id),
+        stripped_text(credential_id),
         root=credential_root,
     )

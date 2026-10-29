@@ -7,10 +7,7 @@ from urllib.parse import quote
 
 
 from management_portal.resources import get_resource_service
-
-
-def _text(value: object) -> str:
-    return str(value or "").strip()
+from management_common.text_values import stripped_text
 
 
 def _json_value(value: object) -> Any:
@@ -39,7 +36,7 @@ def _query_all(service: Any, **kwargs: Any) -> dict[str, Any]:
             if isinstance(record, dict)
         ]
         for record in page_records:
-            resource_id = _text(record.get("resource_id"))
+            resource_id = stripped_text(record.get("resource_id"))
             if resource_id and resource_id in seen:
                 continue
             seen.add(resource_id)
@@ -57,14 +54,14 @@ def _knowledge_item(record: dict[str, Any]) -> dict[str, Any]:
         if isinstance(record.get("attributes"), dict)
         else {}
     )
-    resource_id = _text(record.get("resource_id"))
+    resource_id = stripped_text(record.get("resource_id"))
     project_ids = list(attrs.get("project_ids") or [])
     item = {
         "kb_id": resource_id,
-        "resource_type": _text(record.get("resource_type")),
-        "title": _text(record.get("title")),
-        "preview": _text(record.get("summary")),
-        "project": _text(project_ids[0]) if project_ids else "",
+        "resource_type": stripped_text(record.get("resource_type")),
+        "title": stripped_text(record.get("title")),
+        "preview": stripped_text(record.get("summary")),
+        "project": stripped_text(project_ids[0]) if project_ids else "",
     }
     for key in (
         "type",
@@ -100,7 +97,7 @@ def knowledge_index(
     service: Any = None,
 ) -> dict[str, Any]:
     service = service or get_resource_service()
-    semantic_id = _text(semantic_search_id)
+    semantic_id = stripped_text(semantic_search_id)
     semantic_view = None
     if semantic_id:
         from management_portal import semantic_search_jobs
@@ -109,9 +106,9 @@ def knowledge_index(
             semantic_id, actor=actor, surfaces=semantic_search_jobs.RESOURCE_SCOPES,
         )
     excluded_types = {
-        _text(value)
+        stripped_text(value)
         for value in excluded_resource_types
-        if _text(value)
+        if stripped_text(value)
     }
     refresh_adapters = ["project_knowledge"]
     if "skill" not in excluded_types:
@@ -133,19 +130,19 @@ def knowledge_index(
         records = [
             record
             for record in records
-            if _text(record.get("resource_type")) not in excluded_types
+            if stripped_text(record.get("resource_type")) not in excluded_types
         ]
     if active_only:
         records = [
             record
             for record in records
-            if _text((record.get("attributes") or {}).get("project_status"))
+            if stripped_text((record.get("attributes") or {}).get("project_status"))
             in {"active", "system"}
         ]
     records.sort(
         key=lambda record: (
             int((record.get("attributes") or {}).get("importance") or 0),
-            _text((record.get("attributes") or {}).get("created_at")),
+            stripped_text((record.get("attributes") or {}).get("created_at")),
             int((record.get("attributes") or {}).get("mtime") or 0),
         ),
         reverse=True,
@@ -161,7 +158,7 @@ def knowledge_index(
                     **item,
                     "semantic_rank": int(results[item["kb_id"]].get("rank") or 0),
                     "semantic_score": int(results[item["kb_id"]].get("score") or 0),
-                    "semantic_reason": _text(
+                    "semantic_reason": stripped_text(
                         results[item["kb_id"]].get("reason")
                     ),
                 }
@@ -171,13 +168,13 @@ def knowledge_index(
             items.sort(
                 key=lambda item: (
                     int(item.get("semantic_rank") or 10_000),
-                    _text(item.get("title")),
+                    stripped_text(item.get("title")),
                 )
             )
     state = service.projection_state("project_knowledge")
     skill_state = service.projection_state("skill")
     visible_project_ids = {
-        _text((record.get("attributes") or {}).get("project_ids", [""])[0])
+        stripped_text((record.get("attributes") or {}).get("project_ids", [""])[0])
         for record in records
         if (record.get("attributes") or {}).get("project_ids")
     }
@@ -187,16 +184,16 @@ def knowledge_index(
         if isinstance(item, dict)
         and (
             not actor
-            or _text(item.get("id")) in visible_project_ids
+            or stripped_text(item.get("id")) in visible_project_ids
         )
     ]
     if "skill" not in excluded_types:
-        known_projects = {_text(item.get("id")) for item in projects}
+        known_projects = {stripped_text(item.get("id")) for item in projects}
         projects.extend(
             dict(item)
             for item in skill_state.get("projects") or []
             if isinstance(item, dict)
-            and _text(item.get("id")) not in known_projects
+            and stripped_text(item.get("id")) not in known_projects
         )
     allowed_types = list(state.get("allowed_types") or [])
     if "skill" not in allowed_types:
@@ -259,31 +256,31 @@ def knowledge_detail(
     actor: str = "",
 ) -> dict[str, Any]:
     """Project authorized Resource content into the Knowledge document view."""
-    clean_address = _text(address).strip("/")
+    clean_address = stripped_text(address).strip("/")
     if not clean_address:
         raise ValueError("knowledge address required")
     resource_service = service or get_resource_service()
-    resolved = resource_service.resolve(clean_address, actor=_text(actor))
+    resolved = resource_service.resolve(clean_address, actor=stripped_text(actor))
     detail = resolved.get("detail")
     if not isinstance(detail, dict):
         raise KeyError("knowledge item not found")
-    kind = _text(resolved.get("content_kind")) or "binary"
-    content_type = mimetypes.guess_type(_text(resolved.get("filename")))[0] or "application/octet-stream"
+    kind = stripped_text(resolved.get("content_kind")) or "binary"
+    content_type = mimetypes.guess_type(stripped_text(resolved.get("filename")))[0] or "application/octet-stream"
     data = b""
     if kind in {"markdown", "text", "code"}:
         data, content_type, resolved = resource_service.read_content(
-            clean_address, actor=_text(actor),
+            clean_address, actor=stripped_text(actor),
         )
     content_url = "/api/resources/content?address=" + quote(
-        _text(resolved.get("address")) or clean_address, safe="",
+        stripped_text(resolved.get("address")) or clean_address, safe="",
     )
     return {
         **_json_value(detail),
-        "address": _text(resolved.get("address")) or clean_address,
-        "path": _text(resolved.get("resolved_path")),
-        "filename": _text(resolved.get("filename")),
+        "address": stripped_text(resolved.get("address")) or clean_address,
+        "path": stripped_text(resolved.get("resolved_path")),
+        "filename": stripped_text(resolved.get("filename")),
         "kind": kind,
-        "language": _text(resolved.get("content_language")),
+        "language": stripped_text(resolved.get("content_language")),
         "media_type": content_type,
         "text": data.decode("utf-8", errors="replace") if kind in {"markdown", "text", "code"} else "",
         "raw_url": content_url if kind in {"image", "video", "audio", "pdf"} else "",

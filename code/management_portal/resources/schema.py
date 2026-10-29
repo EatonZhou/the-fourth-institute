@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from typing import Any, Iterable, Mapping
+from management_common.text_values import stripped_text
 
 
 RESOURCE_INDEX_SCHEMA = "tfi.portal.resource_index.v2"
@@ -14,15 +15,11 @@ READ_SCOPES = frozenset({"project", "global"})
 RELATION_KIND_RE = re.compile(r"^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$")
 
 
-def _text(value: object) -> str:
-    return str(value or "").strip()
-
-
 def _dedupe(values: Iterable[object]) -> list[str]:
     output: list[str] = []
     seen: set[str] = set()
     for value in values:
-        clean = _text(value)
+        clean = stripped_text(value)
         key = clean.casefold()
         if not clean or key in seen:
             continue
@@ -40,8 +37,8 @@ def _id_list(name: str, value: object) -> list[str]:
 
 
 def resource_relation(kind: object, target_id: object) -> dict[str, str]:
-    clean_kind = _text(kind)
-    clean_target = _text(target_id)
+    clean_kind = stripped_text(kind)
+    clean_target = stripped_text(target_id)
     if not RELATION_KIND_RE.fullmatch(clean_kind):
         raise ValueError(f"invalid resource relation kind: {clean_kind!r}")
     if not clean_target or "\x00" in clean_target:
@@ -87,7 +84,7 @@ def normalize_resource_attributes(
             + ", ".join(forbidden)
         )
 
-    read_scope = _text(source.pop("read_scope", "")).casefold()
+    read_scope = stripped_text(source.pop("read_scope", "")).casefold()
     if read_scope and read_scope not in READ_SCOPES:
         raise ValueError(f"invalid resource read_scope: {read_scope!r}")
     normalized: dict[str, Any] = {
@@ -97,7 +94,7 @@ def normalize_resource_attributes(
     if read_scope:
         normalized["read_scope"] = read_scope
     if "status" in source:
-        normalized["status"] = _text(source.pop("status"))
+        normalized["status"] = stripped_text(source.pop("status"))
     for name in ("created_at", "updated_at"):
         if name not in source:
             continue

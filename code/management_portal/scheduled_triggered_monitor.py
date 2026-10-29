@@ -24,6 +24,7 @@ from .hatg.contracts import InstructionContext, InstructionError
 from .society_service import get_society_service
 from .society_service.lineage_effect_script import expand, parse
 from .society_service import lineage_effect_syntax
+from management_common.text_values import stripped_text
 
 
 SCHEMA = "tfi.scheduled_triggered_monitor.v1"
@@ -36,10 +37,6 @@ LINEAGE_ACTIONS = ("UpdateComponent", "PauseComponent", "TriggerEvent", "CancelS
 RESIDENT_ACTIONS = ("UpdateResidentSettings", "CancelInput")
 
 
-def _text(value: object) -> str:
-    return str(value or "").strip()
-
-
 def _now() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -49,7 +46,7 @@ def _iso(moment: datetime) -> str:
 
 
 def _parse(value: object) -> datetime | None:
-    text = _text(value)
+    text = stripped_text(value)
     if not text:
         return None
     try:
@@ -62,16 +59,16 @@ def _parse(value: object) -> datetime | None:
 def _period_seconds(config: dict[str, Any]) -> float | None:
     """Length of one planned period of a recurring schedule, when it has one."""
 
-    if _text(config.get("schedule_mode")) != "recurring":
+    if stripped_text(config.get("schedule_mode")) != "recurring":
         return None
     interval = config.get("interval_seconds")
-    if _text(config.get("recurrence_kind")) == "interval" or interval:
+    if stripped_text(config.get("recurrence_kind")) == "interval" or interval:
         try:
             return float(interval) if float(interval) > 0 else None
         except (TypeError, ValueError):
             return None
     return {"daily": 86400.0, "weekly": 7 * 86400.0, "monthly": 31 * 86400.0}.get(
-        _text(config.get("calendar_frequency")) or "daily"
+        stripped_text(config.get("calendar_frequency")) or "daily"
     )
 
 
@@ -84,10 +81,10 @@ def _wire_task(wire: dict[str, Any]) -> str:
     prompt = arguments.get("prompt")
     if isinstance(prompt, dict):
         if "value" in prompt:
-            return _text(prompt.get("value"))
-        parts = [_text(part.get("value")) for part in prompt.get("concat") or [] if isinstance(part, dict) and "value" in part]
+            return stripped_text(prompt.get("value"))
+        parts = [stripped_text(part.get("value")) for part in prompt.get("concat") or [] if isinstance(part, dict) and "value" in part]
         return "\n\n".join(part for part in parts if part)
-    return _text(prompt)
+    return stripped_text(prompt)
 
 
 def _cleanup_hints(item: dict[str, Any], now: datetime) -> list[str]:
@@ -95,12 +92,12 @@ def _cleanup_hints(item: dict[str, Any], now: datetime) -> list[str]:
 
     sources = item.get("sources") or []
     if sources and all(
-        _text((source.get("runtime") or {}).get("state")) == "exhausted" for source in sources
+        stripped_text((source.get("runtime") or {}).get("state")) == "exhausted" for source in sources
     ):
         return ["定时已达到最大触发次数，不会再运行；可以归档或删除"]
     if sources and all(
         source.get("event_type") == "time.reached"
-        and _text(source.get("config", {}).get("schedule_mode") or "at") == "at"
+        and stripped_text(source.get("config", {}).get("schedule_mode") or "at") == "at"
         and int((source.get("runtime") or {}).get("fire_count") or 0) > 0
         for source in sources
     ):
@@ -116,11 +113,11 @@ def _health(item: dict[str, Any], now: datetime) -> tuple[str, list[str]]:
 
     problems: list[str] = list(item["read_errors"])
     warnings: list[str] = []
-    if any(_text(entry.get("severity") or entry.get("level")).lower() == "error"
+    if any(stripped_text(entry.get("severity") or entry.get("level")).lower() == "error"
            for entry in item["diagnostics"] if isinstance(entry, dict)):
         problems.append("Lineage 诊断存在错误")
     last = item.get("last_run") or {}
-    if _text(last.get("status")) in {"failed", "timed_out", "lost", "cancelled", "delivery_expired"}:
+    if stripped_text(last.get("status")) in {"failed", "timed_out", "lost", "cancelled", "delivery_expired"}:
         problems.append(f"最近一次运行{'被取消' if last.get('status') == 'cancelled' else '失败'}")
     if item["consecutive_failures"] >= 2:
         problems.append(f"已连续失败 {item['consecutive_failures']} 次")
@@ -128,14 +125,14 @@ def _health(item: dict[str, Any], now: datetime) -> tuple[str, list[str]]:
     for source in item["sources"]:
         runtime = source.get("runtime") or {}
         if runtime.get("state") == "blocked":
-            reason = _text(runtime.get("error")) or "自动触发暂不可用，请检查 Lineage 配置"
+            reason = stripped_text(runtime.get("error")) or "自动触发暂不可用，请检查 Lineage 配置"
             problems.append(f"自动触发受阻：{source['title']}：{reason}")
         delivery = runtime.get("last_delivery") or {}
         if (delivery.get("statuses") or {}).get("failed") or delivery.get("failed_count"):
             problems.append(f"触发投递失败：{source['title']}")
     effect = item.get("effect_runtime") or {}
     if effect.get("status") == "failed":
-        problems.append(_text(effect.get("error")) or "Effect 执行失败")
+        problems.append(stripped_text(effect.get("error")) or "Effect 执行失败")
     periods = [period for period in (_period_seconds(source["config"]) for source in active_sources) if period]
     last_success = _parse(item.get("last_success_at"))
     if periods and last_success is not None and now - last_success > timedelta(seconds=2 * min(periods)):
@@ -144,7 +141,7 @@ def _health(item: dict[str, Any], now: datetime) -> tuple[str, list[str]]:
     intake = (item.get("state") or {}).get("intake_state")
     if isinstance(intake, dict):
         intake = intake.get("status")
-    if _text(intake) == "closed":
+    if stripped_text(intake) == "closed":
         warnings.append("接单已关闭：任务只排队、不执行")
     if problems:
         return "error", problems + warnings
@@ -190,18 +187,18 @@ def _script_paths(component: dict[str, Any]) -> list[str]:
 
 
 def _lineage_rows(lineage: dict[str, Any], read: _Reader, now: datetime) -> list[dict[str, Any]]:
-    lineage_id = _text(lineage.get("lineage_id"))
+    lineage_id = stripped_text(lineage.get("lineage_id"))
     program = lineage.get("program") or {}
     components = {
-        _text(component.get("id")): component
+        stripped_text(component.get("id")): component
         for component in program.get("components") or []
         if isinstance(component, dict) and component.get("kind") == "event_source"
     }
     residents = {
-        _text(node.get("id")): node for node in lineage.get("nodes") or [] if isinstance(node, dict)
+        stripped_text(node.get("id")): node for node in lineage.get("nodes") or [] if isinstance(node, dict)
     }
     effects = {
-        _text(component.get("id")): component
+        stripped_text(component.get("id")): component
         for component in program.get("components") or []
         if isinstance(component, dict) and component.get("kind") == "effect" and _script_paths(component)
     }
@@ -209,40 +206,40 @@ def _lineage_rows(lineage: dict[str, Any], read: _Reader, now: datetime) -> list
     invoke_wires = [
         wire for wire in program.get("wires") or []
         if isinstance(wire, dict) and wire.get("kind") == "route"
-        and _text(wire.get("target")) in subjects and _text(wire.get("target_port") or "invoke") == "invoke"
-        and _text(wire.get("source")) in components
+        and stripped_text(wire.get("target")) in subjects and stripped_text(wire.get("target_port") or "invoke") == "invoke"
+        and stripped_text(wire.get("source")) in components
     ]
     rows: dict[str, dict[str, Any]] = {}
     for wire in invoke_wires:
-        component = components[_text(wire.get("source"))]
-        if _text((component.get("config") or {}).get("event_type")) not in TRIGGER_EVENTS:
+        component = components[stripped_text(wire.get("source"))]
+        if stripped_text((component.get("config") or {}).get("event_type")) not in TRIGGER_EVENTS:
             continue
-        resident_id = _text(wire.get("target"))
+        resident_id = stripped_text(wire.get("target"))
         rows.setdefault(resident_id, {
             **({"effect_id": resident_id, "row_id": f"{lineage_id}/{resident_id}", "kind": "effect",
                 "script_paths": _script_paths(effects[resident_id])}
                if resident_id in effects else {"resident_id": resident_id, "kind": "resident"}),
             "lineage_id": lineage_id,
-            "lineage_title": _text(lineage.get("title")),
+            "lineage_title": stripped_text(lineage.get("title")),
             "lineage_resident_count": len(residents),
             "lineage_version": lineage.get("revision"),
-            "title": _text(subjects[resident_id].get("title")) or resident_id,
+            "title": stripped_text(subjects[resident_id].get("title")) or resident_id,
             "sources": [], "manual_sources": [], "tasks": [], "read_errors": [], "diagnostics": [],
             "recent_runs": [], "consecutive_failures": 0,
         })
     if not rows:
         return []
     for wire in invoke_wires:
-        row = rows.get(_text(wire.get("target")))
+        row = rows.get(stripped_text(wire.get("target")))
         if row is None:
             continue
-        component = components[_text(wire.get("source"))]
+        component = components[stripped_text(wire.get("source"))]
         config = dict(component.get("config") or {})
         entry = {
-            "component_id": _text(component.get("id")),
-            "wire_id": _text(wire.get("id")),
-            "title": _text(component.get("title")) or _text(component.get("id")),
-            "event_type": _text(config.get("event_type")),
+            "component_id": stripped_text(component.get("id")),
+            "wire_id": stripped_text(wire.get("id")),
+            "title": stripped_text(component.get("title")) or stripped_text(component.get("id")),
+            "event_type": stripped_text(config.get("event_type")),
         }
         task = _wire_task(wire)
         if task:
@@ -253,7 +250,7 @@ def _lineage_rows(lineage: dict[str, Any], read: _Reader, now: datetime) -> list
             row["sources"].append({**entry, "config": config, "runtime": {}, "paused": False})
     try:
         runtime = {
-            _text(view.get("component_id")): view
+            stripped_text(view.get("component_id")): view
             for view in read("GetComponentRuntime", lineage_id=lineage_id).get("components") or []
             if isinstance(view, dict)
         }
@@ -305,7 +302,7 @@ def _lineage_rows(lineage: dict[str, Any], read: _Reader, now: datetime) -> list
         row["last_run"] = dict(row["recent_runs"][0]) if row["recent_runs"] else {}
         failures = 0
         for run in own:
-            status = _text(run.get("status"))
+            status = stripped_text(run.get("status"))
             if status in {"running", "active"}:
                 continue
             if status in {"failed", "timed_out", "lost", "cancelled", "delivery_expired"}:
@@ -313,8 +310,8 @@ def _lineage_rows(lineage: dict[str, Any], read: _Reader, now: datetime) -> list
                 continue
             break
         row["consecutive_failures"] = failures
-        success = next((run for run in own if _text(run.get("status")) in {"completed", "settled", "succeeded"}), None)
-        row["last_success_at"] = _text((success or {}).get("finished_at") or (success or {}).get("started_at"))
+        success = next((run for run in own if stripped_text(run.get("status")) in {"completed", "settled", "succeeded"}), None)
+        row["last_success_at"] = stripped_text((success or {}).get("finished_at") or (success or {}).get("started_at"))
         if row["kind"] == "effect":
             row["state"] = {"work_state": "failed" if (row.get("effect_runtime") or {}).get("status") == "failed" else row["last_run"].get("status") or "尚未运行"}
             row["sources"].sort(key=lambda source: (source["title"].casefold(), source["component_id"]))
@@ -340,8 +337,8 @@ def _lineage_rows(lineage: dict[str, Any], read: _Reader, now: datetime) -> list
         inner = state.get("state") if isinstance(state.get("state"), dict) else state
         row["state"] = dict(inner)
         row["controls"] = dict(state.get("controls") or {})
-        row["active_message_id"] = _text(row["state"].get("active_message_id"))
-        row["title"] = _text((row.get("resident") or {}).get("title")) or row["title"]
+        row["active_message_id"] = stripped_text(row["state"].get("active_message_id"))
+        row["title"] = stripped_text((row.get("resident") or {}).get("title")) or row["title"]
         row["sources"].sort(key=lambda source: (source["title"].casefold(), source["component_id"]))
         row["health"], row["warnings"] = _health(row, now)
         row["read_at"] = _iso(now)
@@ -355,8 +352,8 @@ def get_scheduled_triggered_status(actor: str, *, read: Callable[..., dict[str, 
     items: list[dict[str, Any]] = []
     errors: list[dict[str, str]] = []
     summaries = [summary for summary in lineage_domain.list_lineages(actor).get("lineages") or []
-                 if _text(summary.get("lineage_id"))]
-    identifiers = [_text(summary.get("lineage_id")) for summary in summaries]
+                 if stripped_text(summary.get("lineage_id"))]
+    identifiers = [stripped_text(summary.get("lineage_id")) for summary in summaries]
     try:
         authorization_errors = permission_system.authorize_reads(
             declaration("GetLineage"), [{"lineage_id": value} for value in identifiers],
@@ -370,7 +367,7 @@ def get_scheduled_triggered_status(actor: str, *, read: Callable[..., dict[str, 
     definitions = batch.get("definitions") or {}
     definition_errors = batch.get("lineage_errors") or {}
     def collect(summary: dict[str, Any], authorization_error: Exception | None):
-        lineage_id = _text(summary.get("lineage_id"))
+        lineage_id = stripped_text(summary.get("lineage_id"))
         try:
             if authorization_error is not None:
                 raise authorization_error
@@ -382,13 +379,13 @@ def get_scheduled_triggered_status(actor: str, *, read: Callable[..., dict[str, 
             rows = _lineage_rows(definition, reader, now)
             on_lineage = permission_system.allows_each(actor, LINEAGE_ACTIONS, {"lineage_id": lineage_id})
             for row in rows:
-                resident_id = _text(row.get("resident_id"))
+                resident_id = stripped_text(row.get("resident_id"))
                 on_resident = (permission_system.allows_each(actor, RESIDENT_ACTIONS, {"resident_id": resident_id})
                                if resident_id else dict.fromkeys(RESIDENT_ACTIONS, False))
                 row["allows"] = {**on_lineage, **on_resident}
             return rows, None
         except Exception as exc:  # noqa: BLE001 - one unreadable Lineage affects only itself
-            return [], {"lineage_id": lineage_id, "title": _text(summary.get("title")), "error": str(exc)}
+            return [], {"lineage_id": lineage_id, "title": stripped_text(summary.get("title")), "error": str(exc)}
 
     # Each Lineage has independent read-only facts. Serial ISA round trips
     # across every schedule made even a healthy panel exceed the HTTP timeout.

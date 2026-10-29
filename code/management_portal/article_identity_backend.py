@@ -4,6 +4,7 @@ from management_common.portal_paths import path as portal_path
 from management_common.secure_paths import relative_parts
 from management_common import process_runtime
 from management_common.clock import utc_now_iso
+from management_common.text_values import stripped_text
 
 import codecs
 import functools
@@ -149,15 +150,11 @@ ARTICLE_INCLUDE_COMMANDS = ("input", "include", "subfile")
 _BIB_ENTRY_START = re.compile(r"(?im)^[ \t]*@(?P<type>[A-Za-z]+)\s*\{\s*(?P<key>[^,\s]+)\s*,")
 
 
-def _clean(value: object) -> str:
-    return str(value or "").strip()
-
-
 def _dedupe(values: Iterable[object]) -> list[str]:
     output: list[str] = []
     seen: set[str] = set()
     for value in values:
-        item = _clean(value)
+        item = stripped_text(value)
         if not item:
             continue
         key = item.casefold()
@@ -282,7 +279,7 @@ def extract_article_title(path: str | Path) -> str:
 
 
 def title_fingerprint(title: object) -> str:
-    normalized = _clean(title).casefold()
+    normalized = stripped_text(title).casefold()
     return re.sub(r"[^0-9a-z\u0080-\uffff]+", "", normalized)
 
 
@@ -417,7 +414,7 @@ def inspect_article_root(
     if not root.exists() or not root.is_dir():
         raise FileNotFoundError(f"article directory not found: {root}")
     primary = None
-    if _clean(primary_file):
+    if stripped_text(primary_file):
         relative = _safe_relative_path(primary_file)
         primary = (root / relative).resolve(strict=False)
         try:
@@ -497,7 +494,7 @@ def group_logical_articles(roots: Iterable[dict[str, Any]]) -> list[list[dict[st
     groups: dict[tuple[str, str], list[dict[str, Any]]] = {}
     for item in roots:
         project_id = next(iter(item.get("project_ids") or []), "")
-        fingerprint = _clean(item.get("title_fingerprint")) or str(item.get("path"))
+        fingerprint = stripped_text(item.get("title_fingerprint")) or str(item.get("path"))
         groups.setdefault((project_id.casefold(), fingerprint), []).append(item)
     return [
         sorted(group, key=lambda item: str(item.get("path") or "").casefold())
@@ -514,16 +511,16 @@ def _record_match_keys(record: dict[str, Any]) -> Iterator[tuple[str, ...]]:
     )
     for project_id in record.get("project_ids") or [""]:
         for fingerprint in fingerprints:
-            yield ("title", _clean(project_id).casefold(), fingerprint)
+            yield ("title", stripped_text(project_id).casefold(), fingerprint)
 
 
 def _root_match_keys(item: dict[str, Any]) -> Iterator[tuple[str, ...]]:
     """A manuscript root belongs to the record holding its path or, within one
     project, the record whose title it shares."""
     yield ("path", registry_sync.resolved_path(item["path"]))
-    fingerprint = _clean(item.get("title_fingerprint"))
+    fingerprint = stripped_text(item.get("title_fingerprint"))
     for project_id in item.get("project_ids") or [""]:
-        yield ("title", _clean(project_id).casefold(), fingerprint)
+        yield ("title", stripped_text(project_id).casefold(), fingerprint)
 
 
 ARTICLE_REGISTRY = registry_sync.RegistrySync(
@@ -550,7 +547,7 @@ def is_article_storage_path(
                 continue
             try:
                 candidate.relative_to(
-                    Path(_clean(root.get("path"))).resolve(strict=False)
+                    Path(stripped_text(root.get("path"))).resolve(strict=False)
                 )
             except ValueError:
                 continue
@@ -586,16 +583,16 @@ def _article_root_role(path: str) -> str:
 
 def _select_root(roots: list[dict[str, Any]]) -> dict[str, Any]:
     rank = {"canonical": 0, "submission": 1, "arxiv": 2, "variant": 3}
-    available = [item for item in roots if Path(_clean(item.get("path"))).is_dir()]
+    available = [item for item in roots if Path(stripped_text(item.get("path"))).is_dir()]
     pool = available or roots
     if not pool:
         raise FileNotFoundError("article has no manuscript root")
     return min(
         pool,
         key=lambda item: (
-            rank.get(_clean(item.get("role")), 9),
-            len(_clean(item.get("path"))),
-            _clean(item.get("path")).casefold(),
+            rank.get(stripped_text(item.get("role")), 9),
+            len(stripped_text(item.get("path"))),
+            stripped_text(item.get("path")).casefold(),
         ),
     )
 
@@ -606,9 +603,9 @@ def _root_entry(item: dict[str, Any]) -> dict[str, Any]:
         "path": path,
         "role": _article_root_role(path),
         "present": Path(path).is_dir(),
-        "primary_file": _clean(item.get("primary_file")),
-        "title": _clean(item.get("title")),
-        "title_fingerprint": _clean(item.get("title_fingerprint")),
+        "primary_file": stripped_text(item.get("primary_file")),
+        "title": stripped_text(item.get("title")),
+        "title_fingerprint": stripped_text(item.get("title_fingerprint")),
     }
 
 
@@ -621,7 +618,7 @@ def _merge_record(
     previous = dict(existing or {})
     roots = registry_sync.merge_locations(previous.get("roots") or [], map(_root_entry, group))
     canonical = _select_root(roots)
-    title = _clean(canonical.get("title")) or _clean(previous.get("title")) or article_id
+    title = stripped_text(canonical.get("title")) or stripped_text(previous.get("title")) or article_id
     project_ids = _dedupe(
         [
             *previous.get("project_ids", []),
@@ -642,13 +639,13 @@ def _merge_record(
         "id": article_id,
         "type": "article",
         "title": title,
-        "status": _clean(previous.get("status")) or "active",
+        "status": stripped_text(previous.get("status")) or "active",
         "project_ids": project_ids,
-        "canonical_root": _clean(canonical.get("path")),
-        "primary_file": _clean(canonical.get("primary_file")),
+        "canonical_root": stripped_text(canonical.get("path")),
+        "primary_file": stripped_text(canonical.get("primary_file")),
         "roots": roots,
         "title_fingerprints": fingerprints,
-        "created_at": _clean(previous.get("created_at")) or now,
+        "created_at": stripped_text(previous.get("created_at")) or now,
         "updated_at": now,
     }
 
@@ -706,7 +703,7 @@ def register_article(
     for record in load_article_records():
         if any(
             isinstance(root, dict)
-            and str(Path(_clean(root.get("path"))).resolve(strict=False)) == resolved_path
+            and str(Path(stripped_text(root.get("path"))).resolve(strict=False)) == resolved_path
             for root in record.get("roots") or []
         ):
             if str(item["primary_file"]).casefold().endswith(".tex"):
@@ -739,9 +736,9 @@ def unregister_article(article_id: str) -> dict[str, Any]:
         "id": article_id,
         "deleted": True,
         "manuscript_paths": [
-            _clean(item.get("path"))
+            stripped_text(item.get("path"))
             for item in record.get("roots") or []
-            if isinstance(item, dict) and _clean(item.get("path"))
+            if isinstance(item, dict) and stripped_text(item.get("path"))
         ],
     }
 
@@ -794,7 +791,7 @@ def _article_source_context(
     root_item = _select_root(
         [item for item in record.get("roots") or [] if isinstance(item, dict)]
     )
-    article_root = Path(_clean(root_item.get("path"))).resolve(strict=False)
+    article_root = Path(stripped_text(root_item.get("path"))).resolve(strict=False)
     if not article_root.is_dir():
         raise FileNotFoundError(article_root)
     return record, root_item, article_root
@@ -890,9 +887,9 @@ def _article_target_path(
     _record, _root_item, article_root = _article_source_context(
         article_id
     )
-    if allow_root and not _clean(raw_path):
+    if allow_root and not stripped_text(raw_path):
         return article_root, article_root
-    relative_path = _safe_relative_path(_clean(raw_path))
+    relative_path = _safe_relative_path(stripped_text(raw_path))
     target = (article_root / relative_path).resolve(strict=False)
     try:
         target.relative_to(article_root)
@@ -974,7 +971,7 @@ def list_article_files(
         "id": article_id,
         "root": str(article_root),
         "primary_file": settings["primary_file"],
-        "record_primary_file": _clean(
+        "record_primary_file": stripped_text(
             root_item.get("primary_file") or record.get("primary_file")
         ),
         "entries": entries,
@@ -1104,7 +1101,7 @@ def create_article_entry(
     article_root, target = _article_target_path(
         article_id, relative_path
     )
-    entry_kind = _clean(kind).casefold()
+    entry_kind = stripped_text(kind).casefold()
     if entry_kind not in {"file", "directory"}:
         raise ValueError("article entry kind must be file or directory")
     if target.exists():
@@ -1131,7 +1128,7 @@ def upload_article_file(
     directory: str = "",
     max_bytes: int = ARTICLE_UPLOAD_MAX_BYTES,
 ) -> dict[str, Any]:
-    clean_name = Path(_clean(filename)).name
+    clean_name = Path(stripped_text(filename)).name
     if not clean_name or clean_name in {".", ".."} or "\x00" in clean_name:
         raise ValueError("uploaded article filename is invalid")
     if len(data) > max_bytes:
@@ -1169,7 +1166,7 @@ def search_article_files(
     *,
     limit: int = 200,
 ) -> dict[str, Any]:
-    needle = _clean(query)
+    needle = stripped_text(query)
     if not needle:
         return {"id": article_id, "query": "", "results": [], "truncated": False}
     if len(needle) > 200:
@@ -1779,7 +1776,7 @@ def inspect_article_build_profile(
     if not root.is_dir():
         raise FileNotFoundError(f"article directory not found: {root}")
     candidates = _article_tex_candidates(root)
-    selected = _clean(primary_file)
+    selected = stripped_text(primary_file)
     if not selected and candidates:
         selected = str(candidates[0]["path"])
     selected_candidate = next(
@@ -1821,7 +1818,7 @@ def inspect_article_build_profile(
             f"检测到 {len(standalone)} 个可独立编译的主文档，请确认主文档",
         )
 
-    selected_compiler = _clean(compiler).casefold()
+    selected_compiler = stripped_text(compiler).casefold()
     if not selected_compiler:
         selected_compiler = (
             str(selected_candidate.get("compiler_hint") or "")
@@ -1966,7 +1963,7 @@ def load_article_settings(
     record, root_item, article_root = _article_source_context(
         article_id
     )
-    default_primary_file = _clean(
+    default_primary_file = stripped_text(
         root_item.get("primary_file") or record.get("primary_file")
     )
     try:
@@ -1984,21 +1981,21 @@ def load_article_settings(
         "error_handling": "continue",
     }
     stored = article_build_store.settings(article_id) or {}
-    compiler = _clean(stored.get("compiler") or defaults["compiler"]).casefold()
+    compiler = stripped_text(stored.get("compiler") or defaults["compiler"]).casefold()
     if compiler not in SUPPORTED_LATEX_COMPILERS:
         compiler = defaults["compiler"]
     try:
         primary_file = _safe_relative_path(
-            _clean(stored.get("primary_file") or defaults["primary_file"])
+            stripped_text(stored.get("primary_file") or defaults["primary_file"])
         )
     except ValueError:
         primary_file = _safe_relative_path(defaults["primary_file"])
-    compile_mode = _clean(
+    compile_mode = stripped_text(
         stored.get("compile_mode") or defaults["compile_mode"]
     ).casefold()
     if compile_mode not in ARTICLE_COMPILE_MODES:
         compile_mode = defaults["compile_mode"]
-    error_handling = _clean(
+    error_handling = stripped_text(
         stored.get("error_handling") or defaults["error_handling"]
     ).casefold()
     if error_handling not in ARTICLE_ERROR_HANDLING:
@@ -2030,7 +2027,7 @@ def load_article_settings(
         "environment_profile": environment["profile_id"],
         "environment_policy": environment["policy"],
         "available_compilers": environment["available_compilers"],
-        "updated_at": _clean(stored.get("updated_at")),
+        "updated_at": stripped_text(stored.get("updated_at")),
     }
 
 
@@ -2045,18 +2042,18 @@ def update_article_settings(
     current = load_article_settings(
         article_id, build_root=build_root
     )
-    compiler = _clean(settings.get("compiler", current["compiler"])).casefold()
+    compiler = stripped_text(settings.get("compiler", current["compiler"])).casefold()
     if compiler not in SUPPORTED_LATEX_COMPILERS:
         raise ValueError(f"unsupported LaTeX compiler: {compiler or '(empty)'}")
     primary_file = _safe_relative_path(
-        _clean(settings.get("primary_file", current["primary_file"]))
+        stripped_text(settings.get("primary_file", current["primary_file"]))
     )
-    compile_mode = _clean(
+    compile_mode = stripped_text(
         settings.get("compile_mode", current["compile_mode"])
     ).casefold()
     if compile_mode not in ARTICLE_COMPILE_MODES:
         raise ValueError(f"unsupported compile mode: {compile_mode or '(empty)'}")
-    error_handling = _clean(
+    error_handling = stripped_text(
         settings.get("error_handling", current["error_handling"])
     ).casefold()
     if error_handling not in ARTICLE_ERROR_HANDLING:
@@ -2436,8 +2433,8 @@ class _ArticleBuild:
         self.settings = load_article_settings(
             article_id, build_root=build_root
         )
-        self.primary_file = _safe_relative_path(_clean(self.settings.get("primary_file")))
-        self.compiler = _clean(self.settings.get("compiler")).casefold()
+        self.primary_file = _safe_relative_path(stripped_text(self.settings.get("primary_file")))
+        self.compiler = stripped_text(self.settings.get("compiler")).casefold()
         self.compiler_config = SUPPORTED_LATEX_COMPILERS.get(self.compiler)
         if self.compiler_config is None:
             raise ValueError(f"unsupported LaTeX compiler: {self.compiler}")
@@ -2495,7 +2492,7 @@ class _ArticleBuild:
         )
 
     def run(self, timeout_seconds: int) -> dict[str, Any]:
-        self.compile_mode = _clean(self.settings.get("compile_mode")).casefold() or "normal"
+        self.compile_mode = stripped_text(self.settings.get("compile_mode")).casefold() or "normal"
         if self.compile_mode not in ARTICLE_COMPILE_MODES:
             raise ValueError(f"unsupported compile mode: {self.compile_mode}")
         self.output = article_build_pdf_path(self.article_id, build_root=self.build_root)
@@ -2702,8 +2699,8 @@ def _article_synctex_artifacts(
     settings = load_article_settings(
         article_id, build_root=build_root
     )
-    primary_file = _safe_relative_path(_clean(settings.get("primary_file")))
-    mode = _clean(settings.get("compile_mode")).casefold() or "normal"
+    primary_file = _safe_relative_path(stripped_text(settings.get("primary_file")))
+    mode = stripped_text(settings.get("compile_mode")).casefold() or "normal"
     compile_root = article_build_cache_path(
         article_id, build_root=build_root
     ) / mode
@@ -2858,7 +2855,7 @@ def article_pdf_to_source(
     records = _synctex_records(completed.stdout, start_key="Input")
     candidates: list[dict[str, Any]] = []
     for item in records:
-        raw_input = _clean(item.get("Input"))
+        raw_input = stripped_text(item.get("Input"))
         if not raw_input:
             continue
         input_path = Path(raw_input)
@@ -2952,7 +2949,7 @@ def _article_sections(path: Path) -> list[dict[str, Any]]:
 def resolve_article_address(
     address: str,
 ) -> dict[str, Any]:
-    clean_address = unquote(_clean(address)).strip("/")
+    clean_address = unquote(stripped_text(address)).strip("/")
     root_id, separator, suffix = clean_address.partition("/")
     if not get_resource_service().is_valid_id(root_id, "article"):
         raise ValueError(f"invalid article address: {address}")
@@ -2960,8 +2957,8 @@ def resolve_article_address(
     root_item = _select_root(
         [item for item in record.get("roots") or [] if isinstance(item, dict)]
     )
-    article_root = Path(_clean(root_item.get("path"))).resolve(strict=False)
-    primary_file = _safe_relative_path(_clean(root_item.get("primary_file")))
+    article_root = Path(stripped_text(root_item.get("path"))).resolve(strict=False)
+    primary_file = _safe_relative_path(stripped_text(root_item.get("primary_file")))
     primary_path = (article_root / primary_file).resolve(strict=False)
     try:
         primary_path.relative_to(article_root)
@@ -3000,10 +2997,10 @@ def resolve_article_address(
         )
         return result
     if len(parts) == 2 and parts[0] == "section":
-        section_key = _clean(parts[1]).casefold()
+        section_key = stripped_text(parts[1]).casefold()
         if not section_key or section_key in {".", ".."}:
             raise ValueError("invalid article section key")
-        primary = (article_root / _clean(root_item.get("primary_file"))).resolve(strict=False)
+        primary = (article_root / stripped_text(root_item.get("primary_file"))).resolve(strict=False)
         sections = _article_sections(primary) if primary.is_file() else []
         section = next(
             (item for item in sections if section_key in item.get("keys", [])), None
@@ -3012,7 +3009,7 @@ def resolve_article_address(
             {
                 "target_kind": "article_section",
                 "section": section_key,
-                "section_title": _clean((section or {}).get("title")),
+                "section_title": stripped_text((section or {}).get("title")),
                 "resolved_path": str(primary),
                 "section_start": int((section or {}).get("start") or 0),
                 "section_end": int((section or {}).get("end") or 0),
@@ -3028,7 +3025,7 @@ def read_article_section(
 ) -> tuple[bytes, str, dict[str, Any]]:
     if resolved.get("target_kind") != "article_section" or not resolved.get("exists"):
         raise FileNotFoundError(resolved.get("address") or "article section")
-    path = Path(_clean(resolved.get("resolved_path")))
+    path = Path(stripped_text(resolved.get("resolved_path")))
     text = _read_text(path, limit=max_bytes + 1)
     start = int(resolved.get("section_start") or 0)
     end = int(resolved.get("section_end") or 0)

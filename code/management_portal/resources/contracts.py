@@ -5,10 +5,7 @@ from typing import Any, Iterable, Mapping
 
 from .address import ResourceAddress
 from .schema import RESOURCE_INDEX_SCHEMA
-
-
-def _text(value: object) -> str:
-    return str(value or "").strip()
+from management_common.text_values import stripped_text
 
 
 def _string_set(values: object) -> frozenset[str]:
@@ -20,7 +17,7 @@ def _string_set(values: object) -> frozenset[str]:
         candidates = values
     else:
         candidates = (values,)
-    return frozenset(_text(value) for value in candidates if _text(value))
+    return frozenset(stripped_text(value) for value in candidates if stripped_text(value))
 
 
 @dataclass(frozen=True)
@@ -43,16 +40,16 @@ class ResourceQuery:
         normalized_filters = tuple(
             sorted(
                 (
-                    _text(key),
+                    stripped_text(key),
                     _string_set(raw_values),
                 )
                 for key, raw_values in filters.items()
-                if _text(key)
+                if stripped_text(key)
             )
         )
         return cls(
-            actor=_text(values.get("actor")),
-            q=_text(values.get("q")),
+            actor=stripped_text(values.get("actor")),
+            q=stripped_text(values.get("q")),
             resource_types=_string_set(values.get("resource_types") or ()),
             facets=_string_set(values.get("facets") or ()),
             projects=_string_set(values.get("projects") or ()),
@@ -101,9 +98,9 @@ def normalize_resolution(
     if not isinstance(payload, Mapping):
         raise TypeError("resource resolver must return an object")
     source = dict(payload)
-    root_id = _text(source.get("root_id") or source.get("resource_id"))
-    resource_type = _text(source.get("resource_type"))
-    address = _text(source.get("address"))
+    root_id = stripped_text(source.get("root_id") or source.get("resource_id"))
+    resource_type = stripped_text(source.get("resource_type"))
+    address = stripped_text(source.get("address"))
     if root_id and root_id != parsed.root_id:
         raise ValueError(
             f"resource resolver returned root {root_id!r}, expected {parsed.root_id!r}"
@@ -121,7 +118,7 @@ def normalize_resolution(
     if not isinstance(raw_record, Mapping):
         raise TypeError("resource resolver result requires a record object")
     record = dict(raw_record)
-    record_id = _text(record.get("resource_id"))
+    record_id = stripped_text(record.get("resource_id"))
     if record_id != parsed.root_id:
         raise ValueError(
             "resource resolver record must contain the canonical resource_id "
@@ -132,7 +129,7 @@ def normalize_resolution(
         for key, value in record.items()
         if key != "resource_id"
         and (key == "id" or key.endswith("_id"))
-        and _text(value) == parsed.root_id
+        and stripped_text(value) == parsed.root_id
     )
     if identity_aliases:
         raise ValueError(
@@ -149,7 +146,7 @@ def normalize_resolution(
         "root_id": parsed.root_id,
         "resource_id": parsed.root_id,
         "resource_type": parsed.resource_type,
-        "target_kind": _text(source.get("target_kind")) or parsed.resource_type,
+        "target_kind": stripped_text(source.get("target_kind")) or parsed.resource_type,
         "exists": bool(source.get("exists", True)),
         "record": record,
         "metadata": dict(raw_metadata),
@@ -160,7 +157,7 @@ def normalize_resolution(
 def empty_query_result(query: ResourceQuery, *, index_updated_at: str = "") -> dict[str, Any]:
     return {
         "schema": RESOURCE_INDEX_SCHEMA,
-        "index_updated_at": _text(index_updated_at),
+        "index_updated_at": stripped_text(index_updated_at),
         "query": query.q,
         "total": 0,
         "offset": query.offset,

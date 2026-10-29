@@ -7,17 +7,14 @@ from typing import Any, Callable, Iterable
 from .contracts import ResourceQuery
 from .errors import ResourceServiceUnavailable
 from .timing import lap
-
-
-def _text(value: object) -> str:
-    return str(value or "").strip()
+from management_common.text_values import stripped_text
 
 
 def _dedupe(values: Iterable[object]) -> list[str]:
     output: list[str] = []
     seen: set[str] = set()
     for value in values:
-        clean = _text(value)
+        clean = stripped_text(value)
         if clean and clean not in seen:
             seen.add(clean)
             output.append(clean)
@@ -55,10 +52,10 @@ class ResourceIndexRuntime:
         return self.store.type_counts()
 
     def supports_type(self, resource_type: str) -> bool:
-        return _text(resource_type) in self.indexed_types()
+        return stripped_text(resource_type) in self.indexed_types()
 
     def _target_adapters(self, resource_types: Iterable[str] = ()) -> list[str]:
-        requested = {_text(value) for value in resource_types if _text(value)}
+        requested = {stripped_text(value) for value in resource_types if stripped_text(value)}
         return [
             name
             for name, adapter in self.adapter_layer.adapters.items()
@@ -98,7 +95,7 @@ class ResourceIndexRuntime:
         return self.store.project_changes(projects, **kwargs)
 
     def suggest(self, **kwargs: Any) -> dict[str, Any]:
-        resource_type = _text(kwargs.get("resource_type"))
+        resource_type = stripped_text(kwargs.get("resource_type"))
         self._require_ready(self._target_adapters((resource_type,) if resource_type else ()))
         return self.store.suggest(**kwargs)
 
@@ -118,7 +115,7 @@ class ResourceIndexRuntime:
         except KeyError:
             targets = self._target_adapters(resource_types)
         else:
-            adapter = _text((record.get("source") or {}).get("adapter"))
+            adapter = stripped_text((record.get("source") or {}).get("adapter"))
             targets = [adapter] if adapter in self.adapter_layer.adapters else []
         self._require_ready(targets)
         return self.store.get(resource_id, actor=actor)
@@ -131,7 +128,7 @@ class ResourceIndexRuntime:
         wait: bool = False,
         timeout: float = 180.0,
     ) -> dict[str, Any]:
-        names = [_text(value) for value in adapters if _text(value)]
+        names = [stripped_text(value) for value in adapters if stripped_text(value)]
         targets = (
             self.adapter_layer.matching_adapters(path=path, adapters=names)
             if path
@@ -192,7 +189,7 @@ class ResourceIndexRuntime:
         return status
 
     def projection_state(self, adapter: str) -> dict[str, Any]:
-        return self.store.adapter_source_state(_text(adapter))
+        return self.store.adapter_source_state(stripped_text(adapter))
 
     def project_registered(
         self, resource_type: str, record: dict[str, Any],
@@ -216,8 +213,8 @@ class ResourceIndexRuntime:
             else []
         )
         mark = lap("notify.route.adapters", mark)
-        detected_type = _text(resource_type)
-        clean_id = _text(resource_id)
+        detected_type = stripped_text(resource_type)
+        clean_id = stripped_text(resource_id)
         if clean_id:
             try:
                 record = self.store.internal_get(clean_id)
@@ -225,13 +222,13 @@ class ResourceIndexRuntime:
                 record = {}
             lap("notify.route.lookup", mark)
             if record:
-                stored_type = _text(record.get("resource_type"))
+                stored_type = stripped_text(record.get("resource_type"))
                 if detected_type and stored_type != detected_type:
                     raise ValueError(
                         f"resource change type {detected_type!r} does not match "
                         f"indexed type {stored_type!r}"
                     )
-                adapter = _text((record.get("source") or {}).get("adapter"))
+                adapter = stripped_text((record.get("source") or {}).get("adapter"))
                 if adapter:
                     targets.append(adapter)
                 detected_type = detected_type or stored_type
@@ -249,7 +246,7 @@ class ResourceIndexRuntime:
         *,
         path: str = "",
     ) -> list[str]:
-        clean_path = _text(path)
+        clean_path = stripped_text(path)
         incremental_paths = (
             [clean_path]
             if clean_path and not Path(clean_path).expanduser().is_dir()

@@ -8,6 +8,7 @@ from urllib.parse import unquote
 
 from . import identity_contract, resident_protocol, resource_client
 from . import resident_conversation_records
+from management_common.text_values import stripped_text
 
 
 DEFAULT_CONTEXT_MAX_MESSAGES = 160
@@ -17,12 +18,8 @@ MAX_CONTEXT_CHARS = 1_000_000
 MAX_CONTEXT_MESSAGE_CHARS = 100_000
 
 
-def _text(value: object) -> str:
-    return str(value or "").strip()
-
-
 def _message_role(item: dict[str, Any]) -> str:
-    role = _text(item.get("role")).casefold()
+    role = stripped_text(item.get("role")).casefold()
     if role == "agent":
         return "agent"
     if role == "user":
@@ -38,7 +35,7 @@ def _message_content(item: dict[str, Any]) -> str:
     for block in raw:
         if not isinstance(block, dict) or block.get("type") != "text":
             continue
-        value = _text(block.get("text"))
+        value = stripped_text(block.get("text"))
         if value:
             parts.append(value)
     return "\n".join(parts).strip()[:MAX_CONTEXT_MESSAGE_CHARS]
@@ -53,7 +50,7 @@ def _normalize_messages(raw_messages: object) -> list[dict[str, Any]]:
         content = _message_content(raw)
         if not role or not content:
             continue
-        identity = _text(raw.get("message_id"))[:240]
+        identity = stripped_text(raw.get("message_id"))[:240]
         if not identity:
             raise ValueError("MessageIdentity missing from conversation projection")
         messages.append(
@@ -62,7 +59,7 @@ def _normalize_messages(raw_messages: object) -> list[dict[str, Any]]:
                 "role": role,
                 "speaker": "用户" if role == "human" else "Agent",
                 "content": content,
-                "created_at": _text(raw.get("created_at"))[:80],
+                "created_at": stripped_text(raw.get("created_at"))[:80],
                 "_digest": hashlib.sha256(
                     f"{role}\0{content}".encode("utf-8")
                 ).hexdigest(),
@@ -76,10 +73,10 @@ def _lineage_relation(record: dict[str, Any]) -> str:
     for relation in attributes.get("relations") or []:
         if (
             isinstance(relation, dict)
-            and _text(relation.get("kind")) == "lineage"
-            and _text(relation.get("target_id"))
+            and stripped_text(relation.get("kind")) == "lineage"
+            and stripped_text(relation.get("target_id"))
         ):
-            return _text(relation.get("target_id"))
+            return stripped_text(relation.get("target_id"))
     return ""
 
 
@@ -107,11 +104,11 @@ def _snapshot(resource_id: str, actor: str, *, max_messages: int) -> dict[str, A
         if next_token == token:
             raise RuntimeError("Conversation pagination did not advance")
         token = next_token
-    state = _text((snapshot.get("state") or {}).get("work_state")) or "idle"
+    state = stripped_text((snapshot.get("state") or {}).get("work_state")) or "idle"
     return {
         "id": resource_id,
         "resource_type": "resident",
-        "title": _text(descriptor.get("title")) or resource_id,
+        "title": stripped_text(descriptor.get("title")) or resource_id,
         "lineage_id": _lineage_relation(descriptor),
         "state": state,
         "messages": messages,
@@ -126,8 +123,8 @@ def _common_window(
         return 0, 0, 0
     matcher = difflib.SequenceMatcher(
         None,
-        [_text(message.get("_digest")) for message in source],
-        [_text(message.get("_digest")) for message in relative],
+        [stripped_text(message.get("_digest")) for message in source],
+        [stripped_text(message.get("_digest")) for message in relative],
         autojunk=False,
     )
     match = matcher.find_longest_match(0, len(source), 0, len(relative))
@@ -181,14 +178,14 @@ def read_context(
     max_messages: int = DEFAULT_CONTEXT_MAX_MESSAGES,
     max_chars: int = DEFAULT_CONTEXT_MAX_CHARS,
 ) -> dict[str, Any]:
-    actor_id = _text(actor)
+    actor_id = stripped_text(actor)
     if not actor_id:
         raise PermissionError("context lookup requires a Portal actor")
     message_limit = _positive_limit(max_messages, MAX_CONTEXT_MESSAGES, "max_messages")
     char_limit = _positive_limit(max_chars, MAX_CONTEXT_CHARS, "max_chars")
-    source_id = unquote(_text(address)).strip("/")
+    source_id = unquote(stripped_text(address)).strip("/")
     source = _snapshot(source_id, actor_id, max_messages=message_limit)
-    relative_id = unquote(_text(relative_to_address)).strip("/")
+    relative_id = unquote(stripped_text(relative_to_address)).strip("/")
     relative = _snapshot(relative_id, actor_id, max_messages=message_limit) if relative_id else None
 
     source_messages = list(source["messages"])

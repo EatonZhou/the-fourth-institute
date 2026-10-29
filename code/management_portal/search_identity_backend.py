@@ -8,13 +8,10 @@ from management_portal.resources.portal import portal_url_for_search
 from management_portal import semantic_search_store
 from management_portal.semantic_search_surfaces import RESOURCE_SCOPES
 from management_portal.resources import get_resource_service
+from management_common.text_values import stripped_text
 
 
 BOARD_SURFACES = frozenset({"wall"})
-
-
-def _clean(value: object) -> str:
-    return str(value or "").strip()
 
 
 class _DomainJobs:
@@ -61,7 +58,7 @@ def _job_store_locks(stores: dict[str, Any]) -> Iterator[None]:
 
 def _job_surface(store_name: str, job: dict[str, Any]) -> str:
     """The surface of a stored search: the store's, or one of the surfaces the store holds."""
-    surface = _clean(job.get("surface"))
+    surface = stripped_text(job.get("surface"))
     if store_name == "paper":
         return "paper"
     if store_name == "knowledge":
@@ -86,12 +83,12 @@ def _identity_plan(stores: dict[str, list[dict[str, Any]]]) -> dict[str, Any]:
                     {
                         "surface": store_name,
                         "index": index,
-                        "search_id": _clean(job.get("search_id")),
+                        "search_id": stripped_text(job.get("search_id")),
                         "error": "board search surface must be wall",
                     }
                 )
                 continue
-            search_id = _clean(job.get("search_id"))
+            search_id = stripped_text(job.get("search_id"))
             if not get_resource_service().is_valid_id(search_id, "search"):
                 invalid.append(
                     {
@@ -137,7 +134,7 @@ def _identity_plan(stores: dict[str, list[dict[str, Any]]]) -> dict[str, Any]:
             if not surface:
                 continue
             surface_counts[surface] = surface_counts.get(surface, 0) + 1
-            search_id = _clean(job.get("search_id"))
+            search_id = stripped_text(job.get("search_id"))
             if not get_resource_service().is_valid_id(search_id, "search") or "resource_id" in job:
                 continue
             next_job = {
@@ -209,12 +206,12 @@ def generate_search_id(
             if plan["invalid"] or plan["collisions"]:
                 raise ValueError("cannot allocate a Search ID while search identity data is invalid")
             used = {
-                _clean(job.get("search_id"))
+                stripped_text(job.get("search_id"))
                 for jobs in plan["planned"].values()
                 for job in jobs
                 if get_resource_service().is_valid_id(job.get("search_id"), "search")
             }
-        used.update(_clean(value) for value in additional_ids if _clean(value))
+        used.update(stripped_text(value) for value in additional_ids if stripped_text(value))
         return get_resource_service().new_id("search", used)
 
 
@@ -230,7 +227,7 @@ def load_search_resources(*, include_deleted: bool = True) -> list[dict[str, Any
             deleted = bool(job.get("deleted"))
             if deleted and not include_deleted:
                 continue
-            search_id = _clean(job.get("search_id"))
+            search_id = stripped_text(job.get("search_id"))
             records.append(
                 {
                     "id": search_id,
@@ -238,13 +235,13 @@ def load_search_resources(*, include_deleted: bool = True) -> list[dict[str, Any
                     "search_id": search_id,
                     "search_kind": "semantic",
                     "surface": surface,
-                    "project": _clean(job.get("project")),
+                    "project": stripped_text(job.get("project")),
                     "resource_scope": (
                         surface if surface in RESOURCE_SCOPES else ""
                     ),
-                    "query": _clean(job.get("query")),
-                    "status": "deleted" if deleted else _clean(job.get("status")),
-                    "created_by": _clean(job.get("created_by")),
+                    "query": stripped_text(job.get("query")),
+                    "status": "deleted" if deleted else stripped_text(job.get("status")),
+                    "created_by": stripped_text(job.get("created_by")),
                     "created_at": int(job.get("created_at") or 0),
                     "updated_at": int(job.get("updated_at") or 0),
                     "result_count": int(job.get("result_count") or 0),
@@ -254,7 +251,7 @@ def load_search_resources(*, include_deleted: bool = True) -> list[dict[str, Any
     records.sort(
         key=lambda item: (
             int(item.get("updated_at") or item.get("created_at") or 0),
-            _clean(item.get("id")),
+            stripped_text(item.get("id")),
         ),
         reverse=True,
     )
@@ -275,25 +272,25 @@ def scan_search_resources() -> tuple[list[dict[str, Any]], list[dict[str, str]]]
 
     plan = _identity_plan(stores)
     rejected_ids = {
-        _clean(item.get("search_id"))
+        stripped_text(item.get("search_id"))
         for item in [*plan["invalid"], *plan["collisions"]]
-        if _clean(item.get("search_id"))
+        if stripped_text(item.get("search_id"))
     }
     for item in [*plan["invalid"], *plan["collisions"]]:
-        surface = _clean(item.get("surface"))
+        surface = stripped_text(item.get("surface"))
         source_name = surface if surface in {"paper", "knowledge"} else "board"
         errors.append(
             {
-                "resource_id": _clean(item.get("search_id")),
+                "resource_id": stripped_text(item.get("search_id")),
                 "path": sources[source_name].label if source_name in sources else "",
-                "error": _clean(item.get("error")) or "duplicate Search resource ID",
+                "error": stripped_text(item.get("error")) or "duplicate Search resource ID",
             }
         )
 
     records: list[dict[str, Any]] = []
     for store_name, jobs in plan["planned"].items():
         for job in jobs:
-            search_id = _clean(job.get("search_id"))
+            search_id = stripped_text(job.get("search_id"))
             if search_id in rejected_ids or bool(job.get("deleted")):
                 continue
             try:
@@ -305,13 +302,13 @@ def scan_search_resources() -> tuple[list[dict[str, Any]], list[dict[str, str]]]
                         "search_id": search_id,
                         "search_kind": "semantic",
                         "surface": surface,
-                        "project": _clean(job.get("project")),
+                        "project": stripped_text(job.get("project")),
                         "resource_scope": (
                             surface if surface in RESOURCE_SCOPES else ""
                         ),
-                        "query": _clean(job.get("query")),
-                        "status": _clean(job.get("status")),
-                        "created_by": _clean(job.get("created_by")),
+                        "query": stripped_text(job.get("query")),
+                        "status": stripped_text(job.get("status")),
+                        "created_by": stripped_text(job.get("created_by")),
                         "created_at": int(job.get("created_at") or 0),
                         "updated_at": int(job.get("updated_at") or 0),
                         "result_count": int(job.get("result_count") or 0),
@@ -329,7 +326,7 @@ def scan_search_resources() -> tuple[list[dict[str, Any]], list[dict[str, str]]]
     records.sort(
         key=lambda item: (
             int(item.get("updated_at") or item.get("created_at") or 0),
-            _clean(item.get("id")),
+            stripped_text(item.get("id")),
         ),
         reverse=True,
     )
@@ -341,7 +338,7 @@ def resolve_search_address(
     *,
     actor: str = "",
 ) -> dict[str, Any]:
-    clean_address = unquote(_clean(address)).strip("/")
+    clean_address = unquote(stripped_text(address)).strip("/")
     root_id, separator, _suffix = clean_address.partition("/")
     if not get_resource_service().is_valid_id(root_id, "search"):
         raise ValueError(f"invalid Search address: {address}")
@@ -351,7 +348,7 @@ def resolve_search_address(
     record = next((item for item in records if item["id"] == root_id), None)
     if not record:
         raise KeyError(root_id)
-    search_id = _clean(record.get("search_id"))
+    search_id = stripped_text(record.get("search_id"))
     portal_url = portal_url_for_search(search_id, record)
     return {
         "schema": "tfi.resource_resolution.v2",

@@ -10,6 +10,7 @@ what it returns.
 from __future__ import annotations
 
 from management_common.format_tags import schema_matches
+from management_common.text_values import stripped_text
 
 from management_portal.execution.activity_redaction import redact_sensitive_text as redact_text
 
@@ -259,22 +260,18 @@ _FAILED_STATUSES = {"error", "failed", "failure"}
 _CANCELLED_STATUSES = {"cancelled", "canceled", "stopped"}
 
 
-def _text(value: object) -> str:
-    return str(value or "").strip()
-
-
 def _role(message: dict[str, Any]) -> str:
-    return _text(message.get("role")).casefold()
+    return stripped_text(message.get("role")).casefold()
 
 
 def _kind(message: dict[str, Any]) -> str:
-    return _text(message.get("kind")).casefold()
+    return stripped_text(message.get("kind")).casefold()
 
 
 def _terminal_status(message: dict[str, Any]) -> str:
     role = _role(message)
     kind = _kind(message)
-    runtime_status = _text(message.get("runtime_status") or message.get("status")).casefold()
+    runtime_status = stripped_text(message.get("runtime_status") or message.get("status")).casefold()
     if runtime_status in _CANCELLED_STATUSES or "cancel" in kind or kind.endswith("_stopped"):
         return "cancelled"
     if role == "error" or runtime_status in _FAILED_STATUSES or kind.endswith("_runtime_error"):
@@ -295,8 +292,8 @@ def _conversation_groups(messages: list[dict[str, Any]]) -> list[dict[str, Any]]
         if not isinstance(message, dict):
             continue
         role = _role(message)
-        expected_execution_id = _text(message.get("execution_id"))
-        turn_id = _text(message.get("turn_id"))
+        expected_execution_id = stripped_text(message.get("execution_id"))
+        turn_id = stripped_text(message.get("turn_id"))
         if expected_execution_id:
             key = f"job:{expected_execution_id}"
             public_id = expected_execution_id
@@ -307,13 +304,13 @@ def _conversation_groups(messages: list[dict[str, Any]]) -> list[dict[str, Any]]
             fallback_index += 1
             fallback_key = f"sequence:{fallback_index}"
             key = fallback_key
-            public_id = _text(message.get("id")) or key
+            public_id = stripped_text(message.get("id")) or key
         elif fallback_key:
             key = fallback_key
             public_id = key
         else:
-            key = f"message:{_text(message.get('id')) or index}"
-            public_id = _text(message.get("id")) or key
+            key = f"message:{stripped_text(message.get('id')) or index}"
+            public_id = stripped_text(message.get("id")) or key
         group = groups.setdefault(key, {
             "id": public_id,
             "messages": [],
@@ -343,19 +340,19 @@ def project_summary_evidence(
     """
 
     clean_messages = [dict(item) for item in messages if isinstance(item, dict)]
-    known_ids = {_text(value) for value in known_message_ids if _text(value)}
+    known_ids = {stripped_text(value) for value in known_message_ids if stripped_text(value)}
     redact_value = redact or (lambda value: value)
     stable_messages: list[dict[str, Any]] = []
     pending_requests: list[dict[str, str]] = []
 
     for group in _conversation_groups(clean_messages):
         group_messages = list(group["messages"])
-        status = _text(group.get("status")) or "pending"
+        status = stripped_text(group.get("status")) or "pending"
         if status == "completed":
             is_new = any(
-                _text(message.get("id")) not in known_ids
+                stripped_text(message.get("id")) not in known_ids
                 for message in group_messages
-                if _text(message.get("id"))
+                if stripped_text(message.get("id"))
             )
             if include_all_completed or is_new:
                 stable_messages.extend(
@@ -371,14 +368,14 @@ def project_summary_evidence(
             # The final response may be outside the current history window.
             # A completed request alone is neither pending work nor an outcome.
             continue
-        request = redact_value(_text(user_messages[-1].get("content")))[:1000]
+        request = redact_value(stripped_text(user_messages[-1].get("content")))[:1000]
         if not request:
             continue
         pending_requests.append({
-            "request_id": _text(group.get("id"))[:240],
+            "request_id": stripped_text(group.get("id"))[:240],
             "request": request,
             "status": status if status in {"pending", "failed", "cancelled"} else "pending",
-            "created_at": _text(user_messages[-1].get("created_at"))[:80],
+            "created_at": stripped_text(user_messages[-1].get("created_at"))[:80],
         })
 
     return {

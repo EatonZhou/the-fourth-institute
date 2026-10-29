@@ -6,6 +6,7 @@ from typing import Any, Iterable, Mapping
 
 from management_portal.resources import get_resource_service
 from management_common.site_registry import rewrite_shared_path
+from management_common.text_values import stripped_text
 
 from . import identity_contract
 
@@ -14,11 +15,11 @@ COLLABORATION_DESCRIPTOR_SCHEMA = "tfi.collaboration-descriptor.v2"
 
 
 def resolve(address: str, *, actor: str = "") -> dict[str, Any]:
-    return get_resource_service().resolve(address, actor=_text(actor))
+    return get_resource_service().resolve(address, actor=stripped_text(actor))
 
 
 def get(resource_id: str, *, actor: str = "") -> dict[str, Any]:
-    return get_resource_service().get(resource_id, actor=_text(actor))
+    return get_resource_service().get(resource_id, actor=stripped_text(actor))
 
 
 def portal_url_for_address(
@@ -26,8 +27,8 @@ def portal_url_for_address(
     resource_type: str = "",
 ) -> str:
     return get_resource_service().portal_url_for_address(
-        _text(address),
-        _text(resource_type),
+        stripped_text(address),
+        stripped_text(resource_type),
     )
 
 
@@ -37,7 +38,7 @@ def _query_all(resource_type: str, *, actor: str = "") -> list[dict[str, Any]]:
     offset = 0
     while True:
         page = service.query(
-            actor=_text(actor),
+            actor=stripped_text(actor),
             resource_types=[resource_type],
             include_attributes=True,
             limit=5000,
@@ -63,20 +64,20 @@ def visible_resident_usage_roots(*, actor: str = "") -> dict[str, dict[str, str]
     for record in _query_all("lineage", actor=actor):
         if not (record.get("capabilities") or {}).get("read"):
             continue
-        lineage_id = _text(record.get("resource_id"))
-        lineages[lineage_id] = _text(record.get("title"))
+        lineage_id = stripped_text(record.get("resource_id"))
+        lineages[lineage_id] = stripped_text(record.get("title"))
         attributes = record.get("attributes") if isinstance(record.get("attributes"), Mapping) else {}
-        project_id = next((_text(item) for item in attributes.get("project_ids") or [] if _text(item)), "")
+        project_id = next((stripped_text(item) for item in attributes.get("project_ids") or [] if stripped_text(item)), "")
         if project_id:
             lineage_projects[lineage_id] = project_id
     projects = {
-        _text(record.get("resource_id")): _text(record.get("title"))
+        stripped_text(record.get("resource_id")): stripped_text(record.get("title"))
         for record in _query_all("project", actor=actor)
         if (record.get("capabilities") or {}).get("read")
     } if lineage_projects else {}
     visible: dict[str, dict[str, object]] = {}
     for record in _query_all("resident", actor=actor):
-        resident_id = _text(record.get("resource_id"))
+        resident_id = stripped_text(record.get("resource_id"))
         capabilities = (
             record.get("capabilities")
             if isinstance(record.get("capabilities"), Mapping)
@@ -91,8 +92,8 @@ def visible_resident_usage_roots(*, actor: str = "") -> dict[str, dict[str, str]
         )
         visible[resident_id] = {
             "resident_id": resident_id,
-            "title": _text(record.get("title")) or resident_id,
-            "kind": _text(attributes.get("kind")),
+            "title": stripped_text(record.get("title")) or resident_id,
+            "kind": stripped_text(attributes.get("kind")),
         }
 
     # Resource discovery determines readability; the current domain record owns
@@ -105,8 +106,8 @@ def visible_resident_usage_roots(*, actor: str = "") -> dict[str, dict[str, str]
         canonical = current.get(resident_id)
         if canonical is None:
             continue  # Deleted between discovery and the canonical read.
-        lineage_id = _text(canonical.get("lineage_id"))
-        root = {"resident_id": resident_id, "title": _text(record.get("title")) or resident_id}
+        lineage_id = stripped_text(canonical.get("lineage_id"))
+        root = {"resident_id": resident_id, "title": stripped_text(record.get("title")) or resident_id}
         if lineage_id in lineages:
             root.update({"lineage_id": lineage_id, "lineage_title": lineages[lineage_id] or lineage_id})
             # Usage reaches a Project only through the Resident's current,
@@ -126,8 +127,8 @@ def project_roots(*, actor: str = "") -> dict[str, Path]:
             if isinstance(record.get("attributes"), Mapping)
             else {}
         )
-        project_id = _text(record.get("resource_id"))
-        raw_path = _text(attributes.get("path"))
+        project_id = stripped_text(record.get("resource_id"))
+        raw_path = stripped_text(attributes.get("path"))
         if not project_id or not raw_path:
             continue
         path = Path(rewrite_shared_path(raw_path)).expanduser().resolve(strict=False)
@@ -138,16 +139,16 @@ def project_roots(*, actor: str = "") -> dict[str, Path]:
 def project_root(project_id: str, *, actor: str = "") -> Path | None:
     """Resolve one readable Project without scanning every visible Project."""
 
-    clean_id = _text(project_id)
+    clean_id = stripped_text(project_id)
     if not clean_id:
         return None
     try:
-        record = get_resource_service().get(clean_id, actor=_text(actor))
+        record = get_resource_service().get(clean_id, actor=stripped_text(actor))
     except (KeyError, FileNotFoundError):
         return None
     if (
-        _text(record.get("resource_id")) != clean_id
-        or _text(record.get("resource_type")) != "project"
+        stripped_text(record.get("resource_id")) != clean_id
+        or stripped_text(record.get("resource_type")) != "project"
     ):
         return None
     attributes = (
@@ -155,7 +156,7 @@ def project_root(project_id: str, *, actor: str = "") -> Path | None:
         if isinstance(record.get("attributes"), Mapping)
         else {}
     )
-    raw_path = _text(attributes.get("path"))
+    raw_path = stripped_text(attributes.get("path"))
     if not raw_path:
         return None
     return Path(rewrite_shared_path(raw_path)).expanduser().resolve(strict=False)
@@ -173,15 +174,11 @@ def project_ids_for_path(path: str | Path, *, actor: str = "") -> list[str]:
     return [project_id for _length, project_id in sorted(matches, reverse=True)]
 
 
-def _text(value: object) -> str:
-    return str(value or "").strip()
-
-
 def _dedupe(values: Iterable[object]) -> list[str]:
     output: list[str] = []
     seen: set[str] = set()
     for value in values:
-        item = _text(value)
+        item = stripped_text(value)
         key = item.casefold()
         if not item or key in seen:
             continue
@@ -191,7 +188,7 @@ def _dedupe(values: Iterable[object]) -> list[str]:
 
 
 def _relation(kind: str, target_id: object) -> dict[str, str] | None:
-    target = _text(target_id)
+    target = stripped_text(target_id)
     if not target:
         return None
     identity_contract.validate_id(target)
@@ -214,21 +211,21 @@ def _descriptor(
     return {
         "schema": COLLABORATION_DESCRIPTOR_SCHEMA,
         "resource_id": resource_id,
-        "title": _text(title) or resource_id,
-        "summary": _text(summary),
-        "status": _text(status) or "active",
+        "title": stripped_text(title) or resource_id,
+        "summary": stripped_text(summary),
+        "status": stripped_text(status) or "active",
         "project_ids": _dedupe(project_ids),
         "relations": [item for item in relations if item is not None],
         "attributes": copy.deepcopy(dict(attributes or {})),
-        "created_at": _text(created_at),
-        "updated_at": _text(updated_at),
-        "deleted_at": _text(deleted_at),
+        "created_at": stripped_text(created_at),
+        "updated_at": stripped_text(updated_at),
+        "deleted_at": stripped_text(deleted_at),
     }
 
 
 def workspace_id_for_path(path: str | Path, *, preferred_id: str = "") -> str:
     service = get_resource_service()
-    preferred = _text(preferred_id)
+    preferred = stripped_text(preferred_id)
     return service.workspace_id_for_path(path, preferred_id=preferred)
 
 
@@ -293,12 +290,12 @@ def _resident_resource_projection(
     *,
     updated_by: object = "",
 ) -> dict[str, dict[str, Any]]:
-    resident_id = _text(record.get("resident_id"))
+    resident_id = stripped_text(record.get("resident_id"))
     identity_contract.validate_id(resident_id, "resident")
-    lineage_id = _text(record.get("lineage_id"))
-    if lineage_id or not _text(record.get("deleted_at")):
+    lineage_id = stripped_text(record.get("lineage_id"))
+    if lineage_id or not stripped_text(record.get("deleted_at")):
         identity_contract.validate_id(lineage_id, "lineage")
-    source_resident_id = _text(record.get("source_resident_id"))
+    source_resident_id = stripped_text(record.get("source_resident_id"))
     workspace_ids = _dedupe(
         [
             record.get("owned_workspace_id"),
@@ -316,7 +313,7 @@ def _resident_resource_projection(
         else None,
         *[_relation("workspace", workspace_id) for workspace_id in workspace_ids],
     ]
-    status = "deleted" if _text(record.get("deleted_at")) else "active"
+    status = "deleted" if stripped_text(record.get("deleted_at")) else "active"
     descriptor = _descriptor(
         resident_id,
         title=record.get("title"),
@@ -326,11 +323,11 @@ def _resident_resource_projection(
         relations=relations,
         attributes={
             "principal_hierarchy": dict(record.get("principal_hierarchy") or {}),
-            "personal_owner_id": _text(record.get("personal_owner_id")),
-            "backend": _text(record.get("backend") or ("" if record.get("deleted_at") else "codex")),
-            "created_by": _text(record.get("created_by")),
+            "personal_owner_id": stripped_text(record.get("personal_owner_id")),
+            "backend": stripped_text(record.get("backend") or ("" if record.get("deleted_at") else "codex")),
+            "created_by": stripped_text(record.get("created_by")),
             # The permission trees keep a Resident's own Workspace under it.
-            "owned_workspace_id": _text(record.get("owned_workspace_id")),
+            "owned_workspace_id": stripped_text(record.get("owned_workspace_id")),
         },
         created_at=record.get("created_at"),
         updated_at=record.get("updated_at"),
@@ -344,31 +341,31 @@ def _lineage_resource_projection(
     *,
     updated_by: object = "",
 ) -> dict[str, Any]:
-    lineage_id = _text(lineage.get("lineage_id"))
+    lineage_id = stripped_text(lineage.get("lineage_id"))
     identity_contract.validate_id(lineage_id, "lineage")
     nodes = [item for item in lineage.get("nodes") or [] if isinstance(item, Mapping)]
     relations = [
         _relation("member", item.get("resident_id"))
         for item in nodes
-        if _text(item.get("resident_id"))
+        if stripped_text(item.get("resident_id"))
     ]
     descriptor = _descriptor(
         lineage_id,
         title=lineage.get("title"),
         summary=lineage.get("description"),
-        status="deleted" if _text(lineage.get("deleted_at")) else "active",
+        status="deleted" if stripped_text(lineage.get("deleted_at")) else "active",
         project_ids=[lineage.get("project_id")],
         relations=relations,
         attributes={
-            "kind": _text(lineage.get("kind")),
-            "lineage_membership": _text(lineage.get("lineage_membership")),
-            "leader_resident_id": _text(lineage.get("leader_resident_id")),
-            "created_by": _text(lineage.get("created_by")),
+            "kind": stripped_text(lineage.get("kind")),
+            "lineage_membership": stripped_text(lineage.get("lineage_membership")),
+            "leader_resident_id": stripped_text(lineage.get("leader_resident_id")),
+            "created_by": stripped_text(lineage.get("created_by")),
             # A personal Lineage outside every Project inherits from nothing:
             # only its owners' credentials cover it (decision_bd5217d08c09).
             **(
                 {"permission_parents": []}
-                if _text(lineage.get("lineage_membership")) == "personal" and not _text(lineage.get("project_id"))
+                if stripped_text(lineage.get("lineage_membership")) == "personal" and not stripped_text(lineage.get("project_id"))
                 else {}
             ),
         },
@@ -381,7 +378,7 @@ def _lineage_resource_projection(
 
 def _family_resource_projection(family: Mapping[str, Any]) -> dict[str, Any]:
     """A Family is a resource in its Lineage; the facade remains a Resident."""
-    resource_id = _text(family.get("resource_id"))
+    resource_id = stripped_text(family.get("resource_id"))
     identity_contract.validate_id(resource_id, "family")
     lineage_id = family["lineage_id"]
     relations = [_relation("lineage", lineage_id)]
@@ -434,8 +431,8 @@ def _resident_resource_bundle_projections(
     *,
     updated_by: object = "",
 ) -> list[dict[str, dict[str, Any]]]:
-    resident_id = _text(record.get("resident_id"))
-    deleted_at = _text(record.get("deleted_at"))
+    resident_id = stripped_text(record.get("resident_id"))
+    deleted_at = stripped_text(record.get("deleted_at"))
     projections = [
         _resident_resource_projection(record, updated_by=updated_by)
     ]
@@ -451,19 +448,19 @@ def _merge_collaboration_projection(
     descriptor = dict(current["descriptor"])
     incoming_descriptor = incoming["descriptor"]
     active = (
-        _text(descriptor.get("status")) != "deleted"
-        or _text(incoming_descriptor.get("status")) != "deleted"
+        stripped_text(descriptor.get("status")) != "deleted"
+        or stripped_text(incoming_descriptor.get("status")) != "deleted"
     )
-    if active and _text(descriptor.get("status")) == "deleted":
+    if active and stripped_text(descriptor.get("status")) == "deleted":
         descriptor.update(incoming_descriptor)
     descriptor["status"] = "active" if active else "deleted"
     descriptor["deleted_at"] = "" if active else max(
-        _text(descriptor.get("deleted_at")),
-        _text(incoming_descriptor.get("deleted_at")),
+        stripped_text(descriptor.get("deleted_at")),
+        stripped_text(incoming_descriptor.get("deleted_at")),
     )
     descriptor["updated_at"] = max(
-        _text(descriptor.get("updated_at")),
-        _text(incoming_descriptor.get("updated_at")),
+        stripped_text(descriptor.get("updated_at")),
+        stripped_text(incoming_descriptor.get("updated_at")),
     )
     relations: dict[tuple[str, str], dict[str, str]] = {}
     for relation in [
@@ -472,8 +469,8 @@ def _merge_collaboration_projection(
     ]:
         if not isinstance(relation, Mapping):
             continue
-        kind = _text(relation.get("kind"))
-        target_id = _text(relation.get("target_id"))
+        kind = stripped_text(relation.get("kind"))
+        target_id = stripped_text(relation.get("target_id"))
         if kind and target_id:
             relations[(kind, target_id)] = {"kind": kind, "target_id": target_id}
     descriptor["relations"] = list(relations.values())
@@ -495,7 +492,7 @@ def sync_resident_resource_bundles(
             record,
             updated_by=updated_by,
         ):
-            resource_id = _text(projection["descriptor"].get("resource_id"))
+            resource_id = stripped_text(projection["descriptor"].get("resource_id"))
             current = projections_by_id.get(resource_id)
             projections_by_id[resource_id] = (
                 _merge_collaboration_projection(current, projection)

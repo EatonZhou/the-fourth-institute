@@ -18,6 +18,7 @@ from management_common.resource_identity import (
     ResourceTypeRegistry,
     get_resource_type_registry,
 )
+from management_common.text_values import stripped_text
 
 
 COLLABORATION_DESCRIPTOR_SCHEMA = "tfi.collaboration-descriptor.v2"
@@ -39,10 +40,10 @@ def descriptor_attributes(descriptor: Mapping[str, Any]) -> dict[str, Any]:
 
 def descriptor_resource_record(descriptor: Mapping[str, Any]) -> dict[str, Any]:
     """One projection for direct identity reads and the discovery index."""
-    resource_id = _text(descriptor.get("resource_id"))
+    resource_id = stripped_text(descriptor.get("resource_id"))
     resource_type = get_resource_type_registry().parse(resource_id).resource_type
-    title = _text(descriptor.get("title")) or resource_id
-    summary = _text(descriptor.get("summary"))
+    title = stripped_text(descriptor.get("title")) or resource_id
+    summary = stripped_text(descriptor.get("summary"))
     attributes = normalize_resource_attributes(descriptor_attributes(descriptor))
     terms = [
         *attributes.get("project_ids", []),
@@ -56,15 +57,15 @@ def descriptor_resource_record(descriptor: Mapping[str, Any]) -> dict[str, Any]:
         "summary": summary,
         "source": {
             "adapter": "collaboration", "path": "",
-            "modified_at": _text(descriptor.get("updated_at") or descriptor.get("created_at")),
+            "modified_at": stripped_text(descriptor.get("updated_at") or descriptor.get("created_at")),
         },
         "facets": [resource_type, "collaboration"],
         "attributes": attributes,
-        "search_terms": _dedupe([resource_id, title, *(term for term in terms if _text(term) != summary)]),
+        "search_terms": _dedupe([resource_id, title, *(term for term in terms if stripped_text(term) != summary)]),
         "url": portal_url_for_resource(resource_id, resource_type, record={"attributes": attributes}),
     }
     if resource_type == "workspace":
-        record["version"] = _text(descriptor.get("updated_at"))
+        record["version"] = stripped_text(descriptor.get("updated_at"))
     return record
 
 
@@ -72,15 +73,11 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
-def _text(value: object) -> str:
-    return str(value or "").strip()
-
-
 def _dedupe(values: Iterable[object]) -> list[str]:
     output: list[str] = []
     seen: set[str] = set()
     for value in values:
-        item = _text(value)
+        item = stripped_text(value)
         key = item.casefold()
         if not item or key in seen:
             continue
@@ -112,7 +109,7 @@ class CollaborationDescriptorStore:
         self._attribute_cache: dict[str, dict[str, tuple[int, str]]] = {}
 
     def _resource_type(self, resource_id: str) -> str:
-        resource_type = self._identity.parse(_text(resource_id)).resource_type
+        resource_type = self._identity.parse(stripped_text(resource_id)).resource_type
         if resource_type not in RESOURCE_TYPES:
             raise ValueError(
                 f"unsupported collaboration resource type: {resource_type}"
@@ -121,7 +118,7 @@ class CollaborationDescriptorStore:
 
     def change_key(self, resource_id: str) -> str:
         """The key a registry change of this descriptor is announced under."""
-        clean_id = _text(resource_id)
+        clean_id = stripped_text(resource_id)
         return registry_change_key(self._resource_type(clean_id), clean_id)
 
     def _load_type_locked(self, resource_type: str) -> None:
@@ -176,13 +173,13 @@ class CollaborationDescriptorStore:
             )
         if not schema_matches(raw.get("schema"), expected="tfi.collaboration-descriptor.v2"):
             raise ValueError("unsupported collaboration descriptor schema")
-        resource_id = self._identity.parse(_text(raw.get("resource_id"))).resource_id
+        resource_id = self._identity.parse(stripped_text(raw.get("resource_id"))).resource_id
         if expected_id and resource_id != expected_id:
             raise ValueError(
                 f"descriptor resource_id {resource_id!r} does not match {expected_id!r}"
             )
         self._resource_type(resource_id)
-        status = _text(raw.get("status") or "active").casefold()
+        status = stripped_text(raw.get("status") or "active").casefold()
         if status not in STATUSES:
             raise ValueError(f"invalid collaboration descriptor status: {status!r}")
         attributes = raw.get("attributes") or {}
@@ -206,8 +203,8 @@ class CollaborationDescriptorStore:
         for item in raw.get("relations") or []:
             if not isinstance(item, Mapping) or set(item) != {"kind", "target_id"}:
                 raise ValueError("collaboration descriptor relation is invalid")
-            kind = _text(item.get("kind"))
-            target_id = self._identity.parse(_text(item.get("target_id"))).resource_id
+            kind = stripped_text(item.get("kind"))
+            target_id = self._identity.parse(stripped_text(item.get("target_id"))).resource_id
             key = (kind, target_id)
             if not kind or key in seen_relations:
                 continue
@@ -216,19 +213,19 @@ class CollaborationDescriptorStore:
         return {
             "schema": COLLABORATION_DESCRIPTOR_SCHEMA,
             "resource_id": resource_id,
-            "title": _text(raw.get("title")) or resource_id,
-            "summary": _text(raw.get("summary")),
+            "title": stripped_text(raw.get("title")) or resource_id,
+            "summary": stripped_text(raw.get("summary")),
             "status": status,
             "project_ids": _dedupe(raw.get("project_ids") or []),
             "relations": relations,
             "attributes": copy.deepcopy(dict(attributes)),
-            "created_at": _text(raw.get("created_at")),
-            "updated_at": _text(raw.get("updated_at")) or _now_iso(),
-            "deleted_at": _text(raw.get("deleted_at")),
+            "created_at": stripped_text(raw.get("created_at")),
+            "updated_at": stripped_text(raw.get("updated_at")) or _now_iso(),
+            "deleted_at": stripped_text(raw.get("deleted_at")),
         }
 
     def get(self, resource_id: str) -> dict[str, Any]:
-        clean_id = _text(resource_id)
+        clean_id = stripped_text(resource_id)
         resource_type = self._resource_type(clean_id)
         if resource_type == "workspace":
             from .workspace_store import get_workspace_store
@@ -246,8 +243,8 @@ class CollaborationDescriptorStore:
         """Return current attributes for type-validated resource index rows."""
         grouped: dict[str, list[str]] = {}
         for record in records:
-            resource_type = _text(record.get("resource_type"))
-            clean_id = _text(record.get("resource_id"))
+            resource_type = stripped_text(record.get("resource_type"))
+            clean_id = stripped_text(record.get("resource_id"))
             if resource_type not in RESOURCE_TYPES or not clean_id.startswith(resource_type + "_"):
                 continue
             grouped.setdefault(resource_type, []).append(clean_id)
@@ -311,7 +308,7 @@ class CollaborationDescriptorStore:
         with (self._registry.writer(resource_type) if writer is None else nullcontext(writer)) as writer:
             stored = writer.get(resource_type, resource_id)
             existing = None if stored is None else self.normalize(stored, expected_id=resource_id)
-            if existing is not None and not _text(raw.get("updated_at")):
+            if existing is not None and not stripped_text(raw.get("updated_at")):
                 descriptor["updated_at"] = existing["updated_at"]
             if existing == descriptor:
                 return copy.deepcopy(existing), False
@@ -390,7 +387,7 @@ class CollaborationDescriptorStore:
         return descriptor
 
     def list(self, resource_type: str) -> list[dict[str, Any]]:
-        clean_type = _text(resource_type)
+        clean_type = stripped_text(resource_type)
         if clean_type not in RESOURCE_TYPES:
             raise ValueError(
                 f"unsupported collaboration resource type: {clean_type}"

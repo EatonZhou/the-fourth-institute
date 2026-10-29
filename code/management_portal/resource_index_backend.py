@@ -37,6 +37,7 @@ from management_portal.portal_access_control import (
 )
 from management_portal.resources import timing
 from management_common.format_tags import schema_matches
+from management_common.text_values import stripped_text
 from management_portal.resources.contracts import ResourceQuery
 from management_portal.resources.index import ResourceRecordsProjector
 from management_portal.resources.index_runtime import ResourceIndexRuntime
@@ -102,15 +103,11 @@ def _now_iso() -> str:
     return _utc_iso(datetime.now(timezone.utc))
 
 
-def _text(value: object) -> str:
-    return str(value or "").strip()
-
-
 def _dedupe(values: Iterable[object]) -> list[str]:
     result: list[str] = []
     seen: set[str] = set()
     for value in values:
-        clean = _text(value)
+        clean = stripped_text(value)
         key = clean.casefold()
         if not clean or key in seen:
             continue
@@ -120,7 +117,7 @@ def _dedupe(values: Iterable[object]) -> list[str]:
 
 
 def _timestamp_iso(value: object) -> str:
-    clean = _text(value)
+    clean = stripped_text(value)
     if not clean:
         return ""
     try:
@@ -255,16 +252,16 @@ def resource_record(
     search_terms: Iterable[object] = (),
     url: object = "",
 ) -> dict[str, Any]:
-    clean_id = _text(resource_id)
-    clean_type = _text(resource_type)
-    clean_title = _text(title) or clean_id
-    clean_summary = _text(summary)
-    clean_path = _text(path)
+    clean_id = stripped_text(resource_id)
+    clean_type = stripped_text(resource_type)
+    clean_title = stripped_text(title) or clean_id
+    clean_summary = stripped_text(summary)
+    clean_path = stripped_text(path)
     clean_facets = _dedupe([clean_type, *facets])
     clean_terms = _dedupe([
         clean_id,
         clean_title,
-        *(term for term in search_terms if _text(term) != clean_summary),
+        *(term for term in search_terms if stripped_text(term) != clean_summary),
     ])
     raw_attributes = dict(attributes) if isinstance(attributes, dict) else attributes
     try:
@@ -277,27 +274,27 @@ def resource_record(
         "title": clean_title,
         "summary": clean_summary,
         "source": {
-            "adapter": _text(adapter),
+            "adapter": stripped_text(adapter),
             "path": clean_path,
-            "modified_at": _text(modified_at) or _path_modified_at(clean_path),
+            "modified_at": stripped_text(modified_at) or _path_modified_at(clean_path),
         },
         "facets": clean_facets,
         "attributes": clean_attributes,
         "search_terms": clean_terms,
-        "url": portal_url_for_resource(clean_id, clean_type, record={"attributes": clean_attributes}) or _text(url) or f"/r/{quote(clean_id, safe='')}",
+        "url": portal_url_for_resource(clean_id, clean_type, record={"attributes": clean_attributes}) or stripped_text(url) or f"/r/{quote(clean_id, safe='')}",
     }
 
 
 def _validate_record(record: dict[str, Any], adapter: str) -> dict[str, Any]:
     if not isinstance(record, dict):
         raise ValueError("resource record must be an object")
-    resource_id = _text(record.get("resource_id"))
-    resource_type = _text(record.get("resource_type"))
+    resource_id = stripped_text(record.get("resource_id"))
+    resource_type = stripped_text(record.get("resource_type"))
     _validate_resource_id(resource_id, resource_type)
     source = record.get("source") if isinstance(record.get("source"), dict) else {}
-    if _text(source.get("adapter")) != adapter:
+    if stripped_text(source.get("adapter")) != adapter:
         raise ValueError(f"resource {resource_id} is assigned to the wrong adapter")
-    if not _text(record.get("title")):
+    if not stripped_text(record.get("title")):
         raise ValueError(f"resource {resource_id} has no title")
     normalized = _json_value(record)
     normalized["facets"] = _dedupe(normalized.get("facets") or [])
@@ -410,7 +407,7 @@ class IndexStore:
                 raw = json_value(row["record_json"])
                 if not isinstance(raw, dict):
                     raise ValueError("invalid persisted resource record")
-                adapter = _text(row["adapter"])
+                adapter = stripped_text(row["adapter"])
                 record = _validate_record(raw, adapter)
                 resource_id = record["resource_id"]
                 if resource_id in records:
@@ -461,7 +458,7 @@ class IndexStore:
                 records = [
                     (
                         resource_id,
-                        _text((record.get("source") or {}).get("adapter")),
+                        stripped_text((record.get("source") or {}).get("adapter")),
                         json_text(record, ensure_ascii=False, separators=(",", ":")),
                     )
                     for resource_id in sorted(upserts)
@@ -554,7 +551,7 @@ class IndexStore:
     def adapter_has_snapshot(self, adapter: str) -> bool:
         with self._lock:
             status = self._adapter_status.get(adapter) or {}
-            return bool(_text(status.get("last_success_at")))
+            return bool(stripped_text(status.get("last_success_at")))
 
     def records_for_adapter(self, adapter: str) -> list[dict[str, Any]]:
         # Stored records are replaced, never changed in place, so the copies
@@ -576,7 +573,7 @@ class IndexStore:
         *,
         persist: bool = True,
     ) -> dict[str, Any]:
-        active = {_text(value) for value in active_adapters if _text(value)}
+        active = {stripped_text(value) for value in active_adapters if stripped_text(value)}
         with self._lock:
             stale = (set(self._adapter_ids) | set(self._adapter_status)) - active
             if not stale:
@@ -584,7 +581,7 @@ class IndexStore:
             deleted_ids = {
                 resource_id
                 for resource_id, record in self._records.items()
-                if _text((record.get("source") or {}).get("adapter")) in stale
+                if stripped_text((record.get("source") or {}).get("adapter")) in stale
             }
             for resource_id in deleted_ids:
                 previous = self._records.pop(resource_id, None)
@@ -606,7 +603,7 @@ class IndexStore:
         scan_started_generation: int | None = None,
         direct: bool = False,
     ) -> dict[str, Any]:
-        adapter = _text(changes.adapter)
+        adapter = stripped_text(changes.adapter)
         if not adapter:
             raise ValueError("adapter name required")
         validated: dict[str, dict[str, Any]] = {}
@@ -618,7 +615,7 @@ class IndexStore:
             if isinstance(item, dict)
         ]
         for raw in changes.upserts:
-            raw_id = _text(raw.get("resource_id")) if isinstance(raw, dict) else ""
+            raw_id = stripped_text(raw.get("resource_id")) if isinstance(raw, dict) else ""
             try:
                 record = _validate_record(raw, adapter)
                 if record['resource_type'] not in enabled_types:
@@ -640,7 +637,7 @@ class IndexStore:
                         "error": str(exc)[:1000],
                     }
                 )
-        delete_ids = {_text(value) for value in changes.deletes if _text(value)}
+        delete_ids = {stripped_text(value) for value in changes.deletes if stripped_text(value)}
         conflicts = delete_ids & (set(validated) | protected_ids)
         for resource_id in sorted(conflicts):
             delete_ids.discard(resource_id)
@@ -665,7 +662,7 @@ class IndexStore:
             current_ids = set(self._adapter_ids.get(adapter) or set())
             for resource_id in tuple(validated):
                 existing = self._records.get(resource_id)
-                owner = _text((existing or {}).get("source", {}).get("adapter"))
+                owner = stripped_text((existing or {}).get("source", {}).get("adapter"))
                 if existing and owner != adapter:
                     validated.pop(resource_id)
                     resource_errors.append(
@@ -678,7 +675,7 @@ class IndexStore:
                     )
             for resource_id in tuple(delete_ids):
                 existing = self._records.get(resource_id)
-                owner = _text((existing or {}).get("source", {}).get("adapter"))
+                owner = stripped_text((existing or {}).get("source", {}).get("adapter"))
                 if existing and owner != adapter:
                     delete_ids.discard(resource_id)
                     resource_errors.append(
@@ -772,7 +769,7 @@ class IndexStore:
         records_by_other_adapters = {
             resource_id: record
             for resource_id, record in current_records
-            if _text((record.get("source") or {}).get("adapter")) != adapter
+            if stripped_text((record.get("source") or {}).get("adapter")) != adapter
         }
         # Only an error without an ID needs the records by source path, and
         # resolving every source path costs one system call per component.
@@ -783,7 +780,7 @@ class IndexStore:
             if previous_by_path is None:
                 previous_by_path = {}
                 for resource_id, record in current_records:
-                    raw_path = _text((record.get("source") or {}).get("path"))
+                    raw_path = stripped_text((record.get("source") or {}).get("path"))
                     if resource_id in previous_ids and raw_path:
                         previous_by_path.setdefault(
                             _resolved_source_path(raw_path), set()
@@ -799,8 +796,8 @@ class IndexStore:
             if isinstance(item, dict)
         ]
         for error in resource_errors:
-            resource_id = _text(error.get("resource_id"))
-            error_path = _text(error.get("path"))
+            resource_id = stripped_text(error.get("resource_id"))
+            error_path = stripped_text(error.get("path"))
             if not resource_id and error_path:
                 matched_ids = previous_ids_for_path(error_path)
                 protected_ids.update(matched_ids)
@@ -809,7 +806,7 @@ class IndexStore:
             if resource_id in previous_ids:
                 protected_ids.add(resource_id)
         for raw in records:
-            raw_id = _text(raw.get("resource_id")) if isinstance(raw, dict) else ""
+            raw_id = stripped_text(raw.get("resource_id")) if isinstance(raw, dict) else ""
             try:
                 record = _validate_record(raw, adapter)
                 resource_id = record["resource_id"]
@@ -821,7 +818,7 @@ class IndexStore:
                     raise ValueError(
                         f"adapter {adapter} produced duplicate id {resource_id}"
                     )
-                owner = _text(
+                owner = stripped_text(
                     (records_by_other_adapters.get(resource_id) or {})
                     .get("source", {})
                     .get("adapter")
@@ -1093,9 +1090,9 @@ class IndexStore:
         ]
         ranked.sort(key=lambda row: (
             -row[0],
-            _text(row[1].get("resource_type")),
-            _text(row[1].get("title")).casefold(),
-            _text(row[1].get("resource_id")),
+            stripped_text(row[1].get("resource_type")),
+            stripped_text(row[1].get("title")).casefold(),
+            stripped_text(row[1].get("resource_id")),
         ))
         visible: list[dict[str, Any]] = []
         batch_size = query.limit
@@ -1129,7 +1126,7 @@ class IndexStore:
         return {"resources": visible}
 
     def get(self, resource_id: str, *, actor: str = "") -> dict[str, Any]:
-        clean_id = _text(resource_id)
+        clean_id = stripped_text(resource_id)
         with self._lock:
             record = self._records.get(clean_id)
             record = _json_value(record) if record else None
@@ -1226,7 +1223,7 @@ class IndexStore:
 
     def internal_get(self, resource_id: str) -> dict[str, Any]:
         with self._lock:
-            record = self._records.get(_text(resource_id))
+            record = self._records.get(stripped_text(resource_id))
             if not record:
                 raise KeyError(resource_id)
             return _json_value(record)
@@ -1522,7 +1519,7 @@ class AdapterLayer:
         unknown = sorted(set(names) - set(self.adapters))
         if unknown:
             raise ValueError(f"unknown resource index adapter: {', '.join(unknown)}")
-        clean_paths = {_text(path) for path in paths if _text(path)}
+        clean_paths = {stripped_text(path) for path in paths if stripped_text(path)}
         rescan = bool(force) and not clean_paths
         queued: list[str] = []
         with self._condition:
@@ -1550,7 +1547,7 @@ class AdapterLayer:
         return queued
 
     def matching_adapters(self, *, path: str = "", adapters: Iterable[str] = ()) -> list[str]:
-        names = [_text(value) for value in adapters if _text(value)]
+        names = [stripped_text(value) for value in adapters if stripped_text(value)]
         registry_change = parse_registry_change_key(path)
         if registry_change is not None:
             names.extend(
@@ -1580,7 +1577,7 @@ class AdapterLayer:
         self, resource_type: str, record: dict[str, Any],
     ) -> dict[str, Any]:
         """Publish one committed registration without waiting for the scan queue."""
-        resource_id = _text(record.get("resource_id"))
+        resource_id = stripped_text(record.get("resource_id"))
         owners = [adapter for adapter in self.adapters.values()
                   if resource_type in adapter.resource_types]
         if len(owners) != 1:
@@ -1590,7 +1587,7 @@ class AdapterLayer:
         if callable(projector):
             summary = projector(resource_type, record)
         else:
-            path = _text(record.get("path"))
+            path = stripped_text(record.get("path"))
             scan_changes = getattr(adapter, "scan_changes", None)
             if not path or not callable(scan_changes):
                 raise ValueError(f"adapter {adapter.name} cannot project one registration")
@@ -1599,11 +1596,11 @@ class AdapterLayer:
                 self.store.adapter_source_state(adapter.name),
             )
             matches = [item for item in changes.upserts
-                       if _text(item.get("resource_id")) == resource_id]
+                       if stripped_text(item.get("resource_id")) == resource_id]
             if len(matches) != 1:
                 raise RuntimeError(f"adapter {adapter.name} did not find registered {resource_id}")
             summary = matches[0]
-        if _text(summary.get("resource_id")) != resource_id:
+        if stripped_text(summary.get("resource_id")) != resource_id:
             raise ValueError("registration projection changed resource identity")
         result = self.store.apply(
             ChangeSet(adapter.name, upserts=(summary,),
@@ -1690,10 +1687,10 @@ class AdapterLayer:
         started = time.perf_counter()
         scan_started_generation = self.store.generation()
         rescan = force if rescan is None else bool(rescan)
-        joined = tuple(sorted({_text(path) for path in joined_paths if _text(path)}))
+        joined = tuple(sorted({stripped_text(path) for path in joined_paths if stripped_text(path)}))
         try:
             check_scan_cancelled()
-            clean_paths = tuple(sorted({_text(path) for path in paths if _text(path)}))
+            clean_paths = tuple(sorted({stripped_text(path) for path in paths if stripped_text(path)}))
             incremental_scan = getattr(adapter, "scan_changes", None)
             if clean_paths and callable(incremental_scan):
                 previous_records = self.store.records_for_adapter(adapter_name)
@@ -1756,7 +1753,7 @@ class AdapterLayer:
                 if (
                     not force
                     and self.store.adapter_has_snapshot(adapter_name)
-                    and _text(previous_state.get("fingerprint")) == fingerprint
+                    and stripped_text(previous_state.get("fingerprint")) == fingerprint
                 ):
                     self.store.mark_checked(
                         adapter_name,
@@ -1774,8 +1771,8 @@ class AdapterLayer:
             records, source_state = adapter.scan()
             check_scan_cancelled()
             projection_changed = bool(source_state.get("projection_signature")) and (
-                _text(source_state.get("projection_signature"))
-                != _text(previous_state.get("projection_signature"))
+                stripped_text(source_state.get("projection_signature"))
+                != stripped_text(previous_state.get("projection_signature"))
             )
             recover = getattr(adapter, "recover_snapshot", None)
             if callable(recover):
@@ -1881,7 +1878,7 @@ class AdapterLayer:
         changed_upserts = tuple(
             record
             for record in changes.upserts
-            if previous_by_id.get(_text(record.get("resource_id"))) != record
+            if previous_by_id.get(stripped_text(record.get("resource_id"))) != record
         )
         changed_deletes = tuple(
             resource_id
@@ -1963,15 +1960,15 @@ class AdapterLayer:
         tracking = self._source_tracking_state(adapter, scope, check_started)
         if (
             not isinstance(since, (int, float))
-            or _text(previous_state.get("projection_code_fingerprint")) != tracking["projection_code_fingerprint"]
-            or _text(previous_state.get("registry_fingerprint")) != tracking["registry_fingerprint"]
+            or stripped_text(previous_state.get("projection_code_fingerprint")) != tracking["projection_code_fingerprint"]
+            or stripped_text(previous_state.get("registry_fingerprint")) != tracking["registry_fingerprint"]
         ):
             return None
         previous_records = self.store.records_for_adapter(adapter_name)
         sources = {
             source_path
             for record in previous_records
-            if (source_path := _text((record.get("source") or {}).get("path")))
+            if (source_path := stripped_text((record.get("source") or {}).get("path")))
         }
         resolution_paths = set(sources)
         extra_paths = getattr(adapter, "source_resolution_paths", None)
@@ -2037,7 +2034,7 @@ class AdapterLayer:
         ]
 
         def affected(error: dict[str, Any]) -> bool:
-            raw_path = _text(error.get("path"))
+            raw_path = stripped_text(error.get("path"))
             if not raw_path:
                 return False
             path = Path(raw_path).expanduser().resolve(strict=False)
@@ -2077,11 +2074,11 @@ class AdapterLayer:
         previous_state: dict[str, Any],
     ) -> ChangeSet | None:
         previous_by_path = {
-            _text((record.get("source") or {}).get("path")): _text(
+            stripped_text((record.get("source") or {}).get("path")): stripped_text(
                 record.get("resource_id")
             )
             for record in previous_records
-            if _text((record.get("source") or {}).get("path"))
+            if stripped_text((record.get("source") or {}).get("path"))
         }
         upserts: dict[str, dict[str, Any]] = {}
         deletes: set[str] = set()
@@ -2122,12 +2119,12 @@ class AdapterLayer:
                 }
             )
             for resource_id in changes.deletes:
-                clean_id = _text(resource_id)
+                clean_id = stripped_text(resource_id)
                 if clean_id:
                     deletes.add(clean_id)
                     upserts.pop(clean_id, None)
             for record in changes.upserts:
-                resource_id = _text(record.get("resource_id"))
+                resource_id = stripped_text(record.get("resource_id"))
                 if resource_id:
                     upserts[resource_id] = record
                     deletes.discard(resource_id)
@@ -2226,7 +2223,7 @@ class AdapterLayer:
                     self.store.flush()
                     if result is not None:
                         self._completed_refresh(name, result, forced=pending.force, emit=True)
-                        ok = not _text((self.store.status().get("adapters", {}).get(name) or {}).get("last_error"))
+                        ok = not stripped_text((self.store.status().get("adapters", {}).get(name) or {}).get("last_error"))
                 except Exception:
                     LOGGER.exception("resource index persistence failed: %s", name)
                 finally:
@@ -2257,7 +2254,7 @@ class AdapterLayer:
             return False
         status = self.store.status().get("adapters") or {}
         return all(
-            not _text((status.get(name) or {}).get("last_error"))
+            not stripped_text((status.get(name) or {}).get("last_error"))
             for name in names if name not in self._latest_refresh
         )
 
@@ -2344,13 +2341,13 @@ class _PathsAdapter:
         current_records = list(current)
         if not self.protect_existing_sources:
             return current_records, source_state
-        current_ids = {_text(item.get("resource_id")) for item in current_records}
+        current_ids = {stripped_text(item.get("resource_id")) for item in current_records}
         current_source_paths = {
-            Path(_text((item.get("source") or {}).get("path")))
+            Path(stripped_text((item.get("source") or {}).get("path")))
             .expanduser()
             .resolve(strict=False)
             for item in current_records
-            if _text((item.get("source") or {}).get("path"))
+            if stripped_text((item.get("source") or {}).get("path"))
         }
         preserved: list[dict[str, Any]] = []
         resource_errors = [
@@ -2359,9 +2356,9 @@ class _PathsAdapter:
             if isinstance(item, dict)
         ]
         for record in previous:
-            resource_id = _text(record.get("resource_id"))
+            resource_id = stripped_text(record.get("resource_id"))
             source = record.get("source") if isinstance(record.get("source"), dict) else {}
-            source_path = Path(_text(source.get("path"))).expanduser().resolve(strict=False)
+            source_path = Path(stripped_text(source.get("path"))).expanduser().resolve(strict=False)
             if (
                 resource_id
                 and resource_id not in current_ids
@@ -2397,9 +2394,9 @@ class _PathsAdapter:
 
 def _project_statuses(projects: Iterable[dict[str, Any]]) -> dict[str, str]:
     return {
-        _text(item.get("id")): _text(item.get("status"))
+        stripped_text(item.get("id")): stripped_text(item.get("status"))
         for item in projects
-        if isinstance(item, dict) and _text(item.get("id"))
+        if isinstance(item, dict) and stripped_text(item.get("id"))
     }
 
 
@@ -2434,11 +2431,11 @@ class ProjectKnowledgeAdapter(_PathsAdapter):
         """Read only the newly registered entry when publishing its summary."""
         if resource_type not in self.resource_types:
             raise ValueError(f"unsupported Knowledge resource type: {resource_type}")
-        source_path = Path(_text(item.get("path"))).resolve(strict=False)
-        project_id = _text(item.get("project") or next(iter(item.get("project_ids") or []), ""))
+        source_path = Path(stripped_text(item.get("path"))).resolve(strict=False)
+        project_id = stripped_text(item.get("project") or next(iter(item.get("project_ids") or []), ""))
         if not source_path.is_file() or not project_id:
             raise ValueError("Knowledge registration requires its source path and Project")
-        content_root = Path(_text(item.get("content_root")) or str(source_path.parent))
+        content_root = Path(stripped_text(item.get("content_root")) or str(source_path.parent))
         raw = self._raw_item_for_existing_record({
             "resource_id": item.get("resource_id"),
             "source": {"path": str(source_path)},
@@ -2473,8 +2470,8 @@ class ProjectKnowledgeAdapter(_PathsAdapter):
             source = record.get("source") if isinstance(record.get("source"), dict) else {}
             attrs = record.get("attributes") if isinstance(record.get("attributes"), dict) else {}
             for value in (source.get("path"), attrs.get("content_root"), attrs.get("canonical_root")):
-                if _text(value):
-                    paths.add(_text(value))
+                if stripped_text(value):
+                    paths.add(stripped_text(value))
         return sorted(paths)
 
     @staticmethod
@@ -2489,20 +2486,20 @@ class ProjectKnowledgeAdapter(_PathsAdapter):
         for index, record in enumerate(records):
             source = record.get("source") if isinstance(record.get("source"), dict) else {}
             attrs = record.get("attributes") if isinstance(record.get("attributes"), dict) else {}
-            source_text = _text(source.get("path"))
+            source_text = stripped_text(source.get("path"))
             if source_text:
                 by_source.setdefault(_known_path(source_text), []).append(index)
-            if _text(record.get("resource_type")) == "article":
-                root_text = _text(attrs.get("canonical_root"))
+            if stripped_text(record.get("resource_type")) == "article":
+                root_text = stripped_text(attrs.get("canonical_root"))
                 if root_text:
                     by_root.setdefault(_known_path(root_text), []).append(index)
                 continue
-            root_text = _text(attrs.get("content_root"))
+            root_text = stripped_text(attrs.get("content_root"))
             if attrs.get("single_file") or not root_text:
                 continue
             root = _known_path(root_text)
             if root.parent.name == "knowledge_base":
-                resource_id = _text(record.get("resource_id"))
+                resource_id = stripped_text(record.get("resource_id"))
                 if not resource_id:
                     continue
                 root = root / resource_id
@@ -2551,7 +2548,7 @@ class ProjectKnowledgeAdapter(_PathsAdapter):
         _allowed, _folder_map, folder_to_type, _hash = knowledge_backend._get_tag_config()
         item_type = folder_to_type.get(
             parts[index + 1],
-            _text(record.get("resource_type")),
+            stripped_text(record.get("resource_type")),
         )
         return any(
             source_path == primary_path.resolve(strict=False)
@@ -2569,13 +2566,13 @@ class ProjectKnowledgeAdapter(_PathsAdapter):
         order: int,
     ) -> dict[str, Any] | None:
         item = knowledge_backend.public_item_record(raw)
-        resource_id = _text(item.get("kb_id"))
-        resource_type = _text(item.get("type"))
+        resource_id = stripped_text(item.get("kb_id"))
+        resource_type = stripped_text(item.get("type"))
         if resource_type == "skill":
             return None
-        project = _text(item.get("project"))
-        root_path = Path(_text(raw.get("root_path")))
-        relative_path = _text(raw.get("relative_path") or raw.get("filename"))
+        project = stripped_text(item.get("project"))
+        root_path = Path(stripped_text(raw.get("root_path")))
+        relative_path = stripped_text(raw.get("relative_path") or raw.get("filename"))
         source_path = root_path / relative_path if relative_path else root_path
         facets = ["knowledge"]
         if resource_type == "experiment":
@@ -2611,7 +2608,7 @@ class ProjectKnowledgeAdapter(_PathsAdapter):
                 "project_ids": [project] if project else [],
                 "relations": [resource_relation("related", target) for target in item.get("related") or []],
                 "project_status": statuses.get(project, ""),
-                "preview": _text(item.get("preview")),
+                "preview": stripped_text(item.get("preview")),
                 "content_root": str(root_path),
                 "sort_order": order,
             }
@@ -2667,12 +2664,12 @@ class ProjectKnowledgeAdapter(_PathsAdapter):
     def _raw_item_for_existing_record(record: dict[str, Any]) -> dict[str, Any]:
         source = record.get("source") if isinstance(record.get("source"), dict) else {}
         attrs = record.get("attributes") if isinstance(record.get("attributes"), dict) else {}
-        source_path = Path(_text(source.get("path"))).resolve(strict=False)
-        content_root = Path(_text(attrs.get("content_root"))).resolve(strict=False)
+        source_path = Path(stripped_text(source.get("path"))).resolve(strict=False)
+        content_root = Path(stripped_text(attrs.get("content_root"))).resolve(strict=False)
         if not source_path.is_file():
             return {}
         if content_root.parent.name == "knowledge_base":
-            files_root = content_root / _text(record.get("resource_id"))
+            files_root = content_root / stripped_text(record.get("resource_id"))
         else:
             files_root = content_root
         entry_files, truncated = knowledge_backend._bounded_entry_files(source_path, files_root)
@@ -2682,7 +2679,7 @@ class ProjectKnowledgeAdapter(_PathsAdapter):
                 source_path,
                 content_root,
                 entry_files,
-                _text(next(iter(attrs.get("project_ids") or []), "")),
+                stripped_text(next(iter(attrs.get("project_ids") or []), "")),
                 config_hash,
                 set(allowed),
                 folder_to_type,
@@ -2707,8 +2704,8 @@ class ProjectKnowledgeAdapter(_PathsAdapter):
         allowed, _folder_map, folder_to_type, config_hash = knowledge_backend._get_tag_config()
         allowed_types = set(allowed)
         for project in projects:
-            project_id = _text(project.get("id"))
-            project_path = _text(project.get("path"))
+            project_id = stripped_text(project.get("id"))
+            project_path = stripped_text(project.get("path"))
             if not project_id or not project_path:
                 continue
             knowledge_root = (Path(project_path).expanduser() / "knowledge_base").resolve(strict=False)
@@ -2774,7 +2771,7 @@ class ProjectKnowledgeAdapter(_PathsAdapter):
             matching = records_in_scope(path)
             if matching:
                 for record in matching:
-                    affected[_text(record.get("resource_id"))] = record
+                    affected[stripped_text(record.get("resource_id"))] = record
             else:
                 new_paths.append(path)
 
@@ -2782,7 +2779,7 @@ class ProjectKnowledgeAdapter(_PathsAdapter):
         deletes: list[str] = []
         for resource_id, previous_record in affected.items():
             source = previous_record.get("source") if isinstance(previous_record.get("source"), dict) else {}
-            if not Path(_text(source.get("path"))).is_file():
+            if not Path(stripped_text(source.get("path"))).is_file():
                 deletes.append(resource_id)
                 continue
             raw = self._raw_item_for_existing_record(previous_record)
@@ -2881,28 +2878,28 @@ class SkillPackageAdapter(_PathsAdapter):
         statuses: dict[str, str],
         order: int,
     ) -> dict[str, Any]:
-        skill_id = _text(raw.get("skill_id"))
-        raw_root_path = Path(_text(raw.get("root_path")))
-        relative_path = _text(raw.get("relative_path") or raw.get("filename") or "SKILL.md")
+        skill_id = stripped_text(raw.get("skill_id"))
+        raw_root_path = Path(stripped_text(raw.get("root_path")))
+        relative_path = stripped_text(raw.get("relative_path") or raw.get("filename") or "SKILL.md")
         source_path = raw_root_path if raw_root_path.is_file() else raw_root_path / relative_path
         root_path = raw_root_path.parent if raw_root_path.is_file() else raw_root_path
         files: list[dict[str, Any]] = []
         for file in raw.get("files") or []:
             if not isinstance(file, dict):
                 continue
-            relative = _text(file.get("relative_path") or file.get("name"))
+            relative = stripped_text(file.get("relative_path") or file.get("name"))
             primary = bool(file.get("primary")) or relative == relative_path
             files.append(
                 {
                     "address": skill_id if primary else knowledge_backend._nested_file_address(skill_id, relative),
-                    "name": _text(file.get("name") or relative),
+                    "name": stripped_text(file.get("name") or relative),
                     "relative_path": relative,
-                    "kind": _text(file.get("kind") or "binary"),
+                    "kind": stripped_text(file.get("kind") or "binary"),
                     "primary": primary,
                 }
             )
-        source_kind = _text(raw.get("source"))
-        project = "" if source_kind in {"shared", "third_party"} else _text(raw.get("project"))
+        source_kind = stripped_text(raw.get("source"))
+        project = "" if source_kind in {"shared", "third_party"} else stripped_text(raw.get("project"))
         project_status = statuses.get(project, "")
         attributes = {
             "type": "skill",
@@ -2913,20 +2910,20 @@ class SkillPackageAdapter(_PathsAdapter):
                 else "project"
             ),
             "project_status": project_status,
-            "status": _text(raw.get("status")),
-            "created_at": _text(raw.get("created_at")),
+            "status": stripped_text(raw.get("status")),
+            "created_at": stripped_text(raw.get("created_at")),
             "importance": int(raw.get("importance") or 0),
             "mtime": int(raw.get("mtime") or 0),
-            "filename": _text(raw.get("filename") or "SKILL.md"),
+            "filename": stripped_text(raw.get("filename") or "SKILL.md"),
             "relative_path": relative_path,
             "content_root": str(root_path),
             "single_file": raw_root_path.is_file(),
             "file_count": int(raw.get("file_count") or len(files)),
-            "name": _text(raw.get("name")),
+            "name": stripped_text(raw.get("name")),
             "source": source_kind,
-            "source_label": _text(raw.get("source_label")),
-            "label": _text(raw.get("label")),
-            "preview": _text(raw.get("preview") or raw.get("description")),
+            "source_label": stripped_text(raw.get("source_label")),
+            "label": stripped_text(raw.get("label")),
+            "preview": stripped_text(raw.get("preview") or raw.get("description")),
             "ai_generated": False,
             "sort_order": order,
         }
@@ -3027,8 +3024,8 @@ class SkillPackageAdapter(_PathsAdapter):
             root = shared_root / relative.parts[0]
             return root, "", "shared", "Shared"
         for project in projects:
-            project_id = _text(project.get("id"))
-            project_path = _text(project.get("path"))
+            project_id = stripped_text(project.get("id"))
+            project_path = stripped_text(project.get("path"))
             if not project_id or not project_path:
                 continue
             skill_root = (Path(project_path).expanduser() / "knowledge_base" / "skill").resolve(strict=False)
@@ -3066,7 +3063,7 @@ class SkillPackageAdapter(_PathsAdapter):
             ]
             if matches:
                 for record in matches:
-                    affected[_text(record.get("resource_id"))] = record
+                    affected[stripped_text(record.get("resource_id"))] = record
             else:
                 new_paths.append(path)
 
@@ -3075,13 +3072,13 @@ class SkillPackageAdapter(_PathsAdapter):
         for resource_id, previous_record in affected.items():
             source = previous_record.get("source") if isinstance(previous_record.get("source"), dict) else {}
             attrs = previous_record.get("attributes") if isinstance(previous_record.get("attributes"), dict) else {}
-            source_path = Path(_text(source.get("path"))).resolve(strict=False)
-            root = source_path if attrs.get("single_file") else Path(_text(attrs.get("content_root"))).resolve(strict=False)
+            source_path = Path(stripped_text(source.get("path"))).resolve(strict=False)
+            root = source_path if attrs.get("single_file") else Path(stripped_text(attrs.get("content_root"))).resolve(strict=False)
             raw = self._raw_item(
                 root,
-                project=_text(next(iter(attrs.get("project_ids") or []), "")),
-                source=_text(attrs.get("source")),
-                source_label=_text(attrs.get("source_label")),
+                project=stripped_text(next(iter(attrs.get("project_ids") or []), "")),
+                source=stripped_text(attrs.get("source")),
+                source_label=stripped_text(attrs.get("source_label")),
                 preferred_primary=source_path,
             )
             if not raw:
@@ -3156,15 +3153,15 @@ class ProjectRegistryAdapter(_PathsAdapter):
         if isinstance(item.get("project"), dict):
             item = {**item["project"], "resource_id": item.get("resource_id")}
         # The Project ID is its title: a Project has no other name.
-        project_id = _text(item.get("resource_id") or item.get("id"))
+        project_id = stripped_text(item.get("resource_id") or item.get("id"))
         return resource_record(
             resource_id=project_id, resource_type="project",
             title=project_id, summary=item.get("description"),
             adapter=self.name, facets=["project"],
             attributes={
-                "status": _text(item.get("status")),
-                "project_type": _text(item.get("project_type")), "path": _text(item.get("path")),
-                "ddl": _text(item.get("ddl")), "tags": list(item.get("tags") or []),
+                "status": stripped_text(item.get("status")),
+                "project_type": stripped_text(item.get("project_type")), "path": stripped_text(item.get("path")),
+                "ddl": stripped_text(item.get("ddl")), "tags": list(item.get("tags") or []),
             },
             search_terms=[item.get("status"), item.get("path"), *(item.get("tags") or [])],
         )
@@ -3177,7 +3174,7 @@ class ProjectRegistryAdapter(_PathsAdapter):
                    if change is not None and change[0] == project_registry.COLLECTION}
         if (project_registry.COLLECTION, project_registry.DOCUMENT_ID) in changes:
             current = {
-                _text(item.get("id") or item.get("name")): self.project_record("project", item)
+                stripped_text(item.get("id") or item.get("name")): self.project_record("project", item)
                 for item in project_provider.load_projects_payload().get("projects") or []
                 if isinstance(item, dict)
             }
@@ -3209,7 +3206,7 @@ class ProjectRegistryAdapter(_PathsAdapter):
         for item in payload.get("projects") or []:
             if not isinstance(item, dict):
                 continue
-            project_id = _text(item.get("id") or item.get("name"))
+            project_id = stripped_text(item.get("id") or item.get("name"))
             try:
                 record = self.project_record("project", item)
             except Exception as exc:
@@ -3266,7 +3263,7 @@ class CollaborationRegistryAdapter(_PathsAdapter):
         item: dict[str, Any],
         store: CollaborationDescriptorStore,
     ) -> dict[str, Any]:
-        resource_id = _text(item.get("resource_id"))
+        resource_id = stripped_text(item.get("resource_id"))
         resource_type = RESOURCE_IDENTITY.parse(resource_id).resource_type
         if resource_type not in self.resource_types:
             raise ValueError(
@@ -3303,13 +3300,13 @@ class CollaborationRegistryAdapter(_PathsAdapter):
             upserts[resource_id] = self._index_record(item, store)
 
         next_types = {
-            _text(record.get("resource_id")): _text(record.get("resource_type"))
+            stripped_text(record.get("resource_id")): stripped_text(record.get("resource_type"))
             for record in previous_records
         }
         for resource_id in deletes:
             next_types.pop(resource_id, None)
         for resource_id, record in upserts.items():
-            next_types[resource_id] = _text(record.get("resource_type"))
+            next_types[resource_id] = stripped_text(record.get("resource_type"))
         counts = {
             resource_type: sum(
                 1 for value in next_types.values() if value == resource_type
@@ -3340,7 +3337,7 @@ class CollaborationRegistryAdapter(_PathsAdapter):
                 except Exception as exc:
                     resource_errors.append(
                         {
-                            "resource_id": _text(item.get("resource_id")),
+                            "resource_id": stripped_text(item.get("resource_id")),
                             "error": str(exc)[:1000],
                         }
                     )
@@ -3359,8 +3356,8 @@ class _RepoRegistryProjection:
         return resource_identity_backend._validated_repo(resource_id, raw)
 
     def project(self, item, *, adapter):
-        resource_id = _text(item.get("resource_id") or item.get("id"))
-        projects = [_text(value) for value in item.get("project_ids") or [] if _text(value)]
+        resource_id = stripped_text(item.get("resource_id") or item.get("id"))
+        projects = [stripped_text(value) for value in item.get("project_ids") or [] if stripped_text(value)]
         checkouts = [value for value in item.get("checkouts") or [] if isinstance(value, dict)]
         remotes = [value for value in item.get("remotes") or [] if isinstance(value, dict)]
         return resource_record(
@@ -3369,14 +3366,14 @@ class _RepoRegistryProjection:
             adapter=adapter, modified_at=item.get("updated_at") or item.get("created_at"),
             facets=["repo"],
             attributes={
-                "project_ids": projects, "ownership": _text(item.get("ownership")),
-                "canonical_checkout": _text(item.get("canonical_checkout")),
-                "checkout_paths": [_text(value.get("path")) for value in checkouts if _text(value.get("path"))],
-                "status": _text(item.get("status")),
+                "project_ids": projects, "ownership": stripped_text(item.get("ownership")),
+                "canonical_checkout": stripped_text(item.get("canonical_checkout")),
+                "checkout_paths": [stripped_text(value.get("path")) for value in checkouts if stripped_text(value.get("path"))],
+                "status": stripped_text(item.get("status")),
             },
             search_terms=[*projects, item.get("ownership"), item.get("canonical_checkout"),
-                          *[_text(value.get("path")) for value in checkouts],
-                          *[_text(value.get("url")) for value in remotes]],
+                          *[stripped_text(value.get("path")) for value in checkouts],
+                          *[stripped_text(value.get("url")) for value in remotes]],
         )
 
 
@@ -3460,7 +3457,7 @@ class ResourceRegistryAdapter(_PathsAdapter):
                 try:
                     records.append(self.project_record(source.resource_type, item))
                 except Exception as exc:
-                    resource_errors.append({"resource_id": _text(item.get("id")), "error": str(exc)[:1000]})
+                    resource_errors.append({"resource_id": stripped_text(item.get("id")), "error": str(exc)[:1000]})
         return records, state
 
 
@@ -3522,45 +3519,45 @@ class DeviceRegistryAdapter(_PathsAdapter):
         *, observation: dict[str, Any] | None = None,
         child_ids: Iterable[str] = (),
     ) -> dict[str, Any]:
-        device_id = _text(device.get("resource_id") or device.get("device_id"))
-        device_kind = _text(device.get("device_kind"))
+        device_id = stripped_text(device.get("resource_id") or device.get("device_id"))
+        device_kind = stripped_text(device.get("device_kind"))
         network = device.get("network") if isinstance(device.get("network"), dict) else {}
         access_methods = device.get("access_methods") if isinstance(device.get("access_methods"), dict) else {}
         monitor = device.get("monitor") if isinstance(device.get("monitor"), dict) else {}
         observation = observation or {}
-        observed_at = _text(observation.get("updated_at"))
-        parent_id = _text(device.get("parent_device_id"))
+        observed_at = stripped_text(observation.get("updated_at"))
+        parent_id = stripped_text(device.get("parent_device_id"))
         dynamic = self._observed_fields(
             observation,
             self._GPU_OBSERVATION_FIELDS if device_kind == "gpu" else self._SERVER_OBSERVATION_FIELDS,
         )
-        runtime_status = _text(observation.get("state") if device_kind == "gpu" else observation.get("status"))
+        runtime_status = stripped_text(observation.get("state") if device_kind == "gpu" else observation.get("status"))
         attributes = {
-            "status": runtime_status or _text(device.get("lifecycle")),
-            "created_at": _text(device.get("created_at")),
-            "updated_at": observed_at or _text(device.get("updated_at")),
+            "status": runtime_status or stripped_text(device.get("lifecycle")),
+            "created_at": stripped_text(device.get("created_at")),
+            "updated_at": observed_at or stripped_text(device.get("updated_at")),
             "relations": [resource_relation("parent", parent_id)] if parent_id else [],
-            "device_kind": device_kind, "lifecycle": _text(device.get("lifecycle")),
-            "hostname": _text(device.get("hostname")), "location": _text(device.get("location")),
-            "ip": _text(network.get("primary_ip")),
+            "device_kind": device_kind, "lifecycle": stripped_text(device.get("lifecycle")),
+            "hostname": stripped_text(device.get("hostname")), "location": stripped_text(device.get("location")),
+            "ip": stripped_text(network.get("primary_ip")),
             "mac_addresses": list(network.get("mac_addresses") or []),
             "access_methods": _json_value(access_methods),
             "parent_device_id": parent_id, "gpu_device_ids": sorted(child_ids),
             "expected_gpu_count": int(monitor.get("expected_gpu_count") or 0),
-            "gpu_index": device.get("gpu_index"), "gpu_uuid": _text(device.get("gpu_uuid")),
-            "model": _text(device.get("model")), "observed_at": observed_at,
+            "gpu_index": device.get("gpu_index"), "gpu_uuid": stripped_text(device.get("gpu_uuid")),
+            "model": stripped_text(device.get("model")), "observed_at": observed_at,
             **dynamic,
         }
         if device_kind == "gpu_server":
-            summary_parts = ["GPU server", _text(device.get("hostname")), _text(network.get("primary_ip"))]
+            summary_parts = ["GPU server", stripped_text(device.get("hostname")), stripped_text(network.get("primary_ip"))]
         elif device_kind == "gpu":
-            summary_parts = ["GPU", _text(device.get("model"))]
+            summary_parts = ["GPU", stripped_text(device.get("model"))]
         else:
-            summary_parts = [_text(device.get("description")), _text(device.get("model")),
-                             _text(device.get("hostname")), _text(network.get("primary_ip"))]
+            summary_parts = [stripped_text(device.get("description")), stripped_text(device.get("model")),
+                             stripped_text(device.get("hostname")), stripped_text(network.get("primary_ip"))]
         return resource_record(
             resource_id=device_id, resource_type="device",
-            title=_text(device.get("name")) or device_id,
+            title=stripped_text(device.get("name")) or device_id,
             summary=" · ".join(value for value in summary_parts if value),
             adapter=self.name, modified_at=observed_at or device.get("updated_at"),
             facets=["device", device_kind], attributes=attributes,
@@ -3584,14 +3581,14 @@ class DeviceRegistryAdapter(_PathsAdapter):
             observations = {}
         children: dict[str, set[str]] = {}
         affected_parents = {
-            _text((record.get("attributes") or {}).get("parent_device_id"))
+            stripped_text((record.get("attributes") or {}).get("parent_device_id"))
             for record in previous_records
-            if _text(record.get("resource_id")) in changed_ids
+            if stripped_text(record.get("resource_id")) in changed_ids
         }
         for record in previous_records:
-            parent_id = _text((record.get("attributes") or {}).get("parent_device_id"))
-            if parent_id and _text(record.get("resource_id")) not in changed_ids:
-                children.setdefault(parent_id, set()).add(_text(record.get("resource_id")))
+            parent_id = stripped_text((record.get("attributes") or {}).get("parent_device_id"))
+            if parent_id and stripped_text(record.get("resource_id")) not in changed_ids:
+                children.setdefault(parent_id, set()).add(stripped_text(record.get("resource_id")))
         upserts = []
         deletes = []
         for resource_id in sorted(changed_ids):
@@ -3600,7 +3597,7 @@ class DeviceRegistryAdapter(_PathsAdapter):
                 deletes.append(resource_id)
                 continue
             device = device_identity_backend._normalize_record(raw, resource_id)
-            parent_id = _text(device.get("parent_device_id"))
+            parent_id = stripped_text(device.get("parent_device_id"))
             if parent_id:
                 affected_parents.add(parent_id)
                 children.setdefault(parent_id, set()).add(resource_id)
@@ -3630,16 +3627,16 @@ class DeviceRegistryAdapter(_PathsAdapter):
             )
         child_ids: dict[str, list[str]] = {}
         for device in devices:
-            parent_id = _text(device.get("parent_device_id"))
+            parent_id = stripped_text(device.get("parent_device_id"))
             if parent_id:
-                child_ids.setdefault(parent_id, []).append(_text(device.get("device_id")))
+                child_ids.setdefault(parent_id, []).append(stripped_text(device.get("device_id")))
 
         records: list[dict[str, Any]] = []
         counts: dict[str, int] = {}
         for device in devices:
-            device_id = _text(device.get("device_id"))
+            device_id = stripped_text(device.get("device_id"))
             try:
-                device_kind = _text(device.get("device_kind"))
+                device_kind = stripped_text(device.get("device_kind"))
                 counts[device_kind] = counts.get(device_kind, 0) + 1
                 records.append(
                     self.project_record(
@@ -3674,9 +3671,9 @@ class SavedSearchAdapter(_PathsAdapter):
             search_identity_backend.scan_search_resources()
         )
         for item in source_records:
-            search_id = _text(item.get("id"))
-            surface = _text(item.get("surface"))
-            project_id = _text(item.get("project"))
+            search_id = stripped_text(item.get("id"))
+            surface = stripped_text(item.get("surface"))
+            project_id = stripped_text(item.get("project"))
             try:
                 records.append(resource_record(
                     resource_id=search_id,
@@ -3688,12 +3685,12 @@ class SavedSearchAdapter(_PathsAdapter):
                     facets=["search", surface],
                     attributes={
                         "surface": surface,
-                        "resource_scope": _text(item.get("resource_scope")),
+                        "resource_scope": stripped_text(item.get("resource_scope")),
                         "project_ids": [project_id] if project_id else [],
-                        "search_kind": _text(item.get("search_kind")),
-                        "status": _text(item.get("status")),
+                        "search_kind": stripped_text(item.get("search_kind")),
+                        "status": stripped_text(item.get("status")),
                         "result_count": int(item.get("result_count") or 0),
-                        "created_by": _text(item.get("created_by")),
+                        "created_by": stripped_text(item.get("created_by")),
                     },
                     search_terms=[surface, item.get("search_kind"), item.get("status")],
                 ))
@@ -3776,12 +3773,12 @@ def _publish_projection_change(adapter: str, result: dict[str, Any]) -> None:
         return
     changed_ids = sorted(
         {
-            _text(resource_id)
+            stripped_text(resource_id)
             for resource_id in [
                 *(result.get("upserted_ids") or []),
                 *(result.get("deleted_ids") or []),
             ]
-            if _text(resource_id)
+            if stripped_text(resource_id)
         }
     )
     snapshot_required = len(changed_ids) > 128
