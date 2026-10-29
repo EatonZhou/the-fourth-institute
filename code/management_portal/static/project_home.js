@@ -35,15 +35,17 @@
       const vocab = statusVocab.length ? statusVocab : Object.keys(STATUS_LABELS);
       const statuses = vocab.includes(item.status) ? vocab : [item.status, ...vocab];
       return window.PortalI18n.html`<header class="projectHero">
-        <div class="projectHeroAvatar">${avatarHtml(projectId(), item.avatar, 72)}</div>
+        <div class="projectHeroAvatar">${avatarHtml(projectId(), item.avatar, 48)}</div>
         <div class="projectHeroMain">
-          <h1>${esc(projectId())}</h1>
-          <div class="projectHeroMeta">
-            ${item.project_type ? `<span class="projectChip">${esc(typeLabel(item.project_type))}</span>` : ""}
-            <select class="projectStatusSelect" data-home-status aria-label="项目状态">${statuses.map(value =>
-              `<option value="${esc(value)}"${value === item.status ? " selected" : ""}>${esc(statusLabel(value))}</option>`).join("")}</select>
-            ${deadline.label ? `<span class="projectDeadline" data-tone="${esc(deadline.tone)}" title="${esc(item.ddl)}">${esc(deadline.label)}</span>` : ""}
-            ${(item.tags || []).map(tag => `<span class="projectTag">#${esc(tag)}</span>`).join("")}
+          <div class="projectHeroTitle">
+            <h1>${esc(projectId())}</h1>
+            <div class="projectHeroMeta">
+              ${item.project_type ? `<span class="projectChip">${esc(typeLabel(item.project_type))}</span>` : ""}
+              <select class="projectStatusSelect" data-home-status aria-label="项目状态">${statuses.map(value =>
+                `<option value="${esc(value)}"${value === item.status ? " selected" : ""}>${esc(statusLabel(value))}</option>`).join("")}</select>
+              ${deadline.label ? `<span class="projectDeadline" data-tone="${esc(deadline.tone)}" title="${esc(item.ddl)}">${esc(deadline.label)}</span>` : ""}
+              ${(item.tags || []).map(tag => `<span class="projectTag">#${esc(tag)}</span>`).join("")}
+            </div>
           </div>
           <p class="projectHeroDescription">${esc(item.description || t("还没有说明"))}</p>
         </div>
@@ -58,6 +60,7 @@
             </div>
           </div>
         </div>
+        ${statsHtml()}
       </header>`;
     }
 
@@ -206,7 +209,6 @@
       root.innerHTML = window.PortalI18n.html`<article class="projectHome">
         <nav class="projectCrumbs" aria-label="项目导航"><a href="/projects" data-home-list>项目</a><span aria-hidden="true">/</span><span>${esc(projectId())}</span></nav>
         ${heroHtml()}
-        ${statsHtml()}
         <div class="projectHomeSections">
           ${mapHtml()}
           ${summaryHtml()}
