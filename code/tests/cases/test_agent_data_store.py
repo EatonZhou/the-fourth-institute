@@ -826,6 +826,19 @@ def test_fork_message_cutoff_stops_before_later_context_boundaries(boundary):
     assert not set(expected) & {s["segment_id"] for s in store.agent_context_snapshot(agent_id)["segments"]}
 
 
+def test_a_cutoff_at_a_trailing_notice_is_outside_the_trace():
+    """以末尾的空回复作截止消息时，按截止消息不在 Agent trace 中拒绝
+
+    空文本的 Agent 回复只作为通知显示，没有 trace 片段；它在最后时，按消息截取上下文报告截止消息不在 Agent trace 中，不抛索引错误。
+    """
+    store = AgentDataStore()
+    agent_id = "resident_trace_notice_cutoff"
+    store.display_chat_message(agent_id, _chat("input-one", "user", "question"))
+    store.display_chat_message(agent_id, _chat("notice-one", "agent", ""))
+    with pytest.raises(ValueError, match="not in the Agent trace"):
+        store.agent_context_snapshot(agent_id, through_message_id="notice-one")
+
+
 def test_fork_snapshot_and_materialization_share_the_effective_conversation_boundary(
     tmp_path: Path,
 ) -> None:

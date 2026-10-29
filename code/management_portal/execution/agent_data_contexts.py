@@ -230,7 +230,11 @@ def read_agent_context(connection: Any, agent_id: str, *, before_message_id: str
         # The selected input and following responses form a trace interval.
         # A recorded Provider turn can group appended inputs, but old traces
         # remain usable without any Execution or Provider session record.
-        target = trace_rows(connection, sequence_id, first=int(member["ordinal"]), limit=1)[0]
+        targets = trace_rows(connection, sequence_id, first=int(member["ordinal"]), limit=1)
+        if not targets:
+            # A notice shown after the trace's last segment, such as an empty reply.
+            raise ValueError("Fork cutoff message is not in the Agent trace")
+        target = targets[0]
         target_turn = str(target["provider_turn_id"] or "")
         # Use the same turn boundary as recent Fork selection. Held-info
         # Segments carry released_with and stay with the carrier's answers;
