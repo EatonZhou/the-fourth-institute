@@ -2,6 +2,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const portal=path.resolve(__dirname,'../../../management_portal');
 const {chromium}=require(path.join(portal,'test_framework/tau_runtime/node_modules/playwright'));
+const {LINEAGE_GRAPH_SCRIPTS}=require('./lineage_graph_scripts.cjs');
 const L='lineage_111111111111',B='fbi_222222222222',TITLE='Local Problems Block';
 const report={scope:'Native graph and HATG graphNodeContent with templates/i18n/CSS. Graph/header/template lookup and failure list are local fixtures; no business requests.',formal_acceptance:false};
 (async()=>{
@@ -11,7 +12,7 @@ const report={scope:'Native graph and HATG graphNodeContent with templates/i18n/
     page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>requests.push(r.url()));
     await page.setContent(`<!doctype html><section id="panel" class="portalHatgPanelComponent" role="region"><div id="activeLineageIdentity"><code data-portal-resource-id="${L}">${L}</code></div><div id="hatgCanvas" class="hatgCanvas" style="position:relative;width:1000px;height:680px"><div id="world" class="hatgWorld"><svg id="edges"></svg><svg id="effects"></svg><div id="labels"></div><div id="nodes"></div></div></div></section>`);
     for(const n of ['portal_design_system','portal_themes','hatg_panel','lineage_function_blocks'])await page.addStyleTag({content:fs.readFileSync(path.join(portal,'static',n+'.css'),'utf8')});
-    for(const n of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min','lineage_program','lineage_templates','lineage_graph','hatg_graph_view'])await page.addScriptTag({content:fs.readFileSync(path.join(portal,'static',n+'.js'),'utf8')});
+    for(const n of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min','lineage_program','lineage_templates',...LINEAGE_GRAPH_SCRIPTS,'hatg_graph_view'])await page.addScriptTag({content:fs.readFileSync(path.join(portal,'static',n+'.js'),'utf8')});
     await page.evaluate(({B,TITLE})=>{
       const module=PortalHatgGraphView;
       const deps=Object.fromEntries(module.dependencies.map(n=>[n,()=>{throw new Error('Unexpected dependency '+n);} ]));

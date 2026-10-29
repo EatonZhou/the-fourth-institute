@@ -1,6 +1,7 @@
 'use strict';
 const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path');
 const {chromium} = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
+const {LINEAGE_GRAPH_SCRIPTS} = require('./lineage_graph_scripts.cjs');
 const root = path.resolve(__dirname, '../../../management_portal/static');
 (async () => {
  const browser = await chromium.launch({headless:true});
@@ -14,7 +15,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
   });
   await page.goto('http://identity.fixture.invalid');
   for(const n of ['portal_design_system','portal_themes','hatg_panel','lineage_function_blocks','portal_resident_menu']) await page.addStyleTag({url:'/static/'+n+'.css'});
-  for(const n of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','portal_overlay','portal_ui','portal_detail_surface','portal_society_service','portal_resident_menu','projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min','lineage_program','lineage_graph']) await page.addScriptTag({url:'/static/'+n+'.js'});
+  for(const n of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','portal_overlay','portal_ui','portal_detail_surface','portal_society_service','portal_resident_menu','projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min','lineage_program',...LINEAGE_GRAPH_SCRIPTS]) await page.addScriptTag({url:'/static/'+n+'.js'});
   await page.evaluate(()=> {
    const esc=PortalUIPrimitives.escapeHtml;
    window.longTitle='[TAU:testrun_8e9a430c655ffcf6:lineage.hatg] Manual Event with distinguishing suffix';

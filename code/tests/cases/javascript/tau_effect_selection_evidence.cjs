@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const code = path.resolve(__dirname, '../../..');
 const {chromium} = require(path.join(code, 'management_portal/test_framework/tau_runtime/node_modules/playwright'));
+const {LINEAGE_GRAPH_SCRIPTS} = require('./lineage_graph_scripts.cjs');
 const L = 'lineage_111111111111', E = 'effect_222222222222';
 const report = {scope: 'Native graph and CanvasSelection; node text, header and dependency callbacks are local fixtures; no business requests', formal_acceptance: false};
 
@@ -18,7 +19,7 @@ const report = {scope: 'Native graph and CanvasSelection; node text, header and 
     for (const n of ['portal_design_system','portal_themes','hatg_panel','lineage_function_blocks'])
       await page.addStyleTag({content: fs.readFileSync(path.join(code,'management_portal/static',n+'.css'),'utf8')});
     await page.addStyleTag({content: 'html,body{margin:0} #panel,#agentLineageShell,#hatgPane{display:block;width:100%;height:100%}'});
-    for (const n of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min','lineage_program','lineage_graph','hatg_canvas_selection'])
+    for (const n of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min','lineage_program',...LINEAGE_GRAPH_SCRIPTS,'hatg_canvas_selection'])
       await page.addScriptTag({content: fs.readFileSync(path.join(code,'management_portal/static',n+'.js'),'utf8')});
     await page.evaluate(({L,E}) => {
       const component = {id:E,kind:'effect',title:'Same Effect',x:50,y:45,config:{script:'fail "local fixture"'}};

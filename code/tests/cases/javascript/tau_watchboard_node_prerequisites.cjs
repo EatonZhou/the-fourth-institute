@@ -2,6 +2,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const code=process.env.TAU_CODE_ROOT||path.resolve(__dirname,'../../..');
 const {chromium}=require(path.join(code,'management_portal/test_framework/tau_runtime/node_modules/playwright'));
+const {LINEAGE_GRAPH_SCRIPTS}=require(path.join(code,'tests/cases/javascript/lineage_graph_scripts.cjs'));
 const {readWatchboardNodePrerequisites:read}=require(process.env.TAU_WATCHBOARD_NODE_MODULE||path.join(code,'management_portal/test_framework/tau_watchboard_node_prerequisites'));
 async function nativeFrameEvidence(browser){
   const page=await browser.newPage({viewport:{width:1100,height:800}}),requests=[],errors=[];
@@ -11,7 +12,7 @@ async function nativeFrameEvidence(browser){
     for(const n of ['portal_design_system','portal_themes','hatg_panel','lineage_function_blocks'])
       await page.addStyleTag({content:fs.readFileSync(path.join(code,'management_portal/static',n+'.css'),'utf8')});
     await page.addStyleTag({content:'html,body{height:100%;margin:0} #lineage-hatg-panel{height:100%;width:100%}'});
-    for(const n of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min','lineage_graph'])
+    for(const n of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min',...LINEAGE_GRAPH_SCRIPTS])
       await page.addScriptTag({content:fs.readFileSync(path.join(code,'management_portal/static',n+'.js'),'utf8')});
     await page.evaluate(()=>{
       window.graph=PortalHatgGraph.createGraph({root:'#hatgCanvas',world:'#world',edgeLayer:'#edges',effectLayer:'#effects',labelLayer:'#labels',nodeLayer:'#nodes',scaleExtent:[.05,3.2]});

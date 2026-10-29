@@ -3,6 +3,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs'), path = require('node:path');
 const { chromium } = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
+const { LINEAGE_GRAPH_SCRIPTS } = require('./lineage_graph_scripts.cjs');
 const root = path.resolve(__dirname, '../../../management_portal');
 (async () => {
   const browser = await chromium.launch({ headless: true });
@@ -21,7 +22,7 @@ const root = path.resolve(__dirname, '../../../management_portal');
     }, fs.readFileSync(path.join(root, 'hatg-panel.html'), 'utf8'));
     for (const name of ['portal_design_system', 'portal_themes', 'hatg_panel'])
       await page.addStyleTag({ path: path.join(root, 'static', name + '.css') });
-    for (const name of ['portal_text', 'portal_state', 'portal_translations', 'portal_i18n', 'portal_ui_primitives', 'projection_libraries/portal-graph/1.0.0/geometry', 'vendor/d3/d3.v7.9.0.min', 'lineage_graph', 'hatg_toolbar'])
+    for (const name of ['portal_text', 'portal_state', 'portal_translations', 'portal_i18n', 'portal_ui_primitives', 'projection_libraries/portal-graph/1.0.0/geometry', 'vendor/d3/d3.v7.9.0.min', ...LINEAGE_GRAPH_SCRIPTS, 'hatg_toolbar'])
       await page.addScriptTag({ path: path.join(root, 'static', name + '.js') });
     await page.evaluate(() => {
       window.graph = PortalHatgGraph.createGraph({ root: '#hatgCanvas', world: '#world', edgeLayer: '#edges', effectLayer: '#effects', labelLayer: '#labels', nodeLayer: '#nodes' });

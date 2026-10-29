@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const {chromium} = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
+const {LINEAGE_GRAPH_SCRIPTS} = require('./lineage_graph_scripts.cjs');
 const root = path.resolve(__dirname, '../../../management_portal/static');
 
 (async () => {
@@ -25,7 +26,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     for (const name of ['portal_design_system', 'portal_themes', 'hatg_panel', 'lineage_function_blocks'])
       await page.addStyleTag({url: '/static/' + name + '.css'});
     for (const name of ['portal_text', 'portal_state', 'portal_translations', 'portal_i18n', 'portal_ui_primitives',
-      'projection_libraries/portal-graph/1.0.0/geometry', 'vendor/d3/d3.v7.9.0.min', 'lineage_graph',
+      'projection_libraries/portal-graph/1.0.0/geometry', 'vendor/d3/d3.v7.9.0.min', ...LINEAGE_GRAPH_SCRIPTS,
       'hatg_graph_view', 'hatg_canvas_selection', 'hatg_resident_dialogs'])
       await page.addScriptTag({url: '/static/' + name + '.js'});
     for (const scenario of [{mode: 'full'}, {mode: 'new-session'}, {mode: 'full', failChat: true}]) {

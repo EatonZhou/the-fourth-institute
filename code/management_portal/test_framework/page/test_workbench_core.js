@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
+  const escapeHtml = window.PortalUIPrimitives.escapeHtml;
   const aspectLabels = Object.freeze({ functional: window.PortalI18n.t("功能"), ui: "UI", behavior: window.PortalI18n.t("行为"), performance: window.PortalI18n.t("性能"), "architecture-conformance": window.PortalI18n.t("架构约束") });
   const riskLabels = Object.freeze({ "no-external-side-effects": window.PortalI18n.t("无外部副作用"), unspecified: window.PortalI18n.t("未声明"), isolated: window.PortalI18n.t("隔离环境"), "live-account": window.PortalI18n.t("真实账号"), "read-only": window.PortalI18n.t("只读") });
   const terminalStatuses = new Set(["passed", "failed", "cancelled", "error", "unsupported"]);

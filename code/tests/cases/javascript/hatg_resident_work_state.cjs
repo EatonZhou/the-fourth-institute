@@ -4,6 +4,7 @@
 const fs = require('node:fs'), path = require('node:path'), assert = require('node:assert/strict');
 const repo = path.resolve(__dirname, '../../..'), root = path.join(repo, 'management_portal/static');
 const {chromium} = require(path.join(repo, 'management_portal/test_framework/tau_runtime/node_modules/playwright'));
+const {LINEAGE_GRAPH_SCRIPTS} = require('./lineage_graph_scripts.cjs');
 const report = {checks:[], errors:[], ok:false};
 (async () => {
   const browser = await chromium.launch({headless:true});
@@ -19,7 +20,7 @@ const report = {checks:[], errors:[], ok:false};
     });
     await page.goto('https://hatg-state.fixture.invalid');
     for (const name of ['portal_design_system','portal_themes','hatg_panel']) await page.addStyleTag({url:'/static/'+name+'.css'});
-    for (const name of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min','resident_protocol','lineage_graph','hatg_graph_model','hatg_node_status','hatg_graph_view','hatg_resident_runtime']) await page.addScriptTag({url:'/static/'+name+'.js'});
+    for (const name of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min','resident_protocol',...LINEAGE_GRAPH_SCRIPTS,'hatg_graph_model','hatg_node_status','hatg_graph_view','hatg_resident_runtime']) await page.addScriptTag({url:'/static/'+name+'.js'});
     await page.evaluate(() => {
       PortalI18n.apply('zh-CN');
       const member='resident_fixture', facade='resident_facade';

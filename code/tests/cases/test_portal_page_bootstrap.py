@@ -2,6 +2,7 @@ import json
 import re
 from pathlib import Path
 
+from management_portal import script_groups
 from management_portal.page_bootstrap import inject_page_bootstrap
 
 
@@ -44,7 +45,9 @@ def test_declared_eager_workbenches_are_included_in_manifest():
     for name, host in (("lineage.html", "lineageWorkbenchRoot"),
                        ("paper.html", "paperWorkbench"),
                        ("article_workspace.html", "articleWorkspaceGrid")):
-        result = inject_page_bootstrap((root / name).read_bytes()).decode()
+        # Pages leave the server with their script groups expanded before the bootstrap is injected.
+        page = script_groups.expand_document((root / name).read_text(encoding="utf-8"))
+        result = inject_page_bootstrap(page.encode()).decode()
         config = json.loads(re.search(r'\}\s*\)\((\{.*?\})\);</script>', result).group(1))
         assert {check["id"] for check in config["checks"]} == {host}
         assert config["navigation"] is True

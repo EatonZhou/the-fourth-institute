@@ -1,4 +1,21 @@
 {
+  "portal-foundation": [
+    "/static/portal_state.js",
+    "/static/portal_text.js",
+    "/static/portal_translations.js",
+    "/static/portal_i18n.js",
+    "/static/portal_theme.js"
+  ],
+  "portal-shell": [
+    "/static/portal_overlay.js",
+    "/static/portal_events.js",
+    "/static/portal_refresh_coordinator.js",
+    "/static/resident_protocol.js",
+    "/static/portal_conversation_store.js",
+    "/static/portal_ui_primitives.js",
+    "/static/portal_nav.js",
+    "/static/portal_ui.js"
+  ],
   "chat-workspace": [
     "/static/chat_workspace_message_content.js",
     "/static/chat_workspace_composer.js",

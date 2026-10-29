@@ -51,7 +51,7 @@
     closeOnEscape: true,
     closeOnScroll: true,
   });
-  const esc = value => window.MD?.esc ? window.MD.esc(value) : String(value ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const esc = value => window.PortalUIPrimitives.escapeHtml(value);
   const paperStateHtml = (message, options = {}) => window.PortalUIPrimitives.asyncStateHtml({
     state: options.state || "empty",
     title: options.title || "",

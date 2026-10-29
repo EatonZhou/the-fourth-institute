@@ -5,6 +5,7 @@ const test = require('node:test');
 const vm = require('node:vm');
 const { babelParse } = require('./babel_parse.cjs');
 const { hatgSources, overrideHatgFunctions, startHatgRuntime } = require('./hatg_modules.cjs');
+const { LINEAGE_GRAPH_SCRIPTS } = require('./lineage_graph_scripts.cjs');
 
 const staticRoot = path.resolve(__dirname, '../../../management_portal/static');
 const plain = value => JSON.parse(JSON.stringify(value));
@@ -54,7 +55,7 @@ function fixture() {
   context.window = context;
   for (const file of [
     'portal_state.js', 'hatg_panel_features.js', 'hatg_panel_state.js',
-    'projection_libraries/portal-graph/1.0.0/geometry.js', 'lineage_graph.js',
+    'projection_libraries/portal-graph/1.0.0/geometry.js', ...LINEAGE_GRAPH_SCRIPTS.map(name => `${name}.js`),
     'lineage_program.js', 'portal_society_service.js',
   ]) {
     const source = fs.readFileSync(path.join(staticRoot, file), 'utf8');

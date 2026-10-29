@@ -4,7 +4,9 @@ const path = require('node:path');
 const vm = require('node:vm');
 const repo = path.resolve(__dirname, '../../..');
 const ctx = vm.createContext({ window: { PortalGraphGeometry: {}, PortalI18n: { t: x => x } } });
-vm.runInContext(fs.readFileSync(path.join(repo, 'management_portal/static/lineage_graph.js'), 'utf8'), ctx);
+for (const name of ['lineage_graph_layout.js', 'lineage_graph.js']) {
+  vm.runInContext(fs.readFileSync(path.join(repo, 'management_portal/static', name), 'utf8'), ctx);
+}
 const layout = ctx.window.PortalHatgGraph.computeWorkspaceGraphLayout;
 function check(name, nodes, edges) {
   const input = JSON.stringify([nodes, edges]);

@@ -54,7 +54,7 @@ def chat_scripts(text):
 PAGES = [*sorted((ROOT / "management_portal").glob("*.html")),
          *sorted((ROOT / "management_portal/test_framework/page").glob("*.html")),
          *sorted(ROOT.glob("*_lan/*.html"))]
-HOSTS = [path for path in PAGES if script_groups.MARKER in path.read_text(encoding="utf-8")]
+HOSTS = [path for path in PAGES if '"chat-workspace"' in path.read_text(encoding="utf-8")]
 IDS = [str(path.relative_to(ROOT)) for path in HOSTS]
 
 
@@ -89,7 +89,7 @@ def test_expanded_hosts_load_the_chat_group_in_order_like_its_placeholder(path):
     text = path.read_text(encoding="utf-8")
     scripts = chat_scripts(script_groups.expand_document(text))
     assert tuple(source for source, *_ in scripts) == GROUP
-    placeholder = re.search(r"<script\b[^>]*data-portal-script-group[^>]*>", text)
+    placeholder = re.search(r'<script\b[^>]*data-portal-script-group="chat-workspace"[^>]*>', text)
     loading = (bool(placeholder and " defer" in placeholder[0]), False)
     assert all(tuple(script[1:]) == loading for script in scripts)
 

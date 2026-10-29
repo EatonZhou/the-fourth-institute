@@ -4,7 +4,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const context = vm.createContext({ window: { PortalGraphGeometry: {}, PortalI18n: { t: text => text } } });
-vm.runInContext(fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static/lineage_graph.js'), 'utf8'), context);
+for (const name of ['lineage_graph_layout.js', 'lineage_graph.js']) {
+  vm.runInContext(fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static', name), 'utf8'), context);
+}
 const layout = context.window.PortalHatgGraph.computeBranchAwareLayout;
 const nodes = Array.from({ length: 12 }, (_, index) => ({ id: String(index), x: index * 12, y: index * 8 }));
 const options = { horizontalGap: 14.53, verticalGap: 11.78, nodeWidth: 12.03, nodeHeight: 10.44, componentGap: 3, componentColumnGap: 3, componentWrapSpan: 0, feedbackEdgeTypes: ['watch', 'target'] };

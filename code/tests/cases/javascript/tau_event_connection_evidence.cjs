@@ -2,6 +2,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const portal=path.resolve(__dirname,'../../../management_portal');
 const {chromium}=require(path.join(portal,'test_framework/tau_runtime/node_modules/playwright'));
+const {LINEAGE_GRAPH_SCRIPTS}=require('./lineage_graph_scripts.cjs');
 const L='lineage_111111111111',E='event_source_222222222222',T='effect_333333333333',W='wire_444444444444';
 const report={scope:'Native graph, program ports and CSS; graph data, header and node text are local fixtures. No business requests.',formal_acceptance:false};
 (async()=>{
@@ -11,7 +12,7 @@ const report={scope:'Native graph, program ports and CSS; graph data, header and
     page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>requests.push(r.url()));
     await page.setContent(`<!doctype html><section id="panel" class="portalHatgPanelComponent" role="region"><div id="activeLineageIdentity"><code data-portal-resource-id="${L}">${L}</code></div><div id="hatgCanvas" class="hatgCanvas" style="position:relative;width:1050px;height:700px"><div id="world" class="hatgWorld"><svg id="edges"></svg><svg id="effects"></svg><div id="labels"></div><div id="nodes"></div></div></div></section>`);
     for(const n of ['portal_design_system','portal_themes','hatg_panel'])await page.addStyleTag({content:fs.readFileSync(path.join(portal,'static',n+'.css'),'utf8')});
-    for(const n of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min','lineage_program','lineage_graph'])await page.addScriptTag({content:fs.readFileSync(path.join(portal,'static',n+'.js'),'utf8')});
+    for(const n of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min','lineage_program',...LINEAGE_GRAPH_SCRIPTS])await page.addScriptTag({content:fs.readFileSync(path.join(portal,'static',n+'.js'),'utf8')});
     await page.evaluate(({E,T,W})=>{
       window.localNodes=[{id:E,kind:'event_source',title:'Local Event',x:25,y:40,config:{event_type:'manual.triggered'}},{id:T,kind:'effect',title:'Local Effect',x:75,y:40,config:{script:'local fixture'}}];
       window.localEdges=[{id:W,source:E,target:T,type:'route',source_port:'output',target_port:'invoke',_program_wire:true}];

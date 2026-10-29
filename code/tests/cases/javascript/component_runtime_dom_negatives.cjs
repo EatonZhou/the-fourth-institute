@@ -19,14 +19,14 @@ async function main() {
   assert.ok(probe, 'select one DOM fault probe');
   let replacements = 0;
   await assert.rejects(domContract(probe.kind, (sourceName, source) => {
-    if (sourceName !== 'lineage_graph.js') return source;
+    if (sourceName !== 'lineage_graph_cards.js') return source;
     assert.equal(source.split(probe.before).length - 1, 1, 'exact production DOM write');
     replacements++;
     return source.replace(probe.before, probe.after);
   }), error => {
     assert.match(error.message, probe.failure);
     console.log(JSON.stringify({ result: 'EXPECTED_FAILURE', probe: name, kind: probe.kind,
-      source: 'lineage_graph.js', before: probe.before, after: probe.after,
+      source: 'lineage_graph_cards.js', before: probe.before, after: probe.after,
       assertion: error.message, stack: error.stack }));
     return true;
   });

@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { JSDOM, VirtualConsole } = require('jsdom');
 const { controller, serverFixture, raw } = require('./hatg_runtime_state.cjs');
+const { LINEAGE_GRAPH_SCRIPTS } = require('./lineage_graph_scripts.cjs');
 const staticRoot = path.resolve(__dirname, '../../../management_portal/static');
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 async function until(predicate, label) {
@@ -59,7 +60,8 @@ async function documentFixture(kind, server, sourceTransform = (_name, source) =
   };
   try {
     for (const name of ['portal_text.js', 'portal_state.js', 'portal_ui.js', 'portal_ui_primitives.js',
-      'vendor/d3/d3.v7.9.0.min.js', 'projection_libraries/portal-graph/1.0.0/geometry.js', 'lineage_graph.js']) {
+      'vendor/d3/d3.v7.9.0.min.js', 'projection_libraries/portal-graph/1.0.0/geometry.js',
+      ...LINEAGE_GRAPH_SCRIPTS.map(name => `${name}.js`)]) {
       window.eval(sourceTransform(name, fs.readFileSync(path.join(staticRoot, name), 'utf8')) + `\n//# sourceURL=${name}`);
     }
     const h = controller(kind, sourceTransform('hatg_panel.js', raw), server, {

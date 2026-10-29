@@ -21,12 +21,7 @@
   let cardSequence = 0;
   const KIND_LABELS = Object.freeze({ request: window.PortalI18n.t("请求"), group: window.PortalI18n.t("群体"), info: "info" });
   const STATE_LABELS = Object.freeze({ completed: window.PortalI18n.t("完成"), cancelled: window.PortalI18n.t("已停止"), failed: window.PortalI18n.t("失败"), running: window.PortalI18n.t("处理中") });
-
-  function escapeHtml(value) {
-    return String(value ?? "").replace(/[&<>"']/g, character => ({
-      "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;",
-    })[character]);
-  }
+  const escapeHtml = window.PortalUIPrimitives.escapeHtml;
 
   function formatTime(value) {
     const date = new Date(String(value || ""));

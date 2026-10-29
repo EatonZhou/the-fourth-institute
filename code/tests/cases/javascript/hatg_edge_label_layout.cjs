@@ -1,6 +1,7 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {chromium}=require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
+const {LINEAGE_GRAPH_SCRIPTS}=require('./lineage_graph_scripts.cjs');
 const root=path.resolve(__dirname,'../../../management_portal/static');
 (async()=>{
  const browser=await chromium.launch({headless:true});
@@ -14,7 +15,7 @@ const root=path.resolve(__dirname,'../../../management_portal/static');
   });
   await page.goto('http://edge-label.fixture.invalid');
   for(const n of ['portal_design_system','portal_themes','hatg_panel','lineage_function_blocks'])await page.addStyleTag({url:'/static/'+n+'.css'});
-  for(const n of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min','lineage_graph'])await page.addScriptTag({url:'/static/'+n+'.js'});
+  for(const n of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min',...LINEAGE_GRAPH_SCRIPTS])await page.addScriptTag({url:'/static/'+n+'.js'});
   await page.evaluate(()=>{
    window.graph=PortalHatgGraph.createGraph({root:'#canvas',world:'#world',edgeLayer:'#edges',effectLayer:'#effects',labelLayer:'#labels',nodeLayer:'#nodes',scaleExtent:[.05,3.2]});
    graph.render({nodes:[{id:'a',x:20,y:20},{id:'b',x:80,y:80},{id:'c',x:20,y:80},{id:'d',x:80,y:20}].map(n=>({...n,kind:'agent',title:n.id})),edges:[{id:'one',source:'a',target:'b',type:'packet',label:'Route'},{id:'two',source:'c',target:'d',type:'packet',label:'Route'}]});

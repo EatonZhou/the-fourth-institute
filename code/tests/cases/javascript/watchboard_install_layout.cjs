@@ -2,6 +2,7 @@
 const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path');
 const {babelParse, traverse} = require('./babel_parse.cjs');
 const {workbenchModuleFiles} = require('./lineage_workbench_modules.cjs');
+const {LINEAGE_GRAPH_SCRIPTS} = require('./lineage_graph_scripts.cjs');
 const {chromium} = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
 const root = path.resolve(__dirname, '../../../management_portal/static');
 const parts = {};
@@ -31,7 +32,7 @@ assert.equal(Object.keys(parts).length, 4);
     });
     await page.goto('http://watchboard-install.fixture.invalid');
     for (const n of ['portal_design_system', 'portal_themes', 'hatg_panel', 'lineage_function_blocks']) await page.addStyleTag({url: '/static/' + n + '.css'});
-    for (const n of ['portal_text', 'portal_state', 'portal_translations', 'portal_i18n', 'portal_ui_primitives', 'projection_libraries/portal-graph/1.0.0/geometry', 'vendor/d3/d3.v7.9.0.min', 'lineage_graph', 'hatg_layout']) await page.addScriptTag({url: '/static/' + n + '.js'});
+    for (const n of ['portal_text', 'portal_state', 'portal_translations', 'portal_i18n', 'portal_ui_primitives', 'projection_libraries/portal-graph/1.0.0/geometry', 'vendor/d3/d3.v7.9.0.min', ...LINEAGE_GRAPH_SCRIPTS, 'hatg_layout']) await page.addScriptTag({url: '/static/' + n + '.js'});
     const result = await page.evaluate(async parts => {
       document.documentElement.style.zoom = '1.25';
       const title = '[TAU:testrun_0b64e9f35d85ff9d:resident.conversation] test_94b17916d4ba Watchboard';

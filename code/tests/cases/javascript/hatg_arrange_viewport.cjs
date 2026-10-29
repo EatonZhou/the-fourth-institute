@@ -5,6 +5,7 @@ const { execFileSync } = require('node:child_process');
 const { chromium } = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
 const { babelParse, traverse } = require('./babel_parse.cjs');
 const { readHatgModule } = require('./hatg_modules.cjs');
+const { LINEAGE_GRAPH_SCRIPTS } = require('./lineage_graph_scripts.cjs');
 const root = path.resolve(__dirname, '../../../management_portal/static');
 const familySource = readHatgModule('hatg_family_blocks.js');
 // The arrange camera policy is the layout module's.
@@ -35,7 +36,7 @@ assert.ok(familyOptions, 'production Family camera policy');
     });
     await page.goto('http://hatg-arrange.fixture.invalid');
     for (const name of ['portal_design_system', 'portal_themes', 'hatg_panel', 'lineage_function_blocks']) await page.addStyleTag({ url: '/static/' + name + '.css' });
-    for (const name of ['portal_text', 'portal_state', 'portal_translations', 'portal_i18n', 'portal_ui_primitives', 'projection_libraries/portal-graph/1.0.0/geometry', 'vendor/d3/d3.v7.9.0.min', 'lineage_graph']) await page.addScriptTag({ url: '/static/' + name + '.js' });
+    for (const name of ['portal_text', 'portal_state', 'portal_translations', 'portal_i18n', 'portal_ui_primitives', 'projection_libraries/portal-graph/1.0.0/geometry', 'vendor/d3/d3.v7.9.0.min', ...LINEAGE_GRAPH_SCRIPTS]) await page.addScriptTag({ url: '/static/' + name + '.js' });
     assert.deepEqual(errors, [], 'production dependencies loaded');
     await page.evaluate(options => {
       window.arrangeOptions = eval(options);

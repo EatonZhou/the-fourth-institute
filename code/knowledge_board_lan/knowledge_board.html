@@ -12,11 +12,7 @@
     <link rel="stylesheet" href="/static/portal_design_system.css" data-portal-skin="default" />
     <link rel="stylesheet" href="/static/portal_themes.css" data-portal-skin-provider="themes" />
     <link rel="stylesheet" href="/static/portal_board_toolbar.css" />
-    <script src="/static/portal_state.js"></script>
-    <script src="/static/portal_text.js"></script>
-    <script src="/static/portal_translations.js"></script>
-    <script src="/static/portal_i18n.js"></script>
-    <script src="/static/portal_theme.js"></script>
+    <script data-portal-script-group="portal-foundation"></script>
     <script src="/static/portal_page_state.js"></script>
     <script src="/static/portal_api.js"></script>
     <script src="/static/portal_instruction_client.js"></script>
@@ -2639,7 +2635,7 @@
       // ── markdown renderer (shared) ────────────────────────────────────────
       const renderMarkdown = (src, options = {}) => window.MD.render(src, options) || "<p></p>";
       const renderInlineMarkdown = (text) => window.MD.renderInline(text);
-      const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+      const escapeHtml = (value) => window.PortalUIPrimitives.escapeHtml(value);
       const portalIcon = (name, options = {}) => window.PortalUIPrimitives.iconHtml(name, options);
       const knowledgeStateHtml = (message, options = {}) => window.PortalUIPrimitives.asyncStateHtml({
         state: options.state || "empty",

@@ -1,0 +1,215 @@
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--text);
+  background: var(--bg);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+.componentDemoShell {
+  width: min(940px, calc(100vw - 32px));
+  margin: 0 auto;
+  padding: 28px 0 64px;
+}
+.componentDemoHeader {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+.componentDemoHeader h1,
+.componentDemoHeader p { margin: 0; }
+.componentDemoHeader p {
+  max-width: 560px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+.componentDemoGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.componentDemoCard {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--panel);
+  box-shadow: var(--shadow-soft);
+}
+.componentDemoCard h2 {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+.componentDemoCard p {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.componentDemoToolbarHost {
+  width: 270px;
+  max-width: 100%;
+  padding: 6px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+}
+.componentDemoFilterPanel {
+  width: 220px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+.componentDemoFilterPanel label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+}
+.componentDemoSearch {
+  display: grid;
+  gap: 10px;
+}
+.componentDemoAsync {
+  min-height: 88px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+}
+.componentDemoPopoverBoundary {
+  position: relative;
+  width: min(260px, 100%);
+  height: 170px;
+  overflow: hidden;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--panel) 92%, var(--accent) 8%);
+}
+.componentDemoPopoverBoundary > button {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+}
+.componentDemoPopoverBoundary.is-demo-pinned {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 60;
+}
+.componentDemoPopoverPanel,
+.componentDemoFloatingPanel {
+  box-sizing: border-box;
+  width: 340px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+.componentDemoPopoverPanel {
+  min-height: 240px;
+}
+#componentDynamicPanel {
+  min-height: 0;
+}
+.componentDemoFeedbackActions,
+.componentDemoAsyncVariants,
+.componentDemoIconRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.componentDemoStackHost {
+  position: relative;
+  z-index: 20;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.componentDemoStackCompetitor {
+  position: relative;
+  z-index: 40;
+  margin-top: 8px;
+  padding: 8px;
+  color: var(--muted);
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+}
+.componentDemoAsyncVariants > div {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+.componentDemoAsyncVariants > .componentDemoNarrowAsync {
+  flex: 0 0 176px;
+  width: 176px;
+  max-width: 100%;
+  overflow: hidden;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+}
+.componentDemoResult {
+  min-height: 22px;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.componentDemoTallForm {
+  display: grid;
+  gap: 14px;
+}
+.componentDemoTallSpacer {
+  min-height: 620px;
+  padding: 16px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--panel) 94%, var(--accent) 6%);
+}
+.componentDemoWorkbench {
+  --demo-pane-size: 160px;
+  display: grid;
+  grid-template-columns: minmax(100px, var(--demo-pane-size)) 12px minmax(0, 1fr);
+  min-height: 132px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.componentDemoWorkbenchPane {
+  min-width: 0;
+  padding: 12px;
+  background: color-mix(in srgb, var(--panel) 94%, var(--accent) 6%);
+}
+.componentDemoSplitter {
+  width: 12px;
+  min-height: 132px;
+  cursor: col-resize;
+  touch-action: none;
+  background: color-mix(in srgb, var(--border) 72%, var(--accent) 28%);
+}
+.componentDemoSplitter:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.componentDemoSemantic {
+  display: grid;
+  gap: 8px;
+}
+.componentDemoSemanticControls {
+  display: flex;
+  gap: 8px;
+}
+.componentDemoSemanticControls input { min-width: 0; flex: 1; }
+.componentDemoMutationTargets {
+  display: grid;
+  gap: 9px;
+  margin-top: 10px;
+}
+@media (max-width: 680px) {
+  .componentDemoGrid { grid-template-columns: 1fr; }
+  .componentDemoHeader { align-items: start; flex-direction: column; }
+}

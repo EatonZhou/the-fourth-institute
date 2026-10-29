@@ -3,28 +3,25 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const test = require('node:test');
-const { babelParse, traverse } = require('./babel_parse.cjs');
 const root = path.resolve(__dirname, '../../..');
 const graphGeometry = require(path.join(root, 'management_portal/static/projection_libraries/portal-graph/1.0.0/geometry.js'));
-const source = fs.readFileSync(path.join(root, 'management_portal/static/lineage_graph.js'), 'utf8');
-let extracted;
-traverse(babelParse(source, 'lineage_graph.js'), { FunctionDeclaration(p) {
-  if (p.node.id.name === 'currentViewportInsets') extracted = source.slice(p.node.start, p.node.end);
-} });
+const context = vm.createContext({});
+context.window = context;
+vm.runInContext(fs.readFileSync(path.join(root, 'management_portal/static/lineage_graph_viewport.js'), 'utf8'), context);
 
 function fixture() {
   const canvas = { left: 100, top: 80, right: 1100, bottom: 780 };
   const box = { left: 942, top: 679, right: 1090, bottom: 771 };
   const state = { hidden: false, rendered: true, configured: { top: 58, bottom: 0 } };
-  const context = vm.createContext({ graphGeometry,
-    number: (value, fallback) => Number.isFinite(Number(value)) ? Number(value) : fallback,
-    currentViewportSize: () => ({ width: 1000, height: 700 }),
-    root: { getBoundingClientRect: () => canvas },
+  const viewport = context.PortalHatgGraphViewport.createViewport({
+    d3: {}, graphGeometry,
     minimap: { hasAttribute: () => state.hidden, getClientRects: () => state.rendered ? [box] : [], getBoundingClientRect: () => box },
+    number: (value, fallback) => Number.isFinite(Number(value)) ? Number(value) : fallback,
     options: { viewportInsets: () => state.configured },
+    root: { clientWidth: 1000, clientHeight: 700, getBoundingClientRect: () => canvas },
+    scaleExtent: [0.35, 3.2], state: {}, worldSize: { width: 1280, height: 900 },
   });
-  vm.runInContext(extracted, context);
-  return { canvas, box, state, insets: () => JSON.parse(JSON.stringify(context.currentViewportInsets())) };
+  return { canvas, box, state, insets: () => JSON.parse(JSON.stringify(viewport.currentViewportInsets())) };
 }
 
 test('fit area excludes the actual minimap footprint and preserves caller insets', () => {

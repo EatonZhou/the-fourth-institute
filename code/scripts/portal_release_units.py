@@ -65,6 +65,24 @@ LINEAGE_WORKBENCH_RELEASE_UNIT = (
     'management_portal/static/lineage_primitive_inspector.js',
     'management_portal/static/lineage_invocation_inspector.js',
     'management_portal/static/lineage_element_fields.js',
+    'management_portal/static/lineage_graph_layout.js',
+    'management_portal/static/lineage_graph_viewport.js',
+    'management_portal/static/lineage_graph_nodes.js',
+    'management_portal/static/lineage_graph_element_index.js',
+    'management_portal/static/lineage_graph_ports.js',
+    'management_portal/static/lineage_graph_hover.js',
+    'management_portal/static/lineage_graph_edge_routes.js',
+    'management_portal/static/lineage_graph_edges.js',
+    'management_portal/static/lineage_graph_minimap.js',
+    'management_portal/static/lineage_graph_function_blocks.js',
+    'management_portal/static/lineage_graph_camera.js',
+    'management_portal/static/lineage_graph_selection.js',
+    'management_portal/static/lineage_graph_wiring.js',
+    'management_portal/static/lineage_graph_quick_fork.js',
+    'management_portal/static/lineage_graph_drag.js',
+    'management_portal/static/lineage_graph_cards.js',
+    'management_portal/static/lineage_graph_canvas_events.js',
+    'management_portal/static/lineage_graph_render.js',
     'management_portal/static/lineage_graph.js',
     'management_portal/static/lineage_function_blocks.css',
 )
@@ -88,17 +106,21 @@ def chat_workspace_unit(root: Path) -> tuple[str, ...]:
 
 
 # The Paper, Article, Repo and Projects pages each load their root script after
-# the module scripts it creates its parts from. The page lists them, so the page,
-# its style sheet and every script it loads by the page's prefix are one unit.
-RESOURCE_PAGES = (
+# the module scripts it creates its parts from; the home and component demo
+# pages keep their style sheets, and the demo page its script, in static files.
+# The page lists them, so the page and every script and style sheet it loads by
+# the page's prefix are one unit.
+PAGES = (
     ('management_portal/paper.html', 'paper'),
     ('management_portal/article_workspace.html', 'article_workspace'),
     ('management_portal/repo_workspace.html', 'repo_workspace'),
     ('management_portal/projects.html', 'project'),
+    ('management_portal/index.html', 'home'),
+    ('management_portal/test_demo_components.html', 'test_demo_components'),
 )
 
 
-def resource_page_unit(root: Path, page: str, prefix: str) -> tuple[str, ...]:
+def page_unit(root: Path, page: str, prefix: str) -> tuple[str, ...]:
     """The page and the static scripts and style sheets it loads whose names start with ``prefix``."""
     document = root / page
     if not document.is_file():
@@ -109,7 +131,7 @@ def resource_page_unit(root: Path, page: str, prefix: str) -> tuple[str, ...]:
 
 def release_units(root: Path) -> tuple[tuple[str, ...], ...]:
     return (LINEAGE_WORKBENCH_RELEASE_UNIT, chat_workspace_unit(root),
-            *(resource_page_unit(root, page, prefix) for page, prefix in RESOURCE_PAGES))
+            *(page_unit(root, page, prefix) for page, prefix in PAGES))
 
 
 def expand_release_unit_paths(paths: Iterable[str], root: Path,

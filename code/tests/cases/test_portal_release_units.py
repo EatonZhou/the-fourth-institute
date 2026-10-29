@@ -40,10 +40,10 @@ def test_chat_unit_follows_the_group_list_of_the_published_tree(tmp_path):
         GROUPS, ENTRY, 'management_portal/static/chat_workspace_new.js'}
 
 
-def test_resource_page_scripts_publish_with_their_page():
-    """选中 Paper、Article 或 Repo 页面的任一脚本、样式或页面本身时，页面与它按名加载的全部脚本和样式整组发布"""
-    for page, prefix in units.RESOURCE_PAGES:
-        unit = set(units.resource_page_unit(ROOT, page, prefix))
+def test_page_scripts_publish_with_their_page():
+    """选中 Paper、Article、Repo、首页或组件演示页的任一脚本、样式或页面本身时，页面与它按名加载的全部脚本和样式整组发布"""
+    for page, prefix in units.PAGES:
+        unit = set(units.page_unit(ROOT, page, prefix))
         static = {path.relative_to(ROOT).as_posix() for path in (ROOT / 'management_portal/static').glob(f'{prefix}*')
                   if path.suffix in {'.js', '.css'} and (path.stem == prefix or path.stem.startswith(f'{prefix}_'))}
         assert page in unit and f'management_portal/static/{prefix}.js' in unit
@@ -53,7 +53,7 @@ def test_resource_page_scripts_publish_with_their_page():
     assert ENTRY not in expand('management_portal/static/repo_workspace.js')
 
 
-def test_resource_page_unit_follows_the_page_of_the_published_tree(tmp_path):
+def test_page_unit_follows_the_page_of_the_published_tree(tmp_path):
     """页面单元按被发布源码树中页面的脚本标签取文件；页面不再加载的旧模块不随行，已删除的模块不阻止发布"""
     static = tmp_path / 'management_portal/static'
     static.mkdir(parents=True)

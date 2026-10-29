@@ -3,6 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 import re
 
+from management_portal import script_groups
+
 
 ROOT = Path(__file__).resolve().parents[2]
 STATIC = ROOT / "management_portal" / "static"
@@ -44,6 +46,9 @@ MIGRATED_ESCAPE_HELPERS = (
     "portal_file_tree.js",
     "resource_backup.js",
     "project_common.js",
+    "hatg_mailbox_panel.js",
+    "paper.js",
+    "lineage_graph_nodes.js",
 )
 
 # Modules that take elementOf and staticAssetUrl from PortalUIPrimitives instead of their own copies.
@@ -246,7 +251,7 @@ def test_portal_theme_contract_has_one_provider_and_no_parallel_dialect_contract
     with subtests.test(contract='test_migrated_ui_helpers_load_after_their_shared_owners'), isolated_portal_case() as case_path:
         html_paths = [*sorted((ROOT / 'management_portal').glob('*.html')), *sorted(ROOT.glob('*_lan/*.html'))]
         for path in html_paths:
-            source = path.read_text(encoding='utf-8')
+            source = script_groups.expand_document(path.read_text(encoding='utf-8'))
             for owner in MIGRATED_ESCAPE_HELPERS:
                 if owner not in source:
                     continue
