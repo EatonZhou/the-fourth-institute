@@ -142,7 +142,7 @@ def invocation(caller="alice", **arguments):
 
 
 def test_handlers_read_outputs_check_teams_and_tell_open_pages(monkeypatch):
-    """GetResearchMap 带出引用方向的产出；ApplyResearchMapChanges 只接受项目中的 Lineage 作团队，并通知打开的页面"""
+    """GetResearchMap 带出引用方向的产出（历史修订与 include_outputs=false 不带）；ApplyResearchMapChanges 只接受项目中的 Lineage 作团队，并通知打开的页面"""
     from management_portal import resources, society_service, notifications
 
     project = "HandlerProject"
@@ -169,6 +169,7 @@ def test_handlers_read_outputs_check_teams_and_tell_open_pages(monkeypatch):
     assert result["outputs"] == {direction_id: [{"resource_id": "decision_0123456789ab", "resource_type": "decision",
                                                  "title": "Use RTC", "url": "/r/d", "modified_at": "2026-10-28T00:00:00Z"}]}
     assert web.get_research_map(invocation(project_id=project, revision=1))["outputs"] == {}
+    assert web.get_research_map(invocation(project_id=project, include_outputs=False))["outputs"] == {}
 
     team = {"op": "update_direction", "direction_id": direction_id, "fields": {"teams": ["lineage_000000000002"]}}
     assert web.apply_research_map_changes(invocation(project_id=project, expected_revision=1, changes=[team]))["revision"] == 2

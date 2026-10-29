@@ -789,7 +789,7 @@ modules:
       - "management_portal/projects.html"
       - "management_portal/static/project_*.js"
       - "management_portal/static/project_*.css"
-      - "management_portal/static/projects.*"
+      - "management_portal/static/project.*"
       - "management_portal/research_map_*.py"
       - "management_portal/resources/providers/direction.py"
       - "management_portal/watchboards/telepus.py"

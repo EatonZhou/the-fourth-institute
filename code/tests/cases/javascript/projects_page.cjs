@@ -63,6 +63,10 @@ const ALPHA = {
         if (f.fail.has(name)) throw new Error(`${name} refused`);
         if (name === 'ListProjects') return { projects: JSON.parse(JSON.stringify(projects)), status_vocab: ['not_started', 'active', 'paused', 'done', 'archived'] };
         if (name === 'GetProject') return JSON.parse(JSON.stringify(alpha));
+        if (name === 'GetResearchMap') return { project_id: args.project_id, revision: 4, updated_at: '2026-10-20T10:00:00Z', relations: [], layout: {}, notes: [], outputs: {},
+          directions: [{ direction_id: 'direction_aaaaaaaaaaaa', parent_id: '', title: 'Grasping', stance: 'focus', teams: [] },
+            { direction_id: 'direction_bbbbbbbbbbbb', parent_id: '', title: 'Sim2Real', stance: 'candidate', teams: [] },
+            { direction_id: 'direction_cccccccccccc', parent_id: '', title: 'Old', stance: 'dropped', teams: [] }] };
         if (name === 'ListResidentStates') return { states: [
           { resident_id: 'resident_aaaaaaaaaaaa', state: { work_state: 'running' } },
           { resident_id: 'resident_cccccccccccc', state: { work_state: 'idle', queued_count: 2 } }] };
@@ -73,10 +77,10 @@ const ALPHA = {
       } };
       window.PortalProjectsFixture = { now: Date.parse('2026-10-20T12:00:00Z') };
     }, { projects: PROJECTS, alpha: ALPHA });
-    for (const name of ['project_common', 'project_list', 'project_settings', 'project_home']) {
+    for (const name of ['project_common', 'project_list', 'project_settings', 'project_map_layout', 'project_home']) {
       await page.addScriptTag({ path: path.join(root, 'static', name + '.js') });
     }
-    await page.addStyleTag({ path: path.join(root, 'static', 'projects.css') });
+    await page.addStyleTag({ path: path.join(root, 'static', 'project.css') });
 
     // The list: groups by status, newest change first, the finished group folded.
     await page.evaluate(async () => {
@@ -121,7 +125,8 @@ const ALPHA = {
     await page.evaluate(async () => {
       document.body.innerHTML = '<main id="home"></main>';
       f.calls.length = 0;
-      window.home = PortalProjectHome.create({ root: document.getElementById('home'), onRenamed: id => { f.renamed = id; }, onDeleted: id => { f.deleted = id; } });
+      window.home = PortalProjectHome.create({ root: document.getElementById('home'), onOpenMap: id => { f.mapOpened = id; },
+        onRenamed: id => { f.renamed = id; }, onDeleted: id => { f.deleted = id; } });
       await home.load('Alpha', { statuses: ['not_started', 'active', 'paused', 'done', 'archived'] });
     });
     assert.equal(await page.$eval('.projectHero h1', node => node.textContent), 'Alpha');
@@ -134,6 +139,13 @@ const ALPHA = {
     const tiles = await page.$$eval('.projectResourceTile', nodes => nodes.map(node => [node.textContent.trim(), node.getAttribute('href')]));
     assert.deepEqual(tiles, [['5Design', '/resource/knowledge?type=decision&project=Alpha'], ['7论文', null]]);
     assert.equal(await page.$eval('.projectRecent a', node => node.getAttribute('href')), '/resource/knowledge?item=decision_aaaaaaaaaaaa');
+    // The research map card: the map without outputs, dropped directions left out, opened in the page.
+    assert.deepEqual(await page.evaluate(() => f.calls.find(([name]) => name === 'GetResearchMap')[1]), { project_id: 'Alpha', include_outputs: false });
+    assert.equal(await page.$$eval('.projectMapPreview circle[data-stance]', dots => dots.length), 2);
+    assert.match(await page.$eval('.projectMapCardText p', node => node.textContent), /^2 个方向 · 修订 4/);
+    assert.equal(await page.$eval('.projectMapCardBody', node => node.getAttribute('href')), '/projects?project=Alpha&view=map');
+    await page.click('.projectMapCardBody');
+    assert.equal(await page.evaluate(() => f.mapOpened), 'Alpha');
     const reads = await page.evaluate(() => f.calls.filter(([name]) => name === 'ListResidentStates')[0][1]);
     assert.deepEqual(reads, { resident_ids: ['resident_aaaaaaaaaaaa', 'resident_cccccccccccc'], include_viewer_state: false });
 
@@ -186,6 +198,54 @@ const ALPHA = {
     assert.deepEqual(deadlines, [
       { label: '今天截止', tone: 'warning' }, { label: '还剩 1 天', tone: 'warning' }, { label: '还剩 10 天', tone: '' },
       { label: '已逾期 1 天', tone: 'danger' }, { label: '日期无效', tone: 'danger' }, { label: '', tone: '' }]);
+
+    // In English the list and the Project page carry no untranslated Chinese.
+    const english = await browser.newPage();
+    english.on('pageerror', error => errors.push(error.message));
+    await english.goto('about:blank');
+    await english.evaluate(() => { window.__PORTAL_LANGUAGE__ = 'en'; window.PortalCompatibility = { identifier: name => `portal-${name}` }; });
+    for (const name of ['portal_text', 'portal_translations', 'portal_i18n']) {
+      await english.addScriptTag({ path: path.join(root, 'static', name + '.js') });
+    }
+    await english.evaluate(({ projects, alpha }) => {
+      const escapeHtml = x => String(x ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+      window.PortalUIPrimitives = { escapeHtml, mountIcons() {}, randomUUID: () => 'fixture', asyncStateHtml: state => `<div>${escapeHtml(state.title)}</div>` };
+      window.PortalUI = { toast() {}, formatDateTime: value => String(value).slice(0, 10), copyText: async () => {}, createDialogController: () => ({ open() {}, close() {}, destroy() {} }) };
+      const pageStates = {};
+      window.PortalPageState = { create: name => ({ read: () => ({ ...(pageStates[name] || {}) }), write: patch => { pageStates[name] = { ...(pageStates[name] || {}), ...patch }; } }) };
+      window.PortalIdentity = { username: () => 'fixture' };
+      window.PortalResourceRoutes = { routes: [{ resource_type: 'decision', detail_kind: 'knowledge' }, { resource_type: 'paper', detail_kind: 'paper' }] };
+      window.PortalAvatarEditor = { loadAssets: async () => {}, read: async () => null, mount: () => ({ destroy() {} }), remember() {} };
+      window.MD = { render: text => `<p>${escapeHtml(text)}</p>` };
+      const answers = {
+        ListProjects: { projects, status_vocab: ['not_started', 'active', 'paused', 'done', 'archived'] }, GetProject: alpha,
+        ListResidentStates: { states: [{ resident_id: 'resident_aaaaaaaaaaaa', state: { work_state: 'running' } }] },
+        GetResidentSummaries: { summaries: [] },
+        GetResearchMap: { project_id: 'Alpha', revision: 2, updated_at: '2026-10-20T10:00:00Z', relations: [], layout: {}, notes: [], outputs: {},
+          directions: [{ direction_id: 'direction_aaaaaaaaaaaa', parent_id: '', title: 'Grasping', stance: 'focus', teams: [] }] },
+      };
+      window.PortalInstructionClient = { execute: async name => JSON.parse(JSON.stringify(answers[name] || {})) };
+    }, { projects: PROJECTS, alpha: ALPHA });
+    for (const name of ['project_common', 'project_list', 'project_settings', 'project_map_layout', 'project_home']) {
+      await english.addScriptTag({ path: path.join(root, 'static', name + '.js') });
+    }
+    const chinese = () => english.evaluate(() => {
+      const found = [];
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      while (walker.nextNode()) if (/[一-鿿]/.test(walker.currentNode.nodeValue)) found.push(walker.currentNode.nodeValue.trim());
+      for (const node of document.body.querySelectorAll('[title],[aria-label],[placeholder]')) {
+        for (const name of ['title', 'aria-label', 'placeholder']) if (/[一-鿿]/.test(node.getAttribute(name) || '')) found.push(`${name}=${node.getAttribute(name)}`);
+      }
+      return found;
+    });
+    await english.evaluate(async () => {
+      document.body.innerHTML = '<main id="list"></main><main id="home"></main>';
+      await PortalProjectList.create({ root: document.getElementById('list') }).load();
+      await PortalProjectHome.create({ root: document.getElementById('home') }).load('Alpha', { statuses: ['not_started', 'active', 'paused', 'done', 'archived'] });
+    });
+    assert.equal(await english.$$eval('#list .projectCard', cards => cards.length), 4);
+    assert.match(await english.textContent('#home'), /Research map[\s\S]*Vision/);
+    assert.deepEqual(await chinese(), []);
     assert.deepEqual(errors, []);
     console.log('PASS projects page');
   } finally {

@@ -46,6 +46,7 @@ DECLARATIONS = (
     _d("GetResearchMap", "读取 Project 的研究地图：目标、方向、关系、布局、各方向最近的时间线与产出；带 revision 时读那次修订时的地图。", (
         R("project_id", description="要读取地图的 Project"),
         P("revision", "integer", "读取这一修订时的地图；省略时读当前地图", minimum=0),
+        P("include_outputs", "boolean", "是否带出各方向的产出，默认 true；只需要地图本身时传 false"),
     ), MAP),
     _d("ApplyResearchMapChanges", "以一组改动修改 Project 的研究地图，成为一次新修订：设定目标，增加、修改、移动、删除方向，"
        "增删方向之间的关系，给方向记一条时间线。Resident 增加方向时默认是候选（candidate），User 增加时默认是探索（explore）。", (

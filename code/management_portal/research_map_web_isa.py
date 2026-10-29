@@ -74,8 +74,9 @@ def get_research_map(inv: Invocation) -> dict[str, Any]:
     except LookupError as exc:
         raise not_found(str(exc)) from exc
     # Outputs are what the index holds now, so a past revision shows none.
+    wanted = revision is None and inv.argument("include_outputs") is not False
     ids = {item["direction_id"] for item in result["directions"]}
-    result["outputs"] = _outputs(project_id, ids, inv.caller) if revision is None else {}
+    result["outputs"] = _outputs(project_id, ids, inv.caller) if wanted else {}
     return result
 
 

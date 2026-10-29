@@ -14,7 +14,7 @@
     return (Array.isArray(value) ? value : [value]).filter(item => typeof item === "string" && item.trim()).slice(0, limit);
   }
 
-  function create({ root, onOpenList, onRenamed, onDeleted, onChanged } = {}) {
+  function create({ root, onOpenList, onOpenMap, onRenamed, onDeleted, onChanged } = {}) {
     if (!root) throw new TypeError("PortalProjectHome.create requires root");
     const { esc, t } = common();
     let data = null;
@@ -91,6 +91,43 @@
       </section>`;
     }
 
+    // The research map in miniature: the goal, the directions by stance, and a way in.
+    function mapHtml() {
+      const map = data.research_map;
+      const directions = map ? window.PortalProjectMapLayout.visible(map.directions || []) : [];
+      const counts = window.PortalProjectMapLayout.counts(directions);
+      const labels = { focus: "主攻", explore: "探索", candidate: "候选", watch: "观望", concluded: "已收束" };
+      const positions = window.PortalProjectMapLayout.radial(directions);
+      const box = window.PortalProjectMapLayout.bounds(positions, 140);
+      const tree = directions.map(item => {
+        const from = positions[item.parent_id] || { x: 0, y: 0 };
+        const to = positions[item.direction_id];
+        return `<line x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}" />`;
+      }).join("");
+      const dots = directions.map(item => {
+        const at = positions[item.direction_id];
+        return `<circle cx="${at.x}" cy="${at.y}" r="${item.stance === "focus" ? 46 : item.stance === "watch" ? 26 : 34}" data-stance="${esc(item.stance)}"><title>${esc(item.title)}</title></circle>`;
+      }).join("");
+      const preview = directions.length
+        ? `<svg class="projectMapPreview" viewBox="${box.minX} ${box.minY} ${box.maxX - box.minX} ${box.maxY - box.minY}" aria-hidden="true"><g class="projectMapPreviewEdges">${tree}</g><circle class="projectMapPreviewGoal" cx="0" cy="0" r="58" />${dots}</svg>`
+        : `<div class="projectMapPreview is-empty" aria-hidden="true"><span></span></div>`;
+      const summary = Object.entries(labels).filter(([stance]) => counts[stance])
+        .map(([stance, label]) => `<span class="mapCount" data-stance-tone="${stance}">${esc(t(label))} ${counts[stance]}</span>`).join("");
+      return window.PortalI18n.html`<section class="projectSection projectMapCard" id="projectMap" aria-labelledby="projectMapTitle">
+        <header class="projectSectionHead"><h2 id="projectMapTitle">研究地图</h2>
+          <a class="portalButton is-compact is-primary" href="${esc(common().projectHref(projectId()))}&view=map" data-home-map data-portal-icon="map"><span>${esc(t(directions.length ? "打开研究地图" : "开始绘制研究地图"))}</span></a></header>
+        <a class="projectMapCardBody" href="${esc(common().projectHref(projectId()))}&view=map" data-home-map>
+          ${preview}
+          <div class="projectMapCardText">
+            ${directions.length ? `<div class="mapCounts">${summary}</div>` : ""}
+            <p>${esc(directions.length
+              ? window.PortalI18n.text`${directions.length} 个方向 · 修订 ${map.revision} · ${common().relativeTime(map.updated_at)}`
+              : t("在这里掌控项目的研发方向：定主攻、派团队、看进展、下结论。"))}</p>
+          </div>
+        </a>
+      </section>`;
+    }
+
     function residentSlot(residentId, label, size) {
       return `<span class="projectAvatarSlot" data-avatar-kind="resident" data-avatar-id="${esc(residentId)}" data-avatar-label="${esc(label)}" data-avatar-size="${size}">${common().avatarHtml(label, null, size)}</span>`;
     }
@@ -163,6 +200,7 @@
         ${heroHtml()}
         ${statsHtml()}
         <div class="projectHomeSections">
+          ${mapHtml()}
           ${summaryHtml()}
           ${teamHtml()}
           <div class="projectHomeColumns">${resourcesHtml()}${recentHtml()}</div>
@@ -226,12 +264,14 @@
       if (Array.isArray(statuses)) statusVocab = statuses;
       root.innerHTML = window.PortalUIPrimitives.asyncStateHtml({ state: "loading", title: t("正在读取项目…"), message: "" });
       try {
-        const [result, list] = await Promise.all([
+        const [result, list, researchMap] = await Promise.all([
           common().execute("GetProject", { project_id: id }),
           statusVocab.length ? null : common().execute("ListProjects", {}).catch(() => null),
+          // Without the Projects feature's map the card offers to start one.
+          common().execute("GetResearchMap", { project_id: id, include_outputs: false }).catch(() => null),
         ]);
         if (current !== generation) return null;
-        data = result;
+        data = { ...result, research_map: researchMap };
         if (list?.status_vocab) statusVocab = list.status_vocab;
         render();
         void loadTeamLive(current);
@@ -308,6 +348,8 @@
     root.addEventListener("click", event => {
       const list = event.target.closest("[data-home-list]");
       if (list && common().plainClick(event)) { event.preventDefault(); onOpenList?.(); return; }
+      const map = event.target.closest("[data-home-map]");
+      if (map && common().plainClick(event)) { event.preventDefault(); onOpenMap?.(projectId()); return; }
       if (event.target.closest("[data-home-menu]")) { setMenu(!menuOpen); return; }
       const action = event.target.closest("[data-home-action]");
       if (action) { act(action.dataset.homeAction); return; }

@@ -27,6 +27,22 @@ def test_projects_page_lists_opens_and_changes_projects():
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+def test_research_map_page_steers_directions():
+    """研究地图显示方向、团队与时间线；人的姿态、收束、派团队和组建团队都落到地图修订或发给 Resident 的消息
+
+    放弃的方向默认隐藏；候选可在地图上接纳为探索或丢弃（丢弃即标为放弃并记一条决定）；改姿态与收束各是一次带决定记录的修订；
+    编辑只提交改动的字段；交给已有团队时先记到地图，再以用户的名义把方向发给该团队的 Leader；组建新团队发给 Project Resident；
+    修订号冲突时重读地图并提示；拖动保存位置；回放按修订逐个显示、期间不可编辑；他人的修改到达时重读。真实页面模块，指令由夹具应答。
+
+    :risk: no-external-side-effects
+    :profiles: local.fixture
+    :design: decision_9d15ae2053c4
+    """
+    script = Path(__file__).with_name("javascript") / "project_map.cjs"
+    result = subprocess.run(["node", str(script)], capture_output=True, text=True, timeout=120)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 def test_projects_feature_serves_the_page_and_owns_project_links(monkeypatch):
     """Projects 功能提供页面、导航入口和 Project 的打开地址；没有安装时 Project 打开按它筛选的知识"""
     served = []
