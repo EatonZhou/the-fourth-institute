@@ -39,6 +39,14 @@ class Index:
                  and (not q or q == record["resource_id"])]
         return {"resources": found[offset:offset + limit], "total": len(found)}
 
+    def project_changes(self, project_ids, *, actor):
+        assert actor == "alice"
+        changed = {}
+        for record in self.query(actor=actor, limit=5000, include_attributes=True, projects=project_ids)["resources"]:
+            for project_id in set(project_ids) & set(record["attributes"].get("project_ids") or ()):
+                changed[project_id] = max(changed.get(project_id, ""), record["source"]["modified_at"])
+        return changed
+
     def projection_state(self, adapter):
         assert adapter == "project"
         return self.state

@@ -959,36 +959,10 @@ class IndexStore:
             }
         )
         with timing.timed_request() as timer:
-            mark = timer.started
-            with self._lock:
-                if query.resource_types:
-                    records = [self._records[resource_id]
-                               for resource_type in query.resource_types
-                               for resource_id in self._type_ids.get(resource_type, ())]
-                else:
-                    records = list(self._records.values())
-                updated_at = self._index_updated_at
-            mark = timer.add("snapshot", mark)
-            records = [record for record in records if record['resource_type'] in enabled_types]
-            records = prefilter_query_candidates(records, query)
-            mark = timer.add("prefilter", mark)
-            if records_projector is not None and (
-                records_projector_types is None or
-                any(record["resource_type"] in records_projector_types for record in records)
-            ):
-                records = records_projector(records)
-            mark = timer.add("descriptors", mark)
-            current_facts_needed = any(
-                record["resource_type"] in {"resident", "lineage", "workspace", "workbench", "family"}
-                for record in records
+            records, updated_at, current_facts_needed, mark = self._matching_records(
+                query, timer, enabled_types=enabled_types,
+                records_projector=records_projector, records_projector_types=records_projector_types,
             )
-            if current_facts_needed:
-                records = self._project_business_facts(records)
-            mark = timer.add("business_facts", mark)
-            records = filter_query_candidates(records, query)
-            mark = timer.add("filter", mark)
-            records = self._filter_private_records(records, actor)
-            mark = timer.add("private_visibility", mark)
             result = query_records(
                 records,
                 query,
@@ -1013,6 +987,88 @@ class IndexStore:
                 facets=sorted(query.facets), resource_types=sorted(query.resource_types),
             )
         return result
+
+    def project_changes(
+        self,
+        projects: Iterable[str],
+        *,
+        actor: str = "",
+        records_projector: ResourceRecordsProjector | None = None,
+        records_projector_types: frozenset[str] | None = None,
+    ) -> dict[str, str]:
+        """Each Project's latest source change among the resources the actor may read.
+
+        The resources are those a ``projects`` query returns, found in one
+        pass without ranking, copying or URLs. Paging such a query 5,000 rows
+        at a time projected every candidate again for each page.
+        """
+        query = ResourceQuery.from_kwargs({"actor": actor, "projects": projects})
+        changed: dict[str, str] = {}
+        if not query.projects:
+            return changed
+        with timing.timed_request() as timer:
+            records, _updated_at, _facts, mark = self._matching_records(
+                query, timer, enabled_types=self.resource_types.enabled_types(),
+                records_projector=records_projector, records_projector_types=records_projector_types,
+            )
+            for record, readable in zip(records, readable_flags(records, query.actor)):
+                if not readable:
+                    continue
+                moment = str((record.get("source") or {}).get("modified_at") or "")
+                for project_id in (record.get("attributes") or {}).get("project_ids") or ():
+                    project_id = str(project_id)
+                    if project_id in query.projects and moment > changed.get(project_id, ""):
+                        changed[project_id] = moment
+            timer.add("readable_changes", mark)
+            timer.report_if_slow("project_changes", SLOW_QUERY_SECONDS,
+                                 candidates=len(records), projects=len(query.projects))
+        return changed
+
+    def _matching_records(
+        self,
+        query: ResourceQuery,
+        timer: Any,
+        *,
+        enabled_types: Iterable[str],
+        records_projector: ResourceRecordsProjector | None,
+        records_projector_types: frozenset[str] | None,
+    ) -> tuple[list[dict[str, Any]], str, bool, float]:
+        """Records passing every filter except read access, with current descriptors and facts.
+
+        Returns them with the index revision, whether business facts were
+        projected, and the timer's last mark.
+        """
+        mark = timer.started
+        with self._lock:
+            if query.resource_types:
+                records = [self._records[resource_id]
+                           for resource_type in query.resource_types
+                           for resource_id in self._type_ids.get(resource_type, ())]
+            else:
+                records = list(self._records.values())
+            updated_at = self._index_updated_at
+        mark = timer.add("snapshot", mark)
+        records = [record for record in records if record['resource_type'] in enabled_types]
+        records = prefilter_query_candidates(records, query)
+        mark = timer.add("prefilter", mark)
+        if records_projector is not None and (
+            records_projector_types is None or
+            any(record["resource_type"] in records_projector_types for record in records)
+        ):
+            records = records_projector(records)
+        mark = timer.add("descriptors", mark)
+        current_facts_needed = any(
+            record["resource_type"] in {"resident", "lineage", "workspace", "workbench", "family"}
+            for record in records
+        )
+        if current_facts_needed:
+            records = self._project_business_facts(records)
+        mark = timer.add("business_facts", mark)
+        records = filter_query_candidates(records, query)
+        mark = timer.add("filter", mark)
+        records = self._filter_private_records(records, actor=query.actor)
+        mark = timer.add("private_visibility", mark)
+        return records, updated_at, current_facts_needed, mark
 
     def suggest(
         self,

@@ -955,6 +955,15 @@ class ResourceService:
             **kwargs,
         )
 
+    def project_changes(self, project_ids: Iterable[str], *, actor: str = "") -> dict[str, str]:
+        """Each Project's latest change among the resources the actor may read (ListProjects)."""
+        return self._index().project_changes(
+            project_ids,
+            actor=actor,
+            records_projector=self._collaboration_descriptors,
+            records_projector_types=COLLABORATION_RESOURCE_TYPES,
+        )
+
     def suggest(self, *, actor: str = "", q: str = "", limit: int = 30, resource_type: str = "") -> dict[str, Any]:
         return self._index().suggest(
             actor=actor,

@@ -805,10 +805,6 @@ def _modified_at(item: dict[str, Any]) -> str:
     return str((item.get("source") or {}).get("modified_at") or "")
 
 
-def _member_projects(item: dict[str, Any]) -> list[str]:
-    return [str(project) for project in (item.get("attributes") or {}).get("project_ids") or []]
-
-
 def _project_fields(record: dict[str, Any]) -> dict[str, Any]:
     from management_portal.avatar_store import get_scope_avatar
 
@@ -837,12 +833,7 @@ def list_projects(inv: Invocation) -> dict[str, Any]:
         order.get(str(item.get("resource_id") or ""), len(order)), str(item.get("resource_id") or "").casefold()))
     ids = [str(record.get("resource_id") or "") for record in records]
     teams = get_society_service().project.project_teams(ids, inv.caller) if ids else {}
-    changed: dict[str, str] = {}
-    for item in _resources(inv.caller, projects=ids) if ids else ():
-        moment = _modified_at(item)
-        for project_id in _member_projects(item):
-            if moment > changed.get(project_id, ""):
-                changed[project_id] = moment
+    changed = _service().project_changes(ids, actor=inv.caller) if ids else {}
     projects = []
     for record in records:
         fields = _project_fields(record)

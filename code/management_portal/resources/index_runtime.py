@@ -93,6 +93,10 @@ class ResourceIndexRuntime:
         self._require_ready(self._target_adapters(query.resource_types))
         return self.store.query(**kwargs)
 
+    def project_changes(self, projects: Iterable[str], **kwargs: Any) -> dict[str, str]:
+        self._require_ready(self._target_adapters())
+        return self.store.project_changes(projects, **kwargs)
+
     def suggest(self, **kwargs: Any) -> dict[str, Any]:
         resource_type = _text(kwargs.get("resource_type"))
         self._require_ready(self._target_adapters((resource_type,) if resource_type else ()))

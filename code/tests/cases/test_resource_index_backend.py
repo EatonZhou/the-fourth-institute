@@ -135,6 +135,7 @@ def _record(
     facets: tuple[str, ...] = (),
     attributes: dict | None = None,
     terms: tuple[str, ...] = (),
+    modified_at: str = "2026-07-22T12:00:00+08:00",
 ) -> dict:
     return backend.resource_record(
         resource_id=resource_id,
@@ -143,7 +144,7 @@ def _record(
         summary="Summary",
         adapter=adapter,
         path=f"/tmp/{resource_id}.json",
-        modified_at="2026-07-22T12:00:00+08:00",
+        modified_at=modified_at,
         facets=facets,
         attributes=attributes or {},
         search_terms=terms,
@@ -201,6 +202,66 @@ def test_query_page_decides_read_access_in_one_batch(monkeypatch, isolated_porta
         assert all(item["capabilities"] == {"discover": True, "read": True, "manage": True}
                    for item in result["resources"])
         assert batches == [300, 300 - len(hidden)]
+
+
+def test_project_changes_match_a_paged_projects_query_in_one_pass(monkeypatch, isolated_portal_case):
+    """项目最近变更一次算出，与按项目分页查询的结果一致
+
+    ListProjects 要每个项目下调用者可读资源的最新修改时间。按项目汇总只走一遍候选：描述符投影一次、
+    读取权限整批判定一次；结果与按 projects 分页查询再取最大值相同。不可读或已删除的资源、
+    以及没有请求的项目都不计入。
+
+    :aspects: functional, performance
+    :design-point:
+    """
+    from management_portal import permission_system
+    with isolated_portal_case():
+        store = backend.IndexStore()
+        groups = [["Alpha"], ["Beta"], ["Alpha", "Beta"], ["Gamma"]]
+        records = [_record(f"skill_{index:012x}", "skill",
+                           modified_at=f"2026-10-{1 + index % 28:02d}T{index % 24:02d}:00:00Z",
+                           attributes={"project_ids": groups[index % 4],
+                                       "status": "deleted" if index % 50 == 0 else "active"})
+                   for index in range(1200)]
+        # The latest change of each kind that must not count.
+        records += [
+            _record("skill_ffff00000001", "skill", modified_at="2026-12-01T00:00:00Z",
+                    attributes={"project_ids": ["Alpha"], "status": "active"}),
+            _record("skill_ffff00000002", "skill", modified_at="2026-12-02T00:00:00Z",
+                    attributes={"project_ids": ["Beta"], "status": "deleted"}),
+            _record("skill_ffff00000003", "skill", modified_at="2026-12-03T00:00:00Z",
+                    attributes={"project_ids": ["Gamma"], "status": "active"}),
+        ]
+        store.publish_snapshot("test", records, {})
+        hidden = {record["resource_id"] for record in records[::9]} | {"skill_ffff00000001"}
+        batches, projected = [], []
+
+        def permitted_ids(actor, instruction, parameter, resource_ids):
+            resource_ids = list(resource_ids)
+            batches.append(len(resource_ids))
+            return {resource_id for resource_id in resource_ids if resource_id not in hidden}
+
+        def projector(rows):
+            rows = list(rows)
+            projected.append(len(rows))
+            return rows
+
+        monkeypatch.setattr(permission_system, "permitted_ids", permitted_ids)
+        changes = store.project_changes(["Alpha", "Beta"], actor="alice", records_projector=projector)
+        assert (len(projected), len(batches)) == (1, 1)
+        expected: dict[str, str] = {}
+        offset = 0
+        while True:
+            page = store.query(actor="alice", projects=["Alpha", "Beta"], include_attributes=True,
+                               limit=500, offset=offset)
+            for item in page["resources"]:
+                for project_id in {"Alpha", "Beta"} & set(item["attributes"]["project_ids"]):
+                    expected[project_id] = max(expected.get(project_id, ""), item["source"]["modified_at"])
+            offset += len(page["resources"])
+            if not page["resources"] or offset >= page["total"]:
+                break
+        assert changes == expected
+        assert set(changes) == {"Alpha", "Beta"} and all(value < "2026-12" for value in changes.values())
 
 
 class FakeAdapter:
