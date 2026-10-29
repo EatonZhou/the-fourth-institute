@@ -115,6 +115,10 @@ def test_priority_schema_migration_preserves_family_switch(quota_family):
         row = c.execute("SELECT auto_migrate, auto_migrate_priority FROM families WHERE family_id='fbi_test'").fetchone()
         assert dict(row) == {'auto_migrate': False, 'auto_migrate_priority': []}
         assert upgrade(c)['previous_schema'] == 'tfi.lineage-data.v64'
+        # The shared test schema kept the later tables; put its current version
+        # back, or every store a later test opens refuses the older one.
+        from management_portal.society_service.state_store import LINEAGE_DATA_SCHEMA
+        c.execute("UPDATE lineage_meta SET value=%s WHERE key='schema'", (LINEAGE_DATA_SCHEMA,))
 
 
 def test_configured_adapter_preserves_registration_kind(monkeypatch):

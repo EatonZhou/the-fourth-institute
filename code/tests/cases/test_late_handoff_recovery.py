@@ -13,10 +13,11 @@ LINEAGE = "lineage_aaaaaaaaaaaa"
 MEMBER = "resident_aaaaaaaaaaaa"
 
 
-def recover(monkeypatch, finished_at):
+def recover(monkeypatch, finished_at, *, facade=False):
     """Run one recovery pass over a member's pending handoff whose input completed at ``finished_at``."""
     from tests.cases import society_service_test_support as support
     support._install_isolated_portal_access(monkeypatch)
+    monkeypatch.setattr(reconciliation, "_runs_no_turns", lambda resident_id: facade and resident_id == MEMBER)
     handoff = {"trigger_path_id": "trigger_path_aaaaaaaaaaaa", "step_id": "step", "resident_id": MEMBER,
                "message_id": "msg_done", "status": "queued",
                "event": {"id": "event", "type": "time.reached", "payload": {}, "occurred_at": "2026-10-06T04:40:17Z",
@@ -60,3 +61,24 @@ def test_a_recent_input_still_needs_its_turn_in_the_chat(monkeypatch):
     result, settled, terminal, _receipt = recover(monkeypatch, datetime.now(timezone.utc) - timedelta(hours=1))
     assert result["recovered_handoff_count"] == 0
     assert settled == [] and terminal == []
+
+
+def test_a_facade_input_settles_from_its_receipt_once_relayed(monkeypatch):
+    """Family 门面不运行自己的轮次，Router 转交后输入回执即完成；恢复当轮按回执结清交接，不等 24 小时"""
+    result, settled, terminal, receipt = recover(
+        monkeypatch, datetime.now(timezone.utc) - timedelta(minutes=1), facade=True)
+    assert result["recovery_failures"] == []
+    assert result["recovered_handoff_count"] == 1
+    assert terminal == []
+    assert [(item["status"], item["completed_at"]) for item in settled] == [("completed", receipt["updated_at"])]
+
+
+def test_facade_detection_reads_the_family_role(monkeypatch):
+    """门面判断只看 Resident 记录里的 Family 角色"""
+    from management_portal.society_service import resident_record_domain
+    records = {MEMBER: {"family": {"role": "facade", "family_id": "fbi_aaaaaaaaaaaa"}},
+               "resident_bbbbbbbbbbbb": {"family": {"role": "member"}}}
+    monkeypatch.setattr(resident_record_domain, "find_resident", records.get)
+    assert reconciliation._runs_no_turns(MEMBER)
+    assert not reconciliation._runs_no_turns("resident_bbbbbbbbbbbb")
+    assert not reconciliation._runs_no_turns("resident_cccccccccccc")

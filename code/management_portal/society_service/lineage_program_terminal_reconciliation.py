@@ -139,6 +139,12 @@ def _finished_before(input_state: dict[str, Any], cutoff: datetime) -> bool:
     return bool(input_state.get("updated_at")) and instant(input_state["updated_at"]) < cutoff
 
 
+def _runs_no_turns(resident_id: str) -> bool:
+    """A Family facade relays its input to a member and never runs a turn itself."""
+    from . import family_facade, resident_record_domain
+    return family_facade.is_facade(resident_record_domain.find_resident(resident_id))
+
+
 def _reconcile_resident_handoffs(
     lineage_id: str, actor: str, *, ports: ProgramTerminalPorts, recovery_only: bool,
 ) -> dict[str, Any]:
@@ -180,7 +186,10 @@ def _reconcile_resident_handoffs(
                 node = nodes.get(resident_id)
                 input_state = _input_receipt(resident_id, message_id, member=bool(node))
                 late = _finished_before(input_state, datetime.now(timezone.utc) - LATE_HANDOFF_AGE)
-                if node and not late:
+                # A facade's input finishes when the Router relays it, with no
+                # turn of its own to find in the Chat.
+                by_receipt = late or (bool(node) and _runs_no_turns(resident_id))
+                if node and not by_receipt:
                     state = ports.resident.resident_input_reconciliation_state(node, message_id, invocation_actor)
                 else:
                     # Membership does not own an already dispatched input, and
@@ -208,7 +217,7 @@ def _reconcile_resident_handoffs(
                     if bool(current_node) != bool(node):
                         continue
                     completed_at = str(state.get("completed_at") or (state.get("evidence") or {}).get("completed_at") or "")
-                    if current_node and not late:
+                    if current_node and not by_receipt:
                         settled = ports.resident.handle_resident_message_terminal(
                             resident_id, invocation_actor, message_id, completed_at=completed_at,
                             lineage_id=lineage_id, terminal_status=status,
