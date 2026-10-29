@@ -6,6 +6,9 @@
 :risk: no-external-side-effects
 """
 import json
+import os
+import subprocess
+import sys
 import unittest
 import tempfile
 from pathlib import Path
@@ -50,23 +53,65 @@ class PairedRuntimeTest(unittest.TestCase):
         self.assertEqual(worker["PORTAL_INSTANCE"], "release")
 
     def test_activation_targets_only_affected_application_components(self):
-        self.assertEqual(affected(["code/core_skills/tfi-agent-rule/SKILL.md"]), [])
-        self.assertEqual(affected(["code/management_portal/static/portal_nav.js"]), ["web", "dev-web"])
-        self.assertEqual(affected(["code/management_portal/society_service/server.py"]),
+        loaded = {"resource": {"management_portal.resources.server", "management_portal.resource_index_backend",
+                               "management_portal.society_service.personal_ama"},
+                  "execution": {"management_portal.execution.service"},
+                  "society": {"management_portal.society_service.server", "management_portal.prompt_injection"},
+                  "worker": {"management_portal.execution.worker", "management_portal.codex_app_server_client"}}
+        self.assertEqual(affected(["code/core_skills/tfi-agent-rule/SKILL.md"], loaded), [])
+        self.assertEqual(affected(["code/management_portal/static/portal_nav.js"], loaded), ["web", "dev-web"])
+        self.assertEqual(affected(["code/management_portal/society_service/server.py"], loaded),
                          ["society", "web", "dev-web"])
-        for module in ("agent_prompt_context", "agent_skill_context", "prompt_injection"):
-            with self.subTest(prompt_module=module):
-                self.assertEqual(affected([f"code/management_portal/{module}.py"]),
-                                 ["society", "web", "dev-web"])
-        # The permission port runs in every service with a HATG kernel, ResourceService included.
-        self.assertEqual(affected(["code/management_portal/permission_system/temporary.py"]),
-                         ["resource", "execution", "society", "web", "dev-web"])
-        self.assertEqual(affected(["code/management_portal/society_service/personal_ama.py"]),
+        # A module outside the service packages restarts every service that imported it.
+        self.assertEqual(affected(["code/management_portal/prompt_injection.py"], loaded),
+                         ["society", "web", "dev-web"])
+        self.assertEqual(affected(["code/management_portal/resource_index_backend.py"], loaded),
+                         ["resource", "web", "dev-web"])
+        self.assertEqual(affected(["code/management_portal/codex_app_server_client.py"], loaded),
+                         ["worker", "web", "dev-web"])
+        self.assertEqual(affected(["code/management_portal/society_service/personal_ama.py"], loaded),
                          ["resource", "society", "web", "dev-web"])
-        all_components = affected(["code/management_common/protocol.py"])
+        # Not imported yet: the services read the new source when they first need it.
+        self.assertEqual(affected(["code/management_portal/paper_backend.py"], loaded), ["web", "dev-web"])
+        # Without a record of its imports a service is restarted for any changed module.
+        self.assertEqual(affected(["code/management_portal/paper_backend.py"],
+                                  {k: v for k, v in loaded.items() if k != "worker"}),
+                         ["worker", "web", "dev-web"])
+        # The permission port runs in every service with a HATG kernel, ResourceService included.
+        self.assertEqual(affected(["code/management_portal/permission_system/temporary.py"], loaded),
+                         ["resource", "execution", "society", "web", "dev-web"])
+        all_components = affected(["code/management_common/protocol.py"], loaded)
         self.assertIn("worker", all_components)
         self.assertNotIn("postgres", all_components)
         self.assertNotIn("nats", all_components)
+
+    def test_service_processes_record_lazily_imported_portal_modules(self):
+        from management_common import loaded_modules
+        with tempfile.TemporaryDirectory() as directory:
+            folder = loaded_modules.directory(Path(directory))
+            env = {**os.environ, loaded_modules.DIRECTORY_ENV: str(folder),
+                   loaded_modules.COMPONENT_ENV: "resource",
+                   "PYTHONPATH": str(Path(__file__).resolve().parents[2])}
+            script = ("import sys\n"
+                      "from management_common import loaded_modules\n"
+                      "loaded_modules.track()\n"
+                      "import management_common.format_tags\n"
+                      "print(len(loaded_modules.loaded(loaded_modules.directory(sys.argv[1]))['resource']))\n"
+                      "sys.stdout.flush(); sys.stdin.read()\n")
+            with subprocess.Popen([sys.executable, "-c", script, directory], env=env, text=True,
+                                  stdin=subprocess.PIPE, stdout=subprocess.PIPE) as process:
+                self.assertGreater(int(process.stdout.readline()), 1)
+                names = loaded_modules.loaded(folder)["resource"]
+                self.assertIn("management_common.loaded_modules", names)
+                self.assertIn("management_common.format_tags", names)
+                self.assertNotIn("json", names)
+                process.communicate("")
+            # A record of a process that has exited is dropped.
+            self.assertEqual(loaded_modules.loaded(folder), {})
+            self.assertEqual(list(folder.iterdir()), [])
+        self.assertEqual(loaded_modules.module_name("management_portal/execution/__init__.py"),
+                         "management_portal.execution")
+        self.assertIsNone(loaded_modules.module_name("scripts/tfi_dev.py"))
 
     def test_restart_uses_one_shared_pool_and_selected_web(self):
         self.assertEqual(restart_components("dev", ["web", "lineage"]), ["dev-web", "society"])

@@ -13,6 +13,7 @@ import os
 import secrets
 import socket
 import socketserver
+from management_common import loaded_modules
 from management_common.service_shutdown import DrainingStreamServer, serve_until_stopped, stop_workers
 from management_common.service_endpoint import LocalServiceSocketMixin, service_endpoint
 import threading
@@ -66,6 +67,7 @@ from . import execution_client, principal_hierarchy_domain, resource_client
 def _initialize_read_worker() -> None:
     """Initialize one read-only Lineage projection process."""
 
+    loaded_modules.track()
     os.environ["PORTAL_LINEAGE_READ_WORKER"] = "1"
     configure_default_domain_ports()
     # Stores initialize on the first real read. Warming an otherwise idle
@@ -855,6 +857,7 @@ def parser() -> argparse.ArgumentParser:
 
 
 def main() -> int:
+    loaded_modules.track()
     args = parser().parse_args()
     os.environ.setdefault("PORTAL_SOCIETY_SERVICE_PROCESS", "1")
     get_lineage_data_store()

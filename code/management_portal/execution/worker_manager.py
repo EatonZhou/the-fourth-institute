@@ -16,7 +16,7 @@ from typing import Any
 from .transport import ExecutionServiceClient
 
 from management_common.instance_paths import instance_root
-from management_common import process_runtime
+from management_common import loaded_modules, process_runtime
 from management_portal.shared_state import atomic_replace_json
 
 
@@ -906,6 +906,7 @@ class ExecutionWorkerManager:
 
 
 def main() -> int:
+    loaded_modules.track()
     return ExecutionWorkerManager().run()
 
 

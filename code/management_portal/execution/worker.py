@@ -27,7 +27,7 @@ from .transport import (
 )
 
 from management_common.instance_paths import instance_root
-from management_common import process_runtime
+from management_common import loaded_modules, process_runtime
 from management_portal.shared_state import atomic_replace_json
 
 LOGGER = logging.getLogger(__name__)
@@ -834,6 +834,7 @@ def _elapsed_since_iso_ms(value: str) -> float:
 
 
 def main() -> int:
+    loaded_modules.track()
     try:
         return ExecutionWorkerDaemon().run()
     except Exception:

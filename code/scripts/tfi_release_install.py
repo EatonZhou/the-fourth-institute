@@ -367,7 +367,12 @@ def component_command(target, component):
         command = [python, "-m", "management_portal.web_server", "--host", target["bind"],
                    "--port", str(target["ports"]["web"])]
     else:
+        from management_common import loaded_modules
         command = [python, "-m", MODULES[component]]
+        # A publish restarts this service when it changes a module the
+        # service has imported; each process records its imports here.
+        env[loaded_modules.DIRECTORY_ENV] = str(loaded_modules.directory(root))
+        env[loaded_modules.COMPONENT_ENV] = component
         if component in {"resource", "society"}:
             env[f"PORTAL_{component.upper()}_SERVICE_MODE"] = "local"
             env[f"PORTAL_{component.upper()}_SERVICE_PROCESS"] = "1"

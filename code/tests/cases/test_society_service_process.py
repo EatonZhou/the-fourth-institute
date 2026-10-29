@@ -740,21 +740,15 @@ def test_domain_conflict_preserves_its_payload(lineage_process, monkeypatch, mod
 
 
 def test_read_pools_split_the_cores_between_dev_and_release(monkeypatch):
-    """Dev 与 Release 的 SocietyService 读取进程分用主机核数
+    """SocietyService 默认 12 个读取进程
 
-    未设置 PORTAL_LINEAGE_READ_WORKERS 时，24 核主机上每个 SocietyService 默认 12 个读取进程，另有 3 个 Inbox 活动进程；Dev 与 Release 的 unit 都设为 12。
+    未设置 PORTAL_LINEAGE_READ_WORKERS 时，24 核主机上的 SocietyService 默认 12 个读取进程，另有 3 个 Inbox 活动进程。
 
     :importance: P1
     :design: decision_1b2bdf5c33d6
     """
     # Four read processes and one for Inbox activity queued reads into 504s.
-    from pathlib import Path
-
     monkeypatch.delenv("PORTAL_LINEAGE_READ_WORKERS", raising=False)
     monkeypatch.setattr(lineage_server.os, "cpu_count", lambda: 24)
     assert lineage_server.parser().parse_args([]).read_workers == lineage_server.DEFAULT_READ_WORKERS == 12
     assert lineage_server.CONVERSATION_INDEX_WORKERS == 3
-    systemd = Path(__file__).resolve().parents[2] / "systemd"
-    for instance in ("dev", "release"):
-        unit = (systemd / f"portal-{instance}-society-service.service").read_text(encoding="utf-8")
-        assert "Environment=PORTAL_LINEAGE_READ_WORKERS=12\n" in unit

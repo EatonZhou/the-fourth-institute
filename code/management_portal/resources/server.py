@@ -5,6 +5,7 @@ import json
 import os
 import socket
 import socketserver
+from management_common import loaded_modules
 from management_common.service_shutdown import DrainingStreamServer, serve_until_stopped, stop_workers
 from management_common.service_endpoint import LocalServiceSocketMixin, service_endpoint
 import sys
@@ -499,6 +500,7 @@ def parser() -> argparse.ArgumentParser:
 
 
 def main() -> int:
+    loaded_modules.track()
     args = parser().parse_args()
     server = ResourceServiceServer(args.socket)
     serve_until_stopped(server)

@@ -133,14 +133,16 @@ def run(root, mode):
     os.execve(command[0], command, env)
 
 
-# Society modules ResourceService imports itself (visibility, Workspace paths, facts).
-RESOURCE_SOCIETY_MODULES = frozenset(f"management_portal/society_service/{name}.py" for name in (
-    "lineage_access_policy", "personal_ama", "lineage_workspace_files", "lineage_storage", "lineage_program",
-    "business_fact_views"))
+def affected(paths, loaded=None):
+    """Select the responsible processes, including both Web consumers.
 
-
-def affected(paths):
-    """Select the responsible processes, including both Web consumers."""
+    ``loaded`` maps each shared component to the modules its running
+    processes have imported (management_common.loaded_modules). A changed
+    module restarts every component that has imported it, wherever the module
+    lives; a component without a record is restarted for any changed module.
+    """
+    from management_common.loaded_modules import module_name
+    loaded = loaded or {}
     components = set()
     for path in paths:
         path = path.removeprefix("code/")
@@ -155,18 +157,13 @@ def affected(paths):
             components.update(("resource", "execution", "society", "web", "dev-web"))
         elif path.startswith("management_portal/resources/"):
             components.update(("resource", "web", "dev-web"))
-        elif path in RESOURCE_SOCIETY_MODULES:
-            components.update(("resource", "society", "web", "dev-web"))
-        elif path.startswith("management_portal/society_service/") or path in (
-            "management_portal/agent_prompt_context.py",
-            "management_portal/agent_skill_context.py",
-            "management_portal/prompt_injection.py",
-        ):
-            # Society builds Resident instructions and caches these imported
-            # modules; restarting only the Web leaves old prompt logic in use.
+        elif path.startswith("management_portal/society_service/"):
             components.update(("society", "web", "dev-web"))
         elif path.startswith(("management_portal/", "knowledge_board_lan/")):
             components.update(("web", "dev-web"))
+        module = module_name(path)
+        if module is not None:
+            components.update(c for c in SHARED if c not in loaded or module in loaded[c])
     return [c for c in (*SHARED, "web", "dev-web", "router") if c in components]
 
 
@@ -344,9 +341,11 @@ def restart(root, instance, components=None, *, force_worker_restart=True):
 
 def activate(root, paths, commit, *, initial=False):
     from management_common.instance_config import read_development, read_installation
+    from management_common import loaded_modules
     target = read_installation(root)["target"]
     config = read_development(root)
-    components = list((*SHARED, "web", "dev-web", "router")) if initial else affected(paths)
+    components = (list((*SHARED, "web", "dev-web", "router")) if initial
+                  else affected(paths, loaded_modules.loaded(loaded_modules.directory(root))))
     # Code activation never stops PostgreSQL, NATS or provider account services.
     if components:
         (root / "config/generation.env").write_text("PORTAL_BUILD_ID=portal-" + commit[:12] + "\n")

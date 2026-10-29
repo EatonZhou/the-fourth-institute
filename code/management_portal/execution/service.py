@@ -13,6 +13,8 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any, Callable, Mapping, cast
 
+from management_common import loaded_modules
+
 from ..ai_provider_registry import AIProviderRegistry, shared_ai_provider_registry
 from .config import (
     execution_service_socket,
@@ -989,6 +991,7 @@ def parser() -> argparse.ArgumentParser:
 
 
 def main() -> int:
+    loaded_modules.track()
     args = parser().parse_args()
     from .provider_timing_proxy import TimingProxyModule
     from .request_timing import LegacyRouteSettings
