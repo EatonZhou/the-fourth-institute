@@ -15,7 +15,7 @@ from management_portal.resources import portal as resource_portal
 def test_projects_page_lists_opens_and_changes_projects():
     """项目列表按状态分组、筛选与改状态；项目页显示团队与资源并提供编辑、改名和删除
 
-    列表按状态分组且已完成的组默认折叠，组内最近变化在前；标签与搜索筛选；改状态是一次 UpdateProject，被拒绝时恢复原值。
+    列表在 ListProjects 返回前显示正在读取，之后按状态分组且已完成的组默认折叠，组内最近变化在前；标签与搜索筛选；改状态是一次 UpdateProject，被拒绝时恢复原值。
     项目页读出团队的实时状态与工作摘要、按类型的资源入口与最近变化；概况编辑后以 UpdateProject 保存；
     改名先 dry_run，有正在执行的 Resident 时不能确认；删除要输入项目 ID。真实页面模块，指令由夹具应答。
 

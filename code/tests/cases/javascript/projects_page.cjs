@@ -61,6 +61,7 @@ const ALPHA = {
       window.PortalInstructionClient = { execute: async (name, args) => {
         f.calls.push([name, JSON.parse(JSON.stringify(args))]);
         if (f.fail.has(name)) throw new Error(`${name} refused`);
+        if (name === 'ListProjects') await f.gate;
         if (name === 'ListProjects') return { projects: JSON.parse(JSON.stringify(projects)), status_vocab: ['not_started', 'active', 'paused', 'done', 'archived'] };
         if (name === 'GetProject') return JSON.parse(JSON.stringify(alpha));
         if (name === 'GetResearchMap') return { project_id: args.project_id, revision: 4, updated_at: '2026-10-20T10:00:00Z', relations: [], layout: {}, notes: [], outputs: {},
@@ -82,13 +83,17 @@ const ALPHA = {
     }
     await page.addStyleTag({ path: path.join(root, 'static', 'project.css') });
 
-    // The list: groups by status, newest change first, the finished group folded.
-    await page.evaluate(async () => {
+    // The list says it is reading while ListProjects is slow, then groups by status,
+    // newest change first, the finished group folded.
+    await page.evaluate(() => {
       document.body.innerHTML = '<main id="list"></main>';
       f.opened = [];
+      f.gate = new Promise(resolve => { f.release = resolve; });
       window.list = PortalProjectList.create({ root: document.getElementById('list'), onOpen: id => f.opened.push(id) });
-      await list.load();
+      f.loading = list.load();
     });
+    assert.equal(await page.$eval('#list .portalAsyncState', node => node.dataset.state), 'loading');
+    await page.evaluate(async () => { f.release(); await f.loading; });
     const groupIds = await page.$$eval('[data-project-group]', nodes => nodes.map(node => node.dataset.projectGroup));
     assert.deepEqual(groupIds, ['active', 'waiting', 'closed']);
     assert.deepEqual(await page.$$eval('[data-project-group="active"] .projectCard', cards => cards.map(card => card.dataset.projectId)), ['Beta', 'Alpha']);

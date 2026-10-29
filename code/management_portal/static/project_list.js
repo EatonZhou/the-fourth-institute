@@ -206,6 +206,8 @@
     return {
       root,
       async load() {
+        // ListProjects can take seconds (a cold resource index after a restart); the page says it is reading meanwhile.
+        if (!state.loaded) root.innerHTML = window.PortalUIPrimitives.asyncStateHtml({ state: "loading", title: t("正在读取项目…"), message: "" });
         const result = await common().execute("ListProjects", {});
         state.projects = Array.isArray(result.projects) ? result.projects : [];
         state.statusVocab = Array.isArray(result.status_vocab) ? result.status_vocab : [];
