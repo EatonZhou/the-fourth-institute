@@ -201,7 +201,7 @@ def test_installed_features_serve_their_routes_before_the_shell_fallbacks():
     fallbacks = [index for index, route in enumerate(routes) if route.group == "portal-fallback"]
     paths = [route.path for route in routes]
     for path in ("/paper/api/library", "/api/articles", "/api/wall/", "/test/api/run",
-                 "/api/resource-backup/overview", "/api/notice-board/image", "/static/test_workbench.js"):
+                 "/api/resource-backup/overview", "/api/notice-board/image", "/static/test_page.js"):
         assert paths.index(path) < min(fallbacks), path
 
 

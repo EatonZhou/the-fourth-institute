@@ -88,7 +88,7 @@ def test_public_static_routes_keep_asset_location_and_media_type(monkeypatch):
     monkeypatch.setattr(server, "_serve_static_file", lambda request, path, media_type: (path, media_type))
     request = SimpleNamespace(headers={})
     for path, expected_root, expected_type in (
-        ("/static/test_workbench.js", server.ROOT / "test_framework" / "page", "text/javascript; charset=utf-8"),
+        ("/static/test_page.js", server.ROOT / "test_framework" / "page", "text/javascript; charset=utf-8"),
         ("/static/portal_projections.js", server.ROOT / "static", "application/javascript; charset=utf-8"),
         ("/static/portal_mailbox_todos.js", server.ROOT / "static", "text/javascript; charset=utf-8"),
     ):

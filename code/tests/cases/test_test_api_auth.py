@@ -61,7 +61,7 @@ def test_api(monkeypatch):
     api = SimpleNamespace(**{
         name: mock.Mock(return_value={"ok": True})
         for name in (
-            "query", "query_workspace", "query_case_ids", "case_definition", "preview", "start", "get_run", "cancel_run",
+            "query", "query_workspace", "query_overview", "query_page", "query_case_ids", "case_definition", "preview", "start", "get_run", "cancel_run",
             "delete_runs", "rotate_tau_resident", "configure_tau_residents", "tau_resident_status",
             "tau_admission", "set_tau_admission",
             "implementation_source",
@@ -197,6 +197,28 @@ def test_workspace_catalog_and_case_detail_use_bounded_read_projections(test_api
     assert status == 200
     assert result == {"case": {"ok": True}}
     test_api.api.case_definition.assert_called_once_with("test_0123456789ab")
+
+
+def test_test_page_overview_and_catalog_pages_pass_the_caller_and_filters(test_api):
+    """Test 页面的总览按调用者读取，目录页把筛选、执行方式、仅当前与分页参数交给框架，分页参数无效时拒绝"""
+    status, result = test_api.request("/test/api/catalog?projection=overview")
+    assert status == 200 and result["ok"]
+    test_api.api.query_overview.assert_called_once_with(actor=RESIDENT_ID)
+
+    status, result = test_api.request("/test/api/catalog?projection=page&offset=100&limit=50&module=lineage.hatg&runner=none&search=route")
+    assert status == 200 and result["ok"]
+    filters = test_api.api.query_page.call_args.args[0]
+    assert (filters["modules"], filters["runners"], filters["search"]) == (["lineage.hatg"], ["none"], "route")
+    assert test_api.api.query_page.call_args.kwargs == {"offset": 100, "limit": 50}
+
+    status, _result = test_api.request("/test/api/catalog/query?current=true&runner=tau")
+    assert status == 200
+    assert test_api.api.query_case_ids.call_args.args[0]["current"] is True
+    assert test_api.api.query_case_ids.call_args.args[0]["runners"] == ["tau"]
+
+    status, result = test_api.request("/test/api/catalog?projection=page&offset=many")
+    assert status == 400
+    assert test_api.api.query_page.call_count == 1
 
 
 @pytest.mark.parametrize("method", ["GET", "POST"])

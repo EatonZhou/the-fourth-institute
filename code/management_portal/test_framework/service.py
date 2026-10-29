@@ -85,6 +85,79 @@ class TestFrameworkService:
             ]),
         }
 
+    def query_overview(self, *, actor: str = "") -> dict[str, Any]:
+        """The Test page's overview: catalog figures per module, recent runs and TAU slots, without case rows.
+
+        Retired cases are left out of every figure.  The catalog page reads its
+        cases a page at a time (``query_page``), so the overview stays small
+        however large the catalog grows.  Each recent run also names how many
+        cases it selected, their modules and, for a single case, its title.
+        """
+        all_cases, catalog_errors = self.catalog.projection()
+        cases = [case for case in all_cases if case.lifecycle != "retired"]
+        members: dict[str, list[Any]] = {}
+        for case in cases:
+            members.setdefault(case.module, []).append(case)
+        modules = []
+        for group in MODULE_GROUPS:
+            for module in group.modules:
+                runners = [{item.runner for item in case.implementations} for case in members.get(module.id, [])]
+                modules.append({
+                    "id": module.id,
+                    "group_id": group.id,
+                    "total": len(runners),
+                    "by_importance": {value: sum(case.importance == value for case in members.get(module.id, [])) for value in IMPORTANCE},
+                    "design_points": sum(case.is_design_point for case in members.get(module.id, [])),
+                    "tau": sum("tau" in kinds for kinds in runners),
+                    "without_implementation": sum(not kinds for kinds in runners),
+                    "live": sum(bool(case.live) for case in members.get(module.id, [])),
+                })
+        known = {case.id: case for case in all_cases}
+        runs = self.records.recent_summaries() if actor else []
+        for run in runs:
+            selected = list(dict.fromkeys(item.get("case_id") for item in (run.get("plan") or {}).get("selected") or [] if item.get("case_id")))
+            run["case_count"] = len(selected)
+            run["title"] = known[selected[0]].title if len(selected) == 1 and selected[0] in known else ""
+            run["module_ids"] = sorted({known[case_id].module for case_id in selected if case_id in known})
+        return {
+            "schema": "tfi.test-overview.v1",
+            "summary": self.catalog.summary(cases),
+            "catalog_errors": catalog_errors,
+            "filters": {
+                "importance": list(IMPORTANCE),
+                "modules": public_taxonomy(),
+                "features": public_features(),
+                "aspects": sorted(ASPECTS),
+            },
+            "modules": modules,
+            "capabilities": self.registry.public(),
+            "recent_runs": runs,
+            "tau_residents": self.tau_residents.list([module["id"] for module in modules if module["total"]]),
+        }
+
+    def query_page(self, request: dict[str, Any] | None = None, *, offset: int = 0, limit: int = 100) -> dict[str, Any]:
+        """One page of the catalog list: the browse fields of the matching cases.
+
+        Retired cases are left out unless the request names lifecycles.  The
+        list runs module by module in taxonomy order, most important first, so
+        a page shows each module's cases together.  ``count`` is the number of
+        matches; ``limit`` is at most 500.
+        """
+        filters = dict(request) if isinstance(request, dict) else {}
+        if not filters.get("lifecycle"):
+            filters["current"] = True
+        order = {module.id: index for index, module in enumerate(module for group in MODULE_GROUPS for module in group.modules)}
+        cases = sorted(self.catalog.query(filters), key=lambda case: (
+            order.get(case.module, len(order)), IMPORTANCE.index(case.importance) if case.importance in IMPORTANCE else len(IMPORTANCE), case.key))
+        offset, limit = max(0, int(offset)), max(1, min(int(limit), 500))
+        return {
+            "schema": "tfi.test-catalog-page.v1",
+            "count": len(cases),
+            "offset": offset,
+            "limit": limit,
+            "cases": [case.workspace_summary() for case in cases[offset:offset + limit]],
+        }
+
     def query_case_ids(self, request: dict[str, Any] | None = None) -> dict[str, Any]:
         """Project canonical Catalog query results without duplicating case data."""
         cases = self.catalog.query(request if isinstance(request, dict) else {})

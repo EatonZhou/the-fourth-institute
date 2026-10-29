@@ -34,14 +34,17 @@ function instructionWriter(context) {
   const end = source.indexOf('\n  async function inputState(', start);
   assert.ok(start >= 0 && end > start);
   // Execute the original private request writer, without openPortal's host,
-  // login or browser launch. Transport and retry clock are explicit fakes.
-  return new Function('context', 'origin', 'safeTransport', 'setTimeout',
+  // login or browser launch. Transport, retry clock and request IDs are explicit fakes.
+  let next = 0;
+  return new Function('context', 'origin', 'safeTransport', 'setTimeout', 'randomUUID', 'instructionFailure',
     source.slice(start, end) + '\nreturn executeInstruction;')(
-      context, 'http://fixture.invalid', async (_, operation) => operation(), callback => callback());
+      context, 'http://fixture.invalid', async (_, operation) => operation(), callback => callback(),
+      () => `request-${++next}`, error => ({ message: String(error?.message || error) }));
 }
 
 test('ISA producer preserves request payload and one idempotency key across retries', async () => {
   const calls = [];
+  const log = [];
   const writer = instructionWriter({ request: { post: async (url, options) => {
     calls.push({ url, options });
     const body = calls.length === 1
@@ -50,15 +53,20 @@ test('ISA producer preserves request payload and one idempotency key across retr
     return { ok: () => true, json: async () => body, status: () => 200 };
   } } });
   const args = { resident_id: 'resident_0123456789ab', message_id: 'msg_original' };
-  assert.deepEqual(await writer('GetInputState', args, { key: 'original-key', attempts: 2 }), { message_id: 'msg_original' });
+  assert.deepEqual(await writer('GetInputState', args, { key: 'original-key', attempts: 2, append: entry => log.push(entry) }), { message_id: 'msg_original' });
   assert.equal(calls.length, 2);
-  for (const call of calls) {
+  // Each HTTP attempt has its own request ID; the ISA call and its idempotency key stay the same.
+  calls.forEach((call, index) => {
     assert.equal(call.url, '/api/instructions/execute');
     assert.deepEqual(call.options, { data: { schema: 'tfi.hatg-instruction.v2', instruction: 'GetInputState',
-      arguments: args, idempotency_key: 'original-key' }, headers: { Origin: 'http://fixture.invalid' } });
-  }
+      arguments: args, idempotency_key: 'original-key' }, headers: { Origin: 'http://fixture.invalid', 'X-Portal-Request-ID': `request-${index + 1}` } });
+  });
   assert.equal(calls[0].options.data, calls[1].options.data);
   assert.deepEqual(args, { resident_id: 'resident_0123456789ab', message_id: 'msg_original' });
+  assert.deepEqual(log.map(entry => [entry.kind, entry.attempt, entry.request_id, entry.instruction_status ?? null]), [
+    ['request_started', 1, 'request-1', null], ['request_finished', 1, 'request-1', 'failed'],
+    ['request_started', 2, 'request-2', null], ['request_finished', 2, 'request-2', 'committed'],
+  ]);
 });
 
 test('ISA producer retains error and does not invent a missing key', async () => {
@@ -68,7 +76,7 @@ test('ISA producer retains error and does not invent a missing key', async () =>
     return { ok: () => false, status: () => 409,
       json: async () => ({ error: { code: 'instruction.conflict', message: 'fixture', details: { unchanged: true } } }) };
   } } });
-  await assert.rejects(writer('GetInputState', {}, { key: '', attempts: 1 }), error => {
+  await assert.rejects(writer('GetInputState', {}, { key: '', attempts: 1, append: () => {} }), error => {
     assert.equal(error.code, 'instruction.conflict');
     assert.equal(error.status, 409);
     assert.deepEqual(error.details, { unchanged: true });

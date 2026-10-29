@@ -181,6 +181,7 @@ def test_query_page_decides_read_access_in_one_batch(monkeypatch, isolated_porta
     逐个判定时每个资源都要读一次权限快照，单次调用 10 到 60 秒。
 
     :aspects: functional, performance
+    :design: decision_b6e74d78f7b6
     :design-point:
     """
     from management_portal import permission_system
@@ -212,6 +213,7 @@ def test_project_changes_match_a_paged_projects_query_in_one_pass(monkeypatch, i
     以及没有请求的项目都不计入。
 
     :aspects: functional, performance
+    :design: decision_b6e74d78f7b6
     :design-point:
     """
     from management_portal import permission_system

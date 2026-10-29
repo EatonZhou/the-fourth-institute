@@ -1689,11 +1689,11 @@
         "direct_steps": [
           {
             "capability": "test.catalog.open-filters",
-            "caption": "打开测试目录的功能模块筛选。"
+            "caption": "打开用例目录的筛选工具栏。"
           },
           {
             "capability": "test.catalog.inspect-modules",
-            "caption": "浏览当前功能领域和二级模块。"
+            "caption": "在功能模块筛选中浏览当前功能领域和二级模块。"
           }
         ]
       }
@@ -1860,10 +1860,10 @@
     {
       "id": "test_f657186782b0",
       "key": "agent-use.design.test-workbench-panels",
-      "title": "测试工作台的领域面板可独立打开并保持状态",
-      "description": "验证用户能在测试目录、测试用例、运行控制台、AI 真实使用、门禁与覆盖审查面板间工作，布局切换不会破坏选择与草稿。",
+      "title": "Test 的总览、用例、运行与 TAU 页面互通并保持状态",
+      "description": "验证用户能在 Test 的总览、用例目录、用例页、计划页、运行记录与 TAU 页之间往返：标签、面包屑和浏览器后退都回到地址所指的内容，用例与运行计划草稿不丢失。",
       "importance": "P0",
-      "module": "workbench.panels",
+      "module": "operations.test-workbench",
       "aspects": [
         "functional",
         "ui",
@@ -1871,7 +1871,6 @@
       ],
       "is_design_point": true,
       "design_refs": [
-        "decision_538e155e1102",
         "decision_f2a6a5dd4646"
       ],
       "lifecycle": "active",
@@ -1885,11 +1884,11 @@
           "profiles": [
             "live.controlled"
           ],
-          "task_prompt": "打开新测试工作台：从测试目录选择一条用例，依次打开测试用例、运行控制台、AI 真实使用、门禁与覆盖审查。生成但不要执行一个运行计划；返回测试用例后确认用例和分区状态仍正确。状态对比只限定到同一个测试用例面板根节点；其他按需挂载面板新增的全局控件不算状态改变。标签已经激活时直接读取，不做多余点击；点击前核对实际命中目标，不能只凭 getClientRects 判断可点击。"
+          "task_prompt": "打开 Test 页面（/development?view=test）。先在总览确认覆盖地图、最近运行、待关注、快捷组合与 TAU 摘要都已显示；切到“用例”标签，按一个功能模块筛选，从结果中打开一条用例，在用例页确认面包屑、实现、定义与运行记录分区对应这条用例。在用例页点“运行”进入计划页，只看计划预览，不点“开始运行”。再依次切到“运行”与“TAU”标签，然后用浏览器后退回到计划页和用例页：地址中的 case 参数、标题与分区内容仍对应同一条用例，计划页仍显示刚才的用例；从面包屑回到用例目录时，地址与工具栏保留原来的模块筛选。页面右侧有测试团队对话时，确认它在页面之间切换时保持，不重新创建。状态对比只限定到同一条用例的页面内容。标签已经激活时直接读取，不做多余点击；点击前核对实际命中目标，不能只凭 getClientRects 判断可点击。"
         }
       ],
       "live": {
-        "title": "测试工作台面板协作",
+        "title": "Test 页面之间往返",
         "target": "/wall?view=test",
         "mode": "direct",
         "risk": "read-only",
@@ -1898,17 +1897,17 @@
         "direct_steps": [
           {
             "capability": "test.workbench.open-case",
-            "caption": "从测试目录打开测试用例。"
+            "caption": "从用例目录打开一条用例的页面。"
           },
           {
             "capability": "test.workbench.select-view",
             "value": "agent",
-            "caption": "打开 AI 真实使用与运行控制台。"
+            "caption": "切到 TAU 页，查看各模块的任务和负责的 Resident。"
           },
           {
             "capability": "test.workbench.select-view",
             "value": "review",
-            "caption": "打开覆盖审查后仍保持当前测试用例。"
+            "caption": "回到总览的覆盖地图；演示结束后页面回到原来的地址。"
           }
         ]
       }

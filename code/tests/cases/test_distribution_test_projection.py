@@ -76,7 +76,7 @@ def test_test_view_routes_are_independent_from_framework_and_tau(monkeypatch, wi
         assert replies[-1][0] == (200 if with_view else 404)
         assert ('test' in builtins()) is with_view
         routes = {route.path: route for route in web.routes(shell)}
-        assert ('/static/test_workbench.js' in routes) is with_view
+        assert ('/static/test_page.js' in routes) is with_view
         # Presentation omission never weakens the framework API's original gate.
         assert routes['/test/api/run'].group == 'test-actor-post'
         assert routes['/test/api/catalog'].group == 'test-actor-get'

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import dataclasses
 import hashlib
 import json
 import os
@@ -24,7 +25,7 @@ from management_portal.test_framework.registry import RunnerRegistry
 from management_portal.test_framework.tau import TauConfig, build_prompt, parse_result
 from management_portal.test_framework.dev_target import DevBuildMismatch, DevTargetError, DevTargetVerifier, VerifiedDevTarget
 from management_portal.test_framework.runner_adapters import AdapterResult, TauAdapter, _terminate_artifact_helpers
-from management_portal.test_framework import slots
+from management_portal.test_framework import slots, web
 from management_portal.test_framework.executor import LocalRunExecutor, launch_unit
 from management_portal.test_framework.local_runs import PytestGroup, plan_groups
 from management_portal.test_framework.service import TestFrameworkService as FrameworkService
@@ -752,6 +753,61 @@ def test_run_coordinator_executes_a_fixed_plan_and_records_result(
         for implementation in service.catalog.get(workspace["cases"][0]["id"]).implementations
     })
     assert workspace["cases"][0]["runners"] == expected_runners
+
+
+def test_test_page_reads_an_overview_and_catalog_pages_without_retired_cases(tmp_path: Path) -> None:
+    """Test 页面的总览给出各模块的用例构成和最近运行的标题与模块，目录按模块分页并可按执行方式筛选，退役用例都不计入
+
+    总览不带用例行；每个模块给出总数、P0–P3、设计点、TAU 与缺实现的数量，最近运行写明用例数、所在模块，只有一条用例时写出它的标题。
+    目录一页最多 500 条，按模块的目录顺序、再按重要等级和 key 排列；runner=none 是没有实现的用例。
+
+    :risk: no-external-side-effects
+    :profiles: local.fixture
+    :design: decision_f2a6a5dd4646
+    """
+    service = FrameworkService(state_root=tmp_path / "service")
+    projected, errors = service.catalog.projection()
+    retired = projected[0]
+    projected = (dataclasses.replace(retired, lifecycle="retired"), *projected[1:])
+    service.catalog.projection = lambda: (projected, errors)
+    cases = list(projected[1:])
+    runners = lambda case: {implementation.runner for implementation in case.implementations}
+    first = cases[0]
+    second = next(case for case in cases if case.module != first.module)
+    single = service.records.create({"executable": True, "selected": [{"case_id": first.id, "runner": {"id": "pytest"}}]}, "alice")
+    pair = service.records.create({"executable": True, "campaign": "tau", "selected": [{"case_id": first.id}, {"case_id": second.id}]}, "bob")
+
+    overview = service.query_overview(actor="alice")
+    assert overview["schema"] == "tfi.test-overview.v1" and "cases" not in overview
+    assert overview["summary"]["total"] == len(cases)
+    stats = {item["id"]: item for item in overview["modules"]}
+    assert set(stats) == set(MODULES)
+    members = [case for case in cases if case.module == first.module]
+    assert stats[first.module]["total"] == len(members)
+    assert stats[first.module]["by_importance"] == {value: sum(case.importance == value for case in members) for value in ("P0", "P1", "P2", "P3")}
+    assert stats[first.module]["tau"] == sum("tau" in runners(case) for case in members)
+    assert sum(item["without_implementation"] for item in overview["modules"]) == overview["summary"]["without_implementation"]
+    assert [run["run_id"] for run in overview["recent_runs"]] == [pair["run_id"], single["run_id"]]
+    assert {key: overview["recent_runs"][1][key] for key in ("case_count", "title", "module_ids")} == {"case_count": 1, "title": first.title, "module_ids": [first.module]}
+    assert {key: overview["recent_runs"][0][key] for key in ("case_count", "title", "module_ids")} == {"case_count": 2, "title": "", "module_ids": sorted({first.module, second.module})}
+    assert service.query_overview(actor="")["recent_runs"] == []
+
+    page = service.query_page({}, offset=0, limit=50)
+    assert page["schema"] == "tfi.test-catalog-page.v1"
+    assert page["count"] == len(cases) and len(page["cases"]) == 50
+    assert retired.id not in {item["id"] for item in service.query_page({}, limit=500)["cases"]}
+    assert service.query_page({"lifecycle": ["retired"]})["count"] == 1
+    order = [module.id for group in MODULE_GROUPS for module in group.modules]
+    listed = service.query_page({}, limit=500)["cases"]
+    assert [(order.index(item["module"]), ("P0", "P1", "P2", "P3").index(item["importance"]), item["key"]) for item in listed] == sorted(
+        (order.index(item["module"]), ("P0", "P1", "P2", "P3").index(item["importance"]), item["key"]) for item in listed)
+    assert not {item["id"] for item in page["cases"]} & {item["id"] for item in service.query_page({}, offset=50, limit=50)["cases"]}
+    assert service.query_page({}, limit=10_000)["limit"] == 500
+    tau = service.query_page({"runners": ["tau"]}, limit=500)
+    assert tau["count"] == sum("tau" in runners(case) for case in cases) and all("tau" in item["runners"] for item in tau["cases"])
+    missing = service.query_page({"runners": ["none"]}, limit=500)
+    assert missing["count"] == overview["summary"]["without_implementation"] and all(item["runners"] == [] for item in missing["cases"])
+    assert retired.id not in service.query_case_ids({"current": True})["case_ids"]
 
 
 def test_run_coordinator_observes_cancellation_persisted_by_another_process(
@@ -2339,38 +2395,31 @@ def test_tau_reconnection_obeys_cancellation(tmp_path, monkeypatch, subtests, is
                 assert delays == [1.0]
 
 
-def test_test_page_is_composed_from_registered_workbench_panels_contracts(subtests, isolated_portal_case):
-    """Test 页面由 PortalWorkbench 和已注册的六个面板组装，嵌在 WALL 页面中"""
-    with subtests.test(contract='test_test_page_is_composed_from_registered_workbench_panels'), isolated_portal_case():
+def test_test_page_is_one_addressed_page_inside_the_development_page_contracts(subtests, isolated_portal_case):
+    """Test 视图是开发投影页中按地址切换的一组页面：总览、用例目录、用例、运行、新运行与 TAU，每个脚本都随视图登记和提供"""
+    with subtests.test(contract='test_test_page_is_one_addressed_page_inside_the_development_page'), isolated_portal_case():
         page_root = ROOT / 'management_portal' / 'test_framework' / 'page'
         html = (page_root / 'test_native_view.html').read_text(encoding='utf-8')
         wall = (ROOT / 'management_portal' / 'wall.html').read_text(encoding='utf-8')
-        entry = (page_root / 'test_workbench.js').read_text(encoding='utf-8')
-        core = (page_root / 'test_workbench_core.js').read_text(encoding='utf-8')
-        assert '/static/portal_workbench.js' in html
-        assert 'class="portalActivityRail" id="testActivityRail"' in html
-        assert 'testActivityRail' in entry
-        assert 'PortalWorkbench.createActivityRail' in entry
-        assert html.index('/static/portal_preview_runtime.js') < html.index('/static/portal_pdf_preview.js')
-        assert html.index('/static/portal_pdf_preview.js') < html.index('/static/portal_preview_renderers.js')
+        entry = (page_root / 'test_page.js').read_text(encoding='utf-8')
         assert '/static/wall.js' in wall and '/static/wall.js' not in html
         assert '<template id="wallNativeView"' in wall
         assert '<template id="testNativeView">' in html and 'testNativeView' not in wall
-        assert 'id="wallTestView"' in html
+        assert 'id="wallTestView"' in html and 'id="testPage"' in html
         assert 'registerView("test"' in entry
         assert not (page_root / 'test.html').exists()
-        assert 'window.PortalWorkbench.create({' in entry
-        assert 'panelDefinitions' in core
-        panel_files = {'test-catalog': 'test_catalog_panel.js', 'test-case': 'test_case_panel.js', 'run-console': 'test_run_console_panel.js', 'tau': 'test_tau_panel.js', 'gate-composer': 'test_gate_composer_panel.js', 'test-review': 'test_review_panel.js'}
-        for panel_type, filename in panel_files.items():
-            source = (page_root / filename).read_text(encoding='utf-8')
-            assert f'type: "{panel_type}"' in source
-            assert f'/static/{filename}' in html
-        case_panel = (page_root / 'test_case_panel.js').read_text(encoding='utf-8')
-        assert '/test/api/source?case_id=' in case_panel
-        assert 'data-implementation-id=' in case_panel
-        assert 'document: { kind: "file"' not in case_panel
-        assert '/static/test_live_adapter.js' in html
+        # One script per page; the template loads each once, the shell last, and the web routes serve exactly these files.
+        pages = ['test_page_core.js', 'test_page_overview.js', 'test_page_catalog.js', 'test_page_case.js',
+                 'test_page_run.js', 'test_page_plan.js', 'test_page_tau.js', 'test_live_adapter.js', 'test_page.js']
+        positions = [html.index(f'"/static/{name}"') for name in pages]
+        assert positions == sorted(positions)
+        assert '"/static/test_page.css"' in html
+        assert set(web.PAGE_ASSETS) == {*pages, 'test_page.css'}
+        assert all((page_root / name).exists() for name in web.PAGE_ASSETS)
+        assert not [path.name for path in page_root.glob('test_*_panel.js')] and not (page_root / 'test_workbench.js').exists()
+        case_page = (page_root / 'test_page_case.js').read_text(encoding='utf-8')
+        assert '/test/api/source?case_id=' in case_page
+        assert 'data-implementation-id=' in case_page
         assert 'window.PortalTestLabDemoAdapter = adapter' in (page_root / 'test_live_adapter.js').read_text(encoding='utf-8')
         assert not (page_root / 'test_lab.js').exists()
         assert not (page_root / 'test_lab.css').exists()

@@ -239,7 +239,7 @@
           "profiles": [
             "live.controlled"
           ],
-          "task_prompt": "在测试工作台只改变面板打开状态与当前测试用例，重新载入页面后确认布局和选择按 test-actor 恢复；同时确认没有因此修改测试用例分类或创建运行。"
+          "task_prompt": "在开发投影页的 Test 视图收起右侧的测试团队对话，再打开一个用例页；重新载入页面后确认对话仍按 test-actor 保持收起，页面仍显示地址所指的那个用例；同时确认没有因此修改测试用例分类或创建运行。"
         }
       ],
       "live": {
@@ -253,12 +253,12 @@
           {
             "capability": "test.workbench.select-view",
             "value": "agent",
-            "caption": "改变可见面板并保持当前测试用例。"
+            "caption": "切到 TAU 页，页面地址随之改变。"
           },
           {
             "capability": "test.workbench.select-view",
             "value": "catalog",
-            "caption": "返回测试目录并核对当前测试用例。"
+            "caption": "回到用例目录；演示结束后页面回到原来的地址与滚动位置。"
           }
         ]
       }

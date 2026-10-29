@@ -216,6 +216,9 @@ class CatalogRepository:
         design = values.get("is_design_point")
         has_live = values.get("has_live")
         lifecycle = set(clean_list(values.get("lifecycle")))
+        # "none" stands for a case without any implementation.
+        runners = set(clean_list(values.get("runners")))
+        current = values.get("current") is True
         search = str(values.get("search") or "").strip().casefold()
         point_ref = design_point_ref(values.get("design_point_ref"))
         has_binding = values.get("has_design_point_ref")
@@ -261,6 +264,10 @@ class CatalogRepository:
             if isinstance(has_live, bool) and bool(case.live) is not has_live:
                 continue
             if lifecycle and case.lifecycle not in lifecycle:
+                continue
+            if current and case.lifecycle == "retired":
+                continue
+            if runners and not runners.intersection({item.runner for item in case.implementations} or {"none"}):
                 continue
             searchable = (case.id, case.title, case.description, case.module, case.key,
                           *(implementation.entrypoint for implementation in case.implementations))

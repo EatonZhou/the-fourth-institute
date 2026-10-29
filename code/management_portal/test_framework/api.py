@@ -71,6 +71,14 @@ def query_workspace(filters: dict[str, Any] | None = None, *, actor: str = "") -
     return service(refresh_runtime=True).query_workspace(filters, actor=actor)
 
 
+def query_overview(*, actor: str = "") -> dict[str, Any]:
+    return service(refresh_runtime=True).query_overview(actor=actor)
+
+
+def query_page(filters: dict[str, Any] | None = None, *, offset: int = 0, limit: int = 100) -> dict[str, Any]:
+    return service().query_page(filters, offset=offset, limit=limit)
+
+
 def query_case_ids(filters: dict[str, Any] | None = None) -> dict[str, Any]:
     return service().query_case_ids(filters)
 

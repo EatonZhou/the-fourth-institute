@@ -56,7 +56,7 @@ MODULE_GROUPS = (
     ModuleGroup("resident", "5. Resident、Session 与 Conversation", (
         node("resident.identity", "Resident 身份与发现", "decision_0f57656a2acd", "decision_44cf587c1721", "decision_8fe87d812a4c", "decision_bd5217d08c09", "decision_3e07c6d35cac", "decision_5ff0cb51ed84"),
         node("resident.conversation", "输入、Conversation 与 Channel", "decision_edc470e09f5a", "decision_725dedbe89b2", "decision_c524c775e0be", "decision_692a484e9bea", "decision_15f7df737ed5", "decision_a6bebf4ac283", "decision_0571f3741e23"),
-        node("resident.session", "Session、Generation 与 Provider", "decision_c47a13e8b962"),
+        node("resident.session", "Session、Generation 与 Provider", "decision_c47a13e8b962", "decision_ccbb1cac24aa"),
         node("resident.workspace-memory", "Folder、Workspace 与上下文", "decision_721c64f9bdcc", "decision_ccb99a00eebd", "decision_8838269736d3", "decision_c616d197abbb"),
         node("resident.fork-handoff", "Fork 与 Handoff", "decision_5bf5bfbd52cb", "decision_7ef392b5f60d", "decision_6fc653d55c79"),
     )),
@@ -80,7 +80,7 @@ MODULE_GROUPS = (
         node("workflow.repository", "Repo 与 Workspace", "decision_6476c69b33da"),
         node("workflow.article", "Article", "decision_956154cd02f6"),
         node("workflow.knowledge", "Knowledge、Skill、Experiment 与 Archive", "decision_3ece26686464", "decision_f48c2514bf33", "decision_9ef033d79173", "decision_58db6282c244", "decision_4666241592d4"),
-        node("workflow.project", "Project 业务状态", "decision_4648f7fa3295", "decision_9b94f218a188"),
+        node("workflow.project", "Project 业务状态", "decision_4648f7fa3295", "decision_46c37026e8ea", "decision_9d15ae2053c4"),
     )),
     ModuleGroup("workbench", "9. Portal 前端与工作台", (
         node("workbench.components", "前端组件系统与通用交互", "decision_741b04821171", "decision_b3022c27d22f", "decision_daba6706a788", "decision_fd9851ae01c0"),

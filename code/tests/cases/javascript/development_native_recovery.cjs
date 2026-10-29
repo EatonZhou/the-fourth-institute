@@ -61,46 +61,41 @@ test('native workspace shows progress through asset loading and activation, then
   } finally { owner.destroy(); await harness.cleanup(); }
 });
 
-test('Test initialization can retry after missing panels, without duplicating stores or workbenches', async () => {
+test('Test initialization can retry after a broken template, shares concurrent opens and remounts once after destroy', async () => {
   const harness = createHarness();
   const {window, root} = harness;
   storageFixture(window);
-  root.innerHTML = '<aside id="testActivityRail"></aside><main id="testWorkbenchRoot"></main>';
+  root.innerHTML = '<section id="wallTestView"></section>';
   let controller;
   window.PortalDevelopmentWorkspace = {registerView: (_id, value) => { controller = value; }};
-  window.PortalIdentity = {load: async () => ({username: 'fixture'}), peek: () => null};
-  window.fetch = async () => ({ok: true, json: async () => ({cases: [], recent_runs: []})});
-  evaluate(window, 'management_portal/test_framework/page/test_workbench_core.js');
-  evaluate(window, 'management_portal/test_framework/page/test_workbench.js');
+  window.PortalAPI = {get: async () => ({workbench: null})};
+  window.fetch = async () => ({ok: true, json: async () => ({
+    summary: {total: 0, by_importance: {}}, filters: {modules: []}, modules: [], recent_runs: [], catalog_errors: [],
+    capabilities: {runners: []}, tau_residents: [], access: {can_operate: true},
+  })});
+  for (const name of ['test_page_core', 'test_page_overview', 'test_page_catalog', 'test_page_case', 'test_page_run', 'test_page_plan', 'test_page_tau', 'test_page']) {
+    evaluate(window, `management_portal/test_framework/page/${name}.js`);
+  }
+  const pages = () => root.querySelectorAll('.testTabs').length;
   try {
-    await assert.rejects(controller.activate(), /面板登记不完整/);
-    const T = window.PortalTest;
-    for (const type of ['test-catalog', 'test-case', 'run-console', 'tau', 'gate-composer', 'test-review']) {
-      T.registerPanel({type, create: ({root}) => { root.textContent = type; return {element: root}; }});
-    }
+    await assert.rejects(controller.activate(), /模板不完整/);
+    root.querySelector('#wallTestView').innerHTML = '<div class="testPage" id="testPage"></div>';
     const retry = controller.activate();
     assert.equal(controller.activate(), retry, 'concurrent opens share one initialization');
     await retry;
-    assert.ok(window.PortalWorkbench.get('test'));
-    assert.equal(T.store.listeners.size, 1);
+    await until(() => root.querySelector('.testOverview'));
+    assert.equal(pages(), 1);
     assert.doesNotMatch(root.textContent, /初始化失败/);
     await controller.activate();
-    assert.equal(T.store.listeners.size, 1);
+    assert.equal(pages(), 1, 'a later visit routes the same page again');
     controller.destroy();
-    assert.equal(window.PortalWorkbench.get('test'), null);
-    assert.equal(T.store.listeners.size, 0);
-    assert.equal(T.workbench(), null);
+    assert.equal(pages(), 0);
     await controller.activate();
-    assert.ok(window.PortalWorkbench.get('test'));
-    assert.equal(T.store.listeners.size, 1);
+    assert.equal(pages(), 1);
     controller.destroy();
-    let identityReady;
-    window.PortalIdentity.load = () => new Promise(resolve => { identityReady = resolve; });
     const pending = controller.activate();
     controller.destroy();
-    identityReady({username: 'fixture'});
     await pending;
-    assert.equal(window.PortalWorkbench.get('test'), null, 'late identity reply cannot remount a disposed view');
-    assert.equal(T.store.listeners.size, 0);
+    assert.equal(pages(), 0, 'a view destroyed while mounting stays unmounted');
   } finally { controller.destroy(); await harness.cleanup(); }
 });

@@ -102,5 +102,5 @@ def test_demo_caption_uses_the_existing_readable_caption_style() -> None:
     ]
     assert len(captions) == 1
     assert "testDemoCaption" in str(captions[0].get("class") or "").split()
-    styles = (page_root / "test_workbench.css").read_text(encoding="utf-8")
+    styles = (page_root / "test_page.css").read_text(encoding="utf-8")
     assert re.search(r"\.testDemoCaption\s*\{[^}]*\bcolor\s*:", styles)

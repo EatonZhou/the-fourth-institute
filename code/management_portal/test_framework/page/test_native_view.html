@@ -1,13 +1,9 @@
 <!-- The Test workbench's view in the development projection page (web.native_view). Not a standalone page. -->
 <template id="testNativeView">
-<section id="wallTestView" class="wallWorkspaceView testWorkbenchSurface" aria-label="Test 测试工作台" data-test-workbench-version="component-v2" hidden data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Test 测试工作台&quot;}">
-    <div class="testWorkbenchShell" id="testWorkbenchShell">
-      <aside class="portalActivityRail" id="testActivityRail" aria-label="测试工作台视图" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;测试工作台视图&quot;}"></aside>
-      <div class="testWorkbenchRoot" id="testWorkbenchRoot">
-        <!-- Every Test panel instance is mounted by PortalWorkbench. -->
-      </div>
-    </div>
-    <div class="portalDetailOverlay testDemoOverlay" id="testDemoOverlay" data-portal-detail-overlay data-portal-overlay-layer="dialog" hidden>
+<section id="wallTestView" class="wallWorkspaceView testPageSurface" aria-label="Test" data-test-workbench-version="component-v2" hidden>
+    <!-- test_page.js draws the pages, the tabs and the Test team's conversation here. -->
+    <div class="testPage" id="testPage"></div>
+<div class="portalDetailOverlay testDemoOverlay" id="testDemoOverlay" data-portal-detail-overlay data-portal-overlay-layer="dialog" hidden>
       <section class="portalDetailSurface testDemoSurface" data-portal-detail-surface data-portal-detail-size="viewport" role="dialog" aria-modal="true" aria-labelledby="testDemoTitle">
         <header class="portalDetailHeader testDemoHeader" data-portal-detail-header>
           <div><div class="testDemoSafety"><!--portal-i18n:"只读演示沙盒 · 写请求已阻止"-->只读演示沙盒 · 写请求已阻止</div><h2 id="testDemoTitle"><!--portal-i18n:"行为演示"-->行为演示</h2></div>
@@ -31,7 +27,7 @@
     "/static/portal_themes.css",
     "/static/portal_board_toolbar.css",
     "/static/portal_collection_board.css",
-    "/static/test_workbench.css"
+    "/static/test_page.css"
   ],
   "scripts": [
     {"script-group": "portal-foundation"},
@@ -81,14 +77,14 @@
     "/static/portal_command_palette.js",
     "/static/markdown.js",
     "/static/portal_demo_player.js",
-    "/static/test_workbench_core.js",
-    "/static/test_catalog_panel.js",
-    "/static/test_case_panel.js",
-    "/static/test_run_console_panel.js",
-    "/static/test_tau_panel.js",
-    "/static/test_gate_composer_panel.js",
-    "/static/test_review_panel.js",
-    "/static/test_workbench.js",
-    "/static/test_live_adapter.js"
+    "/static/test_page_core.js",
+    "/static/test_page_overview.js",
+    "/static/test_page_catalog.js",
+    "/static/test_page_case.js",
+    "/static/test_page_run.js",
+    "/static/test_page_plan.js",
+    "/static/test_page_tau.js",
+    "/static/test_live_adapter.js",
+    "/static/test_page.js"
   ]
 }</script>

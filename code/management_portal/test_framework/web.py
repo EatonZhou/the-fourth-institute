@@ -9,12 +9,11 @@ from management_portal.http_routes import RouteDefinition
 from management_portal.test_framework import api as test_framework_api
 from management_portal.test_framework import live_adapter as test_live_adapter
 
-# The Test Workbench page scripts live with the framework, not in management_portal/static.
+# The Test page scripts live with the framework, not in management_portal/static.
 PAGE_ROOT = Path(__file__).resolve().parent / "page"
 PAGE_ASSETS = (
-    "test_case_panel.js", "test_catalog_panel.js", "test_gate_composer_panel.js", "test_live_adapter.js",
-    "test_review_panel.js", "test_run_console_panel.js", "test_tau_panel.js", "test_workbench.css",
-    "test_workbench.js", "test_workbench_core.js",
+    "test_live_adapter.js", "test_page.css", "test_page.js", "test_page_case.js", "test_page_catalog.js",
+    "test_page_core.js", "test_page_overview.js", "test_page_plan.js", "test_page_run.js", "test_page_tau.js",
 )
 # The Test workbench's view in the development projection page (web.native_view).
 NATIVE_VIEW = {
@@ -45,7 +44,9 @@ class TestLabHttp:
 
     def _catalog_filters(self, parsed):
         qs = parse_qs(parsed.query)
-        filters = {'search': str((qs.get('search') or [''])[0]).strip(), 'importance': qs.get('importance') or [], 'modules': qs.get('module') or [], 'features': qs.get('feature') or [], 'aspects': qs.get('aspect') or [], 'lifecycle': qs.get('lifecycle') or [], 'design_point_ref': str((qs.get('design_point_ref') or [''])[0]).strip()}
+        filters = {'search': str((qs.get('search') or [''])[0]).strip(), 'importance': qs.get('importance') or [], 'modules': qs.get('module') or [], 'features': qs.get('feature') or [], 'aspects': qs.get('aspect') or [], 'lifecycle': qs.get('lifecycle') or [], 'runners': qs.get('runner') or [], 'design_point_ref': str((qs.get('design_point_ref') or [''])[0]).strip()}
+        if str((qs.get('current') or [''])[0]).strip().lower() == 'true':
+            filters['current'] = True
         design_value = str((qs.get('is_design_point') or [''])[0]).strip().lower()
         if design_value in {'true', 'false'}:
             filters['is_design_point'] = design_value == 'true'
@@ -68,7 +69,18 @@ class TestLabHttp:
             qs = parse_qs(parsed.query)
             filters = self._catalog_filters(parsed)
             projection = str((qs.get('projection') or [''])[0]).strip().lower()
-            result = test_framework_api.query_workspace(filters, actor=route_actor) if projection == 'workspace' else test_framework_api.query(filters, actor=route_actor)
+            if projection == 'overview':
+                result = test_framework_api.query_overview(actor=route_actor)
+            elif projection == 'page':
+                try:
+                    offset, limit = (int(str((qs.get(name) or [default])[0]).strip() or default) for name, default in (('offset', '0'), ('limit', '100')))
+                except ValueError:
+                    return self.respond(request, 400, {'error': 'offset 与 limit 必须是整数'})
+                result = test_framework_api.query_page(filters, offset=offset, limit=limit)
+            elif projection == 'workspace':
+                result = test_framework_api.query_workspace(filters, actor=route_actor)
+            else:
+                result = test_framework_api.query(filters, actor=route_actor)
             result['access'] = request._test_api_access
             return self.respond(request, 200, result)
         except Exception as exc:
