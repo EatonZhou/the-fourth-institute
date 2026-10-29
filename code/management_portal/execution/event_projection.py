@@ -484,11 +484,11 @@ def execution_projection_from_execution(
 
 
 def _activity_record(sequence: int, detail: dict[str, Any]) -> dict[str, Any] | None:
-    """The stored record of one detail; ``None`` for a token snapshot or an unfinished update."""
+    """The stored record of one detail; ``None`` for an unfinished update."""
 
     kind = str(detail.get("kind") or "").strip()
     status = str(detail.get("status") or "").strip().lower()
-    if kind == "tokens" or (kind in {"update", "reasoning"} and (not status or status in _RUNNING_STATUSES)):
+    if kind in {"update", "reasoning"} and (not status or status in _RUNNING_STATUSES):
         return None
     return {
         "type": "runtime_activity",

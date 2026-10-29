@@ -46,8 +46,8 @@ def test_completed_output_is_independent_of_display_budget_contracts(monkeypatch
             chunks = ["FIRST" * 20, "LAST" * 20]
             events = [
                 (sequence, {
-                    "method": "item/agentMessage/delta",
-                    "params": {"itemId": "stream-message", "delta": chunk},
+                    "method": "item/plan/delta",
+                    "params": {"itemId": "stream-plan", "delta": chunk},
                 })
                 for sequence, chunk in enumerate(chunks, start=1)
             ]
@@ -124,8 +124,8 @@ def test_technical_event_owners_do_not_depend_on_presentation_contracts(subtests
         changes = [{"kind": "update", "path": f"file-{index}.py"} for index in range(8)]
         queries = [f"query-{index}" for index in range(8)]
         events = [
-            (1, {"type": "item.completed", "item": {"type": "fileChange", "changes": changes}}),
-            (2, {"type": "item.completed", "item": {"type": "webSearch", "action": {"queries": queries}}}),
+            (1, {"method": "item/completed", "params": {"item": {"type": "fileChange", "changes": changes}}}),
+            (2, {"method": "item/completed", "params": {"item": {"type": "webSearch", "action": {"queries": queries}}}}),
         ]
         details = semantics.runtime_details_from_objects(events)
         assert details[0]["content"].splitlines() == [f"update {change['path']}" for change in changes]

@@ -17,7 +17,7 @@ from management_common import provider_turn_artifacts
 from management_common.message_identity import derived_message_identity
 
 from .provider_item_projection import ITEM_PHASES, project_item
-from .runtime_details import EventContext, RuntimeDetails, mapping, nonnegative_int, plan_update_id, token_usage_brief
+from .runtime_details import EventContext, RuntimeDetails, mapping, nonnegative_int, plan_update_id
 
 Notification = Callable[[dict[str, Any], dict[str, Any], EventContext, RuntimeDetails], None]
 
@@ -165,14 +165,7 @@ def _thread_attached(event: dict[str, Any], params: dict[str, Any], context: Eve
     ))
 
 
-def _token_usage_updated(event: dict[str, Any], params: dict[str, Any], context: EventContext, details: RuntimeDetails) -> None:
-    usage = token_usage(params.get("tokenUsage"))
-    if usage:
-        details.add(context.detail(kind="tokens", title="Token update", content=token_usage_brief(usage)))
-
-
 NOTIFICATIONS: dict[str, Notification] = {
-    "item/agentMessage/delta": _text_delta,
     "item/plan/delta": _text_delta,
     "turn/plan/updated": _plan_updated,
     "error": _error,
@@ -183,5 +176,4 @@ NOTIFICATIONS: dict[str, Notification] = {
     "turn/started": _turn_started,
     "turn/completed": _turn_completed,
     "thread/attached": _thread_attached,
-    "thread/tokenUsage/updated": _token_usage_updated,
 }
