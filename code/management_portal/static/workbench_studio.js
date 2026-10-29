@@ -88,7 +88,7 @@
     directory?.destroy(); directory = null;
     showError(null);
     content.setAttribute("aria-busy", "true");
-    content.innerHTML = window.PortalI18n.markup("<p>正在加载工作台…</p>");
+    content.innerHTML = window.PortalUIPrimitives.asyncStateHtml({ state: "loading", title: window.PortalI18n.t("正在加载工作台…"), message: "" });
     try {
       // One directory read shows the cards. Built-in entries are listed as the server marks
       // them active; their binding checks stay on the pages that use them.

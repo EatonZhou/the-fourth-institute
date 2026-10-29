@@ -18247,6 +18247,26 @@
     "zh-CN": "{p0} 个工作台",
     "en": "{p0} workbenches"
   },
+  "个工作台": {
+    "zh-CN": "个工作台",
+    "en": "workbenches"
+  },
+  "个团队": {
+    "zh-CN": "个团队",
+    "en": "teams"
+  },
+  "搜索名称、说明、Project 或团队": {
+    "zh-CN": "搜索名称、说明、Project 或团队",
+    "en": "Search names, descriptions, Projects or teams"
+  },
+  "项目主页": {
+    "zh-CN": "项目主页",
+    "en": "Project page"
+  },
+  "打开项目": {
+    "zh-CN": "打开项目",
+    "en": "Open project"
+  },
   "{p0} 个当前筛选的 Repo 有变更；提交前会重新检查": {
     "en": "{p0} filtered Repos have changes; recheck before committing",
     "zh-CN": "{p0} 个当前筛选的 Repo 有变更；提交前会重新检查"

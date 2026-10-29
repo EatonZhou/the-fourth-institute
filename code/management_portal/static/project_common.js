@@ -109,7 +109,7 @@
     const project = encodeURIComponent(projectId);
     if (knowledgeTypes().has(type)) return `/resource/knowledge?type=${encodeURIComponent(type)}&project=${project}`;
     if (CATALOG_TYPES.has(type)) return `/resource/${type}?project=${project}`;
-    if (type === "workbench") return "/workbenches";
+    if (type === "workbench") return `/workbenches?project=${project}`;
     return "";
   }
 

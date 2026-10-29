@@ -1,98 +1,281 @@
-/* The directory reuses the collection board: toolbar, Project groups and item cards.
-   This file adds only what a workbench card carries beyond a resource card. */
-/* The floating mailbox can overlap the last card on desktop as well as mobile. */
-.workbenchCatalog { min-width: 0; color: var(--text); padding-inline-end: 44px; }
+/* The workbench directory, laid out like the Project list (project.css): a heading
+   with figures and filters, folding groups and cards with a coloured left edge. */
+.workbenchCatalog { display: grid; gap: 22px; min-width: 0; padding: 18px 6px 48px; color: var(--text); }
 .workbenchCatalog *, .workbenchCatalog *::before, .workbenchCatalog *::after { box-sizing: border-box; }
-.workbenchCatalogIcon { width: 15px; height: 15px; flex: 0 0 auto; }
-.workbenchCatalogCreate { display: inline-flex; align-items: center; gap: 5px; text-decoration: none; white-space: nowrap; }
-.workbenchCatalog [data-portal-board-action="filter"].is-filtered { border-color: var(--accent); color: var(--accent); }
+/* Folded groups hide their cards with the hidden attribute. */
+.workbenchCatalog [hidden] { display: none !important; }
 
-.workbenchCatalog .portalProjectItems.workbenchCatalogItems {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+/* Heading, figures and tools */
+.workbenchListHero { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.workbenchListHeading h1 { margin: 0 0 6px; font-size: 28px; line-height: 1.2; letter-spacing: -.01em; }
+.workbenchListStats { display: flex; flex-wrap: wrap; gap: 14px; margin: 0; color: var(--muted); }
+.workbenchListStats strong { margin-right: 3px; color: var(--text); font-variant-numeric: tabular-nums; }
+.workbenchListStats .is-live strong { color: var(--ok, #15803d); }
+.workbenchListTools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.workbenchListTools select, .workbenchSearch input {
+  height: var(--portal-control-height, 34px);
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--portal-control-radius, 8px);
+  background: var(--panel);
+  color: var(--text);
 }
-.workbenchCatalogCard { display: flex; flex-direction: column; gap: 0; min-height: 0; }
-.workbenchCatalogCardHead { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; min-width: 0; }
-/* A shared prefix must not hide the name that distinguishes two workbenches.
-   Full titles are readable on touch screens as well as with a keyboard. */
-.workbenchCatalogTitle {
-  flex: 1 1 auto; display: block; overflow: visible; overflow-wrap: anywhere;
-  -webkit-line-clamp: unset;
+.workbenchListTools select { max-width: 220px; }
+.workbenchSearch input { width: min(280px, 60vw); }
+.workbenchListTools a.portalButton { text-decoration: none; }
+
+/* Groups. Most Projects have one or two workbenches, so groups sit side by side,
+   each as wide as its cards; a group with more cards than fit takes whole rows. */
+.workbenchGroups { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 24px 30px; }
+.workbenchGroup {
+  --cards: 1;
+  flex: 0 1 calc(var(--cards) * 314px - 14px);
+  display: grid;
+  gap: 12px;
+  min-width: min(100%, 300px);
+  max-width: 100%;
 }
-.workbenchCatalogTitleLink { color: inherit; text-decoration: none; }
-.workbenchCatalogTitleLink:hover { color: var(--accent); }
-.workbenchCatalogStatus {
-  flex: 0 0 auto; padding: 1px 7px; border: 1px solid var(--border); border-radius: 999px;
-  background: var(--chip, var(--panel-2)); color: var(--muted); font-size: 11px; line-height: 1.5; white-space: nowrap;
+.workbenchGroup.is-collapsed { flex-basis: auto; }
+.workbenchGroupHead { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.workbenchGroupToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 650;
+  cursor: pointer;
 }
-.workbenchCatalogStatus.is-published {
+.workbenchGroupToggle::before {
+  content: "";
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform .15s ease;
+}
+.workbenchGroupToggle[aria-expanded="false"]::before { transform: rotate(-45deg); }
+.workbenchGroupToggle > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.workbenchGroupCount { color: var(--muted); font-size: 13px; font-weight: 500; }
+.workbenchGroupLink {
+  display: inline-flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  gap: 3px;
+  color: var(--muted);
+  font-size: 12px;
+  text-decoration: none;
+}
+.workbenchGroupLink:hover, .workbenchGroupLink:focus-visible { color: var(--accent); }
+.workbenchGroupLink svg { width: 13px; height: 13px; }
+
+/* Cards */
+.workbenchGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 14px; }
+.workbenchCard {
+  --heat: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 16px 16px 12px 19px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--panel);
+  overflow: hidden;
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+/* The left edge and a faint glow warm up while the team works or the page has just changed. */
+.workbenchCard::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: color-mix(in srgb, var(--accent) calc(var(--heat) * 100%), var(--border));
+}
+.workbenchCard::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(120% 70% at 0% 0%, color-mix(in srgb, var(--accent) calc(var(--heat) * 9%), transparent), transparent 60%);
+}
+.workbenchCard:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover, var(--shadow)); border-color: color-mix(in srgb, var(--accent) 35%, var(--border)); }
+.workbenchCard.is-draft { border-style: dashed; }
+@media (prefers-reduced-motion: reduce) { .workbenchCard, .workbenchCard:hover { transition: none; transform: none; } }
+/* The whole card opens the workbench; the links and buttons inside keep their own targets. */
+.workbenchCardLink { position: absolute; inset: 0; z-index: 0; border-radius: inherit; }
+.workbenchCardLink:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--accent); }
+.workbenchCard a:not(.workbenchCardLink), .workbenchCard button, .workbenchTeamMore { position: relative; z-index: 1; }
+
+.workbenchCardHead { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.workbenchMark {
+  --mark-hue: 170;
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 19px;
+  font-weight: 700;
+  background: linear-gradient(135deg, hsl(var(--mark-hue) 62% 46%), hsl(calc(var(--mark-hue) + 40) 58% 36%));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .18);
+}
+.workbenchCardTitle { flex: 1; min-width: 0; display: grid; gap: 3px; }
+/* A shared prefix must not hide the name that distinguishes two workbenches. */
+.workbenchCardTitle h3 { margin: 0; font-size: 16px; line-height: 1.35; overflow-wrap: anywhere; }
+.workbenchCardMarks { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; color: var(--muted); font-size: 12px; }
+.workbenchState {
+  padding: 0 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel-2);
+  font-size: 11px;
+  line-height: 18px;
+  white-space: nowrap;
+}
+.workbenchState.is-published {
   border-color: color-mix(in srgb, var(--accent) 32%, var(--border));
-  background: color-mix(in srgb, var(--accent) 9%, var(--panel)); color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 9%, var(--panel));
+  color: var(--accent);
 }
-.workbenchCatalogMeta { margin: 2px 0 6px; }
-.workbenchCatalogCardHead + .workbenchCatalogDescription { margin-top: 6px; }
+.workbenchState.is-pending {
+  border-color: color-mix(in srgb, var(--warn, #b7791f) 40%, var(--border));
+  background: color-mix(in srgb, var(--warn, #b7791f) 10%, var(--panel));
+  color: var(--warn, #b7791f);
+}
+.workbenchUpdated { white-space: nowrap; }
+.workbenchCardTools { display: flex; align-items: center; align-self: flex-start; gap: 2px; margin: -4px -6px 0 0; }
+.workbenchFavorite, .workbenchCardSettings {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.workbenchFavorite svg, .workbenchCardSettings svg { width: 16px; height: 16px; }
+.workbenchFavorite:hover, .workbenchCardSettings:hover { background: var(--panel-2); color: var(--text); }
 /* The Resident favorite star: muted until starred, then gold. */
-.workbenchCatalogFavorite {
-  display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 25px; height: 23px;
-  margin: -1px -4px 0 0; padding: 0; border: none; border-radius: 6px; background: transparent; color: var(--muted); font-size: 14px; line-height: 1;
-}
-.workbenchCatalogFavorite:hover { background: var(--panel-2); color: var(--accent-2); }
-.workbenchCatalogFavorite.is-on, .workbenchCatalogFavorite.is-on:hover { background: transparent; color: #f5c518; }
-.workbenchCatalog .portalCollectionBadge.is-pending {
-  border-color: color-mix(in srgb, var(--warn, #b7791f) 40%, var(--border)); color: var(--warn, #b7791f);
-}
-.workbenchCatalogDescription { -webkit-line-clamp: 2; margin-bottom: 10px; overflow-wrap: anywhere; }
-.workbenchCatalogDescription.is-empty { font-style: italic; opacity: .7; }
+.workbenchFavorite.is-on, .workbenchFavorite.is-on:hover { color: #f5c518; }
 
-.workbenchCatalogTeam {
-  /* Team and actions sit at the card bottom, so a row of cards lines up. */
-  display: flex; align-items: center; gap: 6px; min-width: 0; margin-top: auto; padding-top: 9px;
-  border-top: 1px solid var(--border); color: var(--muted); font-size: 12px;
+.workbenchCardDescription {
+  margin: 0;
+  min-height: 2.9em;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
-.workbenchCatalogTeamAvatar {
-  display: inline-flex; align-items: center; justify-content: center; flex: 0 0 24px; width: 24px; height: 24px;
-  overflow: hidden; border-radius: 7px; background: var(--panel-2); color: var(--accent);
+.workbenchCardDescription.is-empty { font-style: italic; opacity: .7; }
+.workbenchCardChips { display: flex; flex-wrap: wrap; gap: 6px; }
+.workbenchChip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel-2);
+  color: var(--muted);
+  font-size: 12px;
+  text-decoration: none;
 }
-.workbenchCatalogTeamName {
-  min-width: 0; overflow: hidden; color: var(--text); font-weight: 600; text-decoration: none; text-overflow: ellipsis; white-space: nowrap;
-}
-.workbenchCatalogTeamName:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
-.workbenchCatalogTeamDetail { flex: 0 0 auto; white-space: nowrap; }
-.workbenchCatalogTeamEmpty { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.workbenchCatalogTeamMore {
-  flex: 0 0 auto; padding: 0 6px; border: 1px solid var(--border); border-radius: 999px;
-  background: var(--panel-2); font-size: 11px; line-height: 18px; white-space: nowrap; cursor: default;
-}
-.workbenchCatalogTeam.is-loading .workbenchCatalogTeamEmpty { opacity: .7; }
-.workbenchCatalogActivity { display: inline-flex; align-items: center; gap: 5px; margin-left: auto; flex: 0 0 auto; white-space: nowrap; }
-.workbenchCatalogActivity::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--border); }
-.workbenchCatalogActivity.is-active { color: var(--accent); font-weight: 600; }
-.workbenchCatalogActivity.is-active::before { background: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+a.workbenchChip:hover { border-color: color-mix(in srgb, var(--accent) 50%, var(--border)); color: var(--accent); }
 
-.workbenchCatalogActions { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; }
-.workbenchCatalogOpen, .workbenchCatalogSettings {
-  display: inline-flex; align-items: center; gap: 5px; min-height: 28px; font-size: 12px; text-decoration: none;
+/* The main team at the card's foot, so a row of cards lines up. */
+.workbenchCardTeam {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  color: var(--muted);
+  font-size: 12px;
 }
-.workbenchCatalogOpen { color: var(--accent); font-weight: 650; }
-.workbenchCatalogOpen:hover { text-decoration: underline; text-underline-offset: 3px; }
-.workbenchCatalogSettings { padding: 2px 6px; border-radius: 6px; color: var(--muted); }
-.workbenchCatalogSettings:hover { background: var(--panel-2); color: var(--text); }
+.workbenchTeamAvatar {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--panel-2);
+  color: var(--accent);
+}
+.workbenchTeamAvatar svg { width: 14px; height: 14px; }
+/* In a crowded row the member count gives way before the team name does. */
+.workbenchTeamName {
+  flex: 0 1 auto;
+  min-width: 4em;
+  overflow: hidden;
+  color: var(--text);
+  font-weight: 600;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.workbenchTeamName:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.workbenchTeamDetail { flex: 0 6 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.workbenchTeamMore { flex: none; white-space: nowrap; padding: 0 6px; border: 1px solid var(--border); border-radius: 999px; background: var(--panel-2); font-size: 11px; line-height: 18px; cursor: default; }
+.workbenchTeamEmpty { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.workbenchCardTeam.is-loading .workbenchTeamEmpty { opacity: .7; }
+.workbenchActivity { flex: none; display: inline-flex; align-items: center; gap: 6px; margin-left: auto; white-space: nowrap; }
+.workbenchActivity:not(.is-running):not(.is-queued)::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--border); }
+.workbenchActivity.is-running { color: var(--ok, #15803d); font-weight: 600; }
+.workbenchActivity.is-queued { color: var(--warn, #b7791f); font-weight: 600; }
+.workbenchPulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ok, #15803d);
+  animation: workbenchPulse 1.8s ease-out infinite;
+}
+@keyframes workbenchPulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok, #15803d) 55%, transparent); }
+  70% { box-shadow: 0 0 0 8px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+@media (prefers-reduced-motion: reduce) { .workbenchPulse { animation: none; } }
 
+/* Empty and unavailable directory */
 .workbenchCatalogEmpty {
   display: flex; flex-direction: column; align-items: center; padding: 40px 20px; text-align: center;
-  border: 1px dashed var(--border); border-radius: var(--radius); background: var(--panel);
+  border: 1px dashed var(--border); border-radius: 14px; background: var(--panel);
 }
 .workbenchCatalogEmptyMark {
   display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; margin-bottom: 12px;
   border-radius: 10px; background: color-mix(in srgb, var(--accent) 9%, var(--panel)); color: var(--accent);
 }
-.workbenchCatalogEmptyMark .workbenchCatalogIcon { width: 20px; height: 20px; }
+.workbenchCatalogEmptyMark svg { width: 20px; height: 20px; }
 .workbenchCatalogEmpty h2 { margin: 0; font-size: 15px; font-weight: 650; }
 .workbenchCatalogEmpty p { margin: 6px 0 16px; max-width: 420px; color: var(--muted); font-size: 13px; }
-.workbenchCatalogEmpty .portalButton { display: inline-flex; align-items: center; gap: 5px; }
+.workbenchCatalogEmpty .portalButton { display: inline-flex; align-items: center; gap: 5px; text-decoration: none; }
 .workbenchCatalogErrorDetails { max-width: 100%; margin-top: 16px; color: var(--muted); text-align: left; }
 .workbenchCatalogErrorDetails summary { cursor: pointer; }
 .workbenchCatalogErrorDetails pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; }
 
-@media (max-width: 640px) {
-  .workbenchCatalogTeamDetail { display: none; }
+@media (max-width: 720px) {
+  .workbenchListTools { width: 100%; }
+  .workbenchSearch { flex: 1 1 100%; }
+  .workbenchSearch input { width: 100%; }
+  .workbenchTeamDetail { display: none; }
 }
