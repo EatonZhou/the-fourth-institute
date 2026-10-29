@@ -14,7 +14,7 @@ const payload = { entries: Array.from({ length: 18 }, (_, index) => ({
   section: 'conversation', unread: false, pinned: false, updated_at: '2026-10-15T00:00:00Z', read_revision: 0,
 })), content_signature: 'loaded', ready: true, unread_count: 0, next_page_token: 'next' };
 
-function mailbox({ connected = false, targetRead, transform = (_name, source) => source } = {}) {
+function mailbox({ connected = false, targetRead, cachedSnapshot, clearResult, transform = (_name, source) => source } = {}) {
   const errors = [], reads = [], responses = [], readAttempts = [], receipts = [];
   const virtualConsole = new VirtualConsole();
   virtualConsole.on('jsdomError', error => errors.push(error.message));
@@ -56,17 +56,22 @@ function mailbox({ connected = false, targetRead, transform = (_name, source) =>
   window.PortalAPI = { get(url, options) {
     readAttempts.push({ url, options });
     if (url.startsWith('/api/agent-conversations?resident=') && targetRead) return targetRead(url, options);
-    assert.equal(url, '/api/agent-conversations');
+    assert.ok(url === '/api/agent-conversations' || url.startsWith('/api/agent-conversations?page_token='));
     reads.push(url);
     assert.ok(responses.length, 'Unexpected snapshot request');
     const response = responses.shift();
     return response instanceof Error ? Promise.reject(response) : Promise.resolve(response);
   } };
   window.PortalInstructionClient = { execute: async (instruction, args) => {
+    if (instruction === 'ClearMailbox' && clearResult) {
+      assert.deepEqual({ ...args }, { user_id: 'playwright', mode: 'unread' });
+      return clearResult;
+    }
     assert.equal(instruction, 'ListMailboxTodos');
     assert.deepEqual({ ...args }, { user_id: 'playwright' });
     return { items: [], pending_count: 0 };
   } };
+  if (cachedSnapshot) window.localStorage.setItem('tfi.portal.conversations.v7:playwright', JSON.stringify(cachedSnapshot));
   try {
     for (const name of ['portal_state.js', 'portal_text.js', 'portal_ui_primitives.js',
       'portal_refresh_coordinator.js', 'resident_protocol.js', 'portal_conversation_store.js',
@@ -123,6 +128,70 @@ function mailbox({ connected = false, targetRead, transform = (_name, source) =>
 }
 
 const checks = {
+  async 'clear-reconciles-obsolete-sources'() {
+    const notice = { key: 'lineage-notification:lineage_aaaaaaaaaaaa:old', kind: 'lineage-notification',
+      title: 'Old notice', section: 'notification', unread: true, read_revision: 10,
+      updated_at: '2026-10-15T00:00:00Z' };
+    const app = mailbox({ connected: true, clearResult: { cleared: 0, items: [] } });
+    try {
+      app.queue({ ...payload, paged: true, entries: [notice], next_page_token: '', read_revision: 10 });
+      await app.advance(300);
+      assert.equal(app.store.snapshot().unreadCount, 1);
+      app.queue({ ...payload, paged: true, entries: [], next_page_token: '', read_revision: 11,
+        mailbox_summary: { entries: [], unread_count: 0 } });
+      await app.store.clear('unread');
+      await app.advance(300);
+      assert.equal(app.store.snapshot().unreadCount, 0, 'zero-change clear reconciles stale client membership');
+      assert.equal(app.rows().length, 0);
+      assert.equal(app.reads.length, 2, 'one reconciliation read after the clear');
+    } finally { await app.close(); }
+  },
+  async 'refresh-removes-obsolete-sources'() {
+    const notice = { key: 'lineage-notification:lineage_aaaaaaaaaaaa:old', kind: 'lineage-notification',
+      title: 'Old notice', section: 'notification', unread: true, read_revision: 10,
+      updated_at: '2026-10-15T00:00:00Z' };
+    const room = { ...notice, key: 'chatroom:chatroom_aaaaaaaaaaaa', kind: 'chatroom',
+      title: 'Old room', section: 'conversation', unread_count: 1, attention_unread: true };
+    const currentNotice = { ...notice, key: 'lineage-notification:lineage_aaaaaaaaaaaa:current',
+      title: 'Current notice', unread: false, read_revision: 11 };
+    const app = mailbox({ connected: true, cachedSnapshot: { schema_version: 7, paged: true,
+      entries: [notice, room], revision: 10 } });
+    try {
+      assert.equal(app.store.snapshot().unreadCount, 2, 'cached unread is visible while awaiting the server');
+      app.queue({ ...payload, paged: true, entries: [...payload.entries, currentNotice],
+        read_revision: 11, mailbox_summary: { entries: [], unread_count: 0 }, next_page_token: 'older' });
+      await app.advance(300);
+      assert.equal(app.store.snapshot().unreadCount, 0, 'fresh complete source list retires obsolete unread');
+      assert.ok(!app.rows().some(row => [notice.key, room.key].includes(row.dataset.agentConversationKey)),
+        'obsolete notification and Chatroom disappear from the actual Mailbox');
+      const saved = JSON.parse(app.window.localStorage.getItem('tfi.portal.conversations.v7:playwright'));
+      assert.ok(!saved.entries.some(entry => [notice.key, room.key].includes(entry.key)),
+        'a subsequent browser reload cannot resurrect the obsolete entries');
+      app.queue({ ...payload, paged: true, entries: [{ ...payload.entries[0], key: 'resident:older' }],
+        next_page_token: '', content_signature: 'older-page' });
+      await app.store.loadMore();
+      await app.advance(40);
+      assert.ok(app.rows().some(row => row.dataset.agentConversationKey === currentNotice.key),
+        'older Resident pages retain the current non-paged source list');
+      assert.equal(app.store.snapshot().entries.length, 20, 'pagination preserves previously loaded Residents');
+      app.queue(new Error('Temporary source failure'));
+      await assert.rejects(app.refresh(), /Temporary source failure/);
+      assert.ok(app.store.snapshot().entries.some(entry => entry.key === currentNotice.key),
+        'a failed snapshot does not masquerade as source removal');
+      await app.advance(1000);
+      app.queue({ ...payload, paged: true, entries: [], read_revision: 10,
+        content_signature: 'older-head', next_page_token: '' });
+      await app.refresh();
+      assert.ok(app.store.snapshot().entries.some(entry => entry.key === currentNotice.key),
+        'a late older head preserves a source observed after its read watermark');
+      await app.advance(1000);
+      app.queue({ ...payload, paged: true, entries: [], read_revision: 12,
+        content_signature: 'current-head', next_page_token: '' });
+      await app.refresh();
+      assert.ok(!app.store.snapshot().entries.some(entry => entry.key === currentNotice.key),
+        'the next current head settles removal of that source');
+    } finally { await app.close(); }
+  },
   async 'resident-context'() {
     const app = mailbox({ connected: true });
     const entries = [

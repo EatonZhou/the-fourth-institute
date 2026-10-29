@@ -489,9 +489,16 @@
     const paged = payload?.paged === true;
     const pageEntries = Array.isArray(payload?.entries) ? payload.entries : [];
     acceptEntries(pageEntries);
+    // Head snapshots contain every notification and Chatroom. Only Resident
+    // activity spans pages; merging absent sources would retain ghost unread
+    // entries in storage forever. Preserve source changes newer than this read.
+    const retained = state.entries.filter(item => options.advancePage === true
+      || PAGED_KINDS.has(item?.kind)
+      || Number(state.readStates.get(String(item?.key || ""))?.revision || 0)
+        > Number(payload?.read_revision ?? Infinity));
     const candidates = uniqueEntries(
       paged && options.authoritativeRemoval !== true
-        ? [...state.entries, ...pageEntries]
+        ? [...retained, ...pageEntries]
         : pageEntries,
     );
     const invalidatedResidentIds = new Set(candidates
@@ -1152,6 +1159,10 @@
         for (const timer of state.targetRetryTimers.values()) window.clearTimeout(timer);
         state.targetRetryTimers.clear();
         acceptEntries(payload?.items);
+        // A zero-change receipt can mean a locally unread source disappeared.
+        // Reconcile membership instead of restoring its cached unread forever.
+        const acknowledged = new Set((payload?.items || []).map(item => String(item.key)));
+        if (pendings.some(([key]) => !acknowledged.has(key))) indexRefresh.invalidate({ delay: 0 });
         // A Chatroom keeps its own read positions, without a row revision.
         for (const [key] of pendings) {
           if (key.startsWith("chatroom:")) acceptReadState(key, { read_revision: 0, unread: false });

@@ -59,3 +59,13 @@ def test_missing_resident_state_stays_unknown_without_failing_mailbox():
 def test_resident_context_names_survive_refresh_without_redundant_source_labels():
     """Mailbox shows each Resident's Lineage name and keeps other source labels intact."""
     _run("resident-context")
+
+
+def test_refresh_removes_obsolete_cached_sources_without_losing_resident_pages():
+    """A complete source snapshot removes cached ghost unread while pagination preserves live sources."""
+    _run("refresh-removes-obsolete-sources")
+
+
+def test_clear_reconciles_obsolete_sources_when_server_has_nothing_to_clear():
+    """A no-op clear receipt triggers one fresh source read to remove local ghost unread."""
+    _run("clear-reconciles-obsolete-sources")
