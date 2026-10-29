@@ -178,6 +178,7 @@ modules:
     code_paths:
       - "management_portal/asgi.py"
       - "management_portal/serve_management_portal.py"
+      - "management_portal/portal_changes.py"
       - "management_portal/web_isa.py"
       - "management_portal/web_instruction_server.py"
       - "management_portal/http_*.py"
@@ -492,6 +493,7 @@ modules:
       - "scripts/application_target.py"
       - "management_portal/society_service/lineage_storage.py"
       - "management_portal/society_service/state_store.py"
+      - "management_portal/society_service/lineage_data_*.py"
       - "management_portal/society_service/graph_storage.py"
       - "management_portal/society_service/lineage_placement.py"
       - "management_portal/society_service/function_block_domain.py"

@@ -131,6 +131,21 @@ ARTICLE_SEMANTIC_TEX_COMMAND_LEVELS = {
     "subparagraph": 4,
 }
 ARTICLE_FIGURE_SUFFIXES = (".pdf", ".png", ".jpg", ".jpeg", ".eps", ".svg")
+ARTICLE_REFERENCE_COMMANDS = ("ref", "eqref", "pageref", "autoref", "cref", "Cref")
+ARTICLE_CITATION_COMMANDS = (
+    "cite",
+    "citep",
+    "citet",
+    "citealp",
+    "citeauthor",
+    "citeyear",
+    "parencite",
+    "textcite",
+    "autocite",
+    "footcite",
+)
+ARTICLE_INCLUDE_COMMANDS = ("input", "include", "subfile")
+_BIB_ENTRY_START = re.compile(r"(?im)^[ \t]*@(?P<type>[A-Za-z]+)\s*\{\s*(?P<key>[^,\s]+)\s*,")
 
 
 def _now_iso() -> str:
@@ -1285,297 +1300,33 @@ def article_semantic_index(
         build_root=build_root,
         limit=max(2500, limit),
     )
-    editable_paths = [
+    index = _ArticleSemanticIndex(article_root)
+    for relative in _semantic_source_paths(tree):
+        if index.add_file(relative) and index.total_items >= limit:
+            break
+    index.add_problems()
+    primary = str(settings.get("primary_file") or "")
+    index.order_documents(primary)
+    return index.payload(
+        article_id,
+        primary,
+        truncated=index.total_items >= limit or bool(tree.get("truncated")),
+    )
+
+
+def _semantic_source_paths(tree: dict[str, Any]) -> list[str]:
+    """The editable LaTeX and BibTeX files of a file listing."""
+    return [
         str(entry.get("path") or "")
         for entry in tree["entries"]
         if entry.get("type") == "file"
         and entry.get("editable")
         and Path(str(entry.get("path") or "")).suffix.casefold() in {".tex", ".bib"}
     ]
-    headings: list[dict[str, Any]] = []
-    labels: list[dict[str, Any]] = []
-    references: list[dict[str, Any]] = []
-    citations: list[dict[str, Any]] = []
-    bibliography: list[dict[str, Any]] = []
-    figures: list[dict[str, Any]] = []
-    includes: list[dict[str, Any]] = []
-    documents: list[dict[str, Any]] = []
-    problems: list[dict[str, Any]] = []
-    total_items = 0
 
-    for relative in editable_paths:
-        path = article_root / relative
-        try:
-            text = _read_text(path, limit=8 * 1024 * 1024)
-        except OSError:
-            continue
-        clean = _strip_tex_comments(text)
-        document = {
-            "path": relative,
-            "kind": "bibliography" if path.suffix.casefold() == ".bib" else "latex",
-            "heading_count": 0,
-            "label_count": 0,
-            "citation_count": 0,
-            "figure_count": 0,
-        }
-        if path.suffix.casefold() == ".bib":
-            starts = list(
-                re.finditer(
-                    r"(?im)^[ \t]*@(?P<type>[A-Za-z]+)\s*\{\s*(?P<key>[^,\s]+)\s*,",
-                    clean,
-                )
-            )
-            for index, match in enumerate(starts):
-                end = starts[index + 1].start() if index + 1 < len(starts) else len(clean)
-                block = clean[match.end() : end]
-                line, column = _text_line_column(clean, match.start())
-                entry = {
-                    "kind": "bib_entry",
-                    "entry_type": match.group("type").casefold(),
-                    "key": match.group("key").strip(),
-                    "title": _bib_field(block, "title"),
-                    "author": _bib_field(block, "author"),
-                    "path": relative,
-                    "line": line,
-                    "column": column,
-                }
-                bibliography.append(entry)
-                total_items += 1
-            document["citation_count"] = len(starts)
-            documents.append(document)
-            if total_items >= limit:
-                break
-            continue
 
-        file_headings: list[dict[str, Any]] = []
-        for command, argument, offset, _end in _tex_command_arguments(
-            clean, ARTICLE_SEMANTIC_TEX_COMMAND_LEVELS
-        ):
-            line, column = _text_line_column(clean, offset)
-            item = {
-                "kind": "heading",
-                "command": command.casefold(),
-                "title": _plain_tex(argument, _tex_macros(clean)) or command,
-                "level": ARTICLE_SEMANTIC_TEX_COMMAND_LEVELS[command.casefold()],
-                "path": relative,
-                "line": line,
-                "column": column,
-            }
-            file_headings.append(item)
-            headings.append(item)
-            total_items += 1
-        document["heading_count"] = len(file_headings)
-
-        for _command, argument, offset, _end in _tex_command_arguments(
-            clean, ("label",), optional_arguments=False
-        ):
-            line, column = _text_line_column(clean, offset)
-            key = argument.strip()
-            if not key:
-                continue
-            labels.append(
-                {
-                    "kind": "label",
-                    "key": key,
-                    "path": relative,
-                    "line": line,
-                    "column": column,
-                }
-            )
-            total_items += 1
-        document["label_count"] = sum(1 for item in labels if item["path"] == relative)
-
-        for command, argument, offset, _end in _tex_command_arguments(
-            clean, ("ref", "eqref", "pageref", "autoref", "cref", "Cref")
-        ):
-            line, column = _text_line_column(clean, offset)
-            for key in (part.strip() for part in argument.split(",")):
-                if not key:
-                    continue
-                references.append(
-                    {
-                        "kind": "reference",
-                        "command": command,
-                        "key": key,
-                        "path": relative,
-                        "line": line,
-                        "column": column,
-                    }
-                )
-                total_items += 1
-
-        for command, argument, offset, _end in _tex_command_arguments(
-            clean,
-            (
-                "cite",
-                "citep",
-                "citet",
-                "citealp",
-                "citeauthor",
-                "citeyear",
-                "parencite",
-                "textcite",
-                "autocite",
-                "footcite",
-            ),
-        ):
-            line, column = _text_line_column(clean, offset)
-            for key in (part.strip() for part in argument.split(",")):
-                if not key:
-                    continue
-                citations.append(
-                    {
-                        "kind": "citation",
-                        "command": command,
-                        "key": key,
-                        "path": relative,
-                        "line": line,
-                        "column": column,
-                    }
-                )
-                total_items += 1
-        document["citation_count"] = sum(
-            1 for item in citations if item["path"] == relative
-        )
-
-        for _command, argument, offset, _end in _tex_command_arguments(
-            clean, ("includegraphics",)
-        ):
-            line, column = _text_line_column(clean, offset)
-            resolved, exists = _resolved_article_reference(
-                article_root,
-                path,
-                argument,
-                suffixes=ARTICLE_FIGURE_SUFFIXES,
-            )
-            figures.append(
-                {
-                    "kind": "figure",
-                    "target": argument.strip(),
-                    "resolved_path": resolved,
-                    "exists": exists,
-                    "path": relative,
-                    "line": line,
-                    "column": column,
-                }
-            )
-            total_items += 1
-        document["figure_count"] = sum(
-            1 for item in figures if item["path"] == relative
-        )
-
-        for command, argument, offset, _end in _tex_command_arguments(
-            clean, ("input", "include", "subfile")
-        ):
-            line, column = _text_line_column(clean, offset)
-            resolved, exists = _resolved_article_reference(
-                article_root,
-                path,
-                argument,
-                suffixes=(".tex",),
-            )
-            includes.append(
-                {
-                    "kind": "include",
-                    "command": command,
-                    "target": argument.strip(),
-                    "resolved_path": resolved,
-                    "exists": exists,
-                    "path": relative,
-                    "line": line,
-                    "column": column,
-                }
-            )
-            total_items += 1
-        documents.append(document)
-        if total_items >= limit:
-            break
-
-    label_locations: dict[str, list[dict[str, Any]]] = {}
-    for item in labels:
-        label_locations.setdefault(item["key"], []).append(item)
-    bibliography_by_key = {item["key"]: item for item in bibliography}
-
-    for key, locations in label_locations.items():
-        if len(locations) < 2:
-            continue
-        for item in locations:
-            problems.append(
-                {
-                    "kind": "duplicate_label",
-                    "severity": "warning",
-                    "message": f"标签 “{key}” 在工程中定义了 {len(locations)} 次",
-                    "key": key,
-                    "path": item["path"],
-                    "line": item["line"],
-                    "column": item["column"],
-                }
-            )
-    for item in references:
-        if item["key"] in label_locations:
-            item["definition"] = {
-                key: value
-                for key, value in label_locations[item["key"]][0].items()
-                if key in {"path", "line", "column"}
-            }
-            continue
-        problems.append(
-            {
-                "kind": "undefined_reference",
-                "severity": "warning",
-                "message": f"引用的标签 “{item['key']}” 未在工程中定义",
-                **{key: item[key] for key in ("key", "path", "line", "column")},
-            }
-        )
-    for item in citations:
-        if item["key"] in bibliography_by_key:
-            definition = bibliography_by_key[item["key"]]
-            item["definition"] = {
-                key: definition[key] for key in ("path", "line", "column")
-            }
-            continue
-        problems.append(
-            {
-                "kind": "undefined_citation",
-                "severity": "warning",
-                "message": f"文献 “{item['key']}” 未在 .bib 文件中定义",
-                **{key: item[key] for key in ("key", "path", "line", "column")},
-            }
-        )
-    for item in figures:
-        if item["exists"]:
-            continue
-        problems.append(
-            {
-                "kind": "missing_figure",
-                "severity": "error",
-                "message": f"图片文件 “{item['target']}” 不存在",
-                "path": item["path"],
-                "line": item["line"],
-                "column": item["column"],
-                "target": item["target"],
-            }
-        )
-    for item in includes:
-        if item["exists"]:
-            continue
-        problems.append(
-            {
-                "kind": "missing_include",
-                "severity": "error",
-                "message": f"包含的 TeX 文件 “{item['target']}” 不存在",
-                "path": item["path"],
-                "line": item["line"],
-                "column": item["column"],
-                "target": item["target"],
-            }
-        )
-
-    include_targets: dict[str, list[str]] = {}
-    for item in includes:
-        if item["exists"]:
-            include_targets.setdefault(item["path"], []).append(item["resolved_path"])
-    primary = str(settings.get("primary_file") or "")
+def _reachable_documents(primary: str, include_targets: dict[str, list[str]]) -> list[str]:
+    """The files the primary file includes, transitively, in breadth-first order."""
     reachable: list[str] = []
     pending = [primary] if primary else []
     seen: set[str] = set()
@@ -1586,44 +1337,284 @@ def article_semantic_index(
         seen.add(current)
         reachable.append(current)
         pending.extend(include_targets.get(current, []))
-    reachable_set = set(reachable)
-    document_rank = {path: index for index, path in enumerate(reachable)}
-    documents.sort(
-        key=lambda item: (
-            0 if item["path"] in reachable_set else 1,
-            document_rank.get(item["path"], 10_000),
-            item["path"].casefold(),
-        )
-    )
-    for document in documents:
-        document["reachable_from_primary"] = document["path"] in reachable_set
+    return reachable
 
-    return {
-        "schema": "tfi.article-semantic-index.v1",
-        "id": article_id,
-        "primary_file": primary,
-        "generated_at": _now_iso(),
-        "truncated": total_items >= limit or bool(tree.get("truncated")),
-        "documents": documents,
-        "headings": headings,
-        "labels": labels,
-        "references": references,
-        "citations": citations,
-        "bibliography": bibliography,
-        "figures": figures,
-        "includes": includes,
-        "problems": problems,
-        "counts": {
-            "documents": len(documents),
-            "headings": len(headings),
-            "labels": len(labels),
-            "references": len(references),
-            "citations": len(citations),
-            "bibliography": len(bibliography),
-            "figures": len(figures),
-            "problems": len(problems),
-        },
-    }
+
+class _ArticleSemanticIndex:
+    """The navigation items of an article's LaTeX and BibTeX files, and the problems among them."""
+
+    def __init__(self, article_root: Path) -> None:
+        self.article_root = article_root
+        self.headings: list[dict[str, Any]] = []
+        self.labels: list[dict[str, Any]] = []
+        self.references: list[dict[str, Any]] = []
+        self.citations: list[dict[str, Any]] = []
+        self.bibliography: list[dict[str, Any]] = []
+        self.figures: list[dict[str, Any]] = []
+        self.includes: list[dict[str, Any]] = []
+        self.documents: list[dict[str, Any]] = []
+        self.problems: list[dict[str, Any]] = []
+        self.total_items = 0
+
+    def add_file(self, relative: str) -> bool:
+        """Index one file; ``False`` when it cannot be read."""
+        path = self.article_root / relative
+        try:
+            text = _read_text(path, limit=8 * 1024 * 1024)
+        except OSError:
+            return False
+        clean = _strip_tex_comments(text)
+        bibliography = path.suffix.casefold() == ".bib"
+        document = {
+            "path": relative,
+            "kind": "bibliography" if bibliography else "latex",
+            "heading_count": 0,
+            "label_count": 0,
+            "citation_count": 0,
+            "figure_count": 0,
+        }
+        if bibliography:
+            document["citation_count"] = self._add_bibliography(relative, clean)
+        else:
+            self._add_latex(document, path, clean)
+        self.documents.append(document)
+        return True
+
+    def _add_bibliography(self, relative: str, clean: str) -> int:
+        starts = list(_BIB_ENTRY_START.finditer(clean))
+        for index, match in enumerate(starts):
+            end = starts[index + 1].start() if index + 1 < len(starts) else len(clean)
+            block = clean[match.end() : end]
+            line, column = _text_line_column(clean, match.start())
+            self.bibliography.append({
+                "kind": "bib_entry",
+                "entry_type": match.group("type").casefold(),
+                "key": match.group("key").strip(),
+                "title": _bib_field(block, "title"),
+                "author": _bib_field(block, "author"),
+                "path": relative,
+                "line": line,
+                "column": column,
+            })
+            self.total_items += 1
+        return len(starts)
+
+    def _add_latex(self, document: dict[str, Any], path: Path, clean: str) -> None:
+        relative = document["path"]
+        document["heading_count"] = self._add_headings(relative, clean)
+        self._add_labels(relative, clean)
+        document["label_count"] = sum(1 for item in self.labels if item["path"] == relative)
+        self._add_keys(self.references, "reference", relative, clean, ARTICLE_REFERENCE_COMMANDS)
+        self._add_keys(self.citations, "citation", relative, clean, ARTICLE_CITATION_COMMANDS)
+        document["citation_count"] = sum(
+            1 for item in self.citations if item["path"] == relative
+        )
+        self._add_targets(self.figures, "figure", path, relative, clean, ("includegraphics",),
+                          suffixes=ARTICLE_FIGURE_SUFFIXES, with_command=False)
+        document["figure_count"] = sum(
+            1 for item in self.figures if item["path"] == relative
+        )
+        self._add_targets(self.includes, "include", path, relative, clean, ARTICLE_INCLUDE_COMMANDS,
+                          suffixes=(".tex",), with_command=True)
+
+    def _add_headings(self, relative: str, clean: str) -> int:
+        macros = _tex_macros(clean)
+        count = 0
+        for command, argument, offset, _end in _tex_command_arguments(
+            clean, ARTICLE_SEMANTIC_TEX_COMMAND_LEVELS
+        ):
+            line, column = _text_line_column(clean, offset)
+            self.headings.append({
+                "kind": "heading",
+                "command": command.casefold(),
+                "title": _plain_tex(argument, macros) or command,
+                "level": ARTICLE_SEMANTIC_TEX_COMMAND_LEVELS[command.casefold()],
+                "path": relative,
+                "line": line,
+                "column": column,
+            })
+            count += 1
+            self.total_items += 1
+        return count
+
+    def _add_labels(self, relative: str, clean: str) -> None:
+        for _command, argument, offset, _end in _tex_command_arguments(
+            clean, ("label",), optional_arguments=False
+        ):
+            line, column = _text_line_column(clean, offset)
+            key = argument.strip()
+            if not key:
+                continue
+            self.labels.append({
+                "kind": "label",
+                "key": key,
+                "path": relative,
+                "line": line,
+                "column": column,
+            })
+            self.total_items += 1
+
+    def _add_keys(
+        self, items: list[dict[str, Any]], kind: str, relative: str, clean: str, commands: Iterable[str],
+    ) -> None:
+        """Each key a command names (``\\cite{a, b}`` names two)."""
+        for command, argument, offset, _end in _tex_command_arguments(clean, commands):
+            line, column = _text_line_column(clean, offset)
+            for key in (part.strip() for part in argument.split(",")):
+                if not key:
+                    continue
+                items.append({
+                    "kind": kind,
+                    "command": command,
+                    "key": key,
+                    "path": relative,
+                    "line": line,
+                    "column": column,
+                })
+                self.total_items += 1
+
+    def _add_targets(
+        self, items: list[dict[str, Any]], kind: str, path: Path, relative: str, clean: str,
+        commands: Iterable[str], *, suffixes: Iterable[str], with_command: bool,
+    ) -> None:
+        """The files commands refer to, resolved inside the article root."""
+        for command, argument, offset, _end in _tex_command_arguments(clean, commands):
+            line, column = _text_line_column(clean, offset)
+            resolved, exists = _resolved_article_reference(
+                self.article_root,
+                path,
+                argument,
+                suffixes=suffixes,
+            )
+            items.append({
+                "kind": kind,
+                **({"command": command} if with_command else {}),
+                "target": argument.strip(),
+                "resolved_path": resolved,
+                "exists": exists,
+                "path": relative,
+                "line": line,
+                "column": column,
+            })
+            self.total_items += 1
+
+    def add_problems(self) -> None:
+        """Link references and citations to their definitions; list what is duplicate or missing."""
+        label_locations: dict[str, list[dict[str, Any]]] = {}
+        for item in self.labels:
+            label_locations.setdefault(item["key"], []).append(item)
+        self._duplicate_labels(label_locations)
+        self._link_references(label_locations)
+        self._link_citations({item["key"]: item for item in self.bibliography})
+        self._missing_targets(self.figures, "missing_figure", "图片文件 “{target}” 不存在")
+        self._missing_targets(self.includes, "missing_include", "包含的 TeX 文件 “{target}” 不存在")
+
+    def _duplicate_labels(self, label_locations: dict[str, list[dict[str, Any]]]) -> None:
+        for key, locations in label_locations.items():
+            if len(locations) < 2:
+                continue
+            for item in locations:
+                self.problems.append({
+                    "kind": "duplicate_label",
+                    "severity": "warning",
+                    "message": f"标签 “{key}” 在工程中定义了 {len(locations)} 次",
+                    "key": key,
+                    "path": item["path"],
+                    "line": item["line"],
+                    "column": item["column"],
+                })
+
+    def _link_references(self, label_locations: dict[str, list[dict[str, Any]]]) -> None:
+        for item in self.references:
+            if item["key"] in label_locations:
+                item["definition"] = {
+                    key: value
+                    for key, value in label_locations[item["key"]][0].items()
+                    if key in {"path", "line", "column"}
+                }
+                continue
+            self.problems.append({
+                "kind": "undefined_reference",
+                "severity": "warning",
+                "message": f"引用的标签 “{item['key']}” 未在工程中定义",
+                **{key: item[key] for key in ("key", "path", "line", "column")},
+            })
+
+    def _link_citations(self, bibliography_by_key: dict[str, dict[str, Any]]) -> None:
+        for item in self.citations:
+            if item["key"] in bibliography_by_key:
+                definition = bibliography_by_key[item["key"]]
+                item["definition"] = {
+                    key: definition[key] for key in ("path", "line", "column")
+                }
+                continue
+            self.problems.append({
+                "kind": "undefined_citation",
+                "severity": "warning",
+                "message": f"文献 “{item['key']}” 未在 .bib 文件中定义",
+                **{key: item[key] for key in ("key", "path", "line", "column")},
+            })
+
+    def _missing_targets(self, items: list[dict[str, Any]], kind: str, message: str) -> None:
+        for item in items:
+            if item["exists"]:
+                continue
+            self.problems.append({
+                "kind": kind,
+                "severity": "error",
+                "message": message.format(target=item["target"]),
+                "path": item["path"],
+                "line": item["line"],
+                "column": item["column"],
+                "target": item["target"],
+            })
+
+    def order_documents(self, primary: str) -> None:
+        """Put the files the primary file reaches first, in include order, and mark them."""
+        include_targets: dict[str, list[str]] = {}
+        for item in self.includes:
+            if item["exists"]:
+                include_targets.setdefault(item["path"], []).append(item["resolved_path"])
+        reachable = _reachable_documents(primary, include_targets)
+        reachable_set = set(reachable)
+        document_rank = {path: index for index, path in enumerate(reachable)}
+        self.documents.sort(
+            key=lambda item: (
+                0 if item["path"] in reachable_set else 1,
+                document_rank.get(item["path"], 10_000),
+                item["path"].casefold(),
+            )
+        )
+        for document in self.documents:
+            document["reachable_from_primary"] = document["path"] in reachable_set
+
+    def payload(self, article_id: str, primary: str, *, truncated: bool) -> dict[str, Any]:
+        return {
+            "schema": "tfi.article-semantic-index.v1",
+            "id": article_id,
+            "primary_file": primary,
+            "generated_at": _now_iso(),
+            "truncated": truncated,
+            "documents": self.documents,
+            "headings": self.headings,
+            "labels": self.labels,
+            "references": self.references,
+            "citations": self.citations,
+            "bibliography": self.bibliography,
+            "figures": self.figures,
+            "includes": self.includes,
+            "problems": self.problems,
+            "counts": {
+                "documents": len(self.documents),
+                "headings": len(self.headings),
+                "labels": len(self.labels),
+                "references": len(self.references),
+                "citations": len(self.citations),
+                "bibliography": len(self.bibliography),
+                "figures": len(self.figures),
+                "problems": len(self.problems),
+            },
+        }
 
 
 @functools.lru_cache(maxsize=1)
@@ -2426,33 +2417,51 @@ def compile_article_pdf(
     from_scratch: bool = False,
 ) -> dict[str, Any]:
     """Compile the registered canonical TeX manuscript into a cached PDF."""
-    _record, _root_item, article_root = _article_source_context(
-        article_id
-    )
-    settings = load_article_settings(
-        article_id, build_root=build_root
-    )
-    primary_file = _safe_relative_path(_clean(settings.get("primary_file")))
-    compiler = _clean(settings.get("compiler")).casefold()
-    compiler_config = SUPPORTED_LATEX_COMPILERS.get(compiler)
-    if compiler_config is None:
-        raise ValueError(f"unsupported LaTeX compiler: {compiler}")
-    source = (article_root / primary_file).resolve(strict=False)
-    try:
-        source.relative_to(article_root)
-    except ValueError as exc:
-        raise ValueError("article primary file escapes the article root") from exc
-    if not article_root.is_dir() or not source.is_file():
-        raise FileNotFoundError(source)
-    if source.suffix.casefold() != ".tex":
-        raise ValueError("only LaTeX (.tex) articles can be compiled to PDF")
+    build = _ArticleBuild(article_id, build_root=build_root, from_scratch=from_scratch)
+    build.check_preflight()
+    return build.run(timeout_seconds)
 
-    preflight = article_build_preflight(
-        article_id,
-        build_root=build_root,
-        settings=settings,
-    )
-    if preflight["status"] == "blocked":
+
+class _ArticleBuild:
+    """One latexmk build of an article's primary file, and the build reports it leaves.
+
+    Each report is saved as the build goes: running, then success/warning,
+    error (preflight, no PDF, timeout) or stopped.
+    """
+
+    def __init__(self, article_id: str, *, build_root: str | Path | None, from_scratch: bool) -> None:
+        self.article_id = article_id
+        self.build_root = build_root
+        self.from_scratch = from_scratch
+        _record, _root_item, self.article_root = _article_source_context(
+            article_id
+        )
+        self.settings = load_article_settings(
+            article_id, build_root=build_root
+        )
+        self.primary_file = _safe_relative_path(_clean(self.settings.get("primary_file")))
+        self.compiler = _clean(self.settings.get("compiler")).casefold()
+        self.compiler_config = SUPPORTED_LATEX_COMPILERS.get(self.compiler)
+        if self.compiler_config is None:
+            raise ValueError(f"unsupported LaTeX compiler: {self.compiler}")
+        self.source = (self.article_root / self.primary_file).resolve(strict=False)
+        try:
+            self.source.relative_to(self.article_root)
+        except ValueError as exc:
+            raise ValueError("article primary file escapes the article root") from exc
+        if not self.article_root.is_dir() or not self.source.is_file():
+            raise FileNotFoundError(self.source)
+        if self.source.suffix.casefold() != ".tex":
+            raise ValueError("only LaTeX (.tex) articles can be compiled to PDF")
+
+    def check_preflight(self) -> None:
+        self.preflight = article_build_preflight(
+            self.article_id,
+            build_root=self.build_root,
+            settings=self.settings,
+        )
+        if self.preflight["status"] != "blocked":
+            return
         diagnostics = [
             {
                 "severity": item["severity"],
@@ -2461,90 +2470,183 @@ def compile_article_pdf(
                 "file": item.get("file", ""),
                 "line": 0,
             }
-            for item in preflight["issues"]
+            for item in self.preflight["issues"]
         ]
         _save_article_build_report(
-            article_id,
+            self.article_id,
             {
                 "status": "error",
                 "started_at": _now_iso(),
                 "compiled_at": _now_iso(),
-                "compiler": compiler,
-                "compiler_label": compiler_config["label"],
-                "primary_file": primary_file,
-                "compile_mode": settings.get("compile_mode", "normal"),
+                "compiler": self.compiler,
+                "compiler_label": self.compiler_config["label"],
+                "primary_file": self.primary_file,
+                "compile_mode": self.settings.get("compile_mode", "normal"),
                 "return_code": None,
                 "duration_ms": 0,
                 "diagnostics": diagnostics,
                 "log": "\n".join(item["message"] for item in diagnostics),
                 "summary": "LaTeX build preflight failed",
-                "preflight": preflight,
-                "environment_profile": settings["environment_profile"],
+                "preflight": self.preflight,
+                "environment_profile": self.settings["environment_profile"],
             },
-            build_root=build_root,
+            build_root=self.build_root,
         )
         raise RuntimeError(
             "LaTeX build preflight failed\n"
             + "\n".join(item["message"] for item in diagnostics)
         )
 
-    compile_mode = _clean(settings.get("compile_mode")).casefold() or "normal"
-    if compile_mode not in ARTICLE_COMPILE_MODES:
-        raise ValueError(f"unsupported compile mode: {compile_mode}")
-    output = article_build_pdf_path(article_id, build_root=build_root)
-    cache_root = article_build_cache_path(article_id, build_root=build_root)
-    compile_root = cache_root / compile_mode
-    started_at = _now_iso()
-    started = time.monotonic()
-    _begin_article_build(article_id)
-    try:
-        output.parent.mkdir(parents=True, exist_ok=True)
-        if from_scratch:
-            shutil.rmtree(cache_root, ignore_errors=True)
-            output.unlink(missing_ok=True)
-        compile_root.mkdir(parents=True, exist_ok=True)
-        _save_article_build_report(
-            article_id,
-            {
-                "status": "running",
-                "started_at": started_at,
-                "compiled_at": "",
-                "compiler": compiler,
-                "compiler_label": compiler_config["label"],
-                "primary_file": primary_file,
-                "compile_mode": compile_mode,
-                "return_code": None,
-                "duration_ms": 0,
-                "diagnostics": [],
-                "log": "",
-                "from_scratch": bool(from_scratch),
-                "environment_profile": settings["environment_profile"],
-                "use_project_latexmkrc": settings["use_project_latexmkrc"],
-                "shell_escape": settings["shell_escape"],
-            },
-            build_root=build_root,
-        )
-        compile_target = primary_file
-        if compile_mode == "draft":
-            draft_wrapper = compile_root / "portal-draft.tex"
-            draft_wrapper.write_text(
-                "\\PassOptionsToPackage{draft}{graphicx}\n"
-                f"\\input{{\\detokenize{{{primary_file}}}}}\n",
-                encoding="utf-8",
+    def run(self, timeout_seconds: int) -> dict[str, Any]:
+        self.compile_mode = _clean(self.settings.get("compile_mode")).casefold() or "normal"
+        if self.compile_mode not in ARTICLE_COMPILE_MODES:
+            raise ValueError(f"unsupported compile mode: {self.compile_mode}")
+        self.output = article_build_pdf_path(self.article_id, build_root=self.build_root)
+        self.cache_root = article_build_cache_path(self.article_id, build_root=self.build_root)
+        self.compile_root = self.cache_root / self.compile_mode
+        self.started_at = _now_iso()
+        self.started = time.monotonic()
+        _begin_article_build(self.article_id)
+        try:
+            completed, log, diagnostics, synctex_available = self._compile(timeout_seconds)
+        except ArticleCompilationStopped as exc:
+            self._report(
+                "stopped",
+                return_code=None,
+                diagnostics=parse_latex_diagnostics(exc.output),
+                log=exc.output[-80000:],
+                summary="LaTeX compilation stopped",
+                from_scratch=bool(self.from_scratch),
             )
-            compile_target = str(draft_wrapper)
-        pdf = compile_root / f"{source.stem}.pdf"
+            raise
+        except subprocess.TimeoutExpired as exc:
+            output_text = exc.stdout or ""
+            if isinstance(output_text, bytes):
+                output_text = output_text.decode("utf-8", errors="replace")
+            output_text = str(output_text)
+            self._report(
+                "error",
+                return_code=None,
+                diagnostics=parse_latex_diagnostics(output_text),
+                log=output_text[-80000:],
+                summary=f"LaTeX compilation timed out after {timeout_seconds} seconds",
+                from_scratch=bool(self.from_scratch),
+            )
+            raise RuntimeError(
+                f"LaTeX compilation timed out after {timeout_seconds} seconds\n"
+                f"{output_text[-8000:]}"
+            ) from exc
+        finally:
+            _finish_article_build(self.article_id)
+        has_diagnostics = bool(diagnostics) or completed.returncode != 0
+        report = self._report(
+            "warning" if has_diagnostics else "success",
+            return_code=completed.returncode,
+            diagnostics=diagnostics,
+            log=log[-80000:],
+            summary=(
+                "PDF generated with LaTeX diagnostics"
+                if has_diagnostics
+                else "PDF generated successfully"
+            ),
+            synctex_available=synctex_available,
+            from_scratch=bool(self.from_scratch),
+            preflight=self.preflight,
+            environment_profile=self.settings["environment_profile"],
+            use_project_latexmkrc=self.settings["use_project_latexmkrc"],
+            shell_escape=self.settings["shell_escape"],
+        )
+        return {
+            **report,
+            "pdf_path": str(self.output),
+            "pdf_size": self.output.stat().st_size,
+            "warnings": has_diagnostics,
+        }
+
+    def _compile(self, timeout_seconds: int) -> tuple[subprocess.CompletedProcess[str], str, list[dict[str, Any]], bool]:
+        """Run latexmk and publish its PDF: the run, its output, its diagnostics, and whether SyncTeX is there."""
+        output = self.output
+        output.parent.mkdir(parents=True, exist_ok=True)
+        if self.from_scratch:
+            shutil.rmtree(self.cache_root, ignore_errors=True)
+            output.unlink(missing_ok=True)
+        self.compile_root.mkdir(parents=True, exist_ok=True)
+        self._report(
+            "running",
+            finished=False,
+            return_code=None,
+            diagnostics=[],
+            log="",
+            from_scratch=bool(self.from_scratch),
+            environment_profile=self.settings["environment_profile"],
+            use_project_latexmkrc=self.settings["use_project_latexmkrc"],
+            shell_escape=self.settings["shell_escape"],
+        )
+        compile_target = self._compile_target()
+        pdf = self.compile_root / f"{self.source.stem}.pdf"
         pdf.unlink(missing_ok=True)
+        completed = _run_article_build_command(
+            self.article_id,
+            self._command(compile_target),
+            cwd=self.article_root,
+            timeout_seconds=timeout_seconds,
+            env=_controlled_article_build_environment(self.article_root),
+        )
+        log = str(completed.stdout or "")
+        final_log_path = self.compile_root / f"{self.source.stem}.log"
+        try:
+            final_log = final_log_path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            final_log = ""
+        diagnostics = parse_latex_diagnostics(final_log or log)
+        if not pdf.is_file():
+            self._report(
+                "error",
+                return_code=completed.returncode,
+                diagnostics=diagnostics,
+                log=log[-80000:],
+                summary="LaTeX compilation failed",
+                from_scratch=bool(self.from_scratch),
+                preflight=self.preflight,
+                environment_profile=self.settings["environment_profile"],
+            )
+            raise RuntimeError(f"LaTeX compilation failed\n{log[-12000:]}")
+        temporary_pdf = output.parent / f".{self.article_id}.pdf.tmp"
+        shutil.copyfile(pdf, temporary_pdf)
+        os.replace(temporary_pdf, output)
+        synctex_available = any(
+            candidate.is_file()
+            for candidate in (
+                self.compile_root / f"{self.source.stem}.synctex.gz",
+                self.compile_root / f"{self.source.stem}.synctex",
+            )
+        )
+        return completed, log, diagnostics, synctex_available
+
+    def _compile_target(self) -> str:
+        """The file latexmk compiles: the primary file, or in draft mode a wrapper that inputs it."""
+        if self.compile_mode != "draft":
+            return self.primary_file
+        draft_wrapper = self.compile_root / "portal-draft.tex"
+        draft_wrapper.write_text(
+            "\\PassOptionsToPackage{draft}{graphicx}\n"
+            f"\\input{{\\detokenize{{{self.primary_file}}}}}\n",
+            encoding="utf-8",
+        )
+        return str(draft_wrapper)
+
+    def _command(self, compile_target: str) -> list[str]:
+        settings = self.settings
         command = [
             _latexmk_command(),
             "-norc",
             "-f" if settings["error_handling"] == "continue" else "-f-",
-            str(compiler_config["latexmk_flag"]),
+            str(self.compiler_config["latexmk_flag"]),
             "-synctex=1",
             "-interaction=nonstopmode",
             "-file-line-error",
         ]
-        project_latexmkrc = article_root / ".latexmkrc"
+        project_latexmkrc = self.article_root / ".latexmkrc"
         if settings["use_project_latexmkrc"] and project_latexmkrc.is_file():
             command.extend(["-r", str(project_latexmkrc)])
         engine_flags: list[str] = []
@@ -2553,156 +2655,43 @@ def compile_article_pdf(
         if settings["shell_escape"]:
             engine_flags.append("-shell-escape")
         if engine_flags:
-            engine = _tex_which(compiler) or compiler
+            engine = _tex_which(self.compiler) or self.compiler
             command.append(
-                f"{compiler_config['engine_option']}={engine} "
+                f"{self.compiler_config['engine_option']}={engine} "
                 f"{' '.join(engine_flags)} %O %S"
             )
-        if compile_mode == "draft":
-            command.append(f"-jobname={source.stem}")
+        if self.compile_mode == "draft":
+            command.append(f"-jobname={self.source.stem}")
         command.extend(
             [
-                f"-outdir={compile_root}",
+                f"-outdir={self.compile_root}",
                 compile_target,
             ]
         )
-        completed = _run_article_build_command(
-            article_id,
-            command,
-            cwd=article_root,
-            timeout_seconds=timeout_seconds,
-            env=_controlled_article_build_environment(article_root),
-        )
-        log = str(completed.stdout or "")
-        final_log_path = compile_root / f"{source.stem}.log"
-        try:
-            final_log = final_log_path.read_text(encoding="utf-8", errors="replace")
-        except OSError:
-            final_log = ""
-        diagnostics = parse_latex_diagnostics(final_log or log)
-        if not pdf.is_file():
-            _save_article_build_report(
-                article_id,
-                {
-                    "status": "error",
-                    "started_at": started_at,
-                    "compiled_at": _now_iso(),
-                    "compiler": compiler,
-                    "compiler_label": compiler_config["label"],
-                    "primary_file": primary_file,
-                    "compile_mode": compile_mode,
-                    "return_code": completed.returncode,
-                    "duration_ms": int((time.monotonic() - started) * 1000),
-                    "diagnostics": diagnostics,
-                    "log": log[-80000:],
-                    "summary": "LaTeX compilation failed",
-                    "from_scratch": bool(from_scratch),
-                    "preflight": preflight,
-                    "environment_profile": settings["environment_profile"],
-                },
-                build_root=build_root,
-            )
-            raise RuntimeError(f"LaTeX compilation failed\n{log[-12000:]}")
-        temporary_pdf = output.parent / f".{article_id}.pdf.tmp"
-        shutil.copyfile(pdf, temporary_pdf)
-        os.replace(temporary_pdf, output)
-        synctex_available = any(
-            candidate.is_file()
-            for candidate in (
-                compile_root / f"{source.stem}.synctex.gz",
-                compile_root / f"{source.stem}.synctex",
-            )
-        )
-    except ArticleCompilationStopped as exc:
-        diagnostics = parse_latex_diagnostics(exc.output)
-        _save_article_build_report(
-            article_id,
+        return command
+
+    def _report(
+        self, status: str, *, return_code: int | None, diagnostics: list[dict[str, Any]], log: str,
+        finished: bool = True, **details: Any,
+    ) -> dict[str, Any]:
+        return _save_article_build_report(
+            self.article_id,
             {
-                "status": "stopped",
-                "started_at": started_at,
-                "compiled_at": _now_iso(),
-                "compiler": compiler,
-                "compiler_label": compiler_config["label"],
-                "primary_file": primary_file,
-                "compile_mode": compile_mode,
-                "return_code": None,
-                "duration_ms": int((time.monotonic() - started) * 1000),
+                "status": status,
+                "started_at": self.started_at,
+                "compiled_at": _now_iso() if finished else "",
+                "compiler": self.compiler,
+                "compiler_label": self.compiler_config["label"],
+                "primary_file": self.primary_file,
+                "compile_mode": self.compile_mode,
+                "return_code": return_code,
+                "duration_ms": int((time.monotonic() - self.started) * 1000) if finished else 0,
                 "diagnostics": diagnostics,
-                "log": exc.output[-80000:],
-                "summary": "LaTeX compilation stopped",
-                "from_scratch": bool(from_scratch),
+                "log": log,
+                **details,
             },
-            build_root=build_root,
+            build_root=self.build_root,
         )
-        raise
-    except subprocess.TimeoutExpired as exc:
-        output_text = exc.stdout or ""
-        if isinstance(output_text, bytes):
-            output_text = output_text.decode("utf-8", errors="replace")
-        output_text = str(output_text)
-        diagnostics = parse_latex_diagnostics(output_text)
-        _save_article_build_report(
-            article_id,
-            {
-                "status": "error",
-                "started_at": started_at,
-                "compiled_at": _now_iso(),
-                "compiler": compiler,
-                "compiler_label": compiler_config["label"],
-                "primary_file": primary_file,
-                "compile_mode": compile_mode,
-                "return_code": None,
-                "duration_ms": int((time.monotonic() - started) * 1000),
-                "diagnostics": diagnostics,
-                "log": output_text[-80000:],
-                "summary": (
-                    f"LaTeX compilation timed out after {timeout_seconds} seconds"
-                ),
-                "from_scratch": bool(from_scratch),
-            },
-            build_root=build_root,
-        )
-        raise RuntimeError(
-            f"LaTeX compilation timed out after {timeout_seconds} seconds\n"
-            f"{output_text[-8000:]}"
-        ) from exc
-    finally:
-        _finish_article_build(article_id)
-    has_diagnostics = bool(diagnostics) or completed.returncode != 0
-    report = _save_article_build_report(
-        article_id,
-        {
-            "status": "warning" if has_diagnostics else "success",
-            "started_at": started_at,
-            "compiled_at": _now_iso(),
-            "compiler": compiler,
-            "compiler_label": compiler_config["label"],
-            "primary_file": primary_file,
-            "compile_mode": compile_mode,
-            "return_code": completed.returncode,
-            "duration_ms": int((time.monotonic() - started) * 1000),
-            "diagnostics": diagnostics,
-            "log": log[-80000:],
-            "summary": (
-                "PDF generated with LaTeX diagnostics"
-                if has_diagnostics
-                else "PDF generated successfully"
-            ),
-            "synctex_available": synctex_available,
-            "from_scratch": bool(from_scratch),
-            "preflight": preflight,
-            "environment_profile": settings["environment_profile"],
-            "use_project_latexmkrc": settings["use_project_latexmkrc"],
-            "shell_escape": settings["shell_escape"],
-        },
-        build_root=build_root,
-    )
-    return {
-        **report,
-        "pdf_path": str(output),
-        "pdf_size": output.stat().st_size,
-        "warnings": has_diagnostics,
-    }
 
 
 def _article_synctex_artifacts(

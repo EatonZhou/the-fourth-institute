@@ -661,7 +661,661 @@ class TurnConnection:
                 raise RuntimeError("No Worker connection for Claude Harness tool") from None
 
 
+def _session_location(params: dict[str, Any]) -> tuple[str, Path, Path]:
+    """The session key, working directory and Claude config directory a session starts with."""
+
+    session_key = str(params.get("session_key") or "").strip()
+    cwd = Path(str(params.get("cwd") or "")).expanduser().resolve(strict=False)
+    config_dir = Path(str(params.get("config_dir") or "")).expanduser().resolve(strict=False)
+    if not session_key or not cwd.is_absolute() or not config_dir.is_absolute():
+        raise ValueError("session_key, absolute cwd, and absolute config_dir are required")
+    return session_key, cwd, config_dir
+
+
+def _permission_mode(params: dict[str, Any]) -> str:
+    permission_mode = str(params.get("permission_mode") or "dontAsk").strip()
+    if permission_mode not in {"dontAsk", "bypassPermissions"}:
+        raise ValueError("Unsupported Claude permission mode")
+    return permission_mode
+
+
+def _cli_environment(
+    params: dict[str, Any], provider_env: dict[str, str], config_dir: Path, auto_compact_window: int,
+) -> dict[str, str]:
+    """The environment the session's CLI starts with, over the daemon's own."""
+
+    env = {
+        **provider_env,
+        "CLAUDE_CONFIG_DIR": str(config_dir),
+        "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+        # The CLI inherits the daemon's environment, which holds the Portal
+        # database for model API registrations; only an authorized
+        # Resident's shell gets it (below).
+        "PORTAL_DATABASE_URL": "",
+    }
+    # Mask both inherited identity aliases, including for a human session.
+    for key in ("PORTAL_RESIDENT_ID", "PORTAL_LINEAGE_ID"):
+        mirror_product_env(env, key, "")
+    env.update(resident_identity_environment(params.get("resident_environment")))
+    if params.get("inherit_portal_database"):
+        if not env["PORTAL_RESIDENT_ID"]:
+            raise ValueError("Portal database environment requires Resident identity")
+        env.update(portal_database_environment(True))
+    if auto_compact_window:
+        # Claude Code reads its auto-compaction window when the CLI starts.
+        env["CLAUDE_CODE_AUTO_COMPACT_WINDOW"] = str(auto_compact_window)
+    return env
+
+
+def _agent_options(
+    params: dict[str, Any], *, model: str, effort: str, cwd: Path, session_id: str,
+    permission_mode: str, env: dict[str, str], bridge: ClaudeToolBridge,
+) -> ClaudeAgentOptions:
+    is_owner = bool(params.get("is_owner"))
+    # Always Claude Code's own system prompt: the SDK turns a missing one into
+    # ``--system-prompt ""``, an empty system prompt.  The system prompt is
+    # not part of the session history, so a resumed process has exactly what
+    # this start gives it.
+    system_prompt = {"type": "preset", "preset": "claude_code"}
+    system_prompt_append = str(params.get("system_prompt_append") or "").strip()
+    if system_prompt_append:
+        system_prompt["append"] = system_prompt_append
+    return ClaudeAgentOptions(
+        model=model,
+        cwd=cwd,
+        resume=session_id or None,
+        effort=effort or None,
+        system_prompt=system_prompt,
+        allowed_tools=[*(OWNER_TOOLS if is_owner else NON_OWNER_TOOLS), *bridge.allowed_tools],
+        mcp_servers=bridge.servers,
+        disallowed_tools=[
+            *([] if is_owner else NON_OWNER_DISALLOWED_TOOLS),
+            *([] if _allows_subagents(params) else SUBAGENT_TOOLS),
+        ],
+        permission_mode=permission_mode,
+        add_dirs=[Path(str(item)).expanduser().resolve(strict=False) for item in params.get("add_dirs") or []],
+        hooks=None,
+        setting_sources=[],
+        skills=[],
+        include_partial_messages=False,
+        env=env,
+        stderr=lambda line: print(f"Claude Code stderr: {line}", flush=True),
+        max_buffer_size=CLI_MESSAGE_BUFFER_BYTES,
+        extra_args=dict(CLI_ARGS),
+    )
+
+
+async def _disconnect(handle: SessionHandle) -> None:
+    try:
+        await asyncio.wait_for(handle.client.disconnect(), timeout=30)
+    except Exception:
+        pass
+
+
+@dataclass(frozen=True)
+class TurnDelivery:
+    """What a turn sends the CLI and the UUID it goes under.
+
+    ``recovered`` says how a turn an earlier attempt started is delivered.
+    """
+
+    content: Any
+    prompt_uuid: str
+    recovered: dict[str, Any] | None = None
+
+
+async def _turn_delivery(
+    params: dict[str, Any], handle: SessionHandle, turn_id: str, prompt: str, blocks: Any, media: list[Any],
+) -> TurnDelivery:
+    prompt_uuid = _turn_prompt_uuid(str(params.get("session_key") or ""), turn_id)
+    content = blocks if blocks is not None else prompt
+    continue_prompt = str(params.get("continue_prompt") or "")
+    if not continue_prompt:
+        return TurnDelivery(content, prompt_uuid)
+    # An earlier attempt started this turn, and this daemon no longer has
+    # it.  Once the CLI had taken the turn's input, the turn is continued in
+    # the session; the input is never sent twice.
+    config_dir = Path(str(params.get("config_dir") or "")).expanduser().resolve(strict=False)
+    if await asyncio.to_thread(_transcript_has_message, config_dir, handle.session_id, prompt_uuid):
+        return TurnDelivery(continue_prompt, str(uuid.uuid4()), {"delivery": "continued", "prompt": continue_prompt})
+    return TurnDelivery(content, prompt_uuid, {"delivery": "first_delivery", "prompt": prompt, "imageCount": len(media)})
+
+
+def _tool_call_event(block: ToolUseBlock | ServerToolUseBlock) -> dict[str, Any]:
+    if block.name == "Bash":
+        item = {
+            "type": "commandExecution",
+            "command": str(block.input.get("command") or ""),
+            "status": "running",
+            "id": block.id,
+        }
+        return {"method": "item/started", "params": {"item": item}}
+    return {"type": "response_item", "payload": {
+        "type": "function_call", "name": block.name, "call_id": block.id, "arguments": block.input,
+    }}
+
+
+def _tool_output_event(block: ToolResultBlock | ServerToolResultBlock) -> dict[str, Any]:
+    return {"type": "response_item", "payload": {
+        "type": "function_call_output", "call_id": block.tool_use_id,
+        "output": block.content, "is_error": _tool_result_failed(block),
+    }}
+
+
+class ClaudeTurn:
+    """One Portal turn: its prompt to the session's CLI, and the CLI's messages up to the turn's answer.
+
+    A Portal turn may span several CLI turns: when steering the CLI took only
+    after an answer made it run another turn (see ``ClaudeCodeDaemon.steer``),
+    and when subagents went on in the background after an answer, each CLI
+    turn that takes one of their notifications.  Each message is handled by
+    its kind (``_handler``), each block of an answer by its kind
+    (``_block_handler``).
+    """
+
+    def __init__(
+        self, daemon: "ClaudeCodeDaemon", handle: SessionHandle, params: dict[str, Any],
+        emit: Callable[[dict[str, Any]], Awaitable[None]], turn_id: str,
+    ) -> None:
+        self.daemon = daemon
+        self.handle = handle
+        self.params = params
+        self.emit = emit
+        self.turn_id = turn_id
+        self.prompt_uuid = ""
+        self.prompt_seen = False
+        # Answer text not yet given: commentary, unless the turn's answer
+        # is empty and this text becomes it.
+        self.pending_text_items: list[dict[str, Any]] = []
+        self.assistant_message_index = 0
+        self.subagent_message_indices: dict[str, int] = {}
+        self.result: ResultMessage | None = None
+        self.attached_event_session_id = handle.session_id
+        # Earlier answers of this turn, which another CLI turn went on from.
+        self.answered: list[ResultMessage] = []
+        # The turn waits on subagents in the background; since the last
+        # answer the CLI started a turn; this CLI turn ended on a result
+        # that belongs to earlier work.
+        self.waiting_background = False
+        self.cli_turn = False
+        self.ended_on_earlier_result = False
+        # Runs in the background whose task ended but whose notification
+        # the model has not taken: the CLI takes each in a turn of its own,
+        # or replays it into a turn already running.  ``told``: runs whose
+        # notification came before the daemon saw their task end.
+        self.untold: list[str] = []
+        self.told: set[str] = set()
+        self._handlers = (
+            (SystemMessage, self._on_system),
+            (RateLimitEvent, self._on_rate_limit),
+            (StreamEvent, self._on_stream_event),
+            (AssistantMessage, self._on_assistant),
+            (UserMessage, self._on_user),
+            (ResultMessage, self._on_result),
+        )
+        self._block_handlers = (
+            (TextBlock, self._on_text_block),
+            (ThinkingBlock, self._on_thinking_block),
+            ((ToolUseBlock, ServerToolUseBlock), self._on_tool_use_block),
+            ((ToolResultBlock, ServerToolResultBlock), self._on_tool_result_block),
+        )
+
+    async def run(self, delivery: TurnDelivery) -> dict[str, Any]:
+        """Run the turn on the session (the caller holds the session's lock and a slot)."""
+
+        self._open()
+        await self._emit_started(delivery.recovered)
+        try:
+            if self.handle.tool_bridge is not None:
+                self.handle.tool_bridge.dispatch = self.params.get("_tool_dispatch")
+            self.prompt_uuid = delivery.prompt_uuid
+            await self.handle.client.query(_prompt_message(delivery.content, self.handle.session_id, delivery.prompt_uuid))
+            await self._read_answer()
+            return await self._complete()
+        except Exception as exc:
+            if self.handle.interrupted_turn_id == self.turn_id:
+                await self.daemon._forget_turn_task((self.handle.key, self.turn_id))
+                raise ClaudeTurnInterrupted("Claude Code turn interrupted") from exc
+            if isinstance(exc, ClaudeSDKError):
+                # The SDK stops reading the CLI after a transport error,
+                # so the next turn reconnects and resumes the session.
+                self.handle.invalidated = True
+            raise
+        finally:
+            try:
+                await self._flush_commentary()
+            finally:
+                self._close()
+
+    def _open(self) -> None:
+        handle = self.handle
+        handle.active_turn_id = self.turn_id
+        handle.interrupted_turn_id = ""
+        handle.last_used = time.monotonic()
+        handle.pending_steers.clear()
+        handle.steer_keys.clear()
+        handle.steering_open = True
+
+    def _close(self) -> None:
+        handle = self.handle
+        if handle.tool_bridge is not None:
+            handle.tool_bridge.dispatch = None
+        handle.steering_open = False
+        handle.active_turn_id = ""
+        handle.last_used = time.monotonic()
+
+    async def _emit_started(self, recovered: dict[str, Any] | None) -> None:
+        await self.emit({
+            "method": "turn/started",
+            "params": {"threadId": self.handle.session_id, "turn": {"id": self.turn_id}},
+        })
+        if recovered is not None:
+            await self.emit({
+                "method": "turn/recovered",
+                "params": {"threadId": self.handle.session_id, "turnId": self.turn_id, **recovered},
+            })
+
+    async def _read_answer(self) -> None:
+        """Read the CLI's turns until one gives this turn's answer (``self.result``)."""
+
+        while True:
+            self.ended_on_earlier_result = False
+            stream_state: dict[str, Any] = {}
+            self.cli_turn = False
+            async for message in _turn_messages(
+                self.handle.client, stream_state, self._first_message_limit(), self._message_limit(),
+            ):
+                await self._take(message)
+            if self.result is None and self.answered and stream_state.get("timed_out"):
+                self._let_last_answer_stand()
+            self.waiting_background = self._waits_on_background()
+            if self.result is not None and (self.handle.pending_steers or self.waiting_background) \
+                    and not self.result.is_error:
+                await self._hold_answer()
+                continue
+            if self.result is not None or not self.ended_on_earlier_result:
+                return
+            # Text from that earlier work stays visible as commentary.
+            await self._flush_commentary()
+
+    def _first_message_limit(self) -> float:
+        """How long the CLI may take to start on steering queued behind an earlier answer."""
+
+        return STEER_START_SECONDS if self.answered and not self.waiting_background else 0.0
+
+    def _message_limit(self) -> Callable[[], float | None] | None:
+        return self._background_wait_limit if self.waiting_background else None
+
+    def _background_wait_limit(self) -> float | None:
+        if self.cli_turn or self.handle.subagent_runs.running_in_background():
+            return None
+        # A stopped turn reads no notification of the runs it stopped.
+        return 0.5 if self.handle.interrupted_turn_id == self.turn_id else BACKGROUND_SETTLE_SECONDS
+
+    def _let_last_answer_stand(self) -> None:
+        """The CLI did not start on the steering, or on the end of a run stopped in the background."""
+
+        if self.handle.interrupted_turn_id == self.turn_id:
+            raise RuntimeError("Claude Code turn interrupted while its subagents ran in the background")
+        self.handle.pending_steers.clear()
+        self.untold.clear()
+        self.handle.steering_open = False
+        self.result = self.answered.pop()
+        self.pending_text_items.clear()
+
+    def _waits_on_background(self) -> bool:
+        result = self.result
+        return bool(
+            result is not None and not result.is_error and self.handle.interrupted_turn_id != self.turn_id
+            and (self.handle.subagent_runs.running_in_background() or self.untold)
+        )
+
+    async def _hold_answer(self) -> None:
+        """Keep the answer as an earlier one: the CLI answers steering that arrived
+        after the last step in another turn, which is still this one.  So is each
+        turn in which it takes the notification of a subagent the model left
+        running in the background."""
+
+        self.answered.append(self.result)
+        self.result = None
+        # Its answer so far stays visible as commentary.
+        earlier_answer = str(self.answered[-1].result or "").strip()
+        if not self.pending_text_items and earlier_answer:
+            self.pending_text_items.append({
+                "id": f"{self.turn_id}:answer:{len(self.answered)}",
+                "type": "agentMessage", "text": earlier_answer,
+            })
+        await self._flush_commentary()
+
+    async def _complete(self) -> dict[str, Any]:
+        result = self._final_result()
+        response = str(result.result or "").strip() or "".join(
+            item["text"] for item in self.pending_text_items
+        ).strip()
+        self.pending_text_items.clear()
+        if response:
+            await self._emit_text({
+                "id": f"{self.turn_id}:final", "type": "agentMessage",
+                "phase": "final_answer", "text": response,
+            })
+        usage, model_usage, duration_ms = self._totals(result)
+        await self.emit({
+            "method": "turn/completed",
+            "params": {"threadId": self.handle.session_id, "turn": {"id": self.turn_id}, "usage": usage},
+        })
+        return {
+            "session_id": self.handle.session_id,
+            "turn_id": self.turn_id,
+            "response": response,
+            "usage": usage,
+            "model_usage": model_usage,
+            "duration_ms": duration_ms,
+        }
+
+    def _final_result(self) -> ResultMessage:
+        result = self.result
+        if result is None:
+            raise RuntimeError("Claude Code turn ended without a ResultMessage")
+        if result.is_error:
+            detail = "; ".join(result.errors or []) or str(result.result or result.subtype)
+            if "failed to authenticate" in detail.lower():
+                self.handle.invalidated = True
+            raise RuntimeError(f"Claude Code turn failed: {detail}")
+        return result
+
+    def _totals(self, result: ResultMessage) -> tuple[Any, Any, int]:
+        """The usage, model usage and duration of all the turn's answers."""
+
+        usage = _json_safe(result.usage or {})
+        model_usage = _json_safe(result.model_usage or {})
+        duration_ms = int(result.duration_ms or 0)
+        for earlier in self.answered:
+            usage = _summed(_json_safe(earlier.usage or {}), usage)
+            model_usage = _summed(_json_safe(earlier.model_usage or {}), model_usage)
+            duration_ms += int(earlier.duration_ms or 0)
+        return usage, model_usage, duration_ms
+
+    async def _take(self, message: Any) -> None:
+        self._note_cli_turn(message)
+        if self._is_reported_raw(message):
+            await self.emit({
+                "method": "claude/message",
+                "params": {
+                    "sessionId": self.handle.session_id,
+                    "turnId": self.turn_id,
+                    "messageType": message.__class__.__name__,
+                    "message": _json_safe(message),
+                },
+            })
+        handler = self._handler(message)
+        if handler is not None:
+            await handler(message)
+
+    def _handler(self, message: Any) -> Callable[[Any], Awaitable[None]] | None:
+        if isinstance(message, (AssistantMessage, UserMessage)) and message.parent_tool_use_id:
+            return self._on_subagent_message
+        return next((handler for kind, handler in self._handlers if isinstance(message, kind)), None)
+
+    def _block_handler(self, block: Any) -> Callable[[Any, int, dict[str, Any]], Awaitable[None]] | None:
+        return next((handler for kind, handler in self._block_handlers if isinstance(block, kind)), None)
+
+    def _ours(self, result: ResultMessage) -> bool:
+        """Whether a result ends this turn's work: one before the prompt's echo ends earlier work."""
+
+        return self.prompt_seen or bool(result.is_error)
+
+    def _is_reported_raw(self, message: Any) -> bool:
+        return (
+            (isinstance(message, ResultMessage) and self._ours(message))
+            or (isinstance(message, SystemMessage) and message.subtype == "init")
+        )
+
+    def _note_cli_turn(self, message: Any) -> None:
+        if not isinstance(message, (AssistantMessage, UserMessage)) or message.parent_tool_use_id:
+            return
+        if (self.waiting_background and not self.cli_turn and self.untold
+                and not _notified_runs(message)
+                and str(getattr(message, "uuid", None) or "") not in self.handle.pending_steers):
+            # The CLI started a turn of its own for one notification.
+            self.untold.pop(0)
+        self.cli_turn = True
+
+    async def _on_system(self, message: SystemMessage) -> None:
+        handle = self.handle
+        await self._attach_session(str(message.data.get("session_id") or message.data.get("sessionId") or ""))
+        running = set(handle.subagent_runs.running_in_background())
+        followed = _observe_subagent_task(handle, message)
+        if followed:
+            await self._emit_subagent_progress(followed)
+        ended_card = _ended_subagent_card(handle, message, self.turn_id)
+        if ended_card is not None:
+            await self._emit_item(ended_card)
+        for ended in running - set(handle.subagent_runs.running_in_background()):
+            if ended in self.told:
+                self.told.discard(ended)
+            else:
+                self.untold.append(ended)
+
+    async def _on_rate_limit(self, message: RateLimitEvent) -> None:
+        self.daemon.account_usage.observe(
+            str(self.params.get("provider_profile") or self.daemon.default_profile),
+            str(self.params.get("config_dir") or ""),
+            message.rate_limit_info.raw,
+        )
+
+    async def _on_stream_event(self, message: StreamEvent) -> None:
+        await self._attach_session(str(message.session_id or ""))
+
+    async def _on_subagent_message(self, message: AssistantMessage | UserMessage) -> None:
+        parent = str(message.parent_tool_use_id)
+        child_index = self.subagent_message_indices.get(parent, 0) + 1
+        self.subagent_message_indices[parent] = child_index
+        model = str(getattr(message, "model", "") or "")
+        for child_event in _subagent_events(message, self.turn_id, child_index):
+            self.handle.subagent_runs.observe(parent, child_event["params"]["event"]["params"]["item"], model=model)
+            await self.emit(child_event)
+        await self._emit_subagent_progress(parent)
+
+    async def _on_assistant(self, message: AssistantMessage) -> None:
+        await self._attach_session(str(message.session_id or ""))
+        await _report_context_usage(self.handle, self.turn_id, self.emit)
+        self.assistant_message_index += 1
+        # SDK message creation is not model request dispatch.
+        timing: dict[str, Any] = {}
+        for block_index, block in enumerate(message.content):
+            handler = self._block_handler(block)
+            if handler is not None:
+                await handler(block, block_index, timing)
+
+    async def _on_text_block(self, block: TextBlock, block_index: int, timing: dict[str, Any]) -> None:
+        self.pending_text_items.append({
+            "id": f"{self.turn_id}:{self.assistant_message_index}:text:{block_index}",
+            "type": "agentMessage", "text": block.text,
+            "_request_timing": timing,
+        })
+
+    async def _on_thinking_block(self, block: ThinkingBlock, block_index: int, timing: dict[str, Any]) -> None:
+        await self.emit({
+            "method": "item/completed",
+            "params": {
+                "turnId": self.turn_id,
+                "request_timing": timing,
+                "item": {
+                    "id": f"{self.turn_id}:{self.assistant_message_index}:thinking:{block_index}",
+                    "type": "reasoning",
+                    "thinking": block.thinking,
+                    "signature": block.signature,
+                },
+            },
+        })
+
+    async def _on_tool_use_block(
+        self, block: ToolUseBlock | ServerToolUseBlock, _block_index: int, _timing: dict[str, Any],
+    ) -> None:
+        await self._flush_commentary()
+        if block.name in SUBAGENT_TOOLS:
+            arguments = block.input if isinstance(block.input, dict) else {}
+            self.handle.subagent_runs.start(
+                block.id, tool_use_id=block.id,
+                agent_type=str(arguments.get("subagent_type") or ""),
+                description=str(arguments.get("description") or ""),
+                background=bool(arguments.get("run_in_background")),
+                model=str(arguments.get("model") or ""),
+                prompt=str(arguments.get("prompt") or ""),
+            )
+            await self._emit_subagent_progress(block.id)
+        await self.emit(_tool_call_event(block))
+
+    async def _on_tool_result_block(
+        self, block: ToolResultBlock | ServerToolResultBlock, _block_index: int, _timing: dict[str, Any],
+    ) -> None:
+        await self.emit(_tool_output_event(block))
+
+    async def _on_user(self, message: UserMessage) -> None:
+        if getattr(message, "uuid", None) == self.prompt_uuid:
+            self.prompt_seen = True
+        # The CLI started on a steered message.
+        self.handle.pending_steers.discard(str(getattr(message, "uuid", None) or ""))
+        for block in message.content if isinstance(message.content, list) else []:
+            if isinstance(block, (ToolResultBlock, ServerToolResultBlock)):
+                await self.emit(_tool_output_event(block))
+        for tool_use_id in _subagents_in_background(self.handle, message):
+            await self._emit_subagent_progress(tool_use_id)
+        for tool_use_id in _notified_runs(message):
+            if tool_use_id in self.untold:
+                self.untold.remove(tool_use_id)
+            else:
+                self.told.add(tool_use_id)
+        for card in _subagent_cards(self.handle, message, self.turn_id):
+            await self._emit_item(card)
+
+    async def _on_result(self, message: ResultMessage) -> None:
+        await self._attach_session(str(message.session_id or ""))
+        if not self._ours(message):
+            self.ended_on_earlier_result = True
+            return
+        self.result = message
+        if not self.handle.pending_steers and not self.handle.subagent_runs.running_in_background() and not self.untold:
+            self.handle.steering_open = False
+
+    async def _attach_session(self, session_id: str) -> None:
+        discovered = str(session_id or "").strip()
+        if not discovered:
+            return
+        await self.daemon._attach_session_id(self.handle, discovered)
+        if discovered == self.attached_event_session_id:
+            return
+        self.attached_event_session_id = discovered
+        await self.emit({"method": "thread/attached", "params": {"threadId": discovered, "turnId": self.turn_id}})
+
+    async def _emit_text(self, item: dict[str, Any]) -> None:
+        item = dict(item)
+        timing = item.pop("_request_timing", {})
+        await self.emit({
+            "method": "item/completed",
+            "params": {"threadId": self.handle.session_id, "turnId": self.turn_id, "item": item, "request_timing": timing},
+        })
+
+    async def _emit_item(self, item: dict[str, Any]) -> None:
+        await self.emit({"method": "item/completed", "params": {
+            "threadId": self.handle.session_id, "turnId": self.turn_id, "item": item,
+        }})
+
+    async def _flush_commentary(self) -> None:
+        for item in self.pending_text_items:
+            await self._emit_text({**item, "phase": "commentary"})
+        self.pending_text_items.clear()
+
+    async def _emit_subagent_progress(self, tool_use_id: str) -> None:
+        # The running card of a subagent the model started, when it changed.
+        card = self.handle.subagent_runs.live(tool_use_id, turn_id=self.turn_id)
+        if card is not None:
+            await self.emit({"method": PROGRESS_METHOD, "params": {
+                "threadId": self.handle.session_id, "turnId": self.turn_id, "item": card,
+            }})
+
+
+class ClaudeCompaction:
+    """Claude Code's own ``/compact`` of a session, read up to its result."""
+
+    def __init__(self, daemon: "ClaudeCodeDaemon", handle: SessionHandle, session_id: str) -> None:
+        self.daemon = daemon
+        self.handle = handle
+        self.session_id = session_id
+        self.prompt_uuid = ""
+        self.prompt_seen = False
+        self.outcome: dict[str, Any] = {"compacted": False, "reason": ""}
+        self.result: ResultMessage | None = None
+
+    async def run(self) -> dict[str, Any]:
+        self.prompt_uuid = str(uuid.uuid4())
+        await self.handle.client.query(_prompt_message("/compact", self.handle.session_id, self.prompt_uuid))
+        while self.result is None:
+            received = False
+            async for message in self.handle.client.receive_response():
+                received = True
+                await self._take(message)
+            if not received:
+                break
+        result = self.result
+        if result is None:
+            raise RuntimeError("Claude Code /compact ended without a result")
+        if result.is_error:
+            detail = "; ".join(result.errors or []) or str(result.result or result.subtype)
+            raise RuntimeError(f"Claude Code compaction failed: {detail}")
+        if not self.outcome["compacted"] and not self.outcome["reason"]:
+            self.outcome["reason"] = str(result.result or "").strip() or "not_compacted"
+        return self.outcome
+
+    async def _take(self, message: Any) -> None:
+        if isinstance(message, UserMessage) and getattr(message, "uuid", None) == self.prompt_uuid:
+            self.prompt_seen = True
+        if isinstance(message, SystemMessage):
+            await self._on_system(message)
+        elif isinstance(message, ResultMessage):
+            self._on_result(message)
+
+    async def _on_system(self, message: SystemMessage) -> None:
+        data = message.data or {}
+        observed_session_id = str(data.get("session_id") or "")
+        if observed_session_id and observed_session_id != self.session_id:
+            raise ValueError("Claude session identity changed")
+        await self.daemon._attach_session_id(self.handle, observed_session_id)
+        # The CLI may emit compact evidence before replaying this request's
+        # user message. Keep it until the matching Result, or discard it with
+        # an older Result.
+        if message.subtype == "compact_boundary":
+            metadata = data.get("compact_metadata") or {}
+            self.outcome.update(
+                compacted=True,
+                reason="",
+                pre_tokens=int(metadata.get("pre_tokens") or 0),
+                context_tokens=int(metadata.get("post_tokens") or 0),
+                duration_ms=int(metadata.get("duration_ms") or 0),
+            )
+        elif data.get("compact_result") == "failed":
+            self.outcome = {
+                "compacted": False,
+                "reason": str(data.get("compact_error") or "compaction_failed"),
+            }
+
+    def _on_result(self, message: ResultMessage) -> None:
+        if not self.prompt_seen and not message.is_error:
+            self.outcome = {"compacted": False, "reason": ""}
+            return
+        if message.session_id and message.session_id != self.session_id:
+            raise ValueError("Claude session identity changed")
+        self.result = message
+
+
 class ClaudeCodeDaemon:
+    """The loaded Claude Code sessions and what the Worker asks of them.
+
+    A session is one CLI process (``SessionHandle``), started for a session
+    key and the options of its turns, kept while it is used; a turn runs on
+    it as a ``ClaudeTurn``, a compaction as a ``ClaudeCompaction``.
+    """
+
     def __init__(self) -> None:
         self.max_concurrency = max(1, int(os.getenv("PORTAL_CLAUDE_CODE_MAX_CONCURRENCY", "8")))
         self.max_loaded_sessions = max(1, int(os.getenv("PORTAL_CLAUDE_CODE_MAX_LOADED_SESSIONS", "24")))
@@ -700,11 +1354,7 @@ class ClaudeCodeDaemon:
         )
 
     async def _create_handle(self, params: dict[str, Any]) -> SessionHandle:
-        session_key = str(params.get("session_key") or "").strip()
-        cwd = Path(str(params.get("cwd") or "")).expanduser().resolve(strict=False)
-        config_dir = Path(str(params.get("config_dir") or "")).expanduser().resolve(strict=False)
-        if not session_key or not cwd.is_absolute() or not config_dir.is_absolute():
-            raise ValueError("session_key, absolute cwd, and absolute config_dir are required")
+        session_key, cwd, config_dir = _session_location(params)
         profile_id = str(params.get("provider_profile") or self.default_profile).strip()
         provider_env, profile = _provider_environment(profile_id)
         if claude_provider_catalog.is_native(profile):
@@ -713,82 +1363,20 @@ class ClaudeCodeDaemon:
                 raise ValueError("Claude login directory does not match the selected account route")
         config_dir.mkdir(parents=True, exist_ok=True)
         model = _validated_model(profile, str(params.get("model") or ""))
-        effort = _validated_effort(
-            profile,
-            model,
-            str(params.get("effort") or ""),
-        )
+        effort = _validated_effort(profile, model, str(params.get("effort") or ""))
         if claude_provider_catalog.is_declared(profile):
             provider_env = {**provider_env, **dict.fromkeys(GATEWAY_MODEL_VARIABLES, model)}
-        is_owner = bool(params.get("is_owner"))
-        permission_mode = str(params.get("permission_mode") or "dontAsk").strip()
-        if permission_mode not in {"dontAsk", "bypassPermissions"}:
-            raise ValueError("Unsupported Claude permission mode")
+        permission_mode = _permission_mode(params)
         session_id = str(params.get("session_id") or "").strip()
-        system_prompt_append = str(params.get("system_prompt_append") or "").strip()
         if session_id:
             self._relocate_resumed_session_file(session_id, cwd, config_dir)
-        env = {
-            **provider_env,
-            "CLAUDE_CONFIG_DIR": str(config_dir),
-            "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
-            # The CLI inherits the daemon's environment, which holds the Portal
-            # database for model API registrations; only an authorized
-            # Resident's shell gets it (below).
-            "PORTAL_DATABASE_URL": "",
-        }
-        # Mask both inherited identity aliases, including for a human session.
-        for key in ("PORTAL_RESIDENT_ID", "PORTAL_LINEAGE_ID"):
-            mirror_product_env(env, key, "")
-        env.update(resident_identity_environment(params.get("resident_environment")))
-        if params.get("inherit_portal_database"):
-            if not env["PORTAL_RESIDENT_ID"]:
-                raise ValueError("Portal database environment requires Resident identity")
-            env.update(portal_database_environment(True))
         auto_compact_window = _auto_compact_window(params)
-        if auto_compact_window:
-            # Claude Code reads its auto-compaction window when the CLI starts.
-            env["CLAUDE_CODE_AUTO_COMPACT_WINDOW"] = str(auto_compact_window)
+        env = _cli_environment(params, provider_env, config_dir, auto_compact_window)
         bridge = ClaudeToolBridge(params.get("tools") or [])
-        option_overrides = {
-            "allowed_tools": OWNER_TOOLS if is_owner else NON_OWNER_TOOLS,
-            "disallowed_tools": [] if is_owner else NON_OWNER_DISALLOWED_TOOLS,
-            "permission_mode": permission_mode,
-            "add_dirs": [Path(str(item)).expanduser().resolve(strict=False) for item in params.get("add_dirs") or []],
-            "hooks": None,
-        }
-        options = ClaudeAgentOptions(
-            model=model,
-            cwd=cwd,
-            resume=session_id or None,
-            effort=effort or None,
-            # Always Claude Code's own system prompt: the SDK turns a missing
-            # one into ``--system-prompt ""``, an empty system prompt.  The
-            # system prompt is not part of the session history, so a resumed
-            # process has exactly what this start gives it.
-            system_prompt=(
-                {"type": "preset", "preset": "claude_code", "append": system_prompt_append}
-                if system_prompt_append
-                else {"type": "preset", "preset": "claude_code"}
-            ),
-            allowed_tools=[*option_overrides["allowed_tools"], *bridge.allowed_tools],
-            mcp_servers=bridge.servers,
-            disallowed_tools=[
-                *option_overrides["disallowed_tools"],
-                *([] if _allows_subagents(params) else SUBAGENT_TOOLS),
-            ],
-            permission_mode=option_overrides["permission_mode"],
-            add_dirs=option_overrides["add_dirs"],
-            hooks=option_overrides["hooks"],
-            setting_sources=[],
-            skills=[],
-            include_partial_messages=False,
-            env=env,
-            stderr=lambda line: print(f"Claude Code stderr: {line}", flush=True),
-            max_buffer_size=CLI_MESSAGE_BUFFER_BYTES,
-            extra_args=dict(CLI_ARGS),
-        )
-        client = ClaudeSDKClient(options)
+        client = ClaudeSDKClient(_agent_options(
+            params, model=model, effort=effort, cwd=cwd, session_id=session_id,
+            permission_mode=permission_mode, env=env, bridge=bridge,
+        ))
         await client.connect()
         return SessionHandle(
             key=session_key,
@@ -819,14 +1407,10 @@ class ClaudeCodeDaemon:
                 if handle and handle.lock.locked():
                     raise RuntimeError("cannot change Claude Code session options during an active turn")
                 if handle:
-                    previous = self._sessions.pop(session_key, None)
-                    if handle.session_id:
-                        self._session_ids.pop(handle.session_id, None)
+                    previous = handle
+                    self._forget_session(session_key, handle)
             if previous:
-                try:
-                    await asyncio.wait_for(previous.client.disconnect(), timeout=30)
-                except Exception:
-                    pass
+                await _disconnect(previous)
             if previous is not None and previous.auto_compact_window:
                 # The session keeps the earliest compaction it was given.
                 requested = _auto_compact_window(params)
@@ -840,6 +1424,23 @@ class ClaudeCodeDaemon:
                 if handle.session_id:
                     self._session_ids[handle.session_id] = session_key
             return handle
+
+    def _forget_session(self, session_key: str, handle: SessionHandle) -> None:
+        """Unload a session (the caller holds ``_sessions_lock``)."""
+
+        self._sessions.pop(session_key, None)
+        if handle.session_id:
+            self._session_ids.pop(handle.session_id, None)
+
+    async def _loaded_session(self, params: dict[str, Any]) -> tuple[str, str, SessionHandle | None]:
+        """The session key and CLI session id ``params`` give, and the loaded session either names."""
+
+        session_key = str(params.get("session_key") or "").strip()
+        session_id = str(params.get("session_id") or "").strip()
+        async with self._sessions_lock:
+            if not session_key and session_id:
+                session_key = self._session_ids.get(session_id, "")
+            return session_key, session_id, self._sessions.get(session_key)
 
     async def _attach_session_id(self, handle: SessionHandle, session_id: str) -> bool:
         discovered = str(session_id or "").strip()
@@ -900,377 +1501,41 @@ class ClaudeCodeDaemon:
                 await self._turn_connections[key].attach(emit, params.get("_tool_dispatch"))
         return await asyncio.shield(task)
 
+    async def _forget_turn_task(self, key: tuple[str, str]) -> None:
+        """Drop the turn the current task runs, so that the turn may run again."""
+
+        async with self._turn_tasks_lock:
+            if self._turn_tasks.get(key) is asyncio.current_task():
+                self._turn_tasks.pop(key, None)
+                self._turn_connections.pop(key, None)
+
     async def _run_turn_once(
         self,
         params: dict[str, Any],
         emit: Callable[[dict[str, Any]], Awaitable[None]],
     ) -> dict[str, Any]:
+        prompt, media, blocks = await self._turn_prompt(params)
+        handle = await self._handle_for(params)
+        turn_id = str(params.get("turn_id") or f"claude_turn_{os.urandom(8).hex()}")
+        delivery = await _turn_delivery(params, handle, turn_id, prompt, blocks, media)
+        turn = ClaudeTurn(self, handle, params, emit, turn_id)
+        async with handle.lock:
+            async with self._slots:
+                return await turn.run(delivery)
+
+    async def _turn_prompt(self, params: dict[str, Any]) -> tuple[str, list[Any], Any]:
+        """The turn's prompt, its images, and the content blocks that carry both (``None``: text only)."""
+
         prompt = str(params.get("prompt") or "")
         media = params.get("input_media") or []
         if not prompt and not media:
             raise ValueError("prompt required")
-        blocks = None
-        if media:
-            profile = _provider_profile(str(params.get("provider_profile") or self.default_profile))
-            if not claude_provider_catalog.model_catalog(profile)["capabilities"]["media"]:
-                raise ValueError("Selected Claude route does not support images")
-            blocks = await asyncio.to_thread(claude_input_media.content_blocks, prompt, media)
-        handle = await self._handle_for(params)
-        turn_id = str(params.get("turn_id") or f"claude_turn_{os.urandom(8).hex()}")
-        prompt_uuid = _turn_prompt_uuid(str(params.get("session_key") or ""), turn_id)
-        continue_prompt = str(params.get("continue_prompt") or "")
-        recovered: dict[str, Any] | None = None
-        if continue_prompt:
-            # An earlier attempt started this turn, and this daemon no longer
-            # has it.  Once the CLI had taken the turn's input, the turn is
-            # continued in the session; the input is never sent twice.
-            config_dir = Path(str(params.get("config_dir") or "")).expanduser().resolve(strict=False)
-            if await asyncio.to_thread(_transcript_has_message, config_dir, handle.session_id, prompt_uuid):
-                prompt, blocks, prompt_uuid = continue_prompt, None, str(uuid.uuid4())
-                recovered = {"delivery": "continued", "prompt": prompt}
-            else:
-                recovered = {"delivery": "first_delivery", "prompt": prompt, "imageCount": len(media)}
-        pending_text_items: list[dict[str, Any]] = []
-        assistant_message_index = 0
-        subagent_message_indices: dict[str, int] = {}
-        result: ResultMessage | None = None
-        attached_event_session_id = handle.session_id
-
-        async def emit_text(item: dict[str, Any]) -> None:
-            item = dict(item)
-            timing = item.pop('_request_timing', {})
-            await emit({
-                "method": "item/completed",
-                "params": {"threadId": handle.session_id, "turnId": turn_id, "item": item, 'request_timing': timing},
-            })
-
-        async def flush_commentary() -> None:
-            for item in pending_text_items:
-                await emit_text({**item, "phase": "commentary"})
-            pending_text_items.clear()
-
-        async def emit_subagent_progress(tool_use_id: str) -> None:
-            # The running card of a subagent the model started, when it changed.
-            card = handle.subagent_runs.live(tool_use_id, turn_id=turn_id)
-            if card is not None:
-                await emit({"method": PROGRESS_METHOD, "params": {"threadId": handle.session_id, "turnId": turn_id, "item": card}})
-
-        async def attach_session(session_id: str) -> None:
-            nonlocal attached_event_session_id
-            discovered = str(session_id or "").strip()
-            if not discovered:
-                return
-            await self._attach_session_id(handle, discovered)
-            if discovered == attached_event_session_id:
-                return
-            attached_event_session_id = discovered
-            await emit({
-                "method": "thread/attached",
-                "params": {"threadId": discovered, "turnId": turn_id},
-            })
-
-        async with handle.lock:
-            async with self._slots:
-                handle.active_turn_id = turn_id
-                handle.interrupted_turn_id = ""
-                handle.last_used = time.monotonic()
-                handle.pending_steers.clear()
-                handle.steer_keys.clear()
-                handle.steering_open = True
-                # Earlier answers of this turn, when steering the CLI took only
-                # after an answer made it run another turn (see ``steer``), or
-                # when subagents went on in the background after an answer.
-                answered: list[ResultMessage] = []
-                # ``background``: the turn waits on subagents in the background;
-                # ``cli_turn``: since the last answer the CLI started a turn.
-                waiting = {"background": False, "cli_turn": False}
-                # Runs in the background whose task ended but whose notification
-                # the model has not taken: the CLI takes each in a turn of its
-                # own, or replays it into a turn already running.  ``told``: runs
-                # whose notification came before the daemon saw their task end.
-                untold: list[str] = []
-                told: set[str] = set()
-
-                def wait_limit() -> float | None:
-                    if waiting["cli_turn"] or handle.subagent_runs.running_in_background():
-                        return None
-                    # A stopped turn reads no notification of the runs it stopped.
-                    return 0.5 if handle.interrupted_turn_id == turn_id else BACKGROUND_SETTLE_SECONDS
-                await emit({
-                    "method": "turn/started",
-                    "params": {"threadId": handle.session_id, "turn": {"id": turn_id}},
-                })
-                if recovered is not None:
-                    await emit({
-                        "method": "turn/recovered",
-                        "params": {"threadId": handle.session_id, "turnId": turn_id, **recovered},
-                    })
-                try:
-                    if handle.tool_bridge is not None:
-                        handle.tool_bridge.dispatch = params.get("_tool_dispatch")
-                    prompt_seen = False
-                    await handle.client.query(_prompt_message(
-                        blocks if blocks is not None else prompt, handle.session_id, prompt_uuid,
-                    ))
-                    while True:
-                        ended_on_earlier_result = False
-                        stream_state: dict[str, Any] = {}
-                        waiting["cli_turn"] = False
-                        async for message in _turn_messages(
-                            handle.client, stream_state,
-                            0.0 if waiting["background"] else STEER_START_SECONDS if answered else 0.0,
-                            wait_limit if waiting["background"] else None,
-                        ):
-                            if isinstance(message, (AssistantMessage, UserMessage)) and not message.parent_tool_use_id:
-                                if (waiting["background"] and not waiting["cli_turn"] and untold
-                                        and not _notified_runs(message)
-                                        and str(getattr(message, "uuid", None) or "") not in handle.pending_steers):
-                                    # The CLI started a turn of its own for one notification.
-                                    untold.pop(0)
-                                waiting["cli_turn"] = True
-                            is_result = isinstance(message, ResultMessage)
-                            ours = not is_result or prompt_seen or bool(message.is_error)
-                            emit_raw_message = (
-                                (is_result and ours)
-                                or (isinstance(message, SystemMessage) and message.subtype == "init")
-                            )
-                            if emit_raw_message:
-                                await emit({
-                                    "method": "claude/message",
-                                    "params": {
-                                        "sessionId": handle.session_id,
-                                        "turnId": turn_id,
-                                        "messageType": message.__class__.__name__,
-                                        "message": _json_safe(message),
-                                    },
-                                })
-                            if isinstance(message, SystemMessage):
-                                discovered = str(message.data.get("session_id") or message.data.get("sessionId") or "")
-                                await attach_session(discovered)
-                                running = set(handle.subagent_runs.running_in_background())
-                                followed = _observe_subagent_task(handle, message)
-                                if followed:
-                                    await emit_subagent_progress(followed)
-                                ended_card = _ended_subagent_card(handle, message, turn_id)
-                                if ended_card is not None:
-                                    await emit({"method": "item/completed", "params": {
-                                        "threadId": handle.session_id, "turnId": turn_id, "item": ended_card,
-                                    }})
-                                for ended in running - set(handle.subagent_runs.running_in_background()):
-                                    if ended in told:
-                                        told.discard(ended)
-                                    else:
-                                        untold.append(ended)
-                            elif isinstance(message, RateLimitEvent):
-                                self.account_usage.observe(
-                                    str(params.get("provider_profile") or self.default_profile),
-                                    str(params.get("config_dir") or ""),
-                                    message.rate_limit_info.raw,
-                                )
-                            elif isinstance(message, StreamEvent):
-                                await attach_session(str(message.session_id or ""))
-                            elif isinstance(message, (AssistantMessage, UserMessage)) and message.parent_tool_use_id:
-                                parent = str(message.parent_tool_use_id)
-                                child_index = subagent_message_indices.get(parent, 0) + 1
-                                subagent_message_indices[parent] = child_index
-                                model = str(getattr(message, "model", "") or "")
-                                for child_event in _subagent_events(message, turn_id, child_index):
-                                    handle.subagent_runs.observe(parent, child_event["params"]["event"]["params"]["item"], model=model)
-                                    await emit(child_event)
-                                await emit_subagent_progress(parent)
-                            elif isinstance(message, AssistantMessage):
-                                await attach_session(str(message.session_id or ""))
-                                await _report_context_usage(handle, turn_id, emit)
-                                assistant_message_index += 1
-                                # SDK message creation is not model request dispatch.
-                                timing = {}
-                                for block_index, block in enumerate(message.content):
-                                    if isinstance(block, TextBlock):
-                                        pending_text_items.append({
-                                            "id": f"{turn_id}:{assistant_message_index}:text:{block_index}",
-                                            "type": "agentMessage", "text": block.text,
-                                            '_request_timing': timing,
-                                        })
-                                    elif isinstance(block, ThinkingBlock):
-                                        await emit({
-                                            "method": "item/completed",
-                                            "params": {
-                                                "turnId": turn_id,
-                                                'request_timing': timing,
-                                                "item": {
-                                                    "id": f"{turn_id}:{assistant_message_index}:thinking:{block_index}",
-                                                    "type": "reasoning",
-                                                    "thinking": block.thinking,
-                                                    "signature": block.signature,
-                                                },
-                                            },
-                                        })
-                                    elif isinstance(block, (ToolUseBlock, ServerToolUseBlock)):
-                                        await flush_commentary()
-                                        if block.name in SUBAGENT_TOOLS:
-                                            arguments = block.input if isinstance(block.input, dict) else {}
-                                            handle.subagent_runs.start(
-                                                block.id, tool_use_id=block.id,
-                                                agent_type=str(arguments.get("subagent_type") or ""),
-                                                description=str(arguments.get("description") or ""),
-                                                background=bool(arguments.get("run_in_background")),
-                                                model=str(arguments.get("model") or ""),
-                                                prompt=str(arguments.get("prompt") or ""),
-                                            )
-                                            await emit_subagent_progress(block.id)
-                                        if block.name == "Bash":
-                                            item = {
-                                                "type": "commandExecution",
-                                                "command": str(block.input.get("command") or ""),
-                                                "status": "running",
-                                                "id": block.id,
-                                            }
-                                            await emit({"method": "item/started", "params": {"item": item}})
-                                        else:
-                                            await emit({
-                                                "type": "response_item",
-                                                "payload": {
-                                                    "type": "function_call",
-                                                    "name": block.name,
-                                                    "call_id": block.id,
-                                                    "arguments": block.input,
-                                                },
-                                            })
-                                    elif isinstance(block, (ToolResultBlock, ServerToolResultBlock)):
-                                        await emit({"type": "response_item", "payload": {
-                                            "type": "function_call_output", "call_id": block.tool_use_id,
-                                            "output": block.content, "is_error": _tool_result_failed(block),
-                                        }})
-                            elif isinstance(message, UserMessage):
-                                if getattr(message, "uuid", None) == prompt_uuid:
-                                    prompt_seen = True
-                                # The CLI started on a steered message.
-                                handle.pending_steers.discard(str(getattr(message, "uuid", None) or ""))
-                                for block in message.content if isinstance(message.content, list) else []:
-                                    if isinstance(block, (ToolResultBlock, ServerToolResultBlock)):
-                                        await emit({
-                                            "type": "response_item",
-                                            "payload": {
-                                                "type": "function_call_output",
-                                                "call_id": block.tool_use_id,
-                                                "output": block.content,
-                                                "is_error": _tool_result_failed(block),
-                                            },
-                                        })
-                                for tool_use_id in _subagents_in_background(handle, message):
-                                    await emit_subagent_progress(tool_use_id)
-                                for tool_use_id in _notified_runs(message):
-                                    if tool_use_id in untold:
-                                        untold.remove(tool_use_id)
-                                    else:
-                                        told.add(tool_use_id)
-                                for card in _subagent_cards(handle, message, turn_id):
-                                    await emit({"method": "item/completed", "params": {
-                                        "threadId": handle.session_id, "turnId": turn_id, "item": card,
-                                    }})
-                            elif is_result:
-                                await attach_session(str(message.session_id or ""))
-                                if ours:
-                                    result = message
-                                    if not handle.pending_steers and not handle.subagent_runs.running_in_background() and not untold:
-                                        handle.steering_open = False
-                                else:
-                                    ended_on_earlier_result = True
-                        if result is None and answered and stream_state.get("timed_out"):
-                            if handle.interrupted_turn_id == turn_id:
-                                raise RuntimeError("Claude Code turn interrupted while its subagents ran in the background")
-                            # The CLI did not start on the steering, or on the
-                            # end of a run stopped in the background: the last answer stands.
-                            handle.pending_steers.clear()
-                            untold.clear()
-                            handle.steering_open = False
-                            result = answered.pop()
-                            pending_text_items.clear()
-                        waiting["background"] = bool(
-                            result is not None and not result.is_error and handle.interrupted_turn_id != turn_id
-                            and (handle.subagent_runs.running_in_background() or untold)
-                        )
-                        if result is not None and (handle.pending_steers or waiting["background"]) and not result.is_error:
-                            # Steering that arrived after the last step: the CLI
-                            # answers it in another turn, which is still this one.
-                            # So is each turn in which it takes the notification
-                            # of a subagent the model left running in the background.
-                            answered.append(result)
-                            result = None
-                            # Its answer so far stays visible as commentary.
-                            earlier_answer = str(answered[-1].result or "").strip()
-                            if not pending_text_items and earlier_answer:
-                                pending_text_items.append({
-                                    "id": f"{turn_id}:answer:{len(answered)}",
-                                    "type": "agentMessage", "text": earlier_answer,
-                                })
-                            await flush_commentary()
-                            continue
-                        if result is not None or not ended_on_earlier_result:
-                            break
-                        # Text from that earlier work stays visible as commentary.
-                        await flush_commentary()
-                    if result is None:
-                        raise RuntimeError("Claude Code turn ended without a ResultMessage")
-                    if result.is_error:
-                        detail = "; ".join(result.errors or []) or str(result.result or result.subtype)
-                        if "failed to authenticate" in detail.lower():
-                            handle.invalidated = True
-                        raise RuntimeError(f"Claude Code turn failed: {detail}")
-                    response = str(result.result or "").strip() or "".join(
-                        item["text"] for item in pending_text_items
-                    ).strip()
-                    pending_text_items.clear()
-                    if response:
-                        await emit_text({
-                            "id": f"{turn_id}:final", "type": "agentMessage",
-                            "phase": "final_answer", "text": response,
-                        })
-                    usage = _json_safe(result.usage or {})
-                    model_usage = _json_safe(result.model_usage or {})
-                    duration_ms = int(result.duration_ms or 0)
-                    for earlier in answered:
-                        usage = _summed(_json_safe(earlier.usage or {}), usage)
-                        model_usage = _summed(_json_safe(earlier.model_usage or {}), model_usage)
-                        duration_ms += int(earlier.duration_ms or 0)
-                    await emit({
-                        "method": "turn/completed",
-                        "params": {
-                            "threadId": handle.session_id,
-                            "turn": {"id": turn_id},
-                            "usage": usage,
-                        },
-                    })
-                    return {
-                        "session_id": handle.session_id,
-                        "turn_id": turn_id,
-                        "response": response,
-                        "usage": usage,
-                        "model_usage": model_usage,
-                        "duration_ms": duration_ms,
-                    }
-                except Exception as exc:
-                    if handle.interrupted_turn_id == turn_id:
-                        async with self._turn_tasks_lock:
-                            key = (handle.key, turn_id)
-                            if self._turn_tasks.get(key) is asyncio.current_task():
-                                self._turn_tasks.pop(key, None)
-                                self._turn_connections.pop(key, None)
-                        raise ClaudeTurnInterrupted("Claude Code turn interrupted") from exc
-                    if isinstance(exc, ClaudeSDKError):
-                        # The SDK stops reading the CLI after a transport error,
-                        # so the next turn reconnects and resumes the session.
-                        handle.invalidated = True
-                    raise
-                finally:
-                    try:
-                        await flush_commentary()
-                    finally:
-                        if handle.tool_bridge is not None:
-                            handle.tool_bridge.dispatch = None
-                        handle.steering_open = False
-                        handle.active_turn_id = ""
-                        handle.last_used = time.monotonic()
+        if not media:
+            return prompt, media, None
+        profile = _provider_profile(str(params.get("provider_profile") or self.default_profile))
+        if not claude_provider_catalog.model_catalog(profile)["capabilities"]["media"]:
+            raise ValueError("Selected Claude route does not support images")
+        return prompt, media, await asyncio.to_thread(claude_input_media.content_blocks, prompt, media)
 
     async def steer(self, params: dict[str, Any]) -> dict[str, Any]:
         """Give the running turn more input.
@@ -1278,20 +1543,15 @@ class ClaudeCodeDaemon:
         The CLI queues a user message that arrives during a turn and takes it
         after the turn's current step, so the turn goes on with it.  When the
         turn has no further step the CLI answers it in a turn of its own right
-        after; ``_run_turn_once`` reads that turn as part of this one.  Once
-        the turn's result has arrived steering is closed: a later message
-        would start a turn that no Portal turn reads.
+        after; ``ClaudeTurn`` reads that turn as part of this one.  Once the
+        turn's result has arrived steering is closed: a later message would
+        start a turn that no Portal turn reads.
         """
 
-        session_key = str(params.get("session_key") or "").strip()
-        session_id = str(params.get("session_id") or "").strip()
         text = str(params.get("text") or "")
         if not text.strip():
             raise ValueError("Steering needs text")
-        async with self._sessions_lock:
-            if not session_key and session_id:
-                session_key = self._session_ids.get(session_id, "")
-            handle = self._sessions.get(session_key)
+        _session_key, session_id, handle = await self._loaded_session(params)
         if not handle or not handle.active_turn_id:
             return {"steered": False, "reason": "no_active_turn"}
         requested_turn = str(params.get("turn_id") or "").strip()
@@ -1322,13 +1582,8 @@ class ClaudeCodeDaemon:
         The CLI then reports the run stopped, and its card ends with that.
         """
 
-        session_key = str(params.get("session_key") or "").strip()
-        session_id = str(params.get("session_id") or "").strip()
         tool_use_id = str(params.get("tool_use_id") or "").strip()
-        async with self._sessions_lock:
-            if not session_key and session_id:
-                session_key = self._session_ids.get(session_id, "")
-            handle = self._sessions.get(session_key)
+        _session_key, session_id, handle = await self._loaded_session(params)
         if not handle or not handle.client:
             return {"stopped": False, "reason": "no_session"}
         if session_id and handle.session_id and session_id != handle.session_id:
@@ -1345,12 +1600,7 @@ class ClaudeCodeDaemon:
         return {"stopped": True, "tool_use_id": tool_use_id, "task_id": task_id}
 
     async def interrupt(self, params: dict[str, Any]) -> dict[str, Any]:
-        session_key = str(params.get("session_key") or "").strip()
-        session_id = str(params.get("session_id") or "").strip()
-        async with self._sessions_lock:
-            if not session_key and session_id:
-                session_key = self._session_ids.get(session_id, "")
-            handle = self._sessions.get(session_key)
+        _session_key, session_id, handle = await self._loaded_session(params)
         if not handle or not handle.active_turn_id:
             return {"interrupted": False, "reason": "no active Claude Code turn"}
         requested_turn = str(params.get("turn_id") or "").strip()
@@ -1366,8 +1616,21 @@ class ClaudeCodeDaemon:
             if handle.interrupted_turn_id == active_turn_id:
                 handle.interrupted_turn_id = ""
             raise
-        # The subagents the turn left running in the background stop with it;
-        # their work would otherwise go on where no Portal turn reads it.
+        await self._stop_background_subagents(handle)
+        return {
+            "interrupted": True,
+            "session_key": handle.key,
+            "session_id": handle.session_id,
+            "turn_id": active_turn_id,
+        }
+
+    @staticmethod
+    async def _stop_background_subagents(handle: SessionHandle) -> None:
+        """Stop the subagents an interrupted turn left running in the background.
+
+        Their work would otherwise go on where no Portal turn reads it.
+        """
+
         for tool_use_id in handle.subagent_runs.running_in_background():
             task_id = handle.subagent_tasks.get(tool_use_id, "")
             if not task_id:
@@ -1377,12 +1640,6 @@ class ClaudeCodeDaemon:
                 await handle.client.stop_task(task_id)
             except Exception:  # noqa: BLE001 - the turn stops all the same
                 handle.subagent_stops.discard(tool_use_id)
-        return {
-            "interrupted": True,
-            "session_key": handle.key,
-            "session_id": handle.session_id,
-            "turn_id": active_turn_id,
-        }
 
     async def compact_session(self, params: dict[str, Any]) -> dict[str, Any]:
         """Compact the session's history now, with Claude Code's own ``/compact``.
@@ -1408,62 +1665,13 @@ class ClaudeCodeDaemon:
         if handle.session_id and handle.session_id != session_id:
             raise ValueError("Claude session identity changed")
         compaction_id = f"compact:{params.get('request_id') or uuid.uuid4().hex}"
-        outcome: dict[str, Any] = {"compacted": False, "reason": ""}
         async with handle.lock:
             async with self._slots:
                 handle.active_turn_id = compaction_id
                 handle.interrupted_turn_id = ""
                 handle.last_used = time.monotonic()
-                result: ResultMessage | None = None
                 try:
-                    prompt_uuid = str(uuid.uuid4())
-                    prompt_seen = False
-                    await handle.client.query(_prompt_message("/compact", handle.session_id, prompt_uuid))
-                    while result is None:
-                        received = False
-                        async for message in handle.client.receive_response():
-                            received = True
-                            if isinstance(message, UserMessage) and getattr(message, "uuid", None) == prompt_uuid:
-                                prompt_seen = True
-                            if isinstance(message, SystemMessage):
-                                data = message.data or {}
-                                observed_session_id = str(data.get("session_id") or "")
-                                if observed_session_id and observed_session_id != session_id:
-                                    raise ValueError("Claude session identity changed")
-                                await self._attach_session_id(handle, observed_session_id)
-                                # The CLI may emit compact evidence before replaying
-                                # this request's user message. Keep it until the
-                                # matching Result, or discard it with an older Result.
-                                if message.subtype == "compact_boundary":
-                                    metadata = data.get("compact_metadata") or {}
-                                    outcome.update(
-                                        compacted=True,
-                                        reason="",
-                                        pre_tokens=int(metadata.get("pre_tokens") or 0),
-                                        context_tokens=int(metadata.get("post_tokens") or 0),
-                                        duration_ms=int(metadata.get("duration_ms") or 0),
-                                    )
-                                elif data.get("compact_result") == "failed":
-                                    outcome = {
-                                        "compacted": False,
-                                        "reason": str(data.get("compact_error") or "compaction_failed"),
-                                    }
-                            elif isinstance(message, ResultMessage):
-                                if not prompt_seen and not message.is_error:
-                                    outcome = {"compacted": False, "reason": ""}
-                                    continue
-                                if message.session_id and message.session_id != session_id:
-                                    raise ValueError("Claude session identity changed")
-                                result = message
-                        if not received:
-                            break
-                    if result is None:
-                        raise RuntimeError("Claude Code /compact ended without a result")
-                    if result.is_error:
-                        detail = "; ".join(result.errors or []) or str(result.result or result.subtype)
-                        raise RuntimeError(f"Claude Code compaction failed: {detail}")
-                    if not outcome["compacted"] and not outcome["reason"]:
-                        outcome["reason"] = str(result.result or "").strip() or "not_compacted"
+                    outcome = await ClaudeCompaction(self, handle, session_id).run()
                 except Exception as exc:
                     if handle.interrupted_turn_id == compaction_id:
                         raise ClaudeTurnInterrupted("Claude Code compaction interrupted") from exc
@@ -1476,27 +1684,22 @@ class ClaudeCodeDaemon:
         return {"session_id": handle.session_id, **outcome}
 
     async def session_status(self, params: dict[str, Any]) -> dict[str, Any]:
-        session_key = str(params.get("session_key") or "").strip()
-        session_id = str(params.get("session_id") or "").strip()
-        async with self._sessions_lock:
-            if not session_key and session_id:
-                session_key = self._session_ids.get(session_id, "")
-            handle = self._sessions.get(session_key)
-            if not handle:
-                return {
-                    "loaded": False,
-                    "active": False,
-                    "session_key": session_key,
-                    "session_id": session_id,
-                    "turn_id": "",
-                }
+        session_key, session_id, handle = await self._loaded_session(params)
+        if not handle:
             return {
-                "loaded": True,
-                "active": bool(handle.active_turn_id),
-                "session_key": handle.key,
-                "session_id": handle.session_id or session_id,
-                "turn_id": handle.active_turn_id,
+                "loaded": False,
+                "active": False,
+                "session_key": session_key,
+                "session_id": session_id,
+                "turn_id": "",
             }
+        return {
+            "loaded": True,
+            "active": bool(handle.active_turn_id),
+            "session_key": handle.key,
+            "session_id": handle.session_id or session_id,
+            "turn_id": handle.active_turn_id,
+        }
 
     async def close_session(self, params: dict[str, Any]) -> dict[str, Any]:
         session_key = str(params.get("session_key") or "").strip()
@@ -1519,13 +1722,8 @@ class ClaudeCodeDaemon:
                         "session_key": session_key,
                         "session_id": handle.session_id,
                     }
-                self._sessions.pop(session_key, None)
-                if handle.session_id:
-                    self._session_ids.pop(handle.session_id, None)
-            try:
-                await asyncio.wait_for(handle.client.disconnect(), timeout=30)
-            except Exception:
-                pass
+                self._forget_session(session_key, handle)
+            await _disconnect(handle)
             async with self._sessions_lock:
                 if self._session_setup_locks.get(session_key) is setup_lock:
                     self._session_setup_locks.pop(session_key, None)
@@ -1693,7 +1891,6 @@ class ClaudeCodeDaemon:
         self.account_usage.request_refresh(profile, force=params.get("force_refresh") is True)
         return self.account_usage.snapshot(profile["id"], str(profile["config_dir"]))
 
-
     async def health(self) -> dict[str, Any]:
         async with self._sessions_lock:
             loaded = len(self._sessions)
@@ -1740,14 +1937,9 @@ class ClaudeCodeDaemon:
                     and (now - handle.last_used >= self.idle_seconds or index < overflow)
                 ]
                 for handle in victims:
-                    self._sessions.pop(handle.key, None)
-                    if handle.session_id:
-                        self._session_ids.pop(handle.session_id, None)
+                    self._forget_session(handle.key, handle)
             for handle in victims:
-                try:
-                    await asyncio.wait_for(handle.client.disconnect(), timeout=30)
-                except Exception:
-                    pass
+                await _disconnect(handle)
             if victims:
                 async with self._sessions_lock:
                     for handle in victims:
@@ -1761,10 +1953,99 @@ class ClaudeCodeDaemon:
             self._session_ids.clear()
             self._session_setup_locks.clear()
         for handle in handles:
+            await _disconnect(handle)
+
+
+class WorkerRequest:
+    """One Worker connection: a request, its result, and in between the
+    events and Harness tool calls of a ``turn/run``."""
+
+    def __init__(self, daemon: ClaudeCodeDaemon, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+        self.daemon = daemon
+        self.reader = reader
+        self.writer = writer
+        self.request_id = ""
+        self._write_lock = asyncio.Lock()
+        self._tool_lock = asyncio.Lock()
+        self._methods: dict[str, Callable[[dict[str, Any]], Awaitable[dict[str, Any]]]] = {
+            "health": lambda _params: daemon.health(),
+            "account/usage": self._account_usage,
+            "turn/run": self._run_turn,
+            "turn/steer": daemon.steer,
+            "turn/interrupt": daemon.interrupt,
+            "subagent/stop": daemon.stop_subagent,
+            "session/compact": daemon.compact_session,
+            "session/status": daemon.session_status,
+            "session/close": daemon.close_session,
+            "session/fork": daemon.fork_session,
+        }
+
+    async def serve(self) -> None:
+        try:
+            method, params = await self._read_request()
+            handler = self._methods.get(method)
+            if handler is None:
+                raise ValueError(f"unsupported Claude Code backend method: {method}")
+            result = await handler(params)
+            await self.send({"type": "result", "result": result})
+        except Exception as exc:
             try:
-                await asyncio.wait_for(handle.client.disconnect(), timeout=30)
+                await self.send({
+                    "type": "error",
+                    "error": {"class": exc.__class__.__name__, "message": str(exc)},
+                })
             except Exception:
                 pass
+        finally:
+            self.writer.close()
+            try:
+                await self.writer.wait_closed()
+            except Exception:
+                pass
+
+    async def send(self, payload: dict[str, Any]) -> None:
+        async with self._write_lock:
+            self.writer.write(json.dumps({"id": self.request_id, **payload}, ensure_ascii=False, separators=(",", ":")).encode("utf-8") + b"\n")
+            await self.writer.drain()
+
+    async def _read_request(self) -> tuple[str, dict[str, Any]]:
+        raw = await self.reader.readline()
+        request = json.loads(raw)
+        if not isinstance(request, dict):
+            raise ValueError("request must be an object")
+        self.request_id = str(request.get("id") or "")
+        method = str(request.get("method") or "").strip()
+        params = request.get("params") if isinstance(request.get("params"), dict) else {}
+        if not self.request_id or not method:
+            raise ValueError("request id and method are required")
+        return method, params
+
+    async def _account_usage(self, params: dict[str, Any]) -> dict[str, Any]:
+        return self.daemon.account_usage_snapshot(params)
+
+    async def _run_turn(self, params: dict[str, Any]) -> dict[str, Any]:
+        params["_tool_dispatch"] = self.dispatch_tool
+        return await self.daemon.run_turn(params, lambda event: self.send({"type": "event", "event": event}))
+
+    async def dispatch_tool(self, name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+        # Serialize reverse requests; never send worker credentials or
+        # executable handlers into the provider process.
+        async with self._tool_lock:
+            call_id = os.urandom(16).hex()
+            try:
+                await self.send({"type": "tool_call", "call_id": call_id, "tool": name, "arguments": arguments})
+                raw = await self.reader.readline()
+            except OSError as exc:
+                raise WorkerConnectionLost(str(exc)) from exc
+            if not raw:
+                # A Worker leaves between messages, so it did not take this
+                # call (see NativeAgentClient detach).
+                raise WorkerConnectionLost("Worker closed the turn connection")
+            response = json.loads(raw)
+            if (response.get("id") != self.request_id or response.get("type") != "tool_result"
+                    or response.get("call_id") != call_id or not isinstance(response.get("result"), dict)):
+                raise ValueError("Invalid Claude Harness tool response")
+            return response["result"]
 
 
 async def _serve(socket_path: Path) -> None:
@@ -1772,84 +2053,7 @@ async def _serve(socket_path: Path) -> None:
     socket_path.parent.mkdir(parents=True, exist_ok=True)
 
     async def handle(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
-        request_id = ""
-        write_lock = asyncio.Lock()
-
-        async def send(payload: dict[str, Any]) -> None:
-            async with write_lock:
-                writer.write(json.dumps({"id": request_id, **payload}, ensure_ascii=False, separators=(",", ":")).encode("utf-8") + b"\n")
-                await writer.drain()
-
-        try:
-            raw = await reader.readline()
-            request = json.loads(raw)
-            if not isinstance(request, dict):
-                raise ValueError("request must be an object")
-            request_id = str(request.get("id") or "")
-            method = str(request.get("method") or "").strip()
-            params = request.get("params") if isinstance(request.get("params"), dict) else {}
-            if not request_id or not method:
-                raise ValueError("request id and method are required")
-            if method == "health":
-                result = await daemon.health()
-            elif method == "account/usage":
-                result = daemon.account_usage_snapshot(params)
-            elif method == "turn/run":
-                tool_lock = asyncio.Lock()
-
-                async def dispatch_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
-                    # Serialize reverse requests; never send worker credentials
-                    # or executable handlers into the provider process.
-                    async with tool_lock:
-                        call_id = os.urandom(16).hex()
-                        try:
-                            await send({"type": "tool_call", "call_id": call_id, "tool": name, "arguments": arguments})
-                            raw = await reader.readline()
-                        except OSError as exc:
-                            raise WorkerConnectionLost(str(exc)) from exc
-                        if not raw:
-                            # A Worker leaves between messages, so it did not
-                            # take this call (see NativeAgentClient detach).
-                            raise WorkerConnectionLost("Worker closed the turn connection")
-                        response = json.loads(raw)
-                        if (response.get("id") != request_id or response.get("type") != "tool_result"
-                                or response.get("call_id") != call_id or not isinstance(response.get("result"), dict)):
-                            raise ValueError("Invalid Claude Harness tool response")
-                        return response["result"]
-
-                params["_tool_dispatch"] = dispatch_tool
-                result = await daemon.run_turn(params, lambda event: send({"type": "event", "event": event}))
-            elif method == "turn/steer":
-                result = await daemon.steer(params)
-            elif method == "turn/interrupt":
-                result = await daemon.interrupt(params)
-            elif method == "subagent/stop":
-                result = await daemon.stop_subagent(params)
-            elif method == "session/compact":
-                result = await daemon.compact_session(params)
-            elif method == "session/status":
-                result = await daemon.session_status(params)
-            elif method == "session/close":
-                result = await daemon.close_session(params)
-            elif method == "session/fork":
-                result = await daemon.fork_session(params)
-            else:
-                raise ValueError(f"unsupported Claude Code backend method: {method}")
-            await send({"type": "result", "result": result})
-        except Exception as exc:
-            try:
-                await send({
-                    "type": "error",
-                    "error": {"class": exc.__class__.__name__, "message": str(exc)},
-                })
-            except Exception:
-                pass
-        finally:
-            writer.close()
-            try:
-                await writer.wait_closed()
-            except Exception:
-                pass
+        await WorkerRequest(daemon, reader, writer).serve()
 
     server = await start_local_server(handle, socket_path, limit=16 * 1024 * 1024)
     eviction_task = asyncio.create_task(daemon.evict_idle_sessions())

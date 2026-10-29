@@ -3,14 +3,12 @@
 :module: operations.test-framework
 :risk: no-external-side-effects
 """
-import ast
 from copy import deepcopy
 import hashlib
 import json
 from pathlib import Path
 import subprocess
 from types import SimpleNamespace
-from typing import Any
 
 import pytest
 
@@ -163,17 +161,14 @@ def test_tfi_framework_format_writers_live_descriptor(tmp_path, monkeypatch):
 
 @pytest.mark.parametrize("safe", [False, True])
 def test_tfi_framework_format_writers_checkpoint(tmp_path, safe):
-    """执行原 checkpoint 写入闭包，保留内层原句柄与清理状态。"""
-    # Extract the unmodified private writer; calling its enclosing run would
-    # verify live DEV and invoke a Resident, outside this unit contract.
-    source = Path(runner_adapters.__file__)
-    node, = [node for node in ast.walk(ast.parse(source.read_text()))
-             if isinstance(node, ast.FunctionDef) and node.name == "save_checkpoint"]
-    scope = {"Any": Any, "run_dir": tmp_path}
-    exec(compile(ast.Module(body=[node], type_ignores=[]), str(source), "exec"), scope)
+    """执行原 checkpoint 写入，保留内层原句柄与清理状态。"""
+    # Only the case run's writer: executing the case would verify live DEV
+    # and invoke a Resident, outside this unit contract.
+    case_run = runner_adapters._TauCaseRun.__new__(runner_adapters._TauCaseRun)
+    case_run.run_dir = tmp_path
     handle = {"schema": "tfi.fixture-handle.v1", "message_id": "msg_original", "idempotency_key": "original-key"}
     original = deepcopy(handle)
-    scope["save_checkpoint"](handle, safe=safe)
+    case_run.save_checkpoint(handle, safe=safe)
     path = tmp_path / "tau-invocation.json"
     assert json.loads(path.read_text()) == {"schema": "tfi.tau-invocation-checkpoint.v1",
                                            "handle": handle, "safe_to_cleanup": safe}
