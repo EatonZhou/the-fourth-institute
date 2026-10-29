@@ -46,7 +46,7 @@ from management_portal.resources.query import (
     filter_query_candidates,
     prefilter_query_candidates,
     query_records,
-    resource_is_readable,
+    readable_flags,
     score_id_title,
 )
 from management_portal.resources.portal import portal_url_for_resource
@@ -996,8 +996,7 @@ class IndexStore:
                 portal_access=self._portal_access,
             )
             mark = timer.add("rank_and_copy", mark)
-            for item in result["resources"]:
-                self._with_current_capabilities(item, actor)
+            self._with_current_capabilities(result["resources"], actor)
             if not current_facts_needed:
                 by_id = {record["resource_id"]: record for record in records}
                 for item in result["resources"]:
@@ -1069,12 +1068,12 @@ class IndexStore:
                 access_query,
                 portal_access=self._portal_access,
             )
-            by_id = {item["resource_id"]: item for item in projected["resources"]}
+            by_id = {item["resource_id"]: item
+                     for item in self._with_current_capabilities(projected["resources"], actor)}
             for score, record in batch:
                 item = by_id.get(record["resource_id"])
                 if item is None:
                     continue
-                self._with_current_capabilities(item, actor)
                 item["score"] = round(score, 3)
                 visible.append(item)
                 if len(visible) == query.limit:
@@ -1141,8 +1140,7 @@ class IndexStore:
         rows: list[dict[str, Any]],
         actor: str,
     ) -> list[dict[str, Any]]:
-        return [self._with_current_capabilities(item, actor)
-                for item in self._filter_private_records(rows, actor)]
+        return self._with_current_capabilities(self._filter_private_records(rows, actor), actor)
 
     def _filter_private_records(
         self,
@@ -1154,11 +1152,16 @@ class IndexStore:
         hidden = hidden_private_ids(actor, rows)
         return [item for item in rows if item.get("resource_id") not in hidden]
 
-    def _with_current_capabilities(self, item: dict[str, Any], actor: str) -> dict[str, Any]:
-        """A request-time view; business facts and stored descriptors stay unchanged."""
-        allowed = resource_is_readable(item, actor, portal_access=self._portal_access)
-        item["capabilities"] = {name: allowed for name in ("discover", "read", "manage")}
-        return item
+    def _with_current_capabilities(self, items: list[dict[str, Any]], actor: str) -> list[dict[str, Any]]:
+        """A request-time view; business facts and stored descriptors stay unchanged.
+
+        The whole page is decided in one permission batch. A decision per item
+        reads the scheme's snapshot once per resource: ListProjects reads every
+        resource of every Project and took 10 to 60 seconds that way.
+        """
+        for item, allowed in zip(items, readable_flags(items, actor)):
+            item["capabilities"] = {name: allowed for name in ("discover", "read", "manage")}
+        return items
 
     def _record_with_current_facts(
         self,

@@ -157,19 +157,50 @@ def test_get_evaluates_resource_read_access_once(monkeypatch, isolated_portal_ca
         store = backend.IndexStore()
         resource_id = "skill_0123456789ab"
         store.publish_snapshot("test", [_record(resource_id, "skill")], {})
-        original = backend.resource_is_readable
+        original = backend.readable_flags
         actors = []
 
-        def tracked(record, actor, **kwargs):
+        def tracked(records, actor, **kwargs):
             actors.append(actor)
-            return original(record, actor, **kwargs)
+            return original(records, actor, **kwargs)
 
-        monkeypatch.setattr(backend, "resource_is_readable", tracked)
+        monkeypatch.setattr(backend, "readable_flags", tracked)
         assert store.get(resource_id, actor="alice")["capabilities"]["read"]
         assert actors == ["alice"]
         with pytest.raises(KeyError):
             store.get(resource_id, actor="")
         assert actors == ["alice", ""]
+
+
+def test_query_page_decides_read_access_in_one_batch(monkeypatch, isolated_portal_case):
+    """查询结果整页一次判定读取权限
+
+    一页 300 个资源只向权限方案提交两次批量判定（筛选候选与结果能力各一次），不逐个资源判定；
+    结果的 discover/read/manage 能力仍按判定结果填写。ListProjects 读取所有项目下的全部资源，
+    逐个判定时每个资源都要读一次权限快照，单次调用 10 到 60 秒。
+
+    :aspects: functional, performance
+    :design-point:
+    """
+    from management_portal import permission_system
+    with isolated_portal_case():
+        store = backend.IndexStore()
+        ids = [f"skill_{index:012x}" for index in range(300)]
+        store.publish_snapshot("test", [_record(resource_id, "skill") for resource_id in ids], {})
+        hidden = set(ids[::7])
+        batches = []
+
+        def permitted_ids(actor, instruction, parameter, resource_ids):
+            resource_ids = list(resource_ids)
+            batches.append(len(resource_ids))
+            return {resource_id for resource_id in resource_ids if resource_id not in hidden}
+
+        monkeypatch.setattr(permission_system, "permitted_ids", permitted_ids)
+        result = store.query(actor="alice", resource_types=["skill"], limit=5000)
+        assert {item["resource_id"] for item in result["resources"]} == set(ids) - hidden
+        assert all(item["capabilities"] == {"discover": True, "read": True, "manage": True}
+                   for item in result["resources"])
+        assert batches == [300, 300 - len(hidden)]
 
 
 class FakeAdapter:

@@ -3,7 +3,7 @@ from __future__ import annotations
 import heapq
 import json
 import time
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from typing import Any
 
 from .access import ResourceAccessPolicy
@@ -32,8 +32,20 @@ def resource_is_readable(
     portal_access: PortalAccessStore | None = None,
     access_policy: ResourceAccessPolicy | None = None,
 ) -> bool:
+    return readable_flags([record], actor, access_policy=access_policy)[0]
+
+
+def readable_flags(
+    records: Sequence[Mapping[str, Any]],
+    actor: str,
+    *,
+    access_policy: ResourceAccessPolicy | None = None,
+) -> list[bool]:
+    """Whether the actor may read each record, decided in one permission batch."""
     policy = access_policy or ResourceAccessPolicy()
-    return policy.can_read(record, actor=actor)
+    identifiers = [str(record.get("resource_id") or record.get("root_id") or "") for record in records]
+    readable = policy.readable_ids([identifier for identifier in identifiers if identifier], actor=actor)
+    return [bool(identifier) and identifier in readable for identifier in identifiers]
 
 
 def _score(record: Mapping[str, Any], query: str) -> float:
