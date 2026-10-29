@@ -120,10 +120,7 @@ def configuration_store():
     database = PostgresDatabase(os.environ["PORTAL_DATABASE_URL"], schema=schema)
     from management_portal.resources.workspace_store import get_workspace_store
     workspace = get_workspace_store().ensure("workspace_aaaaaaaaaaaa", "/tmp/settings-authority")
-    store = object.__new__(LineageDataStore)
-    store.database = database
-    store.database_identity = database.identity
-    database.write(store._initialize)
+    store = LineageDataStore(database)
     with database.connect() as connection:
         connection.execute("INSERT INTO residents (resident_id,backend,owned_workspace_id) VALUES (%s,%s,%s)",
                            ("resident_aaaaaaaaaaaa", "codex", workspace))

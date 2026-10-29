@@ -36,7 +36,7 @@ PENDING_EVENT_DISPATCH_LEASE_SECONDS = 360
 # SocietyService then renormalizes every stored object once at its start
 # (migrate_stored_runtime), and reads normalize again until that finishes.
 # test_lineage_program_runtime_normalization pins the rule's source to this number.
-RUNTIME_NORMALIZATION = 2
+RUNTIME_NORMALIZATION = 3
 _NORMALIZATION_KEY = "program_runtime_normalization"
 _TRUST_SECONDS = 60.0
 _trust: tuple[float, bool] = (float("-inf"), False)
@@ -112,6 +112,32 @@ def _item_id(value: object, *, field: str) -> str:
     return item_id
 
 
+def _lenient_count(value: object) -> int:
+    """A stored counter; anything that is not a number counts as 0."""
+
+    try:
+        number = int(value or 0)
+    except (TypeError, ValueError):
+        number = 0
+    return max(0, number)
+
+
+def _optional_id(value: object, *, field: str) -> str:
+    """A stored ID that may be absent: "" stays "", anything else must be valid."""
+
+    text = str(value or "").strip()
+    return _item_id(text, field=field) if text else ""
+
+
+def _unique_ids(values: object, *, field: str) -> list[str]:
+    result: list[str] = []
+    for raw in values or []:
+        item_id = _item_id(raw, field=field)
+        if item_id not in result:
+            result.append(item_id)
+    return result
+
+
 def _normalized_observation(source: dict[str, Any]) -> dict[str, Any]:
     """The live observation one Event Source (or one watched Resident of it) keeps."""
 
@@ -120,430 +146,270 @@ def _normalized_observation(source: dict[str, Any]) -> dict[str, Any]:
     state_signature = str(source.get("state_signature") or "").strip()
     state_value = str(source.get("state_value") or "").strip()
     if state_locator and state_signature and state_value:
-        result["state_locator"] = _item_id(
-            state_locator,
-            field="state locator",
-        )
-        result["state_signature"] = _item_id(
-            state_signature,
-            field="state signature",
-        )
-        result["state_value"] = _item_id(
-            state_value,
-            field="state value",
-        )
-        try:
-            state_generation = int(
-                source.get("state_generation") or 0
-            )
-        except (TypeError, ValueError):
-            state_generation = 0
-        result["state_generation"] = max(
-            0,
-            state_generation,
-        )
+        result["state_locator"] = _item_id(state_locator, field="state locator")
+        result["state_signature"] = _item_id(state_signature, field="state signature")
+        result["state_value"] = _item_id(state_value, field="state value")
+        result["state_generation"] = _lenient_count(source.get("state_generation"))
         if source.get("state_epoch"):
             result["state_epoch"] = _item_id(source["state_epoch"], field="observation epoch")
-    completion_locator = str(
-        source.get("completion_locator") or ""
-    ).strip()
+    completion_locator = str(source.get("completion_locator") or "").strip()
     if completion_locator:
-        result["completion_locator"] = _item_id(
-            completion_locator,
-            field="Resident completion locator",
+        result["completion_locator"] = _item_id(completion_locator, field="Resident completion locator")
+        result["completion_message_id"] = _optional_id(
+            source.get("completion_message_id"), field="Resident completion message id",
         )
-        completion_message_id = str(
-            source.get("completion_message_id") or ""
-        ).strip()
-        if completion_message_id:
-            completion_message_id = _item_id(
-                completion_message_id,
-                field="Resident completion message id",
-            )
-        result["completion_message_id"] = completion_message_id
-        completion_at = str(
-            source.get("completion_at") or ""
-        ).strip()
+        completion_at = _optional_id(source.get("completion_at"), field="Resident completion timestamp")
         if completion_at:
-            result["completion_at"] = _item_id(
-                completion_at,
-                field="Resident completion timestamp",
-            )
-        try:
-            completion_generation = int(
-                source.get("completion_generation") or 0
-            )
-        except (TypeError, ValueError):
-            completion_generation = 0
-        result["completion_generation"] = max(
-            0,
-            completion_generation,
-        )
+            result["completion_at"] = completion_at
+        result["completion_generation"] = _lenient_count(source.get("completion_generation"))
     return result
+
+
+def _fire_budget_state(source: dict[str, Any]) -> dict[str, Any]:
+    """Fired cursors and counters, kept once the source has fired or was reset."""
+
+    if not any(
+        key in source
+        for key in ("fired_cursors", "fire_count", "fire_generation", "last_fired_at")
+    ):
+        return {}
+    result: dict[str, Any] = {
+        "fired_cursors": _unique_ids(source.get("fired_cursors"), field="Event fire cursor")[
+            -MAX_EVENT_FIRE_CURSORS:
+        ],
+        "fire_count": _lenient_count(source.get("fire_count")),
+        "fire_generation": _lenient_count(source.get("fire_generation")),
+    }
+    last_fired_at = _optional_id(source.get("last_fired_at"), field="Event last_fired_at")
+    if last_fired_at:
+        result["last_fired_at"] = last_fired_at
+    return result
+
+
+def _last_delivery_state(last_delivery: dict[str, Any]) -> dict[str, Any]:
+    """Counts of the source's latest fan-out, by delivery status."""
+
+    statuses = last_delivery.get("statuses")
+    normalized_statuses: dict[str, int] = {}
+    if isinstance(statuses, dict):
+        for raw_status, raw_count in list(statuses.items())[:24]:
+            status = _item_id(raw_status, field="delivery status")
+            count = _lenient_count(raw_count)
+            if count:
+                normalized_statuses[status] = count
+    result: dict[str, Any] = {
+        "at": str(last_delivery.get("at") or ""),
+        "total_count": max(0, int(last_delivery.get("total_count") or 0)),
+        "delivered_count": max(0, int(last_delivery.get("delivered_count") or 0)),
+        "queued_count": max(0, int(last_delivery.get("queued_count") or 0)),
+        "dropped_count": max(0, int(last_delivery.get("dropped_count") or 0)),
+        "failed_count": max(0, int(last_delivery.get("failed_count") or 0)),
+        "statuses": normalized_statuses,
+    }
+    for identity_field in ("event_id", "trigger_path_id"):
+        identity = _optional_id(last_delivery.get(identity_field), field=f"Event delivery {identity_field}")
+        if identity:
+            result[identity_field] = identity
+    return result
+
+
+def _file_observation(source: dict[str, Any]) -> dict[str, Any]:
+    file_locator = str(source.get("file_locator") or "").strip()
+    file_signature = str(source.get("file_signature") or "").strip()
+    if not (file_locator and file_signature):
+        return {}
+    return {
+        "file_locator": _item_id(file_locator, field="file locator"),
+        "file_signature": _item_id(file_signature, field="file signature"),
+        "file_generation": _lenient_count(source.get("file_generation")),
+    }
+
+
+def _watched_subject_observations(source: dict[str, Any]) -> dict[str, Any]:
+    """One observation per watched Resident of a source that watches several."""
+
+    subjects = source.get("subjects")
+    if not isinstance(subjects, dict):
+        return {}
+    normalized_subjects: dict[str, dict[str, Any]] = {}
+    for raw_subject, raw_state in list(subjects.items())[:MAX_WATCHED_RESIDENTS]:
+        subject = _item_id(raw_subject, field="watched Resident")
+        state = raw_state if isinstance(raw_state, dict) else {}
+        normalized_state = _normalized_observation(state)
+        if state.get("rebaseline"):
+            normalized_state["rebaseline"] = True
+        if normalized_state:
+            normalized_subjects[subject] = normalized_state
+    return {"subjects": normalized_subjects} if normalized_subjects else {}
+
+
+def _countdown_timer(source: dict[str, Any]) -> dict[str, Any]:
+    timer_due_at = str(source.get("timer_due_at") or "").strip()
+    timer_started_at = str(source.get("timer_started_at") or "").strip()
+    if not (timer_due_at and timer_started_at):
+        return {}
+    return {
+        "timer_due_at": _item_id(timer_due_at, field="timer due_at"),
+        "timer_started_at": _item_id(timer_started_at, field="timer started_at"),
+        "timer_delay_seconds": max(1, int(source.get("timer_delay_seconds") or 1)),
+        "timer_generation": max(0, int(source.get("timer_generation") or 0)),
+    }
+
+
+def _recurring_schedule_state(source: dict[str, Any]) -> dict[str, Any]:
+    """The next occurrence of a recurring source and the one being committed."""
+
+    recurring_contract = str(source.get("recurring_contract") or "").strip()
+    next_scheduled_at = str(source.get("next_scheduled_at") or "").strip()
+    if not (recurring_contract and next_scheduled_at):
+        return {}
+    result: dict[str, Any] = {
+        "recurring_contract": _item_id(recurring_contract, field="recurring schedule contract"),
+        "next_scheduled_at": _item_id(next_scheduled_at, field="next scheduled_at"),
+        "next_due_at": _item_id(source.get("next_due_at"), field="next due_at"),
+    }
+    next_missed_count = max(0, int(source.get("next_missed_count") or 0))
+    if next_missed_count:
+        result["next_missed_count"] = next_missed_count
+    result["generation"] = max(0, int(source.get("generation") or 0))
+    last_scheduled_at = _optional_id(source.get("last_scheduled_at"), field="last scheduled_at")
+    if last_scheduled_at:
+        result["last_scheduled_at"] = last_scheduled_at
+    pending_scheduled_at = _optional_id(source.get("pending_scheduled_at"), field="pending scheduled_at")
+    if pending_scheduled_at:
+        result.update({
+            "pending_scheduled_at": pending_scheduled_at,
+            "pending_next_scheduled_at": _item_id(
+                source.get("pending_next_scheduled_at"), field="pending next scheduled_at",
+            ),
+            "pending_due_at": _item_id(source.get("pending_due_at"), field="pending due_at"),
+            "pending_next_due_at": _item_id(source.get("pending_next_due_at"), field="pending next due_at"),
+            "pending_observed_at": _item_id(source.get("pending_observed_at"), field="pending observed_at"),
+            "pending_missed_count": max(0, int(source.get("pending_missed_count") or 0)),
+            "pending_generation": max(0, int(source.get("pending_generation") or 0)),
+        })
+    return result
+
+
+def _normalized_event_source(source: dict[str, Any]) -> dict[str, Any]:
+    result: dict[str, Any] = {
+        "consumed_cursors": _unique_ids(source.get("consumed_cursors"), field="event cursor")[
+            -MAX_EVENT_CURSORS:
+        ],
+    }
+    if source.get("paused"):
+        result["paused"] = True
+        result["paused_at"] = str(source.get("paused_at") or "")
+    if source.get("rebaseline"):
+        result["rebaseline"] = True
+    result.update(_fire_budget_state(source))
+    if "fanout_settled_generation" in source:
+        result["fanout_settled_generation"] = int(source["fanout_settled_generation"])
+    if isinstance(source.get("last_delivery"), dict):
+        result["last_delivery"] = _last_delivery_state(source["last_delivery"])
+    result.update(_file_observation(source))
+    result.update(_normalized_observation(source))
+    result.update(_watched_subject_observations(source))
+    result.update(_countdown_timer(source))
+    result.update(_recurring_schedule_state(source))
+    return result
+
+
+def _normalized_pending_event(wire_id: str, raw_pending: object) -> dict[str, Any]:
+    """One Event waiting on a wire; one held for manual recovery is kept as it is."""
+
+    if not isinstance(raw_pending, dict):
+        raise ValueError("pending Event wire item must be a dict")
+    if raw_pending.get("recovery_blocked"):
+        return deepcopy(raw_pending)
+    event = deepcopy(raw_pending.get("event")) if isinstance(raw_pending.get("event"), dict) else {}
+    event_id = _item_id(event.get("id"), field="pending event id")
+    event_type = _item_id(event.get("type"), field="pending event type")
+    event["id"] = event_id
+    event["type"] = event_type
+    pending: dict[str, Any] = {
+        "event_source_id": _item_id(raw_pending.get("event_source_id"), field="pending event source id"),
+        "cursor": _item_id(raw_pending.get("cursor"), field="pending event cursor"),
+        "subscriber_id": _item_id(
+            raw_pending.get("subscriber_id") or wire_id, field="pending event subscriber",
+        ),
+        "claim_token": _item_id(raw_pending.get("claim_token"), field="pending event claim token"),
+        "event": event,
+        "queued_at": _item_id(raw_pending.get("queued_at"), field="pending event queued_at"),
+        "expires_at": str(raw_pending.get("expires_at") or "").strip(),
+    }
+    if isinstance(raw_pending.get("invocation"), dict):
+        pending["invocation"] = _normalize_pending_delivery(raw_pending["invocation"])
+    pending["revision"] = max(0, int(raw_pending.get("revision") or 0))
+    if "prompt_override" in raw_pending:
+        pending["prompt_override"] = lineage_primitives.normalize_invocation_prompt(raw_pending["prompt_override"])
+    dispatch_token = _optional_id(raw_pending.get("dispatch_token"), field="pending event dispatch token")
+    if dispatch_token:
+        pending["dispatch_token"] = dispatch_token
+        pending["dispatch_started_at"] = str(raw_pending.get("dispatch_started_at") or "").strip()
+    pending["attempt_count"] = max(0, int(raw_pending.get("attempt_count") or 0))
+    last_attempt_at = _optional_id(
+        raw_pending.get("last_attempt_at"), field="pending event last attempt timestamp",
+    )
+    if last_attempt_at:
+        pending["last_attempt_at"] = last_attempt_at
+    last_error = str(raw_pending.get("last_error") or "").strip()
+    if last_error:
+        pending["last_error"] = last_error[:1000]
+    retry_at = _optional_id(raw_pending.get("retry_at"), field="pending event retry timestamp")
+    if retry_at:
+        pending["retry_at"] = retry_at
+    return pending
+
+
+def _normalized_expired_delivery(raw_expired: dict[str, Any]) -> dict[str, Any]:
+    if raw_expired.get("recovery_blocked"):
+        return deepcopy(raw_expired)
+    event = deepcopy(raw_expired.get("event")) if isinstance(raw_expired.get("event"), dict) else {}
+    return {
+        "event_source_id": _item_id(raw_expired.get("event_source_id"), field="expired event source id"),
+        "wire_id": _item_id(raw_expired.get("wire_id"), field="expired event wire id"),
+        "cursor": _item_id(raw_expired.get("cursor"), field="expired event cursor"),
+        "event": event,
+        "expired_at": _item_id(raw_expired.get("expired_at"), field="expired event timestamp"),
+    }
+
+
+def _mapping(item: dict[str, Any], field: str) -> dict[str, Any]:
+    value = item.get(field)
+    return value if isinstance(value, dict) else {}
 
 
 def _normalize(raw: object) -> dict[str, Any]:
     item = raw if isinstance(raw, dict) else {}
     result = empty_runtime()
-    sources = (
-        item.get("event_sources")
-        if isinstance(item.get("event_sources"), dict)
-        else {}
-    )
-    for raw_source_id, raw_source in sources.items():
+    for raw_source_id, raw_source in _mapping(item, "event_sources").items():
         source_id = _item_id(raw_source_id, field="event_source_id")
-        source = raw_source if isinstance(raw_source, dict) else {}
-        cursors: list[str] = []
-        for raw_cursor in source.get("consumed_cursors") or []:
-            cursor = _item_id(raw_cursor, field="event cursor")
-            if cursor not in cursors:
-                cursors.append(cursor)
-        normalized_source: dict[str, Any] = {
-            "consumed_cursors": cursors[-MAX_EVENT_CURSORS:],
-        }
-        if source.get("paused"):
-            normalized_source["paused"] = True
-            normalized_source["paused_at"] = str(source.get("paused_at") or "")
-        if source.get("rebaseline"):
-            normalized_source["rebaseline"] = True
-        if any(
-            key in source
-            for key in (
-                "fired_cursors",
-                "fire_count",
-                "fire_generation",
-                "last_fired_at",
-            )
-        ):
-            fired_cursors: list[str] = []
-            for raw_cursor in source.get("fired_cursors") or []:
-                cursor = _item_id(
-                    raw_cursor,
-                    field="Event fire cursor",
-                )
-                if cursor not in fired_cursors:
-                    fired_cursors.append(cursor)
-            normalized_source["fired_cursors"] = fired_cursors[
-                -MAX_EVENT_FIRE_CURSORS:
-            ]
-            try:
-                fire_count = int(source.get("fire_count") or 0)
-            except (TypeError, ValueError):
-                fire_count = 0
-            try:
-                fire_generation = int(
-                    source.get("fire_generation") or 0
-                )
-            except (TypeError, ValueError):
-                fire_generation = 0
-            normalized_source["fire_count"] = max(0, fire_count)
-            normalized_source["fire_generation"] = max(
-                0,
-                fire_generation,
-            )
-            last_fired_at = str(
-                source.get("last_fired_at") or ""
-            ).strip()
-            if last_fired_at:
-                normalized_source["last_fired_at"] = _item_id(
-                    last_fired_at,
-                    field="Event last_fired_at",
-                )
-        last_delivery = source.get("last_delivery")
-        if "fanout_settled_generation" in source:
-            normalized_source["fanout_settled_generation"] = int(
-                source["fanout_settled_generation"]
-            )
-        if isinstance(last_delivery, dict):
-            statuses = last_delivery.get("statuses")
-            normalized_statuses: dict[str, int] = {}
-            if isinstance(statuses, dict):
-                for raw_status, raw_count in list(statuses.items())[:24]:
-                    status = _item_id(raw_status, field="delivery status")
-                    try:
-                        count = max(0, int(raw_count or 0))
-                    except (TypeError, ValueError):
-                        count = 0
-                    if count:
-                        normalized_statuses[status] = count
-            normalized_delivery = {
-                "at": str(last_delivery.get("at") or ""),
-                "total_count": max(0, int(last_delivery.get("total_count") or 0)),
-                "delivered_count": max(0, int(last_delivery.get("delivered_count") or 0)),
-                "queued_count": max(0, int(last_delivery.get("queued_count") or 0)),
-                "dropped_count": max(0, int(last_delivery.get("dropped_count") or 0)),
-                "failed_count": max(0, int(last_delivery.get("failed_count") or 0)),
-                "statuses": normalized_statuses,
-            }
-            for identity_field in ("event_id", "trigger_path_id"):
-                identity = str(last_delivery.get(identity_field) or "").strip()
-                if identity:
-                    normalized_delivery[identity_field] = _item_id(
-                        identity,
-                        field=f"Event delivery {identity_field}",
-                    )
-            normalized_source["last_delivery"] = normalized_delivery
-        file_locator = str(source.get("file_locator") or "").strip()
-        file_signature = str(source.get("file_signature") or "").strip()
-        if file_locator and file_signature:
-            normalized_source["file_locator"] = _item_id(
-                file_locator,
-                field="file locator",
-            )
-            normalized_source["file_signature"] = _item_id(
-                file_signature,
-                field="file signature",
-            )
-            try:
-                file_generation = int(source.get("file_generation") or 0)
-            except (TypeError, ValueError):
-                file_generation = 0
-            normalized_source["file_generation"] = max(
-                0,
-                file_generation,
-            )
-        normalized_source.update(_normalized_observation(source))
-        subjects = source.get("subjects")
-        if isinstance(subjects, dict):
-            normalized_subjects: dict[str, dict[str, Any]] = {}
-            for raw_subject, raw_state in list(subjects.items())[:MAX_WATCHED_RESIDENTS]:
-                subject = _item_id(raw_subject, field="watched Resident")
-                state = raw_state if isinstance(raw_state, dict) else {}
-                normalized_state = _normalized_observation(state)
-                if state.get("rebaseline"):
-                    normalized_state["rebaseline"] = True
-                if normalized_state:
-                    normalized_subjects[subject] = normalized_state
-            if normalized_subjects:
-                normalized_source["subjects"] = normalized_subjects
-        timer_due_at = str(source.get("timer_due_at") or "").strip()
-        timer_started_at = str(
-            source.get("timer_started_at") or ""
-        ).strip()
-        if timer_due_at and timer_started_at:
-            normalized_source["timer_due_at"] = _item_id(
-                timer_due_at,
-                field="timer due_at",
-            )
-            normalized_source["timer_started_at"] = _item_id(
-                timer_started_at,
-                field="timer started_at",
-            )
-            normalized_source["timer_delay_seconds"] = max(
-                1,
-                int(source.get("timer_delay_seconds") or 1),
-            )
-            normalized_source["timer_generation"] = max(
-                0,
-                int(source.get("timer_generation") or 0),
-            )
-        recurring_contract = str(
-            source.get("recurring_contract") or ""
-        ).strip()
-        next_scheduled_at = str(
-            source.get("next_scheduled_at") or ""
-        ).strip()
-        if recurring_contract and next_scheduled_at:
-            normalized_source["recurring_contract"] = _item_id(
-                recurring_contract,
-                field="recurring schedule contract",
-            )
-            normalized_source["next_scheduled_at"] = _item_id(
-                next_scheduled_at,
-                field="next scheduled_at",
-            )
-            normalized_source["next_due_at"] = _item_id(
-                source.get("next_due_at"),
-                field="next due_at",
-            )
-            next_missed_count = max(0, int(source.get("next_missed_count") or 0))
-            if next_missed_count:
-                normalized_source["next_missed_count"] = next_missed_count
-            normalized_source["generation"] = max(
-                0,
-                int(source.get("generation") or 0),
-            )
-            last_scheduled_at = str(
-                source.get("last_scheduled_at") or ""
-            ).strip()
-            if last_scheduled_at:
-                normalized_source["last_scheduled_at"] = _item_id(
-                    last_scheduled_at,
-                    field="last scheduled_at",
-                )
-            pending_scheduled_at = str(
-                source.get("pending_scheduled_at") or ""
-            ).strip()
-            if pending_scheduled_at:
-                normalized_source.update(
-                    {
-                        "pending_scheduled_at": _item_id(
-                            pending_scheduled_at,
-                            field="pending scheduled_at",
-                        ),
-                        "pending_next_scheduled_at": _item_id(
-                            source.get("pending_next_scheduled_at"),
-                            field="pending next scheduled_at",
-                        ),
-                        "pending_due_at": _item_id(
-                            source.get("pending_due_at"),
-                            field="pending due_at",
-                        ),
-                        "pending_next_due_at": _item_id(
-                            source.get("pending_next_due_at"),
-                            field="pending next due_at",
-                        ),
-                        "pending_observed_at": _item_id(
-                            source.get("pending_observed_at"),
-                            field="pending observed_at",
-                        ),
-                        "pending_missed_count": max(
-                            0,
-                            int(source.get("pending_missed_count") or 0),
-                        ),
-                        "pending_generation": max(
-                            0,
-                            int(source.get("pending_generation") or 0),
-                        ),
-                    }
-                )
-        result["event_sources"][source_id] = normalized_source
-    wires = (
-        item.get("event_wires")
-        if isinstance(item.get("event_wires"), dict)
-        else {}
-    )
-    for raw_wire_id, raw_wire in wires.items():
+        result["event_sources"][source_id] = _normalized_event_source(
+            raw_source if isinstance(raw_source, dict) else {}
+        )
+    for raw_wire_id, raw_wire in _mapping(item, "event_wires").items():
         wire_id = _item_id(raw_wire_id, field="event wire id")
         wire = raw_wire if isinstance(raw_wire, dict) else {}
-        pending_events: list[dict[str, Any]] = []
-        for raw_pending in wire.get("pending_events") or []:
-            if not isinstance(raw_pending, dict):
-                raise ValueError("pending Event wire item must be a dict")
-            if raw_pending.get("recovery_blocked"):
-                pending_events.append(deepcopy(raw_pending))
-                continue
-            event = (
-                deepcopy(raw_pending.get("event"))
-                if isinstance(raw_pending.get("event"), dict)
-                else {}
-            )
-            event_id = _item_id(event.get("id"), field="pending event id")
-            event_type = _item_id(
-                event.get("type"),
-                field="pending event type",
-            )
-            event["id"] = event_id
-            event["type"] = event_type
-            pending = {
-                "event_source_id": _item_id(
-                    raw_pending.get("event_source_id"),
-                    field="pending event source id",
-                ),
-                "cursor": _item_id(
-                    raw_pending.get("cursor"),
-                    field="pending event cursor",
-                ),
-                "subscriber_id": _item_id(
-                    raw_pending.get("subscriber_id") or wire_id,
-                    field="pending event subscriber",
-                ),
-                "claim_token": _item_id(
-                    raw_pending.get("claim_token"),
-                    field="pending event claim token",
-                ),
-                "event": event,
-                "queued_at": _item_id(
-                    raw_pending.get("queued_at"),
-                    field="pending event queued_at",
-                ),
-                "expires_at": str(
-                    raw_pending.get("expires_at") or ""
-                ).strip(),
-            }
-            if isinstance(raw_pending.get("invocation"), dict):
-                pending["invocation"] = _normalize_pending_delivery(raw_pending["invocation"])
-            pending["revision"] = max(0, int(raw_pending.get("revision") or 0))
-            if "prompt_override" in raw_pending:
-                pending["prompt_override"] = lineage_primitives.normalize_invocation_prompt(raw_pending["prompt_override"])
-            dispatch_token = str(
-                raw_pending.get("dispatch_token") or ""
-            ).strip()
-            if dispatch_token:
-                pending["dispatch_token"] = _item_id(
-                    dispatch_token,
-                    field="pending event dispatch token",
-                )
-                pending["dispatch_started_at"] = str(
-                    raw_pending.get("dispatch_started_at") or ""
-                ).strip()
-            pending["attempt_count"] = max(
-                0,
-                int(raw_pending.get("attempt_count") or 0),
-            )
-            last_attempt_at = str(
-                raw_pending.get("last_attempt_at") or ""
-            ).strip()
-            if last_attempt_at:
-                pending["last_attempt_at"] = _item_id(
-                    last_attempt_at,
-                    field="pending event last attempt timestamp",
-                )
-            last_error = str(raw_pending.get("last_error") or "").strip()
-            if last_error:
-                pending["last_error"] = last_error[:1000]
-            retry_at = str(raw_pending.get("retry_at") or "").strip()
-            if retry_at:
-                pending["retry_at"] = _item_id(retry_at, field="pending event retry timestamp")
-            pending_events.append(pending)
+        pending_events = [
+            _normalized_pending_event(wire_id, raw_pending)
+            for raw_pending in wire.get("pending_events") or []
+        ]
         if pending_events:
-            result["event_wires"][wire_id] = {
-                "pending_events": pending_events,
-            }
-    expired_deliveries: list[dict[str, Any]] = []
-    for raw_expired in item.get("expired_deliveries") or []:
-        if not isinstance(raw_expired, dict):
-            continue
-        if raw_expired.get("recovery_blocked"):
-            expired_deliveries.append(deepcopy(raw_expired))
-            continue
-        event = (
-            deepcopy(raw_expired.get("event"))
-            if isinstance(raw_expired.get("event"), dict)
-            else {}
-        )
-        expired_deliveries.append(
-            {
-                "event_source_id": _item_id(
-                    raw_expired.get("event_source_id"),
-                    field="expired event source id",
-                ),
-                "wire_id": _item_id(
-                    raw_expired.get("wire_id"),
-                    field="expired event wire id",
-                ),
-                "cursor": _item_id(
-                    raw_expired.get("cursor"),
-                    field="expired event cursor",
-                ),
-                "event": event,
-                "expired_at": _item_id(
-                    raw_expired.get("expired_at"),
-                    field="expired event timestamp",
-                ),
-            }
-        )
-    result["expired_deliveries"] = expired_deliveries
-    operators = item.get("operators") if isinstance(item.get("operators"), dict) else {}
+            result["event_wires"][wire_id] = {"pending_events": pending_events}
+    result["expired_deliveries"] = [
+        _normalized_expired_delivery(raw_expired)
+        for raw_expired in item.get("expired_deliveries") or []
+        if isinstance(raw_expired, dict)
+    ]
     result["operators"] = {
         _item_id(operator_id, field="Program operator id"): deepcopy(state)
-        for operator_id, state in operators.items()
+        for operator_id, state in _mapping(item, "operators").items()
         if isinstance(state, dict)
     }
-    profiles = item.get("delivery_profiles") if isinstance(item.get("delivery_profiles"), dict) else {}
     result["delivery_profiles"] = {
         _item_id(message_id, field="delivery message id"): _delivery_profile(profile)
-        for message_id, profile in profiles.items()
+        for message_id, profile in _mapping(item, "delivery_profiles").items()
         if isinstance(profile, dict)
     }
     return result

@@ -14,7 +14,7 @@ import pytest
 
 from management_portal.society_service import lineage_domain as graphs
 from management_portal.society_service import resident_catalog
-from management_portal.society_service.state_store import PROJECT_GRAPH_FILTER, LineageDataStore
+from management_portal.society_service.lineage_data_project_graphs import PROJECT_GRAPH_FILTER, ProjectGraphs
 from tests.cases.isa_test_support import ACTOR
 from tests.cases.test_principal_hierarchy import family, make_project_graph
 from tests.cases.test_resident_folder_creation_contract import (
@@ -37,7 +37,7 @@ def assert_every_project_graph_is_current():
             }
 
         before = revisions()
-        LineageDataStore._synchronize_project_graphs(connection, {project for project, _ in before.values()})
+        store().project_graphs.synchronize(connection, {project for project, _ in before.values()})
         return before, revisions()
 
     before, after = store().database.write(synchronize_all)
@@ -99,13 +99,13 @@ def test_an_ordinary_edit_does_not_read_project_graphs(future_creation_store, mo
     project, child = family("Project"), family("Child")
     make_project_graph(project["lineage_id"])
     materialized = []
-    original = LineageDataStore._materialize_lineage_members
+    original = ProjectGraphs.materialize_members
 
-    def observe(connection, lineage_id):
+    def observe(self, connection, lineage_id):
         materialized.append(lineage_id)
-        return original(connection, lineage_id)
+        return original(self, connection, lineage_id)
 
-    monkeypatch.setattr(LineageDataStore, "_materialize_lineage_members", staticmethod(observe))
+    monkeypatch.setattr(ProjectGraphs, "materialize_members", observe)
     graphs.update_lineage_metadata(child["lineage_id"], {"description": "only the text changes"}, ACTOR)
     assert materialized == []
     graphs.update_lineage_metadata(project["lineage_id"], {"description": "the Project graph itself"}, ACTOR)

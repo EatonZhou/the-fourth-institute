@@ -11,6 +11,7 @@ import pytest
 from management_portal.society_service import (
     invariant_locks,
     lifecycle,
+    lineage_data_residents,
     lineage_message_events,
     resident_catalog,
     resident_conversation_stream,
@@ -48,8 +49,7 @@ def test_stop_commit_does_not_wait_for_conversation_or_workspace(running, monkey
     """停止输入时立即提交停止意图并返回回执，不等待对话锁也不加载 Workspace"""
     record, repo = running
     rid = record['resident_id']
-    store = resident_catalog.get_catalog().state_store
-    monkeypatch.setattr(store, '_residents_from_rows', lambda *a, **k: pytest.fail('Workspace hydration on Stop'))
+    monkeypatch.setattr(lineage_data_residents, 'residents_from_rows', lambda *a, **k: pytest.fail('Workspace hydration on Stop'))
     monkeypatch.setattr(repo, 'current_projection', lambda *a, **k: pytest.fail('synchronous Stop snapshot'))
     held, release = threading.Event(), threading.Event()
     def slow_projection():

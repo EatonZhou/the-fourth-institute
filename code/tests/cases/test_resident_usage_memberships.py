@@ -10,7 +10,7 @@ from contextlib import contextmanager
 import pytest
 
 from management_common.postgres_database import PostgresConnection
-from management_portal.society_service import business_fact_views as facts, resource_client
+from management_portal.society_service import business_fact_views as facts, lineage_data_residents, resource_client
 from tests.cases.database_test_support import guard_queries
 from tests.cases.test_canonical_resource_facts import canonical, R, L
 from tests.cases.test_lineage_catalogs import _record
@@ -38,7 +38,8 @@ def test_queries_use_bounded_primary_keys_without_workspace_extensions_or_graph(
                 'lineage_edges', 'lineage_components', 'lineage_layout',
                 'resident_workspace', 'families', 'family_residents', 'resident_runtime', 'select *'))
     monkeypatch.setattr(state.database, 'snapshot', guarded)
-    for name in ('_residents_from_rows', 'residents_by_id', 'lineage_definition'):
+    monkeypatch.setattr(lineage_data_residents, 'residents_from_rows', lambda *a, **k: pytest.fail('full domain assembly'))
+    for name in ('residents_by_id', 'lineage_definition'):
         monkeypatch.setattr(state, name, lambda *a, **k: pytest.fail('full domain assembly'))
     monkeypatch.setattr(resource_client, 'workspace_paths_many', lambda *a, **k: pytest.fail('Workspace RPC'))
     residents = [R, *[f'resident_{i:012x}' for i in range(1000)]]

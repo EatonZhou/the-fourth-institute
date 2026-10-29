@@ -158,7 +158,8 @@ def test_typed_write_entrypoints_reject_retired_identity_and_inheritance(records
                 {'resident_id': RID if entry == 'resident' else 'resident_abcdef123456',
                  'backend': 'codex', 'lineage_id': lid})
         elif entry == 'lineage':
-            state.database.write(lambda c: state._write_definition(c, lid, {'lineage_id': lid}))
+            from management_portal.society_service import lineage_data_definitions
+            state.database.write(lambda c: lineage_data_definitions.write_definition(c, lid, {'lineage_id': lid}))
         elif entry == 'family':
             from management_portal.society_service import family_storage
             state.database.write(lambda c: family_storage.store_program(c, lid,

@@ -9,6 +9,7 @@ import threading
 
 import pytest
 
+from management_portal.society_service import lineage_data_runtime
 from management_portal.society_service.state_store import LineageDataStore, RuntimeCASConflict
 from tests.cases.test_lineage_object_state import LINEAGE_ID, _store, object_resources  # noqa: F401 - fixture
 
@@ -38,16 +39,16 @@ def _race(monkeypatch, first, second) -> list[BaseException]:
     first_read = threading.Event()
     second_done = threading.Event()
     errors: list[BaseException] = []
-    original = LineageDataStore._lineage_runtime_from_connection
+    original = lineage_data_runtime.runtime_from_connection
 
-    def paused(self, connection, lineage_id):
-        value = original(self, connection, lineage_id)
+    def paused(connection, lineage_id):
+        value = original(connection, lineage_id)
         if threading.current_thread().name == "first-writer" and not first_read.is_set():
             first_read.set()
             second_done.wait(1.0)
         return value
 
-    monkeypatch.setattr(LineageDataStore, "_lineage_runtime_from_connection", paused)
+    monkeypatch.setattr(lineage_data_runtime, "runtime_from_connection", paused)
 
     def run(operation, done=None):
         try:

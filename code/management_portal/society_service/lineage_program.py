@@ -8,7 +8,7 @@ import threading
 from collections import OrderedDict
 from copy import deepcopy
 from datetime import datetime
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable, NamedTuple
 
 from management_common.limit_contract import normalize_optional_limit
 from . import (
@@ -135,6 +135,19 @@ SCOPED_RESIDENT_EVENT_TYPES = frozenset({
     "resident.work_cancelled",
 })
 RESIDENT_SCOPES = ("watched", "lineage", "system")
+# Event types whose Watch wire may name a Resident.
+RESIDENT_SUBJECT_EVENT_TYPES = frozenset({
+    "resident.work_finished",
+    "resident.work_started",
+    "resident.work_failed",
+    "resident.work_cancelled",
+    "resident.state_changed",
+    "resident.context_pressure_exceeded",
+    "resident.work_duration_exceeded",
+    "resident.queue_pressure_exceeded",
+    "resident.message_received",
+    "file.changed",
+})
 
 
 def event_source_resident_scope(source: object) -> str:
@@ -836,6 +849,24 @@ def find_program_resource(
     return namespace, item_id, deepcopy(item) if item is not None else None
 
 
+def _reject_unknown_fields(value: dict[str, Any], allowed: Iterable[str], subject: str) -> None:
+    unknown = sorted(set(value) - set(allowed))
+    if unknown:
+        raise ValueError(f"{subject} 不接受字段：" + "、".join(unknown))
+
+
+def _client_key(item: dict[str, Any]) -> dict[str, str]:
+    client_key = _text(item.get("client_key"), 160)
+    if not client_key:
+        return {}
+    if not _CLIENT_KEY_RE.fullmatch(client_key):
+        raise ValueError(
+            "Program client_key 必须以字母或数字开头，且只能包含"
+            "字母、数字、点、下划线、冒号和连字符"
+        )
+    return {"client_key": client_key}
+
+
 def _boolean(value: object, default: bool = False) -> bool:
     if isinstance(value, bool):
         return value
@@ -1025,11 +1056,7 @@ def normalize_packet_operator_config(
         raise ValueError("Packet Operator kind 无效")
     if not isinstance(raw, dict):
         raise ValueError(f"{clean_kind} component 必须把作者配置放在 config")
-    unknown = sorted(set(raw) - PACKET_OPERATOR_CONFIG_FIELDS[clean_kind])
-    if unknown:
-        raise ValueError(
-            f"{clean_kind} config 不接受字段：" + "、".join(unknown)
-        )
+    _reject_unknown_fields(raw, PACKET_OPERATOR_CONFIG_FIELDS[clean_kind], f"{clean_kind} config")
     defaults = default_packet_operator_config(clean_kind)
     implementation = _text(
         raw.get("operator_implementation"),
@@ -1149,11 +1176,12 @@ def normalize_effect_config(config: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
-def _normalize_component(
-    raw: object,
-    residents: dict[str, dict[str, Any]],
-) -> dict[str, Any]:
-    item = raw if isinstance(raw, dict) else {}
+_COMPONENT_ENVELOPE_FIELDS = frozenset({
+    "id", "kind", "client_key", "created_by_principal_id", "title", "x", "y", "config",
+})
+
+
+def _component_identity(item: dict[str, Any]) -> tuple[str, str]:
     component_id = _text(item.get("id"), 110).lower()
     if not _COMPONENT_ID_RE.fullmatch(component_id):
         raise ValueError("Lineage 原语 component id 无效")
@@ -1163,23 +1191,14 @@ def _normalize_component(
     expected_prefix = f"{kind}_"
     if not component_id.startswith(expected_prefix):
         raise ValueError(f"{kind} component id 必须以 {expected_prefix} 开头")
+    return component_id, kind
 
-    result: dict[str, Any] = {
-        "id": component_id,
-        "kind": kind,
-    }
-    client_key = _text(item.get("client_key"), 160)
-    if client_key:
-        if not _CLIENT_KEY_RE.fullmatch(client_key):
-            raise ValueError(
-                "Program client_key 必须以字母或数字开头，且只能包含"
-                "字母、数字、点、下划线、冒号和连字符"
-            )
-        result["client_key"] = client_key
-    created_by_principal_id = _text(
-        item.get("created_by_principal_id"),
-        110,
-    ).lower()
+
+def _component_envelope(item: dict[str, Any]) -> dict[str, Any]:
+    """Client key, creator, title and canvas position of one component."""
+
+    result: dict[str, Any] = _client_key(item)
+    created_by_principal_id = _text(item.get("created_by_principal_id"), 110).lower()
     if created_by_principal_id:
         if not _RESIDENT_ID_RE.fullmatch(created_by_principal_id):
             raise ValueError("Program component 创建者 Resident ID 无效")
@@ -1190,21 +1209,286 @@ def _normalize_component(
     for axis in ("x", "y"):
         if item.get(axis) is not None:
             result[axis] = _position(item[axis], 50)
+    return result
 
+
+def _authored_config(item: dict[str, Any], kind: str) -> dict[str, Any]:
     if not isinstance(item.get("config"), dict):
-        raise ValueError(
-            f"{kind} component 必须把作者配置放在 config"
-        )
-    config = item["config"]
-    envelope_fields = {
-        "id", "kind", "client_key", "created_by_principal_id", "title",
-        "x", "y", "config",
+        raise ValueError(f"{kind} component 必须把作者配置放在 config")
+    _reject_unknown_fields(item, _COMPONENT_ENVELOPE_FIELDS, f"{kind} component")
+    return item["config"]
+
+
+def _loop_config(config: dict[str, Any]) -> dict[str, Any]:
+    _reject_unknown_fields(config, LOOP_CONFIG_FIELDS, "loop config")
+    completion = _text(config.get("completion"), 24).lower() or "complete"
+    if completion not in LOOP_COMPLETIONS:
+        raise ValueError("循环组件的 completion 只能是 complete 或 rearm")
+    return {
+        "max_rounds": _bounded_integer(
+            config.get("max_rounds"), default=3, minimum=1, maximum=MAX_LOOP_ROUNDS,
+            field="循环组件的最大轮数",
+        ),
+        "completion": completion,
     }
-    unknown_fields = sorted(set(item) - envelope_fields)
-    if unknown_fields:
+
+
+_SEED_TYPES = frozenset({"idea", "plan", "next_step", "other"})
+_SEED_STATUSES = frozenset({"active", "promoted", "dismissed"})
+# Seed text fields in their stored order, with their length limits.
+_SEED_TEXT_LIMITS = {
+    "summary": 800, "artifact_path": MAX_PATH_CHARS,
+    "source_resident_id": 80, "promoted_resident_id": 80, "promotion_purpose": 4000,
+    "created_by": 120, "created_at": 80, "promoted_at": 80,
+    "dismissed_at": 80, "dismissed_by": 160,
+    "dismissal_reason": 2000, "dismissal_source": 40,
+    "updated_at": 80,
+}
+_SEED_RESIDENT_FIELDS = frozenset({"source_resident_id", "promoted_resident_id"})
+
+
+def _seed_config(config: dict[str, Any]) -> dict[str, Any]:
+    _reject_unknown_fields(config, SEED_CONFIG_FIELDS, "seed config")
+    seed_type = _text(config.get("seed_type"), 24).lower() or "other"
+    if seed_type not in _SEED_TYPES:
+        raise ValueError("Seed 类型无效")
+    status = _text(config.get("status"), 24).lower() or "active"
+    if status not in _SEED_STATUSES:
+        raise ValueError("Seed 状态无效")
+    result: dict[str, Any] = {"seed_type": seed_type, "status": status}
+    for field_name, limit in _SEED_TEXT_LIMITS.items():
+        value = _text(config.get(field_name), limit)
+        if value and field_name in _SEED_RESIDENT_FIELDS:
+            value = _resident_id(value, field=f"Seed {field_name}")
+        if value:
+            result[field_name] = value
+    return result
+
+
+def _script_finished_outcome(config: dict[str, Any]) -> dict[str, Any]:
+    outcome = config.get("outcome") or "any"
+    if outcome not in {"any", "succeeded", "failed"}:
+        raise ValueError("script.finished outcome 无效")
+    return {"outcome": outcome}
+
+
+def _fire_budget(config: dict[str, Any]) -> dict[str, Any]:
+    result: dict[str, Any] = {
+        "max_fires": normalize_optional_limit(config.get("max_fires"), maximum=MAX_EVENT_FIRES),
+    }
+    auto_delete = config.get("auto_delete_on_exhaustion")
+    if auto_delete is not None and not isinstance(auto_delete, bool):
+        raise ValueError("auto_delete_on_exhaustion 必须是 boolean")
+    if auto_delete:
+        result["auto_delete_on_exhaustion"] = True
+    return result
+
+
+def _intake_state_domain(config: dict[str, Any]) -> dict[str, Any]:
+    state_domain = _text(config.get("state_domain"), 40).lower() or "intake"
+    if state_domain != "intake":
+        raise ValueError("Resident 状态 Event 的状态域只能是 intake")
+    return {"state_domain": state_domain}
+
+
+def _changed_state_key(config: dict[str, Any]) -> dict[str, Any]:
+    try:
+        return {"key": lineage_graph_state.normalize_state_key(config.get("key"))}
+    except ValueError as exc:
+        raise ValueError("state.changed Event 需要有效的 key") from exc
+
+
+def _context_pressure_threshold(config: dict[str, Any]) -> dict[str, Any]:
+    return {"threshold_percent": _percentage_threshold(config.get("threshold_percent"))}
+
+
+def _work_duration_threshold(config: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "duration_seconds": _bounded_integer(
+            config.get("duration_seconds"), default=900, minimum=1,
+            maximum=MAX_EVENT_EXPIRES_AFTER_SECONDS, field="Resident 单轮工作时长阈值",
+        ),
+    }
+
+
+def _queue_pressure_threshold(config: dict[str, Any]) -> dict[str, Any]:
+    pressure_metric = _text(config.get("pressure_metric"), 40).lower() or "queue_length"
+    if pressure_metric not in {"queue_length", "oldest_wait_seconds"}:
+        raise ValueError("Resident 队列压力指标无效")
+    if pressure_metric == "queue_length":
+        return {
+            "pressure_metric": pressure_metric,
+            "queue_length_threshold": _bounded_integer(
+                config.get("queue_length_threshold"), default=3, minimum=1, maximum=100,
+                field="Resident 队列长度阈值",
+            ),
+        }
+    return {
+        "pressure_metric": pressure_metric,
+        "wait_seconds_threshold": _bounded_integer(
+            config.get("wait_seconds_threshold"), default=300, minimum=1,
+            maximum=MAX_EVENT_EXPIRES_AFTER_SECONDS, field="Resident 队列等待时长阈值",
+        ),
+    }
+
+
+def _state_condition(config: dict[str, Any]) -> dict[str, Any]:
+    try:
+        state_key = lineage_graph_state.normalize_state_key(config.get("key"))
+    except ValueError as exc:
+        raise ValueError("State 条件 Event 需要有效的 key") from exc
+    operator = _text(config.get("operator"), 40).lower() or "equals"
+    if operator not in STATE_CONDITION_OPERATORS:
+        raise ValueError("State 条件 Event 的 operator 无效")
+    return {
+        "key": state_key,
+        "operator": operator,
+        "expected_value": (
+            None
+            if operator in {"exists", "missing"}
+            else lineage_graph_state.normalize_state_value(config.get("expected_value"))
+        ),
+        "fire_on_initial_match": _boolean(config.get("fire_on_initial_match"), False),
+    }
+
+
+def _all_residents_scope(_config: dict[str, Any]) -> dict[str, Any]:
+    # This public Event has one stable meaning: every Resident known to
+    # Portal has transitioned from active to idle.
+    return {"resident_scope": "system"}
+
+
+def _terminal_resident_scope(config: dict[str, Any]) -> dict[str, Any]:
+    resident_scope = _text(config.get("resident_scope"), 24).lower() or "watched"
+    if resident_scope not in RESIDENT_SCOPES:
         raise ValueError(
-            f"{kind} component 不接受字段：" + "、".join(unknown_fields)
+            "Resident 结束工作 Event 的监听范围只能是 "
+            "watched、lineage 或 system"
         )
+    return {} if resident_scope == "watched" else {"resident_scope": resident_scope}
+
+
+def _finished_residents(config: dict[str, Any]) -> dict[str, Any]:
+    raw_resident_ids = config.get("resident_ids")
+    if not isinstance(raw_resident_ids, list):
+        raise ValueError("residents.all_finished 的 resident_ids 必须是数组")
+    resident_ids = list(dict.fromkeys(
+        lineage_primitives.normalize_resident_id(
+            value, field_name="residents.all_finished resident_id",
+        )
+        for value in raw_resident_ids
+    ))
+    if not resident_ids:
+        raise ValueError("residents.all_finished 至少需要一个 Resident")
+    trigger_path_id = _text(config.get("trigger_path_id"), 240) or "$trigger_path.id"
+    if trigger_path_id != "$trigger_path.id" and not trigger_path_id.startswith("trigger_path_"):
+        raise ValueError(
+            "residents.all_finished trigger_path_id 必须是 $trigger_path.id 或 trigger_path_*"
+        )
+    return {"resident_ids": resident_ids, "trigger_path_id": trigger_path_id}
+
+
+def _changed_file_path(config: dict[str, Any]) -> dict[str, Any]:
+    path = _relative_path(config.get("path"), required=False)
+    return {"path": path} if path else {}
+
+
+def _release_misfire_policy(config: dict[str, Any]) -> dict[str, Any]:
+    policy = _text(config.get("misfire_policy"), 24)
+    if policy and policy not in {"all", "coalesce_latest"}:
+        raise ValueError("发布 Event 的 misfire_policy 必须是 all 或 coalesce_latest")
+    return {"misfire_policy": policy} if policy else {}
+
+
+_RECURRING_SCHEDULE_FIELDS = (
+    "recurrence_kind",
+    "interval_seconds",
+    "timezone",
+    "calendar_frequency",
+    "calendar_time",
+    "calendar_weekdays",
+    "calendar_day",
+    "misfire_policy",
+    "overlap_policy",
+    "jitter_seconds",
+)
+
+
+def _time_schedule(config: dict[str, Any]) -> dict[str, Any]:
+    schedule_mode = _text(config.get("schedule_mode"), 24).lower() or "at"
+    if schedule_mode not in {"at", "countdown", "recurring"}:
+        raise ValueError("时间 Event 的模式必须是 at、countdown 或 recurring")
+    result: dict[str, Any] = {"schedule_mode": schedule_mode}
+    if schedule_mode == "countdown":
+        result["delay_seconds"] = max(
+            1, min(MAX_EVENT_EXPIRES_AFTER_SECONDS, _integer(config.get("delay_seconds"), 60)),
+        )
+    elif schedule_mode == "at":
+        scheduled_at = _text(config.get("scheduled_at"), 80)
+        if scheduled_at:
+            result["scheduled_at"] = _iso_datetime(scheduled_at)
+    else:
+        result.update(lineage_recurring_schedule.normalize_config(
+            {key: config.get(key) for key in _RECURRING_SCHEDULE_FIELDS}
+        ))
+    return result
+
+
+# The config fields of an Event Source, in the order they are checked: each
+# step applies to the listed Event types and returns the fields it owns.
+# The observed object is a graph relationship, not Event Source configuration;
+# only an incoming Watch wire represents it.
+_EVENT_SOURCE_CONFIG_STEPS: tuple[tuple[frozenset[str], Callable[[dict[str, Any]], dict[str, Any]]], ...] = (
+    (frozenset({"script.finished"}), _script_finished_outcome),
+    (frozenset(EVENT_SOURCE_TYPES), _fire_budget),
+    (frozenset({"resident.state_changed"}), _intake_state_domain),
+    (frozenset({"state.changed"}), _changed_state_key),
+    (frozenset({"resident.context_pressure_exceeded"}), _context_pressure_threshold),
+    (frozenset({"resident.work_duration_exceeded"}), _work_duration_threshold),
+    (frozenset({"resident.queue_pressure_exceeded"}), _queue_pressure_threshold),
+    (frozenset({"state.condition_met"}), _state_condition),
+    (frozenset({"residents.all_idle"}), _all_residents_scope),
+    (SCOPED_RESIDENT_EVENT_TYPES, _terminal_resident_scope),
+    (frozenset({"residents.all_finished"}), _finished_residents),
+    (frozenset({"file.changed"}), _changed_file_path),
+    (frozenset({"portal.release_published"}), _release_misfire_policy),
+    (frozenset({"time.reached"}), _time_schedule),
+)
+
+
+def _event_source_config(config: dict[str, Any]) -> dict[str, Any]:
+    _reject_unknown_fields(config, EVENT_SOURCE_AUTHORING_CONFIG_FIELDS, "event_source config")
+    event_type = _text(config.get("event_type"), 80).lower() or DEFAULT_EVENT_SOURCE_TYPE
+    if event_type not in EVENT_SOURCE_TYPES:
+        raise ValueError(f"未知的 Event Source 类型：{event_type}")
+    _reject_unknown_fields(
+        config,
+        lineage_primitive_definitions.authoring_config_fields("event", event_type, config=config),
+        f"Event Source {event_type} config",
+    )
+    fields: dict[str, Any] = {}
+    for event_types, normalize in _EVENT_SOURCE_CONFIG_STEPS:
+        if event_type in event_types:
+            fields.update(normalize(config))
+    return {"event_type": event_type, **{name: fields[name] for name in sorted(fields)}}
+
+
+_COMPONENT_CONFIG_NORMALIZERS: dict[str, Callable[[dict[str, Any]], dict[str, Any]]] = {
+    "event_source": _event_source_config,
+    "effect": normalize_effect_config,
+    "seed": _seed_config,
+    "loop": _loop_config,
+}
+
+
+def _normalize_component(
+    raw: object,
+    residents: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    item = raw if isinstance(raw, dict) else {}
+    component_id, kind = _component_identity(item)
+    result: dict[str, Any] = {"id": component_id, "kind": kind, **_component_envelope(item)}
+    config = _authored_config(item, kind)
     if kind in PACKET_OPERATOR_KINDS:
         result["config"] = normalize_packet_operator_config(
             kind,
@@ -1213,323 +1497,154 @@ def _normalize_component(
             component_id=component_id,
             require_executor=False,
         )
-        return result
-    if kind == "loop":
-        unknown_config_fields = sorted(set(config) - LOOP_CONFIG_FIELDS)
-        if unknown_config_fields:
-            raise ValueError("loop config 不接受字段：" + "、".join(unknown_config_fields))
-        completion = _text(config.get("completion"), 24).lower() or "complete"
-        if completion not in LOOP_COMPLETIONS:
-            raise ValueError("循环组件的 completion 只能是 complete 或 rearm")
-        result["config"] = {
-            "max_rounds": _bounded_integer(
-                config.get("max_rounds"), default=3, minimum=1, maximum=MAX_LOOP_ROUNDS,
-                field="循环组件的最大轮数",
-            ),
-            "completion": completion,
-        }
-        return result
-    if kind == "effect":
-        result["config"] = normalize_effect_config(config)
-        return result
-    if kind == "seed":
-        unknown_config_fields = sorted(set(config) - SEED_CONFIG_FIELDS)
-        if unknown_config_fields:
-            raise ValueError(
-                "seed config 不接受字段：" + "、".join(unknown_config_fields)
-            )
-        seed_type = _text(config.get("seed_type"), 24).lower() or "other"
-        if seed_type not in {"idea", "plan", "next_step", "other"}:
-            raise ValueError("Seed 类型无效")
-        status = _text(config.get("status"), 24).lower() or "active"
-        if status not in {"active", "promoted", "dismissed"}:
-            raise ValueError("Seed 状态无效")
-        normalized_config: dict[str, Any] = {
-            "seed_type": seed_type,
-            "status": status,
-        }
-        text_limits = {
-            "summary": 800, "artifact_path": MAX_PATH_CHARS,
-            "source_resident_id": 80, "promoted_resident_id": 80, "promotion_purpose": 4000,
-            "created_by": 120, "created_at": 80, "promoted_at": 80,
-            "dismissed_at": 80, "dismissed_by": 160,
-            "dismissal_reason": 2000, "dismissal_source": 40,
-            "updated_at": 80,
-        }
-        for field_name, limit in text_limits.items():
-            value = _text(config.get(field_name), limit)
-            if value:
-                normalized_config[field_name] = value
-        for field_name in (
-            "source_resident_id", "promoted_resident_id",
-        ):
-            value = normalized_config.get(field_name)
-            if value:
-                normalized_config[field_name] = _resident_id(
-                    value, field=f"Seed {field_name}"
-                )
-        result["config"] = normalized_config
-        return result
-    allowed_config_fields = EVENT_SOURCE_AUTHORING_CONFIG_FIELDS
-    unknown_config_fields = sorted(
-        set(config) - allowed_config_fields
-    )
-    if unknown_config_fields:
-        raise ValueError(
-            f"{kind} config 不接受字段："
-            + "、".join(unknown_config_fields)
-        )
-    if kind == "event_source":
-        forbidden_subject_fields = {
-            "subject_resident_id",
-            "subject_resident_ids",
-            "subject_event_source_id",
-            "subject_wire_id",
-            "subject_effect_id",
-            "subject_effect_ids",
-        }
-        if forbidden_subject_fields & (set(item) | set(config)):
-            raise ValueError(
-                "Event Source 的观察对象必须由一条 Watch wire 表达"
-            )
-
-    def configured_value(key: str) -> object:
-        return config.get(key)
-
-    if kind == "event_source":
-        event_type = _text(
-            configured_value("event_type"),
-            80,
-        ).lower() or DEFAULT_EVENT_SOURCE_TYPE
-        if event_type not in EVENT_SOURCE_TYPES:
-            raise ValueError(f"未知的 Event Source 类型：{event_type}")
-        allowed_type_fields = set(
-            lineage_primitive_definitions.authoring_config_fields(
-                "event",
-                event_type,
-                config=config,
-            )
-        )
-        unknown_type_fields = sorted(set(config) - allowed_type_fields)
-        if unknown_type_fields:
-            raise ValueError(
-                f"Event Source {event_type} config 不接受字段："
-                + "、".join(unknown_type_fields)
-            )
-        result["event_type"] = event_type
-        if event_type == "script.finished":
-            outcome = configured_value("outcome") or "any"
-            if outcome not in {"any", "succeeded", "failed"}:
-                raise ValueError("script.finished outcome 无效")
-            result["outcome"] = outcome
-        max_fires = normalize_optional_limit(
-            configured_value("max_fires"),
-            maximum=MAX_EVENT_FIRES,
-        )
-        result["max_fires"] = max_fires
-        auto_delete = configured_value("auto_delete_on_exhaustion")
-        if auto_delete is not None and not isinstance(auto_delete, bool):
-            raise ValueError("auto_delete_on_exhaustion 必须是 boolean")
-        if auto_delete:
-            result["auto_delete_on_exhaustion"] = True
-        # The observed object is a graph relationship, not Event Source
-        # configuration. It is represented only by an incoming Watch wire.
-        if event_type == "resident.state_changed":
-            state_domain = (
-                _text(configured_value("state_domain"), 40).lower()
-                or "intake"
-            )
-            if state_domain != "intake":
-                raise ValueError("Resident 状态 Event 的状态域只能是 intake")
-            result["state_domain"] = state_domain
-        if event_type == "state.changed":
-            try:
-                result["key"] = lineage_graph_state.normalize_state_key(configured_value("key"))
-            except ValueError as exc:
-                raise ValueError("state.changed Event 需要有效的 key") from exc
-        if event_type == "resident.context_pressure_exceeded":
-            result["threshold_percent"] = _percentage_threshold(
-                configured_value("threshold_percent")
-            )
-        if event_type == "resident.work_duration_exceeded":
-            result["duration_seconds"] = _bounded_integer(
-                configured_value("duration_seconds"),
-                default=900,
-                minimum=1,
-                maximum=MAX_EVENT_EXPIRES_AFTER_SECONDS,
-                field="Resident 单轮工作时长阈值",
-            )
-        if event_type == "resident.queue_pressure_exceeded":
-            pressure_metric = (
-                _text(configured_value("pressure_metric"), 40).lower()
-                or "queue_length"
-            )
-            if pressure_metric not in {
-                "queue_length",
-                "oldest_wait_seconds",
-            }:
-                raise ValueError("Resident 队列压力指标无效")
-            result["pressure_metric"] = pressure_metric
-            if pressure_metric == "queue_length":
-                result["queue_length_threshold"] = _bounded_integer(
-                    configured_value("queue_length_threshold"),
-                    default=3,
-                    minimum=1,
-                    maximum=100,
-                    field="Resident 队列长度阈值",
-                )
-            else:
-                result["wait_seconds_threshold"] = _bounded_integer(
-                    configured_value("wait_seconds_threshold"),
-                    default=300,
-                    minimum=1,
-                    maximum=MAX_EVENT_EXPIRES_AFTER_SECONDS,
-                    field="Resident 队列等待时长阈值",
-                )
-        if event_type == "state.condition_met":
-            try:
-                state_key = lineage_graph_state.normalize_state_key(
-                    configured_value("key")
-                )
-            except ValueError as exc:
-                raise ValueError("State 条件 Event 需要有效的 key") from exc
-            operator = (
-                _text(configured_value("operator"), 40).lower()
-                or "equals"
-            )
-            if operator not in STATE_CONDITION_OPERATORS:
-                raise ValueError("State 条件 Event 的 operator 无效")
-            result["key"] = state_key
-            result["operator"] = operator
-            result["expected_value"] = (
-                None
-                if operator in {"exists", "missing"}
-                else lineage_graph_state.normalize_state_value(
-                    configured_value("expected_value")
-                )
-            )
-            result["fire_on_initial_match"] = _boolean(
-                configured_value("fire_on_initial_match"),
-                False,
-            )
-        if event_type == "residents.all_idle":
-            # This public Event has one stable meaning: every Resident known to
-            # Portal has transitioned from active to idle.
-            result["resident_scope"] = "system"
-        if event_type in SCOPED_RESIDENT_EVENT_TYPES:
-            resident_scope = (
-                _text(configured_value("resident_scope"), 24).lower()
-                or "watched"
-            )
-            if resident_scope not in RESIDENT_SCOPES:
-                raise ValueError(
-                    "Resident 结束工作 Event 的监听范围只能是 "
-                    "watched、lineage 或 system"
-                )
-            if resident_scope != "watched":
-                result["resident_scope"] = resident_scope
-        if event_type == "residents.all_finished":
-            raw_resident_ids = configured_value("resident_ids")
-            if not isinstance(raw_resident_ids, list):
-                raise ValueError(
-                    "residents.all_finished 的 resident_ids 必须是数组"
-                )
-            resident_ids = list(
-                dict.fromkeys(
-                    lineage_primitives.normalize_resident_id(
-                        value,
-                        field_name="residents.all_finished resident_id",
-                    )
-                    for value in raw_resident_ids
-                )
-            )
-            if not resident_ids:
-                raise ValueError(
-                    "residents.all_finished 至少需要一个 Resident"
-                )
-            result["resident_ids"] = resident_ids
-            trigger_path_id = _text(configured_value("trigger_path_id"), 240) or "$trigger_path.id"
-            if trigger_path_id != "$trigger_path.id" and not trigger_path_id.startswith("trigger_path_"):
-                raise ValueError(
-                    "residents.all_finished trigger_path_id 必须是 $trigger_path.id 或 trigger_path_*"
-                )
-            result["trigger_path_id"] = trigger_path_id
-        if event_type == "file.changed":
-            path = _relative_path(
-                configured_value("path"),
-                required=False,
-            )
-            if path:
-                result["path"] = path
-        if event_type == "portal.release_published":
-            policy = _text(configured_value("misfire_policy"), 24)
-            if policy and policy not in {"all", "coalesce_latest"}:
-                raise ValueError("发布 Event 的 misfire_policy 必须是 all 或 coalesce_latest")
-            if policy:
-                result["misfire_policy"] = policy
-        if event_type == "time.reached":
-            schedule_mode = (
-                _text(configured_value("schedule_mode"), 24).lower()
-                or "at"
-            )
-            if schedule_mode not in {"at", "countdown", "recurring"}:
-                raise ValueError(
-                    "时间 Event 的模式必须是 at、countdown 或 recurring"
-                )
-            result["schedule_mode"] = schedule_mode
-            if schedule_mode == "countdown":
-                delay_seconds = max(
-                    1,
-                    min(
-                        MAX_EVENT_EXPIRES_AFTER_SECONDS,
-                        _integer(
-                            configured_value("delay_seconds"),
-                            60,
-                        ),
-                    ),
-                )
-                result["delay_seconds"] = delay_seconds
-            elif schedule_mode == "at":
-                scheduled_at = _text(
-                    configured_value("scheduled_at"),
-                    80,
-                )
-                if scheduled_at:
-                    result["scheduled_at"] = _iso_datetime(scheduled_at)
-            else:
-                recurring = lineage_recurring_schedule.normalize_config(
-                    {
-                        key: configured_value(key)
-                        for key in (
-                            "recurrence_kind",
-                            "interval_seconds",
-                            "timezone",
-                            "calendar_frequency",
-                            "calendar_time",
-                            "calendar_weekdays",
-                            "calendar_day",
-                            "misfire_policy",
-                            "overlap_policy",
-                            "jitter_seconds",
-                        )
-                    }
-                )
-                result.update(recurring)
-    normalized_config: dict[str, Any] = {
-        "event_type": result.pop("event_type"),
-    }
-    for field_name in sorted(
-        EVENT_SOURCE_AUTHORING_CONFIG_FIELDS - {"event_type"}
-    ):
-        if field_name in result:
-            normalized_config[field_name] = result.pop(field_name)
-    result["config"] = normalized_config
-
+    else:
+        result["config"] = _COMPONENT_CONFIG_NORMALIZERS[kind](config)
     return result
 
 
 _HANDOFF_ID_RE = re.compile(r"^handoff_[a-z0-9][a-z0-9_-]{2,95}$")
 _INVOKE_TARGET_KINDS = {"effect", "seed", "loop", *PACKET_OPERATOR_KINDS}
+_ROUTE_CONFIG_FIELDS = frozenset({
+    "invoke_profiles",
+    "include_envelope",
+    "unavailable_policy",
+    "queue_limit",
+    "max_messages",
+    "expires_after_seconds",
+    "context_policy",
+    "parallel",
+})
+
+
+class _WireEnds(NamedTuple):
+    """What one wire connects: each end is a Resident, a component or neither."""
+
+    source: str
+    target: str
+    source_resident: dict[str, Any] | None
+    target_resident: dict[str, Any] | None
+    source_component: dict[str, Any] | None
+    target_component: dict[str, Any] | None
+
+    @property
+    def source_kind(self) -> str:
+        return str((self.source_component or {}).get("kind") or "")
+
+    @property
+    def target_kind(self) -> str:
+        return str((self.target_component or {}).get("kind") or "")
+
+
+def _route_ports(ends: _WireEnds, source_port: str, target_port: str) -> tuple[str, str]:
+    if ends.source_resident or ends.source_kind in {"event_source", "filter", "reducer"}:
+        source_port = source_port or "output"
+        if source_port != "output":
+            raise ValueError("Route 必须来自 output 出口")
+    elif ends.source_kind == "selector":
+        branch_id = lineage_primitives.selector_branch_id_from_port(source_port)
+        branches = lineage_primitives.normalize_selector_branches(
+            authoring_component_config(ends.source_component).get("branches")
+        )
+        if branch_id not in {branch["id"] for branch in branches}:
+            raise ValueError("Selector Route 必须来自已声明的 branch:<id> 出口")
+    elif ends.source_kind == "loop":
+        source_port = source_port or "continue"
+        if source_port not in LOOP_OUTPUT_PORTS:
+            raise ValueError("循环组件的出口只能是 continue 或 stop")
+    else:
+        raise ValueError("Route 的来源必须具有包输出端口")
+    if not (ends.target_resident or ends.target_kind in _INVOKE_TARGET_KINDS):
+        raise ValueError("Route 的目标必须具有输入端口")
+    target_port = target_port or "invoke"
+    allowed = LOOP_INPUT_PORTS if ends.target_kind == "loop" else {"invoke"}
+    if target_port not in allowed:
+        raise ValueError(f"Route 的目标端口无效：{target_port}")
+    return source_port, target_port
+
+
+def _watch_ports(ends: _WireEnds, source_port: str, target_port: str) -> tuple[str, str]:
+    if ends.source_kind != "event_source":
+        raise ValueError("watch wire 的来源必须是 Event Source")
+    if not (
+        ends.target_resident
+        or ends.target_component
+        or _RESIDENT_ID_RE.fullmatch(ends.target)
+        or _WIRE_ID_RE.fullmatch(ends.target)
+        or _HANDOFF_ID_RE.fullmatch(ends.target)
+    ):
+        raise ValueError("watch wire 的目标必须是 Resident、组件、连线或工作区交接")
+    source_port = source_port or "watch"
+    if source_port != "watch" or target_port:
+        raise ValueError("Watch 从 Event Source 的 watch 端点直接绑定观察对象，不使用目标端口")
+    return source_port, target_port
+
+
+def _target_ports(ends: _WireEnds, source_port: str, target_port: str) -> tuple[str, str]:
+    if ends.source_kind != "effect":
+        raise ValueError("target wire 的来源必须是 Effect")
+    endpoints = list(authoring_component_config(ends.source_component).get("endpoints") or [])
+    if not endpoints:
+        raise ValueError("这个 Effect 没有声明具名端点")
+    source_port = source_port or (endpoints[0] if len(endpoints) == 1 else "")
+    if source_port not in endpoints:
+        raise ValueError(f"Effect 没有名为 {source_port or '（空）'} 的端点")
+    if not ends.target_resident and not ends.target_component and not _RESIDENT_ID_RE.fullmatch(ends.target):
+        raise ValueError("target wire 只能指向当前 HATG 的 Resident 或组件")
+    if target_port:
+        raise ValueError("Target 从 Effect 的具名端点直接绑定对象，不使用目标端口")
+    return source_port, target_port
+
+
+# Which ports each wire kind connects, and the default port of each end.
+_WIRE_PORT_RULES: dict[str, Callable[[_WireEnds, str, str], tuple[str, str]]] = {
+    "route": _route_ports,
+    "watch": _watch_ports,
+    "target": _target_ports,
+}
+
+
+def _route_delivery_config(config: dict[str, Any], ends: _WireEnds) -> dict[str, Any]:
+    """How a Route delivers: envelope, invocation profiles, queueing and limits."""
+
+    _reject_unknown_fields(config, _ROUTE_CONFIG_FIELDS, "route wire config")
+    result: dict[str, Any] = {}
+    if not _boolean(config.get("include_envelope"), True):
+        result["include_envelope"] = False
+    profiles = normalize_invoke_profiles(config.get("invoke_profiles"))
+    if profiles:
+        result["invoke_profiles"] = profiles
+    unavailable_policy = (
+        _text(config.get("unavailable_policy"), 24).lower() or DEFAULT_EVENT_UNAVAILABLE_POLICY
+    )
+    if unavailable_policy not in EVENT_UNAVAILABLE_POLICIES:
+        raise ValueError("Invoke wire 的不可消费策略必须是 drop、latest 或 queue")
+    result["unavailable_policy"] = unavailable_policy
+    result["expires_after_seconds"] = max(
+        0, min(MAX_EVENT_EXPIRES_AFTER_SECONDS, _integer(config.get("expires_after_seconds"), 0)),
+    )
+    if unavailable_policy == "queue":
+        result["queue_limit"] = max(
+            1, min(MAX_EVENT_QUEUE_LIMIT, _integer(config.get("queue_limit"), DEFAULT_EVENT_QUEUE_LIMIT)),
+        )
+    maximum = normalize_optional_limit(config.get("max_messages"))
+    if maximum is not None:
+        if not ends.target_resident:
+            raise ValueError("发送消息次数上限只适用于指向 Resident 的 Route")
+        result["max_messages"] = maximum
+    # How the target Resident runs a delivery (decision_481dc4e6292c):
+    # "session" keeps time and file work in the Resident's session.
+    context_policy = _text(config.get("context_policy"), 16).lower()
+    if context_policy:
+        if context_policy != "session":
+            raise ValueError('Invoke wire 的 context_policy 只能是 "session"')
+        result["context_policy"] = context_policy
+    # An Effect that needs no ordering (a Family Router) takes each
+    # Event as it comes, several at once; Residents keep their order.
+    if _boolean(config.get("parallel"), False):
+        if ends.target_kind != "effect":
+            raise ValueError("只有指向 Effect 的 Invoke wire 可以并行投递")
+        result["parallel"] = True
+    return result
 
 
 def _normalize_wire(
@@ -1552,179 +1667,35 @@ def _normalize_wire(
     target = _text(item.get("target"), 110).lower()
     if not source or not target or source == target:
         raise ValueError("Lineage 原语 wire 必须连接两个不同端点")
-    source_port = _text(item.get("source_port"), 80)
-    target_port = _text(item.get("target_port"), 80)
-
-    source_resident = residents.get(source)
-    target_resident = residents.get(target)
-    source_component = components.get(source)
-    target_component = components.get(target)
-    source_kind = str((source_component or {}).get("kind") or "")
-    target_kind = str((target_component or {}).get("kind") or "")
-
-    if kind == "route":
-        if source_resident or source_kind in {"event_source", "filter", "reducer"}:
-            source_port = source_port or "output"
-            if source_port != "output":
-                raise ValueError("Route 必须来自 output 出口")
-        elif source_kind == "selector":
-            branch_id = lineage_primitives.selector_branch_id_from_port(source_port)
-            branches = lineage_primitives.normalize_selector_branches(
-                authoring_component_config(source_component).get("branches")
-            )
-            if branch_id not in {branch["id"] for branch in branches}:
-                raise ValueError("Selector Route 必须来自已声明的 branch:<id> 出口")
-        elif source_kind == "loop":
-            source_port = source_port or "continue"
-            if source_port not in LOOP_OUTPUT_PORTS:
-                raise ValueError("循环组件的出口只能是 continue 或 stop")
-        else:
-            raise ValueError("Route 的来源必须具有包输出端口")
-        if target_resident or target_kind in _INVOKE_TARGET_KINDS:
-            target_port = target_port or "invoke"
-            allowed = LOOP_INPUT_PORTS if target_kind == "loop" else {"invoke"}
-            if target_port not in allowed:
-                raise ValueError(f"Route 的目标端口无效：{target_port}")
-        else:
-            raise ValueError("Route 的目标必须具有输入端口")
-    elif kind == "watch":
-        if source_kind != "event_source":
-            raise ValueError("watch wire 的来源必须是 Event Source")
-        if not (
-            target_resident
-            or target_component
-            or _RESIDENT_ID_RE.fullmatch(target)
-            or _WIRE_ID_RE.fullmatch(target)
-            or _HANDOFF_ID_RE.fullmatch(target)
-        ):
-            raise ValueError("watch wire 的目标必须是 Resident、组件、连线或工作区交接")
-        source_port = source_port or "watch"
-        if source_port != "watch" or target_port:
-            raise ValueError("Watch 从 Event Source 的 watch 端点直接绑定观察对象，不使用目标端口")
-    else:
-        if source_kind != "effect":
-            raise ValueError("target wire 的来源必须是 Effect")
-        endpoints = list(authoring_component_config(source_component).get("endpoints") or [])
-        if not endpoints:
-            raise ValueError("这个 Effect 没有声明具名端点")
-        source_port = source_port or (endpoints[0] if len(endpoints) == 1 else "")
-        if source_port not in endpoints:
-            raise ValueError(f"Effect 没有名为 {source_port or '（空）'} 的端点")
-        if not target_resident and not target_component and not _RESIDENT_ID_RE.fullmatch(target):
-            raise ValueError("target wire 只能指向当前 HATG 的 Resident 或组件")
-        if target_port:
-            raise ValueError("Target 从 Effect 的具名端点直接绑定对象，不使用目标端口")
+    ends = _WireEnds(
+        source, target,
+        residents.get(source), residents.get(target),
+        components.get(source), components.get(target),
+    )
+    source_port, target_port = _WIRE_PORT_RULES[kind](
+        ends, _text(item.get("source_port"), 80), _text(item.get("target_port"), 80),
+    )
     result: dict[str, Any] = {
         "id": wire_id,
         "kind": kind,
         "source": source,
         "target": target,
+        **_client_key(item),
     }
-    client_key = _text(item.get("client_key"), 160)
-    if client_key:
-        if not _CLIENT_KEY_RE.fullmatch(client_key):
-            raise ValueError(
-                "Program client_key 必须以字母或数字开头，且只能包含"
-                "字母、数字、点、下划线、冒号和连字符"
-            )
-        result["client_key"] = client_key
     label = _text(item.get("label"), MAX_TITLE_CHARS)
     if label:
         result["label"] = label
     result["source_port"] = source_port
     if target_port:
         result["target_port"] = target_port
-    if kind in {"route", "target"}:
-        config = item.get("config") if isinstance(item.get("config"), dict) else {}
-        allowed_config = (
-            {
-                "invoke_profiles",
-                "include_envelope",
-                "unavailable_policy",
-                "queue_limit",
-                "max_messages",
-                "expires_after_seconds",
-                "context_policy",
-                "parallel",
-            }
-            if kind == "route"
-            else set()
-        )
-        unknown_config = sorted(set(config) - allowed_config)
-        if unknown_config:
-            raise ValueError(
-                f"{kind} wire config 不接受字段："
-                + "、".join(unknown_config)
-            )
-        delivery_config: dict[str, Any] = {}
-        include_envelope = True
-        if kind in {"route"}:
-            include_envelope = _boolean(
-                config.get("include_envelope"),
-                True,
-            )
-            if not include_envelope:
-                delivery_config["include_envelope"] = False
-        if kind in {"route"}:
-            profiles = normalize_invoke_profiles(
-                config.get("invoke_profiles")
-            )
-            if profiles:
-                delivery_config["invoke_profiles"] = profiles
-            unavailable_policy = _text(
-                config.get("unavailable_policy"),
-                24,
-            ).lower() or DEFAULT_EVENT_UNAVAILABLE_POLICY
-            if unavailable_policy not in EVENT_UNAVAILABLE_POLICIES:
-                raise ValueError(
-                    "Invoke wire 的不可消费策略必须是 drop、latest 或 queue"
-                )
-            delivery_config["unavailable_policy"] = unavailable_policy
-            expires_after_seconds = max(
-                0,
-                min(
-                    MAX_EVENT_EXPIRES_AFTER_SECONDS,
-                    _integer(
-                        config.get("expires_after_seconds"),
-                        0,
-                    ),
-                ),
-            )
-            delivery_config["expires_after_seconds"] = (
-                expires_after_seconds
-            )
-            if unavailable_policy == "queue":
-                delivery_config["queue_limit"] = max(
-                    1,
-                    min(
-                        MAX_EVENT_QUEUE_LIMIT,
-                        _integer(
-                            config.get("queue_limit"),
-                            DEFAULT_EVENT_QUEUE_LIMIT,
-                        ),
-                    ),
-                )
-        if kind == "route":
-            maximum = normalize_optional_limit(config.get("max_messages"))
-            if maximum is not None:
-                if not target_resident:
-                    raise ValueError("发送消息次数上限只适用于指向 Resident 的 Route")
-                delivery_config["max_messages"] = maximum
-            # How the target Resident runs a delivery (decision_481dc4e6292c):
-            # "session" keeps time and file work in the Resident's session.
-            context_policy = _text(config.get("context_policy"), 16).lower()
-            if context_policy:
-                if context_policy != "session":
-                    raise ValueError('Invoke wire 的 context_policy 只能是 "session"')
-                delivery_config["context_policy"] = context_policy
-            # An Effect that needs no ordering (a Family Router) takes each
-            # Event as it comes, several at once; Residents keep their order.
-            if _boolean(config.get("parallel"), False):
-                if target_kind != "effect":
-                    raise ValueError("只有指向 Effect 的 Invoke wire 可以并行投递")
-                delivery_config["parallel"] = True
-        if delivery_config:
-            result["config"] = delivery_config
+    if kind == "watch":
+        return result
+    config = item.get("config") if isinstance(item.get("config"), dict) else {}
+    if kind == "target":
+        # A Target binds its object directly and has no delivery settings.
+        _reject_unknown_fields(config, (), "target wire config")
+        return result
+    result["config"] = _route_delivery_config(config, ends)
     return result
 
 
@@ -2062,6 +2033,213 @@ def _reconcile_event_source_watches(
     }
 
 
+def _program_residents(lineage_nodes: Iterable[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    nodes = [
+        node for node in lineage_nodes
+        if isinstance(node, dict) and _text(node.get("id"), 80)
+    ]
+    return {
+        _resident_id(node.get("id"), field="HATG node"): node
+        for node in nodes
+    }
+
+
+def _authored_items(item: dict[str, Any], before: dict[str, Any], name: str) -> list[Any]:
+    """The authored collection, else the previous one, as a private copy."""
+
+    return deepcopy(
+        item.get(name)
+        if isinstance(item.get(name), list)
+        else before.get(name)
+        if isinstance(before.get(name), list)
+        else []
+    )
+
+
+def _require_unique(values: list[Any], message: str) -> None:
+    if len(values) != len(set(values)):
+        raise ValueError(message)
+
+
+def _check_operator_routes_acyclic(
+    components_by_id: dict[str, dict[str, Any]],
+    wires: list[dict[str, Any]],
+) -> None:
+    operator_ids = {
+        component_id
+        for component_id, component in components_by_id.items()
+        if component.get("kind") in PACKET_OPERATOR_KINDS
+    }
+    dependencies: dict[str, set[str]] = {operator_id: set() for operator_id in operator_ids}
+    for wire in wires:
+        if (
+            wire["kind"] == "route"
+            and wire["source"] in operator_ids
+            and wire["target"] in operator_ids
+        ):
+            dependencies[wire["source"]].add(wire["target"])
+    visiting: set[str] = set()
+    visited: set[str] = set()
+
+    def visit(operator_id: str) -> None:
+        if operator_id in visiting:
+            raise ValueError("Packet Operator 的 Packet 路由不能形成循环")
+        if operator_id in visited:
+            return
+        visiting.add(operator_id)
+        for target_id in dependencies.get(operator_id, set()):
+            visit(target_id)
+        visiting.remove(operator_id)
+        visited.add(operator_id)
+
+    for operator_id in sorted(operator_ids):
+        visit(operator_id)
+
+
+def _watch_subject(
+    event_type: str,
+    subject_id: str,
+    *,
+    watches_resident: bool,
+    components_by_id: dict[str, dict[str, Any]],
+    wires_by_id: dict[str, dict[str, Any]],
+) -> dict[str, str]:
+    """The runtime subject field the first Watch wire of an Event Source sets."""
+
+    if watches_resident:
+        if event_type not in RESIDENT_SUBJECT_EVENT_TYPES:
+            raise ValueError(f"{event_type} Event Source 不能观察 Resident")
+        return {"subject_resident_id": subject_id}
+    if subject_id in components_by_id:
+        subject_kind = components_by_id[subject_id].get("kind")
+        if subject_kind == "effect":
+            if event_type not in EVENT_SOURCE_EFFECT_OBSERVER_TYPES:
+                raise ValueError(f"{event_type} Event Source 不能观察 Effect")
+            return {"subject_effect_id": subject_id}
+        if subject_kind == "event_source":
+            if event_type not in EVENT_SOURCE_OBSERVER_TYPES:
+                raise ValueError(f"{event_type} Event Source 不能观察 Event Source")
+            return {"subject_event_source_id": subject_id}
+        raise ValueError("Watch Subject 原语类型无效")
+    if _HANDOFF_ID_RE.fullmatch(subject_id):
+        if event_type not in EVENT_SOURCE_HANDOFF_OBSERVER_TYPES:
+            raise ValueError(f"{event_type} Event Source 不能观察工作区交接")
+        return {"subject_handoff_id": subject_id}
+    subject_wire = wires_by_id.get(subject_id)
+    if (
+        event_type not in EVENT_SOURCE_DELIVERY_OBSERVER_TYPES
+        or not subject_wire
+        or subject_wire.get("kind") != "route"
+    ):
+        raise ValueError("投递运行 Event 只能 Watch 进入 Invoke 的 Route 连线")
+    return {"subject_wire_id": subject_id}
+
+
+def _check_additional_watch(
+    event_type: str,
+    subject_id: str,
+    first_subject: dict[str, str],
+    watched: set[str],
+    *,
+    watches_resident: bool,
+    components_by_id: dict[str, dict[str, Any]],
+) -> None:
+    """Several Residents (or Effects) may share one Event Source of a type that watches many."""
+
+    many = event_type in EVENT_SOURCE_MULTI_RESIDENT_TYPES
+    if (
+        many
+        and (components_by_id.get(subject_id) or {}).get("kind") == "effect"
+        and "subject_effect_id" in first_subject
+    ):
+        duplicate = "同一个 Effect 不能重复连接同一个事件源"
+    elif many and watches_resident and "subject_resident_id" in first_subject:
+        duplicate = "同一个 Resident 不能重复连到同一个 Event Source"
+    else:
+        raise ValueError(
+            "每个 Event Source 只能有一个 Watch Subject；"
+            "只有 Resident 类 Event 可以同时监听多个 Resident"
+        )
+    if subject_id in watched:
+        raise ValueError(duplicate)
+    watched.add(subject_id)
+
+
+def _watch_subjects(
+    components_by_id: dict[str, dict[str, Any]],
+    wires: list[dict[str, Any]],
+    wires_by_id: dict[str, dict[str, Any]],
+    residents: dict[str, dict[str, Any]],
+) -> dict[str, dict[str, str]]:
+    """Check every Watch wire against its Event Source; each source's first subject."""
+
+    subjects: dict[str, dict[str, str]] = {}
+    watched: dict[str, set[str]] = {}
+    for wire in wires:
+        if wire["kind"] != "watch":
+            continue
+        observer_id = str(wire["source"])
+        observer = components_by_id.get(observer_id) or {}
+        event_type = authoring_event_type(observer)
+        if _component_resident_scope(observer) != "watched":
+            raise ValueError(
+                "监听范围是本 Lineage 或 Portal 全部 Resident 的 Event Source "
+                "不使用 Watch 连线；请删除由它发出的 Watch 连线，或把监听范围改回 Watch 连线指定"
+            )
+        subject_id = str(wire["target"])
+        watches_resident = bool(
+            subject_id in residents or _RESIDENT_ID_RE.fullmatch(subject_id)
+        )
+        if observer_id in subjects:
+            _check_additional_watch(
+                event_type, subject_id, subjects[observer_id], watched[observer_id],
+                watches_resident=watches_resident, components_by_id=components_by_id,
+            )
+            continue
+        subjects[observer_id] = _watch_subject(
+            event_type, subject_id, watches_resident=watches_resident,
+            components_by_id=components_by_id, wires_by_id=wires_by_id,
+        )
+        watched[observer_id] = {subject_id}
+    return subjects
+
+
+def _check_observer_dependencies(
+    components: list[dict[str, Any]],
+    wires_by_id: dict[str, dict[str, Any]],
+    subjects: dict[str, dict[str, str]],
+) -> None:
+    """A run Event Source must not observe itself, directly or through other sources."""
+
+    observed_by: dict[str, str] = {}
+    for component in components:
+        if (
+            component.get("kind") != "event_source"
+            or authoring_event_type(component) not in EVENT_SOURCE_OBSERVER_TYPES
+        ):
+            continue
+        component_id = str(component["id"])
+        subject = subjects.get(component_id) or {}
+        observed_id = str(subject.get("subject_event_source_id") or "")
+        if subject.get("subject_wire_id"):
+            observed_id = str(wires_by_id[subject["subject_wire_id"]]["source"])
+        if observed_id == component_id:
+            raise ValueError("运行 Event Source 不能监听自身")
+        if observed_id:
+            observed_by[component_id] = observed_id
+    for watcher_id in observed_by:
+        seen: set[str] = set()
+        current_id = watcher_id
+        while current_id in observed_by:
+            if current_id in seen:
+                raise ValueError("运行 Event Source 监听关系不能形成循环")
+            seen.add(current_id)
+            current_id = observed_by[current_id]
+
+
+_PROGRAM_FIELDS = frozenset({"schema", "components", "wires"})
+
+
 def normalize_program(
     raw: object,
     *,
@@ -2076,305 +2254,48 @@ def normalize_program(
     """
 
     item = raw if isinstance(raw, dict) else {}
-    unknown_fields = sorted(set(item) - {"schema", "components", "wires"})
-    if unknown_fields:
-        raise ValueError("Lineage program 不接受字段：" + "、".join(unknown_fields))
+    _reject_unknown_fields(item, _PROGRAM_FIELDS, "Lineage program")
     before = previous if isinstance(previous, dict) else {}
-    nodes = [
-        node for node in lineage_nodes
-        if isinstance(node, dict) and _text(node.get("id"), 80)
-    ]
-    residents = {
-        _resident_id(node.get("id"), field="HATG node"): node
-        for node in nodes
-    }
-    components_raw = deepcopy(
-        item.get("components")
-        if isinstance(item.get("components"), list)
-        else before.get("components")
-        if isinstance(before.get("components"), list)
-        else []
-    )
-    wires_raw = deepcopy(
-        item.get("wires")
-        if isinstance(item.get("wires"), list)
-        else before.get("wires")
-        if isinstance(before.get("wires"), list)
-        else []
-    )
+    residents = _program_residents(lineage_nodes)
+    components_raw = _authored_items(item, before, "components")
+    wires_raw = _authored_items(item, before, "wires")
     components = [
         _normalize_component(raw_component, residents)
         for raw_component in components_raw
     ]
     component_ids = [component["id"] for component in components]
-    if len(component_ids) != len(set(component_ids)):
-        raise ValueError("Lineage 程序 component id 不能重复")
+    _require_unique(component_ids, "Lineage 程序 component id 不能重复")
     if set(component_ids) & set(residents):
         raise ValueError("Lineage 程序 component id 不能与 Resident id 冲突")
-    components_by_id = {
-        component["id"]: component for component in components
-    }
+    components_by_id = {component["id"]: component for component in components}
     wires = [
-        _normalize_wire(
-            raw_wire,
-            residents=residents,
-            components=components_by_id,
-        )
+        _normalize_wire(raw_wire, residents=residents, components=components_by_id)
         for raw_wire in wires_raw
     ]
-    wire_ids = [wire["id"] for wire in wires]
-    if len(wire_ids) != len(set(wire_ids)):
-        raise ValueError("Lineage 程序 wire id 不能重复")
-    client_keys = [
-        str(item.get("client_key") or "")
-        for item in [*components, *wires]
-        if str(item.get("client_key") or "")
-    ]
-    if len(client_keys) != len(set(client_keys)):
-        raise ValueError("Lineage 程序 client_key 不能重复")
-    relations = [
-        (
-            wire["kind"],
-            wire["source"],
-            wire["source_port"],
-            wire["target"],
-            wire.get("target_port", ""),
-        )
-        for wire in wires
-    ]
-    if len(relations) != len(set(relations)):
-        raise ValueError("相同端点与类型的 Lineage 程序连线不能重复")
-
-    packet_operator_ids = {
-        component_id
-        for component_id, component in components_by_id.items()
-        if component.get("kind") in PACKET_OPERATOR_KINDS
-    }
-    operator_dependencies: dict[str, set[str]] = {
-        resident_id: set() for resident_id in packet_operator_ids
-    }
-    for wire in wires:
-        if (
-            wire["kind"] == "route"
-            and wire["source"] in packet_operator_ids
-            and wire["target"] in packet_operator_ids
-        ):
-            operator_dependencies[wire["source"]].add(wire["target"])
-    visiting: set[str] = set()
-    visited: set[str] = set()
-
-    def visit_operator(operator_id: str) -> None:
-        if operator_id in visiting:
-            raise ValueError("Packet Operator 的 Packet 路由不能形成循环")
-        if operator_id in visited:
-            return
-        visiting.add(operator_id)
-        for target_id in operator_dependencies.get(operator_id, set()):
-            visit_operator(target_id)
-        visiting.remove(operator_id)
-        visited.add(operator_id)
-
-    for operator_id in sorted(packet_operator_ids):
-        visit_operator(operator_id)
-
+    _require_unique([wire["id"] for wire in wires], "Lineage 程序 wire id 不能重复")
+    _require_unique(
+        [
+            str(item.get("client_key") or "")
+            for item in [*components, *wires]
+            if str(item.get("client_key") or "")
+        ],
+        "Lineage 程序 client_key 不能重复",
+    )
+    _require_unique(
+        [
+            (wire["kind"], wire["source"], wire["source_port"], wire["target"], wire.get("target_port", ""))
+            for wire in wires
+        ],
+        "相同端点与类型的 Lineage 程序连线不能重复",
+    )
+    _check_operator_routes_acyclic(components_by_id, wires)
     wires_by_id = {str(wire["id"]): wire for wire in wires}
-    watch_by_observer: dict[str, dict[str, Any]] = {}
-    watched_residents: dict[str, set[str]] = {}
-    subject_projection: dict[str, dict[str, str]] = {}
-    resident_subject_event_types = {
-        "resident.work_finished",
-        "resident.work_started",
-        "resident.work_failed",
-        "resident.work_cancelled",
-        "resident.state_changed",
-        "resident.context_pressure_exceeded",
-        "resident.work_duration_exceeded",
-        "resident.queue_pressure_exceeded",
-        "resident.message_received",
-        "file.changed",
-    }
-    for wire in wires:
-        if wire["kind"] != "watch":
-            continue
-        observer_id = str(wire["source"])
-        observer_component = components_by_id.get(observer_id) or {}
-        event_type = authoring_event_type(observer_component)
-        if _component_resident_scope(observer_component) != "watched":
-            raise ValueError(
-                "监听范围是本 Lineage 或 Portal 全部 Resident 的 Event Source "
-                "不使用 Watch 连线；请删除由它发出的 Watch 连线，或把监听范围改回 Watch 连线指定"
-            )
-        subject_id = str(wire["target"])
-        watches_resident = bool(
-            subject_id in residents or _RESIDENT_ID_RE.fullmatch(subject_id)
-        )
-        if observer_id in watch_by_observer:
-            # Several Residents may share one Event Source of a type that
-            # watches many; anything else keeps one Watch Subject.
-            earlier = watch_by_observer[observer_id]
-            if (event_type in EVENT_SOURCE_MULTI_RESIDENT_TYPES
-                and (components_by_id.get(subject_id) or {}).get("kind") == "effect"
-                and "subject_effect_id" in subject_projection.get(observer_id, {})):
-                watched = watched_residents.setdefault(observer_id, {str(earlier.get("target") or "")})
-                if subject_id in watched:
-                    raise ValueError("同一个 Effect 不能重复连接同一个事件源")
-                watched.add(subject_id)
-                continue
-            if not (
-                event_type in EVENT_SOURCE_MULTI_RESIDENT_TYPES
-                and watches_resident
-                and "subject_resident_id" in subject_projection.get(observer_id, {})
-            ):
-                raise ValueError(
-                    "每个 Event Source 只能有一个 Watch Subject；"
-                    "只有 Resident 类 Event 可以同时监听多个 Resident"
-                )
-            if subject_id in watched_residents.setdefault(observer_id, {str(earlier.get("target") or "")}):
-                raise ValueError("同一个 Resident 不能重复连到同一个 Event Source")
-            watched_residents[observer_id].add(subject_id)
-            continue
-        watch_by_observer[observer_id] = wire
-        projection: dict[str, str]
-        if watches_resident:
-            projection = {"subject_resident_id": subject_id}
-            if event_type not in resident_subject_event_types:
-                raise ValueError(
-                    f"{event_type} Event Source 不能观察 Resident"
-                )
-        elif subject_id in components_by_id:
-            subject_component = components_by_id[subject_id]
-            if subject_component.get("kind") == "effect":
-                if event_type not in EVENT_SOURCE_EFFECT_OBSERVER_TYPES:
-                    raise ValueError(
-                        f"{event_type} Event Source 不能观察 Effect"
-                    )
-                projection = {"subject_effect_id": subject_id}
-            elif subject_component.get("kind") == "event_source":
-                if event_type not in EVENT_SOURCE_OBSERVER_TYPES:
-                    raise ValueError(
-                        f"{event_type} Event Source 不能观察 Event Source"
-                    )
-                projection = {"subject_event_source_id": subject_id}
-            else:
-                raise ValueError("Watch Subject 原语类型无效")
-        elif _HANDOFF_ID_RE.fullmatch(subject_id):
-            if event_type not in EVENT_SOURCE_HANDOFF_OBSERVER_TYPES:
-                raise ValueError(f"{event_type} Event Source 不能观察工作区交接")
-            projection = {"subject_handoff_id": subject_id}
-        else:
-            subject_wire = wires_by_id.get(subject_id)
-            subject_source = (
-                components_by_id.get(str(subject_wire.get("source") or ""))
-                if subject_wire
-                else None
-            )
-            if (
-                event_type not in EVENT_SOURCE_DELIVERY_OBSERVER_TYPES
-                or not subject_wire
-                or subject_wire.get("kind") not in {"route"}
-            ):
-                raise ValueError(
-                    "投递运行 Event 只能 Watch 进入 Invoke 的 Route 连线"
-                )
-            projection = {"subject_wire_id": subject_id}
-        subject_projection[observer_id] = projection
-
-    observer_dependencies: dict[str, str] = {}
-    for component in components:
-        if component.get("kind") != "event_source":
-            continue
-        event_type = authoring_event_type(component)
-        if event_type not in EVENT_SOURCE_OBSERVER_TYPES:
-            continue
-        component_id = str(component["id"])
-        projection = subject_projection.get(component_id) or {}
-        subject_source_id = str(
-            projection.get("subject_event_source_id") or ""
-        )
-        subject_wire_id = str(projection.get("subject_wire_id") or "")
-        observed_source_id = subject_source_id
-        if subject_source_id:
-            subject_source = components_by_id.get(subject_source_id)
-            if (
-                not subject_source
-                or subject_source.get("kind") != "event_source"
-            ):
-                raise ValueError(
-                    "运行 Event Source 监听了不存在的 Event Source"
-                )
-        if subject_wire_id:
-            subject_wire = wires_by_id.get(subject_wire_id)
-            subject_source = (
-                components_by_id.get(str(subject_wire.get("source") or ""))
-                if subject_wire
-                else None
-            )
-            if (
-                not subject_wire
-                or subject_wire.get("kind") not in {"route"}
-            ):
-                raise ValueError(
-                    "投递运行 Event 只能监听进入 Invoke 的 Route 连线"
-                )
-            observed_source_id = (
-                str(subject_wire["source"])
-                if subject_wire.get("kind") == "route"
-                else ""
-            )
-        if observed_source_id == component_id:
-            raise ValueError("运行 Event Source 不能监听自身")
-        if observed_source_id:
-            observer_dependencies[component_id] = observed_source_id
-
-    for component in components:
-        if component.get("kind") != "event_source":
-            continue
-        event_type = authoring_event_type(component)
-        if event_type not in EVENT_SOURCE_EFFECT_OBSERVER_TYPES:
-            continue
-        subject_effect_id = str(
-            (subject_projection.get(str(component["id"])) or {}).get(
-                "subject_effect_id"
-            )
-            or ""
-        )
-        if not subject_effect_id:
-            continue
-        subject_effect = components_by_id.get(subject_effect_id)
-        if (
-            not subject_effect
-            or subject_effect.get("kind") != "effect"
-        ):
-            raise ValueError("Effect 事件监听了不存在的 Effect")
-        # Effect type changes are incremental graph edits.  Keep the explicit
-        # observer and surface a diagnostic if the new type can no longer
-        # produce this fact; the observer is a separate primitive, not an
-        # output owned by the Effect.
-
-    for watcher_id in observer_dependencies:
-        seen: set[str] = set()
-        current_id = watcher_id
-        while current_id in observer_dependencies:
-            if current_id in seen:
-                raise ValueError("运行 Event Source 监听关系不能形成循环")
-            seen.add(current_id)
-            current_id = observer_dependencies[current_id]
-    effect_target_counts: dict[tuple[str, str], int] = {}
-    effect_target_residents: dict[str, dict[str, str]] = {}
-    for wire in wires:
-        if wire["kind"] != "target":
-            continue
-        key = (str(wire["source"]), str(wire["source_port"]))
-        effect_target_counts[key] = (
-            effect_target_counts.get(key, 0) + 1
-        )
-        effect_target_residents.setdefault(str(wire["source"]), {})[
-            str(wire["source_port"])
-        ] = str(wire["target"])
-    if any(count > 1 for count in effect_target_counts.values()):
-        raise ValueError(
-            "每个 Effect 的一个具名 Endpoint 只能连接一个 Reference"
-        )
+    subjects = _watch_subjects(components_by_id, wires, wires_by_id, residents)
+    _check_observer_dependencies(components, wires_by_id, subjects)
+    _require_unique(
+        [(str(wire["source"]), str(wire["source_port"])) for wire in wires if wire["kind"] == "target"],
+        "每个 Effect 的一个具名 Endpoint 只能连接一个 Reference",
+    )
     return {
         "schema": PROGRAM_SCHEMA,
         "components": components,
@@ -2678,18 +2599,6 @@ def _compile_program(program: object, node_list: list[dict[str, Any]]) -> dict[s
     }
 
 
-RESIDENT_SUBJECT_EVENT_TYPES = frozenset({
-    "resident.work_finished",
-    "resident.work_started",
-    "resident.work_failed",
-    "resident.work_cancelled",
-    "resident.state_changed",
-    "resident.context_pressure_exceeded",
-    "resident.work_duration_exceeded",
-    "resident.queue_pressure_exceeded",
-    "resident.message_received",
-    "file.changed",
-})
 # Effects calling DeliverMessage may leave ``message`` unset: the runtime then
 # composes the message from the activation's input (decision_4adcc1ff2f2c).
 EFFECT_RUNTIME_SUPPLIED_ARGUMENTS = {"DeliverMessage": frozenset({"message"})}

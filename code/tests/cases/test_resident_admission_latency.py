@@ -11,6 +11,7 @@ import pytest
 from management_portal.society_service import (
     invariant_locks,
     lifecycle,
+    lineage_data_residents,
     resident_catalog,
     resident_conversation_stream,
     resident_delivery_work,
@@ -38,8 +39,7 @@ def test_plain_admission_never_loads_workspace_or_projects_inline(input_delivery
 
     普通消息受理不解析工作目录或同步发布展示。使用真实持久层和受控依赖验证消息身份、恢复及并发边界。
     """
-    store = resident_catalog.get_catalog().state_store
-    monkeypatch.setattr(store, "_residents_from_rows", lambda *a, **kw: pytest.fail("Workspace hydration during admission"))
+    monkeypatch.setattr(lineage_data_residents, "residents_from_rows", lambda *a, **kw: pytest.fail("Workspace hydration during admission"))
     monkeypatch.setattr(resident_execution_work, "project_latest_conversation_state", lambda *a, **kw: pytest.fail("inline projection"))
     monkeypatch.setattr(lineage_message_events, "wake_watchers", lambda *a, **kw: pytest.fail("inline watcher dispatch"))
     first = send(input_delivery)
@@ -57,8 +57,7 @@ def test_plain_admission_never_loads_workspace_or_projects_inline(input_delivery
 
 def test_plain_admission_uses_real_command_and_context_preparation(resident_record, monkeypatch):
     """普通消息使用真实命令和引用准备，受理阶段不读取 Workspace。"""
-    store = resident_catalog.get_catalog().state_store
-    monkeypatch.setattr(store, "_residents_from_rows", lambda *a, **kw: pytest.fail("Workspace hydration during admission"))
+    monkeypatch.setattr(lineage_data_residents, "residents_from_rows", lambda *a, **kw: pytest.fail("Workspace hydration during admission"))
     result = send(resident_record)
     assert result["accepted"]
     assert resident_conversation_stream.get_repository().input_state(
@@ -180,7 +179,7 @@ def test_injection_ack_is_durable_and_dispatch_is_unlocked(input_delivery, monke
         return prompt(*args, **kwargs)
     monkeypatch.setattr(resident_input_queue_domain, "_running_turn_prompt", prepare)
     with monkeypatch.context() as admission:
-        admission.setattr(resident_catalog.get_catalog().state_store, "_residents_from_rows",
+        admission.setattr(lineage_data_residents, "residents_from_rows",
                           lambda *a, **kw: pytest.fail("Workspace hydration during injection admission"))
         receipt = resident_protocol.inject_queued_input_into_active_turn(rid, "CASE-A", mid)
     assert receipt["accepted"] and not receipt["injected"] and receipt["delivery_status"] == "pending"

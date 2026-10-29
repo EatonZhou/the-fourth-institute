@@ -571,6 +571,150 @@ def complete_agent_invocations(
     }
 
 
+@dataclass(frozen=True)
+class _PacketDispatch:
+    """The compiled scope one Packet collection is routed in, and the steps per target kind."""
+
+    lineage: dict[str, Any]
+    plan: dict[str, Any]
+    source_node_id: str
+    event: lineage_primitives.LineageEvent
+    actor: str
+    state: str
+    invocation_arguments: dict[str, Any] | None
+    ports: ProgramExecutionPorts
+
+    @property
+    def lineage_id(self) -> str:
+        return str(self.lineage.get("lineage_id") or "")
+
+    def to_operator(self, batch: lineage_program_packet_routing.PacketWireBatch) -> dict[str, Any]:
+        inbox = lineage_operator_runtime.update_inbox(
+            self.lineage_id,
+            batch.target_id,
+            event=self.event,
+            source_wire_id=batch.wire_id,
+            source_node_id=self.source_node_id,
+            packets=batch.packets,
+            state=self.state,
+            include_envelope=_bool(batch.config.get("include_envelope"), True),
+        )
+        if inbox is None:
+            return {"status": "cancelled", "event_id": self.event.id, "operator_id": batch.target_id}
+        return try_dispatch_operator(self.lineage_id, self.actor, batch.target_id, self.event, ports=self.ports)
+
+    def to_loop(self, batch: lineage_program_packet_routing.PacketWireBatch, packet: dict[str, Any]) -> dict[str, Any]:
+        from . import lineage_loop_runtime
+
+        return lineage_loop_runtime.receive(
+            self.lineage_id,
+            self.plan,
+            batch.target_id,
+            str(batch.target_port or "invoke"),
+            self.event,
+            self.actor,
+            dispatch_packets=self.loop_output,
+            packet=packet,
+        )
+
+    def loop_output(self, loop_id: str, output: str, activation: lineage_primitives.LineageEvent, value: Any) -> dict[str, Any]:
+        """Route one round's value out of a loop's continue or stop port."""
+
+        return dispatch_program_packets(
+            self.lineage, self.plan, loop_id, activation, [value], self.actor,
+            packet_wires=[wire for wire in self.plan["wires"]
+                          if wire["kind"] == "route" and wire["source"] == loop_id
+                          and wire.get("source_port") == output],
+            prepare_barriers=True,
+            ports=self.ports,
+        )
+
+    def invocation_input(self, wire_id: str, packet: dict[str, Any]) -> tuple[dict[str, Any], str]:
+        """The arguments and prompt one Packet invokes its target with."""
+
+        arguments = _program_resolved_invoke_arguments(self.plan, wire_id, self.event, packet=packet)
+        if self.invocation_arguments:
+            arguments.update(lineage_primitives.normalize_invocation_arguments(self.invocation_arguments))
+        prompt = lineage_program_packet_routing.input_prompt(
+            packet, arguments, _program_compiled_invocation(self.plan, wire_id)["arguments"],
+            overridden="prompt" in (self.invocation_arguments or {}),
+        )
+        return arguments, prompt
+
+    def to_effect(
+        self, batch: lineage_program_packet_routing.PacketWireBatch, packet: dict[str, Any],
+        arguments: dict[str, Any], prompt: str,
+    ) -> dict[str, Any]:
+        from . import lineage_program_effect_execution
+
+        invocation = _make_program_effect_invocation(
+            self.event,
+            source_kind="packet",
+            source_id=self.source_node_id,
+            source_wire_id=batch.wire_id,
+            prompt=prompt,
+            argument_overrides=arguments,
+            packet=packet,
+            from_resident_id=self.source_node_id if self.source_node_id.startswith("resident_") else "",
+            include_envelope=_bool(batch.config.get("include_envelope"), True),
+            argument_mapping=_program_compiled_invocation(self.plan, batch.wire_id)["arguments"],
+        )
+        return lineage_program_effect_execution._execute_program_effect_component(
+            self.lineage, self.plan, batch.target_id, invocation, self.actor,
+            host=self.ports.flow.effect_authority(),
+        )
+
+    def to_resident(
+        self, batch: lineage_program_packet_routing.PacketWireBatch, packet: dict[str, Any], prompt: str,
+    ) -> dict[str, Any]:
+        """Deliver now when the Resident can take it; otherwise drop at the message limit or defer."""
+
+        from . import lineage_program_event_dispatch
+
+        if not batch.target_node:
+            raise ValueError("Packet Invoke 的下游已不存在")
+        packet_invocation = {
+            "source_kind": "packet",
+            "source_id": self.source_node_id,
+            "source_wire_id": batch.wire_id,
+            "prompt": prompt,
+            "packet": packet,
+            "include_envelope": _bool(batch.config.get("include_envelope"), True),
+        }
+        packet_route = {
+            "wire_id": batch.wire_id,
+            "target_id": batch.target_id,
+            "target_kind": "agent",
+            "config": batch.config,
+        }
+        can_consume, reason = lineage_program_event_dispatch._program_event_route_can_consume(
+            self.lineage_id, self.lineage, packet_route, self.actor,
+            authority=self.ports.flow.event_authority(),
+        )
+        budget = wire_delivery_budget.views(str(self.lineage["lineage_id"]), {batch.wire_id: batch.config})[batch.wire_id]
+        if can_consume:
+            return _dispatch_program_packet_to_agent(
+                self.lineage, batch.target_id, self.event, packet_invocation, self.actor, ports=self.ports,
+            )
+        if budget["message_limit_reached"]:
+            return {"status": "dropped", "reason": "message_limit_reached", "target_id": batch.target_id}
+        return _defer_program_event_route(
+            self.lineage_id,
+            self.source_node_id,
+            packet_route,
+            self.event,
+            f"packet:{self.event.id}:{self.source_node_id}:{batch.wire_id}:{packet.get('id')}",
+            reason=reason,
+            invocation=packet_invocation,
+        )
+
+    def to_invoke_target(self, batch: lineage_program_packet_routing.PacketWireBatch, packet: dict[str, Any]) -> dict[str, Any]:
+        arguments, prompt = self.invocation_input(batch.wire_id, packet)
+        if batch.target_kind == "effect":
+            return self.to_effect(batch, packet, arguments, prompt)
+        return self.to_resident(batch, packet, prompt)
+
+
 def dispatch_program_packets(
     lineage: dict[str, Any],
     plan: dict[str, Any],
@@ -591,15 +735,14 @@ def dispatch_program_packets(
     ports: ProgramExecutionPorts,
 ) -> dict[str, Any]:
     """Route a Packet collection through the caller's compiled scope."""
-    from . import lineage_program_effect_execution, lineage_program_event_dispatch
-
     packet_wires = list(packet_wires)
+    dispatch = _PacketDispatch(lineage, plan, source_node_id, event, actor, state, invocation_arguments, ports)
     if prepare_barriers:
         # Resident Output and Loop rounds start occurrences independently of
         # Event-source dispatch. Freeze the entire operator graph before the
         # first branch can run; nested operators reuse the same barriers.
         prepare_operator_inboxes(
-            str(lineage.get("lineage_id") or ""),
+            dispatch.lineage_id,
             event,
             _program_operator_barriers(
                 lineage, source_node_id,
@@ -622,180 +765,16 @@ def dispatch_program_packets(
         packet_wires,
         packets_by_source_port,
     ):
-        wire_id = batch.wire_id
-        target_id = batch.target_id
-        config = batch.config
-        selected = batch.packets
-        target_node = batch.target_node
         if batch.target_kind == "operator":
-            inbox = lineage_operator_runtime.update_inbox(
-                str(lineage.get("lineage_id") or ""),
-                target_id,
-                event=event,
-                source_wire_id=wire_id,
-                source_node_id=source_node_id,
-                packets=selected,
-                state=state,
-                include_envelope=_bool(
-                    config.get("include_envelope"),
-                    True,
-                ),
-            )
-            if inbox is None:
-                operator_results.append(
-                    {
-                        "status": "cancelled",
-                        "event_id": event.id,
-                        "operator_id": target_id,
-                    }
-                )
-            else:
-                operator_results.append(
-                    try_dispatch_operator(
-                        str(lineage.get("lineage_id") or ""),
-                        actor,
-                        target_id,
-                        event,
-                        ports=ports,
-                    )
-                )
+            operator_results.append(dispatch.to_operator(batch))
             continue
-        if batch.target_kind == "loop":
-            from . import lineage_loop_runtime
-
-            for packet in selected:
-                deliveries.append({
-                    "wire_id": wire_id,
-                    "packet_id": str(packet.get("id") or ""),
-                    **lineage_loop_runtime.receive(
-                        str(lineage.get("lineage_id") or ""),
-                        plan,
-                        target_id,
-                        str(batch.target_port or "invoke"),
-                        event,
-                        actor,
-                        dispatch_packets=lambda loop_id, output, activation, value: dispatch_program_packets(
-                            lineage, plan, loop_id, activation, [value], actor,
-                            packet_wires=[wire for wire in plan["wires"]
-                                          if wire["kind"] == "route" and wire["source"] == loop_id
-                                          and wire.get("source_port") == output],
-                            prepare_barriers=True,
-                            ports=ports,
-                        ),
-                        packet=packet,
-                    ),
-                })
-            continue
-        for packet in selected:
-            resolved_arguments = _program_resolved_invoke_arguments(
-                plan,
-                wire_id,
-                event,
-                packet=packet,
+        for packet in batch.packets:
+            delivery = (
+                dispatch.to_loop(batch, packet)
+                if batch.target_kind == "loop"
+                else dispatch.to_invoke_target(batch, packet)
             )
-            if invocation_arguments:
-                resolved_arguments.update(lineage_primitives.normalize_invocation_arguments(invocation_arguments))
-            resolved_prompt = lineage_program_packet_routing.input_prompt(
-                packet, resolved_arguments, _program_compiled_invocation(plan, wire_id)["arguments"],
-                overridden="prompt" in (invocation_arguments or {}),
-            )
-            if batch.target_kind == "effect":
-                invocation = _make_program_effect_invocation(
-                    event,
-                    source_kind="packet",
-                    source_id=source_node_id,
-                    source_wire_id=wire_id,
-                    prompt=resolved_prompt,
-                    argument_overrides=resolved_arguments,
-                    packet=packet,
-                    from_resident_id=(
-                        source_node_id
-                        if source_node_id.startswith("resident_")
-                        else ""
-                    ),
-                    include_envelope=_bool(
-                        config.get("include_envelope"),
-                        True,
-                    ),
-                    argument_mapping=_program_compiled_invocation(
-                        plan,
-                        wire_id,
-                    )["arguments"],
-                )
-                delivery = lineage_program_effect_execution._execute_program_effect_component(
-                    lineage,
-                    plan,
-                    target_id,
-                    invocation,
-                    actor,
-                    host=ports.flow.effect_authority(),
-                )
-                deliveries.append(
-                    {
-                        "wire_id": wire_id,
-                        "packet_id": str(packet.get("id") or ""),
-                        **delivery,
-                    }
-                )
-                continue
-            if not target_node:
-                raise ValueError("Packet Invoke 的下游已不存在")
-            packet_invocation = {
-                "source_kind": "packet",
-                "source_id": source_node_id,
-                "source_wire_id": wire_id,
-                "prompt": resolved_prompt,
-                "packet": packet,
-                "include_envelope": _bool(
-                    config.get("include_envelope"),
-                    True,
-                ),
-            }
-            packet_route = {
-                "wire_id": wire_id,
-                "target_id": target_id,
-                "target_kind": "agent",
-                "config": config,
-            }
-            can_consume, reason = lineage_program_event_dispatch._program_event_route_can_consume(
-                str(lineage.get("lineage_id") or ""),
-                lineage,
-                packet_route,
-                actor,
-                authority=ports.flow.event_authority(),
-            )
-            budget = wire_delivery_budget.views(str(lineage["lineage_id"]), {wire_id: config})[wire_id]
-            if can_consume:
-                delivery = _dispatch_program_packet_to_agent(
-                    lineage,
-                    target_id,
-                    event,
-                    packet_invocation,
-                    actor,
-                    ports=ports,
-                )
-            elif budget["message_limit_reached"]:
-                delivery = {"status": "dropped", "reason": "message_limit_reached", "target_id": target_id}
-            else:
-                delivery = _defer_program_event_route(
-                    str(lineage.get("lineage_id") or ""),
-                    source_node_id,
-                    packet_route,
-                    event,
-                    (
-                        f"packet:{event.id}:{source_node_id}:"
-                        f"{wire_id}:{packet.get('id')}"
-                    ),
-                    reason=reason,
-                    invocation=packet_invocation,
-                )
-            deliveries.append(
-                {
-                    "wire_id": wire_id,
-                    "packet_id": str(packet.get("id") or ""),
-                    **delivery,
-                }
-            )
+            deliveries.append({"wire_id": batch.wire_id, "packet_id": str(packet.get("id") or ""), **delivery})
     return {
         "deliveries": deliveries,
         "operators": operator_results,
