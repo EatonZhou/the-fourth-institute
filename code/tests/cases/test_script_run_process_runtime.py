@@ -209,6 +209,32 @@ def test_detached_launch_preserves_run_identity_and_allowed_environment(tmp_path
     assert saved['process_tree_id'] == service._payload_tree(row['script_run_id'])
 
 
+def test_user_manager_environment_restores_missing_bus_address(tmp_path):
+    (tmp_path / 'bus').touch()
+    restored = service._user_manager_environment({'XDG_RUNTIME_DIR': str(tmp_path)})
+    assert restored['DBUS_SESSION_BUS_ADDRESS'] == 'unix:path=' + str(tmp_path / 'bus')
+    explicit = service._user_manager_environment({
+        'XDG_RUNTIME_DIR': str(tmp_path),
+        'DBUS_SESSION_BUS_ADDRESS': 'unix:path=/explicit/bus',
+    })
+    assert explicit['DBUS_SESSION_BUS_ADDRESS'] == 'unix:path=/explicit/bus'
+
+
+def test_linux_launch_uses_restored_user_manager_environment(tmp_path, monkeypatch, records):
+    row, _ = records()
+    row.update(arguments={}, caller_id='sample_admin', trigger_path_id='', effect_id='')
+    monkeypatch.setattr(service, 'sys', SimpleNamespace(platform='linux', executable=sys.executable))
+    monkeypatch.setattr(service, '_issue_token', lambda *args: 'test-only')
+    expected = {'XDG_RUNTIME_DIR': '/run/user/1000',
+                'DBUS_SESSION_BUS_ADDRESS': 'unix:path=/run/user/1000/bus'}
+    monkeypatch.setattr(service, '_user_manager_environment', lambda: expected)
+    calls = []
+    monkeypatch.setattr(process_runtime, 'run_process',
+                        lambda *args, **kwargs: calls.append((args, kwargs)) or SimpleNamespace(returncode=0))
+    assert service.launch(row, {'cwd': str(tmp_path)}) is None
+    assert calls[0][1]['env'] == expected
+
+
 def test_linux_launch_cancel_race_stops_original_unit_after_admission(tmp_path, monkeypatch, records):
     script = tmp_path / 'test.py'; script.write_text('pass')
     monkeypatch.setattr(service, 'sys', SimpleNamespace(platform='linux'))

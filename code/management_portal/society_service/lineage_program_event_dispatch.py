@@ -219,6 +219,9 @@ def _dispatch_lineage_program_event_locked(
         )
         if not cancelled:
             raise
+        # The cancelled barrier consumes this Event on every claimed wire. A
+        # preclaimed wire (backlog replay) is settled by its claimer, which
+        # only reads the result that names its wire.
         return {
             "event": normalized_event.to_dict(),
             "event_source_id": event_source_id,
@@ -228,12 +231,14 @@ def _dispatch_lineage_program_event_locked(
             "fire": fire_claim,
             "results": [
                 *budget_results,
-                {
+                *({
                     "status": "cancelled",
+                    "wire_id": str(route.get("wire_id") or ""),
+                    "target_id": str(route.get("target_id") or ""),
                     "event_id": normalized_event.id,
                     "reason": "packet_operator_barrier_cancelled",
                     "error": str(exc),
-                },
+                } for route in claimed_routes),
             ],
         }
 

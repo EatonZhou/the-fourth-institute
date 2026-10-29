@@ -26,7 +26,6 @@
 - [HATG ISA：Lineage 共享状态指令](/r/decision_71ba0494b93e)
 - [HATG ISA：Lineage 运行指令](/r/decision_68215b3a825b)
 - [HATG ISA：脚本运行（RunScript）](/r/decision_8b510cbd9c58)
-  - Linux 的 `systemd-run --user` 启动边界会在服务环境缺失时，从当前 UID 的现有 runtime bus 恢复 `XDG_RUNTIME_DIR` 与 `DBUS_SESSION_BUS_ADDRESS`；这些连接变量只供启动客户端使用，不注入脚本载荷。
 - [HATG ISA：Function Block、画布选区与指令](/r/decision_5b5653c3eaa5)
 - [HATG ISA：Family 内部机制指令](/r/decision_b77fde81e7a0)
 - [HATG ISA：模板与指令](/r/decision_b04cac4188bb)

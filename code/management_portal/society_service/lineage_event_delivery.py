@@ -121,6 +121,13 @@ def settle_delivery(
     outcome = result if "results" in result or result.get("duplicate") else {"results": [result]}
     delivered = pending_event_delivery_consumed(outcome, wire_id)
     error = pending_event_delivery_error(outcome, wire_id)
+    if not delivered and not error and not outcome.get("paused") and not any(
+        isinstance(item, dict) and item.get("wire_id") == wire_id for item in outcome.get("results") or []
+    ):
+        # A busy or closed target names its wire and is retried when it
+        # changes. An attempt that says nothing about this wire is a failed
+        # one: it waits out the retry delay instead of being claimed again at once.
+        error = f"Event delivery returned no outcome for wire {wire_id}"
     for item in outcome.get("results") or []:
         if item.get("wire_id") == wire_id and item.get("status") == "failed":
             item["retry_pending"] = not delivered

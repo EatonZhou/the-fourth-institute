@@ -10,8 +10,8 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from management_portal.society_service import (
-    lineage_domain, lineage_event_claims, lineage_program_backlog, lineage_program_event_dispatch,
-    lineage_program_runtime as runtime,
+    lineage_domain, lineage_event_claims, lineage_event_delivery, lineage_program_backlog,
+    lineage_program_event_dispatch, lineage_program_runtime as runtime,
 )
 from tests.cases import society_service_test_support as support
 from tests.cases.test_lineage_program_runtime_integration import (
@@ -21,11 +21,11 @@ from tests.cases.test_lineage_program_runtime_integration import (
 SOURCE = "event_source_settlement"
 WIRE_A = "wire_settlement_a"
 WIRE_B = "wire_settlement_b"
+FILTER = "filter_settlement"
 ERROR = "downstream admission temporarily unavailable"
 
 
-@pytest.fixture()
-def delivery(runtime_store, monkeypatch):
+def _clock():
     class Clock(datetime):
         moment = datetime(2026, 10, 19, 3, 0, tzinfo=timezone.utc)
 
@@ -33,6 +33,16 @@ def delivery(runtime_store, monkeypatch):
         def now(cls, tz=None):
             return cls.moment.astimezone(tz) if tz else cls.moment.replace(tzinfo=None)
 
+    return Clock
+
+
+def _due(pending):
+    return datetime.fromisoformat(pending["retry_at"].replace("Z", "+00:00"))
+
+
+@pytest.fixture()
+def delivery(runtime_store, monkeypatch):
+    Clock = _clock()
     busy = {"value": False}
     calls = []
 
@@ -157,3 +167,63 @@ def test_expired_claim_recovery_uses_same_failure_delay_and_retains_identity(del
     assert not pending.get("dispatch_token")
     assert datetime.fromisoformat(pending["retry_at"].replace("Z", "+00:00")) > clock.moment
     assert _drain(lineage_id)["attempted_count"] == 0
+
+
+def test_retry_into_an_operator_that_cancelled_its_barrier_consumes_the_event(runtime_store, monkeypatch):
+    """Filter 下游投递失败后屏障已取消：积压重试读到已取消屏障即消费该 Event，不再无间隔反复认领。"""
+    sent = []
+
+    def refuse(node, _prompt, _actor):
+        sent.append(node["id"])
+        raise ValueError("resident workspace_path missing")
+
+    monkeypatch.setattr(support, "NODE_MESSAGE_SENDER", refuse)
+    lineage_id = support.create_lineage_with_resident_members({
+        "title": "Cancelled barrier", "project_id": "project_test",
+        "nodes": [_worker(WORK_A)],
+        "program": {
+            "components": [_component(SOURCE, "event_source", event_type="manual.triggered"),
+                           {"id": FILTER, "kind": "filter", "config": {}}],
+            "wires": [
+                _wire(WIRE_A, "route", SOURCE, FILTER, config={"unavailable_policy": "drop"}),
+                _wire(WIRE_B, "route", FILTER, WORK_A),
+            ],
+        },
+    }, ACTOR)["lineage_id"]
+    clock = _clock()
+    monkeypatch.setattr(runtime, "datetime", clock)
+    _emit(lineage_id)
+    assert sent == [WORK_A]
+    [failed] = _pending(lineage_id)
+    assert failed["attempt_count"] == 1 and failed["last_error"] == "resident workspace_path missing"
+
+    clock.moment = _due(failed) + timedelta(seconds=1)
+    assert _drain(lineage_id)["attempted_count"] == 1
+    # The Filter is not run again and the wire's head is no longer queued.
+    assert sent == [WORK_A]
+    assert _pending(lineage_id) == []
+    assert _drain(lineage_id)["attempted_count"] == 0
+
+
+@pytest.mark.parametrize("outcome,waits", [
+    ({"results": []}, True),
+    ({"exhausted": True, "results": []}, True),
+    ({"paused": True, "results": []}, False),
+])
+def test_an_attempt_without_an_outcome_for_its_wire_waits_for_its_retry(delivery, outcome, waits):
+    """投递结果没有提到这条连线时按失败保存 retry_at；来源暂停仍不记重试时间。"""
+    lineage_id, busy, _calls, clock = delivery
+    busy["value"] = True
+    _emit(lineage_id)
+    claimed = runtime.claim_pending_event(lineage_id, WIRE_A)
+    assert claimed
+    settled = lineage_event_delivery.settle_delivery(lineage_id, WIRE_A, claimed["dispatch_token"], outcome)
+    assert not settled.delivered
+    [pending] = _pending(lineage_id)
+    assert not pending.get("dispatch_token")
+    if waits:
+        assert settled.error and pending["last_error"] == settled.error
+        assert _due(pending) > clock.moment
+        assert runtime.claim_pending_event(lineage_id, WIRE_A) is None
+    else:
+        assert not settled.error and "retry_at" not in pending

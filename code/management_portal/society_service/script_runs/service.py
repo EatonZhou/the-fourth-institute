@@ -94,6 +94,21 @@ def revoke(record):
         tokens.put(record['script_run_id'], {**existing, 'enabled': False})
 
 
+def _user_manager_environment(environment=None):
+    """Return an environment that can reach this Unix user's systemd manager."""
+    result = dict(os.environ if environment is None else environment)
+    runtime_dir = result.get('XDG_RUNTIME_DIR')
+    if not runtime_dir:
+        candidate = Path('/run/user') / str(os.getuid())
+        if candidate.is_dir():
+            runtime_dir = result['XDG_RUNTIME_DIR'] = str(candidate)
+    if runtime_dir and not result.get('DBUS_SESSION_BUS_ADDRESS'):
+        bus = Path(runtime_dir) / 'bus'
+        if bus.exists():
+            result['DBUS_SESSION_BUS_ADDRESS'] = 'unix:path=' + str(bus)
+    return result
+
+
 def launch(record, config):
     _check_platform()
     run_dir = runtime.RUN_ROOT / record['script_run_id']
@@ -134,7 +149,10 @@ def launch(record, config):
                'management_portal.society_service.script_runs.runner', str(private)]
     if config.get('timeout_seconds') is not None:
         command.insert(5, '--property=RuntimeMaxSec=' + str(config['timeout_seconds'] + 10))
-    result = process_runtime.run_process(command, capture_output=True, text=True, timeout=45)
+    result = process_runtime.run_process(
+        command, capture_output=True, text=True, timeout=45,
+        env=_user_manager_environment(),
+    )
     if result.returncode:
         revoke(record)
         raise RuntimeError('脚本单元启动失败：' + result.stderr[-2000:])
