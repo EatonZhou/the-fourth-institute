@@ -94,6 +94,7 @@ FEATURE_INSTRUCTIONS = {
     "UpdateChatroomMessage", "RetractChatroomMessage", "UpdateChatroomReaction", "CreateChatroomMessage",
     "MarkChatroomRead", "GetPulse", "PublishPulseItem", "BindTelepusContactForUser",
     "UnbindTelepusContactForUser", "GetTelepusStatus", "SetTelepusEnabled",
+    "GetResearchMap", "ApplyResearchMapChanges", "ListResearchMapChanges", "UpdateResearchMapLayout",
 }
 from management_portal.permission_system.scheme import repository
 from management_portal.permission_system.scheme.compiler import SchemeError, compile_scheme
@@ -175,7 +176,7 @@ def test_web_starts_without_any_feature():
     # The Web kernel builds: no feature instruction is declared, so none lacks a handler.
     assert not FEATURE_INSTRUCTIONS & (set(web["instructions"]) | set(web["web_handlers"]))
     assert {"GetMailbox", "ListUsers", "ListInstructions"} <= set(web["instructions"])
-    assert not {"discussion", "pulse"} & set(web["categories"])
+    assert not {"discussion", "pulse", "research"} & set(web["categories"])
     # SearchMessages with chatroom_id runs at Web; without Chatrooms Web refuses it.
     assert web["chatroom_search"] == "instruction.invalid_arguments"
     feature_paths = ("/paper", "/projects", "/api/articles", "/resource/article", "/api/repos", "/resource/repo",
@@ -292,12 +293,13 @@ def test_installed_features_add_their_instructions_to_the_catalog_and_web_kernel
     from management_portal.hatg.catalog import categories, instruction_catalog
 
     for hook in ("isa.instructions", "web.instructions"):
-        assert {key for key, _ in portal_features.contributions(hook)} == {"notice_board", "chatroom", "pulse", "telepus"}
+        assert {key for key, _ in portal_features.contributions(hook)} == {"projects", "notice_board", "chatroom", "pulse", "telepus"}
     catalog = instruction_catalog()
     assert FEATURE_INSTRUCTIONS <= set(catalog)
     assert FEATURE_INSTRUCTIONS <= set(web_isa.binding().handlers)
     assert {catalog[name].owner for name in FEATURE_INSTRUCTIONS} == {"web"}
     assert categories()["discussion"] == "公共讨论" and categories()["pulse"] == "Pulse"
+    assert categories()["research"] == "研究地图"
     category = next(parameter for parameter in catalog["ListInstructions"].parameters if parameter.name == "category")
     assert set(category.enum) == set(categories())
 

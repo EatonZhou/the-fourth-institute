@@ -1,0 +1,16 @@
+{
+  "type": "direction",
+  "category": "resource",
+  "description": "A research direction on its Project's research map; it opens at its place on the map.",
+  "title": {
+    "zh": "研究方向",
+    "en": "Research direction"
+  },
+  "provider": "management_portal.resources.providers.direction:install_resolver",
+  "catalog_section": "",
+  "catalog_order": 0,
+  "registerable": false,
+  "scope": "project",
+  "unit": "projects",
+  "enabled_by_default": true
+}

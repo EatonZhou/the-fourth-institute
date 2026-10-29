@@ -950,6 +950,11 @@ def _read_kb_file(
 
     created_at = str(meta.get("created_at") or "")
     status = str(meta.get("status") or "")
+    links = meta.get("links") if isinstance(meta.get("links"), dict) else {}
+    # What the entry names as related: the index records it, so a research
+    # direction finds the entries that name it (decision_46c37026e8ea).
+    related = [str(value).strip() for value in links.get("related") or [] if isinstance(value, str) and value.strip()] \
+        if isinstance(links.get("related"), list) else []
     task_fields = {}
     if item_type == "todo":
         status = str(meta.get("task_status") or ("finished" if status == "done" else "active"))
@@ -1008,6 +1013,7 @@ def _read_kb_file(
         "path": abs_path,
         "mtime": mtime,
         "version": version,
+        "related": list(dict.fromkeys(related)),
         "root_path": str(root_path),
         "relative_path": primary_path.relative_to(root_path).as_posix() if root_path.is_dir() else primary_path.name,
         "file_count": len(entry_files),

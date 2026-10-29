@@ -2556,6 +2556,7 @@ class ProjectKnowledgeAdapter(_PathsAdapter):
         attributes.update(
             {
                 "project_ids": [project] if project else [],
+                "relations": [resource_relation("related", target) for target in item.get("related") or []],
                 "project_status": statuses.get(project, ""),
                 "preview": _text(item.get("preview")),
                 "content_root": str(root_path),

@@ -30,7 +30,7 @@ OBJECT_TYPES = {
     "R": RESOURCE_TYPES | {PERSONAL_SPACE},
 }
 
-_PROJECT_OWNED = ("article", "concept", "dataset", "decision", "document", "experiment", "idea", "information",
+_PROJECT_OWNED = ("article", "concept", "dataset", "decision", "direction", "document", "experiment", "idea", "information",
                   "insight", "material", "meeting", "model", "paper", "patent", "plan", "question", "repo", "review",
                   "risk", "search", "skill", "test", "thinking", "todo")
 

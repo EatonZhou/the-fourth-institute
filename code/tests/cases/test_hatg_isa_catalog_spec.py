@@ -41,6 +41,7 @@ CATEGORY_DECISIONS = {
     "template": "b04cac4188bb",
     "discussion": "3e063aac15b3",
     "pulse": "cc96fce57ab6",
+    "research": "9d15ae2053c4",
     "organization": "6591e7793116",
     "permission": "22227d0ad075",
     "environment": "4527448ad07f",

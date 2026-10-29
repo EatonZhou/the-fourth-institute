@@ -385,6 +385,9 @@
     "ApplyLineageChanges": {
       "a": "@contributor"
     },
+    "ApplyResearchMapChanges": {
+      "a": "@contributor"
+    },
     "ApplyTemplate": {
       "a": "@contributor"
     },
@@ -564,6 +567,9 @@
     "GetProject": {
       "a": "@viewer"
     },
+    "GetResearchMap": {
+      "a": "@viewer"
+    },
     "GetResidentRequest": {
       "a": "@viewer"
     },
@@ -626,6 +632,9 @@
       "a": "@viewer"
     },
     "ListRecentRounds": {
+      "a": "@viewer"
+    },
+    "ListResearchMapChanges": {
       "a": "@viewer"
     },
     "ListResidentRequests": {
@@ -1261,6 +1270,9 @@
     "UpdateModelApi": {
       "a": "@admin",
       "r": "@operations"
+    },
+    "UpdateResearchMapLayout": {
+      "a": "@contributor"
     },
     "UpdateResidentWorkSummary": {
       "a": "@free",
