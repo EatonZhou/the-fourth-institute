@@ -435,6 +435,9 @@ def sync_all_generated_structure() -> dict:
         try:
             outcome = sync_generated_structure(lineage_id)
         except (KeyError, OSError, OperationError, PermissionError, RuntimeError, ValueError) as exc:
+            if isinstance(exc, KeyError) and not _lineage_exists(lineage_id):
+                # Deleted after the listing was read: nothing left to sync.
+                continue
             report["failed"][lineage_id] = f"{exc.__class__.__name__}: {exc}"[:300]
             continue
         if outcome["status"] == "synced":
@@ -442,6 +445,13 @@ def sync_all_generated_structure() -> dict:
         elif outcome["status"] == "unchanged":
             report["unchanged"] += 1
     return report
+
+
+def _lineage_exists(lineage_id: str) -> bool:
+    try:
+        return not _domain()._lineage_catalog_store().get(lineage_id).get("deleted_at")
+    except KeyError:
+        return False
 
 
 def _new_role(lineage_id: str, role: str, title: str, actor: str, near: str, settings: dict, placement: dict, *, creation_key: str = "", follow_default_backend: bool = False) -> str:

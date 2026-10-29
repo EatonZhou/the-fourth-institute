@@ -76,6 +76,21 @@ def test_a_lineage_without_a_family_is_left_alone(lineage):
     assert lineage_domain._read_lineage_state(lineage)["revision"] == revision
 
 
+def test_a_lineage_deleted_during_the_pass_is_not_a_failure(lineage, charters, monkeypatch):
+    """同步途中被删除的 Lineage 不算同步失败
+
+    同步先读出全部 Lineage 再逐个处理；其间被删除的 Lineage 直接跳过，报告里不记失败。
+    """
+    member = resident(lineage, "Member")
+    ok("Familize", {"lineage_id": lineage, "resident_ids": [member], "title": "Team"})
+    store = lineage_domain._lineage_catalog_store()
+    listed = store.listing_records()
+    assert lineage in {record["lineage_id"] for record in listed}
+    ok("DeleteLineage", {"lineage_id": lineage})
+    monkeypatch.setattr(store, "listing_records", lambda: listed)
+    assert lineage not in familize.sync_all_generated_structure()["failed"]
+
+
 def test_only_the_release_instance_syncs_template_structure(monkeypatch):
     """只有 Release 实例启动时同步模板结构；可以用环境变量改为其他实例"""
     monkeypatch.delenv("PORTAL_TEMPLATE_SYNC_INSTANCE", raising=False)
