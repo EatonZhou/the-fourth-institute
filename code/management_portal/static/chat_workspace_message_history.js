@@ -10,7 +10,7 @@
   // the host's onError, or else to a toast.
   const DEPENDENCIES = Object.freeze([
     "bindResourceChips", "composerQuoteHtml", "currentController", "els", "historyScope", "inheritanceCardHtml",
-    "messageRenderKey", "messageViewportAtTail", "options", "state", "syncMessageScrollMode", "toggleMessageFold",
+    "messageRenderKey", "messageQuoteExcerpt", "messageViewportAtTail", "options", "state", "syncMessageScrollMode", "toggleMessageFold",
   ]);
 
   function createMessageHistory(dependencies) {
@@ -18,7 +18,7 @@
     if (missing.length) throw new Error(`PortalChatWorkspaceMessageHistory is missing: ${missing.join(", ")}`);
     const {
       bindResourceChips, composerQuoteHtml, currentController, els, historyScope, inheritanceCardHtml,
-      messageRenderKey, messageViewportAtTail, options, state, syncMessageScrollMode, toggleMessageFold,
+      messageRenderKey, messageQuoteExcerpt, messageViewportAtTail, options, state, syncMessageScrollMode, toggleMessageFold,
     } = dependencies;
 
     let destroyed = false;
@@ -116,12 +116,79 @@
       if (inheritanceView === view) renderInheritanceCard();
     };
 
+    // Personal navigation bookmarks belong to the viewer and this conversation,
+    // independently of the server's messages and of the composition's quote.
+    const pinHost = document.createElement("div");
+    pinHost.className = "workspacePinnedMessages";
+    pinHost.hidden = true;
+    pinHost.title = window.PortalI18n.t("仅你可见，保存在当前浏览器");
+    pinHost.setAttribute("aria-label", window.PortalI18n.t("置顶对话"));
+    if (options.pinMessages) els.head?.after(pinHost);
+    const pinKey = () => JSON.stringify(["portal.chat.pins.v1", window.PortalIdentity?.username?.() || "", historyScope()]);
+    const readPins = () => {
+      try {
+        const pins = JSON.parse(window.localStorage.getItem(pinKey()) || "[]");
+        return Array.isArray(pins) ? pins.filter(pin => pin && typeof pin.message_id === "string" && typeof pin.text === "string") : [];
+      } catch (_) { return []; }
+    };
+    let pinSignature = "";
+    const renderPinnedMessages = () => {
+      if (!options.pinMessages) return;
+      const pins = readPins();
+      const signature = pinKey() + JSON.stringify(pins);
+      if (signature === pinSignature) return;
+      pinSignature = signature;
+      const esc = window.PortalUIPrimitives.escapeHtml;
+      pinHost.hidden = !pins.length;
+      pinHost.innerHTML = pins.map(pin => window.PortalI18n.html`<div class="workspacePinnedMessage" data-pinned-id="${esc(pin.message_id)}">
+        <button type="button" class="workspacePinnedJump" data-pinned-action="jump" title="跳到置顶消息"><span>置顶</span><span>${esc(pin.text)}</span></button>
+        <button type="button" class="portalButton is-quiet is-compact" data-pinned-action="quote">引用回复</button>
+        <button type="button" class="portalButton is-quiet is-compact" data-pinned-action="remove" aria-label="取消置顶" title="取消置顶">×</button>
+      </div>`).join("");
+    };
+    const writePins = pins => {
+      try {
+        window.localStorage.setItem(pinKey(), JSON.stringify(pins));
+        renderPinnedMessages();
+        window.dispatchEvent(new CustomEvent("portal:chat-pins-changed"));
+      } catch (error) { reportError(error); }
+    };
+    const toggleMessagePin = key => {
+      if (!options.pinMessages || !historyScope()) return;
+      const item = state.messageByKey.get(String(key));
+      if (!item || item.pending || item.local_delivery) return;
+      const id = String(item.message_id || item.id || "");
+      const text = messageQuoteExcerpt(item);
+      if (!id || !text) return;
+      const pins = readPins();
+      writePins(pins.some(pin => pin.message_id === id) ? pins.filter(pin => pin.message_id !== id)
+        : [...pins, { message_id: id, author_id: String(item.author_id || item.author || ""), text }]);
+    };
+    const isMessagePinned = key => {
+      const item = state.messageByKey.get(String(key));
+      return !!item && readPins().some(pin => pin.message_id === String(item.message_id || item.id || ""));
+    };
+    const onPinClick = event => {
+      const button = event.target.closest("[data-pinned-action]");
+      const id = button?.closest("[data-pinned-id]")?.dataset.pinnedId;
+      const pin = readPins().find(pin => pin.message_id === id);
+      if (!pin) return;
+      if (button.dataset.pinnedAction === "jump") revealMessage(id).catch(reportError);
+      if (button.dataset.pinnedAction === "quote") setQuote(pin);
+      if (button.dataset.pinnedAction === "remove") writePins(readPins().filter(pin => pin.message_id !== id));
+    };
+    pinHost.addEventListener("click", onPinClick);
+    window.addEventListener("storage", renderPinnedMessages);
+    window.addEventListener("portal:chat-pins-changed", renderPinnedMessages);
+    window.addEventListener(window.PortalIdentity?.eventName || "portal:identity-changed", renderPinnedMessages);
+
     // The message the composition quotes, per conversation; not saved with the draft.
     const composerQuotes = new Map();
     const composerQuoteScope = () => historyScope() || state.activeDraftScope || "";
     const composerQuote = () => composerQuotes.get(composerQuoteScope()) || null;
     // The quote bar shows the quote of the conversation shown.
     const renderComposerQuote = () => {
+      renderPinnedMessages();
       const host = els.composer?.querySelector("[data-composer-quote-host]");
       if (!host) return;
       const quote = composerQuote();
@@ -177,13 +244,17 @@
     els.composer?.addEventListener("click", handleComposerClick);
     // A destroyed Workspace answers none of these clicks, and a reveal under way stops.
     const destroyMessageHistory = () => {
+      pinHost.remove();
+      window.removeEventListener("storage", renderPinnedMessages);
+      window.removeEventListener("portal:chat-pins-changed", renderPinnedMessages);
+      window.removeEventListener(window.PortalIdentity?.eventName || "portal:identity-changed", renderPinnedMessages);
       destroyed = true;
       els.messages?.removeEventListener("click", handleMessagesClick);
       els.composer?.removeEventListener("click", handleComposerClick);
     };
 
     return {
-      revealMessage, inheritanceViewFor, composerQuote, renderComposerQuote, setQuote, clearQuote, destroyMessageHistory,
+      revealMessage, inheritanceViewFor, composerQuote, renderComposerQuote, setQuote, clearQuote, toggleMessagePin, isMessagePinned, renderPinnedMessages, destroyMessageHistory,
     };
   }
 

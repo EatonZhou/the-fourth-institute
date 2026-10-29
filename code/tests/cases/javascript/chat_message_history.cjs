@@ -308,7 +308,27 @@ const fresh = (name, extra = {}) => {
       assert.equal(forked.one('[data-chat-inheritance-summary]').getAttribute('aria-expanded'), 'false');
       assert.equal(paging.one('[data-composer-quote-host]').hidden, false, 'and its quote stays as it was');
     }
-    console.log('PASS the load-earlier button, Fork card, quote jumps and quote bar');
+    {
+      const pinned = fresh('pins', {pinMessages: true});
+      pinned.workspace.setMessages([human('pin-question'), agent('pin-answer')]);
+      pinned.workspace.toggleMessagePin('pin-answer');
+      assert.match(pinned.one('.workspacePinnedMessages').textContent, /pin-answer/);
+      pinned.one('[data-pinned-action="quote"]').click();
+      assert.equal(pinned.workspace.quote().message_id, 'pin-answer');
+      pinned.show('other-pins');
+      assert.equal(pinned.one('.workspacePinnedMessages').hidden, true);
+      pinned.show('pins', [human('pin-question'), agent('pin-answer')]);
+      assert.equal(pinned.one('.workspacePinnedMessages').hidden, false);
+      assert.equal(pinned.one('[data-pinned-action="jump"]').title, '跳到置顶消息');
+      pinned.destroy();
+      const restored = fresh('pins', {pinMessages: true});
+      restored.workspace.setMessages([agent('pin-answer')]);
+      assert.equal(restored.one('.workspacePinnedMessages').hidden, false, 'pins survive remount');
+      restored.one('[data-pinned-action="remove"]').click();
+      assert.equal(restored.one('.workspacePinnedMessages').hidden, true);
+      restored.destroy();
+    }
+    console.log('PASS the load-earlier button, Fork card, quote jumps, pins and quote bar');
   } finally {
     await settle();
     for (const workspace of workspaces) workspace.destroy();

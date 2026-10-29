@@ -602,6 +602,7 @@
       composer.innerHTML = workspaceComposerHtml(composerShellOptions(composerOptions));
     };
     const els = {
+      head: root.querySelector(".portalWorkspaceHead"),
       title: root.querySelector(".portalWorkspaceHead .paneTitle"),
       body: root.querySelector(".portalWorkspaceBody"),
       messages: root.querySelector(`#${CSS.escape(dom.messageListId)}`),
@@ -794,10 +795,10 @@
     });
 
     const {
-      revealMessage, inheritanceViewFor, composerQuote, renderComposerQuote, setQuote, clearQuote, destroyMessageHistory,
+      revealMessage, inheritanceViewFor, composerQuote, renderComposerQuote, setQuote, clearQuote, toggleMessagePin, isMessagePinned, renderPinnedMessages, destroyMessageHistory,
     } = chatWorkspaceModule("PortalChatWorkspaceMessageHistory").createMessageHistory({
       bindResourceChips, composerQuoteHtml, currentController: () => controller, els, historyScope, inheritanceCardHtml,
-      messageRenderKey, messageViewportAtTail, options, state, syncMessageScrollMode, toggleMessageFold,
+      messageRenderKey, messageQuoteExcerpt, messageViewportAtTail, options, state, syncMessageScrollMode, toggleMessageFold,
     });
 
     const { applyComposerInputLayout, destroyComposerHeight } = chatWorkspaceModule("PortalChatWorkspaceComposerHeight")
@@ -852,6 +853,7 @@
     // reads the server's first page again.
     const ownInputMarks = new Map();
     const syncHistory = (scope = historyScope()) => {
+      renderPinnedMessages();
       const scopeKey = String(scope || "");
       const viewer = String(window.PortalIdentity?.username?.() || "").trim().toLowerCase();
       const queued = normalizeWorkspaceQueue(state.composer?.queue).items
@@ -1323,6 +1325,8 @@
         markDraftSaved();
       },
       quote: composerQuote,
+      toggleMessagePin,
+      isMessagePinned,
       setQuote,
       // Drops a conversation's quote; given a message ID, only while it still quotes that message.
       clearQuote,
@@ -1759,6 +1763,7 @@
         renderMarkdown: text => window.MD?.render?.(text) || escapeHtml(text).replace(/\n/g, window.PortalI18n.markup("<br>")),
         renderMessageBody: (item, context) => this.conversationView()?.renderMessageBody?.(item, context)
           ?? residentMessageBody(item, context),
+        pinMessages: true,
         renderMessageFooter: residentMessageFooter,
         renderAfterMessage: residentMessageAfter,
         formatTime: value => window.PortalUI?.formatDateTime?.(value, { style: "compact" }) || String(value || ""),

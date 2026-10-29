@@ -320,6 +320,7 @@
         : "";
       return window.PortalI18n.html`<span class="portalMessageMenuPanel" data-portal-message-menu="${escapeHtml(key)}" data-portal-message-key="${escapeHtml(key)}" hidden>
         ${customItems}
+        ${options.pinMessages && messageRole(item) === "agent" ? window.PortalI18n.html`<button type="button" data-portal-message-action="pin">置顶这轮对话</button>` : ""}
         <button type="button" data-portal-message-copy="text">复制为纯文本</button>
         <button type="button" data-portal-message-copy="markdown">复制为 Markdown</button>
         ${firstAgentReply ? window.PortalI18n.html`<button type="button" data-portal-message-copy="text" data-portal-message-copy-scope="replies">复制全部回复为纯文本</button>
