@@ -12,7 +12,9 @@ from dataclasses import dataclass
 from functools import partial
 
 from . import identity_contract, lineage_handoff_backend, lineage_program
+from .lineage_definition_contract import EDGE_FAMILIES
 from .lineage_values import _dedupe_strings, _integer, _item_id, _safe_actor, _text
+from . import function_block_authoring
 
 
 
@@ -36,12 +38,6 @@ MAX_FRAGMENT_CHARS = 4000
 MAX_FRAGMENT_IMAGES = 24
 
 EDGE_TYPES = {"inheritance", "absorption", "handoff"}
-
-EDGE_FAMILIES = {
-    "inheritance": "context", "absorption": "context",
-    "handoff": "workspace",
-    "candidate_fork": "context",
-}
 
 # A candidate fork runs from a Resident to a Seed: the Resident whose work the
 # candidate starts from, and that adopting the Seed forks.  It is the only
@@ -465,8 +461,7 @@ def _normalize_lineage_payload(
         raise ValueError("HATG 边 id 不能重复")
     edges.extend(candidate_forks)
 
-    from .function_block_domain import normalize_blocks
-    blocks = normalize_blocks({"nodes": nodes, "program": program,
+    blocks = function_block_authoring.normalize_blocks({"nodes": nodes, "program": program,
                                "function_blocks": payload.get("function_blocks", previous.get("function_blocks", []))},
                               actor, previous=previous)
     from .effect_failure_notifications import initialize_recipients

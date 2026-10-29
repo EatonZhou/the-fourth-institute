@@ -5,10 +5,10 @@ from types import SimpleNamespace
 import pytest
 
 from management_portal.society_service import lineage_domain as graphs
-from management_portal.society_service import lineage_definition_versions as versions
 from management_portal.society_service import lineage_program_runtime as runtime
 from management_portal.society_service import resident_conversation_stream, resident_execution_domain
 from management_portal.society_service.state_store import get_lineage_data_store
+from management_portal.society_service.isa import common
 from tests.cases.isa_test_support import ACTOR
 from tests.cases.test_principal_hierarchy import family
 from tests.cases.test_resident_folder_creation_contract import future_creation_store  # noqa: F401
@@ -38,7 +38,7 @@ def test_versioned_multistep_external_stage_allows_other_lineage_writes(future_c
         with ThreadPoolExecutor(max_workers=1) as pool:
             pool.submit(external_stage).result(timeout=5)
         graphs.update_lineage_metadata(lineage_id, {"title": "second commit"}, ACTOR)
-    versions.guard_definition_handler("ForkResident", multistep)(_inv(lineage_id, revision))
+    common.guard_definition_handler("ForkResident", multistep)(_inv(lineage_id, revision))
     assert graphs.get_lineage(lineage_id, ACTOR)["description"] == "external progress"
 
 
@@ -86,7 +86,7 @@ def test_aborted_commit_does_not_consume_version_precondition(future_creation_st
             pool.submit(graphs.update_lineage_metadata, lineage_id, {"title": "concurrent"}, ACTOR).result(timeout=5)
         graphs.update_lineage_metadata(lineage_id, {"title": "must reject"}, ACTOR)
     with pytest.raises(InstructionError) as error:
-        versions.guard_definition_handler("ForkResident", handler)(_inv(lineage_id, revision))
+        common.guard_definition_handler("ForkResident", handler)(_inv(lineage_id, revision))
     assert error.value.code == "instruction.conflict"
     assert graphs.get_lineage(lineage_id, ACTOR)["title"] == "concurrent"
 

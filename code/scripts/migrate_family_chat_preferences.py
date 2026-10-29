@@ -19,7 +19,7 @@ def upgrade(connection):
     if not any(schema_matches(previous, value) for value in (OLD_SCHEMA, NEW_SCHEMA)):
         raise ValueError(f"Expected {OLD_SCHEMA} or {NEW_SCHEMA}, found {previous}")
     if schema_matches(previous, OLD_SCHEMA):
-        from management_portal.society_service.family_chat_preferences import create_schema
+        from management_portal.society_service.family_chat_storage import create_schema
         create_schema(connection)
         connection.execute("UPDATE lineage_meta SET value=%s WHERE key='schema'", (NEW_SCHEMA,))
     if not lineage_data_schema_matches(connection):

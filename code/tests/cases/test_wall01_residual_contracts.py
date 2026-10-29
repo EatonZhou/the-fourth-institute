@@ -10,6 +10,8 @@ import pytest
 
 from tests.cases.test_lineage_backend import lineage_store
 
+from management_portal.society_service import lineage_aggregate
+
 
 def test_overflow_record_reaches_full_index_and_archive_recovery(monkeypatch, tmp_path):
     """文件监听溢出触发全索引刷新与归档快照恢复"""
@@ -130,7 +132,7 @@ def test_empty_lineage_delete_retries_the_same_intent_after_move_failure(
     with pytest.raises(OSError, match="isolated move failure"):
         lineage_domain.delete_lineage(created["lineage_id"], "sample_admin")
 
-    intent = lineage_domain._lineage_deletion_intent(created["lineage_id"])
+    intent = lineage_aggregate.lineage_deletion_intent(created["lineage_id"])
     assert intent["phase"] == "retryable"
     assert intent["operation_id"].startswith("lineage-delete_")
     with pytest.raises(lineage_domain.LineageConflictError, match="deletion is in progress"):
@@ -143,8 +145,8 @@ def test_empty_lineage_delete_retries_the_same_intent_after_move_failure(
     deleted = lineage_domain.delete_lineage(created["lineage_id"], "sample_admin")
     assert deleted["operation_id"] == intent["operation_id"]
     assert len(attempts) == 2
-    assert not lineage_domain._lineage_deletion_intent(created["lineage_id"])
-    assert not lineage_domain._lineage_catalog_store().get_access_records(
+    assert not lineage_aggregate.lineage_deletion_intent(created["lineage_id"])
+    assert not lineage_aggregate.lineage_catalog_store().get_access_records(
         [created["lineage_id"]]
     )
 
@@ -200,7 +202,7 @@ def test_empty_lineage_delete_fences_concurrent_update_without_holding_state_loc
     assert "error" not in outcome
     assert outcome["move_lock_held"] is False
     assert outcome["deleted"]["lineage_id"] == created["lineage_id"]
-    assert not lineage_domain._lineage_catalog_store().get_access_records(
+    assert not lineage_aggregate.lineage_catalog_store().get_access_records(
         [created["lineage_id"]]
     )
 

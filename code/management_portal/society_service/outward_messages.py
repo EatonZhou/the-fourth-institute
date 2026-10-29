@@ -56,11 +56,6 @@ def _find(resident_id: str) -> dict[str, Any]:
     return resident_record_domain.find_resident(resident_id) or {}
 
 
-def _families_around(resident_id: str) -> list[dict[str, Any]]:
-    with get_lineage_data_store().database.read() as connection:
-        return family_storage.families_around(connection, resident_id, max_hops=family_facade.MAX_RELAY_HOPS)
-
-
 def _last_direct_messages(party: str, resident_ids: list[str]) -> dict[str, str]:
     """When ``party`` itself last sent each Resident a message, not through a facade ("" if never)."""
 
@@ -108,13 +103,13 @@ def speaking_identity(sender: str, recipient: Mapping[str, str]) -> str:
     """Who a message from ``sender`` to ``recipient`` goes out as: the sender, or a facade around it."""
 
     sender_id = canonical_actor_id(sender)
-    around = _families_around(sender_id)
+    around = family_facade.families_around(sender_id)
     if not around:
         return sender_id
     recipient_id = str(recipient.get("id") or "")
     holding: set[str] = set()
     if recipient.get("kind") == "resident":
-        holding = {item["family_id"] for item in _families_around(recipient_id)}
+        holding = {item["family_id"] for item in family_facade.families_around(recipient_id)}
         with get_lineage_data_store().database.read() as connection:
             role = family_storage.resident_roles(connection, [recipient_id]).get(recipient_id, {})
         if role.get("role") == "facade":
@@ -130,21 +125,6 @@ def speaking_identity(sender: str, recipient: Mapping[str, str]) -> str:
     # The recipient hears from where it last wrote itself: the sender or an
     # inner facade it wrote to more recently than to the outer facade.
     return _last_written_to(recipient_id, identities) or identities[-1]
-
-
-def identities_of(resident_id: str) -> list[str]:
-    """A Resident and the facades of the Families around it, innermost first."""
-
-    return [resident_id, *(family["facade_id"] for family in _families_around(resident_id))]
-
-
-def speaks_for(facade_id: str, member_id: str) -> bool:
-    """Whether ``facade_id`` is the facade of a Family that holds ``member_id``."""
-
-    member_id = canonical_actor_id(member_id)
-    return bool(facade_id and member_id) and any(
-        family["facade_id"] == facade_id for family in _families_around(member_id)
-    )
 
 
 @contextmanager
@@ -294,6 +274,30 @@ def post_platform_notice(
             message["business_ref"] = str(business_ref).strip()[:500]
         _write(speaker, message)
     return {"resident_id": speaker, "message_id": message_id, "recipients": recipients, "unreached": unreached}
+
+
+def message_creator(record: Mapping[str, Any], *, identity: str, text: str) -> None:
+    """An unavailable internal role asks its actual creator through the facade.
+
+    The durable notification remains the fallback when the creator cannot open
+    the facade. A deterministic message identity makes repeated checks harmless.
+    """
+    from . import family_owners, resident_message_contract
+    family_id = (record.get("family") or {}).get("family_id")
+    if not family_id:
+        return
+    with get_lineage_data_store().database.read() as connection:
+        facade_ids = family_storage.roles_of(connection, family_id)["facade"]
+    if not facade_ids:
+        return
+    for creator in family_owners.recipients(record, creator_only=True):
+        try:
+            deliver_to_user(facade_ids[0], creator, [{"type": "text", "text": text}],
+                message_id=resident_message_contract.derived_message_identity("family-role-alert", identity, creator),
+                business_ref="family-availability")
+        except (PermissionError, KeyError, ValueError):
+            # No permission substitution: the addressed human notification is retained.
+            continue
 
 
 def outward_record_id(facade_id: str, message_id: str) -> str:

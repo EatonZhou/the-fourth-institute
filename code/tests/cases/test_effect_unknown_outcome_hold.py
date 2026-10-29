@@ -21,6 +21,7 @@ from management_portal.society_service import (
     lineage_program_runtime as runtime, outward_messages,
 )
 from management_portal.society_service.state_store import get_lineage_data_store
+from management_portal.society_service import lineage_aggregate
 from tests.cases.test_effect_script import _Outcome
 from tests.cases.test_isa_audit_g4 import event_wire, make_lineage, source
 from tests.cases.test_lineage_generic_primitives import ACTOR, primitive_store  # noqa: F401
@@ -127,7 +128,7 @@ def test_unknown_outcome_read_again_from_its_receipt_stops_retrying_and_asks_peo
     assert result["attempted_count"] == 0 and result["retry_after_seconds"] == 0
     assert calls == ["GetLineage", "GetLineage"]
     [asked] = _asked(lineage_id)
-    assert asked["leader"] == lineage_domain._read_lineage_state(lineage_id)["leader_resident_id"]
+    assert asked["leader"] == lineage_aggregate.read_lineage_state(lineage_id)["leader_resident_id"]
     assert asked["recipients"] == [ACTOR]
     assert asked["text"].startswith("Effect 结果未知，等待处置\n\n")
     assert EFFECT in asked["text"] and activation_key in asked["text"] and hold["trigger_path_id"] in asked["text"]

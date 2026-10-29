@@ -29,10 +29,10 @@ def test_admission_snapshot_survives_later_toggle(family_chat):
     from management_portal.society_service import family_chat_preferences as p
     f, m = family_chat
     msg = {'message_id': 'msg_chat_1', 'author_id': ACTOR}
-    p.capture(f, msg)
+    family_facade.routing_snapshot(f, msg)
     p.change(f['resident_id'], ACTOR, m, 'mute', True)
-    assert p.allowed(f, p.capture(f, msg)) == [m]
-    assert p.allowed(f, p.capture(f, {**msg, 'message_id': 'msg_chat_2'})) == []
+    assert p.allowed(f, family_facade.routing_snapshot(f, msg)) == [m]
+    assert p.allowed(f, family_facade.routing_snapshot(f, {**msg, 'message_id': 'msg_chat_2'})) == []
 
 def test_projection_filters_entire_round_and_nested_replies(family_chat):
     from management_portal.society_service import family_chat_preferences as p
@@ -50,7 +50,7 @@ def test_direct_route_and_relay_validation_respect_solo_and_mute(family_chat, mo
     monkeypatch.setattr(family_facade, 'quoted_member', lambda *a: '')
     p.change(f['resident_id'], ACTOR, m, 'solo', True)
     msg = {'message_id': 'msg_direct', 'author_id': ACTOR}
-    assert p.direct_member(f, msg) == m
+    assert family_facade.direct_member(f, msg) == m
     p.validate_target(f, msg, m)
     with pytest.raises(ValueError, match='M/S'):
         p.validate_target(f, msg, f['resident_id'])
@@ -67,7 +67,7 @@ def test_real_admission_freezes_routing_and_projection_uses_viewer(family_chat):
     resident_domain.deliver_resident_message_content(f['resident_id'], ACTOR, 'before mute', message_id=mid)
     p.change(f['resident_id'], ACTOR, m, 'mute', True)
     message = resident_conversation_stream.get_repository().message(f['resident_id'], mid)
-    assert p.capture(f, message)['muted_member_ids'] == []
+    assert family_facade.routing_snapshot(f, message)['muted_member_ids'] == []
     snap = resident_protocol.get_resident_conversation_snapshot(f['resident_id'], ACTOR)
     assert snap['family_facade']['chat_preferences']['muted_member_ids'] == [m]
 
@@ -108,7 +108,7 @@ def test_question_answer_keeps_original_owner_despite_solo(family_chat, monkeypa
     monkeypatch.setattr(family_facade, 'quoted_member', lambda *a: original)
     message = {'message_id':'msg_answer', 'author_id':ACTOR,
                'content_parts':[{'type':ANSWER_PART, 'source_message_id':'msg_questions'}]}
-    assert p.direct_member(f, message) == original
+    assert family_facade.direct_member(f, message) == original
     p.validate_target(f, message, original)
 
 

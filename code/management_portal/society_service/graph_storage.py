@@ -12,6 +12,7 @@ from typing import Any
 from management_common.database_time import decode_times
 
 from . import edge_storage
+from .lineage_definition_contract import EDGE_FAMILIES, PROGRAM_SCHEMA
 from .definition_collections import column, declarations, decode, typed_values, upsert, upsert_many, validate_fields
 
 
@@ -180,8 +181,6 @@ def put(connection: Any, lineage_id: str, value: Mapping[str, Any]) -> None:
 
 
 def read_many(connection: Any, lineage_ids: list[str]) -> dict[str, dict[str, Any]]:
-    from .lineage_program import PROGRAM_SCHEMA
-    from .lineage_definition_normalization import EDGE_FAMILIES
     result = {lid: {"nodes": [], "edges": [], "function_blocks": [], "program": {"schema": PROGRAM_SCHEMA, "components": [], "wires": []}} for lid in lineage_ids}
     if not result:
         return result

@@ -34,11 +34,12 @@ from management_portal.resource_refs import extract_resource_addresses
 
 
 from management_portal.society_service import resident_workspace_domain
+from management_portal.society_service import lineage_aggregate
 
 @pytest.fixture()
 def lineage_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     root = tmp_path / "lineages"
-    monkeypatch.setattr(lineage_domain, "DATA_ROOT", root)
+    monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", root)
     monkeypatch.setattr(lineage_domain, "LINEAGE_FOLDER_ROOT", root / "lineages")
     monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(root / "lineages"))
     install_resource_boundary(monkeypatch)
@@ -153,7 +154,7 @@ def test_lineage_view_reads_canonical_state_and_view_once(
     if warm:
         lineage_domain.get_lineage(lineage_id, "sample_admin")
     counts = {"state": 0, "view": 0}
-    read_state = lineage_domain._read_lineage_state
+    read_state = lineage_aggregate.read_lineage_state
     canonical_view = business_fact_views.canonical_view
 
     def counted_state(*args, **kwargs):
@@ -164,7 +165,7 @@ def test_lineage_view_reads_canonical_state_and_view_once(
         counts["view"] += 1
         return canonical_view(*args, **kwargs)
 
-    monkeypatch.setattr(lineage_domain, "_read_lineage_state", counted_state)
+    monkeypatch.setattr(lineage_aggregate, "read_lineage_state", counted_state)
     monkeypatch.setattr(business_fact_views, "canonical_view", counted_view)
     assert lineage_domain.get_lineage(lineage_id, "sample_admin")["lineage_id"] == lineage_id
     assert counts == {"state": 1, "view": 1}
@@ -326,7 +327,7 @@ def test_create_lineage_in_project_binds_canonical_entry(
     assert created["project_id"] == "project_robotcompany"
     assert canonical.is_symlink()
     assert canonical.resolve() == expected.resolve()
-    assert lineage_domain._lineage_catalog_store().get(created["lineage_id"])
+    assert lineage_aggregate.lineage_catalog_store().get(created["lineage_id"])
 
 
 def test_owner_reconcile_skips_a_lineage_deleted_before_notification(
@@ -362,7 +363,7 @@ def test_owner_reconcile_skips_a_lineage_deleted_after_catalog_read(
     lineage_id = created["lineage_id"]
 
     def delete_during_reconcile(_lineage_id: str, _actor: str) -> dict:
-        lineage_domain._lineage_catalog_store().remove(lineage_id, deleted_by="sample_admin")
+        lineage_aggregate.lineage_catalog_store().remove(lineage_id, deleted_by="sample_admin")
         raise KeyError("Lineage not found")
 
     monkeypatch.setattr(
@@ -639,7 +640,7 @@ def test_lineage_lifecycle_revision_and_recoverable_delete(
     assert lineage_domain.list_lineages("sample_admin")["lineages"] == []
     assert synced[-1]["lineage_id"] == created["lineage_id"]
     assert result["deleted_at"]
-    with lineage_domain._lineage_catalog_store().state_store.database.read() as connection:
+    with lineage_aggregate.lineage_catalog_store().state_store.database.read() as connection:
         assert connection.execute("SELECT deleted_at FROM lineages WHERE lineage_id=%s", (created["lineage_id"],)).fetchone()["deleted_at"]
 
 
@@ -678,7 +679,7 @@ def test_empty_lineage_delete_preserves_retryable_intent_when_cleanup_fails(
     assert lineage_domain._lineage_dir(created["lineage_id"]).is_dir()
     assert len(synced) == 1
     assert synced[0]["deleted_at"]
-    intent = lineage_domain._lineage_deletion_intent(created["lineage_id"])
+    intent = lineage_aggregate.lineage_deletion_intent(created["lineage_id"])
     assert intent["phase"] == "retryable"
     assert intent["operation_id"].startswith("lineage-delete_")
 
@@ -691,7 +692,7 @@ def test_lineage_list_includes_every_owned_lineage(
         {"title": "Formal HATG"},
         "sample_admin",
     )
-    with lineage_domain._lineage_scope("lineage_aaaaaaaaaaaa"):
+    with lineage_aggregate.lineage_scope("lineage_aaaaaaaaaaaa"):
         personal = lineage_domain._create_lineage_in_scope(
             {
                 "title": "Personal Resident Lineage",
@@ -837,7 +838,7 @@ def test_lineage_creation_uses_canonical_folder_layout(lineage_store: Path) -> N
     lineage_folder = lineage_store / "lineages" / created["lineage_id"]
     assert created["schema"] == "lineage-folder-v3"
     assert (lineage_folder / "residents").is_dir()
-    assert lineage_domain._lineage_catalog_store().get_state(created["lineage_id"])[1]
+    assert lineage_aggregate.lineage_catalog_store().get_state(created["lineage_id"])[1]
     assert (lineage_folder / "LINEAGE.md").is_file()
     assert (lineage_folder / "README.md").is_file()
 
@@ -902,13 +903,13 @@ def test_lineage_node_metadata_authorizes_the_graph_node_and_uses_light_projecti
         detail,
     )
     monkeypatch.setattr(
-        lineage_domain,
-        "_lineage_scope",
+        lineage_aggregate,
+        "lineage_scope",
         lambda *_args, **_kwargs: pytest.fail("metadata entered a Lineage write scope"),
     )
     monkeypatch.setattr(
-        lineage_domain,
-        "_read_lineage_state",
+        lineage_aggregate,
+        "read_lineage_state",
         lambda *_args, **_kwargs: pytest.fail("metadata materialized runtime state"),
     )
     node = created["nodes"][1]
@@ -2034,7 +2035,7 @@ def test_lineage_branch_validates_existing_graph_before_provider_fork(
         "edges": [],
         "leader_resident_id": resident_id,
     }, "sample_admin")
-    broken = lineage_domain._read_lineage(
+    broken = lineage_aggregate.read_lineage(
         created["lineage_id"], actor="sample_admin"
     )
     broken["nodes"][0]["id"] = "fork_invalid"
@@ -2171,7 +2172,7 @@ def test_runtime_persistence_ignores_resident_observations_without_compiling_aut
         sample_lineage_payload(),
         "sample_admin",
     )
-    persisted = lineage_domain._read_lineage(
+    persisted = lineage_aggregate.read_lineage(
         created["lineage_id"], actor="sample_admin"
     )
     persisted["program"] = {
@@ -2191,7 +2192,7 @@ def test_runtime_persistence_ignores_resident_observations_without_compiling_aut
         scope.setattr(lineage_domain, "_compiled_program", lambda *a, **k: pytest.fail("runtime persistence compiled authoring"))
         lineage_domain._persist_lineage_runtime_state(persisted, runtime, "Runtime boundary test")
 
-    saved = lineage_domain._read_lineage(
+    saved = lineage_aggregate.read_lineage(
         created["lineage_id"], actor="sample_admin"
     )
     assert saved["revision"] == persisted["revision"]

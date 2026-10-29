@@ -7,7 +7,7 @@ from typing import Any
 
 from management_common.database_time import iso_time
 from management_common.json_columns import json_text, json_value
-from . import lineage_data_mailbox, resident_execution_storage
+from . import lineage_data_mailbox, resident_delivery_storage, resident_execution_storage
 from .lineage_data_columns import now_iso_millis
 
 
@@ -79,8 +79,7 @@ class ResidentExecutions:
                 'UPDATE resident_execution_work SET progress_json=%s,revision=%s WHERE resident_id=%s',
                 (resident_execution_storage.encode(progress),revision,resident_id),
             )
-            from .resident_delivery_work import enqueue_state
-            enqueue_state(connection, resident_id, revision)
+            resident_delivery_storage.enqueue_state(connection, resident_id, revision)
             return True
         return self.database.write(write)
 
@@ -130,8 +129,7 @@ class ResidentExecutions:
                 connection.execute('DELETE FROM resident_execution_work WHERE resident_id=%s',(resident_id,))
             lineage_data_mailbox.sync_mailbox_queue(connection,resident_id,queue)
             if delivery_message_id:
-                from .resident_delivery_work import enqueue
-                enqueue(connection, resident_id, delivery_message_id, revision)
+                resident_delivery_storage.enqueue(connection, resident_id, delivery_message_id, revision)
             return revision,{**deepcopy(payload),'queue':deepcopy(queue)}
         revision,committed = self.database.write(write)
         return (revision,committed) if return_state else revision

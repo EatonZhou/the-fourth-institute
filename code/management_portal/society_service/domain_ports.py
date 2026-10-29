@@ -57,6 +57,9 @@ class _ResidentLineageHostPort(_BoundPort):
 
 resident_lineage_host_port = _ResidentLineageHostPort()
 
+# Program runtime failures and unsettled Effect activations reach people here.
+failure_notification_port = _BoundPort("Lineage failure notification port")
+
 
 class _ResidentTerminalPort:
     def __init__(self) -> None:
@@ -92,9 +95,11 @@ def bind_domain_ports(
     project: Any,
     resident: Any,
     resident_lineage: Any,
+    failure_notifications: Any,
 ) -> None:
     resource_port.bind(resource)
     execution_port.bind(execution)
     project_domain_port.bind(project)
     resident_domain_port.bind(resident)
     resident_lineage_host_port.bind(resident_lineage)
+    failure_notification_port.bind(failure_notifications)

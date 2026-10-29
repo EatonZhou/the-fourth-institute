@@ -21,6 +21,7 @@ from . import (
 from .domain_ports import resident_lineage_host_port
 from .resident_access import can_manage_resident as _can_manage_resident, manage_refusal
 from . import resident_domain_common, resident_fork_domain
+from . import project_folders
 from management_common.actor_identity import canonical_actor_id, same_actor as _same_actor
 from management_portal.execution.accounts import resolve_account_configuration
 from management_portal.execution.provider_catalog import AGENT_PROVIDERS
@@ -246,10 +247,9 @@ def _new_resident_record(
     """The unpublished identity of the new Resident, and its Lineage Folder."""
 
     from .resident_projection import _optional_absolute_paths
-    from . import project_domain
     workspace_paths = _optional_absolute_paths(payload.get("workspace_paths"))
     if project_id:
-        project_path = str(project_domain.project_root_for_id(project_id).resolve(strict=False))
+        project_path = str(project_folders.project_root_for_id(project_id).resolve(strict=False))
         if project_path not in workspace_paths:
             workspace_paths.append(project_path)
     resident_id = unique_resident_id()

@@ -65,6 +65,7 @@ from management_portal.execution.account_adapters import CodexRoutes
 from management_portal.execution.service import ExecutionService
 from management_portal.execution.session_manager import SessionManager
 from management_portal.society_service import execution_client
+from management_portal.society_service import lineage_aggregate
 from tests.cases.society_service_test_support import install_resource_boundary
 
 
@@ -420,7 +421,7 @@ def resident_record(
     lineage_root = tmp_path / "lineages"
     workspace = lineage_root / "lineage_000000000001"
     default_cwd = workspace / "residents" / "resident_aaaaaaaaaaaa" / "workspace"
-    monkeypatch.setattr(lineage_domain, "DATA_ROOT", tmp_path / "lineage-state")
+    monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", tmp_path / "lineage-state")
     monkeypatch.setattr(lineage_domain, "LINEAGE_FOLDER_ROOT", lineage_root)
     monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(lineage_root))
     session_store = AgentDataStore()
@@ -453,7 +454,7 @@ def resident_record(
     })
     # Canonical membership now requires its aggregate to exist before a
     # Resident is inserted; initialize graph attributes after membership.
-    with lineage_domain._lineage_scope(str(record["lineage_id"])):
+    with lineage_aggregate.lineage_scope(str(record["lineage_id"])):
         lineage_domain._create_lineage_in_scope(
             {"title": "Resident protocol test", "project_id": record["project_id"],
              "nodes": [], "edges": []},
@@ -470,7 +471,7 @@ def resident_record(
     )
     lineage_domain.update_lineage(
         str(record["lineage_id"]),
-        {**lineage_domain._read_lineage(str(record["lineage_id"]), actor="CASE-A"),
+        {**lineage_aggregate.read_lineage(str(record["lineage_id"]), actor="CASE-A"),
          "leader_resident_id": record["resident_id"]},
         "CASE-A",
     )

@@ -17,13 +17,14 @@ from management_portal.society_service import lineage_graph_state, lineage_progr
 
 
 from management_portal.society_service import resident_lifecycle_domain
+from management_portal.society_service import lineage_aggregate
 
 def test_effects_wait_for_all_state_scopes_and_discard_failed_transitions_contracts(monkeypatch, tmp_path, subtests, isolated_portal_case):
     """状态副作用在全部锁释放后执行并丢弃失败回调"""
     with subtests.test(contract='test_effects_wait_for_all_state_scopes_and_discard_failed_transitions'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
             tmp_path = case_path
-            monkeypatch.setattr(lineage_domain, "DATA_ROOT", tmp_path)
+            monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", tmp_path)
             calls = []
             def committed():
                 assert not invariant_locks.lock_held()
@@ -86,19 +87,19 @@ def test_effects_wait_for_all_state_scopes_and_discard_failed_transitions_contra
     with subtests.test(contract='test_different_lineage_scopes_do_not_block_each_other'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
             tmp_path = case_path
-            monkeypatch.setattr(lineage_domain, "DATA_ROOT", tmp_path)
+            monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", tmp_path)
             first_entered = threading.Event()
             release_first = threading.Event()
             second_entered = threading.Event()
 
             def hold_first() -> None:
-                with lineage_domain._lineage_scope("lineage_111111111111"):
+                with lineage_aggregate.lineage_scope("lineage_111111111111"):
                     first_entered.set()
                     release_first.wait(timeout=2)
 
             def enter_second() -> None:
                 first_entered.wait(timeout=2)
-                with lineage_domain._lineage_scope("lineage_222222222222"):
+                with lineage_aggregate.lineage_scope("lineage_222222222222"):
                     second_entered.set()
 
             first = threading.Thread(target=hold_first)
@@ -114,19 +115,19 @@ def test_effects_wait_for_all_state_scopes_and_discard_failed_transitions_contra
     with subtests.test(contract='test_same_lineage_scopes_do_not_block_each_other'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
             tmp_path = case_path
-            monkeypatch.setattr(lineage_domain, "DATA_ROOT", tmp_path)
+            monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", tmp_path)
             first_entered = threading.Event()
             release_first = threading.Event()
             second_entered = threading.Event()
 
             def hold_first() -> None:
-                with lineage_domain._lineage_scope("lineage_111111111111"):
+                with lineage_aggregate.lineage_scope("lineage_111111111111"):
                     first_entered.set()
                     release_first.wait(timeout=2)
 
             def enter_second() -> None:
                 first_entered.wait(timeout=2)
-                with lineage_domain._lineage_scope("lineage_111111111111"):
+                with lineage_aggregate.lineage_scope("lineage_111111111111"):
                     second_entered.set()
 
             first = threading.Thread(target=hold_first)
@@ -143,7 +144,7 @@ def test_effects_wait_for_all_state_scopes_and_discard_failed_transitions_contra
     with subtests.test(contract='test_resident_state_does_not_block_its_lineage_graph'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
             tmp_path = case_path
-            monkeypatch.setattr(lineage_domain, "DATA_ROOT", tmp_path)
+            monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", tmp_path)
             monkeypatch.setattr(
                 resident_lifecycle_domain,
                 "resident_aggregate_lineage_id",
@@ -160,7 +161,7 @@ def test_effects_wait_for_all_state_scopes_and_discard_failed_transitions_contra
 
             def enter_lineage() -> None:
                 resident_entered.wait(timeout=2)
-                with lineage_domain._lineage_scope("lineage_111111111111"):
+                with lineage_aggregate.lineage_scope("lineage_111111111111"):
                     lineage_entered.set()
 
             resident_thread = threading.Thread(target=hold_resident)
@@ -181,7 +182,7 @@ def test_resident_states_run_concurrently(tmp_path, monkeypatch, subtests, isola
         with subtests.test(same_lineage=same_lineage), isolated_portal_case() as case_path:
             with monkeypatch.context() as monkeypatch:
                 tmp_path = case_path
-                monkeypatch.setattr(lineage_domain, "DATA_ROOT", tmp_path)
+                monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", tmp_path)
                 lineage_by_resident = {
                     "resident_111111111111": "lineage_111111111111",
                     "resident_222222222222": "lineage_111111111111" if same_lineage else "lineage_222222222222",
@@ -222,7 +223,7 @@ def test_resident_mutation_lock_does_not_hold_an_identity_snapshot_contracts(mon
     with subtests.test(contract='test_resident_mutation_lock_does_not_hold_an_identity_snapshot'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
             tmp_path = case_path
-            monkeypatch.setattr(lineage_domain, "DATA_ROOT", tmp_path)
+            monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", tmp_path)
             monkeypatch.setattr(
                 resident_lifecycle_domain,
                 "resident_aggregate_lineage_id",
@@ -243,17 +244,17 @@ def test_resident_mutation_lock_does_not_hold_an_identity_snapshot_contracts(mon
     with subtests.test(contract='test_state_lock_requires_explicit_lineage_identity'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
             tmp_path = case_path
-            monkeypatch.setattr(lineage_domain, "DATA_ROOT", tmp_path)
+            monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", tmp_path)
 
             with pytest.raises(ValueError, match="lineage_id is required"):
-                with lineage_domain._lineage_scope(""):
+                with lineage_aggregate.lineage_scope(""):
                     pass
 
             assert not list((tmp_path / ".locks").glob("*"))
     with subtests.test(contract='test_independent_catalog_mutations_do_not_block_each_other'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
             tmp_path = case_path
-            monkeypatch.setattr(lineage_domain, "DATA_ROOT", tmp_path)
+            monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", tmp_path)
             first_entered = threading.Event()
             release_first = threading.Event()
             second_entered = threading.Event()
@@ -281,10 +282,10 @@ def test_resident_mutation_lock_does_not_hold_an_identity_snapshot_contracts(mon
     with subtests.test(contract='test_lineage_query_does_not_wait_for_aggregate_mutation_lock'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
             tmp_path = case_path
-            monkeypatch.setattr(lineage_domain, "DATA_ROOT", tmp_path)
+            monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", tmp_path)
             monkeypatch.setattr(
-                lineage_domain,
-                "_read_lineage",
+                lineage_aggregate,
+                "read_lineage",
                 lambda lineage_id, *, actor=None: {"lineage_id": lineage_id},
             )
             monkeypatch.setattr(lineage_domain, "_ensure_visible", lambda *_args: None)
@@ -298,7 +299,7 @@ def test_resident_mutation_lock_does_not_hold_an_identity_snapshot_contracts(mon
             query_completed = threading.Event()
 
             def hold_mutation_lock() -> None:
-                with lineage_domain._lineage_scope("lineage_111111111111"):
+                with lineage_aggregate.lineage_scope("lineage_111111111111"):
                     lock_entered.set()
                     release_lock.wait(timeout=2)
 
@@ -324,7 +325,7 @@ def test_resident_mutation_lock_does_not_hold_an_identity_snapshot_contracts(mon
     with subtests.test(contract='test_state_lock_health_reports_slow_holds'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
             tmp_path = case_path
-            monkeypatch.setattr(lineage_domain, "DATA_ROOT", tmp_path)
+            monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", tmp_path)
             monkeypatch.setattr(invariant_locks, "_SLOW_SECONDS", 0.01)
             before = lineage_domain.state_lock_health()["slow_hold_count"]
 
@@ -363,7 +364,7 @@ def test_resident_query_does_not_wait_for_aggregate_mutation_lock(
     monkeypatch,
 ) -> None:
     """Resident 状态查询不等待聚合修改锁"""
-    monkeypatch.setattr(lineage_domain, "DATA_ROOT", tmp_path)
+    monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", tmp_path)
     monkeypatch.setattr(
         resident_record_domain,
         "resolve_resident_runtime_target",
@@ -397,7 +398,7 @@ def test_resident_query_does_not_wait_for_aggregate_mutation_lock(
     query_completed = threading.Event()
 
     def hold_mutation_lock() -> None:
-        with lineage_domain._lineage_scope("lineage_111111111111"):
+        with lineage_aggregate.lineage_scope("lineage_111111111111"):
             lock_entered.set()
             release_lock.wait(timeout=2)
 
@@ -448,7 +449,7 @@ def test_program_event_dispatch_does_not_wrap_delivery_in_state_lock(
         dispatch,
     )
 
-    monkeypatch.setattr(lineage_domain, "_read_lineage_state", lambda lineage_id: {
+    monkeypatch.setattr(lineage_aggregate, "read_lineage_state", lambda lineage_id: {
         "lineage_id": lineage_id, "revision": 1, "nodes": [], "edges": [],
         "program": {"components": [], "wires": []},
     })

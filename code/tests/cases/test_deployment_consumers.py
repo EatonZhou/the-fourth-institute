@@ -10,6 +10,7 @@ import pytest
 
 from management_portal import backup_lineage, portal_pulse_backend as pulse
 from management_portal.society_service import system_workflow_switches as switches
+from management_portal.society_service import component_runtime
 from management_portal.watchboards import telepus
 from management_portal.workbench_projections import development_projection as development
 
@@ -138,20 +139,20 @@ def test_removed_managed_switch_binding_cannot_bypass_event_authority(configure,
     from management_portal.hatg.contracts import InstructionError
     from contextlib import nullcontext
     configure()
-    monkeypatch.setattr('management_portal.society_service.lineage_domain._lineage_execution_authorities', lambda _: nullcontext())
+    monkeypatch.setattr('management_portal.society_service.lineage_aggregate.execution_authorities', lambda _: nullcontext())
     settings = ExecutionSettings()
     key = 'system:request-timing:enabled'
     settings.project_workflow_switch(key, False)
     with pytest.raises(InstructionError, match='部署绑定缺失'):
-        switches.update_settings({'model_request_timing_enabled': True}, 'actor')
+        component_runtime.update_settings({'model_request_timing_enabled': True}, 'actor')
     assert settings.get()['model_request_timing_enabled'] is False
 
 
 def test_uninstalled_switch_configuration_preserves_local_settings(configure, monkeypatch):
     from contextlib import nullcontext
     configure()
-    monkeypatch.setattr('management_portal.society_service.lineage_domain._lineage_execution_authorities', lambda _: nullcontext())
-    assert switches.update_settings({'model_request_timing_enabled': False}, 'actor')['model_request_timing_enabled'] is False
+    monkeypatch.setattr('management_portal.society_service.lineage_aggregate.execution_authorities', lambda _: nullcontext())
+    assert component_runtime.update_settings({'model_request_timing_enabled': False}, 'actor')['model_request_timing_enabled'] is False
 
 
 def test_backup_guide_follows_current_site_configuration(configure):

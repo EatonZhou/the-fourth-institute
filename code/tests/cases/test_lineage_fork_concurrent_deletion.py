@@ -7,7 +7,7 @@ from types import SimpleNamespace
 
 import pytest
 from management_portal.society_service import lineage_domain as graphs
-from management_portal.society_service import lineage_definition_versions as versions
+from management_portal.society_service.isa import common
 from tests.cases.test_principal_hierarchy import family
 from tests.cases.test_resident_folder_creation_contract import (
     future_creation_store, _new_session_payload, _append_conversation_turn, CANONICAL_RESIDENT_TARGETS,
@@ -68,7 +68,7 @@ def test_versioned_fork_does_not_conflict_with_its_own_child(future_creation_sto
     revision = graphs.get_lineage(lineage_id, "sample_admin")["revision"]
     invocation = SimpleNamespace(arguments={"lineage_id": lineage_id}, expected_version=revision,
                                  expected_version_for=lambda _: revision)
-    result = versions.guard_definition_handler("ForkResident", lambda _: graphs.fork_lineage_resident(
+    result = common.guard_definition_handler("ForkResident", lambda _: graphs.fork_lineage_resident(
         lineage_id, {"source": source["resident_id"], "fork_mode": "full", "child_title": "Child"},
         "sample_admin",
     ))(invocation)
@@ -90,7 +90,7 @@ def test_stale_fork_precondition_leaves_no_child(future_creation_store, monkeypa
     invocation = SimpleNamespace(arguments={"lineage_id": lineage_id}, expected_version=revision,
                                  expected_version_for=lambda _: revision)
     with pytest.raises(InstructionError) as error:
-        versions.guard_definition_handler("ForkResident", lambda _: graphs.fork_lineage_resident(
+        common.guard_definition_handler("ForkResident", lambda _: graphs.fork_lineage_resident(
             lineage_id, {"source": source["resident_id"], "fork_mode": "full", "child_title": "Rejected"},
             "sample_admin",
         ))(invocation)

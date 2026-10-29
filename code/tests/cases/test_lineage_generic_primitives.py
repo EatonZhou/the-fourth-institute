@@ -15,13 +15,14 @@ from management_common.principal import OperationIdentity
 from management_common.operation_errors import OperationError
 
 from management_portal.society_service import lineage_domain, lineage_program_effect_execution
-from management_portal.society_service import lineage_event_conditions, lineage_program_effect_rules
+from management_portal.society_service import lineage_event_conditions, lineage_program_execution
 from management_portal.society_service import component_runtime, lineage_graph_state
 from management_portal.society_service import invariant_locks, state_store
 from management_portal.society_service import lineage_primitives
 from management_portal.society_service import lineage_program
 from management_portal.society_service import lineage_program_runtime
 from management_portal.society_service.lineage_effect_script import deliver_script_parts
+from management_portal.society_service import lineage_aggregate
 from tests.cases.effect_script_support import effect_config, lower_effect_call
 
 
@@ -102,7 +103,7 @@ def primitive_store(
     monkeypatch: pytest.MonkeyPatch,
 ) -> Path:
     root = tmp_path / "lineages"
-    monkeypatch.setattr(lineage_domain, "DATA_ROOT", root)
+    monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", root)
     monkeypatch.setattr(lineage_domain, "LINEAGE_FOLDER_ROOT", root / "lineages")
     monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(root / "lineages"))
     install_resource_boundary(monkeypatch)
@@ -137,7 +138,7 @@ def test_all_primitive_creation_paths_allocate_without_overlaps(primitive_store:
     }, ACTOR)
     before = lineage_domain.get_lineage(lineage["lineage_id"], ACTOR)
     lineage_id = lineage["lineage_id"]
-    store = lineage_domain._lineage_catalog_store().state_store
+    store = lineage_aggregate.lineage_catalog_store().state_store
     residents_before = store.residents_by_id([WORK_A])
     clock["now"] = "2026-01-01T00:00:01Z"
     if entry == "create":
@@ -316,7 +317,7 @@ def test_invoke_wire_mapping_combines_prompt_and_overrides_other_defaults() -> N
         },
         correlation="argument-mapping",
     )
-    invocation = lineage_program_effect_rules._make_program_effect_invocation(
+    invocation = lineage_program_execution._make_program_effect_invocation(
         event,
         source_kind="packet",
         source_id="event_source_mapping",
@@ -372,7 +373,7 @@ def test_event_prompt_survives_serialization_beyond_metadata_text_limit_contract
             payload={"name": "runtime"},
             correlation="packet-mapping",
         )
-        invocation = lineage_program_effect_rules._make_program_effect_invocation(
+        invocation = lineage_program_execution._make_program_effect_invocation(
             event,
             source_kind="packet",
             source_id=WORK_D,

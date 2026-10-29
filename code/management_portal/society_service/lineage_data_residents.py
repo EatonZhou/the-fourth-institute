@@ -8,11 +8,11 @@ from typing import Any
 from .read_snapshot import request_cached
 from . import family_storage, graph_storage, resident_storage
 from .lineage_data_columns import json_column
+from .resident_storage import RESIDENT_RECORD_SCHEMA
 
 
 def resident_from_row(row: Any) -> dict[str, Any]:
     row = dict(row)
-    from .resident_catalog import RESIDENT_RECORD_SCHEMA
     value: dict[str, Any] = {"schema": RESIDENT_RECORD_SCHEMA, "folder_schema": "lineage-folder-v3"}
     for fields in resident_storage.DOMAIN_TABLES.values():
         value.update(resident_storage.decode(row, fields))

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Mapping
 from typing import Any
 
 from management_common.message_identity import derived_message_identity
@@ -139,6 +140,15 @@ def question_set(message: dict[str, Any] | None) -> dict[str, Any] | None:
         part for part in message.get("content_parts") or []
         if isinstance(part, dict) and part.get("type") == QUESTION_PART
     ), None)
+
+
+def answered_set(message: Mapping[str, Any] | None) -> str:
+    """The message whose question set a user message answers; "" when it answers none."""
+
+    for part in (message or {}).get("content_parts") or []:
+        if isinstance(part, Mapping) and part.get("type") == ANSWER_PART:
+            return str(part.get("source_message_id") or "").strip()
+    return ""
 
 
 def visible_message_input_ids(messages: list[dict[str, Any]]) -> list[str]:

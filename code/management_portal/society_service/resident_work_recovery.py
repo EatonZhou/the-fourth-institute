@@ -19,7 +19,6 @@ from . import (
 )
 from .domain_ports import execution_port, resident_domain_port
 from .resident_account_policy import account_available, fallback_account, migration_target_options, resident_account
-from .family_storage import auto_migration_enabled
 
 MAX_RECOVERY_ATTEMPTS = 2
 RECHECK_SECONDS = 600
@@ -111,7 +110,7 @@ def _notify_steward_blocked(record: Mapping[str, Any], message_id: str, reason: 
             recipients=owners, severity="error", created_by="portal",
             notification_id=f"work-recovery:{record['resident_id']}:{message_id}",
         )
-        from .family_owners import message_creator
+        from .outward_messages import message_creator
         message_creator(record, identity=f"work-recovery:{record['resident_id']}:{message_id}",
                         text=f"Family 内部角色 {record.get('title') or record['resident_id']} 无法继续恢复。{reason}。原输入 {message_id} 已保留。")
         from . import resident_record_domain
@@ -195,8 +194,8 @@ def _reconcile_failed_work(residents: list[dict[str, Any]], context: dict[str, A
                     or record.get("backend_route_id") or "")
         if usage and not route:
             route = str(resident_backend.execution_account(record, binding).get("backend_route_id") or "")
-        from .family_quota import _reserve_candidate
-        can_migrate = auto_migration_enabled(record) and bool(_reserve_candidate(record))
+        can_migrate = (resident_domain_port.auto_migration_enabled(record)
+                       and bool(resident_domain_port.reserve_candidate(record)))
         pending = recovery.get("pending_restart")
         if pending and not can_migrate:
             continue
@@ -236,8 +235,7 @@ def _reconcile_failed_work(residents: list[dict[str, Any]], context: dict[str, A
                 _notify_steward_blocked(record, message_id, "steward 备用后端切换已失败两次")
                 continue
             tried = list(recovery.get("tried_accounts") or [])
-            from .family_storage import auto_migration_priority
-            target = fallback_account(accounts or [], provider, route, tried, reserve=True, priority=auto_migration_priority(record))
+            target = fallback_account(accounts or [], provider, route, tried, reserve=True, priority=resident_domain_port.auto_migration_priority(record))
             if not target:
                 _notify_steward_blocked(record, message_id, "没有已确认有可用额度的备用账号或后端")
                 continue

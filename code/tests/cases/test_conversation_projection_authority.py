@@ -21,7 +21,7 @@ from management_portal.society_service.resident_conversation_stream import (
 from management_portal.society_service.resident_conversation_event_relay import (
     ResidentConversationEventRelay,
 )
-from management_portal.society_service.resident_catalog import RESIDENT_RECORD_SCHEMA
+from management_portal.society_service.resident_storage import RESIDENT_RECORD_SCHEMA
 from management_portal.society_service.state_store import (
     LINEAGE_DATA_SCHEMA,
     LineageDataStore,

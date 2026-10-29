@@ -20,6 +20,7 @@ from typing import Any, Protocol
 
 from . import (
     lineage_effect_script,
+    lineage_effect_syntax,
     lineage_instruction_context,
     lineage_effect_script_journal,
     lineage_primitives,
@@ -68,7 +69,7 @@ def _family_note_context(
     from .family_familize import facade_for_family_state, facade_for_internal_note
 
     if instruction in {"RelayFamilyMessage", "DispatchFamilyTask"}:
-        from .family_familize import facade_for_arrival_call
+        from .family_facade import facade_for_arrival_call
         facade = facade_for_arrival_call(lineage, effect_id, instruction, arguments, event, context.caller,
                                          lineage_id=lineage_id) if context.entry == "lineage" else ""
         return replace(context, caller=facade) if facade else context
@@ -78,18 +79,18 @@ def _family_note_context(
         facade = facade_for_family_state(lineage, effect_id, str(arguments.get("key") or ""))
         return replace(context, caller=facade) if facade else context
     if instruction in {"CheckFamilyRecovery", "CheckFamilyProgress", "CheckFamilyRoleAvailability"}:
-        from .family_familize import _component_family, _role
-        block = _component_family(lineage, effect_id)
+        from .family_familize import component_family, role_of
+        block = component_family(lineage, effect_id)
         if (block and arguments.get("lineage_id") == lineage_id
                 and arguments.get("family_id") == block["id"]):
-            return replace(context, caller=_role(block, "facade"))
+            return replace(context, caller=role_of(block, "facade"))
         return context
     if instruction in {"CheckResidentWorkSummary", "GetFamilySummaryInputs"}:
-        from .family_familize import _component_family, _role, member_ids
-        block = _component_family(lineage, effect_id)
+        from .family_familize import component_family, role_of, member_ids
+        block = component_family(lineage, effect_id)
         target = str(arguments.get("resident_id") or "")
-        allowed = (member_ids(block) + [_role(block, r) for r in ("facade", "router", "steward")]) if block else []
-        facade = _role(block, "facade") if block and target in allowed else ""
+        allowed = (member_ids(block) + [role_of(block, r) for r in ("facade", "router", "steward")]) if block else []
+        facade = role_of(block, "facade") if block and target in allowed else ""
         return replace(context, caller=facade) if facade else context
     if instruction == DELIVER_MESSAGE:
         roles: tuple[str, ...] = ("steward", "router")
@@ -184,10 +185,10 @@ def _outcome_event(
     )
 
 
-_PARSED_SCRIPTS: dict[str, lineage_effect_script.Script] = {}
+_PARSED_SCRIPTS: dict[str, lineage_effect_syntax.Script] = {}
 
 
-def _parsed_script(text: str) -> lineage_effect_script.Script:
+def _parsed_script(text: str) -> lineage_effect_syntax.Script:
     """Parse once per script text; parsed scripts are immutable."""
 
     script = _PARSED_SCRIPTS.get(text)
@@ -382,7 +383,7 @@ class _EffectRun:
             return self._fail(failure_error)
         return self._succeed(outcome)
 
-    def _begin(self) -> tuple[dict[str, Any], lineage_effect_script.Script]:
+    def _begin(self) -> tuple[dict[str, Any], lineage_effect_syntax.Script]:
         """Open the resume journal; the activation then carries its Trigger Path."""
 
         validate_effect_route(self.effect_id, self.event.payload.get("route_path"))

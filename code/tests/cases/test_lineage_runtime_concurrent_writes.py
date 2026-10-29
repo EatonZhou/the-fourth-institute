@@ -10,7 +10,8 @@ import threading
 import pytest
 
 from management_portal.society_service import lineage_data_runtime
-from management_portal.society_service.state_store import LineageDataStore, RuntimeCASConflict
+from management_portal.society_service.lineage_data_runtime import RuntimeCASConflict
+from management_portal.society_service.state_store import LineageDataStore
 from tests.cases.test_lineage_object_state import LINEAGE_ID, _store, object_resources  # noqa: F401 - fixture
 
 

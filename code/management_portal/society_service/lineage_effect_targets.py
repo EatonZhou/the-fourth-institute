@@ -11,7 +11,7 @@ import json
 from dataclasses import dataclass, fields, is_dataclass
 from typing import Any, Callable
 
-from . import lineage_effect_script as ast
+from . import lineage_effect_syntax as ast
 
 
 @dataclass(frozen=True)

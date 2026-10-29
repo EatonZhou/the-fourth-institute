@@ -25,6 +25,10 @@ RUNTIME_COLUMN_FIELDS = frozenset({
 })
 
 
+class RuntimeCASConflict(RuntimeError):
+    """A runtime object changed after the caller read its expected state."""
+
+
 def _runtime_objects(value: Mapping[str, Any]) -> dict[tuple[str, str], dict[str, Any]]:
     objects: dict[tuple[str, str], dict[str, Any]] = {}
     meta = {
@@ -65,8 +69,6 @@ def _runtime_from_objects(
 
 def lock_live_lineage(connection: Any, lineage_id: str) -> None:
     """Hold the Lineage row for this transaction; a deleted Lineage takes no more writes."""
-
-    from .state_store import RuntimeCASConflict
 
     row = connection.execute('SELECT deleted_at FROM lineages WHERE lineage_id=%s FOR NO KEY UPDATE', (lineage_id,)).fetchone()
     if row is not None and row['deleted_at'] is not None:
@@ -164,8 +166,6 @@ class LineageRuntimes:
         before = expected.get('edges') or {}
         after = candidate.get('edges') or {}
         changed = {key for key in set(before) | set(after) if before.get(key) != after.get(key)}
-        from .state_store import RuntimeCASConflict
-
         def write(connection):
             lock_live_lineage(connection, lineage_id)
             current = runtime_from_connection(connection, lineage_id)

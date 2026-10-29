@@ -2,10 +2,10 @@
 from __future__ import annotations
 
 from typing import Any
-from . import family_chat_preferences
+from . import family_chat_storage
 ROLES = ("member", "facade", "router", "steward")
 COLUMNS = {
-    **family_chat_preferences.COLUMNS,
+    **family_chat_storage.COLUMNS,
     "families": ("family_id", "lineage_id", "title", "goal", "previous_leader_id", "deleted_at", "human_familizer_id", "route_threshold", "review_interval_seconds", "lineage_scope", "resource_id", "created_at", "updated_at", "personal_ama_id", "history_before", "history_before_ordinal", "auto_migrate", "auto_migrate_priority"),
     "family_residents": ("family_id", "resident_id", "role"),
 }
@@ -20,7 +20,7 @@ def operating_role_ids(connection: Any) -> list[str]:
 
 
 def create_schema(connection: Any) -> None:
-    family_chat_preferences.create_schema(connection)
+    family_chat_storage.create_schema(connection)
     connection.execute("""CREATE TABLE families (
         family_id TEXT PRIMARY KEY, lineage_id TEXT NOT NULL REFERENCES lineages(lineage_id) ON DELETE CASCADE,
         title TEXT NOT NULL, goal TEXT NOT NULL, previous_leader_id TEXT NOT NULL DEFAULT '',
@@ -254,27 +254,3 @@ def families_around(connection: Any, resident_id: str, *, max_hops: int = 4) -> 
         seen.add(row['family_id'])
         current = row['facade_id']
     return chain
-
-
-def auto_migration_enabled(record: dict) -> bool:
-    """The immediate Family owns its migration policy; ordinary Residents have none."""
-    family = record.get("family") or {}
-    if family.get("role") not in {"member", "router", "steward"} or record.get("deleted_at"):
-        return False
-    from .state_store import get_lineage_data_store
-    with get_lineage_data_store().database.read() as connection:
-        row = connection.execute("SELECT auto_migrate FROM families WHERE family_id=%s AND deleted_at IS NULL",
-                                 (family["family_id"],)).fetchone()
-    return bool(row and row["auto_migrate"])
-
-
-def auto_migration_priority(record: dict) -> list[str]:
-    """Read the same immediate Family policy for admission and failure recovery."""
-    family = record.get("family") or {}
-    if family.get("role") not in {"member", "router", "steward"} or record.get("deleted_at"):
-        return []
-    from .state_store import get_lineage_data_store
-    with get_lineage_data_store().database.read() as connection:
-        row = connection.execute("SELECT auto_migrate_priority FROM families WHERE family_id=%s AND deleted_at IS NULL",
-                                 (family["family_id"],)).fetchone()
-    return list(row["auto_migrate_priority"]) if row else []

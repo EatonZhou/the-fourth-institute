@@ -10,6 +10,7 @@ from copy import deepcopy
 from . import rewrite
 from .registry import ApplyContext, TemplateError, result
 from .values import NAME, match_references, render, render_script
+from .. import lineage_aggregate
 
 
 def domain():
@@ -456,7 +457,7 @@ class StructureKind:
 
     def _targets(self, ctx):
         body = ctx.template["body"]
-        lineage = domain()._read_lineage(ctx.lineage_id, actor=ctx.actor)
+        lineage = lineage_aggregate.read_lineage(ctx.lineage_id, actor=ctx.actor)
         info = _info(lineage)
         needs_target = any(role["from"] == "target" for role in body["roles"])
         targets = ctx.target["resident_ids"] if needs_target else [None]
@@ -790,7 +791,7 @@ def from_selection(lineage_id, element_ids, actor, existing=False):
 
     from .. import resident_protocol
 
-    lineage = domain()._read_lineage(lineage_id, actor=actor)
+    lineage = lineage_aggregate.read_lineage(lineage_id, actor=actor)
     if existing:
         return _rewrite_from_selection(lineage, element_ids)
     blocks = {item["id"]: item for item in lineage.get("function_blocks", [])}

@@ -7,6 +7,8 @@ import pytest
 
 from management_portal import portal_feature_switches as switches
 
+from management_portal.society_service import lineage_aggregate
+
 
 def site():
     return {"site_name": "keep", "deployment": {
@@ -158,7 +160,7 @@ def test_failed_rollback_continues_other_components_and_reports_uncertainty(monk
 def test_native_pause_owner_is_consumed_by_event_and_effect_admission(monkeypatch):
     """Real reducers and admission checks; only persistence/authority is in memory."""
     from management_portal.society_service import (
-        lineage_domain, lineage_program_runtime as runtime,
+        lineage_program_runtime as runtime,
         lineage_program_effect_execution as effect, lineage_program_event_dispatch as events,
         lineage_primitives, system_workflow_switches, trigger_paths,
     )
@@ -180,7 +182,7 @@ def test_native_pause_owner_is_consumed_by_event_and_effect_admission(monkeypatc
     monkeypatch.setattr(runtime, "_runtime_transaction", transaction)
     monkeypatch.setattr(runtime, "operator_state_transaction", operator)
     monkeypatch.setattr(runtime, "read_operator_state", lambda lid, cid: data["operators"].get(cid, {}))
-    monkeypatch.setattr(lineage_domain, "_lineage_execution_authority", lambda lid: nullcontext())
+    monkeypatch.setattr(lineage_aggregate, "execution_authority", lambda lid: nullcontext())
     monkeypatch.setattr(system_workflow_switches, "project_after_commit", lambda lid: None)
     def views(lid, actor, *, component_id):
         kind = "effect" if component_id in plan["effects"] else "event_source"

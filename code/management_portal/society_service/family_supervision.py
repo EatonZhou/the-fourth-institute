@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 
 from . import family_facade, family_recovery, resident_conversation_stream
 from .state_store import get_lineage_data_store
+from . import lineage_aggregate
 
 MAX_REPAIR_ROUNDS = 3
 REF = "duty/family-recovery"
@@ -143,20 +144,19 @@ def _escalate(lineage_id, family, incidents, reason):
                     f"状态：{observed.get('state') or 'unknown'}；错误：{str(observed.get('error') or '')[:1500]}。"
                     "任务和故障记录已保留，请处理阻塞后恢复原任务。")
         incident.update(status="escalated", notification_id=notification_id)
-        from .family_owners import message_creator
+        from .outward_messages import message_creator
         from . import resident_record_domain
         message_creator(resident_record_domain.find_resident(family["facade"]), identity=notification_id,
                         text=f"Family「{family['title']}」需要恢复协助：{reason}。原请求 {incident.get('request_message_id') or incident['message_id']} 已保留。")
 
 
 def check(lineage_id, family_id, actor, *, event=None, escalate_reason=""):
-    from .templates.familize import read_family
-    from . import lineage_domain
+    from .family_familize import read_family
     from . import resident_record_domain
     lineage, block = read_family(lineage_id, family_id, actor)
     family = block["family"]
     if actor not in {family["facade"], family["steward"]}:
-        lineage_domain._ensure_manager(lineage, actor)
+        lineage_aggregate.ensure_manager(lineage, actor)
     facade = resident_record_domain.find_resident(family["facade"])
     if facade.get("deleted_at") or resident_record_domain.resident_intake_state(facade) != "open":
         # Pausing the Family is explicit; closing one member is a repairable fault.

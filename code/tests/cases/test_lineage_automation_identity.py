@@ -7,6 +7,7 @@ from management_common.operation_identity import operation_identity_scope
 from management_common.principal import OperationIdentity
 from management_portal.society_service import lineage_automation_identity as identity
 from management_portal.society_service import lineage_domain, lineage_program_runtime
+from management_portal.society_service import lineage_aggregate
 from tests.cases.isa_test_support import ok, run
 from tests.cases.test_isa_lineage_lifecycle import future_creation_store, lineage, resident, graph  # noqa: F401
 from tests.cases.permission_test_support import permissions  # noqa: F401
@@ -92,7 +93,7 @@ def test_domain_cannot_reintroduce_removed_user_configuration(lineage, entry):
         elif entry == "metadata":
             lineage_domain.update_lineage_metadata(lineage, {"run_as_principal": None}, "sample_admin")
         else:
-            current = lineage_domain._read_lineage_state(lineage)
+            current = lineage_aggregate.read_lineage_state(lineage)
             lineage_domain.update_lineage(lineage, {**current, "run_as_principal": USER}, "sample_admin")
 
 

@@ -18,6 +18,7 @@ from management_portal.society_service import (
     resident_management_domain,
     resident_protocol,
 )
+from management_portal.society_service import lineage_aggregate
 
 
 NODE_MESSAGE_SENDER = None
@@ -96,8 +97,8 @@ def write_lineage_facts(aggregate: Mapping[str, Any]) -> None:
         dict(aggregate)
     )
     definition["schema"] = lineage_domain.LINEAGE_FOLDER_SCHEMA
-    lineage_domain._lineage_catalog_store().upsert(definition)
-    lineage_domain._lineage_catalog_store().put_runtime(
+    lineage_aggregate.lineage_catalog_store().upsert(definition)
+    lineage_aggregate.lineage_catalog_store().put_runtime(
         lineage_id,
         lineage_state_domains.persisted_runtime_state(aggregate),
     )

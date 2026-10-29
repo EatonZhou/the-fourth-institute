@@ -253,7 +253,7 @@ def drain_event_backlog(
                 and str(route.get("target_id") or "") not in closed_ids
                 and str((runtime_view.get(str(route.get("wire_id") or "")) or {}).get("oldest_event_source_id") or "")
                 not in closed_ids
-                and lineage_program_event_dispatch._program_event_route_can_consume(
+                and lineage_program_execution.program_event_route_can_consume(
                     lineage_id, lineage, route, actor_id,
                     authority=_program_event_authority(),
                 )[0],

@@ -69,7 +69,7 @@ from tests.cases.test_family_familize import lineage, charters, resident, graph,
 
 
 def test_priority_persists_and_unrelated_update_preserves_it(lineage, charters):
-    from management_portal.society_service.family_storage import auto_migration_priority
+    from management_portal.society_service.family_quota import auto_migration_priority
     from management_portal.society_service.resident_record_domain import find_resident
     member = resident(lineage, 'Member')
     result = ok('Familize', {'lineage_id': lineage, 'resident_ids': [member]})

@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import hashlib
 
+from . import lineage_aggregate
+
 
 def root(record):
     from . import resident_record_domain
@@ -19,7 +21,6 @@ def prefix(record):
 
 
 def definition(record):
-    from .lineage_domain import _lineage_catalog_store
     from . import resident_lineage
     lineage_id = resident_lineage.lineage_id(record)
     if not lineage_id:
@@ -28,7 +29,7 @@ def definition(record):
     cached = resident_lineage.cached_access_projection(cache_key)
     if cached is not None:
         return cached
-    graph = _lineage_catalog_store().get_state(lineage_id)[0]
+    graph = lineage_aggregate.lineage_catalog_store().get_state(lineage_id)[0]
     resident_lineage.remember_access_projection(cache_key, graph)
     return graph
 

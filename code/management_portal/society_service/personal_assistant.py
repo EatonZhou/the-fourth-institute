@@ -1,7 +1,6 @@
-"""Personal Family policy, initialization and shared behavior (plan_7dddf00a1913)."""
+"""Personal Family policy and shared behavior (plan_7dddf00a1913)."""
 from __future__ import annotations
 
-import hashlib
 from typing import Any, Mapping
 
 TITLE = "Ask Me Anything | My Lineage"
@@ -103,46 +102,3 @@ fi
 sent=$(DispatchFamilyTask resident_id="${arguments.facade}" trigger="review")
 UpdateSharedState lineage_id="${arguments.lineage_id}" key="${arguments.review_key}" value="${activity.value}"
 output status="requested" message_id="${sent.message_id}"'''
-
-
-def ensure(username: str, ama_id: str, actor: str) -> dict[str, Any]:
-    """Resume one user's Family setup without touching their AMA session or history."""
-    from management_common.principal import actor_principal
-    from management_portal.shared_state import exclusive_file_lock
-    from . import lineage_domain as graphs, resident_catalog, lineage_graph_state
-    from .templates.familize import familize
-
-    owner = actor_principal(username)
-    if owner.kind != "user" or actor_principal(actor) != owner:
-        raise PermissionError("个人助手只能以用户本人身份初始化")
-    lock = hashlib.sha256(owner.id.casefold().encode()).hexdigest()
-    with exclusive_file_lock(graphs.DATA_ROOT / "locks" / "personal-assistant" / f"{lock}.lock"):
-        ama = resident_catalog.get_catalog().get(ama_id)
-        lineage_id = ama["lineage_id"]
-        graph = graphs._read_lineage(lineage_id, actor=actor)
-        if (graph.get("lineage_membership") != "personal"
-                or str(graph.get("created_by") or "").casefold() != owner.id.casefold()
-                or ama.get("deleted_at")):
-            raise ValueError("个人 AMA 入口必须指向本人的私人 Lineage 中的有效成员")
-        blocks = [b for b in graph.get("function_blocks", []) if (b.get("family") or {}).get("personal_ama_id")]
-        if blocks and blocks[0]["family"]["personal_ama_id"] != ama_id:
-            raise ValueError("个人助手已绑定另一 AMA；请明确调整成员，初始化不替换绑定")
-        if graph["title"] == "Ask Me Anything":
-            def rename(body):
-                if body["title"] == "Ask Me Anything":
-                    body["title"] = TITLE
-                return {}
-            graph, _ = graphs.commit_lineage_edit(lineage_id, actor, rename, reason="个人助手默认名称")
-        if not blocks:
-            result = familize(lineage_id, [ama_id], actor, title=graph["title"], personal_ama_id=ama_id)
-            graph = graphs._read_lineage(lineage_id, actor=actor)
-            block = next(b for b in graph["function_blocks"] if b["id"] == result["family_id"])
-        else:
-            block = blocks[0]
-        family = block["family"]
-        # Publication can fail after the graph committed. Retry it,
-        # keeping the original roles and migration boundary.
-        graphs._publish_lineage_resource_projection(lineage_id, None, actor=actor)
-        key = preferences_key(family["facade"])
-        lineage_graph_state.update_cell(lineage_id, key, {"preferences": [], "my_teams": []}, expected_value=None)
-        return {"resident_id": family["facade"], "lineage_id": lineage_id, "family_id": family["resource_id"]}

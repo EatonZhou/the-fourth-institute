@@ -2,24 +2,12 @@
 
 The caller owns preferences; the message author owns the immutable routing
 snapshot. Neither changes Family membership, intake or another viewer's chat.
+``family_chat_storage`` holds both; ``family_facade.routing_snapshot`` freezes
+a request's snapshot.
 """
 from management_common.actor_identity import canonical_actor_id
 
-COLUMNS = {
-    'family_chat_preferences': ('facade_id', 'actor', 'muted_member_ids', 'solo_member_id'),
-    'family_chat_inputs': ('facade_id', 'message_id', 'muted_member_ids', 'solo_member_id'),
-}
-
-
-def create_schema(c):
-    c.execute("""CREATE TABLE family_chat_preferences (
-        facade_id TEXT NOT NULL REFERENCES residents(resident_id) ON DELETE CASCADE,
-        actor TEXT NOT NULL, muted_member_ids TEXT[] NOT NULL DEFAULT '{}',
-        solo_member_id TEXT NOT NULL DEFAULT '', PRIMARY KEY(facade_id,actor))""")
-    c.execute("""CREATE TABLE family_chat_inputs (
-        facade_id TEXT NOT NULL REFERENCES residents(resident_id) ON DELETE CASCADE,
-        message_id TEXT NOT NULL, muted_member_ids TEXT[] NOT NULL DEFAULT '{}',
-        solo_member_id TEXT NOT NULL DEFAULT '', PRIMARY KEY(facade_id,message_id))""")
+from . import family_chat_storage
 
 
 def _db():
@@ -27,15 +15,9 @@ def _db():
     return get_lineage_data_store().database
 
 
-def _read(c, facade_id, actor):
-    row = c.execute('SELECT muted_member_ids,solo_member_id FROM family_chat_preferences WHERE facade_id=%s AND actor=%s',
-                    (facade_id, canonical_actor_id(actor))).fetchone()
-    return dict(row) if row else {'muted_member_ids': [], 'solo_member_id': ''}
-
-
 def read(facade, actor):
     with _db().read() as c:
-        return _read(c, facade['resident_id'], actor)
+        return family_chat_storage.read_policy(c, facade['resident_id'], actor)
 
 
 def get(facade_id, actor):
@@ -61,7 +43,7 @@ def change(facade_id, actor, member_id, control, enabled):
         identity = canonical_actor_id(actor)
         c.execute('INSERT INTO family_chat_preferences(facade_id,actor) VALUES (%s,%s) ON CONFLICT DO NOTHING', (facade_id, identity))
         c.execute('SELECT actor FROM family_chat_preferences WHERE facade_id=%s AND actor=%s FOR UPDATE', (facade_id, identity))
-        policy = _read(c, facade_id, identity)
+        policy = family_chat_storage.read_policy(c, facade_id, identity)
         muted = policy['muted_member_ids']
         solo = policy['solo_member_id']
         if control == 'mute':
@@ -80,18 +62,6 @@ def change(facade_id, actor, member_id, control, enabled):
     return result
 
 
-def capture(facade, message):
-    """Freeze once when admitted, before any event or Router model runs."""
-    def write(c):
-        value = _read(c, facade['resident_id'], message.get('author_id', ''))
-        c.execute('INSERT INTO family_chat_inputs VALUES (%s,%s,%s,%s) ON CONFLICT DO NOTHING',
-                  (facade['resident_id'], message['message_id'], value['muted_member_ids'], value['solo_member_id']))
-        row = c.execute('SELECT muted_member_ids,solo_member_id FROM family_chat_inputs WHERE facade_id=%s AND message_id=%s',
-                        (facade['resident_id'], message['message_id'])).fetchone()
-        return dict(row)
-    return _db().write(write)
-
-
 def allowed(facade, policy):
     from . import family_facade
     members = family_facade.family_members(facade)
@@ -99,26 +69,10 @@ def allowed(facade, policy):
     return [m for m in members if m == solo] if solo else [m for m in members if m not in policy.get('muted_member_ids', [])]
 
 
-def direct_member(facade, message):
-    from . import family_facade
-    from .resident_questions import answered_set
-    policy = capture(facade, message)
-    quoted = family_facade.quoted_member(facade, message)
-    # Answer cards keep their original execution's reply path.
-    if quoted and answered_set(message):
-        return quoted
-    if policy['solo_member_id']:
-        return policy['solo_member_id']  # Invalid/departed Solo fails; never silently route elsewhere.
-    if quoted and quoted not in policy['muted_member_ids']:
-        return quoted
-    continued = family_facade.continued_member(facade, message)
-    return continued if continued not in policy['muted_member_ids'] else ''
-
-
 def validate_target(facade, message, member_id):
+    from management_common.async_questions import answered_set
     from . import family_facade
-    from .resident_questions import answered_set
-    policy = capture(facade, message)
+    policy = family_facade.routing_snapshot(facade, message)
     if answered_set(message) and family_facade.quoted_member(facade, message) == member_id:
         return
     solo = policy['solo_member_id']

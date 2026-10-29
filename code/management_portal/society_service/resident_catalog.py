@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
-from . import identity_contract, lineage_storage, resident_backend
+from . import identity_contract, lineage_storage, resident_backend, resident_conversation_stream
 from management_portal.resources.workspace_store import canonical_path
 from .state_store import (
     FORBIDDEN_FORK_IDENTITY_FIELDS,
@@ -17,7 +17,6 @@ from .state_store import (
 )
 
 
-RESIDENT_RECORD_SCHEMA = "tfi.resident.v6"
 RESIDENT_WORKSPACE_DIR = "workspace"
 _CATALOGS: dict[str, "ResidentCatalog"] = {}
 _CATALOGS_LOCK = threading.Lock()
@@ -213,7 +212,6 @@ class ResidentCatalog:
         records = [dict(item) for item in tombstones]
         if any(not str(record.get("deleted_at") or "") for record in records):
             raise ValueError("Resident deletion requires deleted_at")
-        from . import resident_mailbox
         from .resident_lifecycle import ResidentLifecycleOperations
         for record in records:
             ensure_resident_agent(record, actor=str(record.get("deleted_by") or ""))
@@ -227,7 +225,7 @@ class ResidentCatalog:
                 except KeyError:
                     pass
                 else:
-                    resident_mailbox.close(resident_id, str(record["deleted_at"]))
+                    close_mailbox(resident_id, str(record["deleted_at"]))
                 job = self.state_store.resident_execution_record(resident_id)
                 if job.get("execution_id") and not job.get("execution_acknowledged"):
                     ResidentLifecycleOperations(self.state_store).enqueue_cleanup(resident_id, [{
@@ -238,6 +236,30 @@ class ResidentCatalog:
             return self.state_store.remove_residents(records)
 
         return self.state_store.transaction(commit)
+
+
+DELETED_ERROR = {"code": "resident_deleted", "message": "Resident 已删除，这条消息不会被处理"}
+
+
+def close_mailbox(resident_id: str, deleted_at: str) -> list[str]:
+    """End what still waits for a Resident being deleted; returns the inputs it cancelled.
+
+    The deletion runs this in its own transaction, before the tombstone: after
+    it nothing can process or withdraw these messages.  Every input still
+    queued or running ends ``cancelled`` (``resident_deleted``) and the Mailbox
+    is emptied, waiting info and requests the queue dropped included.
+    """
+
+    repository = resident_conversation_stream.get_repository()
+    waiting = [state["message_id"] for state in repository.input_states(resident_id, states=("queued", "running"))]
+    for message_id in waiting:
+        repository.set_input_state(resident_id, message_id, "cancelled", error=DELETED_ERROR, updated_at=deleted_at)
+    store = get_lineage_data_store()
+    store.mailbox_forget(
+        resident_id, [entry["message_id"] for entry in store.mailbox_entries([resident_id])],
+        places=("queue", "group", "pending", "info"),
+    )
+    return waiting
 
 
 def get_catalog() -> ResidentCatalog:

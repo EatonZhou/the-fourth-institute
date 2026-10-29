@@ -9,7 +9,7 @@ import pytest
 from tests.cases.test_resident_context import context, A, B, C
 from tests.cases.test_family_work_summaries import setup_work, SUMMARY
 from management_portal.society_service.resident_context import work_summary as work, summary_layers as layers
-from management_portal.society_service.resident_context.evidence import validate_summary
+from management_portal.society_service.resident_context.evidence import character_count, validate_summary
 
 
 def test_steward_consumes_snapshot_and_member_cannot_overwrite_higher_layers(setup_work):
@@ -98,7 +98,7 @@ def test_legacy_oversized_is_readable_then_condensed_without_replaying_history(s
     old = context.store.work_summary(A)
     assert old["layers"]["recent"] == legacy and old["consolidation"]["due"]
     merged = work.update_resident_work_summary(roles["steward"][0], A, old["revision"], consolidation={"phase": SUMMARY})
-    assert layers.character_count(merged["layers"]) <= 3000
+    assert character_count(merged["layers"]) <= 3000
     assert merged["missing_message_ids"] == []
 
 

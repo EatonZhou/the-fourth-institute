@@ -8,6 +8,7 @@ import pytest
 
 from management_portal.hatg import routing
 from management_portal.society_service import changes, invariant_locks, lineage_domain
+from management_portal.society_service import lineage_aggregate
 from tests.cases.society_service_test_support import install_resource_boundary
 from tests.cases.isa_test_support import isolated_instruction_store, run  # noqa: F401 - fixture
 
@@ -24,7 +25,7 @@ def projection_fixture(isolated_instruction_store, isolate_portal_databases, tmp
     monkeypatch.setattr(subprocess, "Popen", reject)
     records = install_resource_boundary(monkeypatch)
     created = lineage_domain.create_lineage({"title": "projection fixture", "nodes": [], "edges": []}, "sample_admin")
-    before = lineage_domain._read_lineage_state(created["lineage_id"])
+    before = lineage_aggregate.read_lineage_state(created["lineage_id"])
     request = {
         "lineage_id": created["lineage_id"],
         "idempotency_key": "projection-fixture",
@@ -48,7 +49,7 @@ def test_uncommitted_failures_do_not_offer_projection_recovery(projection_fixtur
     """Lineage 写入事务回滚的失败不标记为已提交，也不提供投影恢复"""
     before, request, _records = projection_fixture
     attempts = []
-    store_type = type(lineage_domain._lineage_catalog_store())
+    store_type = type(lineage_aggregate.lineage_catalog_store())
     original_upsert = store_type.upsert
 
     def interrupted(store, value):
@@ -63,7 +64,7 @@ def test_uncommitted_failures_do_not_offer_projection_recovery(projection_fixtur
         failure = submit(request)
         assert failure.error["code"] == "instruction.failed"
         assert not failure.error["details"].get("domain_committed")
-    assert lineage_domain._read_lineage_state(before["lineage_id"]) == before
+    assert lineage_aggregate.read_lineage_state(before["lineage_id"]) == before
     assert len(attempts) == 2
 
 
@@ -120,7 +121,7 @@ def test_projection_recovery_uses_current_state_without_repeating_commit_or_noti
     newer_request = {**request, "idempotency_key": "projection-newer-commit",
                      "description": "newer authoritative state"}
     assert submit(newer_request).status == "committed"
-    newer = lineage_domain._read_lineage_state(before["lineage_id"])
+    newer = lineage_aggregate.read_lineage_state(before["lineage_id"])
     assert newer["revision"] == before["revision"] + 2
     notification_count = len(notifications)
     assert notification_count == 2
@@ -130,7 +131,7 @@ def test_projection_recovery_uses_current_state_without_repeating_commit_or_noti
     assert result.status == "committed" and result.replayed, result
     assert projected == [(newer["revision"], newer["description"])]
     assert len(notifications) == notification_count
-    assert lineage_domain._read_lineage_state(before["lineage_id"]) == newer
+    assert lineage_aggregate.read_lineage_state(before["lineage_id"]) == newer
     assert execution_record(initial.error["details"]["instruction_id"])["error"] is None
 
 
@@ -156,7 +157,7 @@ def test_later_non_projection_failure_is_not_reported_as_success(projection_fixt
         assert failure.error["details"]["domain_committed"] is True
         assert failure.error["commit_state"] == "committed"
     assert attempts == ["projection", "notification"]
-    assert lineage_domain._read_lineage_state(before["lineage_id"])["revision"] == before["revision"] + 1
+    assert lineage_aggregate.read_lineage_state(before["lineage_id"])["revision"] == before["revision"] + 1
 
 
 def test_pending_projection_is_not_evicted_from_the_execution_records(projection_fixture, monkeypatch):
@@ -201,7 +202,7 @@ def test_domain_projection_error_preserves_commit_facts_through_rpc(projection_f
             {"patch": {"description": "committed domain RPC"}},
             "sample_admin",
         )
-    committed = lineage_domain._read_lineage_state(before["lineage_id"])
+    committed = lineage_aggregate.read_lineage_state(before["lineage_id"])
     assert committed["revision"] == before["revision"] + 1
     assert committed["description"] == "committed domain RPC"
     with pytest.raises(CommittedProjectionError) as transported:

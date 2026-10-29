@@ -7,12 +7,13 @@ import json
 import os
 import secrets
 from copy import deepcopy
-from datetime import datetime, timezone
 from functools import lru_cache
 
 from management_common.domain_database import DomainDatabase
 from management_common.relational_rows import read_rows as sql_rows, sync_rows
 from management_common.database_time import encode_times, decode_times
+
+from .registry import now
 
 
 def read_rows(connection, table):
@@ -38,10 +39,6 @@ CREATE TABLE IF NOT EXISTS templates (
 );
 CREATE TABLE IF NOT EXISTS installed_builtins (builtin_key TEXT PRIMARY KEY, installed_at TIMESTAMPTZ NOT NULL);
 """
-
-
-def now():
-    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 @lru_cache(maxsize=8)
@@ -78,7 +75,7 @@ def _write(connection, rows):
 
 
 def ensure_builtins():
-    from . import normalize
+    from .kinds import normalize
     from .builtins import definitions
 
     with database().transaction("templates") as connection:
@@ -175,7 +172,7 @@ def delete(template_id):
 
 
 def restore(template_id, actor):
-    from . import normalize
+    from .kinds import normalize
     from .builtins import definitions
 
     raw = next(

@@ -11,6 +11,7 @@ import pytest
 
 from management_portal.society_service import lineage_domain, lineage_state_domains
 from management_portal.society_service import lineage_definition_normalization
+from management_portal.society_service import lineage_aggregate
 
 
 ACTOR = "sample_admin"
@@ -24,7 +25,7 @@ def lineage_store(
     monkeypatch: pytest.MonkeyPatch,
 ) -> Path:
     root = tmp_path / "lineages"
-    monkeypatch.setattr(lineage_domain, "DATA_ROOT", root)
+    monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", root)
     monkeypatch.setattr(lineage_domain, "LINEAGE_FOLDER_ROOT", root / "lineages")
     monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(root / "lineages"))
     install_resource_boundary(monkeypatch)
@@ -263,7 +264,7 @@ def test_layout_update_ignores_an_object_deleted_by_another_page(
             {"id": SECOND, "title": "Second", "x": 30, "y": 40},
         ],
     }, ACTOR)
-    store = lineage_domain._lineage_catalog_store().state_store
+    store = lineage_aggregate.lineage_catalog_store().state_store
 
     def delete_identities(lineage_id, resident_ids, actor):
         # This layout race exercises the graph transaction; filesystem/session

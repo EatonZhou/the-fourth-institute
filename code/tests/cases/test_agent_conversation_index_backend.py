@@ -20,6 +20,7 @@ from tests.cases.society_service_test_support import install_resource_boundary, 
 
 
 from management_portal.society_service import resident_conversation_projection_domain, resident_directory_domain
+from management_portal.society_service import lineage_aggregate
 
 def _marker(completion_id: str, completed_at: str) -> str:
     return completion_signature(
@@ -841,7 +842,7 @@ def test_human_notifications_are_visible_in_the_conversation_index_only_to_reque
             lineage_id = "lineage_333333333333"
             monkeypatch.setattr(lineage_domain, "LINEAGE_FOLDER_ROOT", tmp_path / "Agents")
             monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(tmp_path / "Agents"))
-            lineage_domain._lineage_catalog_store().upsert(
+            lineage_aggregate.lineage_catalog_store().upsert(
                 _lineage_definition(lineage_id, [])
             )
             install_resource_boundary(monkeypatch)

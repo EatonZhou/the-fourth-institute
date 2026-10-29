@@ -24,6 +24,7 @@ from management_portal.society_service import (
 )
 from management_portal.society_service import resident_lifecycle_domain
 from management_portal.society_service import resident_workspace_domain
+from management_portal.society_service import lineage_aggregate
 from management_portal.resources.providers import project
 from tests.cases.test_cross_owner_storage_integration import ACTOR, owners
 
@@ -137,7 +138,7 @@ def test_absorb_persists_reference_message_without_history_copy(team, monkeypatc
     key = "residual-absorb-canonical"
     result = instruction(team, "AbsorbContext", arguments, key=key)
     assert result.status == "committed", result.to_payload()
-    edge = next(edge for edge in lineage_domain._read_lineage(team.lineage_id, actor=ACTOR)["edges"] if edge["type"] == "absorption")
+    edge = next(edge for edge in lineage_aggregate.read_lineage(team.lineage_id, actor=ACTOR)["edges"] if edge["type"] == "absorption")
     assert edge["absorption"]["status"] == "queued", edge["absorption"]
     message_id = edge["absorption"]["target_message_id"]
     message = resident_protocol.get_resident_message(target_id, ACTOR, message_id)
@@ -146,7 +147,7 @@ def test_absorb_persists_reference_message_without_history_copy(team, monkeypatc
     assert "PRIVATE_HISTORY_MUST_NOT_BE_EMBEDDED" not in encoded
     repeated = instruction(team, "AbsorbContext", arguments, key=key)
     assert repeated.status == "committed"
-    absorption = next(edge for edge in lineage_domain._read_lineage(team.lineage_id, actor=ACTOR)["edges"] if edge["type"] == "absorption")["absorption"]
+    absorption = next(edge for edge in lineage_aggregate.read_lineage(team.lineage_id, actor=ACTOR)["edges"] if edge["type"] == "absorption")["absorption"]
     assert absorption["run_count"] == 1
     assert absorption["target_message_id"] == message_id
     assert instruction(
@@ -310,7 +311,7 @@ def test_handoff_isa_prepares_durable_binding_and_idempotent_delivery(team, mode
         "source_resident_id": team.source["resident_id"], "target_resident_id": team.target["resident_id"],
         "items": [{"source": {"path": str(source)}, "transfer": {"mode": mode}}],
         "execute_now": False,
-        "expected_revision": lineage_domain._read_lineage(team.lineage_id, actor=ACTOR)["revision"],
+        "expected_revision": lineage_aggregate.read_lineage(team.lineage_id, actor=ACTOR)["revision"],
     }, ACTOR)
     handoff_id = created["handoff"]["id"]
     prepared = instruction(team, "PrepareWorkspaceHandoff", {"lineage_id": team.lineage_id, "handoff_id": handoff_id})
@@ -365,10 +366,10 @@ def test_handoff_isa_prepares_a_new_handoff_named_by_its_resident_pair(team, mon
 
 def test_removed_approval_instruction_is_rejected_without_mutation(team):
     """已移除的 ApproveWorkspaceHandoff 指令拒绝执行且无变更"""
-    before = lineage_domain._read_lineage(team.lineage_id, actor=ACTOR)
+    before = lineage_aggregate.read_lineage(team.lineage_id, actor=ACTOR)
     result = instruction(team, "ApproveWorkspaceHandoff", {"handoff_id": "handoff_missing"})
     assert result.status == "failed" and result.error["code"] == "instruction.unknown"
-    assert lineage_domain._read_lineage(team.lineage_id, actor=ACTOR) == before
+    assert lineage_aggregate.read_lineage(team.lineage_id, actor=ACTOR) == before
 
 
 
@@ -383,7 +384,7 @@ def test_project_move_updates_canonical_member_paths_and_keeps_single_root(team)
     root = lineage_domain._lineage_dir(team.lineage_id)
     original = root.resolve()
     (original / "preserve.txt").write_text("user content")
-    current = lineage_domain._read_lineage(team.lineage_id, actor=ACTOR)
+    current = lineage_aggregate.read_lineage(team.lineage_id, actor=ACTOR)
     lineage_domain.update_lineage_metadata(team.lineage_id, {
         "project_id": next_project, "expected_revision": current["revision"],
     }, ACTOR)
@@ -400,7 +401,7 @@ def test_project_move_updates_canonical_member_paths_and_keeps_single_root(team)
 
 def test_missing_folder_rebuild_uses_canonical_members_and_preserves_user_files(team):
     """目录丢失时按权威成员重建结构且保留已有用户文件"""
-    lineage = lineage_domain._read_lineage(team.lineage_id, actor=ACTOR)
+    lineage = lineage_aggregate.read_lineage(team.lineage_id, actor=ACTOR)
     canonical = lineage_domain._lineage_dir(team.lineage_id)
     actual = canonical.resolve()
     (actual / "user.txt").write_text("cannot reconstruct this file")
@@ -431,7 +432,7 @@ def test_failed_handoff_preparation_is_reported_as_a_failed_status(team, monkeyp
         "source_resident_id": team.source["resident_id"], "target_resident_id": team.target["resident_id"],
         "items": [{"source": {"path": str(source)}, "transfer": {"mode": "copy"}}],
         "execute_now": False,
-        "expected_revision": lineage_domain._read_lineage(team.lineage_id, actor=ACTOR)["revision"],
+        "expected_revision": lineage_aggregate.read_lineage(team.lineage_id, actor=ACTOR)["revision"],
     }, ACTOR)
 
     def unavailable(*_args, **_kwargs):

@@ -11,7 +11,7 @@ import pytest
 
 from management_portal import serve_management_portal as portal
 from management_portal.execution.agent_data_store import AgentDataStore
-from management_portal.society_service import lineage_domain
+from management_portal.society_service import lineage_aggregate
 from tests.cases.society_service_test_support import (
     _install_isolated_portal_access,
     publish_registered_lineage_members,
@@ -30,7 +30,7 @@ def test_page_residents_are_not_hydrated_again_for_overlapping_pins(monkeypatch,
     ids = [f"resident_{i + 1:012x}" for i in range(count)]
     definition = _lineage_definition("lineage_123456789abc", [])
     definition["created_by"] = actor
-    lineage_domain._lineage_catalog_store().upsert(definition)
+    lineage_aggregate.lineage_catalog_store().upsert(definition)
     publish_registered_lineage_members({**definition,
         "nodes": [{"id": rid, "title": rid} for rid in ids]}, actor)
     data = AgentDataStore()

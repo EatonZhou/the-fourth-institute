@@ -19,6 +19,7 @@ from .resident_account_policy import (
     reserve_remaining,
 )
 from .state_store import get_lineage_data_store
+from . import lineage_aggregate
 
 MIGRATION_FIELDS = frozenset({
     "epoch", "attempts", "tried_accounts", "checked_at", "pending_restart", "owner_notified",
@@ -80,7 +81,7 @@ def _relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
                    *, quota_reviewed: bool, reason: str, scope_gap: str = "",
                    scope_reviewed: bool = False) -> dict[str, Any]:
     from . import outward_messages, resident_conversation_stream, resident_protocol
-    from .resident_questions import answered_set
+    from management_common.async_questions import answered_set
     from . import resident_record_domain
 
     facade = resident_record_domain.find_resident(facade_id)
@@ -272,6 +273,28 @@ def _relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
         return dict(review["result"])
 
 
+def auto_migration_enabled(record: dict) -> bool:
+    """The immediate Family owns its migration policy; ordinary Residents have none."""
+    family = record.get("family") or {}
+    if family.get("role") not in {"member", "router", "steward"} or record.get("deleted_at"):
+        return False
+    with get_lineage_data_store().database.read() as connection:
+        row = connection.execute("SELECT auto_migrate FROM families WHERE family_id=%s AND deleted_at IS NULL",
+                                 (family["family_id"],)).fetchone()
+    return bool(row and row["auto_migrate"])
+
+
+def auto_migration_priority(record: dict) -> list[str]:
+    """Read the same immediate Family policy for admission and failure recovery."""
+    family = record.get("family") or {}
+    if family.get("role") not in {"member", "router", "steward"} or record.get("deleted_at"):
+        return []
+    with get_lineage_data_store().database.read() as connection:
+        row = connection.execute("SELECT auto_migrate_priority FROM families WHERE family_id=%s AND deleted_at IS NULL",
+                                 (family["family_id"],)).fetchone()
+    return list(row["auto_migrate_priority"]) if row else []
+
+
 def _restore_role_intake(record: dict[str, Any]) -> dict[str, Any] | None:
     """Keep internal operating roles open unless their whole Family is paused.
 
@@ -296,7 +319,7 @@ def _restore_role_intake(record: dict[str, Any]) -> dict[str, Any] | None:
     return record
 
 
-def _reserve_candidate(record: dict[str, Any]) -> dict[str, Any] | None:
+def reserve_candidate(record: dict[str, Any]) -> dict[str, Any] | None:
     """All Family executors share admission; only internal roles auto-open intake."""
     from . import resident_record_domain
     from .resident_work_recovery import _intake_allows_recovery
@@ -316,8 +339,8 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
     from . import resident_record_domain, resident_restart_domain
     from .resident_work_recovery import _intake_allows_recovery
 
-    record = _reserve_candidate(record)
-    if not record or not family_storage.auto_migration_enabled(record):
+    record = reserve_candidate(record)
+    if not record or not auto_migration_enabled(record):
         return False
     resident_id = record["resident_id"]
     if resident_record_domain.lifecycle_operations().pending(resident_id):
@@ -360,7 +383,7 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
     with resident_record_domain.state_lock(resident_id), get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as migration:
         current = resident_record_domain.find_resident(resident_id)
         if (not current or current["lineage_id"] != record["lineage_id"]
-                or not _intake_allows_recovery(current) or not family_storage.auto_migration_enabled(current)):
+                or not _intake_allows_recovery(current) or not auto_migration_enabled(current)):
             return False
         current_job = resident_execution_work.read(current)
         if (resident_account(current, accounts).get("account_id") != account.get("account_id")
@@ -378,7 +401,7 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
         payload = migration.get("pending_restart")
         if not payload and int(migration["attempts"]) < MAX_MIGRATIONS:
             target = fallback_account(accounts, str(account["provider"]), str(account.get("backend_route_id") or ""),
-                                      migration["tried_accounts"], reserve=True, priority=family_storage.auto_migration_priority(current))
+                                      migration["tried_accounts"], reserve=True, priority=auto_migration_priority(current))
             if target:
                 migration["attempts"] += 1
                 migration["tried_accounts"].append(target["account_id"])
@@ -410,7 +433,7 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
                 recipients=owners, severity="warning", created_by="portal",
                 notification_id=f"steward-reserve:{resident_id}:{epoch}",
             )
-            from .family_owners import message_creator
+            from .outward_messages import message_creator
             message_creator(record, identity=f"role-reserve:{resident_id}:{epoch}",
                             text=f"Family 内部角色 {record.get('title') or resident_id} 暂不可用。{reason}请补充可用账号后恢复。")
             with resident_record_domain.state_lock(resident_id), get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as committed:
@@ -421,14 +444,13 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
 
 def check_role_availability(lineage_id: str, family_id: str, actor: str) -> dict[str, Any]:
     """ISA entry for the Family's explicit operating-role supervision Effect."""
-    from .templates.familize import read_family
-    from . import lineage_domain
+    from .family_familize import read_family
     from . import resident_record_domain
 
     lineage, block = read_family(lineage_id, family_id, actor)
     family = block["family"]
     if actor not in {family["facade"], family["steward"]}:
-        lineage_domain._ensure_manager(lineage, actor)
+        lineage_aggregate.ensure_manager(lineage, actor)
     facade = resident_record_domain.find_resident(family["facade"])
     if facade.get("deleted_at") or resident_record_domain.resident_intake_state(facade) != "open":
         return {"family_id": block["id"], "paused": True, "waiting_count": 0}
@@ -461,8 +483,8 @@ def reconcile_role_reserves(residents: list[dict[str, Any]] | None = None) -> in
         residents = resident_execution_work.pending_records()
     roles = []
     for snapshot in residents:
-        record = _reserve_candidate(snapshot)
-        if not record or not family_storage.auto_migration_enabled(record):
+        record = reserve_candidate(snapshot)
+        if not record or not auto_migration_enabled(record):
             continue
         job = resident_execution_work.read(record)
         if (resident_execution_work.is_active(job)

@@ -1,45 +1,23 @@
-"""Invocation-local preconditions, checked only by short definition writes."""
+"""Invocation-local preconditions, checked only by short definition writes.
+
+``isa.common.guard_definition_handler`` sets them for one instruction.
+"""
 from __future__ import annotations
 
 from contextvars import ContextVar
 from dataclasses import dataclass, field
-from functools import wraps
-from typing import Any, Callable
+from typing import Any
 
-from management_portal.hatg.contracts import InstructionError, invalid
-from management_portal.hatg.kernel import Invocation
-
-
-from management_portal.hatg.lineage_versions import DEFINITION_MUTATIONS
-
-
-def _targets(inv: Invocation) -> set[str]:
-    from .isa.common import lineage_of_resident, store
-
-    arguments = inv.arguments
-    targets = {str(arguments[name]) for name in ("lineage_id", "target_lineage_id") if arguments.get(name)}
-    for name in ("resident_id", "source_resident_id", "target_resident_id"):
-        if arguments.get(name):
-            targets.add(lineage_of_resident(arguments[name]))
-    for name in ("seed_id", "handoff_id", "instance_id"):
-        if arguments.get(name):
-            lineage_id = store().lineage_id_for_object(arguments[name])
-            if lineage_id:
-                targets.add(lineage_id)
-    for object_id in arguments.get("object_ids") or []:
-        lineage_id = lineage_of_resident(object_id) if object_id.startswith("resident_") else store().lineage_id_for_object(object_id)
-        if lineage_id:
-            targets.add(lineage_id)
-    return targets
+from management_portal.hatg.contracts import InstructionError
 
 
 @dataclass
-class _Preconditions:
+class Preconditions:
     expected: dict[str, Any]
     checked_transactions: dict[str, str] = field(default_factory=dict)
 
 
-_PRECONDITIONS: ContextVar[_Preconditions | None] = ContextVar("lineage_definition_preconditions", default=None)
+PRECONDITIONS: ContextVar[Preconditions | None] = ContextVar("lineage_definition_preconditions", default=None)
 
 
 def check_definition_version(connection: Any, lineage_id: str) -> None:
@@ -48,7 +26,7 @@ def check_definition_version(connection: Any, lineage_id: str) -> None:
     Remember the database transaction, not just a Python boolean: a failed
     transaction may be retried and must not consume the caller's precondition.
     """
-    context = _PRECONDITIONS.get()
+    context = PRECONDITIONS.get()
     if context is None or lineage_id not in context.expected:
         return
     previous = context.checked_transactions.get(lineage_id)
@@ -73,27 +51,3 @@ def check_definition_version(connection: Any, lineage_id: str) -> None:
             "object_id": lineage_id, "expected_version": expected, "current_version": revision,
         })
     context.checked_transactions[lineage_id] = str(current["transaction_id"])
-
-
-def guard_definition_handler(name: str, handler: Callable[[Invocation], Any]) -> Callable[[Invocation], Any]:
-    if name not in DEFINITION_MUTATIONS:
-        return handler
-
-    @wraps(handler)
-    def guarded(inv: Invocation) -> Any:
-        context = None
-        if inv.expected_version is not None:
-            targets = _targets(inv)
-            if not targets:
-                raise invalid("expected_version 需要已有 Lineage；版本来自 GetLineage 的 lineage.revision")
-            if isinstance(inv.expected_version, dict) and not set(inv.expected_version) <= targets:
-                raise invalid("expected_version 映射的键必须是本次修改的 Lineage ID")
-            context = _Preconditions({lineage_id: inv.expected_version_for(lineage_id)
-                for lineage_id in targets if inv.expected_version_for(lineage_id) is not None})
-        token = _PRECONDITIONS.set(context)
-        try:
-            return handler(inv)
-        finally:
-            _PRECONDITIONS.reset(token)
-
-    return guarded

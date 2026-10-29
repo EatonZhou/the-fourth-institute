@@ -14,6 +14,7 @@ from . import (
     lineage_instruction_context,
     lineage_operator_runtime,
     lineage_primitives,
+    lineage_program,
     lineage_program_identity,
     lineage_program_operator_execution,
     lineage_program_packet_routing,
@@ -28,7 +29,6 @@ from .lineage_event_claims import (
 )
 from .lineage_event_claims import prepare_operator_inboxes
 from .lineage_program_contracts import _program_event_source_contract_fingerprint
-from .lineage_program_effect_rules import _make_program_effect_invocation
 from .lineage_program_packet_routing import (
     compiled_invocation as _program_compiled_invocation,
 )
@@ -70,6 +70,105 @@ class ProgramExecutionPorts:
     state: ProgramExecutionState
     resident: ProgramResidentDelivery
     flow: ProgramExecutionFlow
+
+
+def _make_program_effect_invocation(
+    event: lineage_primitives.LineageEvent,
+    *,
+    source_kind: str,
+    source_id: str = "",
+    source_wire_id: str = "",
+    arguments: dict[str, Any] | None = None,
+    argument_mapping: dict[str, Any] | None = None,
+    argument_overrides: dict[str, Any] | None = None,
+    prompt: object = "",
+    from_resident_id: str = "",
+    packet: dict[str, Any] | None = None,
+    include_envelope: bool = True,
+) -> lineage_primitives.EffectInvocation:
+    """Adapt one Route packet to the Effect runtime input."""
+
+    dynamic_arguments = dict(
+        event.payload.get("arguments")
+        if isinstance(event.payload.get("arguments"), dict)
+        else {}
+    )
+    if isinstance(arguments, dict):
+        dynamic_arguments.update(arguments)
+    input_prompt = (
+        lineage_primitives.normalize_invocation_prompt(prompt)
+        or lineage_primitives.normalize_invocation_prompt(dynamic_arguments.get("prompt"))
+        or lineage_primitives.normalize_invocation_prompt(event.payload.get("prompt"))
+    )
+    if input_prompt:
+        dynamic_arguments["prompt"] = input_prompt
+    if "content_parts" in event.payload:
+        dynamic_arguments["content_parts"] = event.payload["content_parts"]
+    if isinstance(packet, dict) and (packet.get("message") or {}).get("content_parts"):
+        dynamic_arguments["content_parts"] = packet["message"]["content_parts"]
+    envelope = (
+        packet
+        if isinstance(packet, dict)
+        else lineage_primitives.event_packet(event).to_dict()
+    )
+    if isinstance(argument_mapping, dict):
+        dynamic_arguments.update(
+            lineage_program.resolve_invocation_argument_mapping(argument_mapping, event, packet=envelope)
+        )
+    if argument_overrides:
+        dynamic_arguments.update(lineage_primitives.normalize_invocation_arguments(argument_overrides))
+    return lineage_primitives.make_effect_invocation(
+        event,
+        arguments=dynamic_arguments,
+        source_kind=source_kind,
+        source_id=source_id,
+        source_wire_id=source_wire_id,
+        from_resident_id=from_resident_id,
+        include_envelope=include_envelope,
+        packet=envelope,
+    )
+
+
+def program_event_route_can_consume(
+    lineage_id: str,
+    lineage: dict[str, Any],
+    route: dict[str, Any],
+    actor: str,
+    *, authority: ProgramEventAuthority,
+) -> tuple[bool, str]:
+    """Return whether the wire target can accept a new Event right now."""
+
+    target_kind = str(route.get("target_kind") or "")
+    if target_kind in {"effect", "loop"}:
+        return True, ""
+    target_id = str(route.get("target_id") or "")
+    if target_kind in lineage_program.PACKET_OPERATOR_KINDS:
+        try:
+            runtime = lineage_operator_runtime.read_operator_runtime(
+                lineage_id,
+                target_id,
+            )
+        except (OSError, ValueError):
+            return False, "packet_operator_runtime_unavailable"
+        if any(not item.get("recovery_blocked") for item in (runtime.get("pending_deliveries") or {}).values()):
+            return False, "packet_operator_working"
+        return True, ""
+    target = next(
+        (
+            node
+            for node in lineage.get("nodes") or []
+            if (
+                isinstance(node, dict)
+                and str(node.get("id") or "") == target_id
+            )
+        ),
+        None,
+    )
+    if not target:
+        return False, "target_missing"
+    if authority.node_has_active_execution(target, actor):
+        return False, "resident_running"
+    return True, ""
 
 
 def try_dispatch_operator(
@@ -669,8 +768,6 @@ class _PacketDispatch:
     ) -> dict[str, Any]:
         """Deliver now when the Resident can take it; otherwise drop at the message limit or defer."""
 
-        from . import lineage_program_event_dispatch
-
         if not batch.target_node:
             raise ValueError("Packet Invoke 的下游已不存在")
         packet_invocation = {
@@ -687,7 +784,7 @@ class _PacketDispatch:
             "target_kind": "agent",
             "config": batch.config,
         }
-        can_consume, reason = lineage_program_event_dispatch._program_event_route_can_consume(
+        can_consume, reason = program_event_route_can_consume(
             self.lineage_id, self.lineage, packet_route, self.actor,
             authority=self.ports.flow.event_authority(),
         )

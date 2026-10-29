@@ -292,7 +292,7 @@ def _announce_family_retitle(resident_id: str, previous: str, title: str, actor:
         return
 
     def announce() -> None:
-        from .family_familize import announce_member_retitle
+        from .family_facade import announce_member_retitle
 
         try:
             announce_member_retitle(resident_id, previous, title, actor)

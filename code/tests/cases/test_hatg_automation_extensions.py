@@ -14,6 +14,7 @@ from management_portal.society_service import (
     trigger_paths,
     state_store,
 )
+from management_portal.society_service import lineage_aggregate
 
 
 ACTOR = "sample_admin"
@@ -262,14 +263,14 @@ def test_quiesce_delegates_close_and_non_continuing_stop(
 ) -> None:
     """让 Lineage 中的 Resident 静默时关闭它并停止当前执行，不继续处理队列"""
     monkeypatch.setattr(
-        lineage_domain,
-        "_read_lineage",
+        lineage_aggregate,
+        "read_lineage",
         lambda _lineage_id, **_kwargs: {
             "lineage_id": "lineage_aaaaaaaaaaaa",
             "nodes": [_worker(WORK_A)],
         },
     )
-    monkeypatch.setattr(lineage_domain, "_ensure_manager", lambda *_args: None)
+    monkeypatch.setattr(lineage_aggregate, "ensure_manager", lambda *_args: None)
     state_calls: list[dict] = []
     from management_portal.society_service import resident_protocol
 
@@ -332,8 +333,8 @@ def test_queue_item_controls_resolve_created_resident_authority(
     """Lineage 对成员 Resident 队列项的优先和取消以调用者身份转交给该 Resident"""
     created_resident_id = "resident_cccccccccccc"
     monkeypatch.setattr(
-        lineage_domain,
-        "_read_lineage",
+        lineage_aggregate,
+        "read_lineage",
         lambda _lineage_id, **_kwargs: {
             "lineage_id": "lineage_aaaaaaaaaaaa",
             "nodes": [
@@ -343,7 +344,7 @@ def test_queue_item_controls_resolve_created_resident_authority(
             ],
         },
     )
-    monkeypatch.setattr(lineage_domain, "_ensure_manager", lambda *_args: None)
+    monkeypatch.setattr(lineage_aggregate, "ensure_manager", lambda *_args: None)
     from management_portal.society_service import resident_protocol
 
     calls: list[tuple[str, str, str, str]] = []

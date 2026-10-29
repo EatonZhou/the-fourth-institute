@@ -9,7 +9,8 @@ from types import SimpleNamespace
 
 from management_portal import society_service
 from management_portal.resources import isa as resource_isa
-from management_portal.society_service import lineage_access_policy, lineage_domain, project_domain, resident_protocol
+from management_portal.society_service import lineage_access_policy, project_domain, resident_protocol
+from management_portal.society_service import lineage_aggregate
 
 
 def project(project_id, **attributes):
@@ -210,7 +211,7 @@ def test_project_team_is_its_readable_lineages_with_leaders_and_running_members(
             assert sorted(lineage_ids) == ["lineage_00000000000a", "lineage_00000000000b"]
             return {lineage_id: {"lineage_node_ids": nodes[lineage_id]} for lineage_id in lineage_ids}
 
-    monkeypatch.setattr(lineage_domain, "_lineage_catalog_store", lambda: Catalog())
+    monkeypatch.setattr(lineage_aggregate, "lineage_catalog_store", lambda: Catalog())
     monkeypatch.setattr(lineage_access_policy, "changeable_ids",
                         lambda actor, owners, instruction, parameter: set(owners) - {"lineage_00000000000c"})
     monkeypatch.setattr(resident_protocol, "read_resident_states", lambda ids: {

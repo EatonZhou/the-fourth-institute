@@ -8,13 +8,17 @@ the paused window, and an observing source re-establishes its baseline.
 from __future__ import annotations
 
 from management_common.operation_errors import OperationError
+from management_portal.execution.service_settings import ExecutionSettings
+from management_portal.hatg.contracts import InstructionError
 
 from datetime import datetime, timezone
 from typing import Any
 
 from . import lineage_loop_runtime, lineage_program, lineage_program_runtime, lineage_recurring_schedule
+from . import system_workflow_switches
 from .lineage_program_queries import _compiled_program
 from .lineage_program_runtime_projection import event_source_runtime_view
+from . import lineage_aggregate
 
 OBSERVATION_BASELINE_FIELDS = (
     "file_locator",
@@ -51,9 +55,7 @@ class ComponentRuntimeError(OperationError, LookupError):
 
 
 def _plan(lineage_id: str, actor: str) -> dict[str, Any]:
-    from .lineage_domain import _read_lineage
-
-    return _compiled_program(_read_lineage(lineage_id, actor=actor))
+    return _compiled_program(lineage_aggregate.read_lineage(lineage_id, actor=actor))
 
 
 def _event_sources(plan: dict[str, Any]) -> dict[str, dict[str, Any]]:
@@ -85,9 +87,7 @@ def _event_source_projection(source_id: str, source: dict[str, Any], runtime: di
 
 
 def views(lineage_id: str, actor: str, *, component_id: str = "") -> list[dict[str, Any]]:
-    from .lineage_domain import _read_lineage
-
-    lineage = _read_lineage(lineage_id, actor=actor)
+    lineage = lineage_aggregate.read_lineage(lineage_id, actor=actor)
     plan = _compiled_program(lineage)
     if component_id:
         _kind(plan, component_id)
@@ -167,14 +167,51 @@ def update_pause_checkpoint(state: dict[str, Any], kind: str, paused: bool,
 
 
 def set_paused(lineage_id: str, component_id: str, paused: bool, actor: str) -> dict[str, Any]:
-    from . import lineage_domain, system_workflow_switches
-
-    with lineage_domain._lineage_execution_authority(lineage_id):
+    with lineage_aggregate.execution_authority(lineage_id):
         result = _set_paused(lineage_id, component_id, paused, actor)
         # Runtime has committed and its state lock is released. Projection
         # completes before the public command returns, under the same authority.
         system_workflow_switches.project_after_commit(lineage_id)
         return result
+
+
+def update_settings(changes: dict[str, bool], actor: str) -> dict[str, bool]:
+    """Route installed settings through the same public component switch owner."""
+    bindings = system_workflow_switches.workflow_switches()
+    requested = {key: (lineage_id, field) for key, (lineage_id, field) in bindings.items()
+                 if field in changes}
+    with lineage_aggregate.execution_authorities({owner for owner, _field in requested.values()}):
+        settings = ExecutionSettings()
+        managed = settings.managed_workflow_keys()
+        installed: list[tuple[str, str, bool]] = []
+        unmanaged: dict[str, bool] = {}
+        # Fresh installations may have no workflow yet. Once a key was managed,
+        # removing its deployment binding must not bypass its Event authority.
+        for key, (_option, field) in system_workflow_switches.WORKFLOW_FIELDS.items():
+            if field not in changes or key in bindings:
+                continue
+            if key in managed:
+                raise InstructionError("instruction.conflict", "系统开关部署绑定缺失", details={"client_key": key})
+            unmanaged[field] = changes[field]
+        # Validate every requested binding before changing either setting.
+        for key, (lineage_id, field) in requested.items():
+            matches = system_workflow_switches.bound_components(system_workflow_switches.current_definition(lineage_id), key)
+            if len(matches) == 1 and matches[0].get("kind") == "event_source":
+                lineage_aggregate.read_lineage(lineage_id, actor=actor)
+                installed.append((lineage_id, str(matches[0]["id"]), changes[field]))
+            elif matches or key in managed:
+                raise InstructionError(
+                    "instruction.conflict", "系统开关 Event 已删除或绑定无效，请先恢复 Lineage 中的开关节点",
+                    details={"lineage_id": lineage_id, "client_key": key,
+                             "binding_state": "invalid" if matches else "missing"},
+                )
+            else:
+                unmanaged[field] = changes[field]
+        if unmanaged:
+            settings.update_unmanaged(unmanaged)
+        for lineage_id, component_id, enabled in installed:
+            set_paused(lineage_id, component_id, not enabled, actor)
+        return settings.get()
 
 
 def _set_paused(lineage_id: str, component_id: str, paused: bool, actor: str) -> dict[str, Any]:

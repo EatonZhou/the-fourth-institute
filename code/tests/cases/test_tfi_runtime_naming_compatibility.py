@@ -112,7 +112,7 @@ def test_society_readers_keep_non_schema_validation(tmp_path, monkeypatch, names
     from management_portal.society_service import (
         lineage_primitives as packets, lineage_operator_runtime as operators,
         lineage_state_domains as states, lineage_primitive_definitions as definitions,
-        resident_catalog,
+        resident_catalog, resident_storage,
     )
     if kind == 'packet':
         value = {'schema': tagged(packets.PACKET_SCHEMA, namespace), 'message': {'text': 'fixture'}}
@@ -134,7 +134,7 @@ def test_society_readers_keep_non_schema_validation(tmp_path, monkeypatch, names
         read = definitions._load_and_validate
     else:
         rid, lid, wid = 'resident_aaaaaaaaaaaa', 'lineage_bbbbbbbbbbbb', 'workspace_cccccccccccc'
-        value = {'schema': tagged(resident_catalog.RESIDENT_RECORD_SCHEMA, namespace),
+        value = {'schema': tagged(resident_storage.RESIDENT_RECORD_SCHEMA, namespace),
                  'resident_id': rid, 'lineage_id': lid, 'workspace_path': str(tmp_path),
                  'owned_workspace_id': wid, 'owned_workspace': {
                      'workspace_id': wid, 'path': str(tmp_path / 'residents' / rid / 'workspace')}}

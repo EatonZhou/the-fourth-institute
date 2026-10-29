@@ -18,6 +18,8 @@ from management_portal.society_service.resident_intake_domain import deliver_res
 from management_portal.society_service import resident_conversation_stream
 from management_portal.society_service.resident_record_domain import find_resident as _find_resident
 from management_portal.society_service.templates import familize
+from management_portal.society_service import lineage_aggregate
+from management_portal.society_service import family_task_dispatches
 from tests.cases.isa_test_support import ACTOR, ok
 from tests.cases.test_family_familize import lineage, charters, future_creation_store, resident, graph  # noqa: F401
 
@@ -221,9 +223,8 @@ def test_first_turn_has_guide_and_later_turns_only_have_a_readable_reference(con
 
 def test_roster_sync_retires_generated_quota_watch_and_keeps_task_templates(configured_family):
     """旧实例的额度源、Watch 和 Route 一起退役，既有任务配置保留。"""
-    from management_portal.society_service import lineage_domain
     body, block = configured_family
-    catalog = lineage_domain._lineage_catalog_store()
+    catalog = lineage_aggregate.lineage_catalog_store()
     body = catalog.get(body["lineage_id"])
     block = next(b for b in body["function_blocks"] if b["id"] == block["id"])
     before = family_tasks.configured(body, block)
@@ -324,9 +325,8 @@ def test_both_roles_migrate_on_short_window_pressure_and_keep_context(configured
 
 
 def test_sync_retires_automatic_progress_and_steward_summary_watch(configured_family):
-    from management_portal.society_service import lineage_domain
     body, block = configured_family
-    catalog = lineage_domain._lineage_catalog_store()
+    catalog = lineage_aggregate.lineage_catalog_store()
     body = catalog.get(body["lineage_id"])
     block = next(b for b in body["function_blocks"] if b["id"] == block["id"])
     ids = {e["key"]: e["id"] for e in block["elements"]}
@@ -385,16 +385,16 @@ def test_mute_limits_router_facts_and_solo_skips_model(configured_family, monkey
         return msg
     p.change(f['facade'], ACTOR, a, 'mute', True)
     mid = 'msg_0000000000000221'; message(mid)
-    family_tasks.dispatch(f['facade'], 'route', ACTOR, source_message_id=mid)
+    family_task_dispatches.dispatch(f['facade'], 'route', ACTOR, source_message_id=mid)
     assert deliveries[0]['routing']['members'] == [b]
     p.change(f['facade'], ACTOR, b, 'solo', True)
     mid2 = 'msg_0000000000000222'; message(mid2)
     relays = []
     monkeypatch.setattr(family_quota, 'relay_message', lambda *args: relays.append(args) or {'status':'relayed', 'message_id':'original-copy'})
-    result = family_tasks.dispatch(f['facade'], 'route', ACTOR, source_message_id=mid2)
+    result = family_task_dispatches.dispatch(f['facade'], 'route', ACTOR, source_message_id=mid2)
     assert result['status'] == 'relayed' and relays[0][2] == b
     assert len(deliveries) == 1
     p.change(f['facade'], ACTOR, b, 'mute', True)
     mid3 = 'msg_0000000000000223'; message(mid3)
     with pytest.raises(ValueError, match='所有成员已 Mute'):
-        family_tasks.dispatch(f['facade'], 'route', ACTOR, source_message_id=mid3)
+        family_task_dispatches.dispatch(f['facade'], 'route', ACTOR, source_message_id=mid3)

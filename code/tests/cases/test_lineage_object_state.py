@@ -10,10 +10,8 @@ from pathlib import Path
 import pytest
 
 from management_portal.society_service import lineage_state_domains
-from management_portal.society_service.state_store import (
-    LineageDataStore,
-    RuntimeCASConflict,
-)
+from management_portal.society_service.lineage_data_runtime import RuntimeCASConflict
+from management_portal.society_service.state_store import LineageDataStore
 from tests.cases.society_service_test_support import (
     install_resource_boundary, publish_registered_lineage_members,
 )

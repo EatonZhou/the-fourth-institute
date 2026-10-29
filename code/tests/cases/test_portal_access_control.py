@@ -25,6 +25,7 @@ from tests.cases.registry_support import write_projects
 
 
 from management_portal.society_service import resident_access, resident_runtime_domain
+from management_portal.society_service import lineage_aggregate
 
 
 def _projects() -> None:
@@ -73,10 +74,10 @@ def test_open_mode_collaboration_and_resource_read_access_agree(
     }, actor) is resource_allowed
     if collaboration_allowed:
         lineage_domain._ensure_visible(lineage, actor)
-        lineage_domain._ensure_manager(lineage, actor)
+        lineage_aggregate.ensure_manager(lineage, actor)
     else:
         with pytest.raises(PermissionError):
-            lineage_domain._ensure_manager(lineage, actor)
+            lineage_aggregate.ensure_manager(lineage, actor)
     assert lineage == {"lineage_id": "lineage_111111111111"}
 
 
@@ -488,7 +489,7 @@ def test_open_mode_lets_any_user_view_and_manage_lineages_and_residents(
 
     for actor in ("viewer", "contributor", "project-admin", "outsider"):
         lineage_domain._ensure_visible(lineage, actor)
-        lineage_domain._ensure_manager(lineage, actor)
+        lineage_aggregate.ensure_manager(lineage, actor)
 
     resident = {
         "resident_id": "resident_0123456789ab",

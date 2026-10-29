@@ -39,7 +39,7 @@ def test_catalog_deletion_archives_turn_and_queues_ack_atomically(tmp_path, monk
     get_agent_data_store().finish_execution("execution-finished", status="failed", finished_at="2026-10-14T00:00:00Z")
     catalog = resident_catalog.ResidentCatalog(tmp_path, store)
     monkeypatch.setattr(resident_catalog, 'ensure_resident_agent', lambda *a, **kw: None)
-    monkeypatch.setattr(resident_mailbox, 'close', lambda *a: None)
+    monkeypatch.setattr(resident_catalog, 'close_mailbox', lambda *a: None)
     tombstone = {**record, 'deleted_at': '2026-10-11T00:00:00Z', 'deleted_by': 'CASE-A'}
     if fail_delete:
         def fail(*a):

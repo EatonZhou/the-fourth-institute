@@ -11,6 +11,7 @@ import pytest
 from management_portal.hatg import kernel as kernel_module, routing
 from management_portal.hatg.contracts import InstructionContext, InstructionResult
 from management_portal.society_service import resident_domain_common, resident_intake_domain
+from management_portal.society_service import lineage_aggregate
 
 
 ACTOR = "sample_admin"
@@ -57,7 +58,7 @@ def isolated_instruction_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     from tests.cases.society_service_test_support import install_resource_boundary
 
     root = tmp_path / "lineages"
-    monkeypatch.setattr(lineage_domain, "DATA_ROOT", root)
+    monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", root)
     monkeypatch.setattr(lineage_domain, "LINEAGE_FOLDER_ROOT", root / "lineages")
     monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(root / "lineages"))
     install_resource_boundary(monkeypatch, synthetic_residents=False)

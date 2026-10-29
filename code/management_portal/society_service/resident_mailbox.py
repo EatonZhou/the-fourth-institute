@@ -281,30 +281,6 @@ def finish_group(record: Mapping[str, Any], group_id: str, terminal_state: str) 
     return member_ids
 
 
-DELETED_ERROR = {"code": "resident_deleted", "message": "Resident 已删除，这条消息不会被处理"}
-
-
-def close(resident_id: str, deleted_at: str) -> list[str]:
-    """End what still waits for a Resident being deleted; returns the inputs it cancelled.
-
-    The deletion runs this in its own transaction, before the tombstone: after
-    it nothing can process or withdraw these messages.  Every input still
-    queued or running ends ``cancelled`` (``resident_deleted``) and the Mailbox
-    is emptied, waiting info and requests the queue dropped included.
-    """
-
-    repository = resident_conversation_stream.get_repository()
-    waiting = [state["message_id"] for state in repository.input_states(resident_id, states=("queued", "running"))]
-    for message_id in waiting:
-        repository.set_input_state(resident_id, message_id, "cancelled", error=DELETED_ERROR, updated_at=deleted_at)
-    store = get_lineage_data_store()
-    store.mailbox_forget(
-        resident_id, [entry["message_id"] for entry in store.mailbox_entries([resident_id])],
-        places=("queue", "group", "pending", "info"),
-    )
-    return waiting
-
-
 def reopen_group(record: Mapping[str, Any], group_id: str) -> list[str]:
     """A finished group waits again (a requeued round); returns its members, which wait with it."""
 

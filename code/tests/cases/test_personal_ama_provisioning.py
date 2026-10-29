@@ -19,6 +19,7 @@ from management_portal.society_service import (
     resident_execution_domain,
     resident_execution_engine_domain,
 )
+from management_portal.society_service import lineage_aggregate
 from tests.cases.test_resident_folder_creation_contract import future_creation_store  # noqa: F401 - fixture
 
 
@@ -38,7 +39,7 @@ def test_personal_ama_can_precede_default_ai(future_creation_store, monkeypatch)
     monkeypatch.setattr(resident_default_backend, "role_configuration", lambda _: {
         "backend": "codex", "backend_route_id": "one", "runtime_settings": {"backend_role": "default"}})
     monkeypatch.setattr(resident_backend, "session_record", lambda _: {})
-    resident_default_backend.bind_before_execution(record, "first_user")
+    resident_execution_domain.bind_before_execution(record, "first_user")
     saved = resident_catalog.get_catalog().get(result["resident_id"])
     assert saved["backend_route_id"] == "one"
     saved_settings = resident_runtime_domain.read_resident_runtime_settings(saved)
@@ -63,13 +64,13 @@ def test_first_api_binding_replaces_source_site_model(future_creation_store, mon
     monkeypatch.setattr(defaults, "role_configuration", lambda _: {
         "backend": "provider_api", "backend_route_id": "deepseek_api", "runtime_settings": role_settings})
     monkeypatch.setattr(resident_backend, "session_record", lambda _: {})
-    defaults.bind_before_execution(record, "api_user")
+    resident_execution_domain.bind_before_execution(record, "api_user")
     saved = resident_catalog.get_catalog().get(result["resident_id"])
     actual = runtime.read_resident_runtime_settings(saved)
     assert (saved["backend"], saved["backend_route_id"]) == ("provider_api", "deepseek_api")
     assert (actual["model"], actual["reasoning_effort"], actual["service_tier"]) == (role_model or "", "", "")
     monkeypatch.setattr(defaults, "role_configuration", lambda _: pytest.fail("bound Residents must keep their route"))
-    defaults.bind_before_execution(saved, "api_user")
+    resident_execution_domain.bind_before_execution(saved, "api_user")
     assert runtime.read_resident_runtime_settings(saved) == actual
     # Exercise the production request and API adapter without a real account or
     # network: both explicit role models and a blank model reach this API.
@@ -101,7 +102,6 @@ def test_first_api_binding_preserves_pending_input_provenance(future_creation_st
     from management_portal.execution import account_registrations
     from management_portal.execution.agent_data_store import get_agent_data_store
     from management_portal.society_service import (
-        resident_default_backend,
         resident_domain,
         resident_execution_work,
         resident_execution_domain,
@@ -119,7 +119,7 @@ def test_first_api_binding_preserves_pending_input_provenance(future_creation_st
     assert store.execution(original["execution_id"])["provider"] == "codex"
     if not configure_before_input:
         account_registrations.update_role("default", "deepseek_only", "", "", 0, "api_user")
-    resident_default_backend.bind_before_execution(record, "api_user")
+    resident_execution_domain.bind_before_execution(record, "api_user")
     current = resident_execution_work.read(record)
     # The real store reserves on every progress write: this reproduced the
     # native failure even though registration and binding alone passed.
@@ -217,7 +217,7 @@ def test_a_deleted_users_personal_ama_goes_with_the_account(future_creation_stor
         graphs.delete_personal_ama("newcomer", "sample_admin")
     status["newcomer"] = "deleted"
     assert graphs.delete_personal_ama("newcomer", "sample_admin")["deleted_lineage_ids"] == [mine["lineage_id"]]
-    personal = {row["lineage_id"] for row in graphs._lineage_catalog_store().listing_records() if row.get("lineage_membership") == "personal"}
+    personal = {row["lineage_id"] for row in lineage_aggregate.lineage_catalog_store().listing_records() if row.get("lineage_membership") == "personal"}
     assert personal == {theirs["lineage_id"]}
     with pytest.raises(KeyError):
         resident_catalog.get_catalog().get(mine["resident_id"])
@@ -260,7 +260,7 @@ def test_an_ama_left_by_a_busy_deletion_stops_running_and_is_deleted_later(futur
     busy.clear()
     assert principal_hierarchy_domain.delete_orphaned_personal_amas() == {
         "deleted_lineage_ids": [mine["lineage_id"]], "failed": {}}
-    personal = {row["lineage_id"] for row in graphs._lineage_catalog_store().listing_records() if row.get("lineage_membership") == "personal"}
+    personal = {row["lineage_id"] for row in lineage_aggregate.lineage_catalog_store().listing_records() if row.get("lineage_membership") == "personal"}
     assert personal == {theirs["lineage_id"]}
     assert principal_hierarchy_domain.delete_orphaned_personal_amas() == {"deleted_lineage_ids": [], "failed": {}}
 
@@ -278,7 +278,7 @@ def test_only_the_user_creates_a_personal_ama(future_creation_store):
     with pytest.raises(ValueError):
         principal_hierarchy_domain.ensure_personal_ama("resident_0123456789ab", "resident_0123456789ab")
     assert not any(
-        row.get("lineage_membership") == "personal" for row in graphs._lineage_catalog_store().listing_records()
+        row.get("lineage_membership") == "personal" for row in lineage_aggregate.lineage_catalog_store().listing_records()
     )
 
 
@@ -336,7 +336,7 @@ def test_asking_again_finishes_a_creation_whose_registration_failed(future_creat
     assert published == [healed["lineage_id"]]
     assert principal_hierarchy_domain.ensure_personal_ama("newcomer", "newcomer") == healed
     assert published == [healed["lineage_id"]]
-    assert "owner_ids" not in graphs._read_lineage_state(healed["lineage_id"])
+    assert "owner_ids" not in lineage_aggregate.read_lineage_state(healed["lineage_id"])
     assert resident_catalog.get_catalog().get(healed["resident_id"])["principal_hierarchy"]["scope_ids"] == ["newcomer"]
     assert resident_catalog.get_catalog().get(healed["resident_id"])["registration_state"] == "ready"
     assert graphs.get_lineage(healed["lineage_id"], "newcomer")["leader_resident_id"] == healed["resident_id"]

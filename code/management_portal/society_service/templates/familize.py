@@ -11,11 +11,13 @@ from typing import Any, Iterable, Mapping
 
 from management_common.actor_identity import canonical_actor_id
 from management_common.principal import actor_principal
-from .. import family_facade, family_familize as facts, family_workflows, family_tasks
+from .. import family_facade, family_familize as facts, family_workflows, family_tasks, family_task_dispatches
 from ..family_definition import (FAMILY_MEMBER_SIGNALS, FAMILY_ROUTER_SCRIPT,
                                 FAMILY_ROUTE_RELAY_SCRIPT, FAMILY_SUMMARY_CHECK_SCRIPT,
                                 FAMILY_SUMMARY_ROLLUP_SCRIPT)
 from .registry import ApplyContext, TemplateError, result
+from .. import lineage_aggregate
+from .. import function_block_authoring
 
 TEMPLATE_ID = "template_" + hashlib.sha256(b"builtin-template:family").hexdigest()[:12]
 REWIRED_KINDS = frozenset({"route", "target"})
@@ -41,19 +43,7 @@ def _domain():
 
 
 def _read(lineage_id: str, actor: str) -> dict:
-    return _domain()._read_lineage(lineage_id, actor=actor)
-
-
-def read_family(lineage_id: str, family_id: str, actor: str) -> tuple[dict, dict]:
-    lineage = _read(lineage_id, actor)
-    return lineage, _block(lineage, family_id)
-
-
-def _block(body: dict, family_id: str) -> dict:
-    for block in body.get("function_blocks", []):
-        if block.get("family") and family_id in {block["id"], block["family"].get("resource_id")}:
-            return block
-    raise ValueError(f"Lineage 中没有这个 Family：{family_id}")
+    return lineage_aggregate.read_lineage(lineage_id, actor=actor)
 
 
 def _values(values: Mapping) -> dict:
@@ -167,7 +157,7 @@ def _rewire(body: dict, sources: set[str], target: str, block: dict, *, removing
     deleting it. Generated Family wires are deleted by the lifecycle itself.
     """
     owned = {e["id"] for e in block.get("elements", [])
-             if not removing or family_workflows.is_generated(e)}
+             if not removing or facts.is_generated(e)}
     internal = set() if removing else _internal_sources(body, block)
     changed = []
     for wire in body.get("program", {}).get("wires", []):
@@ -185,7 +175,7 @@ def reconcile_in_body(body: dict, block: dict, actor: str) -> None:
     personal = bool(family.get("personal_ama_id"))
     members, facade, steward, router = (family[k] for k in ("members", "facade", "steward", "router"))
     elements = block.setdefault("elements", [])
-    previous = {e.get("key"): e for e in elements if family_workflows.is_generated(e)}
+    previous = {e.get("key"): e for e in elements if facts.is_generated(e)}
     generated = []
     program = body.setdefault("program", {})
     components, wires = program.setdefault("components", []), program.setdefault("wires", [])
@@ -329,11 +319,11 @@ def reconcile_in_body(body: dict, block: dict, actor: str) -> None:
             "lineage_id": {"value": body.get("lineage_id") or body.get("id")}, "family_id": {"value": block["id"]}}}}})
     # Roster reconciliation owns only generated structure. Ordinary workflows
     # retain their objects, contracts and occurrence identities.
-    owned = {e["id"] for e in elements if family_workflows.is_generated(e)}
+    owned = {e["id"] for e in elements if facts.is_generated(e)}
     retired = owned - {e["id"] for e in generated}
     program["components"] = [c for c in components if c["id"] not in retired]
     program["wires"] = [w for w in wires if w["id"] not in retired and w["source"] not in retired and w["target"] not in retired]
-    block["elements"] = [e for e in elements if not family_workflows.is_generated(e)] + generated
+    block["elements"] = [e for e in elements if not facts.is_generated(e)] + generated
 
 
 class _Unchanged(Exception):
@@ -401,7 +391,7 @@ def sync_generated_structure(lineage_id: str) -> dict:
     assistants too. A Lineage already in step commits nothing.
     """
     domain = _domain()
-    state = domain._read_lineage_state(lineage_id)
+    state = lineage_aggregate.read_lineage_state(lineage_id)
     if state.get("deleted_at") or not any(block.get("family") for block in state.get("function_blocks") or []):
         return {"lineage_id": lineage_id, "status": "none"}
     actor = domain._lineage_runtime_actor(state)
@@ -431,7 +421,7 @@ def sync_all_generated_structure() -> dict:
     from management_common.service_shutdown import shutdown_requested
 
     report: dict[str, Any] = {"synced": [], "unchanged": 0, "failed": {}}
-    for record in _domain()._lineage_catalog_store().listing_records():
+    for record in lineage_aggregate.lineage_catalog_store().listing_records():
         if shutdown_requested():
             report["stopped"] = True
             break
@@ -453,7 +443,7 @@ def sync_all_generated_structure() -> dict:
 
 def _lineage_exists(lineage_id: str) -> bool:
     try:
-        return not _domain()._lineage_catalog_store().get(lineage_id).get("deleted_at")
+        return not lineage_aggregate.lineage_catalog_store().get(lineage_id).get("deleted_at")
     except KeyError:
         return False
 
@@ -480,11 +470,55 @@ def _new_role(lineage_id: str, role: str, title: str, actor: str, near: str, set
     return str((created.get("resident") or {}).get("resident_id") or created["node"]["id"])
 
 
+def validate_members(lineage: Mapping[str, Any], resident_ids: Iterable[str], *, family_id: str = "") -> list[str]:
+    """Members belong to this Lineage, to at most one Family, and are not stewards or Routers.
+
+    A facade may be a member, which nests one Family inside another; a
+    Family cannot contain its own facade.
+    """
+
+    ids = list(dict.fromkeys(str(item) for item in resident_ids if item))
+    present = {str(node.get("id") or "") for node in lineage.get("nodes") or [] if isinstance(node, Mapping)}
+    missing = [item for item in ids if item not in present]
+    if missing:
+        raise ValueError("Family 成员必须属于同一 Lineage：" + "、".join(missing))
+    taken: dict[str, str] = {}
+    own_facade = ""
+    for block in facts.family_blocks(lineage):
+        if block.get("id") == family_id:
+            own_facade = facts.role_of(block, "facade")
+            continue
+        if block["family"].get("lineage_scope") and facts.role_of(block, "facade") in ids:
+            raise ValueError("Lineage 范围的 Family 不能加入另一个 Family")
+        for member in facts.member_ids(block):
+            taken[member] = str(block.get("title") or block.get("id") or "")
+    for resident_id in ids:
+        if resident_id in taken:
+            raise ValueError(f"{resident_id} 已是 Family「{taken[resident_id]}」的成员，一个 Resident 只能直接属于一个 Family")
+        if resident_id == own_facade:
+            raise ValueError("Family 的门面不能成为自己的成员")
+        record = facts.find_record(resident_id)
+        if family_facade.is_steward(record):
+            raise ValueError(f"{resident_id} 是 steward，不能成为 Family 成员")
+        if facts.family_of_router(lineage, resident_id) is not None:
+            raise ValueError(f"{resident_id} 是 Family Router，不能成为 Family 成员")
+        if not record or record.get("deleted_at"):
+            raise ValueError(f"{resident_id} 已删除或不存在，不能成为 Family 成员")
+    return ids
+
+
+def join_new_resident(lineage_id: str, resident_id: str, creator: str, family_id: str) -> bool:
+    _lineage, block = facts.read_family(lineage_id, family_id, creator)
+    if resident_id in facts.member_ids(block):
+        return False
+    update_family(lineage_id, family_id, creator, add_member_ids=[resident_id])
+    return True
+
+
 def familize(lineage_id: str, resident_ids: Iterable[str], actor: str, *, title: str = "", goal: str = "",
              parameters: Mapping | None = None, placement_request: dict | None = None,
              resident_settings: Mapping | None = None, template_id: str = TEMPLATE_ID, scope: str = "selection",
              personal_ama_id: str = "") -> dict:
-    from .. import function_block_domain
     lineage = _read(lineage_id, actor)
     if scope not in {"selection", "lineage"}:
         raise TemplateError("Family scope 必须是 selection 或 lineage")
@@ -499,7 +533,7 @@ def familize(lineage_id: str, resident_ids: Iterable[str], actor: str, *, title:
                 member_resident_ids=family["members"], leader_resident_id=lineage.get("leader_resident_id", ""),
                 rewired_wire_ids=[])
         resident_ids = facts.lineage_members(lineage)
-    members = facts.validate_members(lineage, _selection(lineage, resident_ids))
+    members = validate_members(lineage, _selection(lineage, resident_ids))
     if personal_ama_id and (lineage.get("lineage_membership") != "personal" or members != [personal_ama_id]):
         raise TemplateError("个人助手只以当前 AMA 为初始成员")
     if not members and scope != "lineage":
@@ -511,7 +545,7 @@ def familize(lineage_id: str, resident_ids: Iterable[str], actor: str, *, title:
     element_keys = _member_elements(lineage, members, lineage_scope=scope == "lineage")
     # Validate ownership and nesting before creating any roles.
     if element_keys:
-        function_block_domain.functionalize_in_body(copy.deepcopy(lineage), list(element_keys), actor, title=title)
+        function_block_authoring.functionalize_in_body(copy.deepcopy(lineage), list(element_keys), actor, title=title)
     placement = dict(placement_request or {})
     near = str(placement.get("near_resident_id") or _central_member(lineage, members))
     roles = {role: _new_role(lineage_id, role, title, actor, near, settings, placement,
@@ -531,10 +565,10 @@ def familize(lineage_id: str, resident_ids: Iterable[str], actor: str, *, title:
                       history_before_ordinal=(page.get("ordinals") or [0])[-1] + 1)
 
     def edit(body):
-        facts.validate_members(body, members)
+        validate_members(body, members)
         keys = {**_member_elements(body, members, lineage_scope=scope == "lineage"),
                 **{rid: role + "_resident" for role, rid in roles.items()}}
-        block = function_block_domain.functionalize_in_body(body, list(keys), actor, title=title,
+        block = function_block_authoring.functionalize_in_body(body, list(keys), actor, title=title,
                     template_id=template_id, element_keys=keys, x=placement.get("x"), y=placement.get("y"))
         block["family"] = copy.deepcopy(family)
         family_workflows.update(body, block, actor, collect=True)
@@ -544,31 +578,30 @@ def familize(lineage_id: str, resident_ids: Iterable[str], actor: str, *, title:
         return {"family_id": block["id"], "rewired_wire_ids": _rewire(body, set(members), roles["facade"], block)}
 
     view, outcome = _domain().commit_lineage_edit(lineage_id, actor, edit, reason="Familize：创建 Family")
-    block = _block(view, outcome["family_id"])
-    family_tasks.dispatch(roles["facade"], "organization", actor, facts={"change": "Family 已创建，检查分工并等待工作触发。"})
+    block = facts.family_block(view, outcome["family_id"])
+    family_task_dispatches.dispatch(roles["facade"], "organization", actor, facts={"change": "Family 已创建，检查分工并等待工作触发。"})
     return result(f"已创建 Family「{title}」", **outcome, resource_id=block["family"]["resource_id"], function_block_ids=[block["id"]],
         facade_resident_id=roles["facade"], steward_resident_id=roles["steward"], router_resident_id=roles["router"],
         member_resident_ids=members, leader_resident_id=view.get("leader_resident_id", ""),
         created={"resident_ids": list(roles.values()),
-                 "component_ids": [e["id"] for e in block["elements"] if e["kind"] == "component" and family_workflows.is_generated(e)],
-                 "wire_ids": [e["id"] for e in block["elements"] if e["kind"] == "wire" and family_workflows.is_generated(e)]})
+                 "component_ids": [e["id"] for e in block["elements"] if e["kind"] == "component" and facts.is_generated(e)],
+                 "wire_ids": [e["id"] for e in block["elements"] if e["kind"] == "wire" and facts.is_generated(e)]})
 
 
 def update_family(lineage_id: str, family_id: str, actor: str, *, add_member_ids=(), remove_member_ids=(),
                   title=None, goal=None, route_threshold=None, review_interval_seconds=None, auto_migrate=None, auto_migrate_priority=None,
                   add_element_ids=(), remove_element_ids=()) -> dict:
-    from .. import function_block_domain
-    _, selected = read_family(lineage_id, family_id, actor)
+    _, selected = facts.read_family(lineage_id, family_id, actor)
     family_id = selected["id"]
     def edit(body):
-        block = _block(body, family_id)
+        block = facts.family_block(body, family_id)
         family = block["family"]
         added = _selection(body, add_member_ids)
         removed = set(_selection(body, remove_member_ids))
         if removed & set(added):
             raise TemplateError("同一成员不能同时加入和移出")
         members = list(dict.fromkeys([rid for rid in family["members"] if rid not in removed] + added))
-        facts.validate_members(body, members, family_id=family_id)
+        validate_members(body, members, family_id=family_id)
         values = _values({key: family.get(key, []) if value is None else value for key, value in
                           (("goal", goal), ("route_threshold", route_threshold), ("review_interval_seconds", review_interval_seconds), ("auto_migrate", auto_migrate), ("auto_migrate_priority", auto_migrate_priority))})
         if title is not None and not str(title).strip():
@@ -578,7 +611,7 @@ def update_family(lineage_id: str, family_id: str, actor: str, *, add_member_ids
         # The Family owns its roster. The generic block editor protects this projection.
         block.pop("family")
         try:
-            block = function_block_domain.update_in_body(body, family_id, actor, title=title,
+            block = function_block_authoring.update_in_body(body, family_id, actor, title=title,
                 add_element_ids=[rid for rid in new_keys if rid not in old_keys],
                 remove_element_ids=[rid for rid in old_keys if rid not in new_keys], element_keys=new_keys)
         finally:
@@ -601,22 +634,22 @@ def update_family(lineage_id: str, family_id: str, actor: str, *, add_member_ids
         return {"family_id": family_id, "rewired_wire_ids": rewired, "added": sorted(actually_added),
                 "removed": sorted(actually_removed)}
     view, outcome = _domain().commit_lineage_edit(lineage_id, actor, edit, reason="UpdateFamily：更新 Family")
-    block = _block(view, family_id)
+    block = facts.family_block(view, family_id)
     family = block["family"]
     if title is not None:
         _domain().rename_lineage_resident(lineage_id, {"resident_id": family["facade"], "title": family["title"]}, actor)
     if outcome["added"] and canonical_actor_id(actor) != family["steward"]:
         creator_id = canonical_actor_id(actor)
-        maker = str(facts._find(creator_id).get("title") or "") if creator_id.startswith("resident_") else ""
+        maker = str(facts.find_record(creator_id).get("title") or "") if creator_id.startswith("resident_") else ""
         creator = f"成员 {maker}（{creator_id}）" if maker else creator_id
-        joined = "、".join(f"{facts._find(rid).get('title') or rid}（{rid}）" for rid in outcome["added"])
+        joined = "、".join(f"{facts.find_record(rid).get('title') or rid}（{rid}）" for rid in outcome["added"])
         family_facade.tell_steward(family["facade"], family["steward"], actor,
             f"结构信号：{creator} 加入的 {joined} 已加入 Family。请明确它的职责和协作关系；工作摘要由成员本人维护，遗漏由 Effect 挂到下一轮提醒。")
     return {"family_id": family_id, "resource_id": block["family"]["resource_id"], "function_block": block}
 
 
 def unfamilize(lineage_id: str, family_id: str, actor: str, *, successor_id: str = "", rewire_to: str = "") -> dict:
-    lineage, block = read_family(lineage_id, family_id, actor)
+    lineage, block = facts.read_family(lineage_id, family_id, actor)
     family_id = block["id"]
     family = block["family"]
     members, facade = family["members"], family["facade"]
@@ -634,21 +667,21 @@ def unfamilize(lineage_id: str, family_id: str, actor: str, *, successor_id: str
     target = rewire_to or successor
     if target and target not in members:
         raise TemplateError("门面上的外部连线只能改接到 Family 成员")
-    owned = {e["id"] for e in block["elements"] if family_workflows.is_generated(e)}
+    owned = {e["id"] for e in block["elements"] if facts.is_generated(e)}
     external = [w for w in lineage.get("program", {}).get("wires", [])
                 if w["kind"] in REWIRED_KINDS and w["target"] == facade and w["id"] not in owned]
     parents = [b for b in lineage.get("function_blocks", []) if any(e["id"] == family_id for e in b["elements"])]
     if (external or any(b.get("family") for b in parents)) and not target:
         raise TemplateError("门面上有外部连线或外层 Family 引用，需要指定改接的成员")
     _stop_roles(lineage_id, roles, actor)
-    with _domain()._lineage_execution_authority(lineage_id):
+    with lineage_aggregate.execution_authority(lineage_id):
         _stop_roles(lineage_id, roles, actor, wait_seconds=0)
         def edit(body):
-            current = _block(body, family_id)
+            current = facts.family_block(body, family_id)
             rewired = _rewire(body, {facade}, target, current, removing=True) if target else []
             if successor:
                 body["leader_resident_id"] = successor
-            internals = {e["id"] for e in current["elements"] if family_workflows.is_generated(e)} | set(roles)
+            internals = {e["id"] for e in current["elements"] if facts.is_generated(e)} | set(roles)
             kept = [e for e in current["elements"] if e["id"] not in internals]
             program = body["program"]
             program["components"] = [c for c in program["components"] if c["id"] not in internals]
@@ -673,20 +706,19 @@ def unfamilize(lineage_id: str, family_id: str, actor: str, *, successor_id: str
 
 def delete_family(lineage_id: str, family_id: str, actor: str) -> dict:
     """Remove a Family and its contents together, after all work has stopped."""
-    from .. import function_block_domain
 
-    lineage, block = read_family(lineage_id, family_id, actor)
-    _domain()._ensure_manager(lineage, canonical_actor_id(actor))
+    lineage, block = facts.read_family(lineage_id, family_id, actor)
+    lineage_aggregate.ensure_manager(lineage, canonical_actor_id(actor))
     family_id = block["id"]
-    ids, residents = function_block_domain.deletion_scope(lineage, family_id)
+    ids, residents = function_block_authoring.deletion_scope(lineage, family_id)
     _stop_roles(lineage_id, sorted(residents), actor)
-    with _domain()._lineage_execution_authority(lineage_id):
+    with lineage_aggregate.execution_authority(lineage_id):
         _stop_roles(lineage_id, sorted(residents), actor, wait_seconds=0)
 
         def edit(body):
-            if function_block_domain.deletion_scope(body, family_id) != (ids, residents):
+            if function_block_authoring.deletion_scope(body, family_id) != (ids, residents):
                 raise FamilyBusy("Family 内容已改变，未执行删除，请重新核对后重试。")
-            function_block_domain.remove_elements_in_body(body, ids)
+            function_block_authoring.remove_elements_in_body(body, ids)
 
         view, _ = _domain().commit_lineage_edit(lineage_id, actor, edit,
             reason="DeleteFamily：删除 Family 及全部内部对象", resident_ids=sorted(residents))
@@ -740,12 +772,12 @@ def member_moved_out(block: Mapping[str, Any], resident_id: str, target: Mapping
     move itself: the template grants the steward its own Lineage only.
     """
 
-    steward_id, facade_id = facts._role(block, "steward"), facts._role(block, "facade")
+    steward_id, facade_id = facts.role_of(block, "steward"), facts.role_of(block, "facade")
     mover_id = canonical_actor_id(actor)
     if not steward_id or not facade_id or mover_id == steward_id:
         return
-    mover = str(facts._find(mover_id).get("title") or "") if mover_id.startswith("resident_") else ""
-    title = str(facts._find(resident_id).get("title") or resident_id)
+    mover = str(facts.find_record(mover_id).get("title") or "") if mover_id.startswith("resident_") else ""
+    title = str(facts.find_record(resident_id).get("title") or resident_id)
     target_id = str(target.get("lineage_id") or "")
     family_facade.tell_steward(facade_id, steward_id, actor, (
         f"结构信号：{f'{mover}（{mover_id}）' if mover else mover_id} 把成员「{title}」（{resident_id}）"
@@ -765,7 +797,7 @@ def _member_title(members: list[str]) -> str:
     if not members:
         return "Family"
     member = secrets.choice(members)
-    return f"{str(facts._find(member).get('title') or '').strip() or member}-family"
+    return f"{str(facts.find_record(member).get('title') or '').strip() or member}-family"
 
 
 def _central_member(lineage: Mapping[str, Any], members: list[str]) -> str:

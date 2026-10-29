@@ -9,12 +9,12 @@ from management_portal.society_service import lineage_program_backlog
 from management_portal.society_service import (
     lineage_domain,
     lineage_operators,
-    lineage_program_event_dispatch,
     lineage_primitives as primitives,
     lineage_program,
     lineage_program_packet_routing,
     lineage_program_runtime,
 )
+from management_portal.society_service import lineage_program_execution
 from management_portal.hatg.catalog.lineage_run import INPUT_MAX_CHARS
 from tests.cases.effect_script_support import effect_config, lower_effect_call
 from tests.cases import society_service_test_support as lineage_test_support
@@ -63,8 +63,8 @@ def test_triggered_input_survives_dispatch_queue_edit_and_replay(isolated_instru
     """触发输入经直接投递或排队后编辑完整送达，重放不重复投递也不改定义"""
     sent = []
     busy = {"value": queued}
-    availability = lineage_program_event_dispatch._program_event_route_can_consume
-    monkeypatch.setattr(lineage_program_event_dispatch, "_program_event_route_can_consume", lambda *args, **kwargs: (False, "resident_running") if busy["value"] else availability(*args, **kwargs))
+    availability = lineage_program_execution.program_event_route_can_consume
+    monkeypatch.setattr(lineage_program_execution, "program_event_route_can_consume", lambda *args, **kwargs: (False, "resident_running") if busy["value"] else availability(*args, **kwargs))
     monkeypatch.setattr(lineage_domain, "_node_has_active_execution", lambda *args, **kwargs: False)
     monkeypatch.setattr(lineage_test_support, "NODE_MESSAGE_SENDER", lambda node, prompt, actor: sent.append(prompt) or {"message_id": "msg_long_input"})
     lineage_id = _graph()

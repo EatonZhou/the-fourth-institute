@@ -11,6 +11,7 @@ import pytest
 from management_portal.society_service import config, lineage_domain, resident_intake_domain
 from management_portal.society_service.coordinator import LineageCoordinator
 from management_portal.society_service.templates import familize
+from management_portal.society_service import lineage_aggregate
 from tests.cases.isa_test_support import ok
 from tests.cases.test_isa_lineage_lifecycle import (  # noqa: F401 - lineage is a fixture
     future_creation_store,
@@ -46,12 +47,12 @@ def test_a_family_built_by_an_older_template_is_regenerated_once(lineage, charte
     assert synced["status"] == "synced"
     assert synced["family_ids"] == [family["family_id"]]
     assert synced["changes"] == {"wires": {relay["id"]: ["config.parallel"]}}
-    assert synced["actor"] == lineage_domain._lineage_runtime_actor(lineage_domain._read_lineage_state(lineage))
+    assert synced["actor"] == lineage_domain._lineage_runtime_actor(lineage_aggregate.read_lineage_state(lineage))
     assert _relay(lineage, family["family_id"])["config"]["parallel"] is True
 
-    revision = lineage_domain._read_lineage_state(lineage)["revision"]
+    revision = lineage_aggregate.read_lineage_state(lineage)["revision"]
     assert familize.sync_generated_structure(lineage)["status"] == "unchanged"
-    assert lineage_domain._read_lineage_state(lineage)["revision"] == revision
+    assert lineage_aggregate.read_lineage_state(lineage)["revision"] == revision
 
 
 def test_a_plain_function_block_beside_a_family_does_not_make_the_sync_commit(lineage, charters):
@@ -63,17 +64,17 @@ def test_a_plain_function_block_beside_a_family_does_not_make_the_sync_commit(li
     member, other = resident(lineage, "Member"), resident(lineage, "Other")
     ok("Familize", {"lineage_id": lineage, "resident_ids": [member], "title": "Team"})
     ok("Functionalize", {"lineage_id": lineage, "element_ids": [other], "title": "Plain"})
-    revision = lineage_domain._read_lineage_state(lineage)["revision"]
+    revision = lineage_aggregate.read_lineage_state(lineage)["revision"]
     assert familize.sync_generated_structure(lineage)["status"] == "unchanged"
-    assert lineage_domain._read_lineage_state(lineage)["revision"] == revision
+    assert lineage_aggregate.read_lineage_state(lineage)["revision"] == revision
 
 
 def test_a_lineage_without_a_family_is_left_alone(lineage):
     """没有 Family 的 Lineage 不做同步"""
     resident(lineage, "Solo")
-    revision = lineage_domain._read_lineage_state(lineage)["revision"]
+    revision = lineage_aggregate.read_lineage_state(lineage)["revision"]
     assert familize.sync_generated_structure(lineage)["status"] == "none"
-    assert lineage_domain._read_lineage_state(lineage)["revision"] == revision
+    assert lineage_aggregate.read_lineage_state(lineage)["revision"] == revision
 
 
 def test_a_lineage_deleted_during_the_pass_is_not_a_failure(lineage, charters, monkeypatch):
@@ -83,7 +84,7 @@ def test_a_lineage_deleted_during_the_pass_is_not_a_failure(lineage, charters, m
     """
     member = resident(lineage, "Member")
     ok("Familize", {"lineage_id": lineage, "resident_ids": [member], "title": "Team"})
-    store = lineage_domain._lineage_catalog_store()
+    store = lineage_aggregate.lineage_catalog_store()
     listed = store.listing_records()
     assert lineage in {record["lineage_id"] for record in listed}
     ok("DeleteLineage", {"lineage_id": lineage})

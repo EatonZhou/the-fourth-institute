@@ -21,6 +21,7 @@ from unittest import mock
 import pytest
 
 from management_portal.society_service.script_runs import runner, runtime, service, store, worker, events
+from management_portal.society_service import lineage_aggregate
 
 
 @pytest.fixture
@@ -240,7 +241,7 @@ def test_script_events_filter_outcome_keep_run_and_identity(monkeypatch, caller,
     from management_common.principal import OperationIdentity
     record.update(caller_id=caller, identity=OperationIdentity.for_actor(caller, initiated_by=initiated_by).to_dict())
     sources={key:{'event_type':'script.finished','outcome':outcome,'subject_effect_ids':['effect_a','effect_b']} for key,outcome in [('any','any'),('ok','succeeded'),('bad','failed')]}
-    monkeypatch.setattr(events.lineage_domain,'_read_lineage_state',lambda _: {'program': {'components': [
+    monkeypatch.setattr(lineage_aggregate,'read_lineage_state',lambda _: {'program': {'components': [
         {'id': 'effect_b', 'kind': 'effect', 'config': {'failure_recipients': ['lineage-admin']}}
     ]}})
     monkeypatch.setattr(events.lineage_program_queries,'_compiled_program',lambda _: {'event_sources':sources})

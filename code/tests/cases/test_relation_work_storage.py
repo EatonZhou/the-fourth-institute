@@ -7,7 +7,7 @@ import pytest
 from management_portal.society_service import relation_work_storage as work
 from management_portal.execution.agent_data_store import get_agent_data_store
 from management_portal.execution import execution_inputs
-from management_portal.society_service.state_store import RuntimeCASConflict
+from management_portal.society_service.lineage_data_runtime import RuntimeCASConflict
 from tests.cases.test_lineage_object_state import LINEAGE_ID, _store, object_resources
 
 

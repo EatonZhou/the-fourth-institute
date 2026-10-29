@@ -27,7 +27,10 @@ class ResidentDomainHost:
     _delegates = {
         name: module
         for module, names in (
-            (family_quota, ("ensure_role_reserve", "reconcile_role_reserves")),
+            (family_quota, (
+                "ensure_role_reserve", "reconcile_role_reserves", "reserve_candidate",
+                "auto_migration_enabled", "auto_migration_priority",
+            )),
             (resident_directory_domain, (
                 "get_resident_user_message_count", "get_resident_user_message_counts",
                 "get_resident_context_pressures", "get_lineage_node_metadata",

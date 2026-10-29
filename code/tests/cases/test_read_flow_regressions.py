@@ -10,6 +10,7 @@ from management_portal.execution.agent_data_store import AgentDataStore
 from management_portal.society_service import lineage_domain, lineage_human_notifications
 from management_portal.society_service.read_snapshot import read_snapshot_scope, request_cached
 from management_portal.society_service.state_store import LineageDataStore
+from management_portal.society_service import lineage_aggregate
 from tests.cases.test_agent_data_store import _chat
 from tests.cases.test_lineage_catalogs import _lineage_definition
 
@@ -78,7 +79,7 @@ def test_notification_query_skips_graphs_and_empty_lineages(tmp_path, monkeypatc
         lineage_human_notifications.create_notification(lineage_id, title="Notice", message="Message", recipients=[actor])
     def forbidden(*args, **kwargs):
         pytest.fail("notification listing loaded a graph or performed an empty point lookup")
-    monkeypatch.setattr(lineage_domain, "_lineage_catalog_store", forbidden)
+    monkeypatch.setattr(lineage_aggregate, "lineage_catalog_store", forbidden)
     monkeypatch.setattr(store.lineage_human_notifications, "get", forbidden)
     hydrated = []
     def hydrate(items, **kwargs):

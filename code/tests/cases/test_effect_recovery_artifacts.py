@@ -16,6 +16,7 @@ from management_portal.society_service import lineage_program_effect_execution a
 from management_portal.society_service import lineage_primitives
 from management_portal.society_service.effect_artifacts import ArtifactStore
 from management_portal.society_service.state_store import get_lineage_data_store
+from management_portal.society_service import lineage_aggregate
 from tests.cases.test_effect_script import _Host, _Outcome, _lineage, _plan
 from tests.cases.test_lineage_generic_primitives import primitive_store
 
@@ -377,14 +378,13 @@ def test_lineage_deletion_settles_safe_effect_and_retains_cleanup_for_tick(monke
 
     :design-point:
     """
-    from management_portal.society_service.lineage_domain import _lineage_catalog_store
     from management_portal.society_service.effect_recovery_worker import EffectRecoveryWorker
     lid = _lineage("lineage_delete_settled")["lineage_id"]
     journal.begin(lid, "key", effect_id="effect", trigger_path_id="", script_sha="sha")
     entry = journal.record_call(lid, "key", "c1", {"ok": True, "caller": "resident_original", "instruction_id": "inst_lin_delete", "result": {"body": "x" * (journal.MAX_RESULT_BYTES + 1)}})
     observed = []
     monkeypatch.setattr(routing, "release_recovery", lambda *a: observed.append(a))
-    _lineage_catalog_store().remove(lid, deleted_by="sample_admin")
+    lineage_aggregate.lineage_catalog_store().remove(lid, deleted_by="sample_admin")
     assert journal.trigger_paths.effect_finished(lid, "key")["status"] == "cancelled"
     assert get_lineage_data_store().effect_cleanup_task(lid, "key")
     assert not observed
@@ -400,12 +400,11 @@ def test_lineage_deletion_preserves_in_flight_effect_until_confirmed():
 
     :design-point:
     """
-    from management_portal.society_service.lineage_domain import _lineage_catalog_store
     lid = _lineage("lineage_delete_inflight")["lineage_id"]
     journal.begin(lid, "key", effect_id="effect", trigger_path_id="", script_sha="sha")
     journal.record_call_started(lid, "key", "c1", {"instruction": "CreateResident", "caller": "resident_original"})
     with pytest.raises(journal.RecoveryPending):
-        _lineage_catalog_store().remove(lid, deleted_by="sample_admin")
+        lineage_aggregate.lineage_catalog_store().remove(lid, deleted_by="sample_admin")
     assert get_lineage_data_store().lineage_definition(lid)
     assert journal.load(lid, "key")["calls"]["c1"]["status"] == "executing"
     assert not journal.trigger_paths.effect_finished(lid, "key")

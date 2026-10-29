@@ -1,5 +1,4 @@
 from __future__ import annotations
-from management_common.portal_paths import path as portal_path
 from . import business_fact_views
 
 from copy import deepcopy
@@ -31,7 +30,6 @@ from .lineage_definition_normalization import LINEAGE_MEMBERSHIP_VALUES
 from .lineage_values import _bool, _clone_json, _dedupe_strings, _item_id, _safe_actor, _text
 from . import (
     lineage_access_policy,
-    lineage_execution_authority,
     lineage_view_projection,
     lineage_handoff_preparation,
     lineage_handoff_execution,
@@ -79,7 +77,6 @@ from . import (
     invariant_locks,
     lineage_execution_explanation,
     lineage_definition_contract,
-    lineage_catalog,
     lineage_operator_runtime,
     lineage_placement,
     lineage_program,
@@ -91,18 +88,13 @@ from . import (
     resident_state,
     resident_protocol,
 )
-from . import resident_message_contract
+from . import lineage_aggregate, resident_message_contract, resident_work_origin
 from . import lineage_event_dispatch_rules
 from .domain_ports import resident_domain_port as resident_domain, resource_port
-from .state_store import RuntimeCASConflict
+from .lineage_data_runtime import RuntimeCASConflict
+from . import project_folders
 
 
-DEFAULT_DATA_ROOT = (portal_path("staging_root") / "shared" / "portal_lineages")
-DATA_ROOT = Path(os.getenv(
-    "PORTAL_LINEAGE_ROOT",
-    str(DEFAULT_DATA_ROOT),
-)).expanduser()
-invariant_locks.configure_root_provider(lambda: DATA_ROOT)
 LINEAGE_FOLDER_ROOT = lineage_storage.configured_lineage_folder_root()
 SCHEMA_VERSION = 1
 # The Lineage buttons a listing reports in ``allows``; each needs only ``lineage_id`` under the default scheme.
@@ -133,12 +125,8 @@ def _lineages_root() -> Path:
 LOGGER = logging.getLogger(__name__)
 
 
-def _lineage_catalog_store() -> lineage_catalog.LineageCatalog:
-    return lineage_catalog.get_catalog()
-
-
 def _deleted_root() -> Path:
-    return DATA_ROOT / "deleted"
+    return lineage_aggregate.DATA_ROOT / "deleted"
 
 
 def _lineage_dir(lineage_id: str) -> Path:
@@ -215,18 +203,6 @@ def state_lock_health() -> dict[str, Any]:
 
 
 @contextmanager
-def _lineage_scope(
-    lineage_id: str,
-    *,
-    operation: str = "",
-) -> Iterator[None]:
-    """One Lineage operation; its deferred effects run after it ends (no lock)."""
-
-    with invariant_locks.lineage_scope(lineage_id, operation=operation):
-        yield
-
-
-@contextmanager
 def _lineage_scopes(
     lineage_ids: Iterable[str],
     *,
@@ -263,19 +239,6 @@ def catalog_mutation_lock(
 
 
 @contextmanager
-def _lineage_execution_authority(lineage_id: str) -> Iterator[None]:
-    with lineage_execution_authority.execution_authority(lineage_id, root=DATA_ROOT):
-        yield
-
-@contextmanager
-def _lineage_execution_authorities(
-    lineage_ids: list[str] | set[str] | tuple[str, ...],
-) -> Iterator[None]:
-    with lineage_execution_authority.execution_authorities(lineage_ids, root=DATA_ROOT):
-        yield
-
-
-@contextmanager
 def _program_contract_authority(
     lineage_id: str,
     impact: Mapping[str, Iterable[str]],
@@ -288,7 +251,7 @@ def _program_contract_authority(
     """
 
     if any(impact.values()):
-        with _lineage_execution_authority(lineage_id):
+        with lineage_aggregate.execution_authority(lineage_id):
             yield
     else:
         yield
@@ -324,46 +287,11 @@ def _ensure_lineage_folder_files(lineage: dict[str, Any]) -> None:
         _write_text(readme, _lineage_readme_text(lineage))
 
 
-def _read_lineage_state(lineage_id: str) -> dict[str, Any]:
-    """Read the canonical aggregate without re-entering ResourceService."""
-
-    catalog = _lineage_catalog_store()
-    try:
-        payload, runtime_state = catalog.get_state(lineage_id)
-    except KeyError:
-        raise KeyError("Lineage not found")
-    try:
-        runtime_state = lineage_state_domains.validate_runtime_state(
-            runtime_state,
-            definition=payload,
-        )
-    except ValueError as exc:
-        raise ValueError("Lineage runtime state does not match current contract") from exc
-    # The snapshot was read for this call alone, so it is merged in place.
-    return lineage_state_domains.merge_validated_runtime_state(payload, runtime_state)
-
-
-def _read_lineage(lineage_id: str, *, actor: str) -> dict[str, Any]:
-    if _lineage_deletion_intent(lineage_id):
-        raise LineageConflictError("Lineage deletion is in progress")
-    payload = _read_lineage_state(lineage_id)
-    payload = business_fact_views.canonical_view(
-        payload,
-        resource_id=lineage_id,
-        actor=_text(actor, 120),
-    )
-    return payload
-
-
-def _lineage_deletion_intent(lineage_id: str) -> dict[str, Any]:
-    return _lineage_catalog_store().state_store.lineage_deletion_operations.get(lineage_id)
-
-
 def _read_lineage_for_deletion(lineage_id: str, actor: str) -> dict[str, Any]:
     # An interrupted deletion may already have tombstoned its descriptor.
     # The still-existing domain aggregate and revision remain the recovery truth.
     from .business_fact_views import canonical_view
-    return canonical_view(_read_lineage_state(lineage_id), resource_id=lineage_id, actor=_text(actor, 120))
+    return canonical_view(lineage_aggregate.read_lineage_state(lineage_id), resource_id=lineage_id, actor=_text(actor, 120))
 
 
 def _stage_empty_lineage_deletion(
@@ -371,10 +299,10 @@ def _stage_empty_lineage_deletion(
     actor: str,
 ) -> dict[str, Any]:
     lineage_id = str(lineage["lineage_id"])
-    store = _lineage_catalog_store().state_store
+    store = lineage_aggregate.lineage_catalog_store().state_store
     from . import lineage_effect_script_journal
     lineage_effect_script_journal.ensure_deletion_can_settle(lineage_id)
-    existing = _lineage_deletion_intent(lineage_id)
+    existing = lineage_aggregate.lineage_deletion_intent(lineage_id)
     if existing:
         if int(existing.get("definition_revision") or -1) != int(
             lineage.get("revision") or 0
@@ -430,7 +358,7 @@ def _purge_deleted_lineage_folder(intent: Mapping[str, Any]) -> None:
                 or marker.read_text(encoding="utf-8") != proof):
             raise ValueError("Invalid staged Lineage deletion")
         source = target
-    _lineage_catalog_store().state_store.retire_workspaces_under(
+    lineage_aggregate.lineage_catalog_store().state_store.retire_workspaces_under(
         [source], deleted_at=intent["deleted_at"], deleted_by=intent["deleted_by"],
     )
     remove_retired_folder(source)
@@ -441,11 +369,11 @@ def _record_lineage_deletion_error(
     operation_id: str,
     error: BaseException,
 ) -> None:
-    with _lineage_scope(lineage_id):
-        current = _lineage_deletion_intent(lineage_id)
+    with lineage_aggregate.lineage_scope(lineage_id):
+        current = lineage_aggregate.lineage_deletion_intent(lineage_id)
         if str(current.get("operation_id") or "") != operation_id:
             return
-        with _lineage_catalog_store().state_store.lineage_deletion_operations.transaction(lineage_id) as state:
+        with lineage_aggregate.lineage_catalog_store().state_store.lineage_deletion_operations.transaction(lineage_id) as state:
             if str(state.get("operation_id") or "") == operation_id:
                 state["last_error"] = f"{type(error).__name__}: {error}"[:2000]
                 state["phase"] = "retryable"
@@ -492,8 +420,7 @@ def _lineage_project_folder(
             lineage_id,
             folder_root=_lineages_root(),
         )
-    from .project_domain import project_root_for_id
-    project_root = project_root_for_id(project_id)
+    project_root = project_folders.project_root_for_id(project_id)
     return project_root / "knowledge_base" / "agents" / lineage_id
 
 
@@ -535,16 +462,11 @@ def _relocate_lineage_for_project(
     return target
 
 
-def _ensure_manager(lineage: dict[str, Any], actor: str) -> None:
-    if not _actor_can_manage_lineage(lineage, actor):
-        raise lineage_access_policy.lineage_refusal(lineage)
-
-
 def require_lineage_manager(lineage_id: str, actor: str) -> str:
     """Authorize a change to the Lineage without exposing its storage details."""
 
     actor_id = _safe_actor(actor)
-    _ensure_manager(_read_lineage(lineage_id, actor=actor_id), actor_id)
+    lineage_aggregate.ensure_manager(lineage_aggregate.read_lineage(lineage_id, actor=actor_id), actor_id)
     return actor_id
 
 
@@ -559,7 +481,7 @@ def lineage_access_projection(lineage_id: str) -> dict[str, Any]:
     """Return the bounded identity projection shared with Resident Domain."""
 
     target_id = str(lineage_id or "").strip()
-    records = _lineage_catalog_store().get_access_records([target_id])
+    records = lineage_aggregate.lineage_catalog_store().get_access_records([target_id])
     if not records:
         raise KeyError("Lineage not found")
     return records[0]
@@ -591,7 +513,7 @@ def authorize_lineage_resident_principal(
 
     principal = lineage_access_policy.canonical_resident_principal(resident_id)
     identity_contract.validate_id(lineage_id, "lineage")
-    lineage = _read_lineage_state(lineage_id) if require_leader else {}
+    lineage = lineage_aggregate.read_lineage_state(lineage_id) if require_leader else {}
     try:
         member = resident_catalog.get_catalog().get(principal)
     except KeyError:
@@ -665,13 +587,13 @@ def commit_resident_title_projection(
     next_title = _text(title, 120)
     if not exact_resident_id or not next_title:
         raise ValueError("Resident title projection requires identity and title")
-    lineage_ids = _lineage_catalog_store().lineage_ids_for_resident(exact_resident_id)
+    lineage_ids = lineage_aggregate.lineage_catalog_store().lineage_ids_for_resident(exact_resident_id)
     if len(lineage_ids) != 1:
         raise ValueError("Resident must belong to exactly one Lineage")
     lineage_id = lineage_ids[0]
-    with _lineage_scope(lineage_id):
-        previous = _read_lineage(lineage_id, actor=actor)
-        _ensure_manager(previous, actor_id)
+    with lineage_aggregate.lineage_scope(lineage_id):
+        previous = lineage_aggregate.read_lineage(lineage_id, actor=actor)
+        lineage_aggregate.ensure_manager(previous, actor_id)
         lineage = _clone_json(previous)
         node = next(
             (
@@ -765,7 +687,7 @@ def _publish_lineage_resource_projection(
 
     if invariant_locks.lock_held():
         raise RuntimeError("Resource projection publication cannot hold Lineage state locks")
-    store = _lineage_catalog_store().state_store
+    store = lineage_aggregate.lineage_catalog_store().state_store
     lock_path = _lineage_dir(lineage_id) / "runtime" / "resource-projection.lock"
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     with lock_path.open("a+b") as publication_lock, lock_stream(publication_lock):
@@ -776,11 +698,11 @@ def _publish_lineage_resource_projection(
         if creation is not None:
             projection = _clone_json(creation)
         else:
-            projection = _read_lineage_state(lineage_id)
+            projection = lineage_aggregate.read_lineage_state(lineage_id)
             if committed_revision is None and covered >= int(projection["revision"]):
                 return
             if actor:
-                _ensure_manager(_read_lineage(lineage_id, actor=actor), actor)
+                lineage_aggregate.ensure_manager(lineage_aggregate.read_lineage(lineage_id, actor=actor), actor)
         _sync_lineage_resource_identity(projection)
         with store.lineage_resource_projection.transaction(lineage_id) as record:
             record["revision"] = max(int(record.get("revision") or 0), int(projection["revision"]))
@@ -816,7 +738,7 @@ def retry_lineage_projections(
         if failure.get("projection") != "lineage.resource_identity":
             raise ValueError("未知 Lineage 投影")
         lineage_id = str(failure.get("lineage_id") or "")
-        _ensure_manager(_read_lineage(lineage_id, actor=actor), actor)
+        lineage_aggregate.ensure_manager(lineage_aggregate.read_lineage(lineage_id, actor=actor), actor)
         project_committed(
             failure,
             # Execution receipts keep references only, so the revision may be
@@ -1172,7 +1094,7 @@ def _persist_lineage_state(
     if domain == lineage_state_domains.GRAPH:
         lineage_placement.place_new_components(previous, lineage, placement_request)
     lineage_id = str(lineage.get("lineage_id") or "").strip()
-    _lineage_catalog_store().state_store.transaction(
+    lineage_aggregate.lineage_catalog_store().state_store.transaction(
         lambda: _persist_lineage_state_transaction(
             previous,
             lineage,
@@ -1252,14 +1174,14 @@ def _persist_lineage_state_transaction(
         persisted, merged = _committed_definition(
             previous, lineage, domain, resident_references=resident_references,
         )
-        _lineage_catalog_store().upsert(persisted)
+        lineage_aggregate.lineage_catalog_store().upsert(persisted)
         if merged:
             _adopt_committed_definition(lineage, persisted)
         else:
             for field in lineage_definition_merge.STAMP_FIELDS:
                 lineage[field] = persisted[field]
         if (lineage.get("principal_hierarchy") or {}).get("level") == "project":
-            store = _lineage_catalog_store().state_store
+            store = lineage_aggregate.lineage_catalog_store().state_store
             committed = store.database.write(lambda connection: store._lineage_definition_from_connection(connection, lineage_id))
             lineage.update(committed)
         if (
@@ -1313,7 +1235,7 @@ def _persist_lineage_state_transaction(
     if runtime_state_changed:
         if domain == lineage_state_domains.RUNTIME and previous is not None:
             try:
-                merged_runtime = _lineage_catalog_store().put_runtime_cas(
+                merged_runtime = lineage_aggregate.lineage_catalog_store().put_runtime_cas(
                     lineage_id,
                     lineage_state_domains.persisted_runtime_state(previous),
                     runtime_candidate,
@@ -1331,7 +1253,7 @@ def _persist_lineage_state_transaction(
         elif previous is not None:
             # A definition write carries the runtime objects it touched; the
             # rest of the runtime keeps its committed state.
-            merged_runtime = _lineage_catalog_store().state_store.put_lineage_runtime_changes(
+            merged_runtime = lineage_aggregate.lineage_catalog_store().state_store.put_lineage_runtime_changes(
                 lineage_id,
                 lineage_state_domains.persisted_runtime_state(previous),
                 runtime_candidate,
@@ -1339,7 +1261,7 @@ def _persist_lineage_state_transaction(
             lineage["runtime_revision"] = int(merged_runtime.get("runtime_revision") or 0)
             lineage["runtime_updated_at"] = str(merged_runtime.get("updated_at") or "")
         else:
-            _lineage_catalog_store().put_runtime(
+            lineage_aggregate.lineage_catalog_store().put_runtime(
                 lineage_id,
                 runtime_candidate,
             )
@@ -1371,7 +1293,7 @@ def _definition_record(value: Mapping[str, Any]) -> dict[str, Any]:
     persisted["schema"] = LINEAGE_FOLDER_SCHEMA
     return lineage_definition_contract.validate_definition(
         persisted,
-        path=_lineage_catalog_store().storage_identity,
+        path=lineage_aggregate.lineage_catalog_store().storage_identity,
     )
 
 
@@ -1392,7 +1314,7 @@ def _committed_definition(
 
     lineage_id = str(lineage.get("lineage_id") or "")
     ours = _definition_record(lineage)
-    store = _lineage_catalog_store().state_store
+    store = lineage_aggregate.lineage_catalog_store().state_store
     current = store.lock_lineage_definition(lineage_id)
     from .lineage_definition_scope import check_definition_scope
     store.database.write(lambda connection: check_definition_scope(connection, current, lineage_id))
@@ -1567,7 +1489,7 @@ def get_lineage_program_resource_projection(
     lineage_id: str, suffix: str,
 ) -> dict[str, Any]:
     namespace, item_id = lineage_program.parse_program_resource_suffix(suffix)
-    definition, _runtime = _lineage_catalog_store().get_state(lineage_id)
+    definition, _runtime = lineage_aggregate.lineage_catalog_store().get_state(lineage_id)
     _, _, item = lineage_program.find_program_resource(
         definition, suffix,
     )
@@ -1584,7 +1506,7 @@ def get_lineage_program_resource_projection(
 def get_family_resource_projection(resource_id: str) -> dict[str, Any]:
     identity_contract.validate_id(resource_id, "family")
     from . import family_storage
-    with _lineage_catalog_store().state_store.database.snapshot() as connection:
+    with lineage_aggregate.lineage_catalog_store().state_store.database.snapshot() as connection:
         records = family_storage.resource_records(connection, resource_ids=[resource_id])
     if not records or records[0].get("deleted_at"):
         raise KeyError(resource_id)
@@ -1593,7 +1515,7 @@ def get_family_resource_projection(resource_id: str) -> dict[str, Any]:
 
 def get_lineage_resource_projection(lineage_id: str) -> dict[str, Any]:
     clean_id = str(lineage_id or "").strip()
-    lineage = _read_lineage_state(clean_id)
+    lineage = lineage_aggregate.read_lineage_state(clean_id)
     return lineage_view_projection.resource_projection(
         clean_id, lineage, _lineage_membership(lineage)
     )
@@ -1608,7 +1530,7 @@ def _lineage_read_fingerprint(lineage: dict[str, Any]) -> tuple[tuple[str, int, 
 
 
 def _lineage_read_cache_key(lineage_id: str, actor: str) -> tuple[str, str, str]:
-    return lineage_read_cache.cache_key(DATA_ROOT, lineage_id, actor)
+    return lineage_read_cache.cache_key(lineage_aggregate.DATA_ROOT, lineage_id, actor)
 
 
 def invalidate_lineage_read_cache(lineage_id: str) -> None:
@@ -1628,7 +1550,7 @@ def _lineage_snapshot_for_read(
     """Capture canonical Lineage facts and add the authenticated read projection."""
 
     actor_id = _safe_actor(actor)
-    lineage = _clone_json(_read_lineage_state(lineage_id))
+    lineage = _clone_json(lineage_aggregate.read_lineage_state(lineage_id))
     lineage = business_fact_views.canonical_view(
         lineage,
         resource_id=lineage_id,
@@ -1664,7 +1586,7 @@ def _current_lineage_view_for_read(lineage_id: str, actor: str) -> tuple[dict[st
 def list_lineages(actor: str) -> dict[str, Any]:
     actor_id = _safe_actor(actor)
     can_manage = _actor_can_manage_lineages(actor_id)
-    catalog = _lineage_catalog_store()
+    catalog = lineage_aggregate.lineage_catalog_store()
     hydrated = business_fact_views.canonical_views(
         catalog.listing_records(),
         id_field="lineage_id",
@@ -1702,12 +1624,12 @@ def list_resident_discovery_catalog(actor: str) -> dict[str, Any]:
     if not get_portal_access_store().is_service_actor(actor_id):
         raise PermissionError("Resident Discovery catalog requires a service actor")
     records: dict[str, dict[str, Any]] = {}
-    for catalog_item in _lineage_catalog_store().snapshot():
+    for catalog_item in lineage_aggregate.lineage_catalog_store().snapshot():
         lineage_id = str(catalog_item.get("lineage_id") or "").strip()
         if not lineage_id:
             continue
         try:
-            lineage = _read_lineage_state(lineage_id)
+            lineage = lineage_aggregate.read_lineage_state(lineage_id)
         except (KeyError, ValueError):
             continue
         lineage_title = str(lineage.get("title") or lineage_id)
@@ -1781,7 +1703,7 @@ def delete_personal_ama(username: str, actor: str) -> dict[str, Any]:
 
 
 def ensure_personal_assistant(username: str, ama_id: str, actor: str) -> dict[str, Any]:
-    from .personal_assistant import ensure
+    from .principal_hierarchy_domain import ensure_personal_assistant as ensure
     return ensure(username, ama_id, actor)
 
 
@@ -1835,7 +1757,7 @@ def actor_lineage_access_records(
     """Return the Lineage membership facts authorized for one actor."""
 
     actor_id = _safe_actor(actor)
-    catalog = _lineage_catalog_store()
+    catalog = lineage_aggregate.lineage_catalog_store()
     definitions = (
         catalog.snapshot()
         if lineage_ids is None
@@ -1875,7 +1797,7 @@ def get_lineage_monitor_definition(lineage_id: str, actor: str) -> dict[str, Any
     """Read authorized flow definitions without assembling the workbench view."""
 
     actor_id = _safe_actor(actor)
-    lineage = _read_lineage(lineage_id, actor=actor_id)
+    lineage = lineage_aggregate.read_lineage(lineage_id, actor=actor_id)
     _ensure_visible(lineage, actor_id)
     program = lineage.get("program") or {}
     return {
@@ -1903,7 +1825,7 @@ def get_lineage_monitor_definitions(lineage_ids: list[str], actor: str) -> dict[
     if requested:
         # Existing canonical readers join this snapshot. Keep each Lineage's
         # access/deletion checks and isolate its domain validation errors.
-        with _lineage_catalog_store().state_store.database.snapshot():
+        with lineage_aggregate.lineage_catalog_store().state_store.database.snapshot():
             for lineage_id in requested:
                 try:
                     definitions[lineage_id] = get_lineage_monitor_definition(lineage_id, actor_id)
@@ -2036,7 +1958,7 @@ def get_lineage_node_metadata(
         # Node membership belongs to the immutable Lineage definition.  A
         # committed PostgreSQL read is sufficient and must not queue behind an
         # unrelated aggregate writer or materialize runtime state.
-        lineage = _lineage_catalog_store().get(lineage_id)
+        lineage = lineage_aggregate.lineage_catalog_store().get(lineage_id)
     except KeyError:
         raise KeyError("Lineage not found") from None
     node = next(
@@ -2131,8 +2053,8 @@ def create_lineage(payload: dict[str, Any], actor: str) -> dict[str, Any]:
     actor_id = _safe_actor(actor)
     for _ in range(20):
         lineage_id = identity_contract.new_id("lineage")
-        with _lineage_execution_authority(lineage_id):
-            with _lineage_scope(lineage_id):
+        with lineage_aggregate.execution_authority(lineage_id):
+            with lineage_aggregate.lineage_scope(lineage_id):
                 if _lineage_dir(lineage_id).exists():
                     continue
                 lineage = _create_lineage_in_scope(
@@ -2226,7 +2148,7 @@ def initialize_resident_lineage(
     if not identity_contract.is_valid_id(lineage_id, "lineage"):
         raise ValueError("Resident 缺少规范的 lineage_id")
     try:
-        _lineage_catalog_store().get(lineage_id)
+        lineage_aggregate.lineage_catalog_store().get(lineage_id)
     except KeyError:
         pass
     else:
@@ -2279,7 +2201,7 @@ def initialize_resident_lineage(
         lineage["principal_hierarchy"] = {"level": "project", "scope_id": project_id}
         from .principal_hierarchy import project_leaders
         from .lineage_member_projection import project_resident_nodes
-        references = project_leaders(lineage, _lineage_catalog_store().listing_records())
+        references = project_leaders(lineage, lineage_aggregate.lineage_catalog_store().listing_records())
         project_resident_nodes(lineage, [record, *resident_catalog.get_catalog().get_many(list(references))])
     _persist_lineage_state(None, lineage, "创建 Resident Lineage")
     return lineage
@@ -2353,12 +2275,12 @@ def add_registered_resident_node(
     if actual_folder != expected_folder:
         return None
     try:
-        _lineage_catalog_store().get(lineage_id)
+        lineage_aggregate.lineage_catalog_store().get(lineage_id)
     except KeyError:
         return None
-    with _lineage_scope(lineage_id):
-        lineage = _read_lineage(lineage_id, actor=actor)
-        _ensure_manager(lineage, actor)
+    with lineage_aggregate.lineage_scope(lineage_id):
+        lineage = lineage_aggregate.read_lineage(lineage_id, actor=actor)
+        lineage_aggregate.ensure_manager(lineage, actor)
         if node_options is not None:
             if str(record.get("project_id") or "") != str(lineage.get("project_id") or ""):
                 raise ValueError("Lineage Project changed during Resident preparation; retry")
@@ -2388,12 +2310,12 @@ def _moving_family_member(source: dict[str, Any], resident_id: str) -> dict[str,
     the roster as when a member is deleted.
     """
 
-    from .family_familize import _role, family_blocks, member_ids
+    from .family_familize import role_of, family_blocks, member_ids
 
     names = {"facade": "门面", "router": "Router", "steward": "steward"}
     for block in family_blocks(source):
         title = str(block["family"].get("title") or block.get("title") or block["id"])
-        role = next((role for role in names if _role(block, role) == resident_id), "")
+        role = next((role for role in names if role_of(block, role) == resident_id), "")
         if role:
             raise ValueError(
                 f"这个 Resident 是 Family「{title}」的{names[role]}，随 Family 一起存在，不能单独迁移；"
@@ -2444,10 +2366,10 @@ def _resident_move_plan(
     # migrated or disconnected first.
     owned: set[str] = set()
     if family is not None:
-        from . import family_workflows
+        from . import family_familize
 
         owned = {family["id"]} | {
-            element["id"] for element in family.get("elements") or [] if family_workflows.is_generated(element)
+            element["id"] for element in family.get("elements") or [] if family_familize.is_generated(element)
         }
     program = source.get("program") or {}
     collections = {"function_blocks": source.get("function_blocks") or []}
@@ -2481,8 +2403,8 @@ def _resident_move_plan(
 def move_lineage_subgraph(lineage_id: str, payload: dict[str, Any], actor: str) -> dict[str, Any]:
     target_id = str(payload.get("target_lineage_id") or "")
     if not target_id:
-        source = _read_lineage(lineage_id, actor=actor)
-        _ensure_manager(source, actor)
+        source = lineage_aggregate.read_lineage(lineage_id, actor=actor)
+        lineage_aggregate.ensure_manager(source, actor)
         # Validate the selection before publishing a destination identity.
         lineage_subgraph.plan(source, {"program": lineage_program.empty_program()}, payload.get("object_ids"), source_member_ids={
             record["resident_id"] for record in resident_catalog.get_catalog().for_lineage(lineage_id)
@@ -2495,7 +2417,7 @@ def move_lineage_subgraph(lineage_id: str, payload: dict[str, Any], actor: str) 
         try:
             return move_lineage_subgraph(lineage_id, {**payload, "target_lineage_id": target_id}, actor)
         except Exception:
-            current_target = _read_lineage(target_id, actor=actor)
+            current_target = lineage_aggregate.read_lineage(target_id, actor=actor)
             if not current_target.get("nodes") and not (current_target.get("program") or {}).get("components"):
                 delete_lineage(target_id, actor)
             raise
@@ -2503,12 +2425,12 @@ def move_lineage_subgraph(lineage_id: str, payload: dict[str, Any], actor: str) 
     if target_id == lineage_id:
         raise ValueError("请选择不同的目标 Lineage")
     # Match normal graph edits: execution fences precede graph scopes.
-    with _lineage_execution_authorities([lineage_id, target_id]), _lineage_scopes(
+    with lineage_aggregate.execution_authorities([lineage_id, target_id]), _lineage_scopes(
         [lineage_id, target_id], operation="subgraph.move",
     ):
-        source, target = _read_lineage(lineage_id, actor=actor), _read_lineage(target_id, actor=actor)
-        _ensure_manager(source, actor)
-        _ensure_manager(target, actor)
+        source, target = lineage_aggregate.read_lineage(lineage_id, actor=actor), lineage_aggregate.read_lineage(target_id, actor=actor)
+        lineage_aggregate.ensure_manager(source, actor)
+        lineage_aggregate.ensure_manager(target, actor)
         plan = lineage_subgraph.plan(source, target, payload.get("object_ids"),
             source_member_ids={record["resident_id"]
                                for record in resident_catalog.get_catalog().for_lineage(lineage_id)})
@@ -2531,7 +2453,7 @@ def move_lineage_subgraph(lineage_id: str, payload: dict[str, Any], actor: str) 
             # rows. The move owns the final positions, including hidden members;
             # commit them through the layout owner in this same transaction.
             destination = plan["target"]
-            _lineage_catalog_store().update_layout(target_id, [
+            lineage_aggregate.lineage_catalog_store().update_layout(target_id, [
                 {"object_id": item["id"], "x": item["x"], "y": item["y"]}
                 for item in [*destination.get("nodes", []),
                              *destination["program"].get("components", []),
@@ -2555,7 +2477,7 @@ def _record_move_operation(
     """One trackable ID for a whole MoveLineageObjects batch, read by GetMoveOperation."""
 
     operation_id = "lineage-move_" + secrets.token_hex(12)
-    with _lineage_catalog_store().state_store.lineage_move_operations.transaction(target_id, operation_id) as record:
+    with lineage_aggregate.lineage_catalog_store().state_store.lineage_move_operations.transaction(target_id, operation_id) as record:
         record.update({
             "operation_id": operation_id,
             "source_lineage_id": source_id,
@@ -2578,21 +2500,21 @@ def move_lineage_resident(lineage_id: str, payload: dict[str, Any], actor: str) 
         raise ValueError("MoveResident requires different source and target Lineages")
     baselines: list[dict[str, Any]] = []
     with _lineage_scopes([lineage_id, target_id], operation="resident.move"):
-        source, target = _read_lineage(lineage_id, actor=actor), _read_lineage(target_id, actor=actor)
-        _ensure_manager(source, actor)
-        _ensure_manager(target, actor)
+        source, target = lineage_aggregate.read_lineage(lineage_id, actor=actor), lineage_aggregate.read_lineage(target_id, actor=actor)
+        lineage_aggregate.ensure_manager(source, actor)
+        lineage_aggregate.ensure_manager(target, actor)
         allow_empty_source = payload.get("allow_empty_source", False)
         plan = _resident_move_plan(source, resident_id, allow_empty_source=allow_empty_source)
         family = plan["family"]
         # Leaving a Family changes its generated wiring; old Program work is
         # fenced as for any graph edit that changes the execution contract.
-        with _lineage_execution_authority(lineage_id) if family is not None else nullcontext():
+        with lineage_aggregate.execution_authority(lineage_id) if family is not None else nullcontext():
             result = resident_domain.update_resident(resident_id, actor, {
                 "target_lineage_id": target_id,
                 "allow_empty_source": allow_empty_source,
             })
             if family is not None:
-                current = _read_lineage(lineage_id, actor=actor)
+                current = lineage_aggregate.read_lineage(lineage_id, actor=actor)
                 baselines = _execute_program_contract_cleanup(
                     lineage_id, _program_execution_contract_change(source, current),
                     previous_lineage=source, current_lineage=current,
@@ -2625,7 +2547,7 @@ def get_move_operation(operation_id: str, actor: str) -> dict[str, Any]:
     if not re.fullmatch(r"resident-operation_[0-9a-f]{24}", operation_id):
         raise ValueError("operation_id must be a resident-operation or lineage-move ID")
     try:
-        transfer = ResidentLifecycleOperations(_lineage_catalog_store().state_store).transfer(operation_id)
+        transfer = ResidentLifecycleOperations(lineage_aggregate.lineage_catalog_store().state_store).transfer(operation_id)
     except KeyError:
         raise KeyError("迁移操作不存在或已被回收") from None
     source_id = str(transfer.get("source_lineage_id") or "")
@@ -2634,8 +2556,8 @@ def get_move_operation(operation_id: str, actor: str) -> dict[str, Any]:
     identity_contract.validate_id(source_id, "lineage")
     identity_contract.validate_id(target_id, "lineage")
     identity_contract.validate_id(resident_id, "resident")
-    _ensure_visible(_read_lineage(source_id, actor=actor), actor)
-    _ensure_visible(_read_lineage(target_id, actor=actor), actor)
+    _ensure_visible(lineage_aggregate.read_lineage(source_id, actor=actor), actor)
+    _ensure_visible(lineage_aggregate.read_lineage(target_id, actor=actor), actor)
     return {
         **resident_domain.observe_committed_resident_transfer(operation_id, resident_id),
         "source_lineage_id": source_id,
@@ -2647,14 +2569,14 @@ def get_move_operation(operation_id: str, actor: str) -> dict[str, Any]:
 def _get_batch_move_operation(operation_id: str, actor: str) -> dict[str, Any]:
     """A batch is complete once every Resident it moved has finished its workspace move."""
 
-    store = _lineage_catalog_store().state_store
+    store = lineage_aggregate.lineage_catalog_store().state_store
     target_id = store.lineage_move_operations.lineage_id(operation_id)
     if not target_id:
         raise KeyError("迁移操作不存在或已被回收")
     record = store.lineage_move_operations.get(target_id, operation_id) or {}
     source_id = str(record.get("source_lineage_id") or "")
-    _ensure_visible(_read_lineage(source_id, actor=actor), actor)
-    _ensure_visible(_read_lineage(target_id, actor=actor), actor)
+    _ensure_visible(lineage_aggregate.read_lineage(source_id, actor=actor), actor)
+    _ensure_visible(lineage_aggregate.read_lineage(target_id, actor=actor), actor)
     parts = [get_move_operation(item, actor) for item in record.get("resident_operation_ids") or [] if item]
     failed = next((part for part in parts if part.get("status") == "failed"), None)
     pending = next((part for part in parts if part.get("status") != "completed"), None)
@@ -2681,9 +2603,9 @@ def move_resident_membership(
     Resident scope. File transfer and external projections follow via outbox.
     """
     target_lineage_id = str(record["lineage_id"])
-    source, target = _read_lineage(source_lineage_id, actor=actor), _read_lineage(target_lineage_id, actor=actor)
-    _ensure_manager(source, actor)
-    _ensure_manager(target, actor)
+    source, target = lineage_aggregate.read_lineage(source_lineage_id, actor=actor), lineage_aggregate.read_lineage(target_lineage_id, actor=actor)
+    lineage_aggregate.ensure_manager(source, actor)
+    lineage_aggregate.ensure_manager(target, actor)
     node, patch = _resident_move_patch(
         source, str(record["resident_id"]), allow_empty_source=allow_empty_source,
     )
@@ -2691,7 +2613,7 @@ def move_resident_membership(
     # Afterwards the source's current membership already excludes this node.
     body = lineage_graph_authoring.graph_patch_candidate(source, patch)
     from .lineage_definition_scope import check_before_membership_write
-    check_before_membership_write(_lineage_catalog_store().state_store, source_lineage_id)
+    check_before_membership_write(lineage_aggregate.lineage_catalog_store().state_store, source_lineage_id)
     publish_identity()
     normalized = _normalize_lineage_payload(
         body, source, actor, reconnect_removed_inheritance=False,
@@ -2702,7 +2624,7 @@ def move_resident_membership(
         target, record, actor,
         position=position,
     )
-    _lineage_catalog_store().update_layout(target_lineage_id, [
+    lineage_aggregate.lineage_catalog_store().update_layout(target_lineage_id, [
         {"object_id": record["resident_id"], "x": position[0], "y": position[1]},
     ], updated_at=_now_iso())
     invalidate_lineage_read_cache(target_lineage_id)
@@ -2721,7 +2643,7 @@ def create_lineage_resident(
     creation_key = _text(payload.get("creation_key"), 160)
     if not creation_key:
         return _create_lineage_resident(lineage_id, payload, actor)
-    store = _lineage_catalog_store().state_store
+    store = lineage_aggregate.lineage_catalog_store().state_store
     # A session lock serializes the frozen request without delaying the domain
     # commit until after external Resource publication.
     lock_key = int.from_bytes(hashlib.sha256(
@@ -2731,8 +2653,8 @@ def create_lineage_resident(
         receipt = store.resident_creation_operations.get(lineage_id, creation_key)
         resident_id = str(receipt.get("resident_id") or "")
         if resident_id:
-            updated = _read_lineage(lineage_id, actor=actor)
-            _ensure_manager(updated, actor)
+            updated = lineage_aggregate.read_lineage(lineage_id, actor=actor)
+            lineage_aggregate.ensure_manager(updated, actor)
             if resident_id not in {str(node.get("id") or "") for node in updated.get("nodes") or []}:
                 raise ValueError("该创建请求建立的 Resident 已移走或删除，请重新发起")
             try:
@@ -2767,9 +2689,9 @@ def _create_lineage_resident(
     actor: str,
 ) -> dict[str, Any]:
     actor_id = _safe_actor(actor)
-    with _lineage_scope(lineage_id):
-        lineage = _read_lineage(lineage_id, actor=actor)
-        _ensure_manager(lineage, actor_id)
+    with lineage_aggregate.lineage_scope(lineage_id):
+        lineage = lineage_aggregate.read_lineage(lineage_id, actor=actor)
+        lineage_aggregate.ensure_manager(lineage, actor_id)
 
 
         lineage_project_id = _text(lineage.get("project_id"), 120)
@@ -2808,8 +2730,8 @@ def _create_lineage_resident(
             "near_resident_id", "placement",
         ) if key in payload},
     )
-    with _lineage_scope(lineage_id):
-        updated = _read_lineage(lineage_id, actor=actor)
+    with lineage_aggregate.lineage_scope(lineage_id):
+        updated = lineage_aggregate.read_lineage(lineage_id, actor=actor)
         node = _lineage_node(updated, record["resident_id"])
     return {"lineage": updated, "resident": record, "node": node}
 
@@ -2822,8 +2744,8 @@ def update_lineage_graph_state(
     """Update one runtime State Cell without advancing graph revision; ``expected_value`` makes it a compare-and-set."""
 
     actor_id = _safe_actor(actor)
-    lineage = _read_lineage(lineage_id, actor=actor_id)
-    _ensure_manager(lineage, actor_id)
+    lineage = lineage_aggregate.read_lineage(lineage_id, actor=actor_id)
+    lineage_aggregate.ensure_manager(lineage, actor_id)
     from . import lineage_graph_state
 
     guard = {"expected_value": payload["expected_value"]} if "expected_value" in payload else {}
@@ -2843,7 +2765,7 @@ def get_lineage_graph_state(
     """Read the bounded runtime State snapshot or one exact Cell."""
 
     actor_id = _safe_actor(actor)
-    lineage = _read_lineage(lineage_id, actor=actor_id)
+    lineage = lineage_aggregate.read_lineage(lineage_id, actor=actor_id)
     _ensure_visible(lineage, actor_id)
     from . import lineage_graph_state
 
@@ -2863,8 +2785,8 @@ def delete_lineage_graph_state(
     """Delete one runtime State Cell without advancing graph revision."""
 
     actor_id = _safe_actor(actor)
-    lineage = _read_lineage(lineage_id, actor=actor_id)
-    _ensure_manager(lineage, actor_id)
+    lineage = lineage_aggregate.read_lineage(lineage_id, actor=actor_id)
+    lineage_aggregate.ensure_manager(lineage, actor_id)
     from . import lineage_graph_state
 
     arguments: list[Any] = [
@@ -2874,31 +2796,6 @@ def delete_lineage_graph_state(
     if "expected_value" in payload:
         arguments.append(payload.get("expected_value"))
     return lineage_graph_state.delete_cell(*arguments)
-
-
-def _notification_recipients(initiator: str) -> list[str]:
-    """Follow work provenance, falling back only to a Resident's human creator."""
-    from management_common.principal import actor_principal
-    from management_common.operation_identity import current_operation_identity
-    from .resident_work_origin import human_initiator
-    if not initiator:
-        return []
-    principal = actor_principal(initiator)
-    if principal.kind == 'user':
-        return [principal.id]
-    if principal.kind != 'resident':
-        return []
-    identity = current_operation_identity()
-    if identity and identity.principal == principal and identity.initiated_by.kind == 'user':
-        return [identity.initiated_by.id]
-    human = human_initiator(principal.id)
-    if human:
-        return [human]
-    try:
-        creator = str(resident_catalog.get_catalog().get(principal.id).get('created_by') or '')
-    except KeyError:
-        return []
-    return [creator] if creator and actor_principal(creator).kind == 'user' else []
 
 
 def create_lineage_human_notification(
@@ -2911,10 +2808,10 @@ def create_lineage_human_notification(
     actor_id = _safe_actor(actor)
     recipients = [str(item) for item in payload.get("recipients") or [] if str(item or "").strip()]
     if lineage_id:
-        lineage = _read_lineage(lineage_id, actor=actor_id)
+        lineage = lineage_aggregate.read_lineage(lineage_id, actor=actor_id)
         _ensure_visible(lineage, actor_id)
         if not recipients:
-            recipients = _notification_recipients(actor_id)
+            recipients = resident_work_origin.notification_recipients(actor_id)
     if not recipients:
         raise ValueError("通知需要明确的 recipients 或可解析的人类发起人")
     from . import lineage_human_notifications
@@ -2945,9 +2842,9 @@ def _mutate_lineage_program(
     actor_id = _safe_actor(actor)
     contract_impact: dict[str, set[str]] = {}
     completion_baselines: list[dict[str, Any]] = []
-    with _lineage_scope(lineage_id):
-        previous = _read_lineage(lineage_id, actor=actor)
-        _ensure_manager(previous, actor_id)
+    with lineage_aggregate.lineage_scope(lineage_id):
+        previous = lineage_aggregate.read_lineage(lineage_id, actor=actor)
+        lineage_aggregate.ensure_manager(previous, actor_id)
         body = _clone_json(previous)
         program = (
             body.get("program")
@@ -3077,9 +2974,9 @@ def save_lineage_program_component(
     component_id, requested = lineage_program_authoring.component_patch(payload)
     effective_payload = dict(payload)
     effect_changes = payload.get("effect_changes") if isinstance(payload.get("effect_changes"), dict) else {}
-    with _lineage_scope(lineage_id):
-        current = _read_lineage(lineage_id, actor=actor)
-        _ensure_manager(current, _safe_actor(actor))
+    with lineage_aggregate.lineage_scope(lineage_id):
+        current = lineage_aggregate.read_lineage(lineage_id, actor=actor)
+        lineage_aggregate.ensure_manager(current, _safe_actor(actor))
         current_component = next(
             (
                 component
@@ -3196,9 +3093,9 @@ def _retire_exhausted_event_sources(lineage_id: str, actor: str) -> list[str]:
     """Retire opted-in sources once graph cleanup can preserve all accepted work."""
 
     deleted: list[str] = []
-    with _lineage_execution_authority(lineage_id), _lineage_scope(lineage_id):
-        lineage = _read_lineage(lineage_id, actor=actor)
-        _ensure_manager(lineage, actor)
+    with lineage_aggregate.execution_authority(lineage_id), lineage_aggregate.lineage_scope(lineage_id):
+        lineage = lineage_aggregate.read_lineage(lineage_id, actor=actor)
+        lineage_aggregate.ensure_manager(lineage, actor)
         candidates = [
             str(component["id"])
             for component in (lineage.get("program") or {}).get("components") or []
@@ -3206,7 +3103,7 @@ def _retire_exhausted_event_sources(lineage_id: str, actor: str) -> list[str]:
             and (component.get("config") or {}).get("auto_delete_on_exhaustion")
         ]
         for source_id in candidates:
-            lineage = _read_lineage(lineage_id, actor=actor)
+            lineage = lineage_aggregate.read_lineage(lineage_id, actor=actor)
             source = (_compiled_program(lineage).get("event_sources") or {}).get(source_id)
             if not source or not source.get("auto_delete_on_exhaustion"):
                 continue
@@ -3338,9 +3235,9 @@ def rename_lineage_resident(
 ) -> dict[str, Any]:
     """Validate graph concurrency before the canonical Resident rename."""
 
-    with _lineage_scope(lineage_id):
-        current = _read_lineage(lineage_id, actor=actor)
-        _ensure_manager(current, _safe_actor(actor))
+    with lineage_aggregate.lineage_scope(lineage_id):
+        current = lineage_aggregate.read_lineage(lineage_id, actor=actor)
+        lineage_aggregate.ensure_manager(current, _safe_actor(actor))
         node = _lineage_node(current, payload.get("resident_id"))
         identity = resident_domain.resolve_resident_identity(_node_resident_id(node), actor)
         if identity["lineage_id"] != lineage_id:
@@ -3362,15 +3259,15 @@ def update_lineage_layout(
     """
 
     actor_id = _safe_actor(actor)
-    current = _read_lineage(lineage_id, actor=actor_id)
-    _ensure_manager(current, actor_id)
+    current = lineage_aggregate.read_lineage(lineage_id, actor=actor_id)
+    lineage_aggregate.ensure_manager(current, actor_id)
     candidate = _clone_json(current)
     normalized = lineage_state_domains.apply_layout_patch(
         candidate,
         payload.get("positions"),
         normalize_position=_position,
     )
-    result = _lineage_catalog_store().update_layout(
+    result = lineage_aggregate.lineage_catalog_store().update_layout(
         lineage_id,
         normalized["applied"],
         updated_at=_now_iso(),
@@ -3396,9 +3293,9 @@ def update_lineage_metadata(
     actor_id = _safe_actor(actor)
     if "fragments" in payload and not isinstance(payload["fragments"], list):
         raise ValueError("fragments 必须是数组")
-    with _lineage_scope(lineage_id):
-        current = _read_lineage(lineage_id, actor=actor)
-        _ensure_manager(current, actor_id)
+    with lineage_aggregate.lineage_scope(lineage_id):
+        current = lineage_aggregate.read_lineage(lineage_id, actor=actor)
+        lineage_aggregate.ensure_manager(current, actor_id)
         lineage = _clone_json(current)
         if "fragments" in payload:
             lineage["fragments"] = _normalize_lineage_payload(
@@ -3547,9 +3444,9 @@ def _apply_lineage_graph_patch(
     raw_patch = lineage_graph_authoring.authored_graph_patch(
         payload, instruction="ApplyLineageChanges", fields=LINEAGE_GRAPH_PATCH_FIELDS,
     )
-    with _lineage_scope(lineage_id):
-        current = _read_lineage(lineage_id, actor=actor_id)
-        _ensure_manager(current, actor_id)
+    with lineage_aggregate.lineage_scope(lineage_id):
+        current = lineage_aggregate.read_lineage(lineage_id, actor=actor_id)
+        lineage_aggregate.ensure_manager(current, actor_id)
         base = previous if previous is not None else current
         body = lineage_graph_authoring.graph_patch_candidate(base, raw_patch)
     return update_lineage(
@@ -3599,9 +3496,9 @@ def commit_lineage_edit(
     for resident_id in deleted:
         identity_contract.validate_id(resident_id, "resident")
     completion_baselines: list[dict[str, Any]] = []
-    with _lineage_scope(lineage_id):
-        previous = _read_lineage(lineage_id, actor=actor)
-        _ensure_manager(previous, actor_id)
+    with lineage_aggregate.lineage_scope(lineage_id):
+        previous = lineage_aggregate.read_lineage(lineage_id, actor=actor)
+        lineage_aggregate.ensure_manager(previous, actor_id)
         body = _clone_json(previous)
         outcome = edit(body)
         if deleted:
@@ -3633,7 +3530,7 @@ def commit_lineage_edit(
             _program_contract_authority(lineage_id, impact),
             invariant_locks.resident_locks(deleted, operation="lineage.edit"),
         ):
-            _lineage_catalog_store().state_store.transaction(commit)
+            lineage_aggregate.lineage_catalog_store().state_store.transaction(commit)
             completion_baselines = _execute_program_contract_cleanup(
                 lineage_id,
                 impact,
@@ -3770,7 +3667,7 @@ def _resident_projections_removal_patch(
 def _finalize_deleted_resident_projection(lineage_id: str) -> None:
     """Publish projections after the enclosing delete transaction commits."""
 
-    lineage = _read_lineage_state(lineage_id)
+    lineage = lineage_aggregate.read_lineage_state(lineage_id)
     _publish_lineage_resource_projection(lineage_id, int(lineage["revision"]))
     resident_domain.sync_lineage_member_credentials(
         lineage,
@@ -3794,10 +3691,10 @@ def update_lineage(
     """
 
     completion_baselines: list[dict[str, Any]] = []
-    with _lineage_scope(lineage_id):
+    with lineage_aggregate.lineage_scope(lineage_id):
         if previous is None:
-            previous = _read_lineage(lineage_id, actor=actor)
-            _ensure_manager(previous, actor)
+            previous = lineage_aggregate.read_lineage(lineage_id, actor=actor)
+            lineage_aggregate.ensure_manager(previous, actor)
         raw_body = (
             payload.get("lineage")
             if isinstance(payload.get("lineage"), dict)
@@ -3831,7 +3728,7 @@ def update_lineage(
             )
 
         with _program_contract_authority(lineage_id, program_contract_impact):
-            _lineage_catalog_store().state_store.transaction(
+            lineage_aggregate.lineage_catalog_store().state_store.transaction(
                 commit_graph_authority
             )
             completion_baselines = _execute_program_contract_cleanup(
@@ -3884,9 +3781,9 @@ def delete_lineage_graph_objects(
         identity_contract.validate_id(resident_id, "resident")
 
     completion_baselines: list[dict[str, Any]] = []
-    with _lineage_scope(lineage_id):
-        previous = _read_lineage(lineage_id, actor=actor)
-        _ensure_manager(previous, actor)
+    with lineage_aggregate.lineage_scope(lineage_id):
+        previous = lineage_aggregate.read_lineage(lineage_id, actor=actor)
+        lineage_aggregate.ensure_manager(previous, actor)
         for record in resident_catalog.get_catalog().get_many(resident_ids):
             if record["lineage_id"] != lineage_id:
                 raise ValueError("Project references cannot delete a child Lineage leader; manage it in its home Lineage")
@@ -3913,7 +3810,7 @@ def delete_lineage_graph_objects(
             _program_contract_authority(lineage_id, program_contract_impact),
             invariant_locks.resident_locks(resident_ids, operation="lineage.objects.delete"),
         ):
-            _lineage_catalog_store().state_store.transaction(commit_identity_and_graph)
+            lineage_aggregate.lineage_catalog_store().state_store.transaction(commit_identity_and_graph)
             completion_baselines = _execute_program_contract_cleanup(
                 lineage_id,
                 program_contract_impact,
@@ -4015,8 +3912,8 @@ def change_lineage_resident_state(
         40,
     ).lower() or "intake"
     transition = _text(payload.get("transition"), 24).lower()
-    lineage = _read_lineage(lineage_id, actor=actor_id)
-    _ensure_manager(lineage, actor_id)
+    lineage = lineage_aggregate.read_lineage(lineage_id, actor=actor_id)
+    lineage_aggregate.ensure_manager(lineage, actor_id)
     node = _clone_json(_lineage_node(lineage, resident_id))
     if state_domain == "intake":
         return resident_protocol.change_resident_state(
@@ -4042,10 +3939,10 @@ def cancel_lineage_resident_execution(
     message_id = _text(payload.get("message_id"), 100)
     # Stop only needs identity, membership and authority. Loading the graph's
     # component bodies and runtime work here delays cancellation as it grows.
-    if _lineage_deletion_intent(lineage_id):
+    if lineage_aggregate.lineage_deletion_intent(lineage_id):
         raise LineageConflictError("Lineage deletion is in progress")
     lineage = lineage_access_projection(lineage_id)
-    _ensure_manager(lineage, actor_id)
+    lineage_aggregate.ensure_manager(lineage, actor_id)
     if resident_id not in lineage.get("lineage_node_ids", ()):
         raise ValueError("Lineage 中不存在对应的 Agent 节点")
     return resident_protocol.cancel_resident_input(
@@ -4067,8 +3964,8 @@ def _lineage_resident_queue_target(
         raise ValueError(
             "Resident queue Instruction 需要 resident_id 和 message_id"
         )
-    lineage = _read_lineage(lineage_id, actor=actor_id)
-    _ensure_manager(lineage, actor_id)
+    lineage = lineage_aggregate.read_lineage(lineage_id, actor=actor_id)
+    lineage_aggregate.ensure_manager(lineage, actor_id)
     node = _clone_json(_lineage_node(lineage, resident_id))
     return (
         actor_id,
@@ -4099,8 +3996,8 @@ def clear_lineage_resident_queue(
     resident_id = _text(payload.get("resident_id"), 80).lower()
     if not resident_id:
         raise ValueError("resident_id required")
-    lineage = _read_lineage(lineage_id, actor=actor_id)
-    _ensure_manager(lineage, actor_id)
+    lineage = lineage_aggregate.read_lineage(lineage_id, actor=actor_id)
+    lineage_aggregate.ensure_manager(lineage, actor_id)
     node = _lineage_node(lineage, resident_id)
     return resident_protocol.clear_resident_queue(_node_resident_id(node), actor_id)
 
@@ -4141,9 +4038,9 @@ def quiesce_lineage_resident(
         payload.get("target"),
         80,
     ).lower()
-    with _lineage_scope(lineage_id):
-        lineage = _read_lineage(lineage_id, actor=actor)
-        _ensure_manager(lineage, actor_id)
+    with lineage_aggregate.lineage_scope(lineage_id):
+        lineage = lineage_aggregate.read_lineage(lineage_id, actor=actor)
+        lineage_aggregate.ensure_manager(lineage, actor_id)
         node = _clone_json(_lineage_node(lineage, resident_id))
     exact_resident_id = _node_resident_id(node)
     intake = resident_protocol.change_resident_state(
@@ -4190,9 +4087,9 @@ def absorb_lineage_node_context(lineage_id: str, payload: dict[str, Any], actor:
     source_resident_id, target_resident_id = (
         lineage_branch_transitions.absorption_request(payload)
     )
-    with _lineage_scope(lineage_id):
-        baseline = _read_lineage(lineage_id, actor=actor)
-        _ensure_manager(baseline, actor_id)
+    with lineage_aggregate.lineage_scope(lineage_id):
+        baseline = lineage_aggregate.read_lineage(lineage_id, actor=actor)
+        lineage_aggregate.ensure_manager(baseline, actor_id)
         source_snapshot, target_snapshot = (
             lineage_branch_transitions.absorption_nodes(
                 baseline, source_resident_id, target_resident_id,
@@ -4211,9 +4108,9 @@ def absorb_lineage_node_context(lineage_id: str, payload: dict[str, Any], actor:
     )
     now = _now_iso()
 
-    with _lineage_scope(lineage_id):
-        current = _read_lineage(lineage_id, actor=actor)
-        _ensure_manager(current, actor_id)
+    with lineage_aggregate.lineage_scope(lineage_id):
+        current = lineage_aggregate.read_lineage(lineage_id, actor=actor)
+        lineage_aggregate.ensure_manager(current, actor_id)
         current_nodes = {str(node.get("id") or ""): node for node in current.get("nodes") or [] if isinstance(node, dict)}
         if source_resident_id not in current_nodes or target_resident_id not in current_nodes:
             raise LineageConflictError("来源节点或目标节点已改变，请重试拖放")
@@ -4248,8 +4145,8 @@ def absorb_lineage_node_context(lineage_id: str, payload: dict[str, Any], actor:
         delivery_error = _text(exc, 2000) or "目标节点运行失败"
 
     delivered_at = _now_iso()
-    with _lineage_scope(lineage_id):
-        current = _read_lineage(lineage_id, actor=actor)
+    with lineage_aggregate.lineage_scope(lineage_id):
+        current = lineage_aggregate.read_lineage(lineage_id, actor=actor)
         finalized_lineage = lineage_branch_transitions.finish_absorption(
             current, absorption_edge_id,
             status=delivery_status,
@@ -4332,9 +4229,9 @@ def create_lineage_branch(
         lineage_branch_transitions.branch_request(payload)
     )
 
-    with _lineage_scope(lineage_id):
-        previous = _read_lineage(lineage_id, actor=actor)
-        _ensure_manager(previous, actor_id)
+    with lineage_aggregate.lineage_scope(lineage_id):
+        previous = lineage_aggregate.read_lineage(lineage_id, actor=actor)
+        lineage_aggregate.ensure_manager(previous, actor_id)
 
         # The graph and Resident membership must be checked in one short
         # transaction. Context/Provider preparation below holds no graph lock.
@@ -4343,7 +4240,7 @@ def create_lineage_branch(
             _normalize_lineage_payload(_clone_json(current), current, actor_id)
             return current
 
-        previous = _lineage_catalog_store().state_store.transaction(validate_source)
+        previous = lineage_aggregate.lineage_catalog_store().state_store.transaction(validate_source)
         source, source_node_id, existing_edge = (
             lineage_branch_transitions.branch_source(
                 previous, source_resident_id, edge_id,
@@ -4427,12 +4324,12 @@ def _discard_unattached_branch(lineage_id: str, resident_id: str, actor: str) ->
 
 def _locked_branch_definition(previous: dict[str, Any], actor: str) -> dict[str, Any]:
     """Refresh a branch's definition inside its short validation/commit transaction."""
-    current = _lineage_catalog_store().state_store.lock_lineage_definition(previous["lineage_id"])
+    current = lineage_aggregate.lineage_catalog_store().state_store.lock_lineage_definition(previous["lineage_id"])
     if current is None:
         raise LineageConflictError("Fork Lineage was deleted during preparation")
     refreshed = _clone_json(previous)
     _adopt_committed_definition(refreshed, current)
-    _ensure_manager(refreshed, actor)
+    lineage_aggregate.ensure_manager(refreshed, actor)
     return refreshed
 
 
@@ -4496,7 +4393,7 @@ def _attach_lineage_branch(
         _persist_lineage_state(current, lineage, "创建轨迹分支")
         return lineage
 
-    lineage = _lineage_catalog_store().state_store.transaction(commit_branch)
+    lineage = lineage_aggregate.lineage_catalog_store().state_store.transaction(commit_branch)
     return lineage, title_sync_status, title_sync_error
 
 
@@ -4605,9 +4502,9 @@ def promote_seed_node(
     seed_id = _text(payload.get("seed_id"), 80).lower()
     if not seed_id:
         raise ValueError("采纳 Seed 需要 seed_id")
-    with _lineage_scope(lineage_id):
-        previous = _read_lineage(lineage_id, actor=actor)
-        _ensure_manager(previous, actor_id)
+    with lineage_aggregate.lineage_scope(lineage_id):
+        previous = lineage_aggregate.read_lineage(lineage_id, actor=actor)
+        lineage_aggregate.ensure_manager(previous, actor_id)
         seed = _program_seed_component(previous, seed_id)
         if not seed:
             raise ValueError("Seed 不在当前 HATG Program 中")
@@ -4900,8 +4797,8 @@ def _notify_program_resident_invocation_terminal(
         return False
     latest = invocations[-1]
     terminal_status = _text(status, 40) or "failed"
-    with _lineage_scope(lineage_id):
-        lineage = _read_lineage_state(lineage_id)
+    with lineage_aggregate.lineage_scope(lineage_id):
+        lineage = lineage_aggregate.read_lineage_state(lineage_id)
         node = next(
             (
                 item
@@ -4935,7 +4832,7 @@ def _resume_program_execution_principal(
     if not event.identity:
         raise PermissionError("Pending invocation has no verified identity; explicit reissue is required")
     identity = OperationIdentity.from_dict(event.identity)
-    _ensure_manager(_read_lineage_state(lineage_id), identity.principal.id)
+    lineage_aggregate.ensure_manager(lineage_aggregate.read_lineage_state(lineage_id), identity.principal.id)
     return authorize_lineage_resident_principal(lineage_id, executor_resident_id)
 
 
@@ -4951,8 +4848,8 @@ def emit_program_manual_event(
 
 def observe_trigger_path(lineage_id: str, payload: dict[str, Any], actor: str) -> dict[str, Any]:
     from . import trigger_path_observation
-    with _lineage_scope(lineage_id):
-        lineage = _read_lineage(lineage_id, actor=actor)
+    with lineage_aggregate.lineage_scope(lineage_id):
+        lineage = lineage_aggregate.read_lineage(lineage_id, actor=actor)
         _ensure_visible(lineage, _safe_actor(actor))
     return {"lineage_id": lineage_id, **trigger_path_observation.observe(lineage_id, payload)}
 
@@ -4962,8 +4859,8 @@ def get_pending_deliveries(
     payload: dict[str, Any],
     actor: str,
 ) -> dict[str, Any]:
-    with _lineage_scope(lineage_id):
-        lineage = _read_lineage(lineage_id, actor=actor)
+    with lineage_aggregate.lineage_scope(lineage_id):
+        lineage = lineage_aggregate.read_lineage(lineage_id, actor=actor)
         _ensure_visible(lineage, _safe_actor(actor))
         wire_id = str(payload.get("wire_id") or "")
         contracts = _program_invoke_wire_execution_configs(
@@ -4990,8 +4887,8 @@ def _mutate_pending_delivery(
     delete: bool,
 ) -> dict[str, Any]:
     with lineage_state_scope(lineage_id, "mutate_pending_delivery"):
-        lineage = _read_lineage(lineage_id, actor=actor)
-        _ensure_manager(lineage, _safe_actor(actor))
+        lineage = lineage_aggregate.read_lineage(lineage_id, actor=actor)
+        lineage_aggregate.ensure_manager(lineage, _safe_actor(actor))
         wire_id = str(payload.get("wire_id") or "")
         contracts = _program_invoke_wire_execution_configs(
             _compiled_program(lineage),
@@ -5214,7 +5111,7 @@ def handle_resident_message_terminal(
         terminal_status=terminal_status, program_event_source_ids=program_event_source_ids,
     )
     requested = str(lineage_id or "").strip()
-    lineage_ids = [requested] if requested else sorted(_lineage_catalog_store().lineage_ids_for_resident(resident_id))
+    lineage_ids = [requested] if requested else sorted(lineage_aggregate.lineage_catalog_store().lineage_ids_for_resident(resident_id))
     # An explorer may have added or dismissed candidates in this turn.
     from .templates import explore
 
@@ -5233,12 +5130,12 @@ def _handle_resident_message_terminal(
     program_event_source_ids: set[str] | None = None,
 ) -> dict[str, Any]:
     def matching_lineage_ids() -> set[str]:
-        return set(_lineage_catalog_store().lineage_ids_for_resident(resident_id))
+        return set(lineage_aggregate.lineage_catalog_store().lineage_ids_for_resident(resident_id))
 
     requested_lineage_id = str(lineage_id or "").strip()
     if requested_lineage_id:
-        with _lineage_execution_authority(requested_lineage_id):
-            with _lineage_scope(requested_lineage_id):
+        with lineage_aggregate.execution_authority(requested_lineage_id):
+            with lineage_aggregate.lineage_scope(requested_lineage_id):
                 return lineage_program_terminal_reconciliation.handle_resident_message_terminal_locked(
                     resident_id,
                     actor,
@@ -5255,7 +5152,7 @@ def _handle_resident_message_terminal(
     # in canonical order, then verify the committed membership snapshot again.
     while True:
         authority_ids = matching_lineage_ids()
-        with _lineage_execution_authorities(authority_ids):
+        with lineage_aggregate.execution_authorities(authority_ids):
             with _lineage_scopes(
                 authority_ids,
                 operation="resident.message_terminal",
@@ -5312,12 +5209,12 @@ def delete_lineage(lineage_id: str, actor: str) -> dict[str, Any]:
     """Delete a Lineage and its Residents; their folders are removed, not archived."""
     # Resident deletion confirms Resource tombstones after its own commit. Do not
     # hold the Lineage lock while invoking that cross-domain operation.
-    with _lineage_scope(lineage_id):
+    with lineage_aggregate.lineage_scope(lineage_id):
         lineage = _read_lineage_for_deletion(lineage_id, actor)
-        _ensure_manager(lineage, actor)
+        lineage_aggregate.ensure_manager(lineage, actor)
         if (lineage.get("principal_hierarchy") or {}).get("level") == "project":
             from .principal_hierarchy import project_leaders
-            if project_leaders(lineage, _lineage_catalog_store().listing_records()):
+            if project_leaders(lineage, lineage_aggregate.lineage_catalog_store().listing_records()):
                 raise ValueError("Project principal still manages child Lineages")
         preferred_resident_id = _text(lineage.get("leader_resident_id"), 80).lower()
 
@@ -5333,12 +5230,12 @@ def delete_lineage(lineage_id: str, actor: str) -> dict[str, Any]:
             "deleted_resident_ids": result.get("deleted_resident_ids") or [],
         }
 
-    with _lineage_scope(lineage_id):
+    with lineage_aggregate.lineage_scope(lineage_id):
         lineage = _read_lineage_for_deletion(lineage_id, actor)
-        _ensure_manager(lineage, actor)
+        lineage_aggregate.ensure_manager(lineage, actor)
         if (lineage.get("principal_hierarchy") or {}).get("level") == "project":
             from .principal_hierarchy import project_leaders
-            if project_leaders(lineage, _lineage_catalog_store().listing_records()):
+            if project_leaders(lineage, lineage_aggregate.lineage_catalog_store().listing_records()):
                 raise ValueError("Project principal still manages child Lineages")
         if resident_catalog.get_catalog().state_store.residents_for_lineage(lineage_id):
             raise LineageConflictError("Lineage membership changed during deletion")
@@ -5362,17 +5259,17 @@ def delete_lineage(lineage_id: str, actor: str) -> dict[str, Any]:
         raise
 
     removed = False
-    with _lineage_scope(lineage_id):
-        current = _lineage_deletion_intent(lineage_id)
+    with lineage_aggregate.lineage_scope(lineage_id):
+        current = lineage_aggregate.lineage_deletion_intent(lineage_id)
         if current:
             if str(current.get("operation_id") or "") != operation_id:
                 raise LineageConflictError("Lineage deletion operation changed")
-            latest = _lineage_catalog_store().get(lineage_id)
+            latest = lineage_aggregate.lineage_catalog_store().get(lineage_id)
             if int(latest.get("revision") or 0) != int(
                 intent["definition_revision"]
             ):
                 raise LineageConflictError("Lineage changed after deletion was prepared")
-            _lineage_catalog_store().remove(lineage_id, deleted_by=str(intent["deleted_by"]))
+            lineage_aggregate.lineage_catalog_store().remove(lineage_id, deleted_by=str(intent["deleted_by"]))
             removed = True
 
     if removed:
@@ -5410,7 +5307,7 @@ def _mount_resident_reference_workspace(
 
 
 def _node_workspace_context(lineage_id: str, resident_id: str, actor: str) -> tuple[dict[str, Any], dict[str, Any]]:
-    lineage = _read_lineage(lineage_id, actor=actor)
+    lineage = lineage_aggregate.read_lineage(lineage_id, actor=actor)
     _ensure_visible(lineage, actor)
     node = next(
         (
@@ -5431,7 +5328,7 @@ def bind_node_workspace(lineage_id: str, payload: dict[str, Any], actor: str) ->
     mounted = add_node_reference_workspace(
         lineage_id, resident_id, actor_id, str(payload.get("path") or ""), purpose=str(payload.get("purpose") or ""),
     )
-    lineage = _read_lineage(lineage_id, actor=actor_id)
+    lineage = lineage_aggregate.read_lineage(lineage_id, actor=actor_id)
     return {
         "lineage": _verified_lineage_view(lineage, actor_id),
         "workspace": mounted["workspace"],
@@ -5463,7 +5360,7 @@ def unbind_node_workspace(
         workspace_id=workspace_id,
         workspace_path=workspace_path,
     )
-    lineage = _read_lineage(lineage_id, actor=actor_id)
+    lineage = lineage_aggregate.read_lineage(lineage_id, actor=actor_id)
     return {
         "lineage": _verified_lineage_view(lineage, actor_id),
         "workspace_binding": removed,
@@ -5618,9 +5515,9 @@ def create_handoff(
     if source_resident_id == target_resident_id:
         raise ValueError("Handoff 不能交接给来源节点自身")
     handoff_id = _item_id(payload.get("handoff_id"), "handoff")
-    with _lineage_scope(lineage_id):
-        previous = _read_lineage(lineage_id, actor=actor)
-        _ensure_manager(previous, actor_id)
+    with lineage_aggregate.lineage_scope(lineage_id):
+        previous = lineage_aggregate.read_lineage(lineage_id, actor=actor)
+        lineage_aggregate.ensure_manager(previous, actor_id)
         nodes = {
             str(node.get("id") or ""): node
             for node in previous.get("nodes") or []
@@ -5654,9 +5551,9 @@ def create_handoff(
         root_path=lineage_node_workspaces.root_path,
     )
 
-    with _lineage_scope(lineage_id):
-        previous = _read_lineage(lineage_id, actor=actor)
-        _ensure_manager(previous, actor_id)
+    with lineage_aggregate.lineage_scope(lineage_id):
+        previous = lineage_aggregate.read_lineage(lineage_id, actor=actor)
+        lineage_aggregate.ensure_manager(previous, actor_id)
         current_nodes = {str(node.get("id") or "") for node in previous.get("nodes") or []}
         if source_resident_id not in current_nodes or target_resident_id not in current_nodes:
             raise LineageConflictError("Handoff 的来源或目标 Lineage 节点已变化")
@@ -5703,7 +5600,7 @@ def create_handoff(
 
 def get_handoff(lineage_id: str, handoff_id: str, actor: str, *, full_view: bool = True) -> dict[str, Any]:
     actor_id = _safe_actor(actor)
-    lineage = _read_lineage(lineage_id, actor=actor_id)
+    lineage = lineage_aggregate.read_lineage(lineage_id, actor=actor_id)
     _ensure_visible(lineage, actor_id)
     result = {"handoff": _handoff_edge(lineage, handoff_id)}
     if full_view:
@@ -5722,7 +5619,7 @@ def update_handoff(
         raise ValueError("交接关系只能修改 items、explanation、label：" + "、".join(unknown))
     items = None
     if "items" in changes:
-        current = _read_lineage(lineage_id, actor=actor_id)
+        current = lineage_aggregate.read_lineage(lineage_id, actor=actor_id)
         edge = _handoff_edge(current, handoff_id)
         target = next(
             (node for node in current.get("nodes") or [] if node.get("id") == edge.get("target")), {},
@@ -5738,9 +5635,9 @@ def update_handoff(
             source_workspace=_handoff_workspace_root,
             root_path=lineage_node_workspaces.root_path,
         )
-    with _lineage_scope(lineage_id):
-        previous = _read_lineage(lineage_id, actor=actor)
-        _ensure_manager(previous, actor_id)
+    with lineage_aggregate.lineage_scope(lineage_id):
+        previous = lineage_aggregate.read_lineage(lineage_id, actor=actor)
+        lineage_aggregate.ensure_manager(previous, actor_id)
         lineage = _clone_json(previous)
         edge = _handoff_edge(lineage, handoff_id)
         if items is not None and edge.get("status") in {"ready", "preparing"}:
@@ -5767,9 +5664,9 @@ def delete_handoff(lineage_id: str, handoff_id: str, actor: str, *, full_view: b
     """Remove a handoff relation; prepared files and bindings keep their own owners."""
 
     actor_id = _safe_actor(actor)
-    with _lineage_scope(lineage_id):
-        previous = _read_lineage(lineage_id, actor=actor)
-        _ensure_manager(previous, actor_id)
+    with lineage_aggregate.lineage_scope(lineage_id):
+        previous = lineage_aggregate.read_lineage(lineage_id, actor=actor)
+        lineage_aggregate.ensure_manager(previous, actor_id)
         _handoff_edge(previous, handoff_id)
         lineage = _clone_json(previous)
         lineage["edges"] = [
@@ -5790,8 +5687,8 @@ def _set_handoff_failure(
     prepared: list[tuple[dict[str, Any], dict[str, Any]]],
 ) -> dict[str, Any]:
     lineage_handoff_preparation.cleanup_items(prepared)
-    with _lineage_scope(lineage_id):
-        previous = _read_lineage(lineage_id, actor=actor)
+    with lineage_aggregate.lineage_scope(lineage_id):
+        previous = lineage_aggregate.read_lineage(lineage_id, actor=actor)
         lineage = _clone_json(previous)
         handoff = _handoff_edge(lineage, handoff_id)
         lineage_handoff_execution.fail_attempt(handoff, error, _now_iso())
@@ -5817,9 +5714,9 @@ def execute_handoff(
     """Prepare and bind Workspace items without dispatching a Resident task."""
     actor_id = _safe_actor(actor)
     target_handoff_id = _text(handoff_id, 80).lower()
-    with _lineage_scope(lineage_id):
-        previous = _read_lineage(lineage_id, actor=actor)
-        _ensure_manager(previous, actor_id)
+    with lineage_aggregate.lineage_scope(lineage_id):
+        previous = lineage_aggregate.read_lineage(lineage_id, actor=actor)
+        lineage_aggregate.ensure_manager(previous, actor_id)
         handoff = _handoff_edge(previous, target_handoff_id)
         if handoff.get("status") == "preparing":
             raise LineageConflictError("Handoff 正在准备，请等待当前 attempt 完成")
@@ -5868,8 +5765,8 @@ def execute_handoff(
             )
             raise
 
-        with _lineage_scope(lineage_id):
-            previous = _read_lineage(lineage_id, actor=actor)
+        with lineage_aggregate.lineage_scope(lineage_id):
+            previous = lineage_aggregate.read_lineage(lineage_id, actor=actor)
             lineage = _clone_json(previous)
             ready = _handoff_edge(lineage, target_handoff_id)
             lineage_handoff_execution.complete_attempt(ready, prepared, _now_iso())

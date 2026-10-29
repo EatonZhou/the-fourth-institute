@@ -7,7 +7,8 @@ import copy
 import pytest
 
 from management_portal.society_service import definition_collections, graph_storage
-from management_portal.society_service.state_store import get_lineage_data_store, RuntimeCASConflict
+from management_portal.society_service.lineage_data_runtime import RuntimeCASConflict
+from management_portal.society_service.state_store import get_lineage_data_store
 from tests.cases.isa_test_support import ok
 from tests.cases.test_family_familize import charters, lineage, resident, future_creation_store  # noqa: F401
 

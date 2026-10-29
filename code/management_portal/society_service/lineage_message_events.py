@@ -193,8 +193,7 @@ def arrival_details(
     if facade:
         # A request quoting a member's message, or a Resident's next request,
         # goes straight to its member (decision_44cf587c1721).
-        from .family_facade import continued_member, quoted_member
-        from .family_chat_preferences import direct_member
+        from .family_facade import continued_member, direct_member, quoted_member
 
         direct = direct_member(facade, message)
         details["direct_member_id"] = direct

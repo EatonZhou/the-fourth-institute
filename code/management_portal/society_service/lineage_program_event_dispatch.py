@@ -16,7 +16,6 @@ from . import (
     lineage_instruction_context,
     lineage_operator_runtime,
     lineage_primitives,
-    lineage_program,
     lineage_program_effect_execution,
     lineage_program_execution,
     lineage_program_identity,
@@ -66,48 +65,6 @@ def _dispatch_program_foundational_event_route(
     outcomes = result["deliveries"] + result["operators"]
     return {"wire_id": wire_id, "target_id": route["target_id"],
             **(outcomes[0] if outcomes else {"status": "empty"})}
-
-
-def _program_event_route_can_consume(
-    lineage_id: str,
-    lineage: dict[str, Any],
-    route: dict[str, Any],
-    actor: str,
-    *, authority: ProgramEventAuthority,
-) -> tuple[bool, str]:
-    """Return whether the wire target can accept a new Event right now."""
-
-    target_kind = str(route.get("target_kind") or "")
-    if target_kind in {"effect", "loop"}:
-        return True, ""
-    target_id = str(route.get("target_id") or "")
-    if target_kind in lineage_program.PACKET_OPERATOR_KINDS:
-        try:
-            runtime = lineage_operator_runtime.read_operator_runtime(
-                lineage_id,
-                target_id,
-            )
-        except (OSError, ValueError):
-            return False, "packet_operator_runtime_unavailable"
-        if any(not item.get("recovery_blocked") for item in (runtime.get("pending_deliveries") or {}).values()):
-            return False, "packet_operator_working"
-        return True, ""
-    target = next(
-        (
-            node
-            for node in lineage.get("nodes") or []
-            if (
-                isinstance(node, dict)
-                and str(node.get("id") or "") == target_id
-            )
-        ),
-        None,
-    )
-    if not target:
-        return False, "target_missing"
-    if authority.node_has_active_execution(target, actor):
-        return False, "resident_running"
-    return True, ""
 
 
 
@@ -210,7 +167,7 @@ def _dispatch_lineage_program_event_locked(
             cursor,
             wire_runtime,
             bypass_unavailable_policy=bypass_unavailable_policy,
-            can_consume_target=lambda route: _program_event_route_can_consume(
+            can_consume_target=lambda route: lineage_program_execution.program_event_route_can_consume(
                 lineage_id, lineage, route, actor_id, authority=authority
             ),
         )

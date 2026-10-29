@@ -16,6 +16,7 @@ from .common import (
     protocol,
     store,
 )
+from .. import lineage_aggregate
 
 
 
@@ -26,7 +27,7 @@ def _family_to_join(lineage_id: str, inv: Invocation) -> str:
     from management_portal.society_service import family_familize
 
     requested = str(inv.argument("family_id") or "")
-    lineage = domain()._read_lineage(lineage_id, actor=inv.caller)
+    lineage = lineage_aggregate.read_lineage(lineage_id, actor=inv.caller)
     try:
         instance = family_familize.family_for_new_resident(lineage, inv.caller, requested)
     except ValueError as exc:
@@ -35,11 +36,11 @@ def _family_to_join(lineage_id: str, inv: Invocation) -> str:
 
 
 def _join_family(lineage_id: str, resident_id: str, instance_id: str, inv: Invocation) -> dict[str, Any]:
-    from management_portal.society_service import family_familize
+    from management_portal.society_service.templates import familize
 
     if not instance_id or not resident_id:
         return {}
-    family_familize.join_new_resident(lineage_id, resident_id, inv.caller, instance_id)
+    familize.join_new_resident(lineage_id, resident_id, inv.caller, instance_id)
     return {"family_id": instance_id}
 
 
@@ -92,7 +93,7 @@ def _family_role(resident_id: str) -> str:
 def _family_lineage(resident_id: str) -> dict[str, Any]:
     """The Lineage a Family role is looked up in; the caller's access is checked by the instruction itself."""
 
-    return domain()._read_lineage_state(lineage_of_resident(resident_id))
+    return lineage_aggregate.read_lineage_state(lineage_of_resident(resident_id))
 
 
 def _facade_router(facade_id: str) -> str:

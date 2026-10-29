@@ -7,6 +7,7 @@ import pytest
 from management_portal.society_service import lineage_domain, resident_domain, resident_record_domain
 from management_portal.society_service import resident_execution_domain
 from management_portal.society_service import resident_runtime_domain
+from management_portal.society_service import lineage_aggregate
 from tests.cases.test_resident_folder_creation_contract import (
     _add_created_resident_to_lineage,
     _append_conversation_turn,
@@ -98,8 +99,8 @@ def test_ready_handoff_remains_ready_until_invoked(
     record = resident_domain.register_resident(_new_session_payload("Handoff ready only"), "sample_admin")
     handoff = {"id": "handoff_fixture", "status": "ready", "execution": {"enabled": True, "status": "not_requested"}}
     lineage = {"lineage_id": record["lineage_id"], "nodes": [], "revision": 1}
-    monkeypatch.setattr(lineage_domain, "_read_lineage", lambda _, **_kwargs: lineage)
-    monkeypatch.setattr(lineage_domain, "_ensure_manager", lambda *_args: None)
+    monkeypatch.setattr(lineage_aggregate, "read_lineage", lambda _, **_kwargs: lineage)
+    monkeypatch.setattr(lineage_aggregate, "ensure_manager", lambda *_args: None)
     monkeypatch.setattr(lineage_domain, "_handoff_edge", lambda *_args: handoff)
     monkeypatch.setattr(lineage_domain, "_verified_lineage_view", lambda value, _actor: value)
 

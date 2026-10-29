@@ -12,6 +12,7 @@ from management_portal.society_service import (
     lineage_placement,
     lineage_program,
 )
+from management_portal.society_service import lineage_aggregate
 from tests.cases.society_service_test_support import install_resource_boundary
 from tests.cases.effect_script_support import effect_config, lower_effect_call
 
@@ -37,17 +38,18 @@ def component(kind, index=1, **fields):
 
 @pytest.fixture()
 def isolated_owner(tmp_path, monkeypatch):
-    monkeypatch.setattr(lineage_domain, "DATA_ROOT", tmp_path / "lineages")
+    monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", tmp_path / "lineages")
     monkeypatch.setattr(lineage_domain, "LINEAGE_FOLDER_ROOT", tmp_path / "folders")
     monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(tmp_path / "folders"))
     install_resource_boundary(monkeypatch)
     monkeypatch.setattr(lineage_domain, "_actor_can_manage_lineage", lambda lineage, actor, **kwargs: actor == ACTOR and lineage["lineage_id"] == LINEAGE)
+    monkeypatch.setattr(lineage_aggregate, "_actor_can_manage_lineage", lambda lineage, actor, **kwargs: actor == ACTOR and lineage["lineage_id"] == LINEAGE)
     monkeypatch.setattr(
-        lineage_domain,
-        "_read_lineage",
-        lambda lineage_id, **_kwargs: lineage_domain._read_lineage_state(lineage_id),
+        lineage_aggregate,
+        "read_lineage",
+        lambda lineage_id, **_kwargs: lineage_aggregate.read_lineage_state(lineage_id),
     )
-    monkeypatch.setattr(lineage_domain, "get_lineage", lambda lineage_id, actor, **kwargs: lineage_domain._read_lineage_state(lineage_id))
+    monkeypatch.setattr(lineage_domain, "get_lineage", lambda lineage_id, actor, **kwargs: lineage_aggregate.read_lineage_state(lineage_id))
     monkeypatch.setattr(changes, "lineage_changed", lambda *args, **kwargs: None)
     persist = lineage_domain._persist_lineage_state
 
@@ -64,7 +66,7 @@ def isolated_owner(tmp_path, monkeypatch):
     base = {"lineage_id": LINEAGE, "lineage_membership": "formal", "title": "wall07 isolated", "nodes": [], "edges": []}
     state = lineage_domain._normalize_lineage_payload(base, base, ACTOR)
     isolated_persist(None, state, "test fixture initial facts")
-    return lineage_domain._read_lineage_state
+    return lineage_aggregate.read_lineage_state
 
 
 def test_resident_anchor_priority_without_lifecycle(subtests, isolated_portal_case):

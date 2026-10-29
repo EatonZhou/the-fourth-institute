@@ -7,6 +7,7 @@ import pytest
 from management_portal.society_service import lineage_handoff_backend as handoff
 from management_portal.society_service import lineage_handoff_preparation as preparation
 from management_portal.society_service import resident_watchboard_domain as watchboard
+from management_portal.society_service import project_folders
 
 
 def test_handoff_copy_limits_checked_before_copying(tmp_path, monkeypatch):
@@ -116,7 +117,7 @@ def test_project_root_requires_registration_even_when_named_folder_exists(tmp_pa
     monkeypatch.setattr(project_domain.project_registry, 'load', lambda: {'projects': []})
     monkeypatch.setattr(project_domain.resource_client, 'project_roots', lambda: {})
     with pytest.raises((ValueError, KeyError)):
-        project_domain.project_root_for_id('Unregistered')
+        project_folders.project_root_for_id('Unregistered')
 
 
 def test_owned_workspace_projection_does_not_create_reference_bindings(tmp_path):

@@ -1,43 +1,12 @@
 """Bounded temporal memory. Policy is mechanical; agents choose the synthesis."""
 from __future__ import annotations
 
-import os
 from datetime import datetime, timezone
 
-
-def policy() -> dict:
-    defaults = {"total_chars": 3000, "phase_rounds": 20, "phase_seconds": 86400,
-                "long_term_rounds": 100, "long_term_seconds": 604800}
-    result = {}
-    for key, default in defaults.items():
-        value = int(os.environ.get("PORTAL_SUMMARY_" + key.upper(), default))
-        if value <= 0 or (key == "total_chars" and value < 400):
-            raise ValueError("摘要策略必须为正数，total_chars 至少 400")
-        result[key] = value
-    result["higher_layer_chars"] = result["total_chars"] * 3 // 4
-    return result
-
-
-def character_count(value) -> int:
-    """Count all text values, including repeated text across fields/layers."""
-    if isinstance(value, str):
-        return len(value)
-    if isinstance(value, dict):
-        return sum(character_count(item) for item in value.values())
-    if isinstance(value, list):
-        return sum(character_count(item) for item in value)
-    return 0
-
-
-def check_budget(layers: dict) -> None:
-    limits = policy()
-    size = character_count(layers)
-    if size > limits["total_chars"]:
-        raise ValueError(f"摘要各时间层、所有字段合计 {size} 字符，超过总预算 {limits['total_chars']}；请归纳重写，不能增量堆积")
+from .evidence import SUMMARY_FIELDS, character_count, check_budget, policy, utc_now, validate_summary
 
 
 def project(layers: dict) -> dict:
-    from .evidence import SUMMARY_FIELDS
     result = {}
     for key in SUMMARY_FIELDS:
         values = []
@@ -52,7 +21,6 @@ def project(layers: dict) -> dict:
 
 
 def initial(summary: dict, updated_at: str = "") -> tuple[dict, dict]:
-    from .evidence import utc_now
     timestamp = updated_at or utc_now()
     return ({"recent": summary, "phase": {}, "long_term": {}},
             {"phase_at": timestamp, "long_term_at": timestamp, "phase_rounds": 0, "long_term_rounds": 0})
@@ -79,7 +47,6 @@ def due(layers: dict, state: dict, *, now: datetime | None = None) -> dict:
 
 
 def consolidate(layers: dict, state: dict, request: dict) -> tuple[dict, dict]:
-    from .evidence import utc_now, validate_summary
     if not isinstance(request, dict) or set(request) - {"phase", "long_term", "resolved_threads"}:
         raise ValueError("consolidation 只接受 phase、long_term、resolved_threads")
     if "phase" not in request:

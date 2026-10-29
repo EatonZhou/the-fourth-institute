@@ -22,7 +22,6 @@ from management_portal.society_service import (
     lineage_domain,
     lineage_handoff_backend,
     lineage_primitives,
-    project_domain,
     resident_access,
     resident_domain,
     resident_execution_work,
@@ -30,11 +29,13 @@ from management_portal.society_service import (
     resource_client,
     state_store,
 )
-from management_portal.society_service import lineage_program_effect_rules
+from management_portal.society_service import lineage_program_execution
 from management_portal.society_service import resident_intake_domain
 from management_portal.society_service import resident_media_domain
 from management_portal.society_service import resident_record_domain
 from management_portal.society_service import resident_runtime_domain
+from management_portal.society_service import lineage_aggregate
+from management_portal.society_service import project_folders
 from tests.cases.test_resident_folder_creation_contract import (
     _new_session_payload, future_creation_store,
 )
@@ -52,7 +53,7 @@ CANONICAL_RESIDENT_INPUT = resident_protocol.deliver_resident_input
 @pytest.fixture
 def isolated_team(future_creation_store, tmp_path, monkeypatch):
     reset_kernels()
-    monkeypatch.setattr(project_domain, "project_root_for_id", lambda project_id: tmp_path)
+    monkeypatch.setattr(project_folders, "project_root_for_id", lambda project_id: tmp_path)
 
     source = resident_domain.register_resident(_new_session_payload("Helper04 source"), ACTOR)
     target = lineage_domain.create_lineage_resident(
@@ -139,7 +140,7 @@ def test_handoff_create_and_prepare_bind_the_target_without_invoke(isolated_team
     }).result
     prepared = instruction(team, "PrepareWorkspaceHandoff", {"lineage_id": team.lineage_id, "handoff_id": created["handoff_id"]}).result
     assert prepared["status"] == "ready"
-    graph = lineage_domain._read_lineage(team.lineage_id, actor=ACTOR)
+    graph = lineage_aggregate.read_lineage(team.lineage_id, actor=ACTOR)
     edge = next(value for value in graph["edges"] if value["type"] == "handoff")
     assert edge["id"] == created["handoff_id"]
     assert edge["items"][0]["source"]["path"] == str(source_path)
@@ -184,7 +185,7 @@ def test_event_attachment_invocation_reaches_canonical_message_with_closed_intak
     attachment.write_text("synthetic attachment")
     parts = [{"type": "file", "path": str(attachment)}]
     event = lineage_primitives.make_event("manual.triggered", payload={"prompt": "One invocation", "content_parts": parts})
-    invocation = lineage_program_effect_rules._make_program_effect_invocation(event, source_kind="event", source_id="event_source_helper04", include_envelope=False)
+    invocation = lineage_program_execution._make_program_effect_invocation(event, source_kind="event", source_id="event_source_helper04", include_envelope=False)
     definition = delivery_effect(target_id, fixed="Fixed contract")
     unchanged = deepcopy(definition)
     lowered = lower_effect_call(team.lineage_id, "effect_helper04", definition, invocation)
@@ -220,7 +221,7 @@ def delivery_effect(target_id, *, fixed=None):
 
 def attachment_fix_request(team, parts, prompt="Attachment contract"):
     event = lineage_primitives.make_event("manual.triggered", payload={"prompt": prompt, "content_parts": parts})
-    invocation = lineage_program_effect_rules._make_program_effect_invocation(event, source_kind="event", source_id="event_source_helper04", include_envelope=False)
+    invocation = lineage_program_execution._make_program_effect_invocation(event, source_kind="event", source_id="event_source_helper04", include_envelope=False)
     return lower_effect_call(team.lineage_id, "effect_helper04", delivery_effect(team.target["resident_id"]), invocation)
 
 
@@ -490,7 +491,7 @@ def test_attachment_positive_control_uses_canonical_owner_with_closed_intake(iso
     else:
         part = {"type": "context_reference", "context": {"context_text": "Isolated runtime context", "working_directory": str(root)}}
     event = lineage_primitives.make_event("manual.triggered", payload={"prompt": "One invocation", "content_parts": [part]})
-    invocation = lineage_program_effect_rules._make_program_effect_invocation(event, source_kind="event", source_id="event_source_helper04", include_envelope=False)
+    invocation = lineage_program_execution._make_program_effect_invocation(event, source_kind="event", source_id="event_source_helper04", include_envelope=False)
     definition = delivery_effect(target_id, fixed="Fixed contract")
     baseline = deepcopy(definition)
     lowered = lower_effect_call(team.lineage_id, "effect_helper04", definition, invocation)

@@ -11,6 +11,7 @@ import pytest
 from management_portal.society_service import lineage_domain
 from management_portal.society_service import lineage_program
 from management_portal.society_service import lineage_recurring_schedule
+from management_portal.society_service import lineage_aggregate
 from tests.cases.effect_script_support import effect_config, lower_effect_call
 
 
@@ -202,7 +203,7 @@ def backend_store(
     monkeypatch: pytest.MonkeyPatch,
 ) -> Path:
     root = tmp_path / "lineages"
-    monkeypatch.setattr(lineage_domain, "DATA_ROOT", root)
+    monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", root)
     monkeypatch.setattr(lineage_domain, "LINEAGE_FOLDER_ROOT", root / "lineages")
     monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(root / "lineages"))
     install_resource_boundary(monkeypatch)

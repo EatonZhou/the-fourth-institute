@@ -26,7 +26,7 @@ def recovery(monkeypatch):
     monkeypatch.setattr(trigger_paths, "now", lambda: AT)
     event = {"id": "event-one", "type": "time.reached", "occurred_at": AT, "payload": {}}
     path = trigger_paths.begin_event(LINEAGE, SOURCE, event, cause_kind="timer", cause_id=SOURCE)
-    with trigger_paths._store().database.transaction() as connection:
+    with trigger_paths.data_store().database.transaction() as connection:
         step = storage.admit_step(connection, trigger_path_id=path, node_id=RESIDENT, kind="resident",
                                   activation_key=MESSAGE, input_message_id=MESSAGE, created_at=AT)
     trigger_paths.event_settled(path, SOURCE, event["id"])
@@ -84,7 +84,7 @@ def test_completed_input_requires_positive_evidence(recovery):
 @pytest.mark.parametrize("status", ["completed", "failed", "cancelled"])
 def test_missing_linked_execution_uses_receipt_and_unknown_stays_pending(recovery, status):
     """关联的执行记录已被清理时按输入回执收尾，回执未知时保持进行中"""
-    database = trigger_paths._store().database
+    database = trigger_paths.data_store().database
     with database.transaction() as connection:
         storage.link_execution(connection, recovery.step, "execution-pruned")
         storage.transition_step(connection, recovery.step, status="completed", at=AT)
@@ -132,7 +132,7 @@ def test_a_cancelled_run_is_recent_while_its_execution_finished_recently(recover
     """Run 早已取消、它接纳的 Execution 最近才结束时，这个 Run 仍在最近窗口里"""
     store, execution_id = running_input(MESSAGE)
     trigger_paths.link_input(LINEAGE, RESIDENT, MESSAGE, execution_id)
-    with trigger_paths._store().database.transaction() as connection:
+    with trigger_paths.data_store().database.transaction() as connection:
         storage.cancel(connection, recovery.path, at=AT)
     store.finish_execution(execution_id, status="completed", finished_at="2026-10-10T00:00:00Z")
 
@@ -145,7 +145,7 @@ def test_a_cancelled_run_is_recent_while_its_execution_finished_recently(recover
 
 def test_pending_and_recent_reads_are_planned_for_their_own_lineage(recovery):
     """待处理交接和最近窗口的读取每次按实际 Lineage 规划，不会被预备成按平均 Lineage 估算的通用计划"""
-    with trigger_paths._store().database.read_current() as connection:
+    with trigger_paths.data_store().database.read_current() as connection:
         for _ in range(8):
             trigger_paths.resident_inputs(LINEAGE, pending=True)
             trigger_paths.resident_inputs(LINEAGE, finished_since=datetime.fromisoformat("2026-10-05T00:00:00+00:00"))

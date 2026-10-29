@@ -31,6 +31,7 @@ from .evidence import (
     fingerprint,
     message_fingerprint,
     message_id,
+    policy,
     project_messages_for_summary,
     project_summary_evidence,
     project_summary_metadata,
@@ -322,7 +323,6 @@ class ResidentContext:
             else:
                 self.store.discard_summary_job(job["resident_id"])
         queue = self.store.summary_queue()
-        from .summary_layers import policy
         return {"instructions": SUMMARY_INSTRUCTIONS, "summary_policy": policy(), "output_fields": list(SUMMARY_FIELDS), "jobs": eligible,
                 "remaining_ready": queue["ready"], "waiting": queue["waiting"]}
 

@@ -11,6 +11,9 @@ from management_common.database_time import instant, iso_time
 from management_common.json_columns import json_text, json_value
 
 
+RESIDENT_RECORD_SCHEMA = "tfi.resident.v6"
+
+
 # field -> (column, type). Nullable columns preserve absence without a second
 # list of present fields. JSON is reserved for an explicitly named structure.
 IDENTITY_FIELDS = {

@@ -10,8 +10,9 @@ import pytest
 from management_portal import model_api_store
 from management_portal.execution import accounts, account_registrations, provider_catalog
 from management_portal.execution.agent_data_store import AgentDataStore
-from management_portal.society_service import lineage_domain, resident_catalog
+from management_portal.society_service import resident_catalog
 from management_portal.society_service.server import LocalSocietyService
+from management_portal.society_service import lineage_aggregate
 from tests.cases.society_service_test_support import (
     _install_isolated_portal_access, publish_registered_lineage_members,
 )
@@ -60,7 +61,7 @@ def populate(count, *, hidden=(), routes=None):
         definition = _lineage_definition(f"lineage_{int(private) + 1:012x}", [])
         definition.update(created_by="account-batch-other" if private else ACTOR,
                           lineage_membership="personal" if private else "formal")
-        lineage_domain._lineage_catalog_store().upsert(definition)
+        lineage_aggregate.lineage_catalog_store().upsert(definition)
         publish_registered_lineage_members({**definition, "nodes": [{"id": rid} for rid in members]},
                                            definition["created_by"])
     store = resident_catalog.get_catalog().state_store

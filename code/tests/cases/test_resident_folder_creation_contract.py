@@ -50,6 +50,8 @@ from management_portal.society_service import (
     resident_session_backend_domain,
     resident_workspace_domain,
 )
+from management_portal.society_service import lineage_aggregate
+from management_portal.society_service import project_folders
 
 @pytest.fixture()
 def future_creation_store(
@@ -58,7 +60,7 @@ def future_creation_store(
 ) -> Path:
     lineage_root = tmp_path / "portal_lineages"
     lineage_root.mkdir()
-    monkeypatch.setattr(lineage_domain, "DATA_ROOT", lineage_root)
+    monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", lineage_root)
     monkeypatch.setattr(lineage_domain, "LINEAGE_FOLDER_ROOT", lineage_root / "lineages")
     monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(lineage_root / "lineages"))
     # Deleted Residents' quota overrides are forgotten in the Execution store.
@@ -68,7 +70,7 @@ def future_creation_store(
     # A Resident created in a Project defaults to the Project directory as its workspace.
     project_root = tmp_path / "project_test"
     project_root.mkdir(exist_ok=True)
-    monkeypatch.setattr(project_domain, "project_root_for_id", lambda _project_id: project_root)
+    monkeypatch.setattr(project_folders, "project_root_for_id", lambda _project_id: project_root)
     monkeypatch.setattr(project_domain, "PROJECTS_ROOT", tmp_path)
     return lineage_root
 
@@ -95,7 +97,7 @@ def test_registration_creates_identity_without_synthetic_message(
     future_creation_store, monkeypatch, member,
 ):
     """注册 Resident 或添加 Lineage 成员只创建身份和图节点，不写入合成消息"""
-    monkeypatch.setattr(project_domain, "project_root_for_id", lambda _: future_creation_store)
+    monkeypatch.setattr(project_folders, "project_root_for_id", lambda _: future_creation_store)
     parent = resident_domain.register_resident(_new_session_payload("Parent"), "sample_admin")
     payload = _new_session_payload("Registered without task")
     if member:
@@ -119,7 +121,7 @@ def test_registration_does_not_hydrate_unrelated_residents(
     future_creation_store, monkeypatch, member,
 ):
     """注册 Resident 或添加成员时不加载全部 Resident"""
-    monkeypatch.setattr(project_domain, "project_root_for_id", lambda _: future_creation_store)
+    monkeypatch.setattr(project_folders, "project_root_for_id", lambda _: future_creation_store)
     parent = resident_domain.register_resident(_new_session_payload("Existing parent"), "sample_admin")
 
     def unexpected_catalog_hydration():
@@ -153,7 +155,7 @@ def test_slow_registration_preparation_does_not_block_other_residents(
     future_creation_store, monkeypatch, member,
 ):
     """一次注册的工作区准备很慢时不持有锁，其他 Resident 的注册照常完成"""
-    monkeypatch.setattr(project_domain, "project_root_for_id", lambda _: future_creation_store)
+    monkeypatch.setattr(project_folders, "project_root_for_id", lambda _: future_creation_store)
     parent = resident_domain.register_resident(_new_session_payload("Parent"), "sample_admin")
     entered, release = threading.Event(), threading.Event()
     prepare = resident_workspace_domain.ensure_resident_workspace
@@ -190,7 +192,7 @@ def test_resident_registration_commits_different_lineages_concurrently(
     future_creation_store, monkeypatch,
 ):
     """不同 Lineage 的 Resident 注册可以并发提交"""
-    monkeypatch.setattr(project_domain, "project_root_for_id", lambda _: future_creation_store)
+    monkeypatch.setattr(project_folders, "project_root_for_id", lambda _: future_creation_store)
     entered, release = threading.Event(), threading.Event()
     save = resident_record_domain.save_resident_record
 
@@ -230,7 +232,7 @@ def test_hatg_registration_keeps_a_creation_committed_during_its_preparation(fut
 
     Another Resident created while this one prepares does not fail the registration; both stay."""
 
-    monkeypatch.setattr(project_domain, "project_root_for_id", lambda _: future_creation_store)
+    monkeypatch.setattr(project_folders, "project_root_for_id", lambda _: future_creation_store)
     parent = resident_domain.register_resident(_new_session_payload("Parent"), "sample_admin")
     lineage_id = parent["lineage_id"]
     prepared = []
@@ -249,7 +251,7 @@ def test_hatg_registration_keeps_a_creation_committed_during_its_preparation(fut
     )["resident"]
     assert prepared == [created["resident_id"]]
     assert resident_catalog.get_catalog().get(created["resident_id"])["lineage_id"] == lineage_id
-    titles = {node["id"]: node["title"] for node in lineage_domain._read_lineage(lineage_id, actor="sample_admin")["nodes"]}
+    titles = {node["id"]: node["title"] for node in lineage_aggregate.read_lineage(lineage_id, actor="sample_admin")["nodes"]}
     assert created["resident_id"] in titles
     assert "Concurrent node" in titles.values()
     assert titles[parent["resident_id"]] == "Parent"
@@ -259,7 +261,7 @@ def test_member_move_commits_graphs_then_recovers_unlocked_file_transfer(future_
     """成员迁往另一 Lineage 时先提交两张图，锁外文件迁移失败后可重试完成"""
     from management_portal.society_service import resident_workspace_transfer
 
-    monkeypatch.setattr(project_domain, "project_root_for_id", lambda _: future_creation_store)
+    monkeypatch.setattr(project_folders, "project_root_for_id", lambda _: future_creation_store)
     source = resident_domain.register_resident(_new_session_payload("Move source"), "sample_admin")
     destination = resident_domain.register_resident(_new_session_payload("Move destination"), "sample_admin")
     member = lineage_domain.create_lineage_resident(
@@ -277,8 +279,8 @@ def test_member_move_commits_graphs_then_recovers_unlocked_file_transfer(future_
     target = resident_record_domain.resident_folder_path(moved)
     assert not target.exists()
     assert moved["lineage_id"] == destination["lineage_id"]
-    old_graph = lineage_domain._lineage_catalog_store().get(source["lineage_id"])
-    new_graph = lineage_domain._lineage_catalog_store().get(destination["lineage_id"])
+    old_graph = lineage_aggregate.lineage_catalog_store().get(source["lineage_id"])
+    new_graph = lineage_aggregate.lineage_catalog_store().get(destination["lineage_id"])
     assert resident_id not in {item["id"] for item in old_graph["nodes"]}
     assert resident_id in {item["id"] for item in new_graph["nodes"]}
     operations = resident_record_domain.lifecycle_operations()
@@ -306,7 +308,7 @@ def test_member_move_commits_graphs_then_recovers_unlocked_file_transfer(future_
 @pytest.mark.parametrize("project_id", ["project_test", "project_next", ""])
 def test_project_edit_does_not_move_the_lineage_owned_folder(future_creation_store, monkeypatch, project_id):
     """修改 Resident 的 project_id 不移动 Lineage 文件夹，改成其他 Project 被拒绝"""
-    monkeypatch.setattr(project_domain, "project_root_for_id", lambda _: future_creation_store)
+    monkeypatch.setattr(project_folders, "project_root_for_id", lambda _: future_creation_store)
     record = resident_domain.register_resident(_new_session_payload("Project ownership"), "sample_admin")
     original = record["workspace_path"]
     if project_id == record["project_id"]:
@@ -377,12 +379,12 @@ def test_registration_failure_rolls_back_graph_and_identity(future_creation_stor
     assert resident_catalog.get_catalog().snapshot() == before
     assert len(lineage_ids) == 1
     with pytest.raises(KeyError):
-        lineage_domain._lineage_catalog_store().get(lineage_ids[0])
+        lineage_aggregate.lineage_catalog_store().get(lineage_ids[0])
 
 
 def test_failed_registration_archives_only_new_resident_folder(future_creation_store, monkeypatch):
     """成员注册失败后只归档新 Resident 的文件夹，已有成员的文件保留"""
-    monkeypatch.setattr(project_domain, "project_root_for_id", lambda _: future_creation_store)
+    monkeypatch.setattr(project_folders, "project_root_for_id", lambda _: future_creation_store)
     parent = resident_domain.register_resident(_new_session_payload("Kept parent"), "sample_admin")
     parent_folder = resident_record_domain.resident_folder_path(parent)
     keep = parent_folder / "user-file.txt"
@@ -672,7 +674,7 @@ def test_new_resident_creates_one_complete_canonical_lineage(
     lineage_folder = lineage_root / "lineages" / record["lineage_id"]
     resident_folder = lineage_folder / "residents" / record["resident_id"]
     owned_workspace = resident_folder / "workspace"
-    lineage = lineage_domain._lineage_catalog_store().get(record["lineage_id"])
+    lineage = lineage_aggregate.lineage_catalog_store().get(record["lineage_id"])
 
     assert Path(record["workspace_path"]) == lineage_folder
     assert "lineage_storage" not in record
@@ -762,8 +764,8 @@ def test_lineage_project_move_reprojects_resident_and_workspace_resources(
     roots = {"OSForAgent": project_root, "RoboLab": second_project_root}
     monkeypatch.setattr(resource_client, "project_roots", lambda **kwargs: roots)
     # The move resolves these Projects; registration keeps the fixture's Project.
-    fixture_root = project_domain.project_root_for_id
-    monkeypatch.setattr(project_domain, "project_root_for_id", lambda project_id: roots.get(project_id) or fixture_root(project_id))
+    fixture_root = project_folders.project_root_for_id
+    monkeypatch.setattr(project_folders, "project_root_for_id", lambda project_id: roots.get(project_id) or fixture_root(project_id))
     payload = _new_session_payload("System projection root")
     record = resident_domain.register_resident(payload, "sample_admin")
     lineage_id = record["lineage_id"]
@@ -889,7 +891,7 @@ def test_leader_resident_rename_preserves_lineage_identity_and_refreshes_hatg(
         if item["id"] == resident_id
     )
     assert resident_node["title"] == "After rename"
-    persisted_lineage = lineage_domain._lineage_catalog_store().get(lineage_id)
+    persisted_lineage = lineage_aggregate.lineage_catalog_store().get(lineage_id)
     persisted_resident_node = next(
         item
         for item in persisted_lineage["nodes"]
@@ -993,7 +995,7 @@ def test_rename_rolls_back_when_identity_commit_fails(future_creation_store, mon
 
     reset_kernels()
     record = resident_domain.register_resident(_new_session_payload("Keep both titles"), "sample_admin")
-    catalog = lineage_domain._lineage_catalog_store()
+    catalog = lineage_aggregate.lineage_catalog_store()
     before = catalog.get(record["lineage_id"])
     store = resident_catalog.get_catalog()
     upsert = store.upsert
@@ -1023,7 +1025,7 @@ def test_resident_rename_rolls_back_when_projection_callback_fails(
     )
     resident_id = str(record["resident_id"])
     lineage_id = str(record["lineage_id"])
-    catalog = lineage_domain._lineage_catalog_store()
+    catalog = lineage_aggregate.lineage_catalog_store()
     previous_lineage = catalog.get(lineage_id)
     previous_revision = int(previous_lineage["revision"])
     from management_portal.society_service.domain_ports import resident_lineage_host_port
@@ -1106,7 +1108,7 @@ def test_lineage_originated_rename_updates_the_exact_resident_fact(
     assert renamed["resident_id"] == created_resident_id
     assert renamed["title"] == "Fork 1 2026-08-02"
     assert renamed["title_origin"] == "custom"
-    persisted_lineage = lineage_domain._lineage_catalog_store().get(
+    persisted_lineage = lineage_aggregate.lineage_catalog_store().get(
         record["lineage_id"]
     )
     persisted_node = next(
@@ -1191,7 +1193,7 @@ def test_hatg_rename_rolls_back_resident_when_graph_write_fails(
         for node in current["nodes"]
         if node.get("id") == created_resident_id
     )["title"] = "Atomic graph target"
-    catalog = lineage_domain._lineage_catalog_store()
+    catalog = lineage_aggregate.lineage_catalog_store()
     original_upsert = catalog.upsert
 
     def persist_then_fail(definition: dict) -> None:
@@ -2045,7 +2047,7 @@ def test_resident_creation_uses_current_membership_without_project_role(
     """Resident 凭当前成员身份即可创建 Resident，调用者已删除或目标 Lineage 不存在时被拒绝
 
     :design: decision_3e07c6d35cac"""
-    monkeypatch.setattr(project_domain, "project_root_for_id", lambda _: future_creation_store)
+    monkeypatch.setattr(project_folders, "project_root_for_id", lambda _: future_creation_store)
     leader = resident_domain.register_resident(_new_session_payload("Authority root"), "sample_admin")
     caller = lineage_domain.create_lineage_resident(
         leader["lineage_id"], _new_session_payload("Ordinary member"), "sample_admin",

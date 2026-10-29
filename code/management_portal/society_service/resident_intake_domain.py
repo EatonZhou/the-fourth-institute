@@ -709,7 +709,7 @@ def _with_accepted_quote(request: ResidentInput, quote_record: Mapping[str, Any]
     requested_quote = request.requested_quote
     protocol_input = request.protocol_input
     if requested_quote in (None, {}) and request.relay.source is None and family_facade.is_facade(quote_record):
-        from .resident_questions import answered_set
+        from management_common.async_questions import answered_set
 
         # An answer to a member's questions shown on a facade quotes them, so
         # it goes straight back to that member (family_facade.quoted_member).

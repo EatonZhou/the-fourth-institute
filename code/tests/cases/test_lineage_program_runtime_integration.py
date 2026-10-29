@@ -13,7 +13,7 @@ import pytest
 from management_portal.hatg.contracts import InstructionError
 
 from management_portal.society_service import lineage_program_backlog
-from management_portal.society_service import lineage_domain, lineage_program_event_dispatch, lineage_program_identity
+from management_portal.society_service import lineage_domain, lineage_program_identity
 from management_portal.society_service import lineage_operator_runtime
 from management_portal.society_service import resident_message_contract
 from management_portal.society_service import lineage_program_runtime
@@ -24,6 +24,8 @@ from management_portal.society_service.runtime.backend_adapter import (
     LineageBackendRuntimeAdapter,
 )
 from management_portal.society_service.runtime.contracts import ResidentTerminalFact
+from management_portal.society_service import lineage_program_execution
+from management_portal.society_service import lineage_aggregate
 from tests.cases.effect_script_support import effect_config
 
 
@@ -52,7 +54,7 @@ def runtime_store(
     monkeypatch: pytest.MonkeyPatch,
 ) -> Path:
     root = tmp_path / "lineages"
-    monkeypatch.setattr(lineage_domain, "DATA_ROOT", root)
+    monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", root)
     monkeypatch.setattr(lineage_domain, "LINEAGE_FOLDER_ROOT", root / "lineages")
     monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(root / "lineages"))
     install_resource_boundary(monkeypatch)
@@ -2118,9 +2120,9 @@ def test_pending_delivery_commands_edit_delete_and_deliver_independently(
     """待投递指令独立编辑删除与投递且不修改图版本"""
     busy = {"value": True}
     sent = []
-    original_availability = lineage_program_event_dispatch._program_event_route_can_consume
+    original_availability = lineage_program_execution.program_event_route_can_consume
     monkeypatch.setattr(
-        lineage_program_event_dispatch, "_program_event_route_can_consume",
+        lineage_program_execution, "program_event_route_can_consume",
         lambda *args, **kwargs: (False, "resident_running") if busy["value"] else original_availability(*args, **kwargs),
     )
     monkeypatch.setattr(

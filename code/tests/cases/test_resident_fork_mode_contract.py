@@ -5,8 +5,9 @@ import pytest
 
 from management_portal.hatg import catalog
 from management_portal.hatg.contracts import InstructionError
-from management_portal.society_service import lineage_branch_transitions, templates
+from management_portal.society_service import lineage_branch_transitions
 from management_portal.society_service.templates.registry import TemplateError
+from management_portal.society_service.templates import kinds
 
 
 @pytest.mark.parametrize("mode", [None, "full", "native", "visible"])
@@ -68,9 +69,9 @@ def test_structure_templates_use_the_current_full_mode(mode):
     }
     if mode in {"native", "visible"}:
         with pytest.raises(TemplateError, match="Fork 模式"):
-            templates.normalize(template)
+            kinds.normalize(template)
     else:
-        assert templates.normalize(template)["body"]["roles"][-1].get("fork_mode", "full") == "full"
+        assert kinds.normalize(template)["body"]["roles"][-1].get("fork_mode", "full") == "full"
 
 
 

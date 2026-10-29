@@ -7,10 +7,10 @@ import logging
 import secrets
 from copy import deepcopy
 
-from .registry import TemplateError, result
-from .store import now
+from .registry import TemplateError, now, result
 from .values import render
 from ..seed_state_marker import read_marker, MARKER_NAME
+from .. import lineage_aggregate
 
 LOGGER = logging.getLogger(__name__)
 MAX_SEEDS_PER_SET = 32
@@ -131,7 +131,7 @@ def sync_explorer(lineage_id, explorer_id, actor):
                 dismissals.append((seed, dismissed))
         return additions, dismissals
 
-    lineage = _domain()._read_lineage(lineage_id, actor=actor)
+    lineage = lineage_aggregate.read_lineage(lineage_id, actor=actor)
     if any(plan(lineage)):
 
         def edit(body):
@@ -176,7 +176,7 @@ def sync_explorer(lineage_id, explorer_id, actor):
                 changed.append(seed["id"])
 
         _domain().commit_lineage_edit(lineage_id, actor, edit, reason="同步探索候选")
-        lineage = _domain()._read_lineage(lineage_id, actor=actor)
+        lineage = lineage_aggregate.read_lineage(lineage_id, actor=actor)
     kept = candidates(lineage)
     for path in files:
         if path.name in shelved or prefix + path.name in kept:
@@ -272,7 +272,7 @@ class ExploreKind:
         from .structure import create_role
 
         source = ctx.target["resident_ids"][0]
-        lineage = _domain()._read_lineage(ctx.lineage_id, actor=ctx.actor)
+        lineage = lineage_aggregate.read_lineage(ctx.lineage_id, actor=ctx.actor)
         node = next(item for item in lineage["nodes"] if item["id"] == source)
         roles = {"target": {"id": source, "title": node.get("title") or source}}
         body = render(

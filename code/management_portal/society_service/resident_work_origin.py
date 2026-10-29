@@ -71,3 +71,28 @@ def execution_initiator(resident_id: str, execution_id: str) -> str:
         return ''
     initiator = _initiator(message)
     return str(initiator['id']) if initiator is not None and initiator['kind'] == 'user' else ''
+
+
+def notification_recipients(initiator: str) -> list[str]:
+    """Follow work provenance, falling back only to a Resident's human creator."""
+    from management_common.principal import actor_principal
+    from management_common.operation_identity import current_operation_identity
+    from . import resident_catalog
+    if not initiator:
+        return []
+    principal = actor_principal(initiator)
+    if principal.kind == 'user':
+        return [principal.id]
+    if principal.kind != 'resident':
+        return []
+    identity = current_operation_identity()
+    if identity and identity.principal == principal and identity.initiated_by.kind == 'user':
+        return [identity.initiated_by.id]
+    human = human_initiator(principal.id)
+    if human:
+        return [human]
+    try:
+        creator = str(resident_catalog.get_catalog().get(principal.id).get('created_by') or '')
+    except KeyError:
+        return []
+    return [creator] if creator and actor_principal(creator).kind == 'user' else []

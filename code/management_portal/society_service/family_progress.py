@@ -14,6 +14,7 @@ from . import family_facade, resident_conversation_stream, resident_held_infos
 from .resident_context import work_summary
 from .resident_context.evidence import validate_summary
 from .state_store import get_lineage_data_store
+from . import lineage_aggregate
 
 REF = "duty/family-progress"
 MAX_CHARS = 500
@@ -21,15 +22,14 @@ DEFAULT_INTERVAL = 20
 
 
 def _family(lineage_id, family_id, actor, *, publishing=False):
-    from .templates.familize import read_family
-    from . import lineage_domain
+    from .family_familize import read_family
     lineage, block = read_family(lineage_id, family_id, actor)
     family = block["family"]
     if publishing:
         if actor != family["steward"]:
             raise PermissionError("Family 简报只能由本 Family 的 Steward 发布")
     elif actor not in {family["facade"], family["steward"]}:
-        lineage_domain._ensure_manager(lineage, actor)
+        lineage_aggregate.ensure_manager(lineage, actor)
     return block, family
 
 

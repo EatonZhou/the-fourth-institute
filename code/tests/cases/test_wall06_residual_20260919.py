@@ -10,6 +10,7 @@ from management_portal.society_service import (
 from management_portal.society_service.resident_conversation_stream import ResidentConversationRepository
 from management_portal.society_service.runtime.contracts import ResidentTerminalFact
 from management_portal.society_service.state_store import LineageDataStore
+from management_portal.society_service import lineage_aggregate
 from tests.cases.database_test_support import register_owned_workspace
 
 
@@ -111,7 +112,7 @@ def test_terminal_fact_normalizes_status_and_rejects_invalid_fact_before_consump
 def test_membership_rejects_deleted_foreign_and_nonleader(monkeypatch):
     """Lineage 成员授权拒绝已删除、外属与非 Leader 身份"""
     member = {'lineage_id': LINEAGE}
-    monkeypatch.setattr(lineage_domain, '_read_lineage_state', lambda lineage_id: {'leader_resident_id': RESIDENT})
+    monkeypatch.setattr(lineage_aggregate, 'read_lineage_state', lambda lineage_id: {'leader_resident_id': RESIDENT})
     monkeypatch.setattr(lineage_domain.resident_catalog, 'get_catalog', lambda: SimpleNamespace(get=lambda principal: member))
     assert lineage_domain.authorize_lineage_resident_principal(LINEAGE, RESIDENT, require_leader=True) == RESIDENT
     with pytest.raises(PermissionError):

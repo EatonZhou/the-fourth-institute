@@ -3,7 +3,7 @@
 from management_portal.hatg.contracts import invalid, not_found
 
 from .. import templates
-from ..templates import registry, store
+from ..templates import kinds, store
 
 
 def _call(operation, *args, **kwargs):
@@ -67,7 +67,7 @@ def apply(inv):
 HANDLERS = {
     "ListTemplates": lambda inv: {
         "templates": _call(templates.list_templates, inv.argument("target_kind")),
-        "kinds": registry.kinds(),
+        "kinds": kinds.available(),
     },
     "GetTemplate": lambda inv: {
         "template": _call(templates.get, inv.argument("template_id"))

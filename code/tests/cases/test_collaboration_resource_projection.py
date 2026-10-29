@@ -8,6 +8,7 @@ from management_portal.society_service import lineage_domain, resident_domain, r
 
 
 from management_portal.society_service import resident_directory_domain
+from management_portal.society_service import lineage_aggregate
 
 def _protocol_projection(monkeypatch, resident_id: str, state: str = "idle") -> None:
     repository = type("Repository", (), {
@@ -150,8 +151,8 @@ def test_lineage_projection_is_bounded_and_omits_graph_internals(
             return [records[item] for item in selected_ids]
 
     monkeypatch.setattr(
-        lineage_domain,
-        "_read_lineage_state",
+        lineage_aggregate,
+        "read_lineage_state",
         lambda _lineage_id: lineage,
     )
     monkeypatch.setattr(

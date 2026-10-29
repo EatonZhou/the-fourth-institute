@@ -19,13 +19,13 @@ from management_portal.hatg import routing
 from management_portal.society_service import (
     invariant_locks,
     lineage_domain,
-    project_domain,
     resident_domain,
     resident_domain_common,
     resident_registration_domain,
     resource_client,
 )
 from management_portal.society_service.resident_resource_projection import ResidentResourceProjectionWorker
+from management_portal.society_service import project_folders
 from management_portal.resources.workspace_store import get_workspace_store
 from tests.cases.society_service_test_support import install_resource_boundary
 from tests.cases.isa_test_support import isolated_instruction_store, run  # noqa: F401 - fixture
@@ -37,7 +37,7 @@ def registration(isolated_instruction_store, monkeypatch, tmp_path):
     isolated_instruction_store.mkdir(parents=True, exist_ok=True)
     monkeypatch.setenv("PORTAL_SOCIETY_SERVICE_PROCESS", "0")
     monkeypatch.setattr(invariant_locks, "_ROOT_PROVIDER", lambda: tmp_path / "locks")
-    monkeypatch.setattr(project_domain, "project_root_for_id", lambda _: isolated_instruction_store)
+    monkeypatch.setattr(project_folders, "project_root_for_id", lambda _: isolated_instruction_store)
     monkeypatch.setattr(resident_registration_domain, "safe_absolute_path", lambda raw: Path(raw).resolve(strict=False))
     monkeypatch.setattr(
         codex_runtime_settings,

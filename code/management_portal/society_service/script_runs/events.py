@@ -2,13 +2,14 @@
 from pathlib import Path
 from .. import lineage_domain, lineage_program_queries, lineage_primitives, lineage_failure_notifications
 from ..lineage_program_contracts import _program_event_source_contract_fingerprint
+from .. import lineage_aggregate
 
 
 def publish(record):
     if not record.get('lineage_id') or not record.get('effect_id'):
         return
     try:
-        lineage = lineage_domain._read_lineage_state(record['lineage_id'])
+        lineage = lineage_aggregate.read_lineage_state(record['lineage_id'])
     except (KeyError, FileNotFoundError):
         return  # Deleted Lineages have no remaining subscribers or owners.
     plan = lineage_program_queries._compiled_program(lineage)

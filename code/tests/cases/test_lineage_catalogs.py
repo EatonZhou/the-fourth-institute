@@ -13,6 +13,7 @@ from management_portal.society_service import resource_client
 from management_portal.society_service.lineage_catalog import LineageCatalog
 from management_portal.society_service.resident_catalog import ResidentCatalog
 from management_portal.society_service.state_store import LineageDataStore
+from management_portal.society_service import lineage_aggregate
 
 
 LINEAGE_ID = "lineage_111111111111"
@@ -80,7 +81,7 @@ def test_stop_reads_only_access_facts_and_rejects_missing_members(monkeypatch):
     resident_id = "resident_aaaaaaaaaaaa"
     catalog.upsert(_lineage_definition())
     store.put_resident_record(resident_id, _record(resident_id))
-    monkeypatch.setattr(lineage_domain, "_lineage_catalog_store", lambda: catalog)
+    monkeypatch.setattr(lineage_aggregate, "lineage_catalog_store", lambda: catalog)
     monkeypatch.setattr(catalog, "get_state", lambda *_: pytest.fail("Stop loaded the full graph/runtime"))
     cancelled = []
     monkeypatch.setattr(lineage_domain.resident_protocol, "cancel_resident_input",
@@ -221,7 +222,7 @@ def test_lineage_list_checks_actor_once_before_graph_summary(tmp_path, monkeypat
 
     monkeypatch.setattr(catalog, "snapshot", forbidden_snapshot)
     monkeypatch.setattr(catalog, "listing_graph_summaries", selected_summaries)
-    monkeypatch.setattr(lineage_domain, "_lineage_catalog_store", lambda: catalog)
+    monkeypatch.setattr(lineage_aggregate, "lineage_catalog_store", lambda: catalog)
     monkeypatch.setattr(business_fact_views, "canonical_views", canonical_views_stub)
     monkeypatch.setattr(
         lineage_domain,

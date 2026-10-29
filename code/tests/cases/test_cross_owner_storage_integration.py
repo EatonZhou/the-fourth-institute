@@ -35,6 +35,7 @@ from management_portal.society_service import (
     resource_client,
     state_store,
 )
+from management_portal.society_service import lineage_aggregate
 from management_portal.portal_access_control import PortalAccessStore
 from management_portal.resources import ResourceService
 from management_portal.resources.collaboration_registry import CollaborationDescriptorStore
@@ -124,7 +125,7 @@ def owners(tmp_path, monkeypatch):
     monkeypatch.setattr(project, "SHARE_ROOT", tmp_path)
     monkeypatch.setattr(project, "PROJECTS_ROOT", project_root)
     monkeypatch.setattr(project_domain, "PROJECTS_ROOT", project_root)
-    monkeypatch.setattr(lineage_domain, "DATA_ROOT", tmp_path / "lineage")
+    monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", tmp_path / "lineage")
     monkeypatch.setattr(lineage_domain, "LINEAGE_FOLDER_ROOT", tmp_path / "lineages")
     monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(tmp_path / "lineages"))
     for name, value in {"STAGING_ROOT": tmp_path, "AGENTS_ROOT": tmp_path / "agents", "PROJECTS_ROOT": project_root}.items():
@@ -279,7 +280,7 @@ def reopen_resident_catalog(owners):
 
 
 def assert_separate_owners(owners, binding, body, request):
-    aggregate = lineage_domain._read_lineage_state(owners.lineage_id)
+    aggregate = lineage_aggregate.read_lineage_state(owners.lineage_id)
     serialized = json.dumps(aggregate, ensure_ascii=False)
     assert CONTENT not in serialized
     assert "PROJECT_REGISTRY_ONLY_176" not in serialized
@@ -309,7 +310,7 @@ def test_project_binding_resource_and_execution_follow_real_domain_ports(owners,
     aggregate = assert_separate_owners(owners, binding, body, request)
     assert receipt["execution_id"] == request.execution_id
     state_store.reset_lineage_data_store_for_tests()
-    assert lineage_domain._read_lineage_state(owners.lineage_id) == aggregate
+    assert lineage_aggregate.read_lineage_state(owners.lineage_id) == aggregate
     reopened_catalog = reopen_resident_catalog(owners)
     assert binding in reopened_catalog.get(owners.resident_id)["workspace_bindings"]
     fresh_queue = Scheduler()
@@ -345,7 +346,7 @@ def test_another_reader_uses_the_same_committed_storage_path(owners, record_prop
     path = owners.content_path.parent
     domain_ports.resident_domain_port.add_resident_reference_workspace(owners.resident_id, workspace_path=str(path), actor=ACTOR)
     before_resident = deepcopy(resident_record_domain.find_resident(owners.resident_id))
-    before_lineage = deepcopy(lineage_domain._read_lineage_state(owners.lineage_id))
+    before_lineage = deepcopy(lineage_aggregate.read_lineage_state(owners.lineage_id))
     binding = next(item for item in before_resident["workspace_bindings"] if item["path"] == str(path))
     assert execution_count(owners) == 0
     owners.access.upsert_user(scoped_actor, actor=ACTOR)
@@ -357,7 +358,7 @@ def test_another_reader_uses_the_same_committed_storage_path(owners, record_prop
     assert resident_record_domain.find_resident(owners.resident_id)["workspace_bindings"] == before_resident["workspace_bindings"]
     reopened_catalog = reopen_resident_catalog(owners)
     assert reopened_catalog.get(owners.resident_id)["workspace_bindings"] == before_resident["workspace_bindings"]
-    after_lineage = lineage_domain._read_lineage_state(owners.lineage_id)
+    after_lineage = lineage_aggregate.read_lineage_state(owners.lineage_id)
     assert after_lineage["nodes"][0]["status"] == "queued"
     assert after_lineage["nodes"][0]["last_execution"]["execution_id"] == request.execution_id
     assert definition_projection(after_lineage) == definition_projection(before_lineage)
@@ -382,7 +383,7 @@ def test_execution_identity_conflict_keeps_other_owners_and_first_receipt(owners
     assert repeated["execution_id"] == receipt["execution_id"]
     assert execution_count(owners) == 1
     assert owners.resource.read_content(CONTENT_ID, actor=ACTOR)[0] == body
-    assert lineage_domain._read_lineage_state(owners.lineage_id) == aggregate
+    assert lineage_aggregate.read_lineage_state(owners.lineage_id) == aggregate
     assert_separate_owners(owners, binding, body, request)
     record_property("point_id", POINT)
     record_property("failure_boundary", "Execution owner rejects conflicting immutable request after prior owner commits; reopen retains first request and no foreign body in Lineage")

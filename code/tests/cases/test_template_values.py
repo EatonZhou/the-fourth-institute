@@ -1,5 +1,7 @@
 import pytest
 
+from management_portal.society_service.templates import kinds
+
 
 def test_registry_contract_and_typed_parameters():
     """模板参数按类型填默认值并渲染时长，类型不符或引用缺失时报错"""
@@ -79,11 +81,10 @@ def test_template_policy_resolves_optional_selection_lineage():
 
 def test_template_rejects_unknown_parameter_reference():
     """模板引用未定义的参数时规范化失败"""
-    from management_portal.society_service import templates
     from management_portal.society_service.templates.registry import TemplateError
 
     with pytest.raises(TemplateError):
-        templates.normalize(
+        kinds.normalize(
             {
                 "kind": "prompt",
                 "title": "Broken",

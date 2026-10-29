@@ -23,6 +23,7 @@ from management_portal.society_service import resource_client
 from management_portal.society_service.resident_domain_host import (
     ResidentDomainHost,
 )
+from management_portal.society_service import lineage_aggregate
 from tests.cases.database_test_support import register_owned_workspace
 
 
@@ -30,7 +31,7 @@ def _other_lineage_can_enter_state_lock() -> bool:
     acquired: list[bool] = []
 
     def probe() -> None:
-        with lineage_domain._lineage_scope("lineage_eeeeeeeeeeee"):
+        with lineage_aggregate.lineage_scope("lineage_eeeeeeeeeeee"):
             acquired.append(True)
 
     thread = threading.Thread(target=probe)

@@ -9,6 +9,7 @@ from management_portal.society_service import (
     resident_protocol,
     resident_record_domain,
 )
+from management_portal.society_service import lineage_aggregate
 
 
 def test_internal_discovery_methods_are_service_only() -> None:
@@ -156,10 +157,10 @@ def test_internal_discovery_catalog_contains_all_formal_lineage_residents(
     }
 
     monkeypatch.setattr(lineage_domain, "get_portal_access_store", lambda: AccessStore())
-    monkeypatch.setattr(lineage_domain, "_lineage_catalog_store", lambda: Catalog())
+    monkeypatch.setattr(lineage_aggregate, "lineage_catalog_store", lambda: Catalog())
     monkeypatch.setattr(
-        lineage_domain,
-        "_read_lineage_state",
+        lineage_aggregate,
+        "read_lineage_state",
         lambda lineage_id: lineages[lineage_id],
     )
     deleted_ids = set()

@@ -21,7 +21,7 @@ import copy
 import os
 
 from . import resident_domain_common
-from .project_domain import project_record_for_id
+from . import project_folders
 
 
 LINEAGE_INSTRUCTIONS_FILE = "LINEAGE.md"
@@ -977,7 +977,7 @@ def project_info_for_workspace(record: dict, workspace_path: Path) -> dict[str, 
     project_root: Path | None = None
     if project_id:
         try:
-            project_record, project_root = project_record_for_id(project_id)
+            project_record, project_root = project_folders.project_record_for_id(project_id)
         except KeyError:
             pass
     project_name = project_root.name if project_root else ""

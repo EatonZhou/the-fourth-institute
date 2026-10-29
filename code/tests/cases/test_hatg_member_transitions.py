@@ -15,6 +15,7 @@ from management_portal.society_service import (
     resident_lifecycle_steps_domain,
 )
 from management_portal.society_service import resident_record_domain
+from management_portal.society_service import lineage_aggregate
 from tests.cases.isa_test_support import ok, run
 from tests.cases.test_hatg_move_resident import (  # noqa: F401 - teams is a fixture
     ACTOR, execute, failure, graph, request, teams, unchanged,
@@ -154,14 +155,14 @@ def test_move_empty_source_keeps_the_permission_guard_on_both_lineages(teams, mo
     singleton, call = empty_source_request(teams)
     before = [graph(singleton[0]), graph(singleton[1])]
     lineage_id = singleton[0 if side == "source" else 1]["lineage_id"]
-    ensure_manager = lineage_domain._ensure_manager
+    ensure_manager = lineage_aggregate.ensure_manager
 
     def check(lineage, actor):
         if lineage["lineage_id"] == lineage_id:
             raise PermissionError("No target permission")
         return ensure_manager(lineage, actor)
 
-    monkeypatch.setattr(lineage_domain, "_ensure_manager", check)
+    monkeypatch.setattr(lineage_aggregate, "ensure_manager", check)
     assert failure(call)["code"] == "instruction.forbidden"
     unchanged(singleton, before)
 

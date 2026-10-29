@@ -116,7 +116,7 @@ class NativeTargetTests(unittest.TestCase):
     def native_runtime(self):
         from management_portal import portal_feature_switches as switches
         from management_portal.society_service import (component_runtime as cr, lineage_program_runtime as rt,
-            program_work_storage as storage, lineage_domain, system_workflow_switches)
+            program_work_storage as storage, lineage_aggregate, system_workflow_switches)
         database = _TargetDatabase(self.c, 'lineage')
         @contextmanager
         def transaction(lid):
@@ -133,7 +133,7 @@ class NativeTargetTests(unittest.TestCase):
             for obj, key, value in [(rt, '_runtime_transaction', transaction), (rt, '_read_object', read_object),
                 (cr, '_plan', lambda lid, actor: {'event_sources': {k:{**v, 'kind':'event_source'} for k,v in self.configs.items() if k.startswith('event')},
                                                   'effects': {'effect_a': {}}}),
-                (cr, 'views', views), (lineage_domain, '_lineage_execution_authority', lambda lid: nullcontext()),
+                (cr, 'views', views), (lineage_aggregate, 'execution_authority', lambda lid: nullcontext()),
                 (system_workflow_switches, 'project_after_commit', lambda lid: None),
                 (switches, 'read_site_config', lambda: json.loads(self.site.read_text()))]:
                 stack.enter_context(patch.object(obj, key, value))

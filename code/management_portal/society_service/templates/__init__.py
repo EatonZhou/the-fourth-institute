@@ -5,55 +5,13 @@ from __future__ import annotations
 import math
 from copy import deepcopy
 
-from . import registry, values
+from . import kinds, values
 from .registry import ApplyContext, TemplateError
-
-
-def normalize(raw: dict) -> dict:
-    if not isinstance(raw, dict):
-        raise TemplateError("template 必须是对象")
-    template = deepcopy(raw)
-    kind = registry.get(str(template.get("kind") or ""))
-    template.setdefault(
-        "category",
-        "structure"
-        if kind.key == "structure"
-        else "team"
-        if kind.key == "familize"
-        else "apply",
-    )
-    if template["category"] not in {"apply", "structure", "team"}:
-        raise TemplateError("未知模板分组")
-    title = template.get("title")
-    if not isinstance(title, str) or not title.strip():
-        raise TemplateError("模板需要标题")
-    template["title"] = title.strip()
-    template.setdefault("description", "")
-    template.setdefault("targets", list(kind.targets))
-    if (
-        not isinstance(template["targets"], list)
-        or not template["targets"]
-        or any(item not in kind.targets for item in template["targets"])
-    ):
-        raise TemplateError("模板目标必须是模块支持的目标子集")
-    template["targets"] = list(dict.fromkeys(template["targets"]))
-    template["parameters"] = values.normalize_parameters(template.get("parameters", []))
-    template.setdefault("body", {})
-    if not isinstance(template["body"], dict):
-        raise TemplateError("body 必须是对象")
-    template = kind.normalize(template)
-    roles = (
-        {item["key"] for item in template["body"].get("roles", [])}
-        if kind.key == "structure"
-        else {"target"}
-    )
-    found = {item["key"] for item in template["body"].get("match", [])} if kind.key == "structure" else set()
-    values.validate_references(template["body"], template["parameters"], roles, found)
-    return template
+from .. import lineage_aggregate
 
 
 def describe(template):
-    kind = registry.get(template["kind"])
+    kind = kinds.get(template["kind"])
     return {**template, "behavior": kind.describe(template), "editor": kind.editor()}
 
 
@@ -94,7 +52,7 @@ def create(template, actor, *, from_selection=None, dry_run=False):
             ),
             **(template or {}),
         }
-    normalized = normalize(template)
+    normalized = kinds.normalize(template)
     return describe(normalized if dry_run else store.save(normalized, actor))
 
 
@@ -108,7 +66,7 @@ def update(template_id, changes, actor, *, dry_run=False):
     def transform(previous):
         if changes.get("kind", previous["kind"]) != previous["kind"]:
             raise TemplateError("模板 kind 不可修改；请另存为副本")
-        return normalize({**previous, **changes})
+        return kinds.normalize({**previous, **changes})
 
     return describe(
         transform(store.get(template_id))
@@ -131,15 +89,13 @@ def restore(template_id, actor):
 
 
 def normalize_target(lineage_id, raw, actor):
-    from .. import lineage_domain
-
     if not isinstance(raw, dict) or raw.get("kind") not in {
         "resident",
         "selection",
         "canvas",
     }:
         raise TemplateError("target 需要有效 kind")
-    body = lineage_domain._read_lineage(lineage_id, actor=actor)
+    body = lineage_aggregate.read_lineage(lineage_id, actor=actor)
     members = {
         node["id"]
         for node in body.get("nodes", [])
@@ -207,7 +163,7 @@ def apply(
 ):
     from . import store
 
-    template = normalize(store.get(template_id))
+    template = kinds.normalize(store.get(template_id))
     target = normalize_target(lineage_id, target, actor)
     if target["kind"] not in template["targets"]:
         raise TemplateError("此模板不支持当前目标类型")
@@ -220,7 +176,7 @@ def apply(
         for key, ids in choices.items()
     ):
         raise TemplateError("match_choices 需要 {已有元素 key: [元素 ID]}")
-    kind = registry.get(template["kind"])
+    kind = kinds.get(template["kind"])
     ctx = ApplyContext(
         lineage_id,
         template,

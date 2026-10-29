@@ -7,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 
 from management_portal.society_service import changes, invariant_locks, lineage_domain
+from management_portal.society_service import lineage_aggregate
 from tests.cases.test_hatg_projection_receipts import execution_record, projection_fixture, submit  # noqa: F401
 from tests.cases.isa_test_support import isolated_instruction_store  # noqa: F401 - fixture
 
@@ -68,21 +69,21 @@ def test_projection_retry_and_a_concurrent_commit_publish_in_order_and_end_curre
             }
             normal_commit = executor.submit(submit, newer_request)
             assert newer_committed.wait(5), "the domain commit must not wait for a slow external projection"
-            assert lineage_domain._read_lineage_state(before["lineage_id"])["revision"] == committed_revision + 1
+            assert lineage_aggregate.read_lineage_state(before["lineage_id"])["revision"] == committed_revision + 1
             assert projections == []
         finally:
             allow_old_publish.set()
         recovered = recovery.result(timeout=5)
         assert recovered.status == "committed" and recovered.replayed, recovered
         normal_commit.result(timeout=5).raise_for_error()
-        newer = lineage_domain._read_lineage_state(before["lineage_id"])
+        newer = lineage_aggregate.read_lineage_state(before["lineage_id"])
 
     # The retry published the snapshot it read; the newer commit's publication
     # waited for it and then published the newer state.
     assert [projection["revision"] for projection in projections] == [committed_revision, newer["revision"]]
     assert execution_record(instruction_id)["references"] == initial_record["references"]
     assert submit(request).status == "committed"
-    current = lineage_domain._read_lineage_state(before["lineage_id"])
+    current = lineage_aggregate.read_lineage_state(before["lineage_id"])
     assert current["revision"] == newer["revision"]
     assert current["description"] == newer["description"]
     assert len(notifications) == notifications_after_commit + 1

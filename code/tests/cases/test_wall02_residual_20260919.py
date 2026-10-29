@@ -28,6 +28,8 @@ from tests.cases.security_http_support import server as _server
 from tests.cases.isa_test_support import isolated_instruction_store  # noqa: F401 - fixture
 from tests.cases.test_hatg_projection_receipts import projection_fixture
 
+from management_portal.society_service import lineage_aggregate
+
 
 PASSWORD = "Fixture-only-Passphrase-47!"
 
@@ -409,9 +411,8 @@ def test_proxy_metadata_cannot_replace_authenticated_actor(account_boundary, mon
 
 def test_account_delete_preserves_lineage_definition(projection_fixture, account_boundary, monkeypatch):
     """删除用户账号保留 Lineage 定义与项目资源"""
-    from management_portal.society_service import lineage_domain
     created, _, _ = projection_fixture
-    store = lineage_domain._lineage_catalog_store()
+    store = lineage_aggregate.lineage_catalog_store()
     lineage_id = created["lineage_id"]
     before = store.get(lineage_id)
     monkeypatch.setattr(portal, "_delete_portal_user_personal_data", lambda actor: {})

@@ -76,7 +76,7 @@ def accept(
     if requested is None or requested == {}:
         if relay_source is None:
             return {}
-        return kept if existing else family_facade.relay_quote(relay_source, resident_id)
+        return kept if existing else relay_quote(relay_source, resident_id)
     if not isinstance(requested, Mapping) or set(requested) != {"message_id"}:
         raise ValueError("quote 只给出被引用消息的 message_id，作者和摘录由平台填写")
     quoted_id = str(requested.get("message_id") or "").strip()
@@ -107,3 +107,31 @@ def with_quote(text: str, quote: Mapping[str, Any] | None) -> str:
     author = str(quote.get("author_id") or "")
     title = str((resident_record_domain.find_resident(author) or {}).get("title") or "") if author.startswith("resident_") else ""
     return f"{quote_block(quote, author_title=title)}\n\n{text}"
+
+
+def relay_quote(source: tuple[str, str] | None, member_id: str) -> dict[str, str]:
+    """The quote a relayed copy carries: the facade message's, pointed at the member's own Conversation.
+
+    Where the member's Conversation has the quoted message - the member's own
+    reply, or its copy of the request it took - the copy quotes that message;
+    otherwise it keeps only the author and the excerpt.
+    """
+
+    from . import resident_record_domain
+
+    if source is None:
+        return {}
+    facade_id, facade_message_id = source
+    stored = resident_conversation_stream.get_repository().message(facade_id, facade_message_id)
+    quote = message_quote(stored) if stored else {}
+    if not quote:
+        return {}
+    excerpt = {"author_id": quote["author_id"], "text": quote["text"]}
+    quoted_id = quote.get("message_id", "")
+    facade, member = resident_record_domain.find_resident(facade_id), resident_record_domain.find_resident(member_id)
+    if not quoted_id or not facade or not member:
+        return excerpt
+    link = family_facade.relay_links(facade).get(quoted_id) or {}
+    if link.get("resident_id") == member_id and link.get("message_id"):
+        quoted_id = str(link["message_id"])
+    return quote_of(member, quoted_id) or excerpt

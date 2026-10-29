@@ -128,7 +128,8 @@ def test_projection_publication_lock_covers_read_sync_and_receipt(tmp_path, monk
     projection = SimpleNamespace(get=lambda _: (check("read") or {}), transaction=transaction)
     namespace = {"__name__": "isolated_projection_lock", "__package__": "management_portal.society_service",
                  "invariant_locks": SimpleNamespace(lock_held=lambda: False),
-                 "_lineage_catalog_store": lambda: SimpleNamespace(state_store=SimpleNamespace(lineage_resource_projection=projection)),
+                 "lineage_aggregate": SimpleNamespace(lineage_catalog_store=lambda: SimpleNamespace(
+                     state_store=SimpleNamespace(lineage_resource_projection=projection))),
                  "_lineage_dir": lambda _: tmp_path, "_clone_json": dict,
                  "_sync_lineage_resource_identity": lambda _: check("sync"), "lock_stream": lock_stream}
     if sys.platform != "win32":

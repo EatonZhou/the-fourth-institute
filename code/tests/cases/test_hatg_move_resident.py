@@ -10,13 +10,14 @@ import pytest
 from management_portal.execution.agent_data_store import get_agent_data_store
 from management_portal.society_service import (
     lineage_domain,
-    project_domain,
     resident_backend,
     resident_domain,
     resident_lifecycle_domain,
     resident_lifecycle_steps_domain,
 )
 from management_portal.society_service import resident_record_domain
+from management_portal.society_service import lineage_aggregate
+from management_portal.society_service import project_folders
 from tests.cases.isa_test_support import ACTOR, ok, reset_kernels, run
 from tests.cases.test_resident_folder_creation_contract import (
     _append_conversation_turn,
@@ -27,7 +28,7 @@ from tests.cases.test_resident_folder_creation_contract import (
 
 @pytest.fixture
 def teams(future_creation_store, monkeypatch):  # noqa: F811 - pytest fixture
-    monkeypatch.setattr(project_domain, "project_root_for_id", lambda _: future_creation_store)
+    monkeypatch.setattr(project_folders, "project_root_for_id", lambda _: future_creation_store)
     reset_kernels()
     source = resident_domain.register_resident(_new_session_payload("Source"), ACTOR)
     target = resident_domain.register_resident(_new_session_payload("Target"), ACTOR)
@@ -200,7 +201,7 @@ def test_a_busy_resident_moves_and_its_folder_follows_when_the_running_turn_ends
 def test_move_checks_both_lineage_owners(teams, monkeypatch, side):
     """MoveResident 同时检查源和目标 Lineage 的所有者权限，任一不通过则两边不变"""
     blocked = teams[0 if side == "source" else 1]["lineage_id"]
-    ensure_manager = lineage_domain._ensure_manager
+    ensure_manager = lineage_aggregate.ensure_manager
     call = request(teams)
     before = [graph(teams[0]), graph(teams[1])]
 
@@ -210,7 +211,7 @@ def test_move_checks_both_lineage_owners(teams, monkeypatch, side):
         return ensure_manager(lineage, actor)
 
     with monkeypatch.context() as denied:
-        denied.setattr(lineage_domain, "_ensure_manager", check)
+        denied.setattr(lineage_aggregate, "ensure_manager", check)
         assert failure(call)["code"] == "instruction.forbidden"
     unchanged(teams, before)
 

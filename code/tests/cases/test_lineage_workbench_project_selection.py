@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from management_portal.society_service import project_domain
+from management_portal.society_service import project_folders
 
 
 def test_lineage_workbench_rejects_missing_project(subtests, isolated_portal_case):
@@ -23,7 +24,7 @@ def test_lineage_workbench_accepts_only_resolved_existing_project(
     """Lineage 工作台只接受经 project_root_for_id 解析为已有的 Project"""
     resolved: list[str] = []
     monkeypatch.setattr(
-        project_domain,
+        project_folders,
         "project_root_for_id",
         lambda project_id: resolved.append(project_id),
     )

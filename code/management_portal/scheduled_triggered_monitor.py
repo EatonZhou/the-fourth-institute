@@ -22,7 +22,8 @@ from . import isa_client, permission_system
 from .hatg.catalog import declaration
 from .hatg.contracts import InstructionContext, InstructionError
 from .society_service import get_society_service
-from .society_service.lineage_effect_script import JsonValue, Word, expand, parse
+from .society_service.lineage_effect_script import expand, parse
+from .society_service import lineage_effect_syntax
 
 
 SCHEMA = "tfi.scheduled_triggered_monitor.v1"
@@ -178,9 +179,9 @@ def _script_paths(component: dict[str, Any]) -> list[str]:
             continue
         value = next((arg.value for arg in call.arguments if arg.name == "path"), None)
         path = None
-        if isinstance(value, Word):
+        if isinstance(value, lineage_effect_syntax.Word):
             path = value.text
-        elif isinstance(value, JsonValue) and all(isinstance(part, str) for part in value.segments):
+        elif isinstance(value, lineage_effect_syntax.JsonValue) and all(isinstance(part, str) for part in value.segments):
             path = expand(value, {})
         label = path if isinstance(path, str) and path else "动态路径（运行时确定）"
         if label not in paths:

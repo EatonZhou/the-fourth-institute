@@ -16,6 +16,8 @@ from . import (
     identity_contract,
     invariant_locks,
     resident_backend,
+    resident_conversation_stream,
+    resident_input_checkpoints,
     resident_lineage,
     resident_state,
 )
@@ -866,6 +868,73 @@ def record_conversation_projection_error(
     return True
 
 
+def retain_input_checkpoint(record: Mapping[str, Any], job: Mapping[str, Any], carried: list[Mapping[str, Any]]) -> None:
+    """Retain the input needed for requeue and attach its infos to the Execution.
+
+    Only inputs that someone sent are checkpoints: a /compact, a Fork's preparation,
+    a project creation and an isolated authorized call are not.
+    """
+
+    from . import resident_input_scope
+
+    message_id = str(job.get("user_message_id") or "").strip()
+    if not message_id or str(job.get("operation") or "") or is_compact(job):
+        return
+    lineage_id, resident_id = resident_input_checkpoints.address(record)
+    if not lineage_id or resident_input_scope.get(resident_id, message_id):
+        return
+    expected_execution_id = str(job.get("execution_id") or "")
+    durable = read(record)
+    # Stored preparation keeps the item as it was queued; the argument may
+    # carry a prompt rebuilt for this delivery.
+    source = durable if expected_execution_id and str(durable.get("execution_id") or "") == expected_execution_id else job
+    repository = resident_conversation_stream.get_repository()
+    completed: set[str] = set()
+    for entry in resident_input_checkpoints.checkpoints(record):
+        if "item" not in entry:
+            continue
+        try:
+            if repository.input_state(resident_id, entry.get("message_id"))["state"] == "completed":
+                completed.add(str(entry.get("message_id") or ""))
+        except KeyError:
+            completed.add(str(entry.get("message_id") or ""))
+    entry = {
+        "message_id": message_id,
+        "execution_id": expected_execution_id,
+        "kind": "group" if source.get("mailbox_members") else "request",
+        "started_at": resident_input_checkpoints.now(),
+        "infos": [
+            {"message_id": str(item.get("message_id") or ""), "author_id": str(item.get("author_id") or ""),
+             "held_at": str(item.get("held_at") or "")}
+            for item in carried if item.get("message_id")
+        ],
+        "item": resident_input_checkpoints.queue_item(source),
+    }
+    from management_portal.execution.agent_data_store import get_agent_data_store
+    from management_portal.execution.execution_inputs import attach
+    if carried:
+        attach(get_agent_data_store(), expected_execution_id, [
+            {"message_id":item["message_id"],"role":"info","accepted_at":item.get("held_at") or entry["started_at"]}
+            for item in carried if item.get("message_id")
+        ])
+    store = get_lineage_data_store()
+    with store.resident_mailbox_progress.transaction(lineage_id, resident_id) as state:
+        kept = [item for item in state.get("checkpoints") or [] if isinstance(item, dict)]
+        existing = next((item for item in kept if item.get("message_id") == message_id
+                         and item.get("execution_id") == expected_execution_id), None)
+        if existing is not None:
+            # Reservation captured the original input before any projection or
+            # prompt work. Later preparation may attach infos, not replace it.
+            if carried:
+                existing["infos"] = entry["infos"]
+            return
+        kept = [item for item in kept if item.get("message_id") != message_id]
+        for item in kept:
+            if item.get("message_id") in completed:
+                item.pop("item", None)
+        state["checkpoints"] = [*kept, entry][-resident_input_checkpoints.MAX_CHECKPOINTS:]
+
+
 def write(
     record: Mapping[str, object],
     job: dict[str, Any],
@@ -910,7 +979,6 @@ def write(
         if is_active(job) and execution_id(job) != execution_id(previous):
             # Preserve accepted preparation before projection or prompt work
             # can fail and release it. The existing checkpoint owns retries.
-            from .resident_input_checkpoints import retain_input_checkpoint
             retain_input_checkpoint(record, committed_state, [])
     job.clear()
     job.update(committed_state)

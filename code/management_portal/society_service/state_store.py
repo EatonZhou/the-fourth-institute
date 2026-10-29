@@ -12,8 +12,9 @@ from typing import Any
 
 from management_common.portal_database import portal_database
 from . import trigger_path_storage, family_storage, resident_storage, program_work_storage, domain_work_storage, relation_work_storage, resident_execution_storage
+from . import resident_delivery_storage
 from . import graph_storage, definition_collections, lineage_metadata_storage
-from . import wire_delivery_budget, family_task_dispatches
+from . import wire_delivery_storage, family_task_dispatch_storage
 from . import (
     lineage_data_definitions, lineage_data_effect_cleanup, lineage_data_executions, lineage_data_mailbox,
     lineage_data_notifications, lineage_data_project_graphs, lineage_data_projection_outbox, lineage_data_residents,
@@ -67,8 +68,8 @@ LINEAGE_DATA_COLUMNS = {
     "resident_workspace_transfers": ("resident_id", "operation_id", "source_lineage_id", "target_lineage_id", "instruction_id"),
     "lineage_meta": ("key", "value"),
     **program_work_storage.COLUMNS,
-    **wire_delivery_budget.COLUMNS,
-    **family_task_dispatches.COLUMNS,
+    **wire_delivery_storage.COLUMNS,
+    **family_task_dispatch_storage.COLUMNS,
     **domain_work_storage.COLUMNS,
     **relation_work_storage.COLUMNS,
     **lineage_metadata_storage.COLUMNS,
@@ -141,10 +142,6 @@ LINEAGE_DATA_INDEXES = frozenset({
 })
 
 
-class RuntimeCASConflict(RuntimeError):
-    """A runtime object changed after the caller read its expected state."""
-
-
 def _postgres_lineage_data_schema_matches(connection: Any) -> bool:
     tables = {
         str(row["table_name"])
@@ -195,8 +192,8 @@ def create_lineage_data_schema(connection: Any) -> None:
     definition_collections.create_schema(connection)
     connection.executescript('\n        CREATE TABLE lineage_meta (\n            key TEXT PRIMARY KEY,\n            value TEXT NOT NULL\n        );\n\n        CREATE TABLE lineage_layout_positions (\n            lineage_id TEXT NOT NULL REFERENCES lineages(lineage_id),\n            object_id TEXT NOT NULL, x DOUBLE PRECISION NOT NULL, y DOUBLE PRECISION NOT NULL,\n            PRIMARY KEY(lineage_id,object_id)\n        );\n\n        ')
     program_work_storage.create_schema(connection)
-    wire_delivery_budget.create_schema(connection)
-    family_task_dispatches.create_schema(connection)
+    wire_delivery_storage.create_schema(connection)
+    family_task_dispatch_storage.create_schema(connection)
     domain_work_storage.create_schema(connection)
     relation_work_storage.create_schema(connection)
     resident_storage.create_schema(connection)
@@ -207,8 +204,7 @@ def create_lineage_data_schema(connection: Any) -> None:
         "notifications_json JSONB NOT NULL)"
     )
     resident_execution_storage.create_schema(connection)
-    from . import resident_delivery_work
-    resident_delivery_work.create_schema(connection)
+    resident_delivery_storage.create_schema(connection)
     connection.executescript(
         """
         CREATE TABLE resident_resource_projection_outbox (

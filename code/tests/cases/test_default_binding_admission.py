@@ -12,7 +12,6 @@ from management_portal.execution.scheduler import Scheduler
 from management_portal.society_service import (
     principal_hierarchy_domain,
     resident_catalog,
-    resident_default_backend,
     resident_domain,
     resident_execution_domain,
     resident_execution_work,
@@ -53,7 +52,7 @@ def test_scheduler_admission_prevents_cross_provider_binding(pending, local_ack)
         resident_execution_work.write(record, job)
     before_record, before_job = deepcopy(record), resident_execution_work.read(record)
     with pytest.raises(ValueError, match="admitted Execution"):
-        resident_default_backend.bind_before_execution(record, "api_user")
+        resident_execution_domain.bind_before_execution(record, "api_user")
     assert record == before_record
     saved = resident_catalog.get_catalog().get(record["resident_id"])
     assert (saved["backend"], saved["backend_route_id"]) == ("codex", "")
@@ -73,7 +72,7 @@ def test_binding_transaction_rolls_back_new_preparation(pending, monkeypatch):
         raise RuntimeError("injected write failure")
     monkeypatch.setattr(resident_execution_work, "write", fail_write)
     with pytest.raises(RuntimeError, match="injected write failure"):
-        resident_default_backend.bind_before_execution(record, "api_user")
+        resident_execution_domain.bind_before_execution(record, "api_user")
     assert (record["backend"], record["backend_route_id"]) == ("codex", "")
     assert resident_catalog.get_catalog().get(record["resident_id"])["backend"] == "codex"
     assert resident_execution_work.read(record) == original
@@ -96,7 +95,7 @@ def test_legacy_bound_api_reprepares_old_codex_input(pending):
     resident_execution_work.write(record, original)
     record.update(backend="provider_api", backend_route_id="deepseek_test")
     _save_resident_record(record, commit_configuration=True)
-    resident_default_backend.bind_before_execution(record, "api_user")
+    resident_execution_domain.bind_before_execution(record, "api_user")
     current = resident_execution_work.read(record)
     assert current["execution_id"] != original["execution_id"]
     for key in ("user_message_id", "actor", "raw_message", "continuation_id", "queue", "intake_state",
@@ -105,7 +104,7 @@ def test_legacy_bound_api_reprepares_old_codex_input(pending):
     for key in ("actual_sent_prompt", "prompt_built_at", "prompt_builder_version", "runtime_context"):
         assert not current.get(key)
     resident_execution_work.write(record, current)
-    resident_default_backend.bind_before_execution(record, "api_user")
+    resident_execution_domain.bind_before_execution(record, "api_user")
     assert resident_execution_work.read(record)["execution_id"] == current["execution_id"]
     from management_portal.society_service import resident_conversation_stream
     state = resident_conversation_stream.get_repository().input_state(record["resident_id"], current["user_message_id"])

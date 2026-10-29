@@ -7,14 +7,15 @@ from __future__ import annotations
 
 import pytest
 
-from management_portal.society_service import project_domain, resident_catalog, resident_record_domain
+from management_portal.society_service import resident_catalog, resident_record_domain
+from management_portal.society_service import project_folders
 from tests.cases.isa_test_support import ACTOR, ok, reset_kernels, run
 from tests.cases.test_resident_folder_creation_contract import future_creation_store  # noqa: F401 - fixture
 
 
 @pytest.fixture
 def lineage(future_creation_store, monkeypatch):  # noqa: F811 - pytest fixture
-    monkeypatch.setattr(project_domain, "project_root_for_id", lambda _: future_creation_store)
+    monkeypatch.setattr(project_folders, "project_root_for_id", lambda _: future_creation_store)
     reset_kernels()
     created = ok("CreateLineage", {"title": "Team", "project_id": "project_test"}, key="lineage")
     yield created["lineage_id"]

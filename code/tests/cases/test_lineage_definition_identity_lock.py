@@ -11,6 +11,7 @@ import pytest
 from management_portal.society_service import lineage_domain as graphs, resource_client
 from management_portal.society_service.lineage_catalog import LineageCatalog
 from management_portal.society_service.resident_catalog import ResidentCatalog
+from management_portal.society_service import lineage_aggregate
 from tests.cases.society_service_test_support import install_resource_boundary
 from tests.cases.test_lineage_object_state import LINEAGE_ID, _store
 
@@ -30,12 +31,12 @@ def identity_store(monkeypatch, tmp_path):
     install_resource_boundary(monkeypatch)
     store = _store(tmp_path)
     catalog = ResidentCatalog(tmp_path, store)
-    monkeypatch.setattr(graphs, "_lineage_catalog_store", lambda: LineageCatalog(store))
+    monkeypatch.setattr(lineage_aggregate, "lineage_catalog_store", lambda: LineageCatalog(store))
     monkeypatch.setattr(graphs.resident_catalog, "get_catalog", lambda: catalog)
     monkeypatch.setattr(graphs, "_resident_targets", TARGETS)
     # Authorization and read-view assembly are outside the commit under test.
-    monkeypatch.setattr(graphs, "_ensure_manager", lambda *_: None)
-    monkeypatch.setattr(graphs, "_read_lineage", lambda lid, **_: store.lineage_definition(lid))
+    monkeypatch.setattr(lineage_aggregate, "ensure_manager", lambda *_: None)
+    monkeypatch.setattr(lineage_aggregate, "read_lineage", lambda lid, **_: store.lineage_definition(lid))
     return store, catalog
 
 

@@ -12,7 +12,7 @@ import pytest
 from management_portal import isa_client, lineage_workflows, resident_handoff
 from management_portal.hatg.contracts import InstructionError
 from management_portal.society_service import lineage_primitives
-from management_portal.society_service import lineage_program_effect_rules
+from management_portal.society_service import lineage_program_execution
 from management_portal.society_service.lineage_effect_script import deliver_message_script, deliver_script_parts
 from tests.cases.effect_script_support import effect_config, lower_effect_call
 from management_portal.workbench_projections import studio
@@ -303,7 +303,7 @@ def test_workflow_credentials_survive_manual_event_envelope(workflow_runtime, mo
     captured = []
     def dispatch(lineage_id, source_id, event, actor, **kwargs):
         assert (lineage_id, source_id, actor) == (LINEAGE, binding["event_source_id"], "owner")
-        invocation = lineage_program_effect_rules._make_program_effect_invocation(
+        invocation = lineage_program_execution._make_program_effect_invocation(
             event, source_kind="event", source_wire_id=route["id"],
             include_envelope=route["config"]["include_envelope"],
         )
@@ -603,7 +603,7 @@ def test_invocation_preserves_media_and_context_without_changing_prompt_contract
     parts = [{'type': 'image', 'source_type': 'local_path', 'source': '/tmp/figure.png'},
              {'type': 'context_reference', 'context': {'working_directory': '/tmp', 'context_text': 'request context'}}]
     event = lineage_primitives.make_event('manual.triggered', payload={'prompt': 'Question', 'content_parts': parts})
-    invocation = lineage_program_effect_rules._make_program_effect_invocation(event, source_kind='event')
+    invocation = lineage_program_execution._make_program_effect_invocation(event, source_kind='event')
     assert invocation.arguments == {'prompt': 'Question', 'content_parts': parts}
     definition = {**effect_config("DeliverMessage", {"resident_id": {"from": "endpoint.target"}, "message": {"value": "Fixed"}}),
                   "endpoints": {"target": RESIDENT}}

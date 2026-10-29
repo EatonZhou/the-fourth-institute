@@ -13,6 +13,7 @@ import pytest
 from management_portal.society_service import lineage_domain as graphs
 from management_portal.society_service import resident_catalog
 from management_portal.society_service.errors import LineageConflictError
+from management_portal.society_service import lineage_aggregate
 from tests.cases.isa_test_support import ACTOR
 from tests.cases.isa_test_support import run, reset_kernels
 from tests.cases.test_principal_hierarchy import family
@@ -117,7 +118,7 @@ def test_changing_an_object_another_write_deleted_is_a_conflict(future_creation_
     root = family("Team")
     lineage_id = root["lineage_id"]
     member = graphs.create_lineage_resident(lineage_id, _new_session_payload("Member"), ACTOR)["resident"]
-    stale = graphs._read_lineage_state(lineage_id)
+    stale = lineage_aggregate.read_lineage_state(lineage_id)
     graphs.delete_lineage_graph_objects(lineage_id, {"resident_ids": [member["resident_id"]]}, ACTOR)
     renamed = copy.deepcopy(stale)
     next(node for node in renamed["nodes"] if node["id"] == member["resident_id"])["title"] = "Renamed"
@@ -152,10 +153,10 @@ def test_move_invalid_selection_does_not_create_destination(future_creation_stor
 
     :importance: P2"""
     lineage_id = family("Move selection")["lineage_id"]
-    before = {item["lineage_id"] for item in graphs._lineage_catalog_store().snapshot()}
+    before = {item["lineage_id"] for item in lineage_aggregate.lineage_catalog_store().snapshot()}
     result = run("MoveLineageObjects", {"lineage_id": lineage_id, "object_ids": ["effect_123456789abc"]})
     assert result.status == "failed"
-    assert {item["lineage_id"] for item in graphs._lineage_catalog_store().snapshot()} == before
+    assert {item["lineage_id"] for item in lineage_aggregate.lineage_catalog_store().snapshot()} == before
 
 
 def test_merge_revalidates_new_wire_against_changed_target(future_creation_store):
@@ -166,7 +167,7 @@ def test_merge_revalidates_new_wire_against_changed_target(future_creation_store
     lineage_id = root["lineage_id"]
     effect = run("CreateComponent", {"lineage_id": lineage_id, "kind": "effect",
         "config": {"script": "output ok=true", "endpoints": ["worker"]}}).result["component_id"]
-    base = graphs._read_lineage_state(lineage_id)
+    base = lineage_aggregate.read_lineage_state(lineage_id)
     ours = copy.deepcopy(base)
     ours["program"]["wires"].append({"id": "wire_123456789abc", "kind": "target", "source": effect,
         "source_port": "worker", "target": root["resident_id"]})

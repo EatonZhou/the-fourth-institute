@@ -1,10 +1,10 @@
 """Effect definitions own their human failure notification recipients."""
 from management_portal.portal_access_control import get_portal_access_store
 
+from . import lineage_aggregate, resident_work_origin
+
 
 def initialize_recipients(program: dict, previous: dict, actor: str) -> None:
-    from .lineage_domain import _notification_recipients
-
     existing = {item["id"]: item for item in previous.get("components") or []}
     defaults = None
     for component in program.get("components") or []:
@@ -21,7 +21,7 @@ def initialize_recipients(program: dict, previous: dict, actor: str) -> None:
                     config["failure_recipients"] = list(old_config["failure_recipients"] or [])
             else:
                 if defaults is None:
-                    defaults = _notification_recipients(actor)
+                    defaults = resident_work_origin.notification_recipients(actor)
                 config["failure_recipients"] = list(defaults)
             continue  # The server derived these from authenticated work provenance.
         # Invalid identities must not be silently saved as an apparently valid list.
@@ -35,10 +35,8 @@ def initialize_recipients(program: dict, previous: dict, actor: str) -> None:
 
 
 def recipients(lineage_id: str, effect_id: str) -> list[str]:
-    from . import lineage_domain
-
     try:
-        lineage = lineage_domain._read_lineage_state(lineage_id)
+        lineage = lineage_aggregate.read_lineage_state(lineage_id)
     except (KeyError, FileNotFoundError):
         return []
     component = next((item for item in (lineage.get("program") or {}).get("components") or []

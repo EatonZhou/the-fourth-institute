@@ -7,6 +7,7 @@ import secrets
 import pytest
 from management_portal.hatg.catalog import instruction_catalog
 from management_portal.society_service import trigger_paths as paths, trigger_path_observation as observation
+from management_portal.society_service import lineage_failure_notifications
 
 AT = "2026-10-14T00:00:00Z"
 
@@ -94,7 +95,7 @@ def test_watch_cursor_includes_execution_beyond_visible_page():
         eid = f"execution-page-{index:03}"
         agent.reserve_execution(execution_id=eid, agent_id="resident-pagination",
                                 actor_ref="fixture", provider="codex", created_at=AT)
-        with paths._store().database.transaction() as connection:
+        with paths.data_store().database.transaction() as connection:
             step = storage.admit_step(connection, trigger_path_id=identity, kind="resident",
                                       node_id="resident-pagination", activation_key=eid, created_at=AT,
                                       input_message_id=f"message-{index}")
@@ -119,15 +120,15 @@ def test_failed_path_notification_only_after_commit(monkeypatch):
         # Callback can read the committed state from a separate connection.
         assert paths.get(lid, path_id)["status"] == "failed"
         notifications.append(path_id)
-    monkeypatch.setattr(paths, "_notify_failed_path", notify)
+    monkeypatch.setattr(lineage_failure_notifications, "notify_failed_path", notify)
     with pytest.raises(RuntimeError, match="rollback"):
-        with paths._store().database.transaction():
+        with paths.data_store().database.transaction():
             paths.event_settled(identity, "source", event["id"], error="example")
             assert notifications == []
             raise RuntimeError("rollback")
     assert notifications == []
     assert paths.get(lid, identity)["status"] == "active"
-    with paths._store().database.transaction():
+    with paths.data_store().database.transaction():
         paths.event_settled(identity, "source", event["id"], error="example")
         assert notifications == []
     assert notifications == [identity]
@@ -144,7 +145,7 @@ def test_effect_observation_reads_current_owner(monkeypatch):
     from management_portal.society_service.state_store import get_lineage_data_store
     get_lineage_data_store().put_lineage_definition(lid, {"lineage_id": lid, "title": "Effect fixture", "nodes": [], "edges": [], "program": {}}, {"lineage_id": lid})
     current = {"trigger_path_id": identity, "status": "running", "calls": {"c1": {"status": "executing", "script_run_id": "script"}}}
-    with paths._store().database.transaction() as connection:
+    with paths.data_store().database.transaction() as connection:
         connection.execute("INSERT INTO effect_work VALUES (%s,%s,%s)", (lid, "activation", json.dumps(current)))
     from management_portal.society_service import effect_disposition
     monkeypatch.setattr(effect_disposition, "can_resolve", lambda *_: True)
@@ -156,11 +157,11 @@ def test_effect_observation_reads_current_owner(monkeypatch):
     assert observed["current"] == current
     assert observed["resolution_required"]
 
-    with paths._store().effect_work.transaction(lid, "activation") as state:
+    with paths.data_store().effect_work.transaction(lid, "activation") as state:
         state["calls"]["c1"]["status"] = "completed"
     updated_cursor, updated = read()
     assert updated_cursor > cursor
     assert updated["current"]["calls"]["c1"]["status"] == "completed"
-    with paths._store().effect_work.transaction(lid, "activation"):
+    with paths.data_store().effect_work.transaction(lid, "activation"):
         pass
     assert observation.observe(lid, {"trigger_path_id": identity})["path"]["cursor"] == updated_cursor

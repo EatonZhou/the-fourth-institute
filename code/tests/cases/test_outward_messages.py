@@ -27,6 +27,7 @@ from management_portal.society_service import (
     resident_conversation_stream,
     resident_domain,
 )
+from management_portal.society_service import family_facade
 from tests.cases.isa_test_support import run
 from tests.cases.permission_test_support import Fact, permissions  # noqa: F401
 from tests.cases.test_agent_data_store import _chat
@@ -507,7 +508,7 @@ def test_a_facade_speaks_for_the_members_and_stewards_of_the_families_it_fronts(
     :importance: P2
     :design: decision_44cf587c1721
     """
-    speaks = outward_messages.speaks_for
+    speaks = family_facade.speaks_for
     assert speaks(INNER_FACADE, MEMBER) and speaks(OUTER_FACADE, MEMBER) and speaks(INNER_FACADE, STEWARD)
     assert speaks(OUTER_FACADE, COUSIN)
     assert not speaks(INNER_FACADE, COUSIN)
@@ -644,7 +645,7 @@ def test_another_familys_router_relays_the_members_uploads_its_facade_received(d
     monkeypatch.setattr(outward_messages, "speaking_identity",
                         lambda sender, recipient: facade if sender == member else sender)
     fronted = {(facade, member)}
-    monkeypatch.setattr(outward_messages, "speaks_for", lambda facade_id, member_id: (facade_id, member_id) in fronted)
+    monkeypatch.setattr(family_facade, "speaks_for", lambda facade_id, member_id: (facade_id, member_id) in fronted)
     permissions.place(Fact("resident", other))
     permissions.grant(member, other, "@contributor")
     image = _upload("shot.png", "image/png", PNG, owner=member)

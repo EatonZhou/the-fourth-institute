@@ -13,6 +13,8 @@ from management_portal.society_service import (
     resident_input_queue_domain,
 )
 from management_portal.society_service.state_store import get_lineage_data_store
+from management_portal.society_service import lineage_aggregate
+from management_portal.society_service import family_familize
 from tests.cases.isa_test_support import ok
 from tests.cases.test_family_familize import lineage, charters, future_creation_store, resident, graph  # noqa: F401
 
@@ -295,14 +297,13 @@ def test_trigger_failure_resolves_original_event_and_ignores_delayed_completed_i
 
 def test_missing_creator_keeps_escalation_pending_without_another_ai_round(team, monkeypatch):
     """缺少人类创建者时保持待升级且不追加修复轮次"""
-    from management_portal.society_service.templates import familize
-    original = familize.read_family
+    original = family_familize.read_family
     creator = [""]
     def read(*args):
         lineage, block = original(*args)
         block["family"]["human_familizer_id"] = creator[0]
         return lineage, block
-    monkeypatch.setattr(familize, "read_family", read)
+    monkeypatch.setattr(family_familize, "read_family", read)
     mid = team.message()
     team.check(mid)
     result = team.check(escalate_reason="需要创立者提供账号")
@@ -358,12 +359,11 @@ def test_supervision_isa_checks_management_for_non_role_callers(team, monkeypatc
     result = ok("CheckFamilyRecovery", {"lineage_id": team.lineage, "family_id": team.family["family_id"]}, actor=team.steward)
     assert result["family_id"] == team.family["family_id"]
     outsider = resident(team.lineage, "Outsider")
-    from management_portal.society_service import lineage_domain
     checked = []
     def require_owner(lineage, actor):
         checked.append(actor)
         raise PermissionError("no management permission")
-    monkeypatch.setattr(lineage_domain, "_ensure_manager", require_owner)
+    monkeypatch.setattr(lineage_aggregate, "ensure_manager", require_owner)
     denied = run("CheckFamilyRecovery", {"lineage_id": team.lineage, "family_id": team.family["family_id"]}, actor=outsider)
     assert denied.error and checked == [outsider]
 

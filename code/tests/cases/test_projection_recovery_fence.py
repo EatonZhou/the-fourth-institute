@@ -18,6 +18,7 @@ from management_portal.society_service import (
     resident_intake_domain,
     resource_client,
 )
+from management_portal.society_service import lineage_aggregate
 from management_portal.resources.collaboration_registry import CollaborationDescriptorStore
 from management_portal.resources.service import ResourceService
 from tests.cases.society_service_test_support import install_resource_boundary
@@ -34,7 +35,7 @@ ACTOR = "alice"
 @pytest.fixture
 def fence_fixture(tmp_path, monkeypatch, isolate_portal_databases):
     monkeypatch.setenv("PORTAL_SOCIETY_SERVICE_PROCESS", "0")
-    monkeypatch.setattr(lineage_domain, "DATA_ROOT", tmp_path / "data")
+    monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", tmp_path / "data")
     monkeypatch.setattr(lineage_domain, "LINEAGE_FOLDER_ROOT", tmp_path / "lineages")
     monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(tmp_path / "lineages"))
     monkeypatch.setattr(resident_domain_common, "STAGING_ROOT", tmp_path)
@@ -61,7 +62,7 @@ def fence_fixture(tmp_path, monkeypatch, isolate_portal_databases):
     monkeypatch.setattr(changes, "lineage_changed", lambda *args, **kwargs: notifications.append(kwargs))
     reset_kernels()
     created = lineage_domain.create_lineage({"title": "publication fence fixture", "nodes": [], "edges": []}, ACTOR)
-    before = lineage_domain._read_lineage_state(created["lineage_id"])
+    before = lineage_aggregate.read_lineage_state(created["lineage_id"])
     request = {
         "lineage_id": before["lineage_id"],
         "idempotency_key": "fence-original",
@@ -115,7 +116,7 @@ def test_a_commit_covered_by_a_newer_publication_does_not_publish_again(fence_fi
             if not old_committed.wait(5):
                 first.result(timeout=5)
                 pytest.fail("original projection never reached publication")
-            current = lineage_domain._read_lineage_state(before["lineage_id"])
+            current = lineage_aggregate.read_lineage_state(before["lineage_id"])
             assert current["revision"] == original_revision
             next_request = {
                 **request,
@@ -123,7 +124,7 @@ def test_a_commit_covered_by_a_newer_publication_does_not_publish_again(fence_fi
                 "changes": {"description": "newer committed description"},
             }
             assert submit(next_request).status == "committed"
-            newer = lineage_domain._read_lineage_state(before["lineage_id"])
+            newer = lineage_aggregate.read_lineage_state(before["lineage_id"])
             assert projected == [newer["revision"]]
         finally:
             release_old.set()
@@ -135,7 +136,7 @@ def test_a_commit_covered_by_a_newer_publication_does_not_publish_again(fence_fi
     replay = submit(request)
     assert replay.status == "committed" and replay.replayed
     assert projected == [newer["revision"]]
-    assert lineage_domain._read_lineage_state(before["lineage_id"])["revision"] == newer["revision"]
+    assert lineage_aggregate.read_lineage_state(before["lineage_id"])["revision"] == newer["revision"]
     assert len(notifications) == notification_count + 2
 
 
@@ -155,7 +156,7 @@ def test_recovery_publishes_the_committed_revision_outside_the_lock_once(
     assert initial.error["code"] == "instruction.projection_pending"
     instruction_id = initial.error["details"]["instruction_id"]
     lineage_id = before["lineage_id"]
-    committed = lineage_domain._read_lineage_state(lineage_id)
+    committed = lineage_aggregate.read_lineage_state(lineage_id)
     notification_count = len(notifications)
     snapshot_authorized = threading.Event()
     release_projection = threading.Event()
@@ -190,7 +191,7 @@ def test_recovery_publishes_the_committed_revision_outside_the_lock_once(
     assert replay.status == "committed"
     assert execution_record(instruction_id).get("error") is None
     assert published == [committed["revision"]]
-    assert lineage_domain._read_lineage_state(lineage_id) == committed
+    assert lineage_aggregate.read_lineage_state(lineage_id) == committed
     assert "_resource_acl_fingerprint" not in committed
     assert len(notifications) == notification_count
 
@@ -201,7 +202,7 @@ def test_canonical_title_update_reaches_resources_and_replay_is_silent(fence_fix
     lineage_id = before["lineage_id"]
     request["changes"] = {"title": "New canonical title"}
     submit(request).raise_for_error()
-    canonical = lineage_domain._read_lineage_state(lineage_id)
+    canonical = lineage_aggregate.read_lineage_state(lineage_id)
     assert canonical["revision"] == before["revision"] + 1
     assert canonical["title"] == "New canonical title"
     assert service.get(lineage_id, actor="panda")["title"] == "New canonical title"
@@ -226,7 +227,7 @@ def test_lineage_publications_keep_current_metadata(fence_fixture, monkeypatch):
     # commit's publication runs before the change's own publication.
     original_publish = lineage_domain._publish_lineage_resource_projection
     title_change_committed, release = threading.Event(), threading.Event()
-    title_revision = lineage_domain._read_lineage_state(lineage_id)["revision"] + 1
+    title_revision = lineage_aggregate.read_lineage_state(lineage_id)["revision"] + 1
 
     def hold_title_change(target, revision, **kwargs):
         if revision == title_revision:

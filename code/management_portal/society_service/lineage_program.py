@@ -17,10 +17,10 @@ from . import (
     lineage_primitives,
     lineage_recurring_schedule,
 )
+from .lineage_definition_contract import PROGRAM_SCHEMA
 from .lineage_values import _integer, _text, _item_id
 
 
-PROGRAM_SCHEMA = "tfi.hatg-program.v2"
 PACKET_OPERATOR_KINDS = {"filter", "selector", "reducer"}
 PROGRAM_COMPONENT_KINDS = {
     "event_source",

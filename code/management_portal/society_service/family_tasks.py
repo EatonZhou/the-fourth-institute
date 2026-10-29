@@ -6,7 +6,6 @@ never a second configuration store.
 """
 from __future__ import annotations
 
-import copy
 import hashlib
 import json
 import os
@@ -157,7 +156,7 @@ def configured(body: dict, block: dict) -> dict:
 
 
 def context(record: dict) -> tuple[dict, dict]:
-    from .templates.familize import read_family
+    from .family_familize import read_family
     return read_family(record["lineage_id"], record["family"]["family_id"], record["resident_id"])
 
 
@@ -242,65 +241,3 @@ def render(record: dict, trigger: str, facts: dict, *, guide_version: str | None
         prompt += "\n账号种类优先级 auto_migrate_priority：" + json.dumps(block["family"].get("auto_migrate_priority", []), ensure_ascii=False) + "。先选同种类可用账号，再按排序；空数组使用默认（订阅、服务账号、API）。读取 ListProviderAccounts 的 migration_type，不将同 harness 的不同 API 与订阅混为一类。"
     return Template(prompt).substitute(facts=json.dumps(facts, ensure_ascii=False),
         guide_path=path, guide_version=version if guide_version is None else guide_version)
-
-
-def dispatch(facade_id: str, trigger: str, actor: str, *, facts: dict | None = None,
-             message_id: str = "", source_message_id: str = "", event: dict | None = None) -> dict:
-    from . import family_facade, lineage_domain
-    from . import family_task_dispatches, resident_record_domain
-    facade = resident_record_domain.find_resident(facade_id)
-    if not family_facade.is_facade(facade) or trigger not in TASKS:
-        raise ValueError("未知 Family 或工作触发类型")
-    body, block = context(facade)
-    family = block["family"]
-    if actor not in {family["facade"], family["steward"], family["router"]}:
-        lineage_domain._ensure_manager(body, actor)
-    role = TASKS[trigger][1]
-    target = resident_record_domain.find_resident(family[role])
-    facts = copy.deepcopy(facts or {})
-    if source_message_id:
-        facts["message_id"] = source_message_id
-    facts.update(facade=facade_id, lineage_id=facade["lineage_id"], family_id=block["id"])
-    if event:
-        facts["event"] = {k: event[k] for k in ("id", "event_id", "type", "subject_resident_id") if k in event}
-        facts["event"].update({k: v for k, v in (event.get("payload") or {}).items()
-                               if k in {"resident_id", "message_id", "queue_count", "pressure_metric",
-                                        "pressure_threshold", "pressure_value", "oldest_wait_seconds"}})
-    if trigger == "route":
-        # A Lineage can contain nested Families. Expose this layer's exact
-        # routing boundary instead of making the Router infer it from the graph.
-        facts["routing"] = {"members": list(family["members"]), "steward": family["steward"],
-            "constraint": "target 只能是本层 members 中的直接成员或本层 steward。成员若为嵌套 Family，"
-                          "选择其门面，由该 Family 继续路由；不要选择其内部 Router、Steward 或成员。"}
-        mid = str(facts.get("message_id") or "")
-        if not mid:
-            raise ValueError("路由任务必须绑定原消息")
-        from . import resident_conversation_stream
-        message = resident_conversation_stream.get_repository().message(facade_id, mid)
-        if message is None:
-            raise KeyError("门面原消息不存在")
-        from . import family_chat_preferences, family_quota
-        policy = family_chat_preferences.capture(facade, message)
-        from .resident_questions import answered_set
-        direct = family_chat_preferences.direct_member(facade, message) if answered_set(message) else policy['solo_member_id']
-        if direct:
-            return family_quota.relay_message(facade_id, mid, direct, actor)
-        facts['routing']['members'] = family_chat_preferences.allowed(facade, policy)
-        facts['routing']['chat_preferences'] = policy
-        facts['routing']['constraint'] += ' M/S 是原发送者的硬约束，不能选择被排除的成员。'
-        if policy['muted_member_ids'] and not facts['routing']['members']:
-            raise ValueError('当前所有成员已 Mute，请先取消至少一个成员的 M')
-        facts.update(sender=message.get("author_id"), content=message.get("content_parts"))
-        if message.get("quote"):
-            facts["quote"] = message["quote"]
-        return family_task_dispatches.deliver(facade, target, trigger, facts, actor,
-            business_ref=f"family-route/{facade_id}/message/{mid}", message_id=message_id)
-    ref = f"duty/family-{trigger}"
-    if trigger == "route_review":
-        from . import resident_conversation_stream
-        mid = str(facts.get("message_id") or "")
-        if not mid or not resident_conversation_stream.get_repository().message(facade_id, mid):
-            raise ValueError("路由复核必须绑定门面原消息")
-        ref = f"family-review/{facade_id}/message/{mid}"
-    return family_task_dispatches.deliver(facade, target, trigger, facts, actor,
-        business_ref=ref, message_id=message_id)

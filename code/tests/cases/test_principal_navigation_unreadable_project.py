@@ -10,7 +10,8 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from management_portal.society_service import lineage_domain, principal_hierarchy_domain, resident_catalog, resource_client
+from management_portal.society_service import principal_hierarchy_domain, resident_catalog, resource_client
+from management_portal.society_service import lineage_aggregate
 
 
 def test_a_readable_lineage_in_an_unreadable_project_is_listed_under_that_project(monkeypatch):
@@ -20,7 +21,7 @@ def test_a_readable_lineage_in_an_unreadable_project_is_listed_under_that_projec
         {"lineage_id": "lineage_bbbbbbbbbbbb", "title": "Hidden", "project_id": "AI员工"},
         {"lineage_id": "lineage_cccccccccccc", "title": "Mine", "project_id": "OSForAgent"},
     ]
-    monkeypatch.setattr(lineage_domain, "_lineage_catalog_store", lambda: SimpleNamespace(listing_records=lambda: definitions))
+    monkeypatch.setattr(lineage_aggregate, "lineage_catalog_store", lambda: SimpleNamespace(listing_records=lambda: definitions))
     monkeypatch.setattr(resident_catalog, "get_catalog", lambda: SimpleNamespace(all=lambda: []))
     monkeypatch.setattr(resource_client, "_query_all", lambda kind, actor: [{"resource_id": "OSForAgent", "title": "OSForAgent"}])
 

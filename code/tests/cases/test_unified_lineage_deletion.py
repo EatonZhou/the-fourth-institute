@@ -29,6 +29,7 @@ PEER_ID = "resident_222222222222"
 
 
 from management_portal.society_service import resident_lifecycle_domain, resident_runtime_domain, resident_session_backend_domain
+from management_portal.society_service import lineage_aggregate
 
 @pytest.fixture()
 def deletion_store(
@@ -36,7 +37,7 @@ def deletion_store(
     monkeypatch: pytest.MonkeyPatch,
 ) -> tuple[Path, dict[str, dict]]:
     data_root = tmp_path / "portal_lineages"
-    monkeypatch.setattr(lineage_domain, "DATA_ROOT", data_root)
+    monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", data_root)
     monkeypatch.setattr(lineage_domain, "LINEAGE_FOLDER_ROOT", data_root / "lineages")
     monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(data_root / "lineages"))
     resource_records = install_resource_boundary(monkeypatch)
@@ -76,7 +77,7 @@ def _write_resident_facts(records: list[dict]) -> None:
     lineage_domain.update_lineage(
         LINEAGE_ID,
         {
-            **lineage_domain._read_lineage(LINEAGE_ID, actor="sample_admin"),
+            **lineage_aggregate.read_lineage(LINEAGE_ID, actor="sample_admin"),
             "leader_resident_id": ROOT_ID,
         },
         "sample_admin",
@@ -85,7 +86,7 @@ def _write_resident_facts(records: list[dict]) -> None:
 
 def _write_lineage(folder: Path) -> None:
     assert folder == lineage_domain._lineage_dir(LINEAGE_ID)
-    with lineage_domain._lineage_scope(LINEAGE_ID):
+    with lineage_aggregate.lineage_scope(LINEAGE_ID):
         lineage_domain._create_lineage_in_scope(
             {
                 "title": "统一删除",
@@ -290,13 +291,13 @@ def test_nonleader_resident_delete_removes_its_lineage_projection(
         },
     )
 
-    before = lineage_domain._read_lineage(LINEAGE_ID, actor="sample_admin")
+    before = lineage_aggregate.read_lineage(LINEAGE_ID, actor="sample_admin")
     lineage_domain.update_lineage_metadata(LINEAGE_ID, {
         "expected_revision": before["revision"],
     }, "sample_admin")
     result = _delete_member(PEER_ID, actor)
 
-    lineage = lineage_domain._read_lineage(LINEAGE_ID, actor="sample_admin")
+    lineage = lineage_aggregate.read_lineage(LINEAGE_ID, actor="sample_admin")
     assert [node["id"] for node in lineage["nodes"]] == [ROOT_ID]
     assert {
         item["resident_id"]
@@ -427,7 +428,7 @@ def test_lineage_delete_rolls_back_every_authority_when_catalog_commit_fails(
         _resident_record(ROOT_ID, folder),
         _resident_record(PEER_ID, folder),
     ])
-    catalog = lineage_domain._lineage_catalog_store()
+    catalog = lineage_aggregate.lineage_catalog_store()
     monkeypatch.setattr(
         catalog,
         "remove",
@@ -445,7 +446,7 @@ def test_lineage_delete_rolls_back_every_authority_when_catalog_commit_fails(
         item["resident_id"]
         for item in resident_lineage.all()
     } == {ROOT_ID, PEER_ID}
-    assert lineage_domain._read_lineage(
+    assert lineage_aggregate.read_lineage(
         LINEAGE_ID,
         actor="sample_admin",
     )["lineage_id"] == LINEAGE_ID
@@ -498,7 +499,7 @@ def test_resident_delete_does_not_publish_a_rolled_back_graph(
     } == {ROOT_ID, PEER_ID}
     assert {
         node["id"]
-        for node in lineage_domain._read_lineage(
+        for node in lineage_aggregate.read_lineage(
             LINEAGE_ID,
             actor="sample_admin",
         )["nodes"]

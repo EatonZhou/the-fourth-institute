@@ -15,6 +15,7 @@ from management_portal.execution.activity_redaction import redact_sensitive_text
 
 import hashlib
 import json
+import os
 import re
 from collections import OrderedDict
 from collections.abc import Callable, Iterable
@@ -110,6 +111,37 @@ def project_summary_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
     return {key: metadata.get(key) for key in SUMMARY_METADATA_FIELDS}
 
 
+def policy() -> dict:
+    defaults = {"total_chars": 3000, "phase_rounds": 20, "phase_seconds": 86400,
+                "long_term_rounds": 100, "long_term_seconds": 604800}
+    result = {}
+    for key, default in defaults.items():
+        value = int(os.environ.get("PORTAL_SUMMARY_" + key.upper(), default))
+        if value <= 0 or (key == "total_chars" and value < 400):
+            raise ValueError("摘要策略必须为正数，total_chars 至少 400")
+        result[key] = value
+    result["higher_layer_chars"] = result["total_chars"] * 3 // 4
+    return result
+
+
+def character_count(value) -> int:
+    """Count all text values, including repeated text across fields/layers."""
+    if isinstance(value, str):
+        return len(value)
+    if isinstance(value, dict):
+        return sum(character_count(item) for item in value.values())
+    if isinstance(value, list):
+        return sum(character_count(item) for item in value)
+    return 0
+
+
+def check_budget(layers: dict) -> None:
+    limits = policy()
+    size = character_count(layers)
+    if size > limits["total_chars"]:
+        raise ValueError(f"摘要各时间层、所有字段合计 {size} 字符，超过总预算 {limits['total_chars']}；请归纳重写，不能增量堆积")
+
+
 def validate_summary(payload: object) -> dict[str, Any]:
     """The summary fields of a written summary, bounded; nothing else is kept."""
 
@@ -141,7 +173,6 @@ def validate_summary(payload: object) -> dict[str, Any]:
         raise ValueError(
             "summary 不写测试数量，删去后重新提交：" + "；".join(dict.fromkeys(tallies))[:500]
         )
-    from .summary_layers import check_budget
     check_budget(output)
     return output
 

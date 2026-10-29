@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from . import lineage_domain, lineage_storage
+from . import lineage_aggregate
 
 
 @dataclass(frozen=True)
@@ -22,8 +23,8 @@ def canonical_lineage_folder(lineage_id: str) -> Path:
 
 
 def managed_lineage_definition(lineage_id: str, actor: str) -> dict[str, Any]:
-    definition = lineage_domain._read_lineage(lineage_id, actor=actor)
-    lineage_domain._ensure_manager(definition, actor)
+    definition = lineage_aggregate.read_lineage(lineage_id, actor=actor)
+    lineage_aggregate.ensure_manager(definition, actor)
     return definition
 
 
@@ -60,7 +61,7 @@ def lineage_deletion_effects(token: LineageDeletionToken) -> tuple[dict[str, Any
 
 
 def commit_lineage_deletion(token: LineageDeletionToken) -> None:
-    lineage_domain._lineage_catalog_store().remove(token.lineage_id, deleted_by=token.actor)
+    lineage_aggregate.lineage_catalog_store().remove(token.lineage_id, deleted_by=token.actor)
 
 
 def project_lineage_deletion(step: dict[str, Any]) -> None:

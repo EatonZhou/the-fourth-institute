@@ -15,6 +15,7 @@ from management_portal.society_service import service_invocation_domain as domai
 from management_portal.service_invocation_contract import batch_manifest
 from management_portal.society_service.server import LocalSocietyService
 from management_portal.society_service.service_invocation_store import ServiceInvocationConflict
+from management_portal.society_service import lineage_aggregate
 from tests.cases.society_service_test_support import publish_registered_lineage_members
 
 
@@ -98,7 +99,7 @@ def runtime(tmp_path, monkeypatch):
     monkeypatch.setattr(domain, "search_binding", lambda surface: registry.resolve(surface))
     monkeypatch.setattr(domain, "get_portal_access_store", lambda: access)
     monkeypatch.setattr(domain, "resource_port", resources)
-    monkeypatch.setattr(domain.lineage_domain, "_read_lineage_state", lambda selected: copy.deepcopy(lineage))
+    monkeypatch.setattr(lineage_aggregate, "read_lineage_state", lambda selected: copy.deepcopy(lineage))
     monkeypatch.setattr(domain.resident_catalog, "get_catalog", lambda: catalogue)
     monkeypatch.setattr(adapter, "get_society_service", lambda: facade)
     from management_portal.society_service import resident_input_scope, resident_protocol, resident_domain, resident_workspace_domain, invariant_locks

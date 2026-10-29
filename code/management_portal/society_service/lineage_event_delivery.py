@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import logging
-from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, Callable
 from management_common.operation_errors import OperationError
 
 from . import lineage_program_runtime
+from .domain_ports import failure_notification_port
 
 LOGGER = logging.getLogger(__name__)
 
@@ -88,8 +88,7 @@ def hold_for_resolution(lineage_id: str, result: dict[str, Any], wire_id: str) -
         hold = resolution_hold(result, wire_id)
         if hold is None:
             return None
-        from . import lineage_failure_notifications
-        lineage_failure_notifications.ask_resolution(lineage_id, wire_id, hold)
+        failure_notification_port.ask_resolution(lineage_id, wire_id, hold)
     except Exception:  # noqa: BLE001 - keep retrying until someone is told
         LOGGER.exception("Asking to resolve an Effect activation on %s wire %s failed", lineage_id, wire_id)
         return None
@@ -172,14 +171,6 @@ def dispatch_generic_routes(
     return results, matched_count
 
 
-def hold_pending_occurrence(item: dict[str, Any], hold: dict[str, Any], at: str) -> None:
-    """Release a delivery lease into a durable hold; never admit it as a retry."""
-    item.pop("dispatch_token", None)
-    item.pop("dispatch_started_at", None)
-    item.pop("retry_at", None)
-    item["recovery_blocked"] = {**deepcopy(hold), "at": at}
-
-
 def block_unrecoverable_events(database: Any, lineage_id: str) -> int:
     """Retain original work and error evidence, but retire it from retry admission."""
     from . import program_work_storage
@@ -195,6 +186,6 @@ def block_unrecoverable_events(database: Any, lineage_id: str) -> int:
                 continue
             error = permanent_error(item.get("event") or {})
             if error:
-                hold_pending_occurrence(item, {"error": error, "requires_reissue": True}, now_iso())
+                lineage_program_runtime.hold_pending_occurrence(item, {"error": error, "requires_reissue": True}, now_iso())
                 blocked += 1
     return blocked

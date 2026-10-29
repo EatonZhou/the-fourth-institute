@@ -13,6 +13,7 @@ from management_portal import permission_system
 from management_portal.hatg.catalog import declaration
 from management_portal.hatg.contracts import InstructionContext, InstructionError
 from management_portal.society_service import lineage_domain as domain
+from management_portal.society_service import lineage_aggregate
 from tests.cases.test_scheduled_triggered_monitor import LINEAGE, BROKEN, Reads, lineage
 from tests.cases.permission_test_support import permissions  # noqa: F401
 
@@ -83,7 +84,7 @@ def test_batch_reuses_read_only_snapshot_but_checks_each_definition(monkeypatch)
         if rid == BROKEN:
             raise PermissionError('current read denied')
         return {'lineage_id': rid}
-    monkeypatch.setattr(domain, '_lineage_catalog_store', lambda: SimpleNamespace(
+    monkeypatch.setattr(lineage_aggregate, 'lineage_catalog_store', lambda: SimpleNamespace(
         state_store=SimpleNamespace(database=SimpleNamespace(snapshot=snapshot))))
     monkeypatch.setattr(domain, 'get_lineage_monitor_definition', definition)
     result = domain.get_lineage_monitor_definitions([LINEAGE, BROKEN, LINEAGE], 'caller')
@@ -149,7 +150,7 @@ def test_component_views_read_shared_fire_runtime_once_and_keep_fields(monkeypat
                     'next_scheduled_at': '2026-10-09T14:00:00Z'}
               for index, rid in enumerate(sources)}
     read_runtime = Mock(return_value={'event_sources': states})
-    monkeypatch.setattr(domain, '_read_lineage', lambda rid, **kwargs: {'lineage_id': rid})
+    monkeypatch.setattr(lineage_aggregate, 'read_lineage', lambda rid, **kwargs: {'lineage_id': rid})
     monkeypatch.setattr(component_runtime, '_compiled_program', lambda lineage: {'event_sources': sources, 'loops': {}})
     monkeypatch.setattr(lineage_program_runtime, 'read_runtime', read_runtime)
     selected = 'event_source_000' if single else ''
@@ -177,7 +178,7 @@ def test_loop_only_component_view_does_not_read_event_fire_runtime(monkeypatch):
 
     :design-point:"""
     from management_portal.society_service import component_runtime, lineage_program_runtime
-    monkeypatch.setattr(domain, '_read_lineage', lambda rid, **kwargs: {'lineage_id': rid})
+    monkeypatch.setattr(lineage_aggregate, 'read_lineage', lambda rid, **kwargs: {'lineage_id': rid})
     monkeypatch.setattr(component_runtime, '_compiled_program', lambda lineage: {
         'event_sources': {}, 'loops': {'loop_001': {'title': 'Loop'}}})
     fire_runtime = Mock(side_effect=AssertionError('no Event Source read needed'))

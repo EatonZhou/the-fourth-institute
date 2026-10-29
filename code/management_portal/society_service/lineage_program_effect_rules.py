@@ -12,69 +12,12 @@ from __future__ import annotations
 import hashlib
 from typing import Any
 
-from . import lineage_primitives, lineage_program, resident_message_contract
+from . import lineage_primitives, resident_message_contract
 from .lineage_values import _text
 
 DELIVER_MESSAGE = "DeliverMessage"
 DEFAULT_CONTINUE_PROMPT = "请继续推进当前职责，并给出可复核结果。"
 MAX_ROUTE_DEPTH = 24
-
-
-def _make_program_effect_invocation(
-    event: lineage_primitives.LineageEvent,
-    *,
-    source_kind: str,
-    source_id: str = "",
-    source_wire_id: str = "",
-    arguments: dict[str, Any] | None = None,
-    argument_mapping: dict[str, Any] | None = None,
-    argument_overrides: dict[str, Any] | None = None,
-    prompt: object = "",
-    from_resident_id: str = "",
-    packet: dict[str, Any] | None = None,
-    include_envelope: bool = True,
-) -> lineage_primitives.EffectInvocation:
-    """Adapt one Route packet to the Effect runtime input."""
-
-    dynamic_arguments = dict(
-        event.payload.get("arguments")
-        if isinstance(event.payload.get("arguments"), dict)
-        else {}
-    )
-    if isinstance(arguments, dict):
-        dynamic_arguments.update(arguments)
-    input_prompt = (
-        lineage_primitives.normalize_invocation_prompt(prompt)
-        or lineage_primitives.normalize_invocation_prompt(dynamic_arguments.get("prompt"))
-        or lineage_primitives.normalize_invocation_prompt(event.payload.get("prompt"))
-    )
-    if input_prompt:
-        dynamic_arguments["prompt"] = input_prompt
-    if "content_parts" in event.payload:
-        dynamic_arguments["content_parts"] = event.payload["content_parts"]
-    if isinstance(packet, dict) and (packet.get("message") or {}).get("content_parts"):
-        dynamic_arguments["content_parts"] = packet["message"]["content_parts"]
-    envelope = (
-        packet
-        if isinstance(packet, dict)
-        else lineage_primitives.event_packet(event).to_dict()
-    )
-    if isinstance(argument_mapping, dict):
-        dynamic_arguments.update(
-            lineage_program.resolve_invocation_argument_mapping(argument_mapping, event, packet=envelope)
-        )
-    if argument_overrides:
-        dynamic_arguments.update(lineage_primitives.normalize_invocation_arguments(argument_overrides))
-    return lineage_primitives.make_effect_invocation(
-        event,
-        arguments=dynamic_arguments,
-        source_kind=source_kind,
-        source_id=source_id,
-        source_wire_id=source_wire_id,
-        from_resident_id=from_resident_id,
-        include_envelope=include_envelope,
-        packet=envelope,
-    )
 
 
 def effect_definition(plan: dict[str, Any], effect_id: str) -> dict[str, Any]:

@@ -26,14 +26,14 @@ def observe(lineage_id: str, payload: dict[str, Any]) -> dict[str, Any]:
         return {"paths": paths, "total": total, "next_offset": offset + len(paths) if offset + len(paths) < total else None}
     artifact_key = str(payload.get("artifact_activation_key") or "")
     # One read snapshot keeps the pages, owner states and watch cursor consistent.
-    with trigger_paths._store().database.snapshot() as connection:
+    with trigger_paths.data_store().database.snapshot() as connection:
         row = connection.execute("SELECT * FROM trigger_paths WHERE trigger_path_id=%s AND lineage_id=%s",
                                  (identity, lineage_id)).fetchone()
         if row is None:
             raise KeyError(identity)
         path = decode_times(row, {"occurred_at", "finished_at"})
         path["input"] = json_value(path.pop("input_json"))
-        agent = trigger_paths._agent_executions()
+        agent = trigger_paths.agent_executions_table()
         linked = (f"SELECT DISTINCT e.execution_id,e.agent_id,e.status,e.created_at,e.started_at,e.finished_at,e.final_message_id "
                   f"FROM {agent} e JOIN trigger_path_execution_links l USING(execution_id) "
                   "JOIN trigger_path_steps s USING(step_id) WHERE s.trigger_path_id=%s")

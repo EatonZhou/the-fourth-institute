@@ -89,12 +89,12 @@ def test_public_switch_projects_before_return_and_definition_edits_keep_pause(sy
     lineage_id, call, settings = system
     component_id = install(system, workflow)
     field = FIELDS[workflow]
-    revision = switches._definition(lineage_id)["revision"]
+    revision = switches.current_definition(lineage_id)["revision"]
     assert settings.get()[field] is True
     assert workflow in settings.managed_workflow_keys()
     assert toggle(system, component_id, True).raise_for_error()["runtime"]["paused"] is True
     assert ExecutionSettings().get()[field] is False
-    assert switches._definition(lineage_id)["revision"] == revision
+    assert switches.current_definition(lineage_id)["revision"] == revision
     call("UpdateComponent", {"lineage_id": lineage_id, "component_id": component_id,
                              "changes": {"title": "Renamed while closed"}}).raise_for_error()
     assert settings.get()[field] is False
@@ -184,7 +184,7 @@ def test_recovery_and_delayed_definition_callbacks_read_current_runtime(system, 
     """恢复和延迟的定义回调按当前运行状态投影开关，旧回调不影响替换后的事件源"""
     lineage_id, call, settings = system
     component_id = install(system, TIMING)
-    old = switches._definition(lineage_id)
+    old = switches.current_definition(lineage_id)
     callbacks = []
     with monkeypatch.context() as patch:
         patch.setattr(invariant_locks, "defer_until_state_unlock", callbacks.append)

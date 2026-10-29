@@ -21,7 +21,6 @@ from management_portal.execution import backends
 from management_portal.execution.agent_data_store import AgentDataStore, get_agent_data_store
 from management_portal.execution.agent_data_session_capture import persist_provider_compaction
 from management_portal.society_service import (
-    project_domain,
     resident_domain,
     resident_execution_work,
     resident_fork_domain,
@@ -30,6 +29,7 @@ from management_portal.society_service import (
     resident_restart_domain,
     resident_session_backend_domain,
 )
+from management_portal.society_service import project_folders
 from tests.cases.test_resident_folder_creation_contract import (
     future_creation_store,  # noqa: F401 - pytest fixture
     _append_conversation_turn,
@@ -140,7 +140,7 @@ def test_a_fork_cleared_before_its_first_turn_loses_the_inherited_context(
     future_creation_store, monkeypatch,  # noqa: F811
 ) -> None:
     """Fork 在首轮前被清空时丢弃继承的上下文"""
-    monkeypatch.setattr(project_domain, "project_root_for_id", lambda _: future_creation_store)
+    monkeypatch.setattr(project_folders, "project_root_for_id", lambda _: future_creation_store)
     source = resident_domain.register_resident(_new_session_payload("Seed source"), "sample_admin")
     _append_conversation_turn(source["resident_id"], 0)
     child_id = resident_domain.create_resident_context_fork(

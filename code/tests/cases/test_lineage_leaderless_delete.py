@@ -14,6 +14,7 @@ from management_portal.society_service import resident_lifecycle_domain as lifec
 from management_portal.society_service import resident_record_domain as record
 from management_portal.society_service import resident_workspace_domain as workspace
 from management_portal.society_service import resident_access
+from management_portal.society_service import lineage_aggregate
 
 
 @pytest.fixture
@@ -56,8 +57,8 @@ def members(tmp_path, monkeypatch):
         if not state.graph_authorized:
             raise PermissionError('Lineage management denied')
 
-    monkeypatch.setattr(graph_host.lineage_domain, '_read_lineage', lambda _, **_kwargs: {'lineage_id': lineage})
-    monkeypatch.setattr(graph_host.lineage_domain, '_ensure_manager', ensure_manager)
+    monkeypatch.setattr(lineage_aggregate, 'read_lineage', lambda _, **_kwargs: {'lineage_id': lineage})
+    monkeypatch.setattr(lineage_aggregate, 'ensure_manager', ensure_manager)
     monkeypatch.setattr(graph_host.lineage_domain, '_lineage_dir', lambda _: folder)
     monkeypatch.setattr(workspace.resident_lineage_host_port, 'prepare_lineage_deletion', graph_host.ResidentLineageHost.prepare_lineage_deletion)
 

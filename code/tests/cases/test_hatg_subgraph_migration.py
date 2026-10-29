@@ -13,6 +13,7 @@ from management_portal.society_service import (
 )
 from management_portal.society_service import resident_backend, resident_lifecycle_domain
 from management_portal.society_service import resident_record_domain
+from management_portal.society_service import lineage_aggregate
 from tests.cases.isa_test_support import ok, run
 from tests.cases.test_hatg_move_resident import ACTOR, graph, teams  # noqa: F401 - teams is a fixture
 from tests.cases.test_resident_folder_creation_contract import (  # noqa: F401 - fixture
@@ -175,14 +176,14 @@ def test_a_failed_commit_rolls_back_members_graphs_and_outbox(teams, monkeypatch
 def test_both_lineage_owners_are_required(teams, monkeypatch, side):
     """MoveLineageObjects 要求调用者同时拥有源和目标 Lineage"""
     ids = setup_flow(teams)
-    ensure_manager = lineage_domain._ensure_manager
+    ensure_manager = lineage_aggregate.ensure_manager
 
     def check(lineage, actor):
         if lineage["lineage_id"] == teams[side]["lineage_id"]:
             raise PermissionError("No permission for this Lineage")
         return ensure_manager(lineage, actor)
 
-    monkeypatch.setattr(lineage_domain, "_ensure_manager", check)
+    monkeypatch.setattr(lineage_aggregate, "ensure_manager", check)
     assert execute(move_call(teams, ids)).error["code"] == "instruction.forbidden"
 
 

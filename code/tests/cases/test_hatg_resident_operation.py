@@ -13,6 +13,7 @@ from management_portal.society_service import (
     resident_lifecycle_steps_domain,
     resident_record_domain,
 )
+from management_portal.society_service import lineage_aggregate
 from tests.cases.isa_test_support import run
 from tests.cases.test_hatg_move_resident import ACTOR, execute, graph, request, teams  # noqa: F401 - teams is a fixture
 from tests.cases.test_resident_folder_creation_contract import future_creation_store  # noqa: F401 - fixture
@@ -131,6 +132,7 @@ def test_operation_needs_read_permission_not_modify_permission(teams, transfer, 
         return False
 
     monkeypatch.setattr(lineage_domain, "_actor_can_manage_lineage", read_only)
+    monkeypatch.setattr(lineage_aggregate, "_actor_can_manage_lineage", read_only)
     assert observed(transfer.result["operation_id"])["terminal"] is False
     assert checked == {teams[0]["lineage_id"], teams[1]["lineage_id"]}
 
@@ -241,8 +243,8 @@ def test_fork_keeps_the_source_account_unless_one_is_named(monkeypatch, entry, c
     source = "resident_aaaaaaaaaaaa"
     monkeypatch.setattr(residents, "lineage_of_resident", lambda _: "lineage_aaaaaaaaaaaa")
     monkeypatch.setattr(residents, "placement", lambda *_: {})
+    monkeypatch.setattr(lineage_aggregate, "read_lineage", lambda lineage_id, actor: {"program": {}})
     monkeypatch.setattr(residents, "domain", lambda: SimpleNamespace(
-        _read_lineage=lambda lineage_id, actor: {"program": {}},
         fork_lineage_resident=lambda lineage_id, payload, actor: payloads.append(payload) or {"created_resident": {"id": "resident_bbbbbbbbbbbb"}}))
     # GetResident's view: the account a Resident runs under is its "account".
     records = {source: {"provider": "codex", "account": "acct_source"},

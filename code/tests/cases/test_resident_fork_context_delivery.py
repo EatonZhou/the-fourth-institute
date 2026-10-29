@@ -33,10 +33,10 @@ from tests.cases.test_resident_folder_creation_contract import (
 
 
 from management_portal.society_service import (
-    project_domain,
     resident_execution_domain,
     resident_session_backend_domain,
 )
+from management_portal.society_service import project_folders
 
 def _delivered_window(prepared):
     history = prepared['fork_context_input']
@@ -265,7 +265,7 @@ def test_fork_rejects_compaction_without_database_replacement_body(subtests, iso
 @pytest.mark.parametrize('route', ['', 'one'])
 def test_recent_fork_uses_child_trace_before_first_run(future_creation_store, monkeypatch, nested, route):
     """最近 5 轮 fork 在首次运行前使用冻结的子轨迹，不含来源之后的新轮次"""
-    monkeypatch.setattr(project_domain, 'project_root_for_id', lambda _: future_creation_store)
+    monkeypatch.setattr(project_folders, 'project_root_for_id', lambda _: future_creation_store)
     source = resident_domain.register_resident(_new_session_payload('Selected source'), 'sample_admin')
     source = _activate_created_resident(source['resident_id'])
     store = get_agent_data_store()
@@ -311,7 +311,7 @@ def test_from_here_reads_recorded_input_without_repairing_execution_receipts(
     """从消息 fork 时使用已记录的 Chat 输入，不读取执行回执补全 Provider 追加内容"""
     from types import SimpleNamespace
 
-    monkeypatch.setattr(project_domain, 'project_root_for_id', lambda _: future_creation_store)
+    monkeypatch.setattr(project_folders, 'project_root_for_id', lambda _: future_creation_store)
     source = resident_domain.register_resident(_new_session_payload('Appended source'), 'sample_admin')
     source = _activate_created_resident(source['resident_id'])
     store = get_agent_data_store()
@@ -377,7 +377,7 @@ def test_database_fork_creation_remains_a_prerequisite_after_reload(
     future_creation_store, monkeypatch,
 ):
     """full fork 重新读取后仍先执行会话创建任务，完成后绑定新会话"""
-    monkeypatch.setattr(project_domain, 'project_root_for_id', lambda _: future_creation_store)
+    monkeypatch.setattr(project_folders, 'project_root_for_id', lambda _: future_creation_store)
     source = resident_domain.register_resident(_new_session_payload('Fork source'), 'sample_admin')
     source = _activate_created_resident(source['resident_id'])
     _append_conversation_turn(source['resident_id'], 0)
@@ -434,7 +434,7 @@ def test_compacted_fork_compacts_frozen_context_before_first_turn(
     future_creation_store, monkeypatch,
 ):
     """compacted fork 在首轮前压缩冻结的上下文，压缩完成前不能以完整上下文运行"""
-    monkeypatch.setattr(project_domain, 'project_root_for_id', lambda _: future_creation_store)
+    monkeypatch.setattr(project_folders, 'project_root_for_id', lambda _: future_creation_store)
     source = resident_domain.register_resident(_new_session_payload('Compacted source'), 'sample_admin')
     source = _activate_created_resident(source['resident_id'])
     _append_conversation_turn(source['resident_id'], 0)
@@ -500,7 +500,7 @@ def test_compacted_fork_compacts_frozen_context_before_first_turn(
 
 def test_hatg_fork_preserves_context_and_creation_job(future_creation_store, monkeypatch):
     """经 HATG 创建的 full fork 带有待执行的上下文 fork 创建任务"""
-    monkeypatch.setattr(project_domain, 'project_root_for_id', lambda _: future_creation_store)
+    monkeypatch.setattr(project_folders, 'project_root_for_id', lambda _: future_creation_store)
     source = resident_domain.register_resident(_new_session_payload('Graph fork source'), 'sample_admin')
     source = _activate_created_resident(source['resident_id'])
     _append_conversation_turn(source['resident_id'], 0)
@@ -562,7 +562,7 @@ def test_from_here_uses_message_session_after_resident_session_migration(
     future_creation_store, monkeypatch,
 ):
     """Resident 换到新 Provider 会话后，从旧消息 fork 仍带上旧会话中的问答"""
-    monkeypatch.setattr(project_domain, 'project_root_for_id', lambda _: future_creation_store)
+    monkeypatch.setattr(project_folders, 'project_root_for_id', lambda _: future_creation_store)
     source = resident_domain.register_resident(_new_session_payload('Migrated source'), 'sample_admin')
     source = _activate_created_resident(source['resident_id'])
     store = get_agent_data_store()
@@ -613,7 +613,7 @@ def test_fork_preserves_full_trace_and_starts_its_own_session_instructions(
     future_creation_store, monkeypatch,
 ):
     """full fork 继承压缩摘要之后的完整轨迹，并以自己的启动指令开启新会话"""
-    monkeypatch.setattr(project_domain, 'project_root_for_id', lambda _: future_creation_store)
+    monkeypatch.setattr(project_folders, 'project_root_for_id', lambda _: future_creation_store)
     source = resident_domain.register_resident(_new_session_payload('Compacted source'), 'sample_admin')
     source = _activate_created_resident(source['resident_id'])
     store = get_agent_data_store()
@@ -679,7 +679,7 @@ def test_fork_preserves_full_trace_and_starts_its_own_session_instructions(
 
 def test_historical_native_fork_provenance_does_not_require_old_provider_session(future_creation_store, monkeypatch):
     """historical_native 模式的 fork 没有旧 Provider 会话也能构建执行请求"""
-    monkeypatch.setattr(project_domain, 'project_root_for_id', lambda _: future_creation_store)
+    monkeypatch.setattr(project_folders, 'project_root_for_id', lambda _: future_creation_store)
     source = resident_domain.register_resident(_new_session_payload('Historical native source'), 'sample_admin')
     source = _activate_created_resident(source['resident_id'])
     child_id = resident_domain.create_resident_full_context_fork(
@@ -702,7 +702,7 @@ def test_historical_native_fork_provenance_does_not_require_old_provider_session
 
 def test_fork_inherits_trace_messages_without_execution_records(future_creation_store, monkeypatch):
     """来源只有 Chat 消息没有执行记录时，fork 出的 Resident 继承相同轨迹并处于 ready"""
-    monkeypatch.setattr(project_domain, 'project_root_for_id', lambda _: future_creation_store)
+    monkeypatch.setattr(project_folders, 'project_root_for_id', lambda _: future_creation_store)
     source = resident_domain.register_resident(_new_session_payload('Chat only'), 'sample_admin')
     get_agent_data_store().display_chat_message(source['resident_id'], {
         'message_id': 'msg_eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', 'role': 'user',
@@ -722,7 +722,7 @@ def test_fork_historical_trace_respects_compaction_and_freezes_its_window(
     future_creation_store, monkeypatch, mode,
 ):
     """full、recent、message 三种 fork 的轨迹从最近一次压缩开始，来源随后清空也不受影响"""
-    monkeypatch.setattr(project_domain, 'project_root_for_id', lambda _: future_creation_store)
+    monkeypatch.setattr(project_folders, 'project_root_for_id', lambda _: future_creation_store)
     source = resident_domain.register_resident(_new_session_payload('Historical trace'), 'sample_admin')
     store = get_agent_data_store()
     agent_id = source['resident_id']
@@ -765,7 +765,7 @@ def test_fork_historical_trace_respects_compaction_and_freezes_its_window(
 
 def test_empty_database_history_is_distinct_from_missing_context(future_creation_store, monkeypatch):
     """来源历史为空时 fork 的上下文标记为空，首轮直接发送用户输入"""
-    monkeypatch.setattr(project_domain, 'project_root_for_id', lambda _: future_creation_store)
+    monkeypatch.setattr(project_folders, 'project_root_for_id', lambda _: future_creation_store)
     source = resident_domain.register_resident(_new_session_payload('Truly empty source'), 'sample_admin')
     child_id = resident_domain.create_resident_full_context_fork(source['resident_id'], 'sample_admin')['resident_id']
     child = resident_record_domain.find_resident(child_id)
@@ -777,7 +777,7 @@ def test_empty_database_history_is_distinct_from_missing_context(future_creation
 
 def test_fork_of_unstarted_branch_uses_its_database_window(future_creation_store, monkeypatch):
     """从尚未启动的 fork 再 fork 时使用其数据库中的轨迹窗口"""
-    monkeypatch.setattr(project_domain, 'project_root_for_id', lambda _: future_creation_store)
+    monkeypatch.setattr(project_folders, 'project_root_for_id', lambda _: future_creation_store)
     source = resident_domain.register_resident(_new_session_payload('Nested source'), 'sample_admin')
     _append_conversation_turn(source['resident_id'], 0)
     first_id = resident_domain.create_resident_full_context_fork(source['resident_id'], 'sample_admin')['resident_id']
@@ -794,7 +794,7 @@ def test_fork_of_unstarted_branch_uses_its_database_window(future_creation_store
 
 def test_historical_window_uses_compaction_before_cutoff_not_a_later_summary(future_creation_store, monkeypatch):
     """截止到某轮的 fork 快照使用该轮之前的压缩摘要，不用之后的摘要"""
-    monkeypatch.setattr(project_domain, 'project_root_for_id', lambda _: future_creation_store)
+    monkeypatch.setattr(project_folders, 'project_root_for_id', lambda _: future_creation_store)
     source = resident_domain.register_resident(_new_session_payload('Historical source'), 'sample_admin')
     source = _activate_created_resident(source['resident_id'])
     store = get_agent_data_store()
@@ -825,7 +825,7 @@ def test_from_here_resolves_canonical_chat_input_via_composition_graph(
     """从消息 fork 时经输入组合关系定位所选消息的 Provider 轮次，轨迹截止到该轮回复
 
     Live Chat inputs do not carry Provider IDs; immutable relations do."""
-    monkeypatch.setattr(project_domain, 'project_root_for_id', lambda _: future_creation_store)
+    monkeypatch.setattr(project_folders, 'project_root_for_id', lambda _: future_creation_store)
     source = resident_domain.register_resident(_new_session_payload('Composed input'), 'sample_admin')
     source = _activate_created_resident(source['resident_id'])
     store = get_agent_data_store()
@@ -922,7 +922,7 @@ def test_from_here_resolves_canonical_chat_input_via_composition_graph(
 
 def test_queued_followup_does_not_repeat_initial_context(future_creation_store, monkeypatch):
     """fork 的继承上下文被接受后，排队的后续输入不再重复携带"""
-    monkeypatch.setattr(project_domain, 'project_root_for_id', lambda _: future_creation_store)
+    monkeypatch.setattr(project_folders, 'project_root_for_id', lambda _: future_creation_store)
     source = resident_domain.register_resident(_new_session_payload('Queued context'), 'sample_admin')
     _append_conversation_turn(source['resident_id'], 0)
     child_id = resident_domain.create_resident_full_context_fork(source['resident_id'], 'sample_admin')['resident_id']
@@ -941,7 +941,7 @@ def test_queued_followup_does_not_repeat_initial_context(future_creation_store, 
 @pytest.mark.parametrize('count', [5, 10])
 def test_recent_fork_uses_effective_provider_turns_with_tools(future_creation_store, monkeypatch, count):
     """最近 5 或 10 轮 fork 按实际 Provider 轮次保留回复和工具结果"""
-    monkeypatch.setattr(project_domain, 'project_root_for_id', lambda _: future_creation_store)
+    monkeypatch.setattr(project_folders, 'project_root_for_id', lambda _: future_creation_store)
     source = resident_domain.register_resident(_new_session_payload('Recent source'), 'sample_admin')
     source = _activate_created_resident(source['resident_id'])
     store = get_agent_data_store()

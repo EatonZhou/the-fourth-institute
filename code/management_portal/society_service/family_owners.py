@@ -23,31 +23,6 @@ def recipients(record: Mapping[str, Any], *, message: Mapping[str, Any] | None =
     return [human] if human else []
 
 
-def message_creator(record: Mapping[str, Any], *, identity: str, text: str) -> None:
-    """An unavailable internal role asks its actual creator through the facade.
-
-    The durable notification remains the fallback when the creator cannot open
-    the facade. A deterministic message identity makes repeated checks harmless.
-    """
-    from . import family_storage, outward_messages, resident_message_contract
-    from .state_store import get_lineage_data_store
-    family_id = (record.get("family") or {}).get("family_id")
-    if not family_id:
-        return
-    with get_lineage_data_store().database.read() as connection:
-        facade_ids = family_storage.roles_of(connection, family_id)["facade"]
-    if not facade_ids:
-        return
-    for creator in recipients(record, creator_only=True):
-        try:
-            outward_messages.deliver_to_user(facade_ids[0], creator, [{"type": "text", "text": text}],
-                message_id=resident_message_contract.derived_message_identity("family-role-alert", identity, creator),
-                business_ref="family-availability")
-        except (PermissionError, KeyError, ValueError):
-            # No permission substitution: the addressed human notification is retained.
-            continue
-
-
 def register_familizer(facade_id: str, actor: str) -> None:
     """Save the actual human Familize caller as the Family's contact."""
     if actor_principal(actor).kind != "user":

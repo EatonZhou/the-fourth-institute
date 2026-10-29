@@ -5,6 +5,7 @@ from management_common.operation_identity import operation_identity_scope
 from management_common.principal import OperationIdentity, message_origin
 from management_portal.society_service import family_owners, resident_execution_work
 from management_portal.society_service.resident_record_domain import find_resident as _find_resident
+from management_portal.society_service import outward_messages
 from tests.cases.isa_test_support import ACTOR, ok
 from tests.cases.test_family_familize import charters  # noqa: F401
 from tests.cases.test_isa_lineage_lifecycle import lineage, resident, future_creation_store  # noqa: F401
@@ -63,7 +64,7 @@ def test_role_outage_reaches_actual_creator_through_facade_once(lineage, charter
     record = _find_resident(family['router_resident_id'])
     identity = 'router-outage-one'
     for _ in range(2):
-        family_owners.message_creator(record, identity=identity, text='Router 暂无可用账号，请补充账号后恢复。')
+        outward_messages.message_creator(record, identity=identity, text='Router 暂无可用账号，请补充账号后恢复。')
     mid = resident_message_contract.derived_message_identity('family-role-alert', identity, ACTOR)
     message = resident_conversation_stream.get_repository().message(family['facade_resident_id'], mid)
     assert message is not None

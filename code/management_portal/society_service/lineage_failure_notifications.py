@@ -17,10 +17,13 @@ ResolveEffectActivation.
 """
 import logging
 
+from management_common.database_time import instant, iso_time
+from management_common.json_columns import json_value
 from management_common.message_identity import derived_message_identity
 from management_portal import permission_system
 
-from . import lineage_human_notifications
+from . import lineage_human_notifications, trigger_path_storage, trigger_paths
+from . import lineage_aggregate
 
 LOGGER = logging.getLogger(__name__)
 
@@ -119,7 +122,7 @@ def handled(lineage_id: str, watched: tuple[str, str] | None) -> bool:
 
     if watched is None:
         return False
-    from . import lineage_catalog, lineage_domain, lineage_program_queries
+    from . import lineage_catalog, lineage_program_queries
 
     observers: dict[str, list[str]] = {}
     if watched[0] == "resident":
@@ -127,7 +130,7 @@ def handled(lineage_id: str, watched: tuple[str, str] | None) -> bool:
         observers = lineage_catalog.get_catalog().program_resident_observers(watched[1], "resident.work_failed")
     for observing in sorted(set(observers) | {lineage_id}):
         try:
-            plan = lineage_program_queries._compiled_program(lineage_domain._read_lineage_state(observing))
+            plan = lineage_program_queries._compiled_program(lineage_aggregate.read_lineage_state(observing))
         except (KeyError, FileNotFoundError):
             continue
         for source_id, source in (plan.get("event_sources") or {}).items():
@@ -139,10 +142,8 @@ def handled(lineage_id: str, watched: tuple[str, str] | None) -> bool:
 
 
 def _leader(lineage_id: str) -> str:
-    from . import lineage_domain
-
     try:
-        return str(lineage_domain._read_lineage_state(lineage_id).get("leader_resident_id") or "")
+        return str(lineage_aggregate.read_lineage_state(lineage_id).get("leader_resident_id") or "")
     except (KeyError, FileNotFoundError):
         return ""
 
@@ -204,4 +205,49 @@ def notify(
             lineage_id, notification_id=f"{subject}:{timestamp[:10]}",
             title=title, message=message, recipients=recipients, severity="error",
             trigger_path_id=trigger_path_id, created_by="portal",
+        )
+
+
+def notify_failed_path(identity: str) -> None:
+    from . import lineage_program_runtime
+    store = trigger_paths.data_store()
+    with store.database.read() as connection:
+        path = trigger_path_storage.read(connection, identity)
+        if not path or path["status"] != "failed":
+            return
+        steps = [dict(row) for row in connection.execute(
+            "SELECT s.*, (SELECT max(e.finished_at) "
+            f"FROM trigger_path_execution_links l JOIN {trigger_paths.agent_executions_table()} e USING(execution_id) "
+            "WHERE l.step_id=s.step_id AND e.status='failed') AS execution_failed_at "
+            "FROM trigger_path_steps s WHERE s.trigger_path_id=%s", (identity,),
+        ).fetchall()]
+    if path["root_kind"] == "event":
+        source = lineage_program_runtime.read_runtime(path["lineage_id"])["event_sources"].get(path["root_node_id"], {})
+        if source.get("paused"):
+            return  # Reconciliation of a disabled source does not start new alerts.
+    inputs = trigger_paths.input_receipts(s for s in steps if s["kind"] == "resident")
+    for step in steps:
+        receipt = inputs.get(step["step_id"], {})
+        if step["status"] != "failed" and not step["execution_failed_at"] and receipt.get("state") != "failed":
+            continue
+        result = json_value(step["result_json"] or "{}")
+        if result.get("disposition"):
+            # An administrator already handled this occurrence. Preserve its
+            # terminal evidence without emitting another generic failure alert.
+            continue
+        failure = (receipt.get("error") if receipt.get("state") == "failed" else None) or result.get("failure") or result
+        if not isinstance(failure, dict):
+            failure = {"message": str(failure)}
+        failed_at = (receipt.get("updated_at") if receipt.get("state") == "failed" else None) or step["execution_failed_at"] or step["finished_at"]
+        failed_at = iso_time(instant(failed_at)) or path["finished_at"]
+        reason = str(failure.get("message") or failure.get("error") or failure.get("diagnostic") or
+                     ("节点 " + step["node_id"] + " 执行失败，未记录具体原因。"))
+        from . import family_recovery
+        family_recovery.routing_failed(path["input"], reason, node_id=step["node_id"])
+        notify(
+            path["lineage_id"], identity,
+            {"status": "failed", "finished_at": failed_at, "event": path["input"]},
+            subject=step["kind"] + ":" + step["node_id"], title="Lineage 自动执行失败",
+            message=f"{reason}\n\n失败发生时间：{failed_at}\n节点：{step['node_id']}\nTrigger Path：{identity}",
+            watched=(step["kind"], step["node_id"]) if step["kind"] in {"resident", "effect"} else None,
         )

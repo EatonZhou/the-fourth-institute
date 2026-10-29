@@ -6,7 +6,7 @@ output are read from Agent storage; accepting a Resident input ends propagation.
 from __future__ import annotations
 
 import json
-from management_common.database_time import decode_times, instant, iso_time
+from management_common.database_time import decode_times, iso_time
 from management_common.json_columns import json_value
 from copy import deepcopy
 from datetime import datetime, timezone
@@ -14,12 +14,13 @@ from typing import Any, Iterable, Mapping
 
 from management_common.portal_database import _database_schema
 from . import trigger_path_storage as storage
+from .domain_ports import failure_notification_port
 from management_portal.execution import input_continuations
 
 TERMINAL = storage.TERMINAL
 
 
-def _store():
+def data_store():
     from management_portal.execution.agent_data_store import get_agent_data_store
     from .state_store import get_lineage_data_store
     get_agent_data_store()
@@ -61,13 +62,13 @@ def begin_resident_output(lineage_id: str, resident_id: str, message_id: str, *,
 
 def accepted_input(lineage_id: str, event_id: str) -> dict[str, Any]:
     """The Event input first accepted for this occurrence, or an empty mapping."""
-    with _store().database.transaction() as connection:
+    with data_store().database.transaction() as connection:
         row = connection.execute("SELECT input_json FROM trigger_paths WHERE trigger_path_id=%s",
                                  (storage.path_id(lineage_id, "event", event_id),)).fetchone()
     return json_value(row["input_json"]) if row else {}
 
 
-def _agent_executions() -> str:
+def agent_executions_table() -> str:
     return '"' + _database_schema("agent") + '".executions'
 
 
@@ -77,7 +78,7 @@ def begin_event(lineage_id: str, source_id: str, event: Mapping[str, Any], *, ca
     event["payload"].pop("trigger_path_id", None)
     event["payload"].pop("trigger_step_id", None)
     at = str(event["occurred_at"])
-    with _store().database.transaction() as connection:
+    with data_store().database.transaction() as connection:
         # Delivery retries reconstruct the same occurrence. Its first accepted
         # timestamp, including its wire representation, is authoritative. SQL
         # TIMESTAMPTZ formatting may change +00:00 to Z or expand milliseconds;
@@ -94,7 +95,7 @@ def begin_event(lineage_id: str, source_id: str, event: Mapping[str, Any], *, ca
 
 
 def event_settled(identity: str, source_id: str, occurrence_id: str, *, error: str = "") -> None:
-    with _store().database.transaction() as connection:
+    with data_store().database.transaction() as connection:
         # A persisted delivery still owns transport recovery. Accepting its
         # Event is final, while the delivery step remains waiting.
         waiting = connection.execute(
@@ -117,28 +118,28 @@ def _settle(connection: Any, identity: str) -> str:
     if path["status"] != "active":
         return path["status"]
     executions = connection.execute(
-        f"SELECT e.execution_id,e.status,e.finished_at FROM {_agent_executions()} e "
+        f"SELECT e.execution_id,e.status,e.finished_at FROM {agent_executions_table()} e "
         "JOIN trigger_path_execution_links l USING(execution_id) JOIN trigger_path_steps s USING(step_id) "
         "WHERE s.trigger_path_id=%s", (identity,),
     ).fetchall()
     missing = connection.execute(
         "SELECT DISTINCT s.step_id,s.node_id,s.input_message_id FROM trigger_path_steps s "
         "JOIN trigger_path_execution_links l USING(step_id) "
-        f"LEFT JOIN {_agent_executions()} e USING(execution_id) "
+        f"LEFT JOIN {agent_executions_table()} e USING(execution_id) "
         "WHERE s.trigger_path_id=%s AND e.execution_id IS NULL", (identity,),
     ).fetchall()
     outcomes = input_continuations.outcomes(connection, executions)
     status = storage.finish(connection, identity, at=now(),
                             execution_statuses={key: row["status"] for key, row in outcomes.items()},
                             execution_finished_at={key: row["finished_at"] for key, row in outcomes.items()},
-                            input_states=_input_states(missing))
+                            input_states=input_receipts(missing))
     if status == "failed":
         from .invariant_locks import defer_until_state_unlock
-        _store().database.after_commit(lambda: defer_until_state_unlock(lambda: _notify_failed_path(identity)))
+        data_store().database.after_commit(lambda: defer_until_state_unlock(lambda: failure_notification_port.notify_failed_path(identity)))
     return status
 
 
-def _input_states(steps: Iterable[Mapping[str, Any]]) -> dict[str, dict[str, Any]]:
+def input_receipts(steps: Iterable[Mapping[str, Any]]) -> dict[str, dict[str, Any]]:
     """Read durable input receipts without requiring retained execution history."""
     from .resident_conversation_stream import get_repository
     steps = list(steps)
@@ -146,53 +147,8 @@ def _input_states(steps: Iterable[Mapping[str, Any]]) -> dict[str, dict[str, Any
     return {s["step_id"]: states.get((s["node_id"], s["input_message_id"]), {}) for s in steps}
 
 
-def _notify_failed_path(identity: str) -> None:
-    from . import lineage_failure_notifications, lineage_program_runtime
-    store = _store()
-    with store.database.read() as connection:
-        path = storage.read(connection, identity)
-        if not path or path["status"] != "failed":
-            return
-        steps = [dict(row) for row in connection.execute(
-            "SELECT s.*, (SELECT max(e.finished_at) "
-            f"FROM trigger_path_execution_links l JOIN {_agent_executions()} e USING(execution_id) "
-            "WHERE l.step_id=s.step_id AND e.status='failed') AS execution_failed_at "
-            "FROM trigger_path_steps s WHERE s.trigger_path_id=%s", (identity,),
-        ).fetchall()]
-    if path["root_kind"] == "event":
-        source = lineage_program_runtime.read_runtime(path["lineage_id"])["event_sources"].get(path["root_node_id"], {})
-        if source.get("paused"):
-            return  # Reconciliation of a disabled source does not start new alerts.
-    inputs = _input_states(s for s in steps if s["kind"] == "resident")
-    for step in steps:
-        receipt = inputs.get(step["step_id"], {})
-        if step["status"] != "failed" and not step["execution_failed_at"] and receipt.get("state") != "failed":
-            continue
-        result = json_value(step["result_json"] or "{}")
-        if result.get("disposition"):
-            # An administrator already handled this occurrence. Preserve its
-            # terminal evidence without emitting another generic failure alert.
-            continue
-        failure = (receipt.get("error") if receipt.get("state") == "failed" else None) or result.get("failure") or result
-        if not isinstance(failure, dict):
-            failure = {"message": str(failure)}
-        failed_at = (receipt.get("updated_at") if receipt.get("state") == "failed" else None) or step["execution_failed_at"] or step["finished_at"]
-        failed_at = iso_time(instant(failed_at)) or path["finished_at"]
-        reason = str(failure.get("message") or failure.get("error") or failure.get("diagnostic") or
-                     ("节点 " + step["node_id"] + " 执行失败，未记录具体原因。"))
-        from . import family_recovery
-        family_recovery.routing_failed(path["input"], reason, node_id=step["node_id"])
-        lineage_failure_notifications.notify(
-            path["lineage_id"], identity,
-            {"status": "failed", "finished_at": failed_at, "event": path["input"]},
-            subject=step["kind"] + ":" + step["node_id"], title="Lineage 自动执行失败",
-            message=f"{reason}\n\n失败发生时间：{failed_at}\n节点：{step['node_id']}\nTrigger Path：{identity}",
-            watched=(step["kind"], step["node_id"]) if step["kind"] in {"resident", "effect"} else None,
-        )
-
-
 def settle(identity: str) -> bool:
-    with _store().database.transaction() as connection:
+    with data_store().database.transaction() as connection:
         row = storage._lock(connection, identity)
         return row["status"] == "active" and _settle(connection, identity) in TERMINAL
 
@@ -205,7 +161,7 @@ def event_input(lineage_id: str, event_id: str) -> dict[str, Any] | None:
 
 def event_occurrence(lineage_id: str, event_id: str) -> dict[str, Any] | None:
     """The accepted fact and its bounded propagation status, without reobserving it."""
-    with _store().database.read() as connection:
+    with data_store().database.read() as connection:
         row = connection.execute("SELECT trigger_path_id,root_node_id,status,input_json FROM trigger_paths WHERE lineage_id=%s "
                                  "AND root_kind='event' AND occurrence_id=%s LIMIT 1", (lineage_id, event_id)).fetchone()
     if row is None:
@@ -216,14 +172,14 @@ def event_occurrence(lineage_id: str, event_id: str) -> dict[str, Any] | None:
 
 
 def get(lineage_id: str, identity: str) -> dict[str, Any] | None:
-    with _store().database.transaction() as connection:
+    with data_store().database.transaction() as connection:
         row = connection.execute("SELECT lineage_id FROM trigger_paths WHERE trigger_path_id=%s", (identity,)).fetchone()
         if row is None or row["lineage_id"] != lineage_id:
             return None
         result = storage.read(connection, identity)
         result["executions"] = [decode_times(row, {"created_at", "started_at", "finished_at"}) for row in connection.execute(
             f"SELECT DISTINCT e.execution_id,e.agent_id,e.status,e.created_at,e.started_at,e.finished_at,e.final_message_id "
-            f"FROM {_agent_executions()} e JOIN trigger_path_execution_links l USING(execution_id) "
+            f"FROM {agent_executions_table()} e JOIN trigger_path_execution_links l USING(execution_id) "
             "JOIN trigger_path_steps s USING(step_id) WHERE s.trigger_path_id=%s", (identity,),
         ).fetchall()]
         return result
@@ -234,7 +190,7 @@ def find_event_paths(lineage_id: str, payload: Mapping[str, str], *, limit: int 
     """Recent propagation attempts for an exact event payload, including failed effects."""
     if not payload:
         raise ValueError("An event payload selector is required")
-    with _store().database.read() as connection:
+    with data_store().database.read() as connection:
         rows = connection.execute(
             "SELECT trigger_path_id,status,occurred_at,finished_at FROM trigger_paths "
             "WHERE lineage_id=%s AND input_json::jsonb->'payload' @> %s::jsonb "
@@ -249,7 +205,7 @@ def find_event_paths(lineage_id: str, payload: Mapping[str, str], *, limit: int 
             ).fetchall()
             links = connection.execute(
                 f"SELECT l.step_id,e.execution_id,e.status,e.finished_at FROM trigger_path_execution_links l "
-                f"JOIN {_agent_executions()} e USING(execution_id) JOIN trigger_path_steps s USING(step_id) "
+                f"JOIN {agent_executions_table()} e USING(execution_id) JOIN trigger_path_steps s USING(step_id) "
                 "WHERE s.trigger_path_id=%s", (item["trigger_path_id"],),
             ).fetchall()
             outcomes = input_continuations.outcomes(connection, links)
@@ -264,7 +220,7 @@ def list_paths(lineage_id: str, *, limit: int = 50, offset: int = 0, resident_id
     if resident_id:
         where += " AND EXISTS (SELECT 1 FROM trigger_path_steps s WHERE s.trigger_path_id=p.trigger_path_id AND s.kind='resident' AND s.node_id=%s)"
         params.append(resident_id)
-    with _store().database.read() as connection:
+    with data_store().database.read() as connection:
         total = connection.execute("SELECT count(*) FROM trigger_paths p WHERE " + where, tuple(params)).fetchone()[0]
         rows = connection.execute("SELECT p.* FROM trigger_paths p WHERE " + where +
                                   " ORDER BY p.occurred_at DESC,p.trigger_path_id LIMIT %s OFFSET %s",
@@ -275,7 +231,7 @@ def list_paths(lineage_id: str, *, limit: int = 50, offset: int = 0, resident_id
 
 def admit_resident(lineage_id: str, *, resident_id: str, message_id: str, trigger_path_id: str,
                    source_wire_id: str, event: Mapping[str, Any], queued_at: str = "") -> dict[str, Any]:
-    with _store().database.transaction() as connection:
+    with data_store().database.transaction() as connection:
         path = storage._lock(connection, trigger_path_id)
         if path["lineage_id"] != lineage_id:
             raise ValueError("Resident handoff belongs to another Lineage")
@@ -296,12 +252,12 @@ def admit_resident(lineage_id: str, *, resident_id: str, message_id: str, trigge
 
 def link_input(lineage_id: str, resident_id: str, message_id: str, execution_id: str) -> bool:
     """Associate every source step of a merged input with its one Execution."""
-    with _store().database.transaction() as connection:
+    with data_store().database.transaction() as connection:
         rows = connection.execute("SELECT s.step_id,s.trigger_path_id FROM trigger_path_steps s "
                                   "JOIN trigger_paths p USING(trigger_path_id) "
                                   "WHERE p.lineage_id=%s AND s.node_id=%s AND s.input_message_id=%s",
                                   (lineage_id, resident_id, message_id)).fetchall()
-        execution = connection.execute(f"SELECT agent_id,COALESCE(started_at,created_at) AS accepted_at FROM {_agent_executions()} WHERE execution_id=%s", (execution_id,)).fetchone()
+        execution = connection.execute(f"SELECT agent_id,COALESCE(started_at,created_at) AS accepted_at FROM {agent_executions_table()} WHERE execution_id=%s", (execution_id,)).fetchone()
         if rows and (execution is None or execution["agent_id"] != resident_id):
             raise ValueError("Resident handoff must reference its own durable Execution")
         for row in rows:
@@ -333,7 +289,7 @@ def resident_inputs(lineage_id: str, *, paths: Iterable[str] = (), resident_id: 
         # can be pending; the status rule below decides among these few.
         clauses.append("s.step_id IN (SELECT step_id FROM trigger_path_steps WHERE status IN ('pending','running','waiting') "
                        "AND NOT checkpoint_json::jsonb ? 'recovery_blocked' UNION SELECT l.step_id "
-                       f"FROM {_agent_executions()} e JOIN trigger_path_execution_links l USING(execution_id) "
+                       f"FROM {agent_executions_table()} e JOIN trigger_path_execution_links l USING(execution_id) "
                        "WHERE e.status IN ('preparing','queued','running') UNION SELECT l.step_id "
                        "FROM trigger_path_execution_links l JOIN trigger_path_steps leaf USING(step_id) "
                        f"JOIN \"{_database_schema('agent')}\".agent_operations o "
@@ -348,7 +304,7 @@ def resident_inputs(lineage_id: str, *, paths: Iterable[str] = (), resident_id: 
                        "AND status<>'active' AND finished_at>=%s UNION SELECT run.trigger_path_id FROM trigger_paths run "
                        "WHERE run.lineage_id=%s AND run.status='cancelled' AND EXISTS (SELECT 1 FROM trigger_path_steps linked "
                        "JOIN trigger_path_execution_links l USING(step_id) "
-                       f"JOIN {_agent_executions()} e USING(execution_id) "
+                       f"JOIN {agent_executions_table()} e USING(execution_id) "
                        "WHERE linked.trigger_path_id=run.trigger_path_id AND e.finished_at>=%s))")
         params.extend((lineage_id, lineage_id, finished_since, lineage_id, finished_since))
     wanted = tuple(paths)
@@ -357,7 +313,7 @@ def resident_inputs(lineage_id: str, *, paths: Iterable[str] = (), resident_id: 
     for column, value in (("node_id", resident_id), ("input_message_id", message_id)):
         if value:
             clauses.append("s." + column + "=%s"); params.append(value)
-    with _store().database.read_current() as connection:
+    with data_store().database.read_current() as connection:
         # Lineages differ in size a hundredfold. A cached generic plan assumes
         # an average one and walks a large Lineage's paths for the few candidates.
         rows = connection.execute("SELECT s.*,p.input_json FROM trigger_path_steps s JOIN trigger_paths p USING(trigger_path_id) "
@@ -368,7 +324,7 @@ def resident_inputs(lineage_id: str, *, paths: Iterable[str] = (), resident_id: 
         edges = connection.execute("SELECT target_step_id,wire_id FROM trigger_path_step_edges WHERE target_step_id=ANY(%s)",
                                    ([r["step_id"] for r in rows],)).fetchall()
         links = connection.execute(f"SELECT l.step_id,e.execution_id,e.status,e.started_at,e.finished_at,e.final_message_id "
-                                   f"FROM trigger_path_execution_links l JOIN {_agent_executions()} e USING(execution_id) "
+                                   f"FROM trigger_path_execution_links l JOIN {agent_executions_table()} e USING(execution_id) "
                                    "WHERE l.step_id=ANY(%s)", ([r["step_id"] for r in rows],)).fetchall()
         outcomes = input_continuations.outcomes(connection, links)
     grouped: dict[str, list[dict[str, Any]]] = {}
@@ -414,7 +370,7 @@ def block_unrecoverable_inputs(lineage_id: str, inputs: list[dict[str, Any]]) ->
         error = permanent_error(item.get("event") or {})
         if not error:
             continue
-        with _store().database.transaction() as c:
+        with data_store().database.transaction() as c:
             path = storage._lock(c, item["trigger_path_id"])
             if path["lineage_id"] != lineage_id or path["status"] != "active":
                 continue
@@ -452,7 +408,7 @@ def settle_input(lineage_id: str, resident_id: str, message_id: str, *, status: 
         receipt = get_repository().input_state(resident_id, message_id)
     except KeyError:
         receipt = {}
-    with _store().database.transaction() as connection:
+    with data_store().database.transaction() as connection:
         for row in rows:
             if not row["executions"]:
                 if status == "completed" and receipt.get("state") != "completed":
@@ -465,7 +421,7 @@ def settle_input(lineage_id: str, resident_id: str, message_id: str, *, status: 
 
 
 def effect_started(lineage_id: str, activation_key: str, record: Mapping[str, Any]) -> tuple[str, str]:
-    with _store().database.transaction() as connection:
+    with data_store().database.transaction() as connection:
         identity = str(record.get("trigger_path_id") or "")
         at = str(record["started_at"])
         if not identity:
@@ -487,7 +443,7 @@ def effect_started(lineage_id: str, activation_key: str, record: Mapping[str, An
 
 def operator_started(lineage_id: str, node_id: str, event: Mapping[str, Any]) -> str:
     identity = event["payload"]["trigger_path_id"]
-    with _store().database.transaction() as connection:
+    with data_store().database.transaction() as connection:
         path = storage._lock(connection, identity)
         if path["lineage_id"] != lineage_id:
             raise ValueError("Operator belongs to another Lineage")
@@ -498,12 +454,12 @@ def operator_started(lineage_id: str, node_id: str, event: Mapping[str, Any]) ->
 
 
 def operator_settled(step: str, *, status: str, result: Mapping[str, Any] | None = None) -> None:
-    with _store().database.transaction() as connection:
+    with data_store().database.transaction() as connection:
         storage.transition_step(connection, step, status=status, at=now(), result=result)
 
 
 def effect_finished(lineage_id: str, activation_key: str) -> dict[str, Any] | None:
-    with _store().database.read_current() as connection:
+    with data_store().database.read_current() as connection:
         row = connection.execute("SELECT s.* FROM trigger_path_steps s JOIN trigger_paths p USING(trigger_path_id) "
                                  "WHERE p.lineage_id=%s AND s.kind='effect' AND s.activation_key=%s "
                                  "AND s.status IN ('completed','failed','cancelled')", (lineage_id, activation_key)).fetchone()
@@ -517,7 +473,7 @@ def effect_finished(lineage_id: str, activation_key: str) -> dict[str, Any] | No
 
 
 def effect_settled(lineage_id: str, activation_key: str, record: Mapping[str, Any]) -> bool:
-    with _store().database.transaction() as connection:
+    with data_store().database.transaction() as connection:
         row = connection.execute("SELECT s.step_id,s.trigger_path_id FROM trigger_path_steps s JOIN trigger_paths p USING(trigger_path_id) "
                                  "WHERE p.lineage_id=%s AND s.kind='effect' AND s.activation_key=%s", (lineage_id, activation_key)).fetchone()
         if row is None:
@@ -540,7 +496,7 @@ def settle_disposed_delivery(lineage_id: str, activation_key: str) -> None:
     """
     from management_portal.hatg.contracts import InstructionError
 
-    with _store().database.transaction() as connection:
+    with data_store().database.transaction() as connection:
         effect = connection.execute(
             "SELECT s.* FROM trigger_path_steps s JOIN trigger_paths p USING(trigger_path_id) "
             "WHERE p.lineage_id=%s AND s.kind='effect' AND s.activation_key=%s",
@@ -585,7 +541,7 @@ def settle_disposed_delivery(lineage_id: str, activation_key: str) -> None:
 def delivery_waiting(lineage_id: str, wire_id: str, delivery: Mapping[str, Any]) -> None:
     event = delivery["event"]
     identity = (event.get("payload") or {})["trigger_path_id"]
-    with _store().database.transaction() as connection:
+    with data_store().database.transaction() as connection:
         path = storage._lock(connection, identity)
         if path["lineage_id"] != lineage_id:
             raise ValueError("Delivery belongs to another Lineage")
@@ -598,7 +554,7 @@ def delivery_waiting(lineage_id: str, wire_id: str, delivery: Mapping[str, Any])
 
 def delivery_settled(lineage_id: str, wire_id: str, delivery: Mapping[str, Any], *, status: str = "completed", error: str = "") -> None:
     identity = (delivery["event"].get("payload") or {})["trigger_path_id"]
-    with _store().database.transaction() as connection:
+    with data_store().database.transaction() as connection:
         storage.transition_step(connection, storage.step_id(identity, "operator", wire_id, str(delivery["cursor"])),
                                 status=status, at=now(), result={"error": error} if error else None)
         _settle(connection, identity)

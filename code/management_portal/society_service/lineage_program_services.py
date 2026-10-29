@@ -1,9 +1,10 @@
 """Composition of Program delivery, polling and recovery capabilities.
 
-The host owns aggregate access, authorization, locks and public entry points.
-This module assembles the explicit capabilities consumed by Program policies;
-it does not own delivery or settlement rules. Gateways resolve host callbacks
-when called, so replaced domain functions remain visible to already-built ports.
+``lineage_aggregate`` reads and guards the aggregate; the host owns the other
+callbacks and the public entry points.  This module assembles the explicit
+capabilities consumed by Program policies; it does not own delivery or
+settlement rules.  Gateways resolve aggregate reads and host callbacks when
+called, so replaced domain functions remain visible to already-built ports.
 """
 
 from __future__ import annotations
@@ -12,6 +13,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Iterable, Protocol
 
 from . import (
+    lineage_aggregate,
     lineage_catalog,
     lineage_event_reconciliation,
     lineage_primitives,
@@ -36,12 +38,7 @@ class ProgramServiceHost(Protocol):
     """
 
     resident_protocol: ResidentEvidence
-    _lineage_execution_authority: Callable[..., Any]
-    _lineage_scope: Callable[..., Any]
-    _read_lineage: Callable[..., Any]
-    _read_lineage_state: Callable[..., Any]
     get_lineage: Callable[..., Any]
-    _ensure_manager: Callable[..., Any]
     _persist_lineage_runtime_state: Callable[..., Any]
     _now_iso: Callable[..., Any]
     _resume_program_execution_principal: Callable[..., Any]
@@ -64,7 +61,6 @@ class ProgramServiceHost(Protocol):
     handle_resident_message_terminal: Callable[..., Any]
     _actor_can_manage_lineage: Callable[..., Any]
     _lineage_scopes: Callable[..., Any]
-    _lineage_catalog_store: Callable[..., Any]
     _lineage_runtime_actor: Callable[..., Any]
     _read_resident_activity_snapshot: Callable[..., Any]
     reconcile_lineage_system_events: Callable[..., Any]
@@ -92,11 +88,11 @@ def execution_ports(host: ProgramServiceHost) -> lineage_program_execution.Progr
 
 def polling_ports(host: ProgramServiceHost) -> lineage_program_polling.ProgramPollingPorts:
     return lineage_program_polling.ProgramPollingPorts(
-        lineage_catalog_store=host._lineage_catalog_store,
+        lineage_catalog_store=lineage_aggregate.lineage_catalog_store,
         lineage_runtime_actor=host._lineage_runtime_actor,
-        read_lineage_state=host._read_lineage_state,
+        read_lineage_state=lineage_aggregate.read_lineage_state,
         read_resident_activity_snapshot=host._read_resident_activity_snapshot,
-        ensure_manager=host._ensure_manager,
+        ensure_manager=lineage_aggregate.ensure_manager,
         reconcile_lineage_system_events=host.reconcile_lineage_system_events,
         reconcile_lineage_runtime=host.reconcile_lineage_runtime,
     )
@@ -122,15 +118,15 @@ def control_authority(host: ProgramServiceHost) -> lineage_program_backlog.Progr
 def event_reconcile_ports(host: ProgramServiceHost) -> lineage_event_reconciliation.EventReconcilePorts:
     return lineage_event_reconciliation.EventReconcilePorts(
         clone_json=host._clone_json,
-        ensure_manager=host._ensure_manager,
+        ensure_manager=lineage_aggregate.ensure_manager,
         lineage_node_session_key=host._lineage_node_session_key,
         event_contract_fingerprint=host._program_event_source_contract_fingerprint,
         resident_state_value=host._program_resident_state_value,
-        read_lineage=host._read_lineage,
+        read_lineage=lineage_aggregate.read_lineage,
         read_resident_activity_snapshot=host._read_resident_activity_snapshot,
         role_file_signature=host._role_file_signature,
         scheduled_time_reached=host._scheduled_time_reached,
-        lineage_scope=host._lineage_scope,
+        lineage_scope=lineage_aggregate.lineage_scope,
         dispatch_program_event=host.dispatch_lineage_program_event,
     )
 
@@ -139,22 +135,22 @@ class _LineageStateGateway(_BoundHost):
     """Reads, ownership, scopes and commits of the sole Lineage aggregate."""
 
     def lineage_execution_authority(self, lineage_id: str):
-        return self._host._lineage_execution_authority(lineage_id)
+        return lineage_aggregate.execution_authority(lineage_id)
 
     def lineage_scope(self, lineage_id: str, *, operation: str = ""):
-        return self._host._lineage_scope(lineage_id, operation=operation)
+        return lineage_aggregate.lineage_scope(lineage_id, operation=operation)
 
     def read_lineage(self, lineage_id: str, *, actor: str) -> dict[str, Any]:
-        return self._host._read_lineage(lineage_id, actor=actor)
+        return lineage_aggregate.read_lineage(lineage_id, actor=actor)
 
     def read_lineage_state(self, lineage_id: str) -> dict[str, Any]:
-        return self._host._read_lineage_state(lineage_id)
+        return lineage_aggregate.read_lineage_state(lineage_id)
 
     def get_lineage(self, lineage_id: str, actor: str) -> dict[str, Any]:
         return self._host.get_lineage(lineage_id, actor)
 
     def ensure_manager(self, lineage: dict[str, Any], actor: str) -> None:
-        self._host._ensure_manager(lineage, actor)
+        lineage_aggregate.ensure_manager(lineage, actor)
 
     def persist_lineage_runtime_state(self, previous: dict[str, Any], lineage: dict[str, Any], reason: str) -> None:
         self._host._persist_lineage_runtime_state(previous, lineage, reason)
@@ -255,13 +251,13 @@ class _ProgramTerminalDirectoryGateway(_BoundHost):
         return self._host._lineage_scopes(lineage_ids, operation=operation)
 
     def lineage_ids_for_resident(self, resident_id: str) -> list[str]:
-        return self._host._lineage_catalog_store().lineage_ids_for_resident(resident_id)
+        return lineage_aggregate.lineage_catalog_store().lineage_ids_for_resident(resident_id)
 
     def lineage_catalog_store(self) -> lineage_catalog.LineageCatalog:
-        return self._host._lineage_catalog_store()
+        return lineage_aggregate.lineage_catalog_store()
 
     def lineage_execution_authority(self, lineage_id: str):
-        return self._host._lineage_execution_authority(lineage_id)
+        return lineage_aggregate.execution_authority(lineage_id)
 
     def lineage_runtime_actor(self, lineage: dict[str, Any]) -> str:
         return self._host._lineage_runtime_actor(lineage)

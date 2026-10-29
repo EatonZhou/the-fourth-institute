@@ -7,7 +7,8 @@ import copy
 from types import SimpleNamespace
 import pytest
 from management_portal.society_service import graph_storage
-from management_portal.society_service.state_store import get_lineage_data_store, RuntimeCASConflict
+from management_portal.society_service.lineage_data_runtime import RuntimeCASConflict
+from management_portal.society_service.state_store import get_lineage_data_store
 from tests.cases.test_family_familize import lineage, future_creation_store, resident  # noqa: F401
 
 

@@ -9,6 +9,7 @@ from types import SimpleNamespace
 import pytest
 from management_portal.society_service import trigger_paths as paths, trigger_path_observation as observation
 from management_portal.society_service.state_store import get_lineage_data_store
+from management_portal.society_service import lineage_aggregate
 from tests.cases.test_hatg_run_observation import lineage, occurrence, AT
 
 
@@ -78,8 +79,8 @@ def test_artifact_selector_is_scoped_and_authorized(monkeypatch, tmp_path):
     identity, step = effect(lid)
     paths.effect_settled(lid, "activation", {"status": "succeeded", "finished_at": AT, "outputs": {"artifact": reference}})
     assert "artifact body" not in str(observation.observe(lid, {"trigger_path_id": identity}))
-    monkeypatch.setattr(lineage_domain, "_lineage_scope", lambda _: nullcontext())
-    monkeypatch.setattr(lineage_domain, "_read_lineage", lambda *a, **kw: {})
+    monkeypatch.setattr(lineage_aggregate, "lineage_scope", lambda _: nullcontext())
+    monkeypatch.setattr(lineage_aggregate, "read_lineage", lambda *a, **kw: {})
     def deny(*_):
         raise PermissionError("denied")
     monkeypatch.setattr(lineage_domain, "_ensure_visible", deny)

@@ -21,7 +21,7 @@ from management_common.json_columns import json_text, json_value
 from management_common.portal_database import portal_database
 from management_common.database_time import instant, iso_time, decode_times
 
-from .evidence import fingerprint, project_summary_metadata, summary_text, utc_now
+from .evidence import check_budget, fingerprint, project_summary_metadata, summary_text, utc_now
 
 SCHEMA = "resident_context"
 RESIDENT_ID = re.compile(r"resident_[0-9a-f]{12}")
@@ -402,7 +402,7 @@ class ResidentContextStore:
                     layers, state = summary_layers.consolidate(layers, state, consolidation)
                 elif summary is not None:
                     layers["recent"] = summary
-                    summary_layers.check_budget(layers)
+                    check_budget(layers)
                 # No-content coverage remains legal for legacy oversized
                 # summaries, so it cannot prevent the subsequent condensation.
                 new_count = 0

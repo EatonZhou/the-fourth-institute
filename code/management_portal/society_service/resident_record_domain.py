@@ -11,6 +11,7 @@ from . import (
     resident_execution_work,
     resident_lineage,
     resident_state,
+    resident_storage,
 )
 from pathlib import Path
 from typing import Any, Mapping
@@ -149,7 +150,7 @@ def canonical_derived_resident_record(
         if field not in payload and field in anchor:
             payload[field] = copy.deepcopy(anchor[field])
     payload.update({
-        "schema": resident_catalog.RESIDENT_RECORD_SCHEMA,
+        "schema": resident_storage.RESIDENT_RECORD_SCHEMA,
         "resident_id": resident_lineage.resident_id(resident),
         "lineage_id": resident_lineage.lineage_id(anchor),
         "folder_schema": resident_domain_common.LINEAGE_FOLDER_SCHEMA_VERSION,
@@ -279,7 +280,7 @@ def validated_resident_record_payload(
 ) -> dict[str, Any]:
     payload = copy.deepcopy(dict(record))
     payload.pop("intake_state", None)
-    payload["schema"] = resident_catalog.RESIDENT_RECORD_SCHEMA
+    payload["schema"] = resident_storage.RESIDENT_RECORD_SCHEMA
     resident_catalog.get_catalog().validate_record(payload)
     return payload
 

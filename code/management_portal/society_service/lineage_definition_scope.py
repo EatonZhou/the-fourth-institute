@@ -8,6 +8,8 @@ from typing import Any
 
 from management_portal.hatg.contracts import invalid
 
+from . import lineage_aggregate
+
 # These instructions formerly inferred their source solely from an object ID.
 SOURCE_ARGUMENTS = {
     "ForkResident": ("source_resident_id",),
@@ -72,8 +74,6 @@ def guard_source_scope(name, handler):
 
     @wraps(handler)
     def guarded(inv):
-        from .isa.common import domain
-
         lineage_id = str(inv.argument("lineage_id") or "")
         if not lineage_id:
             raise invalid("lineage_id 必填")
@@ -86,7 +86,7 @@ def guard_source_scope(name, handler):
                 ids.add(value)
         scope = _Scope(lineage_id, frozenset(ids))
         # Avoid external work on an invalid source; the commit checks again.
-        current = domain()._read_lineage_state(lineage_id)
+        current = lineage_aggregate.read_lineage_state(lineage_id)
         if name == "DeleteResident":
             # A retry may finish cleanup of an already deleted Resident. Its
             # immutable tombstone still carries the original Lineage.

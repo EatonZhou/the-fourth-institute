@@ -92,7 +92,7 @@ def _round(resident_id: str, *, state: str = "cancelled", infos: tuple = (), tex
     store.begin_execution(execution_id=job["execution_id"], agent_id=resident_id, actor_ref=ACTOR,
                           provider=resident_backend.execution_provider(record), started_at=datetime.now(timezone.utc).isoformat())
     execution_inputs.attach(store, job["execution_id"], [{"message_id": message_id, "role": "primary", "accepted_at": resident_domain_common.now_iso()}])
-    resident_input_checkpoints.retain_input_checkpoint(record, job, carried)
+    resident_execution_work.retain_input_checkpoint(record, job, carried)
     repository.set_input_state(resident_id, message_id, "running")
     if state != "running":
         store.finish_execution(job["execution_id"], status=state, finished_at=resident_domain_common.now_iso())
@@ -253,7 +253,7 @@ def test_a_stopped_group_goes_back_with_its_members(team):
     store = get_agent_data_store()
     store.begin_execution(execution_id="execution-g", agent_id=resident_id, actor_ref=ACTOR, provider=resident_backend.execution_provider(record), started_at=resident_domain_common.now_iso())
     execution_inputs.attach(store, "execution-g", [{"message_id": group_id, "role": "primary", "accepted_at": resident_domain_common.now_iso()}])
-    resident_input_checkpoints.retain_input_checkpoint(record, {**group_item, "execution_id": "execution-g"}, [])
+    resident_execution_work.retain_input_checkpoint(record, {**group_item, "execution_id": "execution-g"}, [])
     store.finish_execution("execution-g", status="cancelled")
     job["queue"] = []
     resident_execution_work.write(record, job)
@@ -312,7 +312,7 @@ def test_the_mailbox_lists_what_waits_what_runs_and_the_recent_rounds(team, monk
     running_info = _info(resident_id, STEWARD, "随当前一轮送达")
     _, carried = resident_held_infos.attach(record, "第 0 条")
     resident_held_infos.consume(record, carried, request_message_id=head)
-    resident_input_checkpoints.retain_input_checkpoint(record, resident_execution_work.read(record), carried)
+    resident_execution_work.retain_input_checkpoint(record, resident_execution_work.read(record), carried)
     job = resident_execution_work.read(record)
     job["submitted_at"] = resident_domain_common.now_iso()
     get_agent_data_store().begin_execution(execution_id=job["execution_id"], agent_id=resident_id, actor_ref=ACTOR,
@@ -350,7 +350,7 @@ def test_rounds_keep_the_last_ten_and_drop_what_completed_rounds_no_longer_need(
     for index in range(12):
         _round(resident_id, state="completed" if index % 2 else "failed", text=f"第 {index} 轮")
     compact = {'execution_id': "job_compact", "user_message_id": "msg_" + uuid.uuid4().hex, 'operation': "backend_compact"}
-    resident_input_checkpoints.retain_input_checkpoint(_record(resident_id), compact, [])
+    resident_execution_work.retain_input_checkpoint(_record(resident_id), compact, [])
 
     recorded = resident_input_checkpoints.checkpoints(_record(resident_id))
 

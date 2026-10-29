@@ -14,6 +14,7 @@ from management_portal.society_service import lineage_domain, lineage_primitives
 from management_portal.society_service import resident_lifecycle_domain
 from management_portal.society_service import resident_session_backend_domain
 from management_portal.society_service.resident_conversation_stream import protocol_message
+from management_portal.society_service import lineage_aggregate
 from tests.cases.isa_test_support import isolated_instruction_store, ok, publish_test_members, run  # noqa: F401 - fixture
 from tests.cases.model_api_test_support import DEEPSEEK_PRIMARY, register_apis
 from tests.cases.test_resident_conversation_boundaries import repository
@@ -90,7 +91,7 @@ def test_disabled_user_loses_lineage_authority_contracts(monkeypatch, subtests, 
         with monkeypatch.context() as monkeypatch:
             event = lineage_primitives.make_event('manual.triggered')
             owner_checks = []
-            monkeypatch.setattr(lineage_domain, '_ensure_manager', lambda *args: owner_checks.append(args))
+            monkeypatch.setattr(lineage_aggregate, 'ensure_manager', lambda *args: owner_checks.append(args))
             with pytest.raises(PermissionError, match='explicit reissue'):
                 lineage_domain._resume_program_execution_principal('lineage_aaaaaaaaaaaa', event, SENDER)
             assert owner_checks == []

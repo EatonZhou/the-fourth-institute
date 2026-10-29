@@ -11,6 +11,8 @@ from management_portal.resource_index_backend import IndexStore, ResourceIndexSe
 from management_portal.resources.service import ResourceService
 from tests.cases.permission_test_support import Fact, permissions  # noqa: F401
 
+from management_portal.society_service import lineage_aggregate
+
 L = "lineage_111111111111"
 R = "resident_111111111111"
 D = "decision_111111111111"
@@ -61,9 +63,9 @@ def test_direct_resource_read_hides_denied_knowledge(resources):
 
 def test_navigation_does_not_reinsert_hidden_lineages(resources, monkeypatch):
     """导航只列出可读项目，不能因原始 Lineage 定义重新暴露被拒绝项目"""
-    from management_portal.society_service import lineage_domain, principal_hierarchy_domain, resource_client
+    from management_portal.society_service import principal_hierarchy_domain, resource_client
     definitions = [{"lineage_id": L, "title": "Hidden", "project_id": "Hidden"}]
-    monkeypatch.setattr(lineage_domain, "_lineage_catalog_store", lambda: SimpleNamespace(listing_records=lambda: definitions))
+    monkeypatch.setattr(lineage_aggregate, "lineage_catalog_store", lambda: SimpleNamespace(listing_records=lambda: definitions))
     monkeypatch.setattr(resource_client, "get_resource_service", lambda: resources)
     result = principal_hierarchy_domain.navigation("intern")
     assert [row["project_id"] for row in result["projects"]] == ["Allowed"]

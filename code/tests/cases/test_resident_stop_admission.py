@@ -15,6 +15,7 @@ from management_portal.society_service import (
     lineage_message_events,
     resident_catalog,
     resident_conversation_stream,
+    resident_delivery_storage,
     resident_delivery_work,
     resident_execution_domain,
     resident_execution_work,
@@ -195,7 +196,7 @@ def test_failed_stop_publication_rolls_back_intent_and_emits_no_control(running,
     rid = record['resident_id']
     def reject_publication(*args):
         raise RuntimeError('outbox write failed')
-    monkeypatch.setattr(resident_delivery_work, 'enqueue_state', reject_publication)
+    monkeypatch.setattr(resident_delivery_storage, 'enqueue_state', reject_publication)
     with pytest.raises(RuntimeError, match='outbox write failed'):
         resident_protocol.cancel_resident_input(rid, 'CASE-A', MID)
     assert not resident_execution_work.read(record).get('stop_requested_at')

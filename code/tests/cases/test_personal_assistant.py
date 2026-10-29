@@ -21,7 +21,7 @@ from tests.cases.test_personal_ama_provisioning import ui_state  # noqa: F401
 @pytest.fixture
 def personal(future_creation_store, charters):
     ama = principal_hierarchy_domain.ensure_personal_ama("newcomer", "newcomer")
-    assistant = personal_assistant.ensure("newcomer", ama["resident_id"], "newcomer")
+    assistant = principal_hierarchy_domain.ensure_personal_assistant("newcomer", ama["resident_id"], "newcomer")
     return ama, assistant
 
 
@@ -42,7 +42,7 @@ def test_personal_family_can_precede_first_ai_account(future_creation_store, mon
     monkeypatch.setattr(personal_ama, "_DESCRIPTORS", SimpleNamespace(get=lambda rid:
         resource_client._resident_resource_projection(resident_catalog.get_catalog().get(rid))["descriptor"]))
     ama = principal_hierarchy_domain.ensure_personal_ama("newcomer", "newcomer")
-    assistant = personal_assistant.ensure("newcomer", ama["resident_id"], "newcomer")
+    assistant = principal_hierarchy_domain.ensure_personal_assistant("newcomer", ama["resident_id"], "newcomer")
     graph = graphs.get_lineage(assistant["lineage_id"], "newcomer")
     family = graph["function_blocks"][0]["family"]
     from management_portal.society_service import resident_execution_work
@@ -58,7 +58,7 @@ def test_personal_family_can_precede_first_ai_account(future_creation_store, mon
         settings = resident_runtime_domain.read_resident_runtime_settings(record)
         assert settings["backend_role"] == "default"
         assert not settings.get("model")
-    assert personal_assistant.ensure("newcomer", ama["resident_id"], "newcomer") == assistant
+    assert principal_hierarchy_domain.ensure_personal_assistant("newcomer", ama["resident_id"], "newcomer") == assistant
     # Background recovery must accept the same unconfigured installation as
     # registration, without abandoning other Residents' accepted work.
     from management_portal.society_service import family_quota, resident_domain
@@ -113,8 +113,7 @@ def test_personal_family_can_precede_first_ai_account(future_creation_store, mon
     assert not family_quota.role_migration(steward).get("account_wait")
     # The worker binds the previously unconfigured role before quota admission.
     # The API identifier in the Resident is a provider, not a native account route.
-    from management_portal.society_service import resident_default_backend
-    resident_default_backend.bind_before_execution(steward, "newcomer")
+    resident_execution_domain.bind_before_execution(steward, "newcomer")
     bound = resident_catalog.get_catalog().get(family["steward"])
     assert not family_quota.ensure_role_reserve(bound, accounts)
     assert not family_quota.role_migration(bound).get("account_wait")
@@ -139,7 +138,7 @@ def test_personal_initialization_is_private_and_resumable(personal):
         assert record["personal_owner_id"] == "newcomer"
         assert resident_access.resident_visible_to_actor(record, "newcomer")
         assert not resident_access.resident_visible_to_actor(record, "CASE-A")
-    again = personal_assistant.ensure("newcomer", ama["resident_id"], "newcomer")
+    again = principal_hierarchy_domain.ensure_personal_assistant("newcomer", ama["resident_id"], "newcomer")
     assert again == assistant
     assert graphs.get_lineage(assistant["lineage_id"], "newcomer")["revision"] == graph["revision"]
     assert principal_hierarchy_domain.ensure_personal_ama("newcomer", "newcomer")["resident_id"] == ama["resident_id"]
@@ -157,7 +156,7 @@ def test_custom_title_and_history_branch_remain_outside_family(future_creation_s
         body["title"] = "My own title"
         return {}
     graphs.commit_lineage_edit(lineage_id, "newcomer", rename, reason="customize")
-    assistant = personal_assistant.ensure("newcomer", ama["resident_id"], "newcomer")
+    assistant = principal_hierarchy_domain.ensure_personal_assistant("newcomer", ama["resident_id"], "newcomer")
     graph = graphs.get_lineage(lineage_id, "newcomer")
     assert graph["title"] == "My own title"
     assert branch not in graph["function_blocks"][0]["family"]["members"]
@@ -176,7 +175,7 @@ def test_history_pages_preserve_ids_and_quotes_exclude_later_direct_chat(future_
     """历史分页保留消息身份，引用回交 AMA，迁移后直接对话不投影"""
     ama = principal_hierarchy_domain.ensure_personal_ama("newcomer", "newcomer")
     old = [_append(ama["resident_id"], i, role="agent" if i % 2 == 0 else "user") for i in range(1, 7)]
-    assistant = personal_assistant.ensure("newcomer", ama["resident_id"], "newcomer")
+    assistant = principal_hierarchy_domain.ensure_personal_assistant("newcomer", ama["resident_id"], "newcomer")
     facade = resident_catalog.get_catalog().get(assistant["resident_id"])
     later = _append(ama["resident_id"], 8, text="must stay private to direct AMA chat")
     page = resident_protocol.get_resident_conversation_snapshot(facade["resident_id"], "newcomer", history_limit=2)
@@ -246,8 +245,8 @@ def test_retry_after_partial_role_creation_reuses_roles(future_creation_store, c
         return result
     monkeypatch.setattr(graphs, "create_lineage_resident", interrupted)
     with pytest.raises(RuntimeError, match="interrupted"):
-        personal_assistant.ensure("newcomer", ama["resident_id"], "newcomer")
-    result = personal_assistant.ensure("newcomer", ama["resident_id"], "newcomer")
+        principal_hierarchy_domain.ensure_personal_assistant("newcomer", ama["resident_id"], "newcomer")
+    result = principal_hierarchy_domain.ensure_personal_assistant("newcomer", ama["resident_id"], "newcomer")
     assert created[0] == created[2] == result["resident_id"]
     graph = graphs.get_lineage(ama["lineage_id"], "newcomer")
     assert len(graph["nodes"]) == 4
@@ -271,7 +270,7 @@ def test_preference_updates_survive_login_and_router_reads_them(personal):
     key = personal_assistant.preferences_key(assistant["resident_id"])
     preference = {"preferences": [{"topic": "代码", "resident_id": "resident_ffffffffffff"}], "my_teams": []}
     lineage_graph_state.update_cell(assistant["lineage_id"], key, preference)
-    personal_assistant.ensure("newcomer", ama["resident_id"], "newcomer")
+    principal_hierarchy_domain.ensure_personal_assistant("newcomer", ama["resident_id"], "newcomer")
     assert lineage_graph_state.read_cell(assistant["lineage_id"], key)["value"] == preference
     inputs = {"arguments": {"members": MEMBERS, "router": ROUTER, "lineage_id": assistant["lineage_id"],
                              "preferences_key": key, "corrections_key": "corrections"},

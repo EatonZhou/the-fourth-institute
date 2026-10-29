@@ -240,14 +240,14 @@ def test_lineage_reads_require_an_explicit_actor() -> None:
     """Lineage 读取要求显式传入调用者身份"""
     root = Path(__file__).resolve().parents[2]
     source = (
-        root / "management_portal/society_service/lineage_domain.py"
+        root / "management_portal/society_service/lineage_aggregate.py"
     ).read_text(encoding="utf-8")
     tree = ast.parse(source)
     definition = next(
         node
         for node in tree.body
         if isinstance(node, ast.FunctionDef)
-        and node.name == "_read_lineage"
+        and node.name == "read_lineage"
     )
     actor_index = [
         argument.arg for argument in definition.args.kwonlyargs
@@ -267,7 +267,7 @@ def test_lineage_reads_require_an_explicit_actor() -> None:
                 if isinstance(node.func, ast.Attribute)
                 else ""
             )
-            if function_name == "_read_lineage" and not any(
+            if function_name == "read_lineage" and not any(
                 keyword.arg == "actor" for keyword in node.keywords
             ):
                 missing_actor.append(

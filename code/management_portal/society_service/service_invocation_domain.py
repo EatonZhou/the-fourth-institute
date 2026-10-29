@@ -11,9 +11,10 @@ from management_portal.service_invocation_contract import (
     plan_fingerprint, plan_fingerprint_matches, validate_manifest,
 )
 
-from . import lineage_domain, resident_catalog, resident_protocol, resident_input_scope
+from . import resident_catalog, resident_protocol, resident_input_scope
 from .domain_ports import resource_port
 from .service_invocation_store import TERMINAL_STATUSES, ServiceInvocationConflict, get_store as _store
+from . import lineage_aggregate
 
 
 def _job_identity(job, surface):
@@ -54,7 +55,7 @@ def _authorize_new(job, binding):
     if (descriptor.get("resource_id") != lineage_id or descriptor.get("exists") is False
             or _unavailable(descriptor) or _unavailable(attributes)):
         raise PermissionError("registered search service Lineage is unavailable")
-    lineage = lineage_domain._read_lineage_state(lineage_id)
+    lineage = lineage_aggregate.read_lineage_state(lineage_id)
     resident = resident_catalog.get_catalog().get(resident_id)
     nodes = [node for node in lineage.get("nodes", []) if node.get("id") == resident_id]
     if (_unavailable(lineage) or _unavailable(resident) or resident.get("lineage_id") != lineage_id

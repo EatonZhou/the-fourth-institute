@@ -7,6 +7,12 @@ from . import identity_contract, lineage_state_domains
 
 
 LINEAGE_DEFINITION_SCHEMA = "lineage-folder-v3"
+PROGRAM_SCHEMA = "tfi.hatg-program.v2"
+EDGE_FAMILIES = {
+    "inheritance": "context", "absorption": "context",
+    "handoff": "workspace",
+    "candidate_fork": "context",
+}
 LINEAGE_MEMBERSHIP_VALUES = frozenset({"formal", "personal"})
 LINEAGE_DEFINITION_FIELDS = frozenset({
     "schema",

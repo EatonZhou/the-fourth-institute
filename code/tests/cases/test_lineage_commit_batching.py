@@ -7,6 +7,7 @@ import pytest
 
 from management_portal.society_service import graph_storage, lineage_domain, resident_domain
 from management_portal.society_service.state_store import get_lineage_data_store
+from management_portal.society_service import lineage_aggregate
 from tests.cases.test_resident_folder_creation_contract import (  # noqa: F401
     future_creation_store, _new_session_payload,
 )
@@ -18,7 +19,7 @@ def test_definition_resolves_members_once_including_prepared_identity(future_cre
     child = lineage_domain.create_lineage_resident(
         parent["lineage_id"], _new_session_payload("Existing member"), "sample_admin",
     )["resident"]
-    before = lineage_domain._read_lineage_state(parent["lineage_id"])
+    before = lineage_aggregate.read_lineage_state(parent["lineage_id"])
     candidate = copy.deepcopy(before)
     pending = "resident_abcdefabcdef"
     candidate["nodes"].append({"id": pending, "title": "Prepared identity"})

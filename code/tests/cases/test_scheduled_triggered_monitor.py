@@ -14,6 +14,8 @@ import pytest
 from management_portal import scheduled_triggered_monitor as monitor
 from management_portal.hatg.contracts import InstructionError
 
+from management_portal.society_service import lineage_aggregate
+
 
 RESIDENT = "resident_0123456789ab"
 LINEAGE = "lineage_0123456789ab"
@@ -423,8 +425,9 @@ def test_monitor_definition_authorizes_before_returning_detached_minimal_fields(
     def forbidden(*args, **kwargs):
         raise AssertionError("full workbench view must not be assembled")
 
-    monkeypatch.setattr(domain, "_read_lineage", read)
+    monkeypatch.setattr(lineage_aggregate, "read_lineage", read)
     monkeypatch.setattr(domain, "_actor_can_manage_lineage", authorize)
+    monkeypatch.setattr(lineage_aggregate, "_actor_can_manage_lineage", authorize)
     monkeypatch.setattr(domain, "_current_lineage_view_for_read", forbidden)
     if not allowed:
         with pytest.raises(PermissionError):
@@ -452,7 +455,7 @@ def test_monitor_definition_preserves_deletion_guard_and_read_rpc_contract(monke
     from management_portal.society_service.contracts import operation_contract
     from management_portal.society_service.errors import LineageConflictError
 
-    monkeypatch.setattr(domain, "_lineage_deletion_intent", lambda lineage_id: {"phase": "deleting"})
+    monkeypatch.setattr(lineage_aggregate, "lineage_deletion_intent", lambda lineage_id: {"phase": "deleting"})
     with pytest.raises(LineageConflictError):
         domain.get_lineage_monitor_definition(LINEAGE, "viewer")
     # Monitors read definitions through the batch RPC, which checks each Lineage on its own.

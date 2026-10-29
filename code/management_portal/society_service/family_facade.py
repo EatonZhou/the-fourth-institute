@@ -22,7 +22,7 @@ from typing import Any, Mapping
 from management_common.actor_identity import canonical_actor_id, same_actor
 from management_portal.execution.chat_position_index import RELAYED_COPY_PATTERN
 
-from . import family_storage, resident_conversation_stream, resident_lineage, resident_mailbox
+from . import family_familize, family_storage, resident_conversation_stream, resident_lineage, resident_mailbox
 from .input_progress import event_input_ids, input_progress
 from .domain_ports import resident_domain_port
 from .state_store import get_lineage_data_store
@@ -303,6 +303,26 @@ def relay_delegates(source: tuple[str, str] | None, member_id: str) -> bool:
     return is_relay_target(facade, member_id)
 
 
+def families_around(resident_id: str) -> list[dict[str, Any]]:
+    with get_lineage_data_store().database.read() as connection:
+        return family_storage.families_around(connection, resident_id, max_hops=MAX_RELAY_HOPS)
+
+
+def identities_of(resident_id: str) -> list[str]:
+    """A Resident and the facades of the Families around it, innermost first."""
+
+    return [resident_id, *(family["facade_id"] for family in families_around(resident_id))]
+
+
+def speaks_for(facade_id: str, member_id: str) -> bool:
+    """Whether ``facade_id`` is the facade of a Family that holds ``member_id``."""
+
+    member_id = canonical_actor_id(member_id)
+    return bool(facade_id and member_id) and any(
+        family["facade_id"] == facade_id for family in families_around(member_id)
+    )
+
+
 def relay_sender(source: tuple[str, str] | None, message: Mapping[str, Any] | None) -> str:
     """The sender whose access a relay's attachments and references are read with; empty if none.
 
@@ -326,8 +346,6 @@ def relay_sender(source: tuple[str, str] | None, message: Mapping[str, Any] | No
     initiator = origin.get("initiated_by") if isinstance(origin.get("initiated_by"), Mapping) else {}
     member = str(initiator.get("id") or "") if initiator.get("kind") == "resident" else ""
     if member and member != author:
-        from .outward_messages import speaks_for
-
         if speaks_for(author, member):
             return member
     return author
@@ -384,8 +402,8 @@ def show_request(facade_id: str, message_id: str) -> None:
     repository = resident_conversation_stream.get_repository()
     message = repository.message(facade_id, message_id)
     if message is not None:
-        from . import family_chat_preferences, resident_record_domain
-        family_chat_preferences.capture(resident_record_domain.find_resident(facade_id), message)
+        from . import resident_record_domain
+        routing_snapshot(resident_record_domain.find_resident(facade_id), message)
     if message is None or message.get("activated_at"):
         return
     # The public message leaves out business_ref; a nested facade's message
@@ -1018,12 +1036,10 @@ def _quoted_owner(facade: Mapping[str, Any], quoted_id: str) -> str:
         # A member reply shown here goes back to the member of this Family that took its request.
         found = relayed_reply(facade, quoted_id)
         return str(found["member_id"]) if found else ""
-    return _outward_quote_owner(facade, stored)
+    return outward_quote_owner(facade, stored)
 
 
-def _outward_quote_owner(facade: Mapping[str, Any], stored: Mapping[str, Any]) -> str:
-    from .outward_messages import identities_of
-
+def outward_quote_owner(facade: Mapping[str, Any], stored: Mapping[str, Any]) -> str:
     initiator = (stored.get("origin") or {}).get("initiated_by") or {}
     if stored.get("role") != "agent" or not stored.get("recipients") or initiator.get("kind") != "resident":
         return ""
@@ -1071,7 +1087,7 @@ def quoted_member(facade: Mapping[str, Any], message: Mapping[str, Any] | None) 
             source_quote = str(message_quote(original).get("message_id") or "")
             outward = repository.message(holder, source_quote) if source_quote else None
             if outward:
-                member_id = _outward_quote_owner(facade, outward)
+                member_id = outward_quote_owner(facade, outward)
                 if member_id:
                     break
     if not member_id or (member_id not in family_member_ids(facade) and member_id != family_steward_id(facade)):
@@ -1126,6 +1142,30 @@ def continued_member(facade: Mapping[str, Any], message: Mapping[str, Any] | Non
     return ""
 
 
+def routing_snapshot(facade, message):
+    """The author's M/S policy for a request, frozen once when admitted, before any event or Router model runs."""
+    from . import family_chat_storage
+    from .state_store import get_lineage_data_store
+    return get_lineage_data_store().database.write(lambda c: family_chat_storage.capture(
+        c, facade['resident_id'], message.get('author_id', ''), message['message_id']))
+
+
+def direct_member(facade, message):
+    """The member a request goes to without the Router, under its author's M/S snapshot; "" for the Router."""
+    from management_common.async_questions import answered_set
+    policy = routing_snapshot(facade, message)
+    quoted = quoted_member(facade, message)
+    # Answer cards keep their original execution's reply path.
+    if quoted and answered_set(message):
+        return quoted
+    if policy['solo_member_id']:
+        return policy['solo_member_id']  # Invalid/departed Solo fails; never silently route elsewhere.
+    if quoted and quoted not in policy['muted_member_ids']:
+        return quoted
+    continued = continued_member(facade, message)
+    return continued if continued not in policy['muted_member_ids'] else ''
+
+
 def _moment(value: object) -> datetime | None:
     try:
         moment = datetime.fromisoformat(str(value or "").replace("Z", "+00:00"))
@@ -1150,32 +1190,96 @@ def _can_take(member_id: str, message: Mapping[str, Any]) -> bool:
     return not (("image" in kinds and not capabilities.supports_media) or ("file" in kinds and not capabilities.local_tools))
 
 
-def relay_quote(source: tuple[str, str] | None, member_id: str) -> dict[str, str]:
-    """The quote a relayed copy carries: the facade message's, pointed at the member's own Conversation.
+def facade_for_arrival_call(lineage, component_id, instruction, arguments, event, caller, *, lineage_id):
+    """Only the generated Router may route its verified arrival as its facade.
 
-    Where the member's Conversation has the quoted message - the member's own
-    reply, or its copy of the request it took - the copy quotes that message;
-    otherwise it keeps only the author and the excerpt.
+    This is a single unchanged-delivery capability, not the external sender's
+    Project permission. The relay owner still checks cancellation, membership,
+    intake, quota and the original author's attachment grants.
     """
-
-    from management_common.principal import message_quote
-
-    from .message_quotes import quote_of
     from . import resident_record_domain
 
-    if source is None:
-        return {}
-    facade_id, facade_message_id = source
-    stored = resident_conversation_stream.get_repository().message(facade_id, facade_message_id)
-    quote = message_quote(stored) if stored else {}
-    if not quote:
-        return {}
-    excerpt = {"author_id": quote["author_id"], "text": quote["text"]}
-    quoted_id = quote.get("message_id", "")
-    facade, member = resident_record_domain.find_resident(facade_id), resident_record_domain.find_resident(member_id)
-    if not quoted_id or not facade or not member:
-        return excerpt
-    link = relay_links(facade).get(quoted_id) or {}
-    if link.get("resident_id") == member_id and link.get("message_id"):
-        quoted_id = str(link["message_id"])
-    return quote_of(member, quoted_id) or excerpt
+    if event is None or event.type != "resident.message_received":
+        return ""
+    relaying = instruction == "RelayFamilyMessage"
+    if relaying:
+        if set(arguments) != {"resident_id", "message_id", "member_id"}:
+            return ""  # No reassign, review overrides or arbitrary delivery fields.
+        message_id = arguments["message_id"]
+    else:
+        if (instruction != "DispatchFamilyTask" or arguments.get("trigger") != "route"
+                or set(arguments) != {"resident_id", "source_message_id", "trigger"}):
+            return ""
+        message_id = arguments["source_message_id"]
+    block = family_familize.component_family(lineage, component_id)
+    if not block or not any(e["id"] == component_id and e.get("key") == "router"
+                            for e in block.get("elements") or []):
+        return ""
+    facade_id = family_familize.role_of(block, "facade")
+    payload = event.payload
+    if (event.subject_resident_id != facade_id or payload.get("resident_id") != facade_id
+            or arguments.get("resident_id") != facade_id
+            or message_id != payload.get("message_id")):
+        return ""
+    facade = resident_record_domain.find_resident(facade_id)
+    if (not is_facade(facade) or facade.get("deleted_at")
+            or facade.get("lineage_id") != lineage_id
+            or facade["family"]["family_id"] != block["id"]):
+        return ""
+    repository = resident_conversation_stream.get_repository()
+    message = repository.message(facade_id, message_id)
+    if (not message or message.get("role") != "user"
+            or not same_actor(message.get("author_id"), caller)):
+        return ""
+    direct = direct_member(facade, message)
+    if relaying and payload.get("direct_member_id"):
+        return facade_id if direct == arguments["member_id"] == payload["direct_member_id"] else ""
+    quoted = quoted_member(facade, message)
+    target = quoted if quoted == direct else ""
+    if relaying:
+        if target:
+            return facade_id if target == arguments["member_id"] == payload.get("quoted_member_id") else ""
+        # Recomputed from stored relays, never taken from the payload alone.
+        continued = continued_member(facade, message)
+        return facade_id if continued and continued == arguments["member_id"] == payload.get("continued_member_id") else ""
+    # Asking this Family's Router to choose is internal maintenance of an
+    # accepted request; it gives the sender no right to dispatch other tasks.
+    # A continuing request may still be asked about: it only takes longer.
+    return facade_id if (not target and not payload.get("quoted_member_id")
+                         and repository.input_state(facade_id, message_id).get("state") == "queued") else ""
+
+
+def announce_member_retitle(resident_id: str, previous: str, title: str, actor: str) -> bool:
+    """A member's new title names the work it gets from now on; its steward writes that down.
+
+    The Router ranks a member's title above what its summary says it has
+    done, so renaming a member is how an owner assigns it a duty.  The
+    steward hears the rename from the facade and brings the routing guide
+    and the memory roster in line; its own renames need no note to itself.
+    Returns whether the steward was told.
+    """
+
+    record = family_familize.find_record(resident_id)
+    lineage_id = resident_lineage.lineage_id(record) if record else ""
+    if not lineage_id or not title or title == previous:
+        return False
+    try:
+        definition = get_lineage_data_store().lineage_definition(lineage_id)
+    except KeyError:
+        return False
+    renamer_id = canonical_actor_id(actor)
+    for block in family_familize.family_blocks(definition):
+        if resident_id not in family_familize.member_ids(block):
+            continue
+        steward_id = family_familize.role_of(block, "steward")
+        if not steward_id or steward_id == renamer_id:
+            return False
+        renamer = str(family_familize.find_record(renamer_id).get("title") or "") if renamer_id.startswith("resident_") else ""
+        tell_steward(family_familize.role_of(block, "facade"), steward_id, actor, (
+            f"结构信号：{f'{renamer}（{renamer_id}）' if renamer else renamer_id} 把成员「{previous or resident_id}」"
+            f"（{resident_id}）的标题改为「{title}」。成员标题代表明确分工，Router 下次读取当前标题；"
+            "请核对受影响成员的职责和协作关系，必要时挂一条下一轮背景更新，不撰写重复的路由指引。"
+            + ("owner 改过的标题以 owner 为准，不要改回。" if not renamer_id.startswith("resident_") else "")
+        ))
+        return True
+    return False

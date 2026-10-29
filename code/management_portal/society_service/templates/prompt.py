@@ -2,6 +2,7 @@
 
 from .registry import TemplateError, result
 from .values import render
+from .. import lineage_aggregate
 
 
 def deliver(resident_id, message, actor, policy="queue"):
@@ -71,11 +72,9 @@ class PromptKind:
         }
 
     def apply(self, ctx):
-        from .. import lineage_domain
-
         nodes = {
             node["id"]: node
-            for node in lineage_domain._read_lineage(ctx.lineage_id, actor=ctx.actor)[
+            for node in lineage_aggregate.read_lineage(ctx.lineage_id, actor=ctx.actor)[
                 "nodes"
             ]
         }

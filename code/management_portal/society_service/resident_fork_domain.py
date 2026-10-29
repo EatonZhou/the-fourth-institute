@@ -12,6 +12,7 @@ from . import (
     resident_execution_work,
     resident_lineage,
     resident_store,
+    resident_storage,
     resident_runtime_domain,
     resident_lifecycle_domain,
     resident_record_domain,
@@ -88,7 +89,7 @@ def _ensure_derived_resident_folder(
     )
     resident_payload = resident_record_domain.canonical_derived_resident_record(record, resident)
     resident_payload = copy.deepcopy(dict(resident_payload))
-    resident_payload["schema"] = resident_catalog.RESIDENT_RECORD_SCHEMA
+    resident_payload["schema"] = resident_storage.RESIDENT_RECORD_SCHEMA
     resident_record_domain.save_resident_record(resident_payload)
     resident_store.replace_file_text(
         resident_folder / resident_domain_common.RESIDENT_WORKSPACES_FILE,

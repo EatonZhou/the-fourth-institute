@@ -9,7 +9,8 @@ from typing import Any
 from management_common.site_registry import rewrite_shared_path
 from management_portal import project_registry
 
-from . import resident_store, resource_client
+from . import project_folders, resident_store, resource_client
+from . import lineage_aggregate
 
 
 PROJECTS_ROOT = (portal_path("share_root") / "Projects")
@@ -29,56 +30,15 @@ def _now_iso() -> str:
     )
 
 
-def project_root_from_registry(project_id: str) -> Path | None:
-    try:
-        return project_record_for_id(project_id)[1]
-    except KeyError:
-        return None
-
-
-def project_root_for_id(project_id: str) -> Path:
-    root = project_root_from_registry(project_id)
-    if root is None or not root.is_dir():
-        raise ValueError(f"项目不存在: {project_id}")
-    return root
-
-
 
 
 def validate_existing_project_selection(payload: dict[str, Any]) -> None:
     project_id = str(payload.get("project_id") or "").strip()
     if not project_id:
         raise ValueError("Lineage Workbench 新增 Session 需要选择已有 Project")
-    project_root_for_id(project_id)
+    project_folders.project_root_for_id(project_id)
 
 
-
-
-def project_record_for_id(project_id: str) -> tuple[dict[str, Any], Path]:
-    """Resolve only registered identity/path pairs through the Project registry."""
-    return _project_record_from_document(project_registry.load(), project_id)
-
-
-def _project_record_from_document(
-    document: dict[str, Any], project_id: str
-) -> tuple[dict[str, Any], Path]:
-    target = str(project_id or "").strip()
-    for item in document["projects"]:
-        if not isinstance(item, dict):
-            continue
-        raw_path = str(item.get("path") or "").strip()
-        project_path = (
-            Path(rewrite_shared_path(raw_path)).expanduser().resolve(strict=False)
-            if raw_path
-            else None
-        )
-        registry_id = str(item.get("id") or "").strip()
-        if target not in {registry_id, project_path.name if project_path else ""}:
-            continue
-        if project_path is None:
-            raise ValueError(f"project path missing: {target}")
-        return dict(item), project_path
-    raise KeyError("project not found")
 
 
 def _registry_without_project(
@@ -122,11 +82,9 @@ def _append_deletion_index(entry: dict[str, Any]) -> None:
 def _project_lineage_ids(identities: set[str]) -> tuple[list[str], list[str]]:
     """Lineages of a project: (ordinary, project-level principal)."""
 
-    from . import lineage_domain
-
     ordinary: list[str] = []
     principals: list[str] = []
-    for record in lineage_domain._lineage_catalog_store().listing_records():
+    for record in lineage_aggregate.lineage_catalog_store().listing_records():
         if str(record.get("project_id") or "").strip() not in identities:
             continue
         lineage_id = str(record.get("lineage_id") or "")
@@ -143,12 +101,12 @@ def project_teams(project_ids: list[str], actor: str) -> dict[str, dict[str, Any
     User-layer Lineages are not part of it.  Each ordinary Lineage reports its
     Leader, how many members it has and how many of them are running now.
     """
-    from . import lineage_domain, principal_hierarchy
+    from . import principal_hierarchy
     from .lineage_access_policy import changeable_ids
     from .resident_protocol import read_resident_states
 
     wanted = list(dict.fromkeys(str(item or "").strip() for item in project_ids if str(item or "").strip()))
-    catalog = lineage_domain._lineage_catalog_store()
+    catalog = lineage_aggregate.lineage_catalog_store()
     rows = [row for row in catalog.listing_records()
             if row.get("project_id") in wanted and row.get("lineage_membership") != "personal"
             and (row.get(principal_hierarchy.FIELD) or {}).get("level") != "user"]
@@ -190,7 +148,7 @@ def validate_project_deletion(project_id: str, actor: str) -> dict[str, Any]:
     if not actor_id:
         raise ValueError("需要登录后删除 project")
     try:
-        record, _root = project_record_for_id(project_id)
+        record, _root = project_folders.project_record_for_id(project_id)
     except KeyError:
         if _finish_deleted_project(project_id, actor_id) is None:
             raise
@@ -230,7 +188,7 @@ def delete_project(project_id: str, actor: str) -> dict[str, Any]:
         raise ValueError("需要登录后删除 project")
     document = project_registry.load()
     try:
-        project_record, project_root = _project_record_from_document(document, project_id)
+        project_record, project_root = project_folders.project_record_from_document(document, project_id)
     except KeyError:
         finished = _finish_deleted_project(project_id, actor_id)
         if finished is None:
@@ -253,7 +211,7 @@ def delete_project(project_id: str, actor: str) -> dict[str, Any]:
             lineage_ids.append(lineage_id)
             resident_ids.extend(str(item) for item in result.get("deleted_resident_ids") or [])
         with project_registry.mutate() as document:
-            project_record, project_root = _project_record_from_document(document, project_id)
+            project_record, project_root = project_folders.project_record_from_document(document, project_id)
             project_root = _registered_deletable_root(project_record)
             entry = {
                 "schema_version": 1,

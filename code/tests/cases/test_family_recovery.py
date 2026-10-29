@@ -17,6 +17,7 @@ from management_portal.society_service import (
     resident_execution_work,
 )
 from management_portal.society_service.resident_record_domain import find_resident as _find_resident
+from management_portal.society_service import lineage_failure_notifications
 from tests.cases.isa_test_support import run
 from tests.cases.test_family_reassign import family, delivery_resident, future_creation_store  # noqa: F401
 from tests.cases.test_resident_mailbox_requeue import _round
@@ -48,7 +49,6 @@ def test_continue_preserves_the_actual_relayed_input_after_execution(family, mon
     from management_portal.execution.agent_data_projection import AgentDataProjector
     from management_portal.execution.contracts import ExecutionRequest
     from management_portal.execution.session_manager import RuntimeSession
-    from management_portal.society_service import resident_input_checkpoints
     from management_portal.society_service.domain_ports import execution_port
 
     root = _send(family, "保留真实转交封装和原始正文")
@@ -77,7 +77,7 @@ def test_continue_preserves_the_actual_relayed_input_after_execution(family, mon
                           actor_ref=job["actor"], provider="codex", started_at=now)
     execution_inputs.attach(store, job["execution_id"], [{"message_id": member_message,
                             "role": "primary", "accepted_at": now}])
-    resident_input_checkpoints.retain_input_checkpoint(record, job, [])
+    resident_execution_work.retain_input_checkpoint(record, job, [])
     repository.commit_user_message(member_id, {**original, "activated_at": now})
     projector = AgentDataProjector(store)
     projector.begin(request, RuntimeSession(mode="stateless", binding_id="", backend_session_id="relay-recovery",
@@ -338,7 +338,7 @@ def test_only_family_routing_failures_close_the_request_including_historical_pat
         path = fail(family["steward"], "event_router")
     assert repository.input_state(family["facade"], root)["state"] == "queued"
     assert family_recovery.request_status(facade, root)["state"] == "failed"
-    trigger_paths._notify_failed_path(path)
+    lineage_failure_notifications.notify_failed_path(path)
     assert repository.input_state(family["facade"], root)["state"] == "failed"
 
 

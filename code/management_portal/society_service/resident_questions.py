@@ -3,16 +3,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from management_common.async_questions import ANSWER_PART, question_set
-
-
-def answered_set(message: Mapping[str, Any] | None) -> str:
-    """The message whose question set a user message answers; "" when it answers none."""
-
-    for part in (message or {}).get("content_parts") or []:
-        if isinstance(part, Mapping) and part.get("type") == ANSWER_PART:
-            return str(part.get("source_message_id") or "").strip()
-    return ""
+from management_common.async_questions import ANSWER_PART, answered_set, question_set
 
 
 def prepare_question_answer(
@@ -66,7 +57,7 @@ def prepare_question_answer(
                 if question is not None:
                     # Resolve the original writer against the current relay's
                     # Family, not the ancestor's roster or a quote excerpt.
-                    if family_facade._outward_quote_owner(relay_facade, question) == resident_id:
+                    if family_facade.outward_quote_owner(relay_facade, question) == resident_id:
                         holder, source = ancestor[0], question
                         relayed_answer = True
                     break

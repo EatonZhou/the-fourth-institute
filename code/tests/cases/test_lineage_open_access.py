@@ -10,6 +10,7 @@ MEMBER_ID = "resident_222222222222"
 
 
 from management_portal.society_service import resident_runtime_domain
+from management_portal.society_service import lineage_aggregate
 
 class _Catalog:
     def snapshot(self):
@@ -32,7 +33,7 @@ def test_lineage_access_is_uniform_for_valid_actors_contracts(monkeypatch, subte
     """开放模式下 Lineage 访问对每个有效主体一致且包含全部成员"""
     with subtests.test(contract='test_lineage_access_contains_all_members'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
-            monkeypatch.setattr(lineage_domain, "_lineage_catalog_store", lambda: _Catalog())
+            monkeypatch.setattr(lineage_aggregate, "lineage_catalog_store", lambda: _Catalog())
 
             for actor in ("alice", "bob"):
                 visible = lineage_domain.actor_lineage_access_records(actor)
@@ -42,7 +43,7 @@ def test_lineage_access_is_uniform_for_valid_actors_contracts(monkeypatch, subte
     with subtests.test(contract='test_lineage_manager_check_accepts_valid_actors'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
 
-            lineage_domain._ensure_manager(
+            lineage_aggregate.ensure_manager(
                 {"lineage_id": LINEAGE_ID},
                 "alice",
             )

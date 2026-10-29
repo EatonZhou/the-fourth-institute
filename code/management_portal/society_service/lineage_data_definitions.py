@@ -9,9 +9,10 @@ from management_common.database_time import iso_time
 from .read_snapshot import request_cached
 from . import (
     definition_collections, family_storage, graph_storage, lineage_data_runtime, lineage_metadata_storage,
-    lineage_state_domains, program_work_storage, trigger_path_storage, wire_delivery_budget,
+    lineage_state_domains, program_work_storage, trigger_path_storage, wire_delivery_storage,
 )
 from .lineage_data_columns import now_iso_millis
+from .lineage_data_runtime import RuntimeCASConflict
 
 
 def _graph_objects(value: Mapping[str, Any]) -> dict[str, str]:
@@ -387,8 +388,6 @@ class LineageDefinitions:
         value: MutableMapping[str, Any],
         initial_runtime: Mapping[str, Any],
     ) -> None:
-        from .state_store import RuntimeCASConflict
-
         def write(connection: Any) -> None:
             deleting = connection.execute(
                 "SELECT 1 FROM lineage_deletion_operations WHERE lineage_id=%s",
@@ -422,7 +421,7 @@ class LineageDefinitions:
                 (lineage_id,),
             ).fetchall():
                 trigger_path_storage.cancel(connection, path["trigger_path_id"], at=deleted_at)
-            for table in (*program_work_storage.COLUMNS, *wire_delivery_budget.COLUMNS, "lineage_shared_state", "lineage_drafts"):
+            for table in (*program_work_storage.COLUMNS, *wire_delivery_storage.COLUMNS, "lineage_shared_state", "lineage_drafts"):
                 connection.execute(f'DELETE FROM {table} WHERE lineage_id=%s', (lineage_id,))
             self.deletions.delete(lineage_id)
             connection.execute('DELETE FROM project_lineage_entries WHERE lineage_id=%s', (lineage_id,))

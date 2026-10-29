@@ -1577,6 +1577,14 @@ def claim_pending_event(
         return deepcopy(pending)
 
 
+def hold_pending_occurrence(item: dict[str, Any], hold: dict[str, Any], at: str) -> None:
+    """Release a delivery lease into a durable hold; never admit it as a retry."""
+    item.pop("dispatch_token", None)
+    item.pop("dispatch_started_at", None)
+    item.pop("retry_at", None)
+    item["recovery_blocked"] = {**deepcopy(hold), "at": at}
+
+
 def finish_pending_event(
     lineage_id: str,
     wire_id: str,
@@ -1632,7 +1640,6 @@ def finish_pending_event(
                 matched["last_error"] = diagnostic[:1000]
             matched.pop("retry_at", None)
             if hold:
-                from .lineage_event_delivery import hold_pending_occurrence
                 hold_pending_occurrence(matched, hold, _iso_now())
             elif retry_later:
                 delay = retry_delay_seconds(int(matched.get("attempt_count") or 1))

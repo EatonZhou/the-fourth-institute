@@ -3,7 +3,7 @@ from management_portal.execution.service_settings import RETENTION_DAYS, Executi
 from management_portal.hatg.contracts import InstructionError, invalid
 from management_portal.hatg.kernel import Invocation
 
-from .. import system_workflow_switches
+from .. import component_runtime, system_workflow_switches
 
 
 def update_execution_settings(inv: Invocation) -> dict:
@@ -28,7 +28,7 @@ def update_execution_settings(inv: Invocation) -> dict:
         if type(days) is not int or not minimum <= days <= maximum:
             raise invalid(f"{name} 必须是 {minimum}–{maximum} 之间的整数天数")
     # Switches may still fail on an invalid Event binding; write retention after them.
-    settings = system_workflow_switches.update_settings(changes, inv.caller) if changes else None
+    settings = component_runtime.update_settings(changes, inv.caller) if changes else None
     if retention:
         settings = ExecutionSettings().update_retention(retention)
     reconciled = None

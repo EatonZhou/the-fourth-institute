@@ -15,6 +15,7 @@ from management_portal.society_service import (
     lineage_program_runtime,
     lineage_program_services as services,
 )
+from management_portal.society_service import lineage_aggregate
 from tests.cases import society_service_test_support as support
 from tests.cases.test_lineage_program_runtime_integration import (  # noqa: F401
     ACTOR, WORK_A, _component, _wire, _worker, runtime_store,
@@ -43,9 +44,9 @@ def test_constructed_ports_keep_domain_authorization_and_scope_lifetime(monkeypa
         calls.append(("authorize", lineage["lineage_id"], actor))
         raise denied
 
-    monkeypatch.setattr(domain, "_lineage_scope", scope)
-    monkeypatch.setattr(domain, "_read_lineage", read)
-    monkeypatch.setattr(domain, "_ensure_manager", ensure_manager)
+    monkeypatch.setattr(lineage_aggregate, "lineage_scope", scope)
+    monkeypatch.setattr(lineage_aggregate, "read_lineage", read)
+    monkeypatch.setattr(lineage_aggregate, "ensure_manager", ensure_manager)
     with pytest.raises(PermissionError) as error:
         with ports.state.lineage_scope("lineage_exact", operation="delivery.check"):
             lineage = ports.state.read_lineage("lineage_exact", actor="viewer")
@@ -106,7 +107,7 @@ def test_terminal_evidence_and_catalog_remain_in_their_owners(monkeypatch):
     assert calls == [("resident_exact", "reader")]
     for lineage_ids in (["lineage_first"], ["lineage_first", "lineage_second"]):
         catalog = SimpleNamespace(lineage_ids_for_resident=lambda resident: lineage_ids)
-        monkeypatch.setattr(domain, "_lineage_catalog_store", lambda: catalog)
+        monkeypatch.setattr(lineage_aggregate, "lineage_catalog_store", lambda: catalog)
         assert ports.directory.lineage_catalog_store() is catalog
         assert ports.directory.lineage_ids_for_resident("resident_exact") is lineage_ids
     assert not hasattr(ports.directory, "send_node_message")
@@ -121,20 +122,20 @@ def test_polling_and_observation_capture_callbacks_without_doing_work(monkeypatc
         calls.append((args, kwargs))
         return {"version": 1}
 
-    monkeypatch.setattr(domain, "_read_lineage_state", first)
-    monkeypatch.setattr(domain, "_read_lineage", first)
+    monkeypatch.setattr(lineage_aggregate, "read_lineage_state", first)
+    monkeypatch.setattr(lineage_aggregate, "read_lineage", first)
     polling = domain._program_polling_ports()
     observations = services.event_reconcile_ports(domain)
     assert calls == []
-    monkeypatch.setattr(domain, "_read_lineage_state", lambda _: {"version": 2})
-    monkeypatch.setattr(domain, "_read_lineage", lambda *args, **kwargs: {"version": 2})
+    monkeypatch.setattr(lineage_aggregate, "read_lineage_state", lambda _: {"version": 2})
+    monkeypatch.setattr(lineage_aggregate, "read_lineage", lambda *args, **kwargs: {"version": 2})
     assert polling.read_lineage_state("lineage_exact") == {"version": 1}
     assert observations.read_lineage("lineage_exact", actor="reader") == {"version": 1}
     assert domain._program_polling_ports().read_lineage_state("lineage_exact") == {"version": 2}
     assert services.event_reconcile_ports(domain).read_lineage("lineage_exact", actor="reader") == {"version": 2}
     assert observations.dispatch_program_event is domain.dispatch_lineage_program_event
-    assert observations.lineage_scope is domain._lineage_scope
-    assert polling.ensure_manager is domain._ensure_manager
+    assert observations.lineage_scope is lineage_aggregate.lineage_scope
+    assert polling.ensure_manager is lineage_aggregate.ensure_manager
 
 
 def test_public_event_and_recovery_wiring_deliver_one_persisted_input(runtime_store, monkeypatch):

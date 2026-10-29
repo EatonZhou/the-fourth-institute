@@ -11,7 +11,7 @@ from typing import Any
 from management_portal.hatg.kernel import InstructionKernel, Invocation, OwnerBinding
 
 from . import conversation, definition, execution, families, function_blocks, organization, residents, runs, shared_state, script_runs, templates, system_workflows
-from ..lineage_definition_versions import guard_definition_handler
+from .common import guard_definition_handler
 from ..lineage_definition_scope import guard_source_scope
 
 
