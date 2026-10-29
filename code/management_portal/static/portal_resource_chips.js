@@ -67,6 +67,7 @@
     "VAR",
   ]);
   const REFERENCE_HOVER_CACHE_MS = 60_000;
+  const LASTING_REFERENCE_FAILURES = new Set([403, 404, 410]);
   const referenceCache = new Map();
   const chipOptions = new WeakMap();
   const resourceLinkOptions = new WeakMap();
@@ -533,6 +534,15 @@
     ) {
       return cached.value;
     }
+    // A deleted or unreadable Resource answers the same for a while; a page
+    // that redraws its label does not ask again on every render.
+    if (
+      options.allowCached !== false
+      && cached?.error
+      && Date.now() - Number(cached.loadedAt || 0) <= maxAgeMs
+    ) {
+      throw cached.error;
+    }
     if (cached?.promise) return cached.promise;
     const promise = window.PortalAPI.get(
       `/api/resources/reference?address=${encodeURIComponent(clean)}`,
@@ -557,7 +567,11 @@
       }
       return value;
     } catch (error) {
-      referenceCache.delete(clean);
+      if (!error?.retryable && LASTING_REFERENCE_FAILURES.has(Number(error?.status))) {
+        referenceCache.set(clean, { value: null, loadedAt: Date.now(), promise: null, error });
+      } else {
+        referenceCache.delete(clean);
+      }
       throw error;
     }
   }
