@@ -184,7 +184,7 @@ def test_nested_facade_does_not_spend_model_quota_and_retires_old_review(quota_f
         from management_portal.society_service.state_store import get_lineage_data_store
         review = get_lineage_data_store().family_quota_reviews.get(
             _find_resident(f.facade)["lineage_id"], f.facade)["requests"][f.message]
-        assert review["weekly_remaining_percent"] == 9
+        assert review["quota_remaining_percent"] == 9
         assert review["quota_not_applicable"] == "family_facade"
 
 

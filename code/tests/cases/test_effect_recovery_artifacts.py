@@ -51,7 +51,7 @@ def test_large_call_restarts_without_repeating_and_preserves_business_summary(mo
 
     monkeypatch.setattr(routing, "execute", execute)
     monkeypatch.setattr(execution.lineage_program_runtime, "effect_result_projection", lambda *a, **kw: {})
-    plan = _plan('child=$(ForkResident source_resident_id="resident_source")\nCrash\noutput resident_id="${child.resident_id}" body="${child.body}"')
+    plan = _plan('child=$(ForkResident source_resident_id="${endpoint.target}")\nCrash\noutput resident_id="${child.resident_id}" body="${child.body}"')
     plan["event_sources"] = {"event_source_recovery": {"event_type": "manual.triggered"}}
     with pytest.raises(SystemExit):
         execution._execute_program_effect_component(lineage, plan, "effect_aaaaaaaaaaaa", inv, "CASE-A", host=_Host())
