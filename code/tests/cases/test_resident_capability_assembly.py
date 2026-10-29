@@ -92,16 +92,34 @@ def test_optional_absent_is_reported_without_global_failure():
     assert context.plans[0]["observations"][0]["observation"] == "missing"
 
 
-def test_recovery_reuses_snapshot_and_rejects_contract_drift():
+def test_recovery_keeps_snapshot_and_fails_only_on_configuration_change():
+    """恢复执行沿用已固定的能力快照，只有 Resident 配置变化才失败
+
+    A release that restarts the Worker mid-turn can change Portal tool
+    definitions: the HATG tool lists every instruction, so adding one
+    (ListProjects on 10-29) failed every running turn. The turn now continues
+    on the new definitions, keeps the frozen snapshot and reports the drift.
+    """
     context = Context()
     assembly.prepare(invocation((tool(),)), context)
     previous = context.plans[0]
     recovered = Context()
     assembly.prepare(invocation((tool(),), recovery_checkpoint={"capability_assembly": previous}), recovered)
     assert recovered.plans == [previous]
-    changed = HarnessTool("hatg_instruction", "changed definition", {"type": "object"}, lambda args: "")
-    with pytest.raises(ValueError, match="changed"):
-        assembly.prepare(invocation((changed,), recovery_checkpoint={"capability_assembly": previous}), Context())
+    assert not [name for name, _ in recovered.events if name == "resident_capability_contract_changed"]
+    changed = HarnessTool("hatg_instruction", "changed definition", {"type": "object"}, lambda args: "ok")
+    released = Context()
+    result = assembly.prepare(invocation((changed, tool("added_tool")),
+                                         recovery_checkpoint={"capability_assembly": previous}), released)
+    assert released.plans == [previous]
+    assert result.harness_tools[0].description == "changed definition"
+    assert dict(released.events)["resident_capability_contract_changed"] == {"reason": "execution_recovery", "changes": [
+        {"ref": "portal:added_tool", "alias": "added_tool", "change": "added"},
+        {"ref": "portal:hatg_instruction", "alias": "hatg_instruction", "change": "changed"}]}
+    reconfigured = invocation((tool(),), [{"ref": "portal:hatg_instruction", "enabled": False}],
+                              recovery_checkpoint={"capability_assembly": previous})
+    with pytest.raises(ValueError, match="configuration changed"):
+        assembly.prepare(reconfigured, Context())
 
 
 def test_revocation_lookup_failure_does_not_execute_tool(monkeypatch):

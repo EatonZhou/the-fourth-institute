@@ -65,6 +65,17 @@ def _guard(tool: Any, resident_id: str, execution_id: str, selected: bool, conte
     return replace(tool, handler=handler, expose_schema=bool(selected and tool.expose_schema))
 
 
+def _contract_changes(saved: list[dict], current: list[dict]) -> list[dict]:
+    """Tools added, removed or redefined since the snapshot, by alias."""
+    def comparable(tool: dict) -> dict:
+        return {key: value for key, value in tool.items() if key != "application"}
+    before = {tool["alias"]: comparable(tool) for tool in saved}
+    after = {tool["alias"]: comparable(tool) for tool in current}
+    return [{"ref": (after.get(alias) or before[alias])["ref"], "alias": alias,
+             "change": "added" if alias not in before else "removed" if alias not in after else "changed"}
+            for alias in sorted(before.keys() | after.keys()) if before.get(alias) != after.get(alias)]
+
+
 def prepare(invocation: Any, context: Any) -> Any:
     request = invocation.request
     resident_id = str((request.metadata or {}).get("resident_id") or "")
@@ -140,12 +151,17 @@ def prepare(invocation: Any, context: Any) -> Any:
                 "observations": observations, "mcp_dependencies": dependencies,
                 "provider_managed": "unknown"}
     if saved is not None:
+        # Only a changed Resident configuration fails recovery. A release that
+        # restarts the Worker mid-turn may change Portal tool definitions (the
+        # HATG tool lists every instruction); the turn continues on them and
+        # the frozen snapshot stays the record of what was accepted.
         if (saved.get("execution_id") != request.execution_id or
                 saved.get("selection_digest") != snapshot["selection_digest"] or
-                saved.get("mcp_dependencies", {}) != dependencies or
-                [{k: v for k, v in tool.items() if k != "application"} for tool in saved.get("tools", [])] !=
-                [{k: v for k, v in tool.items() if k != "application"} for tool in declarations]):
-            raise ValueError("Resident capability contract changed during execution recovery")
+                saved.get("mcp_dependencies", {}) != dependencies):
+            raise ValueError("Resident capability configuration changed during execution recovery")
+        changes = _contract_changes(saved.get("tools", []), declarations)
+        if changes:
+            context.emit("resident_capability_contract_changed", {"reason": "execution_recovery", "changes": changes})
         snapshot = deepcopy(saved)
     # Unlike best-effort telemetry, this checkpoint must survive acceptance.
     context.record_capability_assembly(deepcopy(snapshot))
