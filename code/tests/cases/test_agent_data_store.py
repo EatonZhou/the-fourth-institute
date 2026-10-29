@@ -3,9 +3,11 @@ from __future__ import annotations
 from tests.cases.database_test_support import connect, guard_queries
 import os
 import threading
+import time
 from contextlib import contextmanager
 from pathlib import Path
 
+import psycopg
 import pytest
 
 from management_portal.execution.agent_data_store import (
@@ -1386,3 +1388,37 @@ def test_execution_preserves_durable_provider_outcome_without_copying_context(
             status="failed",
             finished_at="2026-08-23T00:00:02Z",
         )
+
+
+def test_concurrent_first_records_of_one_provider_session_both_succeed():
+    """同一 Provider 会话的并发首次记录都成功
+
+    Worker 的事件投影与执行运行时可能同时第一次记录同一个新会话。后写入的一方等先写入的提交，
+    然后沿用已有记录，不因主键冲突丢掉这次写入。
+    """
+    store = AgentDataStore()
+    identity = dict(provider="codex", backend_route_id="zero", backend_session_id="thread_race",
+                    agent_id="resident_race", actor_ref="sample_admin")
+    second: dict[str, object] = {}
+
+    def record_second():
+        try:
+            second["session"] = store.ensure_provider_session(**identity)
+        except Exception as error:  # noqa: BLE001 - asserted below
+            second["error"] = error
+
+    # The observer has its own connection: the store's pool is held by the two writers.
+    with store.database.transaction(), psycopg.connect(store.database.dsn, autocommit=True) as observer:
+        first = store.ensure_provider_session(**identity)
+        racer = threading.Thread(target=record_second)
+        racer.start()
+        deadline = time.monotonic() + 10
+        while not observer.execute(
+            "SELECT count(*) FROM pg_stat_activity WHERE wait_event_type = 'Lock' "
+            "AND position('INSERT INTO provider_sessions' in query) = 1"
+        ).fetchone()[0]:
+            assert time.monotonic() < deadline, "the second record did not wait for the first"
+            time.sleep(0.02)
+    racer.join(10)
+    assert "error" not in second, repr(second.get("error"))
+    assert second["session"]["provider_session_ref"] == first["provider_session_ref"]

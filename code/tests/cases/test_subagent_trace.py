@@ -720,11 +720,12 @@ def test_kimi_without_subagents_has_no_agent_tools() -> None:
     # live 10-09): each prompt switches the subagent tools off.
     from unittest import mock
     from types import SimpleNamespace
+    from management_portal import kimi_account_runtime
     from management_portal.execution import backends
 
     def disabled(allow: bool) -> list[str]:
         seen: dict = {}
-        client = SimpleNamespace(run_turn=lambda **kwargs: seen.update(kwargs) or SimpleNamespace(
+        client = SimpleNamespace(home=Path("/nonexistent/kimi-account"), run_turn=lambda **kwargs: seen.update(kwargs) or SimpleNamespace(
             response="done", session_id="session-a", turn_id="prompt-1", usage={}))
         invocation = SimpleNamespace(
             request=SimpleNamespace(session=SimpleNamespace(binding_id="resident:test"), runtime_options={"tools": ["Read"], "allow_subagents": allow}, permission_profile="yolo",
@@ -735,7 +736,9 @@ def test_kimi_without_subagents_has_no_agent_tools() -> None:
         )
         context = mock.Mock()
         context.is_cancelled.return_value = False
-        with mock.patch.object(backends, "shared_kimi_client", return_value=client), \
+        # The session's route names a Kimi account; its client is the fake.
+        with mock.patch.object(kimi_account_runtime, "client_for_route", return_value=client), \
+                mock.patch.object(kimi_account_runtime, "remember_session"), \
                 mock.patch.object(backends.KimiBackend, "offer_portal_tools", return_value=([], {})), \
                 mock.patch.object(backends.KimiBackend, "settle_portal_tools", return_value=["mcp__portal__x"]), \
                 mock.patch.object(backends.KimiBackend, "record_provider_compaction"), \

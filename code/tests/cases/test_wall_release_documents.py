@@ -14,12 +14,15 @@ from management_portal import wall_release_documents as release
 
 @pytest.fixture
 def project(tmp_path, monkeypatch):
-    record = {"id": "fixture", "title": "Example", "root": str(tmp_path), "project_id": "demo"}
+    # The isolated site keeps its accounts under tmp_path; the Project gets a directory of its own.
+    root = tmp_path / "project"
+    root.mkdir()
+    record = {"id": "fixture", "title": "Example", "root": str(root), "project_id": "demo"}
     monkeypatch.setattr(wall, "_read_projects", lambda: {"fixture": record})
     access = mock.Mock()
     monkeypatch.setattr(wall, "get_portal_access_store", lambda: access)
-    (tmp_path / "SPEC.md").write_text("# Index\n\n## Core\n- [Design](design.md)\n")
-    (tmp_path / "design.md").write_text("---\nversion:\n  number: 7\n---\n# Design\n\n## Rules\n- Stable behavior.\n\n```md\n# literal\n```\n\n> ## Quoted heading\n")
+    (root / "SPEC.md").write_text("# Index\n\n## Core\n- [Design](design.md)\n")
+    (root / "design.md").write_text("---\nversion:\n  number: 7\n---\n# Design\n\n## Rules\n- Stable behavior.\n\n```md\n# literal\n```\n\n> ## Quoted heading\n")
     return record, access
 
 

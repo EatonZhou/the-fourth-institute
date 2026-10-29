@@ -1846,13 +1846,16 @@ class AgentDataStore:
                         connection, str(source["provider_session_ref"]),
                         agent_id=str(context_agent_id or agent_id or ""),
                     )
-                connection.execute(
+                # The event projection and the runtime can both see a new
+                # session first; the later one keeps the committed record.
+                inserted = connection.execute(
                     'INSERT INTO provider_sessions(provider_session_ref, provider, backend_route_id, '
-                    'backend_session_id, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s)',
+                    'backend_session_id, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s) '
+                    'ON CONFLICT (provider_session_ref) DO NOTHING RETURNING provider_session_ref',
                     (session_ref, clean_provider, clean_route, clean_session, at, at),
-                )
+                ).fetchone()
                 marking_agent = str(context_agent_id or agent_id or "").strip()
-                if inherited and marking_agent:
+                if inserted is not None and inherited and marking_agent:
                     self._record_context_received(
                         connection, marking_agent, session_ref, inherited, actor_ref=actor_ref,
                     )

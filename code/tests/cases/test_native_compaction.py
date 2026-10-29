@@ -284,10 +284,15 @@ def test_kimi_compact_without_history_does_not_create_a_session():
     context = mock.Mock()
     context.is_cancelled.return_value = False
     invocation = _invocation("")
-    with mock.patch.object(backends, "shared_kimi_client", return_value=client):
+    from management_portal import kimi_account_runtime
+
+    # The invocation's route names a Kimi account; its client is the fake.
+    with mock.patch.object(kimi_account_runtime, "client_for_route", return_value=client), \
+            mock.patch.object(kimi_account_runtime, "remember_session") as remembered:
         with pytest.raises(ValueError, match="no Provider history"):
             backends.KimiBackend().execute(invocation, context)
     client.create_session.assert_not_called()
+    remembered.assert_not_called()
     context.record_compaction.assert_not_called()
 
 

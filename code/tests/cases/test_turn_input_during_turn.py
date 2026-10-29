@@ -12,12 +12,13 @@ from __future__ import annotations
 
 import threading
 import time
+from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
 import pytest
 
-from management_portal import kimi_code_client
+from management_portal import kimi_account_runtime, kimi_code_client
 from management_portal.execution import backends
 from management_portal.execution.contracts import (
     EXECUTION_INPUT_CONTROL_SCHEMA,
@@ -337,6 +338,7 @@ def test_a_kimi_turn_answer_includes_what_followed_steered_input() -> None:
     assert live.response == "Module and tests audited."
     assert all(event["params"]["turnId"] == "prompt-7" for event in events)
 
+KIMI_HOME = Path("/nonexistent/kimi-account")
 
 
 def test_kimi_backend_hands_send_now_to_the_running_prompt() -> None:
@@ -358,14 +360,16 @@ def test_kimi_backend_hands_send_now_to_the_running_prompt() -> None:
         steered.set()
         return {"steered": True}
 
-    client = SimpleNamespace(run_turn=run_turn, steer=steer)
+    client = SimpleNamespace(home=KIMI_HOME, run_turn=run_turn, steer=steer)
     backend = backends.KimiBackend()
     invocation = _native_invocation()
     invocation.request.runtime_options = {"tools": [], "model": "kimi-k2.7-code"}
     invocation.session.backend_session_id = "session-1"
     invocation.session.backend_route_id = "kimi_primary"
     context = _native_context(_send_now(turn="prompt-1"))
-    with mock.patch.object(backends, "shared_kimi_client", return_value=client), \
+    # The session's route names a Kimi account; its client is the fake.
+    with mock.patch.object(kimi_account_runtime, "client_for_route", return_value=client), \
+            mock.patch.object(kimi_account_runtime, "remember_session"), \
             mock.patch.object(backends.KimiBackend, "offer_portal_tools", return_value=([], None)), \
             mock.patch.object(backends.KimiBackend, "settle_portal_tools", return_value=[]), \
             mock.patch.object(backends.KimiBackend, "record_provider_compaction"), \
@@ -521,8 +525,11 @@ def test_kimi_reports_the_main_agents_tool_calls_live_in_the_common_shape() -> N
     invocation.provider_event_processor = observed
     invocation.request.runtime_options = {"tools": [], "model": "kimi-k2.7-code"}
     invocation.session.backend_session_id = "session-1"
-    client = SimpleNamespace(run_turn=run_turn, steer=None)
-    with mock.patch.object(backends, "shared_kimi_client", return_value=client), \
+    invocation.session.backend_route_id = "kimi_primary"
+    client = SimpleNamespace(home=KIMI_HOME, run_turn=run_turn, steer=None)
+    # The session's route names a Kimi account; its client is the fake.
+    with mock.patch.object(kimi_account_runtime, "client_for_route", return_value=client), \
+            mock.patch.object(kimi_account_runtime, "remember_session"), \
             mock.patch.object(backends.KimiBackend, "offer_portal_tools", return_value=([], None)), \
             mock.patch.object(backends.KimiBackend, "settle_portal_tools", return_value=[]), \
             mock.patch.object(backends.KimiBackend, "record_provider_compaction"), \

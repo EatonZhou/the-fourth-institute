@@ -8,6 +8,7 @@ every Adapter that declares ``error_continuation`` consumes it.
 """
 from __future__ import annotations
 
+from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
@@ -269,8 +270,15 @@ def test_the_continuation_waits_for_a_provider_process_that_is_restarting() -> N
     assert {call["turn_id"] for call in calls[1:]} == {"execution-1:continue1"}
 
 
+KIMI_HOME = Path("/nonexistent/kimi-account")
+
+
 def _run_kimi(client: SimpleNamespace, invocation, context):
-    with mock.patch.object(backends, "shared_kimi_client", return_value=client), \
+    from management_portal import kimi_account_runtime
+
+    # The invocation's route names a Kimi account; its client is the fake.
+    with mock.patch.object(kimi_account_runtime, "client_for_route", return_value=client), \
+            mock.patch.object(kimi_account_runtime, "remember_session"), \
             mock.patch.object(backends.KimiBackend, "record_provider_compaction"), \
             mock.patch.object(backends.KimiBackend, "observe_turn_usage", return_value=None), \
             mock.patch.object(backends.KimiBackend, "settle_portal_tools", return_value=[]), \
@@ -300,7 +308,7 @@ def test_a_failed_kimi_turn_is_continued_in_its_session() -> None:
         return outcome
 
     context = _context()
-    result = _run_kimi(SimpleNamespace(run_turn=run_turn), _invocation(policy=ProviderErrorRecoveryPolicy(1)), context)
+    result = _run_kimi(SimpleNamespace(home=KIMI_HOME, run_turn=run_turn), _invocation(policy=ProviderErrorRecoveryPolicy(1)), context)
 
     assert result.output["message"] == "done"
     assert prompts == ["audit the module", "continue", "continue"]
@@ -312,7 +320,7 @@ def test_a_kimi_turn_that_never_reached_the_provider_is_not_continued() -> None:
 
     Kimi 轮次的输入尚未送达 Provider 就失败时，不做继续。
     """
-    client = SimpleNamespace(run_turn=mock.Mock(side_effect=KimiCodeUnavailable("Kimi Code backend unavailable")))
+    client = SimpleNamespace(home=KIMI_HOME, run_turn=mock.Mock(side_effect=KimiCodeUnavailable("Kimi Code backend unavailable")))
     with pytest.raises(KimiCodeUnavailable):
         _run_kimi(client, _invocation(policy=ProviderErrorRecoveryPolicy(1)), _context())
     assert client.run_turn.call_count == 1

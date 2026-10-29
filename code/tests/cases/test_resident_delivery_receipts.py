@@ -77,7 +77,11 @@ def test_deliver_message_effect_uses_the_formal_receipt_under_the_outer_lock_and
     primitives = lineage_domain.lineage_primitives
     lineage = lineage_domain.get_lineage(lineage_id, "sample_admin")
     effect_id = "effect_delivery_receipt"
-    plan = {"effects": {effect_id: {**effect_config("DeliverMessage", {"resident_id": {"from": "endpoint.target"}}), "endpoints": {"target": resident_id}}}}
+    # The compiled plan's shape: the declared endpoint and the Resident its Target wire connects.
+    plan = {"effects": {effect_id: {
+        **effect_config("DeliverMessage", {"resident_id": {"from": "endpoint.target"}}),
+        "endpoint_names": ["target"], "endpoints": {"target": resident_id},
+    }}}
     invocation = primitives.make_effect_invocation(
         primitives.make_event("manual.triggered", identity=OperationIdentity.for_actor("sample_admin").to_dict()),
         arguments={"prompt": "Exactly one Effect input"},
