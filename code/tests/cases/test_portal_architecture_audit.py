@@ -389,6 +389,48 @@ def test_missing_plan_index_does_not_abort_other_architecture_checks(tmp_path):
     assert 'IMPROVE.md' not in report['sources']['files']
 
 
+@pytest.mark.parametrize('frozen', [False, True])
+def test_registered_worktree_sources_use_repository_checks(tmp_path, frozen):
+    """Dev 的绝对来源在 Release 仍核归属，文档按审计提交读取。"""
+    main, peer = tmp_path / 'main', tmp_path / 'dev'
+    root = main / 'code'
+    root.mkdir(parents=True)
+    repo, mapping, docs = fixture(root)
+    (root / 'unmapped.py').write_text('')
+
+    def git(*args):
+        return subprocess.check_output(['git', '-C', str(main), *args],
+                                       text=True, stderr=subprocess.PIPE).strip()
+
+    git('init', '-q')
+    git('add', '.')
+    git('-c', 'user.name=Test', '-c', 'user.email=test@example.invalid',
+        'commit', '-qm', 'source')
+    commit = git('rev-parse', 'HEAD')
+    git('worktree', 'add', '--detach', str(peer), commit)
+    (peer / 'code/unpublished.md').write_text('present only in the other worktree')
+    outside = tmp_path / 'other/code/src/owned.py'
+    outside.parent.mkdir(parents=True)
+    outside.write_text('unrelated repository')
+    docs[D]['links']['source'] = [str(peer / 'code/src/owned.py'),
+                                 str(peer / 'code/unmapped.py'),
+                                 str(peer / 'code/unpublished.md'), str(outside)]
+    report = check.audit(check.Repository(root, commit if frozen else ''), mapping,
+                         [D], [], {'plans': []}, docs, [{'owner': 'lineage'}])
+    assert report['by_code'] == {'design.source_unmapped': 1,
+                                 'design.source_invalid_reference': 1}
+    assert next(f for f in report['findings'] if f['code'] == 'design.source_unmapped')['path'] == 'unmapped.py'
+    refs = report['external_references']
+    assert [(r['kind'], r['target'], r['status']) for r in refs] == [
+        ('repository_document', 'unpublished.md', 'invalid'),
+        ('external_path', str(outside), 'readable')]
+
+
+def test_absolute_source_cannot_escape_repository_by_parent_segment(tmp_path):
+    assert check.source_reference(str(tmp_path / '../outside.py'), tmp_path) == (
+        'external_path', str(tmp_path.parent / 'outside.py'))
+
+
 def test_failed_resource_read_is_reported_not_silently_omitted(tmp_path):
     """资源读取失败记为 resource.read_failed 并判审计失败，报告不含错误详情"""
     repo, mapping, docs = fixture(tmp_path)

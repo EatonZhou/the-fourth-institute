@@ -188,7 +188,19 @@ class Repository:
         self.commit = commit
         if commit and not re.fullmatch(r'[0-9a-f]{40}', commit):
             raise ValueError('commit must be a full SHA-1')
-        self.prefix = self.git('rev-parse', '--show-prefix').strip() if commit else ''
+        self.source_roots = (self.root,)
+        try:
+            self.prefix = self.git('rev-parse', '--show-prefix').strip()
+            # Linked worktrees name the same repository files. Check their
+            # sources against this audit's commit, never the peer's live bytes.
+            worktrees = self.git('worktree', 'list', '--porcelain', '-z')
+            self.source_roots += tuple(
+                Path(field[len('worktree '):]) / self.prefix
+                for field in worktrees.split('\0') if field.startswith('worktree '))
+        except subprocess.CalledProcessError:
+            if commit:
+                raise
+            self.prefix = ''  # Standalone source exports have no Git worktrees.
         self.files = set(self.git('ls-tree', '-r', '--name-only', commit).splitlines()) if commit else set()
 
     def git(self, *args):
@@ -212,16 +224,18 @@ class Repository:
         return (self.root / pattern).exists() or any(self.root.glob(pattern))
 
 
-def source_path(value, root):
+def source_path(value, root, source_roots=()):
     value = str(value).split('#', 1)[0]
     value = re.sub(r':\d+(?:-\d+)?$', '', value)
-    prefix = str(root).rstrip('/') + '/'
-    if value.startswith(prefix):
-        value = value[len(prefix):]
+    value = os.path.normpath(value)
+    for source_root in (root, *source_roots):
+        prefix = os.path.normpath(str(source_root)).rstrip('/') + '/'
+        if value.startswith(prefix):
+            return value[len(prefix):]
     return value
 
 
-def source_reference(value, root):
+def source_reference(value, root, source_roots=()):
     """Classify before stripping path anchors: addresses and URLs are not code."""
     if not isinstance(value, str) or not value.strip():
         return 'invalid', str(value)
@@ -230,7 +244,7 @@ def source_reference(value, root):
         return 'resource', value
     if '://' in value or re.match(r'^(?:https?|ftps?|mailto|file):', value, re.I):
         return 'url', value
-    path = os.path.normpath(source_path(value, root))
+    path = source_path(value, root, source_roots)
     if Path(path).is_absolute():
         return 'external_path', path
     if path == '..' or path.startswith('../'):
@@ -421,7 +435,7 @@ def audit(repo, mapping, spec, improve, evolution, documents, instructions, read
             note('design.invalid_sources', design)
             continue
         for source in sources:
-            kind, path = source_reference(source, repo.root)
+            kind, path = source_reference(source, repo.root, repo.source_roots)
             if kind != 'implementation':
                 key = (kind, path)
                 if key not in reference_cache:

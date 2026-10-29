@@ -178,6 +178,7 @@ modules:
     code_paths:
       - "management_portal/asgi.py"
       - "management_portal/serve_management_portal.py"
+      - "management_portal/web_server.py"
       - "management_portal/portal_changes.py"
       - "management_portal/web_isa.py"
       - "management_portal/web_instruction_server.py"
@@ -759,6 +760,7 @@ modules:
       - "management_portal/portal_access_control.py"
       - "management_portal/resident_avatar.py"
       - "management_portal/avatar_store.py"
+      - "management_portal/avatar_database.py"
       - "management_portal/http_account.py"
       - "management_portal/http_admin.py"
       - "management_portal/portal_feature_switches.py"
@@ -935,7 +937,6 @@ modules:
       - "decision_538e155e1102"
       - "decision_79de71d9890d"
       - "decision_f2a6a5dd4646"
-      - "decision_f5ab721f3d5d"
     layer: "frontend"
     level: "component"
   - id: "interface.conversation"
@@ -1018,12 +1019,16 @@ modules:
   - id: "delivery.services"
     title: "发布与服务生命周期控制"
     parent: "delivery"
-    responsibility: "执行提交发布、健康检查和各服务的代际管理，持久化发布完成事实；提供部署拥有的站点配置读取入口。"
+    responsibility: "执行提交发布、健康检查和各服务的代际管理，持久化发布完成事实；维护共享代码与实例状态的路径边界、实例安装与生命周期，并提供部署拥有的站点配置读取入口。"
     instruction_owners: []
     code_paths:
       - "scripts/tfi_dev.py"
       - "scripts/tfi_development_runtime.py"
       - "management_portal/runtime_status.py"
+      - "scripts/portal_release_units.py"
+      - "scripts/tfi_instance_layout.py"
+      - "scripts/tfi_instance_config.py"
+      - "scripts/tfi_instance_manager.py"
       - "management_common/portal_release_events.py"
       - "management_common/service_shutdown.py"
       - "management_common/process_runtime.py"
@@ -1069,6 +1074,7 @@ modules:
       - "decision_37f98f8fcb4b"
       - "decision_99bb5dc0f96b"
       - "decision_15aab18c0ab3"
+      - "decision_d88306d0bd17"
     layer: "service"
     level: "component"
   - id: "delivery.backup"
@@ -1124,10 +1130,6 @@ modules:
     designs:
       - "decision_44cf587c1721"
       - "decision_b77fde81e7a0"
-      - "decision_328fb2548b8f"
-      - "decision_89b9df038a95"
-      - "decision_9ad68dd077d4"
-      - "decision_a64b3ea2c3c5"
     instruction_owners: []
     title: "Family 门面与监督"
     layer: "service"
@@ -1383,7 +1385,7 @@ protocols:
       - "decision_7ef392b5f60d"
       - "decision_865ac8ebef25"
       - "decision_8b2fa224616b"
-      - "decision_9b94f218a188"
+      - "decision_46c37026e8ea"
       - "decision_a6bebf4ac283"
       - "decision_c47a13e8b962"
       - "decision_ed57c4ad1001"
@@ -1641,7 +1643,6 @@ protocols:
     related_designs:
       - "decision_3ece26686464"
       - "decision_99bb5dc0f96b"
-      - "decision_850e6248d680"
     description: "正文和产物使用文件存储，单文件更新由锁与原子替换保护；数据库事务不自动覆盖文件操作。"
     example: "更新 Workspace JSON → 持有作用域文件锁 → 写临时文件并原子替换 → 释放锁后通知读取者；读取者仍通过资源权限入口。"
   - id: "change-refresh"
@@ -1672,8 +1673,8 @@ protocols:
       - "execution"
       - "worker"
       - "providers"
-    designs:
-      - "decision_850e6248d680"
+      - "interface"
+    designs: []
     related_designs:
       - "decision_08bb2d9141f9"
       - "decision_99bb5dc0f96b"
@@ -1684,8 +1685,8 @@ protocols:
       - "decision_c604274e21dd"
       - "decision_e587fe1c472e"
       - "decision_ecf0f2b2de28"
-    description: "发布与重启请求由部署控制面持久化，按服务能力排空或换代；路由入口按用户部署选择转发。管理员网络接口调用部署层 portal_network 读写站点配置，保存按原始文件版本校验；网段在下次连接生效，代理由新进程读取，保存不自动重启服务。"
-    example: "发布确认提交与双远端 push → 控制面切 Release 代码并激活服务 → 健康通过后产生一条发布事实。"
+    description: "部署控制面提交并发布 Dev 的文件，按组件能力重启或换代；路由入口按用户部署选择转发。Web 停止时结束实时流，浏览器从新连接的 portal-ready.server_started_at 判断进程更新并重载。管理员网络接口调用部署层 portal_network 读写站点配置，保存按原始文件版本校验；网段在下次连接生效，代理由新进程读取，保存不自动重启服务。"
+    example: "Dev 提交 → Release 快进并推送 → 激活受影响组件；Web 结束旧实时流 → portal_events 重连 → portal_theme 观察更新的 server_started_at 并重载页面。"
   - id: "release-events"
     title: "发布事实与架构核对订阅"
     modules:
@@ -1814,8 +1815,8 @@ protocols:
       - "lineage.definition"
     designs: []
     related_designs:
-      - "decision_89b9df038a95"
-      - "decision_328fb2548b8f"
+      - "decision_44cf587c1721"
+      - "decision_b77fde81e7a0"
     description: "Family 提供角色事件、Effect 脚本与场景任务默认值；Familize 模板按名册装配 Function Block，通过定义域提交图变更，并保留已保存的指南和任务编辑。私人助手调用同一 Familize 入口完成初始化。"
     example: "Familize 装配 route 时调用 family_tasks.defaults，再用 saved_fields 合并用户编辑，写入 invoke_profiles 的 family_tasks 参数；图保存后由 Family 运行域按 trigger 派发任务。"
 
@@ -2095,7 +2096,7 @@ protocols:
     example: "项目创建/导航读取层级 → principal_hierarchy 校验范围与唯一性 → principal_hierarchy_domain.ensure_project/ensure_personal_ama 串行查重登记 → 页面使用返回 ID。"
 
   - id: "resident-runtime-settings"
-    title: "Resident 运行设置与账号路由准备"
+    title: "Resident 能力配置、会话装配与账号切换"
     modules:
       - "interface.conversation"
       - "interface.shell"
@@ -2104,11 +2105,14 @@ protocols:
       - "execution.scheduling"
       - "execution.providers"
       - "lineage.definition"
-    designs: []
+      - "execution.agent-data"
+      - "worker.harness"
+    designs:
+      - "decision_ccbb1cac24aa"
     related_designs:
       - "decision_3dd52c0692c1"
       - "decision_8b2fa224616b"
-    description: "Resident execution_settings/harness_config 是 Lineage 配置真值；执行准备通过 Provider 声明和账号 runtime_catalog 验证 model/effort/tier/options，再解析已绑定会话路由。四个原生入口（Family chat、Family menu/settings、Resident menu/settings、Resident composer）以选中成员 resident_id 绑定 interface.conversation 的 ResidentRuntimeController；控制器统一 settings/catalog、权限、差量保存、过期目标与缓存失效。interface.shell 的 PortalResidentService 独占 ISA/HTTP 及既有重启幂等、pending receipt、取消与观察；视图仅适配挂载、焦点和刷新，不另造运行状态机。"
+    description: "Resident execution_settings/harness_config 是 Lineage 配置真值；执行准备通过 Provider 声明和账号 runtime_catalog 验证 model/effort/tier/options，再解析已绑定会话路由。四个原生入口（Family chat、Family menu/settings、Resident menu/settings、Resident composer）以选中成员 resident_id 绑定 interface.conversation 的 ResidentRuntimeController；控制器统一 settings/catalog、权限、差量保存、过期目标与缓存失效。interface.shell 的 PortalResidentService 独占 ISA/HTTP 及既有重启幂等、pending receipt、取消与观察；视图仅适配挂载、焦点和刷新，不另造运行状态机。能力选择沿用统一设置；执行前固定本轮装配快照，Provider 已确认、已发送与未知分开记录。保存配置不启动模型推理；账号切换通过既有 Session 控制，保留上下文准备失败时保留旧绑定，不静默降级。"
     example: "四视图 → ResidentRuntimeController → PortalResidentService → Get/UpdateResidentSettings 或 RestartSession/CancelSessionRestart → split_runtime_settings → resident_storage/state_store 提交 → codex_runtime_settings/native_options 对照账号目录 → BackendInvocation；已有 binding 继续解释实际运行账号。"
 
   - id: "execution-account-observation"
@@ -2144,18 +2148,6 @@ protocols:
       - "decision_4648f7fa3295"
     description: "浏览器项目创建以正式 Project ID 登记；Lineage project_domain 对删除和关联 Lineage 执行业务约束；ResourceService/项目目录投影返回项目根与可见条目。项目实体、关系与资源目录各保留自己的存储 owner。"
     example: "CreateProject/项目登记 → project_domain → 注册表；project_index 分页读取 ResourceService → 浏览器项目页；删除先检查仍活动的 Lineage。"
-
-  - id: "project-state-read"
-    title: "Project State 读取契约"
-    modules:
-      - "web.community"
-      - "resources.types"
-      - "interface.content"
-    designs: []
-    related_designs:
-      - "decision_9b94f218a188"
-    description: "project_state.load_project_state 读取项目状态文件并形成规范响应；Project resource 的 read_state 动作复用该读模型，浏览器展示返回状态与诊断。项目目录接口另属 http-interface，不把它声称为 read_state。"
-    example: "Resource action read_state → project provider.project_state → load_project_state(project_id,resolved_root) → canonical_record → Overview。"
 
   - id: "resource-page-view"
     title: "资源页面地址、引用与正文呈现"
