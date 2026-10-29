@@ -6,11 +6,13 @@ permission queries of the permission category (decision_22227d0ad075).
 """
 from __future__ import annotations
 
+import contextvars
 import hashlib
 import json
 import os
 import secrets
 import stat
+from concurrent.futures import Future, ThreadPoolExecutor
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path, PurePosixPath
@@ -763,6 +765,16 @@ def update_workspace_file(inv: Invocation) -> dict[str, Any]:
 # changes list the rest (decision_46c37026e8ea).
 TEAM_RESOURCE_TYPES = frozenset({"lineage", "resident", "workspace", "family"})
 RECENT_PROJECT_CHANGES = 20
+# Team summaries come from SocietyService and resource reads from the index;
+# a Project read runs them side by side.
+_TEAM_READS = ThreadPoolExecutor(max_workers=4, thread_name_prefix="project-team-read")
+
+
+def _read_teams(project_ids: list[str], actor: str) -> Future:
+    from management_portal.society_service import get_society_service
+
+    teams = get_society_service().project.project_teams
+    return _TEAM_READS.submit(contextvars.copy_context().run, teams, project_ids, actor)
 
 
 def _resources(actor: str, **query: Any) -> Iterator[dict[str, Any]]:
@@ -823,8 +835,6 @@ def _project_fields(record: dict[str, Any]) -> dict[str, Any]:
 
 
 def list_projects(inv: Invocation) -> dict[str, Any]:
-    from management_portal.society_service import get_society_service
-
     state = _service().projection_state("project")
     if state.get("schema_version") != 1 or type(state.get("schema_version")) is not int:
         raise RuntimeError("Project projection requires schema_version 1")
@@ -832,8 +842,9 @@ def list_projects(inv: Invocation) -> dict[str, Any]:
     records = sorted(_resources(inv.caller, resource_types=["project"]), key=lambda item: (
         order.get(str(item.get("resource_id") or ""), len(order)), str(item.get("resource_id") or "").casefold()))
     ids = [str(record.get("resource_id") or "") for record in records]
-    teams = get_society_service().project.project_teams(ids, inv.caller) if ids else {}
+    reading = _read_teams(ids, inv.caller) if ids else None
     changed = _service().project_changes(ids, actor=inv.caller) if ids else {}
+    teams = reading.result() if reading else {}
     projects = []
     for record in records:
         fields = _project_fields(record)
@@ -866,12 +877,12 @@ def create_project(inv: Invocation) -> dict[str, Any]:
 
 
 def get_project(inv: Invocation) -> dict[str, Any]:
-    from management_portal.society_service import get_society_service
     from .providers.project import project_summary
 
     project_id = inv.argument("project_id")
     record = _project_record(project_id, inv.caller)
     resource_id = str(record.get("resource_id") or project_id)
+    reading = _read_teams([resource_id], inv.caller)
     try:
         summary = project_summary(resource_id)
     except (FileNotFoundError, KeyError):
@@ -888,7 +899,7 @@ def get_project(inv: Invocation) -> dict[str, Any]:
                         "title": str(item.get("title") or ""), "url": str(item.get("url") or ""),
                         "modified_at": _modified_at(item)})
     changes.sort(key=lambda item: item["modified_at"], reverse=True)
-    team = get_society_service().project.project_teams([resource_id], inv.caller)[resource_id]
+    team = reading.result()[resource_id]
     fields = _project_fields(record)
     del fields["project_id"]
     return {"project": {**record, **fields}, "summary": summary, "team": team,

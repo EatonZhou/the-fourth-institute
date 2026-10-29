@@ -4,6 +4,9 @@ Change routing in ResourceService waited about half a second per Resident
 Resource notification for the index lock, and step timings alone could not
 tell which code held it.  The lock now prints a line for any wait or hold of
 0.2 s or more, naming the waiting code and the holder.
+
+Slow request reports also give the garbage collector's pauses inside the
+request: a recurring 0.2 s in Project reads moved between steps from call to call.
 """
 from __future__ import annotations
 
@@ -58,3 +61,19 @@ def test_a_long_wait_names_the_waiting_code_and_the_holder(capsys):
     assert wait["site"].startswith("hold_briefly:")
     assert wait["holder"].startswith("hold_long:")
     assert reports["slow demo lock hold"]["site"].startswith("hold_long:")
+
+
+def test_a_slow_request_report_counts_the_collector_pauses_inside_it(capsys):
+    """慢请求报告给出请求期间垃圾回收暂停的时间与完整回收次数"""
+    import gc
+
+    from management_portal.resources.timing import StepTimer
+
+    timer = StepTimer()
+    timer.report_if_slow("quiet", 0.0)
+    gc.collect()
+    timer.report_if_slow("collected", 0.0)
+    lines = [line.split(": ", 1) for line in capsys.readouterr().err.splitlines() if line.startswith("ResourceService slow ")]
+    reports = {label.removeprefix("ResourceService slow "): json.loads(details) for label, details in lines}
+    assert reports["quiet"]["gc"] == {"seconds": 0.0, "full": 0}
+    assert reports["collected"]["gc"]["full"] == 1 and reports["collected"]["gc"]["seconds"] >= 0

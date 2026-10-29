@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import functools
+import gc
 import json
 import sys
 import threading
@@ -14,6 +15,34 @@ from typing import Any, Callable, Iterator, TypeVar
 T = TypeVar("T")
 
 SLOW_LOCK_SECONDS = 0.2
+
+
+class _CollectorPauses:
+    """Time the cyclic garbage collector held the interpreter, process-wide.
+
+    A collection stops every thread, so the pauses inside a request's window
+    are part of its wall time whichever step happened to trigger them.
+    """
+
+    def __init__(self) -> None:
+        self.seconds = 0.0
+        self.full_collections = 0
+        self._started = 0.0
+
+    def __call__(self, phase: str, info: dict[str, Any]) -> None:
+        # Collections never overlap: the collector runs holding the GIL.
+        if phase == "start":
+            self._started = time.perf_counter()
+            return
+        self.seconds += time.perf_counter() - self._started
+        self.full_collections += info.get("generation") == 2
+
+    def mark(self) -> tuple[float, int]:
+        return self.seconds, self.full_collections
+
+
+_PAUSES = _CollectorPauses()
+gc.callbacks.append(_PAUSES)
 
 
 def _report(label: str, **details: Any) -> None:
@@ -30,6 +59,7 @@ class StepTimer:
     def __init__(self) -> None:
         self.started = time.perf_counter()
         self.steps: dict[str, float] = {}
+        self._collector = _PAUSES.mark()
 
     def add(self, name: str, since: float) -> float:
         now = time.perf_counter()
@@ -40,11 +70,14 @@ class StepTimer:
         total = time.perf_counter() - self.started
         if total < threshold:
             return
+        paused, full = _PAUSES.mark()
         print(
             f"ResourceService slow {label}: " + json.dumps({
                 **details,
                 "seconds": round(total, 3),
                 "steps": {name: round(value, 3) for name, value in self.steps.items()},
+                # Collector pauses during the request, already inside the step times above.
+                "gc": {"seconds": round(paused - self._collector[0], 3), "full": full - self._collector[1]},
             }, ensure_ascii=False, separators=(",", ":")),
             file=sys.stderr,
             flush=True,

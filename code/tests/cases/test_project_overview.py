@@ -149,6 +149,42 @@ def test_project_overview_counts_resources_and_lists_recent_changes_without_the_
     assert "state" not in result
 
 
+def test_project_reads_take_the_team_and_the_resources_side_by_side(monkeypatch):
+    """ListProjects 与 GetProject 同时读取团队与项目资源，耗时取两者中较慢的一个"""
+    import threading
+
+    index = Index([project("Demo"), resource("paper_000000000001", "paper", ["Demo"], "2026-10-05T00:00:00Z")],
+                  {"schema_version": 1, "project_ids": ["Demo"], "status_vocab": []})
+    use(monkeypatch, index, {"Demo": team()})
+    society = society_service.get_society_service()
+    reading_teams, reading_resources = threading.Event(), threading.Event()
+    overlapped = []
+
+    def project_teams(project_ids, actor):
+        reading_teams.set()
+        overlapped.append(reading_resources.wait(2))
+        return {project_id: team() for project_id in project_ids}
+
+    def side_by_side(read):
+        def wrapped(*args, **kwargs):
+            reading_resources.set()
+            overlapped.append(reading_teams.wait(2))
+            return read(*args, **kwargs)
+        return wrapped
+
+    society.project.project_teams = project_teams
+    monkeypatch.setattr(society_service, "get_society_service", lambda: society)
+    index.project_changes = side_by_side(index.project_changes)
+    assert resource_isa.list_projects(invocation())["projects"][0]["last_changed_at"] == "2026-10-05T00:00:00Z"
+    assert overlapped == [True, True]
+
+    reading_teams.clear(), reading_resources.clear(), overlapped.clear()
+    query = index.query
+    index.query = lambda **kwargs: (side_by_side(query) if kwargs.get("projects") else query)(**kwargs)
+    assert resource_isa.get_project(invocation(project_id="Demo"))["resource_counts"] == {"paper": 1}
+    assert overlapped == [True, True]
+
+
 def test_project_team_is_its_readable_lineages_with_leaders_and_running_members(monkeypatch):
     """Project 的团队由它能读到的 Project 层与普通 Lineage 组成，个人与 User 层 Lineage 不算在内"""
     rows = [
