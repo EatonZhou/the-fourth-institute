@@ -35,3 +35,13 @@ def test_family_settings_scroll_stays_inside_content_column():
         capture_output=True, text=True, timeout=60,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_family_chat_members_controls():
+    """Chat 成员名旁可直接操作 M/S，与已有面板同步；失败可重试，窄屏可访问全部成员。"""
+    result = subprocess.run(
+        ['node', str(Path(__file__).with_name('javascript') / 'family_chat_members.browser.cjs')],
+        input=json.dumps({'routeScript': portal_route_script().decode()}),
+        capture_output=True, text=True, timeout=60,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr

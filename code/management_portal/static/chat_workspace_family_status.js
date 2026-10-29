@@ -15,6 +15,68 @@
       escapeHtml, footerTime, sessionRestartActive,
     } = dependencies;
 
+    function memberMixHtml(id, title, policy, busy = false) {
+      const solo = policy?.solo_member_id || '';
+      const muted = !solo && (policy?.muted_member_ids || []).includes(id);
+      return `<span class="familyMemberMix">${[
+        ['mute', 'M', muted, 'Mute：排除路由并隐藏对话'],
+        ['solo', 'S', solo === id, 'Solo：直连并只显示此成员'],
+      ].map(([mode, label, active, hint]) => `<button type="button" class="familyMemberMixButton" data-family-mix="${mode}" data-member="${escapeHtml(id)}" aria-label="${escapeHtml(`${title || id} · ${hint}`)}" title="${escapeHtml(hint)}" aria-pressed="${active}" ${!policy || busy ? 'disabled' : ''}>${label}</button>`).join('')}</span>`;
+    }
+
+    async function changeMemberMix(residentId, button, onSaved) {
+      const result = await window.PortalInstructionClient.execute('UpdateFamilyChatPreferences', {
+        resident_id: residentId, member_id: button.dataset.member,
+        control: button.dataset.familyMix, enabled: button.getAttribute('aria-pressed') !== 'true',
+      });
+      onSaved(result);
+      window.PortalResidentProjection?.invalidate?.(residentId);
+      await window.PortalResidentProtocol.loadSnapshot(residentId, {force: true});
+    }
+
+    // Keep all members reachable even when their messages are hidden by M/S.
+    function createFamilyChatMembers(residentId, root) {
+      let family = null, busy = false, disposed = false, signature = '';
+      function render() {
+        if (disposed) return;
+        const members = family?.members || (family?.nodes || []).filter(row => row.role === 'member');
+        const policy = family?.chat_preferences;
+        const next = JSON.stringify([members, policy, busy]);
+        if (next === signature) return;
+        signature = next;
+        const focused = root.contains(document.activeElement) ? document.activeElement : null;
+        const scroll = root.scrollTop;
+        root.hidden = !members.length;
+        root.innerHTML = members.map(member => {
+          const id = member.resident_id, title = member.title || id;
+          const href = `/lineage?${new URLSearchParams({ resident: id, lineage: family.lineage_id || '', open_chat: '1' })}`;
+          return `<span class="familyMemberIdentity"><a class="messageMetaLink familyChatMemberName" href="${escapeHtml(href)}" title="${escapeHtml(title)}">${escapeHtml(title)}</a>${memberMixHtml(id, title, policy, busy)}</span>`;
+        }).join('');
+        root.scrollTop = scroll;
+        if (focused?.dataset.familyMix) root.querySelector(`[data-member="${CSS.escape(focused.dataset.member)}"][data-family-mix="${focused.dataset.familyMix}"]`)?.focus({preventScroll: true});
+      }
+      async function onClick(event) {
+        const button = event.target.closest('[data-family-mix]');
+        if (!button || button.disabled || busy) return;
+        event.preventDefault();
+        busy = true; render();
+        try {
+          await changeMemberMix(residentId, button, policy => {
+            if (!disposed) { family = {...family, chat_preferences: policy}; render(); }
+          });
+        } catch (error) { window.PortalUI?.toast?.(error.message, 'error'); }
+        finally {
+          busy = false; render();
+          if (!disposed) root.querySelector(`[data-member="${CSS.escape(button.dataset.member)}"][data-family-mix="${button.dataset.familyMix}"]`)?.focus({preventScroll: true});
+        }
+      }
+      root.addEventListener('click', onClick);
+      return {
+        update(value) { family = value; render(); },
+        destroy() { disposed = true; root.removeEventListener('click', onClick); root.replaceChildren(); root.hidden = true; },
+      };
+    }
+
     // The same Family view is opened from Chat and from a node's menu.
     function createFamilyStatusView(residentId, anchor, onSummary = null, getFamily = null, container = null) {
       const root = document.createElement("section");
@@ -90,12 +152,7 @@
           const reset = week?.resets_at ? footerTime(typeof week.resets_at === "number" ? new Date(week.resets_at * 1000).toISOString() : week.resets_at) : "未知";
           const low = remain !== null && (row.role === "steward" ? remain <= 10 : remain < 10);
           const note = low ? row.role === "steward" ? "额度不足 · 平台负责迁移" : row.role === "member" ? "低于 10% · 新请求须 steward 评估" : "低额度" : "";
-          const solo = chatPolicy?.solo_member_id || '';
-          const muted = !solo && (chatPolicy?.muted_member_ids || []).includes(id);
-          const mix = row.role === 'member' ? `<span class="familyMemberMix">${[
-            ['mute', 'M', muted, 'Mute：排除路由并隐藏对话'],
-            ['solo', 'S', solo === id, 'Solo：直连并只显示此成员'],
-          ].map(([mode, label, active, hint]) => `<button type="button" class="familyMemberMixButton" data-family-mix="${mode}" data-member="${escapeHtml(id)}" aria-label="${escapeHtml(`${row.title || id} · ${hint}`)}" title="${escapeHtml(hint)}" aria-pressed="${active}" ${!chatPolicy || mixBusy ? 'disabled' : ''}>${label}</button>`).join('')}</span>` : '';
+          const mix = row.role === 'member' ? memberMixHtml(id, row.title, chatPolicy, mixBusy) : '';
           const href = `/lineage?${new URLSearchParams({ resident: id, lineage: family.lineage_id || "", open_chat: "1" })}`;
           const intakeNote = migration(row) ? "迁移暂关" : closed ? "关" : "开";
           const status = migration(row) ? "queued" : failed(row) && !working(row) ? "failed" : rowState(row).status;
@@ -214,14 +271,9 @@
           if (mix && !mix.disabled && !mixBusy) {
             mixBusy = true; render();
             try {
-              const result = await window.PortalInstructionClient.execute('UpdateFamilyChatPreferences', {
-                resident_id: residentId, member_id: mix.dataset.member,
-                control: mix.dataset.familyMix, enabled: mix.getAttribute('aria-pressed') !== 'true',
+              await changeMemberMix(residentId, mix, policy => {
+                if (!disposed) chatPolicy = policy;
               });
-              if (disposed) return;
-              chatPolicy = result;
-              window.PortalResidentProjection?.invalidate?.(residentId);
-              await window.PortalResidentProtocol.loadSnapshot(residentId, {force: true});
             } finally { mixBusy = false; render(); }
             return;
           }
@@ -273,7 +325,7 @@
     }
 
     return Object.freeze({
-      createFamilyStatusView, mountFamilyStatus, openFamilyStatus,
+      createFamilyStatusView, createFamilyChatMembers, mountFamilyStatus, openFamilyStatus,
     });
   }
 

@@ -198,7 +198,7 @@
   } = chatWorkspaceModule("PortalChatWorkspaceReadObserver").createReadObserver();
 
   const {
-    createFamilyStatusView, mountFamilyStatus, openFamilyStatus,
+    createFamilyStatusView, createFamilyChatMembers, mountFamilyStatus, openFamilyStatus,
   } = chatWorkspaceModule("PortalChatWorkspaceFamilyStatus").createFamilyStatus({
     escapeHtml, footerTime, sessionRestartActive,
   });
@@ -305,6 +305,7 @@
       <div class="paneHeadText chatHeadText">
         <div class="paneTitle" ${titleId ? `id="${escapeHtml(titleId)}"` : ""}>${escapeHtml(title)}</div>
         <div class="chatSubline"><div class="paneNote" ${statusId ? `id="${escapeHtml(statusId)}"` : ""} data-workspace-status>${escapeHtml(subtitle)}</div></div>
+        <div class="familyChatMembers" data-family-chat-members role="group" aria-label="Family 成员路由与显示" hidden></div>
       </div>
       <div class="paneHeadActions actionGroup">
         <button class="portalButton is-icon is-quiet iconBtn" type="button" data-workspace-history-search aria-label="查找当前对话" title="浏览当前对话片段，输入关键词查找并跳转" aria-expanded="false">${window.PortalUIPrimitives.iconHtml("search")}</button>
@@ -2745,15 +2746,22 @@
     updateFamilyStatus(detail) {
       const family = detail?.family_facade;
       const roster = value => JSON.stringify([value?.family_id, value?.title,
+        value?.chat_preferences,
         (value?.nodes || value?.members || []).map(node => [node.resident_id, node.title, node.role])]);
       const changed = roster(this.familyStatusFamily) !== roster(family);
       const residentId = String(detail?.resident?.resident_id || detail?.resident_id || "");
       if (!family?.family_id || !residentId || this.familyStatusResidentId !== residentId) {
         this.familyStatusView?.destroy(); this.familyStatusView = null;
         this.familyStatusButton = null;
+        this.familyChatMembers?.destroy(); this.familyChatMembers = null;
       }
       this.familyStatusFamily = family?.family_id ? family : null;
       this.familyStatusResidentId = this.familyStatusFamily ? residentId : "";
+      if (this.familyStatusFamily) {
+        const root = this.workspace.root.querySelector('[data-family-chat-members]');
+        this.familyChatMembers ||= createFamilyChatMembers(residentId, root);
+        this.familyChatMembers.update(this.familyStatusFamily);
+      }
       if (changed) this.familyStatusView?.refresh();
     }
 
