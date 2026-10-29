@@ -73,6 +73,7 @@ from .claude_transcript_compaction import (
 )
 from .kimi_tool_gateway import KimiToolGateway, publish_catalog
 from .native_tool_events import NativeToolEventTranslator, provider_activity
+from .transport import ExecutionClaimOwnershipLost
 from .native_session_compaction import (
     NativeCompaction,
     dsh_session_path,
@@ -3400,6 +3401,10 @@ class NativeTurnRun:
             raise ExecutionRecoveryDeferred(
                 f"Worker handover: the {backend.provider_id} turn keeps running for the next Worker"
             ) from exc
+        except ExecutionClaimOwnershipLost:
+            # A write of this turn found the claim handed over first.
+            detached = True
+            raise
         finally:
             # A turn left running has not ended, and this Worker's claim is
             # released: the Worker that attaches records what it leaves.

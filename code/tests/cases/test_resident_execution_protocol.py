@@ -229,11 +229,14 @@ def test_deliver_resident_input_resolves_message_context_once(
 ) -> None:
     """Resident 输入仅解析一次消息上下文并传递运行参数"""
     captured: dict[str, object] = {}
+    # The delivery's own receipt: a sender that cannot read the recipient gets only these fields.
+    receipt = {"resident_id": "resident_0123456789ab", "message_id": "msg_0123456789abcdef",
+               "accepted": True, "activation_policy": "enqueue_and_trigger"}
 
     def deliver(*args, **kwargs):
         captured["args"] = args
         captured["kwargs"] = kwargs
-        return {"ok": True}
+        return dict(receipt)
 
     monkeypatch.setattr(
         resident_intake_domain,
@@ -267,7 +270,7 @@ def test_deliver_resident_input_resolves_message_context_once(
         ),
     )
 
-    assert result == {"ok": True}
+    assert result == receipt
     kwargs = captured["kwargs"]
     assert kwargs["runtime_context"] == "resolved context"
     assert kwargs["additional_skills"] == ["skill-one"]
@@ -2954,7 +2957,12 @@ def test_runtime_settings_save_updates_only_speed_on_running_turn(
     resident_record: dict[str, object],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """运行中保存设置仅即时更新速度且其他设置下轮生效"""
+    """运行中保存设置不改动当前轮，速度和其他设置都从下一轮生效
+
+    正在执行的一轮保持已提交快照；保存参数不向它发送速度更新。
+
+    :design: decision_ccbb1cac24aa
+    """
     resident_id = str(resident_record["resident_id"])
     resident_execution_work.write(
         resident_record,
@@ -2966,20 +2974,11 @@ def test_runtime_settings_save_updates_only_speed_on_running_turn(
             "queue": [],
          "submitted_at": "2026-10-14T00:00:00Z"},
     )
-    calls: list[dict[str, object]] = []
 
     class Service:
         @staticmethod
-        def update_turn_settings(execution_id, *, actor, service_tier, control_id):
-            from management_portal.society_service.invariant_locks import lock_held
-            assert not lock_held(), "Execution RPC under Resident state lock"
-            calls.append({
-                "execution_id": execution_id,
-                "actor": actor,
-                "service_tier": service_tier,
-                "control_id": control_id,
-            })
-            return {"control_id": control_id, "status": "delivered"}
+        def update_turn_settings(*_args, **_kwargs):
+            pytest.fail("saving settings must not change the running turn")
 
     monkeypatch.setattr(execution_port, "service", lambda: Service())
 
@@ -2990,17 +2989,13 @@ def test_runtime_settings_save_updates_only_speed_on_running_turn(
     )
 
     assert result["runtime_settings"]["service_tier"] == "priority"
-    assert result["active_turn_settings_update"]["status"] == "delivered"
-    assert result["active_turn_fields"] == ["service_tier"]
-    assert result["next_turn_fields"] == [
-        "collaboration_mode", "model", "reasoning_effort",
-    ]
     assert result["runtime_settings"]["collaboration_mode"] == "plan"
-    assert calls[0]["execution_id"] == "execution-runtime-settings"
-    assert calls[0]["actor"] == "CASE-A"
-    assert calls[0]["service_tier"] == "priority"
+    assert result["active_turn_settings_update"] == {"requested": False, "status": "next_turn"}
+    assert result["active_turn_fields"] == []
+    assert result["next_turn_fields"] == [
+        "collaboration_mode", "model", "reasoning_effort", "service_tier",
+    ]
     stored = resident_execution_work.read(resident_record)
-    assert stored['execution_id'] == 'execution-runtime-settings'
     assert stored["execution_id"] == "execution-runtime-settings"
 
 
@@ -3082,39 +3077,57 @@ def test_runtime_mode_is_preserved_in_creation_settings(resident_record: dict[st
 def test_codex_registration_resolves_defaults_against_the_selected_account(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """codex 注册按选定账号解析默认模型和推理强度"""
+    """codex 注册按选定账号解析默认模型和推理强度
+
+    注册没有选择模型时只保存空值（继承默认），不读取模型目录；执行前按 Resident 选定的账号解析模型和推理强度。
+
+    :design: decision_8b2fa224616b
+    """
+    from management_portal.execution.provider_catalog import AGENT_PROVIDERS
+
+    for suffix in ("MODEL", "EFFORT", "SERVICE_TIER"):
+        monkeypatch.delenv(f"RESIDENT_AGENT_CODEX_{suffix}", raising=False)
     monkeypatch.setattr(
         resident_backend,
         "session_record",
         lambda *_args, **_kwargs: {},
     )
-    monkeypatch.setattr(
-        codex_runtime_settings,
-        "codex_runtime_catalog",
-        lambda *, account_id: {
+    catalog_accounts: list[str] = []
+
+    def catalog(*, account_id):
+        catalog_accounts.append(account_id)
+        return {
             "models": ["account-model"],
             "default_model": "account-model",
             "efforts_by_model": {"account-model": ["low"]},
             "default_efforts_by_model": {"account-model": "low"},
             "service_tiers_by_model": {"account-model": []},
-        },
-    )
+        }
+
+    monkeypatch.setattr(codex_runtime_settings, "codex_runtime_catalog", catalog)
+    record = {
+        "resident_id": "resident_bbbbbbbbbbbb",
+        "backend": "codex",
+        "backend_route_id": "zero",
+    }
 
     settings = resident_runtime_domain.resident_runtime_settings_from_register_payload(
-        {
-            "resident_id": "resident_bbbbbbbbbbbb",
-            "backend": "codex",
-            "backend_route_id": "zero",
-        },
+        record,
         {},
         "CASE-A",
         "2026-09-21T00:00:00Z",
     )
 
-    assert {
-        field: settings[field]
-        for field in ("model", "reasoning_effort", "service_tier")
-    } == {
+    fields = ("model", "reasoning_effort", "service_tier")
+    # Registration needs no Codex account: API-only installations register Codex Residents too.
+    assert catalog_accounts == []
+    assert {field: settings[field] for field in fields} == dict.fromkeys(fields, "")
+
+    # The Resident's first execution reconciles its settings with the selected account.
+    definition = AGENT_PROVIDERS["codex"]
+    resolved = definition.runtime_adapter().reconcile(definition, record["backend_route_id"], settings)
+    assert catalog_accounts == ["zero"]
+    assert {field: resolved[field] for field in fields} == {
         "model": "account-model",
         "reasoning_effort": "low",
         "service_tier": "",
@@ -3140,11 +3153,8 @@ def test_runtime_settings_save_while_idle_only_persists_settings(
     )
 
     assert result["runtime_settings"]["service_tier"] == "priority"
-    assert result["active_turn_settings_update"] == {
-        "requested": False,
-        "status": "inactive",
-        "resident_id": str(resident_record["resident_id"]),
-    }
+    # Saving only configures later turns (decision_ccbb1cac24aa), idle or not.
+    assert result["active_turn_settings_update"] == {"requested": False, "status": "next_turn"}
     assert result["active_turn_fields"] == []
     assert result["next_turn_fields"] == [
         "model", "reasoning_effort", "service_tier",
