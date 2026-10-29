@@ -59,6 +59,8 @@
   "编辑信息": {"en": "Edit details", "zh-CN": "编辑信息"},
   "改名": {"en": "Rename", "zh-CN": "改名"},
   "删除项目": {"en": "Delete project", "zh-CN": "删除项目"},
+  "确认删除": {"en": "Confirm deletion", "zh-CN": "确认删除"},
+  "与项目 ID 不一致，完全相同后才能确认删除": {"en": "This does not match the project ID. It must match exactly before you can confirm.", "zh-CN": "与项目 ID 不一致，完全相同后才能确认删除"},
   "资源": {"en": "Resources", "zh-CN": "资源"},
   "最近变化": {"en": "Recent changes", "zh-CN": "最近变化"},
   "Resident · {p0} 个正在工作": {"en": "Residents · {p0} working", "zh-CN": "Resident · {p0} 个正在工作"},

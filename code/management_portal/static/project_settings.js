@@ -185,22 +185,30 @@
     const { esc, t, execute } = common();
     const lineages = (team.lineages || []).length + (team.project_lineage_id ? 1 : 0);
     const view = dialog({
-      title: window.PortalI18n.text`删除 ${project.project_id}`, submitLabel: t("删除项目"), tone: "danger",
+      title: window.PortalI18n.text`删除 ${project.project_id}`, submitLabel: t("确认删除"), tone: "danger",
       body: window.PortalI18n.html`<p class="projectSettingsWarning">删除后不能恢复。</p>
         <ul class="projectDryRun">
           <li>${esc(window.PortalI18n.text`${lineages} 个 Lineage 与其中的 ${team.resident_count || 0} 个 Resident 一起删除`)}</li>
           <li>项目目录中的文件删除；其他 Resident 仍在使用的 Workspace 保留</li>
           <li>项目下的资源登记注销；论文等共享库中的对象保留，只去掉与这个项目的关联</li>
         </ul>
-        <label class="portalField"><span>${esc(window.PortalI18n.text`输入项目 ID「${project.project_id}」确认`)}</span><input name="confirm_id" autocomplete="off" /></label>`,
+        <label class="portalField"><span>${esc(window.PortalI18n.text`输入项目 ID「${project.project_id}」确认`)}</span><input name="confirm_id" autocomplete="off" spellcheck="false" placeholder="${esc(project.project_id)}" /></label>
+        <p class="projectSettingsHint" data-confirm-hint hidden>与项目 ID 不一致，完全相同后才能确认删除</p>`,
     });
     const { form } = view;
     const submit = form.querySelector("[data-settings-submit]");
-    submit.disabled = true;
-    form.confirm_id.addEventListener("input", () => { submit.disabled = form.confirm_id.value.trim() !== project.project_id; });
+    const hint = form.querySelector("[data-confirm-hint]");
+    const typed = () => form.confirm_id.value.trim();
+    // The confirm button stays disabled until the typed text is the Project ID; a mismatch says so.
+    const check = () => {
+      submit.disabled = typed() !== project.project_id;
+      hint.hidden = !typed() || typed() === project.project_id;
+    };
+    check();
+    form.confirm_id.addEventListener("input", check);
     form.addEventListener("submit", async event => {
       event.preventDefault();
-      if (form.confirm_id.value.trim() !== project.project_id) return;
+      if (typed() !== project.project_id) return;
       view.setBusy(true);
       view.showError("");
       try {
@@ -210,7 +218,7 @@
         onDeleted?.();
       } catch (error) {
         view.setBusy(false);
-        submit.disabled = form.confirm_id.value.trim() !== project.project_id;
+        check();
         view.showError(window.PortalI18n.text`删除失败：${error.message || error}`);
       }
     });

@@ -192,13 +192,17 @@ const ALPHA = {
       { project_id: 'Alpha', new_project_id: 'Alpha2', dry_run: true },
       { project_id: 'Alpha', new_project_id: 'Alpha2' }]);
 
-    // Delete: only after typing the exact Project ID.
+    // Delete: only after typing the exact Project ID; a mismatch says why the confirm button is unavailable.
     await page.click('[data-home-menu]');
     await page.click('[data-home-action="delete"]');
+    assert.equal(await page.$eval('[data-settings-submit]', button => button.textContent), '确认删除');
     assert.equal(await page.$eval('[data-settings-submit]', button => button.disabled), true);
-    await page.fill('input[name="confirm_id"]', 'Alph');
+    assert.equal(await page.$eval('[data-confirm-hint]', hint => hint.hidden), true, 'no hint before typing');
+    await page.fill('input[name="confirm_id"]', 'lpha');
     assert.equal(await page.$eval('[data-settings-submit]', button => button.disabled), true);
+    assert.equal(await page.$eval('[data-confirm-hint]', hint => hint.hidden), false, 'a mismatch is explained');
     await page.fill('input[name="confirm_id"]', 'Alpha');
+    assert.equal(await page.$eval('[data-confirm-hint]', hint => hint.hidden), true);
     await page.click('[data-settings-submit]');
     await page.waitForFunction(() => f.deleted === 'Alpha');
     assert.deepEqual(await page.evaluate(() => f.calls.filter(([name]) => name === 'DeleteProject').map(([, args]) => args)), [{ project_id: 'Alpha' }]);

@@ -390,6 +390,16 @@ a.projectResourceTile:hover { border-color: color-mix(in srgb, var(--accent) 45%
 .projectSettingsNote { margin: 0; color: var(--muted); line-height: 1.6; }
 .projectSettingsWarning { margin: 0; color: var(--danger); font-weight: 600; }
 .projectSettingsError { margin: 0; color: var(--danger); }
+.projectSettingsHint { margin: -4px 0 0; color: var(--warn); font-size: 13px; }
+/* Once the typed ID matches, the confirm button turns solid so it reads as ready, not as disabled. */
+.projectSettingsSurface [data-settings-submit].is-danger:not(:disabled) {
+  --portal-button-bg: var(--danger, #dc2626);
+  --portal-button-border: var(--danger, #dc2626);
+  --portal-button-color: #fff;
+}
+.projectSettingsSurface [data-settings-submit].is-danger:hover:not(:disabled) {
+  --portal-button-bg: color-mix(in srgb, var(--danger, #dc2626) 86%, #000);
+}
 .projectDryRun { margin: 0; padding-left: 18px; display: grid; gap: 4px; color: var(--text); font-size: 13px; }
 
 @media (max-width: 1100px) {
