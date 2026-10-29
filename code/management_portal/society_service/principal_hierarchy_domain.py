@@ -101,6 +101,34 @@ def delete_personal_ama(username: str, actor: str) -> dict[str, Any]:
     return {"username": owner.id, "deleted_lineage_ids": deleted}
 
 
+def delete_orphaned_personal_amas() -> dict[str, Any]:
+    """Finish the AMA deletions that deleted accounts left behind.
+
+    Deleting an account also deletes its AMA, but that step refuses while an
+    AMA Resident still has work queued, and the account is deleted anyway.
+    Run periodically, this deletes each such AMA once its work has ended.
+    """
+    from management_portal.portal_access_control import get_portal_access_store
+    from . import lineage_domain as graphs
+
+    owners = {
+        str(graph.get("created_by") or "").strip()
+        for graph in graphs._lineage_catalog_store().listing_records()
+        if graph.get("lineage_membership") == "personal"
+    }
+    store = get_portal_access_store()
+    deleted: list[str] = []
+    failed: dict[str, str] = {}
+    for owner in sorted(owner for owner in owners if owner):
+        if store.user(owner)["status"] != "deleted":
+            continue
+        try:
+            deleted.extend(delete_personal_ama(owner, "portal")["deleted_lineage_ids"])
+        except Exception as exc:  # noqa: BLE001 - another owner's AMA must not wait on this one
+            failed[owner] = str(exc) or type(exc).__name__
+    return {"deleted_lineage_ids": deleted, "failed": failed}
+
+
 def _finish_personal_ama(graph: dict[str, Any], owner_id: str) -> None:
     """Register what a creation stopped before: asking again completes it.
 

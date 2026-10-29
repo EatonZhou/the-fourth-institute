@@ -7,6 +7,9 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
+from management_portal import portal_access_control
+
+from . import personal_ama
 from .identity_contract import is_valid_id
 
 
@@ -36,6 +39,11 @@ def runtime_actor(lineage: Mapping) -> str:
                if isinstance(node, Mapping)}
     if not is_valid_id(leader, "resident") or leader not in members:
         raise AutomationConfigurationError("Lineage Leader 必须是当前图中的有效 Resident")
+    # A personal AMA Resident acts as its owner, so it has no authority once
+    # the owner's account is disabled or deleted.
+    owner = personal_ama.owner_of(leader)
+    if owner and not portal_access_control.get_portal_access_store().is_active(owner):
+        raise AutomationConfigurationError("Lineage Leader 所属的用户账号已停用或删除，自动运行已停止")
     return leader
 
 

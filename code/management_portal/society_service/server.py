@@ -60,7 +60,7 @@ from .active_agent_projection import publish_changed as publish_active_agents_ch
 from .application import configure_default_domain_ports
 from .resident_conversation_event_relay import ResidentConversationEventRelay
 from .resident_resource_projection import ResidentResourceProjectionWorker
-from . import execution_client, resource_client
+from . import execution_client, principal_hierarchy_domain, resource_client
 
 
 def _initialize_read_worker() -> None:
@@ -560,6 +560,11 @@ class SocietyServiceServer(LocalServiceSocketMixin, DrainingStreamServer):
             get_resident_conversation_stream().prune_event_deliveries(
                 older_than=delivered_before.isoformat(timespec="milliseconds").replace("+00:00", "Z"),
             )
+            orphaned = principal_hierarchy_domain.delete_orphaned_personal_amas()
+            if orphaned["failed"]:
+                raise RuntimeError(
+                    "Personal AMA cleanup failed: " + json.dumps(orphaned["failed"], ensure_ascii=False, sort_keys=True)
+                )
 
         self.coordinator = LineageCoordinator(
             resume_residents=lambda: _domain_module(

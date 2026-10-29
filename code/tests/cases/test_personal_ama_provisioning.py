@@ -224,6 +224,47 @@ def test_a_deleted_users_personal_ama_goes_with_the_account(future_creation_stor
     assert graphs.delete_personal_ama("newcomer", "sample_admin")["deleted_lineage_ids"] == []
 
 
+def test_an_ama_left_by_a_busy_deletion_stops_running_and_is_deleted_later(future_creation_store, monkeypatch):
+    """账号删除时没删成的 AMA 停止自动运行，工作结束后由定期清理删除
+
+    删除账号时 AMA 的 Resident 还有排队工作，AMA 删除失败而账号照样删除；此后它的 Leader 代表的用户已不存在，
+    自动运行报配置错误而不再反复重试；定期清理在工作结束前记下失败，结束后删除该 AMA，不动其他用户的 AMA。
+
+    :design: decision_bd5217d08c09
+    """
+    from management_portal import portal_access_control
+    from management_portal.society_service import (
+        lineage_automation_identity, personal_ama, resident_lifecycle_domain, resource_client,
+    )
+
+    mine = principal_hierarchy_domain.ensure_personal_ama("newcomer", "newcomer")
+    theirs = principal_hierarchy_domain.ensure_personal_ama("neighbour", "neighbour")
+    descriptors = {mine["resident_id"]: resource_client._resident_resource_projection(
+        resident_catalog.get_catalog().get(mine["resident_id"]))["descriptor"]}
+    monkeypatch.setattr(personal_ama, "_DESCRIPTORS", SimpleNamespace(get=lambda rid: descriptors[rid]))
+    monkeypatch.setattr(personal_ama, "_OWNERS", {})
+    graph = graphs.get_lineage(mine["lineage_id"], "newcomer")
+    assert lineage_automation_identity.runtime_actor(graph) == mine["resident_id"]
+    status = {"newcomer": "deleted", "neighbour": "active"}
+    store = portal_access_control.get_portal_access_store()
+    monkeypatch.setattr(store, "user", lambda username: {"status": status.get(str(username), "active")})
+    monkeypatch.setattr(store, "is_active", lambda username: status.get(str(username), "active") == "active")
+    busy = {mine["resident_id"]}
+    monkeypatch.setattr(resident_lifecycle_domain, "resident_has_pending_work", lambda resident_id: resident_id in busy)
+
+    with pytest.raises(lineage_automation_identity.AutomationConfigurationError):
+        lineage_automation_identity.runtime_actor(graph)
+    assert lineage_automation_identity.readiness_error(graph)
+    first = principal_hierarchy_domain.delete_orphaned_personal_amas()
+    assert first["deleted_lineage_ids"] == [] and set(first["failed"]) == {"newcomer"}
+    busy.clear()
+    assert principal_hierarchy_domain.delete_orphaned_personal_amas() == {
+        "deleted_lineage_ids": [mine["lineage_id"]], "failed": {}}
+    personal = {row["lineage_id"] for row in graphs._lineage_catalog_store().listing_records() if row.get("lineage_membership") == "personal"}
+    assert personal == {theirs["lineage_id"]}
+    assert principal_hierarchy_domain.delete_orphaned_personal_amas() == {"deleted_lineage_ids": [], "failed": {}}
+
+
 def test_only_the_user_creates_a_personal_ama(future_creation_store):
     """个人 Lineage 只能由用户本人创建
 
