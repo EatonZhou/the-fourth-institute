@@ -88,11 +88,11 @@ const ALPHA = {
     const groupIds = await page.$$eval('[data-project-group]', nodes => nodes.map(node => node.dataset.projectGroup));
     assert.deepEqual(groupIds, ['active', 'waiting', 'closed']);
     assert.deepEqual(await page.$$eval('[data-project-group="active"] .projectCard', cards => cards.map(card => card.dataset.projectId)), ['Beta', 'Alpha']);
-    assert.equal(await page.$eval('[data-project-group="closed"] .projectGrid', grid => grid.hidden), true, 'finished projects start folded');
+    assert.equal(await page.isVisible('[data-project-group="closed"] .projectGrid'), false, 'finished projects start folded');
     assert.match(await page.$eval('[data-project-id="Alpha"] .projectSignal.is-running', node => node.textContent), /2 个正在工作/);
     assert.equal(await page.$eval('[data-project-id="Omega"] .projectDeadline', () => 'shown').catch(() => 'none'), 'none', 'a finished project has no deadline badge');
     await page.click('[data-project-group-toggle="closed"]');
-    assert.equal(await page.$eval('[data-project-group="closed"] .projectGrid', grid => grid.hidden), false);
+    assert.equal(await page.isVisible('[data-project-group="closed"] .projectGrid'), true);
 
     // Filters: a tag chip filters, the search box narrows further.
     await page.click('[data-project-id="Alpha"] [data-project-tag="robot"]');
@@ -148,7 +148,9 @@ const ALPHA = {
     assert.equal(await page.evaluate(() => home.hasUnsavedChanges()), false);
 
     // Rename: a dry run first; busy Residents keep it from going on; a clear check confirms.
+    assert.equal(await page.isVisible('[data-home-menu-list]'), false, 'the header menu starts closed');
     await page.click('[data-home-menu]');
+    assert.equal(await page.isVisible('[data-home-menu-list]'), true);
     await page.click('[data-home-action="rename"]');
     await page.fill('input[name="new_project_id"]', 'Alpha2');
     await page.evaluate(() => { f.dryRun = { busy_resident_ids: ['resident_x'], blockers: [] }; });
