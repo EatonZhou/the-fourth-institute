@@ -267,6 +267,93 @@ def test_chat_turn_routes_output_without_an_incoming_program_invocation(
     assert sent == [(WORK_A, "job_chat_first"), (WORK_A, "job_chat_second")]
 
 
+def test_start_requeues_completed_turns_whose_output_a_stop_dropped(
+    runtime_store: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """启动后补上停止前丢失的 Resident Output 转交
+
+    上一进程完成回合后、消费终态前停止，回复没有开启 Trigger Path；新进程启动后补回这类回合，沿 Output 投递一次。已转交、仍由 Program 交接等待、超出回看窗口、由新进程完成或没有 Output 连线的回合不补。
+
+    :module: lineage.hatg
+    :importance: P1
+    :design: decision_4adcc1ff2f2c
+    :design-point:
+    """
+    from management_portal.execution.agent_data_store import get_agent_data_store
+    from management_portal.society_service import lost_terminal_facts
+
+    sent: list[tuple[str, str]] = []
+
+    def send(node, prompt, _actor):
+        if node["id"] == PRODUCER_A:
+            return {"message_id": "job_handoff"}
+        sent.append((node["id"], prompt))
+        return {"message_id": f"job_receiver_{len(sent)}"}
+
+    monkeypatch.setattr(lineage_test_support, "NODE_MESSAGE_SENDER", send)
+    monkeypatch.setattr(
+        lineage_test_support,
+        "RESIDENT_MESSAGE_EVIDENCE_RESOLVER",
+        lambda _resident_id, message_id, _actor: {"reply": message_id},
+    )
+    lineage_id = lineage_test_support.create_lineage_with_resident_members(
+        {
+            "title": "Dropped terminal facts",
+            "nodes": [_worker(PRODUCER_A), _worker(WORK_A)],
+            "program": {
+                "components": [
+                    _component("event_source_manual_producer", "event_source", event_type="manual.triggered"),
+                ],
+                "wires": [
+                    _wire("wire_manual_producer", "route", "event_source_manual_producer", PRODUCER_A),
+                    _wire("wire_producer_output", "route", PRODUCER_A, WORK_A,
+                          config={"include_envelope": False}),
+                ],
+            },
+        },
+        ACTOR,
+    )["lineage_id"]
+    started_at = "2026-10-14T01:00:00Z"
+    finished = {
+        (PRODUCER_A, "job_routed"): "2026-10-14T00:50:00Z",
+        (PRODUCER_A, "job_dropped"): "2026-10-14T00:55:00Z",
+        (PRODUCER_A, "job_handoff"): "2026-10-14T00:56:00Z",
+        (PRODUCER_A, "job_too_old"): "2026-10-14T00:20:00Z",
+        (PRODUCER_A, "job_this_process"): "2026-10-14T00:59:00Z",
+        (WORK_A, "job_no_output_wire"): "2026-10-14T00:58:00Z",
+    }
+    lineage_domain.emit_program_manual_event(lineage_id, {"event_source_id": "event_source_manual_producer"}, ACTOR)
+    assert lineage_program_runtime.resident_handoff(lineage_id, PRODUCER_A, "job_handoff")
+    for (resident_id, message_id), at in finished.items():
+        lineage_test_support.record_terminal_execution(resident_id, message_id, ACTOR, at=at)
+    lineage_test_support.complete_resident_message(PRODUCER_A, ACTOR, "job_routed", lineage_id=lineage_id)
+    get_agent_data_store().database.write(lambda connection: connection.execute(
+        "UPDATE executions SET final_message_id='msg_final_' || execution_id",
+    ))
+
+    class Inputs:
+        """The previous process finalized every input except the one this process did."""
+
+        def input_state(self, resident_id, message_id):
+            if message_id == "job_this_process":
+                return {"state": "completed", "updated_at": "2026-10-14T01:00:05Z"}
+            return {"state": "completed", "updated_at": finished[(resident_id, message_id)]}
+
+        def message_business_ref(self, _resident_id, _message_id):
+            return ""
+
+    monkeypatch.setattr(lost_terminal_facts, "_repository", Inputs)
+    facts = lost_terminal_facts.find(started_at)
+    assert [(fact["resident_id"], fact["message_id"]) for fact in facts] == [(PRODUCER_A, "job_dropped")]
+    assert facts[0]["actor"] == ACTOR and facts[0]["terminal_status"] == "completed"
+
+    LineageBackendRuntimeAdapter().consume_terminal(ResidentTerminalFact.from_payload(facts[0]))
+    assert sent == [(WORK_A, "job_routed"), (WORK_A, "job_dropped")]
+    # The routed reply named its Execution, so a later start finds nothing.
+    assert lost_terminal_facts.find(started_at) == []
+
+
 @pytest.mark.parametrize("maximum", [None, 0, 1, 2])
 def test_output_route_message_limit_and_reset(runtime_store: Path, monkeypatch, maximum) -> None:
     """Resident 输出边限额与幂等重置

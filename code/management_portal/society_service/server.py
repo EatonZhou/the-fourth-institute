@@ -300,6 +300,12 @@ def _domain_module(domain: str) -> Any:
     raise ValueError(f"unsupported SocietyService domain: {domain}")
 
 
+def _lost_terminal_facts(started_at: str) -> list[dict[str, Any]]:
+    from . import lost_terminal_facts
+
+    return lost_terminal_facts.find(started_at)
+
+
 def _sync_template_structure() -> dict[str, Any]:
     from .templates import familize
 
@@ -585,6 +591,7 @@ class SocietyServiceServer(LocalServiceSocketMixin, DrainingStreamServer):
             consume_terminal=lambda payload: self._consume_resident_terminal(
                 ResidentTerminalFact.from_payload(payload)
             ),
+            recover_terminals=_lost_terminal_facts,
             housekeeping=housekeeping,
             housekeeping_seconds=housekeeping_seconds,
             lifecycle_ready=lambda: _domain_module("resident").ready_resident_lifecycle_operations(),

@@ -337,6 +337,44 @@ def test_failed_terminal_consumption_is_retried_without_a_busy_loop() -> None:
     assert snapshot["pending_terminal_count"] == 0
 
 
+def test_terminal_facts_dropped_by_a_stop_are_requeued_once_per_start() -> None:
+    """启动一个恢复间隔后补回停止时丢失的终态，每次启动只补一次，读取失败下次再试"""
+    calls: list[tuple[float, str]] = []
+    consumed: list[dict] = []
+
+    def recover(started_at: str) -> list[dict]:
+        calls.append((time.monotonic(), started_at))
+        if len(calls) == 1:
+            raise RuntimeError("temporary read failure")
+        return [{"resident_id": "resident_222222222222", "message_id": "msg_dropped", "terminal_status": "completed"}]
+
+    coordinator = LineageCoordinator(
+        resume_residents=lambda: {},
+        resume_resident=lambda _resident_id: {},
+        reconcile_all=lambda: {},
+        reconcile_lineage=lambda _lineage_id: {},
+        consume_terminal=lambda fact: consumed.append(fact) or {},
+        recover_terminals=recover,
+        recovery_seconds=0.05,
+    )
+    began = time.monotonic()
+    coordinator.start()
+    try:
+        deadline = time.monotonic() + 2
+        while not consumed and time.monotonic() < deadline:
+            time.sleep(0.01)
+        # Several more recovery intervals pass without another read.
+        time.sleep(0.3)
+        snapshot = coordinator.snapshot()
+    finally:
+        coordinator.stop()
+
+    assert [started_at for _at, started_at in calls] == [snapshot["started_at"]] * 2
+    assert calls[0][0] - began >= 0.04
+    assert [fact["message_id"] for fact in consumed] == ["msg_dropped"]
+    assert snapshot["recovered_terminal_count"] == 1
+
+
 def test_reconcile_suppresses_its_own_lineage_change_notification() -> None:
     """Lineage 协调自身产生的变更通知被抑制，不引发再次协调"""
     calls: list[str] = []

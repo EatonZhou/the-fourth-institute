@@ -29,6 +29,7 @@ class LineageCoordinator:
         reconcile_lineage: Callable[[str], dict[str, Any]],
         recover_program: Callable[[], dict[str, Any]] | None = None,
         consume_terminal: Callable[[dict[str, Any]], dict[str, Any]] | None = None,
+        recover_terminals: Callable[[str], list[dict[str, Any]]] | None = None,
         housekeeping: Callable[[], Any] | None = None,
         housekeeping_seconds: float = 300.0,
         recovery_seconds: float = 30.0,
@@ -58,6 +59,11 @@ class LineageCoordinator:
         self._reconcile_lineage = reconcile_lineage
         self._recover_program = recover_program
         self._consume_terminal = consume_terminal
+        # Terminal facts live in memory until consumed; once per start, after
+        # the first recovery interval, facts a stopped process dropped are
+        # read back from their committed turns (lost_terminal_facts).
+        self._recover_terminals = recover_terminals
+        self._terminals_recovered = False
         self._housekeeping = housekeeping
         self._housekeeping_seconds = max(
             60.0,
@@ -137,6 +143,7 @@ class LineageCoordinator:
         self._stop.clear()
         with self._lock:
             self._state["started_at"] = _now_iso()
+            self._terminals_recovered = False
         self._thread = threading.Thread(
             target=self._run,
             name="society-service-coordinator",
@@ -451,6 +458,24 @@ class LineageCoordinator:
             self._state["last_program_recovery"] = result
             self._state["last_program_recovery_at"] = _now_iso()
 
+    def _recover_lost_terminals(self) -> None:
+        with self._lock:
+            started_at = str(self._state.get("started_at") or "")
+        try:
+            facts = list(self._recover_terminals(started_at) or [])
+        except Exception as exc:
+            self._record_error(exc)
+            with self._lock:
+                self._terminals_recovered = False
+            return
+        for fact in facts:
+            self.notify_terminal(fact)
+        with self._lock:
+            self._state["recovered_terminal_count"] = len(facts)
+        if facts:
+            names = ", ".join(f"{fact['resident_id']}:{fact['message_id']}" for fact in facts)
+            print(f"SocietyService requeued {len(facts)} dropped terminal fact(s): {names}", file=sys.stderr)
+
     def _sync_template_structure(self) -> None:
         try:
             result = dict(self._sync_templates() or {})
@@ -688,6 +713,16 @@ class LineageCoordinator:
                 self._submit(("maintenance", "recover"), self._recover)
                 if self._recover_program is not None:
                     self._submit(("maintenance", "program-recovery"), self._recover_pending_program)
+                # The stopping process may still finish a consumption while
+                # this one starts; looking one interval later lets it finish.
+                with self._lock:
+                    recover_terminals = self._recover_terminals is not None and not self._terminals_recovered
+                    self._terminals_recovered = True
+                if recover_terminals and not self._submit(
+                    ("maintenance", "terminal-recovery"), self._recover_lost_terminals,
+                ):
+                    with self._lock:
+                        self._terminals_recovered = False
                 next_recovery = time.monotonic() + self._recovery_seconds
             if now >= next_housekeeping:
                 self._submit(("maintenance", "housekeeping"), self._run_housekeeping)
