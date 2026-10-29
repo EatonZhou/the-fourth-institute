@@ -712,6 +712,9 @@ def _compact_provider_activity_event_unredacted(
             compact_payload["arguments"] = arguments
         if payload.get("output") not in (None, ""):
             compact_payload["output"] = _activity_text(payload["output"], 2_000)
+        if payload.get("is_error") is True:
+            # Claude's tool results say whether they failed; Codex's carry it in the output text.
+            compact_payload["is_error"] = True
         return {"type": event_type, "payload": compact_payload}
     return None
 

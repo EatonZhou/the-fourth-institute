@@ -29,7 +29,9 @@ def _tool_identity(payload: dict[str, Any]) -> tuple[str, str, str]:
     return "tool", namespace, name
 
 
-def _output_status(output: str) -> str:
+def _output_status(payload: dict[str, Any], output: str) -> str:
+    if payload.get("is_error") is True:
+        return "failed"
     # Codex's shell tools end their output with the process exit code.
     code = re.search(r"Process exited with code (-?\d+)", output)
     return "failed" if code and code.group(1) != "0" else "completed"
@@ -51,7 +53,7 @@ def _output(payload: dict[str, Any], context: EventContext, details: RuntimeDeta
     name = details.tool_names.get(str(payload.get("call_id") or ""), "tool")
     content = str(payload.get("output") or "")
     details.add(context.detail(
-        kind="tool_output", title=f"Tool finished: {name}", content=content, status=_output_status(content),
+        kind="tool_output", title=f"Tool finished: {name}", content=content, status=_output_status(payload, content),
     ))
 
 

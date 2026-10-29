@@ -34,6 +34,30 @@ def test_native_dynamic_tool_activity_reaches_the_runtime_projection(tmp_path):
     assert [row["activity"]["status"] for row in stored] == ["running", "completed", "failed"]
 
 
+def test_a_failed_claude_tool_result_is_projected_as_failed() -> None:
+    """Claude 非 Bash 工具的失败结果在执行活动里显示为失败
+
+    Claude Code Adapter 把 Bash 以外的工具调用和结果记为 function_call 与 function_call_output，
+    失败的结果带 is_error。经活动记录压缩与投影后，失败的结果显示失败，成功的显示完成。
+    """
+    activities = []
+    context = BackendContext(
+        emit_event=lambda _kind, activity: activities.append(activity),
+        cancellation_requested=lambda: False,
+        set_interrupt_target=lambda *_args: None,
+    )
+    for call_id, output, failed in [("read-1", "File does not exist.", True), ("read-2", "1\thello", False)]:
+        context.observe_provider_event({"type": "response_item", "payload": {
+            "type": "function_call", "name": "Read", "call_id": call_id, "arguments": {"file_path": "/tmp/x"}}})
+        context.observe_provider_event({"type": "response_item", "payload": {
+            "type": "function_call_output", "call_id": call_id, "output": output, "is_error": failed}})
+    events = [{"type": "provider_event", "details": activity} for activity in activities]
+    details = event_projection.runtime_details_from_objects(enumerate(events, 1))
+    assert [(row["kind"], row["status"]) for row in details] == [
+        ("tool_call", "running"), ("tool_output", "failed"), ("tool_call", "running"), ("tool_output", "completed"),
+    ]
+
+
 def test_backend_start_reason_is_consumed_only_by_a_new_turn() -> None:
     """轮次开始原因只由新 turn 消耗，同一 turn 重复上报沿用原因，之后默认为继续执行"""
     activities = []
