@@ -1,6 +1,6 @@
 """Family lifecycle instructions (decision_44cf587c1721); the steps the Family's own
 Effects, Router and steward run are in ``family_internal``."""
-from ..declarations import ON_LINEAGE, PLACEMENT, InstructionDeclaration as D, P, R
+from ..declarations import ON_RESIDENT, ON_LINEAGE, PLACEMENT, InstructionDeclaration as D, P, R
 
 
 def _d(name, decides, description, parameters, result):
@@ -56,4 +56,16 @@ DECLARATIONS = (
         P("auto_migrate_priority", "array", "账号种类优先级，取 ListProviderAccounts 的 migration_type.id；同种类优先，再按此顺序，未列出的种类按默认顺序补在末尾；空数组恢复默认", items={"type": "string"}),
     ), (R("family_id", description="被更新的 Family 的 Function Block 键"), R("resource_id", description="Family 正式资源 ID family_…"),
         R("function_block", "object", "更新后的 Function Block：id、title、elements，以及 family（成员名册、goal、路由参数）"))),
+)
+
+
+DECLARATIONS += (
+    D(name='GetFamilyChatPreferences', category='family', owner='lineage',
+      description='读取当前调用者在指定 Family 门面的 M/S 聊天偏好。', target='resident_id', decides=ON_RESIDENT,
+      parameters=(R('resident_id'),), result=(R('muted_member_ids', 'array'), R('solo_member_id'))),
+    D(name='UpdateFamilyChatPreferences', category='family', owner='lineage', mutates=True,
+      description='修改调用者自己的 Mute/Solo；不改变成员接单状态或其他用户偏好。多个 M、单个 S，退出 S 恢复 M。',
+      target='resident_id', decides=ON_RESIDENT,
+      parameters=(R('resident_id'), R('member_id'), R('control', enum=('mute','solo')), R('enabled','boolean')),
+      result=(R('muted_member_ids', 'array'), R('solo_member_id'))),
 )

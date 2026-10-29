@@ -372,3 +372,29 @@ def test_unified_summary_default_migration_preserves_custom_guides(trigger, cust
     assert result["prompt"] == saved["prompt"]
     if trigger == "summary":
         assert "prompt" not in family_tasks.saved_fields(trigger, {"prompt": family_tasks._PRE_UNIFIED_SUMMARY_PROMPT})
+
+def test_mute_limits_router_facts_and_solo_skips_model(configured_family, monkeypatch):
+    from management_portal.society_service import family_chat_preferences as p, family_quota, family_task_dispatches
+    _, block = configured_family
+    f = block['family']; facade = _find_resident(f['facade']); a, b = f['members']
+    deliveries = []
+    monkeypatch.setattr(family_task_dispatches, 'deliver', lambda facade, target, trigger, facts, actor, **kw: deliveries.append(facts) or {'message_id':'sent'})
+    def message(mid):
+        msg = resident_input_queue_domain.build_message('user', 'test', ACTOR, message_id=mid)
+        resident_conversation_stream.get_repository().accept_user_message(f['facade'], msg)
+        return msg
+    p.change(f['facade'], ACTOR, a, 'mute', True)
+    mid = 'msg_0000000000000221'; message(mid)
+    family_tasks.dispatch(f['facade'], 'route', ACTOR, source_message_id=mid)
+    assert deliveries[0]['routing']['members'] == [b]
+    p.change(f['facade'], ACTOR, b, 'solo', True)
+    mid2 = 'msg_0000000000000222'; message(mid2)
+    relays = []
+    monkeypatch.setattr(family_quota, 'relay_message', lambda *args: relays.append(args) or {'status':'relayed', 'message_id':'original-copy'})
+    result = family_tasks.dispatch(f['facade'], 'route', ACTOR, source_message_id=mid2)
+    assert result['status'] == 'relayed' and relays[0][2] == b
+    assert len(deliveries) == 1
+    p.change(f['facade'], ACTOR, b, 'mute', True)
+    mid3 = 'msg_0000000000000223'; message(mid3)
+    with pytest.raises(ValueError, match='所有成员已 Mute'):
+        family_tasks.dispatch(f['facade'], 'route', ACTOR, source_message_id=mid3)

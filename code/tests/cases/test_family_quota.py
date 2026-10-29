@@ -135,6 +135,7 @@ def test_low_weekly_request_waits_for_the_steward_then_relays_original_content_o
     projected = family_facade.project_messages(_record(f.facade), [repo.message(f.facade, f.message)],
                                                input_states={f.message: "queued"})
     assert projected[0]["relay"]["state"] == "quota_review"
+    assert projected[0]["relay"]["quota_remaining_percent"] == 9
     review_id = result["steward_message_id"]
     assert repo.message(f.steward, review_id)["author_id"] == f.facade
     again = family_quota.relay_message(f.facade, f.message, f.member, ACTOR)

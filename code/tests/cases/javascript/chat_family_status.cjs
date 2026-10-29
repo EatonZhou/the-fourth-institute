@@ -115,9 +115,17 @@ w.PortalResidentProtocol = {
     return { load: async () => JSON.parse(JSON.stringify(snapshots[residentId])), destroy: () => released.push(residentId) };
   },
 };
+let chatPreference = {muted_member_ids: [], solo_member_id: ''};
 w.PortalInstructionClient = {
   execute: async (instruction, args) => {
     calls.push([instruction, { ...args }]);
+    if (instruction === 'GetFamilyChatPreferences') return {...chatPreference};
+    if (instruction === 'UpdateFamilyChatPreferences') {
+      if (args.control === 'mute') chatPreference.muted_member_ids = args.enabled ? [args.member_id] : [];
+      else chatPreference.solo_member_id = args.enabled ? args.member_id : '';
+      return {...chatPreference};
+    }
+
     return { message: { message_id: args.message_id, role: 'user', content_parts: [{ type: 'text', text: 'Fetched task' }] } };
   },
 };
@@ -179,6 +187,16 @@ async function membersQuotaAndSummary() {
     assert.equal(quota('res_lead').getAttribute('title'), '额度不足 · 平台负责迁移', 'a steward is low at 10%');
     assert.equal(quota('res_run').className, '');
 
+    const mix = (id, mode) => row(root(), id).querySelector(`[data-family-mix="${mode}"]`);
+    assert.equal(mix('res_lead', 'mute'), null, 'roles have no personal routing controls');
+    assert.ok(mix('res_run', 'mute'), 'members offer M');
+    mix('res_run', 'mute').click(); await settle();
+    assert.equal(mix('res_run', 'mute').getAttribute('aria-pressed'), 'true');
+    mix('res_run', 'solo').click(); await settle();
+    assert.equal(mix('res_run', 'solo').getAttribute('aria-pressed'), 'true');
+    assert.equal(mix('res_run', 'mute').getAttribute('aria-pressed'), 'false');
+    mix('res_run', 'solo').click(); await settle();
+    assert.equal(mix('res_run', 'mute').getAttribute('aria-pressed'), 'true', 'exit Solo restores M');
     const intake = id => cells(root(), id)[4].querySelector('button');
     assert.equal(text(intake('res_run')), '开');
     assert.equal(intake('res_run').getAttribute('aria-checked'), 'true');

@@ -864,9 +864,11 @@ def get_resident_conversation_snapshot(
         # Infos show with the facade's next request, as on any Resident.
         snapshot = resident_held_infos.project_snapshot(target.record, snapshot, handed_to_steward=True)
         snapshot = family_facade.project_snapshot(target.record, snapshot)
+        from . import family_chat_preferences
         if not input_message_id:
             from . import personal_history
             snapshot = personal_history.prepend(target.record, snapshot, limit=history_limit)
+        snapshot = family_chat_preferences.project(target.record, actor_id, snapshot)
     else:
         snapshot = resident_held_infos.project_snapshot(target.record, snapshot)
         snapshot["messages"] = resident_mailbox.project_messages(target.resident_id, snapshot.get("messages") or [])
@@ -895,7 +897,10 @@ def get_conversation_messages(
     target = _target(resident_id, actor)
     from . import personal_history
     if page_token.startswith(personal_history.TOKEN_PREFIX):
-        return personal_history.page(target.record, page_token, limit=limit)
+        page = personal_history.page(target.record, page_token, limit=limit)
+        from . import family_chat_preferences
+        page["messages"] = family_chat_preferences.filter_messages(target.record, actor, page["messages"])
+        return page
     page = resident_conversation_stream.get_repository().messages_page(
         target.resident_id,
         page_token,
@@ -907,7 +912,9 @@ def get_conversation_messages(
     )
     if facade:
         page["messages"] = family_facade.project_messages(target.record, list(page.get("messages") or []))
+        from . import family_chat_preferences
         page = personal_history.prepend(target.record, page, limit=limit)
+        page["messages"] = family_chat_preferences.filter_messages(target.record, actor, page["messages"])
     else:
         page["messages"] = resident_mailbox.project_messages(target.resident_id, page.get("messages") or [])
     return page
@@ -932,6 +939,8 @@ def get_input_history(
     )
     if facade:
         page["messages"] = family_facade.project_messages(target.record, list(page.get("messages") or []))
+        from . import family_chat_preferences
+        page["messages"] = family_chat_preferences.filter_messages(target.record, actor, page["messages"])
     return page
 
 

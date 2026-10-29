@@ -831,6 +831,9 @@ def test_a_nested_family_follows_the_relay_chain_to_the_member_doing_the_work(mo
     titles = {outer: "外层", inner: "内层 Family", MEMBER: "前端"}
 
     class Repository:
+        def _tool_status_messages(self, messages, *, resident_id):
+            return messages
+
         def message_business_ref(self, resident_id, message_id):
             return refs.get((resident_id, message_id), "")
 
@@ -1002,6 +1005,9 @@ def test_the_facade_conversation_reads_like_a_resident_answering_its_requests(mo
     reads = []
 
     class Repository:
+        def _tool_status_messages(self, messages, *, resident_id):
+            return messages
+
         def message_business_ref(self, resident_id, message_id):
             return ""
 

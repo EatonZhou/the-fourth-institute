@@ -191,10 +191,18 @@ def arrival_details(
         "identity": _sender_identity(actor_id, author_id),
     }
     if facade:
-        # A request quoting a member's message goes straight to that member (decision_44cf587c1721).
-        from .family_facade import quoted_member
+        # A request quoting a member's message, or a Resident's next request,
+        # goes straight to its member (decision_44cf587c1721).
+        from .family_facade import continued_member, quoted_member
+        from .family_chat_preferences import direct_member
 
-        details["quoted_member_id"] = quoted_member(facade, message)
+        direct = direct_member(facade, message)
+        details["direct_member_id"] = direct
+        quoted = quoted_member(facade, message)
+        details["quoted_member_id"] = quoted if quoted == direct else ""
+        if not details["quoted_member_id"]:
+            continued = continued_member(facade, message)
+            details["continued_member_id"] = continued if continued == direct else ""
     return details
 
 
@@ -214,7 +222,9 @@ def arrival_event(event_source_id: str, subject_id: str, arrival: Mapping[str, A
             "message_id": arrival["message_id"],
             "author_id": arrival["author_id"],
             "relay_depth": arrival["relay_depth"],
+            "direct_member_id": arrival.get("direct_member_id") or "",
             "quoted_member_id": arrival.get("quoted_member_id") or "",
+            "continued_member_id": arrival.get("continued_member_id") or "",
         },
         correlation=f"{event_source_id}:{subject_id}:{arrival.get('occurrence_id') or arrival['message_id']}",
         identity=arrival["identity"],

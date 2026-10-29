@@ -96,11 +96,21 @@ def facade_for_arrival_call(lineage, component_id, instruction, arguments, event
     if (not message or message.get("role") != "user"
             or not same_actor(message.get("author_id"), caller)):
         return ""
-    target = family_facade.quoted_member(facade, message)
+    from .family_chat_preferences import direct_member
+    direct = direct_member(facade, message)
+    if relaying and payload.get("direct_member_id"):
+        return facade_id if direct == arguments["member_id"] == payload["direct_member_id"] else ""
+    quoted = family_facade.quoted_member(facade, message)
+    target = quoted if quoted == direct else ""
     if relaying:
-        return facade_id if target and target == arguments["member_id"] == payload.get("quoted_member_id") else ""
+        if target:
+            return facade_id if target == arguments["member_id"] == payload.get("quoted_member_id") else ""
+        # Recomputed from stored relays, never taken from the payload alone.
+        continued = family_facade.continued_member(facade, message)
+        return facade_id if continued and continued == arguments["member_id"] == payload.get("continued_member_id") else ""
     # Asking this Family's Router to choose is internal maintenance of an
     # accepted request; it gives the sender no right to dispatch other tasks.
+    # A continuing request may still be asked about: it only takes longer.
     return facade_id if (not target and not payload.get("quoted_member_id")
                          and repository.input_state(facade_id, message_id).get("state") == "queued") else ""
 

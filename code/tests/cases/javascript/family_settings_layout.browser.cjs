@@ -42,7 +42,15 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
       const container = document.getElementById('nodeMenuFamilySettings');
       container.hidden = false;
       container.innerHTML = '<p>在这里查看和调整 Family 内部成员的工作状态、Backend、账号与接单设置。</p><div data-members></div><button id="after-members">管理成员</button>';
-      const nodes = Array.from({ length: 12 }, (_, i) => ({ resident_id: 'fixture_' + i, title: 'ArchExplorer 开发团队 · 成员 ' + i }));
+      const nodes = Array.from({ length: 12 }, (_, i) => ({ resident_id: 'fixture_' + i, role: 'member', title: 'ArchExplorer 开发团队 · 成员 ' + i }));
+      let chatPolicy = {muted_member_ids: [], solo_member_id: ''};
+      window.PortalInstructionClient = {execute: async (name, args) => {
+        if (name === 'UpdateFamilyChatPreferences') {
+          if (args.control === 'mute') chatPolicy.muted_member_ids = args.enabled ? [args.member_id] : [];
+          else chatPolicy.solo_member_id = args.enabled ? args.member_id : '';
+        }
+        return {...chatPolicy};
+      }};
       window.PortalAPI = { get: async () => ({ accounts: [] }) };
       window.PortalResidentRuntimeController = { bind: (_id, handlers) => {
         window.refreshMember = () => handlers.onState({});
@@ -50,7 +58,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
         state: () => ({ canEdit: true }), destroy() {},
         load: async () => ({ detail: { resident: { backend: 'codex' } }, settings: { model: 'gpt-model-long-name', reasoning_effort: 'high' } }),
       }); } };
-      window.PortalResidentProtocol = { ...PortalResidentProtocol, acquire: () => ({
+      window.PortalResidentProtocol = { ...PortalResidentProtocol, loadSnapshot: async () => ({}), acquire: () => ({
         destroy() {}, load: async () => ({ state: { work_state: 'idle', execution_gate: { state: 'open' } }, messages: [] }),
       }) };
       const status = PortalChatWorkspaceFamilyStatus.createFamilyStatus({
@@ -61,6 +69,13 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
       familyView.open();
     });
     await page.waitForFunction(() => document.querySelectorAll('[data-family-status-row]').length === 12);
+    const mute = page.locator('[data-family-status-row="fixture_0"] [data-family-mix="mute"]');
+    await mute.click();
+    await page.waitForFunction(() => document.querySelector('[data-member="fixture_0"][data-family-mix="mute"]').getAttribute('aria-pressed') === 'true');
+    await page.locator('[data-member="fixture_1"][data-family-mix="solo"]').click();
+    await page.waitForFunction(() => document.querySelector('[data-member="fixture_1"][data-family-mix="solo"]').getAttribute('aria-pressed') === 'true');
+    await page.locator('[data-member="fixture_1"][data-family-mix="solo"]').click();
+    await page.waitForFunction(() => document.querySelector('[data-member="fixture_0"][data-family-mix="mute"]').getAttribute('aria-pressed') === 'true');
     for (const width of [1440, 840, 600, 390]) {
       await page.setViewportSize({ width, height: 900 });
       const metrics = await page.evaluate(async () => {

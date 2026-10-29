@@ -56,7 +56,7 @@ ASKED = "msg_" + "2" * 16
 def _ask(relay_depth: int = 0, *, failing: dict | None = None, parts: list | None = None, states: list | None = None,
          quoted: str = "", members: list | None = None, rounds: list | None = None, quote: dict | None = None,
          record: dict | None = None, in_context: dict | None = None, summaries: list | None = None,
-         guide: dict | None = None, goal: str = "让登录稳定", direct: list | None = None):
+         guide: dict | None = None, goal: str = "让登录稳定", direct: list | None = None, continued: str = ""):
     """One Router Effect activation; ``record`` is what the Router was told before, ``in_context`` its messages' fate."""
 
     message = {"content_parts": parts or PARTS, "author_id": "CASE-A", "created_at": "2026-10-12T11:22:40Z",
@@ -83,7 +83,7 @@ def _ask(relay_depth: int = 0, *, failing: dict | None = None, parts: list | Non
             "context_key": f"family_router_context_{FACADE}", "family": "登录 Family", "goal": goal,
         },
         "event": {"payload": {"resident_id": FACADE, "message_id": MESSAGE_ID, "relay_depth": relay_depth,
-                              "quoted_member_id": quoted}},
+                              "quoted_member_id": quoted, "continued_member_id": continued}},
         "packet": {},
         "endpoint": {},
     }
@@ -341,6 +341,22 @@ def test_a_quoted_members_message_goes_back_to_it_without_the_router_resident():
         assert outcome.status == "succeeded"
         assert [name for name, _ in calls] == ["RelayFamilyMessage"]
         assert calls[-1][1]["member_id"] == MEMBERS[1] and outcome.outputs["confidence"] == 100
+
+
+def test_a_residents_continuing_request_goes_to_its_member_without_the_router_resident():
+    """Resident 接着发来的请求不经 Router Resident 交给原承接成员
+
+    到达事件带 continued_member_id 时 Router Effect 直接交给该成员，置信度 100，不询问 Router Resident；同时带引用成员时引用优先。
+
+    :importance: P1
+    :design: decision_44cf587c1721
+    """
+    outcome, calls = _ask(continued=MEMBERS[0])
+    assert outcome.status == "succeeded"
+    assert [name for name, _ in calls] == ["RelayFamilyMessage"]
+    assert calls[-1][1]["member_id"] == MEMBERS[0] and outcome.outputs["confidence"] == 100
+    outcome, calls = _ask(quoted=MEMBERS[1], continued=MEMBERS[0])
+    assert [arguments["member_id"] for _, arguments in calls] == [MEMBERS[1]]
 
 
 def test_the_familys_calls_to_its_steward_and_router_come_from_the_facade():

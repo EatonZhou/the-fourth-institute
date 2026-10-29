@@ -279,6 +279,17 @@ def dispatch(facade_id: str, trigger: str, actor: str, *, facts: dict | None = N
         message = resident_conversation_stream.get_repository().message(facade_id, mid)
         if message is None:
             raise KeyError("门面原消息不存在")
+        from . import family_chat_preferences, family_quota
+        policy = family_chat_preferences.capture(facade, message)
+        from .resident_questions import answered_set
+        direct = family_chat_preferences.direct_member(facade, message) if answered_set(message) else policy['solo_member_id']
+        if direct:
+            return family_quota.relay_message(facade_id, mid, direct, actor)
+        facts['routing']['members'] = family_chat_preferences.allowed(facade, policy)
+        facts['routing']['chat_preferences'] = policy
+        facts['routing']['constraint'] += ' M/S 是原发送者的硬约束，不能选择被排除的成员。'
+        if policy['muted_member_ids'] and not facts['routing']['members']:
+            raise ValueError('当前所有成员已 Mute，请先取消至少一个成员的 M')
         facts.update(sender=message.get("author_id"), content=message.get("content_parts"))
         if message.get("quote"):
             facts["quote"] = message["quote"]

@@ -26,7 +26,7 @@ from .runtime_read_models import (
 )
 
 
-LINEAGE_DATA_SCHEMA = "tfi.lineage-data.v64"
+LINEAGE_DATA_SCHEMA = "tfi.lineage-data.v65"
 LINEAGE_TIMER_LEASE_KEY = "lineage_timer_lease"
 DEFINITION_COLUMN_FIELDS = frozenset({
     "schema",

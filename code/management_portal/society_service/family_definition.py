@@ -23,15 +23,28 @@ FAMILY_MEMBER_SIGNALS = (
 # settings: switching it to Codex or another model is a
 # RestartSession or settings change on that Resident, not a script edit.
 # The Router keeps its session and reads current candidate facts as needed.
+# Two kinds of request need no choice and skip the Router Resident: a quote
+# of a member's message goes back to that member, and a Resident's next
+# request goes to the member that took its latest one (family_facade).
 
 FAMILY_ROUTER_SCRIPT = r'''facade="${event.payload.resident_id}"
 mid="${event.payload.message_id}"
 if [ "${event.payload.relay_depth}" -ge 4 ]; then
   fail "经过的门面数超过上限"
 fi
+if [ -n "${event.payload.direct_member_id}" ]; then
+  relayed=$(RelayFamilyMessage resident_id="$facade" message_id="$mid" member_id="${event.payload.direct_member_id}")
+  output target="${event.payload.direct_member_id}" state="${relayed.status}" confidence:=100 reason="按发送者的直连目标转交"
+  exit
+fi
 if [ -n "${event.payload.quoted_member_id}" ]; then
   relayed=$(RelayFamilyMessage resident_id="$facade" message_id="$mid" member_id="${event.payload.quoted_member_id}")
   output target="${event.payload.quoted_member_id}" state="${relayed.status}" confidence:=100 reason="引用了这个成员的消息，直接交回"
+  exit
+fi
+if [ -n "${event.payload.continued_member_id}" ]; then
+  relayed=$(RelayFamilyMessage resident_id="$facade" message_id="$mid" member_id="${event.payload.continued_member_id}")
+  output target="${event.payload.continued_member_id}" state="${relayed.status}" confidence:=100 reason="同一 Resident 接着发来的请求，交给承接它上一条请求的成员"
   exit
 fi
 # Even an empty or single-member roster can receive organization work for its steward.

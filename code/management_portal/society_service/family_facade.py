@@ -383,6 +383,9 @@ def show_request(facade_id: str, message_id: str) -> None:
 
     repository = resident_conversation_stream.get_repository()
     message = repository.message(facade_id, message_id)
+    if message is not None:
+        from . import family_chat_preferences, resident_record_domain
+        family_chat_preferences.capture(resident_record_domain.find_resident(facade_id), message)
     if message is None or message.get("activated_at"):
         return
     # The public message leaves out business_ref; a nested facade's message
@@ -702,10 +705,10 @@ def project_messages(
                     message["relay"] = {"state": "scope_review"}
                 elif review.get("status") == "waiting":
                     message["relay"] = {"state": "quota_review", "resident_id": review["member_id"],
-                                        "weekly_remaining_percent": review.get("weekly_remaining_percent")}
-                elif quoted := quoted_member(facade, message):
-                    # A quote of a member's message goes to that member without the Router.
-                    message["relay"] = {"state": "delivering", "resident_id": quoted, **_member_view(quoted)}
+                                        "quota_remaining_percent": review.get("quota_remaining_percent")}
+                elif direct := quoted_member(facade, message) or continued_member(facade, message):
+                    # A quote of a member's message, or a Resident's next request, goes to its member without the Router.
+                    message["relay"] = {"state": "delivering", "resident_id": direct, **_member_view(direct)}
                 else:
                     message["relay"] = {"state": ROUTING_STATE}
             continue
@@ -1050,9 +1053,6 @@ def quoted_member(facade: Mapping[str, Any], message: Mapping[str, Any] | None) 
 
     from management_common.principal import message_quote
 
-    from . import resident_execution_provider
-    from . import resident_record_domain
-
     if not isinstance(message, Mapping) or not is_facade(facade):
         return ""
     quoted_id = str(message_quote(message).get("message_id") or "")
@@ -1076,16 +1076,78 @@ def quoted_member(facade: Mapping[str, Any], message: Mapping[str, Any] | None) 
                     break
     if not member_id or (member_id not in family_member_ids(facade) and member_id != family_steward_id(facade)):
         return ""
+    return member_id if _can_take(member_id, message) else ""
+
+
+# A Resident's request continues with the member of its latest one within this time.
+CONTINUATION_SECONDS = 4 * 3600
+
+
+def continued_member(facade: Mapping[str, Any], message: Mapping[str, Any] | None) -> str:
+    """The member a Resident's next request goes to without the Router; "" when the Router chooses as usual.
+
+    A Resident outside the Family that sends the facade request after request
+    keeps working with the member that took its latest one (decision_44cf587c1721):
+    the Router chose that member again for such senders almost every time.
+    People change subjects too often for this, so their requests, and any
+    request with a quote, are routed as usual.  The sender's latest relayed
+    request decides: one the steward took was organization work, and one older
+    than ``CONTINUATION_SECONDS``, or whose member left the Family or cannot
+    read this request's images or files, leaves the choice to the Router.
+    Only relays made before this request arrived count, so the answer does not
+    change while the request waits.
+    """
+
+    from management_common.principal import message_quote
+
+    if not isinstance(message, Mapping) or not is_facade(facade) or message_quote(message).get("message_id"):
+        return ""
+    author_id = canonical_actor_id(str(message.get("author_id") or ""))
+    members = family_member_ids(facade)
+    if not RESIDENT_REF.fullmatch(author_id) or author_id in members | {family_steward_id(facade)}:
+        return ""
+    arrived = _moment(message.get("created_at"))
+    if arrived is None:
+        return ""
+    message_id = str(message.get("message_id") or "")
+    recent = sorted(
+        ((moment, source_id, link) for source_id, link in relay_links(facade).items()
+         if source_id != message_id and (moment := _moment(link.get("relayed_at"))) is not None
+         and 0 <= (arrived - moment).total_seconds() <= CONTINUATION_SECONDS),
+        key=lambda item: item[0], reverse=True,
+    )
+    facade_id = resident_lineage.resident_id(facade)
+    repository = resident_conversation_stream.get_repository()
+    for _relayed_at, source_id, link in recent:
+        if not same_actor((repository.message(facade_id, source_id) or {}).get("author_id"), author_id):
+            continue
+        member_id = str(link.get("resident_id") or "")
+        return member_id if member_id in members and _can_take(member_id, message) else ""
+    return ""
+
+
+def _moment(value: object) -> datetime | None:
+    try:
+        moment = datetime.fromisoformat(str(value or "").replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return moment if moment.tzinfo else moment.replace(tzinfo=timezone.utc)
+
+
+def _can_take(member_id: str, message: Mapping[str, Any]) -> bool:
+    """Whether a member still exists and can read the request's images and files."""
+
+    from . import resident_execution_provider
+    from . import resident_record_domain
+
     record = resident_record_domain.find_resident(member_id)
     if not record or record.get("deleted_at"):
-        return ""
+        return False
     capabilities = resident_execution_provider.provider_for(record).capabilities
     kinds = {
         str(part.get("type") or "") for part in message.get("content_parts") or [] if isinstance(part, Mapping)
     }
-    if ("image" in kinds and not capabilities.supports_media) or ("file" in kinds and not capabilities.local_tools):
-        return ""
-    return member_id
+    return not (("image" in kinds and not capabilities.supports_media) or ("file" in kinds and not capabilities.local_tools))
 
 
 def relay_quote(source: tuple[str, str] | None, member_id: str) -> dict[str, str]:

@@ -24,6 +24,7 @@
       root.setAttribute("aria-label", window.PortalI18n.t("Family 状态"));
       (container || document.body).append(root);
       const rows = new Map();
+      let chatPolicy = null, mixBusy = false;
       let accounts = [], family = {}, quotaError = "", disposed = false, loading = false, reloadRequested = false;
 
       const popoverOptions = { trigger: anchor, panel: root, portal: true,
@@ -89,22 +90,32 @@
           const reset = week?.resets_at ? footerTime(typeof week.resets_at === "number" ? new Date(week.resets_at * 1000).toISOString() : week.resets_at) : "未知";
           const low = remain !== null && (row.role === "steward" ? remain <= 10 : remain < 10);
           const note = low ? row.role === "steward" ? "额度不足 · 平台负责迁移" : row.role === "member" ? "低于 10% · 新请求须 steward 评估" : "低额度" : "";
+          const solo = chatPolicy?.solo_member_id || '';
+          const muted = !solo && (chatPolicy?.muted_member_ids || []).includes(id);
+          const mix = row.role === 'member' ? `<span class="familyMemberMix">${[
+            ['mute', 'M', muted, 'Mute：排除路由并隐藏对话'],
+            ['solo', 'S', solo === id, 'Solo：直连并只显示此成员'],
+          ].map(([mode, label, active, hint]) => `<button type="button" class="familyMemberMixButton" data-family-mix="${mode}" data-member="${escapeHtml(id)}" aria-label="${escapeHtml(`${row.title || id} · ${hint}`)}" title="${escapeHtml(hint)}" aria-pressed="${active}" ${!chatPolicy || mixBusy ? 'disabled' : ''}>${label}</button>`).join('')}</span>` : '';
           const href = `/lineage?${new URLSearchParams({ resident: id, lineage: family.lineage_id || "", open_chat: "1" })}`;
           const intakeNote = migration(row) ? "迁移暂关" : closed ? "关" : "开";
           const status = migration(row) ? "queued" : failed(row) && !working(row) ? "failed" : rowState(row).status;
-          return window.PortalI18n.html`<tr data-family-status-row="${escapeHtml(id)}"><td data-label="节点"><a class="messageMetaLink familyStatusName" href="${escapeHtml(href)}" title="${escapeHtml(row.title || id)}">${escapeHtml(row.title || id)}</a></td><td data-label="工作状态"><button class="portalButton is-quiet familyStatusWork" data-family-status-detail="${escapeHtml(id)}" title="${escapeHtml(label(row))} · 展开工作详情" aria-expanded="${row.expanded ? "true" : "false"}"><span class="status-badge ${escapeHtml(status)}">${escapeHtml(label(row))}</span>${gate.text ? `<span class="status-badge" data-execution-gate="${escapeHtml(gate.state)}" title="${escapeHtml(gate.text)}">${escapeHtml(gate.label)}</span>` : ""}${queue ? window.PortalI18n.html`<span class="familyStatusQueue"> · 排队 ${queue}</span>` : ""}</button></td><td data-label="Backend／账号"><button type="button" class="portalButton is-quiet familyStatusAccount" data-family-status-settings="${escapeHtml(id)}" aria-haspopup="dialog" title="${escapeHtml(window.PortalI18n.text`${row.title || id} · 成员运行设置`)}" ${!canEditRuntime(row) && row.runtime?.state().canRestart !== true || row.settingsLoading || migration(row) ? "disabled" : ""}><span><span>${escapeHtml(`${backend} · ${accountLabel}`)}</span>${canEditRuntime(row) || d.runtime_settings ? window.PortalI18n.html`<span class="familyStatusRuntime"><span>${escapeHtml(row.settingsLoading ? window.PortalI18n.t("读取设置…") : runtimeLabel(row))}</span></span>` : ""}</span><span aria-hidden="true">▾</span></button></td><td data-label="周剩余" ${low ? 'class="familyStatusAttention"' : ""} title="${escapeHtml(note || (remain === null ? q.fresh === false ? window.PortalI18n.t("观测过期，待刷新") : window.PortalI18n.t("无有效周额度观测") : window.PortalI18n.text`周额度重置：${reset}`))}"><span class="familyStatusQuotaValue">${remain === null ? q.currency && q.fresh === true ? escapeHtml(`${q.remaining_balance} ${q.currency}`) : window.PortalI18n.t("未知") : `${remain.toFixed(0)}%`}${low ? window.PortalI18n.markup('<span class="familyStatusQuotaWarning" aria-label="低额度">!</span>') : ""}</span>${remain !== null ? window.PortalI18n.html`<span class="familyStatusQuotaTrack" aria-hidden="true"><span style="width:${remain}%"></span></span>` : ""}</td><td data-label="接单"><button class="portalButton is-compact familyStatusIntake" role="switch" aria-checked="${closed ? "false" : "true"}" aria-label="${escapeHtml(window.PortalI18n.text`${row.title || id}接单`)}" aria-description="${escapeHtml(window.PortalI18n.t("关闭接单只暂停后续任务，当前工作继续"))}" data-portal-tooltip-opt-out="1" data-family-status-intake="${escapeHtml(id)}" ${d.allows?.OpenIntake !== true || migration(row) ? "disabled" : ""}>${intakeNote}</button></td></tr>${row.expanded ? window.PortalI18n.html`<tr><td colspan="5" class="familyStatusDetails"><dl>${gate.text ? `<dt>${escapeHtml(window.PortalI18n.t("执行保护"))}</dt><dd>${escapeHtml(gate.text)}</dd>` : ""}<dt>职责</dt><dd>${escapeHtml(d.resident?.description || window.PortalI18n.t("未填写"))}</dd><dt>模型</dt><dd>${escapeHtml([settings.model, settings.reasoning_effort].filter(Boolean).join(" · ") || window.PortalI18n.t("默认"))}</dd><dt>当前任务</dt><dd>${escapeHtml(taskText.slice(0, 800) || window.PortalI18n.t("无当前任务"))}</dd><dt>开始处理</dt><dd>${escapeHtml(footerTime(task?.activated_at || task?.created_at) || "—")}</dd><dt>最近活动</dt><dd>${escapeHtml(footerTime(snap.messages?.at(-1)?.created_at) || "—")}</dd><dt>周额度重置</dt><dd>${escapeHtml(reset)}</dd>${note ? window.PortalI18n.html`<dt>额度提示</dt><dd>${escapeHtml(note)}</dd>` : ""}${error ? window.PortalI18n.html`<dt>错误</dt><dd>${escapeHtml(typeof error === "string" ? error : JSON.stringify(error))}</dd>` : ""}</dl><a class="messageMetaLink" href="/lineage?${escapeHtml(new URLSearchParams({ lineage: family.lineage_id || "", resident: id }).toString())}">在画布定位</a></td></tr>` : ""}`;
+          return window.PortalI18n.html`<tr data-family-status-row="${escapeHtml(id)}"><td data-label="节点"><div class="familyMemberIdentity"><a class="messageMetaLink familyStatusName" href="${escapeHtml(href)}" title="${escapeHtml(row.title || id)}">${escapeHtml(row.title || id)}</a>${mix}</div></td><td data-label="工作状态"><button class="portalButton is-quiet familyStatusWork" data-family-status-detail="${escapeHtml(id)}" title="${escapeHtml(label(row))} · 展开工作详情" aria-expanded="${row.expanded ? "true" : "false"}"><span class="status-badge ${escapeHtml(status)}">${escapeHtml(label(row))}</span>${gate.text ? `<span class="status-badge" data-execution-gate="${escapeHtml(gate.state)}" title="${escapeHtml(gate.text)}">${escapeHtml(gate.label)}</span>` : ""}${queue ? window.PortalI18n.html`<span class="familyStatusQueue"> · 排队 ${queue}</span>` : ""}</button></td><td data-label="Backend／账号"><button type="button" class="portalButton is-quiet familyStatusAccount" data-family-status-settings="${escapeHtml(id)}" aria-haspopup="dialog" title="${escapeHtml(window.PortalI18n.text`${row.title || id} · 成员运行设置`)}" ${!canEditRuntime(row) && row.runtime?.state().canRestart !== true || row.settingsLoading || migration(row) ? "disabled" : ""}><span><span>${escapeHtml(`${backend} · ${accountLabel}`)}</span>${canEditRuntime(row) || d.runtime_settings ? window.PortalI18n.html`<span class="familyStatusRuntime"><span>${escapeHtml(row.settingsLoading ? window.PortalI18n.t("读取设置…") : runtimeLabel(row))}</span></span>` : ""}</span><span aria-hidden="true">▾</span></button></td><td data-label="周剩余" ${low ? 'class="familyStatusAttention"' : ""} title="${escapeHtml(note || (remain === null ? q.fresh === false ? window.PortalI18n.t("观测过期，待刷新") : window.PortalI18n.t("无有效周额度观测") : window.PortalI18n.text`周额度重置：${reset}`))}"><span class="familyStatusQuotaValue">${remain === null ? q.currency && q.fresh === true ? escapeHtml(`${q.remaining_balance} ${q.currency}`) : window.PortalI18n.t("未知") : `${remain.toFixed(0)}%`}${low ? window.PortalI18n.markup('<span class="familyStatusQuotaWarning" aria-label="低额度">!</span>') : ""}</span>${remain !== null ? window.PortalI18n.html`<span class="familyStatusQuotaTrack" aria-hidden="true"><span style="width:${remain}%"></span></span>` : ""}</td><td data-label="接单"><button class="portalButton is-compact familyStatusIntake" role="switch" aria-checked="${closed ? "false" : "true"}" aria-label="${escapeHtml(window.PortalI18n.text`${row.title || id}接单`)}" aria-description="${escapeHtml(window.PortalI18n.t("关闭接单只暂停后续任务，当前工作继续"))}" data-portal-tooltip-opt-out="1" data-family-status-intake="${escapeHtml(id)}" ${d.allows?.OpenIntake !== true || migration(row) ? "disabled" : ""}>${intakeNote}</button></td></tr>${row.expanded ? window.PortalI18n.html`<tr><td colspan="5" class="familyStatusDetails"><dl>${gate.text ? `<dt>${escapeHtml(window.PortalI18n.t("执行保护"))}</dt><dd>${escapeHtml(gate.text)}</dd>` : ""}<dt>职责</dt><dd>${escapeHtml(d.resident?.description || window.PortalI18n.t("未填写"))}</dd><dt>模型</dt><dd>${escapeHtml([settings.model, settings.reasoning_effort].filter(Boolean).join(" · ") || window.PortalI18n.t("默认"))}</dd><dt>当前任务</dt><dd>${escapeHtml(taskText.slice(0, 800) || window.PortalI18n.t("无当前任务"))}</dd><dt>开始处理</dt><dd>${escapeHtml(footerTime(task?.activated_at || task?.created_at) || "—")}</dd><dt>最近活动</dt><dd>${escapeHtml(footerTime(snap.messages?.at(-1)?.created_at) || "—")}</dd><dt>周额度重置</dt><dd>${escapeHtml(reset)}</dd>${note ? window.PortalI18n.html`<dt>额度提示</dt><dd>${escapeHtml(note)}</dd>` : ""}${error ? window.PortalI18n.html`<dt>错误</dt><dd>${escapeHtml(typeof error === "string" ? error : JSON.stringify(error))}</dd>` : ""}</dl><a class="messageMetaLink" href="/lineage?${escapeHtml(new URLSearchParams({ lineage: family.lineage_id || "", resident: id }).toString())}">在画布定位</a></td></tr>` : ""}`;
         };
+        const missingSolo = chatPolicy?.solo_member_id && !rows.has(chatPolicy.solo_member_id);
+        const soloNotice = missingSolo ? `<p class="paneNote">Solo 成员已离开 <button type="button" class="portalButton is-compact" data-family-mix="solo" data-member="${escapeHtml(chatPolicy.solo_member_id)}" aria-pressed="true" ${mixBusy ? 'disabled' : ''}>取消 Solo</button></p>` : '';
         const table = values => window.PortalI18n.html`<table><thead><tr><th scope="col">节点</th><th scope="col">工作状态</th><th scope="col">Backend／账号</th><th scope="col">周剩余</th><th scope="col">接单</th></tr></thead><tbody>${values.map(rowHtml).join("")}</tbody></table>`;
         // Preserve keyboard focus and detail expansion during live refresh.
         const active = document.activeElement;
         const focusKey = active?.closest("[data-family-status-row]")?.dataset.familyStatusRow;
+        const mixAction = active?.dataset.familyMix;
         const action = active?.dataset.familyStatusDetail ? "detail" : active?.dataset.familyStatusSettings ? "settings" : active?.dataset.familyStatusIntake ? "intake" : "";
         const scrollTop = root.querySelector(".familyStatusBody")?.scrollTop || 0;
         const scrollLeft = root.querySelector(".familyStatusBody")?.scrollLeft || 0;
         root.setAttribute("aria-label", window.PortalI18n.text`${family.title || "Family"} · 成员状态`);
-        root.innerHTML = window.PortalI18n.html`<div class="familyStatusBody">${quotaError ? window.PortalI18n.html`<p class="paneNote">额度暂不可用：${escapeHtml(quotaError)}</p>` : ""}${rows.size ? table(all) : window.PortalI18n.html`<p>${loading ? window.PortalI18n.t("正在加载…") : window.PortalI18n.t("暂无成员状态")}</p>`}</div>${rows.size ? window.PortalI18n.html`<p class="familyStatusIntakeNote">关闭接单只暂停后续任务，当前工作继续</p>` : ""}`;
+        root.innerHTML = window.PortalI18n.html`<div class="familyStatusBody">${soloNotice}${quotaError ? window.PortalI18n.html`<p class="paneNote">额度暂不可用：${escapeHtml(quotaError)}</p>` : ""}${rows.size ? table(all) : window.PortalI18n.html`<p>${loading ? window.PortalI18n.t("正在加载…") : window.PortalI18n.t("暂无成员状态")}</p>`}</div>${rows.size ? window.PortalI18n.html`<p class="familyStatusIntakeNote">关闭接单只暂停后续任务，当前工作继续</p>` : ""}`;
         root.querySelector(".familyStatusBody").scrollTop = scrollTop;
         root.querySelector(".familyStatusBody").scrollLeft = scrollLeft;
+        if (focusKey && mixAction) root.querySelector(`[data-family-status-row="${CSS.escape(focusKey)}"] [data-family-mix="${CSS.escape(mixAction)}"]`)?.focus({ preventScroll: true });
         if (focusKey && action) root.querySelector(`[data-family-status-${action}="${CSS.escape(focusKey)}"]`)?.focus({ preventScroll: true });
       };
       let quotaRequest = null;
@@ -124,6 +135,7 @@
         loading = true; render();
         void loadQuota();
         try {
+          chatPolicy = await window.PortalInstructionClient.execute('GetFamilyChatPreferences', {resident_id: residentId});
           const knownFamily = getFamily?.();
           family = knownFamily || (await window.PortalResidentService.projection({ residentId })).family_facade || {};
           if (disposed || !isOpen()) return;
@@ -198,6 +210,21 @@
       };
       root.addEventListener("click", async event => {
         try {
+          const mix = event.target.closest('[data-family-mix]');
+          if (mix && !mix.disabled && !mixBusy) {
+            mixBusy = true; render();
+            try {
+              const result = await window.PortalInstructionClient.execute('UpdateFamilyChatPreferences', {
+                resident_id: residentId, member_id: mix.dataset.member,
+                control: mix.dataset.familyMix, enabled: mix.getAttribute('aria-pressed') !== 'true',
+              });
+              if (disposed) return;
+              chatPolicy = result;
+              window.PortalResidentProjection?.invalidate?.(residentId);
+              await window.PortalResidentProtocol.loadSnapshot(residentId, {force: true});
+            } finally { mixBusy = false; render(); }
+            return;
+          }
           const detail = event.target.closest("[data-family-status-detail]");
           if (detail) { const row = rows.get(detail.dataset.familyStatusDetail); row.expanded = !row.expanded; render(); return; }
           const intake = event.target.closest("[data-family-status-intake]");

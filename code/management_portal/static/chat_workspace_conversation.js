@@ -160,7 +160,18 @@
         ...roleIssues.map(node => `${node.role === "router" ? "Router" : "Steward"}：${node.availability.reason}`),
         snapshot.family_facade?.alert_contact?.status === "missing" ? window.PortalI18n.t("未登记真人告警联系人") : "",
       ].filter(Boolean).join("；");
-      const projected = foldDeliveredInfos(Array.isArray(snapshot.messages) ? snapshot.messages : [],
+      const policy = snapshot.family_facade?.chat_preferences;
+      const solo = policy?.solo_member_id || '';
+      const muted = new Set(policy?.muted_member_ids || []);
+      const memberIds = new Set((familyMembers || []).map(m => m.resident_id));
+      const visible = message => {
+        if (!solo && !muted.size) return true;
+        const relay = message.family_reply || message.relay || message.family_history || {};
+        const chain = [...(relay.via || []).map(m => m.resident_id), relay.resident_id, message.origin?.initiated_by?.id];
+        const owner = chain.find(id => memberIds.has(id) || muted.has(id) || id === solo);
+        return !owner || (solo ? owner === solo : !muted.has(owner));
+      };
+      const projected = foldDeliveredInfos((Array.isArray(snapshot.messages) ? snapshot.messages : []).filter(visible),
         { handedToSteward: facade }).map(residentProtocolMessageToWorkspace);
       const known = new Set(projected.map(message => message.id));
       for (const message of snapshot.local_submissions || []) {

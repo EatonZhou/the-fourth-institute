@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 from typing import Any
+from . import family_chat_preferences
 ROLES = ("member", "facade", "router", "steward")
 COLUMNS = {
+    **family_chat_preferences.COLUMNS,
     "families": ("family_id", "lineage_id", "title", "goal", "previous_leader_id", "deleted_at", "human_familizer_id", "route_threshold", "review_interval_seconds", "lineage_scope", "resource_id", "created_at", "updated_at", "personal_ama_id", "history_before", "history_before_ordinal", "auto_migrate", "auto_migrate_priority"),
     "family_residents": ("family_id", "resident_id", "role"),
 }
@@ -18,6 +20,7 @@ def operating_role_ids(connection: Any) -> list[str]:
 
 
 def create_schema(connection: Any) -> None:
+    family_chat_preferences.create_schema(connection)
     connection.execute("""CREATE TABLE families (
         family_id TEXT PRIMARY KEY, lineage_id TEXT NOT NULL REFERENCES lineages(lineage_id) ON DELETE CASCADE,
         title TEXT NOT NULL, goal TEXT NOT NULL, previous_leader_id TEXT NOT NULL DEFAULT '',

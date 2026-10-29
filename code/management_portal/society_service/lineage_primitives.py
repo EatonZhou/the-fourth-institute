@@ -389,6 +389,8 @@ def normalize_event_payload(raw: object) -> dict[str, Any]:
         "member_resident_id",
         "member_message_id",
         "quoted_member_id",
+        "continued_member_id",
+        "direct_member_id",
         "commit",
         "completed_at",
         "publication_id",

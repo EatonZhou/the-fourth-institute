@@ -105,3 +105,21 @@ HANDLERS = {"Familize": familize, "Unfamilize": unfamilize, "DeleteFamily": dele
             "CheckFamilyRecovery": check_family_recovery, "CheckFamilyProgress": check_family_progress,
             "CheckFamilyRoleAvailability": check_family_role_availability,
             "PublishFamilyProgress": publish_family_progress, "DispatchFamilyTask": dispatch_family_task}
+
+
+def get_family_chat_preferences(inv):
+    from ..family_chat_preferences import get
+    return get(inv.argument('resident_id'), inv.caller)
+
+
+def update_family_chat_preferences(inv):
+    from ..family_chat_preferences import change
+    try:
+        return change(inv.argument('resident_id'), inv.caller, inv.argument('member_id'),
+                      inv.argument('control'), inv.argument('enabled'))
+    except ValueError as exc:
+        raise invalid(str(exc)) from exc
+
+
+HANDLERS.update(GetFamilyChatPreferences=get_family_chat_preferences,
+                UpdateFamilyChatPreferences=update_family_chat_preferences)
