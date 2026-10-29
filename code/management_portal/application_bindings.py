@@ -27,9 +27,7 @@ def resolve_application_lineage(*, actor: str, application: str) -> str:
 
     if application in builtins():
         return main_lineage(projection_application(application, actor))
-    if application == 'project-chat':
-        lineage_id = application_targets.resource_chat_lineage('project')
-    elif application.startswith('resource-chat:'):
+    if application.startswith('resource-chat:'):
         lineage_id = application_targets.resource_chat_lineage(application.split(':',1)[1])
     else:
         try:

@@ -5,7 +5,6 @@ allocates or configures an identity; prepare is used only after a nonempty send.
 Existing scope strings remain stable so histories keep their original Resident.
 """
 from . import resident_handoff
-from .application_bindings import resolve_application_lineage
 from .resource_lineages import resolve_resource_lineage
 
 
@@ -27,9 +26,7 @@ def resolve(*, actor: str, surface: str, resident_scope: str,
         return native.ensure(surface, actor=actor, resident_scope=resident_scope,
                              create_role=True, **options)
     lineage_id = (resolve_resource_lineage(actor=actor, resource_type=resource_type)
-                  if surface == "resource" else
-                  resolve_application_lineage(actor=actor, application="project-chat")
-                  if surface == "project" else "")
+                  if surface == "resource" else "")
     if not lineage_id:
         raise ValueError(f"Unsupported discussion surface: {surface!r}")
     if not create:

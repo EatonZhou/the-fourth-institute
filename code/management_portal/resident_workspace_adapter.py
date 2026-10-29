@@ -6,7 +6,6 @@ from typing import Any
 
 from . import portal_chat_workspace_projection
 from . import discussion_residents
-from .resources import get_resource_service
 
 
 PORTAL_ROOT = Path(__file__).resolve().parents[1]
@@ -36,53 +35,6 @@ def _context_for(
     actor: str = "",
 ) -> dict[str, Any]:
     context = context if isinstance(context, dict) else {}
-    if surface == "project":
-        project_id = str(context.get("project_id") or "").strip()
-        if not project_id:
-            raise ValueError(
-                "project_id is required for a project Chat Workspace"
-            )
-        if workspace_key != f"project:{project_id}":
-            raise ValueError("workspace_key does not match project_id")
-        payload = get_resource_service().action(
-            project_id, "summary.read", resource_type="project", actor=actor,
-        )
-        payload["id"] = str(payload.pop("resource_id", project_id))
-        status = 200
-        title = str(
-            payload.get("name") or payload.get("id") or project_id
-        ).strip()
-        project_path = str(payload.get("path") or "").strip()
-        summary_path = str(payload.get("summary_path") or "").strip()
-        summary_text = str(payload.get("text") or "").strip()
-        display = {
-            "title": f"{title} Chat",
-            "subtitle": project_path or "Project discussion",
-            "placeholder": "讨论这个项目，Ctrl/⌘ + Enter 发送",
-            "empty_text": (
-                "可以围绕这个项目的目标、summary、任务和后续计划展开讨论。"
-            ),
-            "project_id": project_id,
-        }
-        if not include_prompt_context:
-            return display
-        display.update(
-            {
-                "working_directory": project_path,
-                "prompt_context": (
-                    "# Current Project Context\n\n"
-                    "This is the exact project currently selected in Portal. "
-                    "It supersedes conflicting assumptions from earlier turns.\n\n"
-                    f"- project_id: {payload.get('id') or project_id}\n"
-                    f"- project_path: {project_path}\n"
-                    f"- summary_path: {summary_path}\n"
-                    f"- summary_status: HTTP {status}\n\n"
-                    "Current summary.md:\n```markdown\n"
-                    f"{summary_text or '(empty)'}\n```"
-                ),
-            }
-        )
-        return display
     if surface == "paper":
         from . import paper_backend
 

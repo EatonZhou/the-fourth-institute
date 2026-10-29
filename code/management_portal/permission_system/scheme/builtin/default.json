@@ -1125,6 +1125,10 @@
       "a": "@viewer",
       "r": "@shared"
     },
+    "ListProjects": {
+      "a": "@viewer",
+      "r": "@shared"
+    },
     "ListProviderAccounts": {
       "a": "@viewer",
       "r": "@shared"

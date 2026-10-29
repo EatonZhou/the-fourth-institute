@@ -291,61 +291,6 @@ def knowledge_detail(
     }
 
 
-def project_index(*, actor: str = "", service: Any = None) -> dict[str, Any]:
-    service = service or get_resource_service()
-    payload = _query_all(
-        service,
-        resource_types=["project"],
-        actor=str(actor or ""),
-        include_attributes=True,
-    )
-    state = service.projection_state("project")
-    projects = []
-    for record in payload.get("resources") or []:
-        if not isinstance(record, dict):
-            continue
-        attributes = (
-            record.get("attributes")
-            if isinstance(record.get("attributes"), dict)
-            else {}
-        )
-        project_id = _text(record.get("resource_id"))
-        projects.append(
-            {
-                "resource_id": project_id,
-                "name": _text(
-                    attributes.get("name") or record.get("title")
-                ),
-                "status": _text(attributes.get("status")),
-                "project_type": _text(attributes.get("project_type")),
-                "description": _text(record.get("summary")),
-                "path": _text(attributes.get("path")),
-                "ddl": _text(attributes.get("ddl")),
-                "tags": list(attributes.get("tags") or []),
-            }
-        )
-    order = {
-        _text(project_id): index
-        for index, project_id in enumerate(state.get("project_ids") or [])
-    }
-    projects.sort(
-        key=lambda item: (
-            order.get(_text(item.get("resource_id")), len(order)),
-            _text(item.get("resource_id")).casefold(),
-        )
-    )
-    schema_version = state.get("schema_version")
-    if type(schema_version) is not int or schema_version != 1:
-        raise RuntimeError("Project projection requires schema_version 1")
-    return {
-        "schema_version": schema_version,
-        "status_vocab": list(state.get("status_vocab") or []),
-        "tag_vocab": list(state.get("tag_vocab") or []),
-        "projects": projects,
-    }
-
-
-
 
 
 

@@ -121,23 +121,12 @@ def test_admin_access_is_read_only_and_keeps_actor(monkeypatch):
     action.assert_not_called()
 
 
-def test_project_and_user_routes_keep_actor_and_response_contract(monkeypatch):
-    """项目与用户路由保留当前身份及响应结构"""
+def test_user_routes_keep_actor_and_response_contract(monkeypatch):
+    """用户路由保留当前身份及响应结构"""
     request = SimpleNamespace(headers={})
-    service = object()
-    project_index = mock.Mock(return_value={"projects": ["fixture"]})
     monkeypatch.setattr(server, "_get_session_username", lambda handler: "alice")
-    monkeypatch.setattr(server, "get_resource_service", lambda: service)
-    monkeypatch.setattr(server.resource_views, "project_index", project_index)
     monkeypatch.setattr(server, "list_users", lambda: {"users": ["alice"]})
     monkeypatch.setattr(server, "_serve_json", lambda handler, status, payload: (status, payload))
-
-    projects = urlparse("/api/projects/catalog")
-    monkeypatch.setattr(server._RESOURCE_HTTP, "respond", server._serve_json)
-    assert server._PORTAL_HTTP_ROUTES.dispatch(
-        "GET", projects.path, request, projects, "alice", phase="protected",
-    ) == (200, {"projects": ["fixture"]})
-    project_index.assert_called_once_with(actor="alice", service=service)
 
     todos = urlparse("/api/users")
     assert server._PORTAL_HTTP_ROUTES.dispatch(

@@ -4,29 +4,11 @@ import importlib
 
 import pytest
 
-from management_portal import agent_skill_context as skills, project_state
+from management_portal import agent_skill_context as skills
 from management_portal.resources import domain_projection_evidence as evidence
 from scripts import check_portal_architecture as architecture
 from scripts import resident_hatg_instruction as client
 from tests.cases.compatibility_test_support import synthetic_site
-from tests.cases.test_project_state import complete_payload, write_state
-
-
-@pytest.mark.parametrize("tag,accepted", [
-    ("tfi.project_state.v0.2", True), ("archive.project_state.v0.2", False),
-    ("tfi.project_state.v0.1", False), ("tfi.project_state.v99", False),
-])
-def test_project_state_reads_only_canonical_tag_without_writes(tmp_path, tag, accepted):
-    payload = {**complete_payload(), "schema_version": tag}
-    path = write_state(tmp_path, payload)
-    before = path.read_bytes()
-    with synthetic_site():
-        result = project_state.load_project_state("Demo", tmp_path)
-    assert (result["status"] != "invalid") == accepted
-    if not accepted:
-        assert result["source"]["code"] == "unsupported_schema"
-    assert path.read_bytes() == before
-    assert project_state.SUPPORTED_PROJECT_STATE_SCHEMAS == {"tfi.project_state.v0.2"}
 
 
 def descriptor():

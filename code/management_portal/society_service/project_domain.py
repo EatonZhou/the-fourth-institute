@@ -135,6 +135,55 @@ def _project_lineage_ids(identities: set[str]) -> tuple[list[str], list[str]]:
     return sorted(ordinary), sorted(principals)
 
 
+def project_teams(project_ids: list[str], actor: str) -> dict[str, dict[str, Any]]:
+    """The team of each named Project as far as ``actor`` may read its Lineages.
+
+    A Project's team is its Project-layer Lineage, whose Leader is the Project
+    Resident, and its ordinary Lineages (decision_3e07c6d35cac); personal and
+    User-layer Lineages are not part of it.  Each ordinary Lineage reports its
+    Leader, how many members it has and how many of them are running now.
+    """
+    from . import lineage_domain, principal_hierarchy
+    from .lineage_access_policy import changeable_ids
+    from .resident_protocol import read_resident_states
+
+    wanted = list(dict.fromkeys(str(item or "").strip() for item in project_ids if str(item or "").strip()))
+    catalog = lineage_domain._lineage_catalog_store()
+    rows = [row for row in catalog.listing_records()
+            if row.get("project_id") in wanted and row.get("lineage_membership") != "personal"
+            and (row.get(principal_hierarchy.FIELD) or {}).get("level") != "user"]
+    readable = changeable_ids(actor, {row["lineage_id"]: "" for row in rows}, "GetLineage", "lineage_id")
+    rows = [row for row in rows if row["lineage_id"] in readable]
+    graphs = catalog.listing_graph_summaries([row["lineage_id"] for row in rows])
+    leaders = {str(row.get("leader_resident_id") or "") for row in rows
+               if (row.get(principal_hierarchy.FIELD) or {}).get("level") != "project"}
+    # A Project-layer Lineage also shows the ordinary Leaders as references;
+    # they are members of their own Lineage only.
+    members = {row["lineage_id"]: [node for node in graphs[row["lineage_id"]]["lineage_node_ids"]
+                                   if (row.get(principal_hierarchy.FIELD) or {}).get("level") != "project"
+                                   or node not in leaders]
+               for row in rows}
+    states = read_resident_states([node for nodes in members.values() for node in nodes])
+    running = {resident_id for resident_id, state in states.items() if state.get("work_state") == "running"}
+    teams = {project_id: {"project_resident_id": "", "project_lineage_id": "", "lineages": [],
+                          "resident_count": 0, "running_resident_count": 0} for project_id in wanted}
+    for row in sorted(rows, key=lambda item: (str(item.get("title") or "").casefold(), item["lineage_id"])):
+        team = teams[row["project_id"]]
+        nodes = members[row["lineage_id"]]
+        team["resident_count"] += len(nodes)
+        team["running_resident_count"] += sum(1 for node in nodes if node in running)
+        if (row.get(principal_hierarchy.FIELD) or {}).get("level") == "project":
+            team["project_resident_id"] = str(row.get("leader_resident_id") or "")
+            team["project_lineage_id"] = row["lineage_id"]
+            continue
+        team["lineages"].append({
+            "lineage_id": row["lineage_id"], "title": str(row.get("title") or ""),
+            "leader_resident_id": str(row.get("leader_resident_id") or ""),
+            "member_count": len(nodes), "running_count": sum(1 for node in nodes if node in running),
+        })
+    return teams
+
+
 def validate_project_deletion(project_id: str, actor: str) -> dict[str, Any]:
     """Check the registered directory before ResourceService unregisters content."""
     actor_id = _actor_id(actor)

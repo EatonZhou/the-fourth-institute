@@ -3317,7 +3317,6 @@ def _portal_route_definitions() -> tuple[RouteDefinition, ...]:
         RouteDefinition("GET", "/api/resource-semantic-searches", _RESOURCE_HTTP.semantic_searches, "portal-catalog-get"),
         RouteDefinition("GET", "/resource/api/service-status", _RESOURCE_HTTP.service_status, "portal-catalog-get"),
         RouteDefinition("GET", "/api/resource-index/query", _RESOURCE_HTTP.index_query, "portal-catalog-get"),
-        RouteDefinition("GET", "/api/projects/catalog", _RESOURCE_HTTP.project_catalog, "portal-catalog-get"),
         RouteDefinition("GET", "/api/resource-index/suggest", _RESOURCE_HTTP.index_suggest, "portal-catalog-get"),
         RouteDefinition("GET", "/api/resource-index/status", _RESOURCE_HTTP.index_status, "portal-catalog-get"),
         RouteDefinition("GET", "/api/resource-index/resources/{resource_id}", _RESOURCE_HTTP.index_detail, "portal-resource-index", match="template"),

@@ -182,7 +182,7 @@ def test_web_starts_without_any_feature():
                      "/api/resource-backup", "/resource/backup", "/api/wall/", "/static/wall.", "/static/test_",
                      "/test/api/", "/api/notice-board/")
     assert not [path for path in web["paths"] if path.startswith(feature_paths)]
-    assert {"/", "/api/health", "/lineage", "/settings", "/api/projects/catalog"} <= set(web["paths"])
+    assert {"/", "/api/health", "/lineage", "/settings"} <= set(web["paths"])
 
 
 def test_installed_features_serve_their_routes_before_the_shell_fallbacks():

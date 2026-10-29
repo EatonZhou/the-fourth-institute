@@ -79,17 +79,31 @@ def test_discussion_lineages_use_explicit_configuration_and_reads_are_authorized
     with pytest.raises(application_targets.ApplicationUnconfigured, match="article"):
         application_bindings.resolve_application_lineage(actor="alice", application="resource-chat:article")
     calls.get_lineage.assert_not_called()
-    duties.update({"article": "lineage_111111111111", "project": "lineage_222222222222"})
-    for scope, target in (("resource-chat:article", "lineage_111111111111"), ("project-chat", "lineage_222222222222")):
-        for actor in ("alice", "bob"):
-            assert application_bindings.resolve_application_lineage(actor=actor, application=scope) == target
-            calls.get_lineage.assert_called_with(target, actor)
+    duties.update({"article": "lineage_111111111111"})
+    for actor in ("alice", "bob"):
+        assert application_bindings.resolve_application_lineage(
+            actor=actor, application="resource-chat:article") == "lineage_111111111111"
+        calls.get_lineage.assert_called_with("lineage_111111111111", actor)
     calls.get_lineage.side_effect = PermissionError("revoked")
     with pytest.raises(PermissionError, match="revoked"):
         application_bindings.resolve_application_lineage(actor="bob", application="resource-chat:article")
 
 
-@pytest.mark.parametrize("surface", ["paper", "project"])
+def test_projects_have_no_per_user_discussion():
+    """Project 没有每位用户各自的讨论 Resident：项目对话是 Project Resident
+
+    :design: decision_46c37026e8ea
+    """
+    from management_portal import application_targets
+
+    assert "project" not in application_targets.CHAT_TYPES
+    with pytest.raises(ValueError, match="Unsupported discussion surface"):
+        discussion_residents.resolve(actor="alice", surface="project", resident_scope="surface-chat:alice:project:x")
+    with pytest.raises(ValueError, match="Unknown"):
+        application_bindings.resolve_application_lineage(actor="alice", application="project-chat")
+
+
+@pytest.mark.parametrize("surface", ["paper"])
 def test_workspace_reads_are_non_creating_and_first_send_preparation_is_explicit(monkeypatch, surface):
     """讨论工作区读取不创建身份且首次发送须显式准备"""
     calls = []
@@ -109,9 +123,9 @@ def test_workspace_reads_are_non_creating_and_first_send_preparation_is_explicit
     assert calls == [False, False, True]
 
 
-@pytest.mark.parametrize("surface", ["paper", "project"])
+@pytest.mark.parametrize("surface", ["paper"])
 def test_workspace_prepare_reuses_bound_resident_and_keeps_project_in_metadata(monkeypatch, isolated_portal_case, surface):
-    """Paper 与 Project 首次准备复用讨论绑定并保留项目来源
+    """Paper 首次准备复用讨论绑定并保留项目来源
 
     首次准备经过实际 Resident 调用接口创建绑定，重复准备与只读刷新复用同一成员；项目来源保存在 metadata，不传入未声明的 Resident 创建参数。
 
@@ -153,7 +167,6 @@ def test_workspace_prepare_reuses_bound_resident_and_keeps_project_in_metadata(m
         monkeypatch.setattr(native, "lookup", lambda *args, **kwargs: records.get(resident_id, {}))
         monkeypatch.setattr(native, "get_service", lambda: SimpleNamespace(
             builtin_application=lambda name, actor: {"workbench_id": "workbench_111111111111"}))
-        monkeypatch.setattr(discussion_residents, "resolve_application_lineage", lambda **kwargs: lineage_id)
 
         assert workspace.get_workspace("alice", surface, "item")["binding_state"] == "unbound"
         assert not records

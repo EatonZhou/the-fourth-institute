@@ -84,22 +84,6 @@ def test_missing_packages_prepare_private_python_and_failed_doctor_blocks_activa
     assert dependencies.runtime_python(target) == target['python']
 
 
-def test_project_catalog_keeps_callers_authorization_without_projects_ui(monkeypatch):
-    from management_portal.http_resources import ResourceHttp
-    from management_portal import resource_views
-    service = object()
-    owner = Mock(return_value={'projects': [{'id': 'allowed'}]})
-    monkeypatch.setattr(resource_views, 'project_index', owner)
-    handler = ResourceHttp.__new__(ResourceHttp)
-    handler.resource_service = lambda: service
-    handler.respond = lambda request, status, payload: (status, payload)
-    handler.resource_error = lambda request, error: (403, str(error))
-    assert handler.project_catalog(None, None, 'caller') == (200, {'projects': [{'id': 'allowed'}]})
-    owner.assert_called_once_with(actor='caller', service=service)
-    owner.side_effect = PermissionError('denied')
-    assert handler.project_catalog(None, None, 'other')[0] == 403
-
-
 def test_selected_skill_copies_whole_registered_package_and_relocates_primary(tmp_path):
     from management_portal.distribution.selection import resource_file_scope
     from management_portal.distribution.engineering import copy_content

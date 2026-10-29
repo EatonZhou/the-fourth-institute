@@ -3,7 +3,6 @@
 from pathlib import Path
 from urllib.parse import parse_qs, unquote
 
-from management_portal import resource_views
 from management_portal.http_routes import RouteDefinition
 from management_portal.research_maps import list_research_maps
 
@@ -27,12 +26,6 @@ class ProjectsHttp:
         resource_service = self.resource_service()
         if subpath in {'', '/'} or (subpath.startswith('/') and '/' not in unquote(subpath[1:]).strip('/') and (not subpath.startswith('/api/'))):
             return self.document(request, 200, self.project_html())
-        if subpath == '/api/projects':
-            try:
-                payload = resource_views.project_index(actor=actor, service=resource_service)
-            except Exception as exc:
-                return self.error(request, exc)
-            return self.respond(request, 200, payload)
         if subpath == '/api/research-maps':
             try:
                 project_id = (parse_qs(parsed.query).get('project') or [''])[0].strip()

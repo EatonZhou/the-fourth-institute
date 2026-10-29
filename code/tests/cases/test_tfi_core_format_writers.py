@@ -8,11 +8,10 @@ import pytest
 
 from management_common import principal
 from management_portal.hatg.contracts import InstructionCall, InstructionResult
-from management_portal import service_invocation_contract as contract, project_state
+from management_portal import service_invocation_contract as contract
 from management_portal.portal_passkeys import PortalPasskeyStore
 from management_portal.portal_password_reset import PortalPasswordResetStore
 from management_portal.portal_two_factor import PortalTwoFactorStore
-from tests.cases.test_project_state import complete_payload, write_state
 
 
 def test_new_envelopes_keep_actor_and_idempotency_fields():
@@ -65,17 +64,6 @@ def test_default_plan_digest_uses_new_tag_and_accepts_frozen_old_preimage():
     assert not contract.plan_fingerprint_matches(identity, batches, wire('archive.service-invocation-plan.v1'))
     assert not contract.plan_fingerprint_matches(identity, contract.batch_manifest(identity, ['changed', 'two']),
                                                  wire('archive.service-invocation-plan.v1'))
-
-
-@pytest.mark.parametrize('tag', ['archive.project_state.v0.2', 'tfi.project_state.v0.2', 'tfi.project_state.v0.3'])
-def test_project_document_read_never_rewrites_historical_or_new_source(tmp_path, tag):
-    payload = complete_payload()
-    payload['schema_version'] = tag
-    source = write_state(tmp_path, payload)
-    before = (source.read_bytes(), source.stat().st_mtime_ns)
-    result = project_state.load_project_state('Demo', tmp_path)
-    assert (result['status'] == 'ready') == (tag == 'tfi.project_state.v0.2')
-    assert (source.read_bytes(), source.stat().st_mtime_ns) == before
 
 
 from tests.cases.compatibility_test_support import setUpModule, tearDownModule, site_environ

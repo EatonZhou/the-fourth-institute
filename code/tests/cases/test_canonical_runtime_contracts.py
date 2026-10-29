@@ -8,7 +8,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from management_portal import paper_backend, resource_views, serve_management_portal
+from management_portal import paper_backend, serve_management_portal
 from management_portal.execution.harness import AgentHarness
 from management_portal.execution.harness_settings import normalize_agent_harness_settings
 from management_portal.serve_management_portal import _read_request_multipart
@@ -212,24 +212,28 @@ def test_hatg_graph_nodes_use_only_id_for_resident_identity() -> None:
     assert duplicate_identity_literals == []
 
 
-def test_project_view_requires_explicit_current_projection_schema() -> None:
-    """项目视图要求显式采用当前投影版本"""
+def test_project_list_requires_explicit_current_projection_schema(monkeypatch) -> None:
+    """项目列表要求显式采用当前投影版本"""
+    from types import SimpleNamespace
+
+    from management_portal.resources import isa as resource_isa
+
     class ProjectService:
-        def __init__(self, state: dict[str, object]) -> None:
-            self.state = state
+        state: dict[str, object] = {}
 
         def query(self, **_kwargs: object) -> dict[str, object]:
-            return {"resources": []}
+            return {"resources": [], "total": 0}
 
         def projection_state(self, _adapter: str) -> dict[str, object]:
             return self.state
 
+    service = ProjectService()
+    monkeypatch.setattr(resource_isa, "_service", lambda: service)
+    invocation = SimpleNamespace(caller="alice", argument=lambda _name: None)
     with pytest.raises(RuntimeError, match="requires schema_version 1"):
-        resource_views.project_index(service=ProjectService({}))
-    current = resource_views.project_index(
-        service=ProjectService({"schema_version": 1, "project_ids": []})
-    )
-    assert current["schema_version"] == 1
+        resource_isa.list_projects(invocation)
+    service.state = {"schema_version": 1, "project_ids": [], "status_vocab": ["active"]}
+    assert resource_isa.list_projects(invocation) == {"projects": [], "status_vocab": ["active"]}
 
 
 def test_lineage_reads_require_an_explicit_actor() -> None:

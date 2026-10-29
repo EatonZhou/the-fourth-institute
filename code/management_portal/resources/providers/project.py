@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING, Any
 from management_common.principal import actor_principal
 from management_common.site_registry import rewrite_shared_path
 from management_portal.portal_access_control import get_portal_access_store
-from management_portal.project_state import load_project_state
 from management_portal import project_registry
 
 from .common import canonical_record
@@ -45,7 +44,7 @@ PROJECT_TYPE_ALIASES = {
     "其他项目": "other",
     "non_academic": "company",
 }
-UPDATABLE_FIELDS = frozenset({"status", "ddl", "project_type"})
+UPDATABLE_FIELDS = frozenset({"status", "ddl", "project_type", "description", "tags"})
 
 
 def _load_registry() -> dict[str, Any]:
@@ -325,9 +324,13 @@ def update_project(
     field = str(payload.get("field") or "").strip()
     if field not in UPDATABLE_FIELDS:
         raise ValueError(f"Unsupported Project field: {field}")
-    value = str(payload.get("value") or "")
+    value: str | list[str] = str(payload.get("value") or "")
     if field == "project_type":
         value = normalize_project_type(value)
+    elif field == "description":
+        value = value.strip()
+    elif field == "tags":
+        value = _clean_project_tags(payload.get("value"))
 
     with project_registry.mutate() as data:
         projects = data.get("projects")
@@ -412,18 +415,6 @@ def save_project_summary(
     return project_summary(project_id)
 
 
-def project_state(
-    project_id: str,
-) -> dict[str, Any]:
-    project = _project_record(project_id)
-    display_id = str(project.get("id") or "").strip()
-    resolved_root = _resolved_project_root(project)
-    return canonical_record(
-        display_id,
-        load_project_state(display_id, resolved_root),
-    )
-
-
 def install_mutation_provider(service: "ResourceService") -> None:
     def register(
         payload: dict[str, Any],
@@ -494,19 +485,9 @@ def install_action_provider(service: "ResourceService") -> None:
             str(payload.get("text") or ""),
         )
 
-    def read_state(
-        resource_id: str,
-        _payload: dict[str, Any],
-        *,
-        actor: str = "",
-    ) -> dict[str, Any]:
-        del actor
-        return project_state(resource_id)
-
     service.register_action_provider(
         "project",
         {
-            "state.read": read_state,
             "summary.read": read_summary,
             "summary.save": save_summary,
         },

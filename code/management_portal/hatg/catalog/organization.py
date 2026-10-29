@@ -30,12 +30,22 @@ DECLARATIONS = (
         P("tags", "array", "项目标签，重复项去除", items={"type": "string"}),
         P("language", description="新项目种子文档的语言，默认 zh-CN；仅用于初始化，不改写既有正文", enum=("zh-CN", "en")),
     ), (PROJECT,), mutates=True, owner="resource"),
-    _d("GetProject", ON_PROJECT, "读取 Project 信息、摘要与 Project State。", (R("project_id", description="要读取的 Project"),), (
-        PROJECT, R("summary", "object", "summary.md 的内容（不存在时标明）"),
-        R("state", "object", "project_state/PROJECT_STATE.yaml 的解析视图：status、source 与各章节；文件不存在时 status 为 missing"),
+    _d("ListProjects", FIXED, "列出调用者能看到的全部 Project：登记信息，以及团队规模、正在运行的 Resident 数和最近一次变化的时间。", (), (
+        R("projects", "array", "按登记顺序排列；每项 project_id、status、project_type、description、ddl、tags、"
+          "project_resident_id（Project 层 Lineage 的 Leader）、lineage_count（普通 Lineage 数）、resident_count、"
+          "running_resident_count，以及 last_changed_at（项目下资源最近一次修改的时间，没有资源时为空）"),
+        R("status_vocab", "array", "项目可用的状态", items={"type": "string"}),
+    ), owner="resource"),
+    _d("GetProject", ON_PROJECT, "读取 Project 的登记信息、summary.md、团队、各类资源的数量和最近修改的资源。", (R("project_id", description="要读取的 Project"),), (
+        R("project", "object", "Project 的资源记录，另带 status、project_type、description、ddl 与 tags"),
+        R("summary", "object", "summary.md 的内容（不存在时标明）"),
+        R("team", "object", "project_resident_id、project_lineage_id、resident_count、running_resident_count，以及 lineages："
+          "每个普通 Lineage 的 lineage_id、title、leader_resident_id、member_count 与 running_count；只含调用者能读的 Lineage"),
+        R("resource_counts", "object", "资源类型 → 数量；不含 Lineage、Resident、Workspace 与 Family"),
+        R("recent_changes", "array", "最近修改的资源，新的在前，最多 20 项：resource_id、resource_type、title、url、modified_at"),
     ), target="project_id", owner="resource"),
-    _d("UpdateProject", ON_PROJECT, "修改 Project 的状态、截止日期、类型、摘要或头像。", (
-        R("project_id", description="要修改的 Project"), R("changes", "object", "status、ddl、project_type、summary 与 avatar；avatar 为 {sprite_index: 0–41}、{upload_id}（CreateUpload purpose=avatar 的已完成上传）或 null（恢复为名称首字）"),
+    _d("UpdateProject", ON_PROJECT, "修改 Project 的状态、截止日期、类型、说明、标签、摘要或头像。", (
+        R("project_id", description="要修改的 Project"), R("changes", "object", "status、ddl、project_type、description、tags（字符串数组，重复项去除）、summary（summary.md 全文）与 avatar；avatar 为 {sprite_index: 0–41}、{upload_id}（CreateUpload purpose=avatar 的已完成上传）或 null（恢复为名称首字）"),
     ), (PROJECT,), mutates=True, target="project_id", owner="resource"),
     _d("DeleteProject", ON_PROJECT, "删除一个 Project 及其下的全部内容：资源、Lineage、Resident 与项目目录下的全部文件。"
        "其他功能的共享库中的对象（如论文库中的论文）不删除，只去掉它们与该 Project 的关联。Project 在权限树中的节点和指向它的权限表项随之删除，"

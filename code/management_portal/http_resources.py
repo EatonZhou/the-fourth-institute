@@ -67,15 +67,6 @@ class ResourceHttp:
         except Exception as exc:
             return self.resource_error(request, exc)
 
-    def project_catalog(self, request, parsed, actor):
-        """Project identities are core Lineage data, independent of the board UI."""
-        from management_portal.resource_views import project_index
-        try:
-            return self.respond(request, 200, project_index(
-                actor=actor or '', service=self.resource_service()))
-        except Exception as exc:
-            return self.resource_error(request, exc)
-
     def index_suggest(self, request, parsed, actor):
         qs = parse_qs(parsed.query)
         try:

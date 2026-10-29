@@ -45,7 +45,7 @@ w.PortalAPI = { get: async url => {
 } };
 w.PortalLineageCatalogs = {
   users: async () => { userCatalogReads++; throw new Error('User catalog must not be requested'); },
-  residents: async () => ({ residents: [] }), projectCatalog: async () => ({ projects: [{ id: 'project_test', name: 'Test project' }] }),
+  residents: async () => ({ residents: [] }), projectCatalog: async () => ({ projects: [{ project_id: 'project_test' }] }),
   agentBackends: async () => ({}), populateBackends() {},
 };
 w.PortalInstructionClient = { execute: async (name, args, controls) => {
@@ -88,7 +88,7 @@ const names = ['openCreateLineageModal', 'openEditLineageModal', 'submitLineageF
 const runtime = startHatgRuntime(context, sources, names);
 const api = { state: runtime.state, ...Object.fromEntries(names.map(name => [name, runtime.get(name)])) };
 api.state.lineage = plain(server);
-api.state.projects = [{ id: 'project_test', name: 'Test project' }];
+api.state.projects = [{ project_id: 'project_test' }];
 api.state.lineages = [];
 api.activateLineageEdits(server.lineage_id);
 const submit = () => api.submitLineageForm({ preventDefault() {}, currentTarget: $('lineageForm') });

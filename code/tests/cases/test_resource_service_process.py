@@ -112,7 +112,7 @@ def test_mutation_dispatch_preserves_explicit_resource_type_contracts(subtests, 
         server.service = service
         server._dispatch_mutation('resource.update', {'resource_id': '2HourResearch', 'resource_type': 'project', 'payload': {'title': '2 Hour Research'}})
         server._dispatch_mutation('resource.unregister', {'resource_id': '2HourResearch', 'resource_type': 'project'})
-        server._dispatch_mutation('resource.action', {'resource_id': '2HourResearch', 'resource_type': 'project', 'action': 'state.read'})
+        server._dispatch_mutation('resource.action', {'resource_id': '2HourResearch', 'resource_type': 'project', 'action': 'summary.read'})
         assert service.calls == [('update', 'project'), ('unregister', 'project'), ('action', 'project')]
     with subtests.test(contract='test_remote_projection_failure_remains_service_unavailable'), isolated_portal_case() as case_path:
         with pytest.raises(ResourceServiceUnavailable, match='projection unavailable'):

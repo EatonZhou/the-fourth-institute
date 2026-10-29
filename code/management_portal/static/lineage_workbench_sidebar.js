@@ -23,8 +23,8 @@
 
   function normalizeProjectOptions(projects) {
     return [...new Map((projects || []).flatMap(project => {
-      const id = String(project?.resource_id || "").trim();
-      return id ? [[id, { ...project, id, name: String(project.name || id) }]] : [];
+      const id = String(project?.project_id || "").trim();
+      return id ? [[id, { ...project, id, name: id }]] : [];
     })).values()];
   }
 

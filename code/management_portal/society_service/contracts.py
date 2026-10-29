@@ -110,7 +110,7 @@ DOMAIN_OPERATIONS = {
     ),
     "project": _catalog(
         (Operation('read', 'project', implementation='management_portal.society_service.project_domain'), """
-            validate_project_deletion
+            validate_project_deletion project_teams
         """),
         (Operation('write', 'project', implementation='management_portal.society_service.project_domain'), """
             delete_project

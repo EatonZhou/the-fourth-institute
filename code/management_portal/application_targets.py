@@ -19,7 +19,7 @@ from management_common.portal_database import portal_database
 
 
 SEARCH_SURFACES = ("knowledge", "skill", "repo", "article", "experiment", "paper", "wall")
-CHAT_TYPES = ("knowledge", "skill", "repo", "article", "experiment", "device", "project")
+CHAT_TYPES = ("knowledge", "skill", "repo", "article", "experiment", "device")
 CORE_APPLICATIONS = {
     "resident_discovery": {"target": "resident"},
     "resident_summary": {"target": "resident"},

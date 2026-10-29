@@ -759,8 +759,26 @@ def update_workspace_file(inv: Invocation) -> dict[str, Any]:
 # -- projects ----------------------------------------------------------------------
 
 
+# The team section of a Project shows these; its resource counts and recent
+# changes list the rest (decision_46c37026e8ea).
+TEAM_RESOURCE_TYPES = frozenset({"lineage", "resident", "workspace", "family"})
+RECENT_PROJECT_CHANGES = 20
+
+
+def _resources(actor: str, **query: Any) -> Iterator[dict[str, Any]]:
+    """Every resource the actor may see that matches ``query``, read page by page."""
+    offset = 0
+    while True:
+        page = _service().query(actor=actor, limit=5000, offset=offset, include_attributes=True, **query)
+        resources = [item for item in page.get("resources") or [] if isinstance(item, dict)]
+        yield from resources
+        offset += len(resources)
+        if not resources or offset >= int(page.get("total") or 0):
+            return
+
+
 def _project_resource_ids(actor: str, projects: list[str], *, exclude: set[str]) -> list[str]:
-    """Every resource a project owns, read page by page.
+    """Every resource a project owns.
 
     Lineages and Residents go with their Lineage.  Papers and the other objects
     of a feature's shared library are only related to the project; they lose the
@@ -769,26 +787,70 @@ def _project_resource_ids(actor: str, projects: list[str], *, exclude: set[str])
     from management_portal import portal_features
 
     kept = {"lineage", "resident", *portal_features.related_types()}
-    ids: list[str] = []
-    offset = 0
-    while True:
-        page = _service().query(actor=actor, projects=projects, limit=5000, offset=offset)
-        resources = [item for item in page.get("resources") or [] if isinstance(item, dict)]
-        for item in resources:
-            item_id = str(item.get("resource_id") or "")
-            if item_id and item_id not in exclude and str(item.get("resource_type") or "") not in kept:
-                ids.append(item_id)
-        offset += len(resources)
-        if not resources or offset >= int(page.get("total") or 0):
-            return list(dict.fromkeys(ids))
+    ids = [str(item.get("resource_id") or "") for item in _resources(actor, projects=projects)
+           if str(item.get("resource_type") or "") not in kept]
+    return list(dict.fromkeys(item_id for item_id in ids if item_id and item_id not in exclude))
 
 
 def _project_record(project_id: str, actor: str) -> dict[str, Any]:
-    result = _service().query(actor=actor, resource_types=["project"], q=project_id, limit=20)
+    result = _service().query(actor=actor, resource_types=["project"], q=project_id, limit=20,
+                              include_attributes=True)
     for item in result.get("resources") or []:
         if project_id in {str(item.get("resource_id") or ""), str(item.get("title") or "")}:
             return item
     raise not_found(f"Project 不存在：{project_id}")
+
+
+def _modified_at(item: dict[str, Any]) -> str:
+    return str((item.get("source") or {}).get("modified_at") or "")
+
+
+def _member_projects(item: dict[str, Any]) -> list[str]:
+    return [str(project) for project in (item.get("attributes") or {}).get("project_ids") or []]
+
+
+def _project_fields(record: dict[str, Any]) -> dict[str, Any]:
+    attributes = record.get("attributes") or {}
+    return {
+        "project_id": str(record.get("resource_id") or ""),
+        "status": str(attributes.get("status") or ""),
+        "project_type": str(attributes.get("project_type") or ""),
+        "description": str(record.get("summary") or ""),
+        "ddl": str(attributes.get("ddl") or ""),
+        "tags": [str(tag) for tag in attributes.get("tags") or []],
+    }
+
+
+def list_projects(inv: Invocation) -> dict[str, Any]:
+    from management_portal.society_service import get_society_service
+
+    state = _service().projection_state("project")
+    if state.get("schema_version") != 1 or type(state.get("schema_version")) is not int:
+        raise RuntimeError("Project projection requires schema_version 1")
+    order = {str(project_id): index for index, project_id in enumerate(state.get("project_ids") or [])}
+    records = sorted(_resources(inv.caller, resource_types=["project"]), key=lambda item: (
+        order.get(str(item.get("resource_id") or ""), len(order)), str(item.get("resource_id") or "").casefold()))
+    ids = [str(record.get("resource_id") or "") for record in records]
+    teams = get_society_service().project.project_teams(ids, inv.caller) if ids else {}
+    changed: dict[str, str] = {}
+    for item in _resources(inv.caller, projects=ids) if ids else ():
+        moment = _modified_at(item)
+        for project_id in _member_projects(item):
+            if moment > changed.get(project_id, ""):
+                changed[project_id] = moment
+    projects = []
+    for record in records:
+        fields = _project_fields(record)
+        team = teams.get(fields["project_id"]) or {}
+        projects.append({
+            **fields,
+            "project_resident_id": str(team.get("project_resident_id") or ""),
+            "lineage_count": len(team.get("lineages") or []),
+            "resident_count": int(team.get("resident_count") or 0),
+            "running_resident_count": int(team.get("running_resident_count") or 0),
+            "last_changed_at": changed.get(fields["project_id"], ""),
+        })
+    return {"projects": projects, "status_vocab": [str(item) for item in state.get("status_vocab") or []]}
 
 
 def create_project(inv: Invocation) -> dict[str, Any]:
@@ -804,7 +866,8 @@ def create_project(inv: Invocation) -> dict[str, Any]:
 
 
 def get_project(inv: Invocation) -> dict[str, Any]:
-    from .providers.project import project_state, project_summary
+    from management_portal.society_service import get_society_service
+    from .providers.project import project_summary
 
     project_id = inv.argument("project_id")
     record = _project_record(project_id, inv.caller)
@@ -813,7 +876,22 @@ def get_project(inv: Invocation) -> dict[str, Any]:
         summary = project_summary(resource_id)
     except (FileNotFoundError, KeyError):
         summary = {"exists": False, "text": ""}
-    return {"project": record, "summary": summary, "state": project_state(resource_id)}
+    counts: dict[str, int] = {}
+    changes: list[dict[str, Any]] = []
+    for item in _resources(inv.caller, projects=[resource_id]):
+        resource_type = str(item.get("resource_type") or "")
+        if resource_type == "project" or resource_type in TEAM_RESOURCE_TYPES:
+            continue
+        counts[resource_type] = counts.get(resource_type, 0) + 1
+        changes.append({"resource_id": str(item.get("resource_id") or ""), "resource_type": resource_type,
+                        "title": str(item.get("title") or ""), "url": str(item.get("url") or ""),
+                        "modified_at": _modified_at(item)})
+    changes.sort(key=lambda item: item["modified_at"], reverse=True)
+    team = get_society_service().project.project_teams([resource_id], inv.caller)[resource_id]
+    fields = _project_fields(record)
+    del fields["project_id"]
+    return {"project": {**record, **fields}, "summary": summary, "team": team,
+            "resource_counts": dict(sorted(counts.items())), "recent_changes": changes[:RECENT_PROJECT_CHANGES]}
 
 
 def update_project(inv: Invocation) -> dict[str, Any]:
@@ -823,9 +901,9 @@ def update_project(inv: Invocation) -> dict[str, Any]:
     record = _project_record(project_id, inv.caller)
     resource_id = str(record.get("resource_id") or project_id)
     changes = dict(inv.argument("changes") or {})
-    unknown = sorted(set(changes) - {"status", "ddl", "project_type", "summary", "avatar"})
+    unknown = sorted(set(changes) - {"status", "ddl", "project_type", "description", "tags", "summary", "avatar"})
     if unknown:
-        raise invalid("changes 只能包含 status、ddl、project_type、summary 与 avatar")
+        raise invalid("changes 只能包含 status、ddl、project_type、description、tags、summary 与 avatar")
     summary = changes.pop("summary", None)
     has_avatar = "avatar" in changes
     avatar = changes.pop("avatar", None)
@@ -964,6 +1042,7 @@ HANDLERS = {
     "DeleteUpload": delete_upload,
     "UpdateWorkspaceFile": update_workspace_file,
     "CreateProject": create_project,
+    "ListProjects": list_projects,
     "GetProject": get_project,
     "UpdateProject": update_project,
     "DeleteProject": delete_project,

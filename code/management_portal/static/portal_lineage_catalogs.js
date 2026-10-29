@@ -164,8 +164,9 @@
     if (catalog.backends.some(row => row.backend === current)) select.value = current;
   }
 
+  // { projects: [{ project_id, status, project_type, ... }], status_vocab } from ListProjects.
   function projectCatalog(options = {}) {
-    return read("project-registry", "/api/projects/catalog", options);
+    return readLoader("projects", "ListProjects", () => window.PortalInstructionClient.execute("ListProjects", {}), options);
   }
 
   // Both Fork forms use the execution catalog, including Model API routes.

@@ -27,16 +27,12 @@
       if (!select) return;
       const selected = String(selectedProjectId || "").trim();
       const projects = [...(state.projects || [])].sort((left, right) => (
-        String(left?.name || left?.id || "").localeCompare(
-          String(right?.name || right?.id || ""),
-          undefined,
-          { sensitivity: "base" },
-        )
+        String(left?.project_id || "").localeCompare(String(right?.project_id || ""), undefined, { sensitivity: "base" })
       ));
-      const options = projects.map(project => ({
-        value: String(project?.resource_id || project?.id || "").trim(),
-        label: String(project?.name || project?.resource_id || project?.id || "").trim(),
-      })).filter(item => item.value);
+      const options = projects.map(project => {
+        const id = String(project?.project_id || "").trim();
+        return { value: id, label: id };
+      }).filter(item => item.value);
       if (selected && !options.some(item => item.value === selected)) {
         options.unshift({ value: selected, label: selected });
       }
