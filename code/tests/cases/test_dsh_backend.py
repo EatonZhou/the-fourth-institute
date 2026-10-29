@@ -15,7 +15,7 @@ import uuid
 import pytest
 
 from management_portal.execution.contracts import ExecutionRequest, SessionOptions
-from management_portal.execution.backends import BackendInvocation, AgentSessionService, DshBackend
+from management_portal.execution.backends import BackendInvocation, BackendResult, AgentSessionService, DshBackend
 from management_portal.execution.native_options import prepare_invocation
 from management_portal.execution.provider_catalog import AGENT_PROVIDERS
 
@@ -34,11 +34,13 @@ def test_every_backend_uses_one_service_pipeline(provider):
     # Native requests and neutral Resident requests enter this same
     # service. Adapters alone translate the latter before the shared Harness.
     events = []
-    selected = SimpleNamespace(execute=lambda inv, ctx: events.append((inv, ctx)) or "result")
+    # The pipeline reads the adapter's final tool catalog from its BackendResult.
+    result = BackendResult(output={"message": "result"})
+    selected = SimpleNamespace(execute=lambda inv, ctx: events.append((inv, ctx)) or result)
     harness = SimpleNamespace(prepare_invocation=lambda inv, provider=None: inv, should_run=lambda inv: False,
         execute_passthrough=lambda *, invocation, context, execute: execute(invocation, context))
     turn = invocation(provider, {})
-    assert AgentSessionService({provider: selected}, harness).execute(turn, "context") == "result"
+    assert AgentSessionService({provider: selected}, harness).execute(turn, "context") is result
     assert events == [(turn, "context")]
 
 

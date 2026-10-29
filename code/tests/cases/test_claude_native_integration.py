@@ -281,19 +281,27 @@ def test_native_permissions_shows_and_switches_the_providers_permission_mode(bac
     assert denied["title"] == "Permission denied" and not denied["updates"]
 
 
-@pytest.mark.parametrize("target_route,expected_model,expected_effort", [
-    ("claude_one", "opus", "high"), ("claude_two", "sonnet", ""),
+@pytest.mark.parametrize("target_route,strategy,expected_model,expected_effort", [
+    ("claude_one", "smart", "opus", "high"),
+    # Another account cannot keep the full context; only an explicit handover moves it.
+    # claude_two offers no opus, so its default model replaces it; sonnet there offers high.
+    ("claude_two", "compact", "sonnet", "high"),
 ])
 def test_claude_restart_preserves_settings_only_on_the_same_route(
-    monkeypatch, native_routes, target_route, expected_model, expected_effort,
+    monkeypatch, native_routes, target_route, strategy, expected_model, expected_effort,
 ):
-    """重启 Claude 会话时只有同一路由保留模型和推理强度设置"""
+    """重启 Claude 会话时模型和推理强度按目标账号校正
+
+    同一路由原样保留模型和推理强度；换到另一账号时沿用原设置并按目标账号目录校正：目标没有的模型换成它的默认模型，目标模型支持的推理强度保留。
+
+    :design: decision_ccbb1cac24aa
+    """
     native_routes["claude_one"]["models"].append({"id": "opus", "enabled": True, "support_efforts": ["high"]})
     record, _, _ = _restart_domain(monkeypatch, source_provider="claude", source_route="claude_one")
     monkeypatch.setattr(resident_runtime_domain, "read_resident_runtime_settings",
                         lambda *_: {"model": "opus", "reasoning_effort": "high"})
     state = resident_domain.restart_resident_session(record["resident_id"], "alice", {
-        "target_provider": "claude", "target_account": target_route, "context_strategy": "smart",
+        "target_provider": "claude", "target_account": target_route, "context_strategy": strategy,
     })
     assert state["target_runtime_settings"]["model"] == expected_model
     assert state["target_runtime_settings"]["reasoning_effort"] == expected_effort
@@ -304,11 +312,22 @@ def test_claude_restart_preserves_settings_only_on_the_same_route(
     ("claude", "claude_one", "native"),
 ])
 def test_native_restart_route_and_strategy(monkeypatch, native_routes, source_provider, source_route, expected_strategy):
-    """重启到 Claude 时同一账户用原生 Fork，跨 Provider 或跨账户改为压缩上下文"""
+    """重启到 Claude 时同一账户用原生 Fork，跨 Provider 或跨账户明确选择后改为压缩上下文
+
+    智能选择只是完整保留的兼容写法：跨 Provider 或跨账户无法完整保留时拒绝并保留原会话，不隐式压缩；调用方明确选择压缩交接后才压缩上下文。
+
+    :design: decision_ccbb1cac24aa
+    """
     record, operations, saved = _restart_domain(monkeypatch, source_provider=source_provider, source_route=source_route)
-    result = resident_domain.restart_resident_session(record["resident_id"], "alice", {
-        "target_provider": "claude", "target_account": "claude_one", "context_strategy": "smart",
-    })
+    request = {"target_provider": "claude", "target_account": "claude_one", "context_strategy": "smart"}
+    if source_provider != "claude":
+        request["model"] = "sonnet"  # A cross-Provider switch names its target model.
+    if expected_strategy == "compact":
+        with pytest.raises(ValueError, match="原会话已保留"):
+            resident_domain.restart_resident_session(record["resident_id"], "alice", request)
+        assert not operations
+        request["context_strategy"] = "compact"
+    result = resident_domain.restart_resident_session(record["resident_id"], "alice", request)
     assert result["context_strategy"] == expected_strategy
     assert operations[0]["backend_route_id"] == "claude_one"
     assert operations[0]["operation"] == ("fork" if expected_strategy == "native" else "turn")

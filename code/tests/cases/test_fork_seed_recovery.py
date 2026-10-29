@@ -220,8 +220,12 @@ def test_restart_after_a_failed_unbound_first_turn_hands_its_work_over(monkeypat
     result = resident_domain.restart_resident_session(record["resident_id"], "alice", {})
 
     assert not result.get("configuration_only")
-    assert result["context_strategy"] == "compact"
-    assert operations[0]["operation"] == "turn" and not operations[0]["source_binding_id"]
+    # A restart keeps the full effective context by default (decision_ccbb1cac24aa): the new
+    # session starts empty and receives the unbound turn's work as its seed, with no model handoff turn.
+    assert result["context_strategy"] == "preserve"
+    assert operations[0]["operation"] == "create" and not operations[0]["source_binding_id"]
+    seed = operations[0]["step"]["request"]["metadata"]["fork_context_input"]
+    assert seed["segments"] and seed["empty_context"] is False
 
 
 def test_restart_of_a_resident_that_never_had_a_session_only_configures(monkeypatch) -> None:

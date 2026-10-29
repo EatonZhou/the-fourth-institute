@@ -14,14 +14,18 @@ Found by driving Kimi and DSH Residents through the ISA:
 from __future__ import annotations
 
 import inspect
+from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
 import pytest
 
+from management_portal import kimi_account_runtime
 from management_portal.execution import backends
 from management_portal.execution.accounts import resolve_account_configuration
 from management_portal.society_service import resident_execution_engine_domain
+
+KIMI_HOME = Path("/nonexistent/kimi-account")
 
 
 def test_kimi_account_is_found_by_the_id_the_account_list_shows() -> None:
@@ -123,8 +127,12 @@ def _kimi_turn(snapshots: list[tuple[str, str]], *, response: str = "", fail: bo
         request=SimpleNamespace(session=SimpleNamespace(binding_id="resident:test"), runtime_options={}, permission_profile="", cwd="/work", operation="turn", execution_id="execution-kimi"),
         session=SimpleNamespace(backend_route_id="kimi_primary", backend_session_id="session_kimi"), recovery_checkpoint={},
         system_context="", user_prompt="run pwd", attach_system_context=False, is_new_backend_session=False,
+        harness_tools=(),
     )
-    with mock.patch.object(backends, "shared_kimi_client", return_value=SimpleNamespace(run_turn=run_turn)), \
+    # The session's route names a Kimi account; its client is the fake.
+    with mock.patch.object(kimi_account_runtime, "client_for_route",
+                           return_value=SimpleNamespace(home=KIMI_HOME, run_turn=run_turn)), \
+            mock.patch.object(kimi_account_runtime, "remember_session"), \
             mock.patch.object(backends.KimiBackend, "record_provider_compaction"):
         try:
             backends.KimiBackend().execute(invocation, context)  # type: ignore[arg-type]
@@ -212,15 +220,18 @@ def test_a_kimi_turn_aborted_by_a_service_restart_is_continued_not_asked_again(c
                                 execution_id="execution-1"),
         session=SimpleNamespace(backend_route_id="kimi_primary", backend_session_id="session_kimi"),
         recovery_checkpoint={"turn_id": "prompt-7"}, system_context="", user_prompt="sleep 90 then reply done",
-        attach_system_context=False, is_new_backend_session=False,
+        attach_system_context=False, is_new_backend_session=False, harness_tools=(),
     )
     client = SimpleNamespace(
+        home=KIMI_HOME,
         resume_turn=mock.Mock(side_effect=KimiCodeTurnFailed("Kimi Code resumed turn completed without a final response")),
         run_turn=mock.Mock(return_value=SimpleNamespace(response="done", turn_id="prompt-8", session_id="session_kimi", usage={})),
     )
     context = mock.Mock()
     context.is_cancelled.return_value = cancelled
-    with mock.patch.object(backends, "shared_kimi_client", return_value=client), \
+    # The session's route names a Kimi account; its client is the fake.
+    with mock.patch.object(kimi_account_runtime, "client_for_route", return_value=client), \
+            mock.patch.object(kimi_account_runtime, "remember_session"), \
             mock.patch.object(backends.KimiBackend, "record_provider_compaction"), \
             mock.patch.object(backends.KimiBackend, "settle_portal_tools", return_value=[]):
         if cancelled:

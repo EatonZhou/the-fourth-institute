@@ -176,7 +176,7 @@ def test_kimi_turn_that_fails_still_records_its_compaction() -> None:
                                 session=SimpleNamespace(binding_id="resident:kimi")),
         session=SimpleNamespace(backend_session_id=KIMI_SESSION, backend_route_id=""),
         recovery_checkpoint={}, system_context="", user_prompt="continue",
-        attach_system_context=False, is_new_backend_session=False,
+        attach_system_context=False, is_new_backend_session=False, harness_tools=(),
     )
     client = SimpleNamespace(run_turn=mock.Mock(side_effect=RuntimeError("Kimi turn failed")))
     with mock.patch.object(backends, "shared_kimi_client", return_value=client), \

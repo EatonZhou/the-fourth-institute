@@ -223,7 +223,8 @@ def test_kimi_key_rotation_does_not_interrupt_busy_session_or_block_stop(gateway
     ensure_private_directory(target)
     (target / "server.json").write_text(json.dumps({"pid": 1234, "port": 1234, "version": [0, 0]}))
     client = SimpleNamespace(_request=lambda *a, **kw: {"sessions": [{"id": "busy"}]}, get_status=lambda _: {"busy": True})
-    monkeypatch.setattr(runtime, "process_alive", lambda _: True)
+    # The account's own server is running (ownership is checked by PID, start time and home).
+    monkeypatch.setattr(runtime, "_owned_process", lambda _target, _state: SimpleNamespace(pid=1234))
     monkeypatch.setattr(runtime, "_client", lambda *args: client)
     def forbidden(*args, **kwargs):
         pytest.fail("configuration rotation killed or started a process during a turn")

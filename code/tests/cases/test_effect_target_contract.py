@@ -1,6 +1,6 @@
 """固定 Effect 目标必须通过具名端点及 target 连线公开。
 
-:module: lineage.automation
+:module: lineage.hatg
 """
 
 from types import SimpleNamespace

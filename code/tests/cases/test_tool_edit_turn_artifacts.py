@@ -161,8 +161,16 @@ def test_a_kimi_turn_records_its_edits_before_the_turn_completes():
                                 execution_id="execution-kimi"),
         session=SimpleNamespace(backend_route_id="kimi_primary", backend_session_id="session_kimi"), recovery_checkpoint={},
         system_context="", user_prompt="write", attach_system_context=False, is_new_backend_session=False,
+        harness_tools=(),
     )
-    with mock.patch.object(backends, "shared_kimi_client", return_value=SimpleNamespace(run_turn=run_turn)), \
+    from pathlib import Path
+
+    from management_portal import kimi_account_runtime
+
+    # The session's route names a Kimi account; its client is the fake.
+    client = SimpleNamespace(home=Path("/nonexistent/kimi-account"), run_turn=run_turn)
+    with mock.patch.object(kimi_account_runtime, "client_for_route", return_value=client), \
+            mock.patch.object(kimi_account_runtime, "remember_session"), \
             mock.patch.object(backends.KimiBackend, "record_provider_compaction"):
         backends.KimiBackend().execute(invocation, context)  # type: ignore[arg-type]
     assert _turn_end(observed)[-2:] == ["turnArtifacts", "turn/completed"]
