@@ -769,24 +769,8 @@ a.agent-status-creature.queued:hover {
   line-height: 1.4;
 }
 .agent-status-refresh {
-  appearance: none;
-  display: inline-flex;
-  align-self: flex-start;
   flex: 0 0 auto;
-  align-items: center;
-  gap: 5px;
-  border: 1px solid var(--border);
-  background: var(--panel-2);
-  color: var(--text);
-  border-radius: 8px;
-  padding: 5px 9px;
-  font-size: 12px;
-  font-family: inherit;
-  cursor: pointer;
-  white-space: nowrap;
 }
-.agent-status-refresh:hover { border-color: var(--accent); color: var(--accent); }
-.agent-status-refresh:disabled { opacity: 0.5; cursor: default; }
 .agent-status-refresh.is-refreshing .portalIcon { animation: portalSpin 720ms linear infinite; }
 [data-home-component="agent-accounts"] {
   container: home-accounts / inline-size;

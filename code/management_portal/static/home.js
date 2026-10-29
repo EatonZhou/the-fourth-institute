@@ -1878,7 +1878,7 @@ function renderUsageAttribution() {
               ${Object.entries(AGENT_STATUS_GROUPINGS).map(([group, grouping]) => window.PortalI18n.html`<button class="agent-status-tab ${agentStatusGrouping === group ? "active" : ""}" type="button" data-agent-status-grouping="${group}" aria-pressed="${agentStatusGrouping === group}">${grouping.label}</button>`).join("")}
             </div>
           </div>
-          <button class="agent-status-refresh" type="button" data-usage-refresh data-portal-icon="refresh" title="刷新用量"><span data-usage-refresh-label>刷新</span></button>
+          <button class="portalButton agent-status-refresh" type="button" data-usage-refresh data-portal-icon="refresh" title="刷新用量"><span data-usage-refresh-label>刷新</span></button>
         </div>
         <div class="agent-status-usage-summary">${usageWindowSummary(tokenUsage)}</div>
         <div class="agent-status-chart" style="grid-template-columns:repeat(${Math.max(1, visibleSeries.length)}, minmax(10px, 1fr))" aria-label="Model token usage">${bars || ""}</div>
@@ -2049,7 +2049,7 @@ function renderAgentStatus(data) {
         <div data-agent-status-runboard>${runboardHtml}</div>
         ${accountManagementActions(accounts.length > 0)}
         <button
-          class="agent-status-refresh${statusRefreshing ? " is-refreshing" : ""}"
+          class="portalButton agent-status-refresh${statusRefreshing ? " is-refreshing" : ""}"
           type="button"
           data-agent-status-refresh
           data-portal-icon="refresh"
