@@ -1,5 +1,6 @@
 """The bootstrap CLI must be safe to inspect before installing dependencies."""
 
+import os
 import runpy
 import builtins
 import subprocess
@@ -98,6 +99,48 @@ def test_tau_runtime_reports_missing_optional_browser(tmp_path, monkeypatch):
     storage.chmod(0o600)
     monkeypatch.setattr(tau, "TAU_PLAYWRIGHT", tmp_path / "missing-playwright")
     assert "bootstrap_portal install tau" in tau.TauConfig(storage).unavailable_reason()
+
+
+def test_tau_asks_node_for_the_browser_once_per_playwright_install(tmp_path, monkeypatch):
+    """TAU 的浏览器检查每次 Playwright 安装只向 node 询问一次 Chromium 路径，安装变化或询问失败后重新询问，浏览器文件每次都检查
+
+    Test 页面每次读取总览都会检查 TAU 是否可用；向 node 询问路径要 0.2 秒左右，占了总览读取的大部分时间。
+    """
+    from management_portal.test_framework import tau
+
+    playwright = tmp_path / "playwright"
+    playwright.mkdir()
+    browser = tmp_path / "chrome"
+    browser.write_text("", encoding="utf-8")
+    calls, failing = [], []
+
+    def ask(*_args, **_kwargs):
+        calls.append(1)
+        if failing:
+            raise subprocess.CalledProcessError(1, "node")
+        return str(browser)
+
+    def reinstall():
+        stat = playwright.stat()
+        os.utime(playwright, ns=(stat.st_atime_ns, stat.st_mtime_ns + 1_000_000_000))
+
+    monkeypatch.setattr(tau, "TAU_PLAYWRIGHT", playwright)
+    monkeypatch.setattr(tau, "_BROWSER_PATHS", {})
+    monkeypatch.setattr(tau.shutil, "which", lambda _name: "/usr/bin/node")
+    monkeypatch.setattr(tau.subprocess, "check_output", ask)
+    assert tau.browser_runtime_issue() == "" and tau.browser_runtime_issue() == ""
+    assert len(calls) == 1
+    browser.unlink()
+    assert "缺少 Chromium" in tau.browser_runtime_issue()
+    assert len(calls) == 1
+    browser.write_text("", encoding="utf-8")
+    reinstall()
+    assert tau.browser_runtime_issue() == ""
+    assert len(calls) == 2
+    failing.append(True)
+    reinstall()
+    assert "无法加载" in tau.browser_runtime_issue() and "无法加载" in tau.browser_runtime_issue()
+    assert len(calls) == 4, "a failed lookup is asked again"
 
 
 def test_tau_reports_missing_native_executor_on_macos(tmp_path, monkeypatch):

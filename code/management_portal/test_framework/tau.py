@@ -56,20 +56,34 @@ def browser_runtime_config() -> dict[str, str]:
     return {"python_executable": sys.executable, "browsers_path": browsers}
 
 
+# Chromium's path per (node, Playwright install): asking node for it takes about 0.2 s.
+_BROWSER_PATHS: dict[tuple[str, int], str] = {}
+
+
 def browser_runtime_issue() -> str:
-    """Check the optional TAU browser, independently of the removed UI test suite."""
+    """Check the optional TAU browser, independently of the removed UI test suite.
+
+    Node reports Chromium's path once per Playwright install (the package
+    directory's modification time); a failed lookup is asked again next time,
+    and the browser file itself is checked on every call.
+    """
     node = shutil.which("node")
     if not node:
         return "TAU 需要 Node.js；请安装 TAU 依赖档。"
     if not TAU_PLAYWRIGHT.is_dir():
         return "TAU 缺少 Playwright；请运行 bootstrap_portal install tau。"
-    try:
-        browser = subprocess.check_output(
-            [node, "-e", "process.stdout.write(require(process.argv[1]).chromium.executablePath())", str(TAU_PLAYWRIGHT)],
-            text=True, stderr=subprocess.PIPE, timeout=10,
-        ).strip()
-    except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
-        return "TAU 的 Playwright 运行时无法加载；请重新运行 bootstrap_portal install tau。"
+    install = (node, TAU_PLAYWRIGHT.stat().st_mtime_ns)
+    browser = _BROWSER_PATHS.get(install)
+    if browser is None:
+        try:
+            browser = subprocess.check_output(
+                [node, "-e", "process.stdout.write(require(process.argv[1]).chromium.executablePath())", str(TAU_PLAYWRIGHT)],
+                text=True, stderr=subprocess.PIPE, timeout=10,
+            ).strip()
+        except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            return "TAU 的 Playwright 运行时无法加载；请重新运行 bootstrap_portal install tau。"
+        _BROWSER_PATHS.clear()
+        _BROWSER_PATHS[install] = browser
     if not Path(browser).is_file():
         return "TAU 缺少 Chromium；请运行 bootstrap_portal install tau。"
     return ""
