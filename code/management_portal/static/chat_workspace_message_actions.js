@@ -60,7 +60,7 @@
     };
     const openMessageMenuAt = (menu, point) => {
       const pin = options.pinMessages && menu.querySelector('[data-portal-message-action="pin"]');
-      if (pin) pin.textContent = window.PortalI18n.t(currentController().isMessagePinned(menu.dataset.portalMessageKey) ? "取消置顶" : "置顶这轮对话");
+      if (pin) pin.textContent = window.PortalI18n.t(currentController().isMessagePinned(menu.dataset.portalMessageKey) ? "取消置顶" : "置顶消息");
       if (openMessageMenu !== menu) closeMessageMenu();
       bindMessageSubmenus(menu);
       closeMessageSubmenus(menu);

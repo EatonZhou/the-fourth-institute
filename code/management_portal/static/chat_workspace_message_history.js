@@ -10,7 +10,7 @@
   // the host's onError, or else to a toast.
   const DEPENDENCIES = Object.freeze([
     "bindResourceChips", "composerQuoteHtml", "currentController", "els", "historyScope", "inheritanceCardHtml",
-    "messageRenderKey", "messageQuoteExcerpt", "messageViewportAtTail", "options", "state", "syncMessageScrollMode", "toggleMessageFold",
+    "messageRenderKey", "messageQuoteExcerpt", "messageQuotable", "messageRole", "contractResidentId", "messageViewportAtTail", "options", "state", "syncMessageScrollMode", "toggleMessageFold",
   ]);
 
   function createMessageHistory(dependencies) {
@@ -18,7 +18,7 @@
     if (missing.length) throw new Error(`PortalChatWorkspaceMessageHistory is missing: ${missing.join(", ")}`);
     const {
       bindResourceChips, composerQuoteHtml, currentController, els, historyScope, inheritanceCardHtml,
-      messageRenderKey, messageQuoteExcerpt, messageViewportAtTail, options, state, syncMessageScrollMode, toggleMessageFold,
+      messageRenderKey, messageQuoteExcerpt, messageQuotable, messageRole, contractResidentId, messageViewportAtTail, options, state, syncMessageScrollMode, toggleMessageFold,
     } = dependencies;
 
     let destroyed = false;
@@ -122,7 +122,7 @@
     pinHost.className = "workspacePinnedMessages";
     pinHost.hidden = true;
     pinHost.title = window.PortalI18n.t("仅你可见，保存在当前浏览器");
-    pinHost.setAttribute("aria-label", window.PortalI18n.t("置顶对话"));
+    pinHost.setAttribute("aria-label", window.PortalI18n.t("置顶消息"));
     if (options.pinMessages) els.head?.after(pinHost);
     const pinKey = () => JSON.stringify(["portal.chat.pins.v1", window.PortalIdentity?.username?.() || "", historyScope()]);
     const readPins = () => {
@@ -153,16 +153,23 @@
         window.dispatchEvent(new CustomEvent("portal:chat-pins-changed"));
       } catch (error) { reportError(error); }
     };
+    // Quoting and pinning resolve the exact same message, never a reply group or turn.
+    const messageQuoteTarget = key => {
+      const item = state.messageByKey.get(String(key));
+      if (!item || !messageQuotable(item)) return null;
+      return { message_id: String(item.message_id),
+        author_id: String(item.origin?.sender?.id || item.author_id
+          || (messageRole(item) === "agent" ? contractResidentId() : "") || ""),
+        text: messageQuoteExcerpt(item) };
+    };
     const toggleMessagePin = key => {
       if (!options.pinMessages || !historyScope()) return;
-      const item = state.messageByKey.get(String(key));
-      if (!item || item.pending || item.local_delivery) return;
-      const id = String(item.message_id || item.id || "");
-      const text = messageQuoteExcerpt(item);
-      if (!id || !text) return;
+      const target = messageQuoteTarget(key);
+      if (!target) return;
+      const id = target.message_id;
       const pins = readPins();
       writePins(pins.some(pin => pin.message_id === id) ? pins.filter(pin => pin.message_id !== id)
-        : [...pins, { message_id: id, author_id: String(item.author_id || item.author || ""), text }]);
+        : [...pins, target]);
     };
     const isMessagePinned = key => {
       const item = state.messageByKey.get(String(key));
@@ -254,7 +261,7 @@
     };
 
     return {
-      revealMessage, inheritanceViewFor, composerQuote, renderComposerQuote, setQuote, clearQuote, toggleMessagePin, isMessagePinned, renderPinnedMessages, destroyMessageHistory,
+      revealMessage, inheritanceViewFor, composerQuote, renderComposerQuote, setQuote, clearQuote, messageQuoteTarget, toggleMessagePin, isMessagePinned, renderPinnedMessages, destroyMessageHistory,
     };
   }
 

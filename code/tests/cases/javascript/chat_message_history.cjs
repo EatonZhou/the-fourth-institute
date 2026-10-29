@@ -310,11 +310,20 @@ const fresh = (name, extra = {}) => {
     }
     {
       const pinned = fresh('pins', {pinMessages: true});
-      pinned.workspace.setMessages([human('pin-question'), agent('pin-answer')]);
+      const selected = agent('pin-answer', 'pin-answer selected segment', {
+        message_id: 'pin-answer', origin: {sender: {id: 'resident_selected'}},
+        family_reply: {request_message_id: 'pin-question'},
+      });
+      const before = agent('before', 'before segment', {message_id: 'before', family_reply: {request_message_id: 'pin-question'}});
+      const after = agent('after', 'after segment', {message_id: 'after', family_reply: {request_message_id: 'pin-question'}});
+      pinned.workspace.setMessages([human('pin-question'), before, selected, after]);
+      const target = pinned.workspace.messageQuoteTarget('pin-answer');
+      assert.equal(target.author_id, 'resident_selected');
       pinned.workspace.toggleMessagePin('pin-answer');
       assert.match(pinned.one('.workspacePinnedMessages').textContent, /pin-answer/);
+      assert.doesNotMatch(pinned.one('.workspacePinnedMessages').textContent, /before segment|after segment/);
       pinned.one('[data-pinned-action="quote"]').click();
-      assert.equal(pinned.workspace.quote().message_id, 'pin-answer');
+      assert.equal(JSON.stringify(pinned.workspace.quote()), JSON.stringify(target), 'pin and quote preserve the identical message ID, author and excerpt');
       pinned.show('other-pins');
       assert.equal(pinned.one('.workspacePinnedMessages').hidden, true);
       pinned.show('pins', [human('pin-question'), agent('pin-answer')]);
@@ -326,6 +335,9 @@ const fresh = (name, extra = {}) => {
       assert.equal(restored.one('.workspacePinnedMessages').hidden, false, 'pins survive remount');
       restored.one('[data-pinned-action="remove"]').click();
       assert.equal(restored.one('.workspacePinnedMessages').hidden, true);
+      restored.workspace.setMessages([agent('pending', 'unfinished', {pending: true, message_id: 'pending'})]);
+      restored.workspace.toggleMessagePin('pending');
+      assert.equal(restored.one('.workspacePinnedMessages').hidden, true, 'an unquotable reply cannot be pinned');
       restored.destroy();
     }
     console.log('PASS the load-earlier button, Fork card, quote jumps, pins and quote bar');

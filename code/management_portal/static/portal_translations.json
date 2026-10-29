@@ -1,6 +1,5 @@
 {
-  "置顶这轮对话": {"en": "Pin this conversation turn", "zh-CN": "置顶这轮对话"},
-  "置顶对话": {"en": "Pinned conversations", "zh-CN": "置顶对话"},
+  "置顶消息": {"en": "Pin message", "zh-CN": "置顶消息"},
   "跳到置顶消息": {"en": "Go to pinned message", "zh-CN": "跳到置顶消息"},
   "取消置顶": {"en": "Unpin", "zh-CN": "取消置顶"},
   "仅你可见，保存在当前浏览器": {"en": "Only visible to you, saved in this browser", "zh-CN": "仅你可见，保存在当前浏览器"},

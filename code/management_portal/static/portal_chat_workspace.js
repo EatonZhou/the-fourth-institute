@@ -795,10 +795,10 @@
     });
 
     const {
-      revealMessage, inheritanceViewFor, composerQuote, renderComposerQuote, setQuote, clearQuote, toggleMessagePin, isMessagePinned, renderPinnedMessages, destroyMessageHistory,
+      revealMessage, inheritanceViewFor, composerQuote, renderComposerQuote, setQuote, clearQuote, messageQuoteTarget, toggleMessagePin, isMessagePinned, renderPinnedMessages, destroyMessageHistory,
     } = chatWorkspaceModule("PortalChatWorkspaceMessageHistory").createMessageHistory({
       bindResourceChips, composerQuoteHtml, currentController: () => controller, els, historyScope, inheritanceCardHtml,
-      messageRenderKey, messageQuoteExcerpt, messageViewportAtTail, options, state, syncMessageScrollMode, toggleMessageFold,
+      messageRenderKey, messageQuoteExcerpt, messageQuotable, messageRole, contractResidentId, messageViewportAtTail, options, state, syncMessageScrollMode, toggleMessageFold,
     });
 
     const { applyComposerInputLayout, destroyComposerHeight } = chatWorkspaceModule("PortalChatWorkspaceComposerHeight")
@@ -1325,6 +1325,7 @@
         markDraftSaved();
       },
       quote: composerQuote,
+      messageQuoteTarget,
       toggleMessagePin,
       isMessagePinned,
       setQuote,
@@ -2295,11 +2296,8 @@
 
     // Quote replies (decision_f560803947c6): the quote bar shows the quoted message until it is sent.
     quoteMessage(key) {
-      const item = this.workspace.state?.messages?.find(message => messageIdentity(message) === key);
-      if (!item || !messageQuotable(item)) return false;
-      const author = String(item.origin?.sender?.id || item.author_id
-        || (messageRole(item) === "agent" ? this.target().resident_id : "") || "");
-      return this.workspace.setQuote({ message_id: String(item.message_id), author_id: author, text: messageQuoteExcerpt(item) });
+      const target = this.workspace.messageQuoteTarget(key);
+      return target ? this.workspace.setQuote(target) : false;
     }
 
     async reeditWithdrawnMessage(key) {
