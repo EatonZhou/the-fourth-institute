@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import gc
 import json
 import os
 import socket
@@ -33,6 +34,11 @@ from .runtime import get_resource_service
 RESOURCE_SERVICE_SCHEMA = "tfi.resource-service.v3"
 INSTRUCTION_METHOD = "instruction.execute"
 PERMISSION_COMPLETE_INTERVAL_SECONDS = 3600
+# The resource index keeps millions of objects alive. With the default (700, 10, 10)
+# the rows a Project-wide query holds while it runs reach the oldest generation and
+# set off a full collection of 0.2-0.35 s in most such queries; collecting the young
+# generations less often lets those rows die young.
+COLLECTOR_THRESHOLDS = (100_000, 20, 10)
 
 
 def _report_merges(merged: dict[str, Any]) -> None:
@@ -501,6 +507,7 @@ def parser() -> argparse.ArgumentParser:
 
 def main() -> int:
     loaded_modules.track()
+    gc.set_threshold(*COLLECTOR_THRESHOLDS)
     args = parser().parse_args()
     server = ResourceServiceServer(args.socket)
     serve_until_stopped(server)
