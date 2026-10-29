@@ -73,7 +73,7 @@ from .claude_transcript_compaction import (
 )
 from .kimi_tool_gateway import KimiToolGateway, publish_catalog
 from .native_tool_events import NativeToolEventTranslator, provider_activity
-from .transport import ExecutionClaimOwnershipLost
+from .transport import ExecutionClaimOwnershipLost, ExecutionResponseUnknown, ExecutionServiceUnavailable
 from .native_session_compaction import (
     NativeCompaction,
     dsh_session_path,
@@ -2730,6 +2730,10 @@ PORTAL_TOOL_REGISTRATION_WAIT_SECONDS = 36.0
 # restarted, or a Worker left it): the Provider gets no input twice.
 INTERRUPTED_TURN_CONTINUATION = "continue"
 
+# A Worker's own call to ExecutionService that failed, such as an event of the
+# turn it was recording: never a Provider failure to continue after.
+_EXECUTION_SERVICE_FAILURES = (ExecutionServiceUnavailable, ExecutionResponseUnknown)
+
 
 def report_recovery_input(
     context: BackendContext,
@@ -3389,7 +3393,7 @@ class NativeTurnRun:
                     result = self._run_provider_turn(
                         running_prompt, self.running_turn_id, session.backend_session_id, running_media, continue_prompt,
                     )
-                except NativeAgentDetached:
+                except (NativeAgentDetached, ExecutionClaimOwnershipLost, *_EXECUTION_SERVICE_FAILURES):
                     raise
                 except Exception as exc:  # noqa: BLE001 - re-raised unless the turn may be continued
                     result = self._continue_failed_turn(exc)
@@ -3405,6 +3409,16 @@ class NativeTurnRun:
             # A write of this turn found the claim handed over first.
             detached = True
             raise
+        except _EXECUTION_SERVICE_FAILURES as exc:
+            # ExecutionService did not take an event of the turn (10-29: it
+            # restarted with a publish). Portal failed, not the Provider: a
+            # continuation would meet the turn still running in its session.
+            # The Provider's process keeps the turn and its events, and the
+            # next attempt attaches under the same turn id.
+            detached = True
+            raise ExecutionRecoveryDeferred(
+                f"ExecutionService unavailable: the {backend.provider_id} turn keeps running for the next attempt"
+            ) from exc
         finally:
             # A turn left running has not ended, and this Worker's claim is
             # released: the Worker that attaches records what it leaves.

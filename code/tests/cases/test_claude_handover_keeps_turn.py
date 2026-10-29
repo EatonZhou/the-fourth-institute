@@ -217,6 +217,54 @@ def test_a_detached_worker_requeues_the_execution():
     assert "token_usage_delta" not in [call.args[0] for call in context.emit.call_args_list]
 
 
+def test_an_event_execution_service_did_not_take_leaves_the_turn_to_the_next_attempt():
+    """ExecutionService 未接收轮次事件时把轮次留给下一次尝试
+
+    发布重启 ExecutionService 时，Worker 写入一条 Provider 事件遇到连接重置；这是 Portal 的失败而非 Provider 的失败。Adapter 不在同一会话里发 continue（原轮次仍在运行，守护进程会拒绝），执行延期重排，下一次尝试用同一 turn_id 接回。
+    """
+    from management_portal.execution.harness import ProviderErrorRecoveryPolicy
+    from management_portal.execution.transport import ExecutionResponseUnknown
+
+    turn_ids: list[str] = []
+
+    def run_turn(**options):
+        turn_ids.append(options["turn_id"])
+        if len(turn_ids) > 1:
+            return SimpleNamespace(response="continued", session_id="native", turn_id=options["turn_id"], usage={})
+        options["event_callback"]({"method": "turn/started", "params": {"turn": {"id": TURN_ID}}})
+        options["event_callback"]({"method": "item/started", "params": {"item": {"type": "reasoning", "id": "r1"}}})
+        raise AssertionError("the second event is not taken")
+
+    client = mock.Mock()
+    client.run_turn.side_effect = run_turn
+    context = _context()
+    context.observe_provider_event.side_effect = [
+        None, ExecutionResponseUnknown("ExecutionService request failed at execution-service.sock: ConnectionResetError"),
+    ]
+    invocation = _invocation({"turn_id": TURN_ID})
+    invocation.provider_error_recovery = ProviderErrorRecoveryPolicy(max_continue_attempts=1)
+    usage = ObservedTurnUsage(turn={}, requests=(RequestUsage("claude:msg_1", {"input_tokens": 1}, ""),))
+    with mock.patch.object(backends, "shared_claude_client", return_value=client), \
+            mock.patch.object(backends.ClaudeBackend, "observe_turn_usage", return_value=usage), \
+            mock.patch.object(backends, "wait_before_continuation", return_value=True), \
+            mock.patch("management_portal.execution.native_harness_tools.prepare_tools", return_value=([], None)):
+        with pytest.raises(ExecutionRecoveryDeferred):
+            backends.ClaudeBackend().execute(invocation, context)
+    assert turn_ids == [TURN_ID]
+    emitted = [call.args[0] for call in context.emit.call_args_list]
+    assert "agent_harness_provider_error_continue" not in emitted
+    assert "token_usage_delta" not in emitted
+
+    # The next attempt asks for the same turn, which the daemon attaches to while it runs.
+    client.run_turn.side_effect = None
+    client.run_turn.return_value = SimpleNamespace(response="done", session_id="native", turn_id=TURN_ID, usage={})
+    with mock.patch.object(backends, "shared_claude_client", return_value=client), \
+            mock.patch("management_portal.execution.native_harness_tools.prepare_tools", return_value=([], None)):
+        result = backends.ClaudeBackend().execute(_invocation({"turn_id": TURN_ID}), _context())
+    assert result.output["message"] == "done"
+    assert client.run_turn.call_args.kwargs["turn_id"] == TURN_ID
+
+
 def test_a_worker_that_lost_its_claim_mid_turn_leaves_the_records_to_the_next_worker():
     """轮次中途失去 claim 的 Worker 不再记录这一轮
 
