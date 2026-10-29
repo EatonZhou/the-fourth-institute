@@ -153,17 +153,21 @@ def test_invalid_preferences_are_rejected(value):
         normalize_snapshot({'resource_lineage_options': value})
 
 
-def test_projects_page_and_manual_projects_use_native_chat_target():
+def test_projects_page_and_manual_projects_select_page_without_project_chat_target():
+    # Per-user project chat was removed (c3a8cc2): the project conversation is
+    # the Project Resident, so a leftover resource_chat:project row pulls nothing.
     source = Source()
     source.data['lineage', 'application_targets'].append({'application': 'resource_chat:project', 'lineage_id': OTHER, 'revision': 4})
     for snapshot in ({'projects_page': True}, {'feature_states': {'projects': {'included': True, 'default_enabled': True}}},
                      {'manual_projects': ['chosen']}, {'projects': [{'id': 'chosen'}]}):
         result = dependencies.resolve(snapshot, source)
         assert result['valid']
-        assert result['application_targets'] == ['resource_chat:project']
-        assert result['lineages'] == [{'id': OTHER, 'required_by': ['resource:project']}]
+        assert result['types'] == ['project']
+        assert [page['id'] for page in result['pages']] == ['resource:project']
+        assert result['application_targets'] == []
+        assert result['lineages'] == []
     result = dependencies.resolve({'projects_page': True, 'feature_states': {'projects': {'included': False}}}, source)
-    assert not result['lineages']  # Canonical map overrides stale legacy boolean.
+    assert not result['types'] and not result['pages']  # Canonical map overrides stale legacy boolean.
 
 
 def test_save_copy_and_config_run_freeze_preferences_without_selecting_them(monkeypatch):

@@ -88,8 +88,10 @@ def _questions():
 
 
 def _direct_jev_invocation(parameters):
+    # A direct call is a stateless Chat Completion "generate" request
+    # (build_chat_completion_request); it carries metadata like every request.
     return SimpleNamespace(
-        request=SimpleNamespace(provider="jev_primary", runtime_options={
+        request=SimpleNamespace(provider="jev_primary", operation="generate", metadata={}, runtime_options={
             "parameters": parameters, "max_retries": 0,
             "messages": [{"role": "user", "content": "preset"}],
             "system_prompt": "Business context",

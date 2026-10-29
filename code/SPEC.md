@@ -146,11 +146,11 @@
 - [Portal 中英文界面与语言偏好](/r/decision_27253e25f016)
 - [Portal Workbench 与 Panel Package 组合协议](/r/decision_538e155e1102)
 - [Lineage 个性化前端投影：公共绑定、身份创建、生成提交恢复、有界资源读取与双向演化](/r/decision_f67ae5e70793)
-- [Portal 投影协议 v2：页面清单、门面对话、语义对象与变化通知](/r/decision_7a5ae487e2e9)（含可选独立功能页导航 `navigation.mode=pages`、分区布局隔离和显式 Chat 装配）
+- [Portal 投影协议 v2：页面清单、门面对话、语义对象与变化通知](/r/decision_7a5ae487e2e9)
 - [Portal 开发投影：软件开发范式（架构与协议、阶段进展、未来演化）](/r/decision_13e1a748cf04)
 - [软件工程智能开发核心团队：Lineage 模板与创建原则](/r/decision_78134209e5c9)
 - [Society Workbench 多实例 Editor 与统一打开协议](/r/decision_79de71d9890d)
-- [Portal Chat Workspace](/r/decision_f560803947c6)（含与引用回复同粒度的个人消息置顶及历史跳转）
+- [Portal Chat Workspace](/r/decision_f560803947c6)
 - [Resident 聊天中的提问、审批与本轮修改卡片](/r/decision_1e2eb869bc10)
 - [Resident 统一执行配置：模型、Prompt、后端参数与 Harness](/r/decision_8b2fa224616b)
 - [Portal 内容图片的插入、引用、查看与编辑组件](/r/decision_dca903d71575)

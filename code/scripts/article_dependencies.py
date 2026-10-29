@@ -27,13 +27,14 @@ ASSETS = {
     ('Windows', 'x86_64'): ('tar', '79d52d94ec844a82ca50e18a8394bfc4ab2316ca5a406632aee38c72907e639c'),
 }
 PACKAGES = ('latexmk', 'synctex', 'ctex', 'fandol', 'geometry', 'amsmath', 'amsfonts',
-            'amscls', 'mathtools', 'booktabs', 'tools', 'graphics', 'xcolor', 'pgf',
+            'amscls', 'mathtools', 'booktabs', 'tools', 'graphics', 'grfext', 'xcolor', 'pgf',
             'enumitem', 'fancyhdr', 'microtype', 'natbib', 'hyperref', 'caption', 'float',
             'setspace', 'placeins', 'biber', 'biblatex')
 TOOLS = ('pdflatex', 'xelatex', 'lualatex', 'latexmk', 'biber', 'kpsewhich', 'synctex', 'texlab')
 TEX_FILES = ('ctexbook.cls', 'geometry.sty', 'amsmath.sty', 'amssymb.sty', 'amsthm.sty',
              'mathtools.sty', 'booktabs.sty', 'longtable.sty', 'array.sty', 'tabularx.sty',
-             'graphicx.sty', 'xcolor.sty', 'tikz.sty', 'enumitem.sty', 'fancyhdr.sty',
+             # pdflatex's graphicx loads epstopdf-base, which needs grfext.
+             'graphicx.sty', 'grfext.sty', 'xcolor.sty', 'tikz.sty', 'enumitem.sty', 'fancyhdr.sty',
              'microtype.sty', 'natbib.sty', 'hyperref.sty', 'caption.sty', 'float.sty', 'setspace.sty', 'placeins.sty', 'biblatex.sty')
 
 

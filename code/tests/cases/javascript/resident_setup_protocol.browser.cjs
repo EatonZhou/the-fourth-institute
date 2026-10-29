@@ -24,7 +24,8 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
       window.runtime = PortalChatWorkspaceRuntimeSettings.createRuntimeSettings({escapeHtml: PortalUIPrimitives.escapeHtml});
       window.dialog = runtime.createSessionRestartDialog();
       window.openDialog = () => dialog.open({resident_id: 'fixture', source: {provider: 'codex', account_id: 'two', has_session: true}, runtime_settings: {model: 'm'}, runtime_catalog: catalog,
-        providers: [{id: 'codex', label: 'Codex'}], accounts: {codex: [{id: 'two', account_id: 'codex_two', label: 'two'}, {id: 'three', account_id: 'codex_three', label: 'three'}]},
+        // The server declares which context transfers each target account supports.
+        providers: [{id: 'codex', label: 'Codex'}], accounts: {codex: [{id: 'two', account_id: 'codex_two', label: 'two', context_options: [{id: 'preserve', enabled: true, description: '不压缩上下文'}]}, {id: 'three', account_id: 'codex_three', label: 'three', context_options: [{id: 'preserve', enabled: true, description: '不压缩上下文'}]}]},
         application: {items: [{path: 'capability_config', status: 'unknown', delivery: 'unknown'}]},
         onSave: async values => {saves.push(values); return {settings: values};}}, async values => {calls.push(values); return {status: 'completed', restart_id: 'done'};}, async () => ({}));
       openDialog();
@@ -32,22 +33,25 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     assert.equal(await page.locator('[data-session-restart-submit]').isDisabled(), true);
     assert.equal(await page.locator('[data-runtime-settings-submit]').isVisible(), false);
     assert.equal(await page.locator('[data-session-restart="strategy"]').isVisible(), false);
-    assert.equal(await page.locator('[data-session-reload]').isVisible(), false);
+    // Refresh sits in the footer; settings carry no diagnostics section.
+    assert.equal(await page.locator('[data-session-reload]').isVisible(), true);
+    assert.equal(await page.locator('[data-session-binding-snapshot]').count(), 0);
     await page.locator('[data-session-target]').selectOption(JSON.stringify(['codex', 'three']));
     await page.locator('[data-session-restart-close]').last().click();
     assert.equal(await page.evaluate(() => calls.length), 0, 'closing cancels the draft without switching');
     await page.evaluate(() => openDialog());
     await page.locator('[data-runtime-view="parameters"]').click();
     await page.locator('[data-runtime-panel="parameters"] [data-runtime-setting="model"]').selectOption('m2');
-    await page.locator('[data-session-binding-snapshot] summary').click();
     await page.locator('[data-session-reload]').click();
     assert.equal(await page.locator('[data-runtime-panel="parameters"] [data-runtime-setting="model"]').inputValue(), 'm2');
     await page.locator('[data-runtime-settings-submit]').click();
     assert.equal(await page.evaluate(() => saves[0].model), 'm2');
     await page.locator('[data-runtime-view="capabilities"]').click();
+    await page.locator('summary', {hasText: '配置生效情况'}).click();
     assert.match(await page.locator('[data-capability-application]').innerText(), /当前观察：未知.*交付：未知/);
     await page.locator('[data-runtime-view="switch_account"]').click();
     await page.locator('[data-session-target]').selectOption(JSON.stringify(['codex', 'three']));
+    assert.equal(await page.locator('[data-switch-context-status]').innerText(), '不压缩上下文');
     for (const width of [1280, 390]) {
       await page.setViewportSize({width, height: 900});
       await page.locator('[data-session-restart-submit]').scrollIntoViewIfNeeded();

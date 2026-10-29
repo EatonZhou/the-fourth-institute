@@ -86,6 +86,11 @@ async function familySettingsFixture({runtime = true, restart = true} = {}) {
     PortalUIPrimitives: {randomUUID: () => "fixture"},
     PortalUI: {toast: (...args) => notices.push(args)},
     PortalAPI: {get: async url => {calls.push(['get', url]); return url.includes('agent-runtime-catalog') ? catalog : {accounts: []};}},
+    // The status panel reads the caller's Family M/S chat preferences for the facade first.
+    PortalInstructionClient: {execute: async (name, args) => {
+      assert.deepEqual(JSON.parse(JSON.stringify([name, args])), ['GetFamilyChatPreferences', {resident_id: facade}]);
+      return {muted_member_ids: [], solo_member_id: ''};
+    }},
     PortalResidentProtocol: {executionGateView: () => ({state: '', text: '', label: ''}), stateView: () => ({status: 'idle', display_work_state: 'idle'}),
       acquire: () => ({destroy: noop, load: async () => snapshot})},
     PortalResidentService: {

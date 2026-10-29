@@ -150,7 +150,9 @@ def test_component_views_read_shared_fire_runtime_once_and_keep_fields(monkeypat
                     'next_scheduled_at': '2026-10-09T14:00:00Z'}
               for index, rid in enumerate(sources)}
     read_runtime = Mock(return_value={'event_sources': states})
-    monkeypatch.setattr(lineage_aggregate, 'read_lineage', lambda rid, **kwargs: {'lineage_id': rid})
+    leader = 'resident_aaaaaaaaaaaa'
+    monkeypatch.setattr(lineage_aggregate, 'read_lineage', lambda rid, **kwargs: {
+        'lineage_id': rid, 'leader_resident_id': leader, 'nodes': [{'id': leader}]})
     monkeypatch.setattr(component_runtime, '_compiled_program', lambda lineage: {'event_sources': sources, 'loops': {}})
     monkeypatch.setattr(lineage_program_runtime, 'read_runtime', read_runtime)
     selected = 'event_source_000' if single else ''
@@ -166,7 +168,7 @@ def test_component_views_read_shared_fire_runtime_once_and_keep_fields(monkeypat
     if not single:
         assert result[11]['exhausted'] is True and result[11]['remaining_fires'] == 0
         assert [row['component_id'] for row in result] == sorted(sources)
-        # A Lineage without a configured User still fires; its Residents act on their own authority.
+        # A Lineage with a valid Leader fires as that Leader; no User is configured.
         assert result[1]['state'] == 'listening' and 'error' not in result[1]
         assert result[1]['occurrence_count'] == 1 and result[1]['remaining_fires'] == 9
         assert result[1]['next_scheduled_at'] == '2026-10-09T14:00:00Z'

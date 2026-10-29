@@ -83,6 +83,17 @@ def test_existing_claude_service_sdk_is_available_without_installing(fresh_servi
     assert runtime.link() == sdk
     assert runtime.installed() == ("0.2.174",)
     assert runtime.activation_link() == updates.RUNTIMES / "claude-agent-sdk-current"
+    from management_portal.claude_code_client import ClaudeCodeClient, ClaudeCodeUnavailable
+
+    def daemon_not_started(_client):
+        raise ClaudeCodeUnavailable("daemon not started")
+
+    # The reused SDK counts as installed, but the runtime is available only
+    # once this instance's daemon answers.
+    monkeypatch.setattr(ClaudeCodeClient, "health", daemon_not_started)
+    assert updates._runtime_installed(runtime)
+    assert not updates.runtime_available("claude")
+    monkeypatch.setattr(ClaudeCodeClient, "health", lambda _client: {"backend": "claude", "protocol_version": 1})
     assert updates.runtime_available("claude")
     assert updates.prepare_runtime("claude")["source"] == "existing"
     assert not updates.RUNTIMES.exists()
@@ -191,8 +202,13 @@ def test_managed_claude_activation_failure_rolls_back_without_touching_external_
             raise RuntimeError("failed to start staged runtime")
 
     monkeypatch.setattr(updates, "_service_control", lambda: SimpleNamespace(restart=restart))
-    with pytest.raises(RuntimeError, match="failed to start"):
+    from management_portal.execution.provider_preparation import PreparationError
+    with pytest.raises(PreparationError, match="服务启用失败") as failure:
         updates._activate("claude", runtime, staged)
+    # The public error names only the phase; the service failure stays chained.
+    assert failure.value.phase == "service_activation"
+    assert "failed to start" in str(failure.value.__cause__)
+    assert failure.value.rollback_failed is False
     assert link.resolve() == old
     assert calls == [staged, old]
     assert (sdk / "bin/python").is_file()

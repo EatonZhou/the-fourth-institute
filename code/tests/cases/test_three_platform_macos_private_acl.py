@@ -129,12 +129,16 @@ def test_null_acl_query_only_accepts_explicit_absence(tmp_path, mac_acl, error):
 
 
 def test_shared_private_atomic_write_checks_acl_before_payload(tmp_path, mac_acl):
-    target = tmp_path / "key.json"
+    # tmp_path also holds the autouse site fixture's accounts/ (registration
+    # locks since 2ae2514); inspect a directory that only this case writes.
+    directory = tmp_path / "case"
+    directory.mkdir()
+    target = directory / "key.json"
     target.write_bytes(b"old")
     with pytest.raises(PermissionError):
         shared_state.atomic_replace_json(target, {"secret": "never written"}, mode=0o600)
     assert target.read_bytes() == b"old"
-    assert list(tmp_path.iterdir()) == [target]
+    assert list(directory.iterdir()) == [target]
 
 
 @pytest.mark.parametrize("entries", [

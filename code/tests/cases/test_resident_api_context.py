@@ -62,8 +62,9 @@ def test_two_requests_pass_history_once_and_keep_system_instructions(monkeypatch
     """连续两次模型 API 请求各带一次历史，并都保留固定的 system 指令"""
     from copy import deepcopy
     from management_portal.society_service import resident_execution_domain as execution, resident_runtime_domain
-    from management_portal.execution.backends import ChatCompletionService
+    from management_portal.execution.backends import BackendInvocation, ChatCompletionService
     from management_portal.execution.contracts import SystemInstructions
+    from management_portal.execution.session_manager import RuntimeSession
     settings = {'model': 'm', 'prompt_context': {'history': {'enabled': True, 'max_tokens': 8000}}}
     monkeypatch.setattr(resident_runtime_domain, 'read_resident_runtime_settings', lambda record: deepcopy(settings))
     monkeypatch.setattr(resident_input_scope, 'get', lambda *args: {})
@@ -83,7 +84,14 @@ def test_two_requests_pass_history_once_and_keep_system_instructions(monkeypatch
     record = {'resident_id': RID, 'lineage_id': 'lineage_abcdef123456', 'backend': 'provider_api', 'backend_route_id': 'api'}
     for mid in ('first', 'second'):
         req = execution._build_resident_execution_request(record, {'actor': 'CASE-A', 'job_id': mid, 'user_message_id': mid, 'raw_message': mid})
-        service.execute(SimpleNamespace(request=req, attach_system_context=True, system_context='Fixed instructions', user_prompt=mid), SimpleNamespace(is_cancelled=lambda: False, emit=lambda *args: None))
+        # A Resident request passes Resident capability assembly, which reads the
+        # whole invocation and records its plan on the backend context.
+        session = RuntimeSession(mode='stateless', binding_id='', backend_session_id='',
+                                 is_new_backend_session=True, backend_route_id='api')
+        invocation = BackendInvocation(request=req, session=session, user_prompt=mid, system_context='Fixed instructions',
+                                       attach_system_context=True, is_new_backend_session=True)
+        service.execute(invocation, SimpleNamespace(is_cancelled=lambda: False, emit=lambda *args: None,
+                                                    record_capability_assembly=lambda plan: None))
     assert payloads[0]['messages'] == [{'role': 'system', 'content': 'Fixed instructions'}, {'role': 'user', 'content': 'first'}]
     assert payloads[1]['messages'] == [{'role': 'system', 'content': 'Fixed instructions'}, {'role': 'user', 'content': 'Remember BLUE'}, {'role': 'assistant', 'content': 'BLUE'}, {'role': 'user', 'content': 'second'}]
 

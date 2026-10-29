@@ -13,23 +13,26 @@ def test_navigation_unregistered_folders_links_and_pagination(tmp_path, monkeypa
         if path.name == "private":
             raise PermissionError("denied")
     monkeypatch.setattr(host_directories, "authorize", authorize)
-    (tmp_path / "发行目录").mkdir()
-    (tmp_path / "empty").mkdir()
-    (tmp_path / "private").mkdir()
-    (tmp_path / "notes.txt").write_text("not returned")
-    (tmp_path / "link").symlink_to(tmp_path / "发行目录", target_is_directory=True)
-    (tmp_path / "hidden-link").symlink_to(tmp_path / "private", target_is_directory=True)
+    # A directory of its own: the site fixture keeps account registration locks under tmp_path.
+    root = tmp_path / "picker"
+    root.mkdir()
+    (root / "发行目录").mkdir()
+    (root / "empty").mkdir()
+    (root / "private").mkdir()
+    (root / "notes.txt").write_text("not returned")
+    (root / "link").symlink_to(root / "发行目录", target_is_directory=True)
+    (root / "hidden-link").symlink_to(root / "private", target_is_directory=True)
     monkeypatch.setattr(host_directories, "PAGE_SIZE", 2)
-    first = host_directories.browse({"path": str(tmp_path)}, "alice")
-    second = host_directories.browse({"path": str(tmp_path), "after": first["next_after"]}, "alice")
+    first = host_directories.browse({"path": str(root)}, "alice")
+    second = host_directories.browse({"path": str(root), "after": first["next_after"]}, "alice")
     assert [entry["name"] for entry in first["directories"] + second["directories"]] == ["empty", "link", "发行目录"]
-    assert first["parent"] == str(tmp_path.parent)
-    opened = host_directories.browse({"path": str(tmp_path / "link")}, "alice")
-    assert opened["path"] == str(tmp_path / "发行目录")
+    assert first["parent"] == str(root.parent)
+    opened = host_directories.browse({"path": str(root / "link")}, "alice")
+    assert opened["path"] == str(root / "发行目录")
     assert opened["directories"] == []
     assert calls and all(actor == "alice" for _, actor in calls)
     with pytest.raises(PermissionError):
-        host_directories.browse({"path": str(tmp_path / "hidden-link")}, "alice")
+        host_directories.browse({"path": str(root / "hidden-link")}, "alice")
 
 
 def test_path_owner_and_existing_read_permission(monkeypatch, tmp_path):

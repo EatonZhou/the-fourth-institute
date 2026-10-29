@@ -9,8 +9,10 @@ from types import SimpleNamespace
 
 import pytest
 
+from management_portal.execution import codex_runtime_settings
 from management_portal.execution.agent_data_store import AgentDataStore
 from management_portal.execution.contracts import ExecutionRequest, SessionOptions, SystemInstructions
+from management_portal.execution.provider_catalog import AgentProvider
 from management_portal.society_service import (
     resident_backend,
     resident_catalog,
@@ -105,6 +107,12 @@ def resident(monkeypatch, execution):
     transaction = store.transaction
     real_read, real_active = resident_execution_work.read, resident_execution_work.is_active
     _, operations, _ = _restart_domain(monkeypatch, source_provider='claude', source_route='deepseek_primary')
+    # The explicit target model is checked against the Codex account's model
+    # catalog; use the same fixture catalog as the settings reconciliation.
+    real_catalog = AgentProvider.catalog
+    monkeypatch.setattr(AgentProvider, 'catalog', lambda self, route='': (
+        codex_runtime_settings.codex_runtime_catalog(account_id=route) if self.provider == 'codex'
+        else real_catalog(self, route)))
     monkeypatch.setattr(resident_execution_domain, 'resident_system_instructions',
                         lambda *a, **kw: SystemInstructions())
     # The existing fixture replaces only native/provider work here. Restore the
@@ -148,12 +156,16 @@ def resident(monkeypatch, execution):
                submitted_at='2026-10-19T00:00:00Z', started_at='2026-10-19T00:00:00Z',
                activation_policy='enqueue_and_trigger', queue=queue)
     store.put_resident_execution_record(RID, job)
+    # A cross-Provider migration names its target model; RestartSession admits
+    # no other request, so the deferred payload carries it (decision_ccbb1cac24aa).
     receipt = resident_deferred_restart.schedule(
         store.resident_record(RID), 'alice',
-        {'target_provider': 'codex', 'target_account': 'one', 'context_strategy': 'compact',
-         'active_execution_policy': 'wait', 'idempotency_key': 'original-migration'},
+        {'target_provider': 'codex', 'target_account': 'one', 'model': 'gpt-6-astra',
+         'context_strategy': 'compact', 'active_execution_policy': 'wait',
+         'idempotency_key': 'original-migration'},
         {'provider': 'claude', 'account_id': 'deepseek_primary'},
-        {'target_provider': 'codex', 'target_account': 'one', 'context_strategy': 'compact'},
+        {'target_provider': 'codex', 'target_account': 'one', 'context_strategy': 'compact',
+         'runtime_settings': {'model': 'gpt-6-astra'}},
     )
     return store, repo, operations, receipt, native
 

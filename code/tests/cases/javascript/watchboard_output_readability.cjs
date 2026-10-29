@@ -31,6 +31,8 @@ names.forEach(name=>assert.ok(parts[name],name));
     await page.evaluate(parts=>{
       const $id=id=>document.getElementById(id),esc=PortalUIPrimitives.escapeHtml,portalUi=PortalUI;
       let watchboardModalDialog=null;
+      // closeWatchboardModal also closes the hover edge drawer when one is bound.
+      let watchboardEdge=null;
       window.calls=[];
       const residentService={watchboardOutput:async args=>{
         calls.push(args);

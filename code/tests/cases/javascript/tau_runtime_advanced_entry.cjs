@@ -52,10 +52,11 @@ const {chromium}=require(path.join(code,'management_portal/test_framework/tau_ru
    catch(error){oldError={name:error.name,message:error.message,stack:error.stack};}
    assert.equal(oldError?.name,'TimeoutError','Original Menu-local textbox predicate remains false');
    const surface=p.locator(restart?'.portalSessionRestartOverlay [role="dialog"]':'.portalRuntimeSettingsOverlay:not(.portalSessionRestartOverlay) [role="dialog"]');
-   const timeout=surface.locator('input[data-api-timeout]'),retries=surface.locator('input[data-api-retries]');
+   // The Session card keeps the hidden switch-account target editor in the same dialog; only the shown form counts.
+   const timeout=surface.locator('input[data-api-timeout]').filter({visible:true}),retries=surface.locator('input[data-api-retries]').filter({visible:true});
    await timeout.waitFor({state:'visible',timeout:1000});
    assert.equal(await surface.count(),1);assert.equal(await surface.isVisible(),true);
-   assert.equal(await surface.locator('.portalRuntimeSettingsEditor').count(),1);
+   assert.equal(await surface.locator('.portalRuntimeSettingsEditor').filter({visible:true}).count(),1);
    for(const control of [timeout,retries]){
     assert.equal(await control.count(),1);assert.equal(await control.getAttribute('type'),'number');
     assert.equal(await control.isVisible(),true);assert.equal(await control.isEnabled(),true);

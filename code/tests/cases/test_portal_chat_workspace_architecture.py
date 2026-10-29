@@ -50,9 +50,11 @@ def test_workspace_identity_is_stable_and_actor_scoped_contracts(subtests, isola
     """Chat Workspace 身份按用户和界面稳定生成，投影隐藏 Provider 会话 ID，无旧 REST 入口"""
     with subtests.test(contract='test_workspace_identity_is_stable_and_actor_scoped'), isolated_portal_case() as case_path:
         assert resident_workspace_adapter._workspace_identity('CASE-A', 'paper', 'paper:1') == {'resident_scope': 'surface-chat:CASE-A:paper:paper:1', 'lineage_scope': 'surface-chat:CASE-A:paper'}
-    with subtests.test(contract='test_project_workspace_rejects_a_mismatched_canonical_key'), isolated_portal_case() as case_path:
+    # A Project has no per-user project Chat Workspace (its conversation is the
+    # Project Resident, decision_46c37026e8ea); Paper keeps a canonical key.
+    with subtests.test(contract='test_paper_workspace_rejects_a_mismatched_canonical_key'), isolated_portal_case() as case_path:
         with pytest.raises(ValueError, match='workspace_key'):
-            resident_workspace_adapter._context_for('project', 'project:wrong', '', {'project_id': 'project_right'})
+            resident_workspace_adapter._context_for('paper', 'paper:wrong', '', {'paper_id': 'paper_right'})
     with subtests.test(contract='test_portal_projects_resident_chat_from_neutral_session_facts'), isolated_portal_case() as case_path:
         detail = resident_chat_projection.project_session({'schema': 'tfi.resident-session-projection.v1', 'resident_id': 'resident_bbbbbbbbbbbb', 'resident': {'resident_id': 'resident_bbbbbbbbbbbb', 'title': 'Portal Chat', 'lineage_id': 'lineage_000000000001', 'backend': 'codex', 'source_resident_id': 'resident_aaaaaaaaaaaa'}, 'lineage': {'title': 'Portal Engineering Lineage'}, 'provider_session': {'provider': 'codex', 'id': '019f0000-0000-7000-8000-000000000002'}, 'account_selection': {'source_account_id': 'one'}, 'backend_capabilities': {'backend': 'codex', 'image_input': True, 'context_input': True, 'session_restart': True, 'runtime_settings': ['model', 'reasoning_effort']}, 'runtime_settings': {'model': 'gpt-5.6-sol', 'reasoning_effort': 'high'}, 'allows': {'RestartSession': True, 'DeliverMessage': True}}, 'CASE-A')
         contract = detail['chat_workspace']

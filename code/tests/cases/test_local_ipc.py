@@ -82,6 +82,9 @@ def test_windows_default_uses_new_private_cache_without_touching_legacy(tmp_path
 def test_node_retiring_listener_preserves_successor(tmp_path):
     if not shutil.which('node'):
         pytest.skip('Node required')
+    # A directory of its own: the site fixture keeps account registration locks under tmp_path.
+    root = tmp_path / 'listeners'
+    root.mkdir()
     result = subprocess.run(['node', '-e', '''
 const net=require('net'),fs=require('fs');
 const {listenLocal}=require(process.argv[1]);
@@ -92,9 +95,9 @@ listenLocal(a,logical);a.on('listening',()=>{
     b.close(()=>{if(fs.existsSync(logical))throw new Error('endpoint leaked');});
   }));
 });
-''', str(NODE_HELPER), str(tmp_path/'ipc')], capture_output=True, timeout=10)
+''', str(NODE_HELPER), str(root/'ipc')], capture_output=True, timeout=10)
     assert result.returncode == 0, result.stderr.decode()
-    assert list(tmp_path.iterdir()) == []
+    assert list(root.iterdir()) == []
 
 
 @pytest.mark.parametrize("transport", ["unix", "tcp"])

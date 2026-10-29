@@ -22,14 +22,15 @@ def repair(platform, payload):
     if hashlib.sha256(data).hexdigest() != NEW_SHA:
         raise ValueError('Invalid repair payload; no files changed.')
     sys.path.insert(0, str(platform / 'code'))
+    # Only the installed preview's own modules exist on this path; it predates
+    # management_common.instance_config, so read its installation.json here.
     from scripts.tfi_windows_launcher import launcher_lock
-    from management_common.instance_config import read_installation
     with launcher_lock(platform):
         receipt = json.loads((platform / 'windows-package.json').read_text(encoding='utf-8'))
         if receipt.get('source_commit') not in VERSIONS:
             raise ValueError('This repair supports Windows preview 20261021.1/.2/.3 only.')
         root = platform / 'instance/example_instance'
-        state = read_installation(root)
+        state = json.loads((root / 'installation.json').read_text(encoding='utf-8'))
         if (Path(state['target']['shared_code_root']).resolve() != platform / 'code'
                 or Path(state['target']['install_root']).resolve() != root):
             raise ValueError('Instance ownership mismatch; no files changed.')

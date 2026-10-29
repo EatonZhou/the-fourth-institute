@@ -75,8 +75,9 @@ def test_first_api_binding_replaces_source_site_model(future_creation_store, mon
     # Exercise the production request and API adapter without a real account or
     # network: both explicit role models and a blank model reach this API.
     from management_portal.society_service import resident_execution_domain as execution
-    from management_portal.execution.backends import ChatCompletionService
+    from management_portal.execution.backends import BackendInvocation, ChatCompletionService
     from management_portal.execution.contracts import SystemInstructions
+    from management_portal.execution.session_manager import RuntimeSession
     monkeypatch.setattr(execution, "resident_system_instructions", lambda *a: SystemInstructions())
     job = {"actor": "api_user", "user_message_id": "message-test", "raw_message": "hello"}
     request = execution._build_resident_execution_request(saved, job)
@@ -87,9 +88,15 @@ def test_first_api_binding_replaces_source_site_model(future_creation_store, mon
     service = ChatCompletionService(SimpleNamespace(get=lambda _: {
         "id": "deepseek_api", "kind": "openai_compatible_chat", "default_model": "deepseek-v4-flash"},
         request=transport))
-    service.execute(SimpleNamespace(request=request, attach_system_context=True,
-                                   system_context="fixed instructions", user_prompt="hello"),
-                    SimpleNamespace(is_cancelled=lambda: False, emit=lambda *a: None))
+    # A Resident request passes Resident capability assembly, which reads the
+    # whole invocation and records its plan on the backend context.
+    session = RuntimeSession(mode="stateless", binding_id="", backend_session_id="",
+                             is_new_backend_session=True, backend_route_id="deepseek_api")
+    service.execute(BackendInvocation(request=request, session=session, user_prompt="hello",
+                                      system_context="fixed instructions", attach_system_context=True,
+                                      is_new_backend_session=True),
+                    SimpleNamespace(is_cancelled=lambda: False, emit=lambda *a: None,
+                                    record_capability_assembly=lambda plan: None))
     assert request.provider == "deepseek_api"
     assert payloads[0][1]["model"] == "deepseek-v4-flash"
     assert payloads[0][1]["messages"][-1] == {"role": "user", "content": "hello"}

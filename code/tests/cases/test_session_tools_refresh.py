@@ -50,20 +50,22 @@ def test_required_tools_are_the_isa_tool_and_only_codex_sessions_keep_theirs():
 
 
 def test_smart_restart_of_a_session_without_the_tool_hands_over_compactly(monkeypatch, isolated_portal_case):
-    """智能重启遇到缺工具的会话改用精简交接
+    """智能重启不因缺工具记录自动精简交接
 
-    smart 策略在同 Provider 同账号时本应原生 Fork；来源会话缺少 hatg_instruction 时改选 compact，新线程带上当前工具。
+    smart 兼容值归一为 preserve：同 Provider 同账号时原生 Fork 保留上下文，来源会话缺少 hatg_instruction 也不改选 compact；只有显式 compact 才以新线程交接并带上当前工具。
 
+    :design: decision_ccbb1cac24aa
     :design-point:
     """
-    with isolated_portal_case():
-        record, operations, _saved = _restart_domain(monkeypatch)
-        monkeypatch.setattr(resident_backend, "session_record", lambda *_args, **_kwargs: {
-            **STALE, "binding_id": "resident:resident_aaaaaaaaaaaa"})
-        result = resident_domain.restart_resident_session(
-            record["resident_id"], "alice", {"target_provider": "codex", "context_strategy": "smart"})
-        assert result["context_strategy"] == "compact"
-        assert operations[0]["operation"] == "turn"
+    for strategy, expected, operation in [("smart", "native", "fork"), ("compact", "compact", "turn")]:
+        with isolated_portal_case(), monkeypatch.context() as patch:
+            record, operations, _saved = _restart_domain(patch)
+            patch.setattr(resident_backend, "session_record", lambda *_args, **_kwargs: {
+                **STALE, "binding_id": "resident:resident_aaaaaaaaaaaa"})
+            result = resident_domain.restart_resident_session(
+                record["resident_id"], "alice", {"target_provider": "codex", "context_strategy": strategy})
+            assert result["context_strategy"] == expected
+            assert operations[0]["operation"] == operation
 
 @pytest.mark.parametrize("names", [None, (), ("jev_decide",), ("hatg_instruction",)])
 def test_next_input_keeps_original_session_without_automatic_restart(monkeypatch, names):

@@ -14,7 +14,7 @@ from management_portal.execution.contracts import (
 )
 from management_portal.execution.context_seed import context_seed
 from management_portal.execution.agent_data_store import AgentDataStore
-from management_portal.society_service.state_store import LineageDataStore
+from management_portal.society_service.state_store import LINEAGE_DATA_SCHEMA, LineageDataStore
 
 
 @pytest.fixture(params=['archive', 'tfi', 'wrong_version'])
@@ -194,7 +194,8 @@ def test_experiment_readers_retain_authorization_guards(namespace, reader):
 
 @pytest.mark.parametrize('factory,table,old', [
     (AgentDataStore, 'agent_store_meta', 'archive.agent-data.v18'),
-    (LineageDataStore, 'lineage_meta', 'archive.lineage-data.v60'),
+    # The retired prefix on the current Lineage data version.
+    (LineageDataStore, 'lineage_meta', 'archive.' + LINEAGE_DATA_SCHEMA.split('.', 1)[1]),
 ])
 def test_existing_postgres_marker_is_read_only(factory, table, old, namespace):
     """Existing schema, row version and data remain unchanged through startup."""

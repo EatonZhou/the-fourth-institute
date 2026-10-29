@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import pytest
 
@@ -14,8 +14,16 @@ class _Request:
 
 
 @dataclass(frozen=True)
+class _Session:
+    # BackendInvocation always carries its RuntimeSession; Kimi reads the
+    # session's route to validate the model against that route's catalog.
+    backend_route_id: str = ""
+
+
+@dataclass(frozen=True)
 class _Invocation:
     request: _Request
+    session: _Session = field(default_factory=_Session)
 
 
 class _ClaudeAccount:

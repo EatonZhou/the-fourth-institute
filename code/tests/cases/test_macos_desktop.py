@@ -13,6 +13,7 @@ import tempfile
 import sys
 import threading
 import time
+from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
@@ -233,7 +234,11 @@ class MacDesktop(unittest.TestCase):
             _, foreign, _ = account_job(base / "other")
             controller = Mock()
             controller.status.return_value = {"pid": 0, "active": "inactive"}
-            with patch.object(providers.sys, "platform", "darwin"), patch.object(providers, "_run") as systemctl:
+            # launchd has our job loaded from our own definition path.
+            controller.run.return_value = SimpleNamespace(
+                returncode=0, stdout=f"\tpath = {adapter.unit_path(registry, name)}\n")
+            with patch.object(providers.sys, "platform", "darwin"), patch.object(providers, "_run") as systemctl, \
+                    patch.object(adapter, "service_controller", return_value=controller):
                 plan = providers.owned_services(target, registry)
                 self.assertEqual(plan["names"], [name])
                 providers.stop_services(plan, controller)

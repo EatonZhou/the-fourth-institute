@@ -84,9 +84,12 @@ def test_clean_launchd_environment_can_start_npm_entry_and_connect(definition):
             connection.close()
             # Both our connection and the host's own readiness probe completed
             # before testing stop cleanup (not merely a path appearing on disk).
-            while not endpoint.with_suffix(".ready").exists() and time.monotonic() < deadline:
+            # The host binds Codex to a hidden startup name and renames it to the
+            # endpoint once ready (4e5b38e); the stand-in marks the name it bound.
+            ready = lambda: [path for path in Path(short).iterdir() if path.suffix == ".ready"]
+            while not ready() and time.monotonic() < deadline:
                 time.sleep(.02)
-            assert endpoint.with_suffix(".ready").exists()
+            assert ready()
         finally:
             process.terminate()
             process.communicate(timeout=10)

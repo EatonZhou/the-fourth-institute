@@ -249,7 +249,7 @@ class MacProviderOwnership(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             platform = Path(tmp).resolve()
             root = platform / "instance/desktop"
-            target = {"install_root": str(root), "shared_code_root": str(platform / "code"),
+            target = {"install_root": str(root), "shared_code_root": str(platform / "code"), "service_prefix": "tfi-desktop",
                       "python": str(platform / "dependencies/python/bin/python3"),
                       "data_roots": {"instances_root": str(root / "data/instances"), "accounts_root": str(root / "data/accounts")}}
             installer.write_json(root / "config/site.json", {})
@@ -269,7 +269,11 @@ class MacProviderOwnership(unittest.TestCase):
                 content = adapter.command_unit_text(name, command, cwd=platform / "code",
                     log_root=root / "data/instances/logs", log_name=name, environment=env)
                 (directory / (ServiceControl.label(name) + ".plist")).write_text(content)
-            with patch.object(installer, "clean_environment", return_value=environment):
+            # launchd reports the job as not loaded, as on a stopped Mac.
+            launchd = Mock()
+            launchd.run.return_value = SimpleNamespace(returncode=113, stdout="")
+            with patch.object(installer, "clean_environment", return_value=environment), \
+                    patch.object(adapter, "service_controller", return_value=launchd):
                 for env in (None, environment):
                     write(env)
                     self.assertEqual(services._macos_owned_services(target, directory)["names"], [name])

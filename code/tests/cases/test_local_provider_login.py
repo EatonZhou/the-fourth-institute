@@ -102,7 +102,9 @@ def test_registration_rollback_removes_only_imported_files(local, tmp_path, monk
     source, _ = codex_login(home)
     original = (source / "auth.json").read_bytes()
     target = tmp_path / "accounts" / "first"
-    target.parent.mkdir()
+    # The isolated site's accounts root; registering its default subscription
+    # accounts (conftest) already created it.
+    target.parent.mkdir(exist_ok=True)
     monkeypatch.setattr(account_hosting, "account_home", lambda *_: target)
     with pytest.raises(RuntimeError, match="commit failed"):
         with local.registration_home("codex", "first"):
@@ -145,7 +147,9 @@ def test_failed_registration_keeps_identity_exclusive_until_file_rollback(local,
     local, home = local
     codex_login(home)
     target = tmp_path / 'accounts' / 'first'
-    target.parent.mkdir()
+    # The isolated site's accounts root; registering its default subscription
+    # accounts (conftest) already created it.
+    target.parent.mkdir(exist_ok=True)
     monkeypatch.setattr(account_hosting, 'account_home', lambda *_: target)
     base = dict(account_id='first', provider='codex', kind='subscription_login')
     events = []

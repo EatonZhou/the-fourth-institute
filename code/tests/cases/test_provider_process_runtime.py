@@ -7,7 +7,7 @@ from management_portal.execution import account_login, provider_updates as updat
 
 
 @pytest.mark.parametrize("platform,executable", [("linux", "systemctl"), ("darwin", "launchctl"), ("win32", "sc.exe")])
-def test_provider_control_uses_platform_service_owner(monkeypatch, platform, executable):
+def test_provider_control_uses_platform_service_owner(monkeypatch, tmp_path, platform, executable):
     from scripts import portal_service_control, portal_service_units
     calls = []
     def run(command, **kwargs):
@@ -21,11 +21,19 @@ def test_provider_control_uses_platform_service_owner(monkeypatch, platform, exe
     monkeypatch.setattr(portal_service_control.sys, "platform", platform)
     monkeypatch.setattr(updates, "run_process", run)
     monkeypatch.setattr(portal_service_units, "_run", lambda *command, **kwargs: run(command, **kwargs))
+    if platform == "win32":
+        # Windows Provider services belong to the installed Windows service
+        # controller: a service without a TFI user-service definition is
+        # queried through the SCM with the shared service-control runner.
+        monkeypatch.setenv("TFI_WINDOWS_SERVICE_DIRECTORY", str(tmp_path))
+        monkeypatch.setattr(portal_service_control, "_run", lambda *command, **kwargs: run(command, **kwargs))
     result = updates._service_control().status("example.service")
     assert result["active"] == "active" and result["pid"] == 42
     assert calls[0][0][0] == executable
-    if platform != "linux":
+    if platform == "darwin":
         assert calls[0][1]["timeout"] == 180
+    elif platform == "win32":
+        assert calls[0][0][:3] == ("sc.exe", "queryex", "example.service")
     else:
         assert calls[0][0][:3] == ("systemctl", "--user", "show")
 

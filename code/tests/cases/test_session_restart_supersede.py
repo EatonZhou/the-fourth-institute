@@ -55,14 +55,16 @@ def test_a_new_restart_replaces_an_unfinished_one(monkeypatch, isolated_portal_c
 
         monkeypatch.setattr("time.sleep", coordinator_tick)
 
+        # A different strategy that still prepares a session. (fresh only saves
+        # configuration and creates the session lazily, so it admits no operation.)
         second = resident_domain.restart_resident_session(
             record["resident_id"], "alice",
-            {"target_provider": "codex", "target_account": "one", "context_strategy": "fresh"},
+            {"target_provider": "codex", "target_account": "one", "context_strategy": "visible"},
         )
 
         assert second["status"] == "accepted"
         assert second["restart_id"] != first["restart_id"]
-        assert second["intent"]["context_strategy"] == "fresh"
+        assert second["intent"]["context_strategy"] == "visible"
         assert cancelled == [first["execution_id"]]
         ended = [value["session_restart"] for value in saved
                  if (value.get("session_restart") or {}).get("restart_id") == first["restart_id"]]

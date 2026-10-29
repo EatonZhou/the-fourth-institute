@@ -104,9 +104,10 @@ const last = name => calls.filter(c => c.name === name).at(-1).args;
   assert(listed.includes('gateway') && !listed.includes('chat_only'), listed.join());
   assert.match(form.textContent, /openai_responses/);
   form.elements.account_id.value = 'second-codex'; form.elements.api_id.value = 'gateway';
-  form.elements.is_default.checked = true;
+  // The default route is set from the account list, not while registering.
+  assert(!form.elements.is_default, 'registration offers no default-route switch');
   submit(form); await flush();
-  assert.deepEqual(last('RegisterProviderAccount').config, {api_id: 'gateway', is_default: true});
+  assert.deepEqual(last('RegisterProviderAccount').config, {api_id: 'gateway'});
 
   panel.destroy(); dom.window.close(); console.log('API key harness choices passed');
 })().catch(error => {console.error(error); dom.window.close(); process.exitCode = 1;});

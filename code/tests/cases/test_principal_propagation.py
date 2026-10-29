@@ -174,15 +174,19 @@ def test_model_output_and_service_notice_have_distinct_senders(repository):
 
 
 def test_automation_without_user_does_not_borrow_a_leader():
-    """自动观察允许省略 User 且不借用 Leader
+    """自动观察以当前图中的 Leader 运行，不需要 User
 
-    User 可选，自动观察保留 Portal 服务来源，不借用 Leader，也不允许外部伪装服务身份。
+    新自动工作使用 Lineage 当前 Leader 的身份；Leader 为空或不在当前图中时阻断，不回退为 Portal 服务身份，也不允许外部伪装服务身份。
 
     :design: decision_ae422b92c6f3, decision_5ff0cb51ed84
     """
     from management_common.principal import authenticated_principal
-    for leader in (SENDER, ""):
-        assert lineage_domain._lineage_runtime_actor({"leader_resident_id": leader}) == "portal"
+    from management_portal.society_service.lineage_automation_identity import AutomationConfigurationError
+    assert lineage_domain._lineage_runtime_actor({"leader_resident_id": SENDER, "nodes": [{"id": SENDER}]}) == SENDER
+    for lineage in ({"leader_resident_id": ""}, {"leader_resident_id": SENDER},
+                    {"leader_resident_id": SENDER, "nodes": [{"id": RECEIVER}]}):
+        with pytest.raises(AutomationConfigurationError):
+            lineage_domain._lineage_runtime_actor(lineage)
     with pytest.raises(PermissionError):
         authenticated_principal({"type": "human", "id": "portal"})
     with pytest.raises(PermissionError):

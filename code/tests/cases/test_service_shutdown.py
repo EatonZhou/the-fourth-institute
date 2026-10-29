@@ -321,8 +321,10 @@ def test_read_pool_restart_gives_up_when_new_workers_do_not_start(monkeypatch):
     """新读取进程在启动期限内没有就绪时，重建失败并结束这些进程，下一次读取再重建"""
     from management_portal.society_service import server
 
-    monkeypatch.setattr(server, "READ_POOL_START_SECONDS", .5)
     pool = LineageReadProcessPool(1)
+    # Shorten the deadline only for the restart: a spawned worker's first
+    # start (imports included) can itself take longer than half a second.
+    monkeypatch.setattr(server, "READ_POOL_START_SECONDS", .5)
     failed = pool._executor
     restarted = _hanging_restarts(pool)
     try:

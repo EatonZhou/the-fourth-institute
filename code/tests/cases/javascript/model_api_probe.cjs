@@ -39,7 +39,8 @@ vm.runInContext(fs.readFileSync('management_portal/static/portal_management_back
 const flush = async () => {for (let n = 0; n < 8; n++) await new Promise(resolve => setImmediate(resolve));};
 const buttons = (root, text) => [...root.querySelectorAll('button')].filter(el => el.textContent === text);
 const click = (text, root = window.document) => {const [b] = buttons(root, text); assert(b && !b.disabled, text); b.click();};
-const choices = select => [...select.options].map(option => option.value);
+// Runners whose protocol the API lacks stay listed but disabled.
+const choices = select => [...select.options].filter(option => !option.disabled).map(option => option.value);
 const last = name => calls.filter(c => c.name === name).at(-1);
 const row = id => window.document.querySelector(`[data-backend-account="${id}"]`);
 const status = id => row(id).children[2].textContent;

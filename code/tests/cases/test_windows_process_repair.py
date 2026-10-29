@@ -42,9 +42,12 @@ class ServiceRepair(unittest.TestCase):
             target.write_bytes(b'fixture old code')
             payload = Path(__file__).resolve().parents[2] / 'scripts/tfi_windows_user_services.py'
             before = {p: p.read_bytes() for p in (root / 'installation.json', receipt, process, data, manifest)}
+            # NEW_SHA pins the historical payload (tfi_windows_user_services.py of
+            # e3f86c3); this fixture supplies current code and declares its digest.
             with patch.object(launcher, 'launcher_lock', return_value=nullcontext()), \
                     patch.object(launcher, 'stop_all') as stop, \
-                    patch.object(repair, 'OLD_SHA', hashlib.sha256(target.read_bytes()).hexdigest()):
+                    patch.object(repair, 'OLD_SHA', hashlib.sha256(target.read_bytes()).hexdigest()), \
+                    patch.object(repair, 'NEW_SHA', hashlib.sha256(payload.read_bytes()).hexdigest()):
                 self.assertEqual(repair.repair(platform, payload), 'repaired')
                 self.assertEqual(repair.repair(platform, payload), 'already repaired')
                 stop.assert_not_called()

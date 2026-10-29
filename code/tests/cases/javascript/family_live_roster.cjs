@@ -17,6 +17,8 @@ const {mount} = require('./message_state_family.cjs');
   try {
     window.PortalAPI = {get: async () => ({accounts: []})};
     window.PortalInstructionClient = {execute: async instruction => {
+      // The roster reads the viewer's M/S routing preferences on each load.
+      if (instruction === 'GetFamilyChatPreferences') return {muted_member_ids: [], solo_member_id: ''};
       assert.equal(instruction, 'ListInputHistory'); return {entries: []};
     }};
     window.PortalResidentService = {

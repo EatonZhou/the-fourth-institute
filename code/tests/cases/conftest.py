@@ -51,6 +51,10 @@ os.environ["PORTAL_DATABASE_NAMESPACE"] = _PYTEST_DATABASE_NAMESPACE
 # tests. Authorization transport cases install their own explicit files.
 for environment_key in ("PORTAL_EXECUTION_CONTEXT_FILE", "PORTAL_AUTHORIZATION_CONTEXT_FILE"):
     os.environ.pop(environment_key, None)
+# A Worker's small deployment pools would starve the concurrency cases; tests
+# use the code defaults, and cases that size a pool set it themselves.
+for environment_key in ("PORTAL_POSTGRES_DOMAIN_POOL_SIZE", "PORTAL_POSTGRES_POOL_SIZE"):
+    os.environ.pop(environment_key, None)
 
 
 # Directories left by sessions that were killed are removed first.

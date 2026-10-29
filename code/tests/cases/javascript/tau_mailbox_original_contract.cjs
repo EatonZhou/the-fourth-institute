@@ -61,7 +61,10 @@ const server=http.createServer((req,res)=>{
  assert.equal(calls.length,2);assert.equal(new Set(calls.map(x=>x.id)).size,2);
  assert.ok(calls.every(c=>c.method==='GET'&&c.url==='/api/agent-workbench/residents/projection?id='+target.residentId&&/^[0-9a-f-]{36}$/.test(c.id)));
  assert.equal(evidence.records.length,2);
- for(const r of evidence.records){assert.equal(r.initiator_association,'unique_original_request_signature');assert.equal(r.error_code,'operation.not_found');assert.ok(r.caller_stack.some(x=>x.source==='/static/portal_resident_service.js'));assert.ok(r.caller_stack.some(x=>x.source==='/static/original-fixture.js'));assert.equal(r.trigger_reason,'not_inferred_from_stack_or_time');}
+ for(const r of evidence.records){assert.equal(r.initiator_association,'unique_original_request_signature');assert.equal(r.error_code,'operation.not_found');assert.ok(r.caller_stack.some(x=>x.source==='/static/portal_resident_service.js'));assert.ok(r.caller_stack.some(x=>x.source==='/static/original-fixture.js'));
+  // Each read carries its own transport id, so its cause is the Service's own observation, not a stack or timing guess.
+  assert.equal(r.native_source_association,'unique_original_transport');assert.equal(r.native_source.transport_id,r.transport_id);
+  assert.equal(r.native_source.observation.consumer,'direct_service');assert.equal(r.trigger_reason,'original_native_observation');}
  assert.ok(!JSON.stringify(evidence).includes('PRIVATE'));
  await probe.stop();probe=null;await changes.stop();changes=null;
  await new Promise(r=>setTimeout(r,100));const stopped=samples.length;

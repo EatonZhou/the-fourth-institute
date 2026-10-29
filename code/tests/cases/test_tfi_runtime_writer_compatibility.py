@@ -16,7 +16,7 @@ from management_portal.execution.agent_data_tables import initialize_agent_data
 from management_portal.execution.context_seed import context_seed
 from management_portal.execution.contracts import ExecutionRequest
 from management_portal.execution.scheduler import Scheduler
-from management_portal.society_service.state_store import LineageDataStore
+from management_portal.society_service.state_store import LINEAGE_DATA_SCHEMA, LineageDataStore
 
 
 # The schema initialization each store runs at startup.
@@ -25,7 +25,8 @@ STORE_INITIALIZERS = {'AgentDataStore': initialize_agent_data, 'LineageDataStore
 
 @pytest.mark.parametrize('store,table,tag,schema', [
     ('AgentDataStore', 'agent_store_meta', 'tfi.agent-data.v18', 'writer_agent'),
-    ('LineageDataStore', 'lineage_meta', 'tfi.lineage-data.v60', 'writer_lineage'),
+    # Lineage data versions advance with each migration; the canonical marker is the current one.
+    ('LineageDataStore', 'lineage_meta', LINEAGE_DATA_SCHEMA, 'writer_lineage'),
 ])
 def test_new_marker_and_existing_alias_startup_are_distinct(store, table, tag, schema):
     """新库写规范标记，旧前缀与错版本均拒绝且不改写值和行版本。"""

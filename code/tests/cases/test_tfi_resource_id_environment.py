@@ -159,7 +159,10 @@ def test_resource_id_bootstraps_helper_from_selected_root_without_env_write(tmp_
     common = root / 'management_common'
     common.mkdir(parents=True)
     (common / '__init__.py').write_text('')
-    for name in ('product_environment.py', 'site_compatibility.py', 'site_config.py', 'portal_paths.py'):
+    # site_config/portal_paths read installed deployment roots through
+    # instance_config (which locks with file_lock) since 6d5ec31.
+    for name in ('product_environment.py', 'site_compatibility.py', 'site_config.py', 'portal_paths.py',
+                 'instance_config.py', 'file_lock.py'):
         shutil.copyfile(REPO / 'management_common' / name, common / name)
     env = site_environ({'PATH': os.defpath, 'PYTHONDONTWRITEBYTECODE': '1'})
     if mode in ('new', 'both'):

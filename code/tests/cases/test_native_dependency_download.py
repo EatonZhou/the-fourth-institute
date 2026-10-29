@@ -185,8 +185,20 @@ class NativeDownloads(unittest.TestCase):
             api = SimpleNamespace(
                 installation_lock=lambda path: contextlib.nullcontext(),
                 write_json=lambda path, value: path.write_text(json.dumps(value), encoding="utf-8"))
+            # Windows-only PostgreSQL steps (UTF-8 manifests, C++ runtime) have
+            # their own cases; here they only have to run for PostgreSQL.
+            from scripts.windows import msvc_runtime, utf8_manifest
+            windows_steps = []
+            def prepare_postgres(directory):
+                windows_steps.append(("utf8_manifest", Path(directory).name))
+                return {"utf8_manifest": "fixture"}
+            def prepare_crt(api, target, entry):
+                windows_steps.append(("msvc_runtime", entry["name"]))
+                return {"version": "fixture"}
             with patch.object(native, "urlopen", side_effect=AssertionError("Unexpected network")), \
                     patch.object(native, "verify", return_value={"fixture": "1"}), \
+                    patch.object(utf8_manifest, "prepare_postgres", side_effect=prepare_postgres), \
+                    patch.object(msvc_runtime, "prepare", side_effect=prepare_crt), \
                     contextlib.redirect_stderr(io.StringIO()):
                 bundled = bundle_native_dependencies(root / "source", platform, cache)
                 entries = [{key: value for key, value in row.items() if key not in {"path", "size"}}
@@ -194,6 +206,10 @@ class NativeDownloads(unittest.TestCase):
                            for row in bundled]
                 installed = native.prepare(api, target, entries)
                 self.assertEqual(len(installed), 3)
+                self.assertEqual(windows_steps, [("utf8_manifest", "postgres"), ("msvc_runtime", "postgres")])
+                self.assertEqual({row["artifact"]["name"]: row.get("windows_compatibility") for row in installed},
+                                 {"postgres": {"utf8_manifest": "fixture", "msvc_runtime": {"version": "fixture"}},
+                                  "nats": None, "node": None})
                 for entry in entries:
                     receipt = Path(entry["directory"]) / "tfi-native-dependency.json"
                     self.assertEqual(json.loads(receipt.read_text())["status"], "verified")

@@ -1,5 +1,4 @@
 from __future__ import annotations
-from management_portal.society_service import resident_backend
 
 from dataclasses import replace
 from types import SimpleNamespace
@@ -19,11 +18,8 @@ from management_portal.execution.requests import build_agent_turn_request
 from management_portal.execution.provider_catalog import AGENT_PROVIDERS
 from management_portal.execution.session_manager import RuntimeSession
 from management_portal.society_service import (
-    resident_access,
-    resident_execution_engine_domain,
     resident_fork_domain,
     resident_record_domain,
-    resident_runtime_domain,
     resident_session_backend_domain,
 )
 
@@ -166,7 +162,6 @@ def test_registered_resident_derivation_uses_one_provider_neutral_seed(
             },
         ],
     }
-    created = False
     create_calls = []
 
     monkeypatch.setattr(
@@ -179,31 +174,8 @@ def test_registered_resident_derivation_uses_one_provider_neutral_seed(
         "_fork_provider_context_snapshot",
         lambda *_args, **_kwargs: snapshot,
     )
-    monkeypatch.setattr(
-        resident_execution_engine_domain,
-        "resident_execution_runtime_options",
-        lambda *_args, **_kwargs: {},
-    )
-    monkeypatch.setattr(
-        resident_access,
-        "has_resident_workspace_authority",
-        lambda *_args, **_kwargs: True,
-    )
-    monkeypatch.setattr(
-        resident_runtime_domain,
-        "resident_working_directory",
-        lambda *_args, **_kwargs: "/tmp/provider-context-seed",
-    )
-    monkeypatch.setattr(
-        resident_backend,
-        "record_session_id",
-        lambda record: "created-session" if record is target and created else "",
-    )
-    monkeypatch.setattr(resident_backend, "execution_account", lambda _record: {})
 
     def create_session(**kwargs):
-        nonlocal created
-        created = True
         create_calls.append(kwargs)
         return {"backend_session_id": "created-session"}
 
@@ -231,9 +203,7 @@ def test_registered_resident_derivation_uses_one_provider_neutral_seed(
     }
     assert {"native_backend_fork", "native_codex_fork", "disable_native_codex_fork",
             "codex_context_copy_required", "session_source", "fork_context"}.isdisjoint(target)
-    definition = AGENT_PROVIDERS[backend]
-    assert len(create_calls) == (1 if "create" in definition.operations else 0)
-    if create_calls:
-        assert create_calls[0]["operation"] == "create"
-        assert create_calls[0]["backend"] == definition.provider
-        assert create_calls[0]["preparation_id"] == "preparation-source-registration"
+    # Registration only freezes the inherited context; the first accepted
+    # input creates the Provider session and delivers the seed.
+    assert create_calls == []
+    assert target["session_state"] == "pending_create"

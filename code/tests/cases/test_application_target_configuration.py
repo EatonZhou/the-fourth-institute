@@ -109,8 +109,8 @@ def test_configuration_stores_update_time_as_an_absolute_instant(configuration):
     assert columns == {table: ("timestamp with time zone", "YES", None) for table in application_targets.COLUMNS}
     # A row that was never updated has no time; the interface keeps its empty string.
     with configuration.transaction() as connection:
-        connection.execute("INSERT INTO application_targets (application,lineage_id) VALUES ('resource_chat:project',%s)", (A,))
-    assert config.get("resource_chat:project")["updated_at"] == ""
+        connection.execute("INSERT INTO application_targets (application,lineage_id) VALUES ('resource_chat:article',%s)", (A,))
+    assert config.get("resource_chat:article")["updated_at"] == ""
     before = datetime.now(timezone.utc)
     updated = config.update("tau", {"target_id": A}, "admin", expected_revision=0)
     assert updated["updated_at"].endswith("Z")

@@ -84,7 +84,10 @@ def test_paper_images_require_a_path_component_boundary(tmp_path, monkeypatch):
 
 
 def test_folder_reads_and_directory_browse_do_not_need_linux_proc(tmp_path, monkeypatch):
-    root = tmp_path.resolve()
+    # tmp_path also holds the autouse site fixture's accounts/ (registration
+    # locks since 2ae2514); browse a directory that only this case creates.
+    root = (tmp_path / "browse").resolve()
+    root.mkdir()
     (root / "child").mkdir()
     (root / "text.txt").write_text("pinned", encoding="utf-8")
     real_open = os.open

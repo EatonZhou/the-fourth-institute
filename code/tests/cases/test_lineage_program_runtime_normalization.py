@@ -20,6 +20,8 @@ RULE_DIGESTS = {
     1: "0afd888c110030c165a16ee6aab0245aebf49b7693a2ca61f45f150e1c5b25a0",
     2: "91f41a7bd136fc935075c044e77c55bcded4ebd382161c99685d35308418396b",
     3: "44faacdd2f32322e64a43d798b747fc0419de8bb4b84d69b5ad671046de7fa0d",
+    # Event payloads keep continued_member_id and direct_member_id.
+    4: "b0655f0fa0faa073538a847dd4887e05df53ac028e7f2721179f763a322e5d24",
 }
 
 

@@ -136,7 +136,7 @@ def test_check_installs_only_own_daemon_before_execution(control, check, monkeyp
     unit = control.context["directory"] / "tfi-new-claude-code.service"
     content = unit.read_text()
     assert str(control.sdk / "bin/python") in content
-    assert str(control.root / "config/paths.json") in content
+    assert str(control.root / "config/target.json") in content
     assert "new_database" in content
     assert str(observed[0]) in content
     assert not (updates.RUNTIMES / "claude-agent-sdk-current").exists()

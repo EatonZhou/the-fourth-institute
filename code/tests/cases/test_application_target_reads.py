@@ -28,7 +28,7 @@ def configuration(monkeypatch):
             INSERT INTO application_targets (application,lineage_id) VALUES ('tau', 'lineage_111111111111');
             INSERT INTO application_targets (application,resident_id) VALUES ('resident_discovery', 'resident_111111111111');
             INSERT INTO application_targets (application,resident_id) VALUES ('semantic_search:knowledge', 'resident_111111111111');
-            INSERT INTO application_targets (application,lineage_id) VALUES ('resource_chat:project', 'lineage_111111111111');
+            INSERT INTO application_targets (application,lineage_id) VALUES ('resource_chat:article', 'lineage_111111111111');
         """)
     return database
 
@@ -41,7 +41,7 @@ def test_readers_use_their_columns_without_weakening_owner_schema_checks(configu
         with configuration.transaction() as connection:
             LineageDataStore._initialize(connection)
     assert targets.lineage("tau") == "lineage_111111111111"
-    assert targets.resource_chat_lineage("project") == "lineage_111111111111"
+    assert targets.resource_chat_lineage("article") == "lineage_111111111111"
     expected = {"resident_id": "resident_111111111111", "lineage_id": "lineage_111111111111"}
     assert targets.discovery_resident() == expected
     assert targets.search_resident("knowledge") == expected

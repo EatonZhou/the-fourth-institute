@@ -30,6 +30,9 @@ def installed(tmp_path, monkeypatch):
     target.write_bytes(b'original fixture code')
     monkeypatch.setattr(repair, 'ORIGINAL_SHA256', hashlib.sha256(target.read_bytes()).hexdigest())
     payload = Path(__file__).resolve().parents[2] / 'management_common/local_ipc.py'
+    # The real repair pins its historical payload (local_ipc.py of 4976ff9);
+    # this fixture supplies current code and declares that payload's digest.
+    monkeypatch.setattr(repair, 'REPAIRED_SHA256', hashlib.sha256(payload.read_bytes()).hexdigest())
     monkeypatch.setattr(launcher, 'launcher_lock', lambda path: nullcontext())
     stopped = []
     monkeypatch.setattr(launcher, 'stop_all', lambda path: stopped.append(path))
@@ -153,6 +156,8 @@ def test_secret_repair_only_replaces_private_file_helper_and_preserves_state(ins
     target.write_bytes(original)
     payload = Path(__file__).resolve().parents[2] / 'management_common/file_permissions.py'
     monkeypatch.setattr(secrets, 'PREVIOUS_SHA256' if previous_repair else 'OLD_SHA256', hashlib.sha256(original).hexdigest())
+    # NEW_SHA256 pins the historical payload (file_permissions.py of b17c80b).
+    monkeypatch.setattr(secrets, 'NEW_SHA256', hashlib.sha256(payload.read_bytes()).hexdigest())
     preserved = {p: p.read_bytes() for p in (ipc, receipt, root / 'installation.json')}
     if previous_repair:
         backup = platform / '.build/windows/repairs/secret-attributes/file_permissions.before.py'
