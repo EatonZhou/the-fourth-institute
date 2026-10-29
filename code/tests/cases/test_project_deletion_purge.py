@@ -59,7 +59,7 @@ class _ResourceService:
     def __init__(self, resources, *, failing=()):
         self.resources, self.failing, self.unregistered = resources, set(failing), []
 
-    def query(self, *, actor, projects, limit, offset=0):
+    def query(self, *, actor, projects, limit, offset=0, include_attributes=False):
         return {"resources": self.resources[offset:offset + limit], "total": len(self.resources)}
 
     def unregister(self, resource_id, *, actor, resource_type=""):

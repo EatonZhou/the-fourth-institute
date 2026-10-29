@@ -66,8 +66,10 @@ const HISTORY = [
       window.PortalResourceRoutes = { routes: [{ resource_type: 'decision', detail_kind: 'knowledge' }] };
       window.PortalInstructionClient = { execute: async (name, args) => {
         f.calls.push([name, JSON.parse(JSON.stringify(args))]);
-        if (name === 'GetResearchMap') return JSON.parse(JSON.stringify(map));
-        if (name === 'GetProject') return JSON.parse(JSON.stringify(project));
+        // f.hold keeps the slow reads (the team and the outputs) back while set.
+        if (name === 'GetResearchMap' && args.include_outputs === false) return JSON.parse(JSON.stringify({ ...map, outputs: {} }));
+        if (name === 'GetResearchMap') { await f.hold; return JSON.parse(JSON.stringify(map)); }
+        if (name === 'GetProject') { await f.hold; return JSON.parse(JSON.stringify(project)); }
         if (name === 'ListResidentStates') return { states: [{ resident_id: 'resident_cccccccccccc', state: { work_state: 'running' } }] };
         if (name === 'GetResidentSummaries') return { summaries: [{ resident_id: 'resident_cccccccccccc', summary: { current_focus: 'Tuning the gripper', recent_results: [] } }] };
         if (name === 'ListResearchMapChanges') return { changes: JSON.parse(JSON.stringify(history)) };
@@ -87,12 +89,23 @@ const HISTORY = [
     await page.evaluate(async () => {
       document.body.innerHTML = '<main id="map" style="height:900px"></main>';
       f.selected = [];
-      window.map = PortalProjectMap.create({ root: document.getElementById('map'), onSelectionChange: item => f.selected.push(item?.direction_id || '') });
+      f.hold = new Promise(resolve => { f.release = resolve; });
+      window.map = PortalProjectMap.create({ root: document.getElementById('map'), onSelectionChange: item => f.selected.push(item?.direction_id || ''),
+        onTeam: team => { f.team = team.project_resident_id; } });
       await map.load('Alpha');
     });
     const applied = () => page.evaluate(() => f.calls.filter(([name]) => name === 'ApplyResearchMapChanges').map(([, args]) => args));
     const lastApplied = async () => (await applied()).at(-1);
     const nodes = () => page.$$eval('[data-node]', items => items.map(item => [item.dataset.node, item.dataset.stance]));
+    const quickReads = () => page.evaluate(() => f.calls.filter(([name, args]) => name === 'GetResearchMap' && args.include_outputs === false).length);
+
+    // The directions are drawn at once; the team (GetProject without its resource count) and the outputs follow.
+    assert.equal((await nodes()).length, 3);
+    assert.equal(await page.$('[data-node="direction_aaaaaaaaaaaa"] .mapNodeCount'), null);
+    assert.deepEqual(await page.evaluate(() => f.calls.filter(([name]) => name === 'GetProject').map(([, args]) => args)),
+      [{ project_id: 'Alpha', include_resources: false }]);
+    await page.evaluate(() => f.release());
+    await page.waitForFunction(() => f.team === 'resident_aaaaaaaaaaaa');
 
     // The map: dropped directions hidden until asked; the team's Leader is live on its direction.
     assert.deepEqual(await nodes(), [
@@ -100,6 +113,7 @@ const HISTORY = [
     assert.equal(await page.$eval('.mapGoal p', node => node.textContent), 'Robots that learn new tasks in a day');
     assert.equal(await page.$eval('.mapRevision', node => node.textContent.startsWith('修订 7')), true);
     await page.waitForSelector('[data-node="direction_aaaaaaaaaaaa"].is-running');
+    await page.waitForSelector('[data-node="direction_aaaaaaaaaaaa"] .mapNodeCount');
     assert.equal(await page.$eval('[data-node="direction_aaaaaaaaaaaa"] .mapNodeCount', node => node.textContent), '1');
     assert.equal(await page.$eval('[data-node="direction_aaaaaaaaaaaa"] .mapNodeLine', node => node.textContent), 'Baseline grasps 80%');
     assert.equal(await page.$$eval('.mapRelation', items => items.length), 1);
@@ -175,12 +189,12 @@ const HISTORY = [
     assert.match(formed.message.content_parts[0].text, /CreateLineage 在项目 Alpha/);
 
     // Someone else changed the map first: read it again and say so.
-    const reads = await page.evaluate(() => f.calls.filter(([name]) => name === 'GetResearchMap').length);
+    const reads = await quickReads();
     await page.evaluate(() => { f.conflict = true; });
     await page.fill('.mapNoteForm input[name="text"]', 'Late note');
     await page.click('.mapNoteForm button[type="submit"]');
     await page.waitForFunction(() => f.toasts.some(([, kind]) => kind === 'info'));
-    assert.equal(await page.evaluate(() => f.calls.filter(([name]) => name === 'GetResearchMap').length), reads + 1);
+    assert.equal(await quickReads(), reads + 1);
 
     // A direction dragged keeps its place.
     await page.click('.mapDrawer [data-close]');
@@ -208,9 +222,9 @@ const HISTORY = [
     assert.equal((await nodes()).length, 3);
 
     // A change published by someone else reloads the map.
-    const before = await page.evaluate(() => f.calls.filter(([name]) => name === 'GetResearchMap').length);
+    const before = await quickReads();
     await page.evaluate(() => window.dispatchEvent(new CustomEvent('portal:change', { detail: { projection_changes: { 'research-map': { Alpha: {} } } } })));
-    await page.waitForFunction(count => f.calls.filter(([name]) => name === 'GetResearchMap').length === count + 1, before);
+    await page.waitForFunction(count => f.calls.filter(([name, args]) => name === 'GetResearchMap' && args.include_outputs === false).length === count + 1, before);
 
     // An empty map invites the first direction.
     await page.evaluate(async () => {

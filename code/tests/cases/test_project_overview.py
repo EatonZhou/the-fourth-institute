@@ -104,7 +104,10 @@ def test_project_list_carries_registry_fields_and_signals_in_registry_order(monk
 
 
 def test_project_overview_counts_resources_and_lists_recent_changes_without_the_team(monkeypatch):
-    """GetProject 按类型计数资源、按时间列出最近修改，团队对象不计入，团队由 SocietyService 给出"""
+    """GetProject 按类型计数资源、按时间列出最近修改，团队对象不计入，团队由 SocietyService 给出
+
+    结果带项目可用的状态；include_resources=false 时不查项目下的资源，只给登记信息、摘要与团队。
+    """
     from management_portal.resources.providers import project as project_provider
 
     records = [project("Demo", tags=["vla"])]
@@ -115,9 +118,24 @@ def test_project_overview_counts_resources_and_lists_recent_changes_without_the_
                 resource("paper_00000000000a", "paper", ["Demo"], "2026-10-30T00:00:00Z"),
                 resource("decision_0000000000ff", "decision", ["Other"], "2026-12-01T00:00:00Z")]
     the_team = team("resident_000000000001")
-    use(monkeypatch, Index(records, {}), {"Demo": the_team})
+    index = Index(records, {"status_vocab": ["active", "paused"]})
+    use(monkeypatch, index, {"Demo": the_team})
     monkeypatch.setattr(project_provider, "project_summary", lambda project_id: {"exists": True, "text": "# Demo"})
+    scans = []
+    query = index.query
+
+    def scanning(**kwargs):
+        if kwargs.get("projects"):
+            scans.append(tuple(kwargs["projects"]))
+        return query(**kwargs)
+
+    index.query = scanning
+    light = resource_isa.get_project(invocation(project_id="Demo", include_resources=False))
+    assert (light["resource_counts"], light["recent_changes"], scans) == ({}, [], [])
+    assert (light["team"], light["summary"]["text"], light["status_vocab"]) == (the_team, "# Demo", ["active", "paused"])
     result = resource_isa.get_project(invocation(project_id="Demo"))
+    assert scans == [("Demo",)]
+    assert result["status_vocab"] == ["active", "paused"]
     assert result["resource_counts"] == {"decision": 24, "paper": 1}
     assert [item["resource_id"] for item in result["recent_changes"]][:2] == ["paper_00000000000a", "decision_000000000018"]
     assert len(result["recent_changes"]) == resource_isa.RECENT_PROJECT_CHANGES

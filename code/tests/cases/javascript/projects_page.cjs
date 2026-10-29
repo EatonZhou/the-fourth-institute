@@ -63,6 +63,7 @@ const ALPHA = {
         if (f.fail.has(name)) throw new Error(`${name} refused`);
         if (name === 'ListProjects') await f.gate;
         if (name === 'ListProjects') return { projects: JSON.parse(JSON.stringify(projects)), status_vocab: ['not_started', 'active', 'paused', 'done', 'archived'] };
+        if (name === 'GetProject' && args.include_resources !== false) await f.countGate;
         if (name === 'GetProject') return JSON.parse(JSON.stringify(alpha));
         if (name === 'GetResearchMap') return { project_id: args.project_id, revision: 4, updated_at: '2026-10-20T10:00:00Z', relations: [], layout: {}, notes: [], outputs: {},
           directions: [{ direction_id: 'direction_aaaaaaaaaaaa', parent_id: '', title: 'Grasping', stance: 'focus', teams: [] },
@@ -130,11 +131,18 @@ const ALPHA = {
     await page.evaluate(async () => {
       document.body.innerHTML = '<main id="home"></main>';
       f.calls.length = 0;
+      f.countGate = new Promise(resolve => { f.releaseCount = resolve; });
       window.home = PortalProjectHome.create({ root: document.getElementById('home'), onOpenMap: id => { f.mapOpened = id; },
         onRenamed: id => { f.renamed = id; }, onDeleted: id => { f.deleted = id; } });
-      await home.load('Alpha', { statuses: ['not_started', 'active', 'paused', 'done', 'archived'] });
+      await home.load('Alpha');
     });
+    // The registry and team show at once; the resources fill in once GetProject has counted them.
     assert.equal(await page.$eval('.projectHero h1', node => node.textContent), 'Alpha');
+    assert.equal(await page.$eval('#projectResources .projectEmpty', node => node.textContent), '正在统计资源…');
+    assert.deepEqual(await page.evaluate(() => f.calls.filter(([name]) => ['GetProject', 'ListProjects'].includes(name)).map(([name, args]) => [name, args])),
+      [['GetProject', { project_id: 'Alpha' }], ['GetProject', { project_id: 'Alpha', include_resources: false }]]);
+    await page.evaluate(() => f.releaseCount());
+    await page.waitForSelector('.projectResourceTile');
     assert.equal(await page.$eval('#projectSummary .projectSummaryBody', node => node.textContent), '# Goal\n\nShip it');
     await page.waitForFunction(() => document.querySelector('.projectTeamCard [data-team-focus]')?.textContent === 'Calibrating cameras');
     assert.equal(await page.$eval('.projectTeamCard [data-team-result]', node => node.textContent), 'Baseline 3/3 done');

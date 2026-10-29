@@ -61,6 +61,9 @@
       </header>`;
     }
 
+    // "loading" until the full GetProject has counted the Project's resources, then "ready" or "failed".
+    const resourcesReady = () => data.resources_state === "ready";
+
     function statsHtml() {
       const current = team();
       const total = Object.values(data.resource_counts || {}).reduce((sum, count) => sum + count, 0);
@@ -69,9 +72,13 @@
       return window.PortalI18n.html`<div class="projectStats">
         <div class="projectStat"><strong>${(current.lineages || []).length}</strong><span>团队</span></div>
         <div class="projectStat${running ? " is-live" : ""}"><strong>${current.resident_count || 0}</strong><span>${esc(running ? window.PortalI18n.text`Resident · ${running} 个正在工作` : t("Resident"))}</span></div>
-        <div class="projectStat"><strong>${total}</strong><span>资源</span></div>
-        <div class="projectStat"><strong>${esc(latest ? common().relativeTime(latest) : "—")}</strong><span>最近变化</span></div>
+        <div class="projectStat"><strong>${resourcesReady() ? total : "…"}</strong><span>资源</span></div>
+        <div class="projectStat"><strong>${esc(!resourcesReady() ? "…" : latest ? common().relativeTime(latest) : "—")}</strong><span>最近变化</span></div>
       </div>`;
+    }
+
+    function resourcesPendingHtml() {
+      return `<p class="projectEmpty">${esc(t(data.resources_state === "failed" ? "资源统计失败，刷新页面重试。" : "正在统计资源…"))}</p>`;
     }
 
     function summaryHtml() {
@@ -176,7 +183,8 @@
       ].filter(([, items]) => items.length);
       return window.PortalI18n.html`<section class="projectSection" id="projectResources" aria-labelledby="projectResourcesTitle">
         <header class="projectSectionHead"><h2 id="projectResourcesTitle">资源</h2></header>
-        ${groups.length ? groups.map(([title, items]) => `<div class="projectResourceGroup"><h3>${esc(title)}</h3><div class="projectResourceGrid">${items.map(tile).join("")}</div></div>`).join("")
+        ${!resourcesReady() ? resourcesPendingHtml()
+          : groups.length ? groups.map(([title, items]) => `<div class="projectResourceGroup"><h3>${esc(title)}</h3><div class="projectResourceGrid">${items.map(tile).join("")}</div></div>`).join("")
           : `<p class="projectEmpty">${esc(t("这个项目还没有资源。"))}</p>`}
       </section>`;
     }
@@ -185,7 +193,7 @@
       const items = data.recent_changes || [];
       return window.PortalI18n.html`<section class="projectSection" id="projectRecent" aria-labelledby="projectRecentTitle">
         <header class="projectSectionHead"><h2 id="projectRecentTitle">最近变化</h2></header>
-        ${items.length ? `<ol class="projectRecent">${items.map(item => `<li>
+        ${!resourcesReady() ? resourcesPendingHtml() : items.length ? `<ol class="projectRecent">${items.map(item => `<li>
             <span class="projectRecentType">${esc(common().resourceLabel(item.resource_type))}</span>
             ${item.url ? `<a href="${esc(item.url)}">${esc(item.title || item.resource_id)}</a>` : `<span>${esc(item.title || item.resource_id)}</span>`}
             <time datetime="${esc(item.modified_at)}" title="${esc(item.modified_at)}">${esc(common().relativeTime(item.modified_at))}</time>
@@ -258,23 +266,39 @@
       }));
     }
 
+    async function fillResources(current, counted) {
+      const result = await counted.catch(() => null);
+      if (current !== generation || !data) return;
+      data.resources_state = result ? "ready" : "failed";
+      if (result) Object.assign(data, { resource_counts: result.resource_counts, recent_changes: result.recent_changes });
+      for (const [selector, html] of [[".projectStats", statsHtml()], ["#projectResources", resourcesHtml()], ["#projectRecent", recentHtml()]]) {
+        const node = root.querySelector(selector);
+        if (node) node.outerHTML = html;
+      }
+    }
+
     async function load(id, { statuses } = {}) {
       const current = ++generation;
       editing = false;
       if (Array.isArray(statuses)) statusVocab = statuses;
       root.innerHTML = window.PortalUIPrimitives.asyncStateHtml({ state: "loading", title: t("正在读取项目…"), message: "" });
+      // The registry, summary and team come back in a fraction of a second and
+      // the page shows them; counting the Project's resources takes a second or
+      // more, so the resources and recent changes fill in when it is done.
+      const counted = common().execute("GetProject", { project_id: id });
+      counted.catch(() => null);
       try {
-        const [result, list, researchMap] = await Promise.all([
-          common().execute("GetProject", { project_id: id }),
-          statusVocab.length ? null : common().execute("ListProjects", {}).catch(() => null),
+        const [result, researchMap] = await Promise.all([
+          common().execute("GetProject", { project_id: id, include_resources: false }),
           // Without the Projects feature's map the card offers to start one.
           common().execute("GetResearchMap", { project_id: id, include_outputs: false }).catch(() => null),
         ]);
         if (current !== generation) return null;
-        data = { ...result, research_map: researchMap };
-        if (list?.status_vocab) statusVocab = list.status_vocab;
+        data = { ...result, research_map: researchMap, resources_state: "loading" };
+        if (result.status_vocab?.length) statusVocab = result.status_vocab;
         render();
         void loadTeamLive(current);
+        void fillResources(current, counted);
         return data;
       } catch (error) {
         if (current !== generation) return null;

@@ -36,13 +36,18 @@ DECLARATIONS = (
           "running_resident_count，以及 last_changed_at（项目下资源最近一次修改的时间，没有资源时为空）"),
         R("status_vocab", "array", "项目可用的状态", items={"type": "string"}),
     ), owner="resource"),
-    _d("GetProject", ON_PROJECT, "读取 Project 的登记信息、summary.md、团队、各类资源的数量和最近修改的资源。", (R("project_id", description="要读取的 Project"),), (
+    _d("GetProject", ON_PROJECT, "读取 Project 的登记信息、summary.md、团队、各类资源的数量和最近修改的资源。", (
+        R("project_id", description="要读取的 Project"),
+        P("include_resources", "boolean", "默认 true；为 false 时不统计项目下的资源，resource_counts 与 recent_changes 为空，"
+          "用于只需登记信息与团队的读取（统计要逐一检查项目下的资源，是这条指令最慢的部分）"),
+    ), (
         R("project", "object", "Project 的资源记录，另带 status、project_type、description、ddl、tags 与 avatar"),
         R("summary", "object", "summary.md 的内容（不存在时标明）"),
         R("team", "object", "project_resident_id、project_lineage_id、resident_count、running_resident_count，以及 lineages："
           "每个普通 Lineage 的 lineage_id、title、leader_resident_id、member_count 与 running_count；只含调用者能读的 Lineage"),
         R("resource_counts", "object", "资源类型 → 数量；不含 Lineage、Resident、Workspace 与 Family"),
         R("recent_changes", "array", "最近修改的资源，新的在前，最多 20 项：resource_id、resource_type、title、url、modified_at"),
+        R("status_vocab", "array", "项目可用的状态（与 ListProjects 相同）", items={"type": "string"}),
     ), target="project_id", owner="resource"),
     _d("UpdateProject", ON_PROJECT, "修改 Project 的状态、截止日期、类型、说明、标签、摘要或头像。", (
         R("project_id", description="要修改的 Project"), R("changes", "object", "status、ddl、project_type、description、tags（字符串数组，重复项去除）、summary（summary.md 全文）与 avatar；avatar 为 {sprite_index: 0–41}、{upload_id}（CreateUpload purpose=avatar 的已完成上传）或 null（恢复为名称首字）"),

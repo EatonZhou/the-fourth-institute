@@ -690,6 +690,29 @@ def test_query_applies_dynamic_filters_after_descriptor_projection() -> None:
     ]
 
 
+def test_queries_with_collaboration_candidates_give_only_returned_rows_current_urls(monkeypatch) -> None:
+    """含协作资源的查询只为返回的条目计算当前网址，不改写索引记录；搜索建议同样给当前网址"""
+    store = backend.IndexStore()
+    paper = _record("paper_0123456789ab", "paper", title="Target paper")
+    paper["url"] = "/obsolete-paper-page"
+    resident = _record("resident_0123456789ab", "resident", title="Target resident", facets=("collaboration",))
+    store.publish_snapshot("test", [paper, resident], {})
+    computed: list[str] = []
+    current_url = backend.portal_url_for_resource
+    monkeypatch.setattr(backend, "portal_url_for_resource",
+                        lambda resource_id, *args, **kwargs: computed.append(resource_id) or current_url(resource_id, *args, **kwargs))
+
+    # The paper ranks first; the resident is a candidate that is never returned.
+    result = store.query(actor="alice", limit=1)
+    assert [(item["resource_id"], item["url"]) for item in result["resources"]] == [
+        ("paper_0123456789ab", "/paper?paper=paper_0123456789ab")]
+    assert computed == ["paper_0123456789ab"]
+    assert store.internal_get("paper_0123456789ab")["url"] == "/obsolete-paper-page"
+
+    suggested = store.suggest(actor="alice", q="Target", limit=5)["resources"]
+    assert {item["resource_id"]: item["url"] for item in suggested}["paper_0123456789ab"] == "/paper?paper=paper_0123456789ab"
+
+
 def test_query_batches_candidate_permissions_before_pagination(monkeypatch) -> None:
     """一次查询批量检查所有候选的读取权限，再排序分页"""
     records = [

@@ -73,6 +73,8 @@
         views.map = window.PortalProjectMap.create({
           root,
           onBack: () => navigate(common().projectHref(views.map.projectId())),
+          // The team arrives after the directions are drawn.
+          onTeam: team => showChat(views.map.projectId(), team),
           // The selected direction stays in the address, without a history entry per click.
           onSelectionChange: direction => {
             const url = mapHref(views.map.projectId(), direction?.direction_id || "");
@@ -189,7 +191,7 @@
       try {
         const result = await map.load(project, { selected: direction });
         if (current !== routing) return null;
-        showChat(project, map.team());
+        if (map.team()) showChat(project, map.team());
         return result;
       } catch (error) {
         if (current === routing) { hideChat(); failed("研究地图读取失败", error); }

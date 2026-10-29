@@ -315,7 +315,8 @@ def test_a_rename_moves_the_directory_and_every_reference_follows(world, monkeyp
     # Papers outside the Project follow the new ID (DRAM Stacking's kept the old one).
     relations = json.loads(world["paper"].read_text())["relations"]["projects"]
     assert [item["project_id"] for item in relations] == ["New", "OldX"]
-    assert result["relations"] == {"paper": ["paper_aaaaaaaaaaaa"]}
+    # Every feature with Project relations reports; this Project has no research map directions.
+    assert result["relations"] == {"paper": ["paper_aaaaaaaaaaaa"], "projects": []}
     assert result["external_references"] == [str(project_rename.SERVICE_SCRIPT_ROOTS[0] / "job.py")]
     assert residents.calls[0][0] == "close" and residents.calls[-1][0] == "open"
 
@@ -333,7 +334,8 @@ def test_a_dry_run_reports_and_changes_nothing(world):
     assert result["database"]["tables"]["permission.scheme_nodes.path"] == 3
     assert set(_permission_nodes(world)) == {"Old", "Taken", "article_aaaaaaaaaaaa"}
     assert str(world["old_root"] / "notes.md") in result["files"]["rewritten"]
-    assert result["relations"] == {"paper": ["paper_aaaaaaaaaaaa"]}
+    # Every feature with Project relations reports; this Project has no research map directions.
+    assert result["relations"] == {"paper": ["paper_aaaaaaaaaaaa"], "projects": []}
     assert '"Old"' in world["paper"].read_text()
     assert world["old_root"].is_dir() and not world["new_root"].exists()
     assert [item["id"] for item in project_registry.projects()] == ["Old", "Taken"]

@@ -846,7 +846,11 @@ def list_projects(inv: Invocation) -> dict[str, Any]:
             "running_resident_count": int(team.get("running_resident_count") or 0),
             "last_changed_at": changed.get(fields["project_id"], ""),
         })
-    return {"projects": projects, "status_vocab": [str(item) for item in state.get("status_vocab") or []]}
+    return {"projects": projects, "status_vocab": _status_vocab(state)}
+
+
+def _status_vocab(state: dict[str, Any]) -> list[str]:
+    return [str(item) for item in state.get("status_vocab") or []]
 
 
 def create_project(inv: Invocation) -> dict[str, Any]:
@@ -874,7 +878,8 @@ def get_project(inv: Invocation) -> dict[str, Any]:
         summary = {"exists": False, "text": ""}
     counts: dict[str, int] = {}
     changes: list[dict[str, Any]] = []
-    for item in _resources(inv.caller, projects=[resource_id]):
+    # Counting checks every resource of the Project; a caller that needs only the registry and team skips it.
+    for item in _resources(inv.caller, projects=[resource_id]) if inv.argument("include_resources") is not False else ():
         resource_type = str(item.get("resource_type") or "")
         if resource_type == "project" or resource_type in TEAM_RESOURCE_TYPES:
             continue
@@ -887,7 +892,8 @@ def get_project(inv: Invocation) -> dict[str, Any]:
     fields = _project_fields(record)
     del fields["project_id"]
     return {"project": {**record, **fields}, "summary": summary, "team": team,
-            "resource_counts": dict(sorted(counts.items())), "recent_changes": changes[:RECENT_PROJECT_CHANGES]}
+            "resource_counts": dict(sorted(counts.items())), "recent_changes": changes[:RECENT_PROJECT_CHANGES],
+            "status_vocab": _status_vocab(_service().projection_state("project"))}
 
 
 def update_project(inv: Invocation) -> dict[str, Any]:

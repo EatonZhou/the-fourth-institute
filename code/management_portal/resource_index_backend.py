@@ -959,7 +959,7 @@ class IndexStore:
             }
         )
         with timing.timed_request() as timer:
-            records, updated_at, current_facts_needed, mark = self._matching_records(
+            records, updated_at, mark = self._matching_records(
                 query, timer, enabled_types=enabled_types,
                 records_projector=records_projector, records_projector_types=records_projector_types,
             )
@@ -971,15 +971,7 @@ class IndexStore:
             )
             mark = timer.add("rank_and_copy", mark)
             self._with_current_capabilities(result["resources"], actor)
-            if not current_facts_needed:
-                by_id = {record["resource_id"]: record for record in records}
-                for item in result["resources"]:
-                    source = by_id[item["resource_id"]]
-                    current_url = portal_url_for_resource(
-                        item["resource_id"], item["resource_type"], record=source,
-                    )
-                    if current_url:
-                        item["url"] = current_url
+            self._set_current_urls(result["resources"], records)
             timer.add("canonical_urls", mark)
             timer.report_if_slow(
                 "query", SLOW_QUERY_SECONDS,
@@ -1007,7 +999,7 @@ class IndexStore:
         if not query.projects:
             return changed
         with timing.timed_request() as timer:
-            records, _updated_at, _facts, mark = self._matching_records(
+            records, _updated_at, mark = self._matching_records(
                 query, timer, enabled_types=self.resource_types.enabled_types(),
                 records_projector=records_projector, records_projector_types=records_projector_types,
             )
@@ -1035,8 +1027,7 @@ class IndexStore:
     ) -> tuple[list[dict[str, Any]], str, bool, float]:
         """Records passing every filter except read access, with current descriptors and facts.
 
-        Returns them with the index revision, whether business facts were
-        projected, and the timer's last mark.
+        Returns them with the index revision and the timer's last mark.
         """
         mark = timer.started
         with self._lock:
@@ -1068,7 +1059,7 @@ class IndexStore:
         mark = timer.add("filter", mark)
         records = self._filter_private_records(records, actor=query.actor)
         mark = timer.add("private_visibility", mark)
-        return records, updated_at, current_facts_needed, mark
+        return records, updated_at, mark
 
     def suggest(
         self,
@@ -1124,6 +1115,7 @@ class IndexStore:
                 access_query,
                 portal_access=self._portal_access,
             )
+            self._set_current_urls(projected["resources"], records)
             by_id = {item["resource_id"]: item
                      for item in self._with_current_capabilities(projected["resources"], actor)}
             for score, record in batch:
@@ -1157,20 +1149,16 @@ class IndexStore:
             ]}
 
     @staticmethod
-    def _record_view(record: dict[str, Any]) -> dict[str, Any]:
-        """A query row over an indexed record: its own top level, shared values.
-
-        Query rows only replace top-level fields (url, attributes,
-        capabilities) and query_records copies every row it returns, so a deep
-        copy of each candidate first (0.3 s for 4,055 papers) bought nothing.
-        """
-        item = dict(record)
-        current_url = portal_url_for_resource(
-            item.get("resource_id"), item.get("resource_type"), record=item,
-        )
-        if current_url:
-            item["url"] = current_url
-        return item
+    def _set_current_urls(items: list[dict[str, Any]], records: Iterable[dict[str, Any]]) -> None:
+        """Returned rows carry the Portal surface current code gives them; a cached url may be stale."""
+        wanted = {item["resource_id"] for item in items}
+        sources = {record["resource_id"]: record for record in records if record["resource_id"] in wanted}
+        for item in items:
+            current_url = portal_url_for_resource(
+                item["resource_id"], item["resource_type"], record=sources[item["resource_id"]],
+            )
+            if current_url:
+                item["url"] = current_url
 
     @staticmethod
     def _record_for_read(record: dict[str, Any]) -> dict[str, Any]:
@@ -1186,10 +1174,16 @@ class IndexStore:
         self,
         records: Iterable[dict[str, Any]],
     ) -> list[dict[str, Any]]:
-        """Every query uses fresh Family facts, including with a custom projector."""
-        rows = [self._record_view(record) for record in records]
+        """Every query uses fresh Family facts, including with a custom projector.
+
+        Only Family rows change; every other candidate passes through as the
+        indexed record, which nothing downstream modifies (query_records copies
+        what it returns), and gets its current URL once it is returned.  A copy
+        and a URL for each candidate here cost up to 0.6 s per query over the
+        ~14,000 candidates a Project-scoped query projects.
+        """
         from management_portal.society_service.business_fact_views import project_resources as domain_facts
-        return domain_facts(rows)
+        return domain_facts(list(records))
 
     def _apply_record_access(
         self,

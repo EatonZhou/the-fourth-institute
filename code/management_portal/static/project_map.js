@@ -16,7 +16,7 @@
   const STANCE_LABELS = Object.freeze({ focus: "主攻", explore: "探索", watch: "观望", candidate: "候选", concluded: "已收束", dropped: "放弃" });
   const ZOOM = Object.freeze({ min: 0.25, max: 2.2 });
 
-  function create({ root, onBack, onSelectionChange } = {}) {
+  function create({ root, onBack, onSelectionChange, onTeam } = {}) {
     if (!root) throw new TypeError("PortalProjectMap.create requires root");
     const { esc, execute, avatarHtml, relativeTime } = common();
     const state = {
@@ -197,26 +197,48 @@
       if (!state.replay) render();
     }
 
+    // The directions come back at once and are drawn.  The team (GetProject
+    // without its resource count) and the outputs (a search over the Project's
+    // resources) take a second or more and fill in when they arrive.
     async function load(projectId, { selected = "" } = {}) {
       const current = ++state.generation;
       const first = state.projectId !== projectId;
       state.projectId = projectId;
       if (first) {
         state.replay = null;
+        state.project = null;
+        state.team = null;
         root.innerHTML = window.PortalUIPrimitives.asyncStateHtml({ state: "loading", title: t("正在读取研究地图…"), message: "" });
       }
-      const [map, project] = await Promise.all([
-        execute("GetResearchMap", { project_id: projectId }),
-        first || !state.project ? execute("GetProject", { project_id: projectId }) : Promise.resolve(null),
-      ]);
+      const project = state.project ? null : execute("GetProject", { project_id: projectId, include_resources: false });
+      const complete = execute("GetResearchMap", { project_id: projectId });
+      project?.catch(() => null);
+      complete.catch(() => null);
+      const map = await execute("GetResearchMap", { project_id: projectId, include_outputs: false });
       if (current !== state.generation) return null;
-      state.map = map;
-      if (project) { state.project = project.project; state.team = project.team; }
+      // Until the outputs arrive the map keeps the ones it showed before.
+      state.map = { ...map, outputs: first ? {} : state.map?.outputs || {} };
       if (!state.replay) render();
       if (first) fit();
       if (selected) select(selected);
-      void loadLive(current);
-      return map;
+      if (project) {
+        project.then(result => {
+          if (current !== state.generation) return;
+          state.project = result.project;
+          state.team = result.team;
+          onTeam?.(result.team);
+          if (!state.replay) render();
+          void loadLive(current);
+        }, () => {});
+      } else {
+        void loadLive(current);
+      }
+      complete.then(result => {
+        if (current !== state.generation || result.revision < state.map.revision) return;
+        state.map = result;
+        if (!state.replay) render();
+      }, () => {});
+      return state.map;
     }
 
     async function apply(changes, { select: key = "" } = {}) {
@@ -463,6 +485,7 @@
       team: () => state.team,
       snapshot: () => JSON.parse(JSON.stringify({ map: state.map, view: state.view, replay: state.replay ? { index: state.replay.index, revision: state.replay.map.revision } : null })),
       destroy() {
+        state.generation += 1;
         window.removeEventListener("portal:change", onChange);
         window.clearTimeout(reloadTimer);
         window.clearInterval(state.replay?.timer);

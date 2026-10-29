@@ -50,6 +50,8 @@
   "正在读取项目…": {"en": "Reading the project…", "zh-CN": "正在读取项目…"},
   "项目不存在，或你没有读取它的权限": {"en": "The project does not exist, or you may not read it", "zh-CN": "项目不存在，或你没有读取它的权限"},
   "项目读取失败": {"en": "Could not read the project", "zh-CN": "项目读取失败"},
+  "正在统计资源…": {"en": "Counting resources…", "zh-CN": "正在统计资源…"},
+  "资源统计失败，刷新页面重试。": {"en": "Could not count the resources. Reload the page to try again.", "zh-CN": "资源统计失败，刷新页面重试。"},
   "返回项目列表": {"en": "Back to projects", "zh-CN": "返回项目列表"},
   "项目导航": {"en": "Project navigation", "zh-CN": "项目导航"},
   "复制链接": {"en": "Copy link", "zh-CN": "复制链接"},
