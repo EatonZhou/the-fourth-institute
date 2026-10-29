@@ -102,10 +102,10 @@ def test_familize_hands_leadership_and_wires_to_the_facade_and_unfamilize_return
     facade, steward, router = family["facade_resident_id"], family["steward_resident_id"], family["router_resident_id"]
     view = graph(lineage)
     assert view["leader_resident_id"] == facade == family["leader_resident_id"]
-    # The Router is a Resident of its own: Codex's Luna (CASE-A 10-06) at medium effort to start with (CASE-A 10-12).
+    # The Router is a Resident of its own: Codex's Sol at low effort to start with (10-29 Router replay).
     assert _find_resident(router)["backend"] == "codex"
     settings = ok("GetResidentSettings", {"resident_id": router})["settings"]
-    assert (settings["model"], settings["reasoning_effort"]) == ("gpt-5.6-luna", "medium")
+    assert (settings["model"], settings["reasoning_effort"]) == ("gpt-6.1-sol", "low")
     assert "family-work-guide.md" in charters[0][1]
     assert family["rewired_wire_ids"] == [wire] and _target_of(lineage, wire) == facade
     assert family_facade.facade_configuration(_find_resident(facade))["previous_leader_id"] == first
@@ -279,7 +279,7 @@ def test_the_router_and_steward_start_with_what_was_chosen_when_placing_the_fami
     from management_portal.society_service.templates.familize import KIND
     roles = {role["key"]: role for role in KIND.describe({})["roles"]}
     assert roles["router"]["provider"] == "codex"
-    assert roles["router"]["settings"] == {"model": "gpt-5.6-luna", "reasoning_effort": "medium"}
+    assert roles["router"]["settings"] == {"model": "gpt-6.1-sol", "reasoning_effort": "low"}
 
     first, second = resident(lineage, "First"), resident(lineage, "Second")
     family = ok("Familize", {"lineage_id": lineage, "resident_ids": [first], "title": "Chosen", "resident_settings": {
@@ -294,7 +294,7 @@ def test_the_router_and_steward_start_with_what_was_chosen_when_placing_the_fami
     other = ok("Familize", {"lineage_id": lineage, "resident_ids": [second], "title": "Elsewhere",
                             "resident_settings": {"router": {"provider": "claude"}}}, key="familize-claude-router")
     assert _find_resident(other["router_resident_id"])["backend"] == "claude"
-    assert ok("GetResidentSettings", {"resident_id": other["router_resident_id"]})["settings"].get("model") != "gpt-5.6-luna"
+    assert ok("GetResidentSettings", {"resident_id": other["router_resident_id"]})["settings"].get("model") != "gpt-6.1-sol"
 
     # The facade runs no turns of its own, so there is nothing to choose for it.
     third = resident(lineage, "Third")

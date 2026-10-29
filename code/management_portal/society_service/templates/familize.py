@@ -20,10 +20,13 @@ from .registry import ApplyContext, TemplateError, result
 TEMPLATE_ID = "template_" + hashlib.sha256(b"builtin-template:family").hexdigest()[:12]
 REWIRED_KINDS = frozenset({"route", "target"})
 ROLE_STOP_WAIT_SECONDS = 90.0
+# Replaying 10-29 Router requests in fresh sessions, gpt-5.6-luna mostly
+# answered without a <packet>, which sends the request to route review;
+# gpt-6.1-sol at low effort chose like the sol-high Routers, in less time.
 RESIDENT_ROLES = [
     {"key": "steward", "title": "steward", "from": "new", "provider": "codex"},
     {"key": "router", "title": "Router", "from": "new", "provider": "codex",
-     "settings": {"model": "gpt-5.6-luna", "reasoning_effort": "medium"}},
+     "settings": {"model": "gpt-6.1-sol", "reasoning_effort": "low"}},
 ]
 
 
