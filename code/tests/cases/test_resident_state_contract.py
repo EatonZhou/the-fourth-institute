@@ -58,6 +58,8 @@ def test_native_command_acknowledgement_contains_actor_controls(monkeypatch, sub
                     monkeypatch.setattr(resident_record_domain, "resolve_resident_runtime_target", lambda *args, **kwargs: SimpleNamespace(resident_id=resident_id, record={"resident_id": resident_id, "backend": "codex"}))
                     if operation == "deliver":
                         monkeypatch.setattr(resident_intake_domain, "deliver_resident_message_content", lambda *args, **kwargs: response)
+                        # The caller can read this Resident; a sender that cannot gets only its own receipt.
+                        monkeypatch.setattr(resident_protocol, "_reads_resident", lambda *_: True)
                         result = resident_protocol.deliver_resident_input({
                             "resident_id": resident_id,
                             "message": {"message_id": "msg_11111111111111111111111111111111", "role": "user", "content_parts": [{"type": "text", "text": "queue this"}]},

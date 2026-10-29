@@ -578,6 +578,18 @@ def read_resident_states(
     }
 
 
+def read_work_states(resident_ids: Iterable[str]) -> dict[str, str]:
+    """Each live Resident's work state, derived from its active turn and queue.
+
+    Scheduling only needs to know whether a Resident is busy. The state view
+    adds input history, Family activity, quota gates and controls, which cost
+    an ExecutionService call and account resolution per read. Deleted or
+    unknown Residents are absent.
+    """
+    states = resident_conversation_stream.get_repository().states(resident_ids)
+    return {resident_id: str(state.get("work_state") or "idle") for resident_id, state in states.items()}
+
+
 def get_resident_states(
     resident_ids: list[str],
     actor: str,

@@ -251,3 +251,39 @@ def test_conversation_directory_reuses_visible_identity_and_binding_batches(monk
     assert binding_reads == [[f"resident:{rid}" for rid in ids]]
     assert [row["resident_id"] for row in result] == ids
     assert [row["account_id"] for row in result] == binding_reads[0]
+
+
+def test_lineage_busy_check_reads_only_the_work_state(monkeypatch):
+    """Lineage 判断成员是否忙只读工作状态
+
+    积压投递与完成扫描在持有 Lineage 执行锁时对每条待投递连线和每个被观察成员判断一次是否忙。
+    这一判断只读当前轮次与队列得出的工作状态，不读取输入历史、Family 活动、额度闸门和账号解析；
+    排队与运行都算忙，已删除的 Resident 报 KeyError。
+
+    :module: lineage.service
+    :aspects: functional, performance
+    :design-point:
+    """
+    from management_portal.society_service import lineage_domain, resident_execution_gate
+    states = {"resident_111111111111": {"work_state": "running"},
+              "resident_222222222222": {"work_state": "queued"},
+              "resident_333333333333": {"work_state": "idle"}}
+    reads = []
+
+    class Repository:
+        def states(self, resident_ids):
+            reads.append(list(resident_ids))
+            return {rid: states[rid] for rid in resident_ids if rid in states}
+
+    monkeypatch.setattr(resident_conversation_stream, "get_repository", lambda: Repository())
+    for name in ("get_resident_state", "read_resident_state_snapshots"):
+        monkeypatch.setattr(resident_protocol, name, lambda *a, **kw: pytest.fail("busy check read the Resident state view"))
+    monkeypatch.setattr(resident_execution_gate, "project_states",
+                        lambda *a, **kw: pytest.fail("busy check projected the quota gate"))
+    busy = {rid: lineage_domain._node_has_active_execution({"id": rid}, "CASE-A")
+            for rid in states}
+    assert busy == {"resident_111111111111": True, "resident_222222222222": True,
+                    "resident_333333333333": False}
+    assert reads == [[rid] for rid in states]
+    with pytest.raises(KeyError):
+        lineage_domain._node_has_active_execution({"id": "resident_444444444444"}, "CASE-A")

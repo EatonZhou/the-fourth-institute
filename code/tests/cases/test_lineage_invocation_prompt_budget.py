@@ -174,7 +174,7 @@ def test_input_survives_emit_event_and_second_effect_composition(isolated_instru
     lineage_id = _create("Long Effect chain", {
         "components": [
             {"id": "event_source_start", "kind": "event_source", "config": {"event_type": "manual.triggered"}},
-            {"id": "effect_emit", "kind": "effect", "config": {"script": "TriggerEvent", "endpoints": []}},
+            {"id": "effect_emit", "kind": "effect", "config": {"script": "TriggerEvent", "endpoints": ["next"]}},
             {"id": "event_source_next", "kind": "event_source", "config": {"event_type": "manual.triggered"}},
             {"id": "effect_send", "kind": "effect", "config": deliver_config("SECOND")},
         ],
@@ -182,13 +182,15 @@ def test_input_survives_emit_event_and_second_effect_composition(isolated_instru
             {'id': 'wire_start', 'kind': 'route', 'source': 'event_source_start', 'target': 'effect_emit'},
             {'id': 'wire_next', 'kind': 'route', 'source': 'event_source_next', 'target': 'effect_send', 'config': {'include_envelope': False}},
             {"id": "wire_target", "kind": "target", "source": "effect_send", "source_port": "target", "target": WORK_A},
+            {"id": "wire_emit_next", "kind": "target", "source": "effect_emit", "source_port": "next", "target": "event_source_next"},
         ],
     })
-    # The emitting Effect names its own Lineage and the Event Source that continues the chain.
-    ok("UpdateComponent", {"lineage_id": lineage_id, "component_id": "effect_emit", "changes": {"script": effect_config("TriggerEvent", {
-        "lineage_id": {"value": lineage_id}, "event_source_id": {"value": "event_source_next"},
+    # The emitting Effect names its own Lineage; the Event Source that continues
+    # the chain is a graph target, bound through its "next" endpoint.
+    ok("UpdateComponent", {"lineage_id": lineage_id, "component_id": "effect_emit", "changes": effect_config("TriggerEvent", {
+        "lineage_id": {"value": lineage_id}, "event_source_id": {"from": "endpoint.next"},
         "prompt": {"concat": [{"value": "FIRST"}, {"from": "event.payload.prompt"}], "separator": "\n\n"},
-    })["script"]}}, key="emit-arguments")
+    }, ["next"])}, key="emit-arguments")
     result = run("TriggerEvent", {"lineage_id": lineage_id, "event_source_id": "event_source_start", "prompt": TRIGGER_PROMPT},
                  key="long-chain")
     assert result.status == "committed", result

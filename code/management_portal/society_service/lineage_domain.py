@@ -4777,12 +4777,18 @@ def _resident_input_reconciliation_state(
 
 
 def _node_has_active_execution(node: dict[str, Any], actor: str) -> bool:
-    """Read whether the canonical Resident is currently executing work."""
-    state = resident_protocol.get_resident_state(
-        _node_resident_id(node),
-        actor,
-    )["state"]
-    return str(state.get("work_state") or "idle") != "idle"
+    """Read whether the canonical Resident is currently executing work.
+
+    Backlog selection and completion scans ask this for every pending route or
+    watched member while holding the Lineage's execution authority, so it reads
+    only the work state. Callers have already checked that the actor manages
+    the Lineage this node belongs to.
+    """
+    resident_id = _node_resident_id(node)
+    states = resident_protocol.read_work_states([resident_id])
+    if resident_id not in states:
+        raise KeyError(resident_id)
+    return states[resident_id] != "idle"
 
 
 def _register_program_agent_invocation(
