@@ -29,6 +29,16 @@ def test_catalog_ignores_prose_fences_and_thinking():
     assert check.indexed_ids(text, 'decision') == [D]
 
 
+def test_catalog_reads_list_resource_links_without_indexing_examples():
+    text = (f'# SPEC\n\nMention {D}\n\n'
+            f'- [Design](/r/{D}) · [Copy](docs/design.md)\n'
+            f'- [Thinking](/r/thinking_111111111111)\n'
+            f'- [Plan](/r/{P})\n\n'
+            '```md\n- [Example](/r/decision_222222222222)\n```\n')
+    assert check.indexed_ids(text, 'decision') == [D]
+    assert check.indexed_ids(text, 'plan') == [P]
+
+
 def runtime_fixture(tmp_path):
     repo, mapping, docs = fixture(tmp_path)
     mapping['model_version'] = 2
@@ -334,20 +344,49 @@ def test_plan_missing_index_resource_dependency_and_cycle(tmp_path):
                                 'plan.not_indexed': 1, 'plan.unknown_module': 1, 'plan.unreadable': 1}
 
 
-def test_commit_reads_do_not_follow_working_tree(tmp_path):
+@pytest.mark.parametrize('subdirectory', ['', 'code'])
+def test_commit_reads_do_not_follow_working_tree(tmp_path, subdirectory):
     """架构审计按指定提交读取文件，不受工作区并发修改影响"""
     import subprocess
     def git(*args):
         return subprocess.check_output(['git', '-C', str(tmp_path), *args], text=True).strip()
     git('init', '-q')
-    (tmp_path / 'source.txt').write_text('published')
-    git('add', 'source.txt')
+    root = tmp_path / subdirectory
+    root.mkdir(exist_ok=True)
+    (root / 'source.txt').write_text('published')
+    if subdirectory:
+        (tmp_path / 'source.txt').write_text('wrong repository-level file')
+    git('add', '.')
     git('-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', 'commit', '-qm', 'base')
-    repo = check.Repository(tmp_path, git('rev-parse', 'HEAD'))
-    (tmp_path / 'source.txt').write_text('concurrent editing')
-    (tmp_path / 'extra.txt').write_text('not published')
+    repo = check.Repository(root, git('rev-parse', 'HEAD'))
+    (root / 'source.txt').write_text('concurrent editing')
+    (root / 'extra.txt').write_text('not published')
     assert repo.read('source.txt') == 'published'
     assert repo.exists('source*') and not repo.exists('extra.txt')
+
+
+def test_missing_plan_index_does_not_abort_other_architecture_checks(tmp_path):
+    repo, mapping, docs = fixture(tmp_path)
+    (tmp_path / 'architecture').mkdir()
+    (tmp_path / 'architecture/modules.yaml').write_text(json.dumps(mapping))
+    (tmp_path / 'architecture/evolution.yaml').write_text(json.dumps({'plans': [
+        {'id': P, 'modules': ['one'], 'depends_on': []}]}))
+    (tmp_path / 'SPEC.md').write_text(f'- [Design](/r/{D})\n')
+
+    def call(name, args):
+        if name == 'ListInstructions':
+            return {'instructions': [{'owner': 'lineage'}]}
+        address = args['address']
+        return {'version': '1', 'text': '---\n' + json.dumps({
+            'kb_id': address, **docs.get(address, {})}) + '\n---\n'}
+
+    report = check.run(repo, call)
+    assert report['audit_failed']
+    assert report['by_code'] == {'input.missing': 1}
+    assert report['findings'] == [{'code': 'input.missing', 'subject': 'IMPROVE.md'}]
+    assert report['counts']['designs'] == 1
+    assert report['counts']['plans'] == 1
+    assert 'IMPROVE.md' not in report['sources']['files']
 
 
 def test_failed_resource_read_is_reported_not_silently_omitted(tmp_path):
@@ -480,18 +519,21 @@ def test_resource_references_resolve_through_run_callers_isa(tmp_path):
     assert report['counts']['external_references'] == 2
 
 
-def test_repository_documents_follow_publication_snapshot(tmp_path):
+@pytest.mark.parametrize('subdirectory', ['', 'code'])
+def test_repository_documents_follow_publication_snapshot(tmp_path, subdirectory):
     """仓库文档引用按发布快照判断可读，工作区删除文件不影响结果"""
     import subprocess
-    repo, mapping, docs = fixture(tmp_path)
+    root = tmp_path / subdirectory
+    root.mkdir(exist_ok=True)
+    repo, mapping, docs = fixture(root)
     def git(*args):
         return subprocess.check_output(['git', '-C', str(tmp_path), *args], text=True).strip()
-    (tmp_path / 'guide.md').write_text('published guide')
+    (root / 'guide.md').write_text('published guide')
     git('init', '-q')
     git('add', '.')
     git('-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', 'commit', '-qm', 'base')
-    repo = check.Repository(tmp_path, git('rev-parse', 'HEAD'))
-    (tmp_path / 'guide.md').unlink()
+    repo = check.Repository(root, git('rev-parse', 'HEAD'))
+    (root / 'guide.md').unlink()
     docs[D]['links']['source'] = ['guide.md']
     report = check.audit(repo, mapping, [D], [], {'plans': []}, docs, [{'owner': 'lineage'}])
     assert not report['findings']

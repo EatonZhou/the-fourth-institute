@@ -40,16 +40,27 @@ RESOURCE_ADDRESS = re.compile(r'^[a-z][a-z0-9_]*_[0-9a-f]{12}(?:/.*)?$')
 
 
 def indexed_ids(text, kind):
-    """Only catalog rows count; prose, fenced examples and headings do not."""
+    """Read catalog tables and resource links in lists, not prose or examples."""
     result = []
     in_row = False
+    list_depth = 0
     for token in MarkdownIt('commonmark').enable('table').parse(text):
         if token.type == 'tr_open':
             in_row = True
         elif token.type == 'tr_close':
             in_row = False
+        elif token.type == 'list_item_open':
+            list_depth += 1
+        elif token.type == 'list_item_close':
+            list_depth -= 1
         elif in_row and token.type == 'inline':
             result.extend(x for x in ID.findall(token.content) if x.startswith(kind + '_'))
+        elif list_depth and token.type == 'inline':
+            for child in token.children or []:
+                if child.type == 'link_open':
+                    address = (child.attrGet('href') or '').removeprefix('/r/')
+                    if ID.fullmatch(address) and address.startswith(kind + '_'):
+                        result.append(address)
     return result
 
 
@@ -177,13 +188,18 @@ class Repository:
         self.commit = commit
         if commit and not re.fullmatch(r'[0-9a-f]{40}', commit):
             raise ValueError('commit must be a full SHA-1')
+        self.prefix = self.git('rev-parse', '--show-prefix').strip() if commit else ''
         self.files = set(self.git('ls-tree', '-r', '--name-only', commit).splitlines()) if commit else set()
 
     def git(self, *args):
         return subprocess.check_output(['git', '-C', str(self.root), *args], text=True, stderr=subprocess.PIPE)
 
     def read(self, path):
-        return self.git('show', f'{self.commit}:{path}') if self.commit else (self.root / path).read_text()
+        return self.git('show', self.object_name(path)) if self.commit else (self.root / path).read_text()
+
+    def object_name(self, path):
+        """Git object paths are repository-relative, unlike ls-tree output."""
+        return f'{self.commit}:{self.prefix}{path}'
 
     def matches(self, path, pattern):
         return path == pattern or path.startswith(pattern.rstrip('/') + '/') or fnmatchcase(path, pattern)
@@ -262,7 +278,7 @@ def check_reference(repo, kind, target, resolve_resource):
             if repo.commit:
                 if not repo.exists(target):
                     raise FileNotFoundError(target)
-                repo.git('cat-file', '-e', f'{repo.commit}:{target}')
+                repo.git('cat-file', '-e', repo.object_name(target))
             else:
                 readable_path(repo.root / target)
         elif kind == 'external_path':
@@ -468,7 +484,7 @@ def audit(repo, mapping, spec, improve, evolution, documents, instructions, read
     graph = {p['id']: p.get('depends_on', []) for p in plans}
     for plan in plans:
         pid = plan['id']
-        if pid not in improve:
+        if improve is not None and pid not in improve:
             note('plan.not_indexed', pid)
         if pid not in documents:
             note('plan.unreadable', pid)
@@ -527,14 +543,16 @@ def isa_client(resident_id):
 
 
 def run(repo, call):
-    inputs = {name: repo.read(name) for name in ('SPEC.md', 'IMPROVE.md', 'architecture/modules.yaml')}
+    inputs = {name: repo.read(name) for name in ('SPEC.md', 'architecture/modules.yaml')}
+    if repo.exists('IMPROVE.md'):
+        inputs['IMPROVE.md'] = repo.read('IMPROVE.md')
     mapping = yaml.safe_load(inputs['architecture/modules.yaml'])
     evolution = None
     if repo.exists('architecture/evolution.yaml'):
         inputs['architecture/evolution.yaml'] = repo.read('architecture/evolution.yaml')
         evolution = yaml.safe_load(inputs['architecture/evolution.yaml'])
     spec = indexed_ids(inputs['SPEC.md'], 'decision')
-    improve = indexed_ids(inputs['IMPROVE.md'], 'plan')
+    improve = indexed_ids(inputs['IMPROVE.md'], 'plan') if 'IMPROVE.md' in inputs else None
     addresses = sorted(set(spec) | {p['id'] for p in (evolution or {}).get('plans', [])})
     docs, versions, errors = {}, {}, {}
 
@@ -562,6 +580,11 @@ def run(repo, call):
     instructions = call('ListInstructions', {})['instructions']
     report = audit(repo, mapping, spec, improve, evolution, docs, instructions, errors,
                    resolve_resource=lambda address: call('ResolveResource', {'address': address}))
+    if improve is None:
+        report['audit_failed'] = True
+        report['findings'].append({'code': 'input.missing', 'subject': 'IMPROVE.md'})
+        report['counts']['deviations'] += 1
+        report['by_code']['input.missing'] = 1
     report['sources'] = {'files': {name: hashlib.sha256(text.encode()).hexdigest() for name, text in inputs.items()},
                          'resources': versions, 'instruction_catalog_sha256': hashlib.sha256(
                              json.dumps(instructions, sort_keys=True, ensure_ascii=False).encode()).hexdigest()}
