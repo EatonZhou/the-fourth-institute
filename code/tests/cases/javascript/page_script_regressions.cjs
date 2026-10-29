@@ -13,10 +13,23 @@ function familyBlocks(window, replaced) {
   return createHatgModule(window.PortalHatgFamilyBlocks, 'createFamilyBlocks', replaced);
 }
 
+// A page's own scripts in load order: those whose name starts with `prefix`.
+function pageScripts(page, prefix) {
+  const html = fs.readFileSync(path.resolve(__dirname, '../../../management_portal', page), 'utf8');
+  return [...html.matchAll(/<script src="\/static\/([a-z_]+\.js)"/g)].map(match => match[1])
+    .filter(file => file.startsWith(prefix));
+}
+const ARTICLE_SCRIPTS = pageScripts('article_workspace.html', 'article_workspace');
+const REPO_SCRIPTS = pageScripts('repo_workspace.html', 'repo_workspace');
+
+// `file` names one static script or a list of them; each function comes from
+// the script that declares it.
 function owner(file, names, dependencies) {
-  const source = fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static', file), 'utf8');
+  const sources = [].concat(file).map(name => fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static', name), 'utf8'));
   const functions = names.map(name => {
-    const match = new RegExp(`^( +)(?:async )?function ${name}\\(`, 'm').exec(source);
+    const pattern = new RegExp(`^( +)(?:async )?function ${name}\\(`, 'm');
+    const source = sources.find(text => pattern.test(text)) || '';
+    const match = pattern.exec(source);
     if (!match) throw new Error(`Missing request owner ${name}`);
     const end = source.indexOf(`\n${match[1]}}\n`, match.index);
     return source.slice(match.index, end + match[1].length + 3);
@@ -297,7 +310,7 @@ test('Article compile results and controls belong to the initiating Article', as
   const state = {selectedId: 'A', compilingArticles: new Set(), build: {}, autoCompileQueued: false};
   const pending = new Map(), options = [], views = [];
   const button = {disabled: false, dataset: {}, textContent: 'Compile'};
-  const context = owner('article_workspace.js', ['compileArticle'], {
+  const context = owner(ARTICLE_SCRIPTS, ['compileArticle'], {
     state, window: {PortalI18n: i18n}, $: () => button,
     setCompileMenu: noop, hasDirtyDocuments: () => false, renderBuildSummary: noop,
     renderCompileMenu: noop, compileSettingValue: () => 'normal', showToast: noop,
@@ -328,7 +341,7 @@ function articleUnregisterFixture({confirm = true} = {}) {
   const removal = deferred(), reads = [], writes = [], selections = [], catalogLoads = [];
   const timers = new Map();
   let nextTimer = 0;
-  const context = owner('article_workspace.js', ['unregisterCurrentArticle'], {
+  const context = owner(ARTICLE_SCRIPTS, ['unregisterCurrentArticle'], {
     state, AbortController, ARTICLE_GIT_REFRESH_MS: 5000,
     PortalUIPrimitives: {randomUUID: () => 'fixture'},
     document: {hidden: false, addEventListener: noop, removeEventListener: noop},
@@ -349,9 +362,10 @@ function articleUnregisterFixture({confirm = true} = {}) {
   });
   const staticRoot = path.resolve(__dirname, '../../../management_portal/static');
   vm.runInContext(fs.readFileSync(path.join(staticRoot, 'portal_refresh_coordinator.js'), 'utf8'), context);
-  const source = fs.readFileSync(path.join(staticRoot, 'article_workspace.js'), 'utf8');
-  vm.runInContext(source.slice(source.indexOf('  const unregisteringArticles ='),
-    source.indexOf('  async function updateArticleGitStage(')) + '\nglobalThis.refreshOwner = articleGitRefresh;', context);
+  const source = ARTICLE_SCRIPTS.map(file => fs.readFileSync(path.join(staticRoot, file), 'utf8'))
+    .find(text => text.includes('const unregisteringArticles ='));
+  vm.runInContext(source.slice(source.search(/^ +const unregisteringArticles =/m),
+    source.search(/^ +async function updateArticleGitStage\(/m)) + '\nglobalThis.refreshOwner = articleGitRefresh;', context);
   return {context, state, removal, reads, writes, selections, catalogLoads};
 }
 const flushTasks = () => new Promise(resolve => setImmediate(resolve));
@@ -432,7 +446,7 @@ test('Cancelling Article unregister leaves existing Git reads running', async ()
 
 test('Repo pagination carries current filters through every page and bulk commit', async () => {
   const reads = [], executions = [];
-  const context = owner('repo_workspace.js', ['queryAllRepoRecords', 'startAllRepoAutomation'], {
+  const context = owner(REPO_SCRIPTS, ['queryAllRepoRecords', 'startAllRepoAutomation'], {
     REPO_QUERY_LIMIT: 500, state: {automationActive: false, automationNames: new Map()},
     window: {PortalI18n: i18n, PortalUI: {confirm: async () => true}}, queryState: () => ({q: 'needle', project: 'visible'}),
     getJson: async url => {
@@ -456,7 +470,7 @@ for (const name of ['loadCommitList', 'loadCredentials', 'refreshOverview']) {
     const state = {selectedId: 'A', workspaceSequence: 1, commitListSequence: 0, credentialsSequence: 0,
       overviewSequence: 0, activeTab: 'commits', commitRevision: 'HEAD', commits: null};
     const gate = deferred();
-    const context = owner('repo_workspace.js', [name], {state, getJson: () => gate.promise,
+    const context = owner(REPO_SCRIPTS, [name], {state, getJson: () => gate.promise,
       renderWorkspace: noop, showToast: noop, queryState: () => ({})});
     const pending = context[name]();
     state.selectedId = 'B'; state.workspaceSequence += 1;

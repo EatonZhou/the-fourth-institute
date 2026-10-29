@@ -345,6 +345,12 @@ class ArticlesHttp:
             return self.exception_response(request, exc)
 
 
+def page_assets() -> tuple[str, ...]:
+    """The Article page's own style sheet and scripts: the parts and the root script it loads."""
+    page = (ROOT / "article_workspace.html").read_text(encoding="utf-8")
+    return tuple(dict.fromkeys(re.findall(r'(?:src|href)="(/static/article_workspace[a-z_]*\.(?:css|js))"', page)))
+
+
 def routes(portal):
     """The Article workspace page, list and API (``web.routes``); ``portal`` is the Web shell."""
     http = ArticlesHttp(
@@ -394,7 +400,7 @@ def routes(portal):
     )
     return (
         *(RouteDefinition("GET", path, portal._PUBLIC_PAGES_HTTP.static, "portal-public-get", phase="public")
-          for path in ("/static/article_workspace.css", "/static/article_workspace.js")),
+          for path in page_assets()),
         RouteDefinition("GET", "/api/articles", http.list_articles, "portal-catalog-get"),
         RouteDefinition("POST", "/api/articles/preflight", http.preflight, "portal-articles"),
         *(RouteDefinition(method, f"/api/articles/{{article_id}}/{path}", handler, "portal-articles", match="template")

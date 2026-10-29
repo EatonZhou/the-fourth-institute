@@ -40,6 +40,36 @@ def test_chat_unit_follows_the_group_list_of_the_published_tree(tmp_path):
         GROUPS, ENTRY, 'management_portal/static/chat_workspace_new.js'}
 
 
+def test_resource_page_scripts_publish_with_their_page():
+    """选中 Paper、Article 或 Repo 页面的任一脚本、样式或页面本身时，页面与它按名加载的全部脚本和样式整组发布"""
+    for page, prefix in units.RESOURCE_PAGES:
+        unit = set(units.resource_page_unit(ROOT, page, prefix))
+        static = {path.relative_to(ROOT).as_posix() for path in (ROOT / 'management_portal/static').glob(f'{prefix}*')
+                  if path.suffix in {'.js', '.css'} and (path.stem == prefix or path.stem.startswith(f'{prefix}_'))}
+        assert page in unit and f'management_portal/static/{prefix}.js' in unit
+        assert static <= unit, (page, static - unit)
+        for selected in unit:
+            assert unit <= expand(selected), (page, selected)
+    assert ENTRY not in expand('management_portal/static/repo_workspace.js')
+
+
+def test_resource_page_unit_follows_the_page_of_the_published_tree(tmp_path):
+    """页面单元按被发布源码树中页面的脚本标签取文件；页面不再加载的旧模块不随行，已删除的模块不阻止发布"""
+    static = tmp_path / 'management_portal/static'
+    static.mkdir(parents=True)
+    (tmp_path / 'management_portal/repo_workspace.html').write_text(
+        '<link rel="stylesheet" href="/static/repo_workspace.css" />'
+        '<script src="/static/portal_ui.js"></script>'
+        '<script src="/static/repo_workspace_new.js" defer></script>'
+        '<script src="/static/repo_workspace_removed.js" defer></script>'
+        '<script src="/static/repo_workspace.js" defer></script>')
+    for name in ('repo_workspace.css', 'portal_ui.js', 'repo_workspace_new.js', 'repo_workspace.js', 'repo_workspace_unlisted.js'):
+        (static / name).write_text('')
+    assert expand('management_portal/static/repo_workspace.js', root=tmp_path) == {
+        'management_portal/repo_workspace.html', 'management_portal/static/repo_workspace.css',
+        'management_portal/static/repo_workspace_new.js', 'management_portal/static/repo_workspace.js'}
+
+
 def test_lineage_and_server_publications_stay_apart_from_the_chat():
     """发布 Lineage 页面不带上 Chat，发布服务端文件不带上任何单元"""
     lineage = expand('management_portal/static/lineage_workbench.js')

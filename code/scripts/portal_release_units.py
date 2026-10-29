@@ -8,6 +8,7 @@ did not change add nothing to the commit.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path, PurePosixPath
 from typing import Iterable
 
@@ -86,8 +87,28 @@ def chat_workspace_unit(root: Path) -> tuple[str, ...]:
     return (SCRIPT_GROUPS, *(f'management_portal{source}' for source in listed))
 
 
+# The Paper, Article and Repo pages each load their root script after the
+# module scripts it creates its parts from. The page lists them, so the page,
+# its style sheet and every script it loads by the page's prefix are one unit.
+RESOURCE_PAGES = (
+    ('management_portal/paper.html', 'paper'),
+    ('management_portal/article_workspace.html', 'article_workspace'),
+    ('management_portal/repo_workspace.html', 'repo_workspace'),
+)
+
+
+def resource_page_unit(root: Path, page: str, prefix: str) -> tuple[str, ...]:
+    """The page and the static scripts and style sheets it loads whose names start with ``prefix``."""
+    document = root / page
+    if not document.is_file():
+        return ()
+    names = re.findall(rf'(?:src|href)="/static/({re.escape(prefix)}[a-z_]*\.(?:js|css))"', document.read_text(encoding='utf-8'))
+    return (page, *(f'management_portal/static/{name}' for name in dict.fromkeys(names)))
+
+
 def release_units(root: Path) -> tuple[tuple[str, ...], ...]:
-    return (LINEAGE_WORKBENCH_RELEASE_UNIT, chat_workspace_unit(root))
+    return (LINEAGE_WORKBENCH_RELEASE_UNIT, chat_workspace_unit(root),
+            *(resource_page_unit(root, page, prefix) for page, prefix in RESOURCE_PAGES))
 
 
 def expand_release_unit_paths(paths: Iterable[str], root: Path,

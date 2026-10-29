@@ -7,8 +7,8 @@ const {observeBrowser} = require(path.join(code, 'management_portal/test_framewo
 const probe = process.argv.includes('--probe');
 const observe = probe ? null : require(path.join(code, 'management_portal/test_framework/tau_paper_review_evidence')).observePaperReviewSubmission;
 const api = fs.readFileSync(path.join(code, 'management_portal/static/portal_api.js'), 'utf8');
-const html = fs.readFileSync(path.join(code, 'management_portal/paper.html'), 'utf8');
-const create = html.match(/      async function createReview\(\) \{[\s\S]*?(?=      async function createExp\()/)[0];
+const reviews = fs.readFileSync(path.join(code, 'management_portal/static/paper_reviews.js'), 'utf8');
+const create = reviews.match(/    async function createReview\(\) \{[\s\S]*?(?=    async function createExp\()/)[0];
 const paperId = 'paper_111111111111', privateText = 'PRIVATE-REVIEW-FIXTURE';
 let mode = 'held', requestCount = 0;
 const held = [];

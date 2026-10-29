@@ -57,9 +57,11 @@ const root = path.resolve(__dirname, '../../..');
       };
       window.MD = {registerImagePathResolver: noop, render: String};
     });
-    const html = fs.readFileSync(path.join(root, 'management_portal/repo_workspace.html'), 'utf8')
-      .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
-      .replace('</body>', '<script src="/static/repo_workspace.js"></script></body>');
+    const repoPage = fs.readFileSync(path.join(root, 'management_portal/repo_workspace.html'), 'utf8');
+    // The Repo page's own scripts (its parts, then the root) in page order.
+    const repoScripts = [...repoPage.matchAll(/<script src="\/static\/(repo_workspace[a-z_]*\.js)"/g)]
+      .map(match => `<script src="/static/${match[1]}"></script>`).join('');
+    const html = repoPage.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '').replace('</body>', `${repoScripts}</body>`);
     await page.route('**/resource/repo?*', route => route.fulfill({contentType: 'text/html', body: html}));
     const workspace = page.locator('#repoWorkspace');
     // A stale Git-only deep link must switch to source before any detail fetch.

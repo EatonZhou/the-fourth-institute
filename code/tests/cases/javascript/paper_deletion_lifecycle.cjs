@@ -4,7 +4,10 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const source = fs.readFileSync(path.resolve(__dirname, '../../../management_portal/paper.html'), 'utf8');
+const portal = path.resolve(__dirname, '../../../management_portal');
+// The Paper page's own scripts, in the order paper.html loads them.
+const sources = [...fs.readFileSync(path.join(portal, 'paper.html'), 'utf8').matchAll(/<script src="\/static\/(paper[a-z_]*\.js)"/g)]
+  .map(match => fs.readFileSync(path.join(portal, 'static', match[1]), 'utf8'));
 const tick = () => new Promise(resolve => setImmediate(resolve));
 function deferred() {
   let resolve, reject;
@@ -16,16 +19,17 @@ function fixture({confirm = true} = {}) {
   const state = {selectedId: 'paper_owned', detail: {paper: {id: 'paper_owned', title: 'Owned paper'}},
     deletingPaperId: '', chatHistoryLoadedFor: 'paper:paper_owned'};
   let subscribed = true, busy = false;
+  const paperChatPanel = {
+    surface: () => ({paper_id: state.selectedId}),
+    closeSurface: async () => {calls.push('close'); subscribed = false;},
+    setBusy: value => {busy = value;},
+    openSurface: async target => {calls.push(`open:${target.paper_id}`); subscribed = true;},
+  };
   const context = vm.createContext({state, window: {PortalUI: {confirmAction: async () => confirm}},
     activeChatPaperId: () => state.selectedId,
     activeChatWorkspaceId: () => `paper:${state.selectedId}`,
     chatSessionKey: id => `paper:${id}`,
-    paperChatPanel: {
-      surface: () => ({paper_id: state.selectedId}),
-      closeSurface: async () => {calls.push('close'); subscribed = false;},
-      setBusy: value => {busy = value;},
-      openSurface: async target => {calls.push(`open:${target.paper_id}`); subscribed = true;},
-    },
+    paperChatPanel, currentPaperChatPanel: () => paperChatPanel,
     paperApi: {request: async (url, options) => {
       calls.push(`delete:${JSON.parse(options.body).paper_id}`);
       assert.equal(subscribed, false, 'delete notifications must not find a live Chat reader');
@@ -38,7 +42,9 @@ function fixture({confirm = true} = {}) {
     alertError: error => errors.push(error),
   });
   for (const name of ['loadChatHistory', 'deleteCurrentPaper']) {
-    const match = new RegExp(`^( +)async function ${name}\\(`, 'm').exec(source);
+    const pattern = new RegExp(`^( +)async function ${name}\\(`, 'm');
+    const source = sources.find(text => pattern.test(text)) || '';
+    const match = pattern.exec(source);
     assert.ok(match);
     const end = source.indexOf(`\n${match[1]}}\n`, match.index);
     vm.runInContext(source.slice(match.index, end + match[1].length + 3), context);
