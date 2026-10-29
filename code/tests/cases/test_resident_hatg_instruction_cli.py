@@ -105,6 +105,55 @@ def test_an_explicit_key_is_kept(monkeypatch, clock):
     assert sent[0]["idempotency_key"] == "mine"
 
 
+@pytest.mark.parametrize("error", [urllib.error.URLError(ConnectionRefusedError()),
+                                  failure(503), failure(409, "instruction.in_progress")])
+def test_single_attempt_control_read_never_retries(monkeypatch, clock, capsys, error):
+    sent = []
+
+    def send(request, timeout):
+        sent.append(request)
+        assert timeout == 15
+        raise error
+
+    monkeypatch.setattr(cli, "urlopen", send)
+    assert cli.main(["--resident-id", RESIDENT, "call", "GetConversation",
+                     "--request-timeout", "15", "--max-attempts", "1"]) == 1
+    assert json.loads(capsys.readouterr().out).get("status") != "committed"
+    assert len(sent) == 1 and clock["sleeps"] == []
+
+
+@pytest.mark.parametrize("flags", [["--request-timeout", "nan"], ["--request-timeout", "inf"],
+                                   ["--request-timeout", "0"], ["--max-attempts", "0"]])
+def test_invalid_read_limits_fail_before_any_request(monkeypatch, clock, capsys, flags):
+    def unexpected(*args, **kwargs):
+        pytest.fail("invalid limit must not issue a request")
+
+    monkeypatch.setattr(cli, "urlopen", unexpected)
+    assert cli.main(["--resident-id", RESIDENT, "call", "GetConversation", *flags]) == 1
+    assert json.loads(capsys.readouterr().out)["status"] == "failed"
+
+
+def test_installed_endpoint_uses_applied_target_and_explicit_override(monkeypatch, tmp_path):
+    from management_common.instance_config import configuration_digest
+
+    root = tmp_path / "instance"
+    (root / "config").mkdir(parents=True)
+    target = {"install_root": str(root), "ports": {"web": 28399}}
+    (root / "config/target.json").write_text(json.dumps(target))
+    (root / "installation.json").write_text(json.dumps({
+        "schema": "tfi.release-installation.v2", "configuration_sha256": configuration_digest(target)}))
+    monkeypatch.setattr(cli.portal_paths, "CONFIG_PATH", root / "config/paths.json")
+    monkeypatch.delenv("PORTAL_URL", raising=False)
+    assert cli._portal_url() == "http://127.0.0.1:28399"
+    monkeypatch.setenv("PORTAL_URL", "https://explicit.invalid/")
+    assert cli._portal_url() == "https://explicit.invalid"
+    monkeypatch.delenv("PORTAL_URL")
+    target["ports"]["web"] = 28398
+    (root / "config/target.json").write_text(json.dumps(target))
+    with pytest.raises(ValueError, match="Unapplied"):
+        cli._portal_url()
+
+
 def test_list_and_schema_use_the_self_description_instructions(monkeypatch, clock):
     """命令行 list 调用 ListInstructions，schema 调用 GetInstructionSchema"""
     sent = []

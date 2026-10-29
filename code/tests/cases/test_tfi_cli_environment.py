@@ -93,8 +93,9 @@ def test_context_validation_and_conflicting_paths_are_not_weakened(modules, monk
         context.execution_context()
 
 
-def test_cli_endpoint_ignores_retired_environment(modules, monkeypatch):
-    _, _, load = modules
+def test_cli_endpoint_ignores_retired_environment(modules, monkeypatch, tmp_path):
+    _, cli, load = modules
+    monkeypatch.setattr(cli.portal_paths, 'CONFIG_PATH', tmp_path / 'uninstalled.json')
     monkeypatch.setenv('ARCHIVE_PORTAL_URL', 'https://legacy.invalid/')
     assert load('scripts/resident_hatg_instruction.py', 'old_endpoint').DEFAULT_PORTAL_URL == 'http://127.0.0.1:18086'
     monkeypatch.setenv('PORTAL_URL', 'https://new.invalid/')

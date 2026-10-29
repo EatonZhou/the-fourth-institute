@@ -5,6 +5,7 @@ import os
 import subprocess
 import sys
 import threading
+import time
 import urllib.error
 import urllib.request
 from contextlib import contextmanager
@@ -53,6 +54,88 @@ def http_server(status=200, location=None, body=b'{"ok":true,"items":[]}'):
         finally:
             server.shutdown()
             thread.join(timeout=3)
+
+
+@contextmanager
+def stalled_server(mode):
+    received, release, disconnected = threading.Event(), threading.Event(), threading.Event()
+    calls = []
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_POST(self):
+            self.rfile.read(int(self.headers.get("Content-Length", 0)))
+            calls.append(self.path)
+            received.set()
+            try:
+                if mode == "headers":
+                    release.wait(5)
+                self.send_response(200)
+                self.end_headers()
+                if mode == "body":
+                    release.wait(5)
+                while not release.is_set():
+                    self.wfile.write(b" ")
+                    self.wfile.flush()
+                    release.wait(.02)
+            except (BrokenPipeError, ConnectionResetError):
+                disconnected.set()
+
+        def log_message(self, *args):
+            pass
+
+    with ThreadingHTTPServer(("127.0.0.1", 0), Handler) as server:
+        thread = threading.Thread(target=lambda: server.serve_forever(poll_interval=.01), daemon=True)
+        thread.start()
+        try:
+            yield f"http://127.0.0.1:{server.server_port}", calls, received, disconnected
+        finally:
+            release.set()
+            server.shutdown()
+            thread.join(timeout=3)
+
+
+def bounded_cli_command(tmp_path, url):
+    resident = "resident_aaaaaaaaaaaa"
+    (tmp_path / (resident + ".token")).write_text("test-only-token")
+    script = Path(__file__).resolve().parents[2] / "scripts/resident_hatg_instruction.py"
+    env = dict(os.environ, PORTAL_URL=url, PORTAL_RESIDENT_HATG_TOKEN_ROOT=str(tmp_path),
+               PORTAL_RESIDENT_ID=resident)
+    command = [sys.executable, str(script), "--resident-id", resident, "call", "GetConversation",
+               "--arguments-json", json.dumps({"resident_id": resident, "history_limit": 1}),
+               "--request-timeout", ".15", "--max-attempts", "1"]
+    return command, env
+
+
+@pytest.mark.parametrize("phase", ["headers", "body"])
+def test_control_read_stalls_return_failure_once_without_retry(tmp_path, phase):
+    with stalled_server(phase) as (url, calls, received, disconnected):
+        command, env = bounded_cli_command(tmp_path, url)
+        start = time.monotonic()
+        result = subprocess.run(command, env=env, capture_output=True, text=True, timeout=5)
+        elapsed = time.monotonic() - start
+    assert result.returncode == 1, result.stderr
+    output = json.loads(result.stdout)
+    assert output["error"]["code"] == "instruction.timeout"
+    assert output["error"]["attempts"] == 1
+    assert len(calls) == 1 and elapsed < 3
+
+
+def test_wall_deadline_cancels_and_reaps_trickling_read_without_retry(tmp_path):
+    # Socket inactivity is not a wall deadline: preserve the controller's
+    # subprocess kill-and-reap boundary even when bytes keep arriving.
+    with stalled_server("trickle") as (url, calls, received, disconnected):
+        command, env = bounded_cli_command(tmp_path, url)
+        with subprocess.Popen(command, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as process:
+            try:
+                assert received.wait(3)
+                with pytest.raises(subprocess.TimeoutExpired):
+                    process.communicate(timeout=.4)
+            finally:
+                process.kill()
+                stdout, stderr = process.communicate(timeout=3)
+            assert process.returncode != 0 and stdout == b""
+            assert disconnected.wait(2)
+    assert len(calls) == 1
 
 
 @pytest.fixture
