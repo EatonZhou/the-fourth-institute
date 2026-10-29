@@ -98,6 +98,7 @@
         const changed = nextOwner !== watchboardRefreshOwner;
         watchboardRefreshOwner = nextOwner;
         if (changed) {
+          watchboardEdge?.close();
           watchboardApplications.reset();
           closeWatchboardModal();
           watchboardLoadFailures = 0;
@@ -123,6 +124,8 @@
       function destroyWatchboard() {
         if (watchboardDestroyed) return;
         watchboardDestroyed = true;
+        watchboardEdge?.destroy();
+        watchboardEdge = null;
         watchboardRefresh.destroy();
         watchboardApplications.destroy();
         closeWatchboardModal();
@@ -279,6 +282,99 @@
           </div>`;
       }
 
+      // Like the User Mailbox, a collapsed panel is revealed by hover or
+      // keyboard focus; touch/click keeps it open until dismissed. This is
+      // presentation state only, independent of the saved docked preference.
+      let watchboardEdge = null;
+      function bindWatchboardEdge(box, body) {
+        if (watchboardEdge?.box === box) return watchboardEdge;
+        watchboardEdge?.destroy();
+        const events = new AbortController();
+        const { signal } = events;
+        const trigger = document.createElement("button");
+        trigger.type = "button";
+        trigger.className = "portalButton is-icon watchboardEdgeTrigger";
+        trigger.setAttribute("aria-label", window.PortalI18n.t("展开 Watchboard"));
+        trigger.title = window.PortalI18n.t("Watchboard · 悬停查看，点击保持展开");
+        trigger.innerHTML = window.PortalUIPrimitives.iconHtml("chevron-left");
+        if (box.id) trigger.setAttribute("aria-controls", box.id);
+        body.insertBefore(trigger, box);
+        let shown = false, held = false, closeTimer = 0, restoringFocus = false;
+        const overlay = window.PortalOverlay.register(box, {
+          kind: "popover", closeOnEscape: true,
+          onRequestClose: event => {
+            close();
+            if (event?.key === "Escape") {
+              restoringFocus = true;
+              trigger.focus({ preventScroll: true });
+              restoringFocus = false;
+            }
+          },
+        });
+        const contains = target => trigger.contains(target) || box.contains(target);
+        const cancelClose = () => { clearTimeout(closeTimer); closeTimer = 0; };
+        function setShown(value) {
+          const next = !!value && !trigger.hidden && !!state.watchboardCollapsed;
+          box.classList.toggle("peeking", next);
+          box.inert = !!state.watchboardCollapsed && !next;
+          trigger.setAttribute("aria-expanded", String(next));
+          if (next === shown) return;
+          shown = next;
+          if (shown) overlay.activate();
+          else overlay.deactivate();
+        }
+        function close() { cancelClose(); held = false; setShown(false); }
+        function scheduleClose() {
+          cancelClose();
+          closeTimer = setTimeout(() => {
+            const focused = document.activeElement;
+            if (held || trigger.matches(":hover") || box.matches(":hover") || watchboardModalDialog
+              || (contains(focused) && focused.matches(":focus-visible, input, textarea, select, [contenteditable=true]"))) return;
+            setShown(false);
+          }, 160);
+        }
+        for (const element of [trigger, box]) {
+          element.addEventListener("pointerenter", event => {
+            if (event.pointerType === "touch") return;
+            cancelClose();
+            setShown(true);
+          }, { signal });
+          element.addEventListener("pointerleave", scheduleClose, { signal });
+          element.addEventListener("focusin", event => {
+            if (!restoringFocus && event.target.matches(":focus-visible")) {
+              cancelClose();
+              setShown(true);
+            }
+          }, { signal });
+          element.addEventListener("focusout", scheduleClose, { signal });
+        }
+        trigger.addEventListener("click", () => {
+          held = !held;
+          cancelClose();
+          setShown(held);
+        }, { signal });
+        trigger.addEventListener("keydown", event => {
+          if (event.key === "ArrowLeft" || event.key === "ArrowDown") {
+            event.preventDefault();
+            setShown(true);
+            box.querySelector("button:not(:disabled)")?.focus();
+          }
+        }, { signal });
+        document.addEventListener("pointerdown", event => {
+          if (!contains(event.target) && !watchboardModalDialog) close();
+        }, { capture: true, signal });
+        window.addEventListener("blur", close, { signal });
+        watchboardEdge = { box, close, scheduleClose,
+          sync(visible) {
+            trigger.hidden = !visible || !state.watchboardCollapsed;
+            if (trigger.hidden) close();
+            box.inert = !visible || (!!state.watchboardCollapsed && !shown);
+          },
+          destroy() { close(); events.abort(); overlay.destroy(); trigger.remove(); },
+        };
+        return watchboardEdge;
+      }
+
       function syncWatchboardFrame(dashboard) {
         const box = getChatElement("watchboard");
         const body = getChatElement("body");
@@ -288,6 +384,7 @@
         splitter?.classList.toggle("open", !!dashboard && !state.watchboardCollapsed);
         box.classList.toggle("open", !!dashboard);
         box.classList.toggle("collapsed", !!dashboard && !!state.watchboardCollapsed);
+        bindWatchboardEdge(box, body).sync(!!dashboard);
         if (dashboard) {
           bindWatchboardSplitter();
           applyWatchboardLayout();
@@ -359,7 +456,12 @@
             }
           });
         });
-        box.querySelector("[data-watchboard-dashboard-toggle]")?.addEventListener("click", () => {
+        const toggle = box.querySelector("[data-watchboard-dashboard-toggle]");
+        if (toggle && state.watchboardCollapsed) {
+          toggle.setAttribute("aria-label", window.PortalI18n.t("固定展开 Watchboard"));
+          toggle.title = window.PortalI18n.t("固定展开 Watchboard");
+        }
+        toggle?.addEventListener("click", () => {
           state.watchboardCollapsed = !state.watchboardCollapsed;
           writeLineageUiState({ watchboardCollapsed: state.watchboardCollapsed });
           box.dataset.signature = "";
@@ -388,6 +490,7 @@
         watchboardModalDialog?.destroy();
         watchboardModalDialog = null;
         overlay.remove();
+        watchboardEdge?.scheduleClose();
       }
 
       function showWatchboardModal(title, bodyHtml, { onBind = null } = {}) {

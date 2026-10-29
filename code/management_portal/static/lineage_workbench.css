@@ -726,21 +726,36 @@
       .watchboard.open {
         display: block;
       }
+      .chatWorkspaceBody.hasWatchboard { position: relative; }
+      .portalButton.watchboardEdgeTrigger.is-icon {
+        position: absolute;
+        right: 0;
+        top: 8px;
+        z-index: 4;
+        width: 28px;
+        min-width: 28px;
+        height: 38px;
+        padding: 4px;
+        border-radius: 9px 0 0 9px;
+        color: var(--accent);
+        background: var(--panel-2);
+        box-shadow: 0 2px 8px rgb(0 0 0 / 10%);
+      }
+      .watchboardEdgeTrigger[hidden] { display: none; }
       .watchboard.collapsed {
-        flex-basis: 38px;
-        min-width: 38px;
-        max-width: 38px;
-        overflow: hidden;
-      }
-      .watchboard.collapsed .watchboardBody {
         display: none;
+        position: absolute;
+        inset: 0 28px 0 auto;
+        width: var(--watchboard-dashboard-w, 360px);
+        min-width: 0;
+        max-width: calc(100% - 28px);
+        max-height: none;
+        border: 1px solid var(--border);
+        border-radius: 10px 0 10px 10px;
+        background: var(--panel);
+        box-shadow: -4px 4px 16px rgb(0 0 0 / 12%);
       }
-      .watchboard.collapsed .watchboardHead {
-        min-height: 37px;
-        padding: 0 1px;
-        border-bottom: 0;
-      }
-      .watchboard.collapsed .watchboardTitle { display: none; }
+      .watchboard.collapsed.peeking { display: block; }
       .watchboardHead {
         position: sticky;
         top: 0;
@@ -1223,7 +1238,7 @@
       }
       @container portal-chat-workspace (max-width: 780px) {
         .watchboardSplitter.open { display: none; }
-        .watchboard.open {
+        .watchboard.open:not(.collapsed) {
           flex: 0 0 auto;
           min-width: 0;
           max-width: none;
@@ -1233,12 +1248,6 @@
           border-left: 0;
           border-top: 1px solid var(--border);
         }
-        .watchboard.collapsed {
-          flex-basis: 38px;
-          max-width: none;
-          max-height: 38px;
-        }
-        .watchboard.collapsed .watchboardTitle { display: block; }
       }
       @media (max-width: 720px) {
         .residentFormGrid { grid-template-columns: 1fr; }

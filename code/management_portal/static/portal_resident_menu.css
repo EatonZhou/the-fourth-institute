@@ -542,7 +542,6 @@
 .scopeMenuSurface .nodeSettingsPanels > section { align-content:start; }
 .scopeMenuDetails { display:grid; grid-template-columns:minmax(0,1fr); gap:12px; }
 .scopeMenuFields { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:12px 14px; }
-.scopeMenuFields.is-three { grid-template-columns:repeat(3, minmax(0,1fr)); }
 .scopeMenuSurface .portalField.is-wide { grid-column:1 / -1; }
 .scopeMenuFields textarea { min-height:72px; }
 .scopeMenuSave { grid-column:1 / -1; display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:8px; }
@@ -583,14 +582,13 @@
 .scopeMenuMemberList .portalButton { flex:none; }
 .scopeMenuMembers > .scopeMenuBatch { padding-top:16px; border-top:0; }
 .scopeMenuBatch form { display:grid; grid-template-columns:minmax(0,1fr) 140px; gap:10px 12px; }
-.scopeMenuSummary { white-space:pre-wrap; font-size:13px; line-height:1.7; max-height:320px; overflow:auto; }
 @media(max-width:640px) {
-  .scopeMenuFields, .scopeMenuFields.is-three, .scopeMenuGrantForm, .scopeMenuBatch form { grid-template-columns:minmax(0,1fr); }
+  .scopeMenuFields, .scopeMenuGrantForm, .scopeMenuBatch form { grid-template-columns:minmax(0,1fr); }
 }
-.portalRuntimePurposeNav { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 20px; border-bottom: 1px solid var(--line, #d5dce5); }
+.portalRuntimePurposeNav { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 20px; border-bottom: 1px solid var(--border); }
 .portalSessionRestartOverlay .portalRuntimeSettingsSurface { grid-template-rows: auto auto minmax(0, 1fr); }
 .portalRuntimePurposeNav [aria-pressed="true"] { font-weight: 700; outline: 2px solid var(--accent, #3862c5); outline-offset: -2px; }
-.portalCapabilityGroup { margin: 12px 0; padding: 12px; border: 1px solid var(--line, #d5dce5); border-radius: 8px; min-width: 0; }
+.portalCapabilityGroup { margin: 12px 0; padding: 12px; border: 1px solid var(--border); border-radius: 8px; min-width: 0; }
 .portalCapabilityRow { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 8px 0; }
 .portalCapabilityRow input[type="text"] { min-width: 0; flex: 1 1 220px; }
 .portalCapabilityApplication { display: grid; gap: 8px; padding: 0; list-style: none; }

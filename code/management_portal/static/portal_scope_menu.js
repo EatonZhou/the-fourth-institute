@@ -17,9 +17,6 @@
     select.insertAdjacentHTML("beforeend", nodes.map(node => `<option value="${esc(node.id)}">${esc(node.title ? `${node.title}（${node.id}）` : node.id)}</option>`).join(""));
   };
   const aSelect = `<select name="a" required><option value="">${esc(t("选择 A 节点"))}</option></select>`;
-  const PROJECT_STATUSES = {not_started: "未开始", active: "进行中", paused: "已暂停", done: "已完成", archived: "已归档"};
-  const PROJECT_TYPES = {company: "公司项目", academic: "学术项目", personal: "个人项目", other: "其他"};
-  const selectOptions = labels => Object.entries(labels).map(([value, label]) => `<option value="${esc(value)}">${esc(t(label))}</option>`).join("");
   const SUMMARY_BATCH = 128;
   // Member rows show avatars for this many members; the rest keep their initials.
   const MEMBER_AVATARS = 120;
@@ -109,25 +106,11 @@
       owner.avatarEditor = null;
       const save = window.PortalI18n.html`<div class="scopeMenuSave"><p class="scopeMenuStatus" role="status"></p><button class="portalButton is-compact is-primary" type="submit">保存设置</button></div>`;
       if (owner.kind === "project") {
-        const project = owner.record;
-        node.innerHTML = window.PortalI18n.html`<section data-scope-avatar aria-label="Project avatar"></section>
-          <form class="menuRow scopeMenuDetails" id="scopeSettingsForm">
-            <div class="scopeMenuFields is-three">
-              <label class="portalField"><span>状态</span><select name="status">${selectOptions(PROJECT_STATUSES)}</select></label>
-              <label class="portalField"><span>类型</span><select name="project_type">${selectOptions(PROJECT_TYPES)}</select></label>
-              <label class="portalField"><span>截止时间</span><input name="ddl" placeholder="2026-01-31T18:00:00" autocomplete="off" /></label>
-            </div>
-            ${save}
-          </form>`;
-        const form = node.querySelector("form");
-        form.status.value = project.status || "active";
-        form.project_type.value = project.project_type || "other";
-        form.ddl.value = project.ddl || "";
-        form.addEventListener("submit", event => saveSettings(event, owner, () => ({
-          status: form.status.value, project_type: form.project_type.value, ddl: form.ddl.value.trim(),
-        })));
-        lockSettings(owner, form);
-        mountAvatar(owner, node.querySelector("[data-scope-avatar]"));
+        // A Project's information, avatar, name and deletion live on its page (decision_46c37026e8ea).
+        node.innerHTML = window.PortalI18n.html`<section class="menuRow" aria-label="项目设置">
+          <div class="menuRowCopy"><strong>项目设置</strong><small>项目的状态、类型、截止时间、说明、标签和头像，以及改名和删除，都在项目页中修改。</small></div>
+          <a class="portalButton is-compact is-primary" href="/projects?project=${encodeURIComponent(owner.id)}">打开项目页</a>
+        </section>`;
         return;
       }
       const lineage = owner.record;
@@ -170,30 +153,24 @@
       mountAvatar(owner, node.querySelector("[data-scope-avatar]"));
     }
 
-    // 保存设置 runs UpdateProject / UpdateLineage; the listed record's allows says whether the caller may.
+    // 保存设置 runs UpdateLineage; the listed record's allows says whether the caller may.
     function lockSettings(owner, form) {
-      const instruction = owner.kind === "project" ? "UpdateProject" : "UpdateLineage";
-      if (owner.record?.allows?.[instruction] !== false) return;
+      if (owner.record?.allows?.UpdateLineage !== false) return;
       form.querySelectorAll("input, select, textarea, button").forEach(control => {
         control.disabled = true;
         control.dataset.scopeLocked = "";
       });
-      status(form.querySelector(".scopeMenuStatus"), owner.kind === "project" ? t("你不能修改这个 Project 的设置。") : t("你不能修改这条 Lineage 的设置。"));
+      status(form.querySelector(".scopeMenuStatus"), t("你不能修改这条 Lineage 的设置。"));
     }
 
-    // 编辑头像 saves through UpdateProject / UpdateLineage changes.avatar; 恢复默认 goes back to the initial.
+    // 编辑头像 saves through UpdateLineage changes.avatar; 恢复默认 goes back to the initial.
     function mountAvatar(owner, row) {
       void avatarModule().then(() => {
         if (owner !== context || !row.isConnected) return;
         owner.avatarEditor = window.PortalAvatarEditor.mount(row, {
           portrait: $id("scopeMenuPortrait"), label: identityTitle(owner), clearable: true,
           load: () => owner.avatar,
-          save: async avatar => {
-            if (owner.kind === "project") {
-              return (await run("UpdateProject", {project_id: owner.id, changes: {avatar}}, "project-menu-avatar")).project?.avatar || null;
-            }
-            return (await run("UpdateLineage", {lineage_id: owner.id, changes: {avatar}}, "lineage-menu-avatar")).lineage?.avatar || null;
-          },
+          save: async avatar => (await run("UpdateLineage", {lineage_id: owner.id, changes: {avatar}}, "lineage-menu-avatar")).lineage?.avatar || null,
           onSaved: avatar => {
             owner.avatar = Promise.resolve(avatar);
             window.PortalAvatarEditor.remember(owner.kind, owner.id, avatar);
@@ -245,11 +222,7 @@
       button.disabled = true;
       status(line, t("保存中…"));
       try {
-        if (owner.kind === "project") {
-          await run("UpdateProject", {project_id: owner.id, changes}, "project-menu-update");
-        } else {
-          await run("UpdateLineage", {lineage_id: owner.id, changes}, "lineage-menu-update");
-        }
+        await run("UpdateLineage", {lineage_id: owner.id, changes}, "lineage-menu-update");
         if (owner !== context) return;
         owner.record = {...before, ...changes};
         renderIdentity(owner);
@@ -488,21 +461,11 @@
       await changed({type: "permissions", kind: owner.kind, id: owner.id});
     }
 
-    // Work Journal: a Lineage shows its Residents' summaries; a Project shows
-    // its summary and what each of its Lineages is for.
+    // Work Journal: a Lineage shows its Residents' summaries.  A Project's
+    // summary and team are on its page, so its menu has no journal.
     async function renderJournal(owner) {
       const node = panel("journal");
       node.textContent = t("正在读取工作摘要…");
-      if (owner.kind === "project") {
-        const [project, members] = await (owner.journal ||= Promise.all([
-          run("GetProject", {project_id: owner.id}), loadMembers(owner),
-        ]));
-        if (owner !== context) return;
-        const text = String(project.summary?.text || "").trim();
-        node.innerHTML = window.PortalI18n.html`<section class="residentMenuJournalSection"><h4>Project 摘要</h4>${text ? `<div class="scopeMenuSummary">${esc(text)}</div>` : `<p class="residentMenuJournalMeta">${esc(t("暂无 summary.md。"))}</p>`}</section>
-          <section class="residentMenuJournalSection"><h4>Lineages</h4><ul>${members.map(item => `<li><strong>${esc(item.title)}</strong>${item.meta ? ` — ${esc(item.meta)}` : ""}</li>`).join("") || `<li>${esc(t("暂无成员。"))}</li>`}</ul></section>`;
-        return;
-      }
       const ids = (owner.record.nodes || []).map(item => item.id);
       const summaries = await (owner.journal ||= (async () => {
         const rows = [];
@@ -556,8 +519,9 @@
     modal.querySelector("[data-portal-detail-close]").addEventListener("click", () => dialog.close());
     TABS.forEach(tab => tabButton(tab).addEventListener("click", () => void switchTab(tab)));
     modal.querySelector('[role="tablist"]').addEventListener("keydown", event => {
-      const index = TABS.indexOf(current());
-      const next = {ArrowDown: TABS[(index + 1) % TABS.length], ArrowUp: TABS[(index + TABS.length - 1) % TABS.length], Home: TABS[0], End: TABS[TABS.length - 1]}[event.key];
+      const shown = TABS.filter(tab => !tabButton(tab).hidden);
+      const index = shown.indexOf(current());
+      const next = {ArrowDown: shown[(index + 1) % shown.length], ArrowUp: shown[(index + shown.length - 1) % shown.length], Home: shown[0], End: shown[shown.length - 1]}[event.key];
       if (!next) return;
       event.preventDefault();
       void switchTab(next).then(() => tabButton(next).focus());
@@ -575,12 +539,13 @@
         const permissionsOff = await window.PortalIdentity.permissionSystemOff().catch(() => false);
         context = {kind: next.kind, id: next.id, record: next.record, busy: false, members: null, journal: null, permissionsOff};
         tabButton("package").hidden = permissionsOff;
+        tabButton("journal").hidden = next.kind === "project";
         context.avatar = avatarModule().then(() => window.PortalAvatarEditor.read(next.kind, next.id, {fresh: true})).catch(() => null);
         $id("scopeMenuPortrait").replaceChildren();
         renderIdentity(context);
         TABS.forEach(tab => panel(tab).replaceChildren());
         dialog.open();
-        await switchTab(TABS.includes(next.tab) && !(permissionsOff && next.tab === "package") ? next.tab : "settings");
+        await switchTab(TABS.includes(next.tab) && !tabButton(next.tab).hidden ? next.tab : "settings");
         return true;
       },
       destroy() { dialog.close({force: true}); dialog.destroy(); surface?.destroy(); modal.remove(); },

@@ -40795,31 +40795,106 @@
     "en": "This account still has {p0} bound sessions and {p1} queued or running executions. Move the sessions and wait for or cancel the executions first. You can also disable the account.",
     "zh-CN": "账号仍关联 {p0} 个会话、{p1} 个排队或运行中的执行。请先迁移会话并等待或取消执行；也可先停用账号。"
   },
-  "管理 AI 连接": {"en": "Manage AI connections", "zh-CN": "管理 AI 连接"},
-  "编辑连接": {"en": "Edit connection", "zh-CN": "编辑连接"},
-  "模型（可选）": {"en": "Model (optional)", "zh-CN": "模型（可选）"},
-  "自动使用账号默认模型": {"en": "Use the account's default model", "zh-CN": "自动使用账号默认模型"},
-  "无需手动填写；授权完成后自动读取默认模型，也可选择其他模型。": {"en": "No need to enter a model manually. After authorization, Portal loads the default model. You can also choose another model.", "zh-CN": "无需手动填写；授权完成后自动读取默认模型，也可选择其他模型。"},
-  "先点击登录，获取设备码并在浏览器授权；无需填写模型名称。": {"en": "Click Sign in to get a device code and authorize in your browser. No model name is needed.", "zh-CN": "先点击登录，获取设备码并在浏览器授权；无需填写模型名称。"},
-  "先点击登录并在浏览器完成授权；无需填写模型名称。": {"en": "Click Sign in and authorize in your browser. No model name is needed.", "zh-CN": "先点击登录并在浏览器完成授权；无需填写模型名称。"},
-  "复制服务商给你的三项信息即可。连接名称和账号关联会自动完成。": {"en": "Copy the three values from your provider. Portal generates the connection name and links the account automatically.", "zh-CN": "复制服务商给你的三项信息即可。连接名称和账号关联会自动完成。"},
-  "Portal 服务器无法保存密钥。请管理员检查密钥存储目录的写入权限和磁盘空间，再重新提交；这不表示 API Key 无效。": {"en": "Portal could not save the key. Ask an administrator to check secret storage permissions and free disk space, then submit it again. This does not mean the API Key is invalid.", "zh-CN": "Portal 服务器无法保存密钥。请管理员检查密钥存储目录的写入权限和磁盘空间，再重新提交；这不表示 API Key 无效。"},
-  "连接名称已存在。请在高级设置中换一个名称，或编辑已有连接；这不表示 API Key 无效。": {"en": "This connection name already exists. Choose another name in advanced settings or edit the existing connection. This does not mean the API Key is invalid.", "zh-CN": "连接名称已存在。请在高级设置中换一个名称，或编辑已有连接；这不表示 API Key 无效。"},
-  "当前登录身份没有添加或修改 AI 连接的权限。请重新登录或联系管理员。": {"en": "Your current login cannot add or change AI connections. Sign in again or contact an administrator.", "zh-CN": "当前登录身份没有添加或修改 AI 连接的权限。请重新登录或联系管理员。"},
-  "连接信息不符合要求。请检查接口地址、模型名称和高级设置后重试。": {"en": "The connection details are invalid. Check the base URL, model name and advanced settings, then try again.", "zh-CN": "连接信息不符合要求。请检查接口地址、模型名称和高级设置后重试。"},
-  "未能确认保存结果。请检查网络与 Portal 服务，刷新连接列表确认是否已保存，再重试。": {"en": "Could not confirm whether the connection was saved. Check the network and Portal service, then refresh the connection list before retrying.", "zh-CN": "未能确认保存结果。请检查网络与 Portal 服务，刷新连接列表确认是否已保存，再重试。"},
-  "AI 连接保存失败。请检查 Portal 服务日志中的失败原因，再重新提交 API Key；密钥尚未经过模型服务验证。": {"en": "Could not save the AI connection. Check the Portal service logs before submitting the API Key again. The model service has not validated the key yet.", "zh-CN": "AI 连接保存失败。请检查 Portal 服务日志中的失败原因，再重新提交 API Key；密钥尚未经过模型服务验证。"},
-  "使用 API Key": {"en": "Use an API Key", "zh-CN": "使用 API Key"},
-  "只需服务商提供的接口地址、API Key 和模型名称。Portal 自动建立连接，随后测试并启用 AI。": {"en": "Enter the base URL, API Key and model name from your provider. Portal creates the connection so you can test it and start using AI.", "zh-CN": "只需服务商提供的接口地址、API Key 和模型名称。Portal 自动建立连接，随后测试并启用 AI。"},
-  "已接入的 AI": {"en": "Your AI connections", "zh-CN": "已接入的 AI"},
-  "连接名称（可选）": {"en": "Connection name (optional)", "zh-CN": "连接名称（可选）"},
-  "留空自动生成，无需从服务商获取": {"en": "Leave blank to generate automatically", "zh-CN": "留空自动生成，无需从服务商获取"},
-  "仅用于在 Portal 中区分连接，留空即可。自定义时以小写字母开头，只用小写字母、数字、下划线或短横线，最多 128 字符。": {"en": "Only used to identify this connection in Portal. You can leave it blank. Custom names start with a lowercase letter and contain lowercase letters, numbers, underscores or hyphens, up to 128 characters.", "zh-CN": "仅用于在 Portal 中区分连接，留空即可。自定义时以小写字母开头，只用小写字母、数字、下划线或短横线，最多 128 字符。"},
-  "同意交出这些权限": {"en": "Lend these permissions", "zh-CN": "同意交出这些权限"},
-  "不交出": {"en": "Don't lend", "zh-CN": "不交出"},
-  "同意后随这条回答交给 Resident 的权限：": {"en": "Permissions lent to the Resident with this answer if you agree:", "zh-CN": "同意后随这条回答交给 Resident 的权限："},
-  "成员在 Family 内提出的权限请求不能经门面交出": {"en": "A member's permission request inside a Family cannot be granted through its facade", "zh-CN": "成员在 Family 内提出的权限请求不能经门面交出"},
-  "只在 Resident 处理这条回答期间有效，处理完即失效。": {"en": "Valid only while the Resident handles this answer; it ends when the Resident finishes.", "zh-CN": "只在 Resident 处理这条回答期间有效，处理完即失效。"},
+  "管理 AI 连接": {
+    "en": "Manage AI connections",
+    "zh-CN": "管理 AI 连接"
+  },
+  "编辑连接": {
+    "en": "Edit connection",
+    "zh-CN": "编辑连接"
+  },
+  "模型（可选）": {
+    "en": "Model (optional)",
+    "zh-CN": "模型（可选）"
+  },
+  "自动使用账号默认模型": {
+    "en": "Use the account's default model",
+    "zh-CN": "自动使用账号默认模型"
+  },
+  "无需手动填写；授权完成后自动读取默认模型，也可选择其他模型。": {
+    "en": "No need to enter a model manually. After authorization, Portal loads the default model. You can also choose another model.",
+    "zh-CN": "无需手动填写；授权完成后自动读取默认模型，也可选择其他模型。"
+  },
+  "先点击登录，获取设备码并在浏览器授权；无需填写模型名称。": {
+    "en": "Click Sign in to get a device code and authorize in your browser. No model name is needed.",
+    "zh-CN": "先点击登录，获取设备码并在浏览器授权；无需填写模型名称。"
+  },
+  "先点击登录并在浏览器完成授权；无需填写模型名称。": {
+    "en": "Click Sign in and authorize in your browser. No model name is needed.",
+    "zh-CN": "先点击登录并在浏览器完成授权；无需填写模型名称。"
+  },
+  "复制服务商给你的三项信息即可。连接名称和账号关联会自动完成。": {
+    "en": "Copy the three values from your provider. Portal generates the connection name and links the account automatically.",
+    "zh-CN": "复制服务商给你的三项信息即可。连接名称和账号关联会自动完成。"
+  },
+  "Portal 服务器无法保存密钥。请管理员检查密钥存储目录的写入权限和磁盘空间，再重新提交；这不表示 API Key 无效。": {
+    "en": "Portal could not save the key. Ask an administrator to check secret storage permissions and free disk space, then submit it again. This does not mean the API Key is invalid.",
+    "zh-CN": "Portal 服务器无法保存密钥。请管理员检查密钥存储目录的写入权限和磁盘空间，再重新提交；这不表示 API Key 无效。"
+  },
+  "连接名称已存在。请在高级设置中换一个名称，或编辑已有连接；这不表示 API Key 无效。": {
+    "en": "This connection name already exists. Choose another name in advanced settings or edit the existing connection. This does not mean the API Key is invalid.",
+    "zh-CN": "连接名称已存在。请在高级设置中换一个名称，或编辑已有连接；这不表示 API Key 无效。"
+  },
+  "当前登录身份没有添加或修改 AI 连接的权限。请重新登录或联系管理员。": {
+    "en": "Your current login cannot add or change AI connections. Sign in again or contact an administrator.",
+    "zh-CN": "当前登录身份没有添加或修改 AI 连接的权限。请重新登录或联系管理员。"
+  },
+  "连接信息不符合要求。请检查接口地址、模型名称和高级设置后重试。": {
+    "en": "The connection details are invalid. Check the base URL, model name and advanced settings, then try again.",
+    "zh-CN": "连接信息不符合要求。请检查接口地址、模型名称和高级设置后重试。"
+  },
+  "未能确认保存结果。请检查网络与 Portal 服务，刷新连接列表确认是否已保存，再重试。": {
+    "en": "Could not confirm whether the connection was saved. Check the network and Portal service, then refresh the connection list before retrying.",
+    "zh-CN": "未能确认保存结果。请检查网络与 Portal 服务，刷新连接列表确认是否已保存，再重试。"
+  },
+  "AI 连接保存失败。请检查 Portal 服务日志中的失败原因，再重新提交 API Key；密钥尚未经过模型服务验证。": {
+    "en": "Could not save the AI connection. Check the Portal service logs before submitting the API Key again. The model service has not validated the key yet.",
+    "zh-CN": "AI 连接保存失败。请检查 Portal 服务日志中的失败原因，再重新提交 API Key；密钥尚未经过模型服务验证。"
+  },
+  "使用 API Key": {
+    "en": "Use an API Key",
+    "zh-CN": "使用 API Key"
+  },
+  "只需服务商提供的接口地址、API Key 和模型名称。Portal 自动建立连接，随后测试并启用 AI。": {
+    "en": "Enter the base URL, API Key and model name from your provider. Portal creates the connection so you can test it and start using AI.",
+    "zh-CN": "只需服务商提供的接口地址、API Key 和模型名称。Portal 自动建立连接，随后测试并启用 AI。"
+  },
+  "已接入的 AI": {
+    "en": "Your AI connections",
+    "zh-CN": "已接入的 AI"
+  },
+  "连接名称（可选）": {
+    "en": "Connection name (optional)",
+    "zh-CN": "连接名称（可选）"
+  },
+  "留空自动生成，无需从服务商获取": {
+    "en": "Leave blank to generate automatically",
+    "zh-CN": "留空自动生成，无需从服务商获取"
+  },
+  "仅用于在 Portal 中区分连接，留空即可。自定义时以小写字母开头，只用小写字母、数字、下划线或短横线，最多 128 字符。": {
+    "en": "Only used to identify this connection in Portal. You can leave it blank. Custom names start with a lowercase letter and contain lowercase letters, numbers, underscores or hyphens, up to 128 characters.",
+    "zh-CN": "仅用于在 Portal 中区分连接，留空即可。自定义时以小写字母开头，只用小写字母、数字、下划线或短横线，最多 128 字符。"
+  },
+  "同意交出这些权限": {
+    "en": "Lend these permissions",
+    "zh-CN": "同意交出这些权限"
+  },
+  "不交出": {
+    "en": "Don't lend",
+    "zh-CN": "不交出"
+  },
+  "同意后随这条回答交给 Resident 的权限：": {
+    "en": "Permissions lent to the Resident with this answer if you agree:",
+    "zh-CN": "同意后随这条回答交给 Resident 的权限："
+  },
+  "成员在 Family 内提出的权限请求不能经门面交出": {
+    "en": "A member's permission request inside a Family cannot be granted through its facade",
+    "zh-CN": "成员在 Family 内提出的权限请求不能经门面交出"
+  },
+  "只在 Resident 处理这条回答期间有效，处理完即失效。": {
+    "en": "Valid only while the Resident handles this answer; it ends when the Resident finishes.",
+    "zh-CN": "只在 Resident 处理这条回答期间有效，处理完即失效。"
+  },
   "管理工作流": {
     "zh-CN": "管理工作流",
     "en": "Manage workflows"
@@ -40863,5 +40938,33 @@
   "工作流归属已保存。": {
     "zh-CN": "工作流归属已保存。",
     "en": "Workflow ownership saved."
+  },
+  "项目设置": {
+    "zh-CN": "项目设置",
+    "en": "Project settings"
+  },
+  "项目的状态、类型、截止时间、说明、标签和头像，以及改名和删除，都在项目页中修改。": {
+    "zh-CN": "项目的状态、类型、截止时间、说明、标签和头像，以及改名和删除，都在项目页中修改。",
+    "en": "Change a project's status, type, deadline, description, tags and avatar, or rename or delete it, on its project page."
+  },
+  "打开项目页": {
+    "zh-CN": "打开项目页",
+    "en": "Open project page"
+  },
+  "标签（可选）": {
+    "zh-CN": "标签（可选）",
+    "en": "Tags (optional)"
+  },
+  "截止时间（可选）": {
+    "zh-CN": "截止时间（可选）",
+    "en": "Deadline (optional)"
+  },
+  "Watchboard · 悬停查看，点击保持展开": {
+    "zh-CN": "Watchboard · 悬停查看，点击保持展开",
+    "en": "Watchboard · Hover to view, click to keep open"
+  },
+  "固定展开 Watchboard": {
+    "zh-CN": "固定展开 Watchboard",
+    "en": "Dock Watchboard"
   }
 }
