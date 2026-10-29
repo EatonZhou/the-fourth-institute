@@ -129,6 +129,35 @@ def test_heading_chart_keeps_title_and_explicit_footer_without_body(scale):
     assert (255, 0, 255) not in result.getdata()
 
 
+@pytest.mark.parametrize('scale', [1, 2])
+@pytest.mark.parametrize('prefix', ['Caption: ', ''])
+def test_heading_chart_footer_pair_flush_with_heading_needs_explicit_prefix(scale, prefix):
+    """与图标题左缘对齐、离标签较远的两句：带 Caption 前缀时作为图注保留，无前缀时视为正文排除"""
+    page = Image.new('RGB', (600 * scale, 800 * scale), 'white')
+    draw = ImageDraw.Draw(page)
+    draw.rectangle(tuple(v * scale for v in (100, 200, 450, 400)), fill='teal')
+    lines = [
+        {'text': 'Figure 1. Invented scores', 'x_min': 50, 'x_max': 330, 'y_min': 150, 'y_max': 165},
+        {'text': 'Method A / Method B', 'x_min': 100, 'x_max': 450, 'y_min': 412, 'y_max': 424},
+        {'text': f'{prefix}A=10, B=12; B exceeds A by 2 units.',
+         'x_min': 50, 'x_max': 380, 'y_min': 452, 'y_max': 462},
+        {'text': 'The chart has no error bars and no real data.',
+         'x_min': 50, 'x_max': 385, 'y_min': 474, 'y_max': 484},
+    ]
+    for line, color in zip(lines, ['black', 'blue', 'green', 'red']):
+        draw.rectangle(tuple(line[k] * scale for k in ('x_min', 'y_min', 'x_max', 'y_max')), fill=color)
+    caption = {**lines[0], 'caption': lines[0]['text'], 'number': '1',
+               'page_width': 600, 'page_height': 800, 'page_lines': lines}
+    result = paper_backend._crop_figure_above_caption(page, caption)
+    assert result is not None
+    source = {color: count for count, color in page.getcolors(page.width * page.height)}
+    kept = {color: count for count, color in result.getcolors(result.width * result.height)}
+    for color in ((0, 0, 0), (0, 0, 255), (0, 128, 128)):
+        assert kept.get(color) == source[color]
+    for color in ((0, 128, 0), (255, 0, 0)):
+        assert kept.get(color, 0) == (source[color] if prefix else 0)
+
+
 @pytest.mark.parametrize('framed', [True, False])
 def test_heading_inside_frame_is_not_a_caption_below_another_figure(framed):
     """图标题位于边框内时裁出整个框内图，仅有上方分隔线时不裁剪"""

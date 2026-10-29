@@ -7142,6 +7142,15 @@ def _crop_figure_below_heading(page_image: Image.Image, caption: dict[str, Any])
                 # Axis labels are part of the figure's horizontal extent too.
                 # Notes aligned with those labels can start left of the plot.
                 and x0 >= included_bounds[0] - inset_tolerance
+                # The heading starts at the page's text margin, where body
+                # prose (and often an axis title) also starts. An unprefixed
+                # pair flush with the heading is indistinguishable from that
+                # prose unless it is aligned with the plot itself.
+                and (
+                    explicit_note
+                    or x0 >= graphic_bounds[0] - inset_tolerance
+                    or abs(x0 - float(caption.get("x_min") or 0)) > height
+                )
                 and nx1 <= graphic_bounds[2] + inset_tolerance
                 and 0 <= ny0 - y1 <= max(12.0, 1.5 * height)
                 and 0 < ny1 - ny0 <= 1.5 * height
