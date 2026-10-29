@@ -34,15 +34,26 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     }
     await page.evaluate(() => {
       window.PortalIdentity = {username: () => 'viewer'};
-      window.calls = []; window.toasts = []; window.failNext = false;
+      window.calls = []; window.toasts = []; window.failNext = false; window.denyRead = false;
       PortalUI.toast = message => toasts.push(message);
       let policy = {muted_member_ids: [], solo_member_id: ''};
-      const members = Array.from({length: 8}, (_, i) => ({resident_id: `member_${i}`, title: `成员 ${i} · 架构与实现开发团队`, role: 'member'}));
+      const members = [0, 1].map(i => ({resident_id: `member_${i}`, title: `成员 ${i} · 架构与实现`, role: 'member'}));
       const family = {family_id: 'family_fixture', title: 'Family', lineage_id: 'fixture', members,
         nodes: [{resident_id: 'router', role: 'router', title: 'Router'}, ...members]};
-      window.detail = () => ({resident_id: 'facade', family_facade: {...family, chat_preferences: {...policy}}});
+      window.facadeDetail = () => ({resident_id: 'facade', resident: {resident_id: 'facade', family: {role: 'facade'}},
+        family_facade: {...family, chat_preferences: {...policy}}});
+      window.memberDetail = (id = 'member_0', role = 'member') => ({resident: {resident_id: id, lineage_id: 'fixture', title: '成员 · 架构与实现', family: {family_id: 'family_fixture', role}}});
+      window.watchers = new Set();
+      window.PortalResidentProjection = {
+        subscribe: (id, listener) => { assertFacade(id); watchers.add(listener); queueMicrotask(() => listener({detail: facadeDetail()})); return () => watchers.delete(listener); },
+        invalidate: id => { assertFacade(id); watchers.forEach(listener => listener({detail: facadeDetail()})); },
+      };
+      const assertFacade = id => { if (id !== 'facade') throw new Error('Wrong preference target: ' + id); };
       window.PortalInstructionClient = {execute: async (name, args) => {
         calls.push([name, args]);
+        if (name === 'GetLineage') return {lineage: {function_blocks: [{id: 'family_fixture', family: {facade: 'facade', members: members.map(m => m.resident_id)}}]}};
+        assertFacade(args.resident_id);
+        if (name === 'GetFamilyChatPreferences' && denyRead) throw new Error('Not visible');
         if (name === 'UpdateFamilyChatPreferences') {
           if (failNext) { failNext = false; throw new Error('Save failed'); }
           if (args.control === 'mute') {
@@ -54,70 +65,88 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
         return {...policy};
       }};
       window.PortalAPI = {get: async () => ({accounts: []})};
+      window.PortalResidentService = {projection: async () => facadeDetail()};
       window.PortalResidentRuntimeController = {bind: () => ({
         state: () => ({}), load: async () => ({detail: {resident: {backend: 'codex'}}, settings: {}}), close() {}, destroy() {},
       })};
       window.PortalResidentProtocol = {...PortalResidentProtocol,
-        loadSnapshot: async (id, opts) => { calls.push(['snapshot', id, opts]); panel.updateFamilyStatus(detail()); },
+        loadSnapshot: async (id, opts) => { calls.push(['snapshot', id, opts]); assertFacade(id); },
         acquire: () => ({load: async () => ({state: {work_state: 'idle'}, messages: []}), destroy() {}}),
       };
-      window.panel = PortalChatWorkspace.panelPackage.create({root: document.getElementById('chat'), id: 'chat', autoLoad: false, target: {resident_id: 'facade'}});
-      panel.updateFamilyStatus(detail());
+      window.panel = PortalChatWorkspace.panelPackage.create({root: document.getElementById('chat'), id: 'chat', title: 'Chat Workspace · 架构与实现', autoLoad: false, target: {resident_id: 'member_0'}});
+      panel.updateFamilyStatus(memberDetail());
     });
-    const bar = page.locator('[data-family-chat-members]');
-    const button = (id, mode, parent = bar) => parent.locator(`[data-member="${id}"][data-family-mix="${mode}"]`);
-    const pressed = async (id, mode, active, parent = bar) => {
+    const own = page.locator('[data-family-chat-member]');
+    const button = (id, mode, parent = own) => parent.locator(`[data-member="${id}"][data-family-mix="${mode}"]`);
+    const pressed = async (id, mode, active, parent = own) => {
       await button(id, mode, parent).locator(`xpath=self::*[@aria-pressed='${active}'][not(@disabled)]`).waitFor();
     };
-    assert.equal(await bar.locator('.familyMemberIdentity').count(), 8);
-    assert.equal(await button('router', 'mute').count(), 0);
-    assert.match(await bar.locator('a').first().getAttribute('href'), /resident=member_0/);
-    await button('member_0', 'mute').click(); await pressed('member_0', 'mute', true);
-    await button('member_1', 'solo').click(); await pressed('member_1', 'solo', true);
     await pressed('member_0', 'mute', false);
-    await button('member_2', 'solo').click(); await pressed('member_2', 'solo', true);
-    await pressed('member_1', 'solo', false);
-    await button('member_2', 'solo').click(); await pressed('member_0', 'mute', true);
-    assert.equal(await bar.locator('.familyMemberIdentity').count(), 8, 'hidden conversations never hide the unmute controls');
+    assert.equal(await page.locator('[data-family-chat-members]').count(), 0, 'no facade-wide member bar');
+    assert.equal(await own.locator('button').count(), 2, 'only this member has controls');
+    assert.equal(await own.evaluate(node => node.previousElementSibling.classList.contains('paneTitle')), true, 'buttons immediately follow the Chat title');
+    await button('member_0', 'mute').click(); await pressed('member_0', 'mute', true);
+    await button('member_0', 'solo').click(); await pressed('member_0', 'solo', true);
+    await pressed('member_0', 'mute', false);
+    await button('member_0', 'solo').click(); await pressed('member_0', 'mute', true);
 
-    // The existing Chat popover and the new inline controls share persisted state.
-    await page.evaluate(() => {
+    // The original Menu/status panel remains available and shares preferences.
+    await page.evaluate(async () => {
       const anchor = document.createElement('button'); anchor.id = 'family-anchor'; document.body.append(anchor);
-      panel.openFamilyStatus(anchor);
+      window.menu = await PortalChatWorkspace.openFamilyStatus('facade', {anchor});
     });
     const popover = page.locator('.familyStatusPanel');
     await pressed('member_0', 'mute', true, popover);
     await button('member_0', 'mute', popover).click(); await pressed('member_0', 'mute', false);
-    await page.evaluate(() => panel.familyStatusView.close());
+    await button('member_1', 'solo', popover).click(); await pressed('member_1', 'solo', true, popover);
+    await page.evaluate(() => menu.close());
+    await button('member_0', 'solo').click(); await pressed('member_0', 'solo', true);
+    await button('member_0', 'solo').click(); await pressed('member_0', 'solo', false);
     await page.evaluate(() => { failNext = true; });
-    await button('member_1', 'mute').click();
+    await button('member_0', 'mute').click();
     await page.waitForFunction(() => toasts.includes('Save failed'));
-    await pressed('member_1', 'mute', false);
+    await pressed('member_0', 'mute', false);
     assert.equal(await page.evaluate(() => document.activeElement.dataset.familyMix), 'mute');
-    await button('member_1', 'mute').click(); await pressed('member_1', 'mute', true);
+    await button('member_0', 'mute').click(); await pressed('member_0', 'mute', true);
 
-    // Rebinding a Chat drops the old controls, then reloads this user's choice.
-    await page.evaluate(() => panel.updateFamilyStatus({resident_id: 'ordinary'}));
-    assert.equal(await bar.isVisible(), false);
-    await page.evaluate(() => panel.updateFamilyStatus(detail()));
-    await pressed('member_1', 'mute', true);
+    for (const role of ['facade', 'router', 'steward', 'independent']) {
+      await page.evaluate(role => panel.updateFamilyStatus(role === 'facade' ? facadeDetail() : memberDetail('other', role)), role);
+      assert.equal(await own.isVisible(), false, role + ' must not have title M/S');
+      assert.equal(await page.evaluate(() => watchers.size), 0, 'switching Chat releases the parent subscription');
+    }
+    // A slow lookup must not put member buttons back on a facade after switching.
+    await page.evaluate(() => { panel.updateFamilyStatus(memberDetail()); panel.updateFamilyStatus(facadeDetail()); });
+    await page.waitForTimeout(30);
+    assert.equal(await own.isVisible(), false);
+    assert.equal(await page.evaluate(() => watchers.size), 0);
+    await page.evaluate(() => panel.updateFamilyStatus(memberDetail()));
+    await pressed('member_0', 'mute', true);
+    // A denied read clears the controls instead of applying someone else's state.
+    await page.evaluate(() => { denyRead = true; PortalResidentProjection.invalidate('facade'); });
+    await page.waitForFunction(() => toasts.includes('Not visible'));
+    assert.equal(await own.isVisible(), false);
+    await page.evaluate(() => { denyRead = false; PortalResidentProjection.invalidate('facade'); });
+    await pressed('member_0', 'mute', true);
+
     for (const width of [1200, 390]) {
       await page.setViewportSize({width, height: 900});
-      const metrics = await bar.evaluate(node => {
+      const metrics = await own.evaluate(node => {
         const rect = node.getBoundingClientRect();
-        return {width: rect.width, height: rect.height, right: rect.right, viewport: innerWidth, overflow: node.scrollWidth > node.clientWidth + 1};
+        return {width: rect.width, height: rect.height, right: rect.right, viewport: innerWidth};
       });
-      assert.ok(metrics.height <= 94 && metrics.right <= metrics.viewport && !metrics.overflow, JSON.stringify(metrics));
-      await button('member_7', 'solo').click(); await pressed('member_7', 'solo', true);
-      await button('member_7', 'solo').click(); await pressed('member_1', 'mute', true);
-      if (process.env.FAMILY_CHAT_SCREENSHOTS) await page.screenshot({path: path.join(process.env.FAMILY_CHAT_SCREENSHOTS, `chat-${width}.png`)});
+      assert.ok(metrics.height <= 32 && metrics.right <= metrics.viewport, JSON.stringify(metrics));
+      await button('member_0', 'solo').click(); await pressed('member_0', 'solo', true);
+      await button('member_0', 'solo').click(); await pressed('member_0', 'mute', true);
+      if (process.env.FAMILY_CHAT_SCREENSHOTS) await page.screenshot({path: path.join(process.env.FAMILY_CHAT_SCREENSHOTS, `member-chat-${width}.png`)});
       console.log(JSON.stringify({width, ...metrics}));
     }
-    assert.equal(new URL(page.url()).pathname, '/', 'M/S never navigates to the member Chat');
+    await page.evaluate(() => panel.updateFamilyStatus(facadeDetail()));
+    if (process.env.FAMILY_CHAT_SCREENSHOTS) await page.screenshot({path: path.join(process.env.FAMILY_CHAT_SCREENSHOTS, 'facade-no-controls.png')});
+    assert.equal(new URL(page.url()).pathname, '/', 'M/S never navigates');
     assert.deepEqual(errors, []);
     const updates = await page.evaluate(() => calls.filter(call => call[0] === 'UpdateFamilyChatPreferences'));
     assert.ok(updates.every(([, args]) => args.resident_id === 'facade' && !args.actor && !args.username));
-    await page.evaluate(() => panel.destroy());
-    console.log('PASS: inline Chat M/S, popover sync, failure/retry, restore, narrow layout');
+    await page.evaluate(() => { menu.destroy(); panel.destroy(); });
+    console.log('PASS: member Chat only, parent Family preferences, Menu sync, failure/retry, permissions, cleanup, narrow layout');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

@@ -38,7 +38,7 @@ def test_family_settings_scroll_stays_inside_content_column():
 
 
 def test_family_chat_members_controls():
-    """Chat 成员名旁可直接操作 M/S，与已有面板同步；失败可重试，窄屏可访问全部成员。"""
+    """成员自己 Chat 的标题后提供 M/S，门面无成员栏；与 Menu 同步，离开页面释放订阅。"""
     result = subprocess.run(
         ['node', str(Path(__file__).with_name('javascript') / 'family_chat_members.browser.cjs')],
         input=json.dumps({'routeScript': portal_route_script().decode()}),

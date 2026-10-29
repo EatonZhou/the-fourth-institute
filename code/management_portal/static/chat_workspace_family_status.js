@@ -34,46 +34,69 @@
       await window.PortalResidentProtocol.loadSnapshot(residentId, {force: true});
     }
 
-    // Keep all members reachable even when their messages are hidden by M/S.
-    function createFamilyChatMembers(residentId, root) {
-      let family = null, busy = false, disposed = false, signature = '';
+    // A member's own Chat controls its participation in its parent Family.
+    // The facade retains its existing Menu/status-panel controls only.
+    function createFamilyMemberChatControls(member, root) {
+      let facadeId = '', policy = null, busy = false, disposed = false, signature = '';
+      let unsubscribe = null, readRevision = 0;
       function render() {
         if (disposed) return;
-        const members = family?.members || (family?.nodes || []).filter(row => row.role === 'member');
-        const policy = family?.chat_preferences;
-        const next = JSON.stringify([members, policy, busy]);
+        const next = JSON.stringify([member.title, policy, busy]);
         if (next === signature) return;
         signature = next;
         const focused = root.contains(document.activeElement) ? document.activeElement : null;
-        const scroll = root.scrollTop;
-        root.hidden = !members.length;
-        root.innerHTML = members.map(member => {
-          const id = member.resident_id, title = member.title || id;
-          const href = `/lineage?${new URLSearchParams({ resident: id, lineage: family.lineage_id || '', open_chat: '1' })}`;
-          return `<span class="familyMemberIdentity"><a class="messageMetaLink familyChatMemberName" href="${escapeHtml(href)}" title="${escapeHtml(title)}">${escapeHtml(title)}</a>${memberMixHtml(id, title, policy, busy)}</span>`;
-        }).join('');
-        root.scrollTop = scroll;
-        if (focused?.dataset.familyMix) root.querySelector(`[data-member="${CSS.escape(focused.dataset.member)}"][data-family-mix="${focused.dataset.familyMix}"]`)?.focus({preventScroll: true});
+        root.hidden = !policy;
+        root.innerHTML = policy ? memberMixHtml(member.resident_id, member.title, policy, busy) : '';
+        if (focused?.dataset.familyMix) root.querySelector(`[data-family-mix="${focused.dataset.familyMix}"]`)?.focus({preventScroll: true});
+      }
+      async function readPolicy() {
+        const revision = ++readRevision;
+        try {
+          const value = await window.PortalInstructionClient.execute('GetFamilyChatPreferences', {resident_id: facadeId});
+          if (disposed || revision !== readRevision || busy) return;
+          policy = value; render();
+        } catch (error) {
+          if (disposed || revision !== readRevision) return;
+          policy = null; render();
+          window.PortalUI?.toast?.(error.message, 'error');
+        }
+      }
+      async function resolveFamily() {
+        const {lineage} = await window.PortalInstructionClient.execute('GetLineage', {lineage_id: member.lineage_id});
+        if (disposed) return;
+        const family = (lineage.function_blocks || []).find(block =>
+          block.id === member.family.family_id && (block.family?.members || []).includes(member.resident_id))?.family;
+        if (!family?.facade) return;
+        facadeId = family.facade;
+        // The projection subscription also delivers its initial read and keeps
+        // these buttons current when another Chat or the Menu changes M/S.
+        unsubscribe = window.PortalResidentProjection.subscribe(facadeId, update => {
+          if (disposed) return;
+          if (update.error) { policy = null; render(); return; }
+          void readPolicy();
+        });
       }
       async function onClick(event) {
         const button = event.target.closest('[data-family-mix]');
         if (!button || button.disabled || busy) return;
         event.preventDefault();
+        ++readRevision;
         busy = true; render();
         try {
-          await changeMemberMix(residentId, button, policy => {
-            if (!disposed) { family = {...family, chat_preferences: policy}; render(); }
+          await changeMemberMix(facadeId, button, value => {
+            if (!disposed) { policy = value; render(); }
           });
         } catch (error) { window.PortalUI?.toast?.(error.message, 'error'); }
         finally {
           busy = false; render();
-          if (!disposed) root.querySelector(`[data-member="${CSS.escape(button.dataset.member)}"][data-family-mix="${button.dataset.familyMix}"]`)?.focus({preventScroll: true});
+          if (!disposed) root.querySelector(`[data-family-mix="${button.dataset.familyMix}"]`)?.focus({preventScroll: true});
         }
       }
       root.addEventListener('click', onClick);
+      void resolveFamily().catch(error => { if (!disposed) window.PortalUI?.toast?.(error.message, 'error'); });
       return {
-        update(value) { family = value; render(); },
-        destroy() { disposed = true; root.removeEventListener('click', onClick); root.replaceChildren(); root.hidden = true; },
+        update(value) { member = value; render(); },
+        destroy() { disposed = true; unsubscribe?.(); root.removeEventListener('click', onClick); root.replaceChildren(); root.hidden = true; },
       };
     }
 
@@ -325,7 +348,7 @@
     }
 
     return Object.freeze({
-      createFamilyStatusView, createFamilyChatMembers, mountFamilyStatus, openFamilyStatus,
+      createFamilyStatusView, createFamilyMemberChatControls, mountFamilyStatus, openFamilyStatus,
     });
   }
 

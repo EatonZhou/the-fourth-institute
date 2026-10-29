@@ -5359,7 +5359,8 @@ button.messageQuote:focus-visible {
 .familyMemberIdentity { display: flex; align-items: center; gap: 6px; }
 .familyMemberIdentity .familyStatusName { flex: 1; min-width: 0; }
 .familyMemberIdentity .familyMemberMix { flex-shrink: 0; margin-top: 0; }
-.familyChatMembers { display: flex; flex-wrap: wrap; gap: 4px 14px; max-height: 84px; overflow-y: auto; padding: 4px 2px; margin-top: 4px; font-size: 12px; }
-.familyChatMembers[hidden] { display: none; }
-.familyChatMembers .familyMemberIdentity { min-width: 0; max-width: 100%; }
-.familyChatMemberName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 180px; }
+.chatTitleLine { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.chatTitleLine .paneTitle { min-width: 0; }
+.familyMemberChatMix { display: inline-flex; flex-shrink: 0; }
+.familyMemberChatMix[hidden] { display: none; }
+.familyMemberChatMix .familyMemberMix { margin-top: 0; }

@@ -198,7 +198,7 @@
   } = chatWorkspaceModule("PortalChatWorkspaceReadObserver").createReadObserver();
 
   const {
-    createFamilyStatusView, createFamilyChatMembers, mountFamilyStatus, openFamilyStatus,
+    createFamilyStatusView, createFamilyMemberChatControls, mountFamilyStatus, openFamilyStatus,
   } = chatWorkspaceModule("PortalChatWorkspaceFamilyStatus").createFamilyStatus({
     escapeHtml, footerTime, sessionRestartActive,
   });
@@ -303,9 +303,8 @@
     const loadingId = options.loadingId || "";
     return window.PortalI18n.html`<div class="paneHead chatHead portalWorkspaceHead">
       <div class="paneHeadText chatHeadText">
-        <div class="paneTitle" ${titleId ? `id="${escapeHtml(titleId)}"` : ""}>${escapeHtml(title)}</div>
+        <div class="chatTitleLine"><div class="paneTitle" ${titleId ? `id="${escapeHtml(titleId)}"` : ""}>${escapeHtml(title)}</div><span class="familyMemberChatMix" data-family-chat-member role="group" aria-label="在所属 Family 中的路由与显示" hidden></span></div>
         <div class="chatSubline"><div class="paneNote" ${statusId ? `id="${escapeHtml(statusId)}"` : ""} data-workspace-status>${escapeHtml(subtitle)}</div></div>
-        <div class="familyChatMembers" data-family-chat-members role="group" aria-label="Family 成员路由与显示" hidden></div>
       </div>
       <div class="paneHeadActions actionGroup">
         <button class="portalButton is-icon is-quiet iconBtn" type="button" data-workspace-history-search aria-label="查找当前对话" title="浏览当前对话片段，输入关键词查找并跳转" aria-expanded="false">${window.PortalUIPrimitives.iconHtml("search")}</button>
@@ -2753,15 +2752,19 @@
       if (!family?.family_id || !residentId || this.familyStatusResidentId !== residentId) {
         this.familyStatusView?.destroy(); this.familyStatusView = null;
         this.familyStatusButton = null;
-        this.familyChatMembers?.destroy(); this.familyChatMembers = null;
       }
       this.familyStatusFamily = family?.family_id ? family : null;
       this.familyStatusResidentId = this.familyStatusFamily ? residentId : "";
-      if (this.familyStatusFamily) {
-        const root = this.workspace.root.querySelector('[data-family-chat-members]');
-        this.familyChatMembers ||= createFamilyChatMembers(residentId, root);
-        this.familyChatMembers.update(this.familyStatusFamily);
+      const member = detail?.snapshot?.resident || detail?.resident;
+      const memberKey = !family && member?.family?.role === 'member'
+        ? JSON.stringify([member.resident_id, member.lineage_id, member.family.family_id]) : '';
+      if (this.familyChatMemberKey !== memberKey) {
+        this.familyChatMemberControls?.destroy(); this.familyChatMemberControls = null;
+        this.familyChatMemberKey = memberKey;
+        if (memberKey) this.familyChatMemberControls = createFamilyMemberChatControls(member,
+          this.workspace.root.querySelector('[data-family-chat-member]'));
       }
+      this.familyChatMemberControls?.update(member);
       if (changed) this.familyStatusView?.refresh();
     }
 
