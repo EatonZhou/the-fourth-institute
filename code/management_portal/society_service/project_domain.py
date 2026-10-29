@@ -1,12 +1,12 @@
 from __future__ import annotations
 from management_common.portal_paths import path as portal_path
 
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 
 from management_common.site_registry import rewrite_shared_path
+from management_common.clock import utc_now_iso
 from management_portal import project_registry
 
 from . import project_folders, resident_store, resource_client
@@ -22,14 +22,6 @@ def _actor_id(value: object) -> str:
     while actor.startswith(("@", "＠")):
         actor = actor[1:].strip()
     return actor
-
-
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace(
-        "+00:00", "Z"
-    )
-
-
 
 
 def validate_existing_project_selection(payload: dict[str, Any]) -> None:
@@ -74,7 +66,7 @@ def _append_deletion_index(entry: dict[str, Any]) -> None:
     payload.update({
         "schema_version": 1,
         "projects": projects,
-        "updated_at": entry.get("deleted_at", _now_iso()),
+        "updated_at": entry.get("deleted_at", utc_now_iso()),
     })
     resident_store.write_json(index_path, payload)
 
@@ -218,7 +210,7 @@ def delete_project(project_id: str, actor: str) -> dict[str, Any]:
                 "project_id": registry_id,
                 "project_name": project_root.name,
                 "project_path": str(project_root),
-                "deleted_at": _now_iso(),
+                "deleted_at": utc_now_iso(),
                 "deleted_by": actor_id,
                 "description": str(project_record.get("description") or ""),
                 "lineage_ids": lineage_ids,

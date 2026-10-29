@@ -1,6 +1,7 @@
 from __future__ import annotations
 from management_common.product_environment import read_product_env
 from management_common.portal_paths import PORTAL_ROOT, path as portal_path
+from management_common.clock import utc_now_iso
 
 import functools
 import mimetypes
@@ -9,7 +10,6 @@ import re
 import stat
 import subprocess
 from contextlib import contextmanager
-from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Any, Iterable, Iterator
 from urllib.parse import unquote
@@ -51,10 +51,6 @@ PRUNED_DIR_NAMES = {
     "site-packages",
     "venv",
 }
-
-
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
 def _clean(value: object) -> str:
@@ -511,7 +507,7 @@ def _merge_record(
     project_roots: list[tuple[str, Path]],
     explicit_project_ids: Iterable[str] = (),
 ) -> dict[str, Any]:
-    now = _now_iso()
+    now = utc_now_iso()
     previous = dict(existing or {})
     # Discovery/registration must not silently promote an imported source tree
     # into a Git working copy, even if someone adds Git metadata at its path.
@@ -744,12 +740,12 @@ def update_repo_description(
             record["description_generation"] = {
                 "provider": _clean(provider),
                 "model": _clean(model),
-                "generated_at": _now_iso(),
+                "generated_at": utc_now_iso(),
                 "source_signature": clean_signature,
             }
         else:
             record.pop("description_generation", None)
-        record["updated_at"] = _now_iso()
+        record["updated_at"] = utc_now_iso()
         _put_repo(writer, record)
     announce_registry_changes(REPO_COLLECTION, {repo_id: "updated"}, resource_type="repo")
     return record
@@ -764,7 +760,7 @@ def update_repo_policy(
     with _repo_writer() as writer:
         record = _locked_repo(writer, repo_id)
         record["push_enabled"] = bool(push_enabled)
-        record["updated_at"] = _now_iso()
+        record["updated_at"] = utc_now_iso()
         _put_repo(writer, record)
     announce_registry_changes(REPO_COLLECTION, {repo_id: "updated"}, resource_type="repo")
     return record
@@ -791,7 +787,7 @@ def update_repo_ssh_key(
     with _repo_writer() as writer:
         record = _locked_repo(writer, repo_id)
         record["ssh_key"] = clean_key
-        record["updated_at"] = _now_iso()
+        record["updated_at"] = utc_now_iso()
         _put_repo(writer, record)
     announce_registry_changes(REPO_COLLECTION, {repo_id: "updated"}, resource_type="repo")
     return record

@@ -19,6 +19,7 @@ from __future__ import annotations
 from typing import Any
 
 from management_common.async_questions import ANSWER_PART
+from management_common.clock import utc_now_iso
 
 from . import family_facade, lineage_graph_state, resident_conversation_stream, resident_lineage, resident_message_contract
 
@@ -108,7 +109,7 @@ def reassign_request(facade_id: str, message_id: str, member_id: str, actor: str
     with get_lineage_data_store().family_relays.transaction(resident_lineage.lineage_id(facade), facade_id) as state:
         links = dict(state.get("links") or {})
         links[message_id] = {
-            "resident_id": member_id, "message_id": delivered_id, "relayed_at": family_facade._now(),
+            "resident_id": member_id, "message_id": delivered_id, "relayed_at": utc_now_iso(),
             "reassigned_from": history, "reassigned_by": actor,
         }
         state["links"] = links
@@ -119,7 +120,7 @@ def reassign_request(facade_id: str, message_id: str, member_id: str, actor: str
         "to": {"resident_id": member_id, "title": str(target.get("title") or "")},
         "judged_by": actor,
         "reason": reason.strip(),
-        "at": family_facade._now(),
+        "at": utc_now_iso(),
     }
     _record_correction(resident_lineage.lineage_id(facade), facade_id, correction)
     steward_id = family_facade.family_steward_id(facade)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 from management_common.portal_paths import path as portal_path, resolve_directory
 from management_common.site_config import read_site_config
+from management_common.clock import utc_now_iso
 
 import base64
 import binascii
@@ -80,12 +81,6 @@ def _actor_id(value: object) -> str:
     return actor
 
 
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace(
-        "+00:00", "Z"
-    )
-
-
 def _slugify(value: str) -> str:
     clean = re.sub(r"[^0-9A-Za-z._-]+", "-", str(value or "").strip())
     return clean.strip("-._") or "file"
@@ -149,7 +144,7 @@ def save_workspace_pasted_image(
     )
     absolute.write_bytes(data)
     metadata = {
-        "created_at": _now_iso(),
+        "created_at": utc_now_iso(),
         "actor": actor_id,
         "resident_id": resident_id,
         "filename": original_name or absolute.name,
@@ -202,7 +197,7 @@ def save_workspace_attachment(
     )
     absolute.write_bytes(data)
     metadata = {
-        "created_at": _now_iso(),
+        "created_at": utc_now_iso(),
         "actor": actor_id,
         "resident_id": resident_id,
         "filename": original_name,

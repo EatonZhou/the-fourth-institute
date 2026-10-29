@@ -7,7 +7,6 @@ puts a checkpointed round back in the queue.
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from typing import Any, Mapping
 
 from . import resident_lineage
@@ -15,10 +14,6 @@ from .state_store import get_lineage_data_store
 
 MAX_CHECKPOINTS = 10
 FINISHED_STATES = frozenset({"completed", "failed", "cancelled"})
-
-
-def now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
 def address(record: Mapping[str, Any]) -> tuple[str, str]:

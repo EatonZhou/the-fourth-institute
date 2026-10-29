@@ -5,13 +5,9 @@ import os
 import select
 import struct
 import threading
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, Iterable
-
-
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+from management_common.clock import utc_now_iso
 
 
 class RecursiveFileChangeWatcher:
@@ -242,7 +238,7 @@ class RecursiveFileChangeWatcher:
                         if self.track_new_directories:
                             self._add_tree(path, add_watch)
                     with self._lock:
-                        self._last_event_at = _now_iso()
+                        self._last_event_at = utc_now_iso()
                     self.on_change(str(path))
         except Exception as exc:
             if not self._stopped.is_set():

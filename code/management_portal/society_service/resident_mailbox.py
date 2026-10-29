@@ -32,7 +32,6 @@ the group model they share with delivery, requeue and the projections.
 from __future__ import annotations
 
 import copy
-from datetime import datetime, timezone
 from typing import Any, Iterable, Mapping
 
 from management_common.actor_identity import canonical_actor_id
@@ -48,10 +47,6 @@ TERMINAL_STATES = frozenset({"completed", "failed", "cancelled"})
 
 class MailboxConflict(ValueError):
     """The queue changed or the items cannot be organized this way."""
-
-
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
 def _address(record: Mapping[str, Any]) -> tuple[str, str]:

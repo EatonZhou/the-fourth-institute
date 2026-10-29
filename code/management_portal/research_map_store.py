@@ -22,6 +22,7 @@ from functools import lru_cache
 from typing import Any, Callable, Iterable
 
 from management_common.domain_database import DomainDatabase
+from management_common.clock import utc_now_iso
 
 STANCES = ("candidate", "focus", "explore", "watch", "concluded", "dropped")
 RELATION_KINDS = ("builds_on", "alternative", "depends_on")
@@ -66,10 +67,6 @@ def _database(dsn, namespace):
 
 def database() -> DomainDatabase:
     return _database(os.getenv("PORTAL_DATABASE_URL"), os.getenv("PORTAL_DATABASE_NAMESPACE"))
-
-
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
 def _iso(value: Any) -> str:
@@ -378,7 +375,7 @@ def automation(project_id: str) -> dict[str, Any] | None:
 def record_automation(project_id: str, lineage_id: str, *, actor: str) -> None:
     with database().transaction(key=project_id) as connection:
         connection.execute("INSERT INTO automation VALUES (%s,%s,%s,%s) ON CONFLICT (project_id) DO NOTHING",
-                           (project_id, lineage_id, _now(), actor))
+                           (project_id, lineage_id, utc_now_iso(), actor))
 
 
 def apply(project_id: str, expected_revision: int, changes: list[Any], *, actor: str, resident: bool,
@@ -386,7 +383,7 @@ def apply(project_id: str, expected_revision: int, changes: list[Any], *, actor:
     """Commit ``changes`` as the next revision, refusing a map that moved past ``expected_revision``."""
     from psycopg.types.json import Jsonb
 
-    now = _now()
+    now = utc_now_iso()
     with database().transaction(key=project_id) as connection:
         current = _map_row(connection, project_id, lock=True)
         revision = current["revision"] if current else 0

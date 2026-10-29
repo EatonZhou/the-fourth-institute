@@ -4,6 +4,7 @@ from management_common.product_environment import read_product_env, mirror_produ
 from management_common.format_tags import schema_matches
 from management_common.portal_paths import path as portal_path
 from management_common.site_config import read_site_config
+from management_common.clock import utc_now_iso
 
 import copy
 import json
@@ -13,7 +14,6 @@ import subprocess
 import sys
 import threading
 import time
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 from management_portal.resources.portal import portal_url_for_address
@@ -67,10 +67,6 @@ _RECORD_FIELDS = frozenset(
 )
 def _text(value: object) -> str:
     return str(value or "").strip()
-
-
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
 def _string_list(value: object, *, field: str) -> list[str]:
@@ -450,7 +446,7 @@ def register_device(
             raise ValueError(errors[0]["error"])
         existing_ids = [str(item.get("device_id") or "") for item in records]
         device_id = _RESOURCE_SERVICE.new_id("device", existing_ids)
-        now = _now_iso()
+        now = utc_now_iso()
         record = {
             "schema": REGISTRY_SCHEMA,
             "device_id": device_id,
@@ -641,7 +637,7 @@ def test_ssh_connection(
         "reachable": reachable,
         "latency_ms": round((time.monotonic() - started) * 1000),
         "message": message,
-        "tested_at": _now_iso(),
+        "tested_at": utc_now_iso(),
     }
 
 
@@ -716,10 +712,10 @@ def store_gpu_server_status(
     now = time.time()
     with _STATUS_LOCK:
         store = _read_status_store(path)
-        store["updated_at"] = _now_iso()
+        store["updated_at"] = utc_now_iso()
         store["servers"][clean_id] = {
             "stored_at": now,
-            "stored_at_iso": _now_iso(),
+            "stored_at_iso": utc_now_iso(),
             "payload": stored,
         }
         atomic_replace_json(path, store, sort_keys=False)

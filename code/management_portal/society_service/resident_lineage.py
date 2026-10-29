@@ -3,7 +3,6 @@ from __future__ import annotations
 import copy
 from contextlib import contextmanager
 from contextvars import ContextVar
-from datetime import datetime, timezone
 from typing import Any, Iterator, Mapping
 
 from . import (
@@ -11,6 +10,7 @@ from . import (
     lineage_catalog,
     resident_catalog,
 )
+from management_common.clock import utc_now_iso
 
 
 _ACCESS_SNAPSHOT: ContextVar[dict[str, dict[str, Any]] | None] = ContextVar(
@@ -21,13 +21,6 @@ _ACCESS_SNAPSHOT: ContextVar[dict[str, dict[str, Any]] | None] = ContextVar(
 
 
 
-
-
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace(
-        "+00:00",
-        "Z",
-    )
 
 
 @contextmanager
@@ -108,8 +101,8 @@ def new_snapshot(record: Mapping[str, object]) -> dict[str, Any]:
         "lineage_id": lineage_id(record),
         "anchor_resident_id": resident_id(record),
         "residents": [],
-        "created_at": _now_iso(),
-        "updated_at": _now_iso(),
+        "created_at": utc_now_iso(),
+        "updated_at": utc_now_iso(),
     }
 
 

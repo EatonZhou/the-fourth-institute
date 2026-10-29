@@ -3,6 +3,7 @@ from management_common.product_environment import read_product_env
 from management_common.portal_paths import path as portal_path
 from management_common.secure_paths import relative_parts
 from management_common import process_runtime
+from management_common.clock import utc_now_iso
 
 import codecs
 import functools
@@ -16,7 +17,7 @@ import sys
 import tempfile
 import threading
 import time
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path, PurePosixPath
 from typing import Any, Iterable, Iterator
 from urllib.parse import quote, unquote
@@ -146,10 +147,6 @@ ARTICLE_CITATION_COMMANDS = (
 )
 ARTICLE_INCLUDE_COMMANDS = ("input", "include", "subfile")
 _BIB_ENTRY_START = re.compile(r"(?im)^[ \t]*@(?P<type>[A-Za-z]+)\s*\{\s*(?P<key>[^,\s]+)\s*,")
-
-
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
 def _clean(value: object) -> str:
@@ -639,7 +636,7 @@ def _merge_record(
             *[item.get("title_fingerprint") for item in roots],
         ]
     )
-    now = _now_iso()
+    now = utc_now_iso()
     return {
         "schema": REGISTRY_SCHEMA,
         "id": article_id,
@@ -1593,7 +1590,7 @@ class _ArticleSemanticIndex:
             "schema": "tfi.article-semantic-index.v1",
             "id": article_id,
             "primary_file": primary,
-            "generated_at": _now_iso(),
+            "generated_at": utc_now_iso(),
             "truncated": truncated,
             "documents": self.documents,
             "headings": self.headings,
@@ -2102,7 +2099,7 @@ def update_article_settings(
             "compile_mode": compile_mode,
             "syntax_check": syntax_check,
             "error_handling": error_handling,
-            "updated_at": _now_iso(),
+            "updated_at": utc_now_iso(),
     })
     return load_article_settings(
         article_id, build_root=build_root
@@ -2476,8 +2473,8 @@ class _ArticleBuild:
             self.article_id,
             {
                 "status": "error",
-                "started_at": _now_iso(),
-                "compiled_at": _now_iso(),
+                "started_at": utc_now_iso(),
+                "compiled_at": utc_now_iso(),
                 "compiler": self.compiler,
                 "compiler_label": self.compiler_config["label"],
                 "primary_file": self.primary_file,
@@ -2504,7 +2501,7 @@ class _ArticleBuild:
         self.output = article_build_pdf_path(self.article_id, build_root=self.build_root)
         self.cache_root = article_build_cache_path(self.article_id, build_root=self.build_root)
         self.compile_root = self.cache_root / self.compile_mode
-        self.started_at = _now_iso()
+        self.started_at = utc_now_iso()
         self.started = time.monotonic()
         _begin_article_build(self.article_id)
         try:
@@ -2679,7 +2676,7 @@ class _ArticleBuild:
             {
                 "status": status,
                 "started_at": self.started_at,
-                "compiled_at": _now_iso() if finished else "",
+                "compiled_at": utc_now_iso() if finished else "",
                 "compiler": self.compiler,
                 "compiler_label": self.compiler_config["label"],
                 "primary_file": self.primary_file,

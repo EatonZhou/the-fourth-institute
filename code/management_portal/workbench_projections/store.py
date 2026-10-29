@@ -9,10 +9,10 @@ import hashlib
 import json
 import re
 from contextlib import contextmanager
-from datetime import datetime, timezone
 from functools import cache
 
 from management_common.portal_database import portal_database
+from management_common.clock import utc_now_iso
 from management_portal.resources import ResourceOperationError
 from management_portal.portal_access_control import is_active_user_or_resident
 
@@ -57,10 +57,6 @@ def readable_projects(actor: str, project_ids) -> set[str]:
     from management_portal import permission_system
 
     return permission_system.permitted_ids(actor, "GetProject", "project_id", sorted({str(item) for item in project_ids if item}))
-
-
-def now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
 def definition_changes(value: dict) -> dict:
@@ -217,7 +213,7 @@ class Store:
         data = validate_manifest(payload)
         self.prepare_application(data, actor)
         builtin = str(data.get("builtin") or resource_id)
-        data.update(workbench_id=resource_id, created_by=actor, created_at=now(), updated_at=now())
+        data.update(workbench_id=resource_id, created_by=actor, created_at=utc_now_iso(), updated_at=utc_now_iso())
         with self.connect() as connection:
             self._require_live_manifest(connection, resource_id, data)
             connection.execute('INSERT INTO apps VALUES (%s,%s,%s,1,NULL,%s,%s,%s)',
@@ -337,7 +333,7 @@ class Store:
         data = validate_manifest({**current, **definition_changes(payload)})
         data.pop("revision", None)
         data.pop("published_revision", None)
-        data["updated_at"] = now()
+        data["updated_at"] = utc_now_iso()
         return data
 
     def update(self, app_id: str, payload: dict, actor: str, expected_revision: int) -> dict:

@@ -2,12 +2,12 @@ from __future__ import annotations
 from management_common.portal_paths import path as portal_path
 from management_common.portal_paths import resolve_directory
 from management_common.site_config import read_site_config
+from management_common.clock import utc_now_iso
 
 import hashlib
 import json
 import os
 import re
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -21,10 +21,6 @@ PULSE_MIGRATION_RECEIPT = ".portal-system-migration.json"
 PERIODS = ("daily", "weekly", "monthly")
 # Who may read or publish Pulse is decided by the permission scheme on GetPulse
 # and PublishPulseItem; this module keeps no user lists.
-
-
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
 def _read_json(path: Path, default: Any) -> Any:
@@ -231,7 +227,7 @@ def get_home_payload(actor: str) -> dict:
             "schema": "tfi.portal_pulse.home.v1",
             "actor": actor_id,
             "enabled": False,
-            "generated_at": _now(),
+            "generated_at": utc_now_iso(),
             "periods": {},
             "publications": [],
             "status": {},
@@ -254,7 +250,7 @@ def get_home_payload(actor: str) -> dict:
         "schema": "tfi.portal_pulse.home.v1",
         "actor": actor_id,
         "enabled": True,
-        "generated_at": _now(),
+        "generated_at": utc_now_iso(),
         "data_root": str(_pulse_root()),
         "periods": periods,
         "publications": _published_items(publications),
@@ -301,7 +297,7 @@ def update_publication(actor: str, payload: dict) -> dict:
                     "text": source.get("text") or "",
                     "project": source.get("project") or "",
                     "evidence_paths": source.get("evidence_paths") or [],
-                    "published_at": _now(),
+                    "published_at": utc_now_iso(),
                 }
                 pulse_publication_store.add(connection, publication)
         elif action == "unpublish":

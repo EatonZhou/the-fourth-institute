@@ -10,11 +10,12 @@ from management_portal import resident_handoff
 from management_portal.hatg.contracts import InstructionError
 from management_portal.execution.provider_failures import failure_message, is_usage_limit_failure
 from management_portal.resources import get_resource_service
-from .store import builtins, DEFINITION_FIELDS, FAVORITE_SURFACE, IDENTITY, ProjectionError, Store, now, validate_manifest
+from .store import builtins, DEFINITION_FIELDS, FAVORITE_SURFACE, IDENTITY, ProjectionError, Store, validate_manifest
 
 
 from management_portal import isa_client
 from management_portal.lineage_workflows import lineage_graph
+from management_common.clock import utc_now_iso
 
 
 def isa(actor: str, name: str, arguments: dict | None = None, *, key: str = "", version=None):
@@ -428,7 +429,7 @@ class ProjectionService:
             from . import generation_submission
             from .studio import install
             workflow = install(self, factory, actor)["optimize" if app.get("html") or app.get("manifest") else "generate"]
-            job = {"id": job_id, "status": "submitting", "workbench_id": app["workbench_id"], "base_revision": app["revision"], **workflow, "message_id": "", "created_at": now(), "request_prompt": prompt}
+            job = {"id": job_id, "status": "submitting", "workbench_id": app["workbench_id"], "base_revision": app["revision"], **workflow, "message_id": "", "created_at": utc_now_iso(), "request_prompt": prompt}
             generation_submission.prepare(job)
             self.store.job(job_id, actor, job)
             generation_submission.advance(job, actor=actor, submit=True)

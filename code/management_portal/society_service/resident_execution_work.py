@@ -5,9 +5,9 @@ import secrets
 import threading
 from collections.abc import Callable, Iterable, Mapping
 from contextlib import nullcontext
-from datetime import datetime, timezone
 from typing import Any
 from management_common.product_environment import read_product_env
+from management_common.clock import utc_now_iso
 from management_portal.execution.contracts import TERMINAL_STATUSES
 
 
@@ -37,13 +37,6 @@ CONVERSATION_PROJECTION_INTENT_LIMIT = 64
 
 _THREADS: dict[str, threading.Thread] = {}
 _THREADS_LOCK = threading.RLock()
-
-
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace(
-        "+00:00",
-        "Z",
-    )
 
 
 def key(
@@ -233,7 +226,7 @@ def continuation_fields(
 ) -> dict[str, Any]:
     return {
         "continuation_id": f"resident-continuation:{secrets.token_hex(12)}",
-        "continuation_started_at": str(timestamp or _now_iso()),
+        "continuation_started_at": str(timestamp or utc_now_iso()),
     }
 
 
@@ -614,7 +607,7 @@ def materialize_conversation_input(
         or job.get("dispatched_at")
         or job.get("started_at")
         or job.get("updated_at")
-        or _now_iso()
+        or utc_now_iso()
     )
     persisted = repository.commit_user_message(
         resident_id,
@@ -902,7 +895,7 @@ def retain_input_checkpoint(record: Mapping[str, Any], job: Mapping[str, Any], c
         "message_id": message_id,
         "execution_id": expected_execution_id,
         "kind": "group" if source.get("mailbox_members") else "request",
-        "started_at": resident_input_checkpoints.now(),
+        "started_at": utc_now_iso(),
         "infos": [
             {"message_id": str(item.get("message_id") or ""), "author_id": str(item.get("author_id") or ""),
              "held_at": str(item.get("held_at") or "")}
@@ -960,7 +953,7 @@ def write(
             ensure_execution_id(job)
             # Passing the manual gate starts this input before Session / prompt
             # preparation. Closing intake later only holds subsequent inputs.
-            job.setdefault("intake_admitted_at", _now_iso())
+            job.setdefault("intake_admitted_at", utc_now_iso())
     if job.get("execution_id"):
         from . import resident_catalog
         from management_portal.execution.agent_data_store import get_agent_data_store

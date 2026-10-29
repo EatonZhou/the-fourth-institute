@@ -20,6 +20,7 @@ from datetime import datetime, timezone
 from typing import Any, Mapping
 
 from management_common.actor_identity import canonical_actor_id, same_actor
+from management_common.clock import utc_now_iso
 from management_portal.execution.chat_position_index import RELAYED_COPY_PATTERN
 
 from . import family_familize, family_storage, resident_conversation_stream, resident_lineage, resident_mailbox
@@ -31,10 +32,6 @@ from .state_store import get_lineage_data_store
 RELAY_REF = re.compile(RELAYED_COPY_PATTERN)
 RESIDENT_REF = re.compile(r"^resident_[0-9a-f]{12}$")
 MAX_PROJECTED_REPLIES = 20
-
-
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
 def facade_configuration(record: Mapping[str, Any] | None) -> dict[str, Any]:
@@ -378,7 +375,7 @@ def _complete_relay(source: tuple[str, str], member_id: str, member_message_id: 
             with store.family_relays.transaction(lineage_id, facade_id) as state:
                 links = state.setdefault("links", {})
                 links.setdefault(facade_message_id, {
-                    "resident_id": member_id, "message_id": member_message_id, "relayed_at": _now(),
+                    "resident_id": member_id, "message_id": member_message_id, "relayed_at": utc_now_iso(),
                 })
             show_request(facade_id, facade_message_id)
             repository.set_input_state(facade_id, facade_message_id, "completed")
@@ -411,7 +408,7 @@ def show_request(facade_id: str, message_id: str) -> None:
     business_ref = repository.message_business_ref(facade_id, message_id)
     if business_ref:
         message = {**message, "business_ref": business_ref}
-    repository.commit_user_message(facade_id, message, activated_at=_now())
+    repository.commit_user_message(facade_id, message, activated_at=utc_now_iso())
 
 
 def relayed_outcomes(request_ids: Mapping[str, list[str]]) -> dict[str, dict[str, Any]]:
@@ -599,7 +596,7 @@ def withdraw_request(facade: Mapping[str, Any], message_id: str, actor: str, *, 
             raise ValueError("这条请求已经结束，不能再撤回")
         if not (manager or same_actor(message.get("author_id"), actor)):
             raise PermissionError("只有能管理门面的身份或这条请求的发送者可以撤回")
-        repository.set_input_state(facade_id, message_id, "cancelled", updated_at=_now())
+        repository.set_input_state(facade_id, message_id, "cancelled", updated_at=utc_now_iso())
 
 
 def relay_links(facade: Mapping[str, Any]) -> dict[str, dict[str, Any]]:

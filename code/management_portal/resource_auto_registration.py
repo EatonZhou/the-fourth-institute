@@ -3,10 +3,10 @@ from management_common.product_environment import read_product_env
 from management_common.portal_paths import path as portal_path
 
 from management_common.file_lock import try_lock_descriptor
+from management_common.clock import utc_now_iso
 import logging
 import threading
 import time
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -27,10 +27,6 @@ DEFAULT_RUN_STATE_PATH = Path(
         str(portal_path("staging_root") / "shared" / "portal_runtime" / "resource-auto-registration.last-run"),
     )
 ).expanduser()
-
-
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
 def _normalized_path(value: str | Path) -> str:
@@ -66,7 +62,7 @@ def suppress_paths(
                 "resource_type": resource_type,
                 "path": path,
                 "resource_id": resource_id,
-                "ignored_at": _now_iso(),
+                "ignored_at": utc_now_iso(),
             })
 
 

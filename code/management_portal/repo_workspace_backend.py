@@ -3,6 +3,7 @@ from management_common.site_compatibility import compatibility_value
 from management_common.secure_paths import relative_parts
 from management_common.product_environment import mirror_product_env
 from management_common import file_permissions
+from management_common.clock import utc_now_iso
 
 import hashlib
 import json
@@ -227,10 +228,6 @@ def _repo_lock(repo_id: str) -> threading.RLock:
 
 def _clean(value: object) -> str:
     return str(value or "").strip()
-
-
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
 def _safe_relative_path(value: object, *, allow_empty: bool = False) -> str:
@@ -2249,7 +2246,7 @@ def write_repo_file(
             except FileNotFoundError:
                 pass
         result = read_repo_file(repo_id, relative)
-        result["saved_at"] = _now_iso()
+        result["saved_at"] = utc_now_iso()
         result["status"] = _status_payload(checkout)
         return result
 
@@ -2276,7 +2273,7 @@ def create_repo_entry(
                 "id": repo_id,
                 "path": relative,
                 "kind": "directory",
-                "created_at": _now_iso(),
+                "created_at": utc_now_iso(),
                 "status": _status_payload(checkout),
             }
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -2308,7 +2305,7 @@ def move_repo_entry(
             "id": repo_id,
             "path": source_relative,
             "destination": destination_relative,
-            "moved_at": _now_iso(),
+            "moved_at": utc_now_iso(),
             "status": _status_payload(checkout),
         }
 
@@ -2328,7 +2325,7 @@ def delete_repo_file(
             "id": repo_id,
             "path": relative,
             "deleted": True,
-            "deleted_at": _now_iso(),
+            "deleted_at": utc_now_iso(),
             "status": _status_payload(checkout),
         }
 

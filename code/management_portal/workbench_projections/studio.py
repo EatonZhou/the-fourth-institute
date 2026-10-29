@@ -9,7 +9,8 @@ from pathlib import Path
 
 from management_portal.lineage_workflows import WorkflowBindings
 
-from .store import ProjectionError, now
+from .store import ProjectionError
+from management_common.clock import utc_now_iso
 
 
 FLOWS = {
@@ -166,7 +167,7 @@ v2 页面同时读取 manifest、panels 及已登记的 application 工程；把
         prompt = fit_prompt(lambda values: instructions + json.dumps({**values, "requirements": str(payload.get("requirements") or "")}, ensure_ascii=False) + sdk, snapshots)
         job = {"id": job_id, "kind": "reverse", "status": "submitting", "workbench_id": app["workbench_id"],
                "base_revision": app["revision"], "target_lineage_id": target, "target_revision": graph["revision"],
-               **workflow, "created_at": now(), "request_prompt": prompt}
+               **workflow, "created_at": utc_now_iso(), "request_prompt": prompt}
         from . import generation_submission
         generation_submission.prepare(job)
         service.store.job(job_id, actor, job)
@@ -242,7 +243,7 @@ def apply_reverse(service, payload, actor):
         elif page_replayed:
             job["page_revision"] = app["revision"]
         job.pop("pending_page", None)
-        job.update(applied=True, applied_at=now())
+        job.update(applied=True, applied_at=utc_now_iso())
         return service.store.job(job_id, actor, job)
 
 
@@ -266,7 +267,7 @@ def revise_plan(service, payload, actor):
         if app["revision"] != job["base_revision"] or graph["revision"] != job["target_revision"]:
             raise ProjectionError("projection.reverse_conflict", "页面或团队已改变，请重新分析", 409)
         plan = validate_plan(payload.get("plan"))
-        job.setdefault("plan_history", []).append({"plan": job.get("plan"), "hash": job.get("plan_hash"), "source": job.get("plan_source", "ai"), "error": job.get("error"), "at": now()})
+        job.setdefault("plan_history", []).append({"plan": job.get("plan"), "hash": job.get("plan_hash"), "source": job.get("plan_source", "ai"), "error": job.get("error"), "at": utc_now_iso()})
         job.update(plan=plan, plan_hash=plan_hash(plan), plan_source="user", plan_author=actor, status="completed")
         job.pop("error", None)
         return service.store.job(job_id, actor, job)

@@ -5,7 +5,8 @@ from datetime import datetime
 import re
 
 from management_portal.resources import get_resource_service
-from .store import ProjectionError, now
+from .store import ProjectionError
+from management_common.clock import utc_now_iso
 
 
 def observe(refs, actor):
@@ -18,8 +19,8 @@ def observe(refs, actor):
         resolved = service.resolve(address, actor=actor)
         if resolved.get("exists") is False:
             raise ProjectionError("projection.reference_missing", "引用对象已不存在", 404)
-        observed.append({"ref": ref, "root_id": resolved["root_id"], "observed_at": now()})
-    return {"references": observed, "observed_at": now()}
+        observed.append({"ref": ref, "root_id": resolved["root_id"], "observed_at": utc_now_iso()})
+    return {"references": observed, "observed_at": utc_now_iso()}
 
 
 def semantic_object(value, actor):

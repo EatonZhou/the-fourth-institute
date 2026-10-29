@@ -7,13 +7,13 @@ import json
 import re
 import threading
 from contextlib import contextmanager
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterator, Mapping
 
 from .shared_state import exclusive_file_lock
 from .presentation_store import database
 from management_common.database_time import iso_time
+from management_common.clock import utc_now_iso
 
 
 SCHEMA = "tfi.portal-ui-state.v1"
@@ -22,13 +22,6 @@ _NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$")
 _MAX_KEY_CHARS = 600
 _MAX_VALUE_BYTES = 1024 * 1024
 _MAX_ASSOCIATIONS_PER_NAMESPACE = 2_000
-
-
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace(
-        "+00:00",
-        "Z",
-    )
 
 
 def _name(value: object, field: str) -> str:
@@ -102,7 +95,7 @@ class PortalUIStateStore:
     def put(self, actor: object, namespace: object, key: object, value: object) -> dict[str, Any]:
         actor_id, namespace_id, target = _actor(actor), _name(namespace, "namespace"), _key(key)
         normalized = _value(value)
-        updated = _now_iso()
+        updated = utc_now_iso()
         with self.database.transaction("associations:" + actor_id + ":" + namespace_id) as connection:
             count = connection.execute("SELECT count(*) FROM associations WHERE actor=%s AND namespace=%s",
                                        (actor_id, namespace_id)).fetchone()[0]

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import hashlib
-from datetime import datetime, timezone
 from typing import Any
 
 from management_portal.execution.accounts import shared_account_configuration
@@ -14,12 +13,7 @@ from . import (
     resident_catalog,
     resident_protocol,
 )
-
-
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace(
-        "+00:00", "Z"
-    )
+from management_common.clock import utc_now_iso
 
 
 def _resident_account_id(
@@ -268,5 +262,5 @@ def collect(*, actor: str = "") -> dict[str, Any]:
         "queued_runs": queued_runs[:48],
         "account_groups": account_groups,
         "max_concurrency": max_concurrency,
-        "updated_at": _now_iso(),
+        "updated_at": utc_now_iso(),
     }

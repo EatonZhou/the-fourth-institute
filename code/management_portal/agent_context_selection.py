@@ -1,11 +1,11 @@
 from __future__ import annotations
 from management_common.portal_paths import path as portal_path
+from management_common.clock import utc_now_iso
 
 import os
 import copy
 import time
 from functools import lru_cache
-from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Any
 
@@ -19,13 +19,6 @@ HOST_AGENTS_ROOT = Path(
     os.getenv("PORTAL_AGENT_CONTEXT_AGENTS_ROOT", str(portal_path("share_root") / "Agents"))
 ).expanduser()
 THIRD_PARTY_SKILLS_ROOT = HOST_SKILLS_ROOT / "third-party"
-
-
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace(
-        "+00:00",
-        "Z",
-    )
 
 
 def _markdown_identity(path: Path) -> tuple[str, str]:
@@ -191,7 +184,7 @@ def resolve(
     resolved: dict[str, Any] = {
         "skills": [],
         "agents": [],
-        "updated_at": _now_iso(),
+        "updated_at": utc_now_iso(),
         "updated_by": str(actor or ""),
     }
     invalid: list[str] = []

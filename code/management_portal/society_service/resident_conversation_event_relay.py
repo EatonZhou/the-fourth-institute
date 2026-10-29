@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from management_common.database_time import iso_time
 from management_common.json_columns import json_value
+from management_common.clock import utc_now_iso
 
 import logging
 import threading
-from datetime import datetime, timezone
 from typing import Any
 
 from management_portal.notifications import notification_subject
@@ -26,12 +26,6 @@ LOGGER = logging.getLogger(__name__)
 BUSINESS_REF_CACHE_LIMIT = 4096
 # Sequences are allocated before commit; revisit a bounded trailing range.
 DELIVERY_LOOKBACK = 10_000
-
-
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace(
-        "+00:00", "Z"
-    )
 
 
 class ResidentConversationEventRelay:
@@ -88,7 +82,7 @@ class ResidentConversationEventRelay:
             # connects. Start at the committed tail and relay only new events.
             self._sequence = self._latest_sequence()
             self._last_error = ""
-            self._started_at = _now_iso()
+            self._started_at = utc_now_iso()
             self._stop.clear()
             self._thread = threading.Thread(
                 target=self._run,

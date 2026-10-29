@@ -22,18 +22,14 @@ them next.
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from typing import Any, Collection, Mapping
 
 from . import resident_conversation_stream, resident_lineage
 from .state_store import get_lineage_data_store
+from management_common.clock import utc_now_iso
 
 MAX_HELD_INFOS = 200
 INFO_HEADER = "以下是你上次工作之后收到的背景更新（info 消息），供处理本次请求时参考，不需要单独回复："
-
-
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
 def _resident(record: Mapping[str, Any]) -> str:
@@ -52,7 +48,7 @@ def hold(record: Mapping[str, Any], message: Mapping[str, Any], *, first: bool =
     if not str(message.get("message_id") or "").strip():
         raise ValueError("info message requires message_id")
     get_lineage_data_store().mailbox_hold_info(
-        _resident(record), _storage(message), held_at=_now(), limit=MAX_HELD_INFOS, first=first,
+        _resident(record), _storage(message), held_at=utc_now_iso(), limit=MAX_HELD_INFOS, first=first,
     )
 
 
@@ -229,7 +225,7 @@ def _deliver(record: Mapping[str, Any], message_ids: list[str], request_message_
 
     resident_id = _resident(record)
     repository = resident_conversation_stream.get_repository()
-    activated_at = _now()
+    activated_at = utc_now_iso()
     delivered: list[str] = []
     for message_id in message_ids:
         message = repository.message(resident_id, message_id)
@@ -290,7 +286,7 @@ def restore(record: Mapping[str, Any], items: list[Mapping[str, Any]]) -> list[s
         originals.append((item, message))
     for item, message in reversed(originals):
         get_lineage_data_store().mailbox_hold_info(
-            resident_id, _storage(message), held_at=str(item.get("held_at") or _now()),
+            resident_id, _storage(message), held_at=str(item.get("held_at") or utc_now_iso()),
             limit=MAX_HELD_INFOS, first=True,
         )
     return [str(item["message_id"]) for item, _message in originals]

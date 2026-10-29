@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 from management_common.portal_paths import PORTAL_ROOT, path as portal_path
 from management_common.site_compatibility import compatibility_value
+from management_common.clock import utc_now_iso
 
 
 from . import device_identity_backend
@@ -84,10 +85,6 @@ def _now_ts() -> float:
     return time.time()
 
 
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
-
-
 def _read_status_cache() -> dict[str, Any]:
     try:
         payload = json.loads(STATUS_CACHE_PATH.read_text(encoding="utf-8"))
@@ -153,7 +150,7 @@ def _store_payload(
 ) -> dict[str, Any]:
     now = _now_ts()
     stored = dict(payload)
-    stored["updated_at"] = stored.get("updated_at") or _now_iso()
+    stored["updated_at"] = stored.get("updated_at") or utc_now_iso()
     next_refresh_at = now + (refresh_after_seconds if refresh_after_seconds is not None else _jittered_auto_refresh_seconds())
     with _CACHE_LOCK, status_cache_store.locked(STATUS_CACHE_PATH):
         latest = status_cache_store.read(STATUS_CACHE_PATH)
@@ -163,7 +160,7 @@ def _store_payload(
         latest[key] = {
             "payload": stored,
             "stored_at": now,
-            "stored_at_iso": _now_iso(),
+            "stored_at_iso": utc_now_iso(),
             "next_refresh_at": next_refresh_at,
             "next_refresh_at_iso": datetime.fromtimestamp(next_refresh_at, timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
             "last_forced_at": now if force else float(entry.get("last_forced_at") or 0),
@@ -314,7 +311,7 @@ def _normalize_gpu_observation(
     out.pop("resource_id", None)
     out.update(_gpu_server_public(server))
     observed_at = str(
-        out.get("updated_at") or out.get("generated_at") or _now_iso()
+        out.get("updated_at") or out.get("generated_at") or utc_now_iso()
     ).strip()
     gpus = []
     for item in out.get("gpus") if isinstance(out.get("gpus"), list) else []:
@@ -455,7 +452,7 @@ def _collect_gpu_status(
         payload = {
             **_gpu_server_public(server),
             "status": "error",
-            "updated_at": _now_iso(),
+            "updated_at": utc_now_iso(),
             "ttl_seconds": GPU_STATUS_CACHE_SECONDS,
             "error": _safe_error(exc),
             "gpu_count": _nonnegative_int((server.get("monitor") or {}).get("expected_gpu_count")),
@@ -952,7 +949,7 @@ def _refresh_disk_status(resource: dict[str, Any], payload: dict[str, Any], *, i
         _store_payload(key, payload, {}, force=include_triage, refresh_after_seconds=DISK_STATUS_CACHE_SECONDS)
 
     def stage(name: str, collect, apply) -> str:
-        payload["stages"][name] = {"status": "running", "started_at": _now_iso()}
+        payload["stages"][name] = {"status": "running", "started_at": utc_now_iso()}
         publish()
         try:
             value, error = collect()
@@ -963,7 +960,7 @@ def _refresh_disk_status(resource: dict[str, Any], payload: dict[str, Any], *, i
         except Exception as exc:
             error = _safe_error(exc)
             state = "error"
-        payload["stages"][name].update(status=state, updated_at=_now_iso())
+        payload["stages"][name].update(status=state, updated_at=utc_now_iso())
         if error:
             payload["stages"][name]["error"] = error
         publish()
@@ -974,7 +971,7 @@ def _refresh_disk_status(resource: dict[str, Any], payload: dict[str, Any], *, i
             raise RuntimeError("No filesystem data returned")
         payload["filesystems"] = _collapse_df_rows_by_mount(rows)
         payload["status"] = _aggregate_disk_resource_status(payload["filesystems"])
-        payload["updated_at"] = _now_iso()
+        payload["updated_at"] = utc_now_iso()
         for field in ("stale", "refresh_error", "error", "warning"):
             payload.pop(field, None)
 
@@ -1004,7 +1001,7 @@ def _refresh_disk_status(resource: dict[str, Any], payload: dict[str, Any], *, i
                 error = payload["stages"][name].get("error")
                 if error:
                     triage["errors"].append(error)
-                triage["updated_at"] = _now_iso()
+                triage["updated_at"] = utc_now_iso()
 
         def apply_suggestions(suggestions: list[str]) -> None:
             payload["suggestions"] = suggestions
@@ -1089,7 +1086,7 @@ def _aggregate_disk_resources(resources: list[dict[str, Any]]) -> dict[str, Any]
     return {
         "status": status,
         "refreshing": any(resource.get("refreshing") for resource in resources),
-        "updated_at": _now_iso(),
+        "updated_at": utc_now_iso(),
         "ttl_seconds": DISK_STATUS_CACHE_SECONDS,
         "resources": resources,
         "filesystems": filesystems,
@@ -1101,7 +1098,7 @@ def _aggregate_disk_resources(resources: list[dict[str, Any]]) -> dict[str, Any]
         ],
         "triage": {
             "mode": "lightweight" if "lightweight" in triage_modes else "on_demand",
-            "updated_at": _now_iso(),
+            "updated_at": utc_now_iso(),
             "findings": [
                 finding
                 for resource in resources
@@ -1159,7 +1156,7 @@ def _aggregate_gpu_devices(servers: list[dict[str, Any]]) -> dict[str, Any]:
                 gpus.append(item)
     return {
         "status": status,
-        "updated_at": _now_iso(),
+        "updated_at": utc_now_iso(),
         "ttl_seconds": GPU_STATUS_CACHE_SECONDS,
         "gpu_count": total,
         "available_gpu_count": available,
@@ -1709,7 +1706,7 @@ def _refresh_token_usage_summary(actor: str, *, force_refresh: bool) -> dict[str
             int(previous.get("snapshot_version") or 0) + 1,
         )
     now = _now_ts()
-    fresh["updated_at"] = fresh.get("updated_at") or _now_iso()
+    fresh["updated_at"] = fresh.get("updated_at") or utc_now_iso()
     token_usage_snapshot_cache.write(STATUS_CACHE_PATH, cache_key, {
         "payload": fresh,
         "next_refresh_at": now + (60 if error or fresh.get("status") == "partial" else max(60, RESIDENT_USAGE_REFRESH_SECONDS)),
@@ -1750,9 +1747,9 @@ def _build_agent_status_summary(actor: str = "", force_refresh: bool = False) ->
             force_refresh=force_refresh,
         )
     except Exception:
-        return {"generated_at": _now_iso(), "refreshing": False, "accounts_error": "账号状态暂不可读取"}
+        return {"generated_at": utc_now_iso(), "refreshing": False, "accounts_error": "账号状态暂不可读取"}
     return {
-        "generated_at": _now_iso(),
+        "generated_at": utc_now_iso(),
         "accounts": with_account_resources(account_snapshot.get("accounts", []), account_snapshot.get("exchange_rates") or {}),
         "refreshing": bool(account_snapshot.get("refreshing")),
         "refresh_retry_after_seconds": int(account_snapshot.get("refresh_retry_after_seconds") or 0),

@@ -20,6 +20,7 @@ from .resident_account_policy import (
 )
 from .state_store import get_lineage_data_store
 from . import lineage_aggregate
+from management_common.clock import utc_now_iso
 
 MIGRATION_FIELDS = frozenset({
     "epoch", "attempts", "tried_accounts", "checked_at", "pending_restart", "owner_notified",
@@ -159,7 +160,7 @@ def _relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
                 return {"status": "waiting_for_steward", "resident_id": facade_id, "message_id": message_id,
                         "member_id": scope["suggested_member_id"], "steward_message_id": scope["steward_message_id"]}
             scope.update({"status": "arranged", "member_id": member_id, "arranged_by": actor,
-                          "reason": reason.strip()[:500], "arranged_at": family_facade._now()})
+                          "reason": reason.strip()[:500], "arranged_at": utc_now_iso()})
         elif arranging and scope.get("status") != "arranged":
             raise ValueError("该请求没有等待安排成员的职责空缺")
         elif scope_gap and not scope and not approved and steward_id:
@@ -169,7 +170,7 @@ def _relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
             )
             scopes[message_id] = {"status": "waiting", "suggested_member_id": member_id, "gap": scope_gap[:300],
                                   "reason": reason.strip()[:300], "steward_message_id": review_id,
-                                  "created_at": family_facade._now()}
+                                  "created_at": utc_now_iso()}
             if not repository.message(steward_id, review_id):
                 pending_notices.append(dict(
                     facade_id=facade_id, steward_id=steward_id, initiated_by=actor,
@@ -203,7 +204,7 @@ def _relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
             # The steward keeps its own reserve (ensure_role_reserve) and does not review itself.
             remaining = None if to_steward or to_facade else reserve_remaining(account)
             review = {"member_id": member_id, "account_id": account.get("account_id", ""),
-                      "quota_remaining_percent": remaining, "created_at": family_facade._now()}
+                      "quota_remaining_percent": remaining, "created_at": utc_now_iso()}
             entries[message_id] = review
             if remaining is not None and remaining < MIGRATION_RESERVE_PERCENT:
                 review["status"] = "waiting"

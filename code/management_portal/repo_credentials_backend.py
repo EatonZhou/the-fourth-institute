@@ -6,7 +6,6 @@ import json
 import os
 import secrets
 import threading
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -14,6 +13,7 @@ from cryptography.fernet import Fernet, InvalidToken
 from management_common.format_tags import schema_matches
 from management_common.portal_paths import path as portal_path
 from management_common import file_permissions
+from management_common.clock import utc_now_iso
 
 
 DEFAULT_CREDENTIAL_ROOT = Path(
@@ -37,10 +37,6 @@ _VALID_AUTH_TYPES = {"token", "password_or_token", "ssh_secret"}
 
 class RepoCredentialStoreError(RuntimeError):
     """The encrypted Repo credential store could not be read safely."""
-
-
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
 def _clean_actor(value: object) -> str:
@@ -324,7 +320,7 @@ def save_credential(
             if existing_record
             else f"gitcred-{secrets.token_hex(12)}"
         )
-        now = _now_iso()
+        now = utc_now_iso()
         record = {
             "schema": _SCHEMA,
             "credential_id": credential_id,
@@ -367,7 +363,7 @@ def mark_credential_invalid(
             raise PermissionError("不能修改其他 Portal 用户的 Git 凭据。")
         record["status"] = "invalid"
         record["secret"] = ""
-        record["updated_at"] = _now_iso()
+        record["updated_at"] = utc_now_iso()
         _write_record(path, record, cipher)
         return _metadata(record)
 
@@ -392,7 +388,7 @@ def mark_credential_used(
         record = _read_record(path, cipher)
         if record.get("actor") != clean_actor:
             raise PermissionError("不能修改其他 Portal 用户的 Git 凭据。")
-        now = _now_iso()
+        now = utc_now_iso()
         record["last_used_at"] = now
         record["updated_at"] = now
         _write_record(path, record, cipher)

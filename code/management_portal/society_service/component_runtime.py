@@ -8,6 +8,7 @@ the paused window, and an observing source re-establishes its baseline.
 from __future__ import annotations
 
 from management_common.operation_errors import OperationError
+from management_common.clock import utc_now_iso
 from management_portal.execution.service_settings import ExecutionSettings
 from management_portal.hatg.contracts import InstructionError
 
@@ -158,7 +159,7 @@ def update_pause_checkpoint(state: dict[str, Any], kind: str, paused: bool,
         raise ValueError("Unsupported component pause transition")
     if paused:
         if not state.get("paused"):
-            state.update(paused=True, paused_at=lineage_program_runtime._iso_now())
+            state.update(paused=True, paused_at=utc_now_iso())
     elif kind == "effect":
         state.pop("paused", None)
         state.pop("paused_at", None)

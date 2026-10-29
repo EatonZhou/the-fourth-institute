@@ -7,6 +7,7 @@ from management_portal import usage_read_model
 from management_portal.execution.contracts import usage_total
 
 from . import execution_client, lineage_primitives, resource_client
+from management_common.clock import utc_now_iso
 
 
 TOKEN_KEYS = (
@@ -16,12 +17,6 @@ TOKEN_KEYS = (
     "reasoning_output_tokens",
     "total_tokens",
 )
-
-
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace(
-        "+00:00", "Z"
-    )
 
 
 def _local_now() -> datetime:
@@ -301,7 +296,7 @@ def collect(*, actor: str) -> dict[str, Any]:
             "status": "ok",
             "error": "",
             "refreshing": False,
-            "updated_at": updated_at or _now_iso(),
+            "updated_at": updated_at or utc_now_iso(),
             "collection_windows": read_windows,
         }
     )
