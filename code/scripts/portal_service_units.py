@@ -197,17 +197,27 @@ def install_codex_unit_template(*, reload: bool = True, refresh: bool = False) -
                                   f"Environment=TMPDIR={isolated['root'] / 'runtime'}\n")
         if target.is_symlink():
             raise ValueError("Refusing to replace a different Provider service template")
-        if target.exists() and target.read_text() != content:
+        # Existing account units can retain the paths.json locator inherited
+        # before configuration consolidation. Both locators address this same
+        # installed instance; all other unit directives must still match.
+        locators = {f"Environment=PORTAL_PATHS_CONFIG={isolated['root'] / 'config' / name}"
+                    for name in ("target.json", "paths.json")}
+        existing_content = target.read_text() if target.exists() else None
+        same_definition = existing_content is not None and [
+            "Environment=PORTAL_PATHS_CONFIG=<this-instance>" if line in locators else line
+            for line in existing_content.splitlines()
+        ] == [
+            "Environment=PORTAL_PATHS_CONFIG=<this-instance>" if line in locators else line
+            for line in content.splitlines()
+        ]
+        if existing_content is not None and not same_definition:
             if not refresh:
                 raise ValueError("Refusing to replace a different Provider service template")
             # Explicit deployment maintenance may refresh this instance's own
             # template. Account startup never overwrites a different definition.
             required = {line for line in content.splitlines() if line.startswith((
                 "Environment=HOME=", "Environment=CODEX_HOME=", "WorkingDirectory="))}
-            locators = {line for line in content.splitlines() if line.startswith("Environment=PORTAL_PATHS_CONFIG=")}
-            locators.update(f"Environment=PORTAL_PATHS_CONFIG={isolated['root'] / 'config' / name}"
-                            for name in ("target.json", "paths.json"))
-            existing = set(target.read_text().splitlines())
+            existing = set(existing_content.splitlines())
             if not required.issubset(existing) or not existing.intersection(locators):
                 raise ValueError("Provider service template belongs to another instance")
             from management_common.file_permissions import atomic_write_private_bytes

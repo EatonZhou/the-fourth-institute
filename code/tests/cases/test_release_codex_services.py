@@ -41,6 +41,27 @@ def test_owned_template_never_overwrites_source_or_conflicting_unit(tmp_path, mo
     assert not (context["directory"] / units.CODEX_TEMPLATE).exists()
 
 
+@pytest.mark.parametrize("locator", ["target.json", "paths.json", "foreign/target.json"])
+def test_existing_account_template_accepts_only_equivalent_instance_locator(tmp_path, monkeypatch, locator):
+    from scripts import portal_instance_storage
+    context = {"prefix": "tfi-check-codex-app-server@", "root": tmp_path,
+               "directory": tmp_path / "units"}
+    monkeypatch.setattr(units, "_isolated_codex_context", lambda: context)
+    monkeypatch.setattr(units, "_run", lambda *a, **k: None)
+    active = ["paths.json"]
+    monkeypatch.setattr(portal_instance_storage, "render_unit", lambda _: (
+        f"[Service]\nEnvironment=PORTAL_PATHS_CONFIG={tmp_path / 'config' / active[0]}\nExecStart=owned\n"))
+    path = units.install_codex_unit_template()
+    original = path.read_text()
+    active[0] = locator
+    if locator.startswith("foreign/"):
+        with pytest.raises(ValueError, match="different Provider"):
+            units.install_codex_unit_template()
+    else:
+        assert units.install_codex_unit_template() == path
+    assert path.read_text() == original
+
+
 def test_context_rejects_mismatched_code_and_roots(tmp_path, monkeypatch):
     from management_common import portal_paths
     root = tmp_path / "release"
