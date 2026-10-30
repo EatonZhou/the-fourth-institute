@@ -1058,7 +1058,7 @@ modules:
   - id: "delivery.services"
     title: "发布与服务生命周期控制"
     parent: "delivery"
-    responsibility: "执行提交发布、健康检查和各服务的代际管理，持久化发布完成事实；维护共享代码与实例状态的路径边界、实例安装与生命周期；升级时协调实例停写、代码与数据配对快照、显式迁移和失败恢复，并提供部署拥有的站点配置读取入口。"
+    responsibility: "执行提交发布、健康检查和各服务的代际管理，持久化发布完成事实；维护共享代码与实例状态的路径边界、实例安装与生命周期；升级时协调实例停写、未提交工作保全核对、代码与数据配对快照、显式迁移和失败恢复，并提供部署拥有的站点配置读取入口。"
     instruction_owners: []
     code_paths:
       - "scripts/tfi_dev.py"
@@ -1083,6 +1083,8 @@ modules:
       - "scripts/tfi_release_install.py"
       - "scripts/tfi_application_upgrade.py"
       - "scripts/tfi_application_snapshot.py"
+      - "scripts/tfi_application_freeze.py"
+      - "scripts/tfi_application_work.py"
       - "scripts/tfi_release_schema.py"
       - "scripts/windows/build_update.py"
       - "scripts/tfi_release_platform_*.py"
