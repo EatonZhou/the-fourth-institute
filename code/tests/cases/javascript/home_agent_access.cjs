@@ -3,11 +3,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const {JSDOM} = require('jsdom');
-const {babelParse} = require('./babel_parse.cjs');
+const {homeStatements} = require('./home_modules.cjs');
 
 const root = path.resolve(__dirname, '../../../management_portal/static');
-const source = fs.readFileSync(path.join(root, 'home.js'), 'utf8');
-const ast = babelParse(source, 'home.js');
 const functionNames = new Set([
   'esc', 'residentShortcutId', 'residentShortcutSummary', 'residentShortcutEntries',
   'residentNavigationUrl', 'residentShortcutUrl', 'agentAccessActivityLabel',
@@ -67,13 +65,15 @@ async function check({shortcuts, associations, loading = false, fail = false} = 
   };
   const context = vm.createContext({window, document: dom.window.document, URL, URLSearchParams});
   vm.runInContext(fs.readFileSync(path.join(root, 'portal_resident_service.js'), 'utf8'), context);
-  for (const node of ast.program.body) {
+  for (const {node, source} of homeStatements()) {
     if (node.type === 'FunctionDeclaration' && functionNames.has(node.id.name)
       || node.type === 'VariableDeclaration' && node.declarations.some(item => variableNames.has(item.id.name))
-      || node.type === 'ExpressionStatement' && source.slice(node.start, node.end).startsWith('window.PortalConversationStore?.subscribe?.(')) {
-      vm.runInContext(source.slice(node.start, node.end), context);
+      || node.type === 'ExpressionStatement' && source.startsWith('window.PortalConversationStore?.subscribe?.(')) {
+      vm.runInContext(source, context);
     }
   }
+  // home.js hands its Agent access part the active-agent status through a getter.
+  vm.runInContext('const currentActiveAgentStatus = () => activeAgentStatus;', context);
   await context.loadAgentAccess();
   await new Promise(resolve => setImmediate(resolve));
   const panel = dom.window.document.querySelector('[data-agent-access]');

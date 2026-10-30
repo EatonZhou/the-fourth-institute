@@ -2,6 +2,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const code=path.resolve(__dirname,'../../..'),staticDir=path.join(code,'management_portal/static');
 const {chromium}=require(path.join(code,'management_portal/test_framework/tau_runtime/node_modules/playwright'));
+const {PORTAL_COMPONENTS_STYLES}=require('./portal_components_styles.cjs');
 (async()=>{
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
  const report={formal_acceptance:false,fixture:'Native ScopeMenu/Overlay/UI/DetailSurface/i18n/CSS; records, avatar module, permission response and entry adapter are local fixtures'};
@@ -9,7 +10,7 @@ const {chromium}=require(path.join(code,'management_portal/test_framework/tau_ru
   const p=await browser.newPage({viewport:{width:1200,height:900}}),requests=[],errors=[];
   p.on('request',r=>requests.push(r.url()));p.on('pageerror',e=>errors.push(e.message));
   await p.setContent('<!doctype html><main>Local scope entry</main>');
-  for(const name of ['portal_design_system','portal_themes','portal_components','portal_resident_menu'])await p.addStyleTag({path:path.join(staticDir,name+'.css')});
+  for(const name of ['portal_design_system','portal_themes',...PORTAL_COMPONENTS_STYLES,'portal_resident_menu'])await p.addStyleTag({path:path.join(staticDir,name+'.css')});
   for(const name of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','portal_overlay','portal_ui','portal_detail_surface'])await p.addScriptTag({path:path.join(staticDir,name+'.js')});
   await p.evaluate(()=>{
    PortalI18n.apply('en');window.advancedCalls=0;window.avatarReads=[];

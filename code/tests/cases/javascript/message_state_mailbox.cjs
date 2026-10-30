@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { JSDOM, VirtualConsole } = require('jsdom');
+const { PORTAL_COMPONENTS_STYLES } = require('./portal_components_styles.cjs');
 const staticRoot = path.join(process.env.SOURCE_ROOT || path.resolve(__dirname, '../../..'), 'management_portal/static');
 const drain = () => new Promise(resolve => setImmediate(resolve));
 
@@ -79,7 +80,7 @@ function mailbox({ connected = false, targetRead, cachedSnapshot, clearResult, t
       window.eval(transform(name, fs.readFileSync(path.join(staticRoot, name), 'utf8')) + `\n//# sourceURL=${name}`);
     }
     const style = window.document.createElement('style');
-    style.textContent = transform('portal_components.css', fs.readFileSync(path.join(staticRoot, 'portal_components.css'), 'utf8'));
+    style.textContent = PORTAL_COMPONENTS_STYLES.map(name => transform(`${name}.css`, fs.readFileSync(path.join(staticRoot, `${name}.css`), 'utf8'))).join('\n');
     window.document.head.append(style);
     window.PortalAgentInbox.mount();
     const root = window.document.querySelector('[data-portal-agent-inbox]');

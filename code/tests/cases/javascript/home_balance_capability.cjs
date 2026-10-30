@@ -1,15 +1,14 @@
 const assert = require('node:assert/strict');
-const fs = require('node:fs'), path = require('node:path'), vm = require('node:vm');
+const vm = require('node:vm');
 const {JSDOM} = require('jsdom');
-const {babelParse} = require('./babel_parse.cjs');
+const {homeStatements} = require('./home_modules.cjs');
 const dom = new JSDOM('<main></main>');
 const tag = (parts, ...values) => parts.reduce((text, part, i) => text + part + (values[i] ?? ''), '');
 const context = vm.createContext({window: {PortalI18n: {t: x => x, html: tag, text: tag}},
   esc: x => String(x ?? '').replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;'),
   formatDateTime: x => x || ''});
-const source = fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static/home.js'), 'utf8');
-const fn = babelParse(source, 'home.js').program.body.find(n => n.type === 'FunctionDeclaration' && n.id.name === 'accountBalanceHtml');
-vm.runInContext(source.slice(fn.start, fn.end), context);
+const fn = homeStatements().find(({node: n}) => n.type === 'FunctionDeclaration' && n.id.name === 'accountBalanceHtml');
+vm.runInContext(fn.source, context);
 const render = balance => {
   const main = dom.window.document.querySelector('main');
   main.innerHTML = context.accountBalanceHtml({balance});

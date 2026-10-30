@@ -3,6 +3,7 @@ const assert = require('node:assert/strict'), fs = require('node:fs'), path = re
 const {chromium} = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
 const {LINEAGE_GRAPH_SCRIPTS} = require('./lineage_graph_scripts.cjs');
 const {RESIDENT_MENU_SCRIPTS} = require('./resident_menu_scripts.cjs');
+const {HATG_PANEL_STYLES} = require('./hatg_panel_styles.cjs');
 const root = path.resolve(__dirname, '../../../management_portal/static');
 (async () => {
  const browser = await chromium.launch({headless:true});
@@ -15,7 +16,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
    return route.fulfill({contentType:'text/html',body:'<!doctype html><html><body><div class="portalHatgPanelComponent"><section class="hatgPane" style="width:900px;height:740px"><div class="programWireHint" data-mode="ready"><span></span><span class="programWireHintCopy"><small>Ports shown</small><strong>Click an output port to connect</strong></span></div><div class="hatgViewport"><div id="canvas" class="hatgCanvas"><div id="world" class="hatgWorld"><svg id="edges"></svg><svg id="effects"></svg><div id="labels"></div><div id="nodes"></div></div></div></div></section><div class="programInspectorForm"><textarea class="programEffectScript">return await DeliverMessage({body: "hello"});</textarea><div class="programEffectDiagnostics">Diagnostics: no errors</div></div></div></body></html>'});
   });
   await page.goto('http://identity.fixture.invalid');
-  for(const n of ['portal_design_system','portal_themes','hatg_panel','lineage_function_blocks','portal_resident_menu']) await page.addStyleTag({url:'/static/'+n+'.css'});
+  for(const n of ['portal_design_system','portal_themes',...HATG_PANEL_STYLES,'lineage_function_blocks','portal_resident_menu']) await page.addStyleTag({url:'/static/'+n+'.css'});
   for(const n of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','portal_overlay','portal_ui','portal_detail_surface','portal_society_service',...RESIDENT_MENU_SCRIPTS,'projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min','lineage_program',...LINEAGE_GRAPH_SCRIPTS]) await page.addScriptTag({url:'/static/'+n+'.js'});
   await page.evaluate(()=> {
    const esc=PortalUIPrimitives.escapeHtml;

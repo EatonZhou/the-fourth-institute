@@ -6,6 +6,7 @@ const path = require('node:path');
 const { JSDOM, VirtualConsole } = require('jsdom');
 const { chatWorkspaceScripts } = require('./chat_workspace_modules.cjs');
 const { portalWorkbenchScripts } = require('./portal_workbench_scripts.cjs');
+const { PORTAL_COMPONENTS_STYLES } = require('./portal_components_styles.cjs');
 
 const staticRoot = path.resolve(__dirname, '../../../management_portal/static');
 const MEMBER = 'resident_111111111111';
@@ -68,7 +69,7 @@ function mount(routeScript, messages, { older = [], family = true, transform = (
       window.eval(transform(name, fs.readFileSync(path.join(staticRoot, name), 'utf8')) + `\n//# sourceURL=${name}`);
     }
     const style = window.document.createElement('style');
-    style.textContent = transform('portal_components.css', fs.readFileSync(path.join(staticRoot, 'portal_components.css'), 'utf8'));
+    style.textContent = PORTAL_COMPONENTS_STYLES.map(name => transform(`${name}.css`, fs.readFileSync(path.join(staticRoot, `${name}.css`), 'utf8'))).join('\n');
     window.document.head.append(style);
     const snapshot = { messages, ...(family ? { family_facade: { resident_id: FACADE } } : {}) };
     let remaining = older;

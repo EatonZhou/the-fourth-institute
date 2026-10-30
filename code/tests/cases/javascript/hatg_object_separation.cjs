@@ -2,6 +2,7 @@
 const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path');
 const {chromium} = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
 const {LINEAGE_GRAPH_SCRIPTS} = require('./lineage_graph_scripts.cjs');
+const {HATG_PANEL_STYLES} = require('./hatg_panel_styles.cjs');
 const root = path.resolve(__dirname, '../../../management_portal/static');
 (async () => {
   const browser = await chromium.launch({headless: true});
@@ -14,7 +15,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
       return route.fulfill({contentType: 'text/html', body: '<!doctype html><div class="portalHatgPanelComponent"><div id="canvas" class="hatgCanvas" style="width:1300px;height:760px"><div id="world" class="hatgWorld"><svg id="edges"></svg><svg id="effects"></svg><div id="labels"></div><div id="nodes"></div></div></div></div>'});
     });
     await page.goto('http://object-separation.fixture.invalid');
-    for (const n of ['portal_design_system','portal_themes','hatg_panel','lineage_function_blocks']) await page.addStyleTag({url: '/static/'+n+'.css'});
+    for (const n of ['portal_design_system','portal_themes',...HATG_PANEL_STYLES,'lineage_function_blocks']) await page.addStyleTag({url: '/static/'+n+'.css'});
     for (const n of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min',...LINEAGE_GRAPH_SCRIPTS,'hatg_lineage_state','hatg_program_edits','hatg_family_blocks','hatg_layout']) await page.addScriptTag({url:'/static/'+n+'.js'});
     await page.evaluate(() => {
       window.saved = []; window.failSave = false; window.requestCount = 0;

@@ -59,6 +59,7 @@ function deletionFixture() {
     state, pendingResidentDeletions: new Set(), unavailableResidentBindings: new Set(),
     agentFloatingMenuOverlay: null, agentChatPanel: primary,
     lineageWorkbench: {getPanelsByType: () => [primary, secondary, other]},
+    currentAgentChatPanel: () => ctx.agentChatPanel, currentLineageWorkbench: () => ctx.lineageWorkbench,
     currentPreviewTabsController: () => null, currentPersonalWorkspaces: () => null,
     residentService: {remove: () => {calls.push(['remove']); return removal.promise;}, folder: () => {throw Error('deleted folder read');}},
     currentChatTarget: () => state.chatTarget, selectedResidentId: () => state.chatTarget?.id || '',

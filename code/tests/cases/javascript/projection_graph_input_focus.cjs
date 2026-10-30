@@ -12,6 +12,7 @@ const staticRoot = path.join(repo, 'management_portal/static');
 const { build } = require(path.join(appRoot, 'node_modules/esbuild'));
 const { chromium } = require(path.join(repo, 'management_portal/test_framework/tau_runtime/node_modules/playwright'));
 const { portalWorkbenchScripts } = require('./portal_workbench_scripts.cjs');
+const { PORTAL_COMPONENTS_STYLES } = require('./portal_components_styles.cjs');
 const modules = ['portal_text.js', 'portal_state.js', 'portal_i18n.js', 'portal_ui.js', 'portal_ui_primitives.js',
   'portal_command_registry.js', 'portal_editor_open_service.js', 'portal_workbench_context.js',
   ...portalWorkbenchScripts(staticRoot), 'portal_projections.js', 'projection_host.js'];
@@ -49,7 +50,7 @@ function check(name, actual, expected) {
       type = 'text/html'; bytes = '<!doctype html><html><body><div style="display:flex"><main id="root" style="width:740px;height:650px"></main><textarea id="composer" aria-label="Chat input"></textarea></div>' + modules.map(name => `<script src="/static/${name}"></script>`).join('') + '</body></html>';
     } else if (url.pathname.startsWith('/static/')) {
       const name = url.pathname.slice(8);
-      if ([...modules, 'projection_sdk.js', 'portal_components.css', 'portal_design_system.css', 'portal_workbench.css'].includes(name)) {
+      if ([...modules, 'projection_sdk.js', ...PORTAL_COMPONENTS_STYLES.map(name => `${name}.css`), 'portal_design_system.css', 'portal_workbench.css'].includes(name)) {
         bytes = fs.readFileSync(path.join(staticRoot, name)); if (name.endsWith('.css')) type = 'text/css';
       }
     } else {

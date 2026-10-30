@@ -6,7 +6,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const { randomUUID } = require('node:crypto');
 const { JSDOM } = require('jsdom');
-const { babelParse } = require('./babel_parse.cjs');
+const { homeStatements } = require('./home_modules.cjs');
 const { hatgSources, overrideHatgFunctions, startHatgRuntime } = require('./hatg_modules.cjs');
 const ROOT = path.resolve(__dirname, '../../..');
 const STATIC = path.join(ROOT, 'management_portal/static');
@@ -194,10 +194,9 @@ const submit = () => api.submitLineageForm({ preventDefault() {}, currentTarget:
 
   // Home consumes the same authoritative source state, never an obsolete due time.
   Object.assign(w, { esc: w.PortalUIPrimitives.escapeHtml, displayDateTime: String, scheduledTriggeredExpanded: new Set() });
-  const home = read('home.js');
   const names = new Set(['scheduledTriggeredAllows', 'scheduledTriggeredScheduleText', 'scheduledTriggeredNextAt', 'scheduledTriggeredWaitingForPlan', 'scheduledTriggeredItemId', 'scheduledTriggeredScriptStatus', 'scheduledTriggeredSourceState', 'scheduledTriggeredSourceHtml', 'scheduledTriggeredLineageHtml']);
   const declared = n => (n.type === 'FunctionDeclaration' ? [n.id] : n.type === 'VariableDeclaration' ? n.declarations.map(d => d.id) : []);
-  for (const n of babelParse(home, 'home.js').program.body) if (declared(n).some(id => names.has(id.name))) vm.runInContext(home.slice(n.start, n.end), context);
+  for (const { node: n, source } of homeStatements()) if (declared(n).some(id => names.has(id.name))) vm.runInContext(source, context);
   const sourceRow = { component_id: 'event_source_123456789abc', event_type: 'time.reached', config: { schedule_mode: 'recurring', recurrence_kind: 'interval', interval_seconds: 60 }, runtime: { state: 'blocked', error: '<Access denied>', next_due_at: 'obsolete-due-time' } };
   const item = { lineage_id: server.lineage_id, resident_id: 'resident_test', health: 'error', sources: [sourceRow], problems: ['<Access denied>'], can_manage: true };
   const host = w.document.createElement('div');

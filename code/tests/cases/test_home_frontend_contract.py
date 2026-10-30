@@ -48,6 +48,7 @@ def test_home_shell_reads_only_the_current_user() -> None:
 
     Home panels read their own data; the shell no longer writes placeholder summaries."""
     controller = (PORTAL_ROOT / "static" / "home.js").read_text(encoding="utf-8")
+    parts = "".join(path.read_text(encoding="utf-8") for path in sorted((PORTAL_ROOT / "static").glob("home_*.js")))
 
     def function_body(name: str) -> str:
         start = controller.index(f"function {name}(")
@@ -56,9 +57,9 @@ def test_home_shell_reads_only_the_current_user() -> None:
     shell = function_body("connectHomeShell")
     assert "window.PortalUI.loadCurrentUser()" in shell
     assert "homeApi" not in shell
-    assert "/api/summary" not in controller
-    assert "/api/config" not in controller
-    assert "data-summary-label" not in controller
+    assert "/api/summary" not in controller + parts
+    assert "/api/config" not in controller + parts
+    assert "data-summary-label" not in controller + parts
     assert "context.currentUserReady.catch(() => {}).then(" in function_body("connectPulse")
 
 

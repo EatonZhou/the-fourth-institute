@@ -1,0 +1,347 @@
+/* Shared components: the Chat queue, inheritance cards and the references panel. Pages load this
+   file right after portal_components_composer.css. */
+.workspaceQueue {
+  display: grid;
+  gap: 6px;
+  max-height: 132px;
+  overflow: auto;
+  border: 1px solid var(--border, rgba(148, 163, 184, 0.32));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--panel, #fff) 92%, var(--accent, #2563eb) 8%);
+  padding: 7px;
+}
+
+.workspaceQueueItem {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 6px;
+  align-items: center;
+}
+
+.workspaceQueueItem + .workspaceQueueItem {
+  border-top: 1px solid var(--border, rgba(148, 163, 184, 0.32));
+  padding-top: 6px;
+}
+
+.workspaceQueueHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--muted, #64748b);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.workspaceQueueHeaderActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.workspaceQueueTitle {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.workspaceQueueTitle > span:first-child {
+  flex-shrink: 0;
+}
+
+/* The way to more queue operations: a quiet link, cut short rather than wrapping. */
+.workspaceQueueMailbox {
+  appearance: none;
+  min-width: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspaceQueueMailbox:hover {
+  color: var(--accent, #2563eb);
+  text-decoration: underline;
+}
+
+.workspaceQueueMailbox:focus-visible {
+  outline: 2px solid var(--accent, #2563eb);
+  outline-offset: 2px;
+}
+
+.workspaceQueueText {
+  min-width: 0;
+  overflow: hidden;
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text, #111827);
+}
+
+.workspaceQueueContent {
+  min-width: 0;
+  line-height: 20px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspaceQueueContent .messageImageRef {
+  vertical-align: middle;
+}
+
+.workspaceQueueMeta {
+  color: var(--muted, #64748b);
+  font-size: 11px;
+  margin-right: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspaceQueueBtn {
+  white-space: nowrap;
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+.workspaceHistoryLoader {
+  display: flex;
+  justify-content: center;
+  padding: 6px 0 10px;
+}
+
+.chatInheritanceCard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  overflow-wrap: anywhere;
+  gap: 6px;
+  margin: 4px 0 12px;
+  padding: 10px 12px;
+  border: 1px dashed var(--border, rgba(148, 163, 184, 0.45));
+  border-radius: 8px;
+  background: var(--panel-2, rgba(148, 163, 184, 0.08));
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.chatInheritanceHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+}
+
+.chatInheritanceSource {
+  font-weight: 600;
+}
+
+a.chatInheritanceSource,
+a.chatInheritanceSource:visited {
+  color: var(--accent);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+a.chatInheritanceSource:hover {
+  color: color-mix(in srgb, var(--accent) 82%, var(--text));
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.chatInheritanceHead > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.chatInheritanceMeta,
+.chatInheritanceText,
+.chatInheritanceNote {
+  margin: 0;
+  color: var(--muted, #64748b);
+}
+
+.chatInheritanceActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chatInheritanceActions .portalButton {
+  min-width: 0;
+  max-width: 100%;
+  height: auto;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: start;
+}
+
+.chatInheritanceSummary {
+  display: grid;
+  gap: 10px;
+  max-height: min(420px, 55vh);
+  overflow: auto;
+  padding: 8px 10px;
+  border: 1px solid var(--border, rgba(148, 163, 184, 0.32));
+  border-radius: 6px;
+  background: var(--panel, #fff);
+  font-size: 13px;
+}
+
+.chatInheritanceSummary.is-error {
+  color: var(--danger, #b91c1c);
+}
+
+.chatInheritanceSummaryRole {
+  margin-bottom: 2px;
+  font-weight: 600;
+  color: var(--muted, #64748b);
+}
+
+.refsWrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.refsPanel {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  width: min(360px, calc(100vw - 28px));
+  max-height: min(460px, 60vh);
+  overflow: auto;
+  display: none;
+  border: 1px solid var(--border, rgba(148, 163, 184, 0.32));
+  border-radius: 8px;
+  background: var(--panel, #fff);
+  box-shadow: var(--shadow, 0 10px 25px rgba(15, 23, 42, 0.10));
+  padding: 10px;
+}
+
+.refsPanel.open {
+  display: block;
+}
+
+.refsSearch {
+  position: sticky;
+  top: -10px;
+  z-index: 1;
+  margin: -10px -10px 10px;
+  padding: 10px;
+  background: var(--panel, #fff);
+  border-bottom: 1px solid var(--border, #cbd5e1);
+}
+
+.refsSearchInput {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 7px 9px;
+  border: 1px solid var(--border, #cbd5e1);
+  border-radius: 6px;
+  background: var(--panel, #fff);
+  color: var(--text, #111827);
+  font: inherit;
+}
+
+.refsGroup {
+  margin-bottom: 10px;
+}
+
+.refsGroup:last-child {
+  margin-bottom: 0;
+}
+
+.refsGroupHead {
+  appearance: none;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--muted, #64748b);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 0 6px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.refsGroupLabel {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.refsGroupChevron {
+  width: 14px;
+  height: 14px;
+  transition: color 0.14s ease;
+}
+
+.refsOptions {
+  display: grid;
+  gap: 4px;
+}
+
+.refsOption {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  gap: 7px;
+  align-items: center;
+  border-radius: 6px;
+  padding: 5px;
+  color: var(--text, #111827);
+  font-size: 12px;
+}
+
+.refsOption:hover {
+  background: var(--panel-2, rgba(148, 163, 184, 0.12));
+}
+
+.refsOption input {
+  margin: 0;
+  accent-color: var(--accent, #2563eb);
+}
+
+.refsEmpty {
+  color: var(--muted, #64748b);
+  font-size: 12px;
+  padding: 5px;
+}
+
+.refsDivider {
+  border: 0;
+  border-top: 1px solid var(--border, rgba(148, 163, 184, 0.32));
+  margin: 8px 0;
+}
+
+.refsActions,
+.refsSummary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.refsActions {
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.refsSummary:empty {
+  display: none;
+}

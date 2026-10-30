@@ -4,6 +4,7 @@ const code=process.env.TAU_CODE_ROOT||path.resolve(__dirname,'../../..'),root=co
 const {chromium}=require(code+'/management_portal/test_framework/tau_runtime/node_modules/playwright');
 const {babelParse,traverse}=require(code+'/tests/cases/javascript/babel_parse.cjs');
 const {LINEAGE_GRAPH_SCRIPTS}=require(code+'/tests/cases/javascript/lineage_graph_scripts.cjs');
+const {HATG_PANEL_STYLES}=require(code+'/tests/cases/javascript/hatg_panel_styles.cjs');
 const source=fs.readFileSync(root+'/hatg_family_blocks.js','utf8'); let memberTag;
 traverse(babelParse(source),{FunctionDeclaration(p){if(p.node.id?.name==='familyMemberTag') memberTag=source.slice(p.node.start,p.node.end)}});
 (async()=>{const browser=await chromium.launch({headless:true});try{
@@ -13,7 +14,7 @@ traverse(babelParse(source),{FunctionDeclaration(p){if(p.node.id?.name==='family
   if(name.startsWith('/static/')) {const draft=process.env.FORK_DRAFT?path.join(process.env.FORK_DRAFT,name.slice(8)):''; return route.fulfill({body:fs.readFileSync(draft&&fs.existsSync(draft)?draft:path.join(root,name.slice(8))),contentType:name.endsWith('.css')?'text/css':'text/javascript'})}
   return route.fulfill({contentType:'text/html',body:'<!doctype html><div class="portalHatgPanelComponent" style="position:absolute;left:780px;top:80px"><div id="canvas" class="hatgCanvas" style="width:360px;height:530px"><div id="world" class="hatgWorld"><svg id="edges"></svg><svg id="effects"></svg><div id="labels"></div><div id="nodes"></div></div></div></div>'})});
  await page.goto('http://fork-native.fixture.invalid');
- for(const n of ['portal_design_system','portal_themes','hatg_panel','lineage_function_blocks'])await page.addStyleTag({url:'/static/'+n+'.css'});
+ for(const n of ['portal_design_system','portal_themes',...HATG_PANEL_STYLES,'lineage_function_blocks'])await page.addStyleTag({url:'/static/'+n+'.css'});
  for(const n of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','resident_protocol','projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min',...LINEAGE_GRAPH_SCRIPTS,'hatg_graph_view','hatg_resident_dialogs','hatg_layout'])await page.addScriptTag({url:'/static/'+n+'.js'});
  for (const scenario of ['overlap','clear','save-failure']) {
  const result=await page.evaluate(async ({memberTag,scenario})=>{

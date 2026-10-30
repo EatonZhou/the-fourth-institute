@@ -1,0 +1,655 @@
+/* Shared components: recovery and session restart notices, question, approval and turn cards, and
+   subagent runs. Pages load this file right after portal_components_agent_inbox.css. */
+.portalComponentRecovery {
+  position: absolute;
+  inset: var(--portal-component-recovery-inset, 0);
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+.portalComponentRecovery[hidden] { display: none; }
+
+.portalComponentRecovery > .portalAsyncState {
+  width: min(520px, calc(100% - 32px));
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--panel) 96%, transparent);
+  box-shadow: 0 18px 50px color-mix(in srgb, #0b1020 16%, transparent);
+}
+.portalSessionRestartProgress {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border: 1px solid rgba(127, 127, 127, 0.3);
+  border-radius: 6px;
+  background: rgba(127, 127, 127, 0.06);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.portalSessionRestartProgress[hidden] { display: none; }
+.portalSessionRestartProgress[data-restart-status="failed"] { border-color: #b95656; }
+.portalSessionRestartProgress.is-compact {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 3px 6px;
+}
+.portalSessionRestartProgress.is-compact [role="status"] {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.portalSessionRestartProgress.is-compact .portalButton {
+  flex: none;
+  margin: 0;
+  padding: 2px 6px;
+  min-height: 24px;
+}
+.portalSessionRestartProgress.is-compact[hidden] { display: none; }
+.portalSessionRestartDiagnostics { margin-top: 6px; }
+.portalSessionRestartDiagnostics pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.residentQuestionCard {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  width: 100%;
+  max-width: 680px;
+  min-width: 0;
+  margin: 14px 0;
+  padding: 16px;
+  color: var(--text, #172033);
+  background: color-mix(in srgb, var(--accent, #0f766e) 3%, var(--panel, #fff));
+  border: 1px solid var(--border, #cbd5e1);
+  border-radius: var(--portal-surface-radius, 12px);
+  font: 13px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.residentQuestionTitle {
+  font-size: 14px;
+  font-weight: 650;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.residentQuestionCredentials {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow-wrap: anywhere;
+}
+.residentQuestionCredentials ul { margin: 0; padding-left: 18px; }
+.residentQuestionCredentialScope { font-size: 12px; opacity: .75; }
+.residentQuestionChoices { display: grid; gap: 6px; min-width: 0; }
+.residentQuestionChoice.portalButton {
+  justify-content: flex-start;
+  width: 100%;
+  min-width: 0;
+  padding: 7px 10px;
+  font-weight: 500;
+  line-height: 1.5;
+  white-space: normal;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.residentQuestionChoice::before {
+  content: "";
+  flex: 0 0 12px;
+  height: 12px;
+  box-sizing: border-box;
+  border: 1px solid var(--muted, #64748b);
+  border-radius: 50%;
+}
+.residentQuestionChoice[aria-pressed="true"]::before {
+  border: 4px solid var(--accent, #0f766e);
+  background: var(--panel, #fff);
+}
+.residentQuestionFooter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.residentQuestionFooter .residentQuestionStatus {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+.residentQuestionCard [hidden] { display: none; }
+.residentQuestionStatus { color: var(--muted, #64748b); font-size: 12px; overflow-wrap: anywhere; white-space: pre-wrap; }
+.residentQuestionCard.has-error .residentQuestionStatus { color: var(--danger, #b42318); }
+.residentQuestionChoice kbd {
+  flex: 0 0 auto;
+  min-width: 18px;
+  padding: 0 4px;
+  color: var(--muted, #64748b);
+  border: 1px solid var(--border, #cbd5e1);
+  border-radius: 4px;
+  font: 11px/16px ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-align: center;
+}
+.residentQuestionChoice:has(kbd)::before { display: none; }
+.residentQuestionChoice[aria-pressed="true"] kbd { color: var(--accent, #0f766e); border-color: var(--accent, #0f766e); }
+.residentQuestionStepHead { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.residentQuestionStepHead .residentQuestionStatus { flex: 1 1 160px; min-width: 0; }
+.residentQuestionStepProgress { color: var(--accent, #0f766e); font-size: 12px; font-weight: 650; }
+.residentQuestionCustom { display: flex; gap: 8px; min-width: 0; }
+.residentQuestionCustom input {
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 6px 10px;
+  color: var(--text, #172033);
+  background: var(--panel, #fff);
+  border: 1px solid var(--border, #cbd5e1);
+  border-radius: var(--portal-control-radius, 8px);
+  font: inherit;
+}
+.residentQuestionCustom input:focus-visible {
+  outline: none;
+  border-color: var(--accent, #0f766e);
+  box-shadow: var(--portal-focus-ring);
+}
+.residentQuestionSummary {
+  box-sizing: border-box;
+  display: grid;
+  gap: 6px;
+  max-width: 680px;
+  margin: 10px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border, #cbd5e1);
+  border-radius: var(--portal-surface-radius, 12px);
+  font: 13px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.residentQuestionSummary[data-state="open"] { border-color: color-mix(in srgb, var(--accent, #0f766e) 45%, var(--border, #cbd5e1)); }
+.residentQuestionSummary[data-state="expired"],
+.residentQuestionSummary[data-state="cancelled"] { opacity: .72; }
+.residentQuestionSummaryHead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.residentQuestionSummaryHead .residentQuestionTitle { font-size: 13px; }
+.residentQuestionSummary ol { display: grid; gap: 4px; margin: 0; padding-left: 20px; }
+.residentQuestionSummary li { overflow-wrap: anywhere; }
+.residentQuestionSummary li strong { margin-left: 8px; color: var(--accent, #0f766e); font-weight: 600; }
+
+.residentMcpField { display: grid; gap: 6px; margin-block: 12px; }
+.residentMcpField > span { font-weight: 600; }
+.residentMcpField > small { color: var(--muted, #64748b); }
+.residentMcpField input:not([type="checkbox"]), .residentMcpField select {
+  box-sizing: border-box; width: 100%; min-width: 0; padding: 9px 12px;
+  border: 1px solid var(--border); border-radius: 8px; font: inherit;
+  background: var(--panel); color: var(--text);
+}
+.residentMcpField input[type="checkbox"] { justify-self: start; width: 18px; height: 18px; accent-color: var(--accent); }
+.residentQuestionCard .nativeApprovalDetails {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  max-height: 380px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.nativeApprovalFile { min-width: 0; }
+.nativeApprovalFilePath { font-weight: 600; white-space: pre-wrap; overflow-wrap: anywhere; }
+.nativeTurnCard { gap: 8px; padding: 12px 14px; white-space: normal; }
+.nativeTurnHeader { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.nativeTurnIdentity { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; min-width: 0; }
+.nativeTurnIdentity .residentQuestionTitle { font-size: 13px; }
+.nativeTurnHeader [data-turn-review] { flex: 0 0 auto; width: auto; min-height: 28px; padding: 4px 10px; font-size: 12px; }
+.nativeTurnCard p { margin: 0; }
+.nativeTurnCard ol { display: grid; gap: 4px; margin: 0; padding-inline-start: 22px; }
+.nativeTurnCard .resourceTurnChanges { margin: 0; padding-inline-start: 18px; overflow-wrap: anywhere; font-size: 12px; }
+.resourceTurnChanges small { color: var(--muted); white-space: nowrap; }
+.nativeTurnCard li > span { color: var(--muted); margin-inline-end: 8px; }
+.nativeTurnCard [data-step-status="inProgress"] > span { color: var(--accent); font-weight: 600; }
+.nativeTurnCard details { min-width: 0; margin: 0; }
+.nativeTurnCard summary { cursor: pointer; color: var(--accent); font-weight: 600; }
+.nativeTurnEmpty { color: var(--muted); }
+.nativeTurnDiffToolbar { display: flex; align-items: center; gap: 6px; margin-top: 8px; min-width: 0; }
+.nativeTurnDiffToolbar [data-turn-file-preview] { flex: 0 0 30px; width: 30px; height: 30px; }
+.nativeTurnDiffToolbar select { box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; padding: 5px 9px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); color: var(--text); font: inherit; text-overflow: ellipsis; }
+.nativeTurnCard [data-turn-diff] { max-height: 380px; margin-top: 8px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+.subagentRunSteps { max-height: 320px; margin-top: 8px !important; overflow: auto; font-size: 12px; overflow-wrap: anywhere; }
+.subagentRunSteps code { margin-inline-end: 6px; }
+.subagentRunSteps [data-step-error] code { color: var(--danger, #cf222e); }
+.subagentRunCard .nativeTurnHeader { align-items: flex-start; }
+.subagentRunCard[data-status="failed"] { --message-system-color: var(--danger, #b91c1c); }
+.subagentRunCard[data-status="cancelled"],
+.subagentRunCard[data-status="stopped"],
+.subagentRunCard[data-status="killed"] { --message-system-color: var(--muted, #64748b); }
+.subagentRunMark {
+  display: inline-grid;
+  place-items: center;
+  margin-inline-end: 6px;
+  vertical-align: -3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--message-system-color) 16%, transparent);
+  color: color-mix(in srgb, var(--message-system-color) 85%, var(--text, #172033));
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+.subagentRunMark::before { content: "✓"; }
+.subagentRunCard[data-status="failed"] .subagentRunMark::before { content: "✕"; }
+.subagentRunCard[data-status="cancelled"] .subagentRunMark::before,
+.subagentRunCard[data-status="stopped"] .subagentRunMark::before,
+.subagentRunCard[data-status="killed"] .subagentRunMark::before { content: "■"; font-size: 8px; }
+.subagentRunMeta { flex: 0 0 auto; color: var(--muted, #64748b); font-size: 11px; font-variant-numeric: tabular-nums; line-height: 22px; }
+/* Folded by default: one line of the result, the tools, and a hint to open it. */
+.subagentRunBody { min-width: 0; }
+.subagentRunBody > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin: 0 -8px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  list-style: none;
+  color: var(--muted, #64748b);
+  font-size: 12px;
+  font-weight: 400;
+  user-select: none;
+}
+.subagentRunBody > summary::-webkit-details-marker { display: none; }
+.subagentRunBody > summary:hover { background: color-mix(in srgb, var(--message-system-color) 7%, transparent); color: var(--text, #172033); }
+.subagentRunFold::before {
+  content: "";
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 0.15s ease;
+}
+.subagentRunFold { flex: 0 0 auto; color: var(--message-system-color); }
+.subagentRunBody[open] > summary .subagentRunFold::before { transform: rotate(45deg); }
+.subagentRunPreview { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.subagentRunLabel { display: none; flex: 1 1 auto; font-weight: 600; }
+.subagentRunBody[open] .subagentRunPreview { display: none; }
+.subagentRunBody[open] .subagentRunLabel { display: block; }
+.subagentRunHint { flex: 0 0 auto; color: var(--accent); font-size: 11px; }
+.subagentRunCollapse,
+.subagentRunBody[open] .subagentRunExpand { display: none; }
+.subagentRunBody[open] .subagentRunCollapse { display: inline; }
+.subagentRunResult { display: grid; gap: 6px; padding: 6px 0 4px; }
+.subagentRunStepsFold summary { font-size: 12px; }
+.subagentRunTools { display: flex; flex: 0 0 auto; gap: 4px; max-width: 45%; overflow: hidden; }
+.subagentRunTools code { flex: 0 0 auto; white-space: nowrap; }
+.subagentRunTools code {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--message-system-color) 9%, transparent);
+  color: color-mix(in srgb, var(--message-system-color) 70%, var(--text, #172033));
+  font-size: 11px;
+}
+
+/* A running subagent: a live card among the turn's activity. */
+.subagentLiveGroup {
+  --subagent-color: var(--accent, #0f766e);
+  display: grid;
+  gap: 8px;
+  margin: 10px 0;
+  min-width: 0;
+}
+.subagentLiveGroupHead {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: color-mix(in srgb, var(--subagent-color) 75%, var(--text, #172033));
+  font-size: 12px;
+  font-weight: 650;
+}
+.subagentLivePulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--subagent-color);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--subagent-color) 45%, transparent);
+  animation: subagent-live-pulse 1.6s ease-out infinite;
+}
+.subagentLiveGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+  gap: 10px;
+  min-width: 0;
+}
+.subagentLiveGroup[data-count="1"] .subagentLiveGrid { max-width: 680px; }
+.subagentLiveCard {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  min-width: 0;
+  padding: 12px 14px 10px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--subagent-color) 30%, var(--border, #cbd5e1));
+  border-radius: var(--portal-surface-radius, 12px);
+  background:
+    radial-gradient(120% 80% at 100% 0%, color-mix(in srgb, var(--subagent-color) 10%, transparent), transparent 60%),
+    color-mix(in srgb, var(--subagent-color) 3%, var(--panel, #fff));
+  box-shadow: 0 8px 22px -18px color-mix(in srgb, var(--subagent-color) 80%, transparent);
+  color: var(--text, #172033);
+  font: 13px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.subagentLiveCard[data-fresh] { animation: subagent-live-enter 0.32s ease-out both; }
+.subagentLiveCard::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--subagent-color), transparent) no-repeat;
+  background-size: 45% 100%;
+  animation: subagent-live-sweep 1.8s ease-in-out infinite;
+  animation-delay: calc(var(--subagent-age, 0) * -1s);
+}
+.subagentLiveHead { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.subagentLiveSpinner {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  border: 2px solid color-mix(in srgb, var(--subagent-color) 18%, transparent);
+  border-top-color: var(--subagent-color);
+  border-right-color: color-mix(in srgb, var(--subagent-color) 55%, transparent);
+  border-radius: 50%;
+  animation: subagent-live-spin 0.9s linear infinite;
+  animation-delay: calc(var(--subagent-age, 0) * -1s);
+}
+.subagentLiveIdentity { display: grid; flex: 1 1 auto; min-width: 0; }
+.subagentLiveType {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: color-mix(in srgb, var(--subagent-color) 70%, var(--text, #172033));
+  font-size: 13px;
+  font-weight: 650;
+}
+.subagentLiveMode {
+  padding: 0 6px;
+  border: 1px solid color-mix(in srgb, var(--subagent-color) 22%, transparent);
+  border-radius: 999px;
+  color: color-mix(in srgb, var(--subagent-color) 65%, var(--text, #172033));
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 16px;
+}
+.subagentLiveTask { overflow: hidden; color: var(--text, #172033); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.subagentLiveClock {
+  flex: 0 0 auto;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--subagent-color) 10%, transparent);
+  color: color-mix(in srgb, var(--subagent-color) 80%, var(--text, #172033));
+  font: 600 11px/18px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+.subagentLiveNow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--subagent-color) 7%, var(--panel, #fff));
+  font-size: 12px;
+  animation: subagent-live-step 0.35s ease-out both;
+}
+.subagentLiveNow code,
+.subagentLiveTrail code {
+  flex: 0 0 auto;
+  padding: 0 6px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--subagent-color) 14%, transparent);
+  color: color-mix(in srgb, var(--subagent-color) 80%, var(--text, #172033));
+  font-size: 11px;
+  line-height: 18px;
+}
+.subagentLiveSay {
+  flex: 0 0 auto;
+  padding: 0 5px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--muted, #64748b) 14%, transparent);
+  color: var(--muted, #64748b);
+  font-size: 10px;
+  line-height: 18px;
+}
+.subagentLiveText { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.subagentLiveNow .subagentLiveText { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.subagentLiveDots { display: inline-flex; flex: 0 0 auto; gap: 3px; }
+.subagentLiveDots i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--subagent-color);
+  animation: subagent-live-dot 1.2s ease-in-out infinite;
+}
+.subagentLiveDots i:nth-child(2) { animation-delay: 0.15s; }
+.subagentLiveDots i:nth-child(3) { animation-delay: 0.3s; }
+.subagentLiveTrail { display: grid; gap: 3px; margin: 0; padding: 0; list-style: none; font-size: 11.5px; }
+.subagentLiveTrail:empty { display: none; }
+.subagentLiveTrail li { display: flex; align-items: center; gap: 6px; min-width: 0; color: var(--muted, #64748b); }
+.subagentLiveTrail li:nth-last-child(n + 3) { opacity: 0.7; }
+.subagentLiveTrail li:nth-last-child(n + 4) { opacity: 0.5; }
+.subagentLiveTick {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--success, #1a7f37) 14%, transparent);
+  color: var(--success, #1a7f37);
+  font-size: 9px;
+  font-weight: 700;
+}
+.subagentLiveTick::before { content: "✓"; }
+.subagentLiveTick[data-step-error="1"] { background: color-mix(in srgb, var(--danger, #cf222e) 14%, transparent); color: var(--danger, #cf222e); }
+.subagentLiveTick[data-step-error="1"]::before { content: "✕"; }
+.subagentLiveTrail li[data-step-kind="message"] .subagentLiveTick { display: none; }
+.subagentLiveFoot { display: flex; justify-content: space-between; gap: 8px; color: var(--muted, #64748b); font-size: 11px; }
+.subagentLiveFoot span:last-child:not(:first-child) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.subagentLiveFoot span:first-child { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.subagentLiveFoot span:last-child:not(:first-child) { flex: 0 1 auto; max-width: 40%; }
+/* A running card opens its run; Stop and steering show where the Chat allows them. */
+.subagentLiveCard { cursor: pointer; transition: border-color 0.15s ease; }
+.subagentLiveCard:hover { border-color: color-mix(in srgb, var(--subagent-color) 55%, var(--border, #cbd5e1)); }
+.subagentLiveStepClock {
+  flex: 0 0 auto;
+  color: color-mix(in srgb, var(--subagent-color) 70%, var(--muted, #64748b));
+  font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+.subagentLiveActions { display: flex; justify-content: flex-end; gap: 6px; }
+.subagentLiveAction {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--subagent-color) 25%, var(--border, #cbd5e1));
+  border-radius: 999px;
+  background: transparent;
+  color: color-mix(in srgb, var(--subagent-color) 75%, var(--text, #172033));
+  font: 500 11.5px/22px ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  cursor: pointer;
+}
+.subagentLiveAction:hover,
+.subagentLiveAction:focus-visible { background: color-mix(in srgb, var(--subagent-color) 10%, transparent); }
+.subagentLiveAction[data-subagent-action="stop"] {
+  border-color: color-mix(in srgb, var(--danger, #cf222e) 30%, var(--border, #cbd5e1));
+  color: var(--danger, #cf222e);
+}
+.subagentLiveAction[data-subagent-action="stop"]:hover { background: color-mix(in srgb, var(--danger, #cf222e) 8%, transparent); }
+.subagentLiveAction[data-subagent-action="stop"],
+.subagentLiveAction[data-subagent-action="steer"] { display: none; }
+[data-subagent-stop] .subagentLiveAction[data-subagent-action="stop"],
+[data-subagent-steer] .subagentLiveAction[data-subagent-action="steer"] { display: inline-flex; }
+/* A result card that just took a running card's place lights up once. */
+.subagentRunCard[data-just-finished] { animation: subagent-run-finished 2.4s ease-out; }
+@keyframes subagent-run-finished {
+  0%, 35% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--message-system-color, var(--accent, #0f766e)) 35%, transparent); }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+.subagentRunSection { display: grid; gap: 4px; padding: 4px 0; }
+.subagentRunSectionLabel { color: var(--muted, #64748b); font-size: 11.5px; font-weight: 600; }
+.subagentFiles { display: flex; flex-wrap: wrap; gap: 4px; }
+.subagentFileChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 280px;
+  padding: 0 8px;
+  border: 1px solid var(--border, #cbd5e1);
+  border-radius: 999px;
+  background: var(--panel, #fff);
+  color: var(--accent, #0f766e);
+  font: 12px/20px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  cursor: pointer;
+}
+.subagentFileChip:hover { border-color: var(--accent, #0f766e); }
+.subagentFileChip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.subagentFileChip small { color: var(--muted, #64748b); }
+.subagentRunPromptFold summary { font-size: 12px; cursor: pointer; }
+.subagentRunPrompt {
+  max-height: 240px;
+  margin-top: 6px;
+  padding: 8px 10px;
+  overflow: auto;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--message-system-color, var(--accent, #0f766e)) 5%, transparent);
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.subagentRunActions { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 8px; }
+/* The whole run of one subagent. */
+.subagentDetailSurface {
+  --subagent-color: var(--accent, #0f766e);
+  display: flex;
+  flex-direction: column;
+  width: min(920px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+}
+.subagentDetailHeading { display: grid; gap: 4px; min-width: 0; }
+.subagentDetailTitle { overflow: hidden; color: var(--text, #172033); font-size: 15px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.subagentDetailMeta { display: flex; flex-wrap: wrap; gap: 6px; color: var(--muted, #64748b); font-size: 12px; }
+.subagentDetailMeta span {
+  padding: 0 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--subagent-color) 8%, transparent);
+  font-variant-numeric: tabular-nums;
+  line-height: 20px;
+}
+.subagentDetailMeta [data-subagent-detail-state="running"] { color: var(--subagent-color); font-weight: 600; }
+.subagentDetailMeta [data-subagent-detail-state="failed"] { color: var(--danger, #cf222e); }
+.subagentDetailBody {
+  display: grid;
+  flex: 1 1 auto;
+  align-content: start;
+  gap: 14px;
+  min-height: 0;
+  padding: 4px 20px 12px;
+  overflow: auto;
+}
+.subagentDetailSection[hidden] { display: none; }
+.subagentDetailSection h3 { margin: 0 0 6px; font-size: 13px; }
+.subagentDetailPrompt {
+  max-height: 220px;
+  padding: 8px 10px;
+  overflow: auto;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--subagent-color) 5%, transparent);
+  font-size: 12.5px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.subagentDetailNote { margin: 6px 0 0; color: var(--muted, #64748b); font-size: 12px; }
+.subagentDetailNote:empty { display: none; }
+.subagentDetailFooter { flex-wrap: wrap; }
+.subagentTimeline { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.subagentStep > details { border: 1px solid var(--border, #cbd5e1); border-radius: 8px; background: var(--panel, #fff); }
+.subagentStep > details > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 5px 10px;
+  font-size: 12.5px;
+  list-style: none;
+  cursor: pointer;
+}
+.subagentStep > details > summary::-webkit-details-marker { display: none; }
+.subagentStep summary code { flex: 0 0 auto; font-size: 12px; }
+.subagentStepMark { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; background: color-mix(in srgb, var(--subagent-color) 50%, transparent); }
+.subagentStep[data-step-kind="message"] .subagentStepMark { background: var(--subagent-color); }
+.subagentStep[data-step-kind="thinking"] .subagentStepMark { background: var(--muted, #64748b); }
+.subagentStep[data-step-kind="input"] .subagentStepMark { background: #8250df; }
+.subagentStep[data-step-running] .subagentStepMark { animation: subagent-live-pulse 1.6s ease-out infinite; }
+.subagentStep[data-step-error] > details {
+  border-color: color-mix(in srgb, var(--danger, #cf222e) 45%, var(--border, #cbd5e1));
+  background: color-mix(in srgb, var(--danger, #cf222e) 4%, var(--panel, #fff));
+}
+.subagentStep[data-step-error] .subagentStepMark { background: var(--danger, #cf222e); }
+.subagentStep[data-step-error] summary code { color: var(--danger, #cf222e); }
+.subagentStepKind { flex: 0 0 auto; color: var(--muted, #64748b); font-size: 11.5px; font-weight: 600; }
+.subagentStepText { flex: 1 1 auto; min-width: 0; overflow: hidden; color: var(--text, #172033); text-overflow: ellipsis; white-space: nowrap; }
+.subagentStep > details[open] .subagentStepText { color: var(--muted, #64748b); }
+.subagentStep:not([data-step-kind="tool"]) > details[open] .subagentStepText { visibility: hidden; }
+.subagentStepWhen { flex: 0 0 auto; color: var(--muted, #64748b); font-size: 11px; font-variant-numeric: tabular-nums; }
+.subagentStepBody { display: grid; gap: 4px; padding: 2px 10px 10px; }
+.subagentStepLabel { color: var(--muted, #64748b); font-size: 11px; font-weight: 600; }
+.subagentStepPre {
+  max-height: 320px;
+  margin: 0;
+  padding: 8px 10px;
+  overflow: auto;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--text, #172033) 4%, transparent);
+  font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.subagentStepPre[data-step-error] { background: color-mix(in srgb, var(--danger, #cf222e) 6%, transparent); color: var(--danger, #cf222e); }
+.subagentStepPlain { color: var(--muted, #64748b); font-size: 12.5px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.subagentStepMarkdown { font-size: 13px; overflow-wrap: anywhere; }
+@keyframes subagent-live-spin { to { transform: rotate(360deg); } }
+@keyframes subagent-live-sweep {
+  0% { background-position: -60% 0; }
+  100% { background-position: 160% 0; }
+}
+@keyframes subagent-live-dot {
+  0%, 80%, 100% { opacity: 0.25; transform: translateY(0); }
+  40% { opacity: 1; transform: translateY(-3px); }
+}
+@keyframes subagent-live-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--subagent-color) 45%, transparent); }
+  100% { box-shadow: 0 0 0 8px transparent; }
+}
+@keyframes subagent-live-enter {
+  from { opacity: 0; transform: translateY(6px) scale(0.99); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes subagent-live-step {
+  from { opacity: 0; transform: translateX(-6px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .subagentLiveCard,
+  .subagentLiveCard::before,
+  .subagentLiveSpinner,
+  .subagentLiveNow,
+  .subagentLiveDots i,
+  .subagentLivePulse,
+  .subagentRunCard[data-just-finished],
+  .subagentStep[data-step-running] .subagentStepMark { animation: none; }
+  .subagentLiveSpinner { border-color: var(--subagent-color); }
+  .subagentRunFold::before { transition: none; }
+}

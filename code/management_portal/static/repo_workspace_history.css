@@ -1,0 +1,733 @@
+/* Repository workspace: languages and repository size, the commit history, unified and split diffs
+   and the shortcut list. Pages load this file right after repo_workspace_automation.css. */
+.repoIdentityText > span {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.repoIdentityText {
+  --portal-resource-identity-max-width: min(520px, 48vw);
+  --portal-resource-identity-title-size: 20px;
+  --portal-resource-identity-title-weight: 700;
+  --portal-resource-identity-title-line-height: 1.2;
+}
+
+.repoLanguages {
+  display: grid;
+  gap: 10px;
+  padding-bottom: 4px;
+}
+
+.repoLanguageHeading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.repoLanguageHeading > h3 {
+  margin: 0;
+}
+
+.repoLanguageHeading > span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.repoLanguageBar {
+  height: 8px;
+  display: flex;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--panel-2);
+}
+
+.repoLanguageBar > span {
+  min-width: 2px;
+  height: 100%;
+  border-right: 2px solid var(--panel);
+}
+
+.repoLanguageBar > span:last-child {
+  border-right: 0;
+}
+
+.repoLanguageLegend {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px 10px;
+}
+
+.repoLanguageLegend > span {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 9px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+}
+
+.repoLanguageLegend i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.repoLanguageLegend strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repoLanguageLegend em {
+  color: var(--muted);
+  font-style: normal;
+}
+
+.repoAbout > .repoRepositorySize {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.repoRepositorySize > div {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.repoRepositorySize span {
+  color: var(--muted);
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.repoRepositorySize > strong {
+  color: var(--text);
+  font: 700 12px/1.2 var(--repo-mono);
+  white-space: nowrap;
+}
+
+.repoCommitsPage {
+  width: min(1120px, calc(100% - 32px));
+  min-height: 620px;
+  margin: 0 auto;
+  padding: 12px 0 28px;
+}
+
+.repoCommitTitleBar {
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.repoRevisionControl {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--panel);
+  padding: 0 8px;
+}
+
+.repoRevisionControl span {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.repoRevisionControl select {
+  max-width: 170px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+  font: 10px/1.2 var(--repo-mono);
+}
+
+.repoInlineError {
+  margin-bottom: 12px;
+  border: 1px solid color-mix(in srgb, var(--danger) 24%, var(--border));
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--danger) 6%, var(--panel));
+  color: var(--danger);
+  padding: 9px 11px;
+  font-size: 10px;
+}
+
+.repoCommitGroups {
+  display: grid;
+  gap: 18px;
+}
+
+.repoListFooter {
+  display: flex;
+  justify-content: center;
+  padding: 18px 0 0;
+}
+
+.repoCommitGroup > h3 {
+  margin: 0;
+  padding: 0 0 8px 14px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.repoCommitGroup > div {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--panel);
+}
+
+.repoCommitListItem {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.repoCommitListItem:last-child {
+  border-bottom: 0;
+}
+
+.repoCommitListItem:hover {
+  background: color-mix(in srgb, var(--accent) 5%, var(--panel));
+}
+
+.repoCommitListMain {
+  appearance: none;
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.repoCommitListMain strong,
+.repoCommitListMain span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repoCommitListMain strong {
+  font-size: 11px;
+}
+
+.repoCommitListMain span {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.repoCommitListMain b {
+  color: var(--text);
+  font-weight: 650;
+}
+
+.repoCommitListActions,
+.repoCommitTitleBar > div:last-child,
+.repoCommitIdentifiers {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.repoCommitSha,
+.repoCommitIdentifiers > button:not(.repoIconButton) {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  padding: 2px;
+  cursor: pointer;
+  font: 10px/1.2 var(--repo-mono);
+}
+
+.repoCommitSha:hover,
+.repoCommitIdentifiers > button:not(.repoIconButton):hover {
+  text-decoration: underline;
+}
+
+.repoCommitPage {
+  width: min(1480px, calc(100% - 32px));
+  min-height: 680px;
+  margin: 0 auto;
+  padding: 18px 0 28px;
+}
+
+.repoCommitTitleBar > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 22px;
+}
+
+.repoCommitTitleBar code {
+  border-radius: 6px;
+  background: var(--panel-2);
+  padding: 4px 7px;
+  font: 20px/1.2 var(--repo-mono);
+}
+
+.repoCommitAuthorLine {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding-bottom: 15px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.repoCommitAuthorLine strong {
+  color: var(--text);
+}
+
+.repoCommitSummaryCard {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--panel);
+}
+
+.repoCommitMessage,
+.repoCommitMetaRow,
+.repoCommitStatsRow {
+  padding: 13px 15px;
+  border-bottom: 1px solid var(--border);
+}
+
+.repoCommitMessage {
+  display: grid;
+  gap: 7px;
+  font: 12px/1.45 var(--repo-mono);
+}
+
+.repoCommitMessage p {
+  margin: 0;
+  color: var(--muted);
+  white-space: pre-wrap;
+}
+
+.repoCommitMetaRow,
+.repoCommitStatsRow {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.repoCommitIdentifiers {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  font-family: var(--repo-mono);
+}
+
+.repoCommitIdentifiers code {
+  color: var(--text);
+}
+
+.repoCommitStatsRow {
+  border-bottom: 0;
+}
+
+.repoCommitStatsRow > strong {
+  color: var(--text);
+  font-size: 11px;
+}
+
+.repoCommitTotals {
+  margin-left: auto;
+  font: 11px/1.2 var(--repo-mono);
+}
+
+.repoCommitTotals b,
+.repoCommitFileNav small b,
+.repoCommitFileCard > header > span b {
+  color: var(--repo-green);
+  font-weight: 650;
+}
+
+.repoCommitTotals i,
+.repoCommitFileNav small i,
+.repoCommitFileCard > header > span i {
+  margin-left: 4px;
+  color: var(--danger);
+  font-style: normal;
+  font-weight: 650;
+}
+
+.repoCommitChangeBar {
+  width: 78px;
+  height: 8px;
+  display: flex;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--panel-2);
+}
+
+.repoCommitChangeBar i {
+  background: var(--repo-green);
+}
+
+.repoCommitChangeBar b {
+  background: var(--danger);
+}
+
+.repoCommitDiffLayout {
+  display: grid;
+  grid-template-columns: 270px minmax(0, 1fr);
+  align-items: start;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.repoCommitFileNav {
+  position: sticky;
+  top: 116px;
+  min-width: 0;
+  max-height: calc(100vh - 140px);
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 9px;
+}
+
+.repoCommitFileNav > .portalSearchField,
+.repoCommitDiffToolbar > .portalSearchField {
+  min-width: 0;
+}
+
+.repoCommitFileNav > span {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.repoCommitFileNav > nav {
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 5px;
+}
+
+.repoCommitFileNav nav button {
+  appearance: none;
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text);
+  padding: 6px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.repoCommitFileNav nav button:hover {
+  background: var(--panel-2);
+}
+
+.repoCommitFileNav nav button > span:nth-child(2) {
+  overflow: hidden;
+  font: 9px/1.3 var(--repo-mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repoCommitFileNav small {
+  white-space: nowrap;
+}
+
+.repoCommitFileStatus {
+  min-width: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--muted) 12%, var(--panel));
+  color: var(--muted);
+  padding: 2px 4px;
+  font: 700 8px/1.2 var(--repo-mono);
+}
+
+.repoCommitFileStatus.status-a {
+  background: color-mix(in srgb, var(--repo-green) 12%, var(--panel));
+  color: var(--repo-green);
+}
+
+.repoCommitFileStatus.status-d {
+  background: color-mix(in srgb, var(--danger) 10%, var(--panel));
+  color: var(--danger);
+}
+
+.repoCommitFileStatus.status-r {
+  background: color-mix(in srgb, var(--repo-purple) 11%, var(--panel));
+  color: var(--repo-purple);
+}
+
+.repoCommitDiffMain {
+  min-width: 0;
+}
+
+.repoCommitNotice {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 12px;
+  border: 1px solid #d4a72c;
+  border-radius: 8px;
+  background: color-mix(in srgb, #fff8c5 72%, var(--panel));
+  color: color-mix(in srgb, #7d4e00 75%, var(--text));
+  padding: 12px 14px;
+  font-size: 10px;
+}
+
+.repoCommitDiffToolbar {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 12px;
+}
+
+.repoCommitDiffToolbar > .portalSearchField {
+  width: min(500px, 100%);
+}
+
+.repoCommitDiffToolbar .repoSegmented {
+  margin-left: auto;
+}
+
+.repoCommitFileDiffs {
+  display: grid;
+  gap: 15px;
+}
+
+.repoCommitFileCard {
+  min-width: 0;
+  overflow: hidden;
+  scroll-margin-top: 112px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.repoCommitFileCard[hidden],
+.repoCommitFileNav button[hidden],
+.repoSplitDiffRow[hidden],
+.repoUnifiedDiffRow[hidden] {
+  display: none;
+}
+
+.repoCommitFileCard > header {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel-2);
+  padding: 8px 10px;
+}
+
+.repoCommitFileCard > header > div {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.repoCommitFileCard > header strong {
+  overflow: hidden;
+  font: 650 10px/1.25 var(--repo-mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repoCommitFileCard > header small {
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.repoCommitFileCard > header > span {
+  flex: 0 0 auto;
+  font: 9px/1.2 var(--repo-mono);
+}
+
+.repoUnifiedDiff,
+.repoSplitDiff {
+  overflow: auto;
+  font: 10px/1.55 var(--repo-mono);
+}
+
+.repoUnifiedDiffRow {
+  min-width: max-content;
+  display: grid;
+  grid-template-columns: 44px 44px minmax(640px, 1fr);
+}
+
+.repoUnifiedDiffRow > span {
+  border-right: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  color: var(--muted);
+  padding: 1px 7px;
+  text-align: right;
+  user-select: none;
+}
+
+.repoUnifiedDiffRow > code {
+  display: flex;
+  padding: 1px 9px;
+  white-space: pre;
+}
+
+.repoUnifiedDiffRow > code i {
+  width: 14px;
+  flex: 0 0 auto;
+  font-style: normal;
+}
+
+.repoUnifiedDiffRow.add,
+.repoUnifiedDiffRow.add > span {
+  background: color-mix(in srgb, #2da44e 13%, var(--panel));
+}
+
+.repoUnifiedDiffRow.delete,
+.repoUnifiedDiffRow.delete > span {
+  background: color-mix(in srgb, #cf222e 12%, var(--panel));
+}
+
+.repoUnifiedDiffRow.hunk,
+.repoUnifiedDiffRow.meta {
+  grid-template-columns: 44px 44px minmax(640px, 1fr);
+  background: color-mix(in srgb, #54aeff 14%, var(--panel));
+  color: color-mix(in srgb, #0969da 80%, var(--text));
+}
+
+.repoSplitDiffRow {
+  min-width: 980px;
+  display: grid;
+  grid-template-columns: 44px minmax(420px, 1fr) 44px minmax(420px, 1fr);
+}
+
+.repoSplitDiffRow > span {
+  border-right: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  color: var(--muted);
+  padding: 1px 7px;
+  text-align: right;
+  user-select: none;
+}
+
+.repoSplitDiffRow > code {
+  overflow: hidden;
+  border-right: 1px solid var(--border);
+  padding: 1px 9px;
+  text-overflow: clip;
+  white-space: pre;
+}
+
+.repoSplitDiffRow > :last-child {
+  border-right: 0;
+}
+
+.repoSplitDiffRow .delete {
+  background: color-mix(in srgb, #cf222e 12%, var(--panel));
+}
+
+.repoSplitDiffRow .add {
+  background: color-mix(in srgb, #2da44e 13%, var(--panel));
+}
+
+.repoSplitDiffRow .empty {
+  background: color-mix(in srgb, var(--panel-2) 54%, var(--panel));
+}
+
+.repoSplitDiffRow.hunk,
+.repoSplitDiffRow.meta {
+  grid-template-columns: minmax(980px, 1fr);
+  background: color-mix(in srgb, #54aeff 14%, var(--panel));
+  color: color-mix(in srgb, #0969da 80%, var(--text));
+}
+
+.repoSplitDiffRow.hunk code,
+.repoSplitDiffRow.meta code {
+  border-right: 0;
+}
+
+.repoCommitDiffEmpty {
+  min-height: 92px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  padding: 16px;
+  font-size: 10px;
+}
+
+.repoShortcutList {
+  display: grid;
+  margin: 0;
+}
+
+.repoShortcutList > div {
+  min-height: 42px;
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 7px 14px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+}
+
+.repoShortcutList > div:last-child {
+  border-bottom: 0;
+}
+
+.repoShortcutList dt,
+.repoShortcutList dd {
+  margin: 0;
+}
+
+.repoShortcutList dd {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.repoShortcutList kbd {
+  min-width: 26px;
+  display: inline-block;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: var(--panel-2);
+  color: var(--text);
+  padding: 3px 6px;
+  font: 9px/1.2 var(--repo-mono);
+  text-align: center;
+}

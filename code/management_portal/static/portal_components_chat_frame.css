@@ -1,0 +1,537 @@
+/* Shared components: the Chat workspace frame: image references, pinned messages, loading state,
+   pane heads, Resource identity and the message list. Pages load this file right after
+   portal_components_markdown.css. */
+.composerImageRef.messageImageRef {
+  appearance: none;
+  border: 1px solid var(--border, rgba(148, 163, 184, 0.45));
+  border-radius: 7px;
+  background: var(--panel, #fff);
+  color: var(--text, #111827);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: min(320px, 100%);
+  padding: 5px 7px;
+  margin: 2px 4px 2px 0;
+  vertical-align: middle;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.composerImageRef.messageImageRef:hover {
+  border-color: var(--accent, #2563eb);
+}
+
+.composerImageRefThumb {
+  width: 44px;
+  height: 34px;
+  object-fit: cover;
+  border-radius: 5px;
+  background: var(--panel-2, rgba(148, 163, 184, 0.14));
+}
+
+.composerFileRefIcon {
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--panel-2, rgba(148, 163, 184, 0.14));
+  color: var(--muted, #64748b);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.composerImageRefLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portalChatWorkspaceRoot,
+.chatSelectionContextAction {
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.portalChatWorkspaceRoot {
+  container: portal-chat-workspace / inline-size;
+  min-height: var(--portal-chat-workspace-min-height, 0);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  --portal-composer-input-h: 86px;
+}
+
+.workspacePinnedMessages { flex: 0 0 auto; max-height: 120px; overflow: auto; border-bottom: 1px solid var(--border); padding: 4px 12px; background: var(--panel); }
+.workspacePinnedMessages[hidden] { display: none; }
+.workspacePinnedMessage { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.workspacePinnedJump { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; border: 0; background: transparent; color: var(--text); padding: 5px 0; font: inherit; font-size: 12px; text-align: left; cursor: pointer; }
+.workspacePinnedJump > span:first-child { flex-shrink: 0; color: var(--accent); font-size: 11px; }
+.workspacePinnedJump > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.workspacePinnedMessage > .portalButton { flex-shrink: 0; }
+.workspacePinnedJump:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-radius: 4px; }
+.portalWorkspaceLoading {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  align-items: stretch;
+  justify-content: stretch;
+  background: var(--panel, #fff);
+}
+
+.portalWorkspaceLoading[hidden] {
+  display: none;
+}
+
+.portalWorkspaceLoading > .portalAsyncState {
+  width: 100%;
+  min-height: 0;
+}
+
+.portalChatWorkspaceRoot.is-workspace-loading > .portalWorkspaceBody,
+.portalChatWorkspaceRoot.is-workspace-loading > .composerSplitter,
+.portalChatWorkspaceRoot.is-workspace-loading > .composer {
+  visibility: hidden;
+}
+
+.workspaceComposerExtension,
+.workspaceComposerMetaHost {
+  display: contents;
+}
+
+.workspaceComposerExtension:empty {
+  display: none;
+}
+
+.portalChatWorkspaceRoot .paneNote {
+  margin-top: 0;
+  color: var(--muted, #64748b);
+  font-size: 11px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.portalChatWorkspaceRoot .actionGroup {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  margin-left: 0;
+}
+
+.portalChatWorkspaceRoot .sendIconBtn {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  padding: 0;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* Header appearance is shared even by toolbars with a specialized layout. */
+.paneHead,
+.portalPanelHeadSurface {
+  color: var(--text, #111827);
+  border-bottom: var(--portal-pane-head-border-bottom, 1px solid var(--border, rgba(148, 163, 184, 0.32)));
+  background: var(--panel-2, rgba(148, 163, 184, 0.10));
+}
+
+.paneHead {
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-height: var(--portal-pane-head-min-height, 64px);
+  padding: 10px 12px;
+}
+
+.paneHeadText {
+  flex: 1 1 0;
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.paneHead > .paneTitle {
+  flex: 1 1 auto;
+}
+
+.paneHeadActions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chatHeadText {
+  flex-basis: 240px;
+}
+
+.portalChatWorkspaceRoot .chatHead {
+  position: relative;
+  z-index: 8;
+  overflow: visible;
+}
+
+.chatSubline {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  overflow: hidden;
+}
+
+.chatSubline .paneNote {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.chatSubline .paneNote.hasSessionIdentity {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  overflow: visible;
+  white-space: normal;
+}
+
+.chatSubline .chatHeaderCopyId {
+  max-width: 100%;
+  cursor: copy;
+  font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  user-select: text;
+}
+
+.chatSubline [data-workspace-account-id] {
+  white-space: nowrap;
+}
+
+.chatSubline a.chatHeaderCopyId {
+  cursor: pointer;
+}
+
+.chatSubline [data-workspace-session-id] {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* A Family facade's Chat says so in its header (decision_44cf587c1721). */
+.chatSubline [data-workspace-identity="family"] {
+  background: transparent;
+  font-family: inherit;
+  padding: 0 7px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 999px;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  white-space: nowrap;
+}
+.chatSubline button[data-workspace-identity="family"] { cursor: pointer; }
+.chatSubline button[data-workspace-identity="family"]:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.chatSubline button[data-workspace-identity="family"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.portalResourceIdentity {
+  min-width: 0;
+  max-width: var(--portal-resource-identity-max-width, 100%);
+  display: grid;
+  gap: 3px;
+}
+
+.portalResourceIdentityTitleRow {
+  min-width: 0;
+  max-width: var(--portal-resource-identity-title-row-max-width, none);
+  display: flex;
+  align-items: var(--portal-resource-identity-title-row-align, baseline);
+  gap: 8px;
+  font-size: var(--portal-resource-identity-title-size, inherit);
+  font-weight: var(--portal-resource-identity-title-weight, inherit);
+  line-height: var(--portal-resource-identity-title-line-height, normal);
+}
+
+.portalResourceIdentityTitle {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--text);
+  font: inherit;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portalResourceIdentitySeparator {
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+
+.portalResourceIdentityType {
+  flex: 0 0 auto;
+  color: var(--text);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.portalResourceIdentityId {
+  width: fit-content;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--muted);
+  cursor: default;
+  font: 9.5px/1.45 var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  text-overflow: ellipsis;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.portalResourceIdentityId[data-portal-resource-id] {
+  cursor: copy;
+}
+
+.portalResourceIdentity.compact {
+  gap: 2px;
+}
+
+.portalResourceIdentity.compact .portalResourceIdentityTitleRow {
+  gap: 6px;
+}
+
+.portalResourceIdentity.compact .portalResourceIdentityId {
+  font-size: 9px;
+}
+
+.portalResourceDetailIntro {
+  margin: 0 0 15px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.portalResourceDetailGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.portalResourceDetailField {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--panel-2);
+}
+
+.portalResourceDetailField dt {
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.portalResourceDetailField dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font: 11px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.portalResourceDetailSection {
+  margin-top: 20px;
+}
+
+.portalResourceDetailSection > h3 {
+  margin: 0 0 8px;
+  font-size: 12px;
+}
+
+.portalResourceDetailList {
+  display: grid;
+  gap: 6px;
+}
+
+.portalResourceDetailListItem {
+  padding: 10px 11px;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--panel-2);
+  font: 11px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.portalResourceDetailActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 620px) {
+  .portalResourceDetailGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.portalSemanticIdentity {
+  min-width: 0;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border, #d7dee7);
+}
+
+.portalSemanticIdentity[hidden] {
+  display: none;
+}
+
+.portalSemanticIdentity .portalResourceIdentityTitle {
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.portalSemanticIdentity .portalResourceIdentityId {
+  font-size: 10px;
+}
+
+.paneTitle {
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 18px;
+  color: var(--text, #111827);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.paneNote {
+  margin: 0;
+  color: var(--muted, #64748b);
+  font-size: 11px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.actionGroup {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.sendIconBtn {
+  width: 34px;
+  min-width: 34px;
+  padding: 0;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.chatWorkspaceBody,
+.portalWorkspaceBody {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.portalChatWorkspaceRoot .chatWorkspaceBody {
+  flex-direction: row;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.chatWorkspaceBody > .paneBody {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+@media (max-width: 780px) {
+  .portalChatWorkspaceRoot .chatWorkspaceBody {
+    flex-direction: column;
+  }
+}
+
+@container portal-chat-workspace (max-width: 780px) {
+  .portalChatWorkspaceRoot .chatWorkspaceBody {
+    flex-direction: column;
+  }
+}
+
+.paneBody {
+  min-height: 0;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: auto;
+  padding: 12px;
+}
+
+.messageList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+}
+
+.portalChatWorkspaceRoot .messageList > * {
+  overflow-anchor: none;
+}
+
+.portalChatWorkspaceRoot .messageScrollAnchor {
+  flex: 0 0 1px;
+  width: 1px;
+  height: 1px;
+  overflow-anchor: auto;
+  pointer-events: none;
+}
+
+.portalChatWorkspaceRoot .paneBody.is-reading-history .messageItem {
+  overflow-anchor: auto;
+}
+
+.portalChatWorkspaceRoot .paneBody.is-reading-history .messageScrollAnchor {
+  overflow-anchor: none;
+}
+
+.portalChatWorkspaceRoot .paneBody {
+  position: relative;
+}
+
+.portalAsyncState.portalWorkspaceEmpty {
+  position: absolute;
+  inset: 12px;
+  width: auto;
+  min-height: 0;
+  padding: clamp(28px, 8vh, 72px) 24px;
+}

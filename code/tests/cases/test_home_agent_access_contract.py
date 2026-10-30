@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-HOME_JS = ROOT / "management_portal" / "static" / "home.js"
+AGENT_ACCESS_JS = ROOT / "management_portal" / "static" / "home_agent_access.js"
 
 
 def test_agent_access_loads_shortcuts_and_renders_navigable_residents() -> None:
@@ -18,9 +18,9 @@ def test_agent_access_loads_shortcuts_and_renders_navigable_residents() -> None:
 
 def test_recently_used_preserves_distinct_activity_labels() -> None:
     """Home 最近使用列表分别显示排队中、启动中和运行中，已完成的只显示任务摘要"""
-    source = HOME_JS.read_text(encoding="utf-8")
+    source = AGENT_ACCESS_JS.read_text(encoding="utf-8")
     start = source.index("function agentAccessActivityLabel")
-    end = source.index("\nfunction renderAgentAccess", start)
+    end = source.index("\n    function renderAgentAccess", start)
     functions = source[start:end]
 
     script = f"""

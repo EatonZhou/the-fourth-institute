@@ -7,6 +7,7 @@ const http = require('node:http');
 const { execFileSync } = require('node:child_process');
 const { chatWorkspaceScripts } = require('./chat_workspace_modules.cjs');
 const { portalWorkbenchScripts } = require('./portal_workbench_scripts.cjs');
+const { PORTAL_COMPONENTS_STYLES } = require('./portal_components_styles.cjs');
 const repo = path.resolve(__dirname, '../../..');
 const { chromium } = require(path.join(repo, 'management_portal/test_framework/tau_runtime/node_modules/playwright'));
 const modules = ['portal_state.js', 'portal_page_state.js', 'portal_text.js', 'portal_i18n.js',
@@ -23,11 +24,11 @@ const routes = execFileSync('python3', ['-c',
     let body, type = 'text/javascript';
     if (!name) {
       type = 'text/html';
-      body = '<!doctype html><meta charset="utf-8"><link rel="stylesheet" href="/portal_components.css">' +
+      body = '<!doctype html><meta charset="utf-8">' + PORTAL_COMPONENTS_STYLES.map(name => `<link rel="stylesheet" href="/${name}.css">`).join('') +
         '<style>body{margin:8px}#chat{width:100%;height:800px}</style><main id="chat"></main>' +
         '<script src="/routes.js"></script>' + modules.map(n => `<script src="/${n}"></script>`).join('');
     } else if (name === 'routes.js') body = routes;
-    else if (modules.includes(name) || name === 'portal_components.css') {
+    else if (modules.includes(name) || PORTAL_COMPONENTS_STYLES.some(style => name === `${style}.css`)) {
       body = fs.readFileSync(path.join(repo, 'management_portal/static', name));
       if (name.endsWith('.css')) type = 'text/css';
     }

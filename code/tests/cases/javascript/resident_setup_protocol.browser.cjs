@@ -1,6 +1,7 @@
 'use strict';
 const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path');
 const {chromium} = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
+const {PORTAL_COMPONENTS_STYLES} = require('./portal_components_styles.cjs');
 const root = path.resolve(__dirname, '../../../management_portal/static');
 (async () => {
   const browser = await chromium.launch({headless: true});
@@ -15,7 +16,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
       return route.fulfill({contentType: 'text/html', body: '<!doctype html><html lang="zh-CN"><meta charset="utf-8"><body></body></html>'});
     });
     await page.goto('http://resident.fixture.invalid');
-    for (const file of ['portal_components', 'portal_design_system', 'portal_themes', 'portal_resident_menu']) await page.addStyleTag({url: '/static/' + file + '.css'});
+    for (const file of [...PORTAL_COMPONENTS_STYLES, 'portal_design_system', 'portal_themes', 'portal_resident_menu']) await page.addStyleTag({url: '/static/' + file + '.css'});
     for (const file of ['portal_text', 'portal_state', 'portal_translations', 'portal_i18n', 'portal_ui_primitives', 'portal_overlay', 'portal_ui', 'portal_model_api_settings', 'chat_workspace_runtime_settings']) await page.addScriptTag({url: '/static/' + file + '.js'});
     await page.evaluate(() => {
       const catalog = {models: ['m', 'm2'], default_model: 'm', efforts_by_model: {}, service_tiers_by_model: {}, runtime_capabilities: {settings: ['model', 'permissions'], permission_presets: ['full-access']}};

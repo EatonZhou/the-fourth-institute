@@ -1,0 +1,139 @@
+/* Lineage panel: narrow pane, narrow window and reduced motion overrides. Pages load this file
+   right after hatg_panel_dialogs.css. */
+@scope (:is(.portalHatgPanelComponent, .portalHatgOverlayComponent)) {
+@container lineage-hatg-pane (max-width: 760px) {
+  .hatgToolbar {
+    grid-template-columns: auto minmax(0, 1fr) minmax(0, max-content);
+    grid-template-areas:
+      "rail title actions"
+      "view view view";
+    gap: 6px;
+  }
+
+  .hatgPaneRailControls { grid-area: rail; }
+
+  .hatgTitleBlock {
+    grid-area: title;
+    display: block;
+    min-width: 0;
+  }
+
+  .hatgViewSwitch {
+    grid-area: view;
+    min-width: 0;
+    grid-template-columns: repeat(2, minmax(48px, 1fr));
+  }
+
+  .hatgToolbar > .graphActions {
+    grid-area: actions;
+    justify-self: end;
+  }
+
+  .hatgViewTab {
+    min-width: 0;
+    padding: 6px;
+    text-align: center;
+  }
+
+  .graphAction span { display: none; }
+
+  .graphAction {
+    width: 29px;
+    padding: 5px;
+  }
+
+  .graphAction.functionBlockWrapAction.is-active {
+    width: auto;
+    min-width: 40px;
+    gap: 3px;
+  }
+
+  .graphAction.functionBlockWrapAction > em {
+    min-width: 13px;
+    height: 13px;
+    padding: 0 3px;
+    font-size: 7px;
+  }
+}
+
+@container lineage-hatg-pane (max-width: 420px) {
+  .hatgToolbar {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      "rail title"
+      "view view"
+      "actions actions";
+  }
+
+  .hatgToolbar > .graphActions {
+    width: 100%;
+  }
+
+  .hatgToolbar:has(> .graphActions[data-selection-active="true"]) {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      "rail title"
+      "view view"
+      "actions actions";
+  }
+}
+
+@media (max-width: 1660px) {
+  .agentLineageShell {
+    --lineage-sidebar-w: 218px;
+    --node-chat-w: 312px;
+    --result-pane-w: 350px;
+  }
+
+  .graphAction span { display: none; }
+  .graphAction { width: 29px; padding: 5px; }
+  .graphAction.functionBlockWrapAction.is-active {
+    width: auto;
+    min-width: 40px;
+    gap: 3px;
+  }
+  .graphAction.functionBlockWrapAction > em {
+    min-width: 13px;
+    height: 13px;
+    padding: 0 3px;
+    font-size: 7px;
+  }
+  .graphAction.autoLayoutAction { width: auto; padding: 5px 7px; }
+  .graphAction.autoLayoutAction span { display: inline; }
+  .hatgTitleBlock { flex-basis: 180px; }
+  .hatgViewSwitch { grid-template-columns: repeat(2, minmax(48px, 1fr)); }
+  .hatgViewTab { padding: 6px; text-align: center; }
+  .graphViewportHint { display: none; }
+  .graphSemanticZoom button { width: 24px; justify-content: center; padding: 0; }
+  .graphSemanticZoom button span { display: none; }
+  .graphVisibilitySummary { display: none; }
+}
+
+@media (max-width: 1320px) {
+  body { overflow: auto; }
+  .agentLineageShell { min-width: 1240px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-portal-motion="full"]) .hatgNode[data-status="running"]:not(.draggingNode):not(.blockDragTarget):not(.absorptionDropTarget),
+  html:root:not([data-portal-motion="full"])[data-portal-theme="fire"] .hatgNode[data-status="running"]:not(.draggingNode):not(.blockDragTarget):not(.absorptionDropTarget),
+  :root:not([data-portal-motion="full"]) .hatgNode[data-status="running"] .nodeStatus::before,
+  :root:not([data-portal-motion="full"]) .hatgNode[data-status="queued"] .nodeStatus::before,
+  :root:not([data-portal-motion="full"]) .hatgNode[data-status="running"]::before,
+  :root:not([data-portal-motion="full"]) .hatgNode[data-status="queued"]::before,
+  :root:not([data-portal-motion="full"]) .hatgNode[data-status="running"]::after,
+  :root:not([data-portal-motion="full"]) .hatgNode[data-status="queued"]::after,
+  :root:not([data-portal-motion="full"]) .hatgNodeControl[data-busy="true"]::before,
+  :root:not([data-portal-motion="full"]) .programWireHintPulse { animation: none; }
+}
+
+:root[data-portal-motion="reduced"] .hatgNode[data-status="running"]:not(.draggingNode):not(.blockDragTarget):not(.absorptionDropTarget),
+:root[data-portal-motion="reduced"] .hatgNode[data-status="running"] .nodeStatus::before,
+:root[data-portal-motion="reduced"] .hatgNode[data-status="queued"] .nodeStatus::before,
+:root[data-portal-motion="reduced"] .hatgNode[data-status="running"]::before,
+:root[data-portal-motion="reduced"] .hatgNode[data-status="queued"]::before,
+:root[data-portal-motion="reduced"] .hatgNode[data-status="running"]::after,
+:root[data-portal-motion="reduced"] .hatgNode[data-status="queued"]::after,
+:root[data-portal-motion="reduced"] .hatgNodeControl[data-busy="true"]::before,
+:root[data-portal-motion="reduced"] .programWireHintPulse { animation: none; }
+}

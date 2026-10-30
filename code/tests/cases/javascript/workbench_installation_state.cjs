@@ -17,6 +17,7 @@ const createHarness = () => harness({sourceTransform: (name, text) =>
   workbenchScripts.has(name) ? source(name) : text});
 const stateSource = source('portal_state.js');
 const lineageSource = source('lineage_workbench.js');
+const chatTargetsSource = source('lineage_workbench_chat_targets.js');
 function expression(text, predicate) {
   let selected;
   traverse(parser.parse(text), {enter(p) { if (predicate(p.node)) { assert.equal(selected, undefined); selected = p.node; } }});
@@ -184,7 +185,8 @@ test('HATG quarantines only current GetLineage 404, not other reads or stale req
 
 test('404 quarantine also removes page last-selection fallback without erasing drafts or later healthy selection', () => {
   const names = ['onLineagePanelBinding', 'writeLastSelection'];
-  const functions = names.map(name => expression(lineageSource, n => n.type === 'FunctionDeclaration' && n.id.name === name)).join('\n');
+  const functions = names.map(name => expression(name === 'writeLastSelection' ? chatTargetsSource : lineageSource,
+    n => n.type === 'FunctionDeclaration' && n.id.name === name)).join('\n');
   const stale = {kind:'resident', id:'missing', key:'resident:missing'};
   let saved = {lastChatTarget: stale, draft:'never erase'};
   const location = new URL('https://portal.test/lineage?resident=missing&lineage=kept&open_chat=1');

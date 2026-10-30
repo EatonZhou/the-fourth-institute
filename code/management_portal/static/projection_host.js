@@ -296,15 +296,21 @@
   }
   async function mountContent(root, app, options = {}) {
     const assets = options.packageEntry ? applicationAssets(app, options.packageEntry, !!options.preview) : null;
+    // Request the entry document before the shared SDK, state and style sheets: the style sheets
+    // take several requests, and over HTTP/1.1 a browser runs only a few at once per origin.
+    const documentPromise = assets ? applicationDocument(assets) : new DOMParser().parseFromString(app.html, "text/html");
     if (!sdkPromise) sdkPromise = fetch("/static/projection_sdk.js").then(response => { if (!response.ok) throw new Error("工作台 SDK 加载失败"); return response.text(); });
     if (!statePromise) statePromise = fetch("/static/portal_state.js").then(response => { if (!response.ok) throw new Error("Portal 状态组件加载失败"); return response.text(); });
-    if (!stylesPromise) stylesPromise = Promise.all(["portal_components.css", "portal_design_system.css", "portal_workbench.css"].map(async name => {
+    if (!stylesPromise) stylesPromise = Promise.all(["portal_components.css", "portal_components_markdown.css",
+      "portal_components_chat_frame.css", "portal_components_messages.css", "portal_components_composer.css",
+      "portal_components_queue.css", "portal_components_resource_chips.css", "portal_components_agent_inbox.css",
+      "portal_components_turn_cards.css", "portal_components_conversation.css", "portal_design_system.css",
+      "portal_workbench.css"].map(async name => {
       const response = await fetch(`/static/${name}`);
       if (!response.ok) throw new Error("Portal 基础模板加载失败");
       return response.text();
     })).then(styles => styles.join("\n"));
-    const [sdk, state, sharedCss, documentSource] = await Promise.all([sdkPromise, statePromise, stylesPromise,
-      assets ? applicationDocument(assets) : new DOMParser().parseFromString(app.html, "text/html")]);
+    const [sdk, state, sharedCss, documentSource] = await Promise.all([sdkPromise, statePromise, stylesPromise, documentPromise]);
     // A destroyed panel must never inject its late document or register a channel.
     if (options.isCurrent && !options.isCurrent()) throw fail("cancelled", "功能区已关闭");
     const channel = globalThis.PortalUIPrimitives.randomUUID();

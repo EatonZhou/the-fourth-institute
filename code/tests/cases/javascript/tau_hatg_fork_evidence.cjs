@@ -3,6 +3,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
 const code=process.env.TAU_CODE_ROOT||path.resolve(__dirname,'../../..');
 const {chromium}=require(path.join(code,'management_portal/test_framework/tau_runtime/node_modules/playwright'));
 const {LINEAGE_GRAPH_SCRIPTS}=require(path.join(code,'tests/cases/javascript/lineage_graph_scripts.cjs'));
+const {HATG_PANEL_STYLES}=require(path.join(code,'tests/cases/javascript/hatg_panel_styles.cjs'));
 const {readHatgForkPrerequisites:read}=require(path.join(code,'management_portal/test_framework/tau_hatg_fork_evidence'));
 (async()=>{
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
@@ -10,7 +11,7 @@ const {readHatgForkPrerequisites:read}=require(path.join(code,'management_portal
   const page=await browser.newPage({viewport:{width:1100,height:800}}),errors=[],requests=[];
   page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>requests.push(r.url()));
   await page.setContent('<!doctype html><section id="lineage-hatg-panel" role="region" class="portalHatgPanelComponent"><div id="hatgCanvas" class="hatgCanvas" style="position:absolute;left:100px;top:100px;width:600px;height:500px"><div id="world" class="hatgWorld"><svg id="edges"></svg><svg id="effects"></svg><div id="labels"></div><div id="nodes"></div></div></div></section>');
-  for(const n of ['portal_design_system','portal_themes','hatg_panel','lineage_function_blocks'])
+  for(const n of ['portal_design_system','portal_themes',...HATG_PANEL_STYLES,'lineage_function_blocks'])
    await page.addStyleTag({content:fs.readFileSync(path.join(code,'management_portal/static',n+'.css'),'utf8')});
   await page.addStyleTag({content:'html,body{height:100%;margin:0} #lineage-hatg-panel{height:100%;width:100%}'});
   for(const n of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min',...LINEAGE_GRAPH_SCRIPTS])

@@ -5,6 +5,7 @@ const path = require('node:path');
 const code = path.resolve(__dirname, '../../..');
 const {chromium} = require(path.join(code, 'management_portal/test_framework/tau_runtime/node_modules/playwright'));
 const {LINEAGE_GRAPH_SCRIPTS} = require('./lineage_graph_scripts.cjs');
+const {HATG_PANEL_STYLES} = require('./hatg_panel_styles.cjs');
 const L = 'lineage_111111111111', E = 'effect_222222222222';
 const report = {scope: 'Native graph and CanvasSelection; node text, header and dependency callbacks are local fixtures; no business requests', formal_acceptance: false};
 
@@ -16,7 +17,7 @@ const report = {scope: 'Native graph and CanvasSelection; node text, header and 
   page.on('pageerror', e => errors.push(e.message));
   try {
     await page.setContent(`<!doctype html><section id="panel" class="portalHatgPanelComponent" role="region"><main id="agentLineageShell"><div id="hatgPane"><div id="activeLineageIdentity"><code data-portal-resource-id="${L}">${L}</code></div><div id="hatgCanvas" class="hatgCanvas" style="position:relative;width:900px;height:600px"><div id="world" class="hatgWorld"><svg id="edges"></svg><svg id="effects"></svg><div id="labels"></div><div id="nodes"></div></div></div></div></main></section>`);
-    for (const n of ['portal_design_system','portal_themes','hatg_panel','lineage_function_blocks'])
+    for (const n of ['portal_design_system','portal_themes',...HATG_PANEL_STYLES,'lineage_function_blocks'])
       await page.addStyleTag({content: fs.readFileSync(path.join(code,'management_portal/static',n+'.css'),'utf8')});
     await page.addStyleTag({content: 'html,body{margin:0} #panel,#agentLineageShell,#hatgPane{display:block;width:100%;height:100%}'});
     for (const n of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min','lineage_program',...LINEAGE_GRAPH_SCRIPTS,'hatg_canvas_selection'])

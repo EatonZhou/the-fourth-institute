@@ -5,6 +5,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const portal = path.resolve(__dirname, '../../../management_portal');
 const { chromium } = require(path.join(portal, 'test_framework/tau_runtime/node_modules/playwright'));
+const { PORTAL_COMPONENTS_STYLES } = require('./portal_components_styles.cjs');
+const { HATG_PANEL_STYLES } = require('./hatg_panel_styles.cjs');
 
 (async () => {
   const browser = await chromium.launch({ headless: true });
@@ -17,7 +19,7 @@ const { chromium } = require(path.join(portal, 'test_framework/tau_runtime/node_
       await page.route('**/*', route => route.abort());
       await page.setContent('<!doctype html><section class="portalHatgPanelComponent">'
         + fs.readFileSync(path.join(portal, 'hatg-panel.html'), 'utf8') + '</section>');
-      for (const name of ['portal_design_system', 'portal_themes', 'portal_components', 'hatg_panel']) {
+      for (const name of ['portal_design_system', 'portal_themes', ...PORTAL_COMPONENTS_STYLES, ...HATG_PANEL_STYLES]) {
         await page.addStyleTag({ path: path.join(portal, 'static', name + '.css') });
       }
       await page.evaluate(lang => { window.__PORTAL_LANGUAGE__ = lang; }, language);

@@ -1,0 +1,468 @@
+/* Repository workspace: the Changes tab: change list, diff panel, commit panel and their empty and
+   error states. Pages load this file right after repo_workspace_code.css. */
+.repoChangesLayout {
+  min-height: 620px;
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr) 300px;
+}
+
+.repoChangesList,
+.repoCommitPanel {
+  min-width: 0;
+  background: var(--panel);
+}
+
+.repoChangesList {
+  border-right: 1px solid var(--border);
+}
+
+.repoChangesListHeader,
+.repoDiffHeader {
+  min-height: 49px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel-2);
+}
+
+.repoChangesListHeader {
+  align-items: stretch;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.repoChangesListHeader > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.repoChangesListHeader > .portalSearchField,
+.repoListSearch {
+  min-width: 0;
+  width: 100%;
+}
+
+.repoChangesListHeader > .portalSearchField kbd {
+  flex: 0 0 auto;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--muted);
+  padding: 1px 4px;
+  font: 8px/1.2 var(--repo-mono);
+}
+
+.repoChangesListHeader > nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.repoChangesListHeader > nav > button {
+  appearance: none;
+  width: auto;
+  min-height: 25px;
+  display: inline-flex;
+  grid-template-columns: none;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  padding: 3px 7px;
+  cursor: pointer;
+  font: 650 9px/1 ui-sans-serif, system-ui, sans-serif;
+}
+
+.repoChangesListHeader > nav > button:hover:not(:disabled),
+.repoChangesListHeader > nav > button.active {
+  border-color: color-mix(in srgb, var(--accent) 24%, var(--border));
+  background: color-mix(in srgb, var(--accent) 8%, var(--panel));
+  color: var(--accent);
+}
+
+.repoChangesListHeader > nav > button:disabled {
+  opacity: .42;
+  cursor: default;
+}
+
+.repoChangesListHeader > nav small {
+  font-size: 8px;
+}
+
+.repoChangesListHeader strong,
+.repoDiffHeader strong {
+  font-size: 13px;
+}
+
+.repoChangesListHeader span,
+.repoDiffHeaderActions > span {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.repoChangesItems {
+  max-height: 720px;
+  overflow: auto;
+  padding: 5px;
+}
+
+.repoChangesItems > button {
+  appearance: none;
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 27px minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  padding: 7px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.repoChangesItems > button:hover,
+.repoChangesItems > button.active {
+  background: color-mix(in srgb, var(--accent) 8%, var(--panel));
+}
+
+.repoChangeDetails {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.repoChangeMeta {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 7px;
+}
+
+.repoChangeMeta small {
+  min-width: 0;
+}
+
+.repoChangeMeta time {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.repoChangesItems strong,
+.repoChangesItems small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repoChangesItems strong {
+  font-size: 11px;
+}
+
+.repoChangesItems small {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.repoDiffPanel {
+  min-width: 0;
+  background: var(--panel);
+}
+
+.repoDiffHeader > div {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.repoDiffHeader strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repoDiffHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.repoDiffHeaderActions button {
+  appearance: none;
+  width: 27px;
+  height: 27px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.repoDiffHeaderActions button:hover {
+  background: var(--panel);
+  color: var(--accent);
+}
+
+.repoDiffHeaderActions svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+}
+
+.repoDiffViewer {
+  max-height: 720px;
+}
+
+.repoDiffLine {
+  min-width: max-content;
+  padding: 0 12px;
+  white-space: pre;
+}
+
+.repoDiffLine.add {
+  background: color-mix(in srgb, #2da44e 13%, var(--panel));
+  color: color-mix(in srgb, #1a7f37 85%, var(--text));
+}
+
+.repoDiffLine.delete {
+  background: color-mix(in srgb, #cf222e 12%, var(--panel));
+  color: color-mix(in srgb, #cf222e 80%, var(--text));
+}
+
+.repoDiffLine.hunk {
+  background: color-mix(in srgb, #54aeff 14%, var(--panel));
+  color: color-mix(in srgb, #0969da 80%, var(--text));
+}
+
+.repoDiffLine.meta {
+  color: var(--muted);
+}
+
+.repoDiffEmpty {
+  min-height: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.repoCommitPanel {
+  border-left: 1px solid var(--border);
+  padding: 14px;
+}
+
+.repoCommitPanelHeading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 14px;
+}
+
+.repoCommitPanelHeading > div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.repoCommitPanelHeading strong {
+  overflow: hidden;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repoCommitPanelHeading span {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.repoCommitPanel form,
+.repoRemoteSettings {
+  display: grid;
+  gap: 10px;
+}
+
+.repoCommitPanel label,
+.repoRemoteSettings label,
+.repoSmallDialogBody label,
+.repoPathEditor {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 650;
+}
+
+.repoCommitPanel input,
+.repoCommitPanel textarea,
+.repoRemoteSettings input,
+.repoRemoteSettings select,
+.repoSmallDialogBody input,
+.repoPathEditor input {
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  outline: 0;
+  background: var(--panel);
+  color: var(--text);
+  padding: 8px 9px;
+  font: 11px/1.35 ui-sans-serif, system-ui, sans-serif;
+}
+
+.repoCommitPanel input:focus,
+.repoCommitPanel textarea:focus,
+.repoRemoteSettings input:focus,
+.repoRemoteSettings select:focus,
+.repoSmallDialogBody input:focus,
+.repoPathEditor input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.repoCommitPanel textarea {
+  min-height: 112px;
+  resize: vertical;
+}
+
+.repoCommitPanel > p,
+.repoCommitWarning,
+.repoSettingsNotice {
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.repoCommitWarning {
+  margin-bottom: 10px;
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--border));
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--danger) 7%, var(--panel));
+  color: var(--danger);
+  padding: 8px;
+}
+
+.repoCommitPanel code {
+  font-family: var(--repo-mono);
+}
+
+.repoCleanState {
+  min-height: 500px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 36px;
+  text-align: center;
+}
+
+.repoCleanState h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.repoCleanState p {
+  max-width: 520px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.repoCleanIcon {
+  width: 52px;
+  height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--repo-green) 12%, var(--panel));
+  color: var(--repo-green);
+  font-size: 24px;
+}
+
+.repoCommitRefs {
+  display: flex;
+  justify-content: flex-end;
+  gap: 3px;
+}
+
+.repoCommitRefs em,
+.repoBranchMain em {
+  border: 1px solid color-mix(in srgb, var(--repo-green) 25%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--repo-green) 8%, var(--panel));
+  color: var(--repo-green);
+  padding: 2px 6px;
+  font-size: 8px;
+  font-style: normal;
+  white-space: nowrap;
+}
+
+.repoDiffError,
+.repoListError {
+  min-height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 9px;
+  color: var(--muted);
+  padding: 24px;
+  text-align: center;
+}
+
+.repoDiffError strong,
+.repoListError strong {
+  color: var(--text);
+  font-size: 14px;
+}
+
+.repoDiffError span,
+.repoListError span {
+  max-width: 560px;
+  font-size: 11px;
+}
+
+.repoFilterEmpty {
+  min-height: 92px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  padding: 16px;
+  font-size: 11px;
+  text-align: center;
+}
+
+.repoFilterEmpty[hidden] {
+  display: none;
+}
+
+.repoChangesItems > button[hidden],
+.repoCommitListItem[hidden],
+.repoCommitGroup[hidden],
+.repoBranchRow[hidden] {
+  display: none;
+}

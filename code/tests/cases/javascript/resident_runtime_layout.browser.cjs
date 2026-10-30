@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const {chromium} = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
+const {PORTAL_COMPONENTS_STYLES} = require('./portal_components_styles.cjs');
 const root = path.resolve(__dirname, '../../../management_portal/static');
 (async () => {
   const browser = await chromium.launch({headless: true, ...(process.env.PORTAL_TEST_CHROMIUM ? {executablePath: process.env.PORTAL_TEST_CHROMIUM} : {})});
@@ -18,7 +19,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
       return route.fulfill({contentType: 'text/html; charset=utf-8', body: '<!doctype html><html lang="zh-CN" data-portal-theme="light"><meta charset="utf-8"><body><button id="background">背景操作</button></body></html>'});
     });
     await page.goto('http://runtime.fixture.invalid');
-    for (const name of ['portal_components', 'portal_workbench', 'lineage_workbench', 'portal_design_system', 'portal_themes']) await page.addStyleTag({url: '/static/' + name + '.css'});
+    for (const name of [...PORTAL_COMPONENTS_STYLES, 'portal_workbench', 'lineage_workbench', 'portal_design_system', 'portal_themes']) await page.addStyleTag({url: '/static/' + name + '.css'});
     for (const name of ['portal_text', 'portal_state', 'portal_translations', 'portal_i18n', 'portal_ui_primitives', 'portal_overlay', 'portal_ui', 'portal_detail_surface', 'portal_model_api_settings', 'chat_workspace_runtime_settings']) await page.addScriptTag({url: '/static/' + name + '.js'});
     await page.evaluate(() => {
       window.requests = []; window.saves = []; window.backgroundClicks = 0;

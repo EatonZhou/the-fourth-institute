@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { JSDOM, VirtualConsole } = require('jsdom');
 const { portalWorkbenchScripts } = require('./portal_workbench_scripts.cjs');
+const { PORTAL_COMPONENTS_STYLES } = require('./portal_components_styles.cjs');
 
 const repository = path.resolve(__dirname, '../../..');
 const staticRoot = path.join(repository, 'management_portal/static');
@@ -56,7 +57,7 @@ async function createHarness({ sourceTransform = (_name, source) => source, cont
   window.fetch = async (url, options) => {
     if (url.startsWith('/static/')) {
       const name = url.slice('/static/'.length);
-      assert.ok(['projection_sdk.js', 'portal_state.js', 'portal_components.css', 'portal_design_system.css', 'portal_workbench.css'].includes(name));
+      assert.ok(['projection_sdk.js', 'portal_state.js', ...PORTAL_COMPONENTS_STYLES.map(name => `${name}.css`), 'portal_design_system.css', 'portal_workbench.css'].includes(name));
       return new Response(sourceTransform(name, fs.readFileSync(path.join(staticRoot, name), 'utf8')));
     }
     assert.equal(options.method, 'POST');

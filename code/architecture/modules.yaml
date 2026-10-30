@@ -996,6 +996,7 @@ modules:
       - "management_portal/static/portal_editor_open_service.js"
       - "management_portal/static/portal_resource_registration_service.js"
       - "management_portal/static/hatg_panel.css"
+      - "management_portal/static/hatg_panel_*.css"
       - "management_portal/static/portal_editor_open_commands.js"
       - "management_portal/static/watchboard_applications/registry.js"
       - "management_portal/static/hatg_panel_features.js"
@@ -1081,6 +1082,7 @@ modules:
     code_paths:
       - "management_portal/static/portal_home*"
       - "management_portal/static/home.js"
+      - "management_portal/static/home_*.js"
       - "management_portal/static/home.css"
       - "management_portal/index.html"
       - "management_portal/static/notice_board_home.*"

@@ -4,9 +4,11 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const {readHatgModule, createHatgModule} = require('./hatg_modules.cjs');
+const {workbenchSources} = require('./lineage_workbench_modules.cjs');
 
 const staticRoot = path.resolve(__dirname, '../../../management_portal/static');
-const source = fs.readFileSync(path.join(staticRoot, 'lineage_workbench.js'), 'utf8');
+// The workbench and its module scripts; each production function comes from the one that declares it.
+const source = Object.values(workbenchSources()).join('\n');
 const hatgSource = fs.readFileSync(path.join(staticRoot, 'hatg_panel_mount.js'), 'utf8');
 function owner(text, name) {
   const match = new RegExp(`^( +)(?:async )?function ${name}\\(`, 'm').exec(text);

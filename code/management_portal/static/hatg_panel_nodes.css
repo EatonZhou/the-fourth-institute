@@ -1,0 +1,1109 @@
+/* Lineage panel: graph cards: Resident, Family facade, program and Seed cards, their ports, hover
+   actions, run states, identity, footers and zoom levels. Pages load this file right after
+   hatg_panel_edges.css. */
+@scope (:is(.portalHatgPanelComponent, .portalHatgOverlayComponent)) {
+.hatgNode {
+  position: absolute;
+  z-index: 4;
+  width: 154px;
+  min-height: 94px;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid color-mix(in srgb, var(--border) 92%, transparent);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--panel) 97%, transparent);
+  box-shadow: 0 9px 20px color-mix(in srgb, #0b1020 12%, transparent), inset 0 1px 0 color-mix(in srgb, white 25%, transparent);
+  color: var(--text);
+  padding: 9px 10px 8px;
+  text-align: left;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+}
+
+/* Edge-mounted protocol pills need their own gutter inside work cards. */
+.hatgNode:not(.seedNode) {
+  padding-inline: 26px;
+}
+
+/* Each Family has a tone shared by its facade and by the cards it shows when
+   expanded, so members scattered over a large Lineage still read as one Family. */
+.hatgNode[data-family-tone="0"] { --family-tone: #2a9a8a; }
+.hatgNode[data-family-tone="1"] { --family-tone: #c27a1f; }
+.hatgNode[data-family-tone="2"] { --family-tone: #7a60d0; }
+.hatgNode[data-family-tone="3"] { --family-tone: #c0507a; }
+.hatgNode[data-family-tone="4"] { --family-tone: #2f7fc2; }
+.hatgNode[data-family-tone="5"] { --family-tone: #5f8d27; }
+.hatgNode[data-family-member-tone="0"] { --family-member-tone: #2a9a8a; }
+.hatgNode[data-family-member-tone="1"] { --family-member-tone: #c27a1f; }
+.hatgNode[data-family-member-tone="2"] { --family-member-tone: #7a60d0; }
+.hatgNode[data-family-member-tone="3"] { --family-member-tone: #c0507a; }
+.hatgNode[data-family-member-tone="4"] { --family-member-tone: #2f7fc2; }
+.hatgNode[data-family-member-tone="5"] { --family-member-tone: #5f8d27; }
+
+/* A Family facade stands for the whole Family (decision_44cf587c1721):
+   folded it reads as a stack of cards; expanded, its members are on the canvas. */
+.hatgNode.familyFacadeNode {
+  gap: 6px;
+  border-color: color-mix(in srgb, var(--family-tone, #2a9a8a) 52%, var(--border));
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--family-tone, #2a9a8a) 12%, transparent), transparent 58%),
+    color-mix(in srgb, var(--panel) 98%, transparent);
+  box-shadow:
+    5px 5px 0 -1px var(--panel),
+    5px 5px 0 0 color-mix(in srgb, var(--family-tone, #2a9a8a) 38%, var(--border)),
+    10px 10px 0 -1px var(--panel),
+    10px 10px 0 0 color-mix(in srgb, var(--family-tone, #2a9a8a) 24%, var(--border)),
+    0 12px 24px color-mix(in srgb, var(--family-tone, #2a9a8a) 12%, transparent),
+    inset 3px 0 0 color-mix(in srgb, var(--family-tone, #2a9a8a) 78%, transparent);
+}
+
+.hatgNode.familyFacadeNode.is-expanded {
+  border-style: dashed;
+  box-shadow:
+    0 10px 22px color-mix(in srgb, var(--family-tone, #2a9a8a) 10%, transparent),
+    inset 3px 0 0 color-mix(in srgb, var(--family-tone, #2a9a8a) 78%, transparent);
+}
+
+.familyFacadeTopline { width: 100%; }
+
+.familyFacadeHeading { display: block; min-width: 0; }
+
+.familyFacadeHeading small {
+  display: block;
+  margin-bottom: 3px;
+  color: color-mix(in srgb, var(--family-tone, #2a9a8a) 88%, var(--text));
+  font: 850 6.5px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: .12em;
+}
+
+.familyFacadeHeading strong { display: block; font-size: 12px; }
+
+.familyFacadePill {
+  white-space: nowrap;
+  border-color: color-mix(in srgb, var(--family-tone, #2a9a8a) 40%, var(--border));
+  color: color-mix(in srgb, var(--family-tone, #2a9a8a) 80%, var(--text));
+}
+
+/* Cards an expanded Family shows stay where they are; a ring in the Family's
+   tone marks them instead of a frame, so no other card is ever covered. */
+.hatgNode.familyMemberNode {
+  outline: 2px solid color-mix(in srgb, var(--family-member-tone, #2a9a8a) 58%, transparent);
+  outline-offset: 3px;
+}
+
+.familyMemberTag {
+  position: absolute;
+  top: -9px;
+  left: 14px;
+  max-width: calc(100% - 46px);
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--family-member-tone, #2a9a8a) 55%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--family-member-tone, #2a9a8a) 10%, var(--panel));
+  color: color-mix(in srgb, var(--family-member-tone, #2a9a8a) 82%, var(--text));
+  padding: 2px 7px;
+  font: 760 7px/1.2 ui-sans-serif, system-ui, sans-serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.hatgCanvas[data-semantic-zoom="overview"] .familyMemberTag { display: none; }
+
+/* Selecting an expanded Family's facade fades the rest of the canvas.
+   The renderer writes opacity inline for its fades, hence !important. */
+.hatgNode.familyDimmed { opacity: .32 !important; }
+.hatgNode.familyDimmed:hover { opacity: .72 !important; }
+.hatgEdge.familyDimmed { opacity: .18 !important; }
+
+.familyFacadeMembers {
+  color: var(--muted);
+  font-size: 9px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Keep all counts inside the content gutter reserved for edge-mounted ports. */
+.familyFacadeNode .nodeFooter {
+  flex-wrap: wrap;
+  row-gap: 2px;
+}
+
+.familyFacadeNode .nodeMessageCount {
+  flex: 0 1 100%;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.hatgCanvas[data-semantic-zoom="overview"] .familyFacadeHeading small,
+.hatgCanvas[data-semantic-zoom="overview"] .familyFacadeMembers {
+  display: none;
+}
+
+.hatgNodeDisclosureGroup {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  z-index: 9;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+}
+.hatgNodeDisclosureGroup > .hatgNodeDisclosure { inset: 0; transform: none; }
+.hatgNodeDisclosureAction {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  white-space: nowrap;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--panel);
+  color: var(--muted);
+  box-shadow: none;
+  visibility: hidden;
+  pointer-events: none;
+  cursor: pointer;
+}
+.hatgNodeDisclosureAction::after { content: ""; position: absolute; inset: 12px 12px -10px -10px; }
+.hatgNodeDisclosureAction > svg { width: 12px; height: 12px; }
+.hatgNodeDisclosureGroup:hover > .hatgNodeDisclosureAction,
+.hatgNodeDisclosureGroup:focus-within > .hatgNodeDisclosureAction { visibility: visible; pointer-events: auto; }
+.hatgNodeDisclosureAction:hover, .hatgNodeDisclosureAction:focus-visible { border-color: var(--accent); color: var(--accent); }
+
+.hatgNodeDisclosure {
+  position: absolute;
+  z-index: 9;
+  width: 24px;
+  height: 24px;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, #657bd0 58%, var(--border));
+  border-radius: 50%;
+  outline: none;
+  background: color-mix(in srgb, var(--panel) 97%, transparent);
+  box-shadow: 0 4px 11px color-mix(in srgb, #24315e 18%, transparent);
+  color: #586fca;
+  padding: 0 0 1px;
+  font: 780 15px/1 ui-sans-serif, system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.hatgNodeDisclosure:hover,
+.hatgNodeDisclosure:focus-visible {
+  border-color: currentColor;
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, #657bd0 12%, transparent),
+    0 6px 14px color-mix(in srgb, #24315e 20%, transparent);
+  outline: none;
+}
+
+.hatgNode:is(
+  [data-node-kind="event_source"],
+  [data-node-kind="filter"],
+  [data-node-kind="selector"],
+  [data-node-kind="reducer"],
+  [data-node-kind="effect"]
+) {
+  --program-node-tone: var(--hatg-program-event-color);
+  width: 142px;
+  min-height: 76px;
+  justify-content: center;
+  gap: 5px;
+  border-color: color-mix(in srgb, var(--program-node-tone) 36%, var(--border));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--program-node-tone) 8%, transparent), transparent 58%),
+    color-mix(in srgb, var(--panel) 97%, transparent);
+  box-shadow:
+    0 9px 20px color-mix(in srgb, #0b1020 12%, transparent),
+    inset 3px 0 0 color-mix(in srgb, var(--program-node-tone) 78%, transparent);
+}
+
+.hatgNode[data-node-kind="filter"] { --program-node-tone: #388f78; }
+.hatgNode[data-node-kind="selector"] { --program-node-tone: #6f69d9; }
+.hatgNode[data-node-kind="reducer"] { --program-node-tone: var(--hatg-program-route-color); }
+.hatgNode[data-node-kind="effect"] { --program-node-tone: var(--hatg-program-target-color); }
+.hatgNode:is(
+  [data-node-kind="event_source"],
+  [data-node-kind="filter"],
+  [data-node-kind="selector"],
+  [data-node-kind="reducer"],
+  [data-node-kind="effect"]
+):is(:hover, .selected) {
+  border-color: color-mix(in srgb, var(--program-node-tone) 68%, var(--border));
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--program-node-tone) 10%, transparent),
+    0 10px 24px color-mix(in srgb, #0b1020 15%, transparent),
+    inset 3px 0 0 var(--program-node-tone);
+}
+
+.programNodeTopline { display: flex; align-items: center; gap: 5px; color: var(--program-node-tone); }
+.programNodeGlyph {
+  width: 19px;
+  height: 19px;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--program-node-tone) 42%, var(--border));
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--program-node-tone) 8%, var(--panel));
+  font: 850 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.programNodeKind {
+  font: 850 7px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: .12em;
+}
+.hatgNode:is(
+  [data-node-kind="event_source"],
+  [data-node-kind="filter"],
+  [data-node-kind="selector"],
+  [data-node-kind="reducer"],
+  [data-node-kind="effect"]
+) > strong {
+  display: block;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  font-size: 12px;
+  line-height: 1.25;
+}
+.programNodeDetail {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 7px;
+  line-height: 1.3;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.programNodeExecutionState {
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--program-node-tone, var(--accent)) 9%, var(--panel));
+  color: color-mix(in srgb, var(--program-node-tone, var(--accent)) 78%, var(--text));
+  padding: 3px 6px;
+  font-size: 6.5px;
+  font-weight: 760;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.programNodeExecutionState[data-execution-state="blocked"],
+.programNodeExecutionState[data-execution-state="failed"] { background: color-mix(in srgb, #cf4e58 11%, var(--panel)); color: #b8404b; }
+.programNodeExecutionState[data-execution-state="completed"] { background: color-mix(in srgb, #2d9a68 10%, var(--panel)); color: #247d56; }
+.programNodeExecutionState[data-execution-state="paused"] { background: var(--panel-2); color: var(--muted); }
+
+.hatgPort {
+  --hatg-port-tone: var(--hatg-program-event-color);
+  position: absolute;
+  z-index: 3;
+  min-width: 34px;
+  height: 20px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--hatg-port-tone) 62%, var(--border));
+  border-radius: 999px;
+  outline: none;
+  background: color-mix(in srgb, var(--hatg-port-tone) 9%, var(--panel));
+  box-shadow: 0 2px 7px color-mix(in srgb, #0b1020 15%, transparent);
+  color: color-mix(in srgb, var(--hatg-port-tone) 88%, var(--text));
+  padding: 2px 6px;
+  font: 790 7px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: .015em;
+  white-space: nowrap;
+  cursor: crosshair;
+  opacity: 0;
+  visibility: hidden;
+  touch-action: none;
+  transition:
+    opacity 120ms ease,
+    border-color 120ms ease,
+    background-color 120ms ease,
+    box-shadow 120ms ease,
+    transform 120ms ease;
+}
+
+.hatgWirePreview {
+  display: none;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+  color: var(--accent);
+}
+
+.hatgCanvas:not([data-wire-draft-type]) .hatgPort.out[data-port-owner-hovered="true"]:not(:disabled),
+.hatgCanvas:not([data-wire-draft-type]) .hatgPort.out[data-port-owner-focused="true"]:not(:disabled),
+.hatgCanvas:not([data-wire-draft-type]) .hatgPort.out[data-port-owner-selected="true"]:not(:disabled),
+.hatgCanvas:not([data-wire-draft-type]) .hatgPort.out:focus-visible:not(:disabled),
+.hatgCanvas[data-wire-draft-type] .hatgPort[data-port-compatible="true"]:not(:disabled),
+.hatgCanvas[data-wire-draft-type] .hatgPort[data-wire-draft-source="true"]:not(:disabled) {
+  z-index: 8;
+  pointer-events: auto;
+  opacity: 1;
+  visibility: visible;
+}
+
+.hatgPort.packet { --hatg-port-tone: var(--hatg-program-route-color); }
+.hatgPort.invoke { --hatg-port-tone: var(--hatg-program-target-color); }
+.hatgPort.target { --hatg-port-tone: var(--hatg-program-target-color); }
+.hatgPort.watch { --hatg-port-tone: var(--hatg-program-watch-color); }
+.hatgPort.in { border-style: dashed; }
+.hatgPort.out::after {
+  content: "›";
+  margin-left: 3px;
+  font-size: 8px;
+  line-height: 1;
+}
+.hatgPort.in::before {
+  content: "›";
+  margin-right: 3px;
+  font-size: 8px;
+  line-height: 1;
+}
+.hatgPort:hover:not(:disabled),
+.hatgPort:focus-visible,
+.hatgPort[data-port-compatible="true"] {
+  transform: translate(-50%, -50%) scale(1.08);
+  border-color: var(--hatg-port-tone);
+  background: color-mix(in srgb, var(--hatg-port-tone) 16%, var(--panel));
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--hatg-port-tone) 11%, transparent),
+    0 3px 9px color-mix(in srgb, #0b1020 17%, transparent);
+}
+.hatgNode[data-wire-target], .edgeLabelBtn[data-wire-target] {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  cursor: crosshair;
+}
+.hatgPort.target, .hatgPort.watch { border-style: dashed; }
+.hatgPort[data-wire-draft-source="true"] {
+  border-style: solid;
+  background: var(--hatg-port-tone);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--hatg-port-tone) 14%, transparent);
+  color: var(--panel);
+}
+.hatgPort:disabled { pointer-events: none; cursor: default; opacity: 0; }
+
+.hatgNodeQuickFork {
+  position: absolute;
+  z-index: 7;
+  width: 22px;
+  height: 22px;
+  margin: 0 0 0 66px;
+  transform: translateY(-50%);
+  pointer-events: auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--accent) 38%, var(--border));
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--panel) 96%, transparent);
+  box-shadow: 0 4px 10px color-mix(in srgb, #0b1020 14%, transparent);
+  color: color-mix(in srgb, var(--accent) 72%, var(--muted));
+  padding: 0 0 1px;
+  font: 500 16px/1 ui-sans-serif, system-ui, sans-serif;
+  cursor: pointer;
+  opacity: .82;
+  transition: border-color 140ms ease, box-shadow 140ms ease, color 140ms ease, opacity 140ms ease, transform 140ms ease;
+}
+
+.hatgNodeQuickFork:hover,
+.hatgNodeQuickFork:focus-visible {
+  transform: translateY(-50%) scale(1.08);
+  border-color: color-mix(in srgb, var(--accent) 76%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 11%, transparent), 0 6px 14px color-mix(in srgb, #0b1020 17%, transparent);
+  color: var(--accent);
+  opacity: 1;
+  outline: none;
+}
+
+.hatgNodeQuickFork[data-busy="true"] {
+  cursor: wait;
+  opacity: 1;
+}
+
+.hatgNodeQuickFork[data-busy="true"]::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid color-mix(in srgb, var(--accent) 28%, transparent);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: hatgQuickForkSpin .72s linear infinite;
+}
+
+:scope.hatgQuickForkMenu {
+  width: 288px;
+  padding: 6px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: var(--portal-shadow-popover);
+  font: 13px/1.45 ui-sans-serif, system-ui, sans-serif;
+}
+
+.hatgQuickForkMenuHeading {
+  padding: 6px 9px 8px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+:scope.hatgQuickForkMenu button {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  padding: 9px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+:scope.hatgQuickForkMenu button small {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+:scope.hatgQuickForkMenu button:hover,
+:scope.hatgQuickForkMenu button:focus-visible {
+  outline: none;
+  background: color-mix(in srgb, var(--accent) 10%, var(--panel));
+  color: var(--accent);
+}
+
+@keyframes hatgQuickForkSpin {
+  to { transform: rotate(360deg); }
+}
+
+.hatgNodeHoverAction {
+  position: absolute;
+  z-index: 10;
+  width: 24px;
+  height: 24px;
+  transform: translate(-50%, -50%) scale(.9);
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--warn) 54%, var(--border));
+  border-radius: 50%;
+  outline: none;
+  background: color-mix(in srgb, var(--panel) 96%, transparent);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--panel) 86%, transparent),
+    0 5px 12px color-mix(in srgb, #0b1020 17%, transparent);
+  color: var(--warn);
+  padding: 0;
+  cursor: pointer;
+  opacity: 0;
+  touch-action: manipulation;
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.hatgNodeHoverAction svg {
+  width: 12px;
+  height: 12px;
+}
+
+.hatgNodeHoverAction.action-stop {
+  border-color: color-mix(in srgb, var(--danger) 58%, var(--border));
+  color: var(--danger);
+}
+
+.hatgNodeHoverAction[data-node-owner-hovered="true"],
+.hatgNodeHoverAction[data-node-owner-focused="true"],
+.hatgNodeHoverAction:focus-visible {
+  pointer-events: auto;
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.hatgNodeHoverAction:hover:not(:disabled),
+.hatgNodeHoverAction:focus-visible {
+  border-color: currentColor;
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, currentColor 13%, transparent),
+    0 7px 16px color-mix(in srgb, #0b1020 20%, transparent);
+  transform: translate(-50%, -50%) scale(1.08);
+}
+
+.hatgNodeHoverAction:disabled {
+  cursor: wait;
+}
+
+.hatgNodeOpenMenu {
+  position: absolute;
+  z-index: 10;
+  width: 24px;
+  height: 24px;
+  transform: translate(-50%, -50%) scale(.92);
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 7px;
+  outline: none;
+  background: transparent;
+  box-shadow: none;
+  color: var(--muted);
+  padding: 0;
+  cursor: pointer;
+  opacity: 0;
+  touch-action: manipulation;
+  transition: opacity 120ms ease, transform 120ms ease, color 120ms ease, background-color 120ms ease;
+}
+
+.hatgNodeOpenMenu svg { width: 12px; height: 12px; }
+
+.hatgNodeOpenMenu[data-node-owner-hovered="true"],
+.hatgNodeOpenMenu[data-node-owner-focused="true"],
+.hatgNodeOpenMenu[data-node-owner-selected="true"],
+.hatgNodeOpenMenu:focus-visible {
+  pointer-events: auto;
+  opacity: .82;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.hatgNodeOpenMenu:hover,
+.hatgNodeOpenMenu:focus-visible {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+@media (hover: none), (pointer: coarse) {
+  .hatgNodeOpenMenu {
+    pointer-events: auto;
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    background: color-mix(in srgb, var(--panel) 58%, transparent);
+  }
+}
+
+.hatgNodeHoverAction[data-busy="true"]::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid color-mix(in srgb, currentColor 28%, transparent);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: hatgQuickForkSpin .72s linear infinite;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .hatgNodeHoverAction {
+    pointer-events: auto;
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.hatgNode[data-context-heat="warm"] {
+  background:
+    radial-gradient(circle at 92% 108%, color-mix(in srgb, var(--hatg-context-warm-color) 18%, transparent), transparent 58%),
+    color-mix(in srgb, var(--hatg-context-warm-color) 3%, var(--panel));
+}
+
+.hatgNode[data-context-heat="hot"] {
+  background:
+    radial-gradient(circle at 92% 108%, color-mix(in srgb, var(--hatg-context-hot-color) 25%, transparent), transparent 60%),
+    color-mix(in srgb, var(--hatg-context-hot-color) 5%, var(--panel));
+}
+
+.hatgNode.seedNode {
+  width: 74px;
+  height: 74px;
+  min-height: 74px;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: 1.5px solid color-mix(in srgb, #2b9d72 62%, var(--border));
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 24%, color-mix(in srgb, white 22%, transparent), transparent 38%), color-mix(in srgb, #2b9d72 9%, var(--panel));
+  box-shadow: 0 8px 20px color-mix(in srgb, #0b1020 12%, transparent), 0 0 0 5px color-mix(in srgb, #2b9d72 5%, transparent);
+  padding: 8px;
+  text-align: center;
+}
+
+.hatgNode.seedNode.seed-plan {
+  border-color: color-mix(in srgb, #d18a2f 68%, var(--border));
+  background-color: color-mix(in srgb, #d18a2f 9%, var(--panel));
+}
+
+.hatgNode.seedNode.seed-next_step {
+  border-color: color-mix(in srgb, #8067d8 68%, var(--border));
+  background-color: color-mix(in srgb, #8067d8 9%, var(--panel));
+}
+
+.hatgNode.seedNode .seedNodeGlyph {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, #2b9d72 14%, var(--panel));
+  color: #238664;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.hatgNode.seedNode.seed-plan .seedNodeGlyph { background: color-mix(in srgb, #d18a2f 14%, var(--panel)); color: #b66f1d; }
+.hatgNode.seedNode > strong {
+  width: 58px;
+  font-size: 8.5px;
+  line-height: 1.12;
+  text-align: center;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.hatgNode.seedNode .seedNodeKind {
+  color: var(--muted);
+  font: 700 6.5px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.hatgNode.seedNode.selected::after { border-radius: 50%; }
+
+.hatgNode[data-status="running"],
+.hatgNode[data-status="queued"] {
+  border-color: color-mix(in srgb, var(--accent) 46%, var(--border));
+  box-shadow: 0 9px 22px color-mix(in srgb, #0b1020 12%, transparent), inset 0 0 0 1px color-mix(in srgb, var(--accent) 9%, transparent);
+}
+
+.hatgNode[data-status="running"]:not(.draggingNode):not(.blockDragTarget):not(.absorptionDropTarget) {
+  will-change: opacity;
+  animation: hatgRunningNodeBreath 1.45s cubic-bezier(.4, 0, .2, 1) infinite;
+}
+
+@keyframes hatgRunningNodeBreath {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .82; }
+}
+
+html:root[data-portal-theme="fire"] .hatgNode[data-status="running"]:not(.draggingNode):not(.blockDragTarget):not(.absorptionDropTarget) {
+  will-change: transform;
+  animation: hatgFireRunningNodeBounce 1.2s cubic-bezier(.22, .72, .28, 1) infinite;
+}
+
+@keyframes hatgFireRunningNodeBounce {
+  0%, 14%, 62%, 100% { transform: translate(-50%, -50%) translateY(0); }
+  30% { transform: translate(-50%, -50%) translateY(-8px); }
+  48% { transform: translate(-50%, -50%) translateY(-3px); }
+}
+
+.hatgNode[data-status="running"]::before,
+.hatgNode[data-status="queued"]::before {
+  content: "";
+  position: absolute;
+  z-index: 4;
+  top: -1px;
+  right: 10px;
+  left: 10px;
+  height: 3px;
+  pointer-events: none;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--accent) 32%, transparent) 24%, var(--accent) 50%, color-mix(in srgb, var(--accent) 32%, transparent) 76%, transparent 100%);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+  opacity: 1;
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--accent) 42%, transparent));
+  transform-origin: center;
+  animation: hatgNodeActivitySweep 1.25s ease-in-out infinite;
+}
+
+.hatgNode[data-status="queued"]::before {
+  opacity: .76;
+  animation-duration: 1.8s;
+}
+
+@keyframes hatgNodeActivitySweep {
+  0%, 100% { opacity: .25; transform: scaleX(.18); }
+  55% { opacity: 1; transform: scaleX(1); }
+}
+
+.hatgNode.draggingNode,
+.hatgNode.draggingNode * { cursor: grabbing; }
+
+.hatgCanvas:is(.isNodeDragging, .isViewportMoving) .hatgNode,
+.hatgCanvas:is(.isNodeDragging, .isViewportMoving) .hatgNode::before,
+.hatgCanvas:is(.isNodeDragging, .isViewportMoving) .hatgNode::after,
+.hatgCanvas:is(.isNodeDragging, .isViewportMoving) .hatgNode * {
+  animation-play-state: paused !important;
+}
+
+.hatgCanvas.isNodeAbsorptionDrop .hatgNode.draggingNode {
+  opacity: .45 !important;
+  box-shadow: 0 10px 24px color-mix(in srgb, #0b1020 18%, transparent);
+}
+
+.hatgNode.absorptionDropTarget {
+  z-index: 6;
+}
+
+.hatgNode:hover,
+.hatgNode.selected {
+  border-color: color-mix(in srgb, var(--accent) 68%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent), 0 12px 25px color-mix(in srgb, #0b1020 15%, transparent);
+}
+
+.hatgNode.selected::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  pointer-events: none;
+  border: 1px solid var(--accent);
+  border-radius: 11px;
+}
+
+.hatgNode[data-status="running"]::after,
+.hatgNode[data-status="queued"]::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  pointer-events: none;
+  border: 1px solid color-mix(in srgb, var(--accent) 72%, transparent);
+  border-radius: 13px;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 11%, transparent), 0 0 9px color-mix(in srgb, var(--accent) 16%, transparent);
+  animation: hatgNodeRuntimeOutline 1.55s ease-in-out infinite;
+}
+
+.hatgNode[data-status="queued"]::after {
+  border-color: color-mix(in srgb, var(--accent) 56%, transparent);
+  animation-name: hatgNodeQueuedOutline;
+  animation-duration: 2s;
+}
+
+@keyframes hatgNodeRuntimeOutline {
+  0%, 100% { opacity: .34; transform: scale(.992); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes hatgNodeQueuedOutline {
+  0%, 100% { opacity: .2; transform: scale(.994); }
+  50% { opacity: .72; transform: scale(1); }
+}
+
+.hatgNode.handoffSource {
+  border-color: color-mix(in srgb, var(--warn) 72%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--warn) 15%, transparent), 0 12px 25px color-mix(in srgb, #0b1020 15%, transparent);
+}
+
+.hatgNode.blockDragTarget,
+.hatgNode.absorptionDropTarget {
+  border-color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 8%, var(--panel));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--ok) 15%, transparent), 0 12px 25px color-mix(in srgb, #0b1020 15%, transparent);
+}
+
+.hatgNode.blockDragTarget::before,
+.hatgNode.absorptionDropTarget::before {
+  content: "松开以运行";
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ok) 88%, transparent);
+  color: white;
+  font-size: 11px;
+  font-weight: 800;
+  animation: none;
+}
+
+.hatgNode.absorptionDropTarget::before {
+  content: "松开以吸收";
+}
+
+.hatgNode.seedNode.blockDragTarget::before {
+  content: "松开以采纳";
+  border-radius: 50%;
+  padding: 8px;
+  text-align: center;
+}
+
+.nodeTopline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.nodeIdentity {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font: 8px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nodeLeaderBadge {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--warn) 16%, var(--panel));
+  color: color-mix(in srgb, var(--warn) 88%, var(--text));
+  padding: 1px 4px;
+  font: 800 7px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-style: normal;
+  letter-spacing: .04em;
+}
+
+.nodeStatus {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 8px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.nodeStatus::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.hatgNode[data-status="running"] .nodeStatus::before,
+.hatgNode[data-status="queued"] .nodeStatus::before {
+  width: 7px;
+  height: 7px;
+  background: var(--accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 19%, transparent);
+  animation: lineageNodePulse 1.15s ease-in-out infinite;
+}
+
+.hatgNode[data-status="blocked"] .nodeStatus::before { background: var(--danger); }
+.hatgNode[data-status="done"] .nodeStatus::before { background: var(--ok); }
+
+.hatgNode .nodeStatus[data-work-phase="waiting_quota"]::before {
+  background: var(--warn);
+  box-shadow: none;
+  animation: none;
+}
+
+.hatgNode .nodeIntakeStatus {
+  color: var(--warn);
+  font-weight: 820;
+  font-size: 8px;
+  text-transform: uppercase;
+}
+
+@keyframes lineageNodePulse {
+  0%, 100% { opacity: .48; transform: scale(.78); }
+  50% { opacity: 1; transform: scale(1.3); }
+}
+
+.hatgNode strong {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 11.5px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Resident names often share a long project prefix. Keep their distinguishing
+   ending visible; the graph measures the resulting card height for its edges
+   and layout instead of relying on a hover tooltip for node identity. */
+.hatgNode .nodeTitle {
+  overflow: visible;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.nodeFooter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 5px;
+  row-gap: 2px;
+  margin-top: auto;
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.nodeTypePill {
+  flex-shrink: 0;
+  border: 1px solid color-mix(in srgb, var(--accent) 26%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 6%, var(--panel));
+  color: var(--accent);
+  padding: 2px 5px;
+}
+
+.nodeMessageCount {
+  flex: 0 0 auto;
+  color: color-mix(in srgb, var(--text) 70%, var(--muted));
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.nodeContextHeat {
+  --node-context-heat-color: var(--hatg-context-warm-color);
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  border: 1px solid color-mix(in srgb, var(--node-context-heat-color) 48%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--node-context-heat-color) 11%, var(--panel));
+  color: color-mix(in srgb, var(--node-context-heat-color) 88%, var(--text));
+  padding: 1px 4px;
+  font-size: 7.5px;
+  font-weight: 780;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.nodeContextHeat[data-context-heat-label="hot"] {
+  --node-context-heat-color: var(--hatg-context-hot-color);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--node-context-heat-color) 16%, transparent);
+}
+
+.nodeFooterState {
+  flex-shrink: 0;
+  min-width: 0;
+  overflow: hidden;
+  margin-left: auto;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hatgCanvas[data-lod="reduced"] .nodeFooter,
+.hatgCanvas[data-lod="compact"] .nodeFooter,
+.hatgCanvas[data-lod="compact"] .edgeLabelBtn { display: none; }
+
+.hatgCanvas[data-lod="reduced"] .hatgNode.seedNode > strong,
+.hatgCanvas[data-lod="compact"] .hatgNode.seedNode > strong { width: 46px; font-size: 7.5px; }
+.hatgCanvas[data-lod="compact"] .hatgNode.seedNode .seedNodeKind { display: none; }
+.hatgCanvas[data-lod="compact"] .hatgNode.seedNode .seedNodeGlyph { width: 17px; height: 17px; font-size: 10px; }
+
+.hatgCanvas[data-lod="compact"] .hatgNode > strong { font-size: 10px; }
+
+.hatgCanvas[data-semantic-zoom="overview"] .hatgNode:not(.seedNode) {
+  width: 112px;
+  min-height: 46px;
+  gap: 4px;
+  border-radius: 9px;
+  padding: 7px 8px;
+  box-shadow: 0 5px 12px color-mix(in srgb, #0b1020 10%, transparent);
+}
+
+.hatgCanvas[data-semantic-zoom="overview"] .hatgNodeDisclosure {
+  width: 19px;
+  height: 19px;
+  margin-top: -27px;
+  margin-left: 63px;
+  font-size: 12px;
+}
+
+.hatgCanvas[data-semantic-zoom="overview"] .hatgNodeQuickFork {
+  width: 18px;
+  height: 18px;
+  margin-left: 47px;
+  font-size: 13px;
+}
+
+.hatgCanvas[data-semantic-zoom="overview"] .hatgNodeHoverAction {
+  width: 20px;
+  height: 20px;
+}
+
+.hatgCanvas[data-semantic-zoom="overview"] .hatgNodeHoverAction svg {
+  width: 10px;
+  height: 10px;
+}
+
+.hatgCanvas[data-semantic-zoom="overview"] .hatgNode:not(.seedNode) .nodeIdentity,
+.hatgCanvas[data-semantic-zoom="overview"] .hatgNode:not(.seedNode) .nodeFooter,
+.hatgCanvas[data-semantic-zoom="overview"] .edgeLabelBtn {
+  display: none;
+}
+
+.hatgCanvas[data-semantic-zoom="overview"] .hatgNode:not(.seedNode) .nodeTopline {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+}
+
+.hatgCanvas[data-semantic-zoom="overview"] .hatgNode:not(.seedNode) .nodeStatus {
+  width: 7px;
+  overflow: hidden;
+  color: transparent;
+  gap: 0;
+}
+.hatgCanvas[data-semantic-zoom="overview"] .hatgNode:not(.seedNode) .nodeIntakeStatus { display: none; }
+
+.hatgCanvas[data-semantic-zoom="overview"] .hatgNode:not(.seedNode) > strong {
+  max-width: 88px;
+  padding-right: 9px;
+  font-size: 10px;
+}
+
+.hatgCanvas[data-semantic-zoom="overview"] .hatgNode.seedNode {
+  width: 48px;
+  height: 48px;
+  min-height: 48px;
+  padding: 5px;
+}
+
+.hatgCanvas[data-semantic-zoom="overview"] .hatgNode.seedNode > strong,
+.hatgCanvas[data-semantic-zoom="overview"] .hatgNode.seedNode .seedNodeKind { display: none; }
+.hatgCanvas[data-semantic-zoom="overview"] .hatgNode.seedNode .seedNodeGlyph { width: 21px; height: 21px; }
+
+.hatgCanvas[data-semantic-zoom="inspect"] .hatgNode:not(.seedNode) {
+  width: 176px;
+  min-height: 108px;
+  gap: 7px;
+  padding: 10px 11px 9px;
+}
+
+.hatgCanvas[data-semantic-zoom="inspect"] .hatgNodeQuickFork {
+  margin-left: 77px;
+}
+
+.hatgCanvas[data-semantic-zoom="inspect"] .nodeIdentity,
+.hatgCanvas[data-semantic-zoom="inspect"] .nodeStatus,
+.hatgCanvas[data-semantic-zoom="inspect"] .nodeFooter { font-size: 8.5px; }
+}

@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const {JSDOM} = require('jsdom');
-const {babelParse} = require('./babel_parse.cjs');
+const {homeStatements} = require('./home_modules.cjs');
 
 const root = path.resolve(__dirname, '../../../management_portal/static');
 const dom = new JSDOM('<main></main>', {url:'http://portal.invalid/'});
@@ -12,13 +12,11 @@ const context = vm.createContext({
   window: {location:dom.window.location, PortalI18n:{t:x=>x, html:tag, text:tag, markup:x=>x},
     PortalResidentProtocol:{stateSnapshot:()=>null}, PortalConversationStore:{entries:()=>[]}},
   esc: x=>String(x ?? '').replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;'),
-  URL, URLSearchParams, agentStatusData:{}, executionAccounts:()=>[],
+  URL, URLSearchParams, agentStatusData:{}, currentAgentStatusData:()=>context.agentStatusData, executionAccounts:()=>[],
 });
 vm.runInContext(fs.readFileSync(path.join(root,'portal_resident_avatar.js'),'utf8'),context);
-const source=fs.readFileSync(path.join(root,'home.js'),'utf8');
 const names=new Set(['residentNavigationUrl','agentStatusRunHref','agentStatusCreature','agentStatusCreatureGroup','agentStatusAccountDivider','agentStatusRunboard']);
-const ast=babelParse(source,'home.js');
-for(const node of ast.program.body) if(node.type==='FunctionDeclaration'&&names.has(node.id.name)) vm.runInContext(source.slice(node.start,node.end),context);
+for(const {node,source} of homeStatements()) if(node.type==='FunctionDeclaration'&&names.has(node.id.name)) vm.runInContext(source,context);
 
 const run={type:'resident',resident_id:'resident_000000000051',lineage_id:'lineage_000000000001',title:'Waiting Agent'};
 const main=dom.window.document.querySelector('main');

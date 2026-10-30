@@ -1,16 +1,15 @@
-const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
-const {JSDOM}=require('jsdom');const {babelParse}=require('./babel_parse.cjs');
+const assert=require('node:assert/strict'),vm=require('node:vm');
+const {JSDOM}=require('jsdom');const {homeStatements}=require('./home_modules.cjs');
 const dom=new JSDOM('<section id="panel"></section>',{url:'http://portal.invalid/'}),document=dom.window.document;
 const tag=(parts,...args)=>parts.reduce((s,p,i)=>s+p+(args[i]??''),'');
 const account=id=>({account_id:id,capabilities:{scheduler_settings:true,resident_details:false},max_concurrency:10,dispatch_interval_min_seconds:2,dispatch_interval_max_seconds:6,close_threshold:{supported:true,value:0,unit:'%',metric:'percent'}});
 const calls=[];let failure=false,release,normalized=false;
 const context=vm.createContext({document,window:{PortalI18n:{t:x=>x,html:tag,text:tag,markup:x=>x},PortalUI:{toast:()=>{},errorMessage:(_,e)=>e.message},PortalInstructionClient:{execute:async(name,args,opts)=>{calls.push({name,args,opts});if(release!==undefined)await new Promise(r=>release=r);if(failure)throw Error('save failed');return {settings:{...args,...(normalized?{max_concurrency:24}:{})}};}}},PortalUIPrimitives:{randomUUID:()=>String(calls.length)},
- esc:x=>String(x??'').replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;'),canSetScheduler:true,accountSchedulerPending:new Set(),accountIntakePending:new Map(),agentStatusData:{accounts:[account('a'),account('b')]},executionAccounts:d=>d.accounts,
+ esc:x=>String(x??'').replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;'),canSetScheduler:true,accountSchedulerPending:new Set(),accountIntakePending:new Map(),agentStatusData:{accounts:[account('a'),account('b')]},currentCanSetScheduler:()=>context.canSetScheduler,currentAgentStatusData:()=>context.agentStatusData,executionAccounts:d=>d.accounts,
  accountBalanceHtml:()=>'',accountQuotaWindows:()=>[],accountCreditsHtml:()=>'',syncAccountDetailsButtons:()=>{},loadAgentStatus:()=>{},loadAccountDetails:()=>{},renderAgentStatus:()=>{},formatDateTime:()=>'',
  accountDetails:{accountId:'a',panel:document.querySelector('#panel'),popover:{isOpen:()=>true,reposition:()=>{},close:()=>{}},snapshot:null}});
-const source=fs.readFileSync(path.resolve(__dirname,'../../../management_portal/static/home.js'),'utf8');
 const names=new Set(['accountSchedulerSettings','renderAccountDetails','saveAccountSchedulerSettings']);
-for(const n of babelParse(source,'home.js').program.body)if(n.type==='FunctionDeclaration'&&names.delete(n.id.name))vm.runInContext(source.slice(n.start,n.end),context);
+for(const {node:n,source} of homeStatements())if(n.type==='FunctionDeclaration'&&names.delete(n.id.name))vm.runInContext(source,context);
 assert.equal(names.size,0);
 const input=n=>document.querySelector(`[name="${n}"]`),form=()=>document.querySelector('form');
 const open=id=>{context.accountDetails.accountId=id;document.querySelector('#panel').replaceChildren();context.renderAccountDetails();};

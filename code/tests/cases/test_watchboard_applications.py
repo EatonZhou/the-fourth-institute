@@ -239,6 +239,13 @@ def test_application_rules_do_not_leak_into_lineage_or_common_view():
         "management_portal/society_service/contracts.py",
         "management_portal/static/lineage_workbench_watchboard.js",
         "management_portal/static/lineage_workbench.js",
+        "management_portal/static/lineage_workbench_location.js",
+        "management_portal/static/lineage_workbench_chat_targets.js",
+        "management_portal/static/lineage_workbench_selection.js",
+        "management_portal/static/lineage_workbench_chat_detail.js",
+        "management_portal/static/lineage_workbench_layout.js",
+        "management_portal/static/lineage_workbench_editors.js",
+        "management_portal/static/lineage_workbench_dialog_controls.js",
         "management_portal/static/lineage_workbench.css",
         "management_portal/static/portal_resident_service.js",
     ]

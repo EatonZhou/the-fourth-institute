@@ -5,6 +5,7 @@ const {chromium}=require(path.join(code,'management_portal/test_framework/tau_ru
 const {LINEAGE_GRAPH_SCRIPTS}=require(path.join(code,'tests/cases/javascript/lineage_graph_scripts.cjs'));
 const {LINEAGE_TEMPLATES_SCRIPTS}=require(path.join(code,'tests/cases/javascript/lineage_templates_scripts.cjs'));
 const {RESIDENT_MENU_SCRIPTS}=require(path.join(code,'tests/cases/javascript/resident_menu_scripts.cjs'));
+const {HATG_PANEL_STYLES}=require(path.join(code,'tests/cases/javascript/hatg_panel_styles.cjs'));
 const {readFunctionBlockMenuReady}=require(path.join(code,'management_portal/test_framework/tau_function_block_menu_evidence'));
 const {readFunctionBlockObjectRows}=require(path.join(code,'management_portal/test_framework/tau_function_block_objects_evidence'));
 const B='fbi_fixture',E='effect_fixture',V='event_source_fixture',R='resident_fixture',TITLE='Local block';
@@ -15,7 +16,7 @@ const B='fbi_fixture',E='effect_fixture',V='event_source_fixture',R='resident_fi
   const p=await browser.newPage({viewport:{width:1200,height:900}}),requests=[],errors=[];
   p.on('request',r=>requests.push(r.url()));p.on('pageerror',e=>errors.push(e.message));
   await p.setContent('<!doctype html><main><div id="hatgCanvas" class="hatgCanvas" style="height:500px;width:700px"><div id="world"><svg id="edges"></svg><svg id="effects"></svg><div id="labels"></div><div id="nodes"></div></div></div></main>');
-  for(const n of ['portal_design_system','portal_themes','hatg_panel','lineage_function_blocks','portal_resident_menu'])await p.addStyleTag({path:path.join(staticDir,n+'.css')});
+  for(const n of ['portal_design_system','portal_themes',...HATG_PANEL_STYLES,'lineage_function_blocks','portal_resident_menu'])await p.addStyleTag({path:path.join(staticDir,n+'.css')});
   for(const n of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','portal_overlay','portal_ui','portal_detail_surface','lineage_element_fields',...RESIDENT_MENU_SCRIPTS,'projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min','lineage_program',...LINEAGE_TEMPLATES_SCRIPTS,...LINEAGE_GRAPH_SCRIPTS,'hatg_graph_view','hatg_family_blocks','hatg_function_block_menu'])await p.addScriptTag({path:path.join(staticDir,n+'.js')});
   await p.evaluate(({B,E,V,R,TITLE})=>{
    PortalI18n.apply('en');window.calls=[];window.ack=[];

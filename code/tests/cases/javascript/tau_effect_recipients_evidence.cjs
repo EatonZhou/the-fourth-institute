@@ -2,6 +2,7 @@
 const assert=require('node:assert/strict'),path=require('node:path');
 const code=process.env.TAU_CODE_ROOT||path.resolve(__dirname,'../../..');
 const {chromium}=require(path.join(code,'management_portal/test_framework/tau_runtime/node_modules/playwright'));
+const {HATG_PANEL_STYLES}=require(path.join(code,'tests/cases/javascript/hatg_panel_styles.cjs'));
 const baseline=!!process.env.TAU_RECIPIENTS_LABEL_BASELINE;
 const read=baseline?null:require(path.join(code,'management_portal/test_framework/tau_effect_recipients_evidence')).readClosedEffectRecipients;
 (async()=>{
@@ -10,7 +11,7 @@ const read=baseline?null:require(path.join(code,'management_portal/test_framewor
   const p=await browser.newPage({viewport:{width:1100,height:800}}),requests=[],errors=[];
   p.on('request',r=>requests.push(r.url()));p.on('pageerror',e=>errors.push(e.message));
   await p.setContent('<!doctype html><section id="menu" role="dialog" aria-label="Menu"><div id="body"></div></section>');
-  for(const name of ['portal_design_system','portal_themes','hatg_panel','lineage_function_blocks'])await p.addStyleTag({path:path.join(code,'management_portal/static',name+'.css')});
+  for(const name of ['portal_design_system','portal_themes',...HATG_PANEL_STYLES,'lineage_function_blocks'])await p.addStyleTag({path:path.join(code,'management_portal/static',name+'.css')});
   for(const name of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','lineage_element_fields','hatg_function_block_menu'])await p.addScriptTag({path:path.join(code,'management_portal/static',name+'.js')});
   await p.evaluate(()=>{
    window.instructionCalls=[];

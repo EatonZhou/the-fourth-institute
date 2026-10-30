@@ -6,7 +6,7 @@ const vm = require('node:vm');
 const {test} = require('node:test');
 const {babelParse, traverse} = require('./babel_parse.cjs');
 const parts = {};
-for (const file of ['portal_resident_service', 'lineage_workbench']) {
+for (const file of ['portal_resident_service', 'lineage_workbench', 'lineage_workbench_chat_detail']) {
   const source = fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static', file + '.js'), 'utf8');
   traverse(babelParse(source), {
     ObjectMethod(p) { if (p.node.key?.name === 'updateWatchboard') parts.service = source.slice(p.node.start, p.node.end); },
@@ -35,6 +35,8 @@ function fixture({refreshFails = false, code = 'instruction.conflict'} = {}) {
     selectedResidentId: () => selection,
     lineageWorkbench: {getPanel: () => ({applyLineageMutation: async (...args) => updates.push(args)})},
     agentChatPanel: {applyDetail: detail => {state.detail = detail; details.push(detail);}},
+    currentLineageWorkbench: () => context.lineageWorkbench, currentAgentChatPanel: () => context.agentChatPanel,
+    currentWatchboardController: () => context.watchboardController,
     renderChatExtensionMenu() {}, writeLineageUiState() {}, closeChatExtensionMenu() {},
     watchboardController: {render() {}}, loadFolder: async () => {}, refreshResidentSidebarIfDue: async () => {},
     window: {

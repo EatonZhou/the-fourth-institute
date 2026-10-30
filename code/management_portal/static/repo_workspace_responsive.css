@@ -1,0 +1,357 @@
+/* Repository workspace: narrow window overrides. Pages load this file right after
+   repo_workspace_history.css. */
+@media (max-width: 1180px) {
+  .repoChangesLayout {
+    grid-template-columns: 230px minmax(0, 1fr);
+  }
+
+  .repoCommitPanel {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--border);
+    border-left: 0;
+  }
+
+  .repoCommitPanel form {
+    grid-template-columns: minmax(220px, .8fr) minmax(260px, 1.2fr) 180px;
+    align-items: end;
+  }
+
+  .repoCommitPanel > p,
+  .repoCommitWarning {
+    grid-column: 1 / -1;
+  }
+
+  .repoCommitPanel textarea {
+    min-height: 72px;
+  }
+
+  .repoCommitDiffLayout {
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 14px;
+  }
+}
+
+@media (max-width: 920px) {
+  .repoMastheadMain,
+  .repoCodeToolbar {
+    flex-wrap: wrap;
+  }
+
+  .repoIdentity {
+    flex: 1 1 100%;
+  }
+
+  .repoIdentityActions {
+    margin-left: 45px;
+  }
+
+  .repoCodeLayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .repoAbout {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 18px;
+  }
+
+  .repoAbout > section:first-child {
+    padding-top: 14px;
+  }
+
+  .repoRemoteSettings {
+    grid-template-columns: 1fr;
+  }
+
+  .repoRemoteSettings > div,
+  .repoRemoteSettings > p {
+    grid-column: auto;
+  }
+
+  .repoCommitDiffLayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .repoCommitFileNav {
+    position: static;
+    max-height: none;
+  }
+
+  .repoCommitFileNav > nav {
+    max-height: 220px;
+  }
+
+  .repoCommitPage {
+    width: calc(100% - 20px);
+  }
+
+  .repoWorkspaceNav {
+    flex-wrap: wrap;
+  }
+
+  .repoWorkspaceActions {
+    width: 100%;
+    padding: 0 10px 8px;
+  }
+
+  .repoWorkspaceActions .repoListSearch {
+    width: min(420px, 100%);
+    flex: 1 1 260px;
+  }
+}
+
+@media (max-width: 720px) {
+  .repoMasthead,
+  .repoWorkspaceBody {
+    border-inline: 0;
+    border-radius: 0;
+  }
+
+  .repoIdentityActions span,
+  .repoToolbarDivider,
+  .repoTextButton span,
+  .portalButton.is-compact span {
+    display: none;
+  }
+
+  .repoTabs {
+    overflow-x: auto;
+  }
+
+  .repoWorkspaceActions {
+    overflow-x: auto;
+  }
+
+  .repoTab {
+    flex: 0 0 auto;
+  }
+
+  .repoCodeToolbar {
+    padding: 7px 9px;
+  }
+
+  .repoToolbarUpstream {
+    display: none;
+  }
+
+  .repoBranchControl {
+    flex: 1 1 180px;
+  }
+
+  .repoSyncButtons {
+    width: 100%;
+  }
+
+  .repoSyncButtons .portalButton {
+    flex: 1 1 auto;
+  }
+
+  .repoPushPolicy {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .repoCodeLayout,
+  .repoFilePage,
+  .repoBranchesPage,
+  .repoSettingsPage {
+    padding: 10px;
+  }
+
+  .repoAbout {
+    grid-template-columns: 1fr;
+  }
+
+  .repoTreeRow {
+    grid-template-columns: minmax(0, 1fr) 75px;
+  }
+
+  .repoTreeMessage {
+    display: none;
+  }
+
+  .repoTreeCommitMessage,
+  .repoTreeCommit > time,
+  .repoTreeHistory span {
+    display: none;
+  }
+
+  .repoChangesLayout {
+    min-height: auto;
+    grid-template-columns: 1fr;
+  }
+
+  .repoCleanState {
+    min-height: 300px;
+  }
+
+  .repoChangesList {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .repoChangesItems {
+    max-height: 260px;
+  }
+
+  .repoCommitPanel form {
+    grid-template-columns: 1fr;
+  }
+
+  .repoBranchRow {
+    grid-template-columns: 30px minmax(0, 1fr);
+  }
+
+  .repoBranchActions {
+    grid-column: 2;
+  }
+
+  .repoTagsSection article {
+    grid-template-columns: 110px minmax(0, 1fr);
+  }
+
+  .repoTagsSection article time {
+    display: none;
+  }
+
+  .repoSettingsCard dl > div {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .repoCredentialDialog {
+    max-height: calc(100vh - 20px);
+  }
+
+  .repoCredentialBody {
+    padding: 14px;
+  }
+
+  .repoCredentialRemote {
+    grid-template-columns: 34px minmax(0, 1fr);
+  }
+
+  .repoCredentialRemote em {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .repoSavedCredential {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .repoSavedCredential .portalButton {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+
+  .repoDangerRow {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .repoEditorStatus {
+    display: none;
+  }
+
+  .repoPathEditor {
+    grid-template-columns: 1fr;
+  }
+
+  .portalButton.repoDefaultBranchButton span {
+    display: inline;
+  }
+
+  .repoToolbarModeDivider {
+    display: none;
+  }
+
+  .repoToolButton {
+    width: 30px;
+    padding: 0;
+  }
+
+  .repoToolButton > span {
+    display: none;
+  }
+
+  .repoToolButton small {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    margin: 0;
+  }
+
+  .repoModeTab {
+    width: 30px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .repoModeTab span {
+    display: none;
+  }
+
+  .repoCommitsPage,
+  .repoCommitPage {
+    min-height: auto;
+    width: 100%;
+    padding: 10px;
+  }
+
+  .repoWorkspaceActions .repoRevisionControl {
+    width: 100%;
+  }
+
+  .repoRevisionControl select {
+    max-width: none;
+    flex: 1 1 auto;
+  }
+
+  .repoCommitListItem {
+    grid-template-columns: 30px minmax(0, 1fr) auto;
+  }
+
+  .repoCommitListItem > .repoCommitRefs {
+    display: none;
+  }
+
+  .repoCommitTitleBar,
+  .repoCommitMetaRow,
+  .repoCommitStatsRow,
+  .repoCommitDiffToolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .repoCommitTitleBar > div:last-child,
+  .repoCommitDiffToolbar .repoSegmented {
+    margin-left: 0;
+  }
+
+  .repoCommitIdentifiers {
+    justify-content: flex-start;
+  }
+
+  .repoCommitTotals {
+    margin-left: 0;
+  }
+
+  .repoCommitDiffToolbar > .portalSearchField {
+    width: 100%;
+  }
+
+  .repoAutomationDialog {
+    max-height: calc(100vh - 20px);
+  }
+
+  .repoAutomationResultHead {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .repoSyncStates {
+    flex: 1 1 100%;
+    padding-left: 45px;
+  }
+}

@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const {chromium} = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
+const {PORTAL_COMPONENTS_STYLES} = require('./portal_components_styles.cjs');
 const root = path.resolve(__dirname, '../../../management_portal/static');
 
 (async () => {
@@ -20,7 +21,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     });
     const setup = async (username = "") => {
       await page.goto('http://navigation.fixture.invalid/development');
-      for (const name of ['portal_design_system', 'portal_themes', 'portal_components']) await page.addStyleTag({url: `/static/${name}.css`});
+      for (const name of ['portal_design_system', 'portal_themes', ...PORTAL_COMPONENTS_STYLES]) await page.addStyleTag({url: `/static/${name}.css`});
       for (const name of ['portal_text', 'portal_state', 'portal_translations', 'portal_i18n', 'portal_ui_primitives', 'portal_overlay', 'portal_theme']) await page.addScriptTag({url: `/static/${name}.js`});
       await page.evaluate(username => {
         window.catalogReplies = [];

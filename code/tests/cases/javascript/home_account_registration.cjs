@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs'), path = require('node:path'), vm = require('node:vm');
 const {JSDOM} = require('jsdom');
-const {babelParse} = require('./babel_parse.cjs');
+const {homeStatements} = require('./home_modules.cjs');
 const {PORTAL_MANAGEMENT_SCRIPTS} = require('./portal_management_scripts.cjs');
 const dom = new JSDOM('<section id="home"></section><main></main>', {url: 'http://portal.invalid/', runScripts: 'outside-only'});
 const w = dom.window, context = dom.getInternalVMContext();
@@ -29,13 +29,14 @@ w.PortalInstructionClient = {execute: async (name, args) => {
 const me = {username: 'new-user', access: {permission_system: 'open', allows: {ListProviders: true, RegisterProviderAccount: true}}};
 w.canRegisterAccount = true;
 w.canSetScheduler = false;
+w.currentCanRegisterAccount = () => w.canRegisterAccount;
+w.currentCanSetScheduler = () => w.canSetScheduler;
 w.accountRegistrationPending = false;
 w.accountDetails = null;
 w.esc = x => String(x ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('"', '&quot;');
-const home = source('home.js');
 const names = new Set(['accountManagementActions', 'accountEmptyState', 'openAccountRegistration', 'syncAccountDetailsButtons']);
-for (const n of babelParse(home, 'home.js').program.body) {
-  if (n.type === 'FunctionDeclaration' && names.delete(n.id.name)) vm.runInContext(home.slice(n.start, n.end), context);
+for (const {node: n, source: text} of homeStatements()) {
+  if (n.type === 'FunctionDeclaration' && names.delete(n.id.name)) vm.runInContext(text, context);
 }
 assert.equal(names.size, 0);
 const mountHome = data => {

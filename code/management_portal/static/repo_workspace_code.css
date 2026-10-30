@@ -1,0 +1,669 @@
+/* Repository workspace: the Code tab: breadcrumb, file tree, README, About, sync state, remote
+   summary, statistics and the file page. Pages load this file right after repo_workspace.css. */
+.repoBreadcrumb {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 30px;
+  overflow: auto;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.repoBreadcrumb button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  padding: 2px 0;
+  font: 650 13px/1.2 ui-sans-serif, system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.repoBreadcrumb button:hover {
+  text-decoration: underline;
+}
+
+.repoBreadcrumb strong {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.repoTreePanel,
+.repoReadmePanel,
+.repoFilePanel,
+.repoSettingsCard,
+.repoBranchList,
+.repoTagsSection {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--panel);
+}
+
+.repoTreePanel {
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--text) 4%, transparent);
+}
+
+.repoTreeCommit {
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 11px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--panel-2) 72%, var(--panel));
+  font-size: 11px;
+}
+
+.repoCommitAvatar {
+  width: 25px;
+  height: 25px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 14%, var(--panel-2));
+  color: var(--accent);
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.repoTreeCommit > strong {
+  flex: 0 0 auto;
+}
+
+.repoTreeCommitMessage {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repoTreeCommit > button:not(.repoTreeHistory) {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 2px;
+  cursor: pointer;
+}
+
+.repoTreeCommit code {
+  font: 10px/1.2 var(--repo-mono);
+}
+
+.repoTreeCommit time {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.repoTreeHistory {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  padding: 5px;
+  font: 600 10px/1.2 ui-sans-serif, system-ui, sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.repoTreeHistory svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+}
+
+.repoTreeTable {
+  display: grid;
+}
+
+.repoTreeRow {
+  appearance: none;
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(190px, 1.25fr) minmax(140px, 1fr) 95px;
+  align-items: center;
+  gap: 12px;
+  min-height: 39px;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 68%, transparent);
+  background: transparent;
+  color: var(--text);
+  padding: 6px 11px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.repoTreeRow:last-of-type {
+  border-bottom: 0;
+}
+
+.repoTreeRow:hover {
+  background: color-mix(in srgb, var(--accent) 5%, var(--panel));
+}
+
+.repoTreeParent {
+  min-height: 34px;
+}
+
+.repoTreeName {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.repoTreeName svg {
+  color: #54aeff;
+}
+
+.repoTreeName strong,
+.repoTreeMessage {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repoTreeName strong {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.repoEntryStatus,
+.repoStatusCode {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-width: 21px;
+  min-height: 18px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--repo-orange) 12%, var(--panel));
+  color: var(--repo-orange);
+  padding: 2px 5px;
+  font: 700 8px/1 var(--repo-mono);
+}
+
+.repoTreeMessage,
+.repoTreeRow time {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.repoTreeRow time {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.repoTreeTruncated {
+  padding: 9px 12px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 10px;
+  text-align: center;
+}
+
+.repoTreeEmpty {
+  min-height: 190px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--muted);
+  padding: 24px;
+  text-align: center;
+}
+
+.repoTreeEmpty > svg {
+  width: 30px;
+  height: 30px;
+  fill: none;
+  stroke: currentColor;
+}
+
+.repoTreeEmpty strong {
+  color: var(--text);
+  font-size: 14px;
+}
+
+.repoTreeEmpty span {
+  font-size: 11px;
+}
+
+.repoReadmePanel > header,
+.repoFileHeader {
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 11px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel-2);
+}
+
+.repoReadmePanel > header > div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+}
+
+.repoReadmePanel > header svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.8;
+}
+
+.repoMarkdown {
+  color: var(--text);
+  padding: 24px 28px;
+  font-size: 13px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.repoMarkdown > :first-child { margin-top: 0; }
+.repoMarkdown > :last-child { margin-bottom: 0; }
+.repoMarkdown h1,
+.repoMarkdown h2 {
+  margin: 1.25em 0 .55em;
+  padding-bottom: .35em;
+  border-bottom: 1px solid var(--border);
+  line-height: 1.25;
+}
+.repoMarkdown h1 { font-size: 25px; }
+.repoMarkdown h2 { font-size: 20px; }
+.repoMarkdown h3 { font-size: 16px; }
+.repoMarkdown pre {
+  overflow: auto;
+  padding: 13px;
+  border-radius: 7px;
+  background: var(--repo-code-bg);
+}
+.repoMarkdown code {
+  border-radius: 4px;
+  background: var(--repo-code-bg);
+  padding: 2px 4px;
+  font: .9em/1.45 var(--repo-mono);
+}
+.repoMarkdown pre code {
+  background: transparent;
+  padding: 0;
+}
+.repoMarkdown table {
+  display: block;
+  max-width: 100%;
+  overflow: auto;
+  border-collapse: collapse;
+}
+.repoMarkdown th,
+.repoMarkdown td {
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+}
+.repoMarkdown blockquote {
+  margin-inline: 0;
+  border-left: 3px solid var(--border);
+  color: var(--muted);
+  padding-left: 14px;
+}
+.repoMarkdown img {
+  max-width: 100%;
+  border-radius: 6px;
+}
+.repoMarkdown a { color: var(--accent); }
+
+.repoAbout {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+}
+
+.repoAbout > section {
+  display: grid;
+  gap: 10px;
+  padding: 14px 6px 15px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+}
+
+.repoAbout > section:first-child {
+  padding-top: 3px;
+}
+
+.repoAbout > section:last-child {
+  border-bottom: 0;
+}
+
+.repoAbout h2,
+.repoAbout h3 {
+  margin: 0;
+  font-size: 13px;
+}
+
+.repoAbout h3 {
+  font-size: 11px;
+}
+
+.repoAbout p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.repoAbout dl {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.repoAbout dl > div {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  gap: 8px;
+  font-size: 10px;
+}
+
+.repoAbout dt {
+  color: var(--muted);
+}
+
+.repoAbout dd {
+  margin: 0;
+  overflow: hidden;
+  font-family: var(--repo-mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repoSyncState {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  min-height: 23px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 9%, var(--panel-2));
+  color: var(--accent);
+  padding: 3px 9px;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.repoSyncState.clean {
+  background: color-mix(in srgb, var(--repo-green) 10%, var(--panel));
+  color: var(--repo-green);
+}
+
+.repoSyncState.dirty {
+  background: color-mix(in srgb, var(--repo-orange) 10%, var(--panel));
+  color: var(--repo-orange);
+}
+
+.repoSyncState.conflict {
+  background: color-mix(in srgb, var(--danger) 10%, var(--panel));
+  color: var(--danger);
+}
+
+.repoSyncState.ahead {
+  background: color-mix(in srgb, var(--repo-green) 9%, var(--panel));
+  color: var(--repo-green);
+}
+
+.repoSyncState.behind {
+  background: color-mix(in srgb, var(--repo-blue) 9%, var(--panel));
+  color: var(--repo-blue);
+}
+
+.repoSyncState.muted,
+.repoSyncState.pull-only {
+  background: var(--panel-2);
+  color: var(--muted);
+}
+
+.repoAboutHeading,
+.repoRemoteSummary > div {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.repoAboutHeading button,
+.repoRemoteSummary button,
+.repoRemoteSummary a {
+  appearance: none;
+  width: 25px;
+  height: 25px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.repoAboutHeading button:hover,
+.repoRemoteSummary button:hover,
+.repoRemoteSummary a:hover {
+  background: var(--panel-2);
+  color: var(--accent);
+}
+
+.repoAboutHeading svg,
+.repoRemoteSummary svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+}
+
+.repoRemoteSummary > div > span {
+  display: flex;
+  align-items: center;
+}
+
+.repoCheckoutPath,
+.repoRemoteSummary code {
+  display: block;
+  overflow: hidden;
+  color: var(--muted);
+  font: 9px/1.5 var(--repo-mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repoRemoteSummary {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.repoRemoteSummary strong {
+  font-size: 10px;
+}
+
+.repoStats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px !important;
+}
+
+.repoStats button {
+  appearance: none;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--panel-2);
+  color: var(--text);
+  padding: 8px 4px;
+  cursor: pointer;
+}
+
+.repoStats button:hover {
+  color: var(--accent);
+}
+
+.repoStats strong {
+  overflow: hidden;
+  font: 700 11px/1.2 var(--repo-mono);
+  text-overflow: ellipsis;
+}
+
+.repoStats span {
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.repoFilePage {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.repoFileHeader {
+  flex-wrap: wrap;
+}
+
+.repoFileMeta,
+.repoFileActions {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.repoFileMeta strong {
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repoFileMeta span {
+  color: var(--muted);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.repoFileActions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.repoFileActions kbd {
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--muted);
+  padding: 1px 3px;
+  font: 8px/1 var(--repo-mono);
+}
+
+.repoSegmented {
+  display: flex;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.repoSegmented button {
+  appearance: none;
+  min-height: 28px;
+  border: 0;
+  border-right: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--muted);
+  padding: 4px 9px;
+  font: 600 10px/1 ui-sans-serif, system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.repoSegmented button:last-child {
+  border-right: 0;
+}
+
+.repoSegmented button.active {
+  background: var(--panel-2);
+  color: var(--text);
+}
+
+.repoDiffViewer {
+  overflow: auto;
+  background: var(--panel);
+  font: 11px/1.55 var(--repo-mono);
+  tab-size: 4;
+}
+
+.repoBinaryState {
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--muted);
+}
+
+.repoBinaryState svg {
+  width: 36px;
+  height: 36px;
+}
+
+.repoBinaryState strong {
+  color: var(--text);
+  font-size: 14px;
+}
+
+.repoBinaryState code {
+  max-width: 80%;
+  overflow: auto;
+  border-radius: 6px;
+  background: var(--panel-2);
+  padding: 7px 10px;
+  font: 10px/1.4 var(--repo-mono);
+}
+
+.repoFileLastCommit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.repoFileLastCommit strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repoFileLastCommit code {
+  font-family: var(--repo-mono);
+}
+
+.repoFileLastCommit time {
+  margin-left: auto;
+  white-space: nowrap;
+}

@@ -5,8 +5,9 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { chromium } = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
+const { PORTAL_COMPONENTS_STYLES } = require('./portal_components_styles.cjs');
 const portal = path.resolve(__dirname, '../../../management_portal');
-const css = ['portal_design_system.css', 'portal_components.css', 'portal_workbench.css', 'workbench_studio.css', 'wall.css']
+const css = ['portal_design_system.css', ...PORTAL_COMPONENTS_STYLES.map(name => `${name}.css`), 'portal_workbench.css', 'workbench_studio.css', 'wall.css']
   .map(name => fs.readFileSync(path.join(portal, 'static', name), 'utf8')).join('\n');
 const template = fs.readFileSync(path.join(portal, 'wall.html'), 'utf8');
 (async () => {

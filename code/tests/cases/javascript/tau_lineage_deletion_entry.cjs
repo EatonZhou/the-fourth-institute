@@ -2,6 +2,8 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const portal=path.resolve(__dirname,'../../../management_portal');
 const {chromium}=require(path.join(portal,'test_framework/tau_runtime/node_modules/playwright'));
+const {PORTAL_COMPONENTS_STYLES}=require('./portal_components_styles.cjs');
+const {HATG_PANEL_STYLES}=require('./hatg_panel_styles.cjs');
 (async()=>{
  const browser=await chromium.launch({headless:true});
  const report={formal_acceptance:false,fixture:'Native HATG template/LineageDialogs/UI/Overlay/DetailSurface/i18n/CSS; graph, user catalog and entry dependencies are local fixtures'};
@@ -9,7 +11,7 @@ const {chromium}=require(path.join(portal,'test_framework/tau_runtime/node_modul
   const p=await browser.newPage({viewport:{width:1280,height:1000}}),requests=[],errors=[];
   p.on('request',r=>requests.push(r.url()));p.on('pageerror',e=>errors.push(e.message));
   await p.setContent('<!doctype html><section id="panel" class="portalHatgPanelComponent">'+fs.readFileSync(path.join(portal,'hatg-panel.html'),'utf8')+'</section>');
-  for(const n of ['portal_design_system','portal_themes','portal_components','hatg_panel'])await p.addStyleTag({path:path.join(portal,'static',n+'.css')});
+  for(const n of ['portal_design_system','portal_themes',...PORTAL_COMPONENTS_STYLES,...HATG_PANEL_STYLES])await p.addStyleTag({path:path.join(portal,'static',n+'.css')});
   await p.evaluate(()=>{window.__PORTAL_LANGUAGE__='en';});
   for(const n of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','portal_overlay','portal_ui','portal_detail_surface','hatg_lineage_dialogs'])await p.addScriptTag({path:path.join(portal,'static',n+'.js')});
   await p.evaluate(()=>{

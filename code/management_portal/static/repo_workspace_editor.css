@@ -1,0 +1,279 @@
+/* Repository workspace: dialogs, the file editor, the blame view and the toolbar mode buttons.
+   Pages load this file right after repo_workspace_branches.css. */
+.repoSmallDialog {
+  --portal-detail-width: 520px;
+  --portal-detail-max-height: calc(100dvh - 36px);
+}
+
+.repoEditorDialog {
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+}
+
+.repoDialogHeading {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.repoDialogHeading h2 {
+  margin: 0;
+  overflow: hidden;
+  font-size: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repoEditorTabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 42px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.repoEditorTab {
+  appearance: none;
+  align-self: stretch;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  padding: 0 12px;
+  font: 650 11px/1 ui-sans-serif, system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.repoEditorTab.active {
+  border-bottom-color: #fd8c73;
+  color: var(--text);
+}
+
+.repoEditorStatus {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.repoEditorBody {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 9px;
+  overflow: hidden;
+  padding: 12px 14px;
+}
+
+.repoPathEditor {
+  grid-template-columns: 72px minmax(0, 1fr);
+  align-items: center;
+}
+
+.repoPathEditor input {
+  font-family: var(--repo-mono);
+}
+
+#repoEditorSource,
+.repoEditorPreview {
+  min-height: 480px;
+  max-height: calc(100vh - 260px);
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  outline: 0;
+  background: var(--repo-code-bg);
+  color: var(--text);
+}
+
+#repoEditorSource {
+  resize: none;
+  padding: 14px;
+  font: 12px/1.55 var(--repo-mono);
+  tab-size: 4;
+  white-space: pre;
+}
+
+#repoEditorSource:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 13%, transparent);
+}
+
+.repoEditorPreview {
+  margin: 0;
+  background: var(--panel);
+}
+
+.repoSmallDialogBody {
+  display: grid;
+  gap: 12px;
+}
+
+.repoSmallDialogBody p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.repoBlameViewer {
+  max-height: 75vh;
+  overflow: auto;
+  font: 10px/1.55 var(--repo-mono);
+}
+
+.repoBlameLine {
+  min-width: max-content;
+  display: grid;
+  grid-template-columns: 210px 52px minmax(max-content, 1fr);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 45%, transparent);
+}
+
+.repoBlameLine > button {
+  appearance: none;
+  display: grid;
+  grid-template-columns: 54px 1fr;
+  gap: 4px;
+  border: 0;
+  border-right: 1px solid var(--border);
+  background: color-mix(in srgb, var(--panel-2) 72%, var(--panel));
+  color: var(--text);
+  padding: 3px 8px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.repoBlameLine > button time {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.repoBlameLine > a {
+  border-right: 1px solid var(--border);
+  color: var(--muted);
+  padding: 3px 8px;
+  text-align: right;
+  text-decoration: none;
+}
+
+.repoBlameLine > span {
+  padding: 3px 10px;
+  white-space: pre;
+}
+
+.repoToolbarModeDivider {
+  width: 1px;
+  height: 20px;
+  margin: 0 2px;
+  background: var(--border);
+}
+
+.repoToolButton[hidden] {
+  display: none;
+}
+
+.repoToolButton {
+  appearance: none;
+  position: relative;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  padding: 0 9px;
+  cursor: pointer;
+  font: 650 11px/1 ui-sans-serif, system-ui, sans-serif;
+}
+
+.repoToolButton:hover:not(:disabled),
+.repoToolButton.active {
+  background: var(--panel-2);
+  color: var(--text);
+}
+
+.repoToolButton.active {
+  color: var(--accent);
+}
+
+.repoToolButton:disabled {
+  cursor: not-allowed;
+  opacity: .5;
+}
+
+.repoToolButton svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.repoToolButton small {
+  min-width: 17px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 12%, var(--panel));
+  color: var(--accent);
+  padding: 2px 5px;
+  font-size: 9px;
+  line-height: 1;
+  text-align: center;
+}
+
+.repoToolButton small[hidden] {
+  display: none;
+}
+
+.repoModeActions {
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--panel-2);
+  padding: 2px;
+}
+
+.repoModeTab {
+  appearance: none;
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  padding: 0 8px;
+  cursor: pointer;
+  font: 650 10.5px/1 ui-sans-serif, system-ui, sans-serif;
+}
+
+.repoModeTab:hover:not(:disabled) {
+  color: var(--text);
+}
+
+.repoModeTab.active {
+  background: var(--panel);
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.repoModeTab:disabled {
+  cursor: not-allowed;
+  opacity: .48;
+}
+
+.repoModeTab svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}

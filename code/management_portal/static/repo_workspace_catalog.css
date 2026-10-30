@@ -1,0 +1,195 @@
+/* Repository workspace: the repository list and its cards. Pages load this file right after
+   repo_workspace_editor.css. */
+.repoProjectList {
+  gap: 14px;
+}
+
+.repoCard {
+  position: relative;
+  box-sizing: border-box;
+  min-height: 178px;
+  overflow: hidden;
+  padding-bottom: 48px;
+  cursor: default;
+}
+
+.repoCardOpenSurface {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  appearance: none;
+  border: 0;
+  border-radius: inherit;
+  outline: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.repoCardOpenSurface:focus-visible {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 58%, transparent);
+}
+
+.repoCardContent {
+  position: relative;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.repoCardDescription {
+  min-height: 34px;
+  margin-top: 8px;
+  font-size: 11.5px;
+  line-height: 1.48;
+  -webkit-line-clamp: 2;
+}
+
+.repoCardDescription.pending,
+.repoCardDescription.unavailable {
+  color: color-mix(in srgb, var(--muted) 78%, transparent);
+}
+
+.repoCardStatus {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 9px;
+}
+
+.repoCardStatus > span {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  color: var(--muted);
+  padding: 3px 7px;
+  font-size: 8.5px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.repoCardStatus > span:first-child {
+  max-width: 44%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.repoCardStatus > span.is-dirty {
+  background: color-mix(in srgb, var(--repo-orange) 9%, var(--panel));
+  color: var(--repo-orange);
+}
+
+.repoCardStatus > span.is-clean {
+  background: color-mix(in srgb, var(--repo-green) 9%, var(--panel));
+  color: var(--repo-green);
+}
+
+.repoCardStatus svg {
+  width: 11px;
+  height: 11px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+}
+
+.repoCardStatus.is-loading {
+  opacity: .64;
+}
+
+.repoDescriptionPulse {
+  width: 6px;
+  height: 6px;
+  display: inline-block;
+  margin: 0 7px 1px 1px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: repoDescriptionPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes repoDescriptionPulse {
+  0%,
+  100% {
+    opacity: .32;
+    transform: scale(.78);
+  }
+
+  50% {
+    opacity: .9;
+    transform: scale(1);
+  }
+}
+
+.repoCardAutomation {
+  position: absolute;
+  left: 10px;
+  bottom: 8px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.repoCardAutoButton {
+  appearance: none;
+  min-height: 27px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border));
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--accent) 5%, var(--panel));
+  color: var(--accent);
+  padding: 4px 8px;
+  cursor: pointer;
+  font: 680 9.5px/1 ui-sans-serif, system-ui, sans-serif;
+}
+
+.repoCardAutoButton:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  background: color-mix(in srgb, var(--accent) 11%, var(--panel));
+}
+
+.repoCardAutoButton:disabled {
+  border-color: var(--border);
+  background: var(--panel-2);
+  color: var(--muted);
+  cursor: not-allowed;
+  opacity: .76;
+}
+
+.repoCardAutoButton.running {
+  color: var(--repo-green);
+}
+
+.repoCardAutoButton svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.repoCardAutomationMeta {
+  max-width: 122px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 8.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repoCard .portalCollectionTypeChip {
+  z-index: 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .repoDescriptionPulse {
+    animation: none;
+  }
+}

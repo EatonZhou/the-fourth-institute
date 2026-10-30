@@ -1,0 +1,438 @@
+/* Repository workspace: the automation and credential dialogs. Pages load this file right after
+   repo_workspace_catalog.css. */
+.repoAutomationDialog {
+  --portal-detail-width: 720px;
+  --portal-detail-max-height: min(760px, calc(100dvh - 36px));
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.repoAutomationDialog [hidden] {
+  display: none;
+}
+
+.repoAutomationBody {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px;
+}
+
+.repoAutomationSummary {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.repoAutomationSummary > div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.repoAutomationSummary strong {
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repoAutomationSummary span:not(.repoAutomationProvider) {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.repoAutomationProvider {
+  flex: 0 0 auto;
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 7%, var(--panel));
+  color: var(--accent);
+  padding: 4px 8px;
+  font-size: 9px;
+  font-weight: 720;
+}
+
+.repoAutomationProgress {
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--panel-2);
+}
+
+.repoAutomationProgress > span {
+  width: 0;
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 180ms ease;
+}
+
+.repoAutomationProgress.complete > span {
+  width: 100% !important;
+  transition: none;
+}
+
+.repoAutomationResults {
+  min-height: 160px;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  overflow: auto;
+}
+
+.repoAutomationEmpty {
+  min-height: 150px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 10px;
+  text-align: center;
+}
+
+.repoAutomationResult {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 9px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 10px;
+}
+
+.repoAutomationResultMark {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--panel-2);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 780;
+}
+
+.repoAutomationResult.success .repoAutomationResultMark {
+  background: color-mix(in srgb, var(--repo-green) 12%, var(--panel));
+  color: var(--repo-green);
+}
+
+.repoAutomationResult.partial .repoAutomationResultMark,
+.repoAutomationResult.auth_required .repoAutomationResultMark,
+.repoAutomationResult.stopped .repoAutomationResultMark {
+  background: color-mix(in srgb, #d97706 12%, var(--panel));
+  color: #b45309;
+}
+
+.repoAutomationResult.error .repoAutomationResultMark {
+  background: color-mix(in srgb, var(--danger) 10%, var(--panel));
+  color: var(--danger);
+}
+
+.repoAutomationResultBody {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.repoAutomationResultHead {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.repoAutomationResultHead strong {
+  overflow: hidden;
+  font-size: 10.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repoAutomationResultHead span {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 8.5px;
+}
+
+.repoAutomationResultTitle {
+  margin: 0;
+  color: var(--text);
+  font: 600 10px/1.45 var(--repo-mono);
+}
+
+.repoAutomationResultReason,
+.repoAutomationResultError {
+  margin: 0;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.repoAutomationResultError {
+  color: var(--danger);
+}
+
+.repoCredentialDialog {
+  --portal-detail-width: 560px;
+  --portal-detail-max-height: calc(100dvh - 36px);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.repoCredentialBody {
+  min-height: 0;
+  display: grid;
+  gap: 14px;
+  overflow: auto;
+  padding: 18px;
+}
+
+.repoCredentialRemote {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel-2);
+  padding: 12px;
+}
+
+.repoCredentialRemoteIcon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--accent) 10%, var(--panel));
+  color: var(--accent);
+}
+
+.repoCredentialRemoteIcon svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+.repoCredentialRemote > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.repoCredentialRemote strong,
+.repoCredentialRemote span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repoCredentialRemote strong {
+  font-size: 12px;
+}
+
+.repoCredentialRemote span {
+  color: var(--muted);
+  font: 9.5px/1.4 var(--repo-mono);
+}
+
+.repoCredentialRemote em {
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+  border-radius: 999px;
+  color: var(--accent);
+  padding: 4px 8px;
+  font-size: 8.5px;
+  font-style: normal;
+  font-weight: 760;
+  letter-spacing: .04em;
+}
+
+.repoCredentialReason {
+  margin: -2px 0 0;
+  border-left: 3px solid #d97706;
+  border-radius: 0 6px 6px 0;
+  background: color-mix(in srgb, #d97706 7%, var(--panel));
+  color: color-mix(in srgb, #b45309 85%, var(--text));
+  padding: 9px 11px;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.repoCredentialField {
+  display: grid;
+  gap: 6px;
+}
+
+.repoCredentialField > span {
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.repoCredentialField input {
+  width: 100%;
+  height: 38px;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  outline: 0;
+  background: var(--panel);
+  color: var(--text);
+  padding: 0 11px;
+  font: 11px/1.4 var(--repo-mono);
+}
+
+.repoCredentialField input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.repoCredentialHelp {
+  margin: -4px 0 0;
+  color: var(--muted);
+  font-size: 9.5px;
+  line-height: 1.55;
+}
+
+.repoCredentialRemember {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--accent) 3%, var(--panel));
+  padding: 11px 12px;
+  cursor: pointer;
+}
+
+.repoCredentialRemember input {
+  margin: 2px 0 0;
+  accent-color: var(--accent);
+}
+
+.repoCredentialRemember span {
+  display: grid;
+  gap: 3px;
+}
+
+.repoCredentialRemember strong {
+  font-size: 10px;
+}
+
+.repoCredentialRemember small {
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.repoCredentialError {
+  margin: 0;
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--border));
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--danger) 5%, var(--panel));
+  color: var(--danger);
+  padding: 9px 10px;
+  font-size: 9.5px;
+  line-height: 1.5;
+}
+
+.repoCredentialSettings {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+}
+
+.repoCredentialSettingsIntro {
+  margin: 0;
+  color: var(--muted);
+  font-size: 9.5px;
+  line-height: 1.5;
+}
+
+.repoCredentialContextList,
+.repoSavedCredentialList {
+  display: grid;
+  gap: 7px;
+}
+
+.repoCredentialContext,
+.repoSavedCredential {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 9px 10px;
+}
+
+.repoSavedCredential {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.repoCredentialContext > div,
+.repoSavedCredential > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.repoCredentialContext strong,
+.repoSavedCredential strong {
+  overflow: hidden;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repoCredentialContext span,
+.repoSavedCredential span {
+  overflow: hidden;
+  color: var(--muted);
+  font: 8.5px/1.4 var(--repo-mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repoCredentialContext em,
+.repoSavedCredential em {
+  border-radius: 999px;
+  background: var(--panel-2);
+  color: var(--muted);
+  padding: 4px 7px;
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 720;
+}
+
+.repoSavedCredential.invalid {
+  border-color: color-mix(in srgb, #d97706 35%, var(--border));
+}
+
+.repoSavedCredential.invalid em {
+  background: color-mix(in srgb, #d97706 10%, var(--panel));
+  color: #b45309;
+}
+
+.repoCredentialEmpty {
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  padding: 12px;
+  font-size: 9.5px;
+  text-align: center;
+}

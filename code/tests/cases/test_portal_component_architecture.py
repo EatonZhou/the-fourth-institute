@@ -9,6 +9,18 @@ from management_portal import script_groups
 ROOT = Path(__file__).resolve().parents[2]
 STATIC = ROOT / "management_portal" / "static"
 
+
+def _style_parts(page: str, stem: str) -> tuple[str, ...]:
+    """``stem``.css and the parts ``page`` loads right after it, in load order."""
+    source = (ROOT / "management_portal" / page).read_text(encoding="utf-8")
+    return tuple(re.findall(rf'href="/static/({stem}(?:_[a-z_]+)?\.css)"', source))
+
+
+# Style sheets split into parts that every page loading the sheet loads right after it.
+PORTAL_COMPONENTS_STYLES = _style_parts("index.html", "portal_components")
+HATG_PANEL_STYLES = _style_parts("lineage.html", "hatg_panel")
+REPO_WORKSPACE_STYLES = _style_parts("repo_workspace.html", "repo_workspace")
+
 WORKBENCH_HOSTS = (
     ROOT / "management_portal" / "article_workspace.html",
     ROOT / "management_portal" / "resource_catalog.html",
@@ -22,12 +34,12 @@ WORKBENCH_HOSTS = (
 )
 
 SHARED_INTERNAL_STYLE_OWNERS = {
-    "hatg_panel.css",
+    *HATG_PANEL_STYLES,
     "lineage_function_blocks.css",
     "portal_board_toolbar.css",
     "portal_collection_board.css",
     "portal_workbench.css",
-    "portal_components.css",
+    *PORTAL_COMPONENTS_STYLES,
     "portal_design_system.css",
     "portal_image_editor.css",
     "portal_live_tour.css",
@@ -309,7 +321,7 @@ def test_page_styles_do_not_reach_into_shared_component_internals_contracts(subt
 def test_global_navigation_has_one_shared_host_and_style_owner():
     """全局导航只由共享站点头渲染和定义样式，页面 CSS 不改写导航内部"""
     violations: list[str] = []
-    page_styles = [path for path in STATIC.glob('*.css') if path.name != 'portal_components.css']
+    page_styles = [path for path in STATIC.glob('*.css') if path.name not in PORTAL_COMPONENTS_STYLES]
     for path in page_styles:
         for line_number, selector in _navigation_selectors(path.read_text(encoding='utf-8')):
             violations.append(f'{path.relative_to(ROOT)}:{line_number}: {selector}')
@@ -427,6 +439,30 @@ def test_lazy_loaders_request_every_part_before_the_script_that_creates_it():
     assert re.findall(r'"(/static/[a-z_]+\.js)"', listed[1]) == scripts[:-1]
 
 
+def test_split_style_sheets_load_every_part_in_order():
+    """拆分成分片的样式表在每个加载处紧接着按序加载全部分片"""
+    for parts in (PORTAL_COMPONENTS_STYLES, HATG_PANEL_STYLES, REPO_WORKSPACE_STYLES):
+        stem = parts[0].removesuffix(".css")
+        assert parts[0] == f"{stem}.css" and len(parts) > 1, parts
+        assert sorted(parts) == sorted(path.name for path in STATIC.glob(f"{stem}*.css")
+                                       if path.stem == stem or path.stem.startswith(f"{stem}_")), parts
+        loaders = [*sorted((ROOT / "management_portal").glob("*.html")),
+                   *sorted((ROOT / "management_portal" / "test_framework" / "page").glob("*.html")),
+                   *sorted(ROOT.glob("*_lan/*.html")), STATIC / "projection_host.js"]
+        loading = 0
+        for path in loaders:
+            # Every style sheet the file names, in order: link tags, JSON asset lists, fetch lists.
+            styles = re.findall(r'["/]([a-z_]+\.css)"', path.read_text(encoding="utf-8"))
+            if parts[0] not in styles:
+                assert not set(parts) & set(styles), path
+                continue
+            loading += 1
+            start = styles.index(parts[0])
+            assert tuple(styles[start:start + len(parts)]) == parts, path
+            assert styles.count(parts[0]) == 1 and not set(parts) & set(styles[start + len(parts):]), path
+        assert loading, parts
+
+
 def test_resource_sections_share_one_header_and_style_owner():
     """资源分区页共用同一页头和样式来源，样式表按固定顺序加载"""
     for path in RESOURCE_SECTION_HOSTS:
@@ -468,12 +504,12 @@ def test_resource_sections_share_one_header_and_style_owner():
     assert "--portal-control-height: 38px;" in toolbar_css
     assert "--portal-control-height-compact: 38px;" in toolbar_css
     # One page gutter for every Portal page (portalPageFrame / portalPageHeaderFrame).
-    components_css = (STATIC / "portal_components.css").read_text(encoding="utf-8")
+    components_css = "".join((STATIC / name).read_text(encoding="utf-8") for name in PORTAL_COMPONENTS_STYLES)
     assert "--portal-page-gap:" in components_css
     assert ".portalPageHeaderFrame" in components_css
 
     catalog_css = (STATIC / "resource_catalog.css").read_text(encoding="utf-8")
-    repo_css = (STATIC / "repo_workspace.css").read_text(encoding="utf-8")
+    repo_css = "".join((STATIC / name).read_text(encoding="utf-8") for name in REPO_WORKSPACE_STYLES)
     backup_css = (STATIC / "resource_backup.css").read_text(encoding="utf-8")
     for source in (tabs_css, catalog_css, repo_css, backup_css):
         assert "--portal-resource-page-gutter" not in source

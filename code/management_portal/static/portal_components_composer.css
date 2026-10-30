@@ -1,0 +1,763 @@
+/* Shared components: the composer and the Resident Chat surface around it: runtime settings,
+   capability editor, extension menus, forwarding dock, image tray and message menus. Pages load
+   this file right after portal_components_messages.css. */
+.composer {
+  flex: 0 0 auto;
+  border-top: 1px solid var(--border, rgba(148, 163, 184, 0.32));
+  background: var(--panel-2, rgba(148, 163, 184, 0.10));
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.composerSplitter {
+  flex: 0 0 var(--portal-composer-splitter-size, 7px);
+  cursor: row-resize;
+  touch-action: none;
+  position: relative;
+  background: var(--panel-2, rgba(148, 163, 184, 0.10));
+  border-top: 1px solid var(--border, rgba(148, 163, 184, 0.32));
+}
+
+.composerSplitter::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 48px;
+  height: 2px;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--border, rgba(148, 163, 184, 0.42)) 78%, transparent);
+}
+
+.composerSplitter:hover::after,
+.composerSplitter.active::after {
+  height: 3px;
+  background: var(--accent, #2563eb);
+}
+
+.composerInput {
+  width: 100%;
+  min-height: 86px;
+  height: var(--portal-composer-input-h, 86px);
+  max-height: min(34vh, 260px);
+  overflow: auto;
+  border: 1px solid var(--border, rgba(148, 163, 184, 0.42));
+  border-radius: 8px;
+  background: var(--panel, #fff);
+  color: var(--text, #111827);
+  padding: 9px 10px;
+  outline: none;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.composerInputWrap {
+  position: relative;
+  min-width: 0;
+}
+
+.composerInputWrap .composerInput {
+  display: block;
+}
+
+.composerInput:focus {
+  border-color: var(--accent, #2563eb);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #2563eb) 20%, transparent);
+}
+
+.composerRichInput:empty::before {
+  content: attr(data-placeholder);
+  color: var(--muted, #64748b);
+  pointer-events: none;
+}
+
+.composerSlashCommandHost {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: calc(100% + 6px);
+  z-index: 20;
+}
+
+.composerSlashCommandHost:empty,
+.composerSlashCommandHost[hidden] {
+  display: none;
+}
+
+/* Every @ candidate stays on one compact row (decision_a6bebf4ac283). */
+.composerSlashCommandItem.composerMentionItem {
+  display: flex;
+  gap: 8px;
+  min-height: 30px;
+  padding: 3px 8px;
+  line-height: 20px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.composerMentionItem .composerSlashCommandName {
+  font-family: inherit;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.composerMentionItem .composerSlashCommandTitle {
+  flex: 0 1 auto;
+  min-width: 0;
+  color: var(--muted);
+  font-weight: 400;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.composerMentionItem .composerSlashCommandDescription {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.composerMentionMenu { position: relative; }
+.composerMentionItem:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.composerMentionStatus {
+  padding: 10px 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.composerSlashCommandMenu {
+  max-height: min(260px, 42vh);
+  overflow: auto;
+  border: 1px solid var(--border, rgba(148, 163, 184, 0.36));
+  border-radius: 8px;
+  background: var(--panel, #fff);
+  color: var(--text, #111827);
+  box-shadow: 0 14px 38px rgba(15, 23, 42, 0.18);
+  padding: 5px;
+}
+
+.composerSlashCommandHeader {
+  padding: 4px 7px 6px;
+  color: var(--muted, #64748b);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.composerSlashCommandItem {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(72px, max-content) minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: inherit;
+  padding: 7px 8px;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.composerSlashCommandItem:hover,
+.composerSlashCommandItem:focus-visible,
+.composerSlashCommandItem.active {
+  background: color-mix(in srgb, var(--accent, #2563eb) 10%, var(--panel-2, rgba(148, 163, 184, 0.10)));
+  outline: none;
+}
+
+.composerSlashCommandName {
+  color: var(--accent, #2563eb);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.composerSlashCommandBody {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.composerSlashCommandTitle {
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.composerSlashCommandDescription {
+  color: var(--muted, #64748b);
+  font-size: 11px;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.composerActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: nowrap;
+}
+
+.composerMeta {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-wrap: nowrap;
+}
+
+/* Resident Chat is a single surface shared by Lineage Workbench and Lineage. */
+.portalChatWorkspaceRoot .composer {
+  padding: var(--portal-chat-composer-padding, 6px 8px);
+  gap: 5px;
+}
+
+.portalChatWorkspaceRoot[data-portal-collapsed="true"] > :not(.portalWorkspaceHead) {
+  display: none !important;
+}
+
+.portalChatWorkspaceRoot[data-portal-collapsed="true"] .portalWorkspaceHead {
+  --portal-pane-head-min-height: 42px;
+  --portal-pane-head-border-bottom: 0;
+}
+
+.portalChatWorkspaceRoot[data-portal-collapsed="true"] .chatSubline,
+.portalChatWorkspaceRoot[data-portal-collapsed="true"] .actionGroup .iconBtn:not([data-portal-collapse-control]) {
+  display: none;
+}
+
+.portalChatWorkspaceRoot .composerInput {
+  min-height: 66px;
+  height: var(--portal-composer-input-h, 72px);
+  max-height: min(42vh, 360px);
+  resize: none;
+}
+
+.portalChatWorkspaceRoot .composerRichInput {
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+}
+
+.portalChatWorkspaceRoot .composerActions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.portalChatWorkspaceRoot .composerActions > .actionGroup {
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+
+.portalChatWorkspaceRoot .composerActions .paneNote {
+  margin-right: auto;
+  font-size: 11.25px;
+  line-height: 1.25;
+}
+
+.portalChatWorkspaceRoot .composerMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 0;
+}
+
+.portalChatWorkspaceRoot .composerRuntimeBtn {
+  max-width: 100%;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted, #64748b);
+  padding: 2px 5px;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.portalChatWorkspaceRoot .composerRuntimeBtn:hover,
+.portalChatWorkspaceRoot .composerRuntimeBtn:focus-visible {
+  border-color: color-mix(in srgb, var(--accent, #2563eb) 30%, transparent);
+  background: color-mix(in srgb, var(--accent, #2563eb) 8%, var(--panel, #fff));
+  color: var(--accent, #2563eb);
+  outline: none;
+}
+
+.portalChatWorkspaceRoot .composerRuntimeLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portalRuntimeSettingsSurface { width: min(960px, calc(100vw - 32px)); --portal-detail-form-gap: 8px; }
+.portalRuntimeSettingsTitle { color: var(--text); font-size: 15px; font-weight: 750; }
+.portalRuntimeSettingsGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr)); gap: 10px; }
+.portalRuntimeSettingsField { display: grid; gap: 6px; min-width: 0; color: var(--muted); font-size: 11px; font-weight: 700; }
+.portalRuntimeSettingsField[hidden] { display: none; }
+.portalRuntimeSettingsField select { min-width: 0; min-height: 34px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); color: var(--text); padding: 0 9px; font: inherit; font-weight: 500; }
+.portalRuntimeSettingsField select:focus { border-color: var(--accent); outline: 2px solid color-mix(in srgb, var(--accent) 18%, transparent); outline-offset: 1px; }
+.portalRuntimeSettingsHint { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
+.portalRuntimeSettingsEditor { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: 10px; }
+.portalRuntimeSettingsEditor[hidden] { display: none; }
+.portalRuntimeSectionTitle { margin: 6px 0 0; padding-top: 12px; border-top: 1px solid var(--border); font-size: 13px; }
+.portalRuntimeSettingsForm .portalDetailFooter { flex-wrap: wrap; }
+.portalSessionRestartOverlay .portalRuntimeSettingsSurface {
+  width: min(960px, 100%);
+  height: min(720px, calc(100dvh - 32px));
+  grid-template-rows: auto minmax(0, 1fr);
+  align-self: center;
+}
+.portalSessionRestartOverlay .portalRuntimeSettingsHeader { display: grid; grid-template-columns: minmax(0, 1fr); justify-content: stretch; gap: 12px; }
+.portalRuntimeSettingsHeading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.portalRuntimePurposeNav { display: flex; flex-wrap: wrap; gap: 6px; }
+.portalRuntimePurposeNav .portalButton { font-size: 13px; }
+.portalRuntimePurposeNav [aria-pressed="true"] { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--panel)); }
+.portalSessionRestartOverlay .portalRuntimeSettingsForm {
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+}
+.portalRuntimeSettingsBody { display: grid; align-content: start; gap: 12px; font-size: 13px; line-height: 1.55; }
+.portalRuntimeSettingsBody p { margin: 0 0 10px; }
+.portalRuntimeSettingsBody p:empty { display: none; }
+.portalSessionRestartOverlay .portalDetailFooter { padding: 12px 16px; }
+.portalCapabilityEditor { display: grid; gap: 12px; min-width: 0; }
+.portalCapabilityGroup { min-width: 0; margin: 0; padding: 12px; border: 1px solid var(--border); border-radius: 8px; }
+.portalCapabilityRow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
+.portalCapabilityRow input[type="text"] { flex: 1; width: 100%; min-width: 0; }
+.portalCapabilityRow details { flex-basis: 100%; min-width: 0; }
+.portalCapabilityApplication { padding-inline-start: 20px; overflow-wrap: anywhere; color: var(--muted); font-size: 12px; }
+.portalCapabilityEditor summary { cursor: pointer; }
+
+.portalChatWorkspaceRoot .chatExtensionTools {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.portalChatWorkspaceRoot .chatExtensionTools[hidden] { display: none; }
+
+.filterPopover {
+  position: fixed;
+  z-index: var(--portal-layer-popover, 400);
+  min-width: 132px;
+  max-width: min(340px, calc(100vw - 20px));
+  max-height: min(420px, calc(100vh - 20px));
+  display: none;
+  gap: 2px;
+  padding: 5px;
+  border: 1px solid var(--border, rgba(148, 163, 184, 0.32));
+  border-radius: 8px;
+  background: var(--panel, #fff);
+  box-shadow: var(--portal-shadow-popover, 0 14px 34px rgba(15, 23, 42, 0.18));
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.filterPopover.open { display: grid; }
+
+.filterOption {
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text, #111827);
+  text-align: left;
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
+.filterOption:is(:hover, .active) {
+  background: var(--panel-2, rgba(148, 163, 184, 0.10));
+  color: var(--accent, #2563eb);
+}
+
+.filterSection { display: grid; gap: 2px; }
+.filterSection + .filterSection { margin-top: 5px; padding-top: 5px; border-top: 1px solid var(--border, rgba(148, 163, 184, 0.32)); }
+.filterLabel { padding: 3px 8px 2px; color: var(--muted, #64748b); font-size: 10px; font-weight: 800; text-transform: uppercase; }
+
+.chatExtensionMenu {
+  width: 290px;
+  min-width: 290px;
+  max-width: 340px;
+}
+
+.chatSessionSwitch {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 34px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.chatSessionSwitch:hover { background: var(--panel-2, rgba(148, 163, 184, 0.10)); }
+.chatSessionSwitchText { display: grid; gap: 2px; min-width: 0; }
+.chatSessionSwitchText strong { color: var(--text, #111827); font-size: 12px; font-weight: 650; }
+.chatSessionSwitchText small { color: var(--muted, #64748b); font-size: 10px; line-height: 1.35; }
+.chatSessionSwitch input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.chatSessionSwitchTrack { position: relative; width: 32px; height: 18px; border: 1px solid var(--border, rgba(148, 163, 184, 0.32)); border-radius: 999px; background: var(--panel-2, rgba(148, 163, 184, 0.10)); }
+.chatSessionSwitchTrack::after { content: ""; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--muted, #64748b); transition: transform 140ms ease, background 140ms ease; }
+.chatSessionSwitch input:checked + .chatSessionSwitchTrack { border-color: var(--accent, #2563eb); background: color-mix(in srgb, var(--accent, #2563eb) 28%, var(--panel-2, #f8fafc)); }
+.chatSessionSwitch input:checked + .chatSessionSwitchTrack::after { transform: translateX(14px); background: var(--accent, #2563eb); }
+.chatSessionSwitch input:focus-visible + .chatSessionSwitchTrack { outline: 2px solid var(--accent, #2563eb); outline-offset: 2px; }
+.chatSessionSwitch:has(input:disabled) { cursor: wait; opacity: 0.62; }
+.chatSessionSwitch input:disabled { cursor: wait; }
+.chatSessionNav {
+  width: 100%;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+.chatSessionNav:disabled { cursor: wait; opacity: 0.62; }
+.chatSessionNavArrow { justify-self: end; color: var(--muted, #64748b); font-size: 16px; line-height: 1; }
+.chatPromptInjection { display: grid; max-height: min(72vh, 640px); overflow-y: auto; padding-bottom: 6px; }
+.chatPromptInjectionBack {
+  justify-self: start;
+  margin: 6px 6px 2px;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--text, #111827);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.chatPromptInjectionBack:hover { background: var(--panel-2, rgba(148, 163, 184, 0.10)); }
+.chatHarnessTiming.chatPromptInjectionRow { margin: 3px 12px; }
+.chatPromptInjectionPlace { color: var(--accent, #2563eb); }
+.chatPromptInjectionPreview { display: grid; gap: 4px; margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--border, rgba(148, 163, 184, 0.32)); }
+.chatPromptInjectionParts { display: grid; gap: 1px; margin: 0 14px; padding: 0; list-style: none; color: var(--muted, #64748b); font-size: 10px; }
+.chatPromptInjectionParts li.sent { color: var(--text, #111827); }
+.chatPromptInjectionText {
+  max-height: 260px;
+  margin: 0 12px;
+  padding: 7px 8px;
+  overflow: auto;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--panel-2, #f8fafc) 72%, transparent);
+  color: var(--text, #111827);
+  font-size: 10px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.chatHarnessTiming {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(132px, auto);
+  align-items: center;
+  gap: 10px;
+  margin: -5px 12px 8px;
+  padding: 7px 8px;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--panel-2, #f8fafc) 72%, transparent);
+}
+.chatHarnessTimingText { display: grid; gap: 1px; min-width: 0; }
+.chatHarnessTimingText strong { color: var(--text, #111827); font-size: 10px; font-weight: 650; }
+.chatHarnessTimingText small { color: var(--muted, #64748b); font-size: 9px; line-height: 1.3; }
+.chatHarnessTiming select {
+  min-width: 0;
+  max-width: 158px;
+  padding: 5px 22px 5px 7px;
+  border: 1px solid var(--border, rgba(148, 163, 184, 0.32));
+  border-radius: 6px;
+  background: var(--panel, #fff);
+  color: var(--text, #111827);
+  font: inherit;
+  font-size: 10px;
+}
+.chatHarnessTiming select:focus-visible { outline: 2px solid var(--accent, #2563eb); outline-offset: 1px; }
+.chatHarnessTiming:has(select:disabled) { opacity: 0.62; }
+.chatHarnessTimingValue {
+  display: inline-flex;
+  justify-content: center;
+  min-width: 0;
+  max-width: 158px;
+  padding: 5px 7px;
+  border: 1px solid var(--border, rgba(148, 163, 184, 0.32));
+  border-radius: 6px;
+  background: var(--panel, #fff);
+  color: var(--muted, #64748b);
+  font-size: 10px;
+  line-height: 1.25;
+  text-align: center;
+}
+.chatHarnessTiming[aria-disabled="true"] { opacity: 0.62; }
+.chatExtensionDivider { height: 1px; margin: 4px 8px; background: var(--border, rgba(148, 163, 184, 0.32)); }
+.chatExtensionMenu .filterOption.danger { color: var(--danger, #dc2626); }
+.chatExtensionMenu .filterOption:disabled { color: var(--muted, #64748b); opacity: 0.62; cursor: default; }
+.chatExtensionMenu .filterOption:disabled:hover { background: transparent; color: var(--muted, #64748b); }
+
+.portalChatWorkspaceRoot .forwardDock {
+  position: absolute;
+  right: 14px;
+  bottom: calc(var(--portal-composer-input-h, 72px) + 64px);
+  z-index: 12;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border: 1px solid var(--border, rgba(148, 163, 184, 0.32));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--panel, #fff) 94%, transparent);
+  box-shadow: var(--shadow, 0 10px 25px rgba(15, 23, 42, 0.10));
+}
+
+.portalChatWorkspaceRoot .forwardDock.open { display: flex; }
+.portalChatWorkspaceRoot .forwardCount { color: var(--muted, #64748b); font-size: 11px; }
+.messageItem.forwardSelected { outline: 2px solid color-mix(in srgb, var(--accent, #2563eb) 62%, transparent); outline-offset: 1px; }
+
+.residentForwardSurface { width: min(620px, calc(100vw - 32px)); }
+.residentForwardField { display: grid; gap: 6px; color: var(--text, #111827); font-size: 12px; font-weight: 700; }
+.residentForwardField[hidden] { display: none; }
+.residentForwardField small, .residentForwardSummary { color: var(--muted, #64748b); font-size: 11px; font-weight: 400; }
+.residentForwardField textarea { min-height: 96px; resize: vertical; }
+.residentForwardDirectRow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+
+.composerImageTray {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-items: center;
+}
+
+.composerImageTray:empty {
+  display: none;
+}
+
+.composerImageChip {
+  position: relative;
+  flex: 0 1 240px;
+  min-width: 0;
+  max-width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 7px;
+  align-items: center;
+  border: 1px solid var(--border, rgba(148, 163, 184, 0.32));
+  border-radius: 8px;
+  background: var(--panel, #fff);
+  padding: 6px 7px;
+}
+
+.composerImageChipPreview {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.composerImageThumb {
+  width: 42px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 5px;
+  background: var(--panel-2, rgba(148, 163, 184, 0.12));
+}
+
+.composerFileThumb {
+  width: 42px;
+  height: 32px;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--panel-2, rgba(148, 163, 184, 0.12));
+  color: var(--muted, #64748b);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.composerImageName,
+.composerImagePath {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+}
+
+.composerImageName {
+  color: var(--text, #111827);
+  font-weight: 700;
+}
+
+.composerImagePath {
+  color: var(--muted, #64748b);
+}
+
+.composerUploadProgress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 0 0 8px 8px;
+  background: color-mix(in srgb, var(--accent, #2563eb) 12%, transparent);
+}
+
+.composerUploadProgress > span {
+  display: block;
+  height: 100%;
+  background: var(--accent, #2563eb);
+}
+
+.composerImageRef {
+  appearance: none;
+  border: 1px solid var(--border, rgba(148, 163, 184, 0.42));
+  border-radius: 7px;
+  background: var(--panel, #fff);
+  color: var(--text, #111827);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: min(320px, 100%);
+  padding: 5px 7px;
+  margin: 2px 4px 2px 0;
+  vertical-align: middle;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.composerImageRef.uploading {
+  opacity: 0.72;
+}
+
+.composerImageRef.error {
+  border-color: color-mix(in srgb, var(--danger, #b91c1c) 38%, var(--border, rgba(148, 163, 184, 0.42)));
+}
+
+.composerImageRefRemove,
+.composerImageRemove,
+.composerImageRetry {
+  border: 0;
+  background: transparent;
+  color: var(--muted, #64748b);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+.composerImageRetry {
+  color: var(--accent, #2563eb);
+}
+
+.portalMessageMenuPanel {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 180px;
+  padding: 4px;
+  border: 1px solid var(--border, rgba(148, 163, 184, 0.42));
+  border-radius: 6px;
+  background: var(--panel, #fff);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
+  white-space: nowrap;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+.portalMessageMenuPanel[hidden] {
+  display: none;
+}
+
+.portalMessageMenuPanel button {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text, #111827);
+  cursor: pointer;
+  font: inherit;
+  padding: 6px 8px;
+  text-align: left;
+}
+
+.portalMessageMenuPanel button[hidden] {
+  display: none;
+}
+
+.portalMessageMenuPanel button:hover {
+  background: var(--panel-2, #f1f5f9);
+}
+
+/* A menu item whose choices open beside it. */
+.portalMessageSubmenu {
+  position: relative;
+  display: block;
+}
+
+.portalMessageMenuPanel .portalMessageSubmenuTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.portalMessageSubmenu.open > .portalMessageSubmenuTrigger {
+  background: var(--panel-2, #f1f5f9);
+}
+
+.portalMessageSubmenuChevron {
+  color: var(--muted, #64748b);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.portalMessageSubmenuPanel {
+  position: absolute;
+  top: -5px;
+  left: calc(100% + 4px);
+  display: none;
+  min-width: 160px;
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid var(--border, rgba(148, 163, 184, 0.42));
+  border-radius: 6px;
+  background: var(--panel, #fff);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
+}
+
+.portalMessageSubmenu.open > .portalMessageSubmenuPanel {
+  display: block;
+}
+
+.portalMessageSubmenu.opensLeft > .portalMessageSubmenuPanel {
+  left: auto;
+  right: calc(100% + 4px);
+}
+
+.composerImageRefThumb {
+  width: 44px;
+  height: 34px;
+  object-fit: cover;
+  border-radius: 5px;
+}

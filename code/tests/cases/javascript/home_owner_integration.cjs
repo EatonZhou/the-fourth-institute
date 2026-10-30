@@ -1,10 +1,9 @@
 // Real isolated HTTP/cache owner and the production Home renderer, without a browser.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const path = require('node:path');
 const vm = require('node:vm');
 const {JSDOM} = require('jsdom');
-const {babelParse} = require('./babel_parse.cjs');
+const {homeStatements} = require('./home_modules.cjs');
 
 async function main() {
   const input = JSON.parse(fs.readFileSync(0, 'utf8'));
@@ -44,17 +43,18 @@ async function main() {
     agentStatusData: {}, diskStatusData: {}, gpuStatusData: {}, scheduledTriggeredStatusData: {},
     activeAgentStatus: {}, agentStatusSummaryLoaded: true, agentStatusRunboardHtml: '',
     canRegisterAccount: false, canSetScheduler: false, accountRegistrationPending: false,
+    currentScheduledTriggeredStatus: () => context.scheduledTriggeredStatusData,
+    currentCanRegisterAccount: () => context.canRegisterAccount, currentCanSetScheduler: () => context.canSetScheduler,
     esc: value => {const node = dom.window.document.createElement('span'); node.textContent = value; return node.innerHTML;},
     executionAccounts: () => [], agentStatusRunboard: () => '', focusedResidentIcon: () => null,
     gpuResourceHtml: () => '', diskResourceHtml: () => '', gpuDetailsHtml: () => '', diskDetailsHtml: () => '',
     renderScheduledTriggeredStatus() {}, restoreResidentIconFocus() {}, syncAccountDetailsButtons() {},
     refreshAccountQuotaWindows() {},
   });
-  const source = fs.readFileSync(path.join(input.static, 'static/home.js'), 'utf8');
   const wanted = new Set(['ensureAgentStatusComponentHosts', 'accountManagementActions', 'accountEmptyState', 'renderAgentStatus']);
-  for (const node of babelParse(source, 'home.js').program.body) {
+  for (const {node, source} of homeStatements(input.static)) {
     if (node.type === 'FunctionDeclaration' && wanted.delete(node.id.name)) {
-      vm.runInContext(source.slice(node.start, node.end), context);
+      vm.runInContext(source, context);
     }
   }
   assert.equal(wanted.size, 0, 'production rendering functions must exist');

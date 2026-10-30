@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const {chromium} = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
 const {findChatWorkspaceFunction} = require('./chat_workspace_modules.cjs');
+const {PORTAL_COMPONENTS_STYLES} = require('./portal_components_styles.cjs');
 const root = path.resolve(__dirname, '../../../management_portal/static');
 (async () => {
   const browser = await chromium.launch({headless: true, ...(process.env.PORTAL_TEST_CHROMIUM ? {executablePath: process.env.PORTAL_TEST_CHROMIUM} : {})});
@@ -12,7 +13,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     const errors = []; page.on('pageerror', e => errors.push(e.message));
     await page.route('**/*', route => route.fulfill({contentType: 'text/html; charset=utf-8', body: '<!doctype html><html lang="zh-CN" data-portal-theme="auto"><meta charset="utf-8"><body><section id="chat" class="portalChatWorkspaceRoot" style="width:600px;height:500px"></section></body></html>'}));
     await page.goto('http://watchboard.fixture.invalid');
-    for (const file of ['portal_components.css', 'lineage_workbench.css', 'portal_design_system.css', 'portal_themes.css', 'watchboard_applications/wireguard.css']) await page.addStyleTag({content: fs.readFileSync(path.join(root, file), 'utf8')});
+    for (const file of [...PORTAL_COMPONENTS_STYLES.map(name => `${name}.css`), 'lineage_workbench.css', 'portal_design_system.css', 'portal_themes.css', 'watchboard_applications/wireguard.css']) await page.addStyleTag({content: fs.readFileSync(path.join(root, file), 'utf8')});
     for (const file of ['portal_text.js', 'portal_state.js', 'portal_translations.js', 'portal_i18n.js', 'portal_ui_primitives.js', 'portal_overlay.js', 'portal_ui.js', 'portal_refresh_coordinator.js', 'watchboard_applications/registry.js', 'watchboard_applications/wireguard.js', 'lineage_workbench_watchboard.js']) await page.addScriptTag({content: fs.readFileSync(path.join(root, file), 'utf8')});
     await page.evaluate(shell => {
       const escapeHtml = PortalUIPrimitives.escapeHtml, iconSvg = PortalUIPrimitives.iconHtml;

@@ -7,6 +7,7 @@ const codeRoot = process.env.TFI_TAU_CODE_ROOT || path.resolve(__dirname, '../..
 const { chromium } = require(path.join(codeRoot, 'management_portal/test_framework/tau_runtime/node_modules/playwright'));
 const { observeBrowser } = require(path.join(codeRoot, 'management_portal/test_framework/tau_browser_observer'));
 const { readNativeNavigationTarget } = require(path.join(codeRoot, 'management_portal/test_framework/tau_native_navigation_evidence'));
+const { PORTAL_COMPONENTS_STYLES } = require(path.join(codeRoot, 'tests/cases/javascript/portal_components_styles.cjs'));
 
 (async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tau-editor-nav-'));
@@ -28,7 +29,7 @@ const { readNativeNavigationTarget } = require(path.join(codeRoot, 'management_p
     const page = await context.newPage();
     page.on('pageerror', error => errors.push(error.message));
     await page.goto('http://navigation.fixture.invalid/workbenches?panel=settings&id=fixture');
-    for (const name of ['portal_design_system', 'portal_themes', 'portal_components']) await page.addStyleTag({ url: `/static/${name}.css` });
+    for (const name of ['portal_design_system', 'portal_themes', ...PORTAL_COMPONENTS_STYLES]) await page.addStyleTag({ url: `/static/${name}.css` });
     for (const name of ['portal_text', 'portal_state', 'portal_translations', 'portal_i18n', 'portal_ui_primitives', 'portal_overlay', 'portal_theme']) await page.addScriptTag({ url: `/static/${name}.js` });
     await page.evaluate(() => {
       window.PortalAPI = { get: () => new Promise(() => {}) };

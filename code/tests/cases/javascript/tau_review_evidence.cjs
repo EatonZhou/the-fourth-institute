@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { chatWorkspaceScripts } = require('./chat_workspace_modules.cjs');
 const { portalWorkbenchScripts } = require('./portal_workbench_scripts.cjs');
+const { PORTAL_COMPONENTS_STYLES } = require('./portal_components_styles.cjs');
 const source = path.resolve(__dirname, '../../..');
 const { chromium } = require(path.join(source, 'management_portal/test_framework/tau_runtime/node_modules/playwright'));
 const { openReviewEvidenceWindow } = require(path.join(source, 'management_portal/test_framework/tau_review_evidence.js'));
@@ -33,7 +34,7 @@ const residentId = 'resident_111111111111';
     for (const name of ['portal_state.js', 'portal_page_state.js', 'portal_text.js', 'portal_ui_primitives.js', 'portal_ui.js', 'portal_overlay.js', 'portal_preview_contract.js', 'portal_resource_chips.js', 'portal_image_editor.js', 'portal_editor_open_service.js', 'portal_command_registry.js', 'portal_workbench_context.js', ...portalWorkbenchScripts(), 'portal_resident_service.js', 'resident_protocol.js', ...chatWorkspaceScripts()]) {
       await page.addScriptTag({ content: fs.readFileSync(path.join(source, 'management_portal/static', name), 'utf8') });
     }
-    await page.addStyleTag({ content: fs.readFileSync(path.join(source, 'management_portal/static/portal_components.css'), 'utf8') });
+    await page.addStyleTag({ content: PORTAL_COMPONENTS_STYLES.map(name => fs.readFileSync(path.join(source, 'management_portal/static', name + '.css'), 'utf8')).join('\n') });
     await page.evaluate(residentId => {
       window.sent = [];
       window.PortalResidentProtocol = { ...PortalResidentProtocol, sendInput: async payload => {

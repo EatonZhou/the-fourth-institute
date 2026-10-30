@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
-const fs = require('node:fs'), path = require('node:path'), vm = require('node:vm');
+const vm = require('node:vm');
 const {JSDOM} = require('jsdom');
-const {babelParse} = require('./babel_parse.cjs');
+const {homeStatements} = require('./home_modules.cjs');
 const dom = new JSDOM('<main></main>');
 const tag = (parts, ...values) => parts.reduce((text, part, i) => text + part + (values[i] ?? ''), '');
 const context = vm.createContext({
@@ -9,10 +9,9 @@ const context = vm.createContext({
   esc: x => String(x ?? '').replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;'),
   formatDateTime: value => value ? new Date(value).toISOString() : '',
 });
-const source = fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static/home.js'), 'utf8');
 for (const name of ['accountCreditsHtml', 'accountQuotaWindow', 'accountQuotaWindowIsStale']) {
-  const fn = babelParse(source, 'home.js').program.body.find(n => n.type === 'FunctionDeclaration' && n.id.name === name);
-  vm.runInContext(source.slice(fn.start, fn.end), context);
+  const fn = homeStatements().find(({node: n}) => n.type === 'FunctionDeclaration' && n.id.name === name);
+  vm.runInContext(fn.source, context);
 }
 const render = account => {
   dom.window.document.querySelector('main').innerHTML = context.accountCreditsHtml(account);

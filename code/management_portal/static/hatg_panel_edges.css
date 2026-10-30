@@ -1,0 +1,183 @@
+/* Lineage panel: edges, candidate forks and edge labels. Pages load this file right after
+   hatg_panel.css. */
+@scope (:is(.portalHatgPanelComponent, .portalHatgOverlayComponent)) {
+.hatgEdge {
+  fill: none;
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
+  stroke-width: 2;
+}
+
+/* A candidate fork: the Fork that adopting the Seed would make (decision_4adcc1ff2f2c). */
+.hatgEdge.candidate_fork {
+  stroke: color-mix(in srgb, #8067d8 52%, var(--muted));
+  stroke-width: 1.4;
+  stroke-dasharray: 3 4;
+  marker-end: url(#inheritanceArrow);
+}
+
+.hatgCandidateForkDraft {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 2147483000;
+}
+
+.hatgCandidateForkDraft line {
+  stroke: #8067d8;
+  stroke-width: 1.6;
+  stroke-dasharray: 3 4;
+  stroke-linecap: round;
+}
+
+.isCandidateForkDragging .hatgNode[data-node-kind="seed"] {
+  outline: 1px dashed color-mix(in srgb, #8067d8 55%, transparent);
+  outline-offset: 3px;
+}
+
+.isCandidateForkDragging .hatgNode.candidateForkDropTarget {
+  outline: 2px solid #8067d8;
+  outline-offset: 3px;
+}
+
+.hatgEdge.inheritance {
+  stroke: color-mix(in srgb, #8067d8 76%, var(--muted));
+  marker-end: url(#inheritanceArrow);
+}
+
+.hatgEdge.route,
+.hatgEdge.target,
+.hatgEdge.watch {
+  pointer-events: stroke;
+  stroke-width: 2.2;
+}
+
+.hatgEdge.route {
+  stroke: color-mix(in srgb, var(--hatg-program-route-color) 88%, var(--muted));
+  marker-end: url(#programRouteArrow);
+}
+
+.hatgEdge.target {
+  stroke: color-mix(in srgb, var(--hatg-program-target-color) 88%, var(--muted));
+  stroke-dasharray: 8 3;
+  marker-end: url(#programTargetArrow);
+}
+
+.hatgEdge.watch {
+  stroke: color-mix(in srgb, var(--hatg-program-watch-color) 82%, var(--muted));
+  stroke-dasharray: 2 4;
+  marker-end: url(#programWatchArrow);
+}
+
+.hatgEdge[data-program-wire="true"][data-program-wire-muted="true"] { opacity: .16; }
+
+.hatgEdge.absorption {
+  stroke: color-mix(in srgb, #18a59a 84%, var(--muted));
+  stroke-width: 2.35;
+  stroke-dasharray: 9 3 2 3;
+  marker-end: url(#absorptionArrow);
+}
+
+.hatgEdge.absorption[data-absorption-status="failed"] {
+  stroke: var(--danger);
+}
+
+.hatgEdge.handoff {
+  stroke: color-mix(in srgb, #d18a2f 78%, var(--muted));
+  stroke-dasharray: 5 4;
+  marker-end: url(#handoffArrow);
+}
+.hatgEdge.handoff[data-draft-preview="true"] {
+  stroke-width: 2.6;
+  stroke-dasharray: 3 3;
+  filter: drop-shadow(0 0 4px color-mix(in srgb, #d18a2f 35%, transparent));
+}
+.hatgEdge.handoff[data-handoff-status="preparing"] {
+  stroke-width: 2.7;
+  stroke-dasharray: 2 3;
+}
+.hatgEdge.handoff[data-handoff-status="ready"] {
+  stroke: color-mix(in srgb, #2b9d72 84%, var(--muted));
+  stroke-width: 2.5;
+  stroke-dasharray: none;
+}
+.hatgEdge.handoff[data-handoff-status="failed"] {
+  stroke: var(--danger);
+  stroke-width: 2.7;
+}
+
+.hatgEdge.handoff[data-bound-control="true"] {
+  stroke-width: 2.7;
+  filter: drop-shadow(0 0 3px color-mix(in srgb, #20a6a0 35%, transparent));
+}
+
+.hatgEdge.active {
+  stroke-width: 2.8;
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--accent) 45%, transparent));
+}
+
+.hatgEdge.selected {
+  stroke-width: 3.25;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--accent) 58%, transparent));
+}
+
+.hatgEdge.flowing {
+  stroke-width: 2.65;
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--accent) 34%, transparent));
+}
+
+.hatgEdge.flowing[data-flow-state="queued"] {
+  opacity: .72;
+}
+
+.edgeLabelBtn {
+  position: absolute;
+  max-width: 92px;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel) 94%, transparent);
+  box-shadow: 0 3px 9px color-mix(in srgb, #0b1020 13%, transparent);
+  color: var(--muted);
+  padding: 3px 7px;
+  overflow: hidden;
+  font-size: 8px;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.edgeLabelBtn.inheritance { border-color: color-mix(in srgb, #8067d8 45%, var(--border)); color: #8067d8; }
+.edgeLabelBtn.candidate_fork { border-style: dashed; border-color: color-mix(in srgb, #8067d8 35%, var(--border)); color: color-mix(in srgb, #8067d8 75%, var(--muted)); }
+.edgeLabelBtn.absorption { border-color: color-mix(in srgb, #18a59a 54%, var(--border)); color: #168a82; }
+.edgeLabelBtn.absorption[data-absorption-status="failed"] { border-color: var(--danger); color: var(--danger); }
+.edgeLabelBtn.handoff { border-color: color-mix(in srgb, #d18a2f 45%, var(--border)); color: #c17a23; }
+.edgeLabelBtn.handoff[data-draft-preview="true"] {
+  border-style: dashed;
+  background: color-mix(in srgb, #d18a2f 7%, var(--panel));
+  pointer-events: none;
+}
+.edgeLabelBtn.handoff[data-handoff-status="ready"] { border-color: color-mix(in srgb, #2b9d72 55%, var(--border)); color: #25855f; background: color-mix(in srgb, #2b9d72 5%, var(--panel)); }
+.edgeLabelBtn.handoff[data-handoff-status="preparing"] { border-color: var(--warn); color: var(--warn); }
+.edgeLabelBtn.handoff[data-handoff-status="failed"] { border-color: var(--danger); color: var(--danger); background: color-mix(in srgb, var(--danger) 5%, var(--panel)); }
+.edgeLabelBtn.event { border-color: color-mix(in srgb, var(--hatg-program-event-color) 52%, var(--border)); color: var(--hatg-program-event-color); }
+.edgeLabelBtn.event.hasPendingEvents,
+.edgeLabelBtn.packet.hasPendingEvents {
+  max-width: 126px;
+  border-color: color-mix(in srgb, var(--warn) 68%, var(--hatg-program-event-color));
+  background: color-mix(in srgb, var(--warn) 10%, var(--panel));
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--warn) 12%, transparent),
+    0 4px 11px color-mix(in srgb, #0b1020 16%, transparent);
+  color: color-mix(in srgb, var(--warn) 72%, var(--text));
+  font-weight: 790;
+}
+.edgeLabelBtn.packet { border-color: color-mix(in srgb, var(--hatg-program-route-color) 52%, var(--border)); color: var(--hatg-program-route-color); }
+.edgeLabelBtn.target { border-color: color-mix(in srgb, var(--hatg-program-target-color) 52%, var(--border)); color: var(--hatg-program-target-color); }
+.edgeLabelBtn.watch { border-color: color-mix(in srgb, var(--hatg-program-watch-color) 52%, var(--border)); color: var(--hatg-program-watch-color); border-style: dashed; }
+.edgeLabelBtn:hover { border-color: var(--accent); color: var(--accent); }
+.edgeLabelBtn.selected { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent), 0 5px 14px color-mix(in srgb, #0b1020 16%, transparent); }
+}

@@ -6,6 +6,7 @@ const path = require('node:path');
 const { chromium } = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
 const { chatWorkspaceScripts } = require('./chat_workspace_modules.cjs');
 const { portalWorkbenchScripts } = require('./portal_workbench_scripts.cjs');
+const { PORTAL_COMPONENTS_STYLES } = require('./portal_components_styles.cjs');
 const input = JSON.parse(fs.readFileSync(0, 'utf8'));
 const root = path.resolve(__dirname, '../../../management_portal/static');
 (async () => {
@@ -24,7 +25,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
       return route.fulfill({contentType: 'text/html', body: '<!doctype html><html lang="zh-CN" data-portal-theme="light"><meta charset="utf-8"><body><section id="chat" style="height:90vh;min-width:0"></section></body></html>'});
     });
     await page.goto('http://family.fixture.invalid');
-    for (const name of ['portal_components', 'portal_workbench', 'portal_design_system', 'portal_themes']) {
+    for (const name of [...PORTAL_COMPONENTS_STYLES, 'portal_workbench', 'portal_design_system', 'portal_themes']) {
       await page.addStyleTag({url: `/static/${name}.css`});
     }
     await page.addScriptTag({content: input.routeScript});

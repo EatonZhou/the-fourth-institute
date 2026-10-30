@@ -1,0 +1,1035 @@
+/* Lineage panel: the program inspector: its head, primitive fields, type pickers, invocation,
+   selectors, Resident sets, trigger paths, endpoints, references, delivery and runs. Pages load
+   this file right after hatg_panel_library.css. */
+@scope (:is(.portalHatgPanelComponent, .portalHatgOverlayComponent)) {
+.programInspectorPanel[hidden] { display: none; }
+
+.programInspectorPanel {
+  --program-inspector-tone: var(--hatg-program-route-color);
+  --program-inspector-width: min(
+    clamp(278px, 40cqw, 362px),
+    calc(100% - 74px)
+  );
+  position: absolute;
+  z-index: 35;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: var(--program-inspector-width);
+  max-width: none;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-left: 1px solid color-mix(in srgb, var(--program-inspector-tone) 28%, var(--border));
+  background:
+    radial-gradient(circle at 82% 0, color-mix(in srgb, var(--program-inspector-tone) 9%, transparent), transparent 30%),
+    color-mix(in srgb, var(--panel) 97%, transparent);
+  box-shadow: -18px 0 44px color-mix(in srgb, #101725 17%, transparent);
+  backdrop-filter: blur(18px);
+}
+
+@container lineage-hatg-viewport (min-width: 721px) {
+  /* Limit this container rule to its consumers; a universal subject also makes
+     unrelated Chat descendants candidates during streamed-message layout. */
+  .hatgViewport:has(> .programInspectorPanel:not([hidden])) > :is(.hatgCanvas, .graphNavigationBar) {
+    --hatg-inspector-reserved-width: min(clamp(278px, 40cqw, 362px), calc(100% - 74px));
+  }
+
+  .hatgViewport:has(> .programInspectorPanel:not([hidden])) > .hatgCanvas {
+    right: var(--hatg-inspector-reserved-width);
+  }
+
+  .hatgViewport:has(> .programInspectorPanel:not([hidden])) .graphNavigationBar {
+    right: calc(
+      var(--hatg-inspector-reserved-width)
+      + var(--hatg-navigation-inset)
+    );
+  }
+}
+
+@container lineage-hatg-viewport (max-width: 720px) {
+  .hatgViewport:has(> .programInspectorPanel:not([hidden])) > .programInspectorPanel {
+    top: calc(var(--hatg-navigation-bottom) + var(--hatg-navigation-inset));
+  }
+}
+
+.programInspectorPanel[data-inspector-kind="event_source"] { --program-inspector-tone: var(--hatg-program-event-color); }
+.programInspectorPanel[data-inspector-kind="effect"] { --program-inspector-tone: var(--hatg-program-target-color); }
+.programInspectorPanel[data-inspector-kind="role"] { --program-inspector-tone: #b14670; }
+.programInspectorPanel[data-inspector-kind="reducer"] { --program-inspector-tone: var(--hatg-program-route-color); }
+.programInspectorPanel[data-inspector-kind="wire"] { --program-inspector-tone: var(--hatg-program-reference-color); }
+
+body:has(.hatgPrimitiveCard.dragging) .programInspectorPanel {
+  pointer-events: none;
+  opacity: .46;
+}
+
+.programInspectorHead {
+  min-height: 48px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  padding: 9px 11px 9px 13px;
+}
+
+.programInspectorHead > span { min-width: 0; display: grid; gap: 4px; }
+.programInspectorHead em {
+  color: var(--program-inspector-tone);
+  font: 850 6.5px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-style: normal;
+  letter-spacing: .13em;
+}
+.programInspectorHead strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 10px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.programInspectorHead button {
+  width: 27px;
+  height: 27px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: var(--panel-2);
+  color: var(--muted);
+  padding: 0;
+  font-size: 18px;
+  line-height: 1;
+}
+.programInspectorHead button:hover,
+.programInspectorHead button:focus-visible {
+  background: color-mix(in srgb, var(--program-inspector-tone) 9%, var(--panel));
+  color: var(--text);
+  outline: none;
+}
+
+.programInspectorForm {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 11px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 13px;
+  scrollbar-width: thin;
+}
+
+.programInspectorForm > * { min-width: 0; overflow-wrap: anywhere; }
+
+.programComponentSwitch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel-2);
+}
+.programComponentSwitch > div { display: grid; gap: 4px; min-width: 0; }
+.programComponentSwitch strong { color: var(--text); font-size: 11px; }
+.programComponentSwitch small { color: var(--muted); font-size: 10px; line-height: 1.4; }
+.programComponentSwitch button {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  padding: 4px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 10px;
+  cursor: pointer;
+}
+.programComponentSwitch button:focus-visible { outline: 2px solid var(--program-inspector-tone); outline-offset: 2px; }
+.programComponentSwitch button:disabled { opacity: .6; cursor: wait; }
+.programComponentSwitchTrack {
+  display: block;
+  width: 34px;
+  height: 20px;
+  padding: 3px;
+  box-sizing: border-box;
+  border-radius: 12px;
+  background: var(--muted);
+}
+.programComponentSwitchTrack::after {
+  content: "";
+  display: block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--panel);
+}
+.programComponentSwitch [aria-checked="true"] .programComponentSwitchTrack { background: var(--program-inspector-tone); }
+.programComponentSwitch [aria-checked="true"] .programComponentSwitchTrack::after { transform: translateX(14px); }
+
+.programInspectorForm label { min-width: 0; display: grid; gap: 5px; }
+.primitiveInspector {
+  min-width: 0;
+  display: grid;
+  border: 1px solid color-mix(in srgb, var(--program-inspector-tone, #6676d8) 22%, var(--border));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--program-inspector-tone, #6676d8) 4%, var(--panel));
+}
+.primitiveInspector > .programTypeField {
+  padding: 11px;
+  border-bottom: 1px solid color-mix(in srgb, var(--program-inspector-tone, #6676d8) 16%, var(--border));
+}
+.primitiveInspector > [data-primitive-config-slot] { min-width: 0; }
+.primitiveInspector > [data-primitive-config-slot] > .primitiveConfigEditor {
+  border: 0;
+  border-radius: 0 0 12px 12px;
+  background: transparent;
+}
+.primitiveConfigEditor {
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+  padding: 11px;
+  border: 1px solid color-mix(in srgb, var(--program-inspector-tone, #6676d8) 22%, var(--border));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--program-inspector-tone, #6676d8) 4%, var(--panel));
+}
+.primitiveInspectorExternalHint,
+.primitiveInspectorEmpty {
+  margin: 0;
+  color: var(--muted);
+  font-size: .69rem;
+  line-height: 1.48;
+}
+.primitiveStructuredFields { min-width: 0; display: grid; gap: 10px; }
+.primitiveStructuredFields > label,
+.primitiveOptionalLimit > label,
+.primitiveStructuredFields > fieldset {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+.primitiveStructuredFields > fieldset {
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 9px;
+}
+.primitiveStructuredFields > fieldset > legend,
+.primitiveStructuredFields label > span,
+.primitiveOptionalLimit label > span {
+  color: var(--muted);
+  font-size: .7rem;
+  font-weight: 760;
+}
+.primitiveInspectorCheckbox,
+.primitiveOptionalLimit .programInspectorCheckbox {
+  grid-template-columns: auto minmax(0, 1fr) !important;
+  align-items: center;
+}
+.primitiveInspectorCheckbox > input,
+.primitiveOptionalLimit .programInspectorCheckbox > input {
+  width: auto !important;
+  min-height: 0 !important;
+  margin: 0;
+}
+.primitiveInspectorCheckbox > small {
+  grid-column: 2;
+}
+.primitiveStructuredFields label > small,
+.primitiveOptionalLimit label > small {
+  color: var(--muted);
+  font-size: .66rem;
+  line-height: 1.45;
+}
+.primitiveOptionalLimit { display: grid; gap: 8px; }
+.primitiveOptionalLimit > .programInspectorCheckbox { grid-template-columns: auto minmax(0, 1fr); }
+.primitiveAdvancedConfig {
+  min-width: 0;
+  border-top: 1px solid var(--border);
+  padding-top: 9px;
+}
+.primitiveAdvancedConfig > summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: .72rem;
+  font-weight: 760;
+}
+.primitiveAdvancedConfig > summary > span {
+  flex: 0 0 auto;
+  max-width: 100%;
+  overflow-wrap: normal;
+}
+.primitiveAdvancedConfig > summary small,
+.primitiveAdvancedConfig > small {
+  color: var(--muted);
+  font-size: .63rem;
+  font-weight: 500;
+}
+.primitiveAdvancedJsonField {
+  min-width: 0;
+  margin-top: 8px;
+  display: grid;
+  gap: 5px;
+}
+.primitiveAdvancedJsonField > span {
+  color: var(--muted);
+  font-size: .66rem;
+  font-weight: 720;
+}
+.primitiveAdvancedJsonField > textarea {
+  min-height: 180px;
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: .68rem;
+  line-height: 1.5;
+}
+.primitiveAdvancedJsonField > textarea[aria-invalid="true"] {
+  border-color: color-mix(in srgb, #cf4e58 68%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, #cf4e58 10%, transparent);
+}
+.primitiveAdvancedError {
+  display: block;
+  margin-top: 6px;
+  color: #b83d49 !important;
+  line-height: 1.45;
+}
+.primitiveAdvancedError[hidden] { display: none !important; }
+[data-primitive-field][hidden],
+[data-optional-limit-value][hidden],
+[data-primitive-value-note][hidden] { display: none !important; }
+.primitiveExecutionExplanation {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--border) 76%, #6676d8);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--panel) 94%, #6676d8);
+}
+.primitiveExecutionExplanation[data-execution-tone="danger"] { border-color: color-mix(in srgb, #cf4e58 56%, var(--border)); background: color-mix(in srgb, #cf4e58 7%, var(--panel)); }
+.primitiveExecutionExplanation[data-execution-tone="warning"] { border-color: color-mix(in srgb, #c98a2d 50%, var(--border)); background: color-mix(in srgb, #c98a2d 7%, var(--panel)); }
+.primitiveExecutionExplanation[data-execution-tone="success"] { border-color: color-mix(in srgb, #2d9a68 48%, var(--border)); background: color-mix(in srgb, #2d9a68 6%, var(--panel)); }
+.primitiveExecutionExplanation > header { display: grid; gap: 3px; }
+.primitiveExecutionExplanation > header span { color: var(--muted); font-size: .61rem; font-weight: 820; letter-spacing: .08em; text-transform: uppercase; }
+.primitiveExecutionExplanation > header strong { color: var(--text); font-size: .76rem; }
+.primitiveExecutionExplanation dl { display: grid; gap: 5px; margin: 0; }
+.primitiveExecutionExplanation dl > div { display: grid; grid-template-columns: 42px minmax(0, 1fr); gap: 7px; }
+.primitiveExecutionExplanation dt { color: var(--muted); font-size: .64rem; }
+.primitiveExecutionExplanation dd { min-width: 0; margin: 0; color: var(--text); font-size: .67rem; line-height: 1.42; overflow-wrap: anywhere; }
+.programTypeField,
+.programTypePicker,
+.programTypeHierarchy { min-width: 0; display: grid; gap: 9px; }
+.programTypeHierarchy > label { min-width: 0; display: grid; gap: 5px; }
+.programTypeHierarchy > label > span {
+  color: var(--muted);
+  font-size: .7rem;
+  font-weight: 760;
+  letter-spacing: .02em;
+}
+.programTypeHierarchy select {
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  border-color: color-mix(in srgb, var(--border) 84%, var(--program-inspector-tone));
+  border-radius: 10px;
+  background-color: color-mix(in srgb, var(--panel) 94%, var(--program-inspector-tone));
+  color: var(--text);
+}
+.programTypeHierarchy select:hover,
+.programTypeHierarchy select:focus-visible {
+  border-color: color-mix(in srgb, var(--program-inspector-tone) 58%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--program-inspector-tone) 12%, transparent);
+  outline: none;
+}
+.programTypeHierarchy select:disabled { cursor: not-allowed; opacity: .64; }
+.programTypeHierarchy small {
+  color: var(--muted);
+  font-size: .64rem;
+  line-height: 1.42;
+}
+.programTypeDetail {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  padding: 9px 10px;
+  border: 1px solid color-mix(in srgb, var(--program-inspector-tone) 18%, var(--border));
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--program-inspector-tone) 4%, var(--panel));
+}
+.programTypeDetail > span { color: var(--program-inspector-tone); font-size: .61rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+.programTypeDetail > strong { color: var(--text); font-size: .76rem; }
+.programTypeDetail > p { margin: 0; color: var(--muted); font-size: .67rem; line-height: 1.48; overflow-wrap: anywhere; }
+.programInspectorForm label > span {
+  color: var(--muted);
+  font-size: 7.5px;
+  font-weight: 760;
+  letter-spacing: .025em;
+}
+.programInspectorForm label > small {
+  margin: 0;
+  color: var(--muted);
+  font-size: 7px;
+  line-height: 1.45;
+}
+.programInspectorResource {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+  border: 1px solid color-mix(in srgb, var(--program-inspector-tone) 22%, var(--border));
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--program-inspector-tone) 5%, var(--panel));
+  padding: 8px;
+}
+.programInspectorResource > span {
+  color: var(--muted);
+  font-size: 7px;
+  font-weight: 760;
+  letter-spacing: .025em;
+}
+.programInspectorResource > div {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+}
+.programInspectorResource code {
+  min-width: 0;
+  color: var(--text);
+  font: 7px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+.programInspectorResource button {
+  min-height: 27px;
+  border: 1px solid color-mix(in srgb, var(--program-inspector-tone) 34%, var(--border));
+  border-radius: 7px;
+  background: var(--panel);
+  color: var(--program-inspector-tone);
+  padding: 4px 7px;
+  font-size: 7px;
+  font-weight: 780;
+}
+.programInspectorResource button:hover,
+.programInspectorResource button:focus-visible {
+  border-color: var(--program-inspector-tone);
+  outline: none;
+}
+.programInspectorForm input,
+.programInspectorForm select,
+.programInspectorForm textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  outline: none;
+  background: color-mix(in srgb, var(--panel-2) 62%, var(--panel));
+  color: var(--text);
+  padding: 7px 8px;
+  font: 9px/1.35 ui-sans-serif, system-ui, sans-serif;
+}
+.programInspectorForm textarea { min-height: 92px; resize: vertical; }
+.programInspectorForm input:focus,
+.programInspectorForm select:focus,
+.programInspectorForm textarea:focus {
+  border-color: color-mix(in srgb, var(--program-inspector-tone) 68%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--program-inspector-tone) 9%, transparent);
+}
+.programInspectorForm input:disabled,
+.programInspectorForm select:disabled,
+.programInspectorForm textarea:disabled { opacity: .64; cursor: not-allowed; }
+.programInspectorForm [data-event-field][hidden],
+.programInspectorForm [data-delivery-subject-kind][hidden],
+.programInspectorForm [data-runtime-event-source-subject][hidden],
+.programInspectorForm [data-runtime-event-wire-subject][hidden],
+.programInspectorForm [data-effect-event-subject][hidden],
+.programInspectorForm [data-effect-field][hidden],
+.programInspectorForm [data-event-queue-limit][hidden],
+.programInspectorForm [data-max-fires-field][hidden],
+.programInspectorForm [data-event-resident-set][hidden],
+.programInspectorForm [data-event-system-scope-note][hidden],
+.programInspectorForm [data-program-emit][hidden] { display: none; }
+.programInvokeProfile {
+  display: grid;
+  gap: 9px;
+  padding: 11px;
+  border: 1px solid color-mix(in srgb, var(--program-inspector-tone) 24%, var(--border));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--program-inspector-tone) 5%, transparent);
+}
+.programInvokeProfile > header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.programInvokeProfile > header span { color: var(--text); font-size: .75rem; font-weight: 780; }
+.programInvokeProfile > header code {
+  max-width: 62%;
+  overflow: hidden;
+  color: var(--program-inspector-tone);
+  font: 650 .64rem/1.25 var(--mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.programInvokeProfileHelp,
+.programInvokeEmpty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.5;
+}
+.programInvokeArguments { display: grid; gap: 8px; }
+.programInvokeArgument {
+  display: grid;
+  gap: 8px;
+  padding: 9px;
+  border: 1px solid color-mix(in srgb, var(--program-inspector-tone) 18%, var(--border));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--panel) 92%, var(--program-inspector-tone) 8%);
+}
+.programInvokeArgument > header {
+  display: grid;
+  grid-template-columns: minmax(64px, .72fr) minmax(0, 1.28fr);
+  align-items: start;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+}
+.programInvokeArgument > header code {
+  color: var(--program-inspector-tone);
+  font: 700 9px/1.35 var(--mono);
+  overflow-wrap: anywhere;
+}
+.programInvokeArgument > header span { display: grid; gap: 1px; min-width: 0; }
+.programInvokeArgument > header strong { color: var(--text); font-size: 10px; }
+.programInvokeArgument > header small { color: var(--muted); font: 600 8px/1.35 var(--mono); }
+.programInvokeArgument > p { margin: 0; color: var(--muted); font-size: 8.5px; line-height: 1.45; }
+.programInvokeArgument label,
+.programInvokeArgumentMode { display: grid; gap: 5px; }
+.programInvokeArgument label > span {
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 750;
+  letter-spacing: .04em;
+}
+.programInvokeArgument textarea { min-height: 58px; }
+.programInvokeArgumentMode[hidden] { display: none; }
+.programPacketFilter {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--hatg-program-route-color) 34%, var(--border));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--hatg-program-route-color) 7%, transparent);
+}
+.programPacketFilter > header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.programPacketFilter > header strong { color: var(--text); font-size: 10px; }
+.programPacketFilter > header small { color: var(--muted); font: 600 8px/1.35 var(--mono); }
+.programPacketFilter > label { display: grid; gap: 5px; }
+.programSelectorBranches {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--hatg-program-route-color) 38%, var(--border));
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--hatg-program-route-color) 7%, transparent);
+}
+.programSelectorBranches > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.programSelectorBranches > header > span { display: grid; gap: 2px; }
+.programSelectorBranches > header strong { color: var(--text); font-size: 11px; }
+.programSelectorBranches > header small,
+.programSelectorBranches > p,
+.programSelectorJsonProjection > small {
+  margin: 0;
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1.5;
+}
+.programSelectorBranches > header button,
+.programSelectorBranchCard legend button {
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 8px;
+  font-weight: 760;
+  padding: 5px 7px;
+}
+.programSelectorBranchList { display: grid; gap: 10px; }
+.programSelectorBranchCard {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--hatg-program-route-color) 28%, var(--border));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--panel) 90%, transparent);
+}
+.programSelectorBranchCard legend {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 7px;
+  color: var(--text);
+  font-size: 9px;
+  font-weight: 780;
+}
+.programSelectorBranchCard legend code { color: var(--accent); font-size: 7px; }
+.programSelectorBranchCard legend button { margin-left: auto; color: var(--danger); }
+.programSelectorBranchIdentity {
+  display: grid;
+  grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+  gap: 8px;
+}
+.programSelectorRouteMap {
+  display: grid;
+  grid-template-columns: auto auto auto minmax(70px, 1fr) auto;
+  align-items: center;
+  gap: 5px;
+  padding: 8px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--hatg-program-route-color) 11%, transparent);
+  color: var(--muted);
+  font-size: 8px;
+}
+.programSelectorRouteMap strong { color: var(--text); }
+.programSelectorRouteMap input { min-width: 0; }
+.programSelectorAdvancedRule[hidden] { display: none; }
+.programSelectorAdvancedRule summary,
+.programSelectorJsonProjection summary {
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 8px;
+  font-weight: 740;
+}
+.programSelectorAdvancedRule textarea,
+.programSelectorJsonProjection textarea {
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 7px;
+  font: 8px/1.5 var(--mono);
+}
+.programInvokeAdvanced {
+  border-top: 1px solid color-mix(in srgb, var(--program-inspector-tone) 18%, var(--border));
+  padding-top: 8px;
+}
+.programInvokeAdvanced > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 9px;
+  font-weight: 780;
+}
+.programInvokeAdvanced > summary small { color: var(--muted); font-size: 7.5px; font-weight: 560; text-align: right; }
+.programInvokeAdvanced[open] > summary { margin-bottom: 9px; }
+.programInvokeAdvanced > label { display: grid; gap: 5px; }
+.programInvokeAdvanced > label > span { color: var(--muted); font-size: 8px; font-weight: 720; }
+.programInvokeAdvanced textarea { min-height: 150px; font: 9px/1.5 var(--mono); }
+.programInvokeAdvanced > p { margin: 6px 0 0; color: var(--muted); font-size: 8px; line-height: 1.4; }
+.programInvokeAdvanced > p[data-status="error"] { color: var(--danger); }
+.programInvokeAdvanced > p[data-status="valid"] { color: color-mix(in srgb, var(--success) 72%, var(--text)); }
+
+.programResidentSetPicker {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--panel-2) 58%, var(--panel));
+  padding: 9px;
+}
+.programResidentSetPicker legend {
+  padding: 0 4px;
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 760;
+}
+.programResidentSetPicker > div {
+  max-height: 172px;
+  display: grid;
+  gap: 5px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.programInspectorForm .programResidentSetOption {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 6px 7px;
+}
+.programInspectorForm .programResidentSetOption:hover {
+  border-color: color-mix(in srgb, var(--program-inspector-tone) 28%, var(--border));
+  background: color-mix(in srgb, var(--program-inspector-tone) 5%, var(--panel));
+}
+.programInspectorForm .programResidentSetOption input {
+  width: 15px;
+  min-height: 15px;
+  margin: 0;
+}
+.programInspectorForm .programResidentSetOption > span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  color: var(--text);
+  font-size: 8px;
+  letter-spacing: 0;
+}
+.programResidentSetOption strong,
+.programResidentSetOption small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.programResidentSetOption small {
+  color: var(--muted);
+  font: 6.5px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.programResidentSetPicker > small {
+  color: var(--muted);
+  font-size: 7px;
+  line-height: 1.45;
+}
+
+.programInspectorForm .programInspectorCheckbox {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+}
+.programInspectorForm .programInspectorCheckbox input {
+  width: 16px;
+  min-height: 16px;
+  margin: 0;
+}
+.programInspectorForm .programInspectorCheckbox > span {
+  color: var(--text);
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.programTriggerPathObservation {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  overflow-wrap: anywhere;
+}
+.programTriggerPathObservation > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.programTriggerPathObservation p {
+  margin: 4px 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.programTriggerPathObservation summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 11px;
+  padding: 5px 0;
+}
+.programTriggerPathObservation code {
+  white-space: normal;
+  font-size: 10px;
+}
+.programTriggerPathObservation h4 { margin: 10px 0; font-size: 12px; }
+.programTriggerPathObservation pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.programTriggerPathObservation [data-trigger-path-steps] {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0;
+}
+.programTriggerPathStep {
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--program-inspector-tone);
+  border-radius: 8px;
+}
+.programTriggerPathStep[data-step-status="completed"] { border-left-color: var(--success); }
+.programTriggerPathStep[data-step-status="failed"] { border-left-color: var(--danger); }
+.programTriggerPathStep > strong { font-size: 12px; }
+
+.programEffectRuntime {
+  display: grid;
+  gap: 7px;
+  padding: 9px;
+  border: 1px solid color-mix(in srgb, var(--success) 24%, var(--border));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--success) 5%, var(--panel));
+}
+.programEffectRuntime[data-effect-runtime-status="failed"] {
+  border-color: color-mix(in srgb, var(--danger) 28%, var(--border));
+  background: color-mix(in srgb, var(--danger) 5%, var(--panel));
+}
+.programEffectRuntime > strong {
+  color: color-mix(in srgb, var(--success) 72%, var(--text));
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.programEffectRuntime[data-effect-runtime-status="failed"] > strong {
+  color: color-mix(in srgb, var(--danger) 72%, var(--text));
+}
+.programEffectRuntime > small {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+.programEffectRuntime .programInspectorEndpoints dt {
+  overflow-wrap: anywhere;
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+}
+.programEffectRuntime .programInspectorEndpoints > div {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 3px;
+  align-items: start;
+}
+.programInspectorEndpoints {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+}
+.programInspectorEndpoints > div {
+  display: grid;
+  grid-template-columns: minmax(68px, .68fr) minmax(0, 1.7fr);
+  gap: 8px;
+  align-items: center;
+  padding: 7px 8px;
+  border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--panel) 94%, var(--program-inspector-tone) 6%);
+}
+.programInspectorEndpoints dt,
+.programInspectorEndpoints dd {
+  min-width: 0;
+  margin: 0;
+  font-size: 10px;
+}
+.programInspectorEndpoints dt { color: var(--muted); }
+.programInspectorEndpoints dd {
+  width: 100%;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  color: var(--warning);
+  font-weight: 760;
+  white-space: normal;
+}
+.programInspectorEndpoints [data-endpoint-ready="true"] dd {
+  color: color-mix(in srgb, var(--success) 78%, var(--text));
+}
+.programInspectorEndpoints dd input {
+  min-height: 30px;
+  padding: 5px 7px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 7.5px;
+}
+.programInspectorEndpoints [data-endpoint-ready="true"] dd input {
+  border-color: color-mix(in srgb, var(--success) 45%, var(--border));
+}
+
+.programReferenceControl {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+}
+.programReferenceControl > input { min-width: 0; }
+.programReferenceControl > button {
+  min-height: 30px;
+  border: 1px solid color-mix(in srgb, var(--program-inspector-tone) 34%, var(--border));
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--program-inspector-tone) 7%, var(--panel));
+  color: var(--program-inspector-tone);
+  padding: 5px 9px;
+  font-size: 8px;
+  font-weight: 780;
+  white-space: nowrap;
+}
+.programReferenceControl > button:hover,
+.programReferenceControl > button:focus-visible {
+  border-color: color-mix(in srgb, var(--program-inspector-tone) 68%, var(--border));
+  outline: none;
+}
+.programReferenceStatus {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 7.5px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.programInspectorNote {
+  margin: 0;
+  border-left: 2px solid color-mix(in srgb, var(--program-inspector-tone) 60%, var(--border));
+  background: color-mix(in srgb, var(--program-inspector-tone) 6%, var(--panel));
+  color: var(--muted);
+  padding: 8px 9px;
+  font-size: 7.5px;
+  line-height: 1.5;
+}
+
+.programWireBacklogStatus {
+  display: grid;
+  gap: 3px;
+  border: 1px solid color-mix(in srgb, var(--warn) 44%, var(--border));
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--warn) 7%, var(--panel));
+  color: var(--muted);
+  padding: 8px 9px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.programWireBacklogStatus strong {
+  color: color-mix(in srgb, var(--warn) 72%, var(--text));
+  font-size: inherit;
+}
+.programWireBacklogStatus small { font-size: inherit; }
+
+.programDeliveryQueueHead,
+.programDeliveryQueueActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.programPendingDelivery {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  margin-top: 8px;
+  background: var(--panel);
+}
+.programPendingDelivery summary {
+  cursor: pointer;
+  color: var(--text);
+  font-weight: 600;
+}
+.programPendingDelivery label {
+  margin: 8px 0;
+}
+.programPendingDelivery textarea {
+  width: 100%;
+  min-height: 64px;
+  resize: vertical;
+}
+
+.programInspectorActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  padding-top: 10px;
+}
+.programInspectorActions button {
+  min-height: 30px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--panel);
+  color: var(--muted);
+  padding: 6px 9px;
+  font-size: 8px;
+  font-weight: 760;
+}
+.programInspectorActions button:hover:not(:disabled),
+.programInspectorActions button:focus-visible {
+  border-color: color-mix(in srgb, var(--program-inspector-tone) 58%, var(--border));
+  color: var(--program-inspector-tone);
+  outline: none;
+}
+.programInspectorActions [data-program-save] {
+  min-width: 76px;
+  border-color: color-mix(in srgb, var(--program-inspector-tone) 56%, var(--border));
+  background: var(--program-inspector-tone);
+  color: white;
+  font-size: 9px;
+}
+.programInspectorActions [data-program-save]:hover:not(:disabled),
+.programInspectorActions [data-program-save]:focus-visible {
+  color: white;
+}
+.programInspectorActions [data-program-delete] {
+  margin-right: auto;
+  border-color: color-mix(in srgb, var(--danger) 32%, var(--border));
+  color: var(--danger);
+}
+.programInspectorActions [data-program-delete-role] {
+  margin-right: auto;
+  border-color: color-mix(in srgb, var(--danger) 32%, var(--border));
+  color: var(--danger);
+}
+.programInspectorActions button:disabled { cursor: wait; opacity: .52; }
+
+.programInspectorLifecycle { display: grid; gap: 6px; margin: 0; }
+.programInspectorLifecycle > div {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--panel-2) 55%, var(--panel));
+  padding: 8px;
+  font-size: 8px;
+  line-height: 1.35;
+}
+.programInspectorLifecycle dt { color: var(--muted); }
+.programInspectorLifecycle dd { min-width: 0; margin: 0; overflow-wrap: anywhere; color: var(--text); }
+
+.programRunObservation {
+  display: grid;
+  gap: 7px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 9px;
+  background: var(--panel-2);
+}
+.programRunObservation > header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.programRunObservation > header strong { font-size: 10px; }
+.programRunObservation > header button { min-height: 24px; padding: 3px 8px; }
+.programRunObservation > p,
+.programRunObservation > small,
+.programRunInvocationList p { margin: 0; color: var(--muted); font-size: 8px; line-height: 1.4; }
+.programRunInvocationList { display: grid; gap: 5px; }
+.programRunInvocationList article {
+  display: grid;
+  gap: 2px;
+  border-left: 2px solid var(--program-inspector-tone);
+  padding: 5px 7px;
+  background: var(--panel);
+  font-size: 8px;
+}
+.programRunInvocationList article strong,
+.programRunInvocationList article span,
+.programRunInvocationList article small { overflow-wrap: anywhere; }
+.programRunInvocationList article small { color: var(--muted); }
+}

@@ -1,0 +1,388 @@
+/* Lineage panel: the preview welcome, Lineage dialogs and forms, absorption, Seed promotion, danger
+   zones, choice cards, handoff routes and toggles. Pages load this file right after
+   hatg_panel_relations.css. */
+@scope (:is(.portalHatgPanelComponent, .portalHatgOverlayComponent)) {
+.previewWelcome {
+  height: 100%;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.previewWelcome svg { width: 28px; height: 28px; stroke: currentColor; opacity: .65; }
+
+.lineageDialogOverlay { --portal-detail-width: 560px; }
+
+.portalDetailSurface.handoffModalSurface { --portal-detail-width: 720px; }
+
+.portalDetailSurface.nodeModal,
+.portalDetailSurface.seedPromoteModal,
+.portalDetailSurface.seedDismissModal,
+.portalDetailSurface.nodeAbsorptionModal {
+  --portal-detail-width: 640px;
+}
+
+.lineageForm {
+  --portal-detail-form-gap: 13px;
+  display: grid;
+  gap: 13px;
+  padding: 16px;
+}
+
+.lineageForm label,
+.choiceCards legend {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 720;
+}
+
+#subgraphMoveNameField[hidden] { display: none; }
+
+.lineageForm input:not([type="radio"]):not([type="checkbox"]),
+.lineageForm textarea,
+.lineageForm select {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  outline: none;
+  background: color-mix(in srgb, var(--panel-2) 48%, var(--panel));
+  color: var(--text);
+  padding: 8px 9px;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.lineageForm input:not([type="radio"]):not([type="checkbox"]),
+.lineageForm select { min-height: 36px; }
+.lineageForm textarea { resize: vertical; }
+.lineageForm input:focus,
+.lineageForm textarea:focus,
+.lineageForm select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent); }
+
+/* The checkbox sits on its title's line; the hint lines up under the title. */
+.lineageForm > .lineageCheckField {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+  cursor: pointer;
+}
+.lineageCheckField > input { width: 14px; height: 14px; margin: 1px 0 0; accent-color: var(--accent); }
+.lineageCheckField > span { display: grid; gap: 3px; min-width: 0; }
+.lineageCheckField strong { color: var(--text); font-size: 11px; font-weight: 720; line-height: 16px; }
+.lineageCheckField small { font-weight: 500; line-height: 1.5; }
+
+/* Fields and zones shown only in create or edit mode; their own display rules would otherwise win. */
+.lineageForm > [hidden] { display: none; }
+
+.formGrid.two { display: grid; grid-template-columns: minmax(0, 1fr) 150px; gap: 10px; }
+
+.nodeAbsorptionBody { display: grid; gap: 12px; padding: 16px; }
+
+.nodeAbsorptionRoute {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 76px minmax(0, 1fr);
+  gap: 9px;
+  align-items: stretch;
+}
+
+.nodeAbsorptionRouteCard {
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  gap: 3px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--panel-2) 62%, var(--panel));
+  padding: 10px 11px;
+}
+
+.nodeAbsorptionRouteCard.target {
+  border-color: color-mix(in srgb, #18a59a 44%, var(--border));
+  background: color-mix(in srgb, #18a59a 6%, var(--panel));
+}
+
+.nodeAbsorptionRouteCard span { color: var(--muted); font-size: 8px; }
+.nodeAbsorptionRouteCard strong { overflow: hidden; color: var(--text); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.nodeAbsorptionRouteCard small { overflow: hidden; color: var(--muted); font: 8px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace; text-overflow: ellipsis; white-space: nowrap; }
+.nodeAbsorptionRouteArrow { display: grid; place-content: center; gap: 3px; color: #18a59a; text-align: center; font-size: 22px; }
+.nodeAbsorptionRouteArrow small { color: var(--muted); font-size: 8px; }
+
+.nodeAbsorptionStatus {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid color-mix(in srgb, #18a59a 36%, var(--border));
+  border-radius: 10px;
+  background: color-mix(in srgb, #18a59a 6%, var(--panel));
+  color: #168a82;
+  padding: 10px 11px;
+}
+
+.nodeAbsorptionStatus > span:last-child { min-width: 0; display: grid; gap: 2px; }
+.nodeAbsorptionStatus strong { color: var(--text); font-size: 10px; }
+.nodeAbsorptionStatus small { color: var(--muted); font-size: 8.5px; line-height: 1.4; }
+.nodeAbsorptionStatus[data-state="failed"] { border-color: color-mix(in srgb, var(--danger) 42%, var(--border)); background: color-mix(in srgb, var(--danger) 6%, var(--panel)); color: var(--danger); }
+
+.nodeAbsorptionSpinner {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  border: 2px solid color-mix(in srgb, #18a59a 20%, var(--border));
+  border-top-color: #18a59a;
+  border-radius: 50%;
+  animation: nodeAbsorptionSpin .85s linear infinite;
+}
+
+.nodeAbsorptionStatus[data-state="queued"] .nodeAbsorptionSpinner {
+  border: 0;
+  background: #18a59a;
+  box-shadow: inset 0 0 0 5px color-mix(in srgb, var(--panel) 72%, transparent);
+  animation: none;
+}
+
+.nodeAbsorptionStatus[data-state="failed"] .nodeAbsorptionSpinner {
+  border: 0;
+  border-radius: 4px;
+  background: var(--danger);
+  animation: none;
+}
+
+.nodeAbsorptionMode { grid-template-columns: 150px minmax(0, 1fr); }
+.nodeAbsorptionModal button:disabled { cursor: not-allowed; opacity: .46; }
+
+@keyframes nodeAbsorptionSpin { to { transform: rotate(360deg); } }
+
+.modalActionSpacer { flex: 1 1 auto; }
+
+.seedPromotionRoute,
+.seedDismissRoute {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  border: 1px solid color-mix(in srgb, #2b9d72 30%, var(--border));
+  border-radius: 9px;
+  background: color-mix(in srgb, #2b9d72 5%, var(--panel));
+  padding: 10px;
+}
+
+.seedPromotionRoute span,
+.seedDismissRoute span { min-width: 0; display: grid; gap: 2px; }
+.seedPromotionRoute strong,
+.seedDismissRoute strong { overflow: hidden; color: var(--text); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.seedPromotionRoute small,
+.seedDismissRoute small { overflow: hidden; color: var(--muted); font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.seedPromotionRoute i,
+.seedDismissRoute i { color: #2b9d72; font-size: 15px; font-style: normal; }
+.seedDismissRoute { border-color: color-mix(in srgb, var(--danger) 30%, var(--border)); background: color-mix(in srgb, var(--danger) 5%, var(--panel)); }
+.seedDismissRoute i { color: var(--danger); }
+.seedActionChoices { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.seedActionChoices button { min-height: 34px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); color: var(--muted); font-size: 9px; font-weight: 760; }
+.seedActionChoices button.active { border-color: #2b9d72; background: color-mix(in srgb, #2b9d72 10%, var(--panel)); color: #238664; box-shadow: inset 0 0 0 1px color-mix(in srgb, #2b9d72 20%, transparent); }
+
+.dangerZone {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid color-mix(in srgb, var(--danger) 34%, var(--border));
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--danger) 5%, var(--panel));
+  padding: 10px;
+}
+
+.dangerZone > div { display: grid; gap: 3px; }
+.dangerZone strong { color: var(--danger); font-size: 10px; }
+.dangerZone span { color: var(--muted); font-size: 9px; line-height: 1.4; }
+
+.sourceNodeSummary {
+  border: 1px solid color-mix(in srgb, var(--accent) 31%, var(--border));
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--accent) 6%, var(--panel));
+  color: var(--muted);
+  padding: 10px;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.sourceNodeSummary strong { color: var(--text); }
+
+.modalInfo {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 9px;
+  border-left: 3px solid color-mix(in srgb, var(--accent) 65%, var(--border));
+  background: color-mix(in srgb, var(--accent) 5%, var(--panel));
+  padding: 9px 10px;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.modalInfo strong { color: var(--text); }
+
+.choiceCards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.choiceCards[hidden] { display: none; }
+
+.choiceCards legend { grid-column: 1 / -1; margin-bottom: 0; }
+
+.choiceCards > label {
+  grid-template-columns: 16px minmax(0, 1fr);
+  align-items: start;
+  gap: 7px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--panel-2) 45%, var(--panel));
+  padding: 9px;
+  cursor: pointer;
+}
+
+.choiceCards > label:has(input:checked) { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 7%, var(--panel)); }
+.choiceCards > label:has(input:disabled) { opacity: .45; cursor: not-allowed; }
+.choiceCards input { margin: 2px 0 0; accent-color: var(--accent); }
+.choiceCards span { display: grid; gap: 3px; }
+.choiceCards strong { color: var(--text); font-size: 10px; }
+.choiceCards small { color: var(--muted); font-size: 8.5px; font-weight: 500; line-height: 1.35; }
+
+.branchAccountHint {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.handoffRoute {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px minmax(0, 1fr);
+  gap: 7px;
+  align-items: center;
+}
+
+.handoffRouteNode { min-width: 0; border: 1px solid var(--border); border-radius: 8px; background: var(--panel-2); padding: 9px; }
+.handoffRouteNode strong,
+.handoffRouteNode small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.handoffRouteNode strong { color: var(--text); font-size: 10px; }
+.handoffRouteNode small { margin-top: 3px; color: var(--muted); font-size: 8px; }
+.handoffRouteArrow { color: #d18a2f; text-align: center; font-size: 20px; }
+
+.handoffItemsSection {
+  display: grid;
+  gap: 9px;
+  border: 1px solid color-mix(in srgb, #d18a2f 34%, var(--border));
+  border-radius: 11px;
+  background: color-mix(in srgb, #d18a2f 3%, var(--panel));
+  padding: 10px;
+}
+
+.handoffItemsHeader,
+.handoffItemHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.handoffItemsHeader > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.handoffItemsHeader strong { color: var(--text); font-size: 10px; }
+.handoffItemsHeader small { color: var(--muted); font-size: 8.5px; line-height: 1.4; }
+.handoffItemsHeader small span {
+  display: inline-block;
+  margin-left: 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, #d18a2f 12%, var(--panel-2));
+  padding: 1px 6px;
+  color: #b46d17;
+  font-weight: 800;
+}
+
+.handoffAddItemBtn {
+  flex: 0 0 auto;
+  min-height: 29px;
+  border-color: color-mix(in srgb, #d18a2f 45%, var(--border));
+  color: #a9600d;
+}
+
+.handoffItemsEditor { display: grid; gap: 9px; }
+
+.handoffItemCard {
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-left: 3px solid color-mix(in srgb, #d18a2f 72%, var(--border));
+  border-radius: 10px;
+  background: var(--panel);
+  padding: 10px;
+}
+
+.handoffItemHead {
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  padding-bottom: 7px;
+}
+
+.handoffItemHead strong {
+  color: #a9600d;
+  font-size: 9px;
+  letter-spacing: .04em;
+}
+
+.handoffItemRemoveBtn {
+  border: 0;
+  background: transparent;
+  color: var(--danger);
+  padding: 2px 4px;
+  font: inherit;
+  font-size: 8.5px;
+  cursor: pointer;
+}
+
+.handoffItemRemoveBtn[hidden] { display: none; }
+.handoffItemRemoveBtn:disabled { opacity: .45; cursor: not-allowed; }
+.handoffItemCard label > small { display: block; margin-top: 4px; color: var(--muted); font-size: 8px; line-height: 1.4; }
+
+.toggleField[hidden] { display: none; }
+
+.leaderReviewHistory { display: grid; gap: 6px; border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--border)); border-radius: 8px; background: color-mix(in srgb, var(--accent) 3%, var(--panel)); padding: 9px; }
+.leaderReviewHistory > strong { color: var(--text); font-size: 9px; }
+.leaderReviewHistory > span { color: var(--muted); font-size: 8.5px; line-height: 1.45; }
+.leaderReviewHistory > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 8px; align-items: center; }
+.leaderReviewHistory > div > span { color: var(--muted); font: 8px/1.25 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.leaderReviewHistory > div > b { border-radius: 999px; background: var(--panel-2); color: var(--muted); padding: 2px 5px; font-size: 8px; }
+.leaderReviewHistory > div > b[data-status="sent"] { background: color-mix(in srgb, var(--ok) 10%, var(--panel)); color: var(--ok); }
+.leaderReviewHistory > div > b[data-status="failed"] { background: color-mix(in srgb, var(--danger) 10%, var(--panel)); color: var(--danger); }
+.leaderReviewHistory > div > small { grid-column: 1 / -1; color: var(--text); font-size: 8.5px; line-height: 1.35; }
+
+.toggleField {
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 9px;
+}
+
+.toggleField input { margin-top: 2px; accent-color: var(--accent); }
+.toggleField span { display: grid; gap: 3px; }
+.toggleField strong { color: var(--text); font-size: 10px; }
+.toggleField small { color: var(--muted); font-size: 8.5px; font-weight: 500; }
+}

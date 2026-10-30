@@ -1,0 +1,86 @@
+/* Lineage panel: disabled cards and the Effect script editor, outside the panel scope. Pages load
+   this file right after hatg_panel_responsive.css. */
+.hatgNode[aria-disabled="true"] { filter: grayscale(1); opacity: .45; cursor: not-allowed; }
+
+/* Effect script editor (decision_4adcc1ff2f2c "Effect：用脚本组合指令"). */
+.programEffectScriptInsert {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 6px;
+}
+
+.programEffectScriptInsert > button {
+  white-space: nowrap;
+}
+
+.programInspectorForm .programEffectHelp {
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.programInspectorForm textarea.programEffectScript {
+  min-height: 150px;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.55;
+  tab-size: 2;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  resize: vertical;
+}
+
+.programEffectDiagnostics {
+  border-left: 2px solid var(--border);
+  padding: 7px 9px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.programInspectorPanel > .programEffectDiagnostics {
+  flex: 0 0 auto;
+  max-height: 25%;
+  overflow: auto;
+  overflow-wrap: anywhere;
+  margin: 6px 12px;
+}
+
+.programEffectDiagnostics:empty {
+  display: none;
+}
+
+.programEffectDiagnostics ul {
+  margin: 4px 0 0;
+  padding-left: 14px;
+}
+
+.programEffectDiagnostics code {
+  font-family: var(--mono);
+}
+
+.programEffectDiagnostics[data-effect-diagnostics-state="ok"] {
+  border-left-color: color-mix(in srgb, var(--success) 70%, var(--border));
+}
+
+.programEffectDiagnostics[data-effect-diagnostics-state="warning"],
+.programEffectDiagnostics li[data-level="warning"] {
+  border-left-color: color-mix(in srgb, var(--warning) 70%, var(--border));
+}
+
+.programEffectDiagnostics[data-effect-diagnostics-state="error"] {
+  border-left-color: color-mix(in srgb, var(--danger) 70%, var(--border));
+  color: var(--text, inherit);
+}
+
+.programEffectDiagnostics li[data-level="error"] code {
+  color: var(--danger);
+}
+
+/* RunScript's output is text; long logs stay inside the inspector. */
+[data-run-script-calls] details { margin: 8px 0; padding: 8px; border: 1px solid var(--border, #d5d8de); border-radius: 6px; }
+[data-run-script-calls] summary { cursor: pointer; overflow-wrap: anywhere; }
+[data-run-script-calls] pre { max-height: 280px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+[data-run-script-calls] [data-script-artifacts] { overflow-wrap: anywhere; }
+[data-run-script-calls] [data-script-error] { color: var(--danger, #b42318); }

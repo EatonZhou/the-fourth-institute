@@ -5,7 +5,7 @@ const path = require('node:path');
 const assert = require('node:assert/strict');
 const {randomUUID} = require('node:crypto');
 const {JSDOM} = require('jsdom');
-const {babelParse} = require('./babel_parse.cjs');
+const {homeStatements} = require('./home_modules.cjs');
 const [caseName, payloadFile, _routeFile, resultFile] = process.argv.slice(2);
 const monitor = JSON.parse(fs.readFileSync(payloadFile, 'utf8'));
 const root = path.resolve(__dirname, '../../../management_portal/static');
@@ -38,6 +38,7 @@ async function main() {
     scheduledTriggeredFollowupTimer: 0, scheduledTriggeredFollowupCount: 0,
     SCHEDULED_TRIGGERED_FOLLOWUP_MS: 5000, SCHEDULED_TRIGGERED_IDLE_REFRESH_MS: 30000, SCHEDULED_TRIGGERED_FOLLOWUP_LIMIT: 120,
     homeController: {isComponentVisible: () => visible},
+    currentAgentStatusData: () => w.agentStatusData, currentHomeController: () => w.homeController,
     listen: (target, event, callback, signal) => target.addEventListener(event, callback, {signal}),
     homeApi: {get: async url => {
       assert.match(url, /^\/api\/agent-status\/scheduled-triggered(?:\?refresh=1(?:&fresh=1)?)?$/);
@@ -71,14 +72,13 @@ async function main() {
   });
   w.addEventListener('error', event => record.page_errors.push(event.error?.stack || event.message));
   w.eval(fs.readFileSync(path.join(root, 'portal_instruction_client.js'), 'utf8'));
-  const source = fs.readFileSync(path.join(root, 'home.js'), 'utf8');
   const wanted = new Set(['scheduledTriggeredAllows', 'scheduledTriggeredScheduleText', 'scheduledTriggeredNextAt', 'scheduledTriggeredWaitingForPlan', 'scheduledTriggeredItemId', 'scheduledTriggeredScriptStatus', 'scheduledTriggeredSourceState', 'scheduledTriggeredSourceHtml', 'scheduledTriggeredLineageHtml', 'renderScheduledTriggeredStatus', 'controlScheduledTriggered', 'scheduledTriggeredWorkInFlight', 'scheduleScheduledTriggeredFollowup', 'loadScheduledTriggeredStatus', 'connectScheduledTriggered']);
   const declared = node => node.type === 'FunctionDeclaration' ? [node.id] : node.type === 'VariableDeclaration' ? node.declarations.map(item => item.id) : [];
-  const selected = babelParse(source, 'home.js').program.body.filter(node => declared(node).some(id => wanted.has(id.name)));
-  for (const node of selected) for (const id of declared(node)) wanted.delete(id.name);
+  const selected = homeStatements().filter(({node}) => declared(node).some(id => wanted.has(id.name)));
+  for (const {node} of selected) for (const id of declared(node)) wanted.delete(id.name);
   assert.equal(wanted.size, 0);
   // One evaluation retains the production lexical binding for the allows predicate.
-  w.eval(selected.map(node => source.slice(node.start, node.end)).join('\n'));
+  w.eval(selected.map(({source}) => source).join('\n'));
   const controller = new w.AbortController();
   try {
     w.connectScheduledTriggered({root: panel, context: {currentUserReady: Promise.resolve()}, signal: controller.signal});

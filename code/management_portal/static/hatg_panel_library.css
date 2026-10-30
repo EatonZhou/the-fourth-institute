@@ -1,0 +1,433 @@
+/* Lineage panel: the legend, the Seed inspector, card controls, the Function Block shelf, the
+   component library, primitive blocks and handoff method fields. Pages load this file right after
+   hatg_panel_navigation.css. */
+@scope (:is(.portalHatgPanelComponent, .portalHatgOverlayComponent)) {
+.graphLegend {
+  position: absolute;
+  left: 10px;
+  bottom: 9px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--panel) 90%, transparent);
+  backdrop-filter: blur(8px);
+  color: var(--muted);
+  padding: 5px 7px;
+  font-size: 8px;
+}
+
+.graphLegend span { display: inline-flex; align-items: center; gap: 4px; }
+.graphLegend[hidden] { display: none; }
+.legendLine { width: 17px; height: 0; border-top: 2px solid #8067d8; }
+.legendLine.workspace_binding { border-color: #2b8260; }
+.legendLine.absorption { border-color: #18a59a; border-top-style: dashed; }
+.legendLine.handoff { border-color: #d18a2f; border-top-style: dashed; }
+.legendLine.revision { border-color: #d45562; border-top-style: dotted; }
+.legendLine.role { border-color: #c45b84; border-top-style: dashed; }
+.legendLine.program-route { border-color: var(--hatg-program-route-color); }
+.legendLine.program-target { border-color: var(--hatg-program-target-color); border-top-style: dashed; }
+.legendSeed { width: 10px; height: 10px; border: 1.5px solid #2b9d72; border-radius: 50%; background: color-mix(in srgb, #2b9d72 12%, var(--panel)); }
+
+.seedInspector {
+  /* Placed beside the selected Seed by positionSeedInspector(). */
+  position: absolute;
+  z-index: 8;
+  top: 0;
+  left: 0;
+  width: min(292px, calc(100% - 78px));
+  display: grid;
+  gap: 6px;
+  border: 1px solid color-mix(in srgb, #2b9d72 42%, var(--border));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--panel) 94%, transparent);
+  box-shadow: 0 12px 28px color-mix(in srgb, #0b1020 16%, transparent);
+  backdrop-filter: blur(10px);
+  padding: 9px;
+  transition: right 180ms ease;
+}
+
+.seedInspector[hidden] { display: none; }
+.seedInspectorHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.seedInspectorHead span { color: #238664; font: 850 8px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .08em; text-transform: uppercase; }
+.seedInspectorHead em { border-radius: 999px; background: color-mix(in srgb, #2b9d72 10%, var(--panel)); color: var(--muted); padding: 3px 6px; font-size: 7px; font-style: normal; }
+.seedInspector > strong { overflow: hidden; color: var(--text); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.seedInspector > small { overflow: hidden; color: var(--muted); font: 7.5px/1.25 ui-monospace, SFMono-Regular, Menlo, monospace; text-overflow: ellipsis; white-space: nowrap; }
+.seedInspector > small.seedInspectorProducer { color: #238664; font-family: inherit; font-weight: 720; }
+.seedInspectorActions { display: flex; flex-wrap: wrap; gap: 4px; }
+.seedInspectorActions .portalButton { min-height: 27px; padding: 5px 7px; font-size: 8px; }
+.seedInspectorActions .seedDismiss { margin-left: auto; }
+
+.hatgNodeControl {
+  position: absolute;
+  z-index: 9;
+  width: 26px;
+  height: 26px;
+  margin-top: -29px;
+  margin-left: -18px;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, #2b9d72 55%, var(--border));
+  border-radius: 50%;
+  outline: none;
+  background: color-mix(in srgb, var(--panel) 96%, transparent);
+  box-shadow:
+    0 4px 11px color-mix(in srgb, #0b1020 18%, transparent),
+    0 0 0 2px color-mix(in srgb, var(--panel) 86%, transparent);
+  color: #238664;
+  padding: 0 0 0 1px;
+  font: 850 10px/1 ui-sans-serif, system-ui, sans-serif;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: border-color 140ms ease, box-shadow 140ms ease, color 140ms ease, transform 140ms ease;
+}
+
+.hatgNodeControl.action-stop {
+  border-color: color-mix(in srgb, var(--danger) 64%, var(--border));
+  color: var(--danger);
+  padding-left: 0;
+  font-size: 9px;
+}
+
+.hatgNodeControl.is-hover-action {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(.9);
+  transition:
+    opacity 120ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    color 140ms ease,
+    transform 140ms ease;
+}
+
+.hatgNodeControl.is-hover-action[data-node-owner-hovered="true"],
+.hatgNodeControl.is-hover-action[data-node-owner-focused="true"],
+.hatgNodeControl.is-hover-action:hover,
+.hatgNodeControl.is-hover-action:focus-visible {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.hatgNodeControl.action-reset {
+  border-color: color-mix(in srgb, #7654c7 60%, var(--border));
+  color: #7654c7;
+  padding-left: 0;
+  font-size: 14px;
+}
+
+.hatgNodeControl.action-emit-manual-event,
+.hatgNodeControl.action-reset-event-source {
+  margin-top: -29px;
+  margin-left: 57px;
+  border-color: color-mix(in srgb, var(--hatg-program-event-color) 62%, var(--border));
+  color: var(--hatg-program-event-color);
+  padding-left: 1px;
+}
+
+/* A placed Function Block's manual Event, below its expand control. */
+.hatgNodeControl.action-trigger-function-block {
+  border-color: color-mix(in srgb, var(--hatg-program-event-color) 62%, var(--border));
+  color: var(--hatg-program-event-color);
+  padding-left: 1px;
+}
+
+.hatgNodeControl:hover:not(:disabled),
+.hatgNodeControl:focus-visible {
+  transform: translate(-50%, -50%) scale(1.1);
+  border-color: currentColor;
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, currentColor 13%, transparent),
+    0 6px 14px color-mix(in srgb, #0b1020 20%, transparent);
+}
+
+.hatgNodeControl:disabled {
+  cursor: wait;
+  opacity: .78;
+}
+
+.hatgNodeControl[data-busy="true"]::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid color-mix(in srgb, currentColor 28%, transparent);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: hatgRoleNodeControlSpin .72s linear infinite;
+}
+
+@keyframes hatgRoleNodeControlSpin {
+  to { transform: rotate(360deg); }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .hatgNodeControl.is-hover-action {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.functionShelf {
+  flex: 0 0 auto;
+  display: block;
+  min-height: 90px;
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--panel-2) 44%, var(--panel));
+  padding: 7px 10px;
+}
+
+#functionBlockShelf {
+  min-width: 0;
+  display: block;
+}
+
+#functionBlockShelf[hidden] { display: none; }
+
+.componentLibraryRail {
+  min-width: 0;
+  display: grid;
+  grid-template-columns:
+    minmax(min(116px, calc((100% - 9px) / 2)), var(--hatg-library-primitives, 1fr))
+    9px
+    minmax(min(116px, calc((100% - 9px) / 2)), var(--hatg-library-functions, 1fr));
+  align-items: stretch;
+  gap: 0;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  padding-bottom: 3px;
+}
+
+.componentLibraryGroup {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: stretch;
+  gap: 4px;
+  overflow: hidden;
+}
+
+.primitiveBlockShelf {
+  min-width: 0;
+}
+
+
+.componentLibrarySplitter {
+  position: relative;
+  cursor: col-resize;
+  touch-action: none;
+  user-select: none;
+  outline: none;
+  border-radius: 4px;
+}
+
+.componentLibrarySplitter::after {
+  content: "";
+  position: absolute;
+  inset: 0 4px;
+  background: color-mix(in srgb, var(--border) 78%, transparent);
+}
+
+.componentLibrarySplitter:is(:hover, :focus-visible, .active) {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.componentLibrarySplitter:is(:hover, :focus-visible, .active)::after {
+  background: var(--accent);
+}
+
+.componentLibraryRail:has(.componentLibrarySplitter.active) {
+  cursor: col-resize;
+  user-select: none;
+}
+
+.componentLibraryGroupHead {
+  width: 42px;
+  min-width: 42px;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) 24px;
+  place-items: center;
+  gap: 2px;
+  color: var(--muted);
+}
+
+.componentLibraryGroupHead > span {
+  min-width: 0;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+}
+
+.componentLibraryGroupHead small {
+  color: color-mix(in srgb, var(--accent) 70%, var(--muted));
+  font: 800 6.5px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: .08em;
+}
+
+.primitiveBlockShelf .componentLibraryGroupHead small { color: var(--hatg-program-route-color); font-size: 5.5px; }
+.componentLibraryGroupHead strong { color: var(--text); font-size: 8px; line-height: 1; }
+
+.primitiveLibraryConnector {
+  position: relative;
+  width: 24px;
+  height: 15px;
+  display: block;
+  border-top: 1px solid color-mix(in srgb, var(--hatg-program-route-color) 38%, var(--border));
+}
+
+.primitiveLibraryConnector::before,
+.primitiveLibraryConnector::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  width: 5px;
+  height: 5px;
+  border: 1px solid color-mix(in srgb, var(--hatg-program-route-color) 58%, var(--border));
+  border-radius: 50%;
+  background: var(--panel);
+}
+
+.primitiveLibraryConnector::before { left: 0; }
+.primitiveLibraryConnector::after { right: 0; }
+
+.hatgPrimitiveBlocks {
+  min-width: 0;
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  overflow-x: scroll;
+  overflow-y: hidden;
+  overscroll-behavior-inline: contain;
+  scrollbar-color: color-mix(in srgb, var(--hatg-program-route-color) 34%, var(--border)) transparent;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  padding: 0 0 3px;
+}
+
+.hatgPrimitiveCard {
+  --primitive-tone: var(--hatg-program-event-color);
+  --library-item-color: var(--primitive-tone);
+  position: relative;
+  width: 60px;
+  min-width: 60px;
+  flex: 0 0 60px;
+  height: 68px;
+  display: grid;
+  grid-template-rows: 46px minmax(0, 1fr);
+  justify-items: center;
+  gap: 1px;
+  border: 0;
+  border-radius: 8px;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  padding: 3px 4px 2px;
+  text-align: center;
+  cursor: grab;
+  user-select: none;
+  transition: background-color 130ms ease, color 130ms ease, transform 130ms ease;
+}
+
+.hatgPrimitiveCard.role { --primitive-tone: #b14670; }
+.hatgPrimitiveCard.filter { --primitive-tone: #388f78; }
+.hatgPrimitiveCard.selector { --primitive-tone: #6f69d9; }
+.hatgPrimitiveCard.reducer { --primitive-tone: var(--hatg-program-route-color); }
+.hatgPrimitiveCard.effect { --primitive-tone: var(--hatg-program-target-color); }
+
+.hatgPrimitiveCard:hover,
+.hatgPrimitiveCard:focus-visible {
+  background: color-mix(in srgb, var(--library-item-color) 8%, transparent);
+  color: var(--library-item-color);
+  outline: none;
+}
+
+.hatgPrimitiveCard:active,
+.hatgPrimitiveCard.dragging {
+  cursor: grabbing;
+  opacity: .58;
+  transform: translateY(0) scale(.98);
+}
+
+.hatgPrimitiveGlyph {
+  grid-row: 1;
+  width: 36px;
+  height: 36px;
+  align-self: center;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--primitive-tone) 10%, transparent);
+  color: var(--primitive-tone);
+  transition: background-color 130ms ease, transform 130ms ease;
+}
+
+.hatgPrimitiveCard:hover .hatgPrimitiveGlyph,
+.hatgPrimitiveCard:focus-visible .hatgPrimitiveGlyph {
+  transform: translateY(-1px) scale(1.05);
+  background: color-mix(in srgb, var(--primitive-tone) 16%, transparent);
+}
+
+.hatgPrimitiveGlyph svg {
+  width: 17px;
+  height: 17px;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hatgPrimitiveCopy { width: 100%; min-width: 0; display: grid; gap: 1px; }
+.hatgPrimitiveCopy strong {
+  overflow: hidden;
+  color: currentColor;
+  font-size: 8px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hatgPrimitiveCopy small {
+  display: none;
+}
+
+.componentLibraryAdd {
+  width: 23px;
+  height: 23px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed color-mix(in srgb, var(--accent) 50%, var(--border));
+  border-radius: 50%;
+  background: transparent;
+  color: var(--accent);
+  padding: 5px;
+  cursor: pointer;
+}
+
+.componentLibraryAdd svg { width: 12px; height: 12px; stroke: currentColor; }
+.componentLibraryAdd:hover:not(:disabled),
+.componentLibraryAdd:focus-visible {
+  border-style: solid;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  outline: none;
+}
+
+.componentLibraryAdd:disabled { opacity: .4; cursor: not-allowed; }
+.functionBlockPigeon {
+  width: 100%;
+  height: 100%;
+  display: block;
+  background-image: url("./assets/lineage-role-pigeons-v2.png");
+  background-repeat: no-repeat;
+  background-size: 1000% 500%;
+  filter: drop-shadow(0 2px 2px color-mix(in srgb, #0b1020 19%, transparent));
+}
+
+.handoffMethodGrid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(120px, .6fr); gap: 10px; }
+.handoffCopyFields,
+.handoffGitFields { display: grid; gap: 10px; border: 1px solid color-mix(in srgb, #8f65c7 28%, var(--border)); border-radius: 10px; background: color-mix(in srgb, #8f65c7 3%, var(--panel)); padding: 10px; }
+.handoffCopyFields[hidden],
+.handoffGitFields[hidden] { display: none; }
+.handoffTruthInfo { border-left-color: #d18a2f; }
+}

@@ -4,6 +4,7 @@ const portal = path.resolve(__dirname, '../../../management_portal');
 const {chromium} = require(path.join(portal, 'test_framework/tau_runtime/node_modules/playwright'));
 const {readEventCategorySelection} = require(path.join(portal,'test_framework/tau_event_category_evidence.js'));
 const {HATG_PROGRAM_INSPECTOR_SCRIPTS} = require('./hatg_program_inspector_scripts.cjs');
+const {HATG_PANEL_STYLES} = require('./hatg_panel_styles.cjs');
 const L = 'lineage_111111111111', E = 'event_source_222222222222';
 const report = {scope:'Native HATG template, program/primitive Inspector, manifest, i18n and CSS; local graph/header/runtime dependencies. No business requests.', formal_acceptance:false};
 
@@ -15,7 +16,7 @@ const report = {scope:'Native HATG template, program/primitive Inspector, manife
     page.on('pageerror', e=>errors.push(e.message));
     page.on('request', r=>requests.push(r.url()));
     await page.setContent('<!doctype html><section id="panel" class="portalHatgPanelComponent" role="region">'+fs.readFileSync(path.join(portal,'hatg-panel.html'),'utf8')+'</section>');
-    for (const n of ['portal_design_system','portal_themes','hatg_panel'])
+    for (const n of ['portal_design_system','portal_themes',...HATG_PANEL_STYLES])
       await page.addStyleTag({content:fs.readFileSync(path.join(portal,'static',n+'.css'),'utf8')});
     await page.addStyleTag({content:'html,body{margin:0;height:100%}#panel{height:100vh}#agentLineageShell{height:100%;display:block}#hatgPane{height:100%;display:flex;flex-direction:column}'});
     await page.evaluate(()=>{window.__PORTAL_LANGUAGE__='en';});

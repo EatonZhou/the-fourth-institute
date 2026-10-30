@@ -1,0 +1,550 @@
+/* Shared components: diff lines, forward references, Family relays and Mailbox members, message
+   links, Family request status, the selection context action, Chatroom mentions, quote replies,
+   conversation search, the Family status panel, the language picker, Model API settings and Family
+   member mixing. Pages load this file right after portal_components_turn_cards.css. */
+.portalDiffLineAdd { background: color-mix(in srgb, #2da44e 16%, transparent); }
+.portalDiffLineDelete { background: color-mix(in srgb, #cf222e 14%, transparent); }
+.portalDiffTextAdd { color: var(--success, #1a7f37) !important; }
+.portalDiffTextDelete { color: var(--danger, #cf222e) !important; }
+.portalDiffLineHunk { background: color-mix(in srgb, #0969da 8%, transparent); }
+.residentQuestionCard.answered { gap: 6px; background: var(--panel, #fff); }
+
+.forwardReferenceMessage {
+  display: grid;
+  gap: 9px;
+}
+.forwardReferenceDetails {
+  overflow: hidden;
+  border-left: 3px solid color-mix(in srgb, var(--accent) 48%, var(--border));
+  border-radius: 0 6px 6px 0;
+  background: color-mix(in srgb, var(--accent) 5%, var(--panel-2));
+}
+.forwardReferenceDetails summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 32px;
+  padding: 6px 10px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  user-select: none;
+}
+.forwardReferenceDetails summary:hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+.forwardReferenceHint {
+  flex: 0 0 auto;
+  font-size: 10px;
+  font-weight: 500;
+}
+.forwardReferenceCollapse,
+.forwardReferenceDetails[open] .forwardReferenceExpand {
+  display: none;
+}
+.forwardReferenceDetails[open] .forwardReferenceCollapse {
+  display: inline;
+}
+.forwardReferenceBody {
+  max-height: min(42vh, 380px);
+  overflow: auto;
+  padding: 9px 11px 11px 14px;
+  border-top: 1px solid color-mix(in srgb, var(--accent) 14%, var(--border));
+  color: color-mix(in srgb, var(--text) 82%, var(--muted));
+  font-size: 12px;
+  line-height: 1.55;
+}
+.forwardReferenceBody > :first-child { margin-top: 0; }
+.forwardReferenceBody > :last-child { margin-bottom: 0; }
+.forwardReferenceEntry {
+  display: grid;
+  gap: 4px;
+}
+.forwardReferenceEntry + .forwardReferenceEntry {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--accent) 15%, var(--border));
+}
+.forwardReferenceSpeaker {
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+}
+.forwardReferenceEntryContent > :first-child { margin-top: 0; }
+.forwardReferenceEntryContent > :last-child { margin-bottom: 0; }
+.forwardReferenceNote {
+  color: var(--text);
+}
+
+.messageTokenNote {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.familyRelay {
+  margin-top: 8px;
+  border-left: 2px solid var(--border);
+  padding-left: 10px;
+}
+.familyRelayStatus {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.familyRelay[data-family-relay-state="failed"] .familyRelayStatus {
+  color: var(--danger, var(--muted));
+}
+.familyRelay.heldInfo {
+  border-left-style: dashed;
+}
+.familyRelay.attachedInfos > summary {
+  cursor: pointer;
+  list-style-position: inside;
+}
+.familyRelay.attachedInfos[open] > summary {
+  margin-bottom: 2px;
+}
+.familyRelay.outwardRecord {
+  margin-top: 0;
+}
+.familyRelay.outwardMessage.canReply {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.familyRelay.outwardRecord > summary {
+  cursor: pointer;
+  list-style-position: inside;
+}
+.familyRelay.outwardRecord[open] > summary {
+  margin-bottom: 4px;
+}
+.familyRelay > summary:focus-visible,
+.mailboxMember > summary:focus-visible {
+  outline: none;
+  border-radius: 6px;
+  box-shadow: var(--portal-focus-ring);
+}
+.residentQuestionSummaryActions {
+  display: inline-flex;
+  gap: 6px;
+}
+.mailboxGroupBody {
+  display: grid;
+  gap: 6px;
+  min-width: min(100%, 360px);
+}
+.mailboxGroupNote {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.mailboxMember {
+  border-top: 1px solid var(--border);
+  padding-top: 6px;
+}
+.mailboxMember > summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+}
+.mailboxMember > summary::-webkit-details-marker {
+  display: none;
+}
+.mailboxMemberMeta {
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.mailboxMemberPreview {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mailboxMember[open] .mailboxMemberPreview {
+  visibility: hidden;
+}
+.mailboxMemberText {
+  margin-top: 2px;
+}
+.attachedInfo {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.attachedInfoMeta {
+  color: var(--muted);
+  font-size: 11px;
+}
+.attachedInfoText {
+  color: var(--text);
+  white-space: pre-wrap;
+  /* A long path breaks inside the request instead of pushing it past the Chat's edge. */
+  overflow-wrap: anywhere;
+}
+.familyRelay.familyReply {
+  border-left: 0;
+  padding-left: 0;
+  margin-top: 6px;
+}
+.familyRelay.familyReply .familyRelayStatus {
+  font-size: 11px;
+}
+
+/* Navigable message metadata shares the Chat's typography and theme. */
+.messageMetaLink,
+.messageMetaLink:visited {
+  color: var(--accent);
+  font: inherit;
+  font-weight: 500;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+  border-radius: 3px;
+}
+.messageMetaLink:hover {
+  color: color-mix(in srgb, var(--accent) 82%, var(--text));
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.messageMetaLink:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+/* A Family facade request's own progress, after its last shown message. */
+.messageItem.familyRequestStatus .messageHead {
+  align-items: center;
+  flex-wrap: wrap;
+}
+.messageItem.familyRequestStatus .familyRequestLabel {
+  flex: 1 1 200px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.messageItem.familyRequestStatus .messageHeadRight {
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+.familyRequestStatus [data-portal-message-action="family-recovery-choose"] {
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  justify-content: flex-start;
+  padding: 6px 10px;
+  line-height: 1.45;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.messageItem.familyRequestStatus[data-family-request-state="routing"],
+.messageItem.familyRequestStatus[data-family-request-state="delivering"],
+.messageItem.familyRequestStatus[data-family-request-state="queued"] {
+  box-shadow: inset 3px 0 0 var(--border, #cbd5e1);
+}
+.messageItem.familyRequestStatus[data-family-request-state="routing"] .familyRequestLabel,
+.messageItem.familyRequestStatus[data-family-request-state="delivering"] .familyRequestLabel,
+.messageItem.familyRequestStatus[data-family-request-state="queued"] .familyRequestLabel {
+  color: var(--muted);
+}
+
+.chatSelectionContextAction {
+  position: fixed;
+  z-index: 1200;
+  padding: 3px;
+  border: 1px solid color-mix(in srgb, var(--accent) 38%, var(--border));
+  border-radius: 6px;
+  background: var(--panel);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--text) 16%, transparent);
+}
+.chatSelectionContextAction[hidden] {
+  display: none;
+}
+.chatSelectionContextAction button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 3px 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.chatSelectionContextAction button:hover,
+.chatSelectionContextAction button:focus-visible {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+  outline: none;
+}
+.chatSelectionContextAction svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+}
+
+/* Chatroom personal attention and user mentions (decision_a6bebf4ac283). */
+.portalAgentInboxUnreadCount.is-muted,
+.chatroomUnreadCount.is-muted {
+  background: var(--muted);
+  color: var(--panel, #fff);
+}
+.chatroomMentionBadge {
+  flex: 0 0 auto;
+  color: var(--danger, #dc2626);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.chatroomMutedMark { width: 13px; height: 13px; flex: 0 0 auto; color: var(--muted); }
+.portalMention { color: var(--accent); }
+.composerMentionAvatar { flex: 0 0 24px; width: 24px; height: 24px; border-radius: 50%; text-align: center; line-height: 24px; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.portalChatroomView .paneHeadActions { flex-wrap: wrap; }
+.portalChatroomView [data-chatroom-header-menu] { background: transparent; border-color: transparent; }
+.portalChatroomView [data-chatroom-next-mention] { color: var(--danger, #dc2626); }
+/* Quote replies (decision_f560803947c6): the quote bar above the input and the quote block above a body. */
+.composerQuoteHost[hidden] { display: none; }
+.composerQuote {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 8px;
+  border-left: 3px solid var(--accent, #2563eb);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--accent, #2563eb) 6%, var(--panel, transparent));
+}
+.composerQuoteBody {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.composerQuoteAuthor,
+.messageQuoteAuthor {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.composerQuoteText,
+.messageQuoteText {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: nowrap;
+}
+.composerQuoteCancel {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  padding: 3px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.composerQuoteCancel:hover,
+.composerQuoteCancel:focus-visible {
+  background: color-mix(in srgb, var(--accent, #2563eb) 12%, transparent);
+  color: var(--text);
+  outline: none;
+}
+.composerQuoteCancel svg { width: 14px; height: 14px; }
+.messageQuote {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 2px 0 6px;
+  padding: 5px 8px;
+  border: 0;
+  border-left: 3px solid var(--border, #cbd5e1);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--muted, #64748b) 8%, transparent);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+button.messageQuote {
+  cursor: pointer;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 8px;
+}
+button.messageQuote > .messageQuoteAuthor,
+button.messageQuote > .messageQuoteText {
+  grid-column: 1;
+  min-width: 0;
+}
+.messageQuoteJump {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1;
+}
+button.messageQuote:hover .messageQuoteJump,
+button.messageQuote:focus-visible .messageQuoteJump {
+  color: var(--accent, #2563eb);
+}
+button.messageQuote:hover,
+button.messageQuote:focus-visible {
+  border-left-color: var(--accent, #2563eb);
+  outline: none;
+}
+.portalConversationSearch {
+  width: min(390px, calc(100vw - 24px));
+  max-height: min(520px, calc(100dvh - 32px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 8px;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: 0 10px 32px #0003;
+}
+.portalConversationSearch[hidden] { display: none; }
+.conversationSearchStatus { padding: 0 5px; font-size: 11px; }
+.conversationSearchResults { overflow-y: auto; min-height: 0; max-height: 390px; overscroll-behavior: contain; }
+.conversationSearchResult {
+  display: block; width: 100%; padding: 7px 6px; text-align: left;
+  border: 0; border-radius: 5px; background: transparent; color: inherit;
+  font: inherit; cursor: pointer;
+}
+.conversationSearchResult:hover, .conversationSearchResult:focus-visible {
+  background: color-mix(in srgb, var(--accent) 10%, var(--panel));
+  outline: 1px solid var(--accent); outline-offset: -1px;
+}
+.conversationSearchMeta { display: flex; gap: 10px; justify-content: space-between; color: var(--muted); font-size: 11px; }
+.conversationSearchMeta span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.conversationSearchMeta time { flex-shrink: 0; }
+.conversationSearchExcerpt {
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden; overflow-wrap: anywhere; line-height: 1.45; font-size: 12px; margin-top: 3px;
+}
+.conversationSearchExcerpt mark { background: color-mix(in srgb, var(--accent) 23%, var(--panel)); color: var(--text); font-weight: 650; }
+.messageItem.messageQuoteTarget {
+  animation: message-quote-target 1.6s ease-out;
+}
+@keyframes message-quote-target {
+  0%, 30% { background-color: color-mix(in srgb, var(--accent, #2563eb) 16%, transparent); }
+  100% { background-color: transparent; }
+}
+
+.familyStatusPanel {
+  flex-direction: column;
+  width: min(780px, calc(100vw - 24px));
+  overflow: hidden;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--portal-shadow-popover, 0 12px 36px #0003);
+}
+.familyStatusPanel:not([hidden]) { display: flex; }
+.familyStatusPanel.is-inline { width: 100%; box-shadow: none; }
+.familyStatusBody { padding: 6px; min-height: 0; max-height: 400px; overflow: auto; overscroll-behavior: contain; }
+.familyStatusPanel table { width: 100%; min-width: 720px; border-collapse: collapse; table-layout: fixed; font-size: 12px; }
+.familyStatusPanel th, .familyStatusPanel td { text-align: left; padding: 4px 6px; border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent); vertical-align: middle; }
+.familyStatusPanel th { position: sticky; top: -6px; z-index: 1; color: var(--muted); font-size: 11px; font-weight: 500; white-space: normal; overflow-wrap: normal; word-break: normal; line-height: 1.35; background: var(--panel-2); padding-block: 7px; }
+.familyStatusPanel th:first-child { border-radius: 5px 0 0 5px; }
+.familyStatusPanel th:nth-child(2) { width: 180px; }
+.familyStatusPanel th:nth-child(3) { width: 92px; }
+.familyStatusPanel th:nth-child(4) { width: 100px; }
+.familyStatusPanel th:last-child { width: 76px; border-radius: 0 5px 5px 0; }
+.familyStatusPanel tbody > tr:last-child > td { border-bottom: 0; }
+.familyStatusPanel [data-family-status-row]:hover { background: color-mix(in srgb, var(--accent) 4%, var(--panel)); }
+.familyStatusPanel .familyStatusName { display: block; font-size: 12px; font-weight: 500; line-height: 1.5; white-space: normal; overflow-wrap: anywhere; }
+.familyStatusPanel td .portalButton { min-width: 0; min-height: 24px; max-width: 100%; padding: 2px 3px; font-size: 12px; }
+.familyStatusPanel td .familyStatusAccount { font-weight: 500; text-align: left; }
+.familyStatusPanel td .familyStatusAccount, .familyStatusPanel td .familyStatusRuntime { min-height: 20px; line-height: 16px; padding-block: 1px; }
+.familyStatusAccount > span:first-child, .familyStatusRuntime > span:first-child { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+.familyStatusAccount > span:last-child, .familyStatusRuntime > span:last-child { flex-shrink: 0; }
+.familyStatusRuntime { display: flex; margin-top: 0; color: var(--muted); font-weight: 400; white-space: nowrap; text-align: left; }
+.familyStatusPanel td .familyStatusRuntime { font-size: 11px; font-weight: 400; }
+.familyStatusPanel td .familyStatusIntake { display: inline-flex; align-items: center; gap: 5px; padding: 2px 0; border: 0; background: transparent; box-shadow: none; font-size: 11px; cursor: default; }
+.familyIntakeTrack { position: relative; width: 25px; height: 14px; border-radius: 8px; background: var(--muted); flex-shrink: 0; }
+.familyIntakeTrack::after { content: ""; position: absolute; left: 2px; top: 2px; width: 10px; height: 10px; border-radius: 50%; background: var(--panel); transition: transform .12s ease; }
+.familyStatusIntake[aria-checked="true"] .familyIntakeTrack { background: var(--accent); }
+.familyStatusIntake[aria-checked="true"] .familyIntakeTrack::after { transform: translateX(11px); }
+.familyStatusIntakeNote { flex-shrink: 0; margin: 0; padding: 8px 12px; border-top: 1px solid var(--border); color: var(--muted); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.familyStatusIntake[aria-checked="true"] { color: var(--accent); }
+.familyStatusQuotaValue { display: flex; align-items: center; gap: 5px; font-variant-numeric: tabular-nums; }
+.familyStatusQuotaTrack { display: block; height: 3px; margin-top: 5px; border-radius: 99px; overflow: hidden; background: var(--panel-2); }
+.familyStatusQuotaTrack > span { display: block; height: 100%; border-radius: inherit; background: var(--accent); }
+.familyStatusQuotaWarning { display: inline-flex; align-items: center; justify-content: center; width: 13px; height: 13px; border: 1px solid currentColor; border-radius: 50%; font-size: 10px; font-weight: 700; }
+.familyStatusAttention { color: var(--warning, #c08020); }
+.familyStatusAttention .familyStatusQuotaTrack > span { background: var(--warning, #c08020); }
+.familyStatusDetails { background: var(--panel-2); }
+.familyStatusDetails dl { display: grid; grid-template-columns: 88px minmax(0,1fr); gap: 8px 12px; margin: 6px 0 12px; }
+.familyStatusDetails dt { color: var(--muted); }
+.familyStatusDetails dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (max-width: 540px) {
+  .familyStatusPanel th, .familyStatusPanel td { padding-inline: 4px; }
+}
+
+.portalLanguagePicker { display:flex; align-items:center; justify-content:space-between; gap:16px; font-size:12px; width:100%; }
+.portalLanguagePicker select { color:var(--text); background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:5px 8px; max-width:180px; }
+.portalNavTop > .portalLanguagePicker { width:auto; margin-left:auto; }
+@media (max-width: 600px) {
+  .portalNavTop[data-portal-public-language] > .portalLanguagePicker { min-width:0; flex:0 1 180px; gap:0; }
+  .portalNavTop[data-portal-public-language] > .portalLanguagePicker > span { display:none; }
+  .portalNavTop[data-portal-public-language] > .portalLanguagePicker select { width:100%; min-width:0; max-width:100%; }
+}
+
+/* Model API Settings: protocol fields share the Resident dialog and scroll body. */
+.portalModelApiSettings { display: grid; gap: 14px; }
+.portalModelApiSettings[hidden], .portalModelApiSettings [hidden] { display: none; }
+.portalModelApiSettings fieldset { display: grid; gap: 10px; min-width: 0; margin: 0; padding: 12px; border: 1px solid var(--border); border-radius: 10px; }
+.portalModelApiSettings legend { padding: 0 5px; font-weight: 700; color: var(--text); }
+.portalModelApiSettings input:not([type=checkbox]), .portalModelApiSettings textarea { width: 100%; box-sizing: border-box; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); color: var(--text); font: inherit; }
+.portalModelApiSettings textarea { resize: vertical; min-height: 64px; }
+.portalModelApiSettings details > label { margin-top: 10px; }
+.portalModelApiSettings summary { cursor: pointer; }
+.portalModelApiSettings [data-jev-questions] { display: grid; gap: 10px; }
+.portalApiHistory { display: flex; align-items: center; gap: 8px; }
+
+.familyMemberMix { display: inline-flex; vertical-align: middle; border: 1px solid color-mix(in srgb, var(--text) 20%, var(--panel)); border-radius: 5px; background: var(--panel-2); }
+.familyMemberMixButton { display: inline-flex; align-items: center; justify-content: center; width: 23px; height: 19px; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--muted); font: 600 10px/1 ui-sans-serif,system-ui,sans-serif; cursor: default; }
+.familyMemberMixButton:first-child { border-radius: 4px 0 0 4px; }
+.familyMemberMixButton:last-child { border-left: 1px solid color-mix(in srgb, var(--text) 15%, transparent); border-radius: 0 4px 4px 0; }
+.familyMemberMixButton[data-family-mix="mute"][aria-pressed="true"] { background: #317f94; color: white; }
+.familyMemberMixButton[data-family-mix="solo"][aria-pressed="true"] { background: #a37a20; color: white; }
+.familyMemberMixButton:disabled { opacity: .5; cursor: default; }
+.familyMemberMix[aria-busy="true"] > .familyMemberMixButton:disabled { opacity: 1; }
+.familyMemberMixButton:focus-visible { position: relative; outline: 2px solid var(--accent); outline-offset: 2px; z-index: 1; }
+.familyReply .familyRelayStatus { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+[data-family-reply-controls] { display: inline-flex; flex-shrink: 0; }
+[data-family-reply-controls][hidden] { display: none; }
+
+.familyMemberIdentity { display: flex; align-items: center; gap: 6px; }
+.familyMemberIdentity .familyStatusName { flex: 1; min-width: 0; }
+.familyStatusPanel td .familyStatusDetailsToggle { flex-shrink: 0; padding: 0 3px; color: var(--muted); }
+.chatTitleLine { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.chatTitleLine .paneTitle { min-width: 0; }
+.familyMemberChatMix { display: inline-flex; flex-shrink: 0; }
+.familyMemberChatMix[hidden] { display: none; }
+.familyMemberChatMix .familyMemberMix { margin-top: 0; }

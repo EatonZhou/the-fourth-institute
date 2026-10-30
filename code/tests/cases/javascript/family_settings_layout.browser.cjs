@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { chromium } = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
 const { RESIDENT_MENU_SCRIPTS } = require('./resident_menu_scripts.cjs');
+const { PORTAL_COMPONENTS_STYLES } = require('./portal_components_styles.cjs');
 const root = path.resolve(__dirname, '../../../management_portal/static');
 (async () => {
   const browser = await chromium.launch({ headless: true });
@@ -22,7 +23,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
       return route.fulfill({ contentType: 'text/html', body: '<!doctype html><html lang="zh-CN" data-portal-theme="light"><meta charset="utf-8"><body></body></html>' });
     });
     await page.goto('http://family.fixture.invalid');
-    for (const name of ['portal_components', 'portal_workbench', 'lineage_workbench', 'portal_design_system', 'portal_themes', 'portal_resident_menu']) {
+    for (const name of [...PORTAL_COMPONENTS_STYLES, 'portal_workbench', 'lineage_workbench', 'portal_design_system', 'portal_themes', 'portal_resident_menu']) {
       await page.addStyleTag({ url: '/static/' + name + '.css' });
     }
     for (const name of ['portal_text', 'portal_state', 'portal_translations', 'portal_i18n', 'portal_ui_primitives',

@@ -1,0 +1,151 @@
+/* Shared components: Resource chips, file links and Resource hover cards. Pages load this file
+   right after portal_components_queue.css. */
+/* inline-block, not inline-flex: a flex item is block-level, and the text of the
+   surrounding message (copy, innerText) would break the line around every chip. */
+.portalResourceChip {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin: 0 0.08em;
+  padding: 0.08em 0.45em;
+  border: 1px solid color-mix(in srgb, var(--accent, #2563eb) 36%, var(--border, #cbd5e1));
+  border-radius: 999px;
+  color: color-mix(in srgb, var(--accent, #2563eb) 88%, var(--text, #111827));
+  background: color-mix(in srgb, var(--accent, #2563eb) 9%, var(--panel, #fff));
+  line-height: 1.45;
+  /* Align to surrounding text even when an inline image increases the line height. */
+  vertical-align: middle;
+  text-decoration: none;
+  transition: border-color 120ms ease, background-color 120ms ease, box-shadow 120ms ease;
+}
+
+.portalResourceChip code {
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace);
+  font-size: 0.9em;
+  white-space: nowrap;
+}
+
+.portalResourceChip:hover {
+  border-color: color-mix(in srgb, var(--accent, #2563eb) 66%, var(--border, #cbd5e1));
+  background: color-mix(in srgb, var(--accent, #2563eb) 15%, var(--panel, #fff));
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--accent, #2563eb) 16%, transparent);
+  text-decoration: none;
+}
+
+.portalResourceChip:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent, #2563eb) 70%, transparent);
+  outline-offset: 2px;
+}
+
+.portalResourceChip[aria-busy="true"] {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+.portalFileLink {
+  color: var(--accent, #2563eb);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 48%, transparent);
+  text-underline-offset: 2px;
+}
+
+button.portalFileLink {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  line-height: inherit;
+  vertical-align: baseline;
+}
+
+.portalFileInlineLink code {
+  color: inherit;
+  text-decoration: inherit;
+  text-decoration-color: inherit;
+  text-underline-offset: inherit;
+}
+
+.portalFileLink:hover,
+.portalFileLink:focus-visible {
+  color: color-mix(in srgb, var(--accent, #2563eb) 82%, var(--text, #111827));
+  text-decoration-color: currentColor;
+}
+
+.portalFileLink:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent, #2563eb) 52%, transparent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.portalResourceHoverCard {
+  position: fixed;
+  display: grid;
+  width: min(340px, calc(100vw - 16px));
+  gap: 5px;
+  padding: 10px 11px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--accent, #2563eb) 24%, var(--border, #cbd5e1));
+  border-radius: 9px;
+  color: var(--text, #111827);
+  background: color-mix(in srgb, var(--panel, #fff) 97%, var(--accent, #2563eb) 3%);
+  box-shadow: 0 12px 32px color-mix(in srgb, #0f172a 20%, transparent);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.portalResourceHoverCard[hidden] {
+  display: none;
+}
+
+.portalResourceHoverCard[data-state="loading"] {
+  color: var(--muted, #64748b);
+}
+
+.portalResourceHoverCard[data-state="unavailable"] {
+  border-color: color-mix(in srgb, var(--warn, #d97706) 42%, var(--border, #cbd5e1));
+}
+
+.portalResourceHoverTitle {
+  overflow: hidden;
+  color: var(--text, #111827);
+  font-size: 13px;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portalResourceHoverMeta,
+.portalResourceHoverHint {
+  overflow-wrap: anywhere;
+  color: var(--muted, #64748b);
+}
+
+.portalResourceHoverId {
+  display: block;
+  padding: 4px 6px;
+  overflow: hidden;
+  border-radius: 5px;
+  color: color-mix(in srgb, var(--accent, #2563eb) 84%, var(--text, #111827));
+  background: color-mix(in srgb, var(--accent, #2563eb) 8%, var(--panel-2, #f1f5f9));
+  font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portalResourceHoverHint {
+  padding-top: 1px;
+  font-size: 10px;
+}
+
+[aria-busy="true"] {
+  cursor: progress;
+}

@@ -1,14 +1,13 @@
 // Exercise the production quota renderer and styles in a real layout engine.
 const assert = require('node:assert/strict');
 const fs = require('node:fs'), path = require('node:path');
-const {babelParse} = require('./babel_parse.cjs');
+const {homeStatements} = require('./home_modules.cjs');
 const root = path.resolve(__dirname, '../../..');
 const {chromium} = require(path.join(root, 'management_portal/test_framework/tau_runtime/node_modules/playwright'));
-const source = fs.readFileSync(path.join(root, 'management_portal/static/home.js'), 'utf8');
 const functions = ['executionAccounts', 'accountQuotaWindowIsStale', 'accountQuotaWindows',
   'accountSummaryQuotaWindows', 'refreshAccountQuotaWindows', 'accountQuotaWindow', 'accountLimitRow'];
-const renderer = babelParse(source, 'home.js').program.body.filter(n => n.type === 'FunctionDeclaration' && functions.includes(n.id.name))
-  .map(n => source.slice(n.start, n.end)).join('\n');
+const renderer = homeStatements().filter(({node: n}) => n.type === 'FunctionDeclaration' && functions.includes(n.id.name))
+  .map(statement => statement.source).join('\n');
 
 (async () => {
   const browser = await chromium.launch({headless: true, executablePath: process.env.PORTAL_TEST_CHROMIUM || undefined, args: ['--no-sandbox']});
@@ -24,6 +23,8 @@ const renderer = babelParse(source, 'home.js').program.body.filter(n => n.type =
       const esc = x => String(x ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('"', '&quot;');
       const formatDateTime = x => x ? new Date(x).toISOString() : '';
       const canSetScheduler = false;
+      const currentCanSetScheduler = () => canSetScheduler;
+      const currentAgentStatusData = () => agentStatusData;
       ${renderer}
       const labels = ['Gemini Models · Weekly Limit Remaining', 'Gemini Models · Five Hour Limit Remaining',
         'Claude and GPT models · Weekly Limit Remaining', 'Claude and GPT models · Five Hour Limit Remaining',

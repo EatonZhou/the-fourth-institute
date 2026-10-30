@@ -1,6 +1,7 @@
 'use strict';
 const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path');
 const { chromium } = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
+const { HATG_PANEL_STYLES } = require('./hatg_panel_styles.cjs');
 const portal = path.resolve(__dirname, '../../../management_portal');
 
 (async () => {
@@ -15,7 +16,7 @@ const portal = path.resolve(__dirname, '../../../management_portal');
         + fs.readFileSync(path.join(portal, 'hatg-panel.html'), 'utf8') + '</div></body></html>'});
     });
     await page.goto('http://hatg-feedback.fixture.invalid');
-    for (const name of ['portal_design_system', 'portal_themes', 'hatg_panel'])
+    for (const name of ['portal_design_system', 'portal_themes', ...HATG_PANEL_STYLES])
       await page.addStyleTag({url: '/static/' + name + '.css'});
     await page.addStyleTag({content: 'html,body {margin:0;height:100%} .portalHatgPanelComponent {height:100vh} #agentLineageShell {height:100%;display:block} #hatgPane {height:100%;display:flex;flex-direction:column}'});
     for (const name of ['hatg_program_edits', 'hatg_toolbar'])
