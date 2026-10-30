@@ -30,7 +30,7 @@ CODEX_TEMPLATE = "portal-codex-app-server@.service"
 
 def _isolated_provider_context() -> dict | None:
     """Resolve a release installation's owned Linux Provider service namespace."""
-    from management_common.instance_config import read_installation
+    from management_common.instance_config import installed_source_roots, read_installation
     if not sys.platform.startswith("linux"):
         return None
     configured = os.environ.get("PORTAL_PATHS_CONFIG")
@@ -42,12 +42,12 @@ def _isolated_provider_context() -> dict | None:
     if not state_path.is_file():
         return None
     target = read_installation(root)["target"]
-    from scripts.tfi_instance_layout import code_root, validate_shared_code
+    from scripts.tfi_instance_layout import validate_shared_code
     validate_shared_code(target)
     prefix = target["service_prefix"]
     if (config not in {root / 'config/target.json', root / 'config/paths.json'} or
             Path(target["install_root"]).resolve() != root or
-            SOURCE_ROOT.resolve() != code_root(target).resolve() or
+            SOURCE_ROOT.resolve() not in {Path(value).resolve() for value in installed_source_roots(config).values()} or
             not re.fullmatch(r"tfi-[a-z0-9][a-z0-9-]*", prefix)):
         raise ValueError("Isolated Provider service ownership mismatch")
     from management_common.portal_paths import path
@@ -68,9 +68,9 @@ def _isolated_codex_context() -> dict | None:
 
 def _native_provider_service(unit):
     """Resolve and verify the installed daemon, without creating or starting it."""
-    from management_common.instance_config import read_installation
+    from management_common.instance_config import installed_source_roots, read_installation
     from management_common.portal_paths import path as data_path
-    from scripts.tfi_instance_layout import code_root, validate_shared_code
+    from scripts.tfi_instance_layout import validate_shared_code
     if sys.platform == "win32":
         from scripts import tfi_release_platform_windows as adapter
     elif sys.platform == "darwin":
@@ -86,7 +86,7 @@ def _native_provider_service(unit):
     validate_shared_code(target)
     if (config not in {root / "config/target.json", root / "config/paths.json"}
             or Path(target["install_root"]).resolve() != root
-            or code_root(target).resolve() != SOURCE_ROOT.resolve()
+            or SOURCE_ROOT.resolve() not in {Path(value).resolve() for value in installed_source_roots(config).values()}
             or not re.fullmatch(r"tfi-[a-z0-9][a-z0-9-]*", target["service_prefix"])
             or any(data_path(key).resolve() != Path(value).resolve()
                    for key, value in target["data_roots"].items())):

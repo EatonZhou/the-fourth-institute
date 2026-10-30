@@ -313,6 +313,33 @@ def test_monitor_authentication_failure_and_recovery(isolated_login):
         assert isolated_login.login_state(account.account_id) == "logged_in"
 
 
+@pytest.mark.parametrize("reload_fails", [False, True])
+def test_codex_device_login_reloads_running_server_without_restarting(isolated_login, monkeypatch, reload_fails):
+    """CLI login refreshes native auth; a backend failure never erases the completed login."""
+    account_id = "login_codex_reload"
+    monkeypatch.setattr(login, "login_command", lambda *args, **kwargs: [sys.executable, "-c", "pass"])
+    monkeypatch.setattr(login, "provider_logged_in", lambda *_: True)
+    events = []
+    monkeypatch.setattr(login, "start_codex_instance", lambda key: events.append(("start", key)))
+    client = Mock()
+    def request(method, params, **kwargs):
+        events.append((method, params))
+        if reload_fails:
+            raise OSError("private backend detail")
+        # A monitor request started during reload may still observe the old token.
+        isolated_login.observe(account_id, "login_expired", observed_at=login.now() - timedelta(seconds=1))
+        return {"account": {"type": "chatgpt"}}
+    client.request.side_effect = request
+    monkeypatch.setattr("management_portal.codex_app_server_client.client_for_socket", lambda _: client)
+    manager = login.LoginManager(isolated_login)
+    manager.start({"account_id": account_id, "provider": "codex", "kind": "subscription_login", "enabled": True})
+    wait_for(lambda: client.request.called)
+    wait_for(lambda: isolated_login.login_state(account_id) == "logged_in")
+    assert events == [("start", account_id), ("account/read", {"refreshToken": True})]
+    assert isolated_login.get(account_id)["state"] == "succeeded"
+    assert not isolated_login.get(account_id)["error"]
+
+
 @pytest.mark.parametrize("provider,state", [("claude", None), ("claude", "pending"), ("claude", "succeeded"), ("codex", "awaiting_user")])
 def test_update_login_requires_existing_awaiting_claude_session(isolated_login, monkeypatch, provider, state):
     """提交返回码只更新等待中的 Claude 会话，不隐式打开登录

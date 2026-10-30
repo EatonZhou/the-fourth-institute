@@ -407,6 +407,15 @@ class LoginManager:
                         self.store.observe(session["account_id"], "logged_in")
                         if registration["provider"] == "codex" and registration.get("enabled", True):
                             start_codex_instance(session["account_id"])
+                            # The CLI changed credentials on disk. An already
+                            # running app-server must reload its native auth;
+                            # starting the service alone keeps the old token.
+                            from .account_hosting import codex_socket_path
+                            from management_portal.codex_app_server_client import client_for_socket
+                            observed_at = now()
+                            client_for_socket(codex_socket_path(session["account_id"])).request(
+                                "account/read", {"refreshToken": True}, timeout=30.0)
+                            self.store.observe(session["account_id"], "logged_in", observed_at=observed_at)
                     return
         except Exception:
             # Neither command output nor exception strings cross the login boundary.

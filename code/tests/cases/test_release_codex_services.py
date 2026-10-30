@@ -59,3 +59,24 @@ def test_context_rejects_mismatched_code_and_roots(tmp_path, monkeypatch):
         units._isolated_codex_context()
     monkeypatch.setattr(portal_paths, "path", lambda _: root / "accounts")
     assert units._isolated_codex_context()["prefix"] == "tfi-check-codex-app-server@"
+
+
+@pytest.mark.parametrize("worktree", ["dev", "release", "foreign"])
+def test_paired_provider_control_accepts_only_registered_worktrees(tmp_path, monkeypatch, worktree):
+    """Dev and Release control the same instance without admitting a third source tree."""
+    from management_common import portal_paths
+    root = tmp_path / "instance"
+    (root / "config").mkdir(parents=True)
+    dev, release = tmp_path / "dev/code", tmp_path / "release/code"
+    target = {"install_root": str(root), "service_prefix": "tfi-check",
+              "data_roots": {"accounts_root": str(root / "accounts")},
+              "development": {"dev_code": str(dev), "release_code": str(release)}}
+    (root / "installation.json").write_text(json.dumps({"schema": "tfi.release-installation.v1", "target": target}))
+    monkeypatch.setenv("PORTAL_PATHS_CONFIG", str(root / "config/paths.json"))
+    monkeypatch.setattr(portal_paths, "path", lambda _: root / "accounts")
+    monkeypatch.setattr(units, "SOURCE_ROOT", {"dev": dev, "release": release, "foreign": tmp_path / "other"}[worktree])
+    if worktree == "foreign":
+        with pytest.raises(ValueError, match="ownership"):
+            units._isolated_codex_context()
+    else:
+        assert units._isolated_codex_context()["prefix"] == "tfi-check-codex-app-server@"
