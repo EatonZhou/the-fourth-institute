@@ -23,7 +23,10 @@ def test_windows_provider_services_are_instance_scoped(tmp_path, monkeypatch):
     monkeypatch.setattr(units, "sys", SimpleNamespace(platform="win32"))
     monkeypatch.setenv("PORTAL_PATHS_CONFIG", str(tmp_path / "config/paths.json"))
     target = {"service_prefix": "tfi-fixture", "install_root": str(tmp_path), "shared_code_root": str(units.SOURCE_ROOT), "data_roots": {}}
-    monkeypatch.setattr(instance_config, "read_installation", lambda root: {"target": target})
+    # An installed instance: its state file exists and records this source tree.
+    (tmp_path / instance_config.STATE_FILE).write_text("{}")
+    monkeypatch.setattr(instance_config, "read_installation",
+                        lambda root: {"schema": instance_config.STATE_SCHEMA, "target": target})
     monkeypatch.setattr(platform, "unit_directory", lambda: tmp_path)
     monkeypatch.setattr(platform, "unit_text", lambda target, component, components:
                         json.dumps({"name": "tfi-fixture-"+component, "root": str(tmp_path)}))
@@ -115,7 +118,9 @@ def test_windows_claude_cold_start_registers_native_service_without_restart(tmp_
     monkeypatch.setattr(units, "sys", SimpleNamespace(platform="win32"))
     monkeypatch.setattr(updates, "STATE_ROOT", tmp_path)
     monkeypatch.setenv("PORTAL_PATHS_CONFIG", str(tmp_path / "config/target.json"))
-    monkeypatch.setattr(instance_config, "read_installation", lambda root: {"target": target})
+    (tmp_path / instance_config.STATE_FILE).write_text("{}")
+    monkeypatch.setattr(instance_config, "read_installation",
+                        lambda root: {"schema": instance_config.STATE_SCHEMA, "target": target})
     monkeypatch.setattr(adapter, "unit_directory", lambda: tmp_path)
     monkeypatch.setattr(adapter, "unit_text", lambda *args: "owned")
     calls = []

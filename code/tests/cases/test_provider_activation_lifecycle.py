@@ -21,7 +21,10 @@ def native(request, monkeypatch, tmp_path):
                   shared_code_root=str(units.SOURCE_ROOT), data_roots={}, python='/python', windows_service_mode='user')
     monkeypatch.setattr(units, 'sys', SimpleNamespace(platform=request.param))
     monkeypatch.setenv('PORTAL_PATHS_CONFIG', str(tmp_path/'config/target.json'))
-    monkeypatch.setattr(instance_config, 'read_installation', lambda _: {'target': target})
+    # An installed instance: its state file exists and records this source tree.
+    (tmp_path/instance_config.STATE_FILE).write_text('{}')
+    monkeypatch.setattr(instance_config, 'read_installation',
+                        lambda _: {'schema': instance_config.STATE_SCHEMA, 'target': target})
     monkeypatch.setattr(adapter, 'unit_directory', lambda: tmp_path)
     controller = Mock()
     controller.status.return_value = {'active': 'inactive'}

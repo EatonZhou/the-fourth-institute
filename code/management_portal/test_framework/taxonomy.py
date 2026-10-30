@@ -64,14 +64,14 @@ MODULE_GROUPS = (
         node("lineage.service", "SocietyService 与领域状态", "decision_1b2bdf5c33d6", "decision_d918ebebc062"),
         node("lineage.hatg", "HATG 原语与程序", "decision_4adcc1ff2f2c"),
         node("lineage.team", "Agent Team 与协作图", "decision_6fc653d55c79"),
-        node("lineage.family", "Family 门面与监督", "decision_44cf587c1721", "decision_b77fde81e7a0"),
+        node("lineage.family", "Family 门面与监督", "decision_44cf587c1721", "decision_b77fde81e7a0", "decision_9ad68dd077d4"),
     )),
     ModuleGroup("execution", "7. Execution、Provider 与 Agent Harness", (
         node("execution.scheduled-triggered", "定时与自动触发的工作", "decision_5ff0cb51ed84", "decision_86721bb4e8c8"),
         node("execution.service", "ExecutionService、调度与 Worker", "decision_25eb93d803a4", "decision_6ad0384e020d", "decision_8ac0b5a6c0e5", "decision_075f66430606", "decision_d40f59f5508f"),
         node("execution.persistence", "Execution 持久化与计量", "decision_b1ab45c4b3ec", "decision_f1331d57be89"),
         node("execution.harness", "Agent Harness、Prompt Context 与 AI Relay", "decision_5c62deb8253a", "decision_c604274e21dd", "decision_ef1d6c925955", "decision_fd760e898f9a"),
-        node("execution.providers", "模型 Provider 与帐号接入", "decision_91eb3626d323", "decision_425e428410e0", "decision_3e8c2a7f91d4", "decision_e587fe1c472e", "decision_6b9e42f1c8a7", "decision_3948ce9b9443", "decision_3dd52c0692c1", "decision_6c2f91a7d84e", "decision_276105b5d67b", "decision_7956d7cb4bde"),
+        node("execution.providers", "模型 Provider 与帐号接入", "decision_91eb3626d323", "decision_425e428410e0", "decision_3e8c2a7f91d4", "decision_e587fe1c472e", "decision_6b9e42f1c8a7", "decision_3948ce9b9443", "decision_3dd52c0692c1", "decision_6c2f91a7d84e", "decision_276105b5d67b", "decision_7956d7cb4bde", "decision_44f8f67d7390"),
     )),
     ModuleGroup("workflow", "8. Paper 与业务工作流", (
         node("workflow.wall", "WALL 设计与软件演进", "decision_06defc47e960", "decision_1a2730dcd3d1"),
