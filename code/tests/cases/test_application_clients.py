@@ -294,3 +294,26 @@ def test_context_releases_all_pins_when_capture_fails(monkeypatch):
         with clients.owned_clients(api, [{'target': {'windows_service_mode': 'user'}}], [Mock()]):
             pytest.fail('must not yield partial ownership')
     processes.close.assert_called_once_with()
+
+
+@pytest.mark.parametrize('stage', ['ancestry', 'final_tcp'])
+def test_complete_but_late_capture_never_authorizes_shutdown(monkeypatch, stage):
+    connection, processes = capture_fixture(monkeypatch, [[row()]])
+    clock = [0]
+    monkeypatch.setattr(clients.time, 'monotonic', lambda: clock[0])
+    if stage == 'ancestry':
+        original = clients.ancestry
+        def delayed(*args):
+            result = original(*args)
+            clock[0] = 6
+            return result
+        monkeypatch.setattr(clients, 'ancestry', delayed)
+    else:
+        calls = []
+        def delayed():
+            calls.append(1)
+            if len(calls) == 2: clock[0] = 6
+            return processes.rows
+        processes.tcp = delayed
+    with pytest.raises(ValueError, match='bounded capture'):
+        clients.capture(connection, processes, {11: (200, 10, 100)})

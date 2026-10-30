@@ -179,16 +179,24 @@ def capture(connection, processes, roots):
     def identities():
         return {r['pid']: {k: r[k] for k in IDENTITY} for r in clients(connection)}
 
+    def require_budget():
+        # OS calls cannot be interrupted here, but late results never authorize
+        # shutdown. The same budget covers every round and every client.
+        if time.monotonic() >= deadline:
+            raise ValueError('Database client ownership did not converge during bounded capture')
+
     # SHARE locks freeze writes, not connection creation/closure. Accumulate
     # individually proven identities instead of requiring one immutable online
     # client set throughout all OS reads. This never authorizes an unproven row.
     for _ in range(64):
+        require_budget()
         sampling['rounds'] += 1
         before = identities()
         captured = {pid: e for pid, e in captured.items() if before.get(pid) == e['identity']}
         tcp = processes.tcp()
         candidates = {}
         for pid, identity in before.items():
+            require_budget()
             if pid in captured:
                 continue
             endpoint = (identity['client_addr'], identity['client_port'], server, port)
@@ -229,10 +237,9 @@ def capture(connection, processes, roots):
             else:
                 sampling['deferred'] += 1
         captured = {pid: e for pid, e in captured.items() if after.get(pid) == e['identity']}
+        require_budget()
         if after == {pid: e['identity'] for pid, e in captured.items()}:
             return {'barrier_pid': barrier_pid, 'clients': captured, 'sampling': sampling}
-        if time.monotonic() >= deadline:
-            break
         time.sleep(.05)
     raise ValueError('Database client ownership did not converge during bounded capture')
 
