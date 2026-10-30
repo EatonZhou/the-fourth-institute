@@ -1467,7 +1467,7 @@ function agentStatusRunHref(run) {
 }
 
 function agentStatusCreature(index, activityState, label, run = null) {
-  const residentSnapshot = run?.type === "resident"
+  const residentSnapshot = run?.type === "resident" && run.resident_id
     ? window.PortalResidentProtocol.stateSnapshot(run.resident_id)
     : null;
   const stateLabel = { running: window.PortalI18n.t("运行中"), queued: window.PortalI18n.t("排队"), unread: window.PortalI18n.t("未读回复") }[activityState] || activityState;
@@ -1475,6 +1475,11 @@ function agentStatusCreature(index, activityState, label, run = null) {
     // This icon represents one message. Resident work_state is aggregate state and
     // must not overwrite a queued message while another message is running.
     label = `${label} · ${stateLabel}${residentSnapshot.state?.intake_state === "closed" ? " · 接单关闭" : ""}`;
+    const queuedCount = residentSnapshot.state?.queued_count;
+    const queueLabel = residentSnapshot.ready && Number.isInteger(queuedCount) && queuedCount >= 0
+      ? window.PortalI18n.text`Mailbox 排队：${queuedCount} 条`
+      : window.PortalI18n.t("Mailbox 排队：待更新");
+    label = `${label} · ${queueLabel}`;
   }
   const avatar = window.PortalResidentAvatar.presentation(run);
   const delay = `${index * -0.18}s`;

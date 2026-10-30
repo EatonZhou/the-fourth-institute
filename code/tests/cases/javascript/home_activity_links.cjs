@@ -9,7 +9,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
 const dom = new JSDOM('<main></main>', {url:'http://portal.invalid/'});
 const tag = (parts, ...args) => parts.reduce((s, p, i) => s + p + (args[i] ?? ''), '');
 const context = vm.createContext({
-  window: {location:dom.window.location, PortalI18n:{t:x=>x, html:tag, markup:x=>x},
+  window: {location:dom.window.location, PortalI18n:{t:x=>x, html:tag, text:tag, markup:x=>x},
     PortalResidentProtocol:{stateSnapshot:()=>null}, PortalConversationStore:{entries:()=>[]}},
   esc: x=>String(x ?? '').replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;'),
   URL, URLSearchParams, agentStatusData:{}, executionAccounts:()=>[],
@@ -53,5 +53,40 @@ main.innerHTML=context.agentStatusCreatureGroup(1,'running',0,[{...run,avatar_ur
 assert.equal(main.querySelector('.is-image').tagName,'A');
 assert.match(main.querySelector('.is-image').getAttribute('style'),/avatar\/image/);
 assert.equal(main.querySelector('[class*=rarity-]'),null);
+// Each tooltip reads the Resident's full waiting count, not the bounded icon
+// list or the account-wide queue total; the same renderer handles state updates.
+let snapshot = {ready:true, state:{queued_count:80, intake_state:'open'}};
+let stateReads = 0;
+context.window.PortalResidentProtocol.stateSnapshot = id => {
+  stateReads += 1;
+  assert.equal(id, run.resident_id);
+  return snapshot;
+};
+for (const state of ['running', 'queued', 'unread']) {
+  for (const count of [80, 3, 0]) {
+    snapshot.state.queued_count = count;
+    main.innerHTML = context.agentStatusCreatureGroup(1, state, 0, [{...run, sprite_index:12, sprite_rarity:'SR'}]);
+    const link = main.querySelector('a');
+    assert.match(link.title, new RegExp(`Mailbox 排队：${count} 条`));
+    assert.equal(link.getAttribute('aria-label'), link.title);
+    assert.match(link.title, /Waiting Agent/);
+    assert.match(link.title, /SR/);
+  }
+}
+snapshot = {ready:true, state:{queued_count:2, intake_state:'closed'}};
+main.innerHTML = context.agentStatusCreatureGroup(1, 'running', 0, [run]);
+assert.match(main.querySelector('a').title, /运行中 · 接单关闭 · Mailbox 排队：2 条/);
+for (const unknown of [
+  {ready:false, state:{queued_count:0}}, {ready:true, state:null},
+  {ready:true, state:{}}, {ready:true, state:{queued_count:-1}},
+]) {
+  snapshot = unknown;
+  main.innerHTML = context.agentStatusCreatureGroup(1, 'running', 0, [run]);
+  assert.match(main.querySelector('a').title, /Mailbox 排队：待更新/);
+}
+const readsBeforeAnonymous = stateReads;
+main.innerHTML = context.agentStatusCreatureGroup(1, 'queued', 0, [{type:'resident',title:'Agent',sprite_index:0}]);
+assert.equal(stateReads, readsBeforeAnonymous, 'Anonymous activities must not read a Resident state');
+assert.doesNotMatch(main.querySelector('.agent-status-creature').title, /Mailbox/);
 console.log('Home activity: real targets, fallback-avatar links, queue counts, overflow and privacy passed');
 dom.window.close();
