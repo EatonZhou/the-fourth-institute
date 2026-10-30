@@ -838,7 +838,8 @@ a.agent-status-creature.queued:hover {
 }
 .agent-status-account-rate-windows {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: minmax(0, 1fr);
+  container: account-quotas / inline-size;
   align-items: center;
   gap: 10px;
   min-width: 0;
@@ -857,10 +858,27 @@ a.agent-status-creature.queued:hover {
 .agent-status-account-credits.is-stale .agent-status-account-credits-value { color: var(--muted); }
 .agent-status-account-window {
   display: grid;
-  grid-template-columns: minmax(42px, auto) minmax(44px, 1fr) auto;
+  grid-template-columns: minmax(0, min(40%, 22em)) minmax(44px, 1fr) max-content;
   align-items: center;
   gap: 7px;
   min-width: 0;
+}
+.agent-status-account-window .agent-status-window-name {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.4;
+}
+.agent-status-account-window .agent-status-limit-meta {
+  min-width: 5ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+@container account-quotas (max-width: 420px) {
+  .agent-status-account-window { grid-template-columns: minmax(0, 1fr) max-content; }
+  .agent-status-account-window .agent-status-window-name { grid-column: 1; grid-row: 1; }
+  .agent-status-account-window .agent-status-limit-meta { grid-column: 2; grid-row: 1; }
+  .agent-status-account-window .agent-status-limit-track { grid-column: 1 / -1; grid-row: 2; }
 }
 .agent-status-account-details {
   justify-self: start;
