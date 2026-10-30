@@ -99,8 +99,6 @@ for line in sys.stdin:
     elif method in {"session/new", "session/load"}:
         session = params
         sid = params.get("sessionId", "google-session-1")
-        if not os.environ.get("FAKE_NO_USAGE"):
-            update(sid, sessionUpdate="available_commands_update", availableCommands=[{"name": "usage"}])
         if method == "session/load":
             update(sid, sessionUpdate="agent_message_chunk", content={"type": "text", "text": "old history"})
         result = {"sessionId": sid, "models": {"currentModelId": "gemini-test", "availableModels": [{"modelId": "gemini-test"}]}}
@@ -113,3 +111,9 @@ for line in sys.stdin:
     else:
         result = {}
     send({"id": message["id"], "result": result})
+    if method in {"session/new", "session/load"}:
+        def advertise(session_id):
+            time.sleep(.05)
+            update(session_id, sessionUpdate="available_commands_update",
+                   availableCommands=[] if os.environ.get("FAKE_NO_USAGE") else [{"name": "usage"}])
+        threading.Thread(target=advertise, args=(sid,), daemon=True).start()

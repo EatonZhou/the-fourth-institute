@@ -123,11 +123,14 @@ def quota_windows(report, observed_at):
 
 def observe_account(account_id):
     """Read native auth and quota without an LLM turn or a Resident session."""
-    session_id, commands, chunks = "", set(), []
+    session_id, commands, chunks = "", {}, []
+    advertised = threading.Condition()
     def update(params):
         item = params.get("update") or {}
         if item.get("sessionUpdate") == "available_commands_update":
-            commands.update(c.get("name") for c in item.get("availableCommands", []))
+            with advertised:
+                commands[params.get("sessionId")] = {c.get("name") for c in item.get("availableCommands", [])}
+                advertised.notify_all()
         if params.get("sessionId") == session_id and item.get("sessionUpdate") == "agent_message_chunk":
             content = item.get("content") or {}
             if content.get("type") == "text":
@@ -144,7 +147,10 @@ def observe_account(account_id):
                     "mcpServers": [], "_meta": {"antigravity": {"enabledTools": []}}})
                 session_id = result["sessionId"]
                 # Do not turn a missing native slash command into an LLM prompt.
-                if "usage" not in commands:
+                # Google advertises commands asynchronously AFTER session/new.
+                with advertised:
+                    advertised.wait_for(lambda: session_id in commands, timeout=5)
+                if "usage" not in commands.get(session_id, set()):
                     sample.update(error_code="quota_unsupported", error="当前 Antigravity 运行时未提供额度查询")
                     return sample
                 result = client.call("session/prompt", {"sessionId": session_id,
