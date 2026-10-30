@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const {JSDOM} = require('jsdom');
 const {readHatgModule, createHatgModule} = require('./hatg_modules.cjs');
 
 // Execute production owners with controlled inputs. Page journeys cover their DOM;
@@ -69,9 +70,23 @@ const i18n = {t: value => value, text: (parts, ...values) => parts.reduce((text,
 async function familySettingsFixture({runtime = true, restart = true} = {}) {
   const member = 'resident_member', facade = 'resident_facade';
   const calls = [], settingsDialogs = [], sessionDialogs = [], notices = [], listeners = {};
-  const root = {hidden: true, isConnected: true, innerHTML: '', remove: noop, setAttribute: noop,
-    closest: () => null, addEventListener: (name, handler) => {listeners[name] = handler;},
-    querySelector: selector => selector === '.familyStatusBody' ? {scrollTop: 0} : null};
+  // The status view renders through a template and replaceChildren, so it gets a real
+  // document; the fixture keeps the view's root and its click handler.
+  const {document} = new JSDOM('<main></main>').window;
+  let root;
+  const fixtureDocument = {
+    body: document.body,
+    get activeElement() { return document.activeElement; },
+    createElement: tag => {
+      const element = document.createElement(tag);
+      if (tag === 'section') {
+        root = element;
+        const add = element.addEventListener.bind(element);
+        element.addEventListener = (name, handler, ...rest) => { listeners[name] = handler; add(name, handler, ...rest); };
+      }
+      return element;
+    },
+  };
   const snapshot = {state: {work_state: 'idle', intake_state: 'open'},
     runtime_settings: {model: 'model_one', reasoning_effort: 'high', service_tier: ''}, messages: []};
   const detail = {resident: {backend: 'codex'}, allows: {RestartSession: restart},
@@ -123,12 +138,13 @@ async function familySettingsFixture({runtime = true, restart = true} = {}) {
   });
   vm.runInNewContext(fs.readFileSync(path.resolve(__dirname,
     '../../../management_portal/static/chat_workspace_family_status.js'), 'utf8'), {
-    window, URLSearchParams, document: {createElement: () => root, activeElement: null}, CSS: {escape: value => value},
+    window, URLSearchParams, queueMicrotask, document: fixtureDocument, CSS: {escape: value => value},
   });
   const familyStatus = window.PortalChatWorkspaceFamilyStatus.createFamilyStatus({
     escapeHtml: value => String(value ?? ''), footerTime: () => '', sessionRestartActive: () => false,
   });
-  const view = familyStatus.createFamilyStatusView(facade, null, null, null, {append: noop});
+  // An inline view counts as open while it is in the document.
+  const view = familyStatus.createFamilyStatusView(facade, null, null, null, document.body);
   view.open();
   await new Promise(resolve => setImmediate(resolve));
   return {root, view, calls, settingsDialogs, sessionDialogs, notices,
