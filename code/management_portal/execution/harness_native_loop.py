@@ -8,6 +8,7 @@ from collections import Counter, deque
 from dataclasses import replace
 from typing import Any, Callable
 
+from .contracts import ExecutionControlSignal
 from .harness import (
     AgentLoopProviderEventProcessor,
     HarnessFeatureOutcome,
@@ -880,6 +881,8 @@ class NativeToolLoopRuntime:
         if callable(observe):
             try:
                 observe(self._ledger())
+            except (InterruptedError, ExecutionControlSignal):
+                raise
             except Exception:
                 LOGGER.warning("Adaptive Harness turn policy could not observe the native tool loop", exc_info=True)
         cumulative_output = self._planned_limits.get(

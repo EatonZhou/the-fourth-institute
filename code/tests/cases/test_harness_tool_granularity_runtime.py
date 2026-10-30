@@ -2,7 +2,13 @@ from __future__ import annotations
 
 from typing import Any
 
+import pytest
+
 from management_portal.execution import harness_native_items
+from management_portal.execution.contracts import (
+    ExecutionControlSignal,
+    ExecutionRecoveryDeferred,
+)
 from management_portal.execution.harness_native_loop import (
     NativeToolLoopRuntime,
 )
@@ -705,3 +711,51 @@ def test_fixed_cumulative_output_reminder_waits_for_planned_boundary():
     assert runtime.next_control()["reason"] == "large_output_pressure"
     runtime._apply_adaptive_controls()
     assert runtime.next_control() is None
+
+
+@pytest.mark.parametrize("event", [
+    {
+        "method": "item/completed",
+        "params": {"item": {
+            "id": "read-1", "type": "commandExecution", "command": "cat README.md",
+            "status": "completed", "exitCode": 0, "aggregatedOutput": "content",
+        }},
+    },
+    {
+        "method": "thread/tokenUsage/updated",
+        "params": {"tokenUsage": {
+            "last": {"inputTokens": 10}, "modelContextWindow": 1000,
+        }},
+    },
+], ids=["tool_completion", "token_usage"])
+@pytest.mark.parametrize("error_type", [
+    InterruptedError, ExecutionControlSignal, ExecutionRecoveryDeferred, RuntimeError,
+])
+def test_native_policy_observation_preserves_execution_control(event, error_type, caplog):
+    """原生工具和 token 观察保留控制信号；普通错误仍允许固定计划继续治理。"""
+    error = error_type("native observation failed")
+    snapshots = []
+
+    class Policy:
+        def observe_native_snapshot(self, snapshot):
+            snapshots.append(snapshot)
+            raise error
+
+    runtime = _runtime(
+        "off", adaptive_turn_runtime=Policy(),
+        planned_limits={"cumulative_output_bytes": 1},
+    )
+    runtime.native_output_bytes_observed = 1
+
+    if error_type is RuntimeError:
+        runtime.process_event(event)
+        assert runtime.next_control()["reason"] == "large_output_pressure"
+        assert "could not observe the native tool loop" in caplog.text
+    else:
+        with pytest.raises(error_type) as raised:
+            runtime.process_event(event)
+        assert raised.value is error
+        assert runtime.next_control() is None
+        assert "could not observe the native tool loop" not in caplog.text
+    assert len(snapshots) == 1
+    assert snapshots[0]["native_output_bytes"] >= 1
