@@ -380,10 +380,12 @@ class WindowsInstallerTests(unittest.TestCase):
                     patch.dict(os.environ, {"LOCALAPPDATA": str(registry.parents[1]),
                                             "HOME": str(base / 'operator'),
                                             "USERPROFILE": str(base / 'operator'),
+                                            "PROCESSOR_ARCHITECTURE": "AMD64",
                                             "PORTAL_USER_AVATAR_ROOT": str(base / 'foreign-avatars')}, clear=True):
                 env = installer.clean_environment(target)
                 self.assertEqual(env["TFI_WINDOWS_SERVICE_DIRECTORY"], str(registry))
                 self.assertEqual(env["PYTHONUTF8"], "1")
+                self.assertEqual(env["PROCESSOR_ARCHITECTURE"], "AMD64")
                 self.assertEqual(env["HOME"], str(Path(target["install_root"]) / 'home'))
                 self.assertEqual(env["USERPROFILE"], env["HOME"])
                 self.assertNotIn("PORTAL_USER_AVATAR_ROOT", env)

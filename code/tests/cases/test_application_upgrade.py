@@ -26,7 +26,8 @@ def application(tmp_path):
     (root / 'data/share/content-directory').mkdir()
     state = {'target': {'install_root': str(root), 'shared_code_root': str(app / 'code'),
         'service_prefix': 'tfi-one', 'windows_service_mode': 'user', 'data_roots': {
-            'accounts_root': str(root / 'data/accounts'), 'share_root': str(root / 'data/share')}},
+            'accounts_root': str(root / 'data/accounts'), 'share_root': str(root / 'data/share'),
+            'instances_root': str(root / 'data/instances')}},
         'manifest_sha256': 'a' * 64, 'status': 'installed', 'completed': ['database']}
     installer.write_json(root / 'installation.json', state)
     return app, state
@@ -77,6 +78,7 @@ def transaction(application, tmp_path, monkeypatch):
     monkeypatch.setattr(owner, 'stop', Mock())
     monkeypatch.setattr(owner, 'start', Mock())
     monkeypatch.setattr(owner, 'schema', Mock())
+    monkeypatch.setattr(owner, 'detach_codex', Mock(return_value=[]))
     monkeypatch.setattr(installer, 'prepare_dependencies', Mock())
     monkeypatch.setattr(installer, 'service_controller', lambda: Mock())
     monkeypatch.setattr(installer, 'wait_database', Mock())
@@ -99,7 +101,9 @@ def test_migration_failure_restores_pair_and_preserves_failed_generation(transac
     assert upgrade.states(owner.application)[0]['manifest_sha256'] == 'a' * 64
     journal = installer.read_json(owner.journal_path)
     assert journal['phase'] == 'restored'
-    assert (Path(journal['failed_generation']) / 'instance/one/data/database/business').read_text() == 'partly migrated rows'
+    failed = Path(journal['failed_generation'])
+    inventory = json.loads((failed / 'inventory.json').read_text())
+    assert snapshot.backup_bytes(failed, 'instance/one/data/database/business', inventory) == b'partly migrated rows'
 
 
 def test_success_keeps_identity_and_credentials_without_importing_seed(transaction):
@@ -145,3 +149,86 @@ def test_other_instance_or_changed_target_cannot_be_ignored(application):
     installer.write_json(other / 'installation.json', state)
     with pytest.raises(ValueError, match='belong'):
         upgrade.states(app)
+
+
+def test_windows_maintenance_reexec_waits_and_returns_child_exit(transaction, monkeypatch):
+    owner, manifest, state = transaction
+    monkeypatch.setattr(installer.sys, 'platform', 'win32')
+    monkeypatch.setattr(installer, 'runtime_python', lambda target: '/different/runtime-python')
+    monkeypatch.setattr(installer, 'clean_environment', lambda target: {'PYTHONDONTWRITEBYTECODE': '1'})
+    child = Mock(return_value=17)
+    monkeypatch.setattr(installer.subprocess, 'call', child)
+    monkeypatch.setattr(installer.os, 'execve', Mock(side_effect=AssertionError('detached exec')))
+    assert installer.main(['application-check', '--root', str(owner.application), '--manifest', str(manifest)]) == 17
+    assert child.call_args.args[0][:2] == ['/different/runtime-python', '-B']
+    assert child.call_args.kwargs['env']['PYTHONDONTWRITEBYTECODE'] == '1'
+
+
+def test_flat_backup_preserves_deep_paths_without_expanding_them(application, tmp_path):
+    app, _ = application
+    path = app / ('nested-' + 'x' * 40) / ('local-' + 'y' * 40) / ('business-' + 'z' * 40)
+    path.parent.mkdir(parents=True)
+    path.write_text('deep retained content')
+    backup = tmp_path / 'maintenance-long-parent' / 'backup'
+    expected = snapshot.create_backup(app, backup)
+    assert all(len(str(p.relative_to(backup))) <= 70 for p in backup.rglob('*'))
+    path.write_text('changed')
+    snapshot.restore(backup, app, expected, packed=True)
+    assert path.read_text() == 'deep retained content'
+    assert snapshot.inventory(app) == expected
+    blob = backup / 'files' / expected[path.relative_to(app).as_posix()]['sha256']
+    blob.write_text('corrupt')
+    with pytest.raises(ValueError, match='integrity'):
+        snapshot.restore(backup, app, expected, packed=True)
+    assert path.read_text() == 'deep retained content'
+
+
+def test_stopped_codex_definition_rebinds_only_after_new_runtime_is_ready(application, monkeypatch):
+    import hashlib
+    import os
+    from scripts import tfi_release_dependencies, tfi_windows_user_services
+    app, state = application
+    root = Path(state['target']['install_root'])
+    instances = root / 'data/instances'
+    current = [str(app / 'dependencies/old/python.exe')]
+    monkeypatch.setattr(tfi_release_dependencies, 'runtime_python', lambda _: current[0])
+    monkeypatch.setattr(installer, 'runtime_python', lambda _: current[0])
+    scope = hashlib.sha256(os.fsencode(instances.resolve())).hexdigest()[:10]
+    name = f'portal-codex-app-server@fixture-{scope}.service'
+    directory = instances / 'service-units'
+    directory.mkdir(parents=True)
+    path = directory / (name + '.json')
+    value = {'name': name, 'mode': 'user', 'component': 'codex', 'root': str(root),
+        'code': str(app / 'code'), 'python': current[0], 'command': [current[0], '-m',
+        'management_portal.codex_app_server_host', '--socket', str(instances / 'sockets/codex-fixture.sock'),
+        '--binary', str(root / 'data/codex.cmd'), '--account-home', str(root / 'data/accounts/codex/fixture')]}
+    installer.write_json(path, value)
+    control = tfi_windows_user_services.WindowsServiceControl(directory)
+    monkeypatch.setattr(control, 'status', lambda _: {'pid': 12, 'active': 'active'})
+    monkeypatch.setattr(upgrade.providers, 'owned_services', lambda *_: {'controllers': {name: control}})
+    owner = upgrade.ApplicationUpgrade(installer, app)
+    with pytest.raises(ValueError, match='must stop'):
+        owner.detach_codex([state])
+    assert path.exists()
+    monkeypatch.setattr(control, 'status', lambda _: {'pid': 0, 'active': 'inactive'})
+    saved = owner.detach_codex([state])
+    assert not path.exists()
+    current[0] = str(app / 'dependencies/new/python.exe')
+    owner.attach_codex(saved, state)
+    updated = control.definition(name)
+    assert updated['python'] == updated['command'][0] == current[0]
+    assert updated['command'][1:] == value['command'][1:]
+    assert {k: v for k, v in updated.items() if k not in {'command', 'python'}} == {
+        k: v for k, v in value.items() if k not in {'command', 'python'}}
+
+
+def test_dependency_failure_restores_detached_account_definition(transaction):
+    owner, path, state = transaction
+    definition = Path(state['target']['install_root']) / 'data/accounts/service.json'
+    definition.write_text('original owned definition')
+    owner.detach_codex.side_effect = lambda _: (definition.unlink() or [])
+    installer.prepare_dependencies.side_effect = ValueError('offline dependency failure')
+    with pytest.raises(ValueError, match='offline dependency'):
+        owner.upgrade(path)
+    assert definition.read_text() == 'original owned definition'
+    assert installer.read_json(owner.journal_path)['phase'] == 'restored'

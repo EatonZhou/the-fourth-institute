@@ -2,10 +2,12 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 from pathlib import Path
 import shutil
 import stat
+import re
 
 from management_common.directory_links import is_directory_link, create_directory_link, remove_directory_link
 from management_common.file_permissions import create_private_file, ensure_private_directory
@@ -77,6 +79,60 @@ def copy_tree(source, destination):
     return expected
 
 
+def backup_bytes(backup, name, expected):
+    row = expected[name]
+    value = (Path(backup) / 'files' / row['sha256']).read_bytes()
+    if hashlib.sha256(value).hexdigest() != row['sha256']:
+        raise ValueError('Backup integrity check failed')
+    return value
+
+
+def verify_backup(backup, expected):
+    backup = Path(backup)
+    if json.loads((backup / 'inventory.json').read_text(encoding='utf-8')) != expected:
+        raise ValueError('Backup inventory integrity mismatch')
+    blobs = {}
+    for name, row in expected.items():
+        path = Path(name)
+        if path.is_absolute() or '..' in path.parts or not path.parts:
+            raise ValueError('Unsafe backup path')
+        if 'link' in row:
+            target = Path(row['link'])
+            if target.is_absolute() or '..' in target.parts or row.get('kind') not in {'junction', 'symlink'}:
+                raise ValueError('Unsafe backup link')
+        if 'sha256' in row:
+            sha = row['sha256']
+            if not re.fullmatch('[0-9a-f]{64}', sha):
+                raise ValueError('Invalid backup digest')
+            blobs[sha] = row['size']
+    actual = inventory(backup / 'files')
+    if actual != {sha: {'sha256': sha, 'size': size} for sha, size in blobs.items()}:
+        raise ValueError('Backup integrity check failed')
+
+
+def create_backup(source, destination):
+    """Store bytes by digest, avoiding longer Windows backup paths.
+
+    Logical paths and internal aliases remain in the checked inventory. A
+    backup is not runnable and must be restored through the maintenance owner.
+    """
+    source, destination = Path(source), Path(destination)
+    expected = inventory(source)
+    ensure_private_directory(destination)
+    ensure_private_directory(destination / 'files')
+    for name, row in expected.items():
+        if 'sha256' in row:
+            blob = destination / 'files' / row['sha256']
+            if not blob.exists():
+                copy_file(source / name, blob)
+    with create_private_file(destination / 'inventory.json') as stream:
+        stream.write(json.dumps(expected, sort_keys=True).encode('utf-8'))
+    verify_backup(destination, expected)
+    if inventory(source) != expected:
+        raise ValueError('Application changed during offline backup')
+    return expected
+
+
 def remove(path):
     if is_directory_link(path):
         remove_directory_link(path)
@@ -86,14 +142,16 @@ def remove(path):
         path.unlink(missing_ok=True)
 
 
-def restore(source, destination, expected):
+def restore(source, destination, expected, *, packed=False):
     """Keep open installer lock/interpreter files in place on Windows.
 
     Source has already passed checksum verification; link targets are rebased
     into destination. Unchanged base runtime files are never overwritten.
     """
     source, destination = Path(source), Path(destination)
-    if inventory(source) != expected:
+    if packed:
+        verify_backup(source, expected)
+    elif inventory(source) != expected:
         raise ValueError("Backup integrity check failed; restore refused")
     actual = inventory(destination)
     for name in sorted(actual, key=lambda s: len(Path(s).parts), reverse=True):
@@ -110,7 +168,7 @@ def restore(source, destination, expected):
         elif 'sha256' in row:
             if path.exists():
                 remove(path)
-            copy_file(source / name, path)
+            copy_file(source / 'files' / row['sha256'] if packed else source / name, path)
     for name, row in expected.items():
         if 'link' in row and row != actual.get(name):
             path, target = destination / name, destination / row['link']

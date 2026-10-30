@@ -13,12 +13,12 @@ import re
 import shutil
 import zipfile
 
-from scripts.tfi_release_install import digest, validate_engineering
+from scripts.tfi_release_install import digest, engineering_path, validate_engineering
 from scripts.tfi_instance_layout import source_inventory
 
 
 def build(payload, destination, *, run_id, origins):
-    payload, destination = Path(payload), Path(destination)
+    payload, destination = Path(payload).resolve(), Path(destination).resolve()
     receipt = json.loads((payload / 'windows-package.json').read_text(encoding='utf-8'))
     if receipt.get('source_dirty') is not False or not re.fullmatch('[0-9a-f]{40}', receipt.get('source_commit', '')):
         raise ValueError('Update requires a fixed clean published source')
@@ -39,6 +39,10 @@ def build(payload, destination, *, run_id, origins):
     shutil.copytree(payload / 'dependencies/python-wheels', wheels)
     manifest_path = destination / 'manifest.json'
     manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+    # ZIP payloads omit empty seed roots, just as the desktop launcher does.
+    # Recreate only the declared safe paths before validating the engineering.
+    for relative in manifest['files'].values():
+        engineering_path(destination, relative).mkdir(parents=True, exist_ok=True)
     manifest['run_id'] = run_id
     manifest.setdefault('upgrade', {})['application'] = {
         'schema': 'tfi.windows-application-upgrade.v1',

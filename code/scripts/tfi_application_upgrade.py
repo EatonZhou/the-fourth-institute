@@ -16,6 +16,7 @@ import subprocess
 import sys
 import time
 import uuid
+import tempfile
 
 from management_common.file_permissions import ensure_private_directory
 from management_common.instance_config import read_installation
@@ -25,6 +26,14 @@ from scripts.tfi_instance_layout import database_root
 
 
 TERMINAL = {"complete", "restored", "prebackup_failed"}
+
+
+def require_desktop():
+    if sys.platform == 'win32':
+        import ctypes
+        session = ctypes.c_ulong()
+        if not ctypes.windll.kernel32.ProcessIdToSessionId(os.getpid(), ctypes.byref(session)) or session.value == 0:
+            raise ValueError('Run application maintenance in the logged-in desktop session, not SSH session 0')
 
 
 def control_root(application):
@@ -207,6 +216,48 @@ class ApplicationUpgrade:
             start_and_check(self.api, state)
             providers.start_services(providers.owned_services(state['target'], self.api.unit_directory()), control)
 
+    def detach_codex(self, records):
+        """Retire stopped account definitions before changing the runtime pin.
+
+        Definitions live inside the cold application snapshot. An interrupted
+        switch can therefore restore them without interpreting a stale Python
+        path against the new installation state.
+        """
+        definitions = []
+        for state in records:
+            plan = providers.owned_services(state['target'], self.api.unit_directory())
+            for name, control in (plan or {}).get('controllers', {}).items():
+                value = control.definition(name)
+                if not value or value.get('component') != 'codex':
+                    raise ValueError('Unexpected account service definition')
+                path = control.directory / (name + '.json')
+                if not path.resolve().is_relative_to(self.application):
+                    raise ValueError('Account definition is outside the application snapshot')
+                status = control.status(name)
+                if status['pid'] or status['active'] not in {'inactive', 'failed'}:
+                    raise ValueError('Account service must stop before runtime replacement')
+                definitions.append((path, value))
+        for path, value in definitions:
+            if path.is_symlink() or json.loads(path.read_text(encoding='utf-8')) != value:
+                raise ValueError('Account definition changed while stopping')
+            path.unlink()
+        return definitions
+
+    def attach_codex(self, definitions, state):
+        from scripts.tfi_windows_user_services import validate_definition
+        for path, original in definitions:
+            if Path(original['root']) != Path(state['target']['install_root']):
+                continue
+            value = json.loads(json.dumps(original))
+            value['python'] = self.api.runtime_python(state['target'])
+            value['command'][0] = value['python']
+            validate_definition(value, value['name'])
+            if path.exists() or path.is_symlink():
+                raise ValueError('Account definition appeared during runtime replacement')
+            # Atomic JSON replacement: recovery never encounters half a service
+            # definition if the external updater exits here.
+            self.api.write_json(path, value)
+
     def locks(self, records):
         locks = ExitStack()
         try:
@@ -232,23 +283,32 @@ class ApplicationUpgrade:
         parent = self.paths(journal)
         backup = parent / 'backup'
         expected = self.api.read_json(parent / 'inventory.json')
-        if snapshot.inventory(backup) != expected:
-            raise ValueError('Backup integrity mismatch; no services or data changed')
+        snapshot.verify_backup(backup, expected)
         for state in journal['states']:
             relative = Path(state['target']['install_root']).relative_to(self.application)
-            original = read_installation(backup / relative)
+            # Materialize only the canonical configuration pair for its own
+            # loader. Large/deep business paths stay in the flat backup store.
+            with tempfile.TemporaryDirectory(dir=parent) as temporary:
+                root = Path(temporary)
+                for name in ('installation.json', 'config/target.json'):
+                    path = root / name
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    with snapshot.create_private_file(path) as stream:
+                        stream.write(snapshot.backup_bytes(backup, (relative / name).as_posix(), expected))
+                original = read_installation(root)
             if original['target'] != state['target'] or original['manifest_sha256'] != state['manifest_sha256']:
                 raise ValueError('Backup installation ownership mismatch')
         self.stop(journal['states'])
         failed = parent / ('failed-' + uuid.uuid4().hex)
-        snapshot.copy_tree(self.application, failed)
+        snapshot.create_backup(self.application, failed)
         self.save(journal, 'restoring', failed_generation=str(failed))
-        snapshot.restore(backup, self.application, expected)
+        snapshot.restore(backup, self.application, expected, packed=True)
         self.start(journal['states'])
         self.save(journal, 'restored')
         return {'status': 'restored', 'backup': str(backup), 'failed_generation': str(failed)}
 
     def recover(self):
+        require_desktop()
         journal = self.api.read_json(self.journal_path)
         parent = self.paths(journal)
         if journal['phase'] in TERMINAL:
@@ -266,11 +326,7 @@ class ApplicationUpgrade:
 
     def upgrade(self, manifest_path):
         records, manifest, checks = self.preflight(manifest_path)
-        if sys.platform == 'win32':
-            import ctypes
-            session = ctypes.c_ulong()
-            if not ctypes.windll.kernel32.ProcessIdToSessionId(os.getpid(), ctypes.byref(session)) or session.value == 0:
-                raise ValueError('Run application-upgrade in the logged-in desktop session, not SSH session 0')
+        require_desktop()
         manifest_path = Path(manifest_path).resolve()
         bundle = manifest_path.parent
         ensure_private_directory(self.control)
@@ -292,7 +348,7 @@ class ApplicationUpgrade:
                     check_quiescent(self.api, state['target'])
                 self.stop(records)
                 self.save(journal, 'backing_up')
-                inventory = snapshot.copy_tree(self.application, parent / 'backup')
+                inventory = snapshot.create_backup(self.application, parent / 'backup')
                 self.api.write_json(parent / 'inventory.json', inventory)
                 self.save(journal, 'backup_ready')
             except Exception:
@@ -301,6 +357,7 @@ class ApplicationUpgrade:
                 raise
             try:
                 self.save(journal, 'switching')
+                accounts = self.detach_codex(records)
                 new_code = self.api.engineering_path(bundle, manifest['code']['path'])
                 snapshot.copy_tree(new_code, parent / 'code')
                 (self.application / 'code').rename(parent / 'previous-code')
@@ -317,6 +374,7 @@ class ApplicationUpgrade:
                     state.update(manifest_sha256=journal['manifest_sha256'], version_run_id=manifest['run_id'])
                     self.api.write_json(Path(state['target']['install_root']) / self.api.STATE_FILE, state)
                     self.api.prepare_dependencies(state, manifest)
+                    self.attach_codex(accounts, state)
                     self.api.write_json(Path(state['target']['install_root']) / 'runtime/engineering-manifest.json', manifest)
                     updated.append(state)
                 self.save(journal, 'migrating')

@@ -20,19 +20,25 @@ are observations, not a reservation: the mutating command rechecks under locks.
 `application-upgrade` must run in the signed-in desktop session for user services.
 It locks the desktop launcher and all registered instances, stops owned services,
 rechecks work while PostgreSQL remains available, then stops PostgreSQL. A private,
-verified copy of the entire application pairs code, configuration, accounts,
-workspace and physical databases. Internal NTFS junctions retain their relative
-target semantics in each copy. No seed database or example data is imported.
+verified backup of the entire application pairs code, configuration, accounts,
+workspace and physical databases. Bytes are stored by digest with a checked
+path/link inventory, so deep business paths do not become longer in the backup.
+Internal NTFS junctions retain their relative target semantics on restoration.
+The backup is not a runnable copy. No seed database or example data is imported.
 
 Only the declared v60–v65 Lineage chain is allowed; other domain versions must
 match. Retired run-as configuration is archived in `tfi_migration_archive`; the
 current application uses Lineage Leader identity. Core Python/native binaries
 remain unchanged. The new offline wheelhouse and formal dependency owner verify
 or prepare core packages; all Provider installations and account data remain local.
+Stopped Codex account definitions are included in the backup, withdrawn while
+the dependency interpreter changes, then registered against the verified new
+interpreter. Recovery restores their original definitions and restart set.
 
 The private sibling `.<application>-maintenance/upgrade.json` is a transaction
 journal, not a version registry. After interrupted mutation, ordinary starts are
-blocked until `application-recover`. Recovery verifies the stopped pair before
+blocked until `application-recover`, also run from the signed-in desktop.
+Recovery verifies the stopped pair before
 changing data, preserves the failed generation, restores the previous application
 and database together, and starts only its own services. Neither a backup nor a
 failed generation is deleted automatically. Pre-backup failure restarts the old

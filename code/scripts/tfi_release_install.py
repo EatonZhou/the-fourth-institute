@@ -258,6 +258,11 @@ def clean_environment(target, *, postgres=False):
             if line.startswith("PORTAL_BUILD_ID=") and line.partition("=")[2].strip():
                 env["PORTAL_BUILD_ID"] = line.partition("=")[2].strip()
     if windows:
+        # CPython's Windows platform.machine() reads these OS architecture
+        # values. Keep them across the isolated service/maintenance boundary.
+        for key in ('PROCESSOR_ARCHITECTURE', 'PROCESSOR_ARCHITEW6432'):
+            if os.environ.get(key):
+                env[key] = os.environ[key]
         env.update({"SystemRoot": os.environ.get("SystemRoot", r"C:\Windows"),
                     "WINDIR": os.environ.get("WINDIR", r"C:\Windows"),
                     "TEMP": str(root / "runtime"), "TMP": str(root / "runtime"),
@@ -1299,8 +1304,13 @@ def main(argv=None):
                         environment[key] = os.environ[key]
                     else:
                         environment.pop(key, None)
-                os.execve(python, [python, str(Path(__file__).resolve()),
-                                  *(sys.argv[1:] if argv is None else argv)], environment)
+                command = [python, '-B', str(Path(__file__).resolve()),
+                           *(sys.argv[1:] if argv is None else argv)]
+                if sys.platform == 'win32':
+                    # Windows execve does not preserve the invoking console's
+                    # wait/exit/output contract. Keep the maintenance parent.
+                    return subprocess.call(command, env=environment)
+                os.execve(python, command, environment)
             from scripts import tfi_release_upgrade, tfi_application_upgrade
             # Pass this module even when executed as __main__, preserving one
             # shared installation owner and platform adapter.

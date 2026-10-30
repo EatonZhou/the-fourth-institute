@@ -78,10 +78,10 @@ def upgrade(connection):
         # the key so independent test or installation schemas never collide.
         connection.execute("CREATE SCHEMA IF NOT EXISTS tfi_migration_archive")
         connection.execute("CREATE TABLE IF NOT EXISTS tfi_migration_archive.lineage_run_as ("
-                           "source_schema TEXT NOT NULL,lineage_id TEXT NOT NULL,value JSONB,"
+                           "source_schema TEXT NOT NULL,lineage_id TEXT NOT NULL,value TEXT,"
                            "PRIMARY KEY(source_schema,lineage_id))")
         connection.execute("INSERT INTO tfi_migration_archive.lineage_run_as "
-                           "SELECT current_schema(),lineage_id,run_as_principal_json FROM lineages")
+                           "SELECT current_schema(),lineage_id,run_as_principal_json::text FROM lineages")
         connection.execute("ALTER TABLE lineages DROP COLUMN run_as_principal_json")
     if number < 64:
         connection.execute("ALTER TABLE families ADD COLUMN auto_migrate_priority TEXT[] NOT NULL DEFAULT '{}'")

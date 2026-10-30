@@ -20,7 +20,8 @@ def origin(c, number):
     if number < 64:
         c.execute("ALTER TABLE families DROP COLUMN auto_migrate_priority")
     if number < 63:
-        c.execute("ALTER TABLE lineages ADD COLUMN run_as_principal_json JSONB")
+        # Historical b00/v60 storage is TEXT, not the later JSONB convention.
+        c.execute("ALTER TABLE lineages ADD COLUMN run_as_principal_json TEXT")
     if number < 62:
         c.execute("ALTER TABLE families DROP COLUMN auto_migrate")
     if number < 61:
@@ -40,7 +41,7 @@ def test_chain_preserves_rows_and_archives_retired_configuration(database, numbe
         assert c.execute("SELECT title FROM lineages WHERE lineage_id='kept'").fetchone()[0] == 'local title'
         if number < 63:
             assert c.execute("SELECT value FROM tfi_migration_archive.lineage_run_as "
-                             "WHERE source_schema=current_schema() AND lineage_id='kept'").fetchone()[0] == {}
+                             "WHERE source_schema=current_schema() AND lineage_id='kept'").fetchone()[0] == '{}'
     assert database.write(migration.upgrade)["applied"] is False
 
 
