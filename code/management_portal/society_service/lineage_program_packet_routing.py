@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Iterable, Iterator
 
-from . import lineage_primitives, lineage_program
+from . import lineage_primitives, lineage_program_arguments, lineage_program_vocabulary
 from .lineage_values import _clone_json, _text
 
 
@@ -63,7 +63,7 @@ def resolved_invoke_arguments(
     *,
     packet: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    return lineage_program.resolve_invocation_argument_mapping(
+    return lineage_program_arguments.resolve_invocation_argument_mapping(
         compiled_invocation(plan, wire_id)["arguments"], event, packet=packet
     )
 
@@ -190,7 +190,7 @@ def iter_packet_batches(
         component = components.get(target_id)
         component_kind = str((component or {}).get("kind") or "")
         target_kind = (
-            "operator" if component_kind in lineage_program.PACKET_OPERATOR_KINDS
+            "operator" if component_kind in lineage_program_vocabulary.PACKET_OPERATOR_KINDS
             else "effect" if component_kind == "effect"
             else "loop" if component_kind == "loop"
             else "agent"

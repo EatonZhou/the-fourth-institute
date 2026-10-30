@@ -5,7 +5,9 @@ from types import SimpleNamespace
 import pytest
 
 from management_portal.society_service import lineage_lifecycle, lineage_reads
-from management_portal.society_service import lineage_program_runtime as runtime
+from management_portal.society_service import (
+    lineage_program_resident_inputs, lineage_program_runtime as runtime,
+)
 from management_portal.society_service import resident_conversation_stream, resident_execution_domain
 from management_portal.society_service.state_store import get_lineage_data_store
 from management_portal.society_service.isa import common
@@ -48,11 +50,11 @@ def test_ordinary_event_profile_removed_after_terminal_notification(future_creat
     root = family("Ordinary event")
     lid, rid = root["lineage_id"], root["resident_id"]
     mid = "msg_terminal_profile"
-    runtime.record_delivery_profile(lid, mid, {"isolated": True})
+    lineage_program_resident_inputs.record_delivery_profile(lid, mid, {"isolated": True})
     resident_conversation_stream.get_repository().set_input_state(rid, mid, status)
     monkeypatch.setattr(resident_execution_domain.resident_terminal_port, "report", lambda *a, **k: None)
     resident_execution_domain._notify_lineage_message_terminal(rid, ACTOR, mid, terminal_status=status, lineage_id=lid)
-    assert runtime.delivery_profile(lid, mid) == {}
+    assert lineage_program_resident_inputs.delivery_profile(lid, mid) == {}
 
 
 def test_new_profile_sweeps_only_terminal_inputs(future_creation_store):
@@ -62,10 +64,10 @@ def test_new_profile_sweeps_only_terminal_inputs(future_creation_store):
     repo = resident_conversation_stream.get_repository()
     for status in ("completed", "failed", "cancelled", "running", "queued", "missing"):
         mid = "msg_profile_" + status
-        runtime.record_delivery_profile(lid, mid, {"isolated": True})
+        lineage_program_resident_inputs.record_delivery_profile(lid, mid, {"isolated": True})
         if status != "missing":
             repo.set_input_state(rid, mid, status)
-    runtime.record_delivery_profile(lid, "msg_profile_new", {"isolated": True})
+    lineage_program_resident_inputs.record_delivery_profile(lid, "msg_profile_new", {"isolated": True})
     profiles = runtime.read_runtime(lid)["delivery_profiles"]
     assert set(profiles) == {"msg_profile_running", "msg_profile_queued", "msg_profile_missing", "msg_profile_new"}
 

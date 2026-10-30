@@ -65,10 +65,13 @@ LAYERS = (
     lineage_execution_explanation lineage_graph_authoring lineage_graph_state lineage_handoff_backend
     lineage_handoff_execution lineage_handoff_preparation lineage_instruction_context
     lineage_node_workspaces lineage_operators lineage_primitive_definitions lineage_primitives
-    lineage_program lineage_program_contracts lineage_program_effect_rules lineage_program_graph_mutation
-    lineage_program_identity lineage_program_packet_routing lineage_program_queries
-    lineage_recurring_schedule lineage_subgraph lineage_workspace_binding lineage_workspace_files
-    result_contracts
+    lineage_program lineage_program_addresses lineage_program_arguments lineage_program_bindings
+    lineage_program_compilation lineage_program_components lineage_program_contracts
+    lineage_program_diagnostics lineage_program_effect_rules lineage_program_event_scope
+    lineage_program_fields lineage_program_graph_mutation lineage_program_identity
+    lineage_program_packet_routing lineage_program_queries lineage_program_vocabulary
+    lineage_program_wires lineage_recurring_schedule lineage_subgraph lineage_workspace_binding
+    lineage_workspace_files result_contracts
     """,
     # Records, catalogs, the Conversation stream and the service clients.
     """
@@ -88,8 +91,10 @@ LAYERS = (
     component_runtime effect_disposition effect_recovery_worker lineage_aggregate lineage_catalog
     lineage_definition_scope lineage_effect_script_journal lineage_event_claims lineage_event_conditions
     lineage_event_delivery lineage_event_dispatch_rules lineage_event_routing lineage_loop_runtime
-    lineage_operator_runtime lineage_program_operator_execution lineage_program_runtime
-    lineage_program_runtime_projection lineage_release_events resident_execution_links script_runs.service
+    lineage_operator_runtime lineage_program_effect_results lineage_program_observations
+    lineage_program_occurrences lineage_program_operator_execution lineage_program_resident_inputs
+    lineage_program_runtime lineage_program_runtime_projection lineage_program_schedules
+    lineage_program_wire_queue lineage_release_events resident_execution_links script_runs.service
     system_workflow_switches trigger_path_observation trigger_paths wire_delivery_budget
     """,
     # Resident records, the Family facade and messages out, which Programs deliver through.

@@ -1,6 +1,7 @@
 """Program Operator and Resident execution policy. Aggregate writes remain in the supplied authority ports."""
 from __future__ import annotations
 
+import logging
 from collections.abc import Iterable
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
@@ -14,11 +15,12 @@ from . import (
     lineage_instruction_context,
     lineage_operator_runtime,
     lineage_primitives,
-    lineage_program,
+    lineage_program_arguments,
     lineage_program_identity,
     lineage_program_operator_execution,
     lineage_program_packet_routing,
-    lineage_program_runtime,
+    lineage_program_resident_inputs,
+    lineage_program_vocabulary,
     resident_message_contract,
     trigger_paths,
     wire_delivery_budget,
@@ -41,6 +43,9 @@ from .lineage_program_queries import (
     _program_packet_wires,
 )
 from .lineage_values import _bool, _clone_json
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 class ProgramExecutionState(Protocol):
@@ -113,7 +118,7 @@ def _make_program_effect_invocation(
     )
     if isinstance(argument_mapping, dict):
         dynamic_arguments.update(
-            lineage_program.resolve_invocation_argument_mapping(argument_mapping, event, packet=envelope)
+            lineage_program_arguments.resolve_invocation_argument_mapping(argument_mapping, event, packet=envelope)
         )
     if argument_overrides:
         dynamic_arguments.update(lineage_primitives.normalize_invocation_arguments(argument_overrides))
@@ -142,7 +147,7 @@ def program_event_route_can_consume(
     if target_kind in {"effect", "loop"}:
         return True, ""
     target_id = str(route.get("target_id") or "")
-    if target_kind in lineage_program.PACKET_OPERATOR_KINDS:
+    if target_kind in lineage_program_vocabulary.PACKET_OPERATOR_KINDS:
         try:
             runtime = lineage_operator_runtime.read_operator_runtime(
                 lineage_id,
@@ -190,21 +195,18 @@ def try_dispatch_operator(
     return result
 
 
-def _dispatch_ready_operator(
+def _ready_inbox(
     lineage_id: str,
-    actor: str,
     operator_id: str,
     event: lineage_primitives.LineageEvent,
-    *,
-    ports: ProgramExecutionPorts,
-) -> dict[str, Any]:
-    _lineage_scope = ports.state.lineage_scope
-    _read_lineage = ports.state.read_lineage
-    _ensure_manager = ports.state.ensure_manager
-    _hatg_delivery_message_id = lineage_program_identity.delivery_message_id
-    _send_node_message = ports.resident.send_node_message
-    _resident_delivery_message_id = resident_message_contract.delivered_message_id
-    _register_program_agent_invocation = ports.resident.register_program_agent_invocation
+) -> tuple[dict[str, Any] | None, dict[str, Any], set[str]]:
+    """Claim the operator's inbox for the Event once every expected wire has delivered.
+
+    Returns (result, claimed inbox, expected wire IDs); ``result`` is set when
+    there is nothing to run: the Event was cancelled, still waits, or another
+    dispatcher claimed it.
+    """
+
     runtime = lineage_operator_runtime.read_operator_runtime(
         lineage_id,
         operator_id,
@@ -215,7 +217,7 @@ def _dispatch_ready_operator(
         else None
     )
     if not isinstance(inbox, dict):
-        return {"status": "cancelled", "event_id": event.id}
+        return {"status": "cancelled", "event_id": event.id}, {}, set()
     expected_ids = {
         str(item) for item in inbox.get("expected_wire_ids") or []
     }
@@ -230,17 +232,40 @@ def _dispatch_ready_operator(
             "event_id": event.id,
             "received": len(set(inputs) & expected_ids),
             "expected": len(expected_ids),
-        }
+        }, {}, expected_ids
     claimed = lineage_operator_runtime.pop_inbox(
         lineage_id,
         operator_id,
         event.id,
     )
     if not claimed:
-        return {"status": "claimed", "event_id": event.id}
-    with _lineage_scope(lineage_id):
-        lineage = _read_lineage(lineage_id, actor=actor)
-        _ensure_manager(lineage, actor)
+        return {"status": "claimed", "event_id": event.id}, {}, expected_ids
+    return None, claimed, expected_ids
+
+
+@dataclass(frozen=True)
+class _OperatorScope:
+    """One Packet Operator as the Lineage defines it when its inbox is claimed."""
+
+    nodes: dict[str, dict[str, Any]]
+    plan: dict[str, Any]
+    operator: dict[str, Any]
+    lineage_snapshot: dict[str, Any]
+    kind: str
+    config: dict[str, Any]
+    snapshot: dict[str, Any]
+
+
+def _operator_scope(
+    lineage_id: str,
+    actor: str,
+    operator_id: str,
+    *,
+    ports: ProgramExecutionPorts,
+) -> _OperatorScope:
+    with ports.state.lineage_scope(lineage_id):
+        lineage = ports.state.read_lineage(lineage_id, actor=actor)
+        ports.state.ensure_manager(lineage, actor)
         nodes = {
             str(node.get("id") or ""): node
             for node in lineage.get("nodes") or []
@@ -258,91 +283,127 @@ def _dispatch_ready_operator(
             "title": str(operator.get("title") or operator_id),
             "config": {**operator_config, "mode": operator_kind},
         }
-    operator_inputs = lineage_program_operator_execution.inputs_from_claim(
-        claimed, nodes
+    return _OperatorScope(nodes, plan, operator, lineage_snapshot, operator_kind, operator_config, operator_snapshot)
+
+
+def _ask_resident_executor(
+    lineage_id: str,
+    actor: str,
+    operator_id: str,
+    event: lineage_primitives.LineageEvent,
+    scope: _OperatorScope,
+    claimed: dict[str, Any],
+    expected_ids: set[str],
+    operator_inputs: lineage_program_operator_execution.OperatorInputs,
+    *,
+    ports: ProgramExecutionPorts,
+) -> str:
+    """Send the operator's prompt to its executor Resident and remember the turn; the turn's message ID."""
+
+    prompt = lineage_program_operator_execution.resident_prompt(
+        lineage_id, operator_id, scope.kind, scope.snapshot,
+        event, operator_inputs, scope.nodes, scope.plan,
     )
-    input_packets = operator_inputs.packets
+    executor_resident_id = str(
+        scope.operator.get("resident_executor_id") or ""
+    )
+    executor_snapshot = scope.nodes.get(executor_resident_id)
+    if not executor_snapshot:
+        raise ValueError("Resident 式 Packet Operator 的执行器已不存在")
+    delivery_message_id = lineage_program_identity.delivery_message_id(
+        lineage_id,
+        event.id,
+        f"operator:{operator_id}:{','.join(sorted(expected_ids))}",
+        executor_resident_id,
+    )
+    response = ports.resident.send_node_message(
+        executor_snapshot,
+        prompt,
+        actor,
+        message_id=delivery_message_id,
+        instruction_context=lineage_instruction_context.resident_context(
+            lineage_id, event, actor, executor_resident_id,
+        ),
+    )
+    expected_execution_id = resident_message_contract.delivered_message_id(response)
+    if not expected_execution_id:
+        raise RuntimeError(
+            "Packet Operator 消息已发送，但无法确认对应的 Resident job"
+        )
+    lineage_operator_runtime.update_pending_delivery(
+        lineage_id,
+        operator_id,
+        lineage_program_operator_execution.pending_delivery(
+            operator_id,
+            scope.kind,
+            executor_resident_id,
+            expected_execution_id,
+            event,
+            claimed,
+            operator_inputs,
+            list(scope.operator.get("outgoing_packet_wire_ids") or []),
+        ),
+    )
+    ports.resident.register_program_agent_invocation(
+        lineage_id,
+        executor_resident_id,
+        expected_execution_id,
+        event,
+        operator_id,
+        actor,
+    )
+    return expected_execution_id
+
+
+def _dispatch_ready_operator(
+    lineage_id: str,
+    actor: str,
+    operator_id: str,
+    event: lineage_primitives.LineageEvent,
+    *,
+    ports: ProgramExecutionPorts,
+) -> dict[str, Any]:
+    not_ready, claimed, expected_ids = _ready_inbox(lineage_id, operator_id, event)
+    if not_ready is not None:
+        return not_ready
+    scope = _operator_scope(lineage_id, actor, operator_id, ports=ports)
+    operator_inputs = lineage_program_operator_execution.inputs_from_claim(
+        claimed, scope.nodes
+    )
     implementation = str(
-        operator_config.get("operator_implementation") or "rules"
+        scope.config.get("operator_implementation") or "rules"
     )
     try:
-        if implementation == "rules" or not input_packets:
+        if implementation == "rules" or not operator_inputs.packets:
             output = lineage_program_operator_execution.evaluate_rules(
-                operator_kind, operator_config, input_packets
+                scope.kind, scope.config, operator_inputs.packets
             )
             routed = dispatch_program_packets(
-                lineage_snapshot,
-                plan,
+                scope.lineage_snapshot,
+                scope.plan,
                 operator_id,
                 event,
                 output.packets,
                 actor,
                 packet_wires=_program_packet_wires(
-                    lineage_snapshot,
+                    scope.lineage_snapshot,
                     operator_id,
                 ),
                 packets_by_source_port=output.by_source_port,
                 ports=ports,
             )
             return {
-                "status": lineage_program_operator_execution.completed_status(operator_kind),
+                "status": lineage_program_operator_execution.completed_status(scope.kind),
                 "event_id": event.id,
                 "packet_wire_ids": sorted(expected_ids),
                 **routed,
             }
-        prompt = lineage_program_operator_execution.resident_prompt(
-            lineage_id, operator_id, operator_kind, operator_snapshot,
-            event, operator_inputs, nodes, plan,
-        )
-        executor_resident_id = str(
-            operator.get("resident_executor_id") or ""
-        )
-        executor_snapshot = nodes.get(executor_resident_id)
-        if not executor_snapshot:
-            raise ValueError("Resident 式 Packet Operator 的执行器已不存在")
-        delivery_message_id = _hatg_delivery_message_id(
-            lineage_id,
-            event.id,
-            f"operator:{operator_id}:{','.join(sorted(expected_ids))}",
-            executor_resident_id,
-        )
-        response = _send_node_message(
-            executor_snapshot,
-            prompt,
-            actor,
-            message_id=delivery_message_id,
-            instruction_context=lineage_instruction_context.resident_context(
-                lineage_id, event, actor, executor_resident_id,
-            ),
-        )
-        expected_execution_id = _resident_delivery_message_id(response)
-        if not expected_execution_id:
-            raise RuntimeError(
-                "Packet Operator 消息已发送，但无法确认对应的 Resident job"
-            )
-        lineage_operator_runtime.update_pending_delivery(
-            lineage_id,
-            operator_id,
-            lineage_program_operator_execution.pending_delivery(
-                operator_id,
-                operator_kind,
-                executor_resident_id,
-                expected_execution_id,
-                event,
-                claimed,
-                operator_inputs,
-                list(operator.get("outgoing_packet_wire_ids") or []),
-            ),
-        )
-        _register_program_agent_invocation(
-            lineage_id,
-            executor_resident_id,
-            expected_execution_id,
-            event,
-            operator_id,
-            actor,
+        expected_execution_id = _ask_resident_executor(
+            lineage_id, actor, operator_id, event, scope, claimed, expected_ids, operator_inputs, ports=ports,
         )
     except Exception as exc:  # noqa: BLE001 - persist failure at the operator boundary
+        LOGGER.exception("Packet Operator %s of %s failed on Event %s; the Event is cancelled for it",
+                         operator_id, lineage_id, event.id)
         # The inbox was claimed as one immutable wait-all barrier; a turn
         # Portal cannot correlate cancels the whole Event for this operator.
         lineage_operator_runtime.cancel_event(
@@ -357,31 +418,35 @@ def _dispatch_ready_operator(
             "error": str(exc),
         }
     return {
-        "status": lineage_program_operator_execution.working_status(operator_kind),
+        "status": lineage_program_operator_execution.working_status(scope.kind),
         "event_id": event.id,
         "message_id": expected_execution_id,
         "packet_wire_ids": sorted(expected_ids),
     }
 
 
-def complete_operator_invocation(
+@dataclass(frozen=True)
+class _ExecutorTurn:
+    """The operator a Resident turn ran for, as the Lineage defines it now."""
+
+    operator_id: str
+    operator: dict[str, Any]
+    lineage_snapshot: dict[str, Any]
+    executor_snapshot: dict[str, Any]
+    plan: dict[str, Any]
+
+
+def _executor_turn(
     lineage_id: str,
     executor_resident_id: str,
-    expected_execution_id: str,
     actor: str,
     *,
-    terminal_status: str = "completed",
     ports: ProgramExecutionPorts,
-) -> dict[str, Any] | None:
-    _lineage_scope = ports.state.lineage_scope
-    _read_lineage = ports.state.read_lineage
-    _resume_program_execution_principal = ports.state.resume_program_execution_principal
-    _completed_message_evidence = ports.resident.completed_message_evidence
-    _notify_program_resident_invocation_terminal = ports.resident.notify_program_resident_invocation_terminal
-    _now_iso = ports.state.now_iso
-    _program_event_path_id = lineage_program_identity.event_path_id
-    with _lineage_scope(lineage_id):
-        lineage = _read_lineage(lineage_id, actor=actor)
+) -> _ExecutorTurn | None:
+    """The Packet Operator the Resident executes; None when it executes none or either is gone."""
+
+    with ports.state.lineage_scope(lineage_id):
+        lineage = ports.state.read_lineage(lineage_id, actor=actor)
         nodes = {
             str(node.get("id") or ""): node
             for node in lineage.get("nodes") or []
@@ -400,11 +465,22 @@ def complete_operator_invocation(
         executor_node = nodes.get(executor_resident_id)
         if not operator_id or not current_operator or not executor_node:
             return None
-        lineage_snapshot = _clone_json(lineage)
-        executor_snapshot = dict(executor_node)
+        return _ExecutorTurn(operator_id, current_operator, _clone_json(lineage), dict(executor_node), plan)
+
+
+def _claim_operator_delivery(
+    lineage_id: str,
+    turn: _ExecutorTurn,
+    executor_resident_id: str,
+    expected_execution_id: str,
+    *,
+    ports: ProgramExecutionPorts,
+) -> tuple[dict[str, Any], lineage_primitives.LineageEvent, str] | None:
+    """Take the operator's pending delivery the turn answers: (delivery, its Event, the principal it resumes as)."""
+
     runtime = lineage_operator_runtime.read_operator_runtime(
         lineage_id,
-        operator_id,
+        turn.operator_id,
     )
     pending = (
         runtime.get("pending_deliveries", {}).get(expected_execution_id)
@@ -419,46 +495,118 @@ def complete_operator_invocation(
     ):
         return None
     event = lineage_primitives.normalize_event(pending.get("event"))
-    actor = _resume_program_execution_principal(lineage_id, event, executor_resident_id)
+    actor = ports.state.resume_program_execution_principal(lineage_id, event, executor_resident_id)
     pending = lineage_operator_runtime.pop_pending_delivery(
         lineage_id,
-        operator_id,
+        turn.operator_id,
         expected_execution_id,
     )
     if not pending:
         return None
-    trigger_path_id = _program_event_path_id(lineage_id, event)
+    return pending, event, actor
 
-    def trace_operator_terminal(
-        status: str,
-        output: dict[str, Any] | None = None,
-    ) -> None:
-        ledger_status = (
-            status
-            if status in {"completed", "failed", "cancelled"}
-            else "cancelled"
-        )
-        completed_at = _now_iso()
-        invocations = lineage_program_runtime.settle_resident_handoffs(
-            lineage_id,
-            message_id=expected_execution_id,
-            resident_id=executor_resident_id,
-            status=ledger_status,
-            completed_at=completed_at,
-            output=output,
-        )
-        _notify_program_resident_invocation_terminal(
-            lineage_id, executor_resident_id, expected_execution_id, invocations,
-            status=ledger_status,
-        )
+
+def _settle_operator_turn(
+    lineage_id: str,
+    executor_resident_id: str,
+    expected_execution_id: str,
+    status: str,
+    output: dict[str, Any] | None = None,
+    *,
+    ports: ProgramExecutionPorts,
+) -> None:
+    """Settle the turn's handoff (anything but completed, failed or cancelled counts as cancelled) and notify."""
+
+    ledger_status = (
+        status
+        if status in {"completed", "failed", "cancelled"}
+        else "cancelled"
+    )
+    completed_at = ports.state.now_iso()
+    invocations = lineage_program_resident_inputs.settle_resident_handoffs(
+        lineage_id,
+        message_id=expected_execution_id,
+        resident_id=executor_resident_id,
+        status=ledger_status,
+        completed_at=completed_at,
+        output=output,
+    )
+    ports.resident.notify_program_resident_invocation_terminal(
+        lineage_id, executor_resident_id, expected_execution_id, invocations,
+        status=ledger_status,
+    )
+
+
+def _operator_reply(
+    turn: _ExecutorTurn,
+    pending: dict[str, Any],
+    expected_execution_id: str,
+    actor: str,
+    *,
+    ports: ProgramExecutionPorts,
+) -> tuple[dict[str, Any], str, lineage_program_operator_execution.OperatorOutput]:
+    """The turn's evidence and the operator output its reply decides: (evidence, operator kind, output)."""
+
+    evidence = ports.resident.completed_message_evidence(
+        turn.executor_snapshot,
+        expected_execution_id,
+        actor,
+    )
+    reply = str(evidence.get("reply") or "")
+    operator_kind = str(turn.operator.get("kind") or "")
+    operator_config = turn.operator.get("config") or {}
+    output = lineage_program_operator_execution.parse_resident_reply(
+        operator_kind,
+        reply,
+        [
+            dict(packet)
+            for packet in pending.get("input_packets") or []
+            if isinstance(packet, dict)
+        ],
+        operator_config,
+    )
+    return evidence, operator_kind, output
+
+
+def _first_failed_route(routed: dict[str, Any]) -> dict[str, Any] | None:
+    return next(
+        (
+            item
+            for item in [
+                *(routed.get("deliveries") or []),
+                *(routed.get("operators") or []),
+            ]
+            if str(item.get("status") or "") == "failed"
+        ),
+        None,
+    )
+
+
+def complete_operator_invocation(
+    lineage_id: str,
+    executor_resident_id: str,
+    expected_execution_id: str,
+    actor: str,
+    *,
+    terminal_status: str = "completed",
+    ports: ProgramExecutionPorts,
+) -> dict[str, Any] | None:
+    turn = _executor_turn(lineage_id, executor_resident_id, actor, ports=ports)
+    if turn is None:
+        return None
+    claim = _claim_operator_delivery(lineage_id, turn, executor_resident_id, expected_execution_id, ports=ports)
+    if claim is None:
+        return None
+    pending, event, actor = claim
+    trigger_path_id = lineage_program_identity.event_path_id(lineage_id, event)
     if terminal_status != "completed":
-        trace_operator_terminal(terminal_status)
+        _settle_operator_turn(lineage_id, executor_resident_id, expected_execution_id, terminal_status, ports=ports)
         return {"status": "failed", "event_id": event.id, "trigger_path_id": trigger_path_id}
 
     if lineage_program_operator_execution.has_changed_output_topology(
-        pending, current_operator
+        pending, turn.operator
     ):
-        trace_operator_terminal("discarded")
+        _settle_operator_turn(lineage_id, executor_resident_id, expected_execution_id, "discarded", ports=ports)
         return {
             "status": "discarded",
             "event_id": event.id,
@@ -466,59 +614,35 @@ def complete_operator_invocation(
         }
     routed: dict[str, Any] = {"deliveries": [], "operators": []}
     try:
-        evidence = _completed_message_evidence(
-            executor_snapshot,
-            expected_execution_id,
-            actor,
-        )
-        reply = str(evidence.get("reply") or "")
-        operator_kind = str(current_operator.get("kind") or "")
-        operator_config = current_operator.get("config") or {}
-        output = lineage_program_operator_execution.parse_resident_reply(
-            operator_kind,
-            reply,
-            [
-                dict(packet)
-                for packet in pending.get("input_packets") or []
-                if isinstance(packet, dict)
-            ],
-            operator_config,
+        evidence, operator_kind, output = _operator_reply(
+            turn, pending, expected_execution_id, actor, ports=ports,
         )
         event = trigger_paths.begin_resident_output(
-            lineage_id, executor_resident_id, expected_execution_id, at=_now_iso(), actor=actor,
+            lineage_id, executor_resident_id, expected_execution_id, at=ports.state.now_iso(), actor=actor,
         )
         output_path_id = event.payload["trigger_path_id"]
         routed = dispatch_program_packets(
-            lineage_snapshot,
-            plan,
-            operator_id,
+            turn.lineage_snapshot,
+            turn.plan,
+            turn.operator_id,
             event,
             output.packets,
             actor,
             packet_wires=_program_packet_wires(
-                lineage_snapshot,
-                operator_id,
+                turn.lineage_snapshot,
+                turn.operator_id,
             ),
             packets_by_source_port=output.by_source_port,
             ports=ports,
         )
         trigger_paths.event_settled(output_path_id, executor_resident_id, event.id)
-        failed = next(
-            (
-                item
-                for item in [
-                    *(routed.get("deliveries") or []),
-                    *(routed.get("operators") or []),
-                ]
-                if str(item.get("status") or "") == "failed"
-            ),
-            None,
-        )
+        failed = _first_failed_route(routed)
         if failed:
             raise RuntimeError(
                 str(failed.get("error") or "Packet Operator route failed")
             )
-        trace_operator_terminal("completed", evidence)
+        _settle_operator_turn(lineage_id, executor_resident_id, expected_execution_id, "completed", evidence,
+                              ports=ports)
         return {
             "status": lineage_program_operator_execution.completed_status(operator_kind),
             "event_id": event.id,
@@ -526,7 +650,10 @@ def complete_operator_invocation(
             **routed,
         }
     except Exception as exc:  # noqa: BLE001 - record the terminal failure for recovery
-        trace_operator_terminal("failed", {"error": str(exc)})
+        LOGGER.exception("Packet Operator %s of %s could not take turn %s of %s",
+                         turn.operator_id, lineage_id, expected_execution_id, executor_resident_id)
+        _settle_operator_turn(lineage_id, executor_resident_id, expected_execution_id, "failed",
+                              {"error": str(exc)}, ports=ports)
         return {
             "status": "failed",
             "event_id": event.id,
@@ -557,7 +684,7 @@ def complete_agent_invocations(
         evidence = _completed_message_evidence(source_node, message_id, actor)
     except (KeyError, PermissionError, ValueError):
         evidence = {}
-    invocations = lineage_program_runtime.settle_resident_handoffs(
+    invocations = lineage_program_resident_inputs.settle_resident_handoffs(
         lineage_id,
         message_id=message_id,
         resident_id=source_node_id,
@@ -621,7 +748,7 @@ def complete_agent_invocations(
         trigger_paths.event_settled(output_path_id, source_node_id, event.id)
     for invocation in invocations:
         trigger_path_id = str(invocation.get("trigger_path_id") or "")
-        run_invocations = lineage_program_runtime.path_resident_inputs(
+        run_invocations = lineage_program_resident_inputs.path_resident_inputs(
             lineage_id, trigger_path_id
         )
         for event_source_id, source in all_finished_sources:
@@ -983,7 +1110,7 @@ def _deliver_packet_to_agent(
         return {"status": "dropped", "reason": "message_limit_reached", "target_id": target_id}
     profile = _program_event_delivery_profile(event, {"config": wire.get("config") or {}})
     if profile:
-        lineage_program_runtime.record_delivery_profile(str(lineage["lineage_id"]), delivery_message_id, profile)
+        lineage_program_resident_inputs.record_delivery_profile(str(lineage["lineage_id"]), delivery_message_id, profile)
     facade = facade_speaking_to(lineage, target_id)
     expected_execution_id = receipt.get("accepted_message_id")
     if receipt["status"] != "sent":

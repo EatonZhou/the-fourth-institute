@@ -18,7 +18,7 @@ from management_portal.hatg import routing
 from management_portal.portal_access_control import get_portal_access_store
 from management_portal.society_service import (
     effect_disposition, lineage_domain, lineage_human_notifications, lineage_program_backlog,
-    lineage_program_runtime as runtime, outward_messages,
+    lineage_program_runtime as runtime, lineage_program_wire_queue, outward_messages,
 )
 from management_portal.society_service.state_store import get_lineage_data_store
 from management_portal.society_service import lineage_aggregate
@@ -119,7 +119,7 @@ def test_unknown_outcome_read_again_from_its_receipt_stops_retrying_and_asks_peo
     assert effect_disposition.can_resolve(
         lineage_id, activation_key, get_lineage_data_store().effect_work.get(lineage_id, activation_key),
     )
-    assert runtime.next_retry_seconds(lineage_id) == 0
+    assert lineage_program_wire_queue.next_retry_seconds(lineage_id) == 0
     with get_lineage_data_store().database.read() as connection:
         from management_portal.society_service import program_work_storage
         assert lineage_id not in program_work_storage.recovery_lineage_ids(connection)

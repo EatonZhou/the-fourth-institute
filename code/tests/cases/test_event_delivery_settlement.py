@@ -11,7 +11,7 @@ import pytest
 
 from management_portal.society_service import (
     lineage_domain, lineage_event_claims, lineage_event_delivery, lineage_program_backlog,
-    lineage_program_event_dispatch, lineage_program_runtime as runtime,
+    lineage_program_event_dispatch, lineage_program_runtime as runtime, lineage_program_wire_queue,
 )
 from tests.cases import society_service_test_support as support
 from tests.cases.test_lineage_program_runtime_integration import (
@@ -128,7 +128,7 @@ def test_barrier_failure_releases_claim_with_retry_or_explicit_cancellation(deli
     lineage_id, busy, calls, clock = delivery
     busy["value"] = True
     _emit(lineage_id)
-    claimed = runtime.claim_pending_event(lineage_id, WIRE_A)
+    claimed = lineage_program_wire_queue.claim_pending_event(lineage_id, WIRE_A)
     assert claimed
     lineage_event_claims.release_barrier_failure_claims(
         lineage_id,
@@ -143,7 +143,7 @@ def test_barrier_failure_releases_claim_with_retry_or_explicit_cancellation(deli
         assert pending["attempt_count"] == 1 and pending["last_error"] == ERROR
         assert not pending.get("dispatch_token")
         assert datetime.fromisoformat(pending["retry_at"].replace("Z", "+00:00")) > clock.moment
-        assert runtime.claim_pending_event(lineage_id, WIRE_A) is None
+        assert lineage_program_wire_queue.claim_pending_event(lineage_id, WIRE_A) is None
 
 
 def test_expired_claim_recovery_uses_same_failure_delay_and_retains_identity(delivery):
@@ -151,13 +151,13 @@ def test_expired_claim_recovery_uses_same_failure_delay_and_retains_identity(del
     lineage_id, busy, calls, clock = delivery
     busy["value"] = True
     _emit(lineage_id)
-    claim = runtime.claim_pending_event(lineage_id, WIRE_A)
+    claim = lineage_program_wire_queue.claim_pending_event(lineage_id, WIRE_A)
     assert claim
     busy["value"] = False
     # A still-live lease cannot be stolen by recovery; the unrelated wire runs.
     _drain(lineage_id)
     assert calls == [WORK_B]
-    clock.moment += timedelta(seconds=runtime.PENDING_EVENT_DISPATCH_LEASE_SECONDS + 1)
+    clock.moment += timedelta(seconds=lineage_program_wire_queue.PENDING_EVENT_DISPATCH_LEASE_SECONDS + 1)
     assert _drain(lineage_id)["attempted_count"] == 1
     assert calls == [WORK_B, WORK_A]
     [pending] = _pending(lineage_id)
@@ -215,7 +215,7 @@ def test_an_attempt_without_an_outcome_for_its_wire_waits_for_its_retry(delivery
     lineage_id, busy, _calls, clock = delivery
     busy["value"] = True
     _emit(lineage_id)
-    claimed = runtime.claim_pending_event(lineage_id, WIRE_A)
+    claimed = lineage_program_wire_queue.claim_pending_event(lineage_id, WIRE_A)
     assert claimed
     settled = lineage_event_delivery.settle_delivery(lineage_id, WIRE_A, claimed["dispatch_token"], outcome)
     assert not settled.delivered
@@ -224,6 +224,6 @@ def test_an_attempt_without_an_outcome_for_its_wire_waits_for_its_retry(delivery
     if waits:
         assert settled.error and pending["last_error"] == settled.error
         assert _due(pending) > clock.moment
-        assert runtime.claim_pending_event(lineage_id, WIRE_A) is None
+        assert lineage_program_wire_queue.claim_pending_event(lineage_id, WIRE_A) is None
     else:
         assert not settled.error and "retry_at" not in pending

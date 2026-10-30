@@ -11,7 +11,10 @@ from typing import Any, Callable
 from . import lineage_graph_authoring
 from . import lineage_subgraph
 from .lineage_program_contracts import _program_execution_contract_change
-from . import identity_contract, lineage_placement, lineage_program, lineage_program_runtime, resident_catalog
+from . import (
+    identity_contract, lineage_placement, lineage_program, lineage_program_resident_inputs,
+    lineage_program_runtime, resident_catalog,
+)
 from . import lineage_aggregate
 from .domain_ports import resident_domain_port as resident_domain
 from . import lineage_state, lineage_resident_nodes, lineage_lifecycle, lineage_graph_edits
@@ -70,7 +73,7 @@ def _resident_move_plan(
             raise ValueError("allow_empty_source requires a source without HATG flows")
         runtime = lineage_program_runtime.read_runtime(source["lineage_id"])
         if any(item.get("status") not in {"completed", "failed", "cancelled"}
-               for item in lineage_program_runtime.pending_resident_handoffs(source["lineage_id"])) or any(
+               for item in lineage_program_resident_inputs.pending_resident_handoffs(source["lineage_id"])) or any(
             state.get("pending_events") for state in (runtime.get("event_wires") or {}).values()
         ) or any(state.get("pending_deliveries") or state.get("inbox")
                  for state in (runtime.get("operators") or {}).values()):

@@ -4,7 +4,10 @@ from __future__ import annotations
 from typing import Any
 
 from management_common.limit_contract import normalize_optional_limit
-from . import lineage_automation_identity, lineage_program_runtime, wire_delivery_budget
+from . import (
+    lineage_automation_identity, lineage_program_effect_results, lineage_program_occurrences,
+    lineage_program_wire_queue, wire_delivery_budget,
+)
 from .lineage_values import _clone_json
 from .lineage_program_queries import _compiled_program
 from .lineage_program_contracts import _program_invoke_wire_execution_configs
@@ -22,7 +25,7 @@ def _program_invoke_wire_runtime_view(
             wire_id: dict(contract.get("config") or {})
             for wire_id, contract in contracts.items()
         }
-        queues = lineage_program_runtime.event_wire_runtime_view(
+        queues = lineage_program_wire_queue.event_wire_runtime_view(
             str(lineage.get("lineage_id") or ""),
             wire_configs,
         )
@@ -36,7 +39,7 @@ def event_source_runtime_view(
     lineage: dict[str, Any], source_configs: dict[str, dict[str, Any]],
 ) -> dict[str, dict[str, Any]]:
     """Combine persisted lifecycle and current unattended authority once."""
-    result = lineage_program_runtime.event_source_runtime_view(
+    result = lineage_program_occurrences.event_source_runtime_view(
         str(lineage.get("lineage_id") or ""), source_configs,
     )
     automatic = [source_id for source_id, config in source_configs.items()
@@ -106,7 +109,7 @@ def _program_effect_runtime_view(
 
     try:
         plan = _compiled_program(lineage)
-        return lineage_program_runtime.effect_runtime_view(
+        return lineage_program_effect_results.effect_runtime_view(
             str(lineage.get("lineage_id") or ""),
             set((plan.get("effects") or {}).keys()),
         )

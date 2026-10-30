@@ -237,7 +237,7 @@ def test_the_digest_lists_what_others_changed_and_produced(monkeypatch):
 def test_the_first_map_change_draws_the_daily_digest_into_the_project_lineage(monkeypatch):
     """第一次修改地图时在 Project 层 Lineage 画出每日整理（定时 Event → Effect → Project Resident），只画一次，失败不影响地图修改"""
     from management_portal import isa_client, research_map_automation as automation, society_service
-    from management_portal.society_service.lineage_program import effect_script_analysis
+    from management_portal.society_service.lineage_program_diagnostics import effect_script_analysis
 
     calls, components = [], []
 

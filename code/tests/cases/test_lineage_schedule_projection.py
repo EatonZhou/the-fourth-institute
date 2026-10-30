@@ -1,7 +1,7 @@
 """Public GetLineage must expose the scheduler's persisted due time."""
 
 from management_portal.hatg.contracts import InstructionCall, InstructionContext
-from management_portal.society_service import lineage_program_runtime
+from management_portal.society_service import lineage_program_runtime, lineage_program_schedules
 from management_portal.society_service.isa import build_kernel
 from tests.cases.test_isa_audit_g4 import make_lineage, registered_members  # noqa: F401
 from tests.cases.test_lineage_generic_primitives import primitive_store, ACTOR  # noqa: F401
@@ -28,7 +28,7 @@ def test_get_lineage_preserves_time_source_schedule_projection(primitive_store):
         for source_id, config in ((recurring_id, recurring), (one_shot_id, one_shot))
     ])
     lineage_id = created["lineage_id"]
-    lineage_program_runtime.observe_recurring_schedule(
+    lineage_program_schedules.observe_recurring_schedule(
         lineage_id, recurring_id, config=recurring,
     )
     before = lineage_program_runtime.read_runtime(lineage_id)

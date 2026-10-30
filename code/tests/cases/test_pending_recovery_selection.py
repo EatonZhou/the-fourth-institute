@@ -114,7 +114,9 @@ def test_poll_parks_missing_identity_once_and_retries_transient_failures(store, 
     support._install_isolated_portal_access(monkeypatch)
     from types import SimpleNamespace
     from management_common.principal import OperationIdentity
-    from management_portal.society_service import lineage_program_runtime as runtime
+    from management_portal.society_service import (
+        lineage_program_resident_inputs, lineage_program_runtime as runtime,
+    )
     event = {"id": "legacy", "type": "manual.triggered", "payload": {}, "occurred_at": AT}
     with program_work_storage.transaction(store.database, LINEAGE) as state:
         state["event_wires"] = {"wire": {"pending_events": [{"claim_token": "claim", "event": event}]}}
@@ -122,7 +124,7 @@ def test_poll_parks_missing_identity_once_and_retries_transient_failures(store, 
         with store.database.read() as c:
             return program_work_storage.read(c, lid)
     monkeypatch.setattr(runtime, "read_runtime", read)
-    monkeypatch.setattr(runtime, "pending_resident_handoffs", lambda _: [])
+    monkeypatch.setattr(lineage_program_resident_inputs, "pending_resident_handoffs", lambda _: [])
     calls = []
     def recover(*args, **kw):
         calls.append(args)

@@ -6,7 +6,9 @@ import pytest
 from management_common.operation_identity import operation_identity_scope
 from management_common.principal import OperationIdentity
 from management_portal.society_service import lineage_automation_identity as identity
-from management_portal.society_service import lineage_graph_edits, lineage_lifecycle, lineage_program_runtime
+from management_portal.society_service import (
+    lineage_graph_edits, lineage_lifecycle, lineage_program_occurrences, lineage_program_runtime,
+)
 from management_portal.society_service import lineage_aggregate
 from tests.cases.isa_test_support import ok, run
 from tests.cases.test_isa_lineage_lifecycle import future_creation_store, lineage, resident, graph  # noqa: F401
@@ -73,7 +75,7 @@ def test_registered_leader_change_preserves_accepted_runtime_and_graph_edits(lin
     assert identity.runtime_actor(graph(lineage)) == first
     source = ok("CreateComponent", {"lineage_id": lineage, "kind": "event_source",
                 "config": {"event_type": "manual.triggered"}})["component_id"]
-    lineage_program_runtime.claim_event_occurrence(lineage, source, "accepted", max_fires=3)
+    lineage_program_occurrences.claim_event_occurrence(lineage, source, "accepted", max_fires=3)
     before = deepcopy(lineage_program_runtime.read_runtime(lineage))
     ok("UpdateLineage", {"lineage_id": lineage, "changes": {"leader_resident_id": second}})
     assert identity.runtime_actor(graph(lineage)) == second

@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Iterable, Mapping
 
 from management_common.limit_contract import normalize_optional_limit
-from . import lineage_primitive_definitions, lineage_program
+from . import lineage_primitive_definitions, lineage_program_event_scope
 
 
 SCHEMA = "tfi.hatg-execution-explanations.v1"
@@ -230,7 +230,7 @@ def _event_explanation(
         "state.condition_met": "等待 Graph State 条件从不成立变为成立",
     }.get(event_type, f"正在监听{title}")
     resident_scope = _text(config.get("resident_scope"))
-    if event_type in lineage_program.SCOPED_RESIDENT_EVENT_TYPES and resident_scope in {"lineage", "system"}:
+    if event_type in lineage_program_event_scope.SCOPED_RESIDENT_EVENT_TYPES and resident_scope in {"lineage", "system"}:
         wait_copy = {
             "lineage": f"正在监听本 Lineage 全部 Resident：{title}",
             "system": f"正在监听 Portal 全部 Resident：{title}",

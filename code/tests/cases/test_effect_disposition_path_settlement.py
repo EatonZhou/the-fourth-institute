@@ -9,7 +9,7 @@ from management_portal.hatg.contracts import InstructionError
 from management_portal.society_service import effect_disposition, lineage_domain, trigger_paths
 from management_portal.society_service import family_recovery, lineage_failure_notifications
 from management_portal.society_service import lineage_effect_script_journal as journal
-from management_portal.society_service import lineage_program_runtime as runtime
+from management_portal.society_service import lineage_program_wire_queue
 from management_portal.society_service import trigger_path_storage as storage
 from management_portal.society_service.state_store import get_lineage_data_store
 from tests.cases.test_effect_unknown_outcome_hold import SOURCE, WIRE, _drain, _pending, _receipt, _setup
@@ -51,7 +51,7 @@ def _legacy_disposition(lineage_id, key, status):
     }
     with get_lineage_data_store().database.transaction():
         journal.finish(lineage_id, key, status=status, outputs={}, disposition=disposition)
-        runtime.settle_effect_delivery(lineage_id, existing)
+        lineage_program_wire_queue.settle_effect_delivery(lineage_id, existing)
     journal.cleanup(lineage_id, key)
     terminal = journal.load(lineage_id, key)
     assert terminal["disposition"] == disposition

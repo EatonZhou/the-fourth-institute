@@ -8,7 +8,7 @@ import pytest
 
 from management_portal import society_service, serve_management_portal
 from management_portal import web_resources
-from management_portal.society_service import contracts, lineage_program, lineage_reads
+from management_portal.society_service import contracts, lineage_program_addresses, lineage_reads
 from management_portal.society_service import lineage_aggregate
 from management_portal.resources.providers import collaboration
 from management_portal.resources.service import ResourceService
@@ -76,7 +76,7 @@ def test_program_address_resolve_reference_read(program_resources, namespace, co
 def test_event_producer_address_is_consumable(program_resources):
     """事件生成的组件地址可读取资源引用"""
     service, _, _, _ = program_resources
-    address = lineage_program.program_component_address(ROOT_ID, ITEMS[0][2])
+    address = lineage_program_addresses.program_component_address(ROOT_ID, ITEMS[0][2])
     assert service.reference(address, actor="test-actor")["title"] == f"Target {ITEMS[0][2]}"
 
 
@@ -144,7 +144,7 @@ def test_attached_event_reference(program_resources, actor, missing, expected_st
     from management_portal.resources.portal import canonical_portal_location
 
     service, definition, _, _ = program_resources
-    address = lineage_program.program_component_address(ROOT_ID, ITEMS[0][2])
+    address = lineage_program_addresses.program_component_address(ROOT_ID, ITEMS[0][2])
     if missing:
         definition["program"]["components"] = []
     references = resolve_resource_references(
@@ -167,7 +167,7 @@ def test_bridge_preserves_program_target_or_fails(program_resources, monkeypatch
     """资源桥接保留程序目标且缺失时返回空地址"""
     service, definition, _, _ = program_resources
     monkeypatch.setattr(web_resources, "get_resource_service", lambda: service)
-    address = lineage_program.program_component_address(ROOT_ID, ITEMS[0][2])
+    address = lineage_program_addresses.program_component_address(ROOT_ID, ITEMS[0][2])
     if missing:
         definition["program"]["components"] = []
     location = web_resources._resource_portal_location(address, actor)

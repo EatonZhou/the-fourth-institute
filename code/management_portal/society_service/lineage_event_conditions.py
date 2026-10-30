@@ -9,7 +9,7 @@ import math
 from datetime import datetime, timezone
 from typing import Any
 
-from . import lineage_program_runtime
+from . import lineage_program_observations
 from .lineage_recurring_schedule import parse_utc
 
 
@@ -132,7 +132,7 @@ def _observe_boolean_event_condition(
     signature = "sha256:" + hashlib.sha256(
         value.encode("utf-8")
     ).hexdigest()
-    observed = lineage_program_runtime.observe_event_source_value(
+    observed = lineage_program_observations.observe_event_source_value(
         lineage_id,
         event_source_id,
         locator=locator,
@@ -176,7 +176,7 @@ def _commit_boolean_event_condition(
     condition: dict[str, Any],
 ) -> bool:
     observed = condition["observed"]
-    return lineage_program_runtime.commit_event_source_value(
+    return lineage_program_observations.commit_event_source_value(
         lineage_id,
         event_source_id,
         locator=str(condition["locator"]),

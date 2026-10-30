@@ -12,6 +12,7 @@ import pytest
 from management_portal.society_service import (
     lineage_domain as domain,
     lineage_program_backlog,
+    lineage_program_resident_inputs,
     lineage_program_runtime,
     lineage_program_services as services,
     lineage_resident_controls,
@@ -169,7 +170,7 @@ def test_public_event_and_recovery_wiring_deliver_one_persisted_input(runtime_st
     assert sent == [(WORK_A, ACTOR)]
     wire = lineage_program_runtime.read_runtime(lineage_id)["event_wires"].get("wire_composition", {})
     assert wire.get("pending_events", []) == []
-    inputs = lineage_program_runtime.pending_resident_handoffs(lineage_id)
+    inputs = lineage_program_resident_inputs.pending_resident_handoffs(lineage_id)
     assert len(inputs) == 1
     assert inputs[0]["resident_id"] == WORK_A
     assert inputs[0]["message_id"] == "job_composition_delivery"

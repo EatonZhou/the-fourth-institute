@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 from management_common.principal import OperationIdentity
 from management_portal.society_service import (
-    lineage_program_runtime, lineage_program_terminal_reconciliation as reconciliation,
+    lineage_program_resident_inputs, lineage_program_terminal_reconciliation as reconciliation,
     lineage_recovery_policy, resident_catalog, trigger_paths,
 )
 from management_portal.society_service import resident_conversation_stream
@@ -44,7 +44,7 @@ def test_a_handoff_to_a_deleted_resident_without_its_input_settles_cancelled(mon
     catalog(monkeypatch, {GONE: {"resident_id": GONE, "deleted_at": "2026-10-02T21:13:10Z"}})
     handoff = {"trigger_path_id": "trigger_path_aaaaaaaaaaaa", "step_id": "step", "resident_id": GONE,
                "message_id": "msg_gone", "event": event("sample_admin"), "status": "queued"}
-    monkeypatch.setattr(lineage_program_runtime, "pending_resident_handoffs", lambda _lineage: [handoff])
+    monkeypatch.setattr(lineage_program_resident_inputs, "pending_resident_handoffs", lambda _lineage: [handoff])
     monkeypatch.setattr(trigger_paths, "resident_inputs", lambda *_args, **_kwargs: [handoff])
 
     def missing(resident_id, message_id):
@@ -52,7 +52,7 @@ def test_a_handoff_to_a_deleted_resident_without_its_input_settles_cancelled(mon
     monkeypatch.setattr(resident_conversation_stream, "get_repository",
                         lambda: SimpleNamespace(input_state=missing))
     settled = []
-    monkeypatch.setattr(lineage_program_runtime, "settle_resident_handoffs",
+    monkeypatch.setattr(lineage_program_resident_inputs, "settle_resident_handoffs",
                         lambda lineage_id, **kwargs: settled.append(kwargs) or [])
     monkeypatch.setattr(reconciliation, "settle_program_paths", lambda *_args: None)
     lineage = {"lineage_id": LINEAGE, "nodes": []}

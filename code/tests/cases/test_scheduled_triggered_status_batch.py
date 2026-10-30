@@ -179,12 +179,12 @@ def test_loop_only_component_view_does_not_read_event_fire_runtime(monkeypatch):
     """只有 Loop 组件的 Lineage 读取组件视图时不读取事件源触发状态
 
     :design-point:"""
-    from management_portal.society_service import component_runtime, lineage_program_runtime
+    from management_portal.society_service import component_runtime, lineage_program_occurrences
     monkeypatch.setattr(lineage_aggregate, 'read_lineage', lambda rid, **kwargs: {'lineage_id': rid})
     monkeypatch.setattr(component_runtime, '_compiled_program', lambda lineage: {
         'event_sources': {}, 'loops': {'loop_001': {'title': 'Loop'}}})
     fire_runtime = Mock(side_effect=AssertionError('no Event Source read needed'))
-    monkeypatch.setattr(lineage_program_runtime, 'event_source_runtime_view', fire_runtime)
+    monkeypatch.setattr(lineage_program_occurrences, 'event_source_runtime_view', fire_runtime)
     monkeypatch.setattr(component_runtime.lineage_loop_runtime, 'view', lambda *args: {'state': 'running'})
     assert component_runtime.views(LINEAGE, 'caller') == [{'title': 'Loop', 'state': 'running'}]
     fire_runtime.assert_not_called()

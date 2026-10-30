@@ -8,6 +8,8 @@ from management_portal.execution.agent_data_store import get_agent_data_store
 from management_portal.society_service import (
     lineage_graph_edits,
     lineage_lifecycle,
+    lineage_program_occurrences,
+    lineage_program_resident_inputs,
     lineage_program_runtime,
     lineage_resident_nodes,
     lineage_state,
@@ -203,11 +205,11 @@ def test_event_cursors_and_unsettled_fanout_move_with_their_sources(teams):
     ids = setup_flow(teams)
     source, target, member = teams
     event_id = ids[1]
-    assert lineage_program_runtime.claim_event(source["lineage_id"], event_id, "already-consumed")
+    assert lineage_program_occurrences.claim_event(source["lineage_id"], event_id, "already-consumed")
     moved(teams, ids)
     assert event_id not in lineage_program_runtime.read_runtime(source["lineage_id"])["event_sources"]
-    assert not lineage_program_runtime.claim_event(target["lineage_id"], event_id, "already-consumed")
-    lineage_program_runtime.claim_event_occurrence(target["lineage_id"], event_id, "unsettled")
+    assert not lineage_program_occurrences.claim_event(target["lineage_id"], event_id, "already-consumed")
+    lineage_program_occurrences.claim_event_occurrence(target["lineage_id"], event_id, "unsettled")
     pending = lineage_program_runtime.read_runtime(target["lineage_id"])["event_sources"][event_id]
     moved((target, source, member), [event_id], key="move-back")
     assert lineage_program_runtime.read_runtime(source["lineage_id"])["event_sources"][event_id] == pending
@@ -357,19 +359,19 @@ def test_unselected_work_is_left_alone(teams, monkeypatch, busy_side):
     busy = teams[busy_side]
     lineage_id = busy["lineage_id"]
     unrelated = event_source(lineage_id, "Unrelated")
-    lineage_program_runtime.claim_event_occurrence(lineage_id, unrelated, "unsettled-outside")
+    lineage_program_occurrences.claim_event_occurrence(lineage_id, unrelated, "unsettled-outside")
     from management_portal.society_service import trigger_paths
     event = {"id": "outside-event", "type": "manual.triggered", "occurred_at": "2026-10-12T00:00:00Z", "payload": {}}
     path = trigger_paths.begin_event(lineage_id, unrelated, event, cause_kind="external", cause_id="outside-event")
-    lineage_program_runtime.register_resident_handoff(lineage_id, message_id="outside-message",
+    lineage_program_resident_inputs.register_resident_handoff(lineage_id, message_id="outside-message",
         resident_id=busy["resident_id"], trigger_path_id=path, event=event, source_wire_id="outside-wire")
     monkeypatch.setattr(resident_lifecycle_domain, "resident_has_pending_work", lambda rid: rid == busy["resident_id"])
     before = lineage_program_runtime.read_runtime(lineage_id)
-    pending = lineage_program_runtime.pending_resident_handoffs(lineage_id)
+    pending = lineage_program_resident_inputs.pending_resident_handoffs(lineage_id)
     moved(teams, ids)
     after = lineage_program_runtime.read_runtime(lineage_id)
     assert after["event_sources"][unrelated] == before["event_sources"][unrelated]
-    assert lineage_program_runtime.pending_resident_handoffs(lineage_id) == pending
+    assert lineage_program_resident_inputs.pending_resident_handoffs(lineage_id) == pending
     assert resident_record_domain.find_resident(teams[2]["resident_id"])["lineage_id"] == teams[1]["lineage_id"]
 
 
@@ -415,19 +417,19 @@ def test_invocations_and_their_history_stay_in_the_originating_lineage(teams, st
     from tests.cases.society_service_test_support import completed_execution
     event = {"id": "selected-event", "type": "manual.triggered", "occurred_at": "2026-10-12T00:00:00Z", "payload": {}}
     path = trigger_paths.begin_event(source, ids[1], event, cause_kind="external", cause_id="selected-event")
-    lineage_program_runtime.register_resident_handoff(source, message_id="selected-message",
+    lineage_program_resident_inputs.register_resident_handoff(source, message_id="selected-message",
         resident_id=ids[0], trigger_path_id=path, event=event, source_wire_id=wire_id)
     if status == "completed":
         completed_execution(ids[0], "selected-message")
-        lineage_program_runtime.settle_resident_handoffs(
+        lineage_program_resident_inputs.settle_resident_handoffs(
             source, message_id="selected-message", resident_id=ids[0], status=status,
         )
-    pending = lineage_program_runtime.pending_resident_handoffs(source)
+    pending = lineage_program_resident_inputs.pending_resident_handoffs(source)
     moved(teams, ids)
-    assert lineage_program_runtime.pending_resident_handoffs(source) == pending
-    assert lineage_program_runtime.pending_resident_handoffs(teams[1]["lineage_id"]) == []
-    assert lineage_program_runtime.resident_handoff(source, ids[0], "selected-message")["status"] == status
-    assert lineage_program_runtime.resident_handoff(teams[1]["lineage_id"], ids[0], "selected-message") is None
+    assert lineage_program_resident_inputs.pending_resident_handoffs(source) == pending
+    assert lineage_program_resident_inputs.pending_resident_handoffs(teams[1]["lineage_id"]) == []
+    assert lineage_program_resident_inputs.resident_handoff(source, ids[0], "selected-message")["status"] == status
+    assert lineage_program_resident_inputs.resident_handoff(teams[1]["lineage_id"], ids[0], "selected-message") is None
 
 
 def test_moving_into_a_new_lineage_when_no_target_is_given(teams):

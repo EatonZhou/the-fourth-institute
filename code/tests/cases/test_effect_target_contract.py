@@ -15,7 +15,7 @@ from management_portal.society_service import (
     lineage_program_effect_execution as execution,
     state_store,
 )
-from management_portal.society_service.lineage_program import effect_script_analysis
+from management_portal.society_service.lineage_program_diagnostics import effect_script_analysis
 
 
 TARGET = "resident_bbbbbbbbbbbb"
@@ -268,7 +268,7 @@ def _execute(monkeypatch, definition, *, initialize=True):
                                error={}, instruction_id=f"inst_target_{len(calls)}", replayed=False)
 
     monkeypatch.setattr(routing, "execute", fake_execute)
-    monkeypatch.setattr(execution.lineage_program_runtime, "effect_result_projection", lambda *a, **k: {})
+    monkeypatch.setattr(execution.lineage_program_effect_results, "effect_result_projection", lambda *a, **k: {})
     event = lineage_primitives.LineageEvent(
         id="event_target_contract", type="manual.triggered", payload={},
         identity=OperationIdentity.for_actor("CASE-A").to_dict(),
@@ -310,12 +310,12 @@ def test_valid_endpoint_reaches_the_original_instruction_owner(monkeypatch):
 
 def test_completed_legacy_activation_replays_without_new_calls(monkeypatch):
     """模拟旧策略已完成的真实 journal，新策略不追溯改写终态或重投。"""
-    from management_portal.society_service import lineage_program
+    from management_portal.society_service import lineage_program_diagnostics
 
     definition = _definition(f'DeliverMessage resident_id="{TARGET}" {MESSAGE}')
     with monkeypatch.context() as legacy:
         # Only the new analysis policy is disabled to create a pre-policy terminal record.
-        legacy.setattr(lineage_program, "effect_script_analysis", lambda _definition: SimpleNamespace(diagnostics=[]))
+        legacy.setattr(lineage_program_diagnostics, "effect_script_analysis", lambda _definition: SimpleNamespace(diagnostics=[]))
         first, calls, host = _execute(legacy, definition)
         assert first["status"] == "executed"
         assert len(calls) == 1 and len(host.registered) == 1

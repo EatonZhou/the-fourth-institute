@@ -20,7 +20,9 @@ def _resolution(service: "ResourceService", address: object, **context: Any):
     root_id, _, suffix = clean_address.partition("/")
     if root_id.startswith("lineage_") and suffix.startswith("program/"):
         from management_portal.society_service import get_society_service
-        from management_portal.society_service.lineage_program import parse_program_resource_suffix
+        from management_portal.society_service.lineage_program_addresses import (
+            parse_program_resource_suffix,
+        )
         from ..portal import portal_url_for_address
 
         resolved = canonical_resolution(

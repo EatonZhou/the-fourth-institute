@@ -7,7 +7,7 @@ from typing import Any, Callable
 
 from management_common.service_shutdown import shutdown_requested
 
-from . import lineage_instruction_context, lineage_program_runtime
+from . import lineage_instruction_context, lineage_program_resident_inputs, lineage_program_runtime
 from .domain_ports import resource_port
 from .lineage_program_queries import _compiled_program
 from .lineage_values import _clone_json
@@ -106,7 +106,7 @@ def poll_all_system_events(
         checked += 1
         try:
             runtime = lineage_program_runtime.read_runtime(lineage_id)
-            handoffs = lineage_program_runtime.pending_resident_handoffs(lineage_id)
+            handoffs = lineage_program_resident_inputs.pending_resident_handoffs(lineage_id)
         except errors as exc:
             failure(lineage_id, exc)
             continue

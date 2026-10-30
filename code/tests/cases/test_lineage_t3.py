@@ -11,7 +11,7 @@ import pytest
 from management_portal.hatg.contracts import InstructionError
 from management_portal.society_service import effect_disposition as disposition
 from management_portal.society_service import lineage_effect_script_journal as journal
-from management_portal.society_service import lineage_program_runtime as runtime
+from management_portal.society_service import lineage_program_wire_queue
 from management_portal.society_service import trigger_paths, lineage_program_effect_execution as execution
 from management_portal.society_service.isa import definition, runs
 from management_portal.society_service.state_store import get_lineage_data_store
@@ -56,7 +56,7 @@ def test_disposition_ends_unknown_activation_and_releases_only_its_occurrence(ad
         event["payload"]["trigger_path_id"] = trigger_paths.begin_event(
             lid, "event_source_aaaaaaaaaaaa", event, cause_kind="external", cause_id=event_id,
         )
-        runtime.stage_event_delivery(lid, "event_source_aaaaaaaaaaaa", "wire_aaaaaaaaaaaa", event_id, event)
+        lineage_program_wire_queue.stage_event_delivery(lid, "event_source_aaaaaaaaaaaa", "wire_aaaaaaaaaaaa", event_id, event)
     active = journal.load(lid, key)
     before = trigger_paths.get(lid, active["trigger_path_id"])
     assert before["status"] == "active" and active["calls"]["c1"]["status"] in {"unresolved", "executing"}
@@ -69,7 +69,7 @@ def test_disposition_ends_unknown_activation_and_releases_only_its_occurrence(ad
     assert not get_lineage_data_store().effect_work.list(lid)
     assert get_lineage_data_store().effect_cleanup_task(lid, key)["instructions"] == {"original": ["inst_lin_t3"]}
     journal.ensure_deletion_can_settle(lid)
-    assert runtime.claim_pending_event(lid, "wire_aaaaaaaaaaaa")["event"]["id"] == "event_next"
+    assert lineage_program_wire_queue.claim_pending_event(lid, "wire_aaaaaaaaaaaa")["event"]["id"] == "event_next"
     assert disposition.resolve(lid, key, status, "admin-subject") == result
     with pytest.raises(InstructionError, match="不能改写"):
         disposition.resolve(lid, key, "failed" if status == "succeeded" else "succeeded", "admin-subject")
@@ -89,7 +89,7 @@ def test_disposition_rejects_missing_or_confirmed_calls(admin):
 def test_disposition_is_atomic_if_queue_settlement_fails(admin, monkeypatch):
     """队列结算失败时人工处置整体回滚，Effect 仍处于运行中"""
     lid, key = unknown()
-    monkeypatch.setattr(runtime, "settle_effect_delivery", lambda *a: (_ for _ in ()).throw(OSError("storage")))
+    monkeypatch.setattr(lineage_program_wire_queue, "settle_effect_delivery", lambda *a: (_ for _ in ()).throw(OSError("storage")))
     with pytest.raises(OSError):
         disposition.resolve(lid, key, "failed", "admin-subject")
     assert journal.load(lid, key)["status"] == "running"

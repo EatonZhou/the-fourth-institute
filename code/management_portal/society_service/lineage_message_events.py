@@ -24,7 +24,10 @@ import hashlib
 import re
 from typing import Any, Callable, Iterable, Mapping
 
-from . import lineage_primitives, lineage_program, lineage_program_runtime, resident_conversation_stream
+from . import (
+    lineage_primitives, lineage_program_event_scope, lineage_program_observations,
+    lineage_program_runtime, resident_conversation_stream,
+)
 from . import resident_conversation_records
 
 MESSAGE_RECEIVED_EVENT = "resident.message_received"
@@ -119,7 +122,7 @@ def message_received_sources(plan: Mapping[str, Any]) -> dict[str, dict[str, Any
         for source_id, source in (plan.get("event_sources") or {}).items()
         if isinstance(source, dict)
         and str(source.get("event_type") or "") == MESSAGE_RECEIVED_EVENT
-        and lineage_program.event_source_subject_ids(source)
+        and lineage_program_event_scope.event_source_subject_ids(source)
     }
 
 
@@ -246,7 +249,7 @@ def dispatch_arrival(
 
     sources = {
         source_id: source for source_id, source in message_received_sources(plan).items()
-        if subject_id in lineage_program.event_source_subject_ids(source) and pushed_source(source)
+        if subject_id in lineage_program_event_scope.event_source_subject_ids(source) and pushed_source(source)
     }
     if not sources or not message_id:
         return []
@@ -285,13 +288,13 @@ def prefetch_message_arrivals(
     repository = resident_conversation_stream.get_repository()
     result: dict[tuple[str, str], dict[str, Any]] = {}
     watched = [
-        (source_id, subject_id, subject_id if lineage_program.watches_many_residents(source) else "")
+        (source_id, subject_id, subject_id if lineage_program_event_scope.watches_many_residents(source) else "")
         for source_id, source in sources.items()
-        for subject_id in lineage_program.event_source_subject_ids(source)
+        for subject_id in lineage_program_event_scope.event_source_subject_ids(source)
     ]
     for source_id, subject_id, scope in watched:
         locator = message_locator(subject_id)
-        stored = lineage_program_runtime.observation_state(runtime_sources, source_id, scope)
+        stored = lineage_program_observations.observation_state(runtime_sources, source_id, scope)
         base_cursor = (
             parse_cursor_value(stored.get("state_value"))
             if str(stored.get("state_locator") or "") == locator

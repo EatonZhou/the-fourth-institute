@@ -1,7 +1,8 @@
 """Restart-safe Program terminal observation and repair."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+import logging
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Any, ContextManager, Iterable, Protocol
 from management_common.database_time import instant
@@ -10,9 +11,15 @@ from management_common.service_shutdown import shutdown_requested
 
 from .lineage_program_contracts import _program_event_source_contract_fingerprint
 from . import trigger_paths
-from . import lineage_catalog, lineage_program, lineage_program_runtime, lineage_program_execution, lineage_primitives
+from . import (
+    lineage_catalog, lineage_program_event_scope, lineage_program_observations,
+    lineage_program_resident_inputs, lineage_program_execution, lineage_primitives,
+)
 from .lineage_program_queries import _compiled_program, _program_runtime_resident_ids
 from .lineage_values import _safe_actor, _text, _clone_json
+
+LOGGER = logging.getLogger(__name__)
+
 
 class ProgramTerminalState(Protocol):
     def lineage_scope(self, lineage_id: str, *, operation: str = "") -> ContextManager[None]: ...
@@ -96,7 +103,7 @@ def _observation_definition(lineage: dict[str, Any]) -> dict[str, Any]:
 def _read_completion_evidence(lineage_id: str, actor: str, *, ports: ProgramTerminalPorts) -> dict[str, Any]:
     lineage = ports.state.read_lineage(lineage_id, actor=actor)
     ports.state.ensure_manager(lineage, _safe_actor(actor))
-    subjects = {subject for _, watched, _, subscribers in lineage_program.resident_completion_subscriptions(
+    subjects = {subject for _, watched, _, subscribers in lineage_program_event_scope.resident_completion_subscriptions(
         _compiled_program(lineage), _lineage_member_ids(lineage)) if subscribers for subject in watched}
     evidence = {}
     for node in lineage.get("nodes") or []:
@@ -150,7 +157,7 @@ def _reconcile_resident_handoffs(
 ) -> dict[str, Any]:
     from . import lineage_instruction_context
 
-    pending = lineage_program_runtime.pending_resident_handoffs(lineage_id)
+    pending = lineage_program_resident_inputs.pending_resident_handoffs(lineage_id)
     groups: dict[tuple[str, str], list[dict[str, Any]]] = {}
     for invocation in pending:
         key = (str(invocation.get("resident_id") or ""), str(invocation.get("message_id") or ""))
@@ -225,7 +232,7 @@ def _reconcile_resident_handoffs(
                         for key in ("program_created_count", "operator_result_count", "removed_absorption_count"):
                             result[key] += int(settled.get(key) or 0)
                     else:
-                        finished = lineage_program_runtime.settle_resident_handoffs(
+                        finished = lineage_program_resident_inputs.settle_resident_handoffs(
                             lineage_id, resident_id=resident_id, message_id=message_id,
                             status=status, completed_at=completed_at,
                             output={"resident_id": resident_id, "message_id": message_id,
@@ -239,6 +246,177 @@ def _reconcile_resident_handoffs(
     return result
 
 
+@dataclass
+class _CompletionWatch:
+    """The completion subscriptions of a Lineage and the evidence read for its watched nodes."""
+
+    # subject -> [(source, watched-Resident scope)]; the scope is empty
+    # unless the source watches several Residents.
+    sources_by_subject: dict[str, list[tuple[str, str]]] = field(default_factory=dict)
+    subscribers_by_source: dict[str, list[str]] = field(default_factory=dict)
+    evidence: dict[str, Any] = field(default_factory=dict)
+    source_nodes: list[dict[str, Any]] = field(default_factory=list)
+
+
+def _completion_watch(
+    lineage_id: str,
+    actor: str,
+    actor_id: str,
+    observations: dict[str, Any] | None,
+    *,
+    ports: ProgramTerminalPorts,
+) -> _CompletionWatch:
+    """Read, under the Lineage's authority, which sources watch which nodes' completions.
+
+    Evidence read before counts only while the definition it was read for is current.
+    """
+
+    watch = _CompletionWatch()
+    with ports.directory.lineage_execution_authority(lineage_id), ports.state.lineage_scope(lineage_id):
+        lineage = ports.state.read_lineage(lineage_id, actor=actor)
+        ports.state.ensure_manager(lineage, actor_id)
+        program_plan = _compiled_program(lineage)
+        for event_source_id, watched, many, subscriber_ids in (
+            lineage_program_event_scope.resident_completion_subscriptions(program_plan, _lineage_member_ids(lineage))
+        ):
+            if not watched or not subscriber_ids:
+                continue
+            for subject_id in watched:
+                watch.sources_by_subject.setdefault(
+                    subject_id, []
+                ).append((event_source_id, subject_id if many else ""))
+            watch.subscribers_by_source[event_source_id] = subscriber_ids
+        source_ids = set(watch.sources_by_subject)
+        watch.evidence = ((observations or {}).get("evidence") or {}) if (
+            (observations or {}).get("definition") == _observation_definition(lineage)
+        ) else {}
+        watch.source_nodes = [
+            dict(node)
+            for node in lineage.get("nodes") or []
+            if (
+                isinstance(node, dict)
+                and str(node.get("id") or "") in source_ids
+                and str(node.get("id") or "") in watch.evidence
+            )
+        ]
+    return watch
+
+
+@dataclass
+class _ObservationCounts:
+    created_count: int = 0
+    operator_result_count: int = 0
+    checked_count: int = 0
+    completion_baseline_count: int = 0
+    recovered_handoff_count: int = 0
+    removed_absorption_count: int = 0
+
+
+def _observe_node_completion(
+    lineage_id: str,
+    actor: str,
+    node_id: str,
+    completion: dict[str, Any],
+    watch: _CompletionWatch,
+    observations: dict[str, Any] | None,
+    counts: _ObservationCounts,
+    *,
+    ports: ProgramTerminalPorts,
+) -> list[tuple[str, str, dict[str, Any]]] | None:
+    """Compare a node's latest completion with each watching source's cursor, under the Lineage's authority.
+
+    A first observation sets the source's baseline; the sources that saw a new
+    completion are returned.  None when the definition changed since the
+    evidence was read: the pass stops.
+    """
+
+    event_source_ids = sorted(
+        watch.sources_by_subject.get(node_id) or []
+    )
+    completion_message_id = str(completion.get("message_id") or "")
+    completion_at = str(completion.get("completed_at") or "")
+    completion_locator = f"resident:{node_id}"
+    changed_sources: list[tuple[str, str, dict[str, Any]]] = []
+    with ports.directory.lineage_execution_authority(lineage_id):
+        if _observation_definition(ports.state.read_lineage(lineage_id, actor=actor)) != (observations or {}).get('definition'):
+            return None
+        for event_source_id, scope in event_source_ids:
+            observed = lineage_program_observations.observe_resident_completion(
+                lineage_id,
+                event_source_id,
+                locator=completion_locator,
+                message_id=completion_message_id,
+                completed_at=completion_at,
+                subject=scope,
+            )
+            if observed.get("status") == "baseline":
+                counts.completion_baseline_count += 1
+                lineage_program_observations.establish_resident_completion_subscription_baseline(
+                    lineage_id, event_source_id, locator=completion_locator,
+                    subject_resident_id=node_id, message_id=completion_message_id,
+                    completed_at=completion_at,
+                    subscriber_ids=watch.subscribers_by_source.get(event_source_id, []),
+                    per_resident=bool(scope),
+                )
+            elif observed.get("status") == "changed":
+                changed_sources.append((event_source_id, scope, observed))
+    return changed_sources
+
+
+def _recognize_completion(
+    lineage_id: str,
+    actor: str,
+    actor_id: str,
+    node: dict[str, Any],
+    completion: dict[str, Any],
+    changed_sources: list[tuple[str, str, dict[str, Any]]],
+    observations: dict[str, Any] | None,
+    counts: _ObservationCounts,
+    *,
+    ports: ProgramTerminalPorts,
+) -> None:
+    """Report the completion to the sources that saw it; advance the cursor of each source that took it."""
+
+    node_id = str(node.get("id") or "")
+    completion_message_id = str(completion.get("message_id") or "")
+    completion_at = str(completion.get("completed_at") or "")
+    completion_locator = f"resident:{node_id}"
+    counts.checked_count += 1
+    result = ports.resident.handle_resident_message_completion(
+        ports.resident.node_resident_id(node),
+        actor_id,
+        completion_message_id,
+        completed_at=completion_at,
+        lineage_id=lineage_id,
+        program_event_source_ids={
+            event_source_id
+            for event_source_id, _scope, _observed in changed_sources
+        },
+    )
+    recognized_source_ids = {
+        str(item.get("event_source_id") or "")
+        for item in result.get("program_events") or []
+        if isinstance(item, dict)
+    }
+    with ports.directory.lineage_execution_authority(lineage_id):
+        if _observation_definition(ports.state.read_lineage(lineage_id, actor=actor)) == (observations or {}).get('definition'):
+            for event_source_id, scope, observed in changed_sources:
+                if event_source_id not in recognized_source_ids:
+                    continue
+                lineage_program_observations.commit_resident_completion(
+                    lineage_id, event_source_id, locator=completion_locator,
+                    previous_message_id=str(observed.get("previous_message_id") or ""),
+                    message_id=completion_message_id, completed_at=completion_at, subject=scope,
+                )
+    counts.created_count += int(result.get("program_created_count") or 0)
+    counts.operator_result_count += int(
+        result.get("operator_result_count") or 0
+    )
+    counts.removed_absorption_count += int(
+        result.get("removed_absorption_count") or 0
+    )
+
+
 def _reconcile_observations_with_authority(
     lineage_id: str,
     actor: str,
@@ -248,135 +426,38 @@ def _reconcile_observations_with_authority(
     observations: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Recover Program completion observations and one-shot absorption."""
-    _lineage_scope = ports.state.lineage_scope
-    _read_lineage = ports.state.read_lineage
-    _ensure_manager = ports.state.ensure_manager
-    _node_resident_id = ports.resident.node_resident_id
-    handle_resident_message_completion = ports.resident.handle_resident_message_completion
-    _drain_program_event_wire_backlog = ports.flow.drain_program_event_wire_backlog
 
     actor_id = _safe_actor(actor)
-    # subject -> [(source, watched-Resident scope)]; the scope is empty
-    # unless the source watches several Residents.
-    completion_sources_by_subject: dict[str, list[tuple[str, str]]] = {}
-    completion_subscribers_by_source: dict[str, list[str]] = {}
-    evidence: dict[str, Any] = {}
-    source_nodes: list[dict[str, Any]] = []
     # Recovery observes no completions; it only drains what is already queued.
-    if not recovery_only:
-        with ports.directory.lineage_execution_authority(lineage_id), _lineage_scope(lineage_id):
-            lineage = _read_lineage(lineage_id, actor=actor)
-            _ensure_manager(lineage, actor_id)
-            program_plan = _compiled_program(lineage)
-            for event_source_id, watched, many, subscriber_ids in (
-                lineage_program.resident_completion_subscriptions(program_plan, _lineage_member_ids(lineage))
-            ):
-                if not watched or not subscriber_ids:
-                    continue
-                for subject_id in watched:
-                    completion_sources_by_subject.setdefault(
-                        subject_id, []
-                    ).append((event_source_id, subject_id if many else ""))
-                completion_subscribers_by_source[event_source_id] = subscriber_ids
-            source_ids = set(completion_sources_by_subject)
-            evidence = ((observations or {}).get("evidence") or {}) if (
-                (observations or {}).get("definition") == _observation_definition(lineage)
-            ) else {}
-            source_nodes = [
-                dict(node)
-                for node in lineage.get("nodes") or []
-                if (
-                    isinstance(node, dict)
-                    and str(node.get("id") or "") in source_ids
-                    and str(node.get("id") or "") in evidence
-                )
-            ]
-
-    created_count = 0
-    operator_result_count = 0
-    checked_count = 0
-    completion_baseline_count = 0
-    recovered_handoff_count = 0
-    removed_absorption_count = 0
+    watch = (
+        _completion_watch(lineage_id, actor, actor_id, observations, ports=ports)
+        if not recovery_only
+        else _CompletionWatch()
+    )
+    counts = _ObservationCounts()
     # A stopping owner leaves the rest of this repair pass to the next start;
     # every step below is observed and committed by message ID, so the pass
     # resumes where it stopped.
     stopped = False
-    for node in source_nodes:
+    for node in watch.source_nodes:
         if shutdown_requested():
             stopped = True
             break
         node_id = str(node.get("id") or "")
-        event_source_ids = sorted(
-            completion_sources_by_subject.get(node_id) or []
-        )
-        completion = evidence[node_id]
+        completion = watch.evidence[node_id]
         if not isinstance(completion, dict):
             completion = {}
-        completion_message_id = str(completion.get("message_id") or "")
-        completion_at = str(completion.get("completed_at") or "")
-        completion_locator = f"resident:{node_id}"
-        changed_sources: list[tuple[str, str, dict[str, Any]]] = []
-        with ports.directory.lineage_execution_authority(lineage_id):
-            if _observation_definition(_read_lineage(lineage_id, actor=actor)) != (observations or {}).get('definition'):
-                break
-            for event_source_id, scope in event_source_ids:
-                observed = lineage_program_runtime.observe_resident_completion(
-                    lineage_id,
-                    event_source_id,
-                    locator=completion_locator,
-                    message_id=completion_message_id,
-                    completed_at=completion_at,
-                    subject=scope,
-                )
-                if observed.get("status") == "baseline":
-                    completion_baseline_count += 1
-                    lineage_program_runtime.establish_resident_completion_subscription_baseline(
-                        lineage_id, event_source_id, locator=completion_locator,
-                        subject_resident_id=node_id, message_id=completion_message_id,
-                        completed_at=completion_at,
-                        subscriber_ids=completion_subscribers_by_source.get(event_source_id, []),
-                        per_resident=bool(scope),
-                    )
-                elif observed.get("status") == "changed":
-                    changed_sources.append((event_source_id, scope, observed))
-        if not completion_message_id:
+        changed_sources = _observe_node_completion(
+            lineage_id, actor, node_id, completion, watch, observations, counts, ports=ports,
+        )
+        if changed_sources is None:
+            break
+        if not str(completion.get("message_id") or ""):
             continue
         if not changed_sources:
             continue
-        checked_count += 1
-        result = handle_resident_message_completion(
-            _node_resident_id(node),
-            actor_id,
-            completion_message_id,
-            completed_at=completion_at,
-            lineage_id=lineage_id,
-            program_event_source_ids={
-                event_source_id
-                for event_source_id, _scope, _observed in changed_sources
-            },
-        )
-        recognized_source_ids = {
-            str(item.get("event_source_id") or "")
-            for item in result.get("program_events") or []
-            if isinstance(item, dict)
-        }
-        with ports.directory.lineage_execution_authority(lineage_id):
-            if _observation_definition(_read_lineage(lineage_id, actor=actor)) == (observations or {}).get('definition'):
-                for event_source_id, scope, observed in changed_sources:
-                    if event_source_id not in recognized_source_ids:
-                        continue
-                    lineage_program_runtime.commit_resident_completion(
-                        lineage_id, event_source_id, locator=completion_locator,
-                        previous_message_id=str(observed.get("previous_message_id") or ""),
-                        message_id=completion_message_id, completed_at=completion_at, subject=scope,
-                    )
-        created_count += int(result.get("program_created_count") or 0)
-        operator_result_count += int(
-            result.get("operator_result_count") or 0
-        )
-        removed_absorption_count += int(
-            result.get("removed_absorption_count") or 0
+        _recognize_completion(
+            lineage_id, actor, actor_id, node, completion, changed_sources, observations, counts, ports=ports,
         )
 
     recovery_failures: list[dict[str, str]] = []
@@ -384,34 +465,34 @@ def _reconcile_observations_with_authority(
     if stopped:
         return {
             "stopped": True,
-            "checked_node_count": checked_count,
-            "recovered_handoff_count": recovered_handoff_count,
-            "program_completion_baseline_count": completion_baseline_count,
-            "removed_absorption_count": removed_absorption_count,
-            "created_count": created_count,
-            "program_created_count": created_count,
-            "operator_result_count": operator_result_count,
+            "checked_node_count": counts.checked_count,
+            "recovered_handoff_count": counts.recovered_handoff_count,
+            "program_completion_baseline_count": counts.completion_baseline_count,
+            "removed_absorption_count": counts.removed_absorption_count,
+            "created_count": counts.created_count,
+            "program_created_count": counts.created_count,
+            "operator_result_count": counts.operator_result_count,
             "program_event_backlog": {},
         }
     if not recovery_only:
-        removed_absorption_count += reconcile_terminal_absorption_edges(
+        counts.removed_absorption_count += reconcile_terminal_absorption_edges(
             lineage_id,
             actor_id,
             ports=ports,
         )
-    program_event_backlog = _drain_program_event_wire_backlog(
+    program_event_backlog = ports.flow.drain_program_event_wire_backlog(
         lineage_id,
         actor_id,
     )
     return {
         "stopped": False,
-        "checked_node_count": checked_count,
-        "recovered_handoff_count": recovered_handoff_count,
-        "program_completion_baseline_count": completion_baseline_count,
-        "removed_absorption_count": removed_absorption_count,
-        "created_count": created_count,
-        "program_created_count": created_count,
-        "operator_result_count": operator_result_count,
+        "checked_node_count": counts.checked_count,
+        "recovered_handoff_count": counts.recovered_handoff_count,
+        "program_completion_baseline_count": counts.completion_baseline_count,
+        "removed_absorption_count": counts.removed_absorption_count,
+        "created_count": counts.created_count,
+        "program_created_count": counts.created_count,
+        "operator_result_count": counts.operator_result_count,
         "program_event_backlog": program_event_backlog,
         "recovery_failures": recovery_failures,
     }
@@ -426,7 +507,7 @@ def settle_program_paths(
 
     finished: list[str] = []
     for trigger_path_id in sorted({str(value) for value in trigger_path_ids if str(value)}):
-        if not lineage_program_runtime.settle_trigger_path(
+        if not lineage_program_resident_inputs.settle_trigger_path(
             lineage_id, trigger_path_id
         ):
             continue
@@ -542,58 +623,42 @@ def reconcile_terminal_absorption_edges(
         return removed_count
 
 
-def handle_node_message_completed(
-    resident_id: str,
+def _mark_sources_idle(
+    lineage_ids: list[str],
+    exact_resident_id: str,
+    source_message_id: str,
+    source_completed_at: str,
     actor: str,
-    message_id: str,
+    actor_id: str,
     *,
-    completed_at: str = "",
-    lineage_id: str = "",
-    program_event_source_ids: set[str] | None = None,
     ports: ProgramTerminalPorts,
-) -> dict[str, Any]:
-    """Translate a Resident idle transition into Program-owned Events."""
-    _read_lineage = ports.state.read_lineage
-    _persist_lineage_runtime_state = ports.state.persist_lineage_runtime_state
-    _actor_can_manage_lineage = ports.directory.actor_can_manage_lineage
-    _lineage_scopes = ports.directory.lineage_scopes
-    _drain_program_event_wire_backlog = ports.flow.drain_program_event_wire_backlog
-    _lineage_ids_for_resident = ports.directory.lineage_ids_for_resident
-    _node_resident_id = ports.resident.node_resident_id
-    _now_iso = ports.state.now_iso
+) -> tuple[list[tuple[str, str, dict[str, Any]]], int, int]:
+    """Set the Resident's nodes idle and drop the one-shot absorptions of the finished turn.
 
-    actor_id = _safe_actor(actor)
-    exact_resident_id = _text(resident_id, 180)
-    source_message_id = _text(message_id, 180)
-    source_completed_at = _text(completed_at, 80) or _now_iso()
-    if not exact_resident_id or not source_message_id:
-        raise ValueError("节点完成事件缺少 Resident 或源 message_id")
+    Returns the (Lineage, node, node snapshot) of every matched node, how many
+    nodes matched and how many absorption edges were removed.
+    """
 
     matched_sources: list[tuple[str, str, dict[str, Any]]] = []
     matched_node_count = 0
     removed_absorption_count = 0
-    lineage_ids = (
-        [lineage_id]
-        if lineage_id
-        else _lineage_ids_for_resident(exact_resident_id)
-    )
-    with _lineage_scopes(
+    with ports.directory.lineage_scopes(
         lineage_ids,
         operation="resident.message_completed",
     ):
         for current_lineage_id in lineage_ids:
             try:
-                lineage = _read_lineage(current_lineage_id, actor=actor)
+                lineage = ports.state.read_lineage(current_lineage_id, actor=actor)
             except KeyError:
                 continue
-            if not _actor_can_manage_lineage(lineage, actor_id):
+            if not ports.directory.actor_can_manage_lineage(lineage, actor_id):
                 continue
             sources = [
                 node
                 for node in lineage.get("nodes") or []
                 if (
                     isinstance(node, dict)
-                    and _node_resident_id(node) == exact_resident_id
+                    and ports.resident.node_resident_id(node) == exact_resident_id
                 )
             ]
             if not sources:
@@ -626,100 +691,317 @@ def handle_node_message_completed(
                     )
                 )
             if changed:
-                _persist_lineage_runtime_state(
+                ports.state.persist_lineage_runtime_state(
                     previous,
                     lineage,
                     "节点完成事件",
                 )
+    return matched_sources, matched_node_count, removed_absorption_count
 
-    operator_results: list[dict[str, Any]] = []
-    agent_results: list[dict[str, Any]] = []
-    completed_path_ids_by_lineage: dict[str, set[str]] = {}
-    program_event_results: list[dict[str, Any]] = []
-    for current_lineage_id, source_node_id, source_node in matched_sources:
-        # A turn a Packet Operator asked for belongs to that operator; any
-        # other turn is an ordinary Resident invocation.
-        completed_operator = lineage_program_execution.complete_operator_invocation(
+
+@dataclass
+class _CompletedWork:
+    """What one finished turn completed: operator and Resident invocations, paths and Events."""
+
+    operator_results: list[dict[str, Any]] = field(default_factory=list)
+    agent_results: list[dict[str, Any]] = field(default_factory=list)
+    completed_path_ids_by_lineage: dict[str, set[str]] = field(default_factory=dict)
+    program_event_results: list[dict[str, Any]] = field(default_factory=list)
+
+
+def _complete_node_turn(
+    work: _CompletedWork,
+    current_lineage_id: str,
+    source_node_id: str,
+    source_node: dict[str, Any],
+    source_message_id: str,
+    actor_id: str,
+    source_completed_at: str,
+    program_event_source_ids: set[str] | None,
+    *,
+    ports: ProgramTerminalPorts,
+) -> None:
+    """Complete one node's invocation by the turn, then report the turn to the Event Sources watching it."""
+
+    # A turn a Packet Operator asked for belongs to that operator; any
+    # other turn is an ordinary Resident invocation.
+    completed_operator = lineage_program_execution.complete_operator_invocation(
+        current_lineage_id,
+        source_node_id,
+        source_message_id,
+        actor_id,
+        ports=ports.flow.program_execution_ports(),
+    )
+    if completed_operator:
+        work.operator_results.append(completed_operator)
+        if completed_operator.get("trigger_path_id"):
+            work.completed_path_ids_by_lineage.setdefault(current_lineage_id, set()).add(
+                str(completed_operator["trigger_path_id"])
+            )
+    else:
+        completed_agent = lineage_program_execution.complete_agent_invocations(
+            current_lineage_id,
+            source_node_id,
+            source_node,
+            source_message_id,
+            actor_id,
+            source_completed_at,
+            ports=ports.flow.program_execution_ports(),
+        )
+        if completed_agent:
+            work.agent_results.append(completed_agent)
+            work.completed_path_ids_by_lineage.setdefault(
+                current_lineage_id, set()
+            ).update(
+                str(item.get("trigger_path_id") or "")
+                for item in completed_agent.get("invocations") or []
+                if str(item.get("trigger_path_id") or "")
+            )
+
+    work.program_event_results.extend(
+        dispatch_program_resident_work_finished(
             current_lineage_id,
             source_node_id,
             source_message_id,
             actor_id,
-            ports=ports.flow.program_execution_ports(),
+            completed_at=source_completed_at,
+            event_source_ids=program_event_source_ids,
+            ports=ports,
         )
-        if completed_operator:
-            operator_results.append(completed_operator)
-            if completed_operator.get("trigger_path_id"):
-                completed_path_ids_by_lineage.setdefault(current_lineage_id, set()).add(
-                    str(completed_operator["trigger_path_id"])
-                )
-        else:
-            completed_agent = lineage_program_execution.complete_agent_invocations(
-                current_lineage_id,
-                source_node_id,
-                source_node,
-                source_message_id,
-                actor_id,
-                source_completed_at,
-                ports=ports.flow.program_execution_ports(),
-            )
-            if completed_agent:
-                agent_results.append(completed_agent)
-                completed_path_ids_by_lineage.setdefault(
-                    current_lineage_id, set()
-                ).update(
-                    str(item.get("trigger_path_id") or "")
-                    for item in completed_agent.get("invocations") or []
-                    if str(item.get("trigger_path_id") or "")
-                )
-
-        program_event_results.extend(
-            dispatch_program_resident_work_finished(
-                current_lineage_id,
-                source_node_id,
-                source_message_id,
-                actor_id,
-                completed_at=source_completed_at,
-                event_source_ids=program_event_source_ids,
-                ports=ports,
-            )
-        )
-
-    program_created_count = sum(
-        int(item.get("matched_count") or 0)
-        for item in program_event_results
     )
-    program_event_backlog = {
-        current_lineage_id: _drain_program_event_wire_backlog(
-            current_lineage_id,
-            actor_id,
-        )
-        for current_lineage_id in sorted({
-            item[0] for item in matched_sources
-        })
-    }
-    settled_trigger_path_ids = [
+
+
+def _settle_paths_by_lineage(path_ids_by_lineage: dict[str, set[str]]) -> list[str]:
+    """Settle each Lineage's touched trigger paths, Lineages in order; the paths that finished."""
+
+    return [
         trigger_path_id
         for current_lineage_id, trigger_path_ids in sorted(
-            completed_path_ids_by_lineage.items()
+            path_ids_by_lineage.items()
         )
         for trigger_path_id in settle_program_paths(
             current_lineage_id,
             trigger_path_ids,
         )
     ]
+
+
+def _drain_backlogs(lineage_ids: Iterable[str], actor_id: str, *, ports: ProgramTerminalPorts) -> dict[str, Any]:
+    """Deliver what waited on the now-free Resident, Lineage by Lineage in order."""
+
+    return {
+        current_lineage_id: ports.flow.drain_program_event_wire_backlog(
+            current_lineage_id,
+            actor_id,
+        )
+        for current_lineage_id in sorted(set(lineage_ids))
+    }
+
+
+def handle_node_message_completed(
+    resident_id: str,
+    actor: str,
+    message_id: str,
+    *,
+    completed_at: str = "",
+    lineage_id: str = "",
+    program_event_source_ids: set[str] | None = None,
+    ports: ProgramTerminalPorts,
+) -> dict[str, Any]:
+    """Translate a Resident idle transition into Program-owned Events."""
+
+    actor_id = _safe_actor(actor)
+    exact_resident_id = _text(resident_id, 180)
+    source_message_id = _text(message_id, 180)
+    source_completed_at = _text(completed_at, 80) or ports.state.now_iso()
+    if not exact_resident_id or not source_message_id:
+        raise ValueError("节点完成事件缺少 Resident 或源 message_id")
+
+    lineage_ids = (
+        [lineage_id]
+        if lineage_id
+        else ports.directory.lineage_ids_for_resident(exact_resident_id)
+    )
+    matched_sources, matched_node_count, removed_absorption_count = _mark_sources_idle(
+        lineage_ids, exact_resident_id, source_message_id, source_completed_at, actor, actor_id, ports=ports,
+    )
+    work = _CompletedWork()
+    for current_lineage_id, source_node_id, source_node in matched_sources:
+        _complete_node_turn(
+            work, current_lineage_id, source_node_id, source_node, source_message_id, actor_id,
+            source_completed_at, program_event_source_ids, ports=ports,
+        )
+
+    program_created_count = sum(
+        int(item.get("matched_count") or 0)
+        for item in work.program_event_results
+    )
+    program_event_backlog = _drain_backlogs((item[0] for item in matched_sources), actor_id, ports=ports)
+    settled_trigger_path_ids = _settle_paths_by_lineage(work.completed_path_ids_by_lineage)
     return {
         "matched_node_count": matched_node_count,
         "removed_absorption_count": removed_absorption_count,
         "created_count": program_created_count,
         "program_created_count": program_created_count,
-        "operator_result_count": len(operator_results),
-        "agent_result_count": len(agent_results),
-        "program_events": program_event_results,
-        "operator_results": operator_results,
-        "agent_results": agent_results,
+        "operator_result_count": len(work.operator_results),
+        "agent_result_count": len(work.agent_results),
+        "program_events": work.program_event_results,
+        "operator_results": work.operator_results,
+        "agent_results": work.agent_results,
         "settled_trigger_path_ids": settled_trigger_path_ids,
         "program_event_backlog": program_event_backlog,
     }
+
+
+_TERMINAL_STATUS_ALIASES = {
+    "success": "completed",
+    "succeeded": "completed",
+    "canceled": "cancelled",
+    "interrupted": "cancelled",
+}
+
+
+def _terminal_status(terminal_status: object) -> str:
+    """A terminal status in Program terms; spellings of other systems map to it."""
+
+    status = _text(terminal_status, 24).lower() or "completed"
+    return _TERMINAL_STATUS_ALIASES.get(status, status)
+
+
+@dataclass
+class _TerminalMatch:
+    """The nodes one failed or cancelled turn belongs to, by (Lineage, node)."""
+
+    matched_node_count: int = 0
+    removed_absorption_count: int = 0
+    operator_nodes: set[tuple[str, str]] = field(default_factory=set)
+    terminal_nodes: set[tuple[str, str]] = field(default_factory=set)
+
+
+def _match_terminal_nodes(
+    lineage_ids: list[str],
+    exact_resident_id: str,
+    source_message_id: str,
+    status: str,
+    actor: str,
+    actor_id: str,
+    *,
+    ports: ProgramTerminalPorts,
+) -> _TerminalMatch:
+    """Find the Resident's nodes; a cancelled turn also stops the absorptions it was the target of."""
+
+    match = _TerminalMatch()
+    with ports.directory.lineage_scopes(
+        lineage_ids,
+        operation="resident.message_terminal",
+    ):
+        for current_lineage_id in lineage_ids:
+            try:
+                lineage = ports.state.read_lineage(current_lineage_id, actor=actor)
+            except KeyError:
+                continue
+            if not ports.directory.actor_can_manage_lineage(lineage, actor_id):
+                continue
+            runtime_resident_ids = _program_runtime_resident_ids(lineage)
+            matched_source_node_ids: set[str] = set()
+            for node in lineage.get("nodes") or []:
+                if (
+                    not isinstance(node, dict)
+                    or ports.resident.node_resident_id(node) != exact_resident_id
+                ):
+                    continue
+                match.matched_node_count += 1
+                node_id = str(node.get("id") or "")
+                matched_source_node_ids.add(node_id)
+                match.terminal_nodes.add((current_lineage_id, node_id))
+                if node_id in runtime_resident_ids:
+                    match.operator_nodes.add(
+                        (current_lineage_id, node_id)
+                    )
+            if matched_source_node_ids and status == "cancelled":
+                previous = _clone_json(lineage)
+                removed_for_lineage = remove_terminal_absorption_edges(
+                    lineage,
+                    matched_source_node_ids,
+                    source_message_id,
+                )
+                if removed_for_lineage:
+                    match.removed_absorption_count += removed_for_lineage
+                    ports.state.persist_lineage_runtime_state(
+                        previous,
+                        lineage,
+                        "节点吸收已停止",
+                    )
+    return match
+
+
+def _settle_terminal_handoffs(
+    terminal_nodes: set[tuple[str, str]],
+    source_message_id: str,
+    status: str,
+    terminal_at: str,
+    *,
+    ports: ProgramTerminalPorts,
+) -> tuple[int, dict[str, set[str]]]:
+    """Settle the Program's handoffs to each node and tell their senders; (count, paths by Lineage)."""
+
+    ordinary_terminal_count = 0
+    terminal_path_ids_by_lineage: dict[str, set[str]] = {}
+    for current_lineage_id, source_node_id in sorted(
+        terminal_nodes
+    ):
+        invocations = lineage_program_resident_inputs.settle_resident_handoffs(
+            current_lineage_id,
+            message_id=source_message_id,
+            resident_id=source_node_id,
+            status=status,
+            completed_at=terminal_at,
+        )
+        if not invocations:
+            continue
+        terminal_path_ids_by_lineage.setdefault(
+            current_lineage_id, set()
+        ).update(
+            str(item.get("trigger_path_id") or "")
+            for item in invocations
+            if str(item.get("trigger_path_id") or "")
+        )
+        ordinary_terminal_count += len(invocations)
+        ports.resident.notify_program_resident_invocation_terminal(
+            current_lineage_id,
+            source_node_id,
+            source_message_id,
+            invocations,
+            status=status,
+        )
+    return ordinary_terminal_count, terminal_path_ids_by_lineage
+
+
+def _complete_terminal_operators(
+    operator_nodes: set[tuple[str, str]],
+    source_message_id: str,
+    actor_id: str,
+    status: str,
+    *,
+    ports: ProgramTerminalPorts,
+) -> list[dict[str, Any]]:
+    """End the Packet Operator invocations the turn was running."""
+
+    operator_results: list[dict[str, Any]] = []
+    for current_lineage_id, source_node_id in sorted(
+        operator_nodes
+    ):
+        completed_operator = lineage_program_execution.complete_operator_invocation(
+            current_lineage_id,
+            source_node_id,
+            source_message_id,
+            actor_id,
+            terminal_status=status,
+            ports=ports.flow.program_execution_ports(),
+        )
+        if completed_operator:
+            operator_results.append(completed_operator)
+    return operator_results
 
 
 def handle_resident_message_terminal_locked(
@@ -734,22 +1016,8 @@ def handle_resident_message_terminal_locked(
     ports: ProgramTerminalPorts,
 ) -> dict[str, Any]:
     """Consume one durable Resident terminal fact in Program runtime."""
-    _read_lineage = ports.state.read_lineage
-    _persist_lineage_runtime_state = ports.state.persist_lineage_runtime_state
-    _actor_can_manage_lineage = ports.directory.actor_can_manage_lineage
-    _lineage_scopes = ports.directory.lineage_scopes
-    _lineage_ids_for_resident = ports.directory.lineage_ids_for_resident
-    _node_resident_id = ports.resident.node_resident_id
-    _now_iso = ports.state.now_iso
-    _notify_program_resident_invocation_terminal = ports.resident.notify_program_resident_invocation_terminal
 
-    status = _text(terminal_status, 24).lower() or "completed"
-    status = {
-        "success": "completed",
-        "succeeded": "completed",
-        "canceled": "cancelled",
-        "interrupted": "cancelled",
-    }.get(status, status)
+    status = _terminal_status(terminal_status)
     if status not in {"completed", "failed", "cancelled"}:
         raise ValueError("Resident terminal_status 无效")
     if status == "completed":
@@ -769,103 +1037,21 @@ def handle_resident_message_terminal_locked(
     if not exact_resident_id or not source_message_id:
         raise ValueError("节点终态事件缺少 Resident 或源 message_id")
 
-    matched_node_count = 0
-    removed_absorption_count = 0
-    matched_operator_nodes: set[tuple[str, str]] = set()
-    matched_terminal_nodes: set[tuple[str, str]] = set()
     lineage_ids = (
         [lineage_id]
         if lineage_id
-        else _lineage_ids_for_resident(exact_resident_id)
+        else ports.directory.lineage_ids_for_resident(exact_resident_id)
     )
-    with _lineage_scopes(
-        lineage_ids,
-        operation="resident.message_terminal",
-    ):
-        for current_lineage_id in lineage_ids:
-            try:
-                lineage = _read_lineage(current_lineage_id, actor=actor)
-            except KeyError:
-                continue
-            if not _actor_can_manage_lineage(lineage, actor_id):
-                continue
-            runtime_resident_ids = _program_runtime_resident_ids(lineage)
-            matched_source_node_ids: set[str] = set()
-            for node in lineage.get("nodes") or []:
-                if (
-                    not isinstance(node, dict)
-                    or _node_resident_id(node) != exact_resident_id
-                ):
-                    continue
-                matched_node_count += 1
-                node_id = str(node.get("id") or "")
-                matched_source_node_ids.add(node_id)
-                matched_terminal_nodes.add((current_lineage_id, node_id))
-                if node_id in runtime_resident_ids:
-                    matched_operator_nodes.add(
-                        (current_lineage_id, node_id)
-                    )
-            if matched_source_node_ids and status == "cancelled":
-                previous = _clone_json(lineage)
-                removed_for_lineage = remove_terminal_absorption_edges(
-                    lineage,
-                    matched_source_node_ids,
-                    source_message_id,
-                )
-                if removed_for_lineage:
-                    removed_absorption_count += removed_for_lineage
-                    _persist_lineage_runtime_state(
-                        previous,
-                        lineage,
-                        "节点吸收已停止",
-                    )
-
-    terminal_at = _text(completed_at, 80) or _now_iso()
-    ordinary_terminal_count = 0
-    terminal_path_ids_by_lineage: dict[str, set[str]] = {}
-    for current_lineage_id, source_node_id in sorted(
-        matched_terminal_nodes
-    ):
-        invocations = lineage_program_runtime.settle_resident_handoffs(
-            current_lineage_id,
-            message_id=source_message_id,
-            resident_id=source_node_id,
-            status=status,
-            completed_at=terminal_at,
-        )
-        if not invocations:
-            continue
-        terminal_path_ids_by_lineage.setdefault(
-            current_lineage_id, set()
-        ).update(
-            str(item.get("trigger_path_id") or "")
-            for item in invocations
-            if str(item.get("trigger_path_id") or "")
-        )
-        ordinary_terminal_count += len(invocations)
-        _notify_program_resident_invocation_terminal(
-            current_lineage_id,
-            source_node_id,
-            source_message_id,
-            invocations,
-            status=status,
-        )
-
-    operator_results: list[dict[str, Any]] = []
-    for current_lineage_id, source_node_id in sorted(
-        matched_operator_nodes
-    ):
-        completed_operator = lineage_program_execution.complete_operator_invocation(
-            current_lineage_id,
-            source_node_id,
-            source_message_id,
-            actor_id,
-            terminal_status=status,
-            ports=ports.flow.program_execution_ports(),
-                             )
-        if completed_operator:
-            operator_results.append(completed_operator)
-
+    match = _match_terminal_nodes(
+        lineage_ids, exact_resident_id, source_message_id, status, actor, actor_id, ports=ports,
+    )
+    terminal_at = _text(completed_at, 80) or ports.state.now_iso()
+    ordinary_terminal_count, terminal_path_ids_by_lineage = _settle_terminal_handoffs(
+        match.terminal_nodes, source_message_id, status, terminal_at, ports=ports,
+    )
+    operator_results = _complete_terminal_operators(
+        match.operator_nodes, source_message_id, actor_id, status, ports=ports,
+    )
     terminal_event_type = (
         "resident.work_failed"
         if status == "failed"
@@ -873,7 +1059,7 @@ def handle_resident_message_terminal_locked(
     )
     program_events: list[dict[str, Any]] = []
     for current_lineage_id, source_node_id in sorted(
-        matched_terminal_nodes
+        match.terminal_nodes
     ):
         program_events.extend(
             dispatch_program_resident_terminal_event(
@@ -887,30 +1073,16 @@ def handle_resident_message_terminal_locked(
             )
         )
 
-    settled_trigger_path_ids = [
-        trigger_path_id
-        for current_lineage_id, trigger_path_ids in sorted(
-            terminal_path_ids_by_lineage.items()
-        )
-        for trigger_path_id in settle_program_paths(
-            current_lineage_id, trigger_path_ids
-        )
-    ]
+    settled_trigger_path_ids = _settle_paths_by_lineage(terminal_path_ids_by_lineage)
     # The Resident is free again whatever the outcome: Events that waited for
     # it on a latest or queue wire go now, as after a completed turn.
-    program_event_backlog = {
-        current_lineage_id: ports.flow.drain_program_event_wire_backlog(
-            current_lineage_id,
-            actor_id,
-        )
-        for current_lineage_id in sorted({
-            lineage_id for lineage_id, _node_id in matched_terminal_nodes
-        })
-    }
+    program_event_backlog = _drain_backlogs(
+        (lineage_id for lineage_id, _node_id in match.terminal_nodes), actor_id, ports=ports,
+    )
     return {
         "terminal_status": status,
-        "matched_node_count": matched_node_count,
-        "removed_absorption_count": removed_absorption_count,
+        "matched_node_count": match.matched_node_count,
+        "removed_absorption_count": match.removed_absorption_count,
         "created_count": 0,
         "operator_result_count": len(operator_results),
         "agent_result_count": ordinary_terminal_count,
@@ -949,15 +1121,15 @@ def _watching_sources(
         ):
             continue
         contract = _program_event_source_contract_fingerprint(source)
-        if lineage_program.event_source_resident_scope(source) == "watched":
+        if lineage_program_event_scope.event_source_resident_scope(source) == "watched":
             observed = [
-                subject_id for subject_id in lineage_program.event_source_subject_ids(source)
+                subject_id for subject_id in lineage_program_event_scope.event_source_subject_ids(source)
                 if subject_id in subjects
             ]
         else:
             observed = [resident_id] if (
                 resident_id in subjects
-                and lineage_program.event_source_covers(source, resident_id, members)
+                and lineage_program_event_scope.event_source_covers(source, resident_id, members)
             ) else []
         matches.update((str(event_source_id), contract, subject_id) for subject_id in observed)
     return sorted(matches)
@@ -990,13 +1162,13 @@ def _self_caused_sources(
 
     scoped = {
         event_source_id for event_source_id, _contract, _subject in event_sources
-        if lineage_program.event_source_resident_scope(
+        if lineage_program_event_scope.event_source_resident_scope(
             (plan.get("event_sources") or {}).get(event_source_id)
         ) != "watched"
     }
     if not scoped:
         return set()
-    invocation = lineage_program_runtime.resident_handoff(lineage_id, resident_id, message_id)
+    invocation = lineage_program_resident_inputs.resident_handoff(lineage_id, resident_id, message_id)
     delivered_through = {str((invocation or {}).get("source_wire_id") or "")}
     delivered_through.discard("")
     if not delivered_through:
@@ -1037,6 +1209,10 @@ def _terminal_subjects(source_resident_id: str, source_message_id: str) -> dict[
         # Nested Families: every facade up the chain finishes with the member.
         relays = family_facade.relay_sources_of(source_resident_id, source_message_id)
     except Exception:  # noqa: BLE001 - a relay lookup never blocks the member's own Events
+        LOGGER.exception(
+            "Relay lookup for %s message %s failed; its facades' Event Sources miss this terminal",
+            source_resident_id, source_message_id,
+        )
         relays = []
     for facade_id, facade_message_id in relays:
         subjects.setdefault(facade_id, (facade_message_id, {
@@ -1216,6 +1392,82 @@ def dispatch_program_resident_terminal_event(
     return results
 
 
+# The Event type each terminal status is observed as.
+_TERMINAL_EVENT_TYPES = {
+    "completed": "resident.work_finished",
+    "failed": "resident.work_failed",
+    "cancelled": "resident.work_cancelled",
+}
+
+
+def _dispatch_to_observer(
+    observer_lineage_id: str,
+    indexed_source_ids: Iterable[str],
+    exact_resident_id: str,
+    source_message_id: str,
+    status: str,
+    event_type: str,
+    occurred_at: str,
+    *,
+    ports: ProgramTerminalPorts,
+) -> dict[str, Any] | None:
+    """Dispatch the terminal to one observing Lineage's current sources, under its Leader; None when none observes it."""
+
+    with ports.state.lineage_scope(observer_lineage_id):
+        observer = ports.state.read_lineage_state(observer_lineage_id)
+        observer_actor = ports.directory.lineage_runtime_actor(observer)
+        plan = _compiled_program(observer)
+        current_source_ids = {
+            str(event_source_id)
+            for event_source_id, source in (
+                plan.get("event_sources") or {}
+            ).items()
+            if (
+                isinstance(source, dict)
+                and str(source.get("event_type") or "")
+                == event_type
+                and lineage_program_event_scope.event_source_covers(
+                    source,
+                    exact_resident_id,
+                    _lineage_member_ids(observer),
+                )
+            )
+        }
+        selected_source_ids = current_source_ids & set(
+            indexed_source_ids
+        )
+    if not selected_source_ids:
+        return None
+    from .lineage_instruction_context import automatic_scope
+    with automatic_scope(observer_actor):
+        if status == "completed":
+            results = dispatch_program_resident_work_finished(
+                observer_lineage_id,
+                exact_resident_id,
+                source_message_id,
+                observer_actor,
+                completed_at=occurred_at,
+                event_source_ids=selected_source_ids,
+                ports=ports,
+            )
+        else:
+            results = dispatch_program_resident_terminal_event(
+                observer_lineage_id,
+                exact_resident_id,
+                source_message_id,
+                observer_actor,
+                event_type=event_type,
+                completed_at=occurred_at,
+                event_source_ids=selected_source_ids,
+                ports=ports,
+            )
+    return {
+        "lineage_id": observer_lineage_id,
+        "event_source_ids": sorted(selected_source_ids),
+        "results": results,
+    }
+
+
 def dispatch_resident_terminal_observers(
     resident_id: str,
     message_id: str,
@@ -1232,12 +1484,6 @@ def dispatch_resident_terminal_observers(
     observer executes under its current Leader identity; downstream Effects retain
     their normal target-Lineage authorization checks.
     """
-    _lineage_catalog_store = ports.directory.lineage_catalog_store
-    _lineage_runtime_actor = ports.directory.lineage_runtime_actor
-    _read_lineage_state = ports.state.read_lineage_state
-    _lineage_ids_for_resident = ports.directory.lineage_ids_for_resident
-    _lineage_scope = ports.state.lineage_scope
-    _now_iso = ports.state.now_iso
 
     exact_resident_id = _text(resident_id, 80).lower()
     source_message_id = _text(message_id, 180)
@@ -1246,18 +1492,8 @@ def dispatch_resident_terminal_observers(
         or not source_message_id
     ):
         raise ValueError("Resident terminal observer fact is incomplete")
-    status = _text(terminal_status, 24).lower() or "completed"
-    status = {
-        "success": "completed",
-        "succeeded": "completed",
-        "canceled": "cancelled",
-        "interrupted": "cancelled",
-    }.get(status, status)
-    event_type = {
-        "completed": "resident.work_finished",
-        "failed": "resident.work_failed",
-        "cancelled": "resident.work_cancelled",
-    }.get(status, "")
+    status = _terminal_status(terminal_status)
+    event_type = _TERMINAL_EVENT_TYPES.get(status, "")
     if not event_type:
         raise ValueError("Resident terminal_status 无效")
 
@@ -1268,73 +1504,23 @@ def dispatch_resident_terminal_observers(
             if str(item or "").strip()
         }
         if exclude_lineage_ids is not None
-        else set(_lineage_ids_for_resident(exact_resident_id))
+        else set(ports.directory.lineage_ids_for_resident(exact_resident_id))
     )
-    indexed = _lineage_catalog_store().program_resident_observers(
+    indexed = ports.directory.lineage_catalog_store().program_resident_observers(
         exact_resident_id,
         event_type,
     )
     dispatches: list[dict[str, Any]] = []
     failures: list[dict[str, str]] = []
-    occurred_at = _text(completed_at, 80) or _now_iso()
+    occurred_at = _text(completed_at, 80) or ports.state.now_iso()
     for observer_lineage_id, indexed_source_ids in sorted(indexed.items()):
         if observer_lineage_id in excluded:
             continue
+        # One observer's failure is reported with the result and never stops the others.
         try:
-            with _lineage_scope(observer_lineage_id):
-                observer = _read_lineage_state(observer_lineage_id)
-                observer_actor = _lineage_runtime_actor(observer)
-                plan = _compiled_program(observer)
-                current_source_ids = {
-                    str(event_source_id)
-                    for event_source_id, source in (
-                        plan.get("event_sources") or {}
-                    ).items()
-                    if (
-                        isinstance(source, dict)
-                        and str(source.get("event_type") or "")
-                        == event_type
-                        and lineage_program.event_source_covers(
-                            source,
-                            exact_resident_id,
-                            _lineage_member_ids(observer),
-                        )
-                    )
-                }
-                selected_source_ids = current_source_ids & set(
-                    indexed_source_ids
-                )
-            if not selected_source_ids:
-                continue
-            from .lineage_instruction_context import automatic_scope
-            with automatic_scope(observer_actor):
-                if status == "completed":
-                    results = dispatch_program_resident_work_finished(
-                        observer_lineage_id,
-                        exact_resident_id,
-                        source_message_id,
-                        observer_actor,
-                        completed_at=occurred_at,
-                        event_source_ids=selected_source_ids,
-                        ports=ports,
-                    )
-                else:
-                    results = dispatch_program_resident_terminal_event(
-                        observer_lineage_id,
-                        exact_resident_id,
-                        source_message_id,
-                        observer_actor,
-                        event_type=event_type,
-                        completed_at=occurred_at,
-                        event_source_ids=selected_source_ids,
-                        ports=ports,
-                    )
-            dispatches.append(
-                {
-                    "lineage_id": observer_lineage_id,
-                    "event_source_ids": sorted(selected_source_ids),
-                    "results": results,
-                }
+            dispatch = _dispatch_to_observer(
+                observer_lineage_id, indexed_source_ids, exact_resident_id, source_message_id,
+                status, event_type, occurred_at, ports=ports,
             )
         except Exception as exc:
             failures.append(
@@ -1344,6 +1530,9 @@ def dispatch_resident_terminal_observers(
                     "error": _text(exc, 500),
                 }
             )
+            continue
+        if dispatch is not None:
+            dispatches.append(dispatch)
     return {
         "resident_id": exact_resident_id,
         "message_id": source_message_id,

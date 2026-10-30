@@ -13,7 +13,9 @@ import pytest
 from management_common.principal import OperationIdentity
 from management_portal.society_service import lineage_domain, lineage_instruction_context, lineage_program_edits
 from management_portal.society_service import lineage_execution_authority as authority
-from management_portal.society_service import lineage_program_runtime as runtime
+from management_portal.society_service import (
+    lineage_program_observations, lineage_program_resident_inputs,
+)
 from management_portal.society_service import lineage_program_terminal_reconciliation as terminal
 from tests.cases import society_service_test_support as support
 from tests.cases.test_lineage_program_runtime_integration import (
@@ -38,11 +40,11 @@ def test_completion_evidence_and_response_projection_release_admission(tmp_path,
         with gate(lid):
             graph["program"] = {"revision": "changed during read"}
             edited.set()
-    monkeypatch.setattr(runtime, "pending_resident_handoffs", lambda _: [])
+    monkeypatch.setattr(lineage_program_resident_inputs, "pending_resident_handoffs", lambda _: [])
     monkeypatch.setattr(terminal, "_compiled_program", lambda _: {})
-    monkeypatch.setattr(terminal.lineage_program, "resident_completion_subscriptions",
+    monkeypatch.setattr(terminal.lineage_program_event_scope, "resident_completion_subscriptions",
                         lambda *_: [("source", [rid], False, ["target"])])
-    monkeypatch.setattr(runtime, "observe_resident_completion", lambda *a, **k: observed.append(k) or {"status": "unchanged"})
+    monkeypatch.setattr(lineage_program_observations, "observe_resident_completion", lambda *a, **k: observed.append(k) or {"status": "unchanged"})
     monkeypatch.setattr(terminal, "reconcile_terminal_absorption_edges", lambda *a, **k: 0)
     ports = terminal.ProgramTerminalPorts(
         state=SimpleNamespace(read_lineage=lambda *a, **k: deepcopy(graph), ensure_manager=lambda *_: None,
@@ -105,7 +107,7 @@ def test_component_edit_finishes_while_recovery_waits_for_resident_evidence(runt
             release.set()
         editing.result()
         assert recovery.result()["recovered_handoff_count"] == 0
-    assert len(runtime.pending_resident_handoffs(lid)) == 1
+    assert len(lineage_program_resident_inputs.pending_resident_handoffs(lid)) == 1
 
 
 @pytest.mark.parametrize("change", ["edit", "delete", "replace", "execution", "settle", "membership"])
@@ -171,7 +173,7 @@ def test_recovery_revalidates_handoff_under_admission_lock(tmp_path, monkeypatch
         flow=SimpleNamespace(drain_program_event_wire_backlog=drain),
         directory=SimpleNamespace(lineage_execution_authority=gate),
     )
-    monkeypatch.setattr(runtime, "pending_resident_handoffs", lambda _: deepcopy(current))
+    monkeypatch.setattr(lineage_program_resident_inputs, "pending_resident_handoffs", lambda _: deepcopy(current))
     monkeypatch.setattr(terminal.trigger_paths, "resident_inputs", lambda *a, **k: deepcopy(current))
     monkeypatch.setattr(terminal, "_compiled_program", lambda _: {})
     with ThreadPoolExecutor(max_workers=2) as pool:
@@ -201,7 +203,7 @@ def test_recovery_with_nothing_to_settle_only_drains(monkeypatch):
         flow=SimpleNamespace(drain_program_event_wire_backlog=lambda *a, **k: drains.append(1) or {}),
         directory=SimpleNamespace(lineage_execution_authority=lambda _: gates.append(1) or nullcontext()),
     )
-    monkeypatch.setattr(runtime, "pending_resident_handoffs", lambda _: [])
+    monkeypatch.setattr(lineage_program_resident_inputs, "pending_resident_handoffs", lambda _: [])
     monkeypatch.setattr(terminal, "_compiled_program", lambda _: pytest.fail("recovery compiles nothing"))
     result = terminal.reconcile_runtime_with_authority(lid, "sample_admin", ports=ports, recovery_only=True)
     assert (len(reads), len(gates), len(drains)) == (0, 0, 1)

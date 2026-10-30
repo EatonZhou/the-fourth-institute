@@ -19,7 +19,9 @@ from management_portal.society_service import (
     component_runtime,
     lineage_domain,
     lineage_lifecycle,
-    lineage_program,
+    lineage_program_bindings,
+    lineage_program_compilation,
+    lineage_program_diagnostics,
     lineage_program_runtime,
 )
 from tests.cases import society_service_test_support as lineage_test_support
@@ -78,12 +80,12 @@ def test_a_source_watching_several_residents_fires_for_each_and_names_it(
     sent = _sender(monkeypatch)
     created = _watched_by_two("resident.work_finished")
     lineage_id = str(created["lineage_id"])
-    plan = lineage_program.compile_program(created["program"], created["nodes"])
+    plan = lineage_program_compilation.compile_program(created["program"], created["nodes"])
     source = plan["event_sources"]["event_source_members"]
     assert source["subject_resident_ids"] == [WORK_A, WORK_B]
     assert "subject_resident_id" not in source
     assert "event.missing_subject" not in {
-        item.get("code") for item in lineage_program.program_diagnostics(created["program"], created["nodes"])
+        item.get("code") for item in lineage_program_diagnostics.program_diagnostics(created["program"], created["nodes"])
     }
 
     finish = lineage_domain.lineage_program_terminal_reconciliation.dispatch_program_resident_work_finished
@@ -178,7 +180,7 @@ def test_resuming_starts_every_watched_resident_from_its_current_state(
     created = _watched_by_two("resident.queue_pressure_exceeded", {"queue_length_threshold": 2})
     lineage_id = str(created["lineage_id"])
     source = {"consumed_cursors": [], "subjects": {WORK_A: {"state_locator": "x", "state_signature": "y", "state_value": "z"}}}
-    plan_source = lineage_program.compile_program(created["program"], created["nodes"])["event_sources"]["event_source_members"]
+    plan_source = lineage_program_compilation.compile_program(created["program"], created["nodes"])["event_sources"]["event_source_members"]
     component_runtime._resume_event_source(source, plan_source)
     assert source["subjects"] == {WORK_A: {"rebaseline": True}, WORK_B: {"rebaseline": True}}
     assert "rebaseline" not in source
@@ -193,7 +195,7 @@ def test_only_resident_events_watch_several_and_each_resident_once(primitive_sto
     nodes = [_worker(WORK_A), _worker(WORK_B)]
 
     def compile_with(event_type: str, sources: list[str]) -> dict:
-        return lineage_program.compile_program({
+        return lineage_program_compilation.compile_program({
             "components": [{"id": "event_source_xyz", "kind": "event_source", "config": {"event_type": event_type}}],
             "wires": [
                 {"id": f"wire_watch_n{index}", "kind": "watch", "source": "event_source_xyz", "target": source}
@@ -219,18 +221,18 @@ def test_the_inspector_sets_the_watched_residents_at_once() -> None:
         "wires": [{"id": "wire_watch_a", "kind": "watch", "source": "event_source_xyz", "target": WORK_A,
                    "source_port": "watch"}],
     }
-    added = lineage_program.reconcile_event_source_watch_binding(
+    added = lineage_program_bindings.reconcile_event_source_watch_binding(
         program, "event_source_xyz", {"kind": "resident", "ids": [WORK_A, WORK_B]}, lineage_resident_ids=[WORK_A, WORK_B],
     )
     assert added["updated_wire_ids"] == ["wire_watch_a"] and len(added["created_wire_ids"]) == 1
     assert sorted(wire["target"] for wire in program["wires"]) == [WORK_A, WORK_B]
-    narrowed = lineage_program.reconcile_event_source_watch_binding(
+    narrowed = lineage_program_bindings.reconcile_event_source_watch_binding(
         program, "event_source_xyz", {"kind": "resident", "ids": [WORK_B]}, lineage_resident_ids=[WORK_A, WORK_B],
     )
     assert narrowed["removed_wire_ids"] == ["wire_watch_a"]
     assert [wire["target"] for wire in program["wires"]] == [WORK_B]
     program["components"][0]["config"]["event_type"] = "file.changed"
     with pytest.raises(ValueError, match="只能监听一个 Resident"):
-        lineage_program.reconcile_event_source_watch_binding(
+        lineage_program_bindings.reconcile_event_source_watch_binding(
             program, "event_source_xyz", {"kind": "resident", "ids": [WORK_A, WORK_B]}, lineage_resident_ids=[WORK_A, WORK_B],
         )

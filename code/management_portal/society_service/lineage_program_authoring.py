@@ -8,7 +8,10 @@ from __future__ import annotations
 import secrets
 from typing import Any, Iterable
 
-from . import lineage_program
+from . import (
+    lineage_program, lineage_program_bindings, lineage_program_components,
+    lineage_program_event_scope, lineage_program_vocabulary,
+)
 from .lineage_values import _clone_json, _text
 
 PACKET_OPERATOR_DEFAULT_TITLES = {
@@ -25,7 +28,7 @@ DEFAULT_EFFECT_CONFIG = {"script": 'DeliverMessage resident_id="${endpoint.targe
 
 def new_component_details(payload: dict[str, Any]) -> tuple[str, str, str, dict[str, Any]]:
     kind = _text(payload.get("kind"), 32).lower()
-    if kind not in lineage_program.PROGRAM_COMPONENT_KINDS:
+    if kind not in lineage_program_vocabulary.PROGRAM_COMPONENT_KINDS:
         raise ValueError("未知的 HATG 程序组件类型")
     component_id = f"{kind}_{secrets.token_hex(6)}"
     title = _text(payload.get("title"), 120) or {
@@ -33,7 +36,7 @@ def new_component_details(payload: dict[str, Any]) -> tuple[str, str, str, dict[
         **PACKET_OPERATOR_DEFAULT_TITLES,
     }[kind]
     defaults = {
-        "event_source": {"event_type": lineage_program.DEFAULT_EVENT_SOURCE_TYPE},
+        "event_source": {"event_type": lineage_program_vocabulary.DEFAULT_EVENT_SOURCE_TYPE},
         "effect": DEFAULT_EFFECT_CONFIG,
         "loop": {"max_rounds": 3, "completion": "complete"},
         "seed": {},
@@ -42,10 +45,10 @@ def new_component_details(payload: dict[str, Any]) -> tuple[str, str, str, dict[
         _clone_json(payload.get("config"))
         if isinstance(payload.get("config"), dict)
         else _clone_json(defaults[kind]) if kind in defaults
-        else lineage_program.default_packet_operator_config(kind)
+        else lineage_program_components.default_packet_operator_config(kind)
     )
-    if kind in lineage_program.PACKET_OPERATOR_KINDS:
-        config = lineage_program.normalize_packet_operator_config(
+    if kind in lineage_program_vocabulary.PACKET_OPERATOR_KINDS:
+        config = lineage_program_components.normalize_packet_operator_config(
             kind, config, require_executor=False
         )
         if config.get("resident_executor_id"):
@@ -69,7 +72,7 @@ def packet_update_config(
 ) -> dict[str, Any]:
     kind = str(current_component.get("kind") or "")
     current_config = _clone_json(
-        lineage_program.authoring_component_config(current_component)
+        lineage_program_vocabulary.authoring_component_config(current_component)
     )
     candidate = _clone_json(
         requested.get("config") if isinstance(requested.get("config"), dict)
@@ -81,7 +84,7 @@ def packet_update_config(
         raise ValueError("Packet Operator 不能改绑到其他 Resident")
     if parked_id and not requested_id:
         candidate["resident_executor_id"] = parked_id
-    return lineage_program.normalize_packet_operator_config(
+    return lineage_program_components.normalize_packet_operator_config(
         kind, candidate, require_executor=False
     )
 
@@ -207,13 +210,13 @@ def remove_program_components(
         existing = components[component_id]
         executor_resident_id = (
             str(
-                lineage_program.authoring_component_config(existing).get(
+                lineage_program_vocabulary.authoring_component_config(existing).get(
                     "resident_executor_id"
                 )
                 or ""
             )
             if str(existing.get("kind") or "")
-            in lineage_program.PACKET_OPERATOR_KINDS
+            in lineage_program_vocabulary.PACKET_OPERATOR_KINDS
             else ""
         )
         if executor_resident_id:
@@ -306,11 +309,11 @@ def update_component(
     if (
         kind == "event_source"
         and effective_watch_subject is None
-        and lineage_program._component_resident_scope(existing) != "watched"
+        and lineage_program_event_scope._component_resident_scope(existing) != "watched"
     ):
         # Watching the Lineage or all of Portal replaces the Watch wires.
         effective_watch_subject = {"kind": "resident", "ids": []}
-    if kind in lineage_program.PACKET_OPERATOR_KINDS:
+    if kind in lineage_program_vocabulary.PACKET_OPERATOR_KINDS:
         executor_id = str(
             (existing.get("config") or {}).get("resident_executor_id")
             or ""
@@ -334,10 +337,10 @@ def update_component(
             release_operator_executor_leadership(body, executor_id)
     transitions: list[dict[str, Any]] = []
     if kind == "effect":
-        transitions.append(lineage_program.reconcile_effect_endpoints(program, component_id))
+        transitions.append(lineage_program_bindings.reconcile_effect_endpoints(program, component_id))
     if kind == "effect" and requested_endpoint_reference_ids is not None:
         transitions.append(
-            lineage_program.reconcile_effect_endpoint_bindings(
+            lineage_program_bindings.reconcile_effect_endpoint_bindings(
                 program,
                 component_id,
                 requested_endpoint_reference_ids,
@@ -350,7 +353,7 @@ def update_component(
         )
     if kind == "event_source" and effective_watch_subject is not None:
         transitions.append(
-            lineage_program.reconcile_event_source_watch_binding(
+            lineage_program_bindings.reconcile_event_source_watch_binding(
                 program,
                 component_id,
                 effective_watch_subject,
@@ -487,6 +490,6 @@ def program_without_resident_references(
     )
     for component in program["components"]:
         config = component.get("config") or {}
-        if component.get("kind") in lineage_program.PACKET_OPERATOR_KINDS and config.get("resident_executor_id") in resident_ids:
+        if component.get("kind") in lineage_program_vocabulary.PACKET_OPERATOR_KINDS and config.get("resident_executor_id") in resident_ids:
             component["config"] = {key: value for key, value in config.items() if key != "resident_executor_id"}
     return program

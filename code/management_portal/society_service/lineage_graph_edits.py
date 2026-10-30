@@ -12,7 +12,7 @@ from .lineage_program_contracts import _program_execution_contract_change
 from .lineage_values import _clone_json, _safe_actor, _text
 from . import lineage_program_authoring
 from .lineage_view_projection import node_resident_id as _node_resident_id
-from . import identity_contract, invariant_locks, lineage_program, resident_catalog
+from . import identity_contract, invariant_locks, lineage_program_graph_mutation, resident_catalog
 from . import lineage_aggregate
 from .domain_ports import resident_domain_port as resident_domain
 from . import lineage_state, lineage_resident_nodes
@@ -223,7 +223,7 @@ def apply_lineage_changes(
     """
 
     raw_operations = payload.get("program_operations") or []
-    operations = lineage_program.normalize_graph_mutations(raw_operations) if raw_operations else []
+    operations = lineage_program_graph_mutation.normalize_graph_mutations(raw_operations) if raw_operations else []
     resident_ids = [str(item) for item in payload.get("resident_ids") or []]
     if not operations and not resident_ids:
         raise ValueError("ApplyLineageChanges 需要至少一项修改")

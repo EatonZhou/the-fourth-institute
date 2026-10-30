@@ -356,7 +356,7 @@ def test_a_reclaimed_activation_reuses_completed_calls_and_registers_each_delive
         return _Outcome("committed", {"resident_id": "resident_bbbbbbbbbbbb", "message_id": f"msg_{number}"}, instruction_id=f"inst_{number}")
 
     monkeypatch.setattr(routing, "execute", fake_execute)
-    monkeypatch.setattr(execution.lineage_program_runtime, "effect_result_projection", lambda *a, **k: {"calls": k.get("calls")})
+    monkeypatch.setattr(execution.lineage_program_effect_results, "effect_result_projection", lambda *a, **k: {"calls": k.get("calls")})
     host = _Host()
     with pytest.raises(SystemExit):
         execution._execute_program_effect_component(lineage, plan, "effect_aaaaaaaaaaaa", activation, "CASE-A", host=host)
@@ -411,7 +411,7 @@ def test_a_failed_script_reports_the_line_and_completed_calls(monkeypatch):
         return _Outcome("committed", {}, instruction_id="inst_ping")
 
     monkeypatch.setattr(routing, "execute", fake_execute)
-    monkeypatch.setattr(execution.lineage_program_runtime, "effect_result_projection", lambda *a, **k: {})
+    monkeypatch.setattr(execution.lineage_program_effect_results, "effect_result_projection", lambda *a, **k: {})
     result = execution._execute_program_effect_component(lineage, plan, "effect_aaaaaaaaaaaa", activation, "CASE-A", host=_Host())
     assert result["status"] == "failed"
     assert result["typed_outputs"] == {
@@ -440,7 +440,7 @@ def test_transient_call_failure_resumes_with_the_same_key_without_repeating_succ
         return _Outcome("committed", {"resident_id": "resident_bbbbbbbbbbbb", "message_id": "msg_retry"})
 
     monkeypatch.setattr(routing, "execute", fake_execute)
-    monkeypatch.setattr(execution.lineage_program_runtime, "effect_result_projection", lambda *a, **k: {})
+    monkeypatch.setattr(execution.lineage_program_effect_results, "effect_result_projection", lambda *a, **k: {})
     host = _Host()
     first = execution._execute_program_effect_component(lineage, plan, "effect_aaaaaaaaaaaa", activation, "CASE-A", host=host)
     assert first["status"] == "failed" and first["retryable"] is True
@@ -480,7 +480,7 @@ def test_a_script_changed_mid_activation_is_not_resumed_on_the_new_text(monkeypa
     monkeypatch.setattr(routing, "execute", lambda call, context, **_: (_ for _ in ()).throw(SystemExit("handover")))
     with pytest.raises(SystemExit):
         execution._execute_program_effect_component(lineage, _plan("Ping"), "effect_aaaaaaaaaaaa", activation, "CASE-A", host=_Host())
-    monkeypatch.setattr(execution.lineage_program_runtime, "effect_result_projection", lambda *a, **k: {})
+    monkeypatch.setattr(execution.lineage_program_effect_results, "effect_result_projection", lambda *a, **k: {})
     result = execution._execute_program_effect_component(lineage, _plan("Ping\nPing"), "effect_aaaaaaaaaaaa", activation, "CASE-A", host=_Host())
     assert result["status"] == "failed"
     assert "被修改" in result["error"]
@@ -510,7 +510,7 @@ def test_a_failed_invocation_registration_propagates_and_is_retried_on_reclaim(m
             return super().register_program_agent_invocation(*args)
 
     monkeypatch.setattr(routing, "execute", fake_execute)
-    monkeypatch.setattr(execution.lineage_program_runtime, "effect_result_projection", lambda *a, **k: {})
+    monkeypatch.setattr(execution.lineage_program_effect_results, "effect_result_projection", lambda *a, **k: {})
     host = _FlakyHost()
     with pytest.raises(RuntimeError, match="ledger"):
         execution._execute_program_effect_component(lineage, plan, "effect_aaaaaaaaaaaa", activation, "CASE-A", host=host)
@@ -537,7 +537,7 @@ def test_workflow_bindings_read_the_receipt_a_delivering_effect_returns(monkeypa
     delivered = {"resident_id": resident_id, "message_id": "msg_0123456789abcdef",
                  "input_state": {"message_id": "msg_0123456789abcdef", "state": "queued", "reply_message_ids": []}}
     monkeypatch.setattr(routing, "execute", lambda call, context, **_: _Outcome("committed", dict(delivered), instruction_id="inst_9"))
-    monkeypatch.setattr(execution.lineage_program_runtime, "effect_result_projection", lambda *a, **k: {"calls": k.get("calls")})
+    monkeypatch.setattr(execution.lineage_program_effect_results, "effect_result_projection", lambda *a, **k: {"calls": k.get("calls")})
     result = execution._execute_program_effect_component(
         lineage, _plan(deliver_message_script("Fixed prompt")), effect_id, activation, "CASE-A", host=_Host(),
     )

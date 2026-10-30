@@ -13,7 +13,7 @@ from .lineage_program_queries import _compiled_program
 from . import lineage_graph_authoring
 from .lineage_program_contracts import _program_invoke_wire_execution_configs
 from .lineage_values import _clone_json, _safe_actor, _text
-from .lineage_program import _position
+from .lineage_program_fields import _position
 from . import identity_contract, lineage_state_domains, lineage_storage, resident_catalog, resident_protocol
 from . import lineage_aggregate
 from .domain_ports import resident_domain_port as resident_domain

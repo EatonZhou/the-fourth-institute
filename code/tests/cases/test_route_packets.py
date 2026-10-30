@@ -4,7 +4,9 @@ import json
 import pytest
 
 from management_portal.society_service import lineage_primitives as packets
-from management_portal.society_service import lineage_operators, lineage_program
+from management_portal.society_service import (
+    lineage_operators, lineage_program_arguments, lineage_program_compilation,
+)
 from management_portal.society_service.lineage_program_packet_routing import packet_envelopes
 from tests.cases.test_lineage_generic_primitives import primitive_store  # noqa: F401
 from tests.cases import society_service_test_support as support
@@ -103,12 +105,12 @@ def test_route_compiles_the_same_output_port_for_resident_and_event_source():
                               {"id": "filter_pass", "kind": "filter", "config": {}}],
                "wires": [{"id": "wire_event", "kind": "route", "source": "event_source_start", "target": "filter_pass"},
                          {"id": "wire_resident", "kind": "route", "source": RESIDENT, "target": "filter_pass"}]}
-    plan = lineage_program.compile_program(program, [{"id": RESIDENT}])
+    plan = lineage_program_compilation.compile_program(program, [{"id": RESIDENT}])
     assert {wire["source_port"] for wire in plan["wires"]} == {"output"}
     assert set(plan["packet_operators"]["filter_pass"]["incoming_packet_wire_ids"]) == {"wire_event", "wire_resident"}
     event = packets.make_event("manual.triggered")
     value = packets.event_packet(event).to_dict()
-    assert lineage_program.resolve_invocation_argument_mapping({"kind": {"from": "packet.events.0.type"}}, event, packet=value) == {"kind": "manual.triggered"}
+    assert lineage_program_arguments.resolve_invocation_argument_mapping({"kind": {"from": "packet.events.0.type"}}, event, packet=value) == {"kind": "manual.triggered"}
 
 
 @pytest.mark.parametrize("drop_all", [False, True])

@@ -13,7 +13,9 @@ from .lineage_program_queries import _compiled_program
 from .lineage_program_contracts import _program_execution_contract_change
 from .lineage_values import _clone_json, _safe_actor, _text
 from . import lineage_program_authoring
-from . import lineage_operator_runtime, lineage_program, lineage_program_runtime
+from . import (
+    lineage_operator_runtime, lineage_program, lineage_program_runtime, lineage_program_vocabulary,
+)
 from . import lineage_aggregate
 from . import lineage_state, lineage_reads, lineage_resident_nodes
 
@@ -108,7 +110,7 @@ def create_lineage_program_component(
     )
     effective_payload = dict(payload)
     executor_resident_id = ""
-    if kind in lineage_program.PACKET_OPERATOR_KINDS:
+    if kind in lineage_program_vocabulary.PACKET_OPERATOR_KINDS:
         if requested_config["operator_implementation"] == "resident":
             created_executor = _create_packet_operator_executor(
                 lineage_id,
@@ -190,7 +192,7 @@ def save_lineage_program_component(
         )
         config.update(_clone_json(effect_changes))
         requested["config"] = config
-    if current_kind in lineage_program.PACKET_OPERATOR_KINDS:
+    if current_kind in lineage_program_vocabulary.PACKET_OPERATOR_KINDS:
         candidate_config = lineage_program_authoring.packet_update_config(
             current_component, requested
         )

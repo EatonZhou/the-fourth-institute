@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from management_portal.society_service import (
     component_runtime, lineage_domain, lineage_program_backlog, lineage_program_runtime,
+    lineage_program_wire_queue,
 )
 from tests.cases import society_service_test_support as support
 from tests.cases.test_lineage_program_runtime_integration import (  # noqa: F401
@@ -111,8 +112,8 @@ def test_a_drain_reads_the_lineage_again_only_after_a_delivery_attempt(runtime_s
     }, ACTOR)["lineage_id"]
     lineage_domain.emit_program_manual_event(lineage_id, {"event_source_id": SOURCE}, ACTOR)
     busy["value"] = False
-    claim = lineage_program_runtime.claim_pending_event
-    monkeypatch.setattr(lineage_program_runtime, "claim_pending_event", lambda lid, wire_id, **kwargs: (
+    claim = lineage_program_wire_queue.claim_pending_event
+    monkeypatch.setattr(lineage_program_wire_queue, "claim_pending_event", lambda lid, wire_id, **kwargs: (
         None if wire_id == "wire_reads_a" else claim(lid, wire_id, **kwargs)
     ))
 

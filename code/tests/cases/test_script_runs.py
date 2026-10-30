@@ -266,10 +266,12 @@ def test_multiple_effect_watch_compiles_and_outcome_validates():
     """事件源可同时监视多个 Effect 的脚本结束事件，并编译出结果条件
 
     :design-point:"""
-    from management_portal.society_service import lineage_program as program
+    from management_portal.society_service import (
+        lineage_program_bindings, lineage_program_compilation,
+    )
     graph={'components':[{'id':'effect_aaaaaaaaaaaa','kind':'effect','config':{'script':'GetPortalStatus'}},{'id':'effect_bbbbbbbbbbbb','kind':'effect','config':{'script':'GetPortalStatus'}},{'id':'event_source_cccccccccccc','kind':'event_source','config':{'event_type':'script.finished','outcome':'failed'}}],'wires':[]}
-    program.reconcile_event_source_watch_binding(graph,'event_source_cccccccccccc',{'kind':'effect','ids':['effect_aaaaaaaaaaaa','effect_bbbbbbbbbbbb']},lineage_resident_ids=[])
-    plan=program.compile_program(graph,[])
+    lineage_program_bindings.reconcile_event_source_watch_binding(graph,'event_source_cccccccccccc',{'kind':'effect','ids':['effect_aaaaaaaaaaaa','effect_bbbbbbbbbbbb']},lineage_resident_ids=[])
+    plan=lineage_program_compilation.compile_program(graph,[])
     source=plan['event_sources']['event_source_cccccccccccc']
     assert source['subject_effect_ids']==['effect_aaaaaaaaaaaa','effect_bbbbbbbbbbbb']
     assert source['outcome']=='failed'

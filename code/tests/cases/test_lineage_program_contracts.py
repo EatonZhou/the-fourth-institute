@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 from management_portal.society_service import lineage_lifecycle, lineage_program_edits, lineage_reads, lineage_state
-from management_portal.society_service import lineage_program
+from management_portal.society_service import lineage_program, lineage_program_compilation
 from management_portal.society_service import lineage_recurring_schedule
 from management_portal.society_service import lineage_aggregate
 from tests.cases.effect_script_support import effect_config, lower_effect_call
@@ -334,7 +334,7 @@ def test_normalize_program_preserves_one_event_fanout_and_exact_effect_target_co
         component = second["components"][0]
         assert component["kind"] == "effect"
         assert component["config"] == config
-        compiled = lineage_program.compile_program(second, _nodes())["effects"]["effect_create_builder"]
+        compiled = lineage_program_compilation.compile_program(second, _nodes())["effects"]["effect_create_builder"]
         assert compiled["script"].startswith("CreateResident ")
     with subtests.test(contract='test_event_wire_normalizes_unavailable_policy_queue_limit_and_ttl'), isolated_portal_case() as case_path:
         raw = _composed_program()
@@ -939,7 +939,7 @@ def test_selector_and_reducer_form_an_acyclic_conjugate_operator_chain() -> None
         program,
         lineage_nodes=nodes,
     )
-    plan = lineage_program.compile_program(normalized, nodes)
+    plan = lineage_program_compilation.compile_program(normalized, nodes)
 
     assert plan["packet_operators"][SELECTOR]["kind"] == "selector"
     assert plan["packet_operators"][SELECTOR][
@@ -974,26 +974,26 @@ def test_selector_and_reducer_form_an_acyclic_conjugate_operator_chain() -> None
 
 def test_equal_programs_share_one_compiled_plan_until_their_content_changes(monkeypatch) -> None:
     """内容相同的程序只编译一次并共用计划，成员运行状态变化不算内容变化；内容一变就重新编译，已有计划不随输入改动"""
-    monkeypatch.setattr(lineage_program, "_COMPILED_PLANS", OrderedDict())
+    monkeypatch.setattr(lineage_program_compilation, "_COMPILED_PLANS", OrderedDict())
     compiles = []
-    compile_plan = lineage_program._compile_program
+    compile_plan = lineage_program_compilation._compile_program
     monkeypatch.setattr(
-        lineage_program, "_compile_program", lambda *args: compiles.append(1) or compile_plan(*args),
+        lineage_program_compilation, "_compile_program", lambda *args: compiles.append(1) or compile_plan(*args),
     )
     nodes = _nodes()
     program = _composed_program()
 
-    plan = lineage_program.compile_program(program, nodes)
+    plan = lineage_program_compilation.compile_program(program, nodes)
     unchanged = deepcopy(plan)
-    assert lineage_program.compile_program(deepcopy(program), deepcopy(nodes)) is plan
+    assert lineage_program_compilation.compile_program(deepcopy(program), deepcopy(nodes)) is plan
     # A member's run changes its runtime fields, not the plan.
     running = [{**node, "status": "running", "last_execution": {"message_id": "msg_1"}} for node in nodes]
-    assert lineage_program.compile_program(program, running) is plan
+    assert lineage_program_compilation.compile_program(program, running) is plan
     assert len(compiles) == 1
 
     next(item for item in program["components"] if item["id"] == REDUCER)["title"] = "Renamed"
     nodes[0]["title"] = "renamed"
-    renamed = lineage_program.compile_program(program, nodes)
+    renamed = lineage_program_compilation.compile_program(program, nodes)
     assert len(compiles) == 2
     assert renamed["packet_operators"][REDUCER]["title"] == "Renamed"
     assert plan == unchanged
@@ -1043,6 +1043,6 @@ def test_target_can_bind_any_reference_but_instruction_checks_resource_kind() ->
 
     # The endpoint may hold any reference; DeliverMessage checks at run time
     # that it is a Resident.
-    assert lineage_program.compile_program(program, [])["effects"]["effect_send_reference"]["endpoints"] == {
+    assert lineage_program_compilation.compile_program(program, [])["effects"]["effect_send_reference"]["endpoints"] == {
         "target": "event_source_reference",
     }

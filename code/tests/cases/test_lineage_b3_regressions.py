@@ -124,11 +124,11 @@ RESIDENT = "resident_111111111111"
 
 
 def handoff(lineage_id, message_id):
-    from management_portal.society_service import lineage_program_runtime as runtime, trigger_paths
+    from management_portal.society_service import lineage_program_resident_inputs, trigger_paths
     event = {"id": "event-" + message_id, "type": "manual.triggered", "occurred_at": AT, "payload": {},
              "identity": OperationIdentity.for_actor(RESIDENT).to_dict()}
     path = trigger_paths.begin_event(lineage_id, "source", event, cause_kind="input", cause_id=message_id)
-    runtime.register_resident_handoff(lineage_id, message_id=message_id, resident_id=RESIDENT,
+    lineage_program_resident_inputs.register_resident_handoff(lineage_id, message_id=message_id, resident_id=RESIDENT,
         trigger_path_id=path, event=event, source_wire_id="wire")
     trigger_paths.event_settled(path, "source", event["id"])
     return path
@@ -148,7 +148,9 @@ def complete_input(message_id):
 
 def test_profile_retention_and_terminal_cleanup(monkeypatch):
     """投递配置超过一千条也全部保留，交接完成后只删除对应消息的配置"""
-    from management_portal.society_service import lineage_program_runtime as runtime
+    from management_portal.society_service import (
+        lineage_program_resident_inputs, lineage_program_runtime as runtime,
+    )
     from tests.cases.test_lineage_catalogs import _lineage_definition, LINEAGE_ID
     from management_portal.society_service.state_store import LineageDataStore
     from management_portal.society_service.lineage_catalog import LineageCatalog
@@ -159,7 +161,7 @@ def test_profile_retention_and_terminal_cleanup(monkeypatch):
     assert len(runtime.read_runtime(LINEAGE_ID)["delivery_profiles"]) == len(profiles)
     handoff(LINEAGE_ID, "msg_00000001")
     complete_input("msg_00000001")
-    runtime.settle_resident_handoffs(LINEAGE_ID, message_id="msg_00000001", resident_id="resident_111111111111", status="completed")
+    lineage_program_resident_inputs.settle_resident_handoffs(LINEAGE_ID, message_id="msg_00000001", resident_id="resident_111111111111", status="completed")
     assert "msg_00000001" not in runtime.read_runtime(LINEAGE_ID)["delivery_profiles"]
     assert "msg_00000000" in runtime.read_runtime(LINEAGE_ID)["delivery_profiles"]
 
@@ -175,7 +177,7 @@ def test_pending_only_lineage_is_reconciled(monkeypatch):
     monkeypatch.setattr(polling.lineage_program_runtime, "read_runtime", lambda _: {})
     event = {"id": "pending-recovery", "type": "manual.triggered", "occurred_at": AT,
              "identity": OperationIdentity.for_actor(RESIDENT).to_dict()}
-    monkeypatch.setattr(polling.lineage_program_runtime, "pending_resident_handoffs", lambda _: [{"event": event}])
+    monkeypatch.setattr(polling.lineage_program_resident_inputs, "pending_resident_handoffs", lambda _: [{"event": event}])
     ports = polling.ProgramPollingPorts(
         lineage_catalog_store=lambda: SimpleNamespace(get=lambda _: lineage),
         lineage_runtime_actor=lambda _: "portal", read_lineage_state=lambda _: lineage,
@@ -191,7 +193,7 @@ def test_departed_resident_terminal_input_settles_invocation(monkeypatch):
     """Resident 已不在 Lineage 图中时，其输入结束后对账仍把交接结算为 completed"""
     from contextlib import nullcontext
     from unittest.mock import Mock
-    from management_portal.society_service import lineage_program_runtime as runtime
+    from management_portal.society_service import lineage_program_resident_inputs
     from management_portal.society_service import lineage_program_terminal_reconciliation as terminal
     from management_portal.society_service import resident_conversation_stream
     from management_portal.society_service.lineage_catalog import LineageCatalog
@@ -212,21 +214,23 @@ def test_departed_resident_terminal_input_settles_invocation(monkeypatch):
         flow=Mock(drain_program_event_wire_backlog=lambda *_: {}))
     result = terminal.reconcile_runtime_with_authority(LINEAGE_ID, "portal", ports=ports)
     assert result["recovered_handoff_count"] == 1
-    assert runtime.pending_resident_handoffs(LINEAGE_ID) == []
-    assert runtime.resident_handoff(LINEAGE_ID, "resident_111111111111", "msg_departed")["status"] == "completed"
+    assert lineage_program_resident_inputs.pending_resident_handoffs(LINEAGE_ID) == []
+    assert lineage_program_resident_inputs.resident_handoff(LINEAGE_ID, "resident_111111111111", "msg_departed")["status"] == "completed"
 
 
 def test_deleting_lineage_cleans_work_but_retains_trigger_paths():
     """删除 Lineage 清掉投递配置、事件进度和共享状态，触发路径保留并标为 cancelled"""
-    from management_portal.society_service import lineage_program_runtime as runtime, lineage_graph_state
+    from management_portal.society_service import (
+        lineage_program_occurrences, lineage_program_resident_inputs, lineage_graph_state,
+    )
     from management_portal.society_service.state_store import LineageDataStore
     from management_portal.society_service.lineage_catalog import LineageCatalog
     from tests.cases.test_lineage_catalogs import _lineage_definition, LINEAGE_ID
     store = LineageDataStore()
     LineageCatalog(store).upsert(_lineage_definition())
     path = handoff(LINEAGE_ID, "msg_remove")
-    runtime.record_delivery_profile(LINEAGE_ID, "msg_remove", {"isolated": True})
-    runtime.claim_event_occurrence(LINEAGE_ID, "event_source_remove", "one", max_fires=None)
+    lineage_program_resident_inputs.record_delivery_profile(LINEAGE_ID, "msg_remove", {"isolated": True})
+    lineage_program_occurrences.claim_event_occurrence(LINEAGE_ID, "event_source_remove", "one", max_fires=None)
     lineage_graph_state.update_cell(LINEAGE_ID, "counter", 1)
     with store.database.read() as connection:
         before = connection.execute("SELECT count(*) AS n FROM trigger_paths WHERE lineage_id=%s", (LINEAGE_ID,)).fetchone()["n"]

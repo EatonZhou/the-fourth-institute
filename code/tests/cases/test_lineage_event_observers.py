@@ -15,8 +15,8 @@ from types import SimpleNamespace
 import pytest
 
 from management_portal.society_service import (
-    lineage_event_observers as observers, lineage_message_events, lineage_primitives, lineage_program_runtime,
-    lineage_release_events,
+    lineage_event_observers as observers, lineage_message_events, lineage_primitives,
+    lineage_program_observations, lineage_release_events,
 )
 
 LINEAGE = "lineage_0123456789ab"
@@ -30,10 +30,10 @@ class Runtime:
     def __init__(self, monkeypatch, *answers):
         self.answers = list(answers)
         self.observed, self.committed, self.file_commits = [], [], []
-        monkeypatch.setattr(lineage_program_runtime, "observe_event_source_value", self.observe)
-        monkeypatch.setattr(lineage_program_runtime, "commit_event_source_value", self.commit)
-        monkeypatch.setattr(lineage_program_runtime, "observe_file_signature", self.observe_file)
-        monkeypatch.setattr(lineage_program_runtime, "commit_file_signature",
+        monkeypatch.setattr(lineage_program_observations, "observe_event_source_value", self.observe)
+        monkeypatch.setattr(lineage_program_observations, "commit_event_source_value", self.commit)
+        monkeypatch.setattr(lineage_program_observations, "observe_file_signature", self.observe_file)
+        monkeypatch.setattr(lineage_program_observations, "commit_file_signature",
                             lambda *args, **kwargs: self.file_commits.append(kwargs))
 
     def observe(self, lineage_id, source_id, **kwargs):

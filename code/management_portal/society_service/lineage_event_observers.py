@@ -24,7 +24,10 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Any, Callable, NamedTuple
 
-from . import lineage_message_events, lineage_primitives, lineage_program_runtime, lineage_release_events, trigger_paths
+from . import (
+    lineage_message_events, lineage_primitives, lineage_program_observations,
+    lineage_program_runtime, lineage_program_schedules, lineage_release_events, trigger_paths,
+)
 from .lineage_event_conditions import (
     _boolean_condition_pending_state, _commit_boolean_event_condition,
     _elapsed_whole_seconds, _observe_boolean_event_condition, _state_condition_matches,
@@ -123,14 +126,14 @@ class Scan:
 
     def observe(self, source: Source, locator: str, signature: str, value: str) -> dict[str, Any]:
         """Compare one scalar with the source's recognized baseline."""
-        return lineage_program_runtime.observe_event_source_value(
+        return lineage_program_observations.observe_event_source_value(
             self.lineage_id, source.id, locator=locator, signature=signature, value=value,
             subject=source.subject,
         )
 
     def commit(self, source: Source, locator: str, previous_signature: str, signature: str, value: str) -> None:
         """Move the source's baseline to a value that fires nothing."""
-        lineage_program_runtime.commit_event_source_value(
+        lineage_program_observations.commit_event_source_value(
             self.lineage_id, source.id, locator=locator, previous_signature=previous_signature,
             signature=signature, value=value, subject=source.subject,
         )
@@ -230,7 +233,7 @@ def _file_changed(scan: Scan, source: Source) -> None:
         return
     signature = scan.ports.role_file_signature(scan.lineage_id, subject, relative_path)
     locator = _locator("file_locator_", subject_id, relative_path)
-    observed = lineage_program_runtime.observe_file_signature(
+    observed = lineage_program_observations.observe_file_signature(
         scan.lineage_id, source.id, locator=locator, signature=signature)
     if observed["status"] == "baseline":
         scan.baseline_count += 1
@@ -240,7 +243,7 @@ def _file_changed(scan: Scan, source: Source) -> None:
     occurrence = int(observed.get("generation") or 0) + 1
     cursor = f"file:{occurrence}:{signature}"
     if cursor in (scan.runtime_state(source).get("consumed_cursors") or []):
-        lineage_program_runtime.commit_file_signature(
+        lineage_program_observations.commit_file_signature(
             scan.lineage_id, source.id, locator=locator,
             previous_signature=observed["previous_signature"], signature=signature)
         return
@@ -301,7 +304,7 @@ def _message_received(scan: Scan, source: Source) -> None:
         if observed["status"] == "baseline":
             scan.baseline_count += 1
         return
-    stored = lineage_program_runtime.observation_state(scan.runtime_sources, source.id, source.subject)
+    stored = lineage_program_observations.observation_state(scan.runtime_sources, source.id, source.subject)
     if (
         str(stored.get("state_locator") or "") != locator
         or str(stored.get("state_signature") or "") != prefetched["base_signature"]
@@ -381,7 +384,7 @@ def _work_duration_exceeded(scan: Scan, source: Source) -> None:
     started_at = str(activity.get("started_at") or "")
     captured_at = scan.captured_at()
     if not activity.get("active") or not message_id:
-        if activity and lineage_program_runtime.observation_state(
+        if activity and lineage_program_observations.observation_state(
             scan.runtime_sources, source.id, source.subject,
         ).get("rebaseline"):
             _observe_boolean_event_condition(
@@ -728,7 +731,7 @@ def _time_reached(scan: Scan, source: Source) -> None:
     timer: dict[str, Any] = {}
     recurring: dict[str, Any] = {}
     if schedule_mode == "recurring":
-        recurring = lineage_program_runtime.observe_recurring_schedule(scan.lineage_id, source.id, config=source.config)
+        recurring = lineage_program_schedules.observe_recurring_schedule(scan.lineage_id, source.id, config=source.config)
         # Wake again when the next occurrence is due.
         if not source.exhausted:
             scan.wake_at(recurring.get("next_due_at"))
@@ -737,7 +740,7 @@ def _time_reached(scan: Scan, source: Source) -> None:
         scheduled_at = str(recurring.get("scheduled_at") or "")
         cursor = f"recurring:{int(recurring.get('generation') or 0)}:{scheduled_at}"
     elif schedule_mode == "countdown":
-        timer = lineage_program_runtime.ensure_countdown_timer(
+        timer = lineage_program_schedules.ensure_countdown_timer(
             scan.lineage_id, source.id, delay_seconds=int(source.config.get("delay_seconds") or 60))
         scheduled_at = str(timer.get("due_at") or "")
         cursor = f"timer:{int(timer.get('generation') or 0)}:{scheduled_at}"

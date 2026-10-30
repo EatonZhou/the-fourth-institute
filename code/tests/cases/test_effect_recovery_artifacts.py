@@ -51,7 +51,7 @@ def test_large_call_restarts_without_repeating_and_preserves_business_summary(mo
         return _Outcome("committed", payload if call["instruction"] == "ForkResident" else {}, instruction_id="inst_lin_test")
 
     monkeypatch.setattr(routing, "execute", execute)
-    monkeypatch.setattr(execution.lineage_program_runtime, "effect_result_projection", lambda *a, **kw: {})
+    monkeypatch.setattr(execution.lineage_program_effect_results, "effect_result_projection", lambda *a, **kw: {})
     plan = _plan('child=$(ForkResident source_resident_id="${endpoint.target}")\nCrash\noutput resident_id="${child.resident_id}" body="${child.body}"')
     plan["event_sources"] = {"event_source_recovery": {"event_type": "manual.triggered"}}
     with pytest.raises(SystemExit):
@@ -189,7 +189,7 @@ def test_known_not_committed_disposition_remains_explicit(monkeypatch, code):
     lineage = _lineage("lineage_" + code.split(".")[-1])
     error = {"code": code, "message": "confirmed by owner", "retryable": False, "commit_state": "not_committed"}
     monkeypatch.setattr(routing, "execute", lambda *a, **k: _Outcome("failed", error=error, instruction_id="inst_lin_final"))
-    monkeypatch.setattr(execution.lineage_program_runtime, "effect_result_projection", lambda *a, **kw: {})
+    monkeypatch.setattr(execution.lineage_program_effect_results, "effect_result_projection", lambda *a, **kw: {})
     result = execution._execute_program_effect_component(lineage, _plan("Ping"), "effect_aaaaaaaaaaaa", activation(), "CASE-A", host=_Host())
     assert result["status"] == "failed" and result["calls"][0]["error"] == error
 
@@ -297,7 +297,7 @@ def test_recovery_release_preserves_delegated_callers_and_waits_for_history(monk
         observed.append((call["instruction"], ctx.caller, ctx.recovery_key))
         return _Outcome("committed", {}, instruction_id="inst_lin_" + call["instruction"])
     monkeypatch.setattr(routing, "execute", execute)
-    monkeypatch.setattr(execution.lineage_program_runtime, "effect_result_projection", lambda *a, **kw: {})
+    monkeypatch.setattr(execution.lineage_program_effect_results, "effect_result_projection", lambda *a, **kw: {})
     released = []
     def release(key, ids, ctx):
         assert journal.trigger_paths.effect_finished(lineage["lineage_id"], key)["status"] == "succeeded"

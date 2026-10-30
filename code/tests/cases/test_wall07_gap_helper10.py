@@ -16,7 +16,7 @@ from management_portal.society_service import (
     lineage_reads,
     lineage_lifecycle,
     lineage_graph_edits,
-    lineage_program_runtime,
+    lineage_program_occurrences,
     lineage_program_effect_execution,
     domain_ports,
     invariant_locks,
@@ -100,22 +100,22 @@ def test_delete_effect_removes_its_wires_only(isolated_instruction_store):
 def test_delivery_summary_survives_duplicate_exhausted_and_read_then_resets(lineage_id):
     """事件源投递摘要只记计数，经重复、耗尽触发和读取后保留，重置触发预算后清空"""
     source = 'event_source_helper10_summary'
-    lineage_program_runtime.claim_event_occurrence(lineage_id, source, 'occurrence-a', max_fires=1)
-    summary = lineage_program_runtime.record_event_delivery_summary(lineage_id, source, [
+    lineage_program_occurrences.claim_event_occurrence(lineage_id, source, 'occurrence-a', max_fires=1)
+    summary = lineage_program_occurrences.record_event_delivery_summary(lineage_id, source, [
         {'status': 'sent', 'prompt': 'must-not-copy', 'payload': {'private': 'must-not-copy'}},
         {'status': 'queued'}, {'status': 'dropped'}, {'status': 'failed'},
     ])
     assert [summary[key] for key in ['delivered_count', 'queued_count', 'dropped_count', 'failed_count']] == [1, 1, 1, 1]
     assert 'must-not-copy' not in str(summary)
-    duplicate = lineage_program_runtime.claim_event_occurrence(lineage_id, source, 'occurrence-a', max_fires=1)
-    exhausted = lineage_program_runtime.claim_event_occurrence(lineage_id, source, 'occurrence-b', max_fires=1)
+    duplicate = lineage_program_occurrences.claim_event_occurrence(lineage_id, source, 'occurrence-a', max_fires=1)
+    exhausted = lineage_program_occurrences.claim_event_occurrence(lineage_id, source, 'occurrence-b', max_fires=1)
     assert duplicate['status'] in {'duplicate', 'exhausted'}
     assert exhausted['status'] == 'exhausted'
-    view = lineage_program_runtime.event_source_runtime_view(lineage_id, {source: {'max_fires': 1}})[source]
+    view = lineage_program_occurrences.event_source_runtime_view(lineage_id, {source: {'max_fires': 1}})[source]
     assert view['last_delivery'] == summary
-    assert lineage_program_runtime.event_source_runtime_view(lineage_id, {source: {'max_fires': 1}})[source]['last_delivery'] == summary
-    lineage_program_runtime.reset_event_source_fire_budget(lineage_id, source, expected_generation=view['generation'])
-    assert lineage_program_runtime.event_source_runtime_view(lineage_id, {source: {'max_fires': 1}})[source]['last_delivery'] == {}
+    assert lineage_program_occurrences.event_source_runtime_view(lineage_id, {source: {'max_fires': 1}})[source]['last_delivery'] == summary
+    lineage_program_occurrences.reset_event_source_fire_budget(lineage_id, source, expected_generation=view['generation'])
+    assert lineage_program_occurrences.event_source_runtime_view(lineage_id, {source: {'max_fires': 1}})[source]['last_delivery'] == {}
 
 
 def test_terminal_transport_failure_deduplicates_without_reexecution(primitive_store, monkeypatch, record_property):

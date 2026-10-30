@@ -470,8 +470,9 @@ def test_full_reconcile_stops_between_lineages_when_the_coordinator_stops(monkey
     from management_common.principal import OperationIdentity
     event = {"id": "shutdown-recovery", "type": "manual.triggered", "occurred_at": "2026-10-12T00:00:00Z",
              "identity": OperationIdentity.for_actor("resident_111111111111").to_dict()}
-    monkeypatch.setattr(polling, "lineage_program_runtime", SimpleNamespace(
-        read_runtime=lambda _id: {}, pending_resident_handoffs=lambda _id: [{"event": event}]))
+    monkeypatch.setattr(polling, "lineage_program_runtime", SimpleNamespace(read_runtime=lambda _id: {}))
+    monkeypatch.setattr(polling, "lineage_program_resident_inputs", SimpleNamespace(
+        pending_resident_handoffs=lambda _id: [{"event": event}]))
     lineages = [{"lineage_id": f"lineage_{index:012x}"} for index in range(40)]
     monkeypatch.setattr(polling, "recovery_lineage_ids", lambda **_: [x["lineage_id"] for x in lineages])
     delay = [.25]
@@ -530,7 +531,7 @@ def test_lineage_repair_pass_stops_between_invocations_and_resumes_on_the_next_p
     from contextlib import nullcontext
     from unittest.mock import Mock
     from management_common.service_shutdown import stopping_with
-    from management_portal.society_service import lineage_program_runtime as runtime
+    from management_portal.society_service import lineage_program_resident_inputs
     from management_portal.society_service import lineage_program_terminal_reconciliation as terminal
     from management_portal.society_service import resident_conversation_stream
     from management_portal.society_service.lineage_catalog import LineageCatalog
@@ -546,7 +547,7 @@ def test_lineage_repair_pass_stops_between_invocations_and_resumes_on_the_next_p
         event = {"id": f"event-stop-{index}", "type": "manual.triggered", "occurred_at": "2026-10-12T00:00:00Z", "payload": {},
                  "identity": OperationIdentity.for_actor(resident_id).to_dict()}
         path = trigger_paths.begin_event(LINEAGE_ID, "event-start", event, cause_kind="external", cause_id=event["id"])
-        runtime.register_resident_handoff(LINEAGE_ID, message_id=f"msg_stop_{index}", resident_id=resident_id,
+        lineage_program_resident_inputs.register_resident_handoff(LINEAGE_ID, message_id=f"msg_stop_{index}", resident_id=resident_id,
                                              trigger_path_id=path, event=event, source_wire_id=f"wire_stop_{index}")
     stopping = threading.Event()
 
@@ -567,12 +568,12 @@ def test_lineage_repair_pass_stops_between_invocations_and_resumes_on_the_next_p
         stopped = terminal.reconcile_runtime_with_authority(LINEAGE_ID, "portal", ports=ports)
     assert stopped["stopped"] is True
     assert stopped["recovered_handoff_count"] == 1
-    assert len(runtime.pending_resident_handoffs(LINEAGE_ID)) == 1
+    assert len(lineage_program_resident_inputs.pending_resident_handoffs(LINEAGE_ID)) == 1
     absorption.assert_not_called()
 
     # The next pass, outside a stopping owner, settles what the stop left.
     resumed = terminal.reconcile_runtime_with_authority(LINEAGE_ID, "portal", ports=ports)
     assert resumed["stopped"] is False
     assert resumed["recovered_handoff_count"] == 1
-    assert runtime.pending_resident_handoffs(LINEAGE_ID) == []
+    assert lineage_program_resident_inputs.pending_resident_handoffs(LINEAGE_ID) == []
     assert absorption.called

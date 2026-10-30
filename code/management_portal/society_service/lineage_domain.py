@@ -36,7 +36,10 @@ from .lineage_values import _clone_json, _safe_actor, _text
 from . import lineage_program_backlog
 from .lineage_access_policy import actor_can_manage_lineage as _actor_can_manage_lineage
 from .lineage_view_projection import node_resident_id as _node_resident_id
-from . import invariant_locks, lineage_program_runtime, lineage_primitives, resident_state, resident_protocol
+from . import (
+    invariant_locks, lineage_program_resident_inputs, lineage_program_wire_queue,
+    lineage_primitives, resident_state, resident_protocol,
+)
 from . import lineage_aggregate, resident_work_origin
 from .domain_ports import resident_domain_port as resident_domain
 from . import lineage_state
@@ -298,7 +301,7 @@ def _register_program_agent_invocation(
         **dict(event_envelope.get("payload") or {}),
         "trigger_path_id": trigger_path_id,
     }
-    invocation = lineage_program_runtime.register_resident_handoff(
+    invocation = lineage_program_resident_inputs.register_resident_handoff(
         lineage_id,
         message_id=message_id,
         resident_id=target_id,
@@ -325,7 +328,7 @@ def _pending_event_has_registered_invocation(
         str(invocation.get("resident_id") or "") == target_id
         and str(invocation.get("source_wire_id") or "") == wire_id
         and str((invocation.get("event") or {}).get("id") or "") == event_id
-        for invocation in lineage_program_runtime.path_resident_inputs(lineage_id, trigger_path_id)
+        for invocation in lineage_program_resident_inputs.path_resident_inputs(lineage_id, trigger_path_id)
         if isinstance(invocation, dict)
         and isinstance(invocation.get("event"), dict)
     )
@@ -464,10 +467,10 @@ def get_pending_deliveries(
             raise KeyError("Invoke 连线已不存在")
         return {
             "wire_id": wire_id,
-            "deliveries": lineage_program_runtime.pending_wire_deliveries(
+            "deliveries": lineage_program_wire_queue.pending_wire_deliveries(
                 lineage_id, wire_id,
             ),
-            "runtime": lineage_program_runtime.event_wire_runtime_view(
+            "runtime": lineage_program_wire_queue.event_wire_runtime_view(
                 lineage_id, {wire_id: contracts[wire_id]["config"]},
             )[wire_id],
         }
@@ -489,7 +492,7 @@ def _mutate_pending_delivery(
         )
         if wire_id not in contracts:
             raise KeyError("Invoke 连线已不存在")
-        result = lineage_program_runtime.update_pending_wire_delivery(
+        result = lineage_program_wire_queue.update_pending_wire_delivery(
             lineage_id,
             wire_id,
             str(payload.get("delivery_id") or ""),

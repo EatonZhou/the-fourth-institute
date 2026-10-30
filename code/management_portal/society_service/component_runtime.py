@@ -15,7 +15,10 @@ from management_portal.hatg.contracts import InstructionError
 from datetime import datetime, timezone
 from typing import Any
 
-from . import lineage_loop_runtime, lineage_program, lineage_program_runtime, lineage_recurring_schedule
+from . import (
+    lineage_loop_runtime, lineage_program_event_scope, lineage_program_occurrences,
+    lineage_program_runtime, lineage_recurring_schedule,
+)
 from . import system_workflow_switches
 from .lineage_program_queries import _compiled_program
 from .lineage_program_runtime_projection import event_source_runtime_view
@@ -124,7 +127,7 @@ def _resume_event_source(source: dict[str, Any], config: dict[str, Any]) -> None
         source.pop(field, None)
     source.pop("subjects", None)
     if str(config.get("event_type") or "") != "time.reached":
-        watched = lineage_program.event_source_subject_ids(config)
+        watched = lineage_program_event_scope.event_source_subject_ids(config)
         if len(watched) > 1:
             # Each watched Resident starts again from its current state.
             source["subjects"] = {subject: {"rebaseline": True} for subject in watched}
@@ -239,5 +242,5 @@ def reset(lineage_id: str, component_id: str, actor: str) -> dict[str, Any]:
     if _kind(plan, component_id) == "loop":
         lineage_loop_runtime.reset(lineage_id, component_id)
         return views(lineage_id, actor, component_id=component_id)[0]
-    lineage_program_runtime.reset_event_source_fire_budget(lineage_id, component_id)
+    lineage_program_occurrences.reset_event_source_fire_budget(lineage_id, component_id)
     return views(lineage_id, actor, component_id=component_id)[0]

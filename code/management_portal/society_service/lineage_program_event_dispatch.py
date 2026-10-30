@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 from collections.abc import Iterable
 from contextlib import AbstractContextManager
+from dataclasses import dataclass
 from typing import Any, Protocol
 
 from management_common.limit_contract import normalize_optional_limit
@@ -19,6 +20,7 @@ from . import (
     lineage_program_effect_execution,
     lineage_program_execution,
     lineage_program_identity,
+    lineage_program_occurrences,
     lineage_program_runtime,
 )
 from .lineage_program_contracts import _program_event_source_contract_fingerprint
@@ -68,6 +70,195 @@ def _dispatch_program_foundational_event_route(
 
 
 
+def _verified_event(
+    event: lineage_primitives.LineageEvent | dict[str, Any],
+    actor_id: str,
+) -> lineage_primitives.LineageEvent:
+    """The Event with the dispatch principal as its identity; another principal is refused."""
+
+    from dataclasses import replace
+
+    from management_common.principal import OperationIdentity
+
+    normalized_event = lineage_primitives.normalize_event(event)
+    if normalized_event.identity:
+        identity = OperationIdentity.from_dict(normalized_event.identity)
+        if identity.principal.id != actor_id:
+            raise PermissionError("Event identity disagrees with its dispatch principal")
+        return normalized_event
+    return replace(normalized_event, identity=OperationIdentity.for_actor(actor_id).to_dict())
+
+
+def _unfired_result(
+    normalized_event: lineage_primitives.LineageEvent,
+    event_source_id: str,
+    fire_claim: dict[str, Any],
+) -> dict[str, Any]:
+    """The source took no new occurrence: a duplicate, an exhausted budget or a pause."""
+
+    return {
+        "event": normalized_event.to_dict(),
+        "event_source_id": event_source_id,
+        "matched_count": 0,
+        "consumed_count": 0,
+        "duplicate": False,
+        "exhausted": bool(fire_claim.get("exhausted")),
+        "paused": fire_claim.get("status") == "paused",
+        "fire": fire_claim,
+        "results": [],
+    }
+
+
+@dataclass(frozen=True)
+class _ClaimedRoutes:
+    """The routes one occurrence claimed, and the results of the routes it could not use."""
+
+    available_routes: list[dict[str, Any]]
+    budget_results: list[dict[str, Any]]
+    handled_unavailable_count: int
+    duplicate_unavailable_count: int
+    generic_claims: Any
+
+
+def _claim_routes(
+    lineage_id: str,
+    event_source_id: str,
+    event_source: dict[str, Any],
+    lineage: dict[str, Any],
+    normalized_event: lineage_primitives.LineageEvent,
+    actor_id: str,
+    *,
+    cursor: str,
+    selected_wire_ids: set[str] | None,
+    preclaimed_wire_ids: set[str] | None,
+    bypass_unavailable_policy: bool,
+    invocation_arguments: dict[str, dict[str, Any]] | None,
+    authority: ProgramEventAuthority,
+) -> _ClaimedRoutes:
+    """Select the subscriber routes whose target can take the Event now and claim their deliveries."""
+
+    preclaimed_wire_id_set = {
+        str(item) for item in preclaimed_wire_ids or set() if str(item)
+    }
+    subscriber_routes = lineage_event_dispatch_rules.prepare_subscriber_routes(
+        event_source,
+        selected_wire_ids,
+        invocation_arguments,
+    )
+    wire_runtime = (
+        {}
+        if bypass_unavailable_policy
+        else _program_invoke_wire_runtime_view(lineage)
+    )
+    selection = lineage_event_routing.select_event_routes(
+        lineage_id,
+        event_source_id,
+        subscriber_routes,
+        normalized_event,
+        cursor,
+        wire_runtime,
+        bypass_unavailable_policy=bypass_unavailable_policy,
+        can_consume_target=lambda route: lineage_program_execution.program_event_route_can_consume(
+            lineage_id, lineage, route, actor_id, authority=authority
+        ),
+    )
+    generic_claims = lineage_event_claims.claim_generic_deliveries(
+        lineage_id,
+        event_source_id,
+        cursor,
+        normalized_event.to_dict(),
+        selection.available_routes,
+        preclaimed_wire_id_set,
+    )
+    return _ClaimedRoutes(
+        available_routes=selection.available_routes,
+        budget_results=[*selection.unavailable_results, *generic_claims.blocked_results],
+        handled_unavailable_count=selection.handled_unavailable_count,
+        duplicate_unavailable_count=selection.duplicate_unavailable_count,
+        generic_claims=generic_claims,
+    )
+
+
+def _unclaimed_result(
+    normalized_event: lineage_primitives.LineageEvent,
+    event_source_id: str,
+    fire_claim: dict[str, Any],
+    claimed: _ClaimedRoutes,
+) -> dict[str, Any]:
+    """No route was claimed: every subscriber was unavailable, blocked or already delivered."""
+
+    return {
+        "event": normalized_event.to_dict(),
+        "event_source_id": event_source_id,
+        "matched_count": len(claimed.generic_claims.blocked_results),
+        "consumed_count": claimed.handled_unavailable_count,
+        "duplicate": bool(
+            claimed.duplicate_unavailable_count
+            or (
+                claimed.available_routes
+                and not claimed.generic_claims.routes
+                and not claimed.generic_claims.blocked_results
+            )
+        ),
+        "fire": fire_claim,
+        "results": claimed.budget_results,
+    }
+
+
+def _prepare_operator_barriers(
+    lineage_id: str,
+    event_source_id: str,
+    normalized_event: lineage_primitives.LineageEvent,
+    lineage_snapshot: dict[str, Any],
+    fire_claim: dict[str, Any],
+    claimed: _ClaimedRoutes,
+) -> dict[str, Any] | None:
+    """Freeze the Packet Operator barriers of the claimed routes; the result when a barrier cancels the Event."""
+
+    claimed_routes = claimed.generic_claims.routes
+    barriers = _program_operator_barriers(
+        lineage_snapshot,
+        event_source_id,
+        route_ids=[str(route.get("wire_id") or "") for route in claimed_routes],
+    )
+    try:
+        lineage_event_claims.prepare_operator_inboxes(
+            lineage_id, normalized_event, barriers
+        )
+    except Exception as exc:
+        cancelled = isinstance(
+            exc, lineage_operator_runtime.PacketOperatorEventCancelledError
+        )
+        lineage_event_claims.release_barrier_failure_claims(
+            lineage_id, claimed.generic_claims, exc, consumed=cancelled,
+        )
+        if not cancelled:
+            raise
+        # The cancelled barrier consumes this Event on every claimed wire. A
+        # preclaimed wire (backlog replay) is settled by its claimer, which
+        # only reads the result that names its wire.
+        return {
+            "event": normalized_event.to_dict(),
+            "event_source_id": event_source_id,
+            "matched_count": 0,
+            "consumed_count": claimed.handled_unavailable_count,
+            "duplicate": False,
+            "fire": fire_claim,
+            "results": [
+                *claimed.budget_results,
+                *({
+                    "status": "cancelled",
+                    "wire_id": str(route.get("wire_id") or ""),
+                    "target_id": str(route.get("target_id") or ""),
+                    "event_id": normalized_event.id,
+                    "reason": "packet_operator_barrier_cancelled",
+                    "error": str(exc),
+                } for route in claimed_routes),
+            ],
+        }
+    return None
+
+
 def _dispatch_lineage_program_event_locked(
     lineage_id: str,
     event_source_id: str,
@@ -84,19 +275,11 @@ def _dispatch_lineage_program_event_locked(
     authority: ProgramEventAuthority,
 ) -> dict[str, Any]:
     actor_id = _safe_actor(actor)
-    normalized_event = lineage_primitives.normalize_event(event)
-    from dataclasses import replace
-
-    from management_common.principal import OperationIdentity
-
-    if normalized_event.identity:
-        identity = OperationIdentity.from_dict(normalized_event.identity)
-        if identity.principal.id != actor_id:
-            raise PermissionError("Event identity disagrees with its dispatch principal")
-    else:
-        normalized_event = replace(normalized_event, identity=OperationIdentity.for_actor(actor_id).to_dict())
+    normalized_event = _verified_event(event, actor_id)
     authorized = authority.read_authorized(lineage_id, actor_id)
     authority.ensure_manager(authorized, actor_id)
+    # Under the Lineage scope: check the source's contract, claim the occurrence
+    # and claim the routes. Deliveries run after it, on a snapshot.
     with authority.lineage_scope(lineage_id):
         lineage = authority.read_lineage_state(lineage_id)
         plan = _compiled_program(lineage)
@@ -126,7 +309,7 @@ def _dispatch_lineage_program_event_locked(
                 "stale_contract": True,
                 "results": [],
             }
-        fire_claim = lineage_program_runtime.claim_event_occurrence(
+        fire_claim = lineage_program_occurrences.claim_event_occurrence(
             lineage_id,
             event_source_id,
             cursor,
@@ -135,118 +318,27 @@ def _dispatch_lineage_program_event_locked(
             ),
         )
         if not fire_claim.get("accepted"):
-            return {
-                "event": normalized_event.to_dict(),
-                "event_source_id": event_source_id,
-                "matched_count": 0,
-                "consumed_count": 0,
-                "duplicate": False,
-                "exhausted": bool(fire_claim.get("exhausted")),
-                "paused": fire_claim.get("status") == "paused",
-                "fire": fire_claim,
-                "results": [],
-            }
-        preclaimed_wire_id_set = {
-            str(item) for item in preclaimed_wire_ids or set() if str(item)
-        }
-        subscriber_routes = lineage_event_dispatch_rules.prepare_subscriber_routes(
-            event_source,
-            selected_wire_ids,
-            invocation_arguments,
+            return _unfired_result(normalized_event, event_source_id, fire_claim)
+        claimed = _claim_routes(
+            lineage_id, event_source_id, event_source, lineage, normalized_event, actor_id,
+            cursor=cursor, selected_wire_ids=selected_wire_ids, preclaimed_wire_ids=preclaimed_wire_ids,
+            bypass_unavailable_policy=bypass_unavailable_policy, invocation_arguments=invocation_arguments,
+            authority=authority,
         )
-        wire_runtime = (
-            {}
-            if bypass_unavailable_policy
-            else _program_invoke_wire_runtime_view(lineage)
-        )
-        selection = lineage_event_routing.select_event_routes(
-            lineage_id,
-            event_source_id,
-            subscriber_routes,
-            normalized_event,
-            cursor,
-            wire_runtime,
-            bypass_unavailable_policy=bypass_unavailable_policy,
-            can_consume_target=lambda route: lineage_program_execution.program_event_route_can_consume(
-                lineage_id, lineage, route, actor_id, authority=authority
-            ),
-        )
-        available_routes = selection.available_routes
-        budget_results = selection.unavailable_results
-        handled_unavailable_count = selection.handled_unavailable_count
-        duplicate_unavailable_count = selection.duplicate_unavailable_count
-        generic_claims = lineage_event_claims.claim_generic_deliveries(
-            lineage_id,
-            event_source_id,
-            cursor,
-            normalized_event.to_dict(),
-            available_routes,
-            preclaimed_wire_id_set,
-        )
-        claimed_routes = generic_claims.routes
-        local_dispatch_tokens = generic_claims.dispatch_tokens
-        budget_results = [*budget_results, *generic_claims.blocked_results]
-        if not claimed_routes:
-            return {
-                "event": normalized_event.to_dict(),
-                "event_source_id": event_source_id,
-                "matched_count": len(generic_claims.blocked_results),
-                "consumed_count": handled_unavailable_count,
-                "duplicate": bool(
-                    duplicate_unavailable_count
-                    or (available_routes and not claimed_routes and not generic_claims.blocked_results)
-                ),
-                "fire": fire_claim,
-                "results": budget_results,
-            }
+        if not claimed.generic_claims.routes:
+            return _unclaimed_result(normalized_event, event_source_id, fire_claim, claimed)
         lineage_snapshot = _clone_json(lineage)
 
-    barriers = _program_operator_barriers(
-        lineage_snapshot,
-        event_source_id,
-        route_ids=[str(route.get("wire_id") or "") for route in claimed_routes],
+    cancelled = _prepare_operator_barriers(
+        lineage_id, event_source_id, normalized_event, lineage_snapshot, fire_claim, claimed,
     )
-    try:
-        lineage_event_claims.prepare_operator_inboxes(
-            lineage_id, normalized_event, barriers
-        )
-    except Exception as exc:
-        cancelled = isinstance(
-            exc, lineage_operator_runtime.PacketOperatorEventCancelledError
-        )
-        lineage_event_claims.release_barrier_failure_claims(
-            lineage_id, generic_claims, exc, consumed=cancelled,
-        )
-        if not cancelled:
-            raise
-        # The cancelled barrier consumes this Event on every claimed wire. A
-        # preclaimed wire (backlog replay) is settled by its claimer, which
-        # only reads the result that names its wire.
-        return {
-            "event": normalized_event.to_dict(),
-            "event_source_id": event_source_id,
-            "matched_count": 0,
-            "consumed_count": handled_unavailable_count,
-            "duplicate": False,
-            "fire": fire_claim,
-            "results": [
-                *budget_results,
-                *({
-                    "status": "cancelled",
-                    "wire_id": str(route.get("wire_id") or ""),
-                    "target_id": str(route.get("target_id") or ""),
-                    "event_id": normalized_event.id,
-                    "reason": "packet_operator_barrier_cancelled",
-                    "error": str(exc),
-                } for route in claimed_routes),
-            ],
-        }
-
-    results: list[dict[str, Any]] = list(budget_results)
+    if cancelled is not None:
+        return cancelled
+    results: list[dict[str, Any]] = list(claimed.budget_results)
     route_results, matched_count = lineage_event_delivery.dispatch_generic_routes(
         lineage_id,
-        claimed_routes,
-        local_dispatch_tokens,
+        claimed.generic_claims.routes,
+        claimed.generic_claims.dispatch_tokens,
         lambda route: _dispatch_program_foundational_event_route(
             lineage_id,
             actor_id,
@@ -262,8 +354,8 @@ def _dispatch_lineage_program_event_locked(
     return {
         "event": normalized_event.to_dict(),
         "event_source_id": event_source_id,
-        "matched_count": matched_count + len(generic_claims.blocked_results),
-        "consumed_count": handled_unavailable_count,
+        "matched_count": matched_count + len(claimed.generic_claims.blocked_results),
+        "consumed_count": claimed.handled_unavailable_count,
         "duplicate": False,
         "fire": fire_claim,
         "results": results,
@@ -450,7 +542,7 @@ def dispatch_program_event(
     result["trigger_path_id"] = trigger_path_id
     fire_result = result.get("fire")
     if isinstance(fire_result, dict) and fire_result.get("status") == "fired":
-        lineage_program_runtime.record_event_delivery_summary(
+        lineage_program_occurrences.record_event_delivery_summary(
             lineage_id,
             event_source_id,
             (
@@ -530,7 +622,7 @@ def dispatch_program_event(
             )
         )
     if fire.get("status") == "fired":
-        lineage_program_runtime.mark_event_fanout_complete(
+        lineage_program_occurrences.mark_event_fanout_complete(
             lineage_id, event_source_id, generation=int(fire.get("generation") or 0),
             occurrence_count=int(fire.get("occurrence_count") or 0),
         )

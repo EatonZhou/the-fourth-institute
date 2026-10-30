@@ -21,9 +21,11 @@ from management_portal.society_service import (
     lineage_domain,
     lineage_lifecycle,
     lineage_primitive_definitions,
-    lineage_program,
+    lineage_program_compilation,
+    lineage_program_diagnostics,
     lineage_program_edits,
-    lineage_program_runtime,
+    lineage_program_event_scope,
+    lineage_program_resident_inputs,
     lineage_program_terminal_reconciliation as terminal,
     lineage_reads,
 )
@@ -81,12 +83,12 @@ def test_a_lineage_scoped_source_fires_for_any_member_without_watch_wires(
     sent = _sender(monkeypatch)
     created = _scoped("lineage")
     lineage_id = str(created["lineage_id"])
-    plan = lineage_program.compile_program(created["program"], created["nodes"])
+    plan = lineage_program_compilation.compile_program(created["program"], created["nodes"])
     source = plan["event_sources"]["event_source_any"]
     assert source["resident_scope"] == "lineage"
-    assert lineage_program.event_source_subject_ids(source) == ()
+    assert lineage_program_event_scope.event_source_subject_ids(source) == ()
     assert "event.missing_subject" not in {
-        item.get("code") for item in lineage_program.program_diagnostics(created["program"], created["nodes"])
+        item.get("code") for item in lineage_program_diagnostics.program_diagnostics(created["program"], created["nodes"])
     }
 
     from tests.cases.society_service_test_support import record_terminal_execution
@@ -146,7 +148,7 @@ def test_work_delivered_through_an_effect_counts_as_the_sources_own(monkeypatch:
         "event_source_watched": {"event_type": "resident.work_finished", "subject_resident_id": WORK_C,
                                  "subscriber_routes": [{"wire_id": "wire_into_effect"}]},
     }}
-    monkeypatch.setattr(lineage_program_runtime, "resident_handoff", lambda lineage_id, resident_id, message_id: (
+    monkeypatch.setattr(lineage_program_resident_inputs, "resident_handoff", lambda lineage_id, resident_id, message_id: (
         {"message_id": "msg_fresh", "resident_id": WORK_C, "source_wire_id": "wire_into_effect"}
         if (resident_id, message_id) == (WORK_C, "msg_fresh") else None
     ))
@@ -277,7 +279,7 @@ def test_the_watch_requirement_follows_the_scope() -> None:
     assert lineage_primitive_definitions.watch_required("resident.work_finished", {}) is True
     assert lineage_primitive_definitions.watch_required("resident.work_finished", {"resident_scope": "watched"}) is True
     for scope in ("lineage", "system"):
-        for event_type in sorted(lineage_program.SCOPED_RESIDENT_EVENT_TYPES):
+        for event_type in sorted(lineage_program_event_scope.SCOPED_RESIDENT_EVENT_TYPES):
             assert lineage_primitive_definitions.watch_required(event_type, {"resident_scope": scope}) is False
     assert lineage_primitive_definitions.watch_required("resident.work_started", {}) is True
     [scope_field] = [

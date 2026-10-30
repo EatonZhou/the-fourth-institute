@@ -8,6 +8,7 @@ import pytest
 from management_portal.society_service import (
     lineage_primitive_definitions,
     lineage_program,
+    lineage_program_vocabulary,
 )
 
 
@@ -33,7 +34,7 @@ def test_canonical_definition_file_is_the_complete_browser_manifest_source_contr
                 "component_types",
             )
         }
-        assert set(payload["event_types"]) == lineage_program.EVENT_SOURCE_TYPES
+        assert set(payload["event_types"]) == lineage_program_vocabulary.EVENT_SOURCE_TYPES
         assert (
             lineage_primitive_definitions.default_type("event")
             == "resident.work_finished"
@@ -43,7 +44,7 @@ def test_canonical_definition_file_is_the_complete_browser_manifest_source_contr
             "event.delivery_failed",
             "event.delivery_expired",
         }
-        assert lineage_program.EVENT_SOURCE_EFFECT_OBSERVER_TYPES == (
+        assert lineage_program_vocabulary.EVENT_SOURCE_EFFECT_OBSERVER_TYPES == (
             set(lineage_primitive_definitions.event_types_watching("effect"))
         )
     with subtests.test(contract='test_definition_accessors_do_not_leak_mutable_canonical_state'), isolated_portal_case() as case_path:

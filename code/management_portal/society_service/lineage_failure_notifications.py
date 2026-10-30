@@ -101,7 +101,7 @@ def automatic(lineage_id: str, trigger_path_id: str, record: dict) -> bool:
 
 
 def _watches_failure(source: dict, watched: tuple[str, str]) -> bool:
-    from .lineage_program import event_source_subject_ids
+    from .lineage_program_event_scope import event_source_subject_ids
 
     kind, subject_id = watched
     event_type = str(source.get("event_type") or "")

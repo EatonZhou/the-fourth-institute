@@ -132,8 +132,8 @@ def test_move_empty_source_requires_a_singleton_without_flow_or_work(teams, monk
         ok("CreateComponent", {"lineage_id": source["lineage_id"], "kind": "event_source",
                                "title": "Disconnected flow", "config": {"event_type": "manual.triggered"}}, key="flow")
     elif blocker == "pending_delivery":
-        from management_portal.society_service import lineage_program_runtime
-        runtime = lineage_program_runtime.pending_resident_handoffs
+        from management_portal.society_service import lineage_program_resident_inputs
+        runtime = lineage_program_resident_inputs.pending_resident_handoffs
 
         def with_pending(lineage_id):
             result = runtime(lineage_id)
@@ -141,7 +141,7 @@ def test_move_empty_source_requires_a_singleton_without_flow_or_work(teams, monk
                 result = [{"status": "queued", "resident_id": source["resident_id"]}]
             return result
 
-        monkeypatch.setattr(lineage_program_runtime, "pending_resident_handoffs", with_pending)
+        monkeypatch.setattr(lineage_program_resident_inputs, "pending_resident_handoffs", with_pending)
     before = [graph(singleton[0]), graph(singleton[1])]
     failure(call)
     unchanged(singleton, before)

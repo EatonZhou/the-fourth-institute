@@ -26,7 +26,7 @@ from .lineage_values import _clone_json, _safe_actor, _text
 from . import lineage_access_policy, lineage_view_projection
 from .lineage_access_policy import actor_can_manage_lineage as _actor_can_manage_lineage
 from .lineage_view_projection import node_resident_id as _node_resident_id
-from .lineage_program import _position
+from .lineage_program_fields import _position
 from .lineage_workspace_files import _write_text
 from . import (
     identity_contract,
@@ -34,8 +34,11 @@ from . import (
     lineage_definition_contract,
     lineage_operator_runtime,
     lineage_placement,
-    lineage_program,
+    lineage_program_event_scope,
+    lineage_program_observations,
+    lineage_program_occurrences,
     lineage_program_runtime,
+    lineage_program_wire_queue,
     lineage_state_domains,
     lineage_storage,
     resident_catalog,
@@ -528,7 +531,7 @@ def _resident_completion_baseline_requests(
     }
     requests: list[dict[str, Any]] = []
     for event_source_id, watched, per_resident, subscriber_ids in (
-        lineage_program.resident_completion_subscriptions(plan, nodes)
+        lineage_program_event_scope.resident_completion_subscriptions(plan, nodes)
     ):
         if not any(nodes.get(subject_id) for subject_id in watched):
             continue
@@ -579,7 +582,7 @@ def _establish_resident_completion_baselines(
         if not isinstance(completion, dict):
             completion = {}
         results.append(
-            lineage_program_runtime
+            lineage_program_observations
             .establish_resident_completion_subscription_baseline(
                 lineage_id,
                 str(request.get("event_source_id") or ""),
@@ -651,14 +654,14 @@ def _execute_program_contract_cleanup(
     ):
         if event_source_id in preserve_fire_budget:
             (
-                lineage_program_runtime
+                lineage_program_occurrences
                 .fence_event_source_contract_preserving_fire_budget(
                     lineage_id,
                     event_source_id,
                 )
             )
         else:
-            lineage_program_runtime.forget_event_source(
+            lineage_program_occurrences.forget_event_source(
                 lineage_id,
                 event_source_id,
                 preserve_pause=event_source_id in {
@@ -667,7 +670,7 @@ def _execute_program_contract_cleanup(
                 },
             )
     for wire_id in sorted(impact.get("invoke_wire_ids") or set()):
-        lineage_program_runtime.forget_event_wire(
+        lineage_program_wire_queue.forget_event_wire(
             lineage_id,
             wire_id,
         )

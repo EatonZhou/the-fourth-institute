@@ -16,8 +16,11 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Callable
 
+from management_common.limit_contract import limit_reached, normalize_optional_limit
+
 from . import (
-    lineage_graph_state, lineage_message_events, lineage_primitives, lineage_program, lineage_program_runtime,
+    lineage_graph_state, lineage_message_events, lineage_primitives, lineage_program_event_scope,
+    lineage_program_observations, lineage_program_runtime, lineage_program_schedules,
     lineage_release_events, trigger_paths,
 )
 from .domain_ports import resident_domain_port as resident_domain
@@ -126,14 +129,14 @@ def _read_facts(
                 *(
                     str(value)
                     for source in activity_sources
-                    for value in [*(source.get("resident_ids") or []), *lineage_program.event_source_subject_ids(source)]
+                    for value in [*(source.get("resident_ids") or []), *lineage_program_event_scope.event_source_subject_ids(source)]
                     if str(value)
                 ),
             })
         pressure_session_keys = {
             ports.lineage_node_session_key(subject)
             for source in pressure_sources
-            for subject in [nodes.get(subject_id) for subject_id in lineage_program.event_source_subject_ids(source)]
+            for subject in [nodes.get(subject_id) for subject_id in lineage_program_event_scope.event_source_subject_ids(source)]
             if isinstance(subject, dict) and ports.lineage_node_session_key(subject)
         }
     if resident_activity is None and activity_sources:
@@ -189,8 +192,8 @@ def _observe(lineage_id: str, actor: str, actor_id: str, facts: Facts, ports: Ev
         if observer is None:
             continue
         # An exhausted source never fires again; it needs no wake.
-        exhausted = lineage_program_runtime.limit_reached(
-            lineage_program_runtime.normalize_optional_limit(event_source.get("max_fires")),
+        exhausted = limit_reached(
+            normalize_optional_limit(event_source.get("max_fires")),
             max(0, int(state.get("fire_count") or 0)),
         )
         observer(scan, Source(event_source_id, event_source, subject, exhausted))
@@ -214,14 +217,14 @@ def _dispatch_pending(lineage_id: str, actor_id: str, scan: Scan, dispatch: Call
         if int(result.get("matched_count") or 0):
             event_count += 1
         if item.get("recurring_scheduled_at") and (accepted or result.get("exhausted")):
-            lineage_program_runtime.commit_recurring_schedule(
+            lineage_program_schedules.commit_recurring_schedule(
                 lineage_id,
                 item["event_source_id"],
                 generation=int(item["recurring_generation"]),
                 scheduled_at=str(item["recurring_scheduled_at"]),
             )
         if accepted and item.get("file_locator"):
-            lineage_program_runtime.commit_file_signature(
+            lineage_program_observations.commit_file_signature(
                 lineage_id,
                 item["event_source_id"],
                 locator=item["file_locator"],
@@ -229,7 +232,7 @@ def _dispatch_pending(lineage_id: str, actor_id: str, scan: Scan, dispatch: Call
                 signature=item["file_signature"],
             )
         if accepted and item.get("state_locator"):
-            lineage_program_runtime.commit_event_source_value(
+            lineage_program_observations.commit_event_source_value(
                 lineage_id,
                 item["event_source_id"],
                 locator=item["state_locator"],
@@ -287,8 +290,8 @@ def _observed_sources(plan: dict[str, Any]):
     """
 
     for event_source_id, event_source in sorted((plan.get("event_sources") or {}).items()):
-        if isinstance(event_source, dict) and lineage_program.watches_many_residents(event_source):
-            for subject_id in lineage_program.event_source_subject_ids(event_source):
+        if isinstance(event_source, dict) and lineage_program_event_scope.watches_many_residents(event_source):
+            for subject_id in lineage_program_event_scope.event_source_subject_ids(event_source):
                 yield event_source_id, {**event_source, "subject_resident_id": subject_id}, subject_id
             continue
         yield event_source_id, event_source, ""
@@ -313,7 +316,7 @@ def _with_facade_activity(snapshot: dict[str, Any], activity_sources: list[dict[
         subject_id
         for source in activity_sources
         if str(source.get("event_type") or "") == "resident.work_started"
-        for subject_id in lineage_program.event_source_subject_ids(source)
+        for subject_id in lineage_program_event_scope.event_source_subject_ids(source)
     }
     if not subjects:
         return snapshot

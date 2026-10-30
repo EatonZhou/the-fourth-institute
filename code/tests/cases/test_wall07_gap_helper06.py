@@ -13,6 +13,7 @@ from management_portal.society_service import (
     lineage_lifecycle,
     lineage_placement,
     lineage_program,
+    lineage_program_compilation,
     lineage_program_edits,
     lineage_reads,
     lineage_resident_nodes,
@@ -202,13 +203,13 @@ def test_layout_persists_without_program_compile_or_semantic_conflict(isolated_o
     previous = isolated_owner(LINEAGE)
     identity = created["component"]["id"]
     compile_calls = []
-    real_compile = lineage_program.compile_program
+    real_compile = lineage_program_compilation.compile_program
 
     def observe_compile(*args, **kwargs):
         compile_calls.append(True)
         return real_compile(*args, **kwargs)
 
-    monkeypatch.setattr(lineage_program, "compile_program", observe_compile)
+    monkeypatch.setattr(lineage_program_compilation, "compile_program", observe_compile)
     result = lineage_lifecycle.update_lineage_layout(LINEAGE, {"expected_revision": -999, "positions": [{"object_id": identity, "x": -50, "y": 125}]}, ACTOR)
     assert compile_calls == []
     reloaded = isolated_owner(LINEAGE)

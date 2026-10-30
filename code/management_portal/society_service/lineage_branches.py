@@ -13,7 +13,7 @@ from .errors import LineageConflictError
 from . import lineage_branch_transitions, lineage_definition_normalization
 from .lineage_values import _clone_json, _item_id, _safe_actor, _text
 from .lineage_view_projection import node_resident_id as _node_resident_id
-from .lineage_program import _position
+from .lineage_program_fields import _position
 from . import identity_contract, lineage_placement
 from . import lineage_aggregate, resident_message_contract
 from .domain_ports import resident_domain_port as resident_domain

@@ -10,9 +10,10 @@ import pytest
 
 from management_portal.hatg.contracts import InstructionCall, InstructionContext
 from management_portal.society_service import (
-    component_runtime, lineage_domain, lineage_graph_edits, lineage_primitives, lineage_program,
-    lineage_program_authoring, lineage_program_runtime, lineage_reads, lineage_resident_controls,
-    lineage_state, trigger_path_observation, trigger_paths,
+    component_runtime, lineage_domain, lineage_graph_edits, lineage_primitives,
+    lineage_program_arguments, lineage_program_authoring, lineage_program_diagnostics,
+    lineage_program_occurrences, lineage_program_runtime, lineage_program_wire_queue, lineage_reads,
+    lineage_resident_controls, lineage_state, trigger_path_observation, trigger_paths,
 )
 from management_portal.society_service.isa import build_kernel, definition, runs
 from management_portal.society_service.lineage_program_packet_routing import input_prompt
@@ -90,7 +91,7 @@ def test_direct_event_combines_input_once(mapping, expected):
     """事件直连 Resident 时固定提示与事件输入只拼接一次"""
     event = lineage_primitives.make_event("manual.triggered", payload={"prompt": "Input"})
     packet = lineage_primitives.event_packet(event).to_dict()
-    actual = input_prompt(packet, lineage_program.resolve_invocation_argument_mapping(mapping, event, packet=packet), mapping)
+    actual = input_prompt(packet, lineage_program_arguments.resolve_invocation_argument_mapping(mapping, event, packet=packet), mapping)
     assert actual == expected
 
 
@@ -117,9 +118,9 @@ def test_definition_change_keeps_paused_state(lineage_id, mode):
     with lineage_program_runtime._runtime_transaction(lineage_id) as runtime:
         runtime["event_sources"]["event_source_start"] = {"paused": True, "paused_at": "2026-01-01T00:00:00Z"}
     if mode == "fence":
-        lineage_program_runtime.fence_event_source_contract_preserving_fire_budget(lineage_id, "event_source_start")
+        lineage_program_occurrences.fence_event_source_contract_preserving_fire_budget(lineage_id, "event_source_start")
     else:
-        lineage_program_runtime.forget_event_source(lineage_id, "event_source_start", preserve_pause=True)
+        lineage_program_occurrences.forget_event_source(lineage_id, "event_source_start", preserve_pause=True)
     saved = lineage_program_runtime.read_runtime(lineage_id)["event_sources"]["event_source_start"]
     assert saved["paused"] is True
     assert saved["paused_at"] == "2026-01-01T00:00:00Z"
@@ -136,12 +137,12 @@ def test_expired_delivery_remains_observable_after_notification(lineage_id, monk
     event = lineage_primitives.make_event("manual.triggered").to_dict()
     identity = trigger_paths.begin_event(lineage_id, "event_source_start", event, cause_kind="input", cause_id="test")
     event["payload"]["trigger_path_id"] = identity
-    lineage_program_runtime.defer_event_for_wire(lineage_id, "event_source_start", "wire_start", "cursor_start",
+    lineage_program_wire_queue.defer_event_for_wire(lineage_id, "event_source_start", "wire_start", "cursor_start",
         event, policy="queue", expires_after_seconds=1)
     trigger_paths.event_settled(identity, "event_source_start", event["id"])
     Clock.current += timedelta(seconds=2)
-    assert len(lineage_program_runtime.drain_expired_deliveries(lineage_id)) == 1
-    assert lineage_program_runtime.drain_expired_deliveries(lineage_id) == []
+    assert len(lineage_program_wire_queue.drain_expired_deliveries(lineage_id)) == 1
+    assert lineage_program_wire_queue.drain_expired_deliveries(lineage_id) == []
     assert lineage_program_runtime.read_runtime(lineage_id)["expired_deliveries"] == []
     observed = trigger_path_observation.observe(lineage_id, {"trigger_path_id": identity})
     assert observed["path"]["status"] == "failed"
@@ -263,7 +264,7 @@ def test_deleted_operator_executor_leaves_diagnosable_operator(primitive_store, 
     result = lineage_graph_edits.apply_lineage_changes(current["lineage_id"], {"resident_ids": [WORK_A]}, ACTOR)
     component = next(c for c in result["lineage"]["program"]["components"] if c["id"] == "filter_test")
     assert "resident_executor_id" not in component["config"]
-    diagnostics = lineage_program.program_diagnostics(result["lineage"]["program"], result["lineage"]["nodes"])
+    diagnostics = lineage_program_diagnostics.program_diagnostics(result["lineage"]["program"], result["lineage"]["nodes"])
     assert any(d["code"] == "packet_operator.missing_executor" and d["item_id"] == component["id"] for d in diagnostics)
 
 

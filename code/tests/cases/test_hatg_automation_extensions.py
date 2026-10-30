@@ -10,7 +10,8 @@ from management_portal.society_service import (
     lineage_human_notifications,
     lineage_program,
     lineage_program_identity,
-    lineage_program_runtime,
+    lineage_program_schedules,
+    lineage_program_wire_queue,
     trigger_paths,
     state_store,
 )
@@ -129,18 +130,18 @@ def test_graph_state_update_and_compare_and_set_are_atomic(lineage_id: str) -> N
 
 def test_countdown_timer_keeps_one_runtime_anchor(lineage_id: str) -> None:
     """倒计时事件源重复登记时保持同一计时锚点，改变延时才进入新一代"""
-    first = lineage_program_runtime.ensure_countdown_timer(
+    first = lineage_program_schedules.ensure_countdown_timer(
         lineage_id,
         "event_source_countdown",
         delay_seconds=60,
     )
-    second = lineage_program_runtime.ensure_countdown_timer(
+    second = lineage_program_schedules.ensure_countdown_timer(
         lineage_id,
         "event_source_countdown",
         delay_seconds=60,
     )
     assert second == first
-    changed = lineage_program_runtime.ensure_countdown_timer(
+    changed = lineage_program_schedules.ensure_countdown_timer(
         lineage_id,
         "event_source_countdown",
         delay_seconds=120,
@@ -160,7 +161,7 @@ def test_expired_event_delivery_becomes_a_durable_runtime_fact_contracts(subtest
         trigger_paths.delivery_waiting(lid, "wire", pending)
         trigger_paths.event_settled(identity, "source", event["id"])
         runtime = {"event_sources": {}, "event_wires": {"wire": {"pending_events": [pending]}}, "expired_deliveries": []}
-        removed = lineage_program_runtime._prune_expired_pending_events(
+        removed = lineage_program_wire_queue._prune_expired_pending_events(
             runtime, lineage_id=lid, now=datetime(2026,7,31,0,0,1,tzinfo=timezone.utc))
         assert removed == 1 and runtime["event_wires"] == {}
         assert runtime["expired_deliveries"][0]["event"] == event

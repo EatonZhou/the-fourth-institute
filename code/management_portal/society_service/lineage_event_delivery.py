@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import Any, Callable
 from management_common.operation_errors import OperationError
 
-from . import lineage_program_runtime
+from . import lineage_program_wire_queue
 from .domain_ports import failure_notification_port
 
 LOGGER = logging.getLogger(__name__)
@@ -135,7 +135,7 @@ def settle_delivery(
     if dispatch_token:
         if not delivered:
             hold = hold_for_resolution(lineage_id, outcome, wire_id)
-        lineage_program_runtime.finish_pending_event(
+        lineage_program_wire_queue.finish_pending_event(
             lineage_id, wire_id, dispatch_token, delivered=delivered,
             error=error, terminal_status="failed" if error else "completed",
             retry_later=bool(error), hold=hold,
@@ -193,6 +193,6 @@ def block_unrecoverable_events(database: Any, lineage_id: str) -> int:
                 continue
             error = permanent_error(item.get("event") or {})
             if error:
-                lineage_program_runtime.hold_pending_occurrence(item, {"error": error, "requires_reissue": True}, now_iso())
+                lineage_program_wire_queue.hold_pending_occurrence(item, {"error": error, "requires_reissue": True}, now_iso())
                 blocked += 1
     return blocked

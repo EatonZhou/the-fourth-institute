@@ -45,13 +45,13 @@ def can_resolve(lineage_id: str, key: str, record: dict) -> bool:
 
 
 def _dispose(lineage_id: str, key: str, existing: dict, disposition: dict) -> None:
-    from . import lineage_program_runtime, trigger_paths
+    from . import lineage_program_wire_queue, trigger_paths
 
     # Terminal evidence, journal removal and this occurrence's queue release
     # commit together. Other occurrences on the wire remain pending.
     with get_lineage_data_store().database.transaction():
         journal.finish(lineage_id, key, status=disposition["status"], outputs={}, disposition=disposition)
-        lineage_program_runtime.settle_effect_delivery(lineage_id, existing)
+        lineage_program_wire_queue.settle_effect_delivery(lineage_id, existing)
         trigger_paths.settle_disposed_delivery(lineage_id, key)
     journal.cleanup(lineage_id, key)
 

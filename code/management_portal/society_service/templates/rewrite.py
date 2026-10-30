@@ -25,13 +25,13 @@ MAX_BINDINGS = 200
 
 
 def _wire_kinds():
-    from ..lineage_program import PROGRAM_WIRE_KINDS
+    from ..lineage_program_vocabulary import PROGRAM_WIRE_KINDS
 
     return PROGRAM_WIRE_KINDS
 
 
 def _node_kinds():
-    from ..lineage_program import PROGRAM_COMPONENT_KINDS
+    from ..lineage_program_vocabulary import PROGRAM_COMPONENT_KINDS
 
     return PROGRAM_COMPONENT_KINDS | {"resident"}
 

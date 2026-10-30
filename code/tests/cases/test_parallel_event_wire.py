@@ -13,7 +13,7 @@ from __future__ import annotations
 import pytest
 
 from management_portal.society_service import lineage_event_routing, lineage_lifecycle, lineage_primitives
-from management_portal.society_service import lineage_program_runtime as runtime, trigger_paths
+from management_portal.society_service import lineage_program_wire_queue, trigger_paths
 from tests.cases.test_lineage_generic_primitives import primitive_store, ACTOR, WORK_A, _worker  # noqa: F401
 
 
@@ -35,7 +35,7 @@ def _stage(lineage_id: str, cursor: str) -> None:
     event["payload"]["trigger_path_id"] = trigger_paths.begin_event(
         lineage_id, "event_source_start", event, cause_kind="input", cause_id=cursor,
     )
-    runtime.stage_event_delivery(lineage_id, "event_source_start", "wire_route", cursor, event)
+    lineage_program_wire_queue.stage_event_delivery(lineage_id, "event_source_start", "wire_route", cursor, event)
 
 
 def test_a_parallel_wire_claims_a_later_occurrence_while_an_earlier_one_is_delivered(primitive_store):
@@ -47,14 +47,14 @@ def test_a_parallel_wire_claims_a_later_occurrence_while_an_earlier_one_is_deliv
     _stage(lineage_id, "c1")
     _stage(lineage_id, "c2")
 
-    first = runtime.claim_pending_event(lineage_id, "wire_route")
+    first = lineage_program_wire_queue.claim_pending_event(lineage_id, "wire_route")
     assert first["cursor"] == "c1"
-    assert runtime.claim_pending_event(lineage_id, "wire_route") is None  # ordered: waits behind c1
-    second = runtime.claim_pending_event(lineage_id, "wire_route", cursor="c2")
+    assert lineage_program_wire_queue.claim_pending_event(lineage_id, "wire_route") is None  # ordered: waits behind c1
+    second = lineage_program_wire_queue.claim_pending_event(lineage_id, "wire_route", cursor="c2")
     assert second["cursor"] == "c2" and second["dispatch_token"] != first["dispatch_token"]
-    assert runtime.claim_pending_event(lineage_id, "wire_route", cursor="c2") is None  # already being delivered
-    assert runtime.finish_pending_event(lineage_id, "wire_route", second["dispatch_token"], delivered=True)
-    assert runtime.finish_pending_event(lineage_id, "wire_route", first["dispatch_token"], delivered=True)
+    assert lineage_program_wire_queue.claim_pending_event(lineage_id, "wire_route", cursor="c2") is None  # already being delivered
+    assert lineage_program_wire_queue.finish_pending_event(lineage_id, "wire_route", second["dispatch_token"], delivered=True)
+    assert lineage_program_wire_queue.finish_pending_event(lineage_id, "wire_route", first["dispatch_token"], delivered=True)
 
 
 def test_only_an_ordered_wire_is_blocked_by_its_backlog():

@@ -7,7 +7,9 @@ from __future__ import annotations
 
 import pytest
 
-from management_portal.society_service import lineage_primitives, lineage_program
+from management_portal.society_service import (
+    lineage_primitives, lineage_program_components, lineage_program_diagnostics,
+)
 from management_portal.society_service.lineage_program_effect_execution import effect_outputs
 from management_portal.society_service.lineage_program_effect_rules import (
     effect_call_key,
@@ -98,18 +100,18 @@ def test_outputs_are_the_called_instructions_declared_result_fields():
 
 def test_effect_configuration_accepts_only_script_and_endpoints():
     """Effect 配置仅接受脚本与端点"""
-    normalized = lineage_program.normalize_effect_config({
+    normalized = lineage_program_components.normalize_effect_config({
         "script": 'ForkResident source_resident_id="${endpoint.source}"\r\n',
         "endpoints": ["source"],
     })
     assert normalized == {"script": 'ForkResident source_resident_id="${endpoint.source}"\n', "endpoints": ["source"]}
-    assert lineage_program.normalize_effect_config({}) == {"script": "", "endpoints": []}
+    assert lineage_program_components.normalize_effect_config({}) == {"script": "", "endpoints": []}
     with pytest.raises(ValueError, match="只包含"):
-        lineage_program.normalize_effect_config({"instruction": "ForkResident", "arguments": {}, "endpoints": []})
+        lineage_program_components.normalize_effect_config({"instruction": "ForkResident", "arguments": {}, "endpoints": []})
     with pytest.raises(ValueError, match="必须是文本"):
-        lineage_program.normalize_effect_config({"script": ["DeliverMessage"]})
+        lineage_program_components.normalize_effect_config({"script": ["DeliverMessage"]})
     with pytest.raises(ValueError, match="最长"):
-        lineage_program.normalize_effect_config({"script": "#" * 20_001})
+        lineage_program_components.normalize_effect_config({"script": "#" * 20_001})
 
 
 def diagnostics_for(config, *, connect=()):
@@ -128,7 +130,7 @@ def diagnostics_for(config, *, connect=()):
         ],
     }
     nodes = [{"id": TARGET, "kind": "agent", "title": "T"}] if connect else []
-    return {item["code"] for item in lineage_program.program_diagnostics(program, nodes)}
+    return {item["code"] for item in lineage_program_diagnostics.program_diagnostics(program, nodes)}
 
 
 def test_diagnostics_check_the_script_its_calls_and_endpoints():
@@ -156,9 +158,9 @@ def test_diagnostics_check_the_script_its_calls_and_endpoints():
 def test_effect_outputs_feed_downstream_argument_checks():
     """Effect 输出字段供下游参数检查使用"""
     effect = {"script": 'x=$(ForkResident source_resident_id="a")\noutput child="${x.resident_id}"', "endpoints": {}, "endpoint_names": []}
-    assert lineage_program.effect_script_analysis(effect).output_fields == {"child"}
+    assert lineage_program_diagnostics.effect_script_analysis(effect).output_fields == {"child"}
     single = {"script": 'ForkResident source_resident_id="a"', "endpoints": {}, "endpoint_names": []}
-    assert "resident_id" in lineage_program.effect_script_analysis(single).output_fields
+    assert "resident_id" in lineage_program_diagnostics.effect_script_analysis(single).output_fields
 
 
 def payload_diagnostics(event_type, reference):
@@ -177,7 +179,7 @@ def payload_diagnostics(event_type, reference):
         ],
     }
     nodes = [{"id": watched, "title": "A"}, {"id": TARGET, "title": "B"}]
-    return [item for item in lineage_program.program_diagnostics(program, nodes)
+    return [item for item in lineage_program_diagnostics.program_diagnostics(program, nodes)
             if item["code"] == "effect.unavailable_event_payload"]
 
 
@@ -204,7 +206,7 @@ def test_a_new_effect_from_the_primitive_card_has_the_config_create_component_ac
     from management_portal.society_service import lineage_program_authoring
 
     default = lineage_program_authoring.DEFAULT_EFFECT_CONFIG
-    assert lineage_program.normalize_effect_config(default) == default
+    assert lineage_program_components.normalize_effect_config(default) == default
     source = (Path(__file__).resolve().parents[2] / "management_portal/static/lineage_program.js").read_text()
     block = re.search(r"\n      effect: \{.*?default_config: \{(.*?)\n        \},", source, re.S).group(1)
     assert f"script: '{default['script']}'" in block

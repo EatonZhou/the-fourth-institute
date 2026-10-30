@@ -11,7 +11,9 @@ from typing import Any, Callable
 from dataclasses import dataclass
 from functools import partial
 
-from . import identity_contract, lineage_handoff_backend, lineage_program
+from . import (
+    identity_contract, lineage_handoff_backend, lineage_program, lineage_program_vocabulary,
+)
 from .lineage_definition_contract import EDGE_FAMILIES
 from .lineage_values import _dedupe_strings, _integer, _item_id, _safe_actor, _text
 from . import function_block_authoring
@@ -346,7 +348,7 @@ def _normalize_node(
             110,
         ).lower()
         if (
-            operator_kind not in lineage_program.PACKET_OPERATOR_KINDS
+            operator_kind not in lineage_program_vocabulary.PACKET_OPERATOR_KINDS
             or not component_id.startswith(f"{operator_kind}_")
         ):
             raise ValueError("Packet Operator Resident 执行器绑定无效")

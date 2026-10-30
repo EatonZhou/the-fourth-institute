@@ -27,8 +27,10 @@ from management_portal.society_service import lineage_event_conditions, lineage_
 from management_portal.society_service import component_runtime, lineage_graph_state
 from management_portal.society_service import invariant_locks, state_store
 from management_portal.society_service import lineage_primitives
-from management_portal.society_service import lineage_program
-from management_portal.society_service import lineage_program_runtime
+from management_portal.society_service import (
+    lineage_program, lineage_program_compilation, lineage_program_diagnostics,
+)
+from management_portal.society_service import lineage_program_observations, lineage_program_runtime
 from management_portal.society_service.lineage_effect_script import deliver_script_parts
 from management_portal.society_service import lineage_aggregate
 from tests.cases.effect_script_support import effect_config, lower_effect_call
@@ -260,7 +262,7 @@ def test_event_routes_and_effect_endpoints_are_generic() -> None:
         },
         lineage_nodes=[_worker(WORK_A), _worker(WORK_B)],
     )
-    plan = lineage_program.compile_program(
+    plan = lineage_program_compilation.compile_program(
         program,
         [_worker(WORK_A), _worker(WORK_B)],
     )
@@ -282,7 +284,7 @@ def test_event_routes_and_effect_endpoints_are_generic() -> None:
 
 def test_invoke_wire_mapping_combines_prompt_and_overrides_other_defaults() -> None:
     """调用连线的参数映射把 prompt 接在 Effect 默认消息之后，其他参数覆盖默认值"""
-    plan = lineage_program.compile_program(
+    plan = lineage_program_compilation.compile_program(
         {
             "components": [
                 {
@@ -443,7 +445,7 @@ def test_event_prompt_survives_serialization_beyond_metadata_text_limit_contract
             if component["id"] == "event_source_delivery_failure"
         )
         assert not any(key.startswith("subject_") for key in watcher)
-        compiled = lineage_program.compile_program(program, [_worker(WORK_A)])
+        compiled = lineage_program_compilation.compile_program(program, [_worker(WORK_A)])
         runtime_watcher = compiled["event_sources"][
             "event_source_delivery_failure"
         ]
@@ -452,7 +454,7 @@ def test_event_prompt_survives_serialization_beyond_metadata_text_limit_contract
     with subtests.test(contract='test_program_accepts_external_resident_event_and_effect_references'), isolated_portal_case() as case_path:
         external_observer_subject = "resident_111111111111"
         external_effect_target = "resident_222222222222"
-        plan = lineage_program.compile_program(
+        plan = lineage_program_compilation.compile_program(
             {
                 "components": [
                     {
@@ -1400,8 +1402,8 @@ def test_queue_pressure_event_supports_both_metrics_and_rearms(
     )
     # The graph can finish before its observation cursor is acknowledged.
     # A later sample has different queue details but must not deliver again.
-    commit_observation = lineage_program_runtime.commit_event_source_value
-    monkeypatch.setattr(lineage_program_runtime, "commit_event_source_value", lambda *args, **kwargs: False)
+    commit_observation = lineage_program_observations.commit_event_source_value
+    monkeypatch.setattr(lineage_program_observations, "commit_event_source_value", lambda *args, **kwargs: False)
     length_crossed = lineage_domain.reconcile_lineage_system_events(
         created["lineage_id"],
         ACTOR,
@@ -1411,7 +1413,7 @@ def test_queue_pressure_event_supports_both_metrics_and_rearms(
             oldest_queued_at="2026-08-02T10:00:40Z",
         ),
     )
-    monkeypatch.setattr(lineage_program_runtime, "commit_event_source_value", commit_observation)
+    monkeypatch.setattr(lineage_program_observations, "commit_event_source_value", commit_observation)
     replay = lineage_domain.reconcile_lineage_system_events(
         created["lineage_id"], ACTOR,
         resident_activity_snapshot=snapshot(
@@ -1677,7 +1679,7 @@ def test_event_wire_and_effect_envelope_opt_out_round_trip_through_program() -> 
         wire["id"]: wire
         for wire in program["wires"]
     }
-    plan = lineage_program.compile_program(
+    plan = lineage_program_compilation.compile_program(
         program,
         [_worker(WORK_A), _worker(WORK_B)],
     )
@@ -1714,7 +1716,7 @@ def test_reference_bindings_reject_invocation_configuration_contracts(subtests, 
     """端点连线不接受调用配置，同一事件到同一端点的重复路由即使 prompt 不同也被拒绝"""
     with subtests.test(contract='test_reference_bindings_reject_invocation_configuration'), isolated_portal_case() as case_path:
         with pytest.raises(ValueError, match="target wire config 不接受字段"):
-            lineage_program.compile_program(
+            lineage_program_compilation.compile_program(
                 {
                     "components": [{
                                        "id": "effect_delivery_send",
@@ -3319,7 +3321,7 @@ def test_resident_packet_can_drive_reducer_then_endpoint_free_effect(
         },
         ACTOR,
     )
-    assert lineage_program.program_diagnostics(
+    assert lineage_program_diagnostics.program_diagnostics(
         created["program"],
         created["nodes"],
     ) == []

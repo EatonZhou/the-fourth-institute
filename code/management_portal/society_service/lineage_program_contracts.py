@@ -10,7 +10,7 @@ import json
 from typing import Any
 
 from management_common.limit_contract import normalize_optional_limit
-from . import lineage_program
+from . import lineage_program_compilation, lineage_program_event_scope, lineage_program_vocabulary
 from .lineage_values import _clone_json
 
 
@@ -21,7 +21,7 @@ _EVENT_CONTRACT_FIELDS = {
     'event_type': (False, lambda event_source: str(event_source.get('event_type') or '')),
     'output_schema': (True, lambda event_source: _clone_json(event_source.get('output_schema') or {})),
     'max_fires': (True, lambda event_source: normalize_optional_limit(event_source.get('max_fires'))),
-    'subject_resident_id': (False, lambda event_source: '' if lineage_program.watches_many_residents(event_source) else str(event_source.get('subject_resident_id') or '')),
+    'subject_resident_id': (False, lambda event_source: '' if lineage_program_event_scope.watches_many_residents(event_source) else str(event_source.get('subject_resident_id') or '')),
     'subject_event_source_id': (True, lambda event_source: str(event_source.get('subject_event_source_id') or '')),
     'subject_wire_id': (True, lambda event_source: str(event_source.get('subject_wire_id') or '')),
     'subject_effect_id': (True, lambda event_source: str(event_source.get('subject_effect_id') or '')),
@@ -74,8 +74,8 @@ def _program_event_execution_configs(
             ),
             # Several watched Residents: changing the set re-baselines the source.
             **(
-                {"subject_resident_ids": list(lineage_program.event_source_subject_ids(event_source))}
-                if lineage_program.watches_many_residents(event_source)
+                {"subject_resident_ids": list(lineage_program_event_scope.event_source_subject_ids(event_source))}
+                if lineage_program_event_scope.watches_many_residents(event_source)
                 else {}
             ),
         }
@@ -138,7 +138,7 @@ def _invalid_previous_program_recovery_impact(
         if (
             isinstance(component, dict)
             and str(component.get("kind") or "")
-            in lineage_program.PACKET_OPERATOR_KINDS
+            in lineage_program_vocabulary.PACKET_OPERATOR_KINDS
             and str(component.get("id") or "")
         )
     }
@@ -192,12 +192,12 @@ def _program_execution_contract_change(
 ) -> dict[str, set[str]]:
     """Diff the one compiled authority for queued HATG program work."""
 
-    after_plan = lineage_program.compile_program(
+    after_plan = lineage_program_compilation.compile_program(
         current.get("program"),
         current.get("nodes") or [],
     )
     try:
-        before_plan = lineage_program.compile_program(
+        before_plan = lineage_program_compilation.compile_program(
             previous.get("program"),
             previous.get("nodes") or [],
         )
@@ -281,7 +281,7 @@ def _program_event_source_contract_fingerprint(
 
     contract = {
         **{key: normalize(event_source) for key, (_, normalize) in _EVENT_CONTRACT_FIELDS.items()},
-        **(({'subject_resident_ids': list(lineage_program.event_source_subject_ids(event_source))} if lineage_program.watches_many_residents(event_source) else {})),
+        **(({'subject_resident_ids': list(lineage_program_event_scope.event_source_subject_ids(event_source))} if lineage_program_event_scope.watches_many_residents(event_source) else {})),
         **(({'subject_effect_ids': list(event_source.get('subject_effect_ids') or []), 'outcome': str(event_source.get('outcome') or 'any')} if event_source.get('event_type') == 'script.finished' else {})),
     }
     return hashlib.sha256(

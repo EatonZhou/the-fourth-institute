@@ -7,7 +7,9 @@ from management_common.principal import is_user_or_resident
 import json
 from typing import Any, Callable
 
-from . import lineage_program, lineage_state_domains, resident_catalog, resident_protocol
+from . import (
+    lineage_program_diagnostics, lineage_state_domains, resident_catalog, resident_protocol,
+)
 from .domain_ports import resident_domain_port
 from .lineage_values import _clone_json, _text
 
@@ -93,7 +95,7 @@ def verified_lineage_view(
     project_resident_runtime_state(view, actor)
     project_handoff_execution(view, actor)
     try:
-        view["program_diagnostics"] = lineage_program.program_diagnostics(
+        view["program_diagnostics"] = lineage_program_diagnostics.program_diagnostics(
             view.get("program"), view.get("nodes") or [],
         )
     except (TypeError, ValueError) as exc:

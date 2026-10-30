@@ -10,7 +10,9 @@ import json
 
 import pytest
 
-from management_portal.society_service import lineage_primitives, lineage_program, resident_protocol
+from management_portal.society_service import (
+    lineage_primitives, lineage_program_diagnostics, resident_protocol,
+)
 from management_portal.society_service.lineage_program_effect_rules import DEFAULT_CONTINUE_PROMPT, prepare_call_arguments
 from tests.cases.test_effect_script import _lineage, _plan, _Host
 from tests.cases.test_generic_effect import invocation, TARGET
@@ -35,7 +37,7 @@ def test_authored_message_constants_report_component_and_source_line(message):
     effect_id = 'effect_aaaaaaaaaaaa'
     script = '# saved invalid draft\nDeliverMessage resident_id="${endpoint.target}" message:=' + json.dumps(message)
     effect = _plan(script)['effects'][effect_id]
-    diagnostics = lineage_program._effect_diagnostics(effect_id, effect)
+    diagnostics = lineage_program_diagnostics._effect_diagnostics(effect_id, effect)
     [error] = [item for item in diagnostics if item['code'] == 'effect.invalid_argument']
     assert error['item_id'] == effect_id and error['level'] == 'error'
     assert '第 2 行' in error['message']
@@ -56,7 +58,7 @@ def test_dynamic_invalid_message_fails_before_delivery_and_remains_failed_on_rep
     from management_portal.society_service import lineage_program_effect_execution as execution, trigger_paths
     lineage = _lineage('lineage_aaaaaaaaaaaa')
     plan = _plan('DeliverMessage resident_id="${endpoint.target}" message="${arguments.message}"')
-    assert not lineage_program.effect_script_analysis(plan['effects']['effect_aaaaaaaaaaaa']).diagnostics
+    assert not lineage_program_diagnostics.effect_script_analysis(plan['effects']['effect_aaaaaaaaaaaa']).diagnostics
     event = lineage_primitives.LineageEvent(id='event_message_validation', type='manual.triggered',
                                           payload={}, identity=OperationIdentity.for_actor('CASE-A').to_dict())
     activation = lineage_primitives.EffectInvocation(id='invocation_message_validation', activation=event,

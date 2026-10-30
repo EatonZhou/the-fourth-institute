@@ -110,12 +110,14 @@ def delete_lineage(inv: Invocation) -> dict[str, Any]:
 
 
 def list_component_types(inv: Invocation) -> dict[str, Any]:
-    from management_portal.society_service import lineage_primitive_definitions, lineage_program
+    from management_portal.society_service import (
+        lineage_primitive_definitions, lineage_program_vocabulary,
+    )
 
     return {
         "component_types": lineage_primitive_definitions.component_type_catalog(),
         "event_types": list(lineage_primitive_definitions.type_catalog("event")),
-        "component_kinds": list(lineage_program.PROGRAM_COMPONENT_KINDS),
+        "component_kinds": list(lineage_program_vocabulary.PROGRAM_COMPONENT_KINDS),
     }
 
 
@@ -325,14 +327,16 @@ def get_workspace_handoff(inv: Invocation) -> dict[str, Any]:
 
 
 def get_lineage_diagnostics(inv: Invocation) -> dict[str, Any]:
-    from management_portal.society_service import lineage_program
+    from management_portal.society_service import (
+        lineage_program_compilation, lineage_program_diagnostics,
+    )
     from ..lineage_program_runtime_projection import (
         _program_event_source_runtime_view, event_source_diagnostics,
     )
 
     lineage = lineage_reads().get_lineage_definition_for_analysis(inv.argument("lineage_id"), inv.caller)
-    plan = lineage_program.compile_program(lineage.get("program"), lineage.get("nodes") or [])
-    diagnostics = lineage_program.program_diagnostics(
+    plan = lineage_program_compilation.compile_program(lineage.get("program"), lineage.get("nodes") or [])
+    diagnostics = lineage_program_diagnostics.program_diagnostics(
         lineage.get("program"), lineage.get("nodes") or [], _compiled_plan=plan,
     )
     diagnostics.extend(event_source_diagnostics(_program_event_source_runtime_view(lineage)))

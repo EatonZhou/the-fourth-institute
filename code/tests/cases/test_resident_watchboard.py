@@ -14,7 +14,9 @@ from types import SimpleNamespace
 
 from management_portal.society_service import lineage_state
 from management_portal.society_service import resident_domain as backend
-from management_portal.society_service import watchboard_lineage, lineage_program, resident_record_domain
+from management_portal.society_service import (
+    watchboard_lineage, lineage_program, lineage_program_graph_mutation, resident_record_domain,
+)
 from management_portal.society_service import resident_watchboard_domain
 from management_portal.society_service import resident_access
 
@@ -86,7 +88,7 @@ class ResidentWatchboardTest(unittest.TestCase):
     def install(self):
         plan = resident_watchboard_domain.installation_plan(self.record)
         from management_portal.society_service.isa.definition import translate_changes
-        lineage_program.normalize_graph_mutations(translate_changes(plan["install"])[0])
+        lineage_program_graph_mutation.normalize_graph_mutations(translate_changes(plan["install"])[0])
         for item in plan["files"]:
             prefix = self.record["owned_workspace_id"] + "/file/watchboard/"
             self.assertTrue(item["address"].startswith(prefix))

@@ -22,9 +22,14 @@ from management_portal.society_service import (
 )
 from management_portal.society_service import lineage_operator_runtime
 from management_portal.society_service import resident_message_contract
-from management_portal.society_service import lineage_program_runtime
+from management_portal.society_service import (
+    lineage_program_occurrences, lineage_program_resident_inputs, lineage_program_runtime,
+    lineage_program_schedules,
+)
 from management_portal.society_service import lineage_recurring_schedule
-from management_portal.society_service import lineage_program, lineage_program_contracts, state_store
+from management_portal.society_service import (
+    lineage_program_compilation, lineage_program_contracts, state_store,
+)
 from tests.cases.isa_test_support import ok, reset_kernels
 from management_portal.society_service.runtime.backend_adapter import (
     LineageBackendRuntimeAdapter,
@@ -262,7 +267,7 @@ def test_chat_turn_routes_output_without_an_incoming_program_invocation(
     )
     lineage_id = created["lineage_id"]
     for message_id in ("job_chat_first", "job_chat_second"):
-        assert not lineage_program_runtime.resident_handoff(
+        assert not lineage_program_resident_inputs.resident_handoff(
             lineage_id, PRODUCER_A, message_id,
         )
         lineage_test_support.complete_resident_message(
@@ -332,7 +337,7 @@ def test_start_requeues_completed_turns_whose_output_a_stop_dropped(
         (WORK_A, "job_no_output_wire"): "2026-10-14T00:58:00Z",
     }
     lineage_domain.emit_program_manual_event(lineage_id, {"event_source_id": "event_source_manual_producer"}, ACTOR)
-    assert lineage_program_runtime.resident_handoff(lineage_id, PRODUCER_A, "job_handoff")
+    assert lineage_program_resident_inputs.resident_handoff(lineage_id, PRODUCER_A, "job_handoff")
     for (resident_id, message_id), at in finished.items():
         lineage_test_support.record_terminal_execution(resident_id, message_id, ACTOR, at=at)
     lineage_test_support.complete_resident_message(PRODUCER_A, ACTOR, "job_routed", lineage_id=lineage_id)
@@ -963,7 +968,7 @@ def test_work_finished_delivery_failure_remains_pending_until_persisted(
     runtime = lineage_program_runtime.read_runtime(lineage_id)
     assert "wire_direct_work_done_target" not in runtime["event_wires"]
     assert [
-        item["message_id"] for item in lineage_program_runtime.pending_resident_handoffs(lineage_id)
+        item["message_id"] for item in lineage_program_resident_inputs.pending_resident_handoffs(lineage_id)
     ] == ["msg_durable_work_finished"]
 
     duplicate = lineage_test_support.emit_resident_completion(
@@ -1069,7 +1074,7 @@ def test_work_finished_retry_is_idempotent_after_input_persisted_before_ack(
     assert persisted_messages == {"msg_idempotent_work_finished"}
     runtime = lineage_program_runtime.read_runtime(lineage_id)
     assert runtime["event_wires"] == {}
-    assert len(lineage_program_runtime.pending_resident_handoffs(lineage_id)) == 1
+    assert len(lineage_program_resident_inputs.pending_resident_handoffs(lineage_id)) == 1
 
 
 def test_completion_starts_a_new_path_and_does_not_wait_for_descendant_execution(
@@ -1346,7 +1351,7 @@ def test_backlog_consumes_pending_event_with_existing_resident_invocation(
     runtime = lineage_program_runtime.read_runtime(lineage_id)
     pending = runtime["event_wires"][wire_id]["pending_events"][0]
     event = pending["event"]
-    lineage_program_runtime.register_resident_handoff(
+    lineage_program_resident_inputs.register_resident_handoff(
         lineage_id,
         message_id="msg_1234567890abcdef1234567890abcdef",
         resident_id=WORK_A,
@@ -1812,7 +1817,7 @@ def test_reconcile_recovers_ordinary_program_resident_terminal_once(
     assert recovered["recovered_handoff_count"] == 1
     assert replay["recovered_handoff_count"] == 0
     assert queries == [(WORK_A, "job_program_resident")]
-    invocation = lineage_program_runtime.resident_handoff(
+    invocation = lineage_program_resident_inputs.resident_handoff(
         created["lineage_id"], WORK_A, "job_program_resident",
     )
     assert invocation["status"] == terminal_status
@@ -2771,7 +2776,7 @@ def test_recurring_schedule_recovers_pending_after_restart_and_reconcile_is_idem
 
     # Persist the source occurrence, then reconstruct execution through the
     # public reconcile path as a service restart would.
-    pending = lineage_program_runtime.observe_recurring_schedule(
+    pending = lineage_program_schedules.observe_recurring_schedule(
         lineage_id,
         "event_source_recurring",
         config={
@@ -2784,7 +2789,7 @@ def test_recurring_schedule_recovers_pending_after_restart_and_reconcile_is_idem
     assert pending["status"] == "due"
     # Simulate a crash after the source occurrence was claimed but before its
     # subscriber route was delivered or the schedule cursor was advanced.
-    lineage_program_runtime.claim_event_occurrence(
+    lineage_program_occurrences.claim_event_occurrence(
         lineage_id,
         "event_source_recurring",
         (
@@ -2867,7 +2872,7 @@ def test_recurring_jitter_due_time_survives_reconcile_and_runtime_reload(
 
     Clock.current += timedelta(seconds=66)
     assert lineage_domain.reconcile_lineage_system_events(lineage_id, ACTOR)["event_count"] == 0
-    assert lineage_program_runtime.observe_recurring_schedule(
+    assert lineage_program_schedules.observe_recurring_schedule(
         lineage_id,
         "event_source_recurring",
         config=created["program"]["components"][0]["config"],
@@ -2921,14 +2926,14 @@ def test_created_recurring_jitter_survives_store_restart_and_revision_change(
     }, actor=ACTOR, key="audit_recurring_jitter_revision")
     source_id = created["component"]["id"]
     current = lineage_reads.get_lineage(lineage_id, ACTOR)
-    before_plan = lineage_program.compile_program(
+    before_plan = lineage_program_compilation.compile_program(
         current["program"], current["nodes"]
     )
     before_source = before_plan["event_sources"][source_id]
     assert created["component"]["config"]["jitter_seconds"] == 10
     assert before_source["jitter_seconds"] == 10
 
-    initial = lineage_program_runtime.observe_recurring_schedule(
+    initial = lineage_program_schedules.observe_recurring_schedule(
         lineage_id, source_id, config=before_source
     )
     assert initial["next_due_at"] == "2026-08-20T00:01:07Z"
@@ -2938,17 +2943,17 @@ def test_created_recurring_jitter_survives_store_restart_and_revision_change(
     assert lineage_program_runtime.read_runtime(lineage_id)["event_sources"][source_id][
         "next_due_at"
     ] == "2026-08-20T00:01:07Z"
-    projected = lineage_program_runtime.event_source_runtime_view(
+    projected = lineage_program_occurrences.event_source_runtime_view(
         lineage_id, {source_id: before_source}
     )[source_id]
     assert projected["next_due_at"] == "2026-08-20T00:01:07Z"
 
     Clock.current += timedelta(seconds=67)
-    pending = lineage_program_runtime.observe_recurring_schedule(
+    pending = lineage_program_schedules.observe_recurring_schedule(
         lineage_id, source_id, config=before_source
     )
     assert pending["due_at"] == "2026-08-20T00:01:07Z"
-    assert lineage_program_runtime.observe_recurring_schedule(
+    assert lineage_program_schedules.observe_recurring_schedule(
         lineage_id, source_id, config=before_source
     ) == pending
 
@@ -2968,7 +2973,7 @@ def test_created_recurring_jitter_survives_store_restart_and_revision_change(
         ACTOR,
     )["lineage"]
     assert updated["revision"] == current["revision"] + 1
-    after_source = lineage_program.compile_program(
+    after_source = lineage_program_compilation.compile_program(
         updated["program"], updated["nodes"]
     )["event_sources"][source_id]
     assert after_source["jitter_seconds"] == 5
@@ -2977,11 +2982,11 @@ def test_created_recurring_jitter_survives_store_restart_and_revision_change(
     ) != lineage_program_contracts._program_event_source_contract_fingerprint(
         after_source
     )
-    replacement = lineage_program_runtime.observe_recurring_schedule(
+    replacement = lineage_program_schedules.observe_recurring_schedule(
         lineage_id, source_id, config=after_source
     )
     assert replacement["generation"] == pending["generation"] + 1
-    assert lineage_program_runtime.commit_recurring_schedule(
+    assert lineage_program_schedules.commit_recurring_schedule(
         lineage_id,
         source_id,
         generation=pending["generation"],
@@ -3041,7 +3046,7 @@ def test_recurring_pause_preserves_due_cursor_and_resume_skips_the_paused_window
 
     def source_config() -> dict:
         lineage = lineage_reads.get_lineage(lineage_id, ACTOR)
-        return lineage_program.compile_program(
+        return lineage_program_compilation.compile_program(
             lineage["program"], lineage["nodes"]
         )["event_sources"][source_id]
 
@@ -3070,7 +3075,7 @@ def test_recurring_pause_preserves_due_cursor_and_resume_skips_the_paused_window
     runtime = lineage_program_runtime.read_runtime(lineage_id)
     assert runtime["event_sources"][source_id]["paused"] is True
     assert runtime["event_sources"][source_id]["next_due_at"] == cursor["next_due_at"]
-    assert lineage_program_runtime.event_source_runtime_view(
+    assert lineage_program_occurrences.event_source_runtime_view(
         lineage_id, {source_id: configured}
     )[source_id]["paused"] is True
 
@@ -3115,26 +3120,26 @@ def test_recurring_jitter_coalesces_once_and_fences_old_generation(
         "misfire_policy": "coalesce_latest",
         "overlap_policy": "drop",
     }
-    lineage_program_runtime.observe_recurring_schedule(lineage_id, "event_source_recurring", config=config)
+    lineage_program_schedules.observe_recurring_schedule(lineage_id, "event_source_recurring", config=config)
     Clock.current += timedelta(seconds=180)
-    waiting = lineage_program_runtime.observe_recurring_schedule(lineage_id, "event_source_recurring", config=config)
+    waiting = lineage_program_schedules.observe_recurring_schedule(lineage_id, "event_source_recurring", config=config)
     assert waiting["status"] == "waiting"
     assert waiting["next_due_at"] == "2026-08-20T00:03:10Z"
     Clock.current += timedelta(seconds=5)
-    assert lineage_program_runtime.observe_recurring_schedule(lineage_id, "event_source_recurring", config=config) == waiting
+    assert lineage_program_schedules.observe_recurring_schedule(lineage_id, "event_source_recurring", config=config) == waiting
     Clock.current += timedelta(seconds=5)
-    pending = lineage_program_runtime.observe_recurring_schedule(lineage_id, "event_source_recurring", config=config)
+    pending = lineage_program_schedules.observe_recurring_schedule(lineage_id, "event_source_recurring", config=config)
     assert pending["scheduled_at"] == "2026-08-20T00:03:00Z"
     assert pending["due_at"] == "2026-08-20T00:03:10Z"
     assert pending["missed_count"] == 2
-    assert lineage_program_runtime.observe_recurring_schedule(lineage_id, "event_source_recurring", config=config) == pending
+    assert lineage_program_schedules.observe_recurring_schedule(lineage_id, "event_source_recurring", config=config) == pending
 
-    replacement = lineage_program_runtime.observe_recurring_schedule(
+    replacement = lineage_program_schedules.observe_recurring_schedule(
         lineage_id, "event_source_recurring", config={**config, "jitter_seconds": 5}
     )
     assert replacement["generation"] == pending["generation"] + 1
     assert replacement["status"] == "waiting"
-    assert lineage_program_runtime.commit_recurring_schedule(
+    assert lineage_program_schedules.commit_recurring_schedule(
         lineage_id, "event_source_recurring",
         generation=pending["generation"], scheduled_at=pending["scheduled_at"],
     )["status"] == "stale"
@@ -3163,16 +3168,16 @@ def test_recurring_jitter_skip_keeps_latest_occurrence_until_its_due_time(
         "misfire_policy": "skip",
         "overlap_policy": "drop",
     }
-    lineage_program_runtime.observe_recurring_schedule(lineage_id, "event_source_recurring", config=config)
+    lineage_program_schedules.observe_recurring_schedule(lineage_id, "event_source_recurring", config=config)
     Clock.current += timedelta(seconds=120)
-    skipped = lineage_program_runtime.observe_recurring_schedule(lineage_id, "event_source_recurring", config=config)
+    skipped = lineage_program_schedules.observe_recurring_schedule(lineage_id, "event_source_recurring", config=config)
     assert skipped["status"] == "skipped"
     assert skipped["skipped_count"] == 1
     source = lineage_program_runtime.read_runtime(lineage_id)["event_sources"]["event_source_recurring"]
     assert source["next_scheduled_at"] == "2026-08-20T00:02:00Z"
     assert source["next_due_at"] == "2026-08-20T00:02:10Z"
     Clock.current += timedelta(seconds=10)
-    due = lineage_program_runtime.observe_recurring_schedule(lineage_id, "event_source_recurring", config=config)
+    due = lineage_program_schedules.observe_recurring_schedule(lineage_id, "event_source_recurring", config=config)
     assert due["status"] == "due"
     assert due["scheduled_at"] == "2026-08-20T00:02:00Z"
     assert due["missed_count"] == 0
@@ -3337,14 +3342,14 @@ def test_recurring_generation_fences_pending_occurrence_on_config_change(
         "misfire_policy": "coalesce_latest",
         "overlap_policy": "drop",
     }
-    lineage_program_runtime.observe_recurring_schedule(
+    lineage_program_schedules.observe_recurring_schedule(
         lineage_id, "event_source_recurring", config=first_config
     )
     Clock.current += timedelta(seconds=60)
-    stale = lineage_program_runtime.observe_recurring_schedule(
+    stale = lineage_program_schedules.observe_recurring_schedule(
         lineage_id, "event_source_recurring", config=first_config
     )
-    replacement = lineage_program_runtime.observe_recurring_schedule(
+    replacement = lineage_program_schedules.observe_recurring_schedule(
         lineage_id,
         "event_source_recurring",
         config={**first_config, "interval_seconds": 120},
@@ -3353,7 +3358,7 @@ def test_recurring_generation_fences_pending_occurrence_on_config_change(
     assert stale["generation"] == 1
     assert replacement["generation"] == 2
     assert replacement["status"] == "waiting"
-    assert lineage_program_runtime.commit_recurring_schedule(
+    assert lineage_program_schedules.commit_recurring_schedule(
         lineage_id,
         "event_source_recurring",
         generation=1,
@@ -3479,16 +3484,16 @@ def test_recurring_skip_misfire_advances_without_replaying_old_windows(
         "misfire_policy": "skip",
         "overlap_policy": "drop",
     }
-    lineage_program_runtime.observe_recurring_schedule(
+    lineage_program_schedules.observe_recurring_schedule(
         lineage_id, "event_source_recurring", config=config
     )
     Clock.current += timedelta(seconds=121)
 
-    skipped = lineage_program_runtime.observe_recurring_schedule(
+    skipped = lineage_program_schedules.observe_recurring_schedule(
         lineage_id, "event_source_recurring", config=config
     )
     Clock.current += timedelta(seconds=59)
-    next_due = lineage_program_runtime.observe_recurring_schedule(
+    next_due = lineage_program_schedules.observe_recurring_schedule(
         lineage_id, "event_source_recurring", config=config
     )
 
@@ -3560,7 +3565,7 @@ def test_recurring_max_fires_advances_schedule_and_reset_only_restores_budget(
     before_reset = lineage_program_runtime.read_runtime(lineage_id)["event_sources"][
         "event_source_recurring"
     ]
-    projected = lineage_program_runtime.event_source_runtime_view(
+    projected = lineage_program_occurrences.event_source_runtime_view(
         lineage_id,
         {
             "event_source_recurring": {
@@ -3570,7 +3575,7 @@ def test_recurring_max_fires_advances_schedule_and_reset_only_restores_budget(
             }
         },
     )["event_source_recurring"]
-    lineage_program_runtime.reset_event_source_fire_budget(
+    lineage_program_occurrences.reset_event_source_fire_budget(
         lineage_id,
         "event_source_recurring",
         expected_generation=projected["generation"],
@@ -3606,8 +3611,8 @@ def test_one_shot_time_source_reports_its_pending_time_until_it_fires(runtime_st
         },
     }, ACTOR)
     config = {"event_type": "time.reached", "schedule_mode": "at", "scheduled_at": "2000-01-01T00:00:00Z"}
-    before = lineage_program_runtime.event_source_runtime_view(created["lineage_id"], {"event_source_oneshot": config})
+    before = lineage_program_occurrences.event_source_runtime_view(created["lineage_id"], {"event_source_oneshot": config})
     assert before["event_source_oneshot"]["next_due_at"] == "2000-01-01T00:00:00Z"
     assert lineage_domain.reconcile_lineage_system_events(created["lineage_id"], ACTOR)["event_count"] == 1
-    after = lineage_program_runtime.event_source_runtime_view(created["lineage_id"], {"event_source_oneshot": config})
+    after = lineage_program_occurrences.event_source_runtime_view(created["lineage_id"], {"event_source_oneshot": config})
     assert after["event_source_oneshot"]["next_due_at"] == ""

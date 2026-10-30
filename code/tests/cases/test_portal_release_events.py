@@ -2,7 +2,9 @@ import pytest
 
 from management_common import portal_release_events as facts
 from management_portal.society_service import lineage_domain, lineage_release_events as events
-from management_portal.society_service import lineage_program, lineage_program_contracts as contracts
+from management_portal.society_service import (
+    lineage_program, lineage_program_compilation, lineage_program_contracts as contracts,
+)
 from tests.cases.test_lineage_generic_primitives import primitive_store, ACTOR, WORK_A, _worker  # noqa: F401
 from tests.cases import society_service_test_support as support
 
@@ -118,8 +120,8 @@ def test_publication_policy_changes_fence_delivery_without_resetting_progress():
     for policy in ['all', 'coalesce_latest']:
         after = definition(policy)
         assert contracts._program_execution_contract_change(before, after)['event_source_ids'] == set()
-        old_plan = lineage_program.compile_program(before['program'], [])
-        new_plan = lineage_program.compile_program(after['program'], [])
+        old_plan = lineage_program_compilation.compile_program(before['program'], [])
+        new_plan = lineage_program_compilation.compile_program(after['program'], [])
         old = old_plan['event_sources']['event_source_release']
         new = new_plan['event_sources']['event_source_release']
         assert new['misfire_policy'] == policy

@@ -13,7 +13,7 @@ from .lineage_view_projection import (
     node_resident_id as _node_resident_id,
     node_status as _lineage_node_status,
 )
-from .lineage_program import _position
+from .lineage_program_fields import _position
 from . import identity_contract, lineage_placement, resident_protocol
 from . import lineage_aggregate
 from .domain_ports import resident_domain_port as resident_domain

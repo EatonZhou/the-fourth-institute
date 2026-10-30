@@ -9,8 +9,8 @@ from . import (
     lineage_event_delivery,
     lineage_operator_runtime,
     lineage_primitives,
-    lineage_program,
-    lineage_program_runtime,
+    lineage_program_vocabulary,
+    lineage_program_wire_queue,
 )
 
 
@@ -41,7 +41,7 @@ def claim_generic_deliveries(
     for wire_id in routes_by_id:
         if wire_id in claimed_ids:
             continue
-        staged = lineage_program_runtime.stage_event_delivery(
+        staged = lineage_program_wire_queue.stage_event_delivery(
             lineage_id,
             event_source_id,
             wire_id,
@@ -52,7 +52,7 @@ def claim_generic_deliveries(
         if staged.get("status") == "delivered":
             continue
         parallel = bool((routes_by_id[wire_id].get("config") or {}).get("parallel"))
-        pending = lineage_program_runtime.claim_pending_event(
+        pending = lineage_program_wire_queue.claim_pending_event(
             lineage_id, wire_id, cursor=cursor if parallel else "",
             event_source_id=event_source_id,
             target_id=str(routes_by_id[wire_id].get("target_id") or ""),
@@ -98,9 +98,9 @@ def defer_program_event_route(
     # waits for its turn instead of being dropped without a trace.
     default_policy = (
         "queue" if event.type == "manual.triggered"
-        else lineage_program.DEFAULT_EVENT_UNAVAILABLE_POLICY
+        else lineage_program_vocabulary.DEFAULT_EVENT_UNAVAILABLE_POLICY
     )
-    result = lineage_program_runtime.defer_event_for_wire(
+    result = lineage_program_wire_queue.defer_event_for_wire(
         lineage_id,
         event_source_id,
         wire_id,
@@ -108,7 +108,7 @@ def defer_program_event_route(
         event.to_dict(),
         policy=str(config.get("unavailable_policy") or default_policy),
         queue_limit=int(
-            config.get("queue_limit") or lineage_program.DEFAULT_EVENT_QUEUE_LIMIT
+            config.get("queue_limit") or lineage_program_vocabulary.DEFAULT_EVENT_QUEUE_LIMIT
         ),
         expires_after_seconds=int(config.get("expires_after_seconds") or 0),
         subscriber_id=wire_id,

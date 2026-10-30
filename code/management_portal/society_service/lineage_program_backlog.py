@@ -121,7 +121,10 @@ def deliver_claimed(
 # The aggregate supplies only state, authorization and delivery capabilities.
 from contextlib import AbstractContextManager
 from typing import Protocol
-from . import lineage_program_event_dispatch, lineage_program_execution, lineage_program_runtime
+from . import (
+    lineage_program_event_dispatch, lineage_program_execution, lineage_program_runtime,
+    lineage_program_wire_queue,
+)
 from .lineage_program_queries import _compiled_program
 from .lineage_program_runtime_projection import _program_invoke_wire_runtime_view
 from .lineage_program_contracts import _program_event_source_contract_fingerprint
@@ -151,7 +154,7 @@ def dispatch_expired_deliveries(
     """Each expiry retains its saved authority, independently of the polling caller."""
     from . import trigger_paths
 
-    expired = lineage_program_runtime.drain_expired_deliveries(lineage_id)
+    expired = lineage_program_wire_queue.drain_expired_deliveries(lineage_id)
     results: list[dict[str, Any]] = []
     for item in expired:
         source_component_id = str(item.get("event_source_id") or "")
@@ -262,7 +265,7 @@ def drain_event_backlog(
             complete = True
             break
         wire_id, event_source_id, selected_route = selected
-        pending = lineage_program_runtime.claim_pending_event(
+        pending = lineage_program_wire_queue.claim_pending_event(
             lineage_id,
             wire_id, event_source_id=event_source_id,
             target_id=str(selected_route.get("target_id") or ""),
@@ -309,8 +312,8 @@ def drain_event_backlog(
     # Failed attempts wait for their stored retry time; a target that is
     # closed or busy is looked at again after the same delay.
     delays = [
-        lineage_program_runtime.next_retry_seconds(lineage_id) if held_wire_ids else 0,
-        lineage_program_runtime.retry_delay_seconds(waiting_attempt_count) if waiting_attempt_count else 0,
+        lineage_program_wire_queue.next_retry_seconds(lineage_id) if held_wire_ids else 0,
+        lineage_program_wire_queue.retry_delay_seconds(waiting_attempt_count) if waiting_attempt_count else 0,
     ]
     retry_after_seconds = min((delay for delay in delays if delay > 0), default=0)
     # Retiring re-reads the Lineage under its admission lock; skip it when no

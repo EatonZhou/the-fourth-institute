@@ -24,7 +24,7 @@ from .lineage_view_projection import node_resident_id as _node_resident_id
 from . import (
     identity_contract,
     lineage_execution_explanation,
-    lineage_program,
+    lineage_program_addresses,
     resident_catalog,
     resident_protocol,
 )
@@ -116,9 +116,9 @@ def _lineage_summary(
 def get_lineage_program_resource_projection(
     lineage_id: str, suffix: str,
 ) -> dict[str, Any]:
-    namespace, item_id = lineage_program.parse_program_resource_suffix(suffix)
+    namespace, item_id = lineage_program_addresses.parse_program_resource_suffix(suffix)
     definition, _runtime = lineage_aggregate.lineage_catalog_store().get_state(lineage_id)
-    _, _, item = lineage_program.find_program_resource(
+    _, _, item = lineage_program_addresses.find_program_resource(
         definition, suffix,
     )
     return {

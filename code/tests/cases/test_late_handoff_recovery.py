@@ -5,7 +5,8 @@ from types import SimpleNamespace
 
 from management_common.principal import OperationIdentity
 from management_portal.society_service import (
-    lineage_program_runtime, lineage_program_terminal_reconciliation as reconciliation, trigger_paths,
+    lineage_program_resident_inputs, lineage_program_terminal_reconciliation as reconciliation,
+    trigger_paths,
 )
 from management_portal.society_service import resident_conversation_stream
 
@@ -22,14 +23,14 @@ def recover(monkeypatch, finished_at, *, facade=False):
                "message_id": "msg_done", "status": "queued",
                "event": {"id": "event", "type": "time.reached", "payload": {}, "occurred_at": "2026-10-06T04:40:17Z",
                          "identity": OperationIdentity.for_actor("sample_admin").to_dict()}}
-    monkeypatch.setattr(lineage_program_runtime, "pending_resident_handoffs", lambda _lineage: [handoff])
+    monkeypatch.setattr(lineage_program_resident_inputs, "pending_resident_handoffs", lambda _lineage: [handoff])
     monkeypatch.setattr(trigger_paths, "resident_inputs", lambda *_args, **_kwargs: [handoff])
     receipt = {"message_id": "msg_done", "state": "completed", "reply_message_ids": ["msg_reply"],
                "updated_at": finished_at.isoformat().replace("+00:00", "Z")}
     monkeypatch.setattr(resident_conversation_stream, "get_repository",
                         lambda: SimpleNamespace(input_state=lambda _resident, _message: receipt))
     settled, terminal = [], []
-    monkeypatch.setattr(lineage_program_runtime, "settle_resident_handoffs",
+    monkeypatch.setattr(lineage_program_resident_inputs, "settle_resident_handoffs",
                         lambda lineage_id, **kwargs: settled.append(kwargs) or [])
     monkeypatch.setattr(reconciliation, "settle_program_paths", lambda *_args: [])
     lineage = {"lineage_id": LINEAGE, "nodes": [{"id": MEMBER}]}

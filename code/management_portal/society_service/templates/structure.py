@@ -274,7 +274,7 @@ class StructureKind:
     targets = ("resident", "selection", "canvas")
 
     def normalize(self, template):
-        from ..lineage_program import PROGRAM_COMPONENT_KINDS, PROGRAM_WIRE_KINDS
+        from ..lineage_program_vocabulary import PROGRAM_COMPONENT_KINDS, PROGRAM_WIRE_KINDS
 
         body = template["body"]
         keys = set()

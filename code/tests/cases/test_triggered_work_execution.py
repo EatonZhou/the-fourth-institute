@@ -45,7 +45,7 @@ def test_every_delivery_is_a_model_turn_and_triggered_work_runs_fresh() -> None:
 def test_a_manual_trigger_waits_for_a_busy_target(monkeypatch) -> None:
     """目标 Resident 忙碌时手动触发排队等待，定时触发和配置为 drop 的连线直接丢弃"""
     calls = []
-    monkeypatch.setattr(lineage_event_claims.lineage_program_runtime, "defer_event_for_wire",
+    monkeypatch.setattr(lineage_event_claims.lineage_program_wire_queue, "defer_event_for_wire",
                         lambda *args, **kwargs: calls.append(kwargs["policy"]) or {})
     for event_type in ("manual.triggered", "time.reached"):
         lineage_event_claims.defer_program_event_route(

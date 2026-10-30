@@ -102,7 +102,9 @@ def test_pending_mutation_changes_the_current_item_inside_the_runtime_lock(monke
 
     验证修改或删除待投递调用时在运行事务内读取并改变当前条目，修改后条目的修订号加一。
     """
-    from management_portal.society_service import lineage_program_runtime as runtime
+    from management_portal.society_service import (
+        lineage_program_runtime as runtime, lineage_program_wire_queue,
+    )
 
     from management_portal.society_service import trigger_paths
     from tests.cases.test_lineage_catalogs import _lineage_definition, LINEAGE_ID
@@ -119,9 +121,9 @@ def test_pending_mutation_changes_the_current_item_inside_the_runtime_lock(monke
     def transaction(_):
         yield state
     monkeypatch.setattr(runtime, "_runtime_transaction", transaction)
-    monkeypatch.setattr(runtime, "_prune_expired_pending_events", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(lineage_program_wire_queue, "_prune_expired_pending_events", lambda *_args, **_kwargs: None)
     inv = invocation("DeletePendingDelivery" if delete else "UpdatePendingDelivery", {"lineage_id": LINEAGE_ID, "wire_id": "wire_aaaaaaaaaaaa", "delivery_id": "delivery_aaaaaaaaaaaa"})
-    result = runtime.update_pending_wire_delivery(inv.argument("lineage_id"), inv.argument("wire_id"), inv.argument("delivery_id"), delete=delete, prompt="new")
+    result = lineage_program_wire_queue.update_pending_wire_delivery(inv.argument("lineage_id"), inv.argument("wire_id"), inv.argument("delivery_id"), delete=delete, prompt="new")
     assert result["status"] == ("deleted" if delete else "updated")
     if not delete:
         assert pending["revision"] == 3

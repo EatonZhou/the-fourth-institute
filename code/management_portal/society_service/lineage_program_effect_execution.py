@@ -24,8 +24,10 @@ from . import (
     lineage_instruction_context,
     lineage_effect_script_journal,
     lineage_primitives,
-    lineage_program,
+    lineage_program_diagnostics,
+    lineage_program_vocabulary,
     lineage_program_runtime,
+    lineage_program_effect_results,
 )
 from .lineage_program_contracts import _program_event_source_contract_fingerprint
 from .lineage_program_effect_rules import (
@@ -438,7 +440,7 @@ class _EffectRun:
         # Keep terminal replays above authoritative. For unfinished activations,
         # reject hidden fixed targets or broken endpoint references before any
         # further ISA call, including an earlier read/write in the same script.
-        for code, message, line in lineage_program.effect_script_analysis(definition).diagnostics:
+        for code, message, line in lineage_program_diagnostics.effect_script_analysis(definition).diagnostics:
             if code in _TARGET_DIAGNOSTICS:
                 raise lineage_effect_script.ScriptFailure(code, message, line=line)
 
@@ -634,7 +636,7 @@ def _effect_result(
     instruction = str(last.get("instruction") or "")
     instruction_id = str(last.get("instruction_id") or "")
     failed = status != "succeeded"
-    projection = lineage_program_runtime.effect_result_projection(
+    projection = lineage_program_effect_results.effect_result_projection(
         lineage_id,
         effect_id,
         status="failed" if failed else "executed",
@@ -646,7 +648,7 @@ def _effect_result(
     )
     event = _outcome_event(
         effect_id, instruction, invocation,
-        event_type=lineage_program.EFFECT_FAILURE_EVENT_TYPE if failed else lineage_program.EFFECT_OUTCOME_EVENT_TYPE,
+        event_type=lineage_program_vocabulary.EFFECT_FAILURE_EVENT_TYPE if failed else lineage_program_vocabulary.EFFECT_OUTCOME_EVENT_TYPE,
         instruction_id=instruction_id,
         body={**outputs, "call_count": len(summary)} if failed else {"outputs": outputs, "call_count": len(summary)},
     )

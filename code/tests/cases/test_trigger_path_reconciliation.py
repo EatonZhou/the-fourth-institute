@@ -5,8 +5,9 @@ from types import SimpleNamespace
 import pytest
 
 from management_portal.society_service import (
-    family_recovery, lineage_failure_notifications, lineage_program_runtime,
-    resident_conversation_stream, trigger_path_storage as storage, trigger_paths,
+    family_recovery, lineage_failure_notifications, lineage_program_observations,
+    lineage_program_occurrences, lineage_program_runtime, resident_conversation_stream,
+    trigger_path_storage as storage, trigger_paths,
 )
 from tests.cases.test_lineage_b3_regressions import complete_input
 from tests.cases.canonical_domain_fixture import canonical_projection
@@ -232,11 +233,11 @@ def test_rebuilt_observation_baselines_get_distinct_stable_occurrence_keys():
     """基线重建具有独立稳定身份，旧待确认发生身份在确认前保持。"""
     canonical_projection(RESIDENT, lineage_id=LINEAGE)
     def observe(value):
-        return lineage_program_runtime.observe_event_source_value(
+        return lineage_program_observations.observe_event_source_value(
             LINEAGE, SOURCE, locator="queue", signature=value, value=value, subject=RESIDENT)
     first = observe("false")
     assert observe("true")["occurrence_key"] == first["occurrence_key"]
-    lineage_program_runtime.fence_event_source_contract_preserving_fire_budget(LINEAGE, SOURCE)
+    lineage_program_occurrences.fence_event_source_contract_preserving_fire_budget(LINEAGE, SOURCE)
     second = observe("false")
     assert second["occurrence_key"] != first["occurrence_key"]
     assert observe("true")["occurrence_key"] == second["occurrence_key"]
@@ -244,7 +245,7 @@ def test_rebuilt_observation_baselines_get_distinct_stable_occurrence_keys():
     with lineage_program_runtime._runtime_transaction(LINEAGE) as runtime:
         runtime["event_sources"][SOURCE]["subjects"][RESIDENT].pop("state_epoch")
     assert observe("true")["occurrence_key"] == "1"
-    assert lineage_program_runtime.commit_event_source_value(
+    assert lineage_program_observations.commit_event_source_value(
         LINEAGE, SOURCE, locator="queue", previous_signature="false", signature="true", value="true", subject=RESIDENT)
     following = observe("false")
     assert following["generation"] == 1

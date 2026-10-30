@@ -18,6 +18,8 @@ from management_portal.society_service import (
     lineage_program_polling as polling,
     lineage_program_terminal_reconciliation as terminal,
     lineage_program_runtime as runtime,
+    lineage_program_resident_inputs,
+    lineage_program_wire_queue,
     trigger_paths,
 )
 from tests.cases.society_service_test_support import _install_isolated_portal_access
@@ -173,7 +175,7 @@ def polling_ports(monkeypatch, lineages, *, stored=None, handoffs=None):
     monkeypatch.setattr(polling, "shutdown_requested", lambda: False)
     monkeypatch.setattr(polling, "recovery_lineage_ids", lambda **_: [x["lineage_id"] for x in lineages])
     monkeypatch.setattr(runtime, "read_runtime", lambda identifier: snapshots.get(identifier, {}))
-    monkeypatch.setattr(runtime, "pending_resident_handoffs", lambda identifier: (handoffs or {}).get(identifier, []))
+    monkeypatch.setattr(lineage_program_resident_inputs, "pending_resident_handoffs", lambda identifier: (handoffs or {}).get(identifier, []))
     monkeypatch.setattr(polling.business_fact_views, "canonical_view", lambda data, **kwargs: data)
     monkeypatch.setattr(polling, "_compiled_program", lambda data: {"event_sources": {}})
     def reconcile(identifier, actor, **kwargs):
@@ -366,9 +368,9 @@ def test_recovery_only_does_not_observe_new_completion_facts(monkeypatch):
     def forbidden(*args, **kwargs):
         pytest.fail("recovery_only must not create new observations or absorption work")
     monkeypatch.setattr(terminal, "_compiled_program", lambda data: {})
-    monkeypatch.setattr(terminal.lineage_program, "resident_completion_subscriptions",
+    monkeypatch.setattr(terminal.lineage_program_event_scope, "resident_completion_subscriptions",
                         lambda *args: [(SOURCE, {RESIDENT}, False, ["consumer"])])
-    monkeypatch.setattr(runtime, "pending_resident_handoffs", lambda identifier: [])
+    monkeypatch.setattr(lineage_program_resident_inputs, "pending_resident_handoffs", lambda identifier: [])
     monkeypatch.setattr(terminal, "reconcile_terminal_absorption_edges", forbidden)
     ports = SimpleNamespace(
         state=SimpleNamespace(lineage_scope=lambda *args: nullcontext(), read_lineage=lambda *args, **kwargs: current,
@@ -432,7 +434,7 @@ def test_expired_deliveries_use_each_saved_identity_without_leaking_ambient_scop
         monkeypatch.setattr(live_users, "is_active", lambda actor: actor != OTHER)
         pending.append({"event_source_id": SOURCE, "wire_id": WIRE, "cursor": "missing",
                         "event": replace(second, identity={}).to_dict()})
-    monkeypatch.setattr(runtime, "drain_expired_deliveries", lambda identifier: pending)
+    monkeypatch.setattr(lineage_program_wire_queue, "drain_expired_deliveries", lambda identifier: pending)
     monkeypatch.setattr(backlog, "_compiled_program", lambda data: {})
     recorded, dispatched, reads, settled = [], [], [], []
     monkeypatch.setattr(trigger_paths, "begin_event",

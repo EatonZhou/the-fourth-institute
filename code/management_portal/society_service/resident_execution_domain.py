@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 import secrets
 from copy import deepcopy
 
@@ -241,8 +242,8 @@ def _notify_lineage_message_completed(
 ) -> None:
     """Queue one durable completion fact after the Conversation commit."""
     if str(message_id or "").strip():
-        from . import lineage_program_runtime
-        lineage_program_runtime.cleanup_delivery_profiles(lineage_id=lineage_id, message_id=message_id)
+        from . import lineage_program_resident_inputs
+        lineage_program_resident_inputs.cleanup_delivery_profiles(lineage_id=lineage_id, message_id=message_id)
     if not str(actor or "").strip() or not str(message_id or "").strip():
         return
     resident_terminal_port.report(
@@ -282,8 +283,8 @@ def _notify_lineage_message_terminal(
         )
         return
     if status in {"failed", "cancelled"} and str(message_id or "").strip():
-        from . import lineage_program_runtime
-        lineage_program_runtime.cleanup_delivery_profiles(lineage_id=lineage_id, message_id=message_id)
+        from . import lineage_program_resident_inputs
+        lineage_program_resident_inputs.cleanup_delivery_profiles(lineage_id=lineage_id, message_id=message_id)
     if (
         status not in {"failed", "cancelled"}
         or not str(actor or "").strip()
@@ -1463,17 +1464,21 @@ def _persist_execution_final_message(
 
 
 def _lineage_delivery_profile(job: Mapping[str, Any]) -> dict[str, Any]:
-    """How a Lineage asked this input to run (see lineage_program_runtime)."""
+    """How a Lineage asked this input to run (see lineage_program_resident_inputs)."""
 
     lineage_id = str(job.get("lineage_id") or "").strip()
     message_id = str(job.get("user_message_id") or "").strip()
     if not lineage_id or not message_id:
         return {}
     try:
-        from . import lineage_program_runtime
+        from . import lineage_program_resident_inputs
 
-        return lineage_program_runtime.delivery_profile(lineage_id, message_id)
+        return lineage_program_resident_inputs.delivery_profile(lineage_id, message_id)
     except Exception:  # noqa: BLE001 - an unreadable profile runs the input normally
+        logging.getLogger(__name__).warning(
+            "Delivery profile of %s in %s is unreadable; the input runs normally", message_id, lineage_id,
+            exc_info=True,
+        )
         return {}
 
 

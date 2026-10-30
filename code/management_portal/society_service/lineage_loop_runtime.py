@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
-from . import lineage_primitives, lineage_program, lineage_program_runtime
+from . import lineage_primitives, lineage_program_runtime, lineage_program_vocabulary
 
 Dispatch = Callable[..., dict[str, Any]]
 
@@ -100,7 +100,7 @@ def receive(
     loop = (plan.get("loops") or {}).get(loop_id)
     if not isinstance(loop, dict):
         raise ValueError("循环组件已不存在")
-    output, state = _advance(lineage_id, loop_id, loop, port if port in lineage_program.LOOP_INPUT_PORTS else "invoke")
+    output, state = _advance(lineage_id, loop_id, loop, port if port in lineage_program_vocabulary.LOOP_INPUT_PORTS else "invoke")
     result: dict[str, Any] = {"loop_id": loop_id, "input_port": port, **state}
     if not output:
         return result

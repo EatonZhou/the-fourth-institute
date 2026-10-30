@@ -18,7 +18,7 @@ def ports(monkeypatch):
         {'id': 'timer', 'config': {'event_type': 'time.reached'}}]}}
     monkeypatch.setattr(polling, 'recovery_lineage_ids', lambda **_: ['lineage_config'])
     monkeypatch.setattr(polling.lineage_program_runtime, 'read_runtime', lambda _: {})
-    monkeypatch.setattr(polling.lineage_program_runtime, 'pending_resident_handoffs', lambda _: [])
+    monkeypatch.setattr(polling.lineage_program_resident_inputs, 'pending_resident_handoffs', lambda _: [])
     value = polling.ProgramPollingPorts(
         lineage_catalog_store=lambda: SimpleNamespace(get=lambda _: definition),
         lineage_runtime_actor=identity.runtime_actor, read_lineage_state=lambda _: definition,

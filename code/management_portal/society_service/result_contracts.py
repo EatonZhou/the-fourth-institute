@@ -14,7 +14,7 @@ from typing import Any
 from jsonschema import Draft202012Validator
 
 from .lineage_definition_contract import PROGRAM_SCHEMA
-from .lineage_program import PROGRAM_WIRE_KINDS
+from .lineage_program_vocabulary import PROGRAM_WIRE_KINDS
 
 STRING = {"type": "string", "minLength": 1}
 COUNT = {"type": "integer", "minimum": 0}

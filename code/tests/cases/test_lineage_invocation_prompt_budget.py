@@ -11,9 +11,10 @@ from management_portal.society_service import (
     lineage_graph_edits,
     lineage_operators,
     lineage_primitives as primitives,
-    lineage_program,
+    lineage_program_arguments,
     lineage_program_packet_routing,
     lineage_program_runtime,
+    lineage_program_wire_queue,
     lineage_reads,
 )
 from management_portal.society_service import lineage_program_execution
@@ -113,10 +114,10 @@ def test_runtime_budget_is_separate_from_authored_text_and_structured_arguments(
     with pytest.raises(ValueError, match="bytes"):
         primitives.normalize_invocation_arguments({"prompt": "valid", "metadata": "x" * primitives.MAX_INVOCATION_ARGUMENT_BYTES})
     mapping = {"prompt": {"from": "event.payload.prompt"}}
-    assert lineage_program.normalize_invocation_argument_mapping(mapping) == mapping
-    assert lineage_program.resolve_invocation_argument_mapping(mapping, event)["prompt"] == LONG_PROMPT
+    assert lineage_program_arguments.normalize_invocation_argument_mapping(mapping) == mapping
+    assert lineage_program_arguments.resolve_invocation_argument_mapping(mapping, event)["prompt"] == LONG_PROMPT
     with pytest.raises(ValueError, match="bytes"):
-        lineage_program.normalize_invocation_argument_mapping({"prompt": {"value": LONG_PROMPT}})
+        lineage_program_arguments.normalize_invocation_argument_mapping({"prompt": {"value": LONG_PROMPT}})
 
 
 def test_fixed_plus_runtime_composition_preserves_exact_boundary_and_definition():
@@ -214,9 +215,9 @@ def test_pending_packet_text_uses_runtime_budget_and_failure_is_atomic(isolated_
 
     def persist(cursor, value):
         kwargs = {"invocation": value}
-        method = lineage_program_runtime.stage_event_delivery
+        method = lineage_program_wire_queue.stage_event_delivery
         if not staged:
-            method = lineage_program_runtime.defer_event_for_wire
+            method = lineage_program_wire_queue.defer_event_for_wire
             kwargs["policy"] = "queue"
         return method(lineage_id, "event_source_input", "wire_input", cursor, event, **kwargs)
 

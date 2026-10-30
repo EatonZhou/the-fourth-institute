@@ -8,6 +8,7 @@ from management_portal.society_service import (
     component_runtime,
     lineage_domain,
     lineage_program_edits,
+    lineage_program_occurrences,
     lineage_program_runtime,
     lineage_reads,
     lineage_state,
@@ -122,14 +123,14 @@ def test_reset_fences_old_auto_delete_readiness(runtime_store):
     """重置事件源后，旧一代的扇出完成不会触发自动删除"""
     created = create()
     lineage_id = created["lineage_id"]
-    lineage_program_runtime.claim_event_occurrence(lineage_id, SOURCE, "old", max_fires=1)
-    lineage_program_runtime.mark_event_fanout_complete(lineage_id, SOURCE, generation=0, occurrence_count=1)
+    lineage_program_occurrences.claim_event_occurrence(lineage_id, SOURCE, "old", max_fires=1)
+    lineage_program_occurrences.mark_event_fanout_complete(lineage_id, SOURCE, generation=0, occurrence_count=1)
     component_runtime.reset(lineage_id, SOURCE, ACTOR)
-    lineage_program_runtime.mark_event_fanout_complete(lineage_id, SOURCE, generation=0, occurrence_count=1)
-    lineage_program_runtime.claim_event_occurrence(lineage_id, SOURCE, "new", max_fires=1)
+    lineage_program_occurrences.mark_event_fanout_complete(lineage_id, SOURCE, generation=0, occurrence_count=1)
+    lineage_program_occurrences.claim_event_occurrence(lineage_id, SOURCE, "new", max_fires=1)
     assert lineage_program_edits._retire_exhausted_event_sources(lineage_id, ACTOR) == []
     assert source_exists(lineage_id)
-    lineage_program_runtime.mark_event_fanout_complete(lineage_id, SOURCE, generation=1, occurrence_count=1)
+    lineage_program_occurrences.mark_event_fanout_complete(lineage_id, SOURCE, generation=1, occurrence_count=1)
     assert lineage_program_edits._retire_exhausted_event_sources(lineage_id, ACTOR) == [SOURCE]
 
 
@@ -137,12 +138,12 @@ def test_older_fanout_cannot_mark_a_newer_occurrence_as_settled(runtime_store):
     """较早一次触发的扇出完成不能把较新的触发标为已结算"""
     created = create(maximum=2)
     lineage_id = created["lineage_id"]
-    lineage_program_runtime.claim_event_occurrence(lineage_id, SOURCE, "first", max_fires=2)
-    lineage_program_runtime.mark_event_fanout_complete(lineage_id, SOURCE, generation=0, occurrence_count=1)
-    lineage_program_runtime.claim_event_occurrence(lineage_id, SOURCE, "second", max_fires=2)
-    lineage_program_runtime.mark_event_fanout_complete(lineage_id, SOURCE, generation=0, occurrence_count=1)
+    lineage_program_occurrences.claim_event_occurrence(lineage_id, SOURCE, "first", max_fires=2)
+    lineage_program_occurrences.mark_event_fanout_complete(lineage_id, SOURCE, generation=0, occurrence_count=1)
+    lineage_program_occurrences.claim_event_occurrence(lineage_id, SOURCE, "second", max_fires=2)
+    lineage_program_occurrences.mark_event_fanout_complete(lineage_id, SOURCE, generation=0, occurrence_count=1)
     assert lineage_program_edits._retire_exhausted_event_sources(lineage_id, ACTOR) == []
-    lineage_program_runtime.mark_event_fanout_complete(lineage_id, SOURCE, generation=0, occurrence_count=2)
+    lineage_program_occurrences.mark_event_fanout_complete(lineage_id, SOURCE, generation=0, occurrence_count=2)
     assert lineage_program_edits._retire_exhausted_event_sources(lineage_id, ACTOR) == [SOURCE]
 
 

@@ -7,11 +7,11 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Any
 
-from . import lineage_program
+from . import lineage_program_compilation
 
 
 def _compiled_program(lineage: dict[str, Any]) -> dict[str, Any]:
-    return lineage_program.compile_program(
+    return lineage_program_compilation.compile_program(
         lineage.get("program"),
         lineage.get("nodes") or [],
     )
