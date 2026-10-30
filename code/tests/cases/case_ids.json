@@ -5374,9 +5374,6 @@
     "tests/cases/test_workspace_store.py::test_deleted_identity_cannot_be_revived_or_reused": "test_575e2636c156",
     "tests/cases/test_workspace_store.py::test_ensure_participates_in_outer_transaction_and_equal_save_is_noop": "test_1c679e75b87d",
     "tests/cases/test_workspace_store.py::test_external_path_is_immutable_and_explicit_move_retains_identity": "test_cec6270734d4",
-    "tests/cases/test_workspace_store.py::test_registration_arbitrates_concurrent_path_identity": "test_ec19c42f5791",
-    "tests/cases/test_yaml_files.py::test_callers_get_independent_copies": "test_15e762a91514",
-    "tests/cases/test_yaml_files.py::test_parse_is_reused_until_the_content_changes": "test_52bc126513b2",
-    "tests/cases/test_yaml_files.py::test_read_and_parse_errors_are_unchanged": "test_cfb3e017f344"
+    "tests/cases/test_workspace_store.py::test_registration_arbitrates_concurrent_path_identity": "test_ec19c42f5791"
   }
 }

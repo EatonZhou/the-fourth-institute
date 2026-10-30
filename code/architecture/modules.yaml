@@ -434,7 +434,6 @@ modules:
       - "management_portal/registry_sync.py"
       - "management_portal/resource_auto_registration.py"
       - "management_portal/resource_backup_backend.py"
-      - "management_portal/resource_chat_context.py"
       - "management_portal/resource_identity_backend.py"
       - "management_portal/resource_index_backend.py"
       - "management_portal/resource_lineages.py"
