@@ -177,7 +177,10 @@ class ApplicationUpgrade:
         for key in ('target', 'python', 'bundled_native_dependencies'):
             if not old.get(key) or old[key] != new.get(key):
                 raise ValueError('Base Python/native dependency replacement is outside this migration')
-        observed = snapshot.inventory(self.application)
+        # Live Provider/SQLite files may be read-locked on Windows. Preflight
+        # needs storage/link metadata only; byte-level verification belongs to
+        # the stopped snapshot after every owned process has exited.
+        observed = snapshot.inventory(self.application, content=False)
         for state in records:
             db = database_root(state['target']).relative_to(self.application).as_posix() + '/'
             if any('link' in row for name, row in observed.items() if name.startswith(db)):
@@ -192,7 +195,7 @@ class ApplicationUpgrade:
             self.database_check(state)
             checks.append(self.schema(state))
         return records, manifest, {'schemas': checks, 'required_free_bytes': needed,
-            'observed_inventory_sha256': __import__('hashlib').sha256(
+            'observed_metadata_sha256': __import__('hashlib').sha256(
                 json.dumps(observed, sort_keys=True).encode()).hexdigest()}
 
     def stop(self, records, *, keep_database=False):

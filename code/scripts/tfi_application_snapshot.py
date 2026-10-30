@@ -21,7 +21,7 @@ def digest(path):
         return hashlib.file_digest(stream, 'sha256').hexdigest()
 
 
-def inventory(root):
+def inventory(root, *, content=True):
     root = Path(root).absolute()
     result = {}
     def visit(parent):
@@ -42,7 +42,8 @@ def inventory(root):
                 result[relative] = {"directory": True}
                 visit(path)
             elif stat.S_ISREG(info.st_mode):
-                result[relative] = {"sha256": digest(path), "size": info.st_size}
+                result[relative] = {"size": info.st_size, **(
+                    {"sha256": digest(path)} if content else {"mtime_ns": info.st_mtime_ns})}
             elif not stat.S_ISSOCK(info.st_mode):
                 raise ValueError(f"Unsupported backup file type: {relative}")
     visit(root)

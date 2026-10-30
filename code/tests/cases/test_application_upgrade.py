@@ -232,3 +232,14 @@ def test_dependency_failure_restores_detached_account_definition(transaction):
         owner.upgrade(path)
     assert definition.read_text() == 'original owned definition'
     assert installer.read_json(owner.journal_path)['phase'] == 'restored'
+
+
+def test_live_inventory_does_not_read_provider_locked_bytes(application, monkeypatch):
+    app, _ = application
+    monkeypatch.setattr(snapshot, 'digest', Mock(side_effect=PermissionError('native read lock')))
+    metadata = snapshot.inventory(app, content=False)
+    assert metadata['instance/one/data/accounts/sentinel']['size'] > 0
+    assert 'sha256' not in metadata['instance/one/data/accounts/sentinel']
+    assert metadata['instance/one/data/share/alias']['link'] == 'instance/one/data/share/content-directory'
+    with pytest.raises(PermissionError):
+        snapshot.inventory(app)
