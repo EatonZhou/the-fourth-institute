@@ -5,9 +5,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 const http = require('node:http');
 const { chromium } = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
+const { portalWorkbenchScripts } = require('./portal_workbench_scripts.cjs');
 const root = path.resolve(__dirname, '../../../management_portal/static');
 const modules = ['portal_text.js', 'portal_state.js', 'portal_i18n.js', 'portal_ui.js', 'portal_ui_primitives.js',
-  'portal_command_registry.js', 'portal_editor_open_service.js', 'portal_workbench_context.js', 'portal_workbench.js',
+  'portal_command_registry.js', 'portal_editor_open_service.js', 'portal_workbench_context.js', ...portalWorkbenchScripts(root),
   'portal_projections.js', 'projection_host.js'];
 const html = '<input id="draft" value="preserved"><button id="local">Local</button>' +
   '<script>window.localKeys=[];addEventListener("keydown",e=>localKeys.push(e.key));' +

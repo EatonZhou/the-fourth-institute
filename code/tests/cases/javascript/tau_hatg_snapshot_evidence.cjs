@@ -3,6 +3,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
 const code=process.env.TAU_CODE_ROOT||path.resolve(__dirname,'../../..'),portal=path.join(code,'management_portal');
 const {readHatgControlsSnapshot:read}=require(path.join(portal,'test_framework/tau_hatg_snapshot_evidence'));
 const {chromium}=require(path.join(portal,'test_framework/tau_runtime/node_modules/playwright'));
+const {portalWorkbenchScripts}=require('./portal_workbench_scripts.cjs');
 (async()=>{const browser=await chromium.launch({headless:true,args:['--no-sandbox']});try{
  const p=await browser.newPage({viewport:{width:1200,height:900}}),errors=[];
  p.on('pageerror',e=>errors.push(e.message));
@@ -19,7 +20,7 @@ const {chromium}=require(path.join(portal,'test_framework/tau_runtime/node_modul
   return route.fulfill({contentType:'application/json',body:'{}'});
  });
  await p.goto('http://tau-fixture.local/fixture');
- const names=['portal_state','portal_text','portal_translations','portal_i18n','portal_page_state','portal_api','portal_instruction_client','portal_identity','portal_society_service','portal_resident_discovery_service','portal_overlay','portal_ui_primitives','portal_ui','portal_workbench_context','portal_workbench','lineage_workbench_controller','portal_resource_header'];
+ const names=['portal_state','portal_text','portal_translations','portal_i18n','portal_page_state','portal_api','portal_instruction_client','portal_identity','portal_society_service','portal_resident_discovery_service','portal_overlay','portal_ui_primitives','portal_ui','portal_workbench_context',...portalWorkbenchScripts(path.join(portal,'static')).map(file=>file.replace(/\.js$/,'')),'lineage_workbench_controller','portal_resource_header'];
  for(const n of names)await p.addScriptTag({path:path.join(portal,'static',n+'.js')});
  const loader=fs.readFileSync(path.join(portal,'static/portal_hatg_loader.js'),'utf8');
  for(const match of loader.matchAll(/"(\/static\/[^" ]+\.js)"/g))await p.addScriptTag({path:path.join(portal,match[1])});

@@ -3,6 +3,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
 const codeRoot=process.env.TFI_TAU_CODE_ROOT||path.resolve(__dirname,'../../..');
 const {chromium}=require(path.join(codeRoot,'management_portal/test_framework/tau_runtime/node_modules/playwright'));
 const {readWorkbenchTabClose}=require(path.join(codeRoot,'management_portal/test_framework/tau_tab_close_evidence'));
+const {portalWorkbenchScripts}=require('./portal_workbench_scripts.cjs');
 (async()=>{
   const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
   try{
@@ -12,7 +13,7 @@ const {readWorkbenchTabClose}=require(path.join(codeRoot,'management_portal/test
     await page.addStyleTag({content:fs.readFileSync(path.join(codeRoot,'management_portal/static/portal_workbench.css'),'utf8')});
     await page.addStyleTag({content:'#fixture{width:700px;height:400px;margin:100px 50px} :root{--portal-workbench-single-tab-opacity:0;--portal-workbench-single-tab-revealed-opacity:1}'});
     await page.evaluate(()=>{window.PortalIdentity={username:()=> 'fixture'};});
-    for(const name of ['portal_text.js','portal_ui.js','portal_ui_primitives.js','portal_editor_open_service.js','portal_command_registry.js','portal_workbench_context.js','portal_workbench.js'])
+    for(const name of ['portal_text.js','portal_ui.js','portal_ui_primitives.js','portal_editor_open_service.js','portal_command_registry.js','portal_workbench_context.js',...portalWorkbenchScripts(path.join(codeRoot,'management_portal/static'))])
       await page.addScriptTag({content:fs.readFileSync(path.join(codeRoot,'management_portal/static',name),'utf8')});
     await page.evaluate(()=>{
       window.PortalWorkbench.registerPanelPackage({type:'local-test',version:1,presentation:{title:'Local',icon:'panel'},sizing:{minWidth:180,minHeight:140},instances:'multiple',capabilities:[],behavior:{canHide:true,canCollapse:true,canMove:true,closable:true},context:{channels:['*']},persistence:{schemaVersion:1},create:()=>document.getElementById('localPanel')});

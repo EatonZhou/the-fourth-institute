@@ -2,6 +2,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),{execFileSync}=require('node:child_process');
 const code=process.env.TAU_CODE_ROOT||path.resolve(__dirname,'../../..');
 const {chatWorkspaceScripts}=require('./chat_workspace_modules.cjs');
+const {portalWorkbenchScripts}=require('./portal_workbench_scripts.cjs');
 const helper=process.env.TAU_WATCHBOARD_MESSAGE_HELPER||path.join(code,'management_portal/test_framework/tau_watchboard_message_contract');
 const {readWatchboardComposer,readWatchboardMessageFold,readWatchboardForkWorkspace}=require(helper);
 const {chromium}=require(path.join(code,'management_portal/test_framework/tau_runtime/node_modules/playwright'));
@@ -40,7 +41,7 @@ const routeScript=execFileSync(process.env.TAU_PYTHON||'python3',['-c','from man
    window.PortalInstructionClient={execute:(instruction,args)=>fetch('/api/instructions/execute',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({instruction,arguments:args})}).then(r=>r.json()).then(r=>r.result)};
   });
   await page.addScriptTag({content:routeScript});
-  for(const name of ['portal_state.js','portal_page_state.js','portal_text.js','portal_ui_primitives.js','portal_ui.js','portal_overlay.js','portal_resource_chips.js','portal_image_editor.js','portal_editor_open_service.js','portal_command_registry.js','portal_workbench_context.js','portal_workbench.js','portal_resident_service.js','resident_protocol.js',...chatWorkspaceScripts(path.join(code,'management_portal/static'))])
+  for(const name of ['portal_state.js','portal_page_state.js','portal_text.js','portal_ui_primitives.js','portal_ui.js','portal_overlay.js','portal_resource_chips.js','portal_image_editor.js','portal_editor_open_service.js','portal_command_registry.js','portal_workbench_context.js',...portalWorkbenchScripts(path.join(code,'management_portal/static')),'portal_resident_service.js','resident_protocol.js',...chatWorkspaceScripts(path.join(code,'management_portal/static'))])
    await page.addScriptTag({path:path.join(code,'management_portal/static',name)});
   await page.addStyleTag({path:path.join(code,'management_portal/static/portal_components.css')});
   await page.addStyleTag({content:'#fixture{width:320px;height:800px}.chatMessages{height:450px;overflow:auto}'});

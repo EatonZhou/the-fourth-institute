@@ -213,7 +213,7 @@ def test_portal_theme_contract_has_one_provider_and_no_parallel_dialect_contract
         assert not violations, 'parallel theme variables:\n' + '\n'.join(violations)
     with subtests.test(contract='test_workbench_hosts_load_shared_contract_owners_before_workbench'), isolated_portal_case() as case_path:
         for path in WORKBENCH_HOSTS:
-            source = path.read_text(encoding='utf-8')
+            source = script_groups.expand_document(path.read_text(encoding='utf-8'))
             editor_open = source.index('portal_editor_open_service.js')
             registry = source.index('portal_command_registry.js')
             context = source.index('portal_workbench_context.js')
@@ -372,6 +372,21 @@ def test_live_demonstrations_load_on_demand():
     for path in [ROOT / 'tests/cases/live_cases.json', *sorted((ROOT / 'tests/cases/design_live').glob('*.json'))]:
         named.update(re.findall(r'"adapter": "([a-z-]+)"', path.read_text(encoding='utf-8')))
     assert named and named - {'test-lab'} <= set(assets), sorted(named - set(assets))
+
+
+def test_lazy_chat_loader_loads_the_workbench_parts_of_its_script_group():
+    """导航按需加载 Chat 时先载入工作台脚本组的全部部件脚本，名单与脚本组一致，每个部件注册所列的全局名"""
+    nav_js = (STATIC / 'portal_nav.js').read_text(encoding='utf-8')
+    listed = re.search(r'const WORKBENCH_PARTS = \[(.*?)\];', nav_js, re.S)
+    assert listed, 'portal_nav.js lists the workbench parts'
+    pairs = re.findall(r'\["([a-z_]+)", "([A-Za-z]+)"\]', listed[1])
+    group = list(script_groups.scripts('portal-workbench'))
+    assert group[-1] == '/static/portal_workbench.js'
+    assert [f'/static/{path}.js' for path, _name in pairs] == group[:-1]
+    for path, name in pairs:
+        assert f'global.{name} = Object.freeze(' in (STATIC / f'{path}.js').read_text(encoding='utf-8'), path
+    loader = nav_js[nav_js.index('function loadChatWorkspace()'):]
+    assert loader.index('WORKBENCH_PARTS.map') < loader.index('["portal_workbench", "PortalWorkbench"]')
 
 
 def test_resource_sections_share_one_header_and_style_owner():

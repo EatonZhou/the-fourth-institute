@@ -40,6 +40,26 @@ def test_chat_unit_follows_the_group_list_of_the_published_tree(tmp_path):
         GROUPS, ENTRY, 'management_portal/static/chat_workspace_new.js'}
 
 
+def test_workbench_root_and_parts_publish_together():
+    """选中工作台根脚本或任一部件脚本时，脚本组中的全部工作台脚本整组发布，Chat 不随行"""
+    listed = json.loads((ROOT / GROUPS).read_text(encoding='utf-8'))['portal-workbench']
+    scripts = {f'management_portal{source}' for source in listed}
+    assert 'management_portal/static/portal_workbench.js' in scripts and len(scripts) > 1
+    for selected in scripts:
+        assert expand(selected) == scripts
+
+
+def test_workspace_surface_root_and_parts_publish_together():
+    """选中工作区界面根脚本或任一部件脚本时，脚本组中的全部工作区界面脚本整组发布，Chat 不随行"""
+    listed = json.loads((ROOT / GROUPS).read_text(encoding='utf-8'))['portal-workspace-surface']
+    scripts = {f'management_portal{source}' for source in listed}
+    files = {path.relative_to(ROOT).as_posix()
+             for path in (ROOT / 'management_portal/static').glob('portal_workspace_surface*.js')}
+    assert 'management_portal/static/portal_workspace_surface.js' in scripts and scripts == files
+    for selected in scripts:
+        assert expand(selected) == scripts
+
+
 def test_page_scripts_publish_with_their_page():
     """选中 Paper、Article、Repo、首页或组件演示页的任一脚本、样式或页面本身时，页面与它按名加载的全部脚本和样式整组发布"""
     for page, prefix in units.PAGES:

@@ -27,8 +27,21 @@ LINEAGE_WORKBENCH_RELEASE_UNIT = (
     'management_portal/static/lineage_workbench_which_resident.js',
     'management_portal/static/lineage_workbench_chatrooms.js',
     'management_portal/static/lineage_workbench_resident_dialogs.js',
+    'management_portal/static/lineage_workbench_preview_documents.js',
+    'management_portal/static/lineage_workbench_preview_refresh.js',
+    'management_portal/static/lineage_workbench_preview_rendering.js',
+    'management_portal/static/lineage_workbench_preview_editing.js',
+    'management_portal/static/lineage_workbench_preview_files.js',
+    'management_portal/static/lineage_workbench_preview_links.js',
+    'management_portal/static/lineage_workbench_preview_chat_links.js',
     'management_portal/static/lineage_workbench_preview.js',
     'management_portal/static/lineage_workbench_card_menus.js',
+    'management_portal/static/lineage_workbench_sidebar_targets.js',
+    'management_portal/static/lineage_workbench_sidebar_filters.js',
+    'management_portal/static/lineage_workbench_sidebar_snapshot.js',
+    'management_portal/static/lineage_workbench_sidebar_agent_list.js',
+    'management_portal/static/lineage_workbench_sidebar_favorites.js',
+    'management_portal/static/lineage_workbench_sidebar_reveal.js',
     'management_portal/static/lineage_workbench_sidebar.js',
     'management_portal/static/lineage_workbench_recent.js',
     'management_portal/static/portal_lineage_catalogs.js',
@@ -84,6 +97,17 @@ LINEAGE_WORKBENCH_RELEASE_UNIT = (
     'management_portal/static/lineage_graph_canvas_events.js',
     'management_portal/static/lineage_graph_render.js',
     'management_portal/static/lineage_graph.js',
+    'management_portal/static/lineage_templates_dialogs.js',
+    'management_portal/static/lineage_templates_shelf.js',
+    'management_portal/static/lineage_templates_resident_settings.js',
+    'management_portal/static/lineage_templates_application.js',
+    'management_portal/static/lineage_templates_editing.js',
+    'management_portal/static/lineage_templates_editor_draft.js',
+    'management_portal/static/lineage_templates_editor_pages.js',
+    'management_portal/static/lineage_templates_editor_elements.js',
+    'management_portal/static/lineage_templates_editor_inspector.js',
+    'management_portal/static/lineage_templates_editor_actions.js',
+    'management_portal/static/lineage_templates.js',
     'management_portal/static/lineage_function_blocks.css',
 )
 
@@ -103,6 +127,24 @@ def chat_workspace_unit(root: Path) -> tuple[str, ...]:
         return ()
     listed = json.loads(groups.read_text(encoding='utf-8'))[CHAT_WORKSPACE_GROUP]
     return (SCRIPT_GROUPS, *(f'management_portal{source}' for source in listed))
+
+
+# portal_workbench.js creates each workbench, and portal_workspace_surface.js
+# its Preview panels, workspace browsers, document sessions, document tabs and
+# selection controllers, from the part factories their script groups load
+# before them, so each root script and its parts are one unit. The group list
+# itself stays with the Chat unit, which already carries it; joining it here
+# would bind every workbench publication to the Chat.
+PART_SCRIPT_GROUPS = ('portal-workbench', 'portal-workspace-surface')
+
+
+def script_group_unit(root: Path, group: str) -> tuple[str, ...]:
+    """The scripts of one group in ``script_groups.json``, as source paths under ``root``."""
+    groups = root / SCRIPT_GROUPS
+    if not groups.is_file():
+        return ()
+    listed = json.loads(groups.read_text(encoding='utf-8')).get(group, ())
+    return tuple(f'management_portal{source}' for source in listed)
 
 
 # The Paper, Article, Repo and Projects pages each load their root script after
@@ -131,6 +173,7 @@ def page_unit(root: Path, page: str, prefix: str) -> tuple[str, ...]:
 
 def release_units(root: Path) -> tuple[tuple[str, ...], ...]:
     return (LINEAGE_WORKBENCH_RELEASE_UNIT, chat_workspace_unit(root),
+            *(script_group_unit(root, group) for group in PART_SCRIPT_GROUPS),
             *(page_unit(root, page, prefix) for page, prefix in PAGES))
 
 

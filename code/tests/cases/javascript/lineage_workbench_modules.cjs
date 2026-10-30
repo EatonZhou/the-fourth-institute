@@ -1,6 +1,8 @@
 // The lineage workbench takes its parts from module scripts through
-// workbenchModule("<global>"). Tests load a part's script as lineage.html does
-// and create the part with only the dependencies a case replaces.
+// workbenchModule("<global>"), and a module script may in turn take its own
+// parts from part scripts (previewPart("<global>") and the like). Tests load a
+// part's script as lineage.html does and create the part with only the
+// dependencies a case replaces.
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
@@ -10,11 +12,13 @@ const PORTAL = path.resolve(__dirname, '../../../management_portal');
 const STATIC = path.join(PORTAL, 'static');
 const read = file => fs.readFileSync(path.join(STATIC, file), 'utf8');
 const registered = text => [...text.matchAll(/window\.([A-Za-z]+) = Object\.freeze\(/g)].map(match => match[1]);
+// The globals a script asks for through workbenchModule("...") or a part lookup.
+const requested = (text, pattern) => new Set([...text.matchAll(pattern)].map(match => match[1]));
+const MODULE_LOOKUP = /workbenchModule\("([A-Za-z]+)"\)/g;
+const PART_LOOKUP = /\b[a-z][A-Za-z]*Part\("([A-Za-z]+)"\)/g;
 
-// Module scripts the workbench asks for, in lineage.html's order.
-function workbenchModuleFiles() {
-  const globals = new Set([...read('lineage_workbench.js').matchAll(/workbenchModule\("([A-Za-z]+)"\)/g)]
-    .map(match => match[1]));
+// lineage.html's lineage_workbench_*.js scripts that register one of `globals`, in its order.
+function pageScriptsRegistering(globals) {
   const page = fs.readFileSync(path.join(PORTAL, 'lineage.html'), 'utf8');
   const files = [...page.matchAll(/<script src="\/static\/(lineage_workbench_[a-z_]+\.js)">/g)].map(match => match[1])
     .filter(file => registered(read(file)).some(name => globals.has(name)));
@@ -24,15 +28,33 @@ function workbenchModuleFiles() {
   return files;
 }
 
+// The part scripts a module script creates its own parts from, in lineage.html's order.
+function modulePartFiles(file) {
+  const globals = requested(read(file), PART_LOOKUP);
+  return globals.size ? pageScriptsRegistering(globals) : [];
+}
+
+// Module scripts the workbench asks for and the part scripts they create
+// their parts from, in lineage.html's order.
+function workbenchModuleFiles() {
+  const modules = pageScriptsRegistering(requested(read('lineage_workbench.js'), MODULE_LOOKUP));
+  const parts = new Set(modules.flatMap(modulePartFiles));
+  const page = fs.readFileSync(path.join(PORTAL, 'lineage.html'), 'utf8');
+  return [...page.matchAll(/<script src="\/static\/(lineage_workbench_[a-z_]+\.js)">/g)].map(match => match[1])
+    .filter(file => modules.includes(file) || parts.has(file));
+}
+
 // The workbench and its module scripts, by file name.
 function workbenchSources() {
   return Object.fromEntries(['lineage_workbench.js', ...workbenchModuleFiles()].map(file => [file, read(file)]));
 }
 
-// Run a module script with `window` as its global object and return what it registers.
+// Run a module script, after the part scripts it creates its parts from, with
+// `window` as their global object and return what the module script registers.
 function loadWorkbenchModule(file, window = {}) {
   const [name] = registered(read(file));
-  vm.runInContext(read(file), vm.createContext({ window }), { filename: file });
+  const context = vm.createContext({ window });
+  for (const script of [...modulePartFiles(file), file]) vm.runInContext(read(script), context, { filename: script });
   return window[name];
 }
 
@@ -62,8 +84,8 @@ function findWorkbenchFunction(name, sources = workbenchSources()) {
 // path to its JSON body and `instructions` maps an ISA instruction to its
 // result; anything else answers an empty object. Every request is recorded,
 // and every script, page or console error is collected. Each workbench part's
-// factory is wrapped, so `parts[global]` holds what the workbench passed to
-// the part and what the part returned.
+// factory (and that of each part a module script creates) is wrapped, so
+// `parts[global]` holds what the part was passed and what it returned.
 function startWorkbenchPage({ answers = {}, instructions = {}, url = 'https://portal.fixture.invalid/lineage' } = {}) {
   const { JSDOM, VirtualConsole } = require('jsdom');
   const { execFileSync } = require('node:child_process');

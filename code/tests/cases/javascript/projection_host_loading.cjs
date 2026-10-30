@@ -9,8 +9,9 @@ const crypto = require('node:crypto');
 const { chromium } = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
 const repo = path.resolve(__dirname, '../../..');
 const staticRoot = path.join(repo, 'management_portal/static');
+const { portalWorkbenchScripts } = require('./portal_workbench_scripts.cjs');
 const modules = ['portal_text.js', 'portal_state.js', 'portal_i18n.js', 'portal_ui.js', 'portal_ui_primitives.js',
-  'portal_command_registry.js', 'portal_editor_open_service.js', 'portal_workbench_context.js', 'portal_workbench.js',
+  'portal_command_registry.js', 'portal_editor_open_service.js', 'portal_workbench_context.js', ...portalWorkbenchScripts(staticRoot),
   'portal_projections.js', 'projection_host.js'];
 const styles = ['portal_design_system.css', 'portal_components.css', 'portal_workbench.css', 'workbench_studio.css', 'projection_host.css'];
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');

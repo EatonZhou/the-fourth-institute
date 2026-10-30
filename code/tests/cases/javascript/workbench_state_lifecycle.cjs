@@ -1,30 +1,39 @@
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
 const vm = require('node:vm');
 
 const { babelParse } = require('./babel_parse.cjs');
-const sourcePath = path.resolve(__dirname, '../../../management_portal/static/portal_workbench.js');
+const { STATIC, ROOT_SCRIPT, portalWorkbenchSources } = require('./portal_workbench_scripts.cjs');
+const sourcePath = path.join(STATIC, ROOT_SCRIPT);
 
 function layoutController() {
-  const source = fs.readFileSync(sourcePath, 'utf8');
+  const sources = portalWorkbenchSources();
+  const source = sources[ROOT_SCRIPT];
   const ast = babelParse(source, sourcePath);
   const scope = ast.program.body[0].expression.callee.body;
   const create = scope.body.find(node => node.type === 'FunctionDeclaration' && node.id.name === 'create');
   assert(create, 'Locate the production Workbench controller');
-  const functions = new Map(create.body.body
-    .filter(node => node.type === 'FunctionDeclaration').map(node => [node.id.name, node]));
+  // create builds the controller from functions its part scripts declare in
+  // their factories (createX inside each part's wrapper).
+  const statements = Object.entries(sources).filter(([file]) => file !== ROOT_SCRIPT).flatMap(([file, text]) => {
+    const part = babelParse(text, file).program.body[0].expression.callee.body;
+    const factory = part.body.find(node => node.type === 'FunctionDeclaration' && /^create[A-Z]/.test(node.id.name));
+    assert(factory, `Locate the part factory of ${file}`);
+    return factory.body.body.map(node => ({ node, text }));
+  });
+  const declared = name => statements.filter(({ node }) => node.type === 'FunctionDeclaration' && node.id.name === name);
   const take = name => {
-    assert(functions.has(name), `Missing production controller function: ${name}`);
-    const node = functions.get(name);
-    return source.slice(node.start, node.end);
+    const found = declared(name);
+    assert.equal(found.length, 1, `Missing production controller function: ${name}`);
+    const [{ node, text }] = found;
+    return text.slice(node.start, node.end);
   };
-  const visibleIds = create.body.body.find(node => node.type === 'VariableDeclaration'
+  const visibleIds = statements.find(({ node }) => node.type === 'VariableDeclaration'
     && node.declarations.some(declaration => declaration.id.name === 'visiblePanelIds'));
   assert(visibleIds, 'Locate the production visibility selector');
   const publicController = create.body.body.find(node => node.type === 'ExpressionStatement'
-    && node.expression.type === 'AssignmentExpression' && node.expression.left.name === 'controller');
+    && node.expression.type === 'AssignmentExpression' && node.expression.left.property?.name === 'controller');
   assert(publicController, 'Locate the production public controller bindings');
   const properties = publicController.expression.right.arguments[0].properties;
   const bindings = ['applyWorkspace', 'hidePanel', 'showPanel', 'getState'].map(name => {
@@ -34,8 +43,9 @@ function layoutController() {
   });
 
   // Give unmodified controller functions the same state fixture as the browser
-  // regression. All layout helpers remain in the original script's lexical
-  // scope; neither placement capture nor restoration is reimplemented here.
+  // regression; the state the parts share is the shellState they read. All
+  // layout helpers remain in the root script's lexical scope; neither
+  // placement capture nor restoration is reimplemented here.
   // DOM mounting/rollback, focus, measurements and iframe continuity stay in UI
   // regressions. These two effect boundaries cannot read/write the layout.
   const fixture = `
@@ -51,15 +61,17 @@ function layoutController() {
       const unavailableBindings = new Set();
       const requiredIds = new Set(['canvas']);
       const placements = {}, savedWorkspaces = {};
-      let hidden = new Set(), collapsed = new Set();
-      let model = splitNode('horizontal', [
-        stackNode(['navigation']), stackNode(['canvas']), stackNode(['preview']),
-      ], [1, 2, 1]);
-      let focusedStackId = '', activeWorkspaceName = '', activeOpenTargetPanelId = '';
-      const layoutLocked = false;
+      const shellState = {
+        hidden: new Set(), collapsed: new Set(),
+        model: splitNode('horizontal', [
+          stackNode(['navigation']), stackNode(['canvas']), stackNode(['preview']),
+        ], [1, 2, 1]),
+        focusedStackId: '', activeWorkspaceName: '', activeOpenTargetPanelId: '',
+        layoutLocked: false,
+      };
       const render = global.__renderEffect;
       const closeMenu = global.__closeMenuEffect;
-      ${source.slice(visibleIds.start, visibleIds.end)}
+      ${visibleIds.text.slice(visibleIds.node.start, visibleIds.node.end)}
       ${['hiddenPanelsForLayout', 'normalizeCurrent', 'inheritedLayoutLock', 'isLayoutLocked',
     'applyWorkspace', 'hidePanel', 'showPanel', 'stateSnapshot'].map(take).join('\n')}
       const controller = Object.freeze({ ${bindings.join(', ')} });

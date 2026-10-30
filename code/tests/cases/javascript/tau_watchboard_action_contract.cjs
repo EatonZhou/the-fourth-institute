@@ -5,6 +5,7 @@ const {chromium}=require(path.join(code,'management_portal/test_framework/tau_ru
 const {observeBrowser}=require(path.join(code,'management_portal/test_framework/tau_browser_observer'));
 const {observeFiniteInstructionResponses}=require(path.join(code,'management_portal/test_framework/tau_finite_instruction_evidence'));
 const {readWorkbenchTabClose}=require(path.join(code,'management_portal/test_framework/tau_tab_close_evidence'));
+const {portalWorkbenchScripts}=require('./portal_workbench_scripts.cjs');
 const {matchesWatchboardRemoval:matches,readWorkbenchPanelBinding:binding}=require(process.env.TAU_WATCHBOARD_ACTION_MODULE||path.join(code,'management_portal/test_framework/tau_watchboard_action_contract'));
 const fixture=JSON.parse(fs.readFileSync(process.env.TAU_WATCHBOARD_PLAN||path.join(__dirname,'watchboard_removal_plan.json'),'utf8'));
 const {plan,resident_id:residentId}=fixture;
@@ -38,7 +39,7 @@ assert.throws(()=>matches(args,{...expected,componentIds:[]}),/Exact original/);
     await page.addStyleTag({content:fs.readFileSync(path.join(code,'management_portal/static/portal_workbench.css'),'utf8')});
     await page.addStyleTag({content:'#fixture{width:900px;height:400px;margin:100px 40px} :root{--portal-workbench-single-tab-opacity:0;--portal-workbench-single-tab-revealed-opacity:1}'});
     await page.evaluate(()=>{window.PortalIdentity={username:()=> 'fixture'};});
-    for(const name of ['portal_text.js','portal_ui.js','portal_ui_primitives.js','portal_editor_open_service.js','portal_command_registry.js','portal_workbench_context.js','portal_workbench.js','portal_resident_service.js'])
+    for(const name of ['portal_text.js','portal_ui.js','portal_ui_primitives.js','portal_editor_open_service.js','portal_command_registry.js','portal_workbench_context.js',...portalWorkbenchScripts(path.join(code,'management_portal/static')),'portal_resident_service.js'])
       await page.addScriptTag({content:fs.readFileSync(path.join(code,'management_portal/static',name),'utf8')});
     await page.evaluate(({plan,residentId})=>{
       window.PortalWorkbench.registerPanelPackage({type:'local-test',version:1,presentation:{title:'Local',icon:'panel'},sizing:{minWidth:180,minHeight:140},instances:'multiple',capabilities:[],behavior:{canHide:true,canCollapse:true,canMove:true,closable:true},context:{channels:['*']},persistence:{schemaVersion:1},create:({panelId})=>document.getElementById(panelId==='chat'?'lineage-chat-panel':'other-panel')});

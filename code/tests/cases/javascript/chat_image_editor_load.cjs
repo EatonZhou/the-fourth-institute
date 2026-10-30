@@ -8,6 +8,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { JSDOM } = require('jsdom');
 const { chatWorkspaceScripts } = require('./chat_workspace_modules.cjs');
+const { portalWorkbenchScripts } = require('./portal_workbench_scripts.cjs');
 const input = JSON.parse(fs.readFileSync(0, 'utf8'));
 const STATIC = path.resolve(__dirname, '../../../management_portal/static');
 const dom = new JSDOM('<script src="/static/portal_state.js?portal_v=r42"></script><section id="fixture"></section>', {
@@ -26,7 +27,7 @@ w.PortalIdentity = { username: () => 'sample_admin' };
 w.eval(input.routeScript);
 for (const name of ['portal_state.js', 'portal_page_state.js', 'portal_text.js', 'portal_ui_primitives.js', 'portal_ui.js',
   'portal_overlay.js', 'portal_resource_chips.js', 'portal_editor_open_service.js', 'portal_command_registry.js',
-  'portal_workbench_context.js', 'portal_workbench.js', 'resident_protocol.js', ...chatWorkspaceScripts()]) {
+  'portal_workbench_context.js', ...portalWorkbenchScripts(), 'resident_protocol.js', ...chatWorkspaceScripts()]) {
   w.eval(fs.readFileSync(path.join(STATIC, name), 'utf8'));
 }
 const settle = async () => { for (let turn = 0; turn < 5; turn += 1) await new Promise(resolve => setTimeout(resolve, 0)); };

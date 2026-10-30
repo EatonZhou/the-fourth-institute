@@ -1432,11 +1432,35 @@
     return personalAssistantRequest;
   }
 
+  // PortalWorkbench creates its parts from these scripts, the "portal-workbench"
+  // script group of script_groups.json without portal_workbench.js. They only
+  // register factories, so they load in any order before it.
+  const WORKBENCH_PARTS = [
+    ["portal_workbench_storage", "PortalWorkbenchStorage"],
+    ["portal_workbench_runtime_context", "PortalWorkbenchRuntimeContext"],
+    ["portal_workbench_layout_model", "PortalWorkbenchLayoutModel"],
+    ["portal_workbench_viewport", "PortalWorkbenchViewport"],
+    ["portal_workbench_chrome", "PortalWorkbenchChrome"],
+    ["portal_workbench_layout_lock", "PortalWorkbenchLayoutLock"],
+    ["portal_workbench_panel_runtimes", "PortalWorkbenchPanelRuntimes"],
+    ["portal_workbench_snapshot", "PortalWorkbenchSnapshot"],
+    ["portal_workbench_panel_mounts", "PortalWorkbenchPanelMounts"],
+    ["portal_workbench_tab_drag", "PortalWorkbenchTabDrag"],
+    ["portal_workbench_layout_view", "PortalWorkbenchLayoutView"],
+    ["portal_workbench_customizer", "PortalWorkbenchCustomizer"],
+    ["portal_workbench_render", "PortalWorkbenchRender"],
+    ["portal_workbench_panel_actions", "PortalWorkbenchPanelActions"],
+    ["portal_workbench_editor_opening", "PortalWorkbenchEditorOpening"],
+    ["portal_workbench_activity_rail_items", "PortalWorkbenchActivityRailItems"],
+    ["portal_workbench_activity_rail_views", "PortalWorkbenchActivityRailViews"],
+  ];
+
   // Lazy loading keeps pages without an open assistant free of Chat's dependencies.
   let chatWorkspaceAssets = null;
   function loadChatWorkspace() {
     if (!chatWorkspaceAssets) chatWorkspaceAssets = (async () => {
       await loadBackpackAsset("/static/portal_workbench.css");
+      await Promise.all(WORKBENCH_PARTS.map(([path, name]) => loadBackpackAsset(`/static/${path}.js`, name)));
       for (const [path, name] of [
         ["portal_page_state", "PortalPageState"], ["portal_ui", "PortalUI"],
         ["portal_resource_routes", "PortalResourceRoutes"], ["portal_preview_contract", "PortalPreviewContract"],

@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { JSDOM, VirtualConsole } = require('jsdom');
 const { chatWorkspaceScripts } = require('./chat_workspace_modules.cjs');
+const { portalWorkbenchScripts } = require('./portal_workbench_scripts.cjs');
 
 const staticRoot = path.resolve(__dirname, '../../../management_portal/static');
 const MEMBER = 'resident_111111111111';
@@ -63,7 +64,7 @@ function mount(routeScript, messages, { older = [], family = true, transform = (
     for (const name of ['portal_state.js', 'portal_page_state.js', 'portal_text.js', 'portal_ui_primitives.js', 'portal_ui.js',
       'portal_overlay.js', 'portal_resource_chips.js', 'portal_image_editor.js',
       'portal_editor_open_service.js', 'portal_command_registry.js', 'portal_workbench_context.js',
-      'portal_workbench.js', 'resident_protocol.js', ...chatWorkspaceScripts()]) {
+      ...portalWorkbenchScripts(), 'resident_protocol.js', ...chatWorkspaceScripts()]) {
       window.eval(transform(name, fs.readFileSync(path.join(staticRoot, name), 'utf8')) + `\n//# sourceURL=${name}`);
     }
     const style = window.document.createElement('style');

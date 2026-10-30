@@ -1,12 +1,18 @@
 """Script groups: scripts that several pages load together, in one order.
 
 ``script_groups.json`` lists each group's scripts in load order; it is the
-only place that names them. ``portal-foundation`` is what pages load first
+only place that names them, except that portal_nav.js's lazy Chat loader
+repeats the workbench parts (a test keeps the two lists equal).
+``portal-foundation`` is what pages load first
 (shared state, text, translations, i18n, theme), ``portal-shell`` the page
 shell after the services a page chooses (overlay, events, refresh, Resident
-protocol, conversations, UI primitives, navigation, UI), and
-``chat-workspace`` the Chat modules and their entry script. A page names the
-group where its scripts belong:
+protocol, conversations, UI primitives, navigation, UI), ``portal-workbench``
+the workbench's part scripts and the ``portal_workbench.js`` that creates
+workbenches from them, ``portal-workspace-surface`` the part scripts of the
+Preview panel, workspace browser, document sessions, document tabs and
+selection controllers and the ``portal_workspace_surface.js`` that creates
+them, and ``chat-workspace`` the Chat modules and their entry
+script. A page names the group where its scripts belong:
 
 * a document holds ``<script data-portal-script-group="chat-workspace"></script>``,
   and the element's other attributes (``defer``) go to each of the scripts;

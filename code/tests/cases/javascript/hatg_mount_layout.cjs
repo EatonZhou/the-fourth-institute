@@ -9,6 +9,7 @@ const path = require('node:path');
 const { test } = require('node:test');
 const { JSDOM, VirtualConsole } = require('jsdom');
 const { STATIC, hatgSources, startHatgRuntime } = require('./hatg_modules.cjs');
+const { portalWorkbenchScripts } = require('./portal_workbench_scripts.cjs');
 
 const PORTAL = path.dirname(STATIC);
 // Page scripts the runtime uses, in lineage.html's order.
@@ -16,7 +17,7 @@ const PAGE_SCRIPTS = [
   'portal_state.js', 'portal_text.js', 'portal_translations.js', 'portal_i18n.js', 'portal_page_state.js',
   'portal_api.js', 'portal_instruction_client.js', 'portal_identity.js', 'portal_society_service.js',
   'portal_resident_discovery_service.js', 'portal_overlay.js', 'portal_ui_primitives.js', 'portal_ui.js',
-  'portal_workbench_context.js', 'portal_workbench.js', 'lineage_workbench_controller.js',
+  'portal_workbench_context.js', ...portalWorkbenchScripts(STATIC), 'lineage_workbench_controller.js',
 ];
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 

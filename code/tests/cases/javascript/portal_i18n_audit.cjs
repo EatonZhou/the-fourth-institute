@@ -7,6 +7,7 @@ const { JSDOM } = require('jsdom');
 const { babelParse, traverse } = require('./babel_parse.cjs');
 const { execFileSync } = require('node:child_process');
 const { chatWorkspaceScripts } = require('./chat_workspace_modules.cjs');
+const { portalWorkbenchScripts } = require('./portal_workbench_scripts.cjs');
 const root = path.resolve(__dirname, '../../..');
 const read = name => fs.readFileSync(path.join(root, name), 'utf8');
 
@@ -41,7 +42,7 @@ async function chatHarness(t) {
   w.eval(routeScript);
   for (const file of ['portal_state.js', 'portal_page_state.js', 'portal_ui_primitives.js', 'portal_ui.js', 'portal_overlay.js',
     'portal_resource_chips.js', 'portal_image_editor.js', 'portal_editor_open_service.js', 'portal_command_registry.js',
-    'portal_workbench_context.js', 'portal_workbench.js', 'resident_protocol.js', ...chatWorkspaceScripts()]) {
+    'portal_workbench_context.js', ...portalWorkbenchScripts(), 'resident_protocol.js', ...chatWorkspaceScripts()]) {
     w.eval(read(`management_portal/static/${file}`));
   }
   return w;

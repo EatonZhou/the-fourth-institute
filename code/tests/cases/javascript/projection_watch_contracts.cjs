@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { JSDOM, VirtualConsole } = require('jsdom');
+const { portalWorkbenchScripts } = require('./portal_workbench_scripts.cjs');
 
 const repository = path.resolve(__dirname, '../../..');
 const staticRoot = path.join(repository, 'management_portal/static');
@@ -115,7 +116,7 @@ async function createHarness({ sourceTransform = (_name, source) => source, cont
   try {
     for (const name of ['portal_text.js', 'portal_state.js', 'portal_ui.js', 'portal_ui_primitives.js',
       'portal_command_registry.js', 'portal_editor_open_service.js', 'portal_workbench_context.js',
-      'portal_workbench.js', 'portal_projections.js', 'projection_host.js']) {
+      ...portalWorkbenchScripts(staticRoot), 'portal_projections.js', 'projection_host.js']) {
       window.eval(sourceTransform(name, fs.readFileSync(path.join(staticRoot, name), 'utf8')) + `\n//# sourceURL=${name}`);
     }
     host = await window.PortalProjectionHost.mount(window.document.getElementById('projection'), {

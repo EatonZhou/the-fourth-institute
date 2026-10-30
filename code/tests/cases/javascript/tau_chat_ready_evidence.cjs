@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { chatWorkspaceScripts } = require('./chat_workspace_modules.cjs');
+const { portalWorkbenchScripts } = require('./portal_workbench_scripts.cjs');
 const source = path.resolve(__dirname, '../../..');
 const { chromium } = require(path.join(source, 'management_portal/test_framework/tau_runtime/node_modules/playwright'));
 const { routeScript } = JSON.parse(fs.readFileSync(0, 'utf8'));
@@ -28,7 +29,7 @@ const residentId = 'resident_111111111111', otherId = 'resident_222222222222';
       } };
     });
     await page.addScriptTag({ content: routeScript });
-    for (const name of ['portal_state.js', 'portal_page_state.js', 'portal_text.js', 'portal_ui_primitives.js', 'portal_ui.js', 'portal_overlay.js', 'portal_preview_contract.js', 'portal_resource_chips.js', 'portal_image_editor.js', 'portal_editor_open_service.js', 'portal_command_registry.js', 'portal_workbench_context.js', 'portal_workbench.js', 'portal_resident_service.js', 'resident_protocol.js', ...chatWorkspaceScripts()]) {
+    for (const name of ['portal_state.js', 'portal_page_state.js', 'portal_text.js', 'portal_ui_primitives.js', 'portal_ui.js', 'portal_overlay.js', 'portal_preview_contract.js', 'portal_resource_chips.js', 'portal_image_editor.js', 'portal_editor_open_service.js', 'portal_command_registry.js', 'portal_workbench_context.js', ...portalWorkbenchScripts(), 'portal_resident_service.js', 'resident_protocol.js', ...chatWorkspaceScripts()]) {
       await page.addScriptTag({ content: fs.readFileSync(path.join(source, 'management_portal/static', name), 'utf8') });
     }
     await page.addStyleTag({ content: fs.readFileSync(path.join(source, 'management_portal/static/portal_components.css'), 'utf8') });

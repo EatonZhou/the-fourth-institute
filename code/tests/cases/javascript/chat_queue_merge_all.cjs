@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { JSDOM } = require('jsdom');
 const { chatWorkspaceScripts } = require('./chat_workspace_modules.cjs');
+const { portalWorkbenchScripts } = require('./portal_workbench_scripts.cjs');
 const ROOT = path.resolve(__dirname, '../../..');
 const FACADE = 'resident_111111111111';
 const MEMBER = 'resident_222222222222';
@@ -55,7 +56,7 @@ async function main() {
   } };
   for (const name of ['portal_state.js', 'portal_page_state.js', 'portal_ui_primitives.js', 'portal_ui.js',
     'portal_overlay.js', 'portal_resource_chips.js', 'portal_image_editor.js', 'portal_editor_open_service.js',
-    'portal_command_registry.js', 'portal_workbench_context.js', 'portal_workbench.js',
+    'portal_command_registry.js', 'portal_workbench_context.js', ...portalWorkbenchScripts(),
     'portal_resident_service.js', 'resident_protocol.js', ...chatWorkspaceScripts()]) {
     w.eval(fs.readFileSync(path.join(ROOT, 'management_portal/static', name), 'utf8'));
   }

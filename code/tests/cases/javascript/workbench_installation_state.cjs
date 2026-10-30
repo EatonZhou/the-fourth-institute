@@ -8,11 +8,13 @@ const parser = require('@babel/parser');
 const traverse = require('@babel/traverse').default;
 const {createHarness: harness, plain} = require('./workbench_visibility_state.cjs');
 const {chatWorkspaceSources, findChatWorkspaceNode} = require('./chat_workspace_modules.cjs');
+const {portalWorkbenchScripts} = require('./portal_workbench_scripts.cjs');
 const staticRoot = path.resolve(__dirname, '../../../management_portal/static');
 const sourceRoot = process.env.PORTAL_STATE_TEST_SOURCE || staticRoot;
 const source = name => fs.readFileSync(path.join(sourceRoot, name), 'utf8');
+const workbenchScripts = new Set(portalWorkbenchScripts(staticRoot));
 const createHarness = () => harness({sourceTransform: (name, text) =>
-  name === 'portal_workbench.js' ? source(name) : text});
+  workbenchScripts.has(name) ? source(name) : text});
 const stateSource = source('portal_state.js');
 const lineageSource = source('lineage_workbench.js');
 function expression(text, predicate) {

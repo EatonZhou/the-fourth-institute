@@ -6,6 +6,7 @@ const path = require("node:path");
 const { execFileSync } = require("node:child_process");
 const { JSDOM, VirtualConsole } = require("jsdom");
 const { chatWorkspaceScripts } = require("./chat_workspace_modules.cjs");
+const { portalWorkbenchScripts } = require("./portal_workbench_scripts.cjs");
 
 const repo = process.env.TAU_CODE_ROOT || path.resolve(__dirname, "../../..");
 const source = name => fs.readFileSync(path.join(repo, "management_portal/static", name), "utf8");
@@ -49,7 +50,7 @@ function chat(t, handlers = {}, options = {}) {
   w.eval(routeScript);
   for (const name of ["portal_state.js", "portal_page_state.js", "portal_text.js", "portal_ui_primitives.js", "portal_ui.js",
     "portal_overlay.js", "portal_resource_chips.js", "portal_image_editor.js", "portal_editor_open_service.js",
-    "portal_command_registry.js", "portal_workbench_context.js", "portal_workbench.js", "portal_resident_service.js",
+    "portal_command_registry.js", "portal_workbench_context.js", ...portalWorkbenchScripts(path.join(repo, "management_portal/static")), "portal_resident_service.js",
     "resident_protocol.js", ...chatWorkspaceScripts(path.join(repo, "management_portal/static"))]) w.eval(source(name) + `\n//# sourceURL=${name}`);
   const panel = w.PortalChatWorkspace.panelPackage.create({ root: w.document.getElementById("fixture"), id: "assistant",
     autoLoad: false, target: { resident_id: FACADE, lineage_id: LINEAGE }, onError: error => errors.push(String(error)), ...options });

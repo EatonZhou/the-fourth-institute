@@ -6,12 +6,13 @@ const path = require('node:path');
 const http = require('node:http');
 const { execFileSync } = require('node:child_process');
 const { chatWorkspaceScripts } = require('./chat_workspace_modules.cjs');
+const { portalWorkbenchScripts } = require('./portal_workbench_scripts.cjs');
 const repo = path.resolve(__dirname, '../../..');
 const { chromium } = require(path.join(repo, 'management_portal/test_framework/tau_runtime/node_modules/playwright'));
 const modules = ['portal_state.js', 'portal_page_state.js', 'portal_text.js', 'portal_i18n.js',
   'portal_ui_primitives.js', 'portal_ui.js', 'portal_overlay.js', 'portal_resource_chips.js',
   'portal_image_editor.js', 'portal_editor_open_service.js', 'portal_command_registry.js',
-  'portal_workbench_context.js', 'portal_workbench.js', 'portal_resident_service.js',
+  'portal_workbench_context.js', ...portalWorkbenchScripts(), 'portal_resident_service.js',
   'resident_protocol.js', ...chatWorkspaceScripts()];
 const routes = execFileSync('python3', ['-c',
   'from management_portal.resources.portal import portal_route_script; print(portal_route_script().decode())'],

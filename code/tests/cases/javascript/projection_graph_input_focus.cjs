@@ -11,9 +11,10 @@ const appRoot = path.join(repo, 'management_portal/workbench_projections/develop
 const staticRoot = path.join(repo, 'management_portal/static');
 const { build } = require(path.join(appRoot, 'node_modules/esbuild'));
 const { chromium } = require(path.join(repo, 'management_portal/test_framework/tau_runtime/node_modules/playwright'));
+const { portalWorkbenchScripts } = require('./portal_workbench_scripts.cjs');
 const modules = ['portal_text.js', 'portal_state.js', 'portal_i18n.js', 'portal_ui.js', 'portal_ui_primitives.js',
   'portal_command_registry.js', 'portal_editor_open_service.js', 'portal_workbench_context.js',
-  'portal_workbench.js', 'portal_projections.js', 'projection_host.js'];
+  ...portalWorkbenchScripts(staticRoot), 'portal_projections.js', 'projection_host.js'];
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const object = id => ({ id, kind: 'module', title: id, responsibility: 'Focus fixture', child_ids: [], mechanism_ids: [], host_ids: [] });
 const content = { root: { ...object('scope'), child_ids: ['a', 'b'] }, children: [object('a'), object('b')],

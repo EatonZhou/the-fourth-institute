@@ -5,12 +5,13 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { JSDOM, VirtualConsole } = require('jsdom');
 const { babelParse } = require('./babel_parse.cjs');
+const { portalWorkbenchScripts } = require('./portal_workbench_scripts.cjs');
 
 const repository = path.resolve(__dirname, '../../..');
 const scripts = [
   'portal_text.js', 'portal_ui.js', 'portal_ui_primitives.js',
   'portal_editor_open_service.js', 'portal_command_registry.js',
-  'portal_workbench_context.js', 'portal_workbench.js',
+  'portal_workbench_context.js', ...portalWorkbenchScripts(path.join(repository, 'management_portal/static')),
 ];
 const plain = value => JSON.parse(JSON.stringify(value));
 

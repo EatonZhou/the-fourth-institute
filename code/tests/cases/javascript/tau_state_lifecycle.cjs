@@ -4,6 +4,7 @@ const fs = require('node:fs'), path = require('node:path'), vm = require('node:v
 const {babelParse} = require('./babel_parse.cjs');
 const {workbenchModuleFiles} = require('./lineage_workbench_modules.cjs');
 const {chatWorkspaceScripts} = require('./chat_workspace_modules.cjs');
+const {STATIC: SURFACE_STATIC, portalWorkspaceSurfaceScripts} = require('./portal_workspace_surface_scripts.cjs');
 const noop = () => {};
 const i18n = {t: s => s, text: (parts, ...values) => parts.reduce((s, p, i) => s + p + (values[i] ?? ''), '')};
 // The named declarations in one script, or in any of several scripts.
@@ -211,7 +212,12 @@ function previewFixture({restoreDocument} = {}) {
     focusInitialPreviewLine: noop, rememberPreviousResource: noop,
     renderDocument: async doc => {ctx.documentValue = doc; rendered.push(doc); return doc;},
   });
-  vm.runInContext(declarations('portal_workspace_surface.js', ['createDocumentSession', 'createDocumentTabsController', 'createOwnedTabsController', 'clearPreview', 'openResource', 'notifyPersistence']), ctx);
+  // The part scripts register their factories on the fixture's window, and the
+  // Preview panel's shared state is the context itself, so cases read it as globals.
+  const surfaceScripts = portalWorkspaceSurfaceScripts();
+  surfaceScripts.slice(0, -1).forEach(file => vm.runInContext(fs.readFileSync(path.join(SURFACE_STATIC, file), 'utf8'), ctx));
+  ctx.previewPanelState = ctx;
+  vm.runInContext(declarations(surfaceScripts, ['surfacePart', 'renderDocumentTabs', 'createDocumentSession', 'createDocumentTabsController', 'createOwnedTabsController', 'clearPreview', 'openResource', 'notifyPersistence']), ctx);
   let dirty = false;
   const errors = [];
   const tabs = ctx.createOwnedTabsController({
