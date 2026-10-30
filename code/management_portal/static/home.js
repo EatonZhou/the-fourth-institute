@@ -908,13 +908,28 @@ function accountQuotaWindows(account) {
   return windows;
 }
 
-// An open account dialog shows the same windows as its row; replace them with
-// the latest summary without re-rendering the rest of the dialog.
+function accountSummaryQuotaWindows(account) {
+  const windows = accountQuotaWindows(account);
+  if (account.provider !== "antigravity") return windows;
+  // Home shows the shared Gemini subscription limits. Model-specific and
+  // other model groups remain available in the account's full details.
+  return [
+    ["Gemini Models/Five Hour Limit Remaining", window.PortalI18n.t("5 小时")],
+    ["Gemini Models/Weekly Limit Remaining", window.PortalI18n.t("每周")],
+  ].flatMap(([id, label]) => {
+    const quotaWindow = windows.find(item => item.id === id);
+    return quotaWindow ? [{...quotaWindow, full_label: quotaWindow.label, label}] : [];
+  });
+}
+
+// Refresh the selected Home windows and the complete dialog windows in place.
 function refreshAccountQuotaWindows() {
   const accounts = new Map(executionAccounts(agentStatusData).map(account => [account.account_id, account]));
   for (const node of document.querySelectorAll("[data-account-quota-account]")) {
     const account = accounts.get(node.dataset.accountQuotaAccount);
-    const quotaWindow = account && accountQuotaWindows(account).find(window => window.id === node.dataset.accountQuotaWindow);
+    const windows = account && (node.closest("[data-account-limit-account]")
+      ? accountSummaryQuotaWindows(account) : accountQuotaWindows(account));
+    const quotaWindow = windows && windows.find(window => window.id === node.dataset.accountQuotaWindow);
     if (quotaWindow) node.outerHTML = accountQuotaWindow(account, quotaWindow);
     else if (account) node.remove();
   }
@@ -929,7 +944,7 @@ function accountQuotaWindow(account, quotaWindow) {
   const reset = quotaWindow?.resets_at ? formatDateTime(quotaWindow.resets_at * 1000) : "";
   const observed = quotaWindow?.observed_at;
   const sampled = formatDateTime(typeof observed === "number" ? observed * 1000 : observed || "");
-  const title = [stale ? window.PortalI18n.t("数据已过期，百分比为上次采样") : !known ? window.PortalI18n.t("额度数据不可用") : window.PortalI18n.t("剩余额度"),
+  const title = [quotaWindow.full_label || label, stale ? window.PortalI18n.t("数据已过期，百分比为上次采样") : !known ? window.PortalI18n.t("额度数据不可用") : window.PortalI18n.t("剩余额度"),
     sampled && window.PortalI18n.text`采样于 ${sampled}`, reset && window.PortalI18n.text`重置 ${reset}`, account?.error].filter(Boolean).join(" · ");
   return window.PortalI18n.html`<div class="agent-status-account-window" data-account-quota-account="${esc(account.account_id)}" data-account-quota-window="${esc(quotaWindow.id || "")}" title="${esc(title)}">
     <span class="agent-status-window-name">${esc(label)}</span>
@@ -981,7 +996,7 @@ function accountCreditsHtml(account) {
 
 function accountLimitRow(account) {
   const accountId = String(account.account_id || "");
-  const windows = accountQuotaWindows(account);
+  const windows = accountSummaryQuotaWindows(account);
   const quota = account.quota_reserve || {};
   const reserved = quota.status === "reserved";
   const blocked = (quota.windows || []).filter(window => typeof window.remaining_percent === "number" && window.remaining_percent <= quota.reserve_percent);

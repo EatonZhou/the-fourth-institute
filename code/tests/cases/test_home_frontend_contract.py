@@ -19,8 +19,8 @@ def test_credits_show_their_own_sample_time_and_failed_read_state() -> None:
     subprocess.run(["node", str(script)], check=True, cwd=ROOT)
 
 
-def test_multiple_long_quota_labels_fit_home_and_details_in_browser() -> None:
-    """实际浏览器覆盖五个长标签窗口、过期与未知值、宽窄屏及账号详情。"""
+def test_home_quota_summary_and_complete_details_fit_in_browser() -> None:
+    """首页仅并排显示 Gemini 两个窗口，详情保留全部；覆盖刷新、过期、未知值及宽窄屏。"""
     script = Path(__file__).with_name("javascript") / "home_quota_layout.cjs"
     subprocess.run(["node", str(script)], check=True, cwd=ROOT, timeout=60)
 
