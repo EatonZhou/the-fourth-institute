@@ -11,7 +11,7 @@ from unittest import mock
 from management_common.provider_turn_artifacts import (
     TOOL_CALL_DIFF_NOTE, ToolEditArtifacts, content_part, review_target, tool_edit_diff,
 )
-from management_portal.execution import backends
+from management_portal.execution import claude_backend, dsh_backend, kimi_backend
 from management_portal.execution.native_tool_events import tool_completed
 from management_portal.society_service import (
     resident_conversation_stream,
@@ -108,12 +108,12 @@ def _turn_end(observed: list[dict]) -> list[str]:
 def test_claude_and_dsh_turns_record_their_edits_before_the_turn_completes():
     """Claude 和 DSH 轮次在轮次完成事件之前记录本轮文件修改"""
     completed = {"method": "turn/completed", "params": {"threadId": "session", "turn": {"id": "turn-1", "status": "completed"}}}
-    claude = _native_socket_turn(backends.ClaudeBackend, [
+    claude = _native_socket_turn(claude_backend.ClaudeBackend, [
         {"method": "item/started", "params": {"item": {"id": "t1", "type": "toolCall", "name": "Edit", "input": EDIT_ARGUMENTS}}},
         {"method": "item/completed", "params": {"item": {"id": "t1", "type": "toolCall", "output": "ok", "status": "completed"}}},
         completed,
     ])
-    dsh = _native_socket_turn(backends.DshBackend, [
+    dsh = _native_socket_turn(dsh_backend.DshBackend, [
         {"method": "item/started", "params": {"item": {"id": "t1", "type": "dynamicToolCall", "tool": "edit",
                                                         "arguments": '{"file_path": "a.py", "old_string": "old", "new_string": "new"}'}}},
         {"method": "item/completed", "params": {"item": {"id": "t1", "type": "dynamicToolCall", "tool": "edit",
@@ -129,7 +129,7 @@ def test_claude_and_dsh_turns_record_their_edits_before_the_turn_completes():
 
 def test_a_turn_without_file_edits_has_no_card():
     """没有文件修改的轮次不生成本轮修改卡片"""
-    observed = _native_socket_turn(backends.ClaudeBackend, [
+    observed = _native_socket_turn(claude_backend.ClaudeBackend, [
         {"method": "item/started", "params": {"item": {"id": "t1", "type": "toolCall", "name": "Bash", "input": {"command": "ls"}}}},
         {"method": "item/completed", "params": {"item": {"id": "t1", "type": "toolCall", "output": "a.py", "status": "completed"}}},
         {"method": "turn/completed", "params": {"threadId": "session", "turn": {"id": "turn-1", "status": "completed"}}},
@@ -171,8 +171,8 @@ def test_a_kimi_turn_records_its_edits_before_the_turn_completes():
     client = SimpleNamespace(home=Path("/nonexistent/kimi-account"), run_turn=run_turn)
     with mock.patch.object(kimi_account_runtime, "client_for_route", return_value=client), \
             mock.patch.object(kimi_account_runtime, "remember_session"), \
-            mock.patch.object(backends.KimiBackend, "record_provider_compaction"):
-        backends.KimiBackend().execute(invocation, context)  # type: ignore[arg-type]
+            mock.patch.object(kimi_backend.KimiBackend, "record_provider_compaction"):
+        kimi_backend.KimiBackend().execute(invocation, context)  # type: ignore[arg-type]
     assert _turn_end(observed)[-2:] == ["turnArtifacts", "turn/completed"]
     artifact = observed[-2]["params"]["item"]["artifacts"]
     assert artifact["turn_id"] == "p1" and "+++ b//work/out.txt\n@@ -0,0 +1,1 @@ Write 写入全文" in artifact["diff"]

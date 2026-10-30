@@ -15,7 +15,7 @@ from types import SimpleNamespace
 from unittest import mock
 from unittest.mock import AsyncMock
 
-from management_portal.execution import backends
+from management_portal.execution import claude_backend, dsh_backend
 from management_portal.execution.contracts import ExecutionRequest, SessionOptions
 from management_portal.execution.provider_catalog import AGENT_PROVIDERS
 from tests.cases.test_wall08_gap_helper05 import claude_owner  # noqa: F401 - pytest fixture
@@ -51,10 +51,10 @@ def _system_prompt_sent(provider: str, backend, *, attach: bool) -> str:
 
 def test_every_claude_turn_carries_the_portal_rules() -> None:
     """Claude 每一轮的系统提示都带上 Portal 规则，包括会话的后续轮次"""
-    assert _system_prompt_sent("claude", backends.ClaudeBackend, attach=True) == RULES
+    assert _system_prompt_sent("claude", claude_backend.ClaudeBackend, attach=True) == RULES
     # A later turn of the session: Portal attached the rules at its start, and
     # Claude Code needs them again in this turn's system prompt.
-    assert _system_prompt_sent("claude", backends.ClaudeBackend, attach=False) == RULES
+    assert _system_prompt_sent("claude", claude_backend.ClaudeBackend, attach=False) == RULES
 
 
 def test_dsh_replacement_system_prompt_keeps_the_full_rules_each_turn() -> None:
@@ -62,8 +62,8 @@ def test_dsh_replacement_system_prompt_keeps_the_full_rules_each_turn() -> None:
 
     :module: platform.core"""
     assert AGENT_PROVIDERS["dsh"].system_context_every_turn
-    assert _system_prompt_sent("dsh", backends.DshBackend, attach=True) == RULES
-    assert _system_prompt_sent("dsh", backends.DshBackend, attach=False) == RULES
+    assert _system_prompt_sent("dsh", dsh_backend.DshBackend, attach=True) == RULES
+    assert _system_prompt_sent("dsh", dsh_backend.DshBackend, attach=False) == RULES
 
 
 def test_claude_code_always_starts_with_its_own_system_prompt(claude_owner, monkeypatch, tmp_path) -> None:  # noqa: F811

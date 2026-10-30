@@ -15,7 +15,9 @@ import uuid
 import pytest
 
 from management_portal.execution.contracts import ExecutionRequest, SessionOptions
-from management_portal.execution.backends import BackendInvocation, BackendResult, AgentSessionService, DshBackend
+from management_portal.execution.backend_contracts import BackendInvocation, BackendResult
+from management_portal.execution.backend_services import AgentSessionService
+from management_portal.execution.dsh_backend import DshBackend
 from management_portal.execution.native_options import prepare_invocation
 from management_portal.execution.provider_catalog import AGENT_PROVIDERS
 

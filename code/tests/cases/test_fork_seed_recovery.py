@@ -18,10 +18,10 @@ from unittest import mock
 
 import pytest
 
-from management_portal.execution import backends
+from management_portal.execution import claude_backend, codex_backend
 from management_portal.execution.agent_data_session_capture import persist_provider_compaction
 from management_portal.execution.agent_data_store import AgentDataStore
-from management_portal.execution.backends import BackendInvocation
+from management_portal.execution.backend_contracts import BackendInvocation
 from management_portal.execution.context_seed import CONTEXT_SEED_SCHEMA, realize_portable_seed
 from management_portal.execution.requests import build_agent_turn_request
 from management_portal.execution.session_manager import RuntimeSession
@@ -92,12 +92,12 @@ def test_compactions_of_a_failed_turn_are_recorded() -> None:
         raise RuntimeError("Claude Code turn failed: Autocompact is thrashing")
 
     client = SimpleNamespace(run_turn=run_turn)
-    with mock.patch.object(backends, "shared_claude_client", return_value=client), \
+    with mock.patch.object(claude_backend, "shared_claude_client", return_value=client), \
             mock.patch("management_portal.execution.native_harness_tools.prepare_tools",
                        return_value=([], None)), \
-            mock.patch.object(backends.ClaudeBackend, "record_provider_compaction") as record:
+            mock.patch.object(claude_backend.ClaudeBackend, "record_provider_compaction") as record:
         with pytest.raises(RuntimeError, match="thrashing"):
-            backends.ClaudeBackend().execute(invocation, mock.Mock())
+            claude_backend.ClaudeBackend().execute(invocation, mock.Mock())
 
     record.assert_called_once()
     assert record.call_args.kwargs["backend_session_id"] == "claude-session-1"
@@ -193,7 +193,7 @@ class _DaemonClient:
 def test_claude_turn_runs_in_the_requested_session(loaded, active, requested, closed) -> None:
     """会话重启真正换到新会话，并交接未绑定首轮留下的工作"""
     client = _DaemonClient(loaded, active=active)
-    backend = backends.ClaudeBackend()
+    backend = claude_backend.ClaudeBackend()
     backend.client_factory = lambda: client  # type: ignore[method-assign]
 
     backend.prepare_native_session(session_key="resident:resident_x", backend_session_id=requested)
@@ -313,7 +313,7 @@ def _codex_compaction(fingerprint: str):
 @pytest.mark.parametrize("latest,recorded", [("f-new", True), ("f-old", False)])
 def test_codex_compaction_of_an_unfinished_turn_is_recorded(latest, recorded) -> None:
     """Codex 一轮未完成时的压缩照样记录，并保留压缩之后的工作"""
-    backend = backends.CodexBackend.__new__(backends.CodexBackend)
+    backend = codex_backend.CodexBackend.__new__(codex_backend.CodexBackend)
     backend._latest_compaction = lambda _route, _thread: _codex_compaction(latest)  # type: ignore[method-assign]
     calls: list[dict] = []
     context = SimpleNamespace(record_compaction=lambda **kwargs: calls.append(kwargs))
@@ -338,7 +338,7 @@ def test_codex_compaction_of_an_unfinished_turn_is_recorded(latest, recorded) ->
 
 def test_codex_completed_turn_is_left_to_its_own_recording() -> None:
     """Codex 一轮未完成时的压缩照样记录，并保留压缩之后的工作"""
-    backend = backends.CodexBackend.__new__(backends.CodexBackend)
+    backend = codex_backend.CodexBackend.__new__(codex_backend.CodexBackend)
     backend._latest_compaction = lambda *_a: pytest.fail("a completed turn records afterwards")  # type: ignore[method-assign]
     with backend._compaction_recorded_on_failure(
         context=SimpleNamespace(), route=SimpleNamespace(account_id="three"),  # type: ignore[arg-type]

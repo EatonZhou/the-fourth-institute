@@ -14,7 +14,7 @@ from management_common.provider_turn_artifacts import TurnArtifacts, content_par
 from management_common.provider_user_input import validate_response
 from management_portal import codex_capabilities
 from management_portal.execution.agent_data_projection import AgentDataProjector
-from management_portal.execution.backends import _compact_provider_activity_event
+from management_portal.execution.provider_activity_events import _compact_provider_activity_event
 from management_portal.execution.contracts import ExecutionInputControl, ExecutionRequest, SessionOptions
 from management_portal.execution.event_projection import append_execution_activity, execution_projection_from_path
 from management_portal.execution.session_manager import RuntimeSession

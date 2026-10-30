@@ -18,7 +18,7 @@ from unittest import mock
 import pytest
 
 from management_portal import dsh_client
-from management_portal.execution import backends
+from management_portal.execution import claude_backend, dsh_backend, kimi_backend, native_socket_backend
 from management_portal.execution.provider_catalog import AGENT_PROVIDERS
 from management_portal.society_service.resident_session_backend_domain import (
     compact_portal_result as _compact_portal_result,
@@ -66,7 +66,7 @@ def _compact(backend_class, outcome: dict, session_id: str = "native-1"):
     return result, calls, recorded
 
 
-@pytest.mark.parametrize("backend_class", [backends.ClaudeBackend, backends.DshBackend])
+@pytest.mark.parametrize("backend_class", [claude_backend.ClaudeBackend, dsh_backend.DshBackend])
 def test_the_adapter_compacts_and_records_the_compaction(backend_class) -> None:
     """适配器执行压缩并记录这次压缩"""
     result, calls, recorded = _compact(backend_class, {
@@ -85,7 +85,7 @@ def test_the_adapter_compacts_and_records_the_compaction(backend_class) -> None:
 
 def test_a_dsh_compaction_reports_what_it_replaced() -> None:
     """DSH 压缩后报告替换了哪些历史"""
-    result, _calls, _recorded = _compact(backends.DshBackend, {
+    result, _calls, _recorded = _compact(dsh_backend.DshBackend, {
         "compacted": True, "shadowed_items": 11, "shadowed_tokens": 1877, "context_tokens": 1377,
     })
     assert result.output["message"] == "较早的 11 条历史已换成一份摘要（约 1,877 token），压缩后上下文约 1,377 token。"
@@ -94,7 +94,7 @@ def test_a_dsh_compaction_reports_what_it_replaced() -> None:
 @pytest.mark.parametrize("reason", ["Not enough messages to compact.", "nothing_to_compact", "summary_not_smaller"])
 def test_a_history_too_short_to_compact_is_left_as_it_is(reason) -> None:
     """历史太短无法压缩时保持原样"""
-    result, _calls, recorded = _compact(backends.ClaudeBackend, {"compacted": False, "reason": reason})
+    result, _calls, recorded = _compact(claude_backend.ClaudeBackend, {"compacted": False, "reason": reason})
     recorded.assert_not_called()
     assert result.output["compacted"] is False
     assert result.output["message"] == "没有足够的历史可以压缩，会话未改变。"
@@ -104,13 +104,13 @@ def test_a_history_too_short_to_compact_is_left_as_it_is(reason) -> None:
 def test_a_compaction_the_provider_could_not_run_fails() -> None:
     """Provider 无法执行的压缩以失败结束"""
     with pytest.raises(RuntimeError, match="did not compact: busy"):
-        _compact(backends.DshBackend, {"compacted": False, "reason": "busy"})
+        _compact(dsh_backend.DshBackend, {"compacted": False, "reason": "busy"})
 
 
 def test_a_session_without_provider_history_has_nothing_to_compact() -> None:
     """没有 Provider 历史的会话没有可压缩的内容"""
     with pytest.raises(ValueError, match="no Provider history"):
-        _compact(backends.ClaudeBackend, {"compacted": True}, session_id="")
+        _compact(claude_backend.ClaudeBackend, {"compacted": True}, session_id="")
 
 
 def test_the_completed_message_says_what_the_provider_did() -> None:
@@ -158,7 +158,7 @@ def test_the_dsh_bridge_compacts_only_an_idle_session() -> None:
     """DSH 桥接只压缩空闲会话"""
     from pathlib import Path
 
-    bridge = (Path(backends.__file__).resolve().parents[1] / "dsh_runtime" / "bridge.mjs").read_text(encoding="utf-8")
+    bridge = (Path(dsh_backend.__file__).resolve().parents[1] / "dsh_runtime" / "bridge.mjs").read_text(encoding="utf-8")
     block = bridge[bridge.index("message.method === 'session/compact'"):bridge.index("message.method === 'session/close'")]
     assert "if (current || admitted || compacting) return {compacted: false, reason: 'busy'};" in block
     assert "ctx.compaction.compactNow(handle.agent," in block
@@ -262,7 +262,7 @@ def test_compact_aligns_the_requested_session_before_calling_the_client():
     :module: platform.core
     :importance: P2
     """
-    backend = backends.ClaudeBackend()
+    backend = claude_backend.ClaudeBackend()
     order = []
     backend.prepare_native_session = lambda **kwargs: order.append(("align", kwargs["backend_session_id"]))
     backend.client_factory = lambda: SimpleNamespace(compact_session=lambda **kwargs: (
@@ -290,7 +290,7 @@ def test_kimi_compact_without_history_does_not_create_a_session():
     with mock.patch.object(kimi_account_runtime, "client_for_route", return_value=client), \
             mock.patch.object(kimi_account_runtime, "remember_session") as remembered:
         with pytest.raises(ValueError, match="no Provider history"):
-            backends.KimiBackend().execute(invocation, context)
+            kimi_backend.KimiBackend().execute(invocation, context)
     client.create_session.assert_not_called()
     remembered.assert_not_called()
     context.record_compaction.assert_not_called()
@@ -310,7 +310,7 @@ def test_kimi_compact_without_wire_replacement_records_no_checkpoint():
             mock.patch("management_portal.kimi_code_client.time.sleep"):
         result = client.compact_session("empty-wire")
     assert result["compacted"] is False and result["reason"] == "nothing_to_compact"
-    backend_result, _, recorded = _compact(backends.ClaudeBackend, result)
+    backend_result, _, recorded = _compact(claude_backend.ClaudeBackend, result)
     assert backend_result.output["compacted"] is False
     recorded.assert_not_called()
 
@@ -366,5 +366,5 @@ def test_usage_emission_failure_does_not_drop_later_provider_requests():
     context = mock.Mock()
     context.emit.side_effect = [RuntimeError("temporary ledger failure"), None]
     requests = tuple(SimpleNamespace(request_id=key, usage={"total_tokens": 1}, occurred_at="now") for key in ("first", "second"))
-    backends.report_request_usage(context, SimpleNamespace(requests=requests))
+    native_socket_backend.report_request_usage(context, SimpleNamespace(requests=requests))
     assert [call.args[1]["event_id"] for call in context.emit.call_args_list] == ["first", "second"]

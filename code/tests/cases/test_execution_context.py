@@ -12,7 +12,7 @@ from management_portal.agent_prompt_context import (
     portal_turn_instructions,
 )
 from management_portal import agent_prompt_context
-from management_portal.execution.backends import BackendResult
+from management_portal.execution.backend_contracts import BackendResult
 from management_portal.execution.contracts import (
     ExecutionRequest,
     SessionOptions,
@@ -244,7 +244,7 @@ def test_create_then_first_turn_injects_session_start_instructions(
     """codex 会话 create 时不带启动指令，第一个可见轮次才注入且只注入一次"""
     from types import SimpleNamespace
     from unittest.mock import Mock
-    from management_portal.execution.backends import CodexBackend
+    from management_portal.execution.codex_backend import CodexBackend
 
     attached: list[tuple[str, bool]] = []
     client = Mock()

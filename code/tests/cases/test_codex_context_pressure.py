@@ -8,7 +8,8 @@ from unittest import mock
 
 import pytest
 
-from management_portal.execution.backends import BackendInvocation, CodexBackend
+from management_portal.execution.backend_contracts import BackendInvocation
+from management_portal.execution.codex_backend import CodexBackend
 from management_portal.execution.contracts import ExecutionRequest, InputMedia, SessionOptions
 from management_portal.execution import codex_rollout_history, harness_inline_media
 from management_portal.execution.codex_rollout_history import read_codex_context_window

@@ -16,16 +16,11 @@ from unittest import mock
 
 import pytest
 
-from management_portal.execution import backends
 from management_portal.execution import harness_capabilities as capabilities
-from management_portal.execution.backends import (
-    AgentSessionService,
-    BackendContext,
-    BackendInvocation,
-    BackendResult,
-    CodexBackend,
-    DshBackend,
-)
+from management_portal.execution.backend_contracts import BackendContext, BackendInvocation, BackendResult
+from management_portal.execution.backend_services import AgentSessionService
+from management_portal.execution.codex_backend import CodexBackend
+from management_portal.execution.dsh_backend import DshBackend
 from management_portal.execution.contracts import ExecutionRequest, InputMedia, SessionOptions
 from management_portal.execution.harness import (
     AgentHarness,
@@ -658,7 +653,7 @@ def test_dsh_turns_a_token_bound_into_a_share_of_the_window(tmp_path: Path, monk
     ))
     (tmp_path / session / "launch.json").write_text(json.dumps({"threshold_ratio": 0.8, "subagents": True}))
     monkeypatch.setattr(
-        "management_portal.execution.backends.read_dsh_request_config",
+        "management_portal.execution.dsh_backend.read_dsh_request_config",
         lambda path: {"model": "m", "reasoningEffort": "high", "_adapter_defaults": {}},
     )
     backend.prepare_native_session(session_key="k", backend_session_id=session, options={"model": "m", "effort": "high"})

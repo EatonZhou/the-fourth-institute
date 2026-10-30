@@ -24,7 +24,8 @@ import pytest
 from management_common.json_columns import json_value
 from management_portal.execution.agent_data_projection import AgentDataProjector
 from management_portal.execution.agent_data_store import AgentDataStore
-from management_portal.execution.backends import BackendContext, BackendInvocation, ClaudeBackend
+from management_portal.execution.backend_contracts import BackendContext, BackendInvocation
+from management_portal.execution.claude_backend import ClaudeBackend
 from management_portal.execution.contracts import ExecutionRequest, SessionOptions
 from management_portal.execution.session_manager import RuntimeSession
 from tests.cases import capability_contracts
@@ -530,7 +531,7 @@ def test_kimi_stops_one_subagent_by_cancelling_its_task_while_the_turn_goes_on()
     from unittest import mock
 
     from management_portal import kimi_code_client
-    from management_portal.execution import backends
+    from management_portal.execution import kimi_backend
 
     tasks = [
         {"id": "bash-1", "kind": "bash", "status": "running", "parent_tool_call_id": "Bash_9"},
@@ -565,9 +566,9 @@ def test_kimi_stops_one_subagent_by_cancelling_its_task_while_the_turn_goes_on()
 
     client = kimi_code_client.KimiCodeClient("http://kimi.test/api/v1")
     with mock.patch.object(kimi_code_client, "urlopen", urlopen), \
-            mock.patch.object(backends, "shared_kimi_client", return_value=client):
+            mock.patch.object(kimi_backend, "shared_kimi_client", return_value=client):
         def stop(call: str) -> tuple[bool, str]:
-            return backends.KimiBackend().deliver_turn_input(
+            return kimi_backend.KimiBackend().deliver_turn_input(
                 session_key="resident:kimi", session_id="session_1", turn_id="prompt-1",
                 items=[{"type": "subagent_stop", "tool_use_id": call}], control_id=f"stop-{call}")
 
@@ -601,7 +602,7 @@ def test_a_running_subagent_card_leaves_no_record_in_the_trace() -> None:
     with pytest.raises(KeyError):
         store.operation_record(content_part(running, request.execution_id)["segment_id"])
     # The Execution's activity log keeps the running card for the Chat.
-    from management_portal.execution.backends import _compact_provider_activity_event
+    from management_portal.execution.provider_activity_events import _compact_provider_activity_event
 
     kept = _compact_provider_activity_event({"method": "subagent/progress", "params": {"turnId": "t", "item": running}})
     assert kept == {"method": "subagent/progress", "params": {"turnId": "t", "item": running}}
@@ -721,7 +722,7 @@ def test_kimi_without_subagents_has_no_agent_tools() -> None:
     from unittest import mock
     from types import SimpleNamespace
     from management_portal import kimi_account_runtime
-    from management_portal.execution import backends
+    from management_portal.execution import kimi_backend
 
     def disabled(allow: bool) -> list[str]:
         seen: dict = {}
@@ -739,11 +740,11 @@ def test_kimi_without_subagents_has_no_agent_tools() -> None:
         # The session's route names a Kimi account; its client is the fake.
         with mock.patch.object(kimi_account_runtime, "client_for_route", return_value=client), \
                 mock.patch.object(kimi_account_runtime, "remember_session"), \
-                mock.patch.object(backends.KimiBackend, "offer_portal_tools", return_value=([], {})), \
-                mock.patch.object(backends.KimiBackend, "settle_portal_tools", return_value=["mcp__portal__x"]), \
-                mock.patch.object(backends.KimiBackend, "record_provider_compaction"), \
-                mock.patch.object(backends.KimiBackend, "observe_turn_usage", return_value=None):
-            backends.KimiBackend().execute(invocation, context)  # type: ignore[arg-type]
+                mock.patch.object(kimi_backend.KimiBackend, "offer_portal_tools", return_value=([], {})), \
+                mock.patch.object(kimi_backend.KimiBackend, "settle_portal_tools", return_value=["mcp__portal__x"]), \
+                mock.patch.object(kimi_backend.KimiBackend, "record_provider_compaction"), \
+                mock.patch.object(kimi_backend.KimiBackend, "observe_turn_usage", return_value=None):
+            kimi_backend.KimiBackend().execute(invocation, context)  # type: ignore[arg-type]
         return seen["disabled_tools"]
 
     assert disabled(True) == ["mcp__portal__x"]

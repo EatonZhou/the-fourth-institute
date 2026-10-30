@@ -16,7 +16,8 @@ from pathlib import Path
 from management_portal.execution.agent_data_projection import AgentDataProjector
 from management_portal.execution.agent_data_session_capture import persist_provider_compaction
 from management_portal.execution.agent_data_store import AgentDataStore
-from management_portal.execution.backends import BackendInvocation, ClaudeBackend
+from management_portal.execution.backend_contracts import BackendInvocation
+from management_portal.execution.claude_backend import ClaudeBackend
 from management_portal.execution.claude_transcript_compaction import (
     claude_transcript_path,
     read_claude_latest_compaction,

@@ -24,7 +24,7 @@ import pytest
 
 
 from management_portal import opencode_client, opencode_provider_catalog
-from management_portal.execution import backends
+from management_portal.execution import provider_continuation
 from management_portal.execution.harness import HarnessTool, ProviderErrorRecoveryPolicy
 from management_portal.opencode_backend import OpenCodeBackend
 from tests.cases import capability_contracts
@@ -300,7 +300,7 @@ def test_a_failed_opencode_turn_is_continued_in_its_session(opencode) -> None:
     :aspects: functional, behavior
     """
     context = _context()
-    with mock.patch.object(backends.time, "sleep"):
+    with mock.patch.object(provider_continuation.time, "sleep"):
         result = OpenCodeBackend().execute(
             _invocation(opencode, "fail once", policy=ProviderErrorRecoveryPolicy(1)), context)
 

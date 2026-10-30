@@ -6,7 +6,7 @@ from unittest import mock
 import pytest
 
 from management_portal import claude_provider_catalog
-from management_portal.execution import backends
+from management_portal.execution import claude_backend, dsh_backend
 from management_portal.execution.accounts import default_execution_accounts
 from management_portal.execution.contracts import ExecutionRequest, SessionOptions, InputMedia
 from management_portal.society_service import resident_domain
@@ -55,9 +55,9 @@ def test_claude_route_override_is_rejected_before_native_execution():
         request=SimpleNamespace(runtime_options={"provider_profile": "claude_two"}, operation="turn", input_media=()),
         session=SimpleNamespace(backend_route_id="claude_one"),
     )
-    with mock.patch.object(backends, "shared_claude_client") as client:
+    with mock.patch.object(claude_backend, "shared_claude_client") as client:
         with pytest.raises(ValueError, match="migration"):
-            backends.ClaudeBackend().execute(invocation, mock.Mock())
+            claude_backend.ClaudeBackend().execute(invocation, mock.Mock())
     client.assert_not_called()
 
 
@@ -75,12 +75,12 @@ def test_claude_images_reach_native_client_and_common_composer(native_routes):
         user_prompt='Look', system_context='', attach_system_context=False)
     fake = mock.Mock()
     fake.run_turn.return_value = SimpleNamespace(response='seen', session_id='native', turn_id='turn', usage={})
-    with mock.patch.object(backends, 'shared_claude_client', return_value=fake), \
+    with mock.patch.object(claude_backend, 'shared_claude_client', return_value=fake), \
             mock.patch('management_portal.execution.native_harness_tools.prepare_tools', return_value=([], None)):
-        backends.ClaudeBackend().execute(invocation, mock.Mock())
+        claude_backend.ClaudeBackend().execute(invocation, mock.Mock())
     assert fake.run_turn.call_args.kwargs['input_media'] == [image.to_payload()]
     with pytest.raises(ValueError, match='does not support'):
-        backends.DshBackend().execute(invocation, mock.Mock())
+        dsh_backend.DshBackend().execute(invocation, mock.Mock())
     record = {'backend': 'claude', 'provider_profile': 'claude_one'}
     capabilities = resident_execution_provider.capability_projection(record)
     assert capabilities['image_input'] is True

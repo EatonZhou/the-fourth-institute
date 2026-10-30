@@ -3,7 +3,7 @@ from unittest import mock
 
 import pytest
 
-from management_portal.execution import backends
+from management_portal.execution import claude_backend, dsh_backend
 from management_portal.execution.native_harness_tools import prepare_tools
 from management_portal.execution.harness import HarnessTool, AgentLoopToolBatch
 from tests.cases.test_turn_input_during_turn import _native_context, _native_invocation
@@ -43,7 +43,7 @@ def test_claude_tools_keep_worker_authority_and_process_results():
         dispatch({"tool": "read_resource", "arguments": {}})
 
 
-@pytest.mark.parametrize("backend_class", [backends.DshBackend, backends.ClaudeBackend])
+@pytest.mark.parametrize("backend_class", [dsh_backend.DshBackend, claude_backend.ClaudeBackend])
 def test_a_native_socket_turn_offers_portal_tools_and_hands_their_results_to_the_harness(backend_class):
     """Claude Code 与 DSH 的回合提供 Portal 工具并把结果交给 Harness
 

@@ -20,7 +20,8 @@ from management_portal.codex_app_server_protocol import (
     CodexTurnSafetyBlocked,
     CodexTurnResult,
 )
-from management_portal.execution.backends import BackendContext, BackendInvocation, CodexBackend
+from management_portal.execution.backend_contracts import BackendContext, BackendInvocation
+from management_portal.execution.codex_backend import CodexBackend
 from management_portal.execution.contracts import ExecutionRecoveryDeferred, ExecutionRequest, SessionOptions
 from management_portal.execution.codex_recovery import CodexRecoveryBudget, CodexRecoveryExhausted
 from management_portal.execution.codex_rollout_history import read_codex_turn_error
@@ -56,11 +57,11 @@ def _invocation() -> BackendInvocation:
 def no_continue_pause(monkeypatch):
     """Continue at once: these tests are about whether a turn continues, not when."""
     monkeypatch.setattr(
-        "management_portal.execution.backends.wait_before_continuation",
+        "management_portal.execution.provider_continuation.wait_before_continuation",
         lambda _policy, context: not context.is_cancelled(),
     )
     # These outage-budget fixtures model turns that already consumed their input.
-    monkeypatch.setattr("management_portal.execution.backends.read_codex_turn_input_recorded", lambda *_a, **_k: True)
+    monkeypatch.setattr("management_portal.execution.codex_turn_run.read_codex_turn_input_recorded", lambda *_a, **_k: True)
 
 
 def test_native_authentication_failure_prevents_continuation(tmp_path, subtests, isolated_portal_case):
@@ -123,7 +124,7 @@ def test_native_capacity_error_retains_continuation_policy_contracts(tmp_path, s
         backend = CodexBackend(client_factory=lambda _socket_path: client)
         with (
             mock.patch.object(backend.account_registry, "find_thread_rollout", return_value=tmp_path / "rollout"),
-            mock.patch("management_portal.execution.backends.read_codex_turn_error", return_value={
+            mock.patch("management_portal.execution.codex_turn_run.read_codex_turn_error", return_value={
                 "message": "The selected model is at capacity", "codexErrorInfo": "serverOverloaded",
             }),
         ):
@@ -400,7 +401,7 @@ def test_reconnect_loop_is_bounded(subtests, isolated_portal_case):
             client.run_turn.side_effect = CodexTurnConnectionLost(invocation.session.backend_session_id, "current")
             client.resume_turn.side_effect = failure
             states = []
-            with mock.patch("management_portal.execution.backends.time.sleep"), mock.patch("management_portal.execution.backends.time.monotonic", side_effect=range(0, 10000, 30)), pytest.raises(ExecutionRecoveryDeferred):
+            with mock.patch("management_portal.execution.codex_turn_run.time.sleep"), mock.patch("management_portal.execution.codex_turn_run.time.monotonic", side_effect=range(0, 10000, 30)), pytest.raises(ExecutionRecoveryDeferred):
                 CodexBackend(client_factory=lambda _socket: client).execute(
                     invocation,
                     BackendContext(

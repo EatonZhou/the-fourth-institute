@@ -76,7 +76,8 @@ def _fresh_bound_domain(monkeypatch):
 
 def test_codex_fresh_defers_native_create_and_preserves_audit(monkeypatch, isolated_portal_case, tmp_path):
     from unittest import mock
-    from management_portal.execution.backends import BackendContext, CodexBackend
+    from management_portal.execution.backend_contracts import BackendContext
+    from management_portal.execution.codex_backend import CodexBackend
     from management_portal.execution.contracts import ExecutionRequest
     from management_portal.society_service import resident_work_recovery as recovery
     from tests.cases.test_agent_data_projection import _runtime_session, _invocation
@@ -280,7 +281,8 @@ def test_account_switch_freezes_effective_window_without_model(monkeypatch, isol
 def test_codex_empty_create_imports_and_records_effective_context(tmp_path, isolated_portal_case):
     from dataclasses import replace
     from unittest import mock
-    from management_portal.execution.backends import BackendContext, CodexBackend
+    from management_portal.execution.backend_contracts import BackendContext
+    from management_portal.execution.codex_backend import CodexBackend
     from management_portal.society_service.resident_session_preservation import canonical_seed
     from tests.cases.test_agent_data_projection import _turn_request, _runtime_session, _invocation
 
@@ -341,7 +343,8 @@ def test_preservation_fork_refuses_lossy_native_reasoning(tmp_path, isolated_por
     from dataclasses import replace
     from unittest import mock
     from management_portal.codex_app_server_protocol import CodexThreadNotFound
-    from management_portal.execution.backends import BackendContext, CodexBackend
+    from management_portal.execution.backend_contracts import BackendContext
+    from management_portal.execution.codex_backend import CodexBackend
     from tests.cases.test_agent_data_projection import _turn_request, _runtime_session, _invocation
 
     with isolated_portal_case():

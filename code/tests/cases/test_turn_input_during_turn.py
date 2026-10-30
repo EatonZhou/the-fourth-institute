@@ -19,7 +19,7 @@ from unittest import mock
 import pytest
 
 from management_portal import kimi_account_runtime, kimi_code_client
-from management_portal.execution import backends
+from management_portal.execution import claude_backend, dsh_backend, kimi_backend
 from management_portal.execution.contracts import (
     EXECUTION_INPUT_CONTROL_SCHEMA,
     EXECUTION_TURN_SETTINGS_CONTROL_SCHEMA,
@@ -215,7 +215,7 @@ def _native_context(*controls: dict) -> mock.Mock:
     return context
 
 
-@pytest.mark.parametrize("backend_class", [backends.DshBackend, backends.ClaudeBackend])
+@pytest.mark.parametrize("backend_class", [dsh_backend.DshBackend, claude_backend.ClaudeBackend])
 def test_a_native_turn_takes_send_now_while_it_runs(backend_class) -> None:
     """原生轮次运行中接收 Send now
 
@@ -361,7 +361,7 @@ def test_kimi_backend_hands_send_now_to_the_running_prompt() -> None:
         return {"steered": True}
 
     client = SimpleNamespace(home=KIMI_HOME, run_turn=run_turn, steer=steer)
-    backend = backends.KimiBackend()
+    backend = kimi_backend.KimiBackend()
     invocation = _native_invocation()
     invocation.request.runtime_options = {"tools": [], "model": "kimi-k2.7-code"}
     invocation.session.backend_session_id = "session-1"
@@ -370,11 +370,11 @@ def test_kimi_backend_hands_send_now_to_the_running_prompt() -> None:
     # The session's route names a Kimi account; its client is the fake.
     with mock.patch.object(kimi_account_runtime, "client_for_route", return_value=client), \
             mock.patch.object(kimi_account_runtime, "remember_session"), \
-            mock.patch.object(backends.KimiBackend, "offer_portal_tools", return_value=([], None)), \
-            mock.patch.object(backends.KimiBackend, "settle_portal_tools", return_value=[]), \
-            mock.patch.object(backends.KimiBackend, "record_provider_compaction"), \
-            mock.patch.object(backends.KimiBackend, "observe_turn_usage", return_value=None), \
-            mock.patch.object(backends, "KimiToolGateway"):
+            mock.patch.object(kimi_backend.KimiBackend, "offer_portal_tools", return_value=([], None)), \
+            mock.patch.object(kimi_backend.KimiBackend, "settle_portal_tools", return_value=[]), \
+            mock.patch.object(kimi_backend.KimiBackend, "record_provider_compaction"), \
+            mock.patch.object(kimi_backend.KimiBackend, "observe_turn_usage", return_value=None), \
+            mock.patch.object(kimi_backend, "KimiToolGateway"):
         result = backend.execute(invocation, context)
 
     assert result.output["message"] == "done"
@@ -468,7 +468,7 @@ class _Observed:
         pass
 
 
-@pytest.mark.parametrize("backend_class", [backends.DshBackend, backends.ClaudeBackend])
+@pytest.mark.parametrize("backend_class", [dsh_backend.DshBackend, claude_backend.ClaudeBackend])
 def test_native_text_and_reasoning_reach_the_governor_as_activity(backend_class) -> None:
     """原生文本和推理作为活动报告给守卫
 
@@ -530,12 +530,12 @@ def test_kimi_reports_the_main_agents_tool_calls_live_in_the_common_shape() -> N
     # The session's route names a Kimi account; its client is the fake.
     with mock.patch.object(kimi_account_runtime, "client_for_route", return_value=client), \
             mock.patch.object(kimi_account_runtime, "remember_session"), \
-            mock.patch.object(backends.KimiBackend, "offer_portal_tools", return_value=([], None)), \
-            mock.patch.object(backends.KimiBackend, "settle_portal_tools", return_value=[]), \
-            mock.patch.object(backends.KimiBackend, "record_provider_compaction"), \
-            mock.patch.object(backends.KimiBackend, "observe_turn_usage", return_value=None), \
-            mock.patch.object(backends, "KimiToolGateway"):
-        backends.KimiBackend().execute(invocation, _native_context())
+            mock.patch.object(kimi_backend.KimiBackend, "offer_portal_tools", return_value=([], None)), \
+            mock.patch.object(kimi_backend.KimiBackend, "settle_portal_tools", return_value=[]), \
+            mock.patch.object(kimi_backend.KimiBackend, "record_provider_compaction"), \
+            mock.patch.object(kimi_backend.KimiBackend, "observe_turn_usage", return_value=None), \
+            mock.patch.object(kimi_backend, "KimiToolGateway"):
+        kimi_backend.KimiBackend().execute(invocation, _native_context())
 
     calls = [(event["method"], event["params"]["item"]["type"], event["params"]["item"].get("command"),
               event["params"]["item"].get("status")) for event in observed.events if event["method"].startswith("item/")]

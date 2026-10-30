@@ -247,7 +247,8 @@ def test_turn_pump_control_receipt_routes_to_original_owner(namespace, kind):
 
 @pytest.mark.parametrize('kind', ['input', 'settings'])
 def test_codex_adapter_control_receipts_use_execution_owner(namespace, kind):
-    from management_portal.execution.backends import CodexBackend, BackendInvocation, BackendContext
+    from management_portal.execution.backend_contracts import BackendInvocation, BackendContext
+    from management_portal.execution.codex_backend import CodexBackend
     from management_portal.execution.contracts import SessionOptions
     from management_portal.execution.session_manager import RuntimeSession
     tag = f'archive.execution-{ "input" if kind == "input" else "turn-settings" }-control.v1'

@@ -244,7 +244,7 @@ def test_live_child_items_reach_canonical_store_without_entering_parent_context(
     from management_portal.execution.agent_data_projection import AgentDataProjector
     from management_portal.execution.contracts import ExecutionRequest, SessionOptions
     from management_portal.execution.session_manager import RuntimeSession
-    from management_portal.execution.backends import BackendInvocation
+    from management_portal.execution.backend_contracts import BackendInvocation
     store=AgentDataStore()
     request=ExecutionRequest.new(actor="sample_admin",prompt="inspect",service_type="agent_session",provider="kimi",operation="turn",
         agent_id="resident_live_trace_test",session=SessionOptions(mode="persistent",binding_id="resident:resident_live_trace_test"))

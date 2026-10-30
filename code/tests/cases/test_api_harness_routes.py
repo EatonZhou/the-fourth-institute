@@ -36,7 +36,7 @@ def test_registered_api_catalog_and_protocol_guard(gateway, provider, protocol):
 
 def test_kimi_controls_and_new_session_use_the_bound_account(gateway, monkeypatch, tmp_path):
     from management_portal import kimi_account_runtime as runtime
-    from management_portal.execution.backends import KimiBackend
+    from management_portal.execution.kimi_backend import KimiBackend
     from management_portal.execution.session_manager import RuntimeSession
     from tests.cases.test_dsh_backend import invocation
     monkeypatch.setattr(runtime, "root", lambda: tmp_path / "accounts")

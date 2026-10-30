@@ -17,7 +17,7 @@ from unittest import mock
 
 import pytest
 
-from management_portal.execution import backends
+from management_portal.execution import dsh_backend, kimi_backend
 from management_portal.execution.native_session_compaction import (
     dsh_session_path,
     kimi_wire_path,
@@ -144,7 +144,7 @@ def test_dsh_backend_records_its_session_compaction(tmp_path, monkeypatch) -> No
     monkeypatch.setattr(dsh_client, "STATE", tmp_path)
     context = _Recording()
 
-    backends.DshBackend().record_provider_compaction(
+    dsh_backend.DshBackend().record_provider_compaction(
         context=context, backend_session_id=DSH_SESSION,  # type: ignore[arg-type]
         backend_route_id="deepseek_primary", config_dir="",
     )
@@ -161,7 +161,7 @@ def test_kimi_backend_records_its_session_compaction(tmp_path, monkeypatch) -> N
     monkeypatch.setenv("PORTAL_KIMI_CODE_HOME", str(tmp_path))
     context = _Recording()
 
-    backends.KimiBackend().record_provider_compaction(context=context, backend_session_id=KIMI_SESSION)  # type: ignore[arg-type]
+    kimi_backend.KimiBackend().record_provider_compaction(context=context, backend_session_id=KIMI_SESSION)  # type: ignore[arg-type]
 
     assert [(call["provider"], call["created_at"], call["provider_compaction_ref"][:5]) for call in context.calls] == [
         ("kimi", "2026-09-30T13:53:50.000Z", "kimi:"),
@@ -179,10 +179,10 @@ def test_kimi_turn_that_fails_still_records_its_compaction() -> None:
         attach_system_context=False, is_new_backend_session=False, harness_tools=(),
     )
     client = SimpleNamespace(run_turn=mock.Mock(side_effect=RuntimeError("Kimi turn failed")))
-    with mock.patch.object(backends, "shared_kimi_client", return_value=client), \
-            mock.patch.object(backends.KimiBackend, "record_provider_compaction") as record:
+    with mock.patch.object(kimi_backend, "shared_kimi_client", return_value=client), \
+            mock.patch.object(kimi_backend.KimiBackend, "record_provider_compaction") as record:
         with pytest.raises(RuntimeError, match="Kimi turn failed"):
-            backends.KimiBackend().execute(invocation, mock.Mock())  # type: ignore[arg-type]
+            kimi_backend.KimiBackend().execute(invocation, mock.Mock())  # type: ignore[arg-type]
 
     record.assert_called_once()
     assert record.call_args.kwargs["backend_session_id"] == KIMI_SESSION

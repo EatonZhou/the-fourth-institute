@@ -7,7 +7,7 @@ import pytest
 
 from management_common.json_columns import json_value
 from management_portal.codex_app_server_protocol import CodexTurnInterrupted
-from management_portal.execution import backends
+from management_portal.execution import backend_contracts, codex_backend
 from management_portal.execution.contracts import ExecutionRecoveryDeferred, ExecutionRequest, SessionOptions
 from management_portal.execution.scheduler import Scheduler
 from management_portal.execution.session_manager import RuntimeSession
@@ -247,7 +247,7 @@ def invoke_backend(checkpoint, *, cancelled=False, interrupted_turn=TURN_ID, com
         runtime_options=({"goal": {"action": "set", "objective": "finish work"}} if goal_status else {}),
         session=SessionOptions(mode="persistent", binding_id="planned-handover", backend_route_id="zero"),
     )
-    invocation = backends.BackendInvocation(
+    invocation = backend_contracts.BackendInvocation(
         request=request,
         session=RuntimeSession(
             mode="persistent", binding_id=request.session.binding_id,
@@ -259,13 +259,13 @@ def invoke_backend(checkpoint, *, cancelled=False, interrupted_turn=TURN_ID, com
     )
     events = []
     recovery = []
-    context = backends.BackendContext(
+    context = backend_contracts.BackendContext(
         emit_event=lambda kind, payload: events.append((kind, payload)),
         cancellation_requested=lambda: cancelled,
         set_interrupt_target=lambda *_args: None,
         set_provider_recovery_state=recovery.append,
     )
-    result = backends.CodexBackend(client_factory=lambda _socket: client).execute(invocation, context)
+    result = codex_backend.CodexBackend(client_factory=lambda _socket: client).execute(invocation, context)
     return result, client, events, recovery
 
 
@@ -372,7 +372,7 @@ def test_new_worker_finishes_same_execution_through_real_socket(handover_claim, 
         worker = ExecutionWorker(
             build_id="new", worker_id="dev:new", scheduler=client,
             runtime=ExecutionRuntime(
-                agent_providers={"codex": backends.CodexBackend(client_factory=lambda _socket: provider)},
+                agent_providers={"codex": codex_backend.CodexBackend(client_factory=lambda _socket: provider)},
                 state_root=tmp_path / "new-runtime",
             ),
         )

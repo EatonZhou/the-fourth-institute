@@ -21,7 +21,7 @@ from tests.cases.test_execution_planned_handover import (
     accepted_checkpoint, handover_claim, invoke_backend, stored_checkpoint,
 )
 from tests.cases.test_codex_message_replay import _request_session
-from management_portal.execution.backends import CodexBackend
+from management_portal.execution.codex_backend import CodexBackend
 from management_portal.execution.contracts import ExecutionRecoveryDeferred
 from management_portal.execution.agent_data_projection import AgentDataProjector
 from management_portal.execution.agent_data_store import AgentDataStore

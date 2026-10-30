@@ -16,12 +16,8 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 from management_common.json_columns import json_value
-from management_portal.execution.backends import (
-    AgentSessionService,
-    BackendContext,
-    BackendInvocation,
-    BackendResult,
-)
+from management_portal.execution.backend_contracts import BackendContext, BackendInvocation, BackendResult
+from management_portal.execution.backend_services import AgentSessionService
 from management_portal.execution.contracts import ExecutionRequest, SessionOptions
 from management_portal.execution.harness import (
     AgentHarness,

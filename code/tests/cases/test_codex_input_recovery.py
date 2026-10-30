@@ -11,7 +11,8 @@ from unittest import mock
 import pytest
 
 from management_portal.codex_app_server_protocol import CodexTurnInterrupted, CodexTurnResult
-from management_portal.execution.backends import BackendContext, CodexBackend
+from management_portal.execution.backend_contracts import BackendContext
+from management_portal.execution.codex_backend import CodexBackend
 from management_portal.execution.contracts import ExecutionRecoveryDeferred, InputMedia
 from management_portal.execution.codex_rollout_history import read_codex_turn_input_recorded
 from tests.cases.test_codex_recovery_budget import _invocation
@@ -79,7 +80,7 @@ def test_recovery_resends_unrecorded_input_with_attachments_and_persists_choice(
                 saved, events = [], []
                 context = BackendContext(emit_event=lambda k, v: events.append((k, v)), cancellation_requested=lambda: False,
                                          set_interrupt_target=lambda *_a: None, set_provider_recovery_state=lambda s: saved.append(dict(s)))
-                with mock.patch("management_portal.execution.backends.wait_before_continuation", return_value=True):
+                with mock.patch("management_portal.execution.provider_continuation.wait_before_continuation", return_value=True):
                     if recorded is None:
                         with pytest.raises(ExecutionRecoveryDeferred, match="input delivery"):
                             backend.execute(invocation, context)

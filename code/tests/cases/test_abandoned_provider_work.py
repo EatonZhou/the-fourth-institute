@@ -24,7 +24,7 @@ from unittest import mock
 
 import pytest
 
-from management_portal.execution import backends
+from management_portal.execution import codex_backend, dsh_backend
 from management_portal.execution.contracts import ExecutionRequest, SessionOptions
 from management_portal.execution.runtime import ExecutionRuntime
 from management_portal.execution.scheduler import SchedulerClient
@@ -317,7 +317,7 @@ def test_dsh_names_the_turn_and_new_session_a_lost_worker_did_not_report() -> No
 
     client = mock.Mock()
     client.interrupt.return_value = {"interrupted": True}
-    backend = backends.DshBackend.__new__(backends.DshBackend)
+    backend = dsh_backend.DshBackend.__new__(dsh_backend.DshBackend)
     backend.client_factory = lambda: client
 
     assert backend.interrupt(
@@ -335,7 +335,7 @@ def test_codex_interrupts_the_threads_turn_in_progress_when_the_turn_id_is_unkno
     """
     client = mock.Mock()
     client.active_turn_id.return_value = "turn-in-progress"
-    backend = backends.CodexBackend.__new__(backends.CodexBackend)
+    backend = codex_backend.CodexBackend.__new__(codex_backend.CodexBackend)
     backend.account_registry = mock.Mock()
     backend.client_factory = lambda _socket: client
 

@@ -15,7 +15,7 @@ import pytest
 
 from management_portal.codex_app_server_client import CodexAppServerClient
 from management_portal.codex_app_server_protocol import CodexTurnInterrupted
-from management_portal.execution.backends import CodexBackend, _CODEX_COMPACTION_PROMPT
+from management_portal.execution.codex_backend import CodexBackend, _CODEX_COMPACTION_PROMPT
 
 
 def _installed_native_binaries() -> list[str]:

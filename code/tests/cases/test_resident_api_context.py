@@ -62,7 +62,8 @@ def test_two_requests_pass_history_once_and_keep_system_instructions(monkeypatch
     """连续两次模型 API 请求各带一次历史，并都保留固定的 system 指令"""
     from copy import deepcopy
     from management_portal.society_service import resident_execution_domain as execution, resident_runtime_domain
-    from management_portal.execution.backends import BackendInvocation, ChatCompletionService
+    from management_portal.execution.backend_contracts import BackendInvocation
+    from management_portal.execution.chat_completion_service import ChatCompletionService
     from management_portal.execution.contracts import SystemInstructions
     from management_portal.execution.session_manager import RuntimeSession
     settings = {'model': 'm', 'prompt_context': {'history': {'enabled': True, 'max_tokens': 8000}}}

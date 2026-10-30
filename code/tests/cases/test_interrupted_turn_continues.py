@@ -23,7 +23,7 @@ import pytest
 
 from management_portal import kimi_portal_tools
 from management_portal.claude_code_client import ClaudeCodeClient
-from management_portal.execution import backends
+from management_portal.execution import claude_backend, dsh_backend, kimi_backend
 from management_portal.execution.contracts import ExecutionRecoveryDeferred, ExecutionRequest, SessionOptions
 from management_portal.execution.kimi_tool_gateway import KimiToolGateway
 from management_portal.execution.native_harness_tools import prepare_tools
@@ -96,7 +96,7 @@ def _context():
     return mock.Mock(is_cancelled=mock.Mock(return_value=False), is_handover=mock.Mock(return_value=False))
 
 
-@pytest.mark.parametrize("provider, backend", [("claude", backends.ClaudeBackend), ("dsh", backends.DshBackend)])
+@pytest.mark.parametrize("provider, backend", [("claude", claude_backend.ClaudeBackend), ("dsh", dsh_backend.DshBackend)])
 @pytest.mark.parametrize("checkpoint, turn_id, prompt, continue_prompt", [
     ({}, TURN_ID, "the original task", None),
     # A Worker that died: no handover marker, the turn had started.
@@ -135,12 +135,12 @@ def test_what_the_daemon_sent_for_a_recovered_turn_is_recorded(delivery, prompt)
 
     client = mock.Mock(run_turn=mock.Mock(side_effect=run_turn))
     context = _context()
-    with mock.patch.object(backends.ClaudeBackend, "client_factory", staticmethod(lambda: client)), \
-            mock.patch.object(backends.ClaudeBackend, "prepare_native_session", lambda *_args, **_kwargs: None), \
-            mock.patch.object(backends.ClaudeBackend, "observe_turn_usage", lambda *_args, **_kwargs: None), \
-            mock.patch.object(backends.ClaudeBackend, "record_provider_compaction", lambda *_args, **_kwargs: None), \
+    with mock.patch.object(claude_backend.ClaudeBackend, "client_factory", staticmethod(lambda: client)), \
+            mock.patch.object(claude_backend.ClaudeBackend, "prepare_native_session", lambda *_args, **_kwargs: None), \
+            mock.patch.object(claude_backend.ClaudeBackend, "observe_turn_usage", lambda *_args, **_kwargs: None), \
+            mock.patch.object(claude_backend.ClaudeBackend, "record_provider_compaction", lambda *_args, **_kwargs: None), \
             mock.patch("management_portal.execution.native_harness_tools.prepare_tools", return_value=([], None)):
-        backends.ClaudeBackend().execute(_invocation("claude", {"turn_id": TURN_ID}), context)
+        claude_backend.ClaudeBackend().execute(_invocation("claude", {"turn_id": TURN_ID}), context)
     context.emit.assert_any_call("recovery_input_sent", {
         "provider": "claude", "reason": "turn_interrupted", "prompt": prompt,
         "input_delivery": delivery, "turn_id": TURN_ID,
@@ -317,10 +317,10 @@ def _patched_kimi(client):
     return (
         mock.patch.object(kimi_account_runtime, "client_for_route", return_value=client),
         mock.patch.object(kimi_account_runtime, "remember_session"),
-        mock.patch.object(backends.KimiBackend, "record_provider_compaction"),
-        mock.patch.object(backends.KimiBackend, "settle_portal_tools", return_value=[]),
-        mock.patch.object(backends.KimiBackend, "observe_turn_usage", return_value=None),
-        mock.patch.object(backends.KimiBackend, "offer_portal_tools", return_value=([], None)),
+        mock.patch.object(kimi_backend.KimiBackend, "record_provider_compaction"),
+        mock.patch.object(kimi_backend.KimiBackend, "settle_portal_tools", return_value=[]),
+        mock.patch.object(kimi_backend.KimiBackend, "observe_turn_usage", return_value=None),
+        mock.patch.object(kimi_backend.KimiBackend, "offer_portal_tools", return_value=([], None)),
     )
 
 
@@ -339,7 +339,7 @@ def test_the_next_kimi_worker_follows_the_kept_prompt() -> None:
     with ExitStack() as stack:
         for patch in patches:
             stack.enter_context(patch)
-        result = backends.KimiBackend().execute(_kimi_invocation(checkpoint), context)
+        result = kimi_backend.KimiBackend().execute(_kimi_invocation(checkpoint), context)
     assert result.output["message"] == "done"
     assert client.run_turn.call_args.kwargs["turn_id"] == "prompt-7"
     assert client.run_turn.call_args.kwargs["detach_requested"] == context.is_handover
@@ -359,7 +359,7 @@ def test_a_kimi_worker_that_stops_following_requeues_the_execution() -> None:
         for patch in patches:
             stack.enter_context(patch)
         with pytest.raises(ExecutionRecoveryDeferred):
-            backends.KimiBackend().execute(_kimi_invocation({"turn_id": "prompt-7"}), _context())
+            kimi_backend.KimiBackend().execute(_kimi_invocation({"turn_id": "prompt-7"}), _context())
     client.run_turn.assert_called_once()
 
 

@@ -15,10 +15,8 @@ import pytest
 
 from management_portal.execution.agent_data_projection import AgentDataProjector
 from management_portal.execution.agent_data_store import AgentDataStore
-from management_portal.execution.backends import (
-    BackendInvocation,
-    request_scoped_item_event,
-)
+from management_portal.execution.backend_contracts import BackendInvocation
+from management_portal.execution.native_socket_backend import request_scoped_item_event
 from management_portal.execution.contracts import ExecutionRequest, SessionOptions
 from management_portal.execution.session_manager import RuntimeSession
 

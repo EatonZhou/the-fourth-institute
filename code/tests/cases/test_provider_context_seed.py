@@ -5,10 +5,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from management_portal.execution.backends import (
-    AgentSessionService,
-    BackendInvocation,
-)
+from management_portal.execution.backend_contracts import BackendInvocation
+from management_portal.execution.backend_services import AgentSessionService
 from management_portal.execution.context_seed import (
     CONTEXT_SEED_SCHEMA,
     context_seed,

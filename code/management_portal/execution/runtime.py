@@ -10,15 +10,8 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Callable
 
-from .backends import (
-    AgentSessionService,
-    Backend,
-    BackendContext,
-    BackendInvocation,
-    BackendResult,
-    ExecutionServiceAdapter,
-    default_execution_services,
-)
+from .backend_contracts import Backend, BackendContext, BackendInvocation, BackendResult
+from .backend_services import AgentSessionService, ExecutionServiceAdapter, default_execution_services
 from .contracts import ExecutionRecoveryDeferred, ExecutionRequest
 from .injection_plan import plan_injection
 from .config import execution_state_root

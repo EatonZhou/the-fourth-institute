@@ -8,7 +8,7 @@ from unittest import mock
 
 from management_portal import resident_workspace_adapter as portal_chat_workspace_backend
 from management_portal.execution import event_projection
-from management_portal.execution.backends import BackendContext
+from management_portal.execution.backend_contracts import BackendContext
 
 
 def test_native_dynamic_tool_activity_reaches_the_runtime_projection(tmp_path):

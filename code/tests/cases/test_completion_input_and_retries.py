@@ -4,7 +4,7 @@ import pytest
 
 from urllib.error import URLError
 from management_portal.ai_provider_registry import AIProviderHTTPError
-from management_portal.execution.backends import ChatCompletionService
+from management_portal.execution.chat_completion_service import ChatCompletionService
 
 
 def invocation():
@@ -41,7 +41,7 @@ def test_completion_sends_materialized_current_prompt_and_preserves_history():
 ])
 def test_completion_retries_only_transient_provider_failures(monkeypatch, error, retry):
     """Chat Completion 仅重试临时 Provider 故障"""
-    monkeypatch.setattr("management_portal.execution.backends.time.sleep", lambda _: None)
+    monkeypatch.setattr("management_portal.execution.model_api_protocols.time.sleep", lambda _: None)
     calls = []
     def request(*_args, **_kwargs):
         calls.append(True)

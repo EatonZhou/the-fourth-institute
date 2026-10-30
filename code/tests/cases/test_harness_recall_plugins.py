@@ -7,13 +7,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from management_portal.execution.backends import (
-    AgentSessionService,
-    BackendContext,
-    BackendInvocation,
-    BackendResult,
-    CodexBackend,
-)
+from management_portal.execution.backend_contracts import BackendContext, BackendInvocation, BackendResult
+from management_portal.execution.backend_services import AgentSessionService
+from management_portal.execution.codex_backend import CodexBackend
 from management_portal.execution.contracts import (
     ExecutionRequest,
     SessionOptions,

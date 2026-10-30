@@ -24,11 +24,8 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from management_portal.execution.backends import (  # noqa: E402
-    BackendContext,
-    BackendInvocation,
-    CodexBackend,
-)
+from management_portal.execution.backend_contracts import BackendContext, BackendInvocation  # noqa: E402
+from management_portal.execution.codex_backend import CodexBackend  # noqa: E402
 from management_portal.execution.requests import (  # noqa: E402
     build_agent_session_request,
 )

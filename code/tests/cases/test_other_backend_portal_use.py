@@ -21,7 +21,7 @@ from unittest import mock
 import pytest
 
 from management_portal import kimi_account_runtime
-from management_portal.execution import backends
+from management_portal.execution import claude_backend, dsh_backend, kimi_backend
 from management_portal.execution.accounts import resolve_account_configuration
 from management_portal.society_service import resident_execution_engine_domain
 
@@ -86,7 +86,7 @@ TURN = [
 
 def test_dsh_last_agent_message_of_a_completed_turn_is_the_answer() -> None:
     """Kimi Code 与 DSH Resident 的 Portal 使用"""
-    items = _run(backends.DshBackend, TURN)
+    items = _run(dsh_backend.DshBackend, TURN)
     assert [item for item in items if item[0] != ""] == [
         ("Looking at the files.", "commentary"),
         ("final text", "final_answer"),
@@ -95,13 +95,13 @@ def test_dsh_last_agent_message_of_a_completed_turn_is_the_answer() -> None:
 
 def test_dsh_message_of_a_failed_turn_is_not_an_answer() -> None:
     """Kimi Code 与 DSH Resident 的 Portal 使用"""
-    items = _run(backends.DshBackend, TURN[:4], fail=True)
+    items = _run(dsh_backend.DshBackend, TURN[:4], fail=True)
     assert ("final text", "commentary") in items
 
 
 def test_providers_that_mark_phases_pass_through_unchanged() -> None:
     """Kimi Code 与 DSH Resident 的 Portal 使用"""
-    items = _run(backends.ClaudeBackend, [_agent_message("m1", "hello", phase="commentary"),
+    items = _run(claude_backend.ClaudeBackend, [_agent_message("m1", "hello", phase="commentary"),
                                           _agent_message("m2", "final text", phase="final_answer")])
     assert items == [("hello", "commentary"), ("final text", "final_answer")]
 
@@ -133,9 +133,9 @@ def _kimi_turn(snapshots: list[tuple[str, str]], *, response: str = "", fail: bo
     with mock.patch.object(kimi_account_runtime, "client_for_route",
                            return_value=SimpleNamespace(home=KIMI_HOME, run_turn=run_turn)), \
             mock.patch.object(kimi_account_runtime, "remember_session"), \
-            mock.patch.object(backends.KimiBackend, "record_provider_compaction"):
+            mock.patch.object(kimi_backend.KimiBackend, "record_provider_compaction"):
         try:
-            backends.KimiBackend().execute(invocation, context)  # type: ignore[arg-type]
+            kimi_backend.KimiBackend().execute(invocation, context)  # type: ignore[arg-type]
         except RuntimeError:
             pass
     return [(event["payload"]["message"], event["payload"]["replace_previous"])
@@ -188,7 +188,7 @@ def test_dsh_applies_a_changed_model_by_resuming_with_a_new_agent(tmp_path, monk
     (tmp_path / session_id / "launch.json").write_text('{"subagents": true}', encoding="utf-8")
     monkeypatch.setattr(dsh_client, "STATE", tmp_path)
     calls: list[tuple] = []
-    backend = backends.DshBackend()
+    backend = dsh_backend.DshBackend()
     backend.client_factory = lambda: SimpleNamespace(close_session=lambda *args: calls.append(args))  # type: ignore[method-assign]
 
     backend.prepare_native_session(session_key="resident:resident_dsh", backend_session_id=session_id,
@@ -232,16 +232,16 @@ def test_a_kimi_turn_aborted_by_a_service_restart_is_continued_not_asked_again(c
     # The session's route names a Kimi account; its client is the fake.
     with mock.patch.object(kimi_account_runtime, "client_for_route", return_value=client), \
             mock.patch.object(kimi_account_runtime, "remember_session"), \
-            mock.patch.object(backends.KimiBackend, "record_provider_compaction"), \
-            mock.patch.object(backends.KimiBackend, "settle_portal_tools", return_value=[]):
+            mock.patch.object(kimi_backend.KimiBackend, "record_provider_compaction"), \
+            mock.patch.object(kimi_backend.KimiBackend, "settle_portal_tools", return_value=[]):
         if cancelled:
             # A stop before the attach starts nothing.
             with pytest.raises(InterruptedError):
-                backends.KimiBackend().execute(invocation, context)  # type: ignore[arg-type]
+                kimi_backend.KimiBackend().execute(invocation, context)  # type: ignore[arg-type]
             client.resume_turn.assert_not_called()
             client.run_turn.assert_not_called()
         else:
-            result = backends.KimiBackend().execute(invocation, context)  # type: ignore[arg-type]
+            result = kimi_backend.KimiBackend().execute(invocation, context)  # type: ignore[arg-type]
             assert result.output["message"] == "done"
             client.resume_turn.assert_not_called()
             request = client.run_turn.call_args.kwargs

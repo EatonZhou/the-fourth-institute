@@ -87,7 +87,7 @@ def test_formal_switch_handler_and_query_share_actual_binding(monkeypatch, isola
 
 def test_execution_checkpoint_freezes_assembly_before_the_provider_runs(tmp_path):
     from management_portal.execution.runtime import ExecutionRuntime, RuntimeContext
-    from management_portal.execution.backends import BackendResult
+    from management_portal.execution.backend_contracts import BackendResult
     from management_portal.execution.contracts import ExecutionRequest, SessionOptions
     from management_portal.execution.harness import AgentHarness
     checkpoints, observations = [], []

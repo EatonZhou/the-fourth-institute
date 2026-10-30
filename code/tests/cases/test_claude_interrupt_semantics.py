@@ -1,7 +1,7 @@
 from unittest import mock
 
 
-from management_portal.execution import backends
+from management_portal.execution import claude_backend
 
 
 def test_claude_interrupt_uses_native_identity_and_reports_daemon_result(subtests, isolated_portal_case):
@@ -16,8 +16,8 @@ def test_claude_interrupt_uses_native_identity_and_reports_daemon_result(subtest
         with subtests.test(session_key=session_key, session_id=session_id, reply=reply, expected=expected, called=called), isolated_portal_case() as case_path:
             client = mock.Mock()
             client.interrupt.return_value = reply
-            with mock.patch.object(backends, "shared_claude_client", return_value=client):
-                result = backends.ClaudeBackend().interrupt(
+            with mock.patch.object(claude_backend, "shared_claude_client", return_value=client):
+                result = claude_backend.ClaudeBackend().interrupt(
                     backend_session_id=session_id, turn_id="turn-a", backend_route_id="",
                     runtime_options={"session_key": session_key} if session_key else {},
                 )

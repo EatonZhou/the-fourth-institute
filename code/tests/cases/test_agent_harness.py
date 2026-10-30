@@ -13,14 +13,10 @@ from unittest import mock
 
 import pytest
 
-from management_portal.execution.backends import (
-    AgentSessionService,
-    BackendContext,
-    BackendInvocation,
-    BackendResult,
-    ClaudeBackend,
-    CodexBackend,
-)
+from management_portal.execution.backend_contracts import BackendContext, BackendInvocation, BackendResult
+from management_portal.execution.backend_services import AgentSessionService
+from management_portal.execution.claude_backend import ClaudeBackend
+from management_portal.execution.codex_backend import CodexBackend
 from management_portal.execution.contracts import (
     ExecutionControlSignal,
     ExecutionRecoveryDeferred,
@@ -1666,7 +1662,7 @@ def test_early_compaction_after_tool_timing_is_armed_before_provider_loop_contra
         )
 
         with mock.patch(
-            "management_portal.execution.backends.shared_claude_client",
+            "management_portal.execution.claude_backend.shared_claude_client",
             return_value=client,
         ):
             ClaudeBackend().execute(invocation, _context([]))

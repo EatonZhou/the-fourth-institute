@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 
 from management_portal import prompt_injection
-from management_portal.execution.backends import BackendResult
+from management_portal.execution.backend_contracts import BackendResult
 from management_portal.execution.contracts import (
     ExecutionRequest,
     InjectionPart,

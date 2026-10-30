@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from management_portal.execution.agent_data_projection import AgentDataProjector
 from management_portal.execution.agent_data_store import AgentDataStore
-from management_portal.execution.backends import BackendInvocation
+from management_portal.execution.backend_contracts import BackendInvocation
 from management_portal.execution.contracts import ExecutionRequest, SessionOptions
 from management_portal.execution.session_manager import RuntimeSession
 

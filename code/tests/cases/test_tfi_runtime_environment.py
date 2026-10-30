@@ -13,7 +13,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from management_portal.execution.backends import CodexBackend
+from management_portal.execution.codex_backend import CodexBackend
 from management_portal.society_service import resident_execution_work, resident_runtime_domain
 from management_portal.society_service.script_runs import service as scripts
 from scripts import verify_dsh_backend

@@ -37,7 +37,7 @@ class ClaudePostgresTest(unittest.TestCase):
         Real provider + deployed socket + isolated PostgreSQL, including a crash boundary."""
         from management_portal.claude_code_client import shared_client
         from management_portal.execution.agent_data_projection import AgentDataProjector
-        from management_portal.execution.backends import ClaudeBackend
+        from management_portal.execution.claude_backend import ClaudeBackend
         from management_portal.execution.harness import AgentHarness
         from management_portal.execution.runtime import ExecutionRuntime, RuntimeContext
 

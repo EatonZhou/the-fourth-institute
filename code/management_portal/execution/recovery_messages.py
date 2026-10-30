@@ -4,7 +4,7 @@ When a turn is recovered (a Worker handover, a Provider process that no
 longer ran the turn, a Provider error or transition), the Harness sends the
 Provider an input nobody typed: ``continue`` when the Provider had the turn's
 input, or the turn's input itself when it never had it (``recovery_input_sent``,
-see ``backends.report_recovery_input``).  That input is recorded like any other
+see ``provider_continuation.report_recovery_input``).  That input is recorded like any other
 message: in the Resident's trace where it was sent, and so in its Chat, as a
 message of the Agent Harness.
 

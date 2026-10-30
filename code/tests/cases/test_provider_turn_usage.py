@@ -18,7 +18,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
-from management_portal.execution import backends
+from management_portal.execution import claude_backend
 from management_portal.codex_app_server_protocol import merge_turn_token_usage
 from management_portal.codex_app_server_client import codex_token_usage_delta
 from management_portal.execution.provider_turn_usage import (
@@ -121,13 +121,13 @@ def _claude_turn(config_dir: Path, *, fail: bool) -> tuple[mock.Mock, object]:
         session=SimpleNamespace(backend_route_id="claude_one", backend_session_id=SESSION),
         user_prompt="build it", system_context="", attach_system_context=False,
     )
-    backend = backends.ClaudeBackend()
+    backend = claude_backend.ClaudeBackend()
     backend.client_factory = lambda: SimpleNamespace(  # type: ignore[method-assign]
         run_turn=run_turn, session_status=lambda *_args: {}, close_session=lambda *_args: {},
     )
     result: object = None
     with mock.patch("management_portal.execution.native_harness_tools.prepare_tools", return_value=([], None)), \
-            mock.patch.object(backends.ClaudeBackend, "record_provider_compaction"), \
+            mock.patch.object(claude_backend.ClaudeBackend, "record_provider_compaction"), \
             contextlib.suppress(RuntimeError):
         result = backend.execute(invocation, context)  # type: ignore[arg-type]
     return context, result

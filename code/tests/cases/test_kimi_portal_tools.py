@@ -26,7 +26,7 @@ from unittest import mock
 import pytest
 
 from management_portal import kimi_code_server, kimi_portal_tools
-from management_portal.execution import backends
+from management_portal.execution import kimi_backend
 from management_portal.kimi_code_client import KimiCodeUnavailable
 from management_portal.execution.harness import HarnessTool
 from management_portal.execution.harness_capabilities import PORTAL_TOOLS
@@ -296,9 +296,9 @@ def _fake_client(registered: list[list[str]]) -> SimpleNamespace:
 
 
 def _settle(client: SimpleNamespace, catalog: list[dict], *, cancelled: bool = False) -> list[str]:
-    with mock.patch.object(backends, "shared_kimi_client", return_value=client), \
-            mock.patch.object(backends.time, "sleep"):
-        return backends.KimiBackend.settle_portal_tools(
+    with mock.patch.object(kimi_backend, "shared_kimi_client", return_value=client), \
+            mock.patch.object(kimi_backend.time, "sleep"):
+        return kimi_backend.KimiBackend.settle_portal_tools(
             "session-a", catalog, profile={"tools": ["Read"], "permission_mode": "yolo", "model": "kimi-k3"},
             cancelled=lambda: cancelled,
         )
@@ -374,11 +374,11 @@ def test_a_kimi_turn_serves_its_harness_tools_to_its_own_session(root) -> None:
     )
     context = mock.Mock()
     context.is_cancelled.return_value = False
-    with mock.patch.object(backends, "shared_kimi_client", return_value=client), \
-            mock.patch.object(backends, "_kimi_home", return_value=str(root.home)), \
-            mock.patch.object(backends.KimiBackend, "record_provider_compaction"), \
-            mock.patch.object(backends.KimiBackend, "observe_turn_usage", return_value=None):
-        result = backends.KimiBackend().execute(_invocation((tool,)), context)  # type: ignore[arg-type]
+    with mock.patch.object(kimi_backend, "shared_kimi_client", return_value=client), \
+            mock.patch.object(kimi_backend, "_kimi_home", return_value=str(root.home)), \
+            mock.patch.object(kimi_backend.KimiBackend, "record_provider_compaction"), \
+            mock.patch.object(kimi_backend.KimiBackend, "observe_turn_usage", return_value=None):
+        result = kimi_backend.KimiBackend().execute(_invocation((tool,)), context)  # type: ignore[arg-type]
 
     assert _text(seen["result"]) == "pong:Ping" and seen["result"]["isError"] is False
     assert seen["disabled_tools"] == [f"{PREFIX}jev_decide"]
@@ -400,11 +400,11 @@ def test_without_the_hook_a_kimi_turn_runs_without_portal_tools(root) -> None:
     tool = HarnessTool(name="hatg_instruction", description="x", input_schema={"type": "object"}, handler=lambda _a: "")
     context = mock.Mock()
     context.is_cancelled.return_value = False
-    with mock.patch.object(backends, "shared_kimi_client", return_value=client), \
-            mock.patch.object(backends, "_kimi_home", return_value=str(root.home)), \
-            mock.patch.object(backends.KimiBackend, "record_provider_compaction"), \
-            mock.patch.object(backends.KimiBackend, "observe_turn_usage", return_value=None):
-        result = backends.KimiBackend().execute(_invocation((tool,)), context)  # type: ignore[arg-type]
+    with mock.patch.object(kimi_backend, "shared_kimi_client", return_value=client), \
+            mock.patch.object(kimi_backend, "_kimi_home", return_value=str(root.home)), \
+            mock.patch.object(kimi_backend.KimiBackend, "record_provider_compaction"), \
+            mock.patch.object(kimi_backend.KimiBackend, "observe_turn_usage", return_value=None):
+        result = kimi_backend.KimiBackend().execute(_invocation((tool,)), context)  # type: ignore[arg-type]
 
     assert result.output["message"] == "done"
     assert result.available_harness_tool_names == frozenset()

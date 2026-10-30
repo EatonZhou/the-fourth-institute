@@ -7,7 +7,7 @@ import pytest
 from management_common.execution_context_file import execution_context
 from management_portal.codex_app_server_client import CodexAppServerClient
 from management_portal.codex_app_server_protocol import CodexThreadWriterBusy
-from management_portal.execution.backends import CodexBackend
+from management_portal.execution.codex_backend import CodexBackend
 from management_portal.execution.contracts import ExecutionRequest, SessionOptions
 
 

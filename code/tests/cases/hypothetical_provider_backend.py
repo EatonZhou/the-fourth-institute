@@ -6,7 +6,7 @@ input during the turn and its recovery.  Its client comes from its runtime.
 """
 from __future__ import annotations
 
-from management_portal.execution.backends import NativeSocketBackend
+from management_portal.execution.native_socket_backend import NativeSocketBackend
 from tests.cases.hypothetical_provider import PROVIDER
 
 

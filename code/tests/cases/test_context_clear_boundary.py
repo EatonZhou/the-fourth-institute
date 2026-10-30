@@ -17,7 +17,7 @@ from unittest import mock
 
 import pytest
 
-from management_portal.execution import backends
+from management_portal.execution import claude_backend
 from management_portal.execution.agent_data_store import AgentDataStore, get_agent_data_store
 from management_portal.execution.agent_data_session_capture import persist_provider_compaction
 from management_portal.society_service import (
@@ -187,7 +187,7 @@ def _release(backend_class, daemon: _Daemon):
 def test_a_native_release_closes_an_idle_or_unloaded_session(closed) -> None:
     """原生释放关闭空闲或未加载的会话"""
     daemon = _Daemon(closed)
-    result = _release(backends.ClaudeBackend, daemon)
+    result = _release(claude_backend.ClaudeBackend, daemon)
     assert daemon.calls == [("resident:resident_x", "claude-session-old")]
     assert result.output["operation"] == "release"
 
@@ -196,7 +196,7 @@ def test_a_native_release_waits_for_the_running_turn() -> None:
     """原生释放等待正在运行的一轮结束"""
     daemon = _Daemon({"closed": False, "reason": "session has an active turn", "session_id": "claude-session-old"})
     with pytest.raises(RuntimeError, match="active turn"):
-        _release(backends.ClaudeBackend, daemon)
+        _release(claude_backend.ClaudeBackend, daemon)
 
 
 def _trace(store: AgentDataStore, agent_id: str) -> list[tuple[str, str]]:

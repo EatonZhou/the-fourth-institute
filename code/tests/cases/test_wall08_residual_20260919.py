@@ -226,7 +226,7 @@ def test_usage_current_calendar_windows_ledger_boundaries(monkeypatch):
 
 def test_kimi_release_calls_abort_without_archive_or_replacement(tmp_path, monkeypatch):
     """kimi 释放会话只调用 abort 接口，不归档也不替换原会话"""
-    from management_portal.execution import backends
+    from management_portal.execution import backend_contracts, kimi_backend
     from management_portal.execution.contracts import ExecutionRequest, SessionOptions
     from management_portal.execution.session_manager import RuntimeSession
     from management_portal.kimi_code_client import KimiCodeClient
@@ -234,14 +234,14 @@ def test_kimi_release_calls_abort_without_archive_or_replacement(tmp_path, monke
     client = KimiCodeClient(base_url="http://synthetic.invalid", events_root=tmp_path)
     transport = Mock(return_value={"accepted": True})
     monkeypatch.setattr(client, "_request", transport)
-    monkeypatch.setattr(backends, "shared_kimi_client", lambda: client)
+    monkeypatch.setattr(kimi_backend, "shared_kimi_client", lambda: client)
     request = ExecutionRequest.new(actor="fixture", prompt="release existing synthetic session", service_type="agent_session", provider="kimi", operation="release",
         session=SessionOptions(mode="persistent", binding_id="fixture-binding"))
-    invocation = backends.BackendInvocation(request=request,
+    invocation = backend_contracts.BackendInvocation(request=request,
         session=RuntimeSession(mode="persistent", binding_id="fixture-binding", backend_session_id="native/fixture", is_new_backend_session=False),
         user_prompt="", system_context="", attach_system_context=False, is_new_backend_session=False)
-    context = backends.BackendContext(emit_event=lambda *_args: None, cancellation_requested=lambda: False, set_interrupt_target=lambda *_args: None)
-    result = backends.KimiBackend().execute(invocation, context)
+    context = backend_contracts.BackendContext(emit_event=lambda *_args: None, cancellation_requested=lambda: False, set_interrupt_target=lambda *_args: None)
+    result = kimi_backend.KimiBackend().execute(invocation, context)
     assert result.output["operation"] == "release"
     transport.assert_called_once_with("POST", "sessions/native%2Ffixture:abort", {})
     assert invocation.session.backend_session_id == "native/fixture"

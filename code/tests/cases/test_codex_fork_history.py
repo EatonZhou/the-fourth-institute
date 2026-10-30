@@ -10,7 +10,8 @@ import pytest
 from management_portal.execution.codex_history import response_items_from_segments
 from management_portal.execution.codex_history_delivery import CodexHistoryDelivery
 from management_portal.execution.agent_data_store import AgentDataStore
-from management_portal.execution.backends import BackendContext, CodexBackend
+from management_portal.execution.backend_contracts import BackendContext
+from management_portal.execution.codex_backend import CodexBackend
 from tests.cases.test_agent_data_projection import _turn_request, _runtime_session, _invocation
 
 

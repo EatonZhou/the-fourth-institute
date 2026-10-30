@@ -18,7 +18,7 @@ from unittest import mock
 import pytest
 
 from management_common.json_columns import json_value
-from management_portal.execution import backends
+from management_portal.execution import claude_backend, provider_continuation
 from management_portal.execution.contracts import ExecutionRecoveryDeferred, ExecutionRequest, SessionOptions
 from management_portal.execution.provider_turn_usage import ObservedTurnUsage, RequestUsage
 from management_portal.execution.transport import ExecutionClaimOwnershipLost
@@ -171,9 +171,9 @@ def test_next_worker_attaches_to_the_running_turn(checkpoint, running_turn):
     client = mock.Mock()
     client.run_turn.return_value = SimpleNamespace(response="done", session_id="native", turn_id=running_turn, usage={})
     context = _context()
-    with mock.patch.object(backends, "shared_claude_client", return_value=client), \
+    with mock.patch.object(claude_backend, "shared_claude_client", return_value=client), \
             mock.patch("management_portal.execution.native_harness_tools.prepare_tools", return_value=([], None)):
-        result = backends.ClaudeBackend().execute(_invocation(checkpoint), context)
+        result = claude_backend.ClaudeBackend().execute(_invocation(checkpoint), context)
     assert result.output["message"] == "done"
     client.run_turn.assert_called_once()
     assert client.run_turn.call_args.kwargs["turn_id"] == running_turn
@@ -191,10 +191,10 @@ def test_a_stop_before_attaching_does_not_start_the_turn_anew():
     client = mock.Mock()
     context = _context()
     context.is_cancelled.return_value = True
-    with mock.patch.object(backends, "shared_claude_client", return_value=client), \
+    with mock.patch.object(claude_backend, "shared_claude_client", return_value=client), \
             mock.patch("management_portal.execution.native_harness_tools.prepare_tools", return_value=([], None)):
         with pytest.raises(InterruptedError):
-            backends.ClaudeBackend().execute(_invocation(KEPT), context)
+            claude_backend.ClaudeBackend().execute(_invocation(KEPT), context)
     client.run_turn.assert_not_called()
 
 
@@ -207,11 +207,11 @@ def test_a_detached_worker_requeues_the_execution():
     client.run_turn.side_effect = NativeAgentDetached("left")
     context = _context()
     usage = ObservedTurnUsage(turn={}, requests=(RequestUsage("claude:msg_1", {"input_tokens": 1}, ""),))
-    with mock.patch.object(backends, "shared_claude_client", return_value=client), \
-            mock.patch.object(backends.ClaudeBackend, "observe_turn_usage", return_value=usage), \
+    with mock.patch.object(claude_backend, "shared_claude_client", return_value=client), \
+            mock.patch.object(claude_backend.ClaudeBackend, "observe_turn_usage", return_value=usage), \
             mock.patch("management_portal.execution.native_harness_tools.prepare_tools", return_value=([], None)):
         with pytest.raises(ExecutionRecoveryDeferred):
-            backends.ClaudeBackend().execute(_invocation({}), context)
+            claude_backend.ClaudeBackend().execute(_invocation({}), context)
     # The turn has not ended and this Worker's claim is released: the
     # Worker that attaches records the turn's usage and compactions.
     assert "token_usage_delta" not in [call.args[0] for call in context.emit.call_args_list]
@@ -244,12 +244,12 @@ def test_an_event_execution_service_did_not_take_leaves_the_turn_to_the_next_att
     invocation = _invocation({"turn_id": TURN_ID})
     invocation.provider_error_recovery = ProviderErrorRecoveryPolicy(max_continue_attempts=1)
     usage = ObservedTurnUsage(turn={}, requests=(RequestUsage("claude:msg_1", {"input_tokens": 1}, ""),))
-    with mock.patch.object(backends, "shared_claude_client", return_value=client), \
-            mock.patch.object(backends.ClaudeBackend, "observe_turn_usage", return_value=usage), \
-            mock.patch.object(backends, "wait_before_continuation", return_value=True), \
+    with mock.patch.object(claude_backend, "shared_claude_client", return_value=client), \
+            mock.patch.object(claude_backend.ClaudeBackend, "observe_turn_usage", return_value=usage), \
+            mock.patch.object(provider_continuation, "wait_before_continuation", return_value=True), \
             mock.patch("management_portal.execution.native_harness_tools.prepare_tools", return_value=([], None)):
         with pytest.raises(ExecutionRecoveryDeferred):
-            backends.ClaudeBackend().execute(invocation, context)
+            claude_backend.ClaudeBackend().execute(invocation, context)
     assert turn_ids == [TURN_ID]
     emitted = [call.args[0] for call in context.emit.call_args_list]
     assert "agent_harness_provider_error_continue" not in emitted
@@ -258,9 +258,9 @@ def test_an_event_execution_service_did_not_take_leaves_the_turn_to_the_next_att
     # The next attempt asks for the same turn, which the daemon attaches to while it runs.
     client.run_turn.side_effect = None
     client.run_turn.return_value = SimpleNamespace(response="done", session_id="native", turn_id=TURN_ID, usage={})
-    with mock.patch.object(backends, "shared_claude_client", return_value=client), \
+    with mock.patch.object(claude_backend, "shared_claude_client", return_value=client), \
             mock.patch("management_portal.execution.native_harness_tools.prepare_tools", return_value=([], None)):
-        result = backends.ClaudeBackend().execute(_invocation({"turn_id": TURN_ID}), _context())
+        result = claude_backend.ClaudeBackend().execute(_invocation({"turn_id": TURN_ID}), _context())
     assert result.output["message"] == "done"
     assert client.run_turn.call_args.kwargs["turn_id"] == TURN_ID
 
@@ -275,9 +275,9 @@ def test_a_worker_that_lost_its_claim_mid_turn_leaves_the_records_to_the_next_wo
     context = _context()
     context.is_handover.return_value = True
     usage = ObservedTurnUsage(turn={}, requests=(RequestUsage("claude:msg_1", {"input_tokens": 1}, ""),))
-    with mock.patch.object(backends, "shared_claude_client", return_value=client), \
-            mock.patch.object(backends.ClaudeBackend, "observe_turn_usage", return_value=usage), \
+    with mock.patch.object(claude_backend, "shared_claude_client", return_value=client), \
+            mock.patch.object(claude_backend.ClaudeBackend, "observe_turn_usage", return_value=usage), \
             mock.patch("management_portal.execution.native_harness_tools.prepare_tools", return_value=([], None)):
         with pytest.raises(ExecutionClaimOwnershipLost):
-            backends.ClaudeBackend().execute(_invocation({}), context)
+            claude_backend.ClaudeBackend().execute(_invocation({}), context)
     assert "token_usage_delta" not in [call.args[0] for call in context.emit.call_args_list]

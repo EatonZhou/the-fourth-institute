@@ -11,7 +11,8 @@ import pytest
 from management_portal.execution.agent_data_projection import AgentDataProjector
 from management_portal.execution.agent_data_store import AgentDataStore
 from management_portal.execution.provider_reasoning import provider_reasoning
-from management_portal.execution.backends import BackendContext, CodexBackend
+from management_portal.execution.backend_contracts import BackendContext
+from management_portal.execution.codex_backend import CodexBackend
 from tests.cases.test_agent_data_projection import _invocation, _runtime_session, _turn_request
 
 

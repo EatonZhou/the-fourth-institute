@@ -14,7 +14,7 @@ from unittest import mock
 
 import pytest
 
-from management_portal.execution import backends
+from management_portal.execution import backend_contracts, dsh_backend, kimi_backend, provider_continuation
 from management_portal.execution.contracts import ExecutionRecoveryDeferred
 from management_portal.execution.harness import ProviderErrorRecoveryPolicy
 from management_portal.execution.harness_capabilities import ERROR_CONTINUATION
@@ -72,14 +72,14 @@ def _run_native(
             raise outcome
         return outcome
 
-    backend = backends.DshBackend()
+    backend = dsh_backend.DshBackend()
     backend.provider_id = provider_id
     backend.client_factory = lambda: SimpleNamespace(run_turn=run_turn, close_session=lambda *a: {})  # type: ignore[method-assign]
     with mock.patch("management_portal.execution.native_harness_tools.prepare_tools", return_value=([], None)), \
-            mock.patch.object(backends.DshBackend, "record_provider_compaction"), \
-            mock.patch.object(backends.DshBackend, "observe_turn_usage", return_value=None), \
-            mock.patch.object(backends.DshBackend, "prepare_native_session"), \
-            mock.patch.object(backends.time, "sleep", sleep or mock.Mock()):
+            mock.patch.object(dsh_backend.DshBackend, "record_provider_compaction"), \
+            mock.patch.object(dsh_backend.DshBackend, "observe_turn_usage", return_value=None), \
+            mock.patch.object(dsh_backend.DshBackend, "prepare_native_session"), \
+            mock.patch.object(provider_continuation.time, "sleep", sleep or mock.Mock()):
         return backend.execute(invocation, context)
 
 
@@ -134,14 +134,14 @@ def test_a_continuation_after_a_kept_turn_starts_as_a_recovery() -> None:
     """
 
     activities: list[dict] = []
-    context = backends.BackendContext(
+    context = backend_contracts.BackendContext(
         emit_event=lambda kind, details: activities.append(details) if kind == "provider_event" else None,
         cancellation_requested=lambda: False,
         set_interrupt_target=lambda *_args: None,
         turn_start_reason="backend_service_update",
     )
-    with mock.patch.object(backends.time, "sleep"):
-        prompt, attempt = backends.provider_error_continuation(
+    with mock.patch.object(provider_continuation.time, "sleep"):
+        prompt, attempt = provider_continuation.provider_error_continuation(
             RuntimeError("Claude Code daemon connection closed"),
             invocation=_invocation(policy=ProviderErrorRecoveryPolicy(1)), context=context,
             provider_id="claude", turn_started=True,
@@ -279,11 +279,11 @@ def _run_kimi(client: SimpleNamespace, invocation, context):
     # The invocation's route names a Kimi account; its client is the fake.
     with mock.patch.object(kimi_account_runtime, "client_for_route", return_value=client), \
             mock.patch.object(kimi_account_runtime, "remember_session"), \
-            mock.patch.object(backends.KimiBackend, "record_provider_compaction"), \
-            mock.patch.object(backends.KimiBackend, "observe_turn_usage", return_value=None), \
-            mock.patch.object(backends.KimiBackend, "settle_portal_tools", return_value=[]), \
-            mock.patch.object(backends.time, "sleep"):
-        return backends.KimiBackend().execute(invocation, context)
+            mock.patch.object(kimi_backend.KimiBackend, "record_provider_compaction"), \
+            mock.patch.object(kimi_backend.KimiBackend, "observe_turn_usage", return_value=None), \
+            mock.patch.object(kimi_backend.KimiBackend, "settle_portal_tools", return_value=[]), \
+            mock.patch.object(provider_continuation.time, "sleep"):
+        return kimi_backend.KimiBackend().execute(invocation, context)
 
 
 def test_a_failed_kimi_turn_is_continued_in_its_session() -> None:
@@ -367,7 +367,7 @@ def test_a_turn_refused_for_the_hosts_location_waits_for_the_egress_and_continue
     calls: list[dict] = []
     context = _tracking_context()
     probes = mock.Mock(side_effect=["blocked", "unreachable", "allowed"])
-    with mock.patch.object(backends, "egress_state", probes):
+    with mock.patch.object(provider_continuation, "egress_state", probes):
         result = _run_native(
             calls, [RuntimeError(EGRESS_BLOCK), ANSWER],
             _invocation(policy=ProviderErrorRecoveryPolicy(1), provider_profile=SUBSCRIPTION), context,
@@ -379,7 +379,7 @@ def test_a_turn_refused_for_the_hosts_location_waits_for_the_egress_and_continue
     assert prompts == ["audit the module", "continue"]
     # It looks every 10 seconds until Anthropic answers this host again.
     assert probes.call_count == 3
-    assert sum(call["sleep"] for call in calls if "sleep" in call) == 2 * backends.EGRESS_PROBE_INTERVAL_SECONDS
+    assert sum(call["sleep"] for call in calls if "sleep" in call) == 2 * provider_continuation.EGRESS_PROBE_INTERVAL_SECONDS
     events = {call.args[0]: call.args[1] for call in context.emit.call_args_list}
     assert (events["provider_egress_unavailable"]["provider"], events["provider_egress_unavailable"]["state"]) == (
         "claude", "blocked",
@@ -387,7 +387,7 @@ def test_a_turn_refused_for_the_hosts_location_waits_for_the_egress_and_continue
     assert events["provider_egress_unavailable"]["upstream"] == "anthropic"
     details = events["agent_harness_provider_error_continue"]
     assert (details["reason"], details["attempt"], details["max_attempts"]) == (
-        "egress_blocked", 1, backends.EGRESS_BLOCK_CONTINUE_ATTEMPTS,
+        "egress_blocked", 1, provider_continuation.EGRESS_BLOCK_CONTINUE_ATTEMPTS,
     )
     assert context.current_provider_recovery_state() == {
         "provider_error_continue_count": 1, "egress_block_continue_count": 1,
@@ -403,7 +403,7 @@ def test_a_continuation_refused_again_waits_again_until_its_attempts_are_used() 
     """
     calls: list[dict] = []
     context = _tracking_context()
-    with mock.patch.object(backends, "egress_state", return_value="allowed"):
+    with mock.patch.object(provider_continuation, "egress_state", return_value="allowed"):
         result = _run_native(
             calls, [RuntimeError(EGRESS_BLOCK), RuntimeError(EGRESS_BLOCK), ANSWER],
             _invocation(policy=ProviderErrorRecoveryPolicy(1), provider_profile=SUBSCRIPTION), context, provider_id="claude",
@@ -416,14 +416,14 @@ def test_a_continuation_refused_again_waits_again_until_its_attempts_are_used() 
     }
 
     calls.clear()
-    refusals = [RuntimeError(EGRESS_BLOCK) for _ in range(backends.EGRESS_BLOCK_CONTINUE_ATTEMPTS + 1)]
+    refusals = [RuntimeError(EGRESS_BLOCK) for _ in range(provider_continuation.EGRESS_BLOCK_CONTINUE_ATTEMPTS + 1)]
     last = refusals[-1]
-    with mock.patch.object(backends, "egress_state", return_value="allowed"), \
+    with mock.patch.object(provider_continuation, "egress_state", return_value="allowed"), \
             pytest.raises(RuntimeError) as raised:
         _run_native(calls, [*refusals, ANSWER], _invocation(policy=ProviderErrorRecoveryPolicy(1), provider_profile=SUBSCRIPTION),
                     _tracking_context(), provider_id="claude")
     assert raised.value is last
-    assert len(calls) == backends.EGRESS_BLOCK_CONTINUE_ATTEMPTS + 1
+    assert len(calls) == provider_continuation.EGRESS_BLOCK_CONTINUE_ATTEMPTS + 1
 
 
 def test_a_refused_turn_fails_when_the_egress_does_not_come_back() -> None:
@@ -441,16 +441,16 @@ def test_a_refused_turn_fails_when_the_egress_does_not_come_back() -> None:
 
     error = RuntimeError(EGRESS_BLOCK)
     context = _tracking_context()
-    with mock.patch.object(backends, "egress_state", return_value="blocked") as probe, \
-            mock.patch.object(backends.time, "monotonic", lambda: clock["now"]), \
+    with mock.patch.object(provider_continuation, "egress_state", return_value="blocked") as probe, \
+            mock.patch.object(provider_continuation.time, "monotonic", lambda: clock["now"]), \
             pytest.raises(RuntimeError) as raised:
         _run_native(calls, [error, ANSWER], _invocation(policy=ProviderErrorRecoveryPolicy(1), provider_profile=SUBSCRIPTION), context,
                     sleep=sleep, provider_id="claude")
 
     assert raised.value is error
     assert [call["prompt"] for call in calls] == ["audit the module"]
-    assert clock["now"] == backends.EGRESS_BLOCK_WAIT_SECONDS
-    assert probe.call_count == backends.EGRESS_BLOCK_WAIT_SECONDS / backends.EGRESS_PROBE_INTERVAL_SECONDS + 1
+    assert clock["now"] == provider_continuation.EGRESS_BLOCK_WAIT_SECONDS
+    assert probe.call_count == provider_continuation.EGRESS_BLOCK_WAIT_SECONDS / provider_continuation.EGRESS_PROBE_INTERVAL_SECONDS + 1
     context.set_provider_recovery_state.assert_not_called()
 
 
@@ -466,7 +466,7 @@ def test_a_worker_handing_over_leaves_the_wait_for_the_egress_to_the_next_worker
     probe = mock.Mock(return_value="blocked")
     # The Worker is asked to hand over after its first look at the egress.
     context.is_handover.side_effect = lambda: probe.call_count > 0
-    with mock.patch.object(backends, "egress_state", probe), \
+    with mock.patch.object(provider_continuation, "egress_state", probe), \
             pytest.raises(ExecutionRecoveryDeferred):
         _run_native(calls, [RuntimeError(EGRESS_BLOCK), ANSWER], _invocation(policy=ProviderErrorRecoveryPolicy(1), provider_profile=SUBSCRIPTION),
                     context, provider_id="claude")
@@ -572,7 +572,7 @@ def test_a_claude_turn_that_cannot_reach_anthropic_waits_for_the_tunnel_and_cont
     # The first look tells the tunnel is down; the wait looks until it is
     # back; the second failure looks once more and finds Anthropic answering.
     probes = mock.Mock(side_effect=["unreachable", "unreachable", "allowed", "allowed"])
-    with mock.patch.object(backends, "egress_state", probes):
+    with mock.patch.object(provider_continuation, "egress_state", probes):
         result = _run_native(
             calls, [RuntimeError(NO_CONNECTION), RuntimeError("API Error: Connection error."), ANSWER],
             _invocation(policy=ProviderErrorRecoveryPolicy(1), provider_profile=SUBSCRIPTION), context,
@@ -601,7 +601,7 @@ def test_a_connection_failure_while_anthropic_answers_is_an_ordinary_provider_er
     :importance: P2"""
     calls: list[dict] = []
     context = _tracking_context()
-    with mock.patch.object(backends, "egress_state", return_value="allowed") as probe:
+    with mock.patch.object(provider_continuation, "egress_state", return_value="allowed") as probe:
         result = _run_native(
             calls, [RuntimeError(NO_CONNECTION), ANSWER],
             _invocation(policy=ProviderErrorRecoveryPolicy(1), provider_profile=SUBSCRIPTION), context,
@@ -627,7 +627,7 @@ def test_a_route_to_a_service_that_serves_every_location_does_not_wait_for_the_v
 
     calls: list[dict] = []
     context = _tracking_context()
-    with mock.patch.object(backends, "egress_state", return_value="unreachable") as probe:
+    with mock.patch.object(provider_continuation, "egress_state", return_value="unreachable") as probe:
         result = _run_native(
             calls, [RuntimeError("DeepSeek request failed: Connection error."), ANSWER],
             _invocation(policy=ProviderErrorRecoveryPolicy(1)), context, provider_id=provider_id,

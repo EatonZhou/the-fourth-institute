@@ -5,7 +5,8 @@ from types import SimpleNamespace
 import pytest
 
 from management_portal.execution import provider_balance_adapters
-from management_portal.execution.backends import BackendInvocation, ChatCompletionService
+from management_portal.execution.backend_contracts import BackendInvocation
+from management_portal.execution.chat_completion_service import ChatCompletionService
 from management_portal.execution.harness_jev import (
     JEV_DECIDE_TOOL_NAME,
     JevDecisionToolFeature,

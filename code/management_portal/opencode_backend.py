@@ -12,7 +12,8 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
-from management_portal.execution.backends import BackendContext, NativeSocketBackend, record_native_compaction
+from management_portal.execution.backend_contracts import BackendContext
+from management_portal.execution.native_socket_backend import NativeSocketBackend, record_native_compaction
 from management_portal.execution.native_session_compaction import NativeCompaction, summary_history
 from management_portal.execution.provider_turn_usage import ObservedTurnUsage, RequestUsage, epoch_ms, usage_payload
 

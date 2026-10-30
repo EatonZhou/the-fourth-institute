@@ -14,7 +14,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from management_portal.execution.backends import ChatCompletionService
+from management_portal.execution.chat_completion_service import ChatCompletionService
 from management_portal.execution.runtime import ExecutionRuntime
 from management_portal.execution.scheduler import SchedulerClient
 from management_portal.execution.worker import ExecutionWorker
@@ -23,7 +23,7 @@ from tests.cases.test_execution_observation_budget import control_plane
 from types import SimpleNamespace
 from management_portal import model_api_store
 from management_portal.ai_provider_registry import AIProviderRegistry
-from management_portal.execution.backends import BackendInvocation
+from management_portal.execution.backend_contracts import BackendInvocation
 from management_portal.execution.requests import build_chat_completion_request
 
 

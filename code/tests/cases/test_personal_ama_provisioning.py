@@ -75,7 +75,8 @@ def test_first_api_binding_replaces_source_site_model(future_creation_store, mon
     # Exercise the production request and API adapter without a real account or
     # network: both explicit role models and a blank model reach this API.
     from management_portal.society_service import resident_execution_domain as execution
-    from management_portal.execution.backends import BackendInvocation, ChatCompletionService
+    from management_portal.execution.backend_contracts import BackendInvocation
+    from management_portal.execution.chat_completion_service import ChatCompletionService
     from management_portal.execution.contracts import SystemInstructions
     from management_portal.execution.session_manager import RuntimeSession
     monkeypatch.setattr(execution, "resident_system_instructions", lambda *a: SystemInstructions())

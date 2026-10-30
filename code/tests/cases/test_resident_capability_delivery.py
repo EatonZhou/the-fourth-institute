@@ -8,7 +8,13 @@ from types import SimpleNamespace
 
 import pytest
 
-from management_portal.execution import backends, native_harness_tools, native_options
+from management_portal.execution import (
+    backend_contracts,
+    backend_services,
+    kimi_backend,
+    native_harness_tools,
+    native_options,
+)
 from management_portal.execution import resident_capability_assembly as assembly
 from management_portal.execution import resident_mcp
 from management_portal.execution.contracts import ExecutionRecoveryDeferred, ExecutionRequest
@@ -43,15 +49,15 @@ def runtime(monkeypatch, tmp_path):
         return SimpleNamespace(response="done", session_id="test-session", turn_id="test-turn", usage={})
 
     client = SimpleNamespace(home=tmp_path, run_turn=run_turn)
-    backend = backends.KimiBackend(client=client)
+    backend = kimi_backend.KimiBackend(client=client)
     # Remove live gateway/account/profile/usage I/O, keeping execute and offer real.
     monkeypatch.setattr(backend, "turn_scope", lambda *_: nullcontext())
     monkeypatch.setattr(backend, "client_turn_options", lambda *_: {})
     monkeypatch.setattr(backend, "record_provider_compaction", lambda **_: None)
     monkeypatch.setattr(backend, "observe_turn_usage", lambda **_: None)
     monkeypatch.setattr(native_options, "prepare_invocation", lambda invocation: invocation)
-    monkeypatch.setattr(backends.kimi_portal_tools, "service_ready", lambda _: True)
-    monkeypatch.setattr(backends, "publish_catalog", lambda catalog, home: published.append(catalog))
+    monkeypatch.setattr(kimi_backend.kimi_portal_tools, "service_ready", lambda _: True)
+    monkeypatch.setattr(kimi_backend, "publish_catalog", lambda catalog, home: published.append(catalog))
 
     def materialize(selections, **kwargs):
         assert kwargs["caller"] == "resident_test"
@@ -59,12 +65,12 @@ def runtime(monkeypatch, tmp_path):
         return (MCP,), []
 
     monkeypatch.setattr(resident_mcp, "materialize_mcp_tools", materialize)
-    context = backends.BackendContext(
+    context = backend_contracts.BackendContext(
         emit_event=lambda name, payload: events.append((name, payload)),
         cancellation_requested=lambda: False,
         set_interrupt_target=lambda *_: None,
     )
-    service = backends.AgentSessionService(providers={"kimi": backend}, harness=NoHarnessLoop())
+    service = backend_services.AgentSessionService(providers={"kimi": backend}, harness=NoHarnessLoop())
     return SimpleNamespace(backend=backend, context=context, service=service, events=events,
                            model_calls=model_calls, published=published, state=state)
 
@@ -82,7 +88,7 @@ def invocation(*, kind="builtin", required=False, operation="turn"):
         runtime_options={"runtime_settings": {"capability_config": config}},
         metadata={"resident_id": "resident_test"},
     )
-    return backends.BackendInvocation(request=request,
+    return backend_contracts.BackendInvocation(request=request,
         session=RuntimeSession("resume", "resident:test", "test-session", False),
         user_prompt="do work", system_context="", attach_system_context=False,
         is_new_backend_session=False, harness_tools=(BUILTIN,), harness_capabilities=frozenset({"portal_tools"}))
@@ -92,9 +98,9 @@ def fail_offer(monkeypatch, reason):
     def failure(*args, **kwargs):
         raise RuntimeError("isolated catalog failure")
     if reason == "service_not_ready":
-        monkeypatch.setattr(backends.kimi_portal_tools, "service_ready", lambda _: False)
+        monkeypatch.setattr(kimi_backend.kimi_portal_tools, "service_ready", lambda _: False)
     elif reason == "publish_failure":
-        monkeypatch.setattr(backends, "publish_catalog", failure)
+        monkeypatch.setattr(kimi_backend, "publish_catalog", failure)
     elif reason == "prepare_failure":
         monkeypatch.setattr(native_harness_tools, "prepare_tools", failure)
     elif reason == "empty_catalog":

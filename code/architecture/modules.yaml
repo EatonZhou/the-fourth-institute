@@ -700,7 +700,11 @@ modules:
     responsibility: "按能力声明准备会话、上下文和原生调用，归一事件与中断结果；适配器由 Worker 调用。"
     instruction_owners: []
     code_paths:
-      - "management_portal/execution/backends.py"
+      - "management_portal/execution/backend_*.py"
+      - "management_portal/execution/claude_backend.py"
+      - "management_portal/execution/dsh_backend.py"
+      - "management_portal/execution/kimi_backend.py"
+      - "management_portal/execution/chat_completion_service.py"
       - "management_portal/execution/contracts.py"
       - "management_portal/execution/session_*.py"
       - "management_portal/execution/context_seed.py"

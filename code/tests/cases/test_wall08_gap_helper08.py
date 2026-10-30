@@ -15,7 +15,8 @@ import pytest
 from management_common.json_columns import json_value
 from management_portal.execution.agent_data_store import AgentDataStore
 from management_portal.execution.accounts import ExecutionAccount, ExecutionAccounts
-from management_portal.execution.backends import BackendContext, BackendInvocation, CodexBackend
+from management_portal.execution.backend_contracts import BackendContext, BackendInvocation
+from management_portal.execution.codex_backend import CodexBackend
 from management_portal.execution.account_adapters import CodexAccountRoute
 from management_portal.execution.contracts import ExecutionInputControl, ExecutionRequest, ExecutionResult, SessionOptions
 from management_portal.execution.scheduler import Scheduler

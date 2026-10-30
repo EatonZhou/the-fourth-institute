@@ -4,7 +4,7 @@ import re
 
 import pytest
 
-from management_portal.execution.backends import CodexBackend
+from management_portal.execution.codex_backend import CodexBackend
 from management_portal.execution.harness_native_loop import NativeToolLoopRuntime
 from management_portal.society_service.templates.builtins import definitions
 

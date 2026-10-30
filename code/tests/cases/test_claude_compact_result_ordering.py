@@ -183,7 +183,7 @@ def test_session_mismatch_rejects_before_sending_compact():
 
 
 def _adapter_compact(cli, *, recorded=None):
-    from management_portal.execution.backends import ClaudeBackend
+    from management_portal.execution.claude_backend import ClaudeBackend
 
     invocation = SimpleNamespace(
         request=SimpleNamespace(

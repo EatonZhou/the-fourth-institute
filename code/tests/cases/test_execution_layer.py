@@ -37,11 +37,17 @@ from management_portal.codex_app_server_protocol import (
 )
 from management_portal.execution.agent_data_store import AgentDataStore
 from management_portal.execution.agent_data_projection import AgentDataProjector
-from management_portal.execution import backends as execution_backends
-from management_portal.execution.backends import (
-    BackendInvocation,
-    BackendResult,
+from management_portal.execution import (
+    backend_contracts,
+    chat_completion_service,
+    claude_backend,
+    codex_backend,
+    codex_turn_run,
+    kimi_backend,
+    provider_activity_events,
+    provider_continuation,
 )
+from management_portal.execution.backend_contracts import BackendInvocation, BackendResult
 from management_portal.execution.contracts import (
     ExecutionInputControl,
     ExecutionTurnSettingsControl,
@@ -93,7 +99,7 @@ def recorded_codex_input(monkeypatch):
     against real rollout fixtures in test_codex_input_recovery.py.
     """
     monkeypatch.setattr(
-        execution_backends, "read_codex_turn_input_recorded", lambda *_args, **_kwargs: True,
+        codex_turn_run, "read_codex_turn_input_recorded", lambda *_args, **_kwargs: True,
     )
 
 
@@ -154,7 +160,7 @@ class TestAgentProvider:
 def no_continue_pause(monkeypatch):
     """Continue at once: these tests are about whether a turn continues, not when."""
     monkeypatch.setattr(
-        "management_portal.execution.backends.wait_before_continuation",
+        "management_portal.execution.provider_continuation.wait_before_continuation",
         lambda _policy, context: not context.is_cancelled(),
     )
 
@@ -678,7 +684,7 @@ def test_scheduler_event_cursor_advances_across_service_replacement_contracts(tm
             ValueError,
             match="cannot combine sandbox and sandbox_policy",
         ):
-            execution_backends.CodexBackend(
+            codex_backend.CodexBackend(
                 client_factory=lambda _socket_path: mock.Mock(),
             ).execute(
                 BackendInvocation(
@@ -689,7 +695,7 @@ def test_scheduler_event_cursor_advances_across_service_replacement_contracts(tm
                     attach_system_context=True,
                     is_new_backend_session=True,
                 ),
-                execution_backends.BackendContext(
+                backend_contracts.BackendContext(
                     emit_event=lambda *_args: None,
                     cancellation_requested=lambda: False,
                     set_interrupt_target=lambda *_args: None,
@@ -1513,7 +1519,7 @@ def test_provider_backends_execute_only_inside_agent_runtime(
         "usage": {"total_tokens": 12},
     }
     monkeypatch.setattr(
-        execution_backends.shared_ai_provider_registry,
+        chat_completion_service.shared_ai_provider_registry,
         "get",
         lambda _provider_id: {
             "id": "test_primary",
@@ -1532,7 +1538,7 @@ def test_provider_backends_execute_only_inside_agent_runtime(
         return response
 
     monkeypatch.setattr(
-        execution_backends.shared_ai_provider_registry,
+        chat_completion_service.shared_ai_provider_registry,
         "request",
         request_provider,
     )
@@ -1565,7 +1571,7 @@ def test_chat_completion_explicit_zero_retries_overrides_registry_default(
     """chat_completion 显式设 max_retries=0 时覆盖注册表默认值，只请求一次"""
     calls = 0
     monkeypatch.setattr(
-        execution_backends.shared_ai_provider_registry,
+        chat_completion_service.shared_ai_provider_registry,
         "get",
         lambda _provider_id: {
             "id": "test_primary",
@@ -1581,7 +1587,7 @@ def test_chat_completion_explicit_zero_retries_overrides_registry_default(
         raise RuntimeError("provider unavailable")
 
     monkeypatch.setattr(
-        execution_backends.shared_ai_provider_registry,
+        chat_completion_service.shared_ai_provider_registry,
         "request",
         fail_provider,
     )
@@ -1647,7 +1653,7 @@ def test_codex_backend_defaults_subagents_off_in_thread_config(
         system_instructions=portal_system_instructions("resident"),
     )
     events: list[tuple[str, dict]] = []
-    context = execution_backends.BackendContext(
+    context = backend_contracts.BackendContext(
         emit_event=lambda name, details: events.append((name, details)),
         cancellation_requested=lambda: False,
         set_interrupt_target=lambda *_args: None,
@@ -1660,7 +1666,7 @@ def test_codex_backend_defaults_subagents_off_in_thread_config(
         backend_route_id=request.session.backend_route_id,
         is_new_backend_session=False,
     )
-    execution_backends.CodexBackend(
+    codex_backend.CodexBackend(
         client_factory=lambda _socket_path: client,
     ).execute(
         BackendInvocation(
@@ -1678,11 +1684,11 @@ def test_codex_backend_defaults_subagents_off_in_thread_config(
         "show_raw_agent_reasoning": True,
         "model_reasoning_summary": "auto",
         "agents": {"enabled": False, "interrupt_message": False},
-        "compact_prompt": execution_backends._CODEX_COMPACTION_PROMPT,
+        "compact_prompt": codex_backend._CODEX_COMPACTION_PROMPT,
         "project_doc_max_bytes": 0,
         "tools": {"update_plan": {"enabled": True}},
         "shell_environment_policy.set": {
-            "PORTAL_EXECUTION_CONTEXT_FILE": str(execution_backends.CodexBackend._execution_context_path(request)), "PORTAL_RESIDENT_ID": "resident_0123456789ab",
+            "PORTAL_EXECUTION_CONTEXT_FILE": str(codex_backend.CodexBackend._execution_context_path(request)), "PORTAL_RESIDENT_ID": "resident_0123456789ab",
         },
     }
     assert request.runtime_options["config_overrides"]["shell_environment_policy.set"]["PORTAL_EXECUTION_ID"] == "stale-execution"
@@ -1747,7 +1753,7 @@ def test_codex_backend_uses_client_final_answer() -> None:
         system_instructions=portal_system_instructions("resident"),
     )
 
-    result = execution_backends.CodexBackend(
+    result = codex_backend.CodexBackend(
         client_factory=lambda _socket_path: client,
     ).execute(
         BackendInvocation(
@@ -1764,7 +1770,7 @@ def test_codex_backend_uses_client_final_answer() -> None:
             attach_system_context=False,
             is_new_backend_session=False,
         ),
-        execution_backends.BackendContext(
+        backend_contracts.BackendContext(
             emit_event=lambda *_args: None,
             cancellation_requested=lambda: False,
             set_interrupt_target=lambda *_args: None,
@@ -1806,7 +1812,7 @@ def test_codex_backend_resumes_an_accepted_turn_after_disconnect() -> None:
         system_instructions=portal_system_instructions("resident"),
     )
 
-    result = execution_backends.CodexBackend(
+    result = codex_backend.CodexBackend(
         client_factory=lambda _socket_path: client,
     ).execute(
         BackendInvocation(
@@ -1823,7 +1829,7 @@ def test_codex_backend_resumes_an_accepted_turn_after_disconnect() -> None:
             attach_system_context=False,
             is_new_backend_session=False,
         ),
-        execution_backends.BackendContext(
+        backend_contracts.BackendContext(
             emit_event=lambda *_args: None,
             cancellation_requested=lambda: False,
             set_interrupt_target=lambda *_args: None,
@@ -1839,10 +1845,10 @@ def test_codex_backend_resumes_an_accepted_turn_after_disconnect() -> None:
             "show_raw_agent_reasoning": True,
             "model_reasoning_summary": "auto",
             "agents": {"enabled": False, "interrupt_message": False},
-            "compact_prompt": execution_backends._CODEX_COMPACTION_PROMPT,
+            "compact_prompt": codex_backend._CODEX_COMPACTION_PROMPT,
             "project_doc_max_bytes": 0,
             "tools": {"update_plan": {"enabled": True}},
-            "shell_environment_policy.set": {"PORTAL_EXECUTION_CONTEXT_FILE": str(execution_backends.CodexBackend._execution_context_path(request))},
+            "shell_environment_policy.set": {"PORTAL_EXECUTION_CONTEXT_FILE": str(codex_backend.CodexBackend._execution_context_path(request))},
         },
         event_callback=mock.ANY,
         turn_started_callback=mock.ANY,
@@ -1891,8 +1897,8 @@ def test_codex_backend_keeps_waiting_for_an_unavailable_accepted_turn() -> None:
         system_instructions=portal_system_instructions("resident"),
     )
 
-    with mock.patch.object(execution_backends.time, "sleep"):
-        result = execution_backends.CodexBackend(
+    with mock.patch.object(codex_turn_run.time, "sleep"):
+        result = codex_backend.CodexBackend(
             client_factory=lambda _socket_path: client,
         ).execute(
             BackendInvocation(
@@ -1909,7 +1915,7 @@ def test_codex_backend_keeps_waiting_for_an_unavailable_accepted_turn() -> None:
                 attach_system_context=False,
                 is_new_backend_session=False,
             ),
-            execution_backends.BackendContext(
+            backend_contracts.BackendContext(
                 emit_event=lambda *_args: None,
                 cancellation_requested=lambda: False,
                 set_interrupt_target=lambda *_args: None,
@@ -2009,7 +2015,7 @@ def test_codex_backend_recovers_terminal_event_without_resuming_thread() -> None
         backend_route_id="one",
         is_new_backend_session=False,
     )
-    backend = execution_backends.CodexBackend(
+    backend = codex_backend.CodexBackend(
         client_factory=lambda _socket_path: client,
     )
 
@@ -2023,7 +2029,7 @@ def test_codex_backend_recovers_terminal_event_without_resuming_thread() -> None
                 attach_system_context=False,
                 is_new_backend_session=False,
             ),
-            execution_backends.BackendContext(
+            backend_contracts.BackendContext(
                 emit_event=lambda *_args: None,
                 cancellation_requested=lambda: False,
                 set_interrupt_target=lambda *_args: None,
@@ -2057,7 +2063,7 @@ def test_codex_backend_recovers_terminal_event_without_resuming_thread() -> None
                 "provider_recovery_state": terminal_state,
             },
         ),
-        execution_backends.BackendContext(
+        backend_contracts.BackendContext(
             emit_event=lambda *_args: None,
             cancellation_requested=lambda: False,
             set_interrupt_target=lambda *_args: None,
@@ -2205,7 +2211,7 @@ def test_codex_backend_maps_input_media_to_native_app_server_images() -> None:
         system_instructions=portal_system_instructions("resident"),
     )
 
-    execution_backends.CodexBackend(
+    codex_backend.CodexBackend(
         client_factory=lambda _socket_path: client,
     ).execute(
         BackendInvocation(
@@ -2222,7 +2228,7 @@ def test_codex_backend_maps_input_media_to_native_app_server_images() -> None:
             attach_system_context=False,
             is_new_backend_session=False,
         ),
-        execution_backends.BackendContext(
+        backend_contracts.BackendContext(
             emit_event=lambda *_args: None,
             cancellation_requested=lambda: False,
             set_interrupt_target=lambda *_args: None,
@@ -2273,7 +2279,7 @@ def test_codex_backend_resumes_a_thread_created_by_another_worker() -> None:
         backend_route_id="one",
         is_new_backend_session=False,
     )
-    result = execution_backends.CodexBackend(
+    result = codex_backend.CodexBackend(
         account_registry=registry,
         client_factory=lambda _socket_path: client,
     ).execute(
@@ -2285,7 +2291,7 @@ def test_codex_backend_resumes_a_thread_created_by_another_worker() -> None:
             attach_system_context=False,
             is_new_backend_session=False,
         ),
-        execution_backends.BackendContext(
+        backend_contracts.BackendContext(
             emit_event=lambda *_args: None,
             cancellation_requested=lambda: False,
             set_interrupt_target=lambda *_args: None,
@@ -2336,13 +2342,13 @@ def test_codex_subagent_requests_count_toward_the_turn_but_not_its_context() -> 
     )
     observed: list[tuple[dict[str, int], int]] = []
     events: list[tuple[str, dict]] = []
-    context = execution_backends.BackendContext(
+    context = backend_contracts.BackendContext(
         emit_event=lambda name, details: events.append((name, details)),
         cancellation_requested=lambda: False,
         set_interrupt_target=lambda *_args: None,
         update_context_usage=lambda usage, window: observed.append((usage, window)),
     )
-    execution_backends.CodexBackend(client_factory=lambda _socket_path: client).execute(
+    codex_backend.CodexBackend(client_factory=lambda _socket_path: client).execute(
         BackendInvocation(
             request=request,
             session=RuntimeSession(
@@ -2423,13 +2429,13 @@ def test_codex_requests_no_worker_heard_are_reported_from_the_rollouts(tmp_path:
         session=SessionOptions(mode="persistent", binding_id="provider:test-session", backend_route_id="one"),
     )
     events: list[tuple[str, dict]] = []
-    context = execution_backends.BackendContext(
+    context = backend_contracts.BackendContext(
         emit_event=lambda name, details: events.append((name, details)),
         cancellation_requested=lambda: False,
         set_interrupt_target=lambda *_args: None,
         execution_started_at=at(-60),
     )
-    execution_backends.CodexBackend(
+    codex_backend.CodexBackend(
         client_factory=lambda _socket_path: client,
         account_registry=registry,
     ).execute(
@@ -2509,7 +2515,7 @@ def test_codex_backend_projects_current_context_usage_from_token_events(
     )
     observed: list[tuple[dict[str, int], int]] = []
     events: list[tuple[str, dict]] = []
-    context = execution_backends.BackendContext(
+    context = backend_contracts.BackendContext(
         emit_event=lambda name, details: events.append((name, details)),
         cancellation_requested=lambda: False,
         set_interrupt_target=lambda *_args: None,
@@ -2518,7 +2524,7 @@ def test_codex_backend_projects_current_context_usage_from_token_events(
         ),
     )
 
-    execution_backends.CodexBackend(
+    codex_backend.CodexBackend(
         client_factory=lambda _socket_path: client,
     ).execute(
         BackendInvocation(
@@ -2611,7 +2617,7 @@ def test_codex_backend_bridges_native_events_and_turn_controls() -> None:
             backend_route_id="one",
         ),
     )
-    execution_backends.CodexBackend(
+    codex_backend.CodexBackend(
         client_factory=lambda _socket_path: client,
     ).execute(
         BackendInvocation(
@@ -2629,7 +2635,7 @@ def test_codex_backend_bridges_native_events_and_turn_controls() -> None:
             is_new_backend_session=False,
             provider_event_processor=processor,
         ),
-        execution_backends.BackendContext(
+        backend_contracts.BackendContext(
             emit_event=lambda *_args: None,
             cancellation_requested=lambda: False,
             set_interrupt_target=lambda *_args: None,
@@ -2692,7 +2698,7 @@ def test_codex_backend_continues_provider_turn_without_final_response(
     )
     recovery_states: list[dict] = []
     start_reasons: list[str] = []
-    result = execution_backends.CodexBackend(
+    result = codex_backend.CodexBackend(
         client_factory=lambda _socket_path: client,
     ).execute(
         BackendInvocation(
@@ -2709,7 +2715,7 @@ def test_codex_backend_continues_provider_turn_without_final_response(
             attach_system_context=False,
             is_new_backend_session=False,
         ),
-        execution_backends.BackendContext(
+        backend_contracts.BackendContext(
             emit_event=lambda *_args: None,
             cancellation_requested=lambda: False,
             set_interrupt_target=lambda *_args: None,
@@ -2721,7 +2727,7 @@ def test_codex_backend_continues_provider_turn_without_final_response(
     assert result.output["message"] == "done"
     assert client.run_turn.call_count == 2
     assert client.run_turn.call_args_list[1].args[1] == (
-        execution_backends.INTERRUPTED_TURN_CONTINUATION
+        provider_continuation.INTERRUPTED_TURN_CONTINUATION
     )
     reasons = [state["reason"] for state in recovery_states if "reason" in state]
     assert reasons and set(reasons) == {reason}
@@ -2750,7 +2756,7 @@ def test_codex_interrupt_reaches_turn_before_blocking_goal_pause() -> None:
     backend.client_factory.return_value = client
     with ThreadPoolExecutor(max_workers=1) as executor:
         stopped = executor.submit(
-            execution_backends.CodexBackend.interrupt, backend,
+            codex_backend.CodexBackend.interrupt, backend,
             backend_session_id="thread-stop", turn_id="turn-stop",
             backend_route_id="route-stop", runtime_options={"goal": {"objective": "finish"}},
         )
@@ -2778,7 +2784,7 @@ def test_codex_interrupt_preserves_goal_pause_semantics(subtests, isolated_porta
                 client.request.side_effect = TimeoutError("Goal API unavailable")
             backend = mock.Mock()
             backend.client_factory.return_value = client
-            result = execution_backends.CodexBackend.interrupt(
+            result = codex_backend.CodexBackend.interrupt(
                 backend, backend_session_id="thread-stop", turn_id=turn_id,
                 backend_route_id="route-stop", runtime_options={"goal": goal},
             )
@@ -2801,7 +2807,7 @@ def test_codex_interrupt_attempts_goal_pause_even_if_turn_request_fails_contract
         backend = mock.Mock()
         backend.client_factory.return_value = client
         with pytest.raises(RuntimeError, match="turn interrupt failed"):
-            execution_backends.CodexBackend.interrupt(
+            codex_backend.CodexBackend.interrupt(
                 backend, backend_session_id="thread-stop", turn_id="turn-stop",
                 backend_route_id="route-stop", runtime_options={"goal": {}},
             )
@@ -2834,7 +2840,7 @@ def test_codex_interrupt_attempts_goal_pause_even_if_turn_request_fails_contract
             ),
         )
 
-        result = execution_backends.CodexBackend(
+        result = codex_backend.CodexBackend(
             client_factory=lambda _socket_path: client,
         ).execute(
             BackendInvocation(
@@ -2852,7 +2858,7 @@ def test_codex_interrupt_attempts_goal_pause_even_if_turn_request_fails_contract
                 is_new_backend_session=False,
                 provider_error_recovery=ProviderErrorRecoveryPolicy(),
             ),
-            execution_backends.BackendContext(
+            backend_contracts.BackendContext(
                 emit_event=lambda *_args: None,
                 cancellation_requested=lambda: False,
                 set_interrupt_target=lambda *_args: None,
@@ -2884,7 +2890,7 @@ def test_codex_interrupt_attempts_goal_pause_even_if_turn_request_fails_contract
         )
 
         with pytest.raises(CodexTurnInterrupted):
-            execution_backends.CodexBackend(
+            codex_backend.CodexBackend(
                 client_factory=lambda _socket_path: client,
             ).execute(
                 BackendInvocation(
@@ -2901,7 +2907,7 @@ def test_codex_interrupt_attempts_goal_pause_even_if_turn_request_fails_contract
                     attach_system_context=False,
                     is_new_backend_session=False,
                 ),
-                execution_backends.BackendContext(
+                backend_contracts.BackendContext(
                     emit_event=lambda *_args: None,
                     cancellation_requested=lambda: False,
                     set_interrupt_target=lambda *_args: None,
@@ -2935,7 +2941,7 @@ def test_codex_interrupt_attempts_goal_pause_even_if_turn_request_fails_contract
         )
 
         with pytest.raises(RuntimeError, match="continuation limit"):
-            execution_backends.CodexBackend(
+            codex_backend.CodexBackend(
                 client_factory=lambda _socket_path: client,
             ).execute(
                 BackendInvocation(
@@ -2952,7 +2958,7 @@ def test_codex_interrupt_attempts_goal_pause_even_if_turn_request_fails_contract
                     attach_system_context=False,
                     is_new_backend_session=False,
                 ),
-                execution_backends.BackendContext(
+                backend_contracts.BackendContext(
                     emit_event=lambda *_args: None,
                     cancellation_requested=lambda: False,
                     set_interrupt_target=lambda *_args: None,
@@ -2982,7 +2988,7 @@ def test_codex_interrupt_attempts_goal_pause_even_if_turn_request_fails_contract
         recovery_states: list[dict] = []
 
         with pytest.raises(ExecutionRecoveryDeferred) as raised:
-            execution_backends.CodexBackend(
+            codex_backend.CodexBackend(
                 client_factory=lambda _socket_path: client,
             ).execute(
                 BackendInvocation(
@@ -2999,7 +3005,7 @@ def test_codex_interrupt_attempts_goal_pause_even_if_turn_request_fails_contract
                     attach_system_context=False,
                     is_new_backend_session=False,
                 ),
-                execution_backends.BackendContext(
+                backend_contracts.BackendContext(
                     emit_event=lambda *_args: None,
                     cancellation_requested=lambda: False,
                     set_interrupt_target=lambda *_args: None,
@@ -3038,7 +3044,7 @@ def test_codex_interrupt_attempts_goal_pause_even_if_turn_request_fails_contract
         recovery_states: list[dict] = []
 
         with pytest.raises(ExecutionRecoveryDeferred) as raised:
-            execution_backends.CodexBackend(
+            codex_backend.CodexBackend(
                 client_factory=lambda _socket_path: client,
             ).execute(
                 BackendInvocation(
@@ -3055,7 +3061,7 @@ def test_codex_interrupt_attempts_goal_pause_even_if_turn_request_fails_contract
                     attach_system_context=False,
                     is_new_backend_session=False,
                 ),
-                execution_backends.BackendContext(
+                backend_contracts.BackendContext(
                     emit_event=lambda *_args: None,
                     cancellation_requested=lambda: False,
                     set_interrupt_target=lambda *_args: None,
@@ -3108,7 +3114,7 @@ def test_codex_backend_continues_typed_interruption_with_provider_detail(
         ),
     )
 
-    result = execution_backends.CodexBackend(
+    result = codex_backend.CodexBackend(
         client_factory=lambda _socket_path: client,
     ).execute(
         BackendInvocation(
@@ -3126,7 +3132,7 @@ def test_codex_backend_continues_typed_interruption_with_provider_detail(
             is_new_backend_session=False,
             provider_error_recovery=ProviderErrorRecoveryPolicy(),
         ),
-        execution_backends.BackendContext(
+        backend_contracts.BackendContext(
             emit_event=lambda *_args: None,
             cancellation_requested=lambda: False,
             set_interrupt_target=lambda *_args: None,
@@ -3173,8 +3179,8 @@ def test_codex_backend_continues_capacity_failure_once() -> None:
     )
 
     sleep = mock.Mock()
-    with mock.patch.object(execution_backends.time, "sleep", sleep):
-        result = execution_backends.CodexBackend(
+    with mock.patch.object(provider_continuation.time, "sleep", sleep):
+        result = codex_backend.CodexBackend(
             client_factory=lambda _socket_path: client,
         ).execute(
             BackendInvocation(
@@ -3192,7 +3198,7 @@ def test_codex_backend_continues_capacity_failure_once() -> None:
                 is_new_backend_session=False,
                 provider_error_recovery=ProviderErrorRecoveryPolicy(),
             ),
-            execution_backends.BackendContext(
+            backend_contracts.BackendContext(
                 emit_event=lambda kind, payload: events.append((kind, payload)),
                 cancellation_requested=lambda: False,
                 set_interrupt_target=lambda *_args: None,
@@ -3243,7 +3249,7 @@ def test_codex_backend_does_not_continue_cancelled_interruption() -> None:
     )
 
     with pytest.raises(InterruptedError, match="cancelled"):
-        execution_backends.CodexBackend(
+        codex_backend.CodexBackend(
             client_factory=lambda _socket_path: client,
         ).execute(
             BackendInvocation(
@@ -3261,7 +3267,7 @@ def test_codex_backend_does_not_continue_cancelled_interruption() -> None:
                 is_new_backend_session=False,
                 provider_error_recovery=ProviderErrorRecoveryPolicy(),
             ),
-            execution_backends.BackendContext(
+            backend_contracts.BackendContext(
                 emit_event=lambda *_args: None,
                 cancellation_requested=lambda: cancelled,
                 set_interrupt_target=lambda *_args: None,
@@ -3298,7 +3304,7 @@ def test_codex_backend_continues_unexplained_interruption_only_once() -> None:
 
     recovery_states: list[dict] = []
     with pytest.raises(ExecutionRecoveryDeferred) as raised:
-        execution_backends.CodexBackend(
+        codex_backend.CodexBackend(
             client_factory=lambda _socket_path: client,
         ).execute(
             BackendInvocation(
@@ -3316,7 +3322,7 @@ def test_codex_backend_continues_unexplained_interruption_only_once() -> None:
                 is_new_backend_session=False,
                 provider_error_recovery=ProviderErrorRecoveryPolicy(),
             ),
-            execution_backends.BackendContext(
+            backend_contracts.BackendContext(
                 emit_event=lambda *_args: None,
                 cancellation_requested=lambda: False,
                 set_interrupt_target=lambda *_args: None,
@@ -3363,7 +3369,7 @@ def test_codex_backend_bounds_repeated_provider_system_errors() -> None:
     recovery_states: list[dict] = []
 
     with pytest.raises(ExecutionRecoveryDeferred) as raised:
-        execution_backends.CodexBackend(
+        codex_backend.CodexBackend(
             client_factory=lambda _socket_path: client,
         ).execute(
             BackendInvocation(
@@ -3381,7 +3387,7 @@ def test_codex_backend_bounds_repeated_provider_system_errors() -> None:
                 is_new_backend_session=False,
                 provider_error_recovery=ProviderErrorRecoveryPolicy(),
             ),
-            execution_backends.BackendContext(
+            backend_contracts.BackendContext(
                 emit_event=lambda *_args: None,
                 cancellation_requested=lambda: False,
                 set_interrupt_target=lambda *_args: None,
@@ -3435,7 +3441,7 @@ def test_codex_backend_does_not_require_new_compaction_for_replayed_item() -> No
             backend_route_id="zero",
         ),
     )
-    backend = execution_backends.CodexBackend(
+    backend = codex_backend.CodexBackend(
         client_factory=lambda _socket_path: client,
     )
     existing = mock.Mock(fingerprint="already-committed-compaction")
@@ -3467,7 +3473,7 @@ def test_codex_backend_does_not_require_new_compaction_for_replayed_item() -> No
             is_new_backend_session=False,
             recovery_checkpoint={"turn_id": "historical-compaction-turn"},
         ),
-        execution_backends.BackendContext(
+        backend_contracts.BackendContext(
             emit_event=lambda *_args: None,
             cancellation_requested=lambda: False,
             set_interrupt_target=lambda *_args: None,
@@ -3511,7 +3517,7 @@ def test_codex_backend_recovery_uses_the_same_continuation_limit() -> None:
     )
 
     with pytest.raises(RuntimeError, match="continuation limit"):
-        execution_backends.CodexBackend(
+        codex_backend.CodexBackend(
             client_factory=lambda _socket_path: client,
         ).execute(
             BackendInvocation(
@@ -3529,7 +3535,7 @@ def test_codex_backend_recovery_uses_the_same_continuation_limit() -> None:
                 is_new_backend_session=False,
                 recovery_checkpoint={"turn_id": "accepted-turn"},
             ),
-            execution_backends.BackendContext(
+            backend_contracts.BackendContext(
                 emit_event=lambda *_args: None,
                 cancellation_requested=lambda: False,
                 set_interrupt_target=lambda *_args: None,
@@ -3950,7 +3956,7 @@ def test_codex_backend_forwards_per_session_capability_disables() -> None:
         is_new_backend_session=False,
     )
 
-    execution_backends.CodexBackend(
+    codex_backend.CodexBackend(
         client_factory=lambda _socket_path: client,
     ).execute(
         BackendInvocation(
@@ -3961,7 +3967,7 @@ def test_codex_backend_forwards_per_session_capability_disables() -> None:
             attach_system_context=False,
             is_new_backend_session=False,
         ),
-        execution_backends.BackendContext(
+        backend_contracts.BackendContext(
             emit_event=lambda *_args: None,
             cancellation_requested=lambda: False,
             set_interrupt_target=lambda *_args: None,
@@ -3970,11 +3976,11 @@ def test_codex_backend_forwards_per_session_capability_disables() -> None:
 
     assert client.run_turn.call_args.kwargs["config"] == {
         **config_overrides,
-        "shell_environment_policy.set": {"PORTAL_EXECUTION_CONTEXT_FILE": str(execution_backends.CodexBackend._execution_context_path(request))},
+        "shell_environment_policy.set": {"PORTAL_EXECUTION_CONTEXT_FILE": str(codex_backend.CodexBackend._execution_context_path(request))},
         "show_raw_agent_reasoning": True,
         "model_reasoning_summary": "auto",
         "agents": {"enabled": False, "interrupt_message": False},
-        "compact_prompt": execution_backends._CODEX_COMPACTION_PROMPT,
+        "compact_prompt": codex_backend._CODEX_COMPACTION_PROMPT,
         "project_doc_max_bytes": 0,
         "tools": {"update_plan": {"enabled": True}},
     }
@@ -3987,20 +3993,20 @@ def test_codex_backend_enables_subagents_only_when_explicitly_allowed_contracts(
     :importance: P1
     """
     with subtests.test(contract='test_codex_backend_enables_subagents_only_when_explicitly_allowed'), isolated_portal_case() as case_path:
-        assert execution_backends.CodexBackend._thread_config(
+        assert codex_backend.CodexBackend._thread_config(
             {"allow_subagents": True}
         ) == {
             "show_raw_agent_reasoning": True,
             "model_reasoning_summary": "auto",
             "agents": {"enabled": True, "interrupt_message": False},
-            "compact_prompt": execution_backends._CODEX_COMPACTION_PROMPT,
+            "compact_prompt": codex_backend._CODEX_COMPACTION_PROMPT,
             "project_doc_max_bytes": 0,
             "tools": {"update_plan": {"enabled": True}},
         }
     with subtests.test(contract='test_backend_context_emits_uniform_provider_input_binding'), isolated_portal_case() as case_path:
         events: list[tuple[str, dict]] = []
         interrupt_targets: list[tuple[str, str, str]] = []
-        context = execution_backends.BackendContext(
+        context = backend_contracts.BackendContext(
             emit_event=lambda name, details: events.append((name, details)),
             cancellation_requested=lambda: False,
             set_interrupt_target=lambda *values: interrupt_targets.append(values),
@@ -4028,16 +4034,16 @@ def test_codex_backend_enables_subagents_only_when_explicitly_allowed_contracts(
             )
         ]
     with subtests.test(contract='test_provider_activity_drops_deltas_and_raw_command_output'), isolated_portal_case() as case_path:
-        assert execution_backends._compact_provider_activity_event({
+        assert provider_activity_events._compact_provider_activity_event({
             "method": "item/commandExecution/outputDelta",
             "params": {"delta": "unbounded output"},
         }) is None
-        assert execution_backends._compact_provider_activity_event({
+        assert provider_activity_events._compact_provider_activity_event({
             "method": "item/agentMessage/delta",
             "params": {"delta": "token delta"},
         }) is None
 
-        compact = execution_backends._compact_provider_activity_event({
+        compact = provider_activity_events._compact_provider_activity_event({
             "method": "item/completed",
             "params": {
                 "turnId": "turn-1",
@@ -4111,7 +4117,7 @@ def test_codex_backend_enables_subagents_only_when_explicitly_allowed_contracts(
             ValueError,
             match="native goals require a persistent thread",
         ):
-            execution_backends.CodexBackend(
+            codex_backend.CodexBackend(
                 account_registry=registry,
                 client_factory=mock.Mock(),
             ).execute(
@@ -4129,7 +4135,7 @@ def test_codex_backend_enables_subagents_only_when_explicitly_allowed_contracts(
                     attach_system_context=False,
                     is_new_backend_session=True,
                 ),
-                execution_backends.BackendContext(
+                backend_contracts.BackendContext(
                     emit_event=lambda *_args: None,
                     cancellation_requested=lambda: False,
                     set_interrupt_target=lambda *_args: None,
@@ -4164,7 +4170,7 @@ def test_codex_backend_owns_interrupt_attribution(subtests, isolated_portal_case
                     "agents": {"interrupt_message": interrupt_message, "max_threads": 2},
                     "compact_prompt": "Create a handoff for the next LLM.",
                 }
-                config = execution_backends.CodexBackend._thread_config({
+                config = codex_backend.CodexBackend._thread_config({
                     "allow_subagents": allow_subagents,
                     "config_overrides": overrides,
                 })
@@ -4174,7 +4180,7 @@ def test_codex_backend_owns_interrupt_attribution(subtests, isolated_portal_case
                     "interrupt_message": False,
                     "max_threads": 2,
                 }
-                assert config["compact_prompt"] == execution_backends._CODEX_COMPACTION_PROMPT
+                assert config["compact_prompt"] == codex_backend._CODEX_COMPACTION_PROMPT
                 assert overrides == {
                     "agents": {"interrupt_message": interrupt_message, "max_threads": 2},
                     "compact_prompt": "Create a handoff for the next LLM.",
@@ -4229,7 +4235,7 @@ def test_codex_backend_forwards_structured_sandbox_through_unified_exit(
         is_new_backend_session=True,
     )
 
-    execution_backends.CodexBackend(
+    codex_backend.CodexBackend(
         client_factory=lambda _socket_path: client,
     ).execute(
         BackendInvocation(
@@ -4240,7 +4246,7 @@ def test_codex_backend_forwards_structured_sandbox_through_unified_exit(
             attach_system_context=True,
             is_new_backend_session=True,
         ),
-        execution_backends.BackendContext(
+        backend_contracts.BackendContext(
             emit_event=lambda *_args: None,
             cancellation_requested=lambda: False,
             set_interrupt_target=lambda *_args: None,
@@ -4297,7 +4303,7 @@ def test_codex_backend_selects_native_permission_profile_and_approval(
         is_new_backend_session=True,
     )
 
-    execution_backends.CodexBackend(
+    codex_backend.CodexBackend(
         client_factory=lambda _socket_path: client,
     ).execute(
         BackendInvocation(
@@ -4308,7 +4314,7 @@ def test_codex_backend_selects_native_permission_profile_and_approval(
             attach_system_context=True,
             is_new_backend_session=True,
         ),
-        execution_backends.BackendContext(
+        backend_contracts.BackendContext(
             emit_event=lambda *_args: None,
             cancellation_requested=lambda: False,
             set_interrupt_target=lambda *_args: None,
@@ -4336,7 +4342,7 @@ def test_codex_permission_profile_owns_sandbox_policy(subtests, isolated_portal_
         {"sandbox_policy": {"type": "dangerFullAccess"}},
     ):
         with subtests.test(lower_level_policy=lower_level_policy), isolated_portal_case() as case_path:
-            sandbox, sandbox_policy = execution_backends.CodexBackend._sandbox_options({
+            sandbox, sandbox_policy = codex_backend.CodexBackend._sandbox_options({
                 "permissions": ":danger-full-access",
                 **lower_level_policy,
             })
@@ -4371,7 +4377,7 @@ def test_claude_backend_projects_provider_activity(
 
     client.run_turn.side_effect = run_turn
     monkeypatch.setattr(
-        execution_backends,
+        claude_backend,
         "shared_claude_client",
         lambda: client,
     )
@@ -4390,7 +4396,7 @@ def test_claude_backend_projects_provider_activity(
     )
     events: list[tuple[str, dict]] = []
 
-    execution_backends.ClaudeBackend().execute(
+    claude_backend.ClaudeBackend().execute(
         BackendInvocation(
             request=request,
             session=RuntimeSession(
@@ -4404,7 +4410,7 @@ def test_claude_backend_projects_provider_activity(
             attach_system_context=False,
             is_new_backend_session=False,
         ),
-        execution_backends.BackendContext(
+        backend_contracts.BackendContext(
             emit_event=lambda name, details: events.append((name, details)),
             cancellation_requested=lambda: False,
             set_interrupt_target=lambda *_args: None,
@@ -4443,7 +4449,7 @@ def test_kimi_backend_projects_provider_activity(
 
     client.run_turn.side_effect = run_turn
     monkeypatch.setattr(
-        execution_backends,
+        kimi_backend,
         "shared_kimi_client",
         lambda: client,
     )
@@ -4461,7 +4467,7 @@ def test_kimi_backend_projects_provider_activity(
     )
     events: list[tuple[str, dict]] = []
 
-    execution_backends.KimiBackend().execute(
+    kimi_backend.KimiBackend().execute(
         BackendInvocation(
             request=request,
             session=RuntimeSession(
@@ -4475,7 +4481,7 @@ def test_kimi_backend_projects_provider_activity(
             attach_system_context=False,
             is_new_backend_session=False,
         ),
-        execution_backends.BackendContext(
+        backend_contracts.BackendContext(
             emit_event=lambda name, details: events.append((name, details)),
             cancellation_requested=lambda: False,
             set_interrupt_target=lambda *_args: None,
@@ -4488,7 +4494,7 @@ def test_kimi_backend_projects_provider_activity(
 def test_provider_activity_recursively_redacts_sensitive_values() -> None:
     """Provider 活动的命令、URL、参数、警告和工具输出中的密钥被递归遮蔽"""
     synthetic_secret = "sentinel-provider-secret"
-    compact = execution_backends._compact_provider_activity_event({
+    compact = provider_activity_events._compact_provider_activity_event({
         "method": "item/completed",
         "params": {
             "item": {
@@ -4512,7 +4518,7 @@ def test_provider_activity_recursively_redacts_sensitive_values() -> None:
             },
         },
     })
-    warning = execution_backends._compact_provider_activity_event({
+    warning = provider_activity_events._compact_provider_activity_event({
         "method": "guardianWarning",
         "params": {
             "warning": f"credential={synthetic_secret}",
@@ -4526,7 +4532,7 @@ def test_provider_activity_recursively_redacts_sensitive_values() -> None:
             },
         },
     })
-    tool_output = execution_backends._compact_provider_activity_event({
+    tool_output = provider_activity_events._compact_provider_activity_event({
         "type": "response_item",
         "payload": {
             "type": "function_call_output",
@@ -4550,7 +4556,7 @@ def test_codex_account_route_uses_one_then_falls_back_before_thread_start(
     """codex 新线程启动前 one 账号不可用时回退到 zero，并记录回退事件"""
     one_client = mock.Mock()
     one_client.start_thread.side_effect = (
-        execution_backends.CodexAppServerUnavailable("socket unavailable")
+        codex_backend.CodexAppServerUnavailable("socket unavailable")
     )
     zero_client = mock.Mock()
     zero_client.start_thread.return_value = {
@@ -4587,7 +4593,7 @@ def test_codex_account_route_uses_one_then_falls_back_before_thread_start(
         is_new_backend_session=True,
     )
     events: list[tuple[str, dict]] = []
-    result = execution_backends.CodexBackend(
+    result = codex_backend.CodexBackend(
         client_factory=client_factory,
     ).execute(
         BackendInvocation(
@@ -4598,7 +4604,7 @@ def test_codex_account_route_uses_one_then_falls_back_before_thread_start(
             attach_system_context=True,
             is_new_backend_session=True,
         ),
-        execution_backends.BackendContext(
+        backend_contracts.BackendContext(
             emit_event=lambda name, details: events.append((name, details)),
             cancellation_requested=lambda: False,
             set_interrupt_target=lambda *_args: None,
@@ -4646,21 +4652,21 @@ def test_codex_fallback_skips_accounts_that_reject_capacity(tmp_path, blocked):
         mock.Mock(account_id=route, socket_path=tmp_path / f"codex-app-server-{route}.sock")
         for route in ("one", "zero", "two")
     ]
-    backend = execution_backends.CodexBackend(account_registry=registry, client_factory=lambda socket: socket)
+    backend = codex_backend.CodexBackend(account_registry=registry, client_factory=lambda socket: socket)
 
     def start(client, *_args):
         started.append(str(client))
         if str(client).endswith("codex-app-server-one.sock"):
-            raise execution_backends.CodexAppServerUnavailable("primary unavailable")
+            raise codex_backend.CodexAppServerUnavailable("primary unavailable")
         return "new-thread"
 
-    context = execution_backends.BackendContext(
+    context = backend_contracts.BackendContext(
         emit_event=lambda *event: events.append(event), cancellation_requested=lambda: False,
         set_interrupt_target=lambda *_args: None, reassign_backend_route=reassign,
     )
     with mock.patch.object(backend, "_start_thread", side_effect=start):
         if "two" in blocked:
-            with pytest.raises(execution_backends.CodexAppServerUnavailable, match="primary unavailable"):
+            with pytest.raises(codex_backend.CodexAppServerUnavailable, match="primary unavailable"):
                 backend._resolve_client(invocation, context)
             assert events == []
             assert len(started) == 1
@@ -4679,7 +4685,7 @@ def test_explicit_codex_account_route_does_not_fall_back(
     """禁止回退的显式 codex 账号路线不可用时直接报错，不尝试其他账号"""
     one_client = mock.Mock()
     one_client.start_thread.side_effect = (
-        execution_backends.CodexAppServerUnavailable("socket unavailable")
+        codex_backend.CodexAppServerUnavailable("socket unavailable")
     )
     zero_client = mock.Mock()
 
@@ -4714,10 +4720,10 @@ def test_explicit_codex_account_route_does_not_fall_back(
     )
 
     with pytest.raises(
-        execution_backends.CodexAppServerUnavailable,
+        codex_backend.CodexAppServerUnavailable,
         match="socket unavailable",
     ):
-        execution_backends.CodexBackend(
+        codex_backend.CodexBackend(
             client_factory=client_factory,
         ).execute(
             BackendInvocation(
@@ -4728,7 +4734,7 @@ def test_explicit_codex_account_route_does_not_fall_back(
                 attach_system_context=True,
                 is_new_backend_session=True,
             ),
-            execution_backends.BackendContext(
+            backend_contracts.BackendContext(
                 emit_event=lambda *_args: None,
                 cancellation_requested=lambda: False,
                 set_interrupt_target=lambda *_args: None,
@@ -4743,7 +4749,7 @@ def test_codex_account_route_never_moves_an_existing_thread() -> None:
     """已有线程的 codex 轮次在账号不可用时报错，不迁移到其他账号"""
     one_client = mock.Mock()
     one_client.run_turn.side_effect = (
-        execution_backends.CodexAppServerUnavailable("socket unavailable")
+        codex_backend.CodexAppServerUnavailable("socket unavailable")
     )
     zero_client = mock.Mock()
 
@@ -4777,10 +4783,10 @@ def test_codex_account_route_never_moves_an_existing_thread() -> None:
     )
 
     with pytest.raises(
-        execution_backends.CodexAppServerUnavailable,
+        codex_backend.CodexAppServerUnavailable,
         match="socket unavailable",
     ):
-        execution_backends.CodexBackend(
+        codex_backend.CodexBackend(
             client_factory=client_factory,
         ).execute(
             BackendInvocation(
@@ -4791,7 +4797,7 @@ def test_codex_account_route_never_moves_an_existing_thread() -> None:
                 attach_system_context=False,
                 is_new_backend_session=False,
             ),
-            execution_backends.BackendContext(
+            backend_contracts.BackendContext(
                 emit_event=lambda *_args: None,
                 cancellation_requested=lambda: False,
                 set_interrupt_target=lambda *_args: None,
@@ -4826,7 +4832,7 @@ def test_codex_account_route_does_not_treat_auth_failure_as_failover() -> None:
         system_instructions=portal_system_instructions("resident"),
     )
     with pytest.raises(RuntimeError, match="authentication failed"):
-        execution_backends.CodexBackend(
+        codex_backend.CodexBackend(
             client_factory=client_factory,
         ).execute(
             BackendInvocation(
@@ -4842,7 +4848,7 @@ def test_codex_account_route_does_not_treat_auth_failure_as_failover() -> None:
                 attach_system_context=True,
                 is_new_backend_session=True,
             ),
-            execution_backends.BackendContext(
+            backend_contracts.BackendContext(
                 emit_event=lambda *_args: None,
                 cancellation_requested=lambda: False,
                 set_interrupt_target=lambda *_args: None,
@@ -5802,7 +5808,7 @@ def test_codex_backend_maps_execution_input_control_to_native_steer() -> None:
         ),
     )
 
-    execution_backends.CodexBackend(
+    codex_backend.CodexBackend(
         client_factory=lambda _socket_path: client,
     ).execute(
         BackendInvocation(
@@ -5819,7 +5825,7 @@ def test_codex_backend_maps_execution_input_control_to_native_steer() -> None:
             attach_system_context=False,
             is_new_backend_session=False,
         ),
-        execution_backends.BackendContext(
+        backend_contracts.BackendContext(
             emit_event=lambda *_args: None,
             cancellation_requested=lambda: False,
             set_interrupt_target=lambda *_args: None,
@@ -5890,7 +5896,7 @@ def test_codex_backend_maps_goal_to_native_protocol() -> None:
         ),
     )
 
-    result = execution_backends.CodexBackend(
+    result = codex_backend.CodexBackend(
         account_registry=registry,
         client_factory=lambda _socket_path: client,
     ).execute(
@@ -5908,7 +5914,7 @@ def test_codex_backend_maps_goal_to_native_protocol() -> None:
             attach_system_context=False,
             is_new_backend_session=False,
         ),
-        execution_backends.BackendContext(
+        backend_contracts.BackendContext(
             emit_event=lambda *_args: None,
             cancellation_requested=lambda: False,
             set_interrupt_target=lambda *_args: None,

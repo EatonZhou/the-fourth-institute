@@ -199,7 +199,7 @@ def test_adapter_completion_without_tool_receipt_is_not_delivery_evidence():
 
 
 def test_required_kimi_tool_cannot_fall_back_to_an_empty_catalog(monkeypatch, tmp_path):
-    from management_portal.execution.backends import KimiBackend, kimi_portal_tools
+    from management_portal.execution.kimi_backend import KimiBackend, kimi_portal_tools
     before = invocation((tool(),), [{"ref": "portal:hatg_instruction", "required": True}])
     monkeypatch.setattr(kimi_portal_tools, "service_ready", lambda home: False)
     with pytest.raises(ValueError, match="[Rr]equired.*(tool|capability)"):
@@ -233,7 +233,7 @@ def test_required_mcp_uses_native_capabilities_without_an_attached_override(monk
 
 @pytest.mark.parametrize("fails", [False, True])
 def test_delivery_observation_failure_keeps_the_provider_outcome(monkeypatch, fails):
-    from management_portal.execution import backends, native_options
+    from management_portal.execution import backend_services, native_options
     reply = SimpleNamespace(available_harness_tool_names=frozenset({"hatg_instruction"}))
     class Provider:
         def execute(self, invocation, context):
@@ -250,8 +250,8 @@ def test_delivery_observation_failure_keeps_the_provider_outcome(monkeypatch, fa
     monkeypatch.setattr(native_options, "prepare_invocation", lambda invocation: invocation)
     monkeypatch.setattr(assembly, "prepare", lambda invocation, context: invocation)
     monkeypatch.setattr(assembly, "observe_delivery", broken)
-    monkeypatch.setattr(backends, "prepare_backend_context_seed", lambda provider, invocation: invocation)
-    service = backends.AgentSessionService(providers={"claude": Provider()}, harness=Harness())
+    monkeypatch.setattr(backend_services, "prepare_backend_context_seed", lambda provider, invocation: invocation)
+    service = backend_services.AgentSessionService(providers={"claude": Provider()}, harness=Harness())
     if fails:
         with pytest.raises(RuntimeError, match="provider failed"):
             service.execute(Invocation(), Context())

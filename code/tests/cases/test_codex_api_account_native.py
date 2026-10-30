@@ -24,7 +24,7 @@ import pytest
 from management_portal.codex_app_server_client import CodexAppServerClient
 from management_portal.execution import account_hosting, account_login, isa
 from management_portal.execution.account_hosting import account_home
-from management_portal.execution.backends import CodexBackend
+from management_portal.execution.codex_backend import CodexBackend
 
 NATIVE_BINARIES = sorted(set(filter(None, os.environ.get("PORTAL_CODEX_NATIVE_TEST_BINARIES", "").split(os.pathsep))))
 KEY = "sk-native-test"
