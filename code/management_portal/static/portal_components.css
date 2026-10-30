@@ -514,12 +514,26 @@ html[data-portal-viewport="mobile"] body.portalBoardShell .portalNavTop {
 
 /* Keep the global navigation reachable when a workbench adds its toolbar. */
 html[data-portal-viewport="mobile"] body.portalBoardShell .portalNavTop:has(> .portalWorkbenchChrome) {
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: minmax(35px, auto) minmax(32px, auto);
+  align-items: center;
 }
 html[data-portal-viewport="mobile"] body.portalBoardShell .portalNavTop > .portalWorkbenchChrome {
-  order: 1;
-  flex: 0 0 100%;
+  grid-column: 1 / -1;
+  grid-row: 2;
+  width: 100%;
   justify-content: flex-end;
+}
+
+html[data-portal-viewport="mobile"] body.portalBoardShell .portalNavTop:has(> .portalWorkbenchChrome) > .portalNavMain {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+html[data-portal-viewport="mobile"] body.portalBoardShell .portalNavTop:has(> .portalWorkbenchChrome) > .portalUser {
+  grid-column: 2;
+  grid-row: 1;
 }
 
 html[data-portal-viewport="mobile"] body.portalBoardShell .portalNavMain {
@@ -529,7 +543,15 @@ html[data-portal-viewport="mobile"] body.portalBoardShell .portalNavMain {
 }
 
 html[data-portal-viewport="mobile"] body.portalBoardShell .portalBrand {
-  font-size: 15px;
+  width: 28px;
+  overflow: hidden;
+  font-size: 0;
+}
+
+html[data-portal-viewport="mobile"] body.portalBoardShell .portalBrand::after {
+  content: attr(data-portal-site-compact-name);
+  font-size: 14px;
+  font-weight: 750;
 }
 
 html[data-portal-viewport="mobile"] body.portalBoardShell .portalModuleLink {
@@ -4171,9 +4193,40 @@ button.portalFileLink {
 }
 
 @media (max-width: 640px) {
+  .portalAgentInbox {
+    width: 38px;
+    height: 40px;
+  }
+
+  .portalAgentInboxTrigger {
+    width: 38px;
+    height: 40px;
+  }
+
+  .portalAgentInbox[data-has-assistant="true"] {
+    height: 80px;
+  }
+
+  .portalPersonalAssistantTrigger {
+    top: 40px;
+  }
+
   .portalAgentInboxPanel {
-    width: calc(100vw - 50px);
-    max-height: calc(100vh - 90px);
+    position: fixed;
+    top: auto !important;
+    right: max(8px, env(safe-area-inset-right));
+    bottom: calc(58px + env(safe-area-inset-bottom));
+    left: max(8px, env(safe-area-inset-left));
+    width: auto;
+    height: min(620px, calc(100dvh - 132px - env(safe-area-inset-bottom)));
+    max-height: calc(100dvh - 132px - env(safe-area-inset-bottom));
+    border-radius: 12px;
+    transform: translateY(10px);
+  }
+
+  .portalAgentInbox[data-expanded="true"][data-active-panel="mailbox"] .portalAgentInboxPanel:not(.portalPersonalAssistantPanel),
+  .portalAgentInbox[data-expanded="true"][data-active-panel="assistant"] .portalPersonalAssistantPanel {
+    transform: translateY(0);
   }
 }
 

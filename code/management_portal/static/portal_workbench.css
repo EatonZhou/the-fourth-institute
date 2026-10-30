@@ -41,14 +41,20 @@
 @media (max-width: 780px) {
   .portalWorkbenchPageLayout {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: 56px minmax(0, 1fr);
+    grid-template-rows: 44px minmax(0, 1fr);
   }
   .portalWorkbenchPageLayout > .portalActivityRail {
     width: auto;
-    height: 56px;
-    min-height: 52px;
+    height: 44px;
+    min-height: 44px;
     flex-direction: row;
     justify-content: flex-start;
+    padding-block: 3px;
+  }
+  .portalWorkbenchPageLayout > .portalActivityRail .portalActivityRailView {
+    width: 34px;
+    height: 34px;
+    flex-basis: 34px;
   }
   .portalWorkbenchPageLayout > .portalActivityRail .portalActivityRailItems { display: none; }
   .portalWorkbenchPageLayout > .portalActivityRail .portalActivityRailView.active::before {

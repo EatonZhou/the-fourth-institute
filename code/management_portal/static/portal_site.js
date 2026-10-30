@@ -18,6 +18,13 @@
   window.__PORTAL_SITE__ = site;
   let currentTitle = null;
   const name = () => site.site_name;
+  const compactName = () => {
+    const value = String(name() || "").trim();
+    const words = value.split(/\s+/).filter(Boolean);
+    return words.length > 1
+      ? words.map(word => Array.from(word)[0]).join("").slice(0, 4).toUpperCase()
+      : Array.from(value).slice(0, 4).join("");
+  };
   const translate = source => window.PortalI18n?.t(source) ?? source;
   const title = (prefix = "", separator = " — ") => prefix ? `${prefix}${separator}${name()}` : name();
 
@@ -37,10 +44,13 @@
     renderTitle();
   }
   function apply(root = document) {
-    root.querySelectorAll("[data-portal-site-name]").forEach(element => { element.textContent = name(); });
+    root.querySelectorAll("[data-portal-site-name]").forEach(element => {
+      element.textContent = name();
+      element.dataset.portalSiteCompactName = compactName();
+    });
     renderTitle();
   }
-  window.PortalSite = Object.freeze({ name, title, setTitle, apply });
+  window.PortalSite = Object.freeze({ name, compactName, title, setTitle, apply });
   window.addEventListener("portal:language-changed", () => apply());
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => apply(), { once: true });
   else apply();

@@ -277,6 +277,12 @@
       || element.closest(".portalPersonalAssistantPanel")));
   }
 
+  function usesTouchExpansion(event) {
+    if (event?.pointerType === "touch") return true;
+    if (window.PortalResponsive?.isMobile?.()) return true;
+    return window.matchMedia?.("(hover: none), (pointer: coarse)")?.matches === true;
+  }
+
   function bindTriggerDragging(trigger, signal) {
     let gesture = null;
     const finish = event => {
@@ -848,7 +854,10 @@
           return;
         }
         const panel = trigger.matches("[data-personal-assistant-trigger]") ? "assistant" : "mailbox";
-        if (event.pointerType === "touch") state.touchExpanded = state.activePanel !== panel || !state.touchExpanded;
+        // WebKit can dispatch the synthetic click after a touch as a MouseEvent
+        // without pointerType. Mobile/coarse capability therefore owns this
+        // toggle instead of relying on the click event's optional field.
+        if (usesTouchExpansion(event)) state.touchExpanded = state.activePanel !== panel || !state.touchExpanded;
         state.activePanel = panel;
         updateChrome();
         return;
