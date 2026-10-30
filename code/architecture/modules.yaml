@@ -1084,6 +1084,7 @@ modules:
       - "scripts/tfi_application_upgrade.py"
       - "scripts/tfi_application_snapshot.py"
       - "scripts/tfi_application_freeze.py"
+      - "scripts/tfi_application_clients.py"
       - "scripts/tfi_application_work.py"
       - "scripts/tfi_release_schema.py"
       - "scripts/windows/build_update.py"
