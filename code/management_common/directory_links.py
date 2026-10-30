@@ -6,13 +6,16 @@ from pathlib import Path
 import secrets
 import struct
 import sys
+from management_common.filesystem_paths import filesystem_path, logical_path
 
 
 def is_directory_link(path: Path) -> bool:
+    path = filesystem_path(path)
     return path.is_symlink() or (hasattr(path, "is_junction") and path.is_junction())
 
 
 def remove_directory_link(path: Path, *, missing_ok=False) -> None:
+    path = filesystem_path(path)
     if hasattr(path, "is_junction") and path.is_junction():
         path.rmdir()
     elif path.is_symlink():
@@ -29,6 +32,7 @@ def create_directory_link(path: Path, target: Path) -> None:
 
 
 def replace_directory_link(source: Path, target: Path) -> None:
+    source, target = filesystem_path(source), filesystem_path(target)
     # MoveFileEx cannot replace an existing directory junction. Preserve the
     # previous alias until the new one is installed, with rollback on failure.
     if sys.platform != "win32" or not is_directory_link(target):
@@ -45,13 +49,14 @@ def replace_directory_link(source: Path, target: Path) -> None:
 
 
 def create_windows_junction(path: Path, target: Path) -> None:
+    path, target = filesystem_path(path), filesystem_path(target)
     if not target.is_dir():
         raise ValueError("Directory link target must be a directory")
     if sys.platform != "win32":
         raise OSError("Windows junctions require Windows")
     from ctypes import wintypes
 
-    resolved = str(target.resolve())
+    resolved = str(logical_path(target.resolve()))
     substitute = ("\\??\\UNC\\" + resolved.lstrip("\\") if resolved.startswith("\\\\")
                   else "\\??\\" + resolved).encode("utf-16-le")
     display = resolved.encode("utf-16-le")

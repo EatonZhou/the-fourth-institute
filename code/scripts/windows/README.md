@@ -159,6 +159,15 @@ Windows 当前仍为试用版，公开安装包和 README 下载入口已撤下�
 引用一致。路径整理应用于所有平台的公开 seed；已安装实例不在此操作范围内。
 较长的安装目录和后续依赖仍可能需要 Windows 长路径支持。
 
+应用升级的 `tfi_application_snapshot` 在库存、哈希读取、备份、复制及恢复时，
+统一通过文件系统适配使用 Windows 扩展 DOS 路径，因此可以处理
+`LongPathsEnabled=0` 下已有的长源路径，无需修改用户注册表。安装 target、
+清单相对路径和内部目录链接目标仍保留普通路径语义；外部链接拒绝、私有文件
+ACL 与祖先目录检查继续生效。此能力仅覆盖升级快照及其文件权限和目录链接依赖，
+不改变其他程序的长路径要求，也不跳过活动工作检查。
+原生定向验收可在禁用长路径策略的隔离 Windows 环境中，以发行 Python 运行
+`code/tests/cases/test_application_long_paths.py`（`PYTHONPATH` 指向同版 `code`）。
+
 在 Linux 上安装 NSIS，或在 Windows 安装 NSIS 并将 `makensis` 加入构建 PATH。
 从仓库根目录执行：
 

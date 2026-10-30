@@ -22,6 +22,7 @@ import sys
 from contextlib import ExitStack, contextmanager
 from functools import lru_cache
 from pathlib import Path, PureWindowsPath
+from management_common.filesystem_paths import filesystem_path
 
 
 class PrivateFileError(PermissionError):
@@ -227,6 +228,9 @@ class _WindowsSecurity:
 
     @contextmanager
     def handle(self, path, *, directory=False, create=False, access=0x20000):
+        # The public entry point has validated the ordinary path. Only the
+        # syscall spelling changes; ancestor pins and object/ACL checks stay.
+        path = filesystem_path(path)
         with ExitStack() as stack:
             attributes = None
             if create:
@@ -464,13 +468,13 @@ def atomic_write_private_bytes(path, payload):
                 stream.flush()
                 os.fsync(stream.fileno())
             if win:
-                os.replace(temporary, path)
+                os.replace(filesystem_path(temporary), filesystem_path(path))
             else:
                 os.replace(temporary.name, path.name, src_dir_fd=parent_fd, dst_dir_fd=parent_fd)
         finally:
             if created:
                 if win:
-                    temporary.unlink(missing_ok=True)
+                    filesystem_path(temporary).unlink(missing_ok=True)
                 else:
                     try:
                         os.unlink(temporary.name, dir_fd=parent_fd)

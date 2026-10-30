@@ -11,31 +11,33 @@ import re
 
 from management_common.directory_links import is_directory_link, create_directory_link, remove_directory_link
 from management_common.file_permissions import create_private_file, ensure_private_directory
+from management_common.filesystem_paths import filesystem_path, logical_path
 
 
 LOCKS = {".install.lock", ".configuration.lock"}
 
 
 def digest(path):
-    with Path(path).open('rb') as stream:
+    with filesystem_path(path).open('rb') as stream:
         return hashlib.file_digest(stream, 'sha256').hexdigest()
 
 
 def inventory(root, *, content=True):
-    root = Path(root).absolute()
+    root = logical_path(root).absolute()
     result = {}
     def visit(parent):
-        for path in sorted(parent.iterdir()):
+        for native in sorted(filesystem_path(parent).iterdir()):
+            path = parent / native.name
             if path.name in LOCKS or path.relative_to(root).as_posix() == '.build/windows/launcher.lock':
                 continue
             relative = path.relative_to(root).as_posix()
-            info = path.lstat()
+            info = native.lstat()
             if is_directory_link(path):
-                target = path.resolve(strict=True)
-                if not target.is_relative_to(root) or not target.is_dir():
+                target = logical_path(native.resolve(strict=True))
+                if not target.is_relative_to(root) or not filesystem_path(target).is_dir():
                     raise ValueError(f"External or non-directory link cannot be backed up: {relative}")
                 result[relative] = {"link": target.relative_to(root).as_posix(),
-                                    "kind": "junction" if getattr(path, 'is_junction', lambda: False)() else "symlink"}
+                                    "kind": "junction" if getattr(native, 'is_junction', lambda: False)() else "symlink"}
             elif getattr(info, 'st_file_attributes', 0) & 0x400:
                 raise ValueError(f"Unsupported reparse point: {relative}")
             elif stat.S_ISDIR(info.st_mode):
@@ -51,21 +53,22 @@ def inventory(root, *, content=True):
 
 
 def copy_file(source, destination):
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    with source.open('rb') as src, create_private_file(destination) as dst:
+    source, destination = logical_path(source), logical_path(destination)
+    filesystem_path(destination.parent).mkdir(parents=True, exist_ok=True)
+    with filesystem_path(source).open('rb') as src, create_private_file(destination) as dst:
         shutil.copyfileobj(src, dst, 1024 * 1024)
-    shutil.copystat(source, destination)
+    shutil.copystat(filesystem_path(source), filesystem_path(destination))
 
 
 def copy_tree(source, destination):
-    source, destination = Path(source), Path(destination)
+    source, destination = logical_path(source), logical_path(destination)
     expected = inventory(source)
-    destination.mkdir(mode=0o700)
+    filesystem_path(destination).mkdir(mode=0o700)
     ensure_private_directory(destination)
     for name, row in expected.items():
         path = destination / name
         if row.get('directory'):
-            path.mkdir(parents=True, exist_ok=True)
+            filesystem_path(path).mkdir(parents=True, exist_ok=True)
         elif 'sha256' in row:
             copy_file(source / name, path)
     for name, row in expected.items():
@@ -74,7 +77,7 @@ def copy_tree(source, destination):
             if row['kind'] == 'junction':
                 create_directory_link(path, target)
             else:
-                path.symlink_to(os.path.relpath(target, path.parent), target_is_directory=True)
+                filesystem_path(path).symlink_to(os.path.relpath(target, path.parent), target_is_directory=True)
     if inventory(destination) != expected or inventory(source) != expected:
         raise ValueError("Snapshot changed during copying or failed its integrity check")
     return expected
@@ -82,7 +85,7 @@ def copy_tree(source, destination):
 
 def backup_bytes(backup, name, expected):
     row = expected[name]
-    value = (Path(backup) / 'files' / row['sha256']).read_bytes()
+    value = filesystem_path(Path(backup) / 'files' / row['sha256']).read_bytes()
     if hashlib.sha256(value).hexdigest() != row['sha256']:
         raise ValueError('Backup integrity check failed')
     return value
@@ -90,7 +93,7 @@ def backup_bytes(backup, name, expected):
 
 def verify_backup(backup, expected):
     backup = Path(backup)
-    if json.loads((backup / 'inventory.json').read_text(encoding='utf-8')) != expected:
+    if json.loads(filesystem_path(backup / 'inventory.json').read_text(encoding='utf-8')) != expected:
         raise ValueError('Backup inventory integrity mismatch')
     blobs = {}
     for name, row in expected.items():
@@ -117,14 +120,14 @@ def create_backup(source, destination):
     Logical paths and internal aliases remain in the checked inventory. A
     backup is not runnable and must be restored through the maintenance owner.
     """
-    source, destination = Path(source), Path(destination)
+    source, destination = logical_path(source), logical_path(destination)
     expected = inventory(source)
     ensure_private_directory(destination)
     ensure_private_directory(destination / 'files')
     for name, row in expected.items():
         if 'sha256' in row:
             blob = destination / 'files' / row['sha256']
-            if not blob.exists():
+            if not filesystem_path(blob).exists():
                 copy_file(source / name, blob)
     with create_private_file(destination / 'inventory.json') as stream:
         stream.write(json.dumps(expected, sort_keys=True).encode('utf-8'))
@@ -135,6 +138,7 @@ def create_backup(source, destination):
 
 
 def remove(path):
+    path = filesystem_path(path)
     if is_directory_link(path):
         remove_directory_link(path)
     elif path.is_dir():
@@ -149,7 +153,7 @@ def restore(source, destination, expected, *, packed=False):
     Source has already passed checksum verification; link targets are rebased
     into destination. Unchanged base runtime files are never overwritten.
     """
-    source, destination = Path(source), Path(destination)
+    source, destination = logical_path(source), logical_path(destination)
     if packed:
         verify_backup(source, expected)
     elif inventory(source) != expected:
@@ -163,11 +167,11 @@ def restore(source, destination, expected, *, packed=False):
         if row == actual.get(name):
             continue
         if row.get('directory'):
-            if path.exists() and not path.is_dir():
+            if filesystem_path(path).exists() and not filesystem_path(path).is_dir():
                 remove(path)
-            path.mkdir(parents=True, exist_ok=True)
+            filesystem_path(path).mkdir(parents=True, exist_ok=True)
         elif 'sha256' in row:
-            if path.exists():
+            if filesystem_path(path).exists():
                 remove(path)
             copy_file(source / 'files' / row['sha256'] if packed else source / name, path)
     for name, row in expected.items():
@@ -176,6 +180,6 @@ def restore(source, destination, expected, *, packed=False):
             if row['kind'] == 'junction':
                 create_directory_link(path, target)
             else:
-                path.symlink_to(os.path.relpath(target, path.parent), target_is_directory=True)
+                filesystem_path(path).symlink_to(os.path.relpath(target, path.parent), target_is_directory=True)
     if inventory(destination) != expected:
         raise ValueError("Restored application differs from its verified backup")
