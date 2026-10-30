@@ -168,6 +168,21 @@ ACL 与祖先目录检查继续生效。此能力仅覆盖升级快照及其文�
 原生定向验收可在禁用长路径策略的隔离 Windows 环境中，以发行 Python 运行
 `code/tests/cases/test_application_long_paths.py`（`PYTHONPATH` 指向同版 `code`）。
 
+应用更新由包外的 `tfi_release_install.py application-check / application-upgrade /
+application-recover --root <应用根>` 执行，检查和升级还需 `--manifest <固定更新包的
+manifest.json>`。在线检查只给出候选结果。升级持有应用与全部实例锁，通过
+`tfi_application_freeze` 取得业务表写入屏障，再由 `tfi_application_work` 证明
+等待输入尚未提交执行；真实在途执行、未知检查点或无法取得屏障均拒绝。
+随后停止所属服务，确认无其他数据库连接，保持屏障直至 PostgreSQL 停稳，
+才备份配对的源码、数据库、账号和业务目录。此协议不修改接单配置，不取消
+输入，也不删除队列；独立 bundle 的 `check_quiescent` 规则保持原样。
+
+迁移与物理恢复后，只启动 PostgreSQL，核对等待输入、执行准备和工作检查点
+的完整摘要，之后才恢复消费者。恢复消费者前持久记录 `resuming`；此后启动
+失败，`application-recover` 只继续恢复服务，保留可能已经推进的新业务数据。
+此前的迁移失败才使用冷备份恢复旧版。升级必须在所属用户桌面会话运行；
+SCM、外部数据根及未声明来源不在当前迁移范围。
+
 在 Linux 上安装 NSIS，或在 Windows 安装 NSIS 并将 `makensis` 加入构建 PATH。
 从仓库根目录执行：
 

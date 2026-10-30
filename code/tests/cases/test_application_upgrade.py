@@ -2,6 +2,7 @@
 import json
 from pathlib import Path
 from unittest.mock import Mock
+from contextlib import nullcontext
 import pytest
 
 from scripts import tfi_application_snapshot as snapshot
@@ -82,8 +83,10 @@ def transaction(application, tmp_path, monkeypatch):
     monkeypatch.setattr(installer, 'prepare_dependencies', Mock())
     monkeypatch.setattr(installer, 'service_controller', lambda: Mock())
     monkeypatch.setattr(installer, 'wait_database', Mock())
-    from scripts import tfi_release_upgrade
-    monkeypatch.setattr(tfi_release_upgrade, 'check_quiescent', Mock())
+    from scripts import tfi_application_work as work
+    monkeypatch.setattr(work, 'inspect', Mock(return_value={'retained': 'stable'}))
+    monkeypatch.setattr(upgrade.barrier, 'freeze', lambda *_: nullcontext([Mock()]))
+    monkeypatch.setattr(upgrade.barrier, 'assert_no_clients', Mock())
     return owner, path, state
 
 
@@ -121,12 +124,53 @@ def test_success_keeps_identity_and_credentials_without_importing_seed(transacti
 
 def test_late_work_blocks_before_stop_or_snapshot(transaction, monkeypatch):
     owner, path, _ = transaction
-    from scripts import tfi_release_upgrade
-    monkeypatch.setattr(tfi_release_upgrade, 'check_quiescent', Mock(side_effect=RuntimeError('active work')))
+    from scripts import tfi_application_work as work
+    monkeypatch.setattr(work, 'inspect', Mock(side_effect=RuntimeError('active work')))
     with pytest.raises(RuntimeError, match='active work'):
         owner.upgrade(path)
     owner.stop.assert_not_called()
     assert not owner.journal_path.exists()
+
+
+def test_retained_work_mismatch_rolls_back_before_admission(transaction, monkeypatch):
+    owner, path, _ = transaction
+    from scripts import tfi_application_work as work
+    monkeypatch.setattr(work, 'inspect', Mock(side_effect=[
+        {'retained': 'original'}, {'retained': 'changed'}, {'retained': 'original'}]))
+    with pytest.raises(ValueError, match='Retained waiting work changed'):
+        owner.upgrade(path)
+    assert (owner.application / 'code/version').read_text() == 'original'
+    assert installer.read_json(owner.journal_path)['phase'] == 'restored'
+    owner.start.assert_called_once()
+
+
+def test_admitted_start_failure_recovers_forward_without_replaying_backup(transaction):
+    owner, path, _ = transaction
+    business = owner.application / 'instance/one/data/database/business'
+    def started_then_failed(records):
+        business.write_text('waiting input progressed after admission')
+        raise RuntimeError('startup health failed')
+    owner.start.side_effect = started_then_failed
+    with pytest.raises(RuntimeError, match='startup health failed'):
+        owner.upgrade(path)
+    assert installer.read_json(owner.journal_path)['phase'] == 'resuming'
+    assert (owner.application / 'code/version').read_text() == 'new'
+    owner.start.side_effect = None
+    assert owner.recover()['status'] == 'complete'
+    assert business.read_text() == 'waiting input progressed after admission'
+    assert not upgrade.pending(owner.application)
+
+
+def test_unknown_database_client_restores_service_availability_without_backup(transaction, monkeypatch):
+    owner, path, _ = transaction
+    monkeypatch.setattr(upgrade.barrier, 'assert_no_clients', Mock(side_effect=RuntimeError('other client')))
+    with pytest.raises(RuntimeError, match='other client'):
+        owner.upgrade(path)
+    journal = installer.read_json(owner.journal_path)
+    assert journal['phase'] == 'prebackup_failed'
+    assert not (owner.paths(journal) / 'backup').exists()
+    assert (owner.application / 'code/version').read_text() == 'original'
+    owner.start.assert_called_once()
 
 
 def test_partial_switch_crash_can_recover_from_external_installer(transaction):

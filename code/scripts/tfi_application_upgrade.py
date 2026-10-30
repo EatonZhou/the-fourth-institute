@@ -18,10 +18,11 @@ import time
 import uuid
 import tempfile
 
-from management_common.file_permissions import ensure_private_directory
+from management_common.file_permissions import ensure_private_directory, atomic_write_private_bytes
 from management_common.instance_config import read_installation
 from scripts import tfi_application_snapshot as snapshot
 from scripts import tfi_release_provider_services as providers
+from scripts import tfi_application_freeze as barrier
 from scripts.tfi_instance_layout import database_root
 
 
@@ -86,7 +87,10 @@ class ApplicationUpgrade:
     def save(self, journal, phase, **values):
         journal.update(values, phase=phase)
         journal.setdefault('stages', []).append({'phase': phase, 'time': time.time()})
-        self.api.write_json(self.journal_path, journal)
+        # Admission must follow a flushed, atomically published journal. A
+        # torn or merely buffered phase must never authorize stale recovery.
+        atomic_write_private_bytes(self.journal_path,
+            (json.dumps(journal, ensure_ascii=False, indent=2) + '\n').encode('utf-8'))
 
     def schema(self, state, *, apply=False):
         # The new module executes against this target, without inheriting the
@@ -188,13 +192,15 @@ class ApplicationUpgrade:
         needed = 3 * sum(row.get('size', 0) for row in observed.values()) + 1024**3
         if shutil.disk_usage(self.application).free < needed:
             raise ValueError('Insufficient free space for backup, failed generation and staging')
-        from scripts.tfi_release_upgrade import check_quiescent
+        from scripts import tfi_application_work as work
         checks = []
+        waiting = []
         for state in records:
-            check_quiescent(self.api, state['target'])
+            waiting.append(work.inspect(self.api, state['target']))
             self.database_check(state)
             checks.append(self.schema(state))
-        return records, manifest, {'schemas': checks, 'required_free_bytes': needed,
+        return records, manifest, {'schemas': checks, 'waiting_work_candidates': waiting,
+            'offline_proof_required': True, 'required_free_bytes': needed,
             'observed_metadata_sha256': __import__('hashlib').sha256(
                 json.dumps(observed, sort_keys=True).encode()).hexdigest()}
 
@@ -204,11 +210,11 @@ class ApplicationUpgrade:
             target = state['target']
             self.api.check_available(target, existing=True)
             plan = providers.owned_services(target, self.api.unit_directory())
-            providers.stop_services(plan, control)
             names = [self.api.unit_name(target, c) for c in reversed(self.api.COMPONENTS)
                      if not (keep_database and c == 'postgres')]
             for name in names:
                 control.stop(name)
+            providers.stop_services(plan, control)
             if any((s := control.status(n))['pid'] or s['active'] not in {'inactive', 'failed'} for n in names):
                 raise RuntimeError('Owned services remain running; backup/restore refused')
 
@@ -218,6 +224,27 @@ class ApplicationUpgrade:
         for state in records:
             start_and_check(self.api, state)
             providers.start_services(providers.owned_services(state['target'], self.api.unit_directory()), control)
+
+    def verify_work(self, records, expected):
+        """Only PostgreSQL runs while the immutable waiting work is checked."""
+        from scripts import tfi_application_work as work
+        control = self.api.service_controller()
+        for state in records:
+            target = state['target']
+            control.start(self.api.unit_name(target, 'postgres'))
+            self.api.wait_database(target)
+        with barrier.freeze(self.api, records) as connections:
+            for state, proof, connection in zip(records, expected, connections, strict=True):
+                barrier.assert_no_clients(connection)
+                if work.inspect(self.api, state['target'], connection=connection) != proof:
+                    raise ValueError('Retained waiting work changed; service admission refused')
+
+    def resume(self, journal, records, outcome):
+        # Once a consumer can see retained inputs, a new business write is
+        # possible. Never restore a stale cold database after this boundary.
+        self.save(journal, 'resuming', resume_states=records, resume_outcome=outcome)
+        self.start(records)
+        self.save(journal, outcome)
 
     def detach_codex(self, records):
         """Retire stopped account definitions before changing the runtime pin.
@@ -306,8 +333,9 @@ class ApplicationUpgrade:
         snapshot.create_backup(self.application, failed)
         self.save(journal, 'restoring', failed_generation=str(failed))
         snapshot.restore(backup, self.application, expected, packed=True)
-        self.start(journal['states'])
-        self.save(journal, 'restored')
+        if 'waiting_work' in journal:
+            self.verify_work(journal['states'], journal['waiting_work'])
+        self.resume(journal, journal['states'], 'restored')
         return {'status': 'restored', 'backup': str(backup), 'failed_generation': str(failed)}
 
     def recover(self):
@@ -320,10 +348,16 @@ class ApplicationUpgrade:
         if [s['target'] for s in current] != [s['target'] for s in journal['states']]:
             raise ValueError('Installation ownership changed since upgrade')
         with self.locks(current):
+            if journal['phase'] == 'resuming':
+                for state, expected in zip(current, journal['resume_states'], strict=True):
+                    if any(state.get(key) != expected.get(key) for key in
+                           ('target', 'manifest_sha256', 'version_run_id')):
+                        raise ValueError('Resuming installation version changed')
+                self.resume(journal, journal['resume_states'], journal['resume_outcome'])
+                return {'status': journal['resume_outcome']}
             if journal['phase'] in {'quiescing', 'backing_up'}:
                 # No code or database mutation is allowed before backup_ready.
-                self.save(journal, 'prebackup_failed')
-                self.start(current)
+                self.resume(journal, current, 'prebackup_failed')
                 return {'status': 'prebackup_failed'}
             return self.restore(journal)
 
@@ -341,22 +375,24 @@ class ApplicationUpgrade:
         with self.locks(records):
             if states(self.application) != records or pending(self.application):
                 raise ValueError('Installation changed while acquiring upgrade locks')
-            from scripts.tfi_release_upgrade import check_quiescent
-            for state in records:
-                check_quiescent(self.api, state['target'])
-            self.save(journal, 'quiescing')
+            from scripts import tfi_application_work as work
             try:
-                self.stop(records, keep_database=True)
-                for state in records:
-                    check_quiescent(self.api, state['target'])
-                self.stop(records)
+                with barrier.freeze(self.api, records) as connections:
+                    proofs = [work.inspect(self.api, state['target'], connection=connection)
+                              for state, connection in zip(records, connections, strict=True)]
+                    # Refusal above occurs before any service stop or journal.
+                    self.save(journal, 'quiescing', waiting_work=proofs)
+                    self.stop(records, keep_database=True)
+                    for connection in connections:
+                        barrier.assert_no_clients(connection)
+                    self.stop(records)
                 self.save(journal, 'backing_up')
                 inventory = snapshot.create_backup(self.application, parent / 'backup')
                 self.api.write_json(parent / 'inventory.json', inventory)
                 self.save(journal, 'backup_ready')
             except Exception:
-                self.save(journal, 'prebackup_failed')
-                self.start(records)
+                if journal.get('phase') in {'quiescing', 'backing_up'}:
+                    self.resume(journal, records, 'prebackup_failed')
                 raise
             try:
                 self.save(journal, 'switching')
@@ -389,12 +425,16 @@ class ApplicationUpgrade:
                     self.schema(state, apply=True)
                     control.stop(self.api.unit_name(target, 'postgres'))
                 self.api.write_json(self.application / 'windows-package.json', declaration['package'])
+                self.verify_work(updated, journal['waiting_work'])
                 self.save(journal, 'starting')
-                self.start(updated)
-                self.save(journal, 'complete')
+                self.resume(journal, updated, 'complete')
                 return {'status': 'installed', 'run_id': manifest['run_id'],
                     'manifest_sha256': journal['manifest_sha256'], 'backup': str(parent / 'backup')}
             except Exception:
+                if journal.get('phase') == 'resuming':
+                    # Already admitted work may have progressed. Retry startup
+                    # through application-recover, never roll back its data.
+                    raise
                 # The saved stopped pair, never a seed or reverse SQL, is the
                 # authority for recovery. A failed generation is retained too.
                 self.save(journal, 'recovery_required')
