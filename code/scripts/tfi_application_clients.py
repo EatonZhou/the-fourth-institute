@@ -13,6 +13,10 @@ import sys
 import time
 
 
+class ProcessAbsentError(OSError):
+    """Only OpenProcess ERROR_INVALID_PARAMETER for a validated service PID."""
+
+
 class WindowsProcesses:
     """Pin process objects through shutdown; never infer identity from a PID alone."""
     def __init__(self):
@@ -40,7 +44,10 @@ class WindowsProcesses:
         if pid not in self.handles:
             handle = self.api.OpenProcess(0x1000 | 0x100000, False, pid)
             if not handle:
-                raise ctypes.WinError(ctypes.get_last_error())
+                error = ctypes.get_last_error()
+                if error == 87:
+                    raise ProcessAbsentError('Process is unavailable to OpenProcess')
+                raise ctypes.WinError(error)
             try:
                 times = [self.w.FILETIME() for _ in range(4)]
                 if not self.api.GetProcessTimes(handle, *(ctypes.byref(t) for t in times)):
@@ -460,12 +467,15 @@ def service_root(processes, read):
             pid = state[pid_key]
             try:
                 stamp = processes.pin(pid, allow_exited=True)
-            except OSError as exc:
+            except ProcessAbsentError:
                 diagnostic[label] = 'read_error'
-                if getattr(exc, 'winerror', None) != 87 or pid in before:
+                if pid in before:
                     refuse('process_read_error')
                 diagnostic[label] = 'absent_candidate'
                 continue
+            except OSError:
+                diagnostic[label] = 'read_error'
+                refuse('process_read_error')
             if stamp != state[stamp_key]:
                 diagnostic[label] = 'identity_mismatch'
                 refuse('process_identity_changed')

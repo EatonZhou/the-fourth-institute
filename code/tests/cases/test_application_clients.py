@@ -383,8 +383,9 @@ class RootProcesses(Processes):
         self.errors = {}
     def pin(self, pid, *, allow_exited=False):
         if pid in self.errors or pid in self.absent:
-            error = OSError('SENSITIVE process details')
-            error.winerror = self.errors.get(pid, 87)
+            code = self.errors.get(pid, 87)
+            error = (clients.ProcessAbsentError if code == 87 else OSError)('SENSITIVE process details')
+            error.winerror = code
             raise error
         if not allow_exited and pid in self.dead:
             raise ValueError('Client process exited during ownership capture')
@@ -461,3 +462,13 @@ def test_root_failure_is_wrapped_before_capture_and_releases_handles(monkeypatch
             pytest.fail('must refuse before stop')
     assert caught.value.diagnostic['service_ordinal'] == 1
     capture.assert_not_called(); p.close.assert_called_once_with()
+
+
+def test_other_windows_api_error_87_never_means_absent():
+    p = RootProcesses(); p.absent = {10, 11}
+    def failed(*args, **kwargs):
+        error = OSError('SENSITIVE GetProcessTimes'); error.winerror = 87; raise error
+    p.pin = failed
+    with pytest.raises(clients.ClientProofError) as caught:
+        clients.service_root(p, root_record)
+    assert caught.value.diagnostic['service_roots'][0]['supervisor'] == 'read_error'
