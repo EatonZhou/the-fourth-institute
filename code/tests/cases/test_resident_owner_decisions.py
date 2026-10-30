@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from management_portal.society_service import lineage_domain, resident_domain, resident_record_domain
+from management_portal.society_service import lineage_handoffs, lineage_state, resident_domain, resident_record_domain
 from management_portal.society_service import resident_execution_domain
 from management_portal.society_service import resident_runtime_domain
 from management_portal.society_service import lineage_aggregate
@@ -101,9 +101,9 @@ def test_ready_handoff_remains_ready_until_invoked(
     lineage = {"lineage_id": record["lineage_id"], "nodes": [], "revision": 1}
     monkeypatch.setattr(lineage_aggregate, "read_lineage", lambda _, **_kwargs: lineage)
     monkeypatch.setattr(lineage_aggregate, "ensure_manager", lambda *_args: None)
-    monkeypatch.setattr(lineage_domain, "_handoff_edge", lambda *_args: handoff)
-    monkeypatch.setattr(lineage_domain, "_verified_lineage_view", lambda value, _actor: value)
+    monkeypatch.setattr(lineage_handoffs, "_handoff_edge", lambda *_args: handoff)
+    monkeypatch.setattr(lineage_state, "_verified_lineage_view", lambda value, _actor: value)
 
-    result = lineage_domain.execute_handoff(record["lineage_id"], "handoff_fixture", "sample_admin")
+    result = lineage_handoffs.execute_handoff(record["lineage_id"], "handoff_fixture", "sample_admin")
     assert result["handoff"]["status"] == "ready"
     assert "dispatch" not in result

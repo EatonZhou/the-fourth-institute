@@ -173,7 +173,7 @@ def delete_project(project_id: str, actor: str) -> dict[str, Any]:
     returns its deletion record.
     """
 
-    from . import lineage_domain
+    from . import lineage_lifecycle
 
     actor_id = _actor_id(actor)
     if not actor_id:
@@ -199,7 +199,7 @@ def delete_project(project_id: str, actor: str) -> dict[str, Any]:
     resident_ids: list[str] = []
     try:
         for lineage_id in [*ordinary, *principals]:
-            result = lineage_domain.delete_lineage(lineage_id, actor_id)
+            result = lineage_lifecycle.delete_lineage(lineage_id, actor_id)
             lineage_ids.append(lineage_id)
             resident_ids.extend(str(item) for item in result.get("deleted_resident_ids") or [])
         with project_registry.mutate() as document:

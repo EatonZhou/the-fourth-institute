@@ -9,9 +9,9 @@ import pytest
 from types import SimpleNamespace
 
 from management_portal.society_service import (
-    family_facade, lineage_domain as graphs, lineage_graph_state, personal_assistant,
-    personal_history, principal_hierarchy_domain, resident_catalog, resident_conversation_stream,
-    resident_execution_domain, resident_protocol,
+    family_facade, lineage_graph_edits, lineage_graph_state, lineage_reads, lineage_resident_nodes,
+    personal_assistant, personal_history, principal_hierarchy_domain, resident_catalog,
+    resident_conversation_stream, resident_execution_domain, resident_protocol,
 )
 from tests.cases.test_resident_folder_creation_contract import future_creation_store  # noqa: F401
 from tests.cases.test_family_familize import charters  # noqa: F401
@@ -43,7 +43,7 @@ def test_personal_family_can_precede_first_ai_account(future_creation_store, mon
         resource_client._resident_resource_projection(resident_catalog.get_catalog().get(rid))["descriptor"]))
     ama = principal_hierarchy_domain.ensure_personal_ama("newcomer", "newcomer")
     assistant = principal_hierarchy_domain.ensure_personal_assistant("newcomer", ama["resident_id"], "newcomer")
-    graph = graphs.get_lineage(assistant["lineage_id"], "newcomer")
+    graph = lineage_reads.get_lineage(assistant["lineage_id"], "newcomer")
     family = graph["function_blocks"][0]["family"]
     from management_portal.society_service import resident_execution_work
     steward = resident_catalog.get_catalog().get(family["steward"])
@@ -123,7 +123,7 @@ def test_personal_family_can_precede_first_ai_account(future_creation_store, mon
 def test_personal_initialization_is_private_and_resumable(personal):
     """个人助手初始化幂等，内部角色保持私有并退出发现候选"""
     ama, assistant = personal
-    graph = graphs.get_lineage(assistant["lineage_id"], "newcomer")
+    graph = lineage_reads.get_lineage(assistant["lineage_id"], "newcomer")
     family = graph["function_blocks"][0]["family"]
     assert graph["title"] == personal_assistant.TITLE
     assert graph["leader_resident_id"] == assistant["resident_id"]
@@ -140,7 +140,7 @@ def test_personal_initialization_is_private_and_resumable(personal):
         assert not resident_access.resident_visible_to_actor(record, "CASE-A")
     again = principal_hierarchy_domain.ensure_personal_assistant("newcomer", ama["resident_id"], "newcomer")
     assert again == assistant
-    assert graphs.get_lineage(assistant["lineage_id"], "newcomer")["revision"] == graph["revision"]
+    assert lineage_reads.get_lineage(assistant["lineage_id"], "newcomer")["revision"] == graph["revision"]
     assert principal_hierarchy_domain.ensure_personal_ama("newcomer", "newcomer")["resident_id"] == ama["resident_id"]
     assert lineage_graph_state.read_cell(assistant["lineage_id"], personal_assistant.preferences_key(assistant["resident_id"]))["value"] == {"preferences": [], "my_teams": []}
     from management_portal.society_service.resident_context.source import LineageResidentSource
@@ -151,13 +151,13 @@ def test_custom_title_and_history_branch_remain_outside_family(future_creation_s
     """保留用户命名与历史分支，只纳入当前 AMA"""
     ama = principal_hierarchy_domain.ensure_personal_ama("newcomer", "newcomer")
     lineage_id = ama["lineage_id"]
-    branch = graphs.create_lineage_resident(lineage_id, {"title": "July–August"}, "newcomer")["resident"]["resident_id"]
+    branch = lineage_resident_nodes.create_lineage_resident(lineage_id, {"title": "July–August"}, "newcomer")["resident"]["resident_id"]
     def rename(body):
         body["title"] = "My own title"
         return {}
-    graphs.commit_lineage_edit(lineage_id, "newcomer", rename, reason="customize")
+    lineage_graph_edits.commit_lineage_edit(lineage_id, "newcomer", rename, reason="customize")
     assistant = principal_hierarchy_domain.ensure_personal_assistant("newcomer", ama["resident_id"], "newcomer")
-    graph = graphs.get_lineage(lineage_id, "newcomer")
+    graph = lineage_reads.get_lineage(lineage_id, "newcomer")
     assert graph["title"] == "My own title"
     assert branch not in graph["function_blocks"][0]["family"]["members"]
     assert assistant["resident_id"] != ama["resident_id"]
@@ -232,7 +232,7 @@ def test_daily_review_only_calls_model_after_new_activity(active, reviewed, expe
 def test_retry_after_partial_role_creation_reuses_roles(future_creation_store, charters, monkeypatch):
     """初始化中途失败后复用已建角色，不重复创建"""
     ama = principal_hierarchy_domain.ensure_personal_ama("newcomer", "newcomer")
-    create = graphs.create_lineage_resident
+    create = lineage_resident_nodes.create_lineage_resident
     failed = False
     created = []
     def interrupted(lineage_id, payload, actor):
@@ -243,12 +243,12 @@ def test_retry_after_partial_role_creation_reuses_roles(future_creation_store, c
             failed = True
             raise RuntimeError("role publication interrupted")
         return result
-    monkeypatch.setattr(graphs, "create_lineage_resident", interrupted)
+    monkeypatch.setattr(lineage_resident_nodes, "create_lineage_resident", interrupted)
     with pytest.raises(RuntimeError, match="interrupted"):
         principal_hierarchy_domain.ensure_personal_assistant("newcomer", ama["resident_id"], "newcomer")
     result = principal_hierarchy_domain.ensure_personal_assistant("newcomer", ama["resident_id"], "newcomer")
     assert created[0] == created[2] == result["resident_id"]
-    graph = graphs.get_lineage(ama["lineage_id"], "newcomer")
+    graph = lineage_reads.get_lineage(ama["lineage_id"], "newcomer")
     assert len(graph["nodes"]) == 4
 
 

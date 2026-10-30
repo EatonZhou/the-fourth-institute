@@ -15,7 +15,7 @@ from management_portal import avatar_store, resident_avatar, user_avatar
 from management_portal.execution.transport import ExecutionServiceClient
 from management_portal.hatg.routing import routing_mode
 from management_portal.hatg.socket_rpc import owner_socket
-from management_portal.society_service import lineage_domain, resident_hatg_credentials
+from management_portal.society_service import lineage_state, resident_hatg_credentials
 from management_portal.resources.config import resource_service_mode
 
 DEPLOYED = (Path("/share"), Path.home() / ".tfi", Path("/srv/agent-staging/portal_instances"),
@@ -33,7 +33,7 @@ def test_case_files_stay_in_the_case_root():
     Lineage 文件夹、Resident 令牌文件、头像与访问审计在测试中都指向用例根目录，不写入 /share/Agents 或 ~/.tfi。
     """
     locations = {
-        "lineage folders": lineage_domain.LINEAGE_FOLDER_ROOT,
+        "lineage folders": lineage_state.LINEAGE_FOLDER_ROOT,
         "Resident bearer files": resident_hatg_credentials.TOKEN_ROOT,
         "Resident avatars": Path(os.environ["PORTAL_RESIDENT_AVATAR_ROOT"]),
         "user avatars": Path(os.environ["PORTAL_USER_AVATAR_ROOT"]),

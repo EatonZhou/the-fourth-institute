@@ -187,7 +187,18 @@ def test_hatg_graph_nodes_use_only_id_for_resident_identity() -> None:
     """HATG 图节点仅以 id 表示 Resident 身份"""
     root = Path(__file__).resolve().parents[2]
     sources = (
+        "management_portal/society_service/lineage_branches.py",
         "management_portal/society_service/lineage_domain.py",
+        "management_portal/society_service/lineage_graph_edits.py",
+        "management_portal/society_service/lineage_handoffs.py",
+        "management_portal/society_service/lineage_lifecycle.py",
+        "management_portal/society_service/lineage_moves.py",
+        "management_portal/society_service/lineage_program_edits.py",
+        "management_portal/society_service/lineage_reads.py",
+        "management_portal/society_service/lineage_resident_controls.py",
+        "management_portal/society_service/lineage_resident_nodes.py",
+        "management_portal/society_service/lineage_resident_workspaces.py",
+        "management_portal/society_service/lineage_state.py",
         "management_portal/society_service/lineage_member_projection.py",
         "management_portal/society_service/state_store.py",
         "management_portal/workbench_projections/studio.py",

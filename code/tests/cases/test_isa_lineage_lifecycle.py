@@ -34,8 +34,9 @@ def test_diagnostics_use_definition_without_full_lineage_view(lineage, monkeypat
     """Lineage 诊断只读取定义
 
     :module: lineage.service"""
-    from management_portal.society_service import lineage_domain
+    from management_portal.society_service import lineage_domain, lineage_reads
 
+    monkeypatch.setattr(lineage_reads, "get_lineage", lambda *_: pytest.fail("full Lineage view is unnecessary"))
     monkeypatch.setattr(lineage_domain, "get_lineage", lambda *_: pytest.fail("full Lineage view is unnecessary"))
     assert isinstance(ok("GetLineageDiagnostics", {"lineage_id": lineage})["diagnostics"], list)
 
@@ -93,14 +94,14 @@ def test_deleting_the_leader_picks_a_new_leader_from_the_remaining_residents(lin
 
 def test_a_repeated_creation_key_returns_the_resident_it_already_created(lineage):
     """相同 creation_key 再次创建 Resident 时返回已创建的那一个"""
-    from management_portal.society_service import lineage_domain
+    from management_portal.society_service import lineage_resident_nodes
 
     payload = {"title": "Application worker", "backend": "codex", "creation_key": "invocation-create:fixture"}
-    first = lineage_domain.create_lineage_resident(lineage, dict(payload), ACTOR)
-    again = lineage_domain.create_lineage_resident(lineage, dict(payload), ACTOR)
+    first = lineage_resident_nodes.create_lineage_resident(lineage, dict(payload), ACTOR)
+    again = lineage_resident_nodes.create_lineage_resident(lineage, dict(payload), ACTOR)
     assert again["resident"]["resident_id"] == first["resident"]["resident_id"]
     assert [node["id"] for node in graph(lineage)["nodes"]] == [first["resident"]["resident_id"]]
-    other = lineage_domain.create_lineage_resident(lineage, {**payload, "creation_key": "invocation-create:other"}, ACTOR)
+    other = lineage_resident_nodes.create_lineage_resident(lineage, {**payload, "creation_key": "invocation-create:other"}, ACTOR)
     assert other["resident"]["resident_id"] != first["resident"]["resident_id"]
 
 

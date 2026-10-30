@@ -117,24 +117,30 @@ DOMAIN_OPERATIONS = {
         """),
     ),
     "lineage": _catalog(
-        (Operation('read', 'lineage', implementation='management_portal.society_service.lineage_domain'), """
+        (Operation('read', 'lineage', implementation='management_portal.society_service.lineage_reads'), """
             get_family_resource_projection
         """),
-        (Operation('read', 'lineage', 'lineage', 'lineage_id', implementation='management_portal.society_service.lineage_domain'), """
-            authorize_lineage_resident_principal get_lineage_resource_projection get_lineage_program_resource_projection
+        (Operation('read', 'lineage', 'lineage', 'lineage_id', implementation='management_portal.society_service.lineage_state'), """
+            authorize_lineage_resident_principal
+        """),
+        (Operation('read', 'lineage', 'lineage', 'lineage_id', implementation='management_portal.society_service.lineage_reads'), """
+            get_lineage_resource_projection get_lineage_program_resource_projection
             get_lineage_node_metadata
         """),
-        (Operation('read', 'lineage', 'lineage', 'lineage_id', 'lineage_graph', implementation='management_portal.society_service.lineage_domain'), """
+        (Operation('read', 'lineage', 'lineage', 'lineage_id', 'lineage_graph', implementation='management_portal.society_service.lineage_reads'), """
             get_lineage
         """),
-        (Operation('read', 'lineage', 'lineage', 'lineage_id', 'message_counts', implementation='management_portal.society_service.lineage_domain'), """
+        (Operation('read', 'lineage', 'lineage', 'lineage_id', 'message_counts', implementation='management_portal.society_service.lineage_reads'), """
             get_node_message_counts
         """),
-        (Operation('read', 'lineage', implementation='management_portal.society_service.lineage_domain'), """
-            get_lineage_monitor_definitions list_lineages list_principal_hierarchy list_lineage_human_notifications list_resident_discovery_catalog
+        (Operation('read', 'lineage', implementation='management_portal.society_service.lineage_reads'), """
+            get_lineage_monitor_definitions list_lineages list_lineage_human_notifications list_resident_discovery_catalog
             list_removed_discovery_residents
         """),
-        (Operation('write', 'resident', 'lineage', 'lineage_id', implementation='management_portal.society_service.lineage_domain'), """
+        (Operation('read', 'lineage', implementation='management_portal.society_service.lineage_domain'), """
+            list_principal_hierarchy
+        """),
+        (Operation('write', 'resident', 'lineage', 'lineage_id', implementation='management_portal.society_service.lineage_resident_nodes'), """
             create_lineage_resident
         """),
         # Creates (and, with a deleted account, deletes) the User's personal Lineage; its domain serializes per User.

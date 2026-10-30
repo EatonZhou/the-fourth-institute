@@ -10,6 +10,13 @@ from management_portal import portal_access_control
 from management_portal.society_service import (
     effect_failure_notifications,
     lineage_domain,
+    lineage_state,
+    lineage_reads,
+    lineage_resident_nodes,
+    lineage_lifecycle,
+    lineage_graph_edits,
+    lineage_branches,
+    lineage_resident_workspaces,
     resident_catalog,
     resident_hatg_credentials,
     lineage_state_domains,
@@ -79,7 +86,7 @@ def _install_isolated_portal_access(monkeypatch) -> None:
     for module in (
         lineage_instruction_context,
         effect_failure_notifications,
-        lineage_domain,
+        lineage_reads,
         resident_access,
         resident_management_domain,
     ):
@@ -96,7 +103,7 @@ def write_lineage_facts(aggregate: Mapping[str, Any]) -> None:
     definition = lineage_state_domains.definition_projection(
         dict(aggregate)
     )
-    definition["schema"] = lineage_domain.LINEAGE_FOLDER_SCHEMA
+    definition["schema"] = lineage_state.LINEAGE_FOLDER_SCHEMA
     lineage_aggregate.lineage_catalog_store().upsert(definition)
     lineage_aggregate.lineage_catalog_store().put_runtime(
         lineage_id,
@@ -109,15 +116,15 @@ def create_lineage_with_resident_members(
 ) -> dict[str, Any]:
     """Create isolated test identities before authoring their graph view."""
     nodes = copy.deepcopy(list(payload.get("nodes") or []))
-    created = lineage_domain.create_lineage({
+    created = lineage_lifecycle.create_lineage({
         **copy.deepcopy(dict(payload)),
         "nodes": [],
         "edges": [],
         "program": {"components": [], "wires": []},
     }, actor)
     publish_registered_lineage_members({**created, "nodes": nodes}, actor)
-    current = lineage_domain.get_lineage(created["lineage_id"], actor)
-    return lineage_domain.update_lineage(created["lineage_id"], {
+    current = lineage_reads.get_lineage(created["lineage_id"], actor)
+    return lineage_graph_edits.update_lineage(created["lineage_id"], {
         "expected_revision": current["revision"],
         "lineage": {**current, **copy.deepcopy(dict(payload)), "nodes": nodes},
     }, actor)
@@ -139,7 +146,7 @@ def publish_registered_lineage_members(
         return
     # Commit one event time: empty timestamps make descriptor normalization read
     # the clock independently of its canonical guard and race across seconds.
-    created_at = lineage.get("created_at") or lineage_domain._now_iso()
+    created_at = lineage.get("created_at") or lineage_state._now_iso()
     updated_at = lineage.get("updated_at") or created_at
     with store.database.read() as connection:
         existing = {row["resident_id"] for row in connection.execute(
@@ -179,14 +186,14 @@ def publish_registered_lineage_members(
 
 
 def install_registered_lineage_members(monkeypatch) -> None:
-    original_create = lineage_domain.create_lineage
+    original_create = lineage_lifecycle.create_lineage
 
     def create(payload, actor):
         lineage = original_create(payload, actor)
         publish_registered_lineage_members(lineage, actor)
         return lineage
 
-    monkeypatch.setattr(lineage_domain, "create_lineage", create)
+    monkeypatch.setattr(lineage_lifecycle, "create_lineage", create)
 
 
 def install_resource_boundary(monkeypatch, *, synthetic_residents=True) -> dict[str, dict[str, Any]]:
@@ -323,13 +330,13 @@ def install_resource_boundary(monkeypatch, *, synthetic_residents=True) -> dict[
         ),
     )
 
-    original_rename = lineage_domain._rename_resident_lineage_node
-    original_branch_fork = lineage_domain._create_derived_resident
-    original_workspace_roots = lineage_domain._resident_workspace_roots
-    original_workspace_mount = lineage_domain._mount_resident_reference_workspace
+    original_rename = lineage_resident_nodes._rename_resident_lineage_node
+    original_branch_fork = lineage_branches._create_derived_resident
+    original_workspace_roots = lineage_resident_workspaces._resident_workspace_roots
+    original_workspace_mount = lineage_resident_workspaces._mount_resident_reference_workspace
 
     monkeypatch.setattr(
-        lineage_domain,
+        lineage_resident_nodes,
         "_rename_resident_lineage_node",
         lambda node, title, actor: (
             LINEAGE_NODE_RENAME_RESOLVER(copy.deepcopy(node), title, actor)
@@ -361,10 +368,10 @@ def install_resource_boundary(monkeypatch, *, synthetic_residents=True) -> dict[
             return resolver(resident_id, workspace_path, actor)
         return original_workspace_mount(resident_id, actor, workspace_path, **kwargs)
 
-    monkeypatch.setattr(lineage_domain, "_create_derived_resident", branch_fork)
-    monkeypatch.setattr(lineage_domain, "_resident_workspace_roots", workspace_roots)
+    monkeypatch.setattr(lineage_branches, "_create_derived_resident", branch_fork)
+    monkeypatch.setattr(lineage_resident_workspaces, "_resident_workspace_roots", workspace_roots)
     monkeypatch.setattr(
-        lineage_domain,
+        lineage_resident_workspaces,
         "_mount_resident_reference_workspace",
         workspace_mount,
     )
@@ -415,8 +422,8 @@ def install_resource_boundary(monkeypatch, *, synthetic_residents=True) -> dict[
         "deliver_resident_input",
         deliver_test_resident_input,
     )
-    original_requested_project_id = lineage_domain._requested_lineage_project_id
-    original_project_folder = lineage_domain._lineage_project_folder
+    original_requested_project_id = lineage_state._requested_lineage_project_id
+    original_project_folder = lineage_lifecycle._lineage_project_folder
     test_project_id = "project_test"
 
     def requested_project_id(payload, previous, actor):
@@ -429,16 +436,16 @@ def install_resource_boundary(monkeypatch, *, synthetic_residents=True) -> dict[
 
     def project_folder(lineage_id, project_id, actor):
         if project_id == test_project_id:
-            return lineage_domain._lineages_root() / lineage_id
+            return lineage_state._lineages_root() / lineage_id
         return original_project_folder(lineage_id, project_id, actor)
 
     monkeypatch.setattr(
-        lineage_domain,
+        lineage_state,
         "_requested_lineage_project_id",
         requested_project_id,
     )
     monkeypatch.setattr(
-        lineage_domain,
+        lineage_lifecycle,
         "_lineage_project_folder",
         project_folder,
     )
@@ -494,8 +501,8 @@ def install_resource_boundary(monkeypatch, *, synthetic_residents=True) -> dict[
         "sync_resident",
         "sync_resident_resource_bundles",
     ):
-        monkeypatch.delitem(lineage_domain.resource_port.__dict__, method_name, raising=False)
-    monkeypatch.setattr(lineage_domain.resource_port, "_implementation", resource_client)
+        monkeypatch.delitem(lineage_state.resource_port.__dict__, method_name, raising=False)
+    monkeypatch.setattr(lineage_state.resource_port, "_implementation", resource_client)
     monkeypatch.setattr(resource_client, "project_ids_for_path", lambda *_args, **_kwargs: [])
     monkeypatch.setattr(resource_client, "project_roots", lambda **_kwargs: {})
     monkeypatch.setattr(
@@ -532,7 +539,7 @@ def install_resource_boundary(monkeypatch, *, synthetic_residents=True) -> dict[
         }
 
     monkeypatch.setattr(
-        lineage_domain,
+        lineage_state,
         "_resident_targets",
         resolve_resident_targets,
     )
@@ -541,7 +548,7 @@ def install_resource_boundary(monkeypatch, *, synthetic_residents=True) -> dict[
         "ensure_resident_credential",
         lambda *_args, **_kwargs: None,
     )
-    monkeypatch.setattr(lineage_domain, "_sync_lineage_resource_identity", sync_lineage)
+    monkeypatch.setattr(lineage_state, "_sync_lineage_resource_identity", sync_lineage)
     return records
 
 

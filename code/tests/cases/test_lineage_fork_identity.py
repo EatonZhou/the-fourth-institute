@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from management_portal.society_service import lineage_domain
+from management_portal.society_service import lineage_branches
 
 
 LINEAGE = "lineage_111111111111"
@@ -27,12 +27,12 @@ def fork_payloads(monkeypatch: pytest.MonkeyPatch) -> list[dict]:
         payloads.append(payload)
         return {"edge_id": payload["edge_id"]}
 
-    monkeypatch.setattr(lineage_domain, "create_lineage_branch", create_branch)
+    monkeypatch.setattr(lineage_branches, "create_lineage_branch", create_branch)
     return payloads
 
 
 def fork(**arguments: object) -> dict:
-    return lineage_domain.fork_lineage_resident(
+    return lineage_branches.fork_lineage_resident(
         LINEAGE, {"source": SOURCE, **arguments}, "sample_admin"
     )
 
@@ -56,7 +56,7 @@ def test_fork_retry_reuses_instruction_identity(fork_payloads: list[dict]) -> No
 def test_fork_instruction_key_is_scoped_to_its_principal(fork_payloads: list[dict]) -> None:
     """幂等键按调用者区分，不同调用者用同一个键得到不同分叉边"""
     first = fork(idempotency_key="shared-key")
-    second = lineage_domain.fork_lineage_resident(
+    second = lineage_branches.fork_lineage_resident(
         LINEAGE, {"source": SOURCE, "idempotency_key": "shared-key"}, "another-owner"
     )
     assert first["edge_id"] != second["edge_id"]

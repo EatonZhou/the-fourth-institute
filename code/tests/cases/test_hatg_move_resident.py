@@ -9,7 +9,11 @@ import pytest
 
 from management_portal.execution.agent_data_store import get_agent_data_store
 from management_portal.society_service import (
-    lineage_domain,
+    lineage_graph_edits,
+    lineage_lifecycle,
+    lineage_moves,
+    lineage_reads,
+    lineage_resident_nodes,
     resident_backend,
     resident_domain,
     resident_lifecycle_domain,
@@ -32,7 +36,7 @@ def teams(future_creation_store, monkeypatch):  # noqa: F811 - pytest fixture
     reset_kernels()
     source = resident_domain.register_resident(_new_session_payload("Source"), ACTOR)
     target = resident_domain.register_resident(_new_session_payload("Target"), ACTOR)
-    member = lineage_domain.create_lineage_resident(
+    member = lineage_resident_nodes.create_lineage_resident(
         source["lineage_id"], _new_session_payload("Existing member"), ACTOR,
     )["resident"]
     yield source, target, member
@@ -40,7 +44,7 @@ def teams(future_creation_store, monkeypatch):  # noqa: F811 - pytest fixture
 
 
 def graph(record):
-    return lineage_domain.get_lineage(record["lineage_id"], ACTOR)
+    return lineage_reads.get_lineage(record["lineage_id"], ACTOR)
 
 
 def request(teams, key="move-one"):
@@ -77,7 +81,7 @@ def test_move_preserves_member_conversation_files_and_replays(teams, empty_targe
     """MoveResident 迁移成员后保留会话、对话、Workspace 和文件，重复调用回放同一操作"""
     source, target, member = teams
     if empty_target:
-        target = lineage_domain.create_lineage({"title": "Empty target", "project_id": source["project_id"]}, ACTOR)
+        target = lineage_lifecycle.create_lineage({"title": "Empty target", "project_id": source["project_id"]}, ACTOR)
         teams = source, target, member
         assert graph(target)["nodes"] == []
     resident_id = member["resident_id"]
@@ -132,7 +136,7 @@ def test_move_avoids_target_node_at_the_source_position(teams):
     source, target, member = teams
     target_before = graph(target)
     obstacle = target_before["nodes"][0]
-    lineage_domain.update_lineage_layout(source["lineage_id"], {"positions": [
+    lineage_lifecycle.update_lineage_layout(source["lineage_id"], {"positions": [
         {"id": member["resident_id"], "x": obstacle["x"], "y": obstacle["y"]},
     ]}, ACTOR)
     execute(request(teams)).raise_for_error()
@@ -146,7 +150,7 @@ def test_move_avoids_target_node_at_the_source_position(teams):
 def test_move_preserves_source_position_when_destination_has_room(teams):
     """目标 Lineage 原位置空闲时迁入节点保持源位置坐标"""
     source, target, member = teams
-    lineage_domain.update_lineage_layout(source["lineage_id"], {"positions": [
+    lineage_lifecycle.update_lineage_layout(source["lineage_id"], {"positions": [
         {"id": member["resident_id"], "x": 87, "y": 81},
     ]}, ACTOR)
     execute(request(teams)).raise_for_error()
@@ -225,7 +229,7 @@ def test_move_reference_guard_does_not_prune_flows(teams, kind):
     objects = definition if kind == "function_blocks" else definition["program"]
     objects[kind] = [{"id": "existing-object", "config": {"members": [member["resident_id"]]}}]
     with pytest.raises(ValueError, match=f"{kind}/existing-object"):
-        lineage_domain._resident_move_patch(definition, member["resident_id"])
+        lineage_moves._resident_move_patch(definition, member["resident_id"])
     assert objects[kind][0]["id"] == "existing-object"
     assert graph(source) == before
 
@@ -233,14 +237,14 @@ def test_move_reference_guard_does_not_prune_flows(teams, kind):
 def test_move_detaches_relations_without_reconnecting(teams):
     """迁移成员时断开它的继承等关系并列在回执中，源图不绕过它补建继承边，来源信息保留"""
     source, target, member = teams
-    child = lineage_domain.create_lineage_resident(
+    child = lineage_resident_nodes.create_lineage_resident(
         source["lineage_id"], _new_session_payload("Forked from member"), ACTOR,
     )["resident"]
     edges = [
         {"id": "edge_000000000001", "type": "inheritance", "source": source["resident_id"], "target": member["resident_id"]},
         {"id": "edge_000000000002", "type": "inheritance", "source": member["resident_id"], "target": child["resident_id"]},
     ]
-    lineage_domain._apply_lineage_graph_patch(source["lineage_id"], {
+    lineage_graph_edits._apply_lineage_graph_patch(source["lineage_id"], {
         "patch": {"edges": edges}, "history_reason": "test relations",
     }, ACTOR, synchronize_external_projections=False)
     record = resident_record_domain.find_resident(member["resident_id"])
@@ -276,7 +280,7 @@ def test_concurrent_moves_of_different_members_both_land(teams):
     验证从同一源 Lineage 并发迁出两个不同成员时两次迁移都提交，源和目标的成员列表都包含两次修改。
     """
     source, target, _ = teams
-    second = lineage_domain.create_lineage_resident(
+    second = lineage_resident_nodes.create_lineage_resident(
         source["lineage_id"], _new_session_payload("Second real member"), ACTOR,
     )["resident"]
     calls = [request(teams, "first"), request((source, target, second), "second")]
@@ -315,7 +319,7 @@ def test_move_failure_rolls_back_both_graphs_membership_and_outbox(teams, monkey
     def fail(*args, **kwargs):
         raise ValueError("destination commit failed")
 
-    monkeypatch.setattr(lineage_domain, "_append_registered_resident_node_locked", fail)
+    monkeypatch.setattr(lineage_resident_nodes, "_append_registered_resident_node_locked", fail)
     assert "destination commit failed" in failure(call)["message"]
     unchanged(teams, before)
 

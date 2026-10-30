@@ -434,7 +434,7 @@ def test_new_resident_uses_default_without_explicit_role(monkeypatch):
     created = []
     monkeypatch.setattr(residents, "_family_to_join", lambda *a: "")
     monkeypatch.setattr(residents, "placement", lambda *a: {})
-    monkeypatch.setattr(residents, "domain", lambda: SimpleNamespace(create_lineage_resident=lambda lineage, payload, actor:
+    monkeypatch.setattr(residents, "lineage_resident_nodes", lambda: SimpleNamespace(create_lineage_resident=lambda lineage, payload, actor:
         created.append(payload) or {"resident": {"resident_id": "resident_000000000001"}}))
     residents.create_resident(invoke(title="New", lineage_id="lineage_000000000001"))
     assert created[0]["backend"] == "claude"

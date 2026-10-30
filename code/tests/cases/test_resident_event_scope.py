@@ -19,10 +19,13 @@ import pytest
 from management_portal.society_service import (
     lineage_catalog,
     lineage_domain,
+    lineage_lifecycle,
     lineage_primitive_definitions,
     lineage_program,
+    lineage_program_edits,
     lineage_program_runtime,
     lineage_program_terminal_reconciliation as terminal,
+    lineage_reads,
 )
 from tests.cases import society_service_test_support as lineage_test_support
 from tests.cases.test_lineage_generic_primitives import (  # noqa: F401 - primitive_store is a fixture
@@ -38,7 +41,7 @@ OUTSIDER = "resident_0000000000ff"
 
 
 def _scoped(scope: str, event_type: str = "resident.work_finished") -> dict:
-    return lineage_domain.create_lineage(
+    return lineage_lifecycle.create_lineage(
         {
             "title": "Observe a set of Residents",
             "nodes": [_worker(WORK_A), _worker(WORK_B), _worker(WORK_C)],
@@ -214,7 +217,7 @@ def test_a_scoped_source_takes_no_watch_wire(primitive_store: Path) -> None:
     """
     del primitive_store
     with pytest.raises(ValueError, match="不使用 Watch 连线"):
-        lineage_domain.create_lineage(
+        lineage_lifecycle.create_lineage(
             {
                 "title": "Scope and Watch together",
                 "nodes": [_worker(WORK_A), _worker(WORK_C)],
@@ -238,7 +241,7 @@ def test_choosing_a_scope_drops_the_watch_wires(primitive_store: Path) -> None:
     保存组件把 resident_scope 改为 lineage 时同时删除指向它的 Watch 连线，保留 Event 连线。
     """
     del primitive_store
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         {
             "title": "Watched first",
             "nodes": [_worker(WORK_A), _worker(WORK_C)],
@@ -253,7 +256,7 @@ def test_choosing_a_scope_drops_the_watch_wires(primitive_store: Path) -> None:
         },
         ACTOR,
     )
-    saved = lineage_domain.save_lineage_program_component(
+    saved = lineage_program_edits.save_lineage_program_component(
         str(created["lineage_id"]),
         {"component_id": "event_source_any", "component": {
             "config": {"event_type": "resident.work_finished", "resident_scope": "lineage"},
@@ -261,7 +264,7 @@ def test_choosing_a_scope_drops_the_watch_wires(primitive_store: Path) -> None:
         ACTOR,
     )
     assert saved["removed_wire_ids"] == ["wire_watch_a"]
-    lineage = lineage_domain.get_lineage(str(created["lineage_id"]), ACTOR)
+    lineage = lineage_reads.get_lineage(str(created["lineage_id"]), ACTOR)
     assert [wire["id"] for wire in lineage["program"]["wires"]] == ["wire_tell_c"]
     assert lineage["program"]["components"][0]["config"]["resident_scope"] == "lineage"
 

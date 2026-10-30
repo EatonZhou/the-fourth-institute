@@ -234,18 +234,18 @@ def test_isa_crud_and_selection_roundtrip(lineage):
 )
 def test_explore_keeps_seeds_and_syncs_files(lineage, monkeypatch, key, seed_type):
     """探索模板创建 Seed 并同步候选文件，删除探索者后 Seed 和文件仍保留"""
-    from management_portal.society_service import lineage_domain, templates
+    from management_portal.society_service import lineage_branches, lineage_resident_nodes, templates
     from management_portal.society_service.templates import explore, prompt
 
     source = resident(lineage, "Source")
 
     def fork(lid, payload, actor):
-        created = lineage_domain.create_lineage_resident(
+        created = lineage_resident_nodes.create_lineage_resident(
             lid, {"title": payload["child_title"], "backend": "codex"}, actor
         )
         return {"created_resident": {"id": created["resident"]["resident_id"]}}
 
-    monkeypatch.setattr(lineage_domain, "fork_lineage_resident", fork)
+    monkeypatch.setattr(lineage_branches, "fork_lineage_resident", fork)
     delivered = []
     monkeypatch.setattr(
         prompt,
@@ -639,7 +639,7 @@ def test_structure_rejects_cross_provider_before_any_creation(
     lineage, monkeypatch, provider_location
 ):
     """fork 角色指定其他 Provider 时，结构模板在创建任何 Resident 前拒绝"""
-    from management_portal.society_service import lineage_domain, templates
+    from management_portal.society_service import lineage_branches, lineage_resident_nodes, templates
 
     source = resident(lineage, "Source")
     fork = {"key": "copy", "from": "fork", "fork_of": "target"}
@@ -666,8 +666,8 @@ def test_structure_rejects_cross_provider_before_any_creation(
     def unexpected_creation(*args, **kwargs):
         pytest.fail("Provider validation must run before creating any Resident")
 
-    monkeypatch.setattr(lineage_domain, "create_lineage_resident", unexpected_creation)
-    monkeypatch.setattr(lineage_domain, "fork_lineage_resident", unexpected_creation)
+    monkeypatch.setattr(lineage_resident_nodes, "create_lineage_resident", unexpected_creation)
+    monkeypatch.setattr(lineage_branches, "fork_lineage_resident", unexpected_creation)
     with pytest.raises(templates.TemplateError, match="Provider"):
         templates.apply(
             lineage,
@@ -683,7 +683,7 @@ def test_structure_validates_all_target_providers_before_any_creation(
 ):
     """多个目标中任一 Provider 不符时，结构模板在首次 fork 前拒绝"""
     from management_portal.society_service import (
-        lineage_domain,
+        lineage_branches,
         resident_protocol,
         templates,
     )
@@ -721,7 +721,7 @@ def test_structure_validates_all_target_providers_before_any_creation(
     def unexpected_creation(*args, **kwargs):
         pytest.fail("All target Providers must be checked before the first Fork")
 
-    monkeypatch.setattr(lineage_domain, "fork_lineage_resident", unexpected_creation)
+    monkeypatch.setattr(lineage_branches, "fork_lineage_resident", unexpected_creation)
     with pytest.raises(templates.TemplateError, match="Provider"):
         templates.apply(
             lineage,
@@ -733,7 +733,7 @@ def test_structure_validates_all_target_providers_before_any_creation(
 
 def test_structure_validates_fork_provider_through_new_roles(lineage, monkeypatch):
     """嵌套 fork 新角色时沿继承链检查 Provider，在创建前拒绝不符的指定"""
-    from management_portal.society_service import lineage_domain, templates
+    from management_portal.society_service import lineage_resident_nodes, templates
 
     recipe = templates.create(
         {
@@ -758,7 +758,7 @@ def test_structure_validates_fork_provider_through_new_roles(lineage, monkeypatc
     def unexpected_creation(*args, **kwargs):
         pytest.fail("Fork Provider inheritance must be resolved before creation")
 
-    monkeypatch.setattr(lineage_domain, "create_lineage_resident", unexpected_creation)
+    monkeypatch.setattr(lineage_resident_nodes, "create_lineage_resident", unexpected_creation)
     with pytest.raises(templates.TemplateError, match="Provider"):
         templates.apply(
             lineage,
@@ -774,7 +774,7 @@ def test_fork_same_provider_preserves_settings_and_account(
     monkeypatch, explicit_provider
 ):
     """同 Provider 的 fork 角色使用所选账号，并合并所选与模板中的运行设置"""
-    from management_portal.society_service import lineage_domain, resident_protocol
+    from management_portal.society_service import lineage_branches, resident_protocol
     from management_portal.society_service.templates.registry import ApplyContext
     from management_portal.society_service.templates.structure import create_role
 
@@ -787,7 +787,7 @@ def test_fork_same_provider_preserves_settings_and_account(
         calls.append(("fork", payload, actor))
         return {"created_resident": {"id": "resident_child"}}
 
-    monkeypatch.setattr(lineage_domain, "fork_lineage_resident", fork)
+    monkeypatch.setattr(lineage_branches, "fork_lineage_resident", fork)
     monkeypatch.setattr(
         resident_protocol,
         "update_resident_runtime_settings",

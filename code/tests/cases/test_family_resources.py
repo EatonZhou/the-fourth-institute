@@ -5,7 +5,7 @@ import pytest
 
 from management_portal.society_service.state_store import get_lineage_data_store
 from management_portal.resources import get_resource_service
-from management_portal.society_service import lineage_domain, resource_client
+from management_portal.society_service import lineage_state, resource_client
 from tests.cases.isa_test_support import ok
 from tests.cases.test_family_familize import charters  # noqa: F401
 from tests.cases.test_isa_lineage_lifecycle import future_creation_store, lineage, resident, graph  # noqa: F401
@@ -17,7 +17,7 @@ REAL_SYNC_LINEAGE = resource_client.sync_lineage
 @pytest.fixture(autouse=True)
 def family_publication(lineage, monkeypatch):
     # Creation fixtures stub resource publication; exercise the real owner here.
-    monkeypatch.setattr(lineage_domain, "_sync_lineage_resource_identity", REAL_SYNC_LINEAGE)
+    monkeypatch.setattr(lineage_state, "_sync_lineage_resource_identity", REAL_SYNC_LINEAGE)
     # In production the ResourceService dispatcher authenticates SocietyService
     # publications as the society-service domain; the in-process service gets none.
     service = get_resource_service()

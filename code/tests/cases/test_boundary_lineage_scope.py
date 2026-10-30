@@ -6,7 +6,7 @@ import pytest
 from management_portal.hatg.catalog import instruction_catalog
 from management_portal.hatg.contracts import InstructionError
 from management_portal.society_service import lineage_definition_scope as scope
-from management_portal.society_service import lineage_domain as graphs
+from management_portal.society_service import lineage_program_edits
 from tests.cases.isa_test_support import ACTOR, ok, run
 from tests.cases.test_isa_lineage_lifecycle import lineage, resident, graph, future_creation_store  # noqa: F401
 
@@ -38,8 +38,8 @@ def test_concurrent_source_removal_is_rechecked_under_commit_lock(lineage):
         # A concurrent write runs with its own invocation context.
         from concurrent.futures import ThreadPoolExecutor
         with ThreadPoolExecutor(1) as pool:
-            pool.submit(graphs.delete_lineage_program_component, lineage, {'component_id': component}, ACTOR).result()
-        graphs.create_lineage_program_component(lineage, {'kind': 'event_source',
+            pool.submit(lineage_program_edits.delete_lineage_program_component, lineage, {'component_id': component}, ACTOR).result()
+        lineage_program_edits.create_lineage_program_component(lineage, {'kind': 'event_source',
             'config': {'event_type': 'manual.triggered'}}, ACTOR)
     with pytest.raises(InstructionError, match='对象不属于'):
         scope.guard_source_scope('MoveLineageObjects', delayed_handler)(inv)

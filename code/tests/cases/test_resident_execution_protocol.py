@@ -28,7 +28,10 @@ import pytest
 pytestmark = pytest.mark.usefixtures("registered_execution_defaults")
 
 from management_portal.society_service import (
-    lineage_domain,
+    lineage_state,
+    lineage_resident_nodes,
+    lineage_lifecycle,
+    lineage_graph_edits,
     resident_hatg_credentials,
     resident_access,
     resident_conversation_projection_domain,
@@ -423,7 +426,7 @@ def resident_record(
     workspace = lineage_root / "lineage_000000000001"
     default_cwd = workspace / "residents" / "resident_aaaaaaaaaaaa" / "workspace"
     monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", tmp_path / "lineage-state")
-    monkeypatch.setattr(lineage_domain, "LINEAGE_FOLDER_ROOT", lineage_root)
+    monkeypatch.setattr(lineage_state, "LINEAGE_FOLDER_ROOT", lineage_root)
     monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(lineage_root))
     session_store = AgentDataStore()
     monkeypatch.setattr(
@@ -456,7 +459,7 @@ def resident_record(
     # Canonical membership now requires its aggregate to exist before a
     # Resident is inserted; initialize graph attributes after membership.
     with lineage_aggregate.lineage_scope(str(record["lineage_id"])):
-        lineage_domain._create_lineage_in_scope(
+        lineage_lifecycle._create_lineage_in_scope(
             {"title": "Resident protocol test", "project_id": record["project_id"],
              "nodes": [], "edges": []},
             "CASE-A",
@@ -470,7 +473,7 @@ def resident_record(
         "019f0000-0000-7000-8000-000000000001",
         backend_route_id="zero",
     )
-    lineage_domain.update_lineage(
+    lineage_graph_edits.update_lineage(
         str(record["lineage_id"]),
         {**lineage_aggregate.read_lineage(str(record["lineage_id"]), actor="CASE-A"),
          "leader_resident_id": record["resident_id"]},
@@ -772,7 +775,7 @@ def _add_created_resident_to_lineage(
 ) -> None:
     created_resident_record = resident_catalog.get_catalog().get(created_resident_id)
     created_resident_record["workspace_path"] = record["workspace_path"]
-    updated = lineage_domain.add_registered_resident_node(
+    updated = lineage_resident_nodes.add_registered_resident_node(
         created_resident_record,
         actor,
     )

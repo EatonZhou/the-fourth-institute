@@ -1,7 +1,8 @@
 """The stored Lineage aggregate: its canonical reads, change scopes, Program authority and manager check.
 
-Code that reads or guards a Lineage uses this module; ``lineage_domain``
-edits the aggregate and owns its public entry points.
+Code that reads or guards a Lineage uses this module; the Lineage operation
+modules (``lineage_state`` and those built on it) edit the aggregate, and
+``lineage_domain`` owns the runtime entry points.
 """
 from __future__ import annotations
 

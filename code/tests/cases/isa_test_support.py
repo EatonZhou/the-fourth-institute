@@ -51,7 +51,7 @@ def isolated_instruction_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     """Lineage folders, Resident staging and resource boundary under ``tmp_path``, with fresh kernels."""
 
     from management_portal.society_service import (
-        lineage_domain,
+        lineage_state,
         resident_project_domain,
         resident_workspace_domain,
     )
@@ -59,7 +59,7 @@ def isolated_instruction_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
 
     root = tmp_path / "lineages"
     monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", root)
-    monkeypatch.setattr(lineage_domain, "LINEAGE_FOLDER_ROOT", root / "lineages")
+    monkeypatch.setattr(lineage_state, "LINEAGE_FOLDER_ROOT", root / "lineages")
     monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(root / "lineages"))
     install_resource_boundary(monkeypatch, synthetic_residents=False)
     monkeypatch.setattr(resident_domain_common, "STAGING_ROOT", tmp_path)

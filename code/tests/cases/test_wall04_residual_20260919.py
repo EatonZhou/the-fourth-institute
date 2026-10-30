@@ -12,7 +12,10 @@ from management_portal import agent_context_selection
 from tests.cases.isa_test_support import reset_kernels, run
 from management_portal.society_service import (
     invariant_locks,
-    lineage_domain,
+    lineage_handoffs,
+    lineage_lifecycle,
+    lineage_resident_nodes,
+    lineage_state,
     resident_catalog,
     resident_conversation_stream,
     resident_delivery_work,
@@ -34,7 +37,7 @@ LOCAL_POPEN = subprocess.Popen
 @pytest.fixture
 def team(owners, monkeypatch):
     reset_kernels()
-    target = lineage_domain.create_lineage_resident(owners.lineage_id, {
+    target = lineage_resident_nodes.create_lineage_resident(owners.lineage_id, {
         "title": "Residual target", "backend": "codex", "mode": "new_session",
     }, ACTOR)["resident"]
     resident_protocol.change_resident_state(
@@ -307,7 +310,7 @@ def test_handoff_isa_prepares_durable_binding_and_idempotent_delivery(team, mode
     (source / "handoff.txt").write_text("original bytes")
     (source / ".env").write_text("private fixture only")
     before_owned = team.target["owned_workspace"]
-    created = lineage_domain.create_handoff(team.lineage_id, {
+    created = lineage_handoffs.create_handoff(team.lineage_id, {
         "source_resident_id": team.source["resident_id"], "target_resident_id": team.target["resident_id"],
         "items": [{"source": {"path": str(source)}, "transfer": {"mode": mode}}],
         "execute_now": False,
@@ -381,11 +384,11 @@ def test_project_move_updates_canonical_member_paths_and_keeps_single_root(team)
     adapter = team.owners.index.adapter_layer.adapters["project"]
     records, source_state = adapter.scan()
     team.owners.index_store.publish_snapshot("project", records, source_state)
-    root = lineage_domain._lineage_dir(team.lineage_id)
+    root = lineage_state._lineage_dir(team.lineage_id)
     original = root.resolve()
     (original / "preserve.txt").write_text("user content")
     current = lineage_aggregate.read_lineage(team.lineage_id, actor=ACTOR)
-    lineage_domain.update_lineage_metadata(team.lineage_id, {
+    lineage_lifecycle.update_lineage_metadata(team.lineage_id, {
         "project_id": next_project, "expected_revision": current["revision"],
     }, ACTOR)
     destination = team.owners.root / "Projects" / next_project / "knowledge_base" / "agents" / team.lineage_id
@@ -402,12 +405,12 @@ def test_project_move_updates_canonical_member_paths_and_keeps_single_root(team)
 def test_missing_folder_rebuild_uses_canonical_members_and_preserves_user_files(team):
     """目录丢失时按权威成员重建结构且保留已有用户文件"""
     lineage = lineage_aggregate.read_lineage(team.lineage_id, actor=ACTOR)
-    canonical = lineage_domain._lineage_dir(team.lineage_id)
+    canonical = lineage_state._lineage_dir(team.lineage_id)
     actual = canonical.resolve()
     (actual / "user.txt").write_text("cannot reconstruct this file")
     backup = team.owners.root / "saved-original"
     actual.rename(backup)
-    lineage_domain._ensure_lineage_folder_files(lineage)
+    lineage_state._ensure_lineage_folder_files(lineage)
     for record in resident_catalog.get_catalog().for_lineage(team.lineage_id):
         resident_workspace_domain.ensure_resident_workspace(record)
     assert (canonical / "README.md").is_file()
@@ -419,7 +422,7 @@ def test_missing_folder_rebuild_uses_canonical_members_and_preserves_user_files(
         assert (folder / "resident.md").is_file()
         assert (folder / "workspace").is_dir()
     (canonical / "LINEAGE.md").write_text("human notes")
-    lineage_domain._ensure_lineage_folder_files(lineage)
+    lineage_state._ensure_lineage_folder_files(lineage)
     assert (canonical / "LINEAGE.md").read_text() == "human notes"
 
 
@@ -428,7 +431,7 @@ def test_failed_handoff_preparation_is_reported_as_a_failed_status(team, monkeyp
     from management_portal.society_service import lineage_handoff_preparation
 
     source = Path(team.source["default_cwd"])
-    created = lineage_domain.create_handoff(team.lineage_id, {
+    created = lineage_handoffs.create_handoff(team.lineage_id, {
         "source_resident_id": team.source["resident_id"], "target_resident_id": team.target["resident_id"],
         "items": [{"source": {"path": str(source)}, "transfer": {"mode": "copy"}}],
         "execute_now": False,

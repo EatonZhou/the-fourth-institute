@@ -14,7 +14,15 @@ import pytest
 from management_common.principal import OperationIdentity
 from management_common.operation_errors import OperationError
 
-from management_portal.society_service import lineage_domain, lineage_program_effect_execution
+from management_portal.society_service import (
+    lineage_domain,
+    lineage_graph_edits,
+    lineage_lifecycle,
+    lineage_program_edits,
+    lineage_program_effect_execution,
+    lineage_reads,
+    lineage_state,
+)
 from management_portal.society_service import lineage_event_conditions, lineage_program_execution
 from management_portal.society_service import component_runtime, lineage_graph_state
 from management_portal.society_service import invariant_locks, state_store
@@ -104,7 +112,7 @@ def primitive_store(
 ) -> Path:
     root = tmp_path / "lineages"
     monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", root)
-    monkeypatch.setattr(lineage_domain, "LINEAGE_FOLDER_ROOT", root / "lineages")
+    monkeypatch.setattr(lineage_state, "LINEAGE_FOLDER_ROOT", root / "lineages")
     monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(root / "lineages"))
     install_resource_boundary(monkeypatch)
     monkeypatch.setattr(
@@ -125,32 +133,33 @@ def primitive_store(
 def test_all_primitive_creation_paths_allocate_without_overlaps(primitive_store: Path, entry: str, monkeypatch: pytest.MonkeyPatch) -> None:
     """新建、补丁、克隆和初始组件都自动摆在附近且互不重叠，手动位置保持不变"""
     clock = {"now": "2026-01-01T00:00:00Z"}
+    monkeypatch.setattr(lineage_state, "_now_iso", lambda: clock["now"])
     monkeypatch.setattr(lineage_domain, "_now_iso", lambda: clock["now"])
     component = {
         "id": "event_source_placement_template", "kind": "event_source", "title": "验收完成→监督",
         "x": 300, "y": -250, "config": {"event_type": "manual.triggered"},
     }
     initial = [dict(component, id=f"event_source_initial_{index}") for index in range(5)] if entry == "initial" else [component]
-    lineage = lineage_domain.create_lineage({
+    lineage = lineage_lifecycle.create_lineage({
         "title": "Primitive placement",
         "nodes": [{**_worker(WORK_A), "x": 300, "y": -250}], "edges": [],
         "program": {"components": initial, "wires": []},
     }, ACTOR)
-    before = lineage_domain.get_lineage(lineage["lineage_id"], ACTOR)
+    before = lineage_reads.get_lineage(lineage["lineage_id"], ACTOR)
     lineage_id = lineage["lineage_id"]
     store = lineage_aggregate.lineage_catalog_store().state_store
     residents_before = store.residents_by_id([WORK_A])
     clock["now"] = "2026-01-01T00:00:01Z"
     if entry == "create":
         for index in range(5):
-            lineage = lineage_domain.create_lineage_program_component(lineage_id, {
+            lineage = lineage_program_edits.create_lineage_program_component(lineage_id, {
                 "kind": "event_source", "title": f"自动事件 {index}",
                 "expected_revision": lineage["revision"], "x": None, "y": None,
                 "created_by_principal_id": WORK_A,
                 "config": {"event_type": "manual.triggered"},
             }, ACTOR)["lineage"]
     elif entry == "patch":
-        lineage = lineage_domain.apply_lineage_graph_patch(lineage_id, {
+        lineage = lineage_graph_edits.apply_lineage_graph_patch(lineage_id, {
             "expected_revision": lineage["revision"],
             "patch": {"program": {"components": [
                 *lineage["program"]["components"],
@@ -158,13 +167,13 @@ def test_all_primitive_creation_paths_allocate_without_overlaps(primitive_store:
             ], "wires": []}},
         }, ACTOR)
     elif entry == "clone":
-        lineage = lineage_domain.apply_lineage_changes(lineage_id, {
+        lineage = lineage_graph_edits.apply_lineage_changes(lineage_id, {
             "program_operations": [
                 {"op": "clone", "kind": "component", "id": component["id"], "new_id": f"event_source_clone_{index}"}
                 for index in range(5)
             ],
         }, ACTOR)["lineage"]
-    current = lineage_domain.get_lineage(lineage_id, ACTOR)
+    current = lineage_reads.get_lineage(lineage_id, ACTOR)
     objects = [*current["nodes"], *current["program"]["components"]]
     assert [{key: value for key, value in node.items() if key != "updated_at"} for node in current["nodes"]] == [
         {key: value for key, value in node.items() if key != "updated_at"} for node in before["nodes"]
@@ -183,10 +192,10 @@ def test_all_primitive_creation_paths_allocate_without_overlaps(primitive_store:
             )
     # An explicit edit of an existing component remains a user-owned placement.
     moved = dict(current["program"]["components"][0], x=300, y=-250)
-    lineage_domain.update_lineage_layout(lineage_id, {
+    lineage_lifecycle.update_lineage_layout(lineage_id, {
         "positions": [{"id": moved["id"], "x": 300, "y": -250}],
     }, ACTOR)
-    result = lineage_domain.save_lineage_program_component(lineage_id, {
+    result = lineage_program_edits.save_lineage_program_component(lineage_id, {
         "expected_revision": current["revision"], "component_id": moved["id"], "component": {"title": "保留手动位置"},
     }, ACTOR)
     assert result["component"]["x"] == 300 and result["component"]["y"] == -250
@@ -494,7 +503,7 @@ def test_connecting_event_wires_preserves_authored_event_configuration(
         "max_fires": 2,
         "state_domain": "intake",
     }
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         {
             "title": "Event config survives connections",
             "nodes": [_worker(WORK_A), _worker(WORK_B)],
@@ -513,7 +522,7 @@ def test_connecting_event_wires_preserves_authored_event_configuration(
         ACTOR,
     )
 
-    watched = lineage_domain.save_lineage_program_wire(
+    watched = lineage_program_edits.save_lineage_program_wire(
         created["lineage_id"],
         {
             "expected_revision": created["revision"],
@@ -532,7 +541,7 @@ def test_connecting_event_wires_preserves_authored_event_configuration(
     )
     assert component["config"] == expected_config
 
-    connected = lineage_domain.save_lineage_program_wire(
+    connected = lineage_program_edits.save_lineage_program_wire(
         created["lineage_id"],
         {'expected_revision': watched['lineage']['revision'], 'kind': 'route', 'source': 'event_source_preserved_config', 'source_port': 'output', 'target': WORK_B, 'target_port': 'invoke'},
         ACTOR,
@@ -565,7 +574,7 @@ def test_permanent_resident_delete_keeps_the_seeds_it_wrote_or_started(
         "delete_resident_identities",
         lambda lineage_id, ids, _actor: deleted_residents.extend(ids),
     )
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         {
             "title": "Permanent Resident delete",
             "leader_resident_id": WORK_A,
@@ -597,7 +606,7 @@ def test_permanent_resident_delete_keeps_the_seeds_it_wrote_or_started(
         ACTOR,
     )
 
-    result = lineage_domain.delete_lineage_graph_objects(
+    result = lineage_graph_edits.delete_lineage_graph_objects(
         str(created["lineage_id"]),
         {
             "resident_ids": [WORK_B],
@@ -627,7 +636,7 @@ def test_graph_mutation_add_clone_remove_is_atomic(
 ) -> None:
     """ApplyLineageChanges 的增加、克隆、设置和删除一次提交，任一步失败则整体回滚"""
     del primitive_store
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         {
             "title": "Atomic graph mutation",
             "nodes": [_worker(WORK_A)],
@@ -651,7 +660,7 @@ def test_graph_mutation_add_clone_remove_is_atomic(
     )
     lineage_id = str(created["lineage_id"])
     before_revision = int(created["revision"])
-    result = lineage_domain.apply_lineage_changes(
+    result = lineage_graph_edits.apply_lineage_changes(
         lineage_id,
         {
             "program_operations": [
@@ -707,7 +716,7 @@ def test_graph_mutation_add_clone_remove_is_atomic(
     )
 
     assert result["revision"] == before_revision + 1
-    evolved = lineage_domain.get_lineage(lineage_id, ACTOR)
+    evolved = lineage_reads.get_lineage(lineage_id, ACTOR)
     components = {
         str(item["id"]): item
         for item in evolved["program"]["components"]
@@ -727,7 +736,7 @@ def test_graph_mutation_add_clone_remove_is_atomic(
 
     failed_revision = int(evolved["revision"])
     with pytest.raises(ValueError):
-        lineage_domain.apply_lineage_changes(
+        lineage_graph_edits.apply_lineage_changes(
             lineage_id,
             {
                 "program_operations": [
@@ -749,7 +758,7 @@ def test_graph_mutation_add_clone_remove_is_atomic(
             },
             ACTOR,
         )
-    unchanged = lineage_domain.get_lineage(lineage_id, ACTOR)
+    unchanged = lineage_reads.get_lineage(lineage_id, ACTOR)
     assert unchanged["revision"] == failed_revision
     unchanged_component = next(
         item
@@ -773,7 +782,7 @@ def test_effect_outcome_chain_rejects_a_synchronous_cycle(
         return original_definition(plan, effect_id)
 
     monkeypatch.setattr(lineage_program_effect_execution, "effect_definition", observed_definition)
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         {
             "title": "Outcome cycle fence",
             "nodes": [_worker(WORK_A)],
@@ -953,7 +962,7 @@ def test_all_idle_events_fire_only_on_nonzero_to_zero_transitions(
             or {"message_id": f"job_idle_{len(sent)}"}
         ),
     )
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         {
             "title": "Resident activity Events",
             "nodes": [
@@ -1058,7 +1067,7 @@ def test_context_pressure_event_fires_once_per_threshold_entry(
             or {"message_id": f"job_pressure_{len(sent)}"}
         ),
     )
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         {
             "title": "Resident context pressure Event",
             "nodes": [_worker(WORK_A), _worker(WORK_B)],
@@ -1142,7 +1151,7 @@ def test_context_pressure_event_fires_once_per_threshold_entry(
     assert observed_sessions == [
         {WORK_A},
     ] * 6
-    runtime = lineage_domain.get_lineage(
+    runtime = lineage_reads.get_lineage(
         created["lineage_id"],
         ACTOR,
     )["program_event_source_runtime"][
@@ -1168,7 +1177,7 @@ def test_work_duration_event_is_edge_triggered_per_job(
             or {"message_id": f"job_duration_{len(sent)}"}
         ),
     )
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         {
             "title": "Resident work duration Event",
             "nodes": [_worker(WORK_A), _worker(WORK_B)],
@@ -1308,7 +1317,7 @@ def test_queue_pressure_event_supports_both_metrics_and_rearms(
             or {"message_id": f"job_queue_{len(sent)}"}
         ),
     )
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         {
             "title": "Resident queue pressure Events",
             "nodes": [_worker(WORK_A), _worker(WORK_B)],
@@ -1493,7 +1502,7 @@ def test_state_condition_event_initial_policy_and_false_to_true_edges(
             or {"message_id": f"job_state_{len(sent)}"}
         ),
     )
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         {
             "title": "Graph State condition Events",
             "nodes": [_worker(WORK_A), _worker(WORK_B)],
@@ -1578,7 +1587,7 @@ def test_state_condition_event_initial_policy_and_false_to_true_edges(
         for dispatch in crossed["events"]
     )
     assert sent == [WORK_B, WORK_A, WORK_B]
-    runtime = lineage_domain.get_lineage(
+    runtime = lineage_reads.get_lineage(
         created["lineage_id"],
         ACTOR,
     )["program_event_source_runtime"]
@@ -1757,7 +1766,7 @@ def test_manual_event_directly_starts_ordinary_resident(
         return {"message_id": f"job_{len(sent)}"}
 
     monkeypatch.setattr(lineage_test_support, "NODE_MESSAGE_SENDER", send)
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         {
             "title": "Generic Event to Resident",
             "nodes": [_worker(WORK_A, "Source"), _worker(WORK_B, "Worker B")],
@@ -1808,7 +1817,7 @@ def test_event_fire_limit_counts_occurrences_before_fanout_and_can_reset(
             or {"message_id": f"job_fire_{len(sent)}"}
         ),
     )
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         {
             "title": "Bounded Event fire",
             "nodes": [_worker(WORK_A), _worker(WORK_B)],
@@ -1890,7 +1899,7 @@ def test_unbounded_unrouted_event_counts_each_accepted_occurrence(
     primitive_store: Path,
 ) -> None:
     """不限次数且没有下游的事件源也累计每次触发"""
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         {
             "title": "Unrouted Event occurrence count",
             "nodes": [],
@@ -1939,7 +1948,7 @@ def test_zero_fire_limit_disables_event_without_becoming_unbounded(
     primitive_store: Path,
 ) -> None:
     """次数上限为 0 的事件源不触发，重置后仍为 0 而不会变成不限次数"""
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         {
             "title": "Zero Event budget",
             "nodes": [_worker(WORK_A)],
@@ -1999,7 +2008,7 @@ def test_budget_exhaustion_routes_through_an_explicit_event_source(
             or {"message_id": f"job_budget_{len(sent)}"}
         ),
     )
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         {
             "title": "Explicit budget watcher",
             "nodes": [_worker(WORK_A), _worker(WORK_B)],
@@ -2073,7 +2082,7 @@ def test_delivery_failure_can_be_observed_for_one_exact_event_wire(
         return {"message_id": "job_failure_observer"}
 
     monkeypatch.setattr(lineage_test_support, "NODE_MESSAGE_SENDER", send)
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         {
             "title": "Exact delivery failure watcher",
             "nodes": [_worker(WORK_A), _worker(WORK_B)],
@@ -2133,7 +2142,7 @@ def test_deleting_an_observed_source_cascades_its_runtime_watchers(
     primitive_store: Path,
 ) -> None:
     """删除被观察的事件源时，一并删除观察它的预算耗尽和投递失败事件源及连线"""
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         {
             "title": "Runtime watcher deletion closure",
             "nodes": [_worker(WORK_A), _worker(WORK_B)],
@@ -2186,7 +2195,7 @@ def test_deleting_an_observed_source_cascades_its_runtime_watchers(
         ACTOR,
     )
 
-    deleted = lineage_domain.delete_lineage_program_component(
+    deleted = lineage_program_edits.delete_lineage_program_component(
         created["lineage_id"],
         {
             "component_id": "event_source_delete_origin",
@@ -2233,7 +2242,7 @@ def test_resident_state_event_observes_intake_changes(
             or {"message_id": f"job_state_{len(sent)}"}
         ),
     )
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         {
             "title": "Resident state Events",
             "nodes": [_worker(WORK_A), _worker(WORK_B)],
@@ -2303,7 +2312,7 @@ def test_event_without_envelope_sends_the_authored_prompt_verbatim(
             or {"message_id": "job_plain_event"}
         ),
     )
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         {
             "title": "Plain Event delivery",
             "nodes": [_worker(WORK_B, "Worker B")],
@@ -2349,7 +2358,7 @@ def test_one_event_can_fan_out_with_different_envelopes_per_edge(
             or {"message_id": f"job_{node['id'][-4:]}"}
         ),
     )
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         {
             "title": "Per-edge Event envelopes",
             "nodes": [_worker(WORK_A, "Worker A"), _worker(WORK_B, "Worker B")],
@@ -2397,7 +2406,7 @@ def test_effect_success_composes_into_second_resident_route(
         return {"message_id": f"job_{len(sent)}"}
 
     monkeypatch.setattr(lineage_test_support, "NODE_MESSAGE_SENDER", send)
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         {
             "title": "TriggerEvent composition",
             "nodes": [_worker(WORK_A), _worker(WORK_B)],
@@ -2675,7 +2684,7 @@ def test_non_success_resident_terminal_never_emits_work_finished(
             else {}
         ),
     )
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         {
             "title": f"{terminal_status} is not completion",
             "nodes": [_worker(WORK_A), _worker(WORK_B)],
@@ -2784,7 +2793,7 @@ def test_completion_without_an_output_wire_is_not_replayed_after_connecting(
         ACTOR,
     )
 
-    connected = lineage_domain.save_lineage_program_wire(
+    connected = lineage_program_edits.save_lineage_program_wire(
         created["lineage_id"],
         {'expected_revision': created['revision'], 'kind': 'route', 'source': 'event_source_unrouted_completion', 'source_port': 'output', 'target': WORK_B, 'target_port': 'invoke'},
         ACTOR,
@@ -2843,7 +2852,7 @@ def test_time_and_file_events_directly_trigger_an_ordinary_resident_once(
             or {"message_id": f"job_system_{len(sent)}"}
         ),
     )
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         {
             "title": "Foundational system Events",
             "leader_resident_id": leader,
@@ -2919,7 +2928,7 @@ def test_effect_endpoint_references_edit_the_same_named_target_wires(
     primitive_store: Path,
 ) -> None:
     """Effect 端点引用新建、改指或清空同名端点连线，也可指向其他 Lineage 的 Resident"""
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         {
             "title": "Effect endpoint Resident IDs",
             "nodes": [_worker(WORK_A), _worker(WORK_B)],
@@ -2937,7 +2946,7 @@ def test_effect_endpoint_references_edit_the_same_named_target_wires(
         ACTOR,
     )
 
-    bound = lineage_domain.save_lineage_program_component(
+    bound = lineage_program_edits.save_lineage_program_component(
         created["lineage_id"],
         {
             "expected_revision": created["revision"],
@@ -2961,7 +2970,7 @@ def test_effect_endpoint_references_edit_the_same_named_target_wires(
         }
     ]
 
-    retargeted = lineage_domain.save_lineage_program_component(
+    retargeted = lineage_program_edits.save_lineage_program_component(
         created["lineage_id"],
         {
             "expected_revision": bound["lineage"]["revision"],
@@ -2977,7 +2986,7 @@ def test_effect_endpoint_references_edit_the_same_named_target_wires(
     assert retargeted["updated_wire_ids"] == [endpoint_wire_id]
     assert retargeted["lineage"]["program"]["wires"][0]["target"] == WORK_B
 
-    handed_off = lineage_domain.save_lineage_program_component(
+    handed_off = lineage_program_edits.save_lineage_program_component(
         created["lineage_id"],
         {
             "expected_revision": retargeted["lineage"]["revision"],
@@ -3006,7 +3015,7 @@ def test_effect_endpoint_references_edit_the_same_named_target_wires(
         for wire in handed_off["lineage"]["program"]["wires"]
         if wire["source_port"] == "source"
     )
-    cleared = lineage_domain.save_lineage_program_component(
+    cleared = lineage_program_edits.save_lineage_program_component(
         created["lineage_id"],
         {
             "expected_revision": handed_off["lineage"]["revision"],
@@ -3027,8 +3036,8 @@ def test_effect_endpoint_references_edit_the_same_named_target_wires(
         for wire in cleared["lineage"]["program"]["wires"]
     } == {"target": WORK_B}
 
-    lineage_domain.create_lineage({"title": "External source", "nodes": [_worker(WORK_C)]}, ACTOR)
-    external_source = lineage_domain.save_lineage_program_component(
+    lineage_lifecycle.create_lineage({"title": "External source", "nodes": [_worker(WORK_C)]}, ACTOR)
+    external_source = lineage_program_edits.save_lineage_program_component(
         created["lineage_id"],
         {
             "expected_revision": cleared["lineage"]["revision"],
@@ -3053,7 +3062,7 @@ def test_packet_retargets_the_same_typed_wire(
     primitive_store: Path,
 ) -> None:
     """修改路由连线目标时沿用同一连线 ID，可在 Effect 和 Resident 之间切换"""
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         {
             "title": "Typed wire endpoint editing",
             "nodes": [
@@ -3079,7 +3088,7 @@ def test_packet_retargets_the_same_typed_wire(
         ACTOR,
     )
 
-    proposed = lineage_domain.save_lineage_program_wire(
+    proposed = lineage_program_edits.save_lineage_program_wire(
         created["lineage_id"],
         {
             "expected_revision": created["revision"],
@@ -3091,7 +3100,7 @@ def test_packet_retargets_the_same_typed_wire(
     assert proposed["wire"]["id"] == "wire_packet_endpoint_edit"
     assert proposed["wire"]["target"] == "effect_endpoint_edit"
 
-    direct = lineage_domain.save_lineage_program_wire(
+    direct = lineage_program_edits.save_lineage_program_wire(
         created["lineage_id"],
         {
             "expected_revision": proposed["lineage"]["revision"],
@@ -3363,7 +3372,7 @@ def test_pre_dispatch_reducer_failure_releases_generic_event_route_claim(
             or {"message_id": f"job_{len(sent)}"}
         ),
     )
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         {
             "title": "Retry before executable intent",
             "nodes": [
@@ -3418,14 +3427,14 @@ def test_pre_dispatch_reducer_failure_releases_generic_event_route_claim(
         correlation="generic-route-retry",
     )
     real_prepare = (
-        lineage_domain.lineage_operator_runtime.prepare_inbox
+        lineage_state.lineage_operator_runtime.prepare_inbox
     )
 
     def fail_prepare(*_args: object, **_kwargs: object) -> None:
         raise RuntimeError("reducer storage unavailable")
 
     monkeypatch.setattr(
-        lineage_domain.lineage_operator_runtime,
+        lineage_state.lineage_operator_runtime,
         "prepare_inbox",
         fail_prepare,
     )
@@ -3440,7 +3449,7 @@ def test_pre_dispatch_reducer_failure_releases_generic_event_route_claim(
     assert sent == []
 
     monkeypatch.setattr(
-        lineage_domain.lineage_operator_runtime,
+        lineage_state.lineage_operator_runtime,
         "prepare_inbox",
         real_prepare,
     )

@@ -8,7 +8,13 @@ import pytest
 
 from management_portal import isa_client, wall_residents
 from management_portal.hatg.contracts import InstructionError
-from management_portal.society_service import lineage_domain, resident_catalog, resident_domain
+from management_portal.society_service import (
+    lineage_graph_edits,
+    lineage_reads,
+    lineage_resident_nodes,
+    resident_catalog,
+    resident_domain,
+)
 from management_portal.society_service import resident_protocol, resident_workspace_domain
 from management_portal.workbench_projections import service
 from tests.cases.test_resident_folder_creation_contract import _new_session_payload, future_creation_store
@@ -23,8 +29,8 @@ def test_wall_release_preserves_source_after_last_real_resident_deletion(
     actor = 'sample_admin'
     first = resident_domain.register_resident(_new_session_payload('First worker'), actor)
     lid = first['lineage_id']
-    second = lineage_domain.create_lineage_resident(lid, _new_session_payload('Second worker'), actor)['resident']
-    survivor = lineage_domain.create_lineage_resident(lid, _new_session_payload('Other project'), actor)['resident']
+    second = lineage_resident_nodes.create_lineage_resident(lid, _new_session_payload('Second worker'), actor)['resident']
+    survivor = lineage_resident_nodes.create_lineage_resident(lid, _new_session_payload('Other project'), actor)['resident']
     root = tmp_path / 'engineering'
     child = root / 'module'
     child.mkdir(parents=True)
@@ -45,7 +51,7 @@ def test_wall_release_preserves_source_after_last_real_resident_deletion(
     runtime = service.ProjectionService(store)
     monkeypatch.setattr(wall_residents, 'get_service', lambda: runtime)
     monkeypatch.setattr(store, 'builtin', lambda *_: store.get(APP, 'alice'))
-    monkeypatch.setattr(service, 'lineage_graph', lambda _actor, team: lineage_domain.get_lineage(team, actor))
+    monkeypatch.setattr(service, 'lineage_graph', lambda _actor, team: lineage_reads.get_lineage(team, actor))
     calls, interrupted = [], []
 
     def invoke(caller, name, arguments, **kwargs):
@@ -58,7 +64,7 @@ def test_wall_release_preserves_source_after_last_real_resident_deletion(
             except KeyError:
                 raise InstructionError('instruction.not_found', 'Resident deleted')
         if name == 'GetLineage':
-            return {'lineage': lineage_domain.get_lineage(arguments['lineage_id'], actor)}
+            return {'lineage': lineage_reads.get_lineage(arguments['lineage_id'], actor)}
         if name == 'ListResidentStates':
             return {'states': [{'state': {'work_state': 'idle'}}]}
         if name == 'UnbindWorkspace':
@@ -73,8 +79,8 @@ def test_wall_release_preserves_source_after_last_real_resident_deletion(
             return result
         if name == 'ApplyLineageChanges':
             assert all(op['kind'] == 'resident' for op in arguments['operations'])
-            assert kwargs['version'] == lineage_domain.get_lineage(lid, actor)['revision']
-            result = lineage_domain.apply_lineage_changes(lid, {
+            assert kwargs['version'] == lineage_reads.get_lineage(lid, actor)['revision']
+            result = lineage_graph_edits.apply_lineage_changes(lid, {
                 'resident_ids': [op['id'] for op in arguments['operations']]}, actor)
             if lost_reply == 'after_delete' and not interrupted:
                 interrupted.append(True)

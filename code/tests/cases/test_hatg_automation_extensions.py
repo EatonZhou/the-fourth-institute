@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 import pytest
 
 from management_portal.society_service import (
-    lineage_domain,
+    lineage_resident_controls,
     lineage_graph_state,
     lineage_human_notifications,
     lineage_program,
@@ -317,7 +317,7 @@ def test_quiesce_delegates_close_and_non_continuing_stop(
             }
         ),
     )
-    result = lineage_domain.quiesce_lineage_resident(
+    result = lineage_resident_controls.quiesce_lineage_resident(
         "lineage_aaaaaaaaaaaa",
         {"target": WORK_A},
         ACTOR,
@@ -359,7 +359,7 @@ def test_queue_item_controls_resolve_created_resident_authority(
         ),
     )
 
-    cancelled = lineage_domain.cancel_lineage_resident_queue_item(
+    cancelled = lineage_resident_controls.cancel_lineage_resident_queue_item(
         "lineage_aaaaaaaaaaaa",
         {"resident_id": created_resident_id, "message_id": "queue_item_cancel"},
         ACTOR,

@@ -12,7 +12,7 @@ from management_portal import scheduled_triggered_monitor as monitor
 from management_portal import permission_system
 from management_portal.hatg.catalog import declaration
 from management_portal.hatg.contracts import InstructionContext, InstructionError
-from management_portal.society_service import lineage_domain as domain
+from management_portal.society_service import lineage_reads
 from management_portal.society_service import lineage_aggregate
 from tests.cases.test_scheduled_triggered_monitor import LINEAGE, BROKEN, Reads, lineage
 from tests.cases.permission_test_support import permissions  # noqa: F401
@@ -86,12 +86,12 @@ def test_batch_reuses_read_only_snapshot_but_checks_each_definition(monkeypatch)
         return {'lineage_id': rid}
     monkeypatch.setattr(lineage_aggregate, 'lineage_catalog_store', lambda: SimpleNamespace(
         state_store=SimpleNamespace(database=SimpleNamespace(snapshot=snapshot))))
-    monkeypatch.setattr(domain, 'get_lineage_monitor_definition', definition)
-    result = domain.get_lineage_monitor_definitions([LINEAGE, BROKEN, LINEAGE], 'caller')
+    monkeypatch.setattr(lineage_reads, 'get_lineage_monitor_definition', definition)
+    result = lineage_reads.get_lineage_monitor_definitions([LINEAGE, BROKEN, LINEAGE], 'caller')
     assert calls == ['snapshot', (LINEAGE, 'caller'), (BROKEN, 'caller')]
     assert result == {'definitions': {LINEAGE: {'lineage_id': LINEAGE}},
                       'lineage_errors': {BROKEN: 'current read denied'}}
-    assert domain.get_lineage_monitor_definitions([], 'caller') == {'definitions': {}, 'lineage_errors': {}}
+    assert lineage_reads.get_lineage_monitor_definitions([], 'caller') == {'definitions': {}, 'lineage_errors': {}}
     assert not active and len(calls) == 3
 
 

@@ -7,7 +7,7 @@ import subprocess
 import pytest
 
 from management_portal.hatg import routing
-from management_portal.society_service import changes, invariant_locks, lineage_domain
+from management_portal.society_service import changes, invariant_locks, lineage_graph_edits, lineage_lifecycle, lineage_state
 from management_portal.society_service import lineage_aggregate
 from tests.cases.society_service_test_support import install_resource_boundary
 from tests.cases.isa_test_support import isolated_instruction_store, run  # noqa: F401 - fixture
@@ -24,7 +24,7 @@ def projection_fixture(isolated_instruction_store, isolate_portal_databases, tmp
     monkeypatch.setattr(socket.socket, "connect", reject)
     monkeypatch.setattr(subprocess, "Popen", reject)
     records = install_resource_boundary(monkeypatch)
-    created = lineage_domain.create_lineage({"title": "projection fixture", "nodes": [], "edges": []}, "sample_admin")
+    created = lineage_lifecycle.create_lineage({"title": "projection fixture", "nodes": [], "edges": []}, "sample_admin")
     before = lineage_aggregate.read_lineage_state(created["lineage_id"])
     request = {
         "lineage_id": created["lineage_id"],
@@ -58,7 +58,7 @@ def test_uncommitted_failures_do_not_offer_projection_recovery(projection_fixtur
         raise OSError("transaction must roll back")
 
     monkeypatch.setattr(store_type, "upsert", interrupted)
-    monkeypatch.setattr(lineage_domain, "_sync_lineage_resource_identity", lambda *_: pytest.fail("uncommitted projection"))
+    monkeypatch.setattr(lineage_state, "_sync_lineage_resource_identity", lambda *_: pytest.fail("uncommitted projection"))
     for attempt in range(2):
         request["idempotency_key"] = f"projection-fixture-{attempt}"
         failure = submit(request)
@@ -77,7 +77,7 @@ def test_projection_replay_reauthorizes_and_preserves_pending_receipt(projection
         attempts.append(projection["revision"])
         raise OSError("isolated unavailable resource")
 
-    monkeypatch.setattr(lineage_domain, "_sync_lineage_resource_identity", unavailable)
+    monkeypatch.setattr(lineage_state, "_sync_lineage_resource_identity", unavailable)
     initial = submit(request)
     assert initial.error["code"] == "instruction.projection_pending"
     assert initial.error["commit_state"] == "committed"
@@ -95,7 +95,7 @@ def test_projection_replay_reauthorizes_and_preserves_pending_receipt(projection
 def test_projection_recovery_uses_current_state_without_repeating_commit_or_notification(projection_fixture, monkeypatch):
     """投影恢复按当前最新状态投影，不重复提交也不重复发送变更通知"""
     before, request, _records = projection_fixture
-    original_projection = lineage_domain._sync_lineage_resource_identity
+    original_projection = lineage_state._sync_lineage_resource_identity
     original_changed = changes.lineage_changed
     notifications = []
     projected = []
@@ -108,7 +108,7 @@ def test_projection_recovery_uses_current_state_without_repeating_commit_or_noti
         raise OSError("temporary projection failure")
 
     monkeypatch.setattr(changes, "lineage_changed", changed)
-    monkeypatch.setattr(lineage_domain, "_sync_lineage_resource_identity", unavailable)
+    monkeypatch.setattr(lineage_state, "_sync_lineage_resource_identity", unavailable)
     initial = submit(request)
     assert initial.error["code"] == "instruction.projection_pending"
 
@@ -117,7 +117,7 @@ def test_projection_recovery_uses_current_state_without_repeating_commit_or_noti
         projected.append((projection["revision"], projection["description"]))
         return original_projection(projection)
 
-    monkeypatch.setattr(lineage_domain, "_sync_lineage_resource_identity", observed)
+    monkeypatch.setattr(lineage_state, "_sync_lineage_resource_identity", observed)
     newer_request = {**request, "idempotency_key": "projection-newer-commit",
                      "description": "newer authoritative state"}
     assert submit(newer_request).status == "committed"
@@ -148,7 +148,7 @@ def test_later_non_projection_failure_is_not_reported_as_success(projection_fixt
         attempts.append("notification")
         raise ValueError("separate committed-phase failure")
 
-    monkeypatch.setattr(lineage_domain, "_sync_lineage_resource_identity", unavailable)
+    monkeypatch.setattr(lineage_state, "_sync_lineage_resource_identity", unavailable)
     monkeypatch.setattr(changes, "lineage_changed", unrelated_failure)
     for _attempt in range(2):
         failure = submit(request)
@@ -169,7 +169,7 @@ def test_pending_projection_is_not_evicted_from_the_execution_records(projection
     def unavailable(_projection):
         raise OSError("pending projection must retain its record")
 
-    monkeypatch.setattr(lineage_domain, "_sync_lineage_resource_identity", unavailable)
+    monkeypatch.setattr(lineage_state, "_sync_lineage_resource_identity", unavailable)
     initial = submit(request)
     assert initial.error["code"] == "instruction.projection_pending"
     instruction_id = initial.error["details"]["instruction_id"]
@@ -177,7 +177,7 @@ def test_pending_projection_is_not_evicted_from_the_execution_records(projection
     instruction_store = routing.kernel_for("lineage", required=True).store
     instruction_store.prune(now="2099-01-01T00:00:00.000Z")
     assert execution_record(instruction_id) == pending
-    monkeypatch.setattr(lineage_domain, "_sync_lineage_resource_identity", lambda projection: None)
+    monkeypatch.setattr(lineage_state, "_sync_lineage_resource_identity", lambda projection: None)
     for index in range(2):
         later = submit({**request, "idempotency_key": f"later-{index}", "description": f"later {index}"})
         assert later.status == "committed", later
@@ -195,9 +195,9 @@ def test_domain_projection_error_preserves_commit_facts_through_rpc(projection_f
     def unavailable(_projection):
         raise OSError("isolated domain projection failure")
 
-    monkeypatch.setattr(lineage_domain, "_sync_lineage_resource_identity", unavailable)
+    monkeypatch.setattr(lineage_state, "_sync_lineage_resource_identity", unavailable)
     with pytest.raises(CommittedProjectionError) as domain_failure:
-        lineage_domain.apply_lineage_graph_patch(
+        lineage_graph_edits.apply_lineage_graph_patch(
             before["lineage_id"],
             {"patch": {"description": "committed domain RPC"}},
             "sample_admin",

@@ -11,7 +11,7 @@ from types import SimpleNamespace
 import pytest
 
 from management_common.principal import OperationIdentity
-from management_portal.society_service import lineage_domain, lineage_instruction_context
+from management_portal.society_service import lineage_domain, lineage_instruction_context, lineage_program_edits
 from management_portal.society_service import lineage_execution_authority as authority
 from management_portal.society_service import lineage_program_runtime as runtime
 from management_portal.society_service import lineage_program_terminal_reconciliation as terminal
@@ -88,7 +88,7 @@ def test_component_edit_finishes_while_recovery_waits_for_resident_evidence(runt
         return {"status": "running"}
 
     def edit():
-        result = lineage_domain.save_lineage_program_component(lid, {
+        result = lineage_program_edits.save_lineage_program_component(lid, {
             "component_id": "event_source_manual", "config": {"event_type": "manual.triggered", "max_fires": 2},
         }, ACTOR)
         edited.set()

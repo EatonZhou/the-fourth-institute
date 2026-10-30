@@ -16,7 +16,13 @@ from pathlib import Path
 
 import pytest
 
-from management_portal.society_service import lineage_domain, lineage_program_runtime
+from management_portal.society_service import (
+    lineage_domain,
+    lineage_lifecycle,
+    lineage_program_runtime,
+    lineage_reads,
+    lineage_state,
+)
 from management_portal.society_service.coordinator import LineageCoordinator
 from tests.cases import society_service_test_support as lineage_test_support
 from tests.cases.test_lineage_program_runtime_integration import (  # noqa: F401 - fixture
@@ -72,13 +78,13 @@ def test_reconcile_reports_when_a_recurring_source_is_next_due(
 
     sent: list[str] = []
     monkeypatch.setattr(lineage_program_runtime, "datetime", Clock)
-    monkeypatch.setattr(lineage_domain, "datetime", Clock)
+    monkeypatch.setattr(lineage_state, "datetime", Clock)
     monkeypatch.setattr(
         lineage_test_support,
         "NODE_MESSAGE_SENDER",
         lambda node, _prompt, _actor: sent.append(str(node["id"])) or {"message_id": f"job_wake_{len(sent)}"},
     )
-    lineage_id = lineage_domain.create_lineage(
+    lineage_id = lineage_lifecycle.create_lineage(
         {
             "title": "Recurring wake",
             "nodes": [_worker(WORK_A)],
@@ -120,12 +126,12 @@ def test_an_exhausted_source_needs_no_wake(
             return cls.current if tz is None else cls.current.astimezone(tz)
 
     monkeypatch.setattr(lineage_program_runtime, "datetime", Clock)
-    monkeypatch.setattr(lineage_domain, "datetime", Clock)
+    monkeypatch.setattr(lineage_state, "datetime", Clock)
     monkeypatch.setattr(
         lineage_test_support, "NODE_MESSAGE_SENDER",
         lambda node, _prompt, _actor: {"message_id": f"job_once_{node['id']}"},
     )
-    lineage_id = lineage_domain.create_lineage(
+    lineage_id = lineage_lifecycle.create_lineage(
         {
             "title": "Fires once",
             "nodes": [_worker(WORK_A)],
@@ -269,7 +275,7 @@ def test_an_event_wire_can_keep_background_work_in_the_session(
     time and file work in the Resident's session.  Every delivery is a model
     turn, so a wire has no execution mode to choose."""
     def create(config: dict) -> str:
-        return lineage_domain.create_lineage(
+        return lineage_lifecycle.create_lineage(
             {
                 "title": "Session wake",
                 "nodes": [_worker(WORK_A)],
@@ -285,7 +291,7 @@ def test_an_event_wire_can_keep_background_work_in_the_session(
         )["lineage_id"]
 
     lineage_id = create({"context_policy": "session", "unavailable_policy": "drop"})
-    lineage = lineage_domain.get_lineage(lineage_id, ACTOR)
+    lineage = lineage_reads.get_lineage(lineage_id, ACTOR)
     wire = next(w for w in lineage["program"]["wires"] if w["id"] == "wire_check")
     assert wire["config"]["context_policy"] == "session"
     assert "execution" not in wire["config"]

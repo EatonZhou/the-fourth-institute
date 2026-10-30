@@ -12,7 +12,7 @@ import pytest
 from management_portal.society_service import (
     family_facade,
     family_quota,
-    lineage_domain,
+    lineage_resident_nodes,
     resident_account_policy as accounts_policy,
     resident_backend,
     resident_conversation_stream,
@@ -73,12 +73,12 @@ def quota_family(team, monkeypatch):
     monkeypatch.setattr(resident_intake_domain, "resolve_context_refs", lambda *args, **kwargs: {})
     facade_id = team.source["resident_id"]
     member_id = team.target["resident_id"]
-    steward = lineage_domain.create_lineage_resident(team.lineage_id, {
+    steward = lineage_resident_nodes.create_lineage_resident(team.lineage_id, {
         "title": "Quota steward", "backend": "codex", "mode": "new_session",
     }, ACTOR)["resident"]
     steward_id = steward["resident_id"]
     # A second Resident the steward can arrange a request to, made before the Family exists.
-    spare_id = lineage_domain.create_lineage_resident(team.lineage_id, {
+    spare_id = lineage_resident_nodes.create_lineage_resident(team.lineage_id, {
         "title": "数据库迁移", "backend": "codex", "mode": "new_session",
     }, ACTOR)["resident"]["resident_id"]
     resident_input_queue_domain.commit_resident_intake_state(_record(steward_id), "closed")

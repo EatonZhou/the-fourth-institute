@@ -9,7 +9,15 @@ from pathlib import Path
 
 import pytest
 
-from management_portal.society_service import lineage_domain, lineage_state_domains
+from management_portal.society_service import (
+    lineage_domain,
+    lineage_graph_edits,
+    lineage_lifecycle,
+    lineage_reads,
+    lineage_resident_nodes,
+    lineage_state,
+    lineage_state_domains,
+)
 from management_portal.society_service import lineage_definition_normalization
 from management_portal.society_service import lineage_aggregate
 
@@ -26,14 +34,14 @@ def lineage_store(
 ) -> Path:
     root = tmp_path / "lineages"
     monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", root)
-    monkeypatch.setattr(lineage_domain, "LINEAGE_FOLDER_ROOT", root / "lineages")
+    monkeypatch.setattr(lineage_state, "LINEAGE_FOLDER_ROOT", root / "lineages")
     monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(root / "lineages"))
     install_resource_boundary(monkeypatch)
     return root
 
 
 def _create() -> dict:
-    return lineage_domain.create_lineage(
+    return lineage_lifecycle.create_lineage(
         {
             "title": "State domains",
             "project_id": "project_test",
@@ -124,7 +132,7 @@ def test_lineage_definition_and_runtime_are_persisted_separately_contracts(subte
             "blocked",
             "done",
         }
-        assert lineage_domain._lineage_node_status("paused") == "idle"
+        assert lineage_resident_nodes._lineage_node_status("paused") == "idle"
 
 
 def test_layout_updates_merge_by_object_without_graph_conflicts(
@@ -134,7 +142,7 @@ def test_layout_updates_merge_by_object_without_graph_conflicts(
     created = _create()
     graph_revision = created["revision"]
 
-    first = lineage_domain.update_lineage_layout(
+    first = lineage_lifecycle.update_lineage_layout(
         created["lineage_id"],
         {
             "expected_revision": graph_revision - 1,
@@ -144,7 +152,7 @@ def test_layout_updates_merge_by_object_without_graph_conflicts(
         },
         ACTOR,
     )
-    second = lineage_domain.update_lineage_layout(
+    second = lineage_lifecycle.update_lineage_layout(
         created["lineage_id"],
         {
             "expected_revision": 999_999,
@@ -159,7 +167,7 @@ def test_layout_updates_merge_by_object_without_graph_conflicts(
         },
         ACTOR,
     )
-    current = lineage_domain.get_lineage(created["lineage_id"], ACTOR)
+    current = lineage_reads.get_lineage(created["lineage_id"], ACTOR)
 
     assert first["revision"] == graph_revision
     assert second["revision"] == graph_revision
@@ -182,7 +190,7 @@ def test_same_object_layout_is_last_write_wins(
     """同一对象的多次布局更新以最后一次写入为准"""
     created = _create()
     for x, y in ((25, 35), (75, 85)):
-        lineage_domain.update_lineage_layout(
+        lineage_lifecycle.update_lineage_layout(
             created["lineage_id"],
             {
                 "positions": [
@@ -192,7 +200,7 @@ def test_same_object_layout_is_last_write_wins(
             ACTOR,
         )
 
-    current = lineage_domain.get_lineage(created["lineage_id"], ACTOR)
+    current = lineage_reads.get_lineage(created["lineage_id"], ACTOR)
     assert (_node(current, FIRST)["x"], _node(current, FIRST)["y"]) == (
         75.0,
         85.0,
@@ -207,7 +215,7 @@ def test_stale_graph_form_cannot_overwrite_layout_or_runtime(
     """旧图表单保存时只改定义，不覆盖较新的布局坐标和节点运行状态"""
     created = _create()
     stale_form = lineage_domain._clone_json(created)
-    lineage_domain.update_lineage_layout(
+    lineage_lifecycle.update_lineage_layout(
         created["lineage_id"],
         {
             "positions": [
@@ -230,7 +238,7 @@ def test_stale_graph_form_cannot_overwrite_layout_or_runtime(
     stale_form["nodes"][0]["x"] = -999
     stale_form["nodes"][0]["status"] = "idle"
     stale_form["nodes"][0]["last_execution"] = {}
-    updated = lineage_domain.update_lineage(
+    updated = lineage_graph_edits.update_lineage(
         created["lineage_id"],
         {
             "expected_revision": created["revision"],
@@ -285,7 +293,7 @@ def test_layout_update_ignores_an_object_deleted_by_another_page(
         "delete_resident_identities",
         delete_identities,
     )
-    deleted = lineage_domain.delete_lineage_graph_objects(
+    deleted = lineage_graph_edits.delete_lineage_graph_objects(
         created["lineage_id"],
         {
             "expected_revision": created["revision"],
@@ -295,7 +303,7 @@ def test_layout_update_ignores_an_object_deleted_by_another_page(
     )
     updated = deleted["lineage"]
 
-    result = lineage_domain.update_lineage_layout(
+    result = lineage_lifecycle.update_lineage_layout(
         created["lineage_id"],
         {
             "positions": [
@@ -328,19 +336,19 @@ def test_stale_graph_form_neither_erases_nor_resurrects_transient_absorption(
             "target_message_id": "job_absorption",
         },
     })
-    normalized_runtime = lineage_domain._normalize_lineage_payload(
+    normalized_runtime = lineage_state._normalize_lineage_payload(
         runtime,
         created,
         ACTOR,
     )
-    lineage_domain._persist_lineage_runtime_state(
+    lineage_state._persist_lineage_runtime_state(
         created,
         normalized_runtime,
         "test absorption runtime",
     )
 
     stale_without_absorption["title"] = "Graph keeps live absorption"
-    graph_with_absorption = lineage_domain.update_lineage(
+    graph_with_absorption = lineage_graph_edits.update_lineage(
         created["lineage_id"],
         {
             "expected_revision": created["revision"],
@@ -356,7 +364,7 @@ def test_stale_graph_form_neither_erases_nor_resurrects_transient_absorption(
     stale_with_absorption = lineage_domain._clone_json(
         graph_with_absorption
     )
-    completion_previous = lineage_domain.get_lineage(
+    completion_previous = lineage_reads.get_lineage(
         created["lineage_id"], ACTOR
     )
     completion = lineage_domain._clone_json(completion_previous)
@@ -365,13 +373,13 @@ def test_stale_graph_form_neither_erases_nor_resurrects_transient_absorption(
         for edge in completion.get("edges") or []
         if edge.get("id") != "edge_absorption_runtime"
     ]
-    lineage_domain._persist_lineage_runtime_state(
+    lineage_state._persist_lineage_runtime_state(
         completion_previous,
         completion,
         "test authoritative absorption completion",
     )
     stale_with_absorption["title"] = "Graph cannot resurrect absorption"
-    graph_after_completion = lineage_domain.update_lineage(
+    graph_after_completion = lineage_graph_edits.update_lineage(
         created["lineage_id"],
         {
             "expected_revision": graph_with_absorption["revision"],
@@ -418,7 +426,7 @@ def test_stale_graph_form_preserves_handoff_preparation(
             "prompt": "Continue",
         },
     })
-    graph = lineage_domain.update_lineage(
+    graph = lineage_graph_edits.update_lineage(
         created["lineage_id"],
         {
             "expected_revision": created["revision"],
@@ -455,19 +463,19 @@ def test_stale_graph_form_preserves_handoff_preparation(
         "workspace_id": "workspace_target",
         "path": "/tmp/ready",
     })
-    normalized_runtime = lineage_domain._normalize_lineage_payload(
+    normalized_runtime = lineage_state._normalize_lineage_payload(
         runtime,
         graph,
         ACTOR,
     )
-    lineage_domain._persist_lineage_runtime_state(
+    lineage_state._persist_lineage_runtime_state(
         graph,
         normalized_runtime,
         "test handoff runtime",
     )
 
     stale_graph["title"] = "Graph edit during Handoff"
-    updated = lineage_domain.update_lineage(
+    updated = lineage_graph_edits.update_lineage(
         created["lineage_id"],
         {
             "expected_revision": graph["revision"],

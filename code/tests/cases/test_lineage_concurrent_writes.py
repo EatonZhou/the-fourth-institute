@@ -10,7 +10,14 @@ from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
-from management_portal.society_service import lineage_domain as graphs
+from management_portal.society_service import (
+    lineage_domain as graphs,
+    lineage_graph_edits,
+    lineage_lifecycle,
+    lineage_reads,
+    lineage_resident_nodes,
+    lineage_state,
+)
 from management_portal.society_service import resident_catalog
 from management_portal.society_service.errors import LineageConflictError
 from management_portal.society_service import lineage_aggregate
@@ -26,14 +33,14 @@ def hold_definition_writes(monkeypatch, lineage_id, parties):
     """Let every write read the Lineage before any of them commits."""
 
     barrier = threading.Barrier(parties)
-    original = graphs._persist_lineage_state
+    original = lineage_state._persist_lineage_state
 
     def synchronized(previous, lineage, reason, **kwargs):
         if previous is not None and lineage.get("lineage_id") == lineage_id:
             barrier.wait(timeout=20)
         return original(previous, lineage, reason, **kwargs)
 
-    monkeypatch.setattr(graphs, "_persist_lineage_state", synchronized)
+    monkeypatch.setattr(lineage_state, "_persist_lineage_state", synchronized)
 
 
 def test_definition_expected_version_compares_current_revision(future_creation_store):
@@ -42,12 +49,12 @@ def test_definition_expected_version_compares_current_revision(future_creation_s
     :importance: P2"""
     reset_kernels()
     lineage_id = family("Versioned")["lineage_id"]
-    revision = graphs.get_lineage(lineage_id, ACTOR)["revision"]
+    revision = lineage_reads.get_lineage(lineage_id, ACTOR)["revision"]
     arguments = {"lineage_id": lineage_id, "changes": {"title": "accepted"}}
     assert run("UpdateLineage", arguments, version=revision).status == "committed"
     refused = run("UpdateLineage", {**arguments, "changes": {"title": "stale"}}, version=revision)
     assert refused.error["code"] == "instruction.conflict"
-    current = graphs.get_lineage(lineage_id, ACTOR)
+    current = lineage_reads.get_lineage(lineage_id, ACTOR)
     assert refused.error["details"]["current_version"] == current["revision"]
     assert current["title"] == "accepted"
     assert run("CreateComponent", {"lineage_id": lineage_id, "kind": "event_source",
@@ -59,19 +66,19 @@ def test_concurrent_resident_creations_in_one_lineage_all_land(future_creation_s
     """同一 Lineage 中并发创建的 Resident 全部保留"""
     # Registration references must survive commit-time merge validation; a
     # synthetic resolver that accepts any Resident ID would hide that failure.
-    monkeypatch.setattr(graphs, "_resident_targets", CANONICAL_RESIDENT_TARGETS)
+    monkeypatch.setattr(lineage_state, "_resident_targets", CANONICAL_RESIDENT_TARGETS)
     root = family("Team")
     lineage_id = root["lineage_id"]
     hold_definition_writes(monkeypatch, lineage_id, 4)
 
     def create(number):
-        return graphs.create_lineage_resident(
+        return lineage_resident_nodes.create_lineage_resident(
             lineage_id, _new_session_payload(f"Member {number}"), ACTOR,
         )["resident"]["resident_id"]
 
     with ThreadPoolExecutor(max_workers=4) as pool:
         created = list(pool.map(create, range(4)))
-    current = graphs.get_lineage(lineage_id, ACTOR)
+    current = lineage_reads.get_lineage(lineage_id, ACTOR)
     assert {root["resident_id"], *created} == {node["id"] for node in current["nodes"]}
     assert current["leader_resident_id"] == root["resident_id"]
 
@@ -81,7 +88,7 @@ def test_concurrent_deletions_of_different_residents_all_land(future_creation_st
     root = family("Team")
     lineage_id = root["lineage_id"]
     members = [
-        graphs.create_lineage_resident(lineage_id, _new_session_payload(f"Member {number}"), ACTOR)["resident"]["resident_id"]
+        lineage_resident_nodes.create_lineage_resident(lineage_id, _new_session_payload(f"Member {number}"), ACTOR)["resident"]["resident_id"]
         for number in range(3)
     ]
     # Deletion serializes identity and graph changes in one transaction. Wait
@@ -89,16 +96,17 @@ def test_concurrent_deletions_of_different_residents_all_land(future_creation_st
     start = threading.Barrier(3)
     def delete(resident_id):
         start.wait(timeout=20)
-        return graphs.delete_lineage_graph_objects(lineage_id, {"resident_ids": [resident_id]}, ACTOR)
+        return lineage_graph_edits.delete_lineage_graph_objects(lineage_id, {"resident_ids": [resident_id]}, ACTOR)
     # Each write restamps the members it keeps; make every stamp distinct.
     ticks = iter(range(10_000))
+    monkeypatch.setattr(lineage_state, "_now_iso", lambda: f"2026-10-02T00:{next(ticks) // 60 % 60:02d}:{next(ticks) % 60:02d}Z")
     monkeypatch.setattr(graphs, "_now_iso", lambda: f"2026-10-02T00:{next(ticks) // 60 % 60:02d}:{next(ticks) % 60:02d}Z")
     with ThreadPoolExecutor(max_workers=3) as pool:
         list(pool.map(
             delete,
             members,
         ))
-    assert {node["id"] for node in graphs.get_lineage(lineage_id, ACTOR)["nodes"]} == {root["resident_id"]}
+    assert {node["id"] for node in lineage_reads.get_lineage(lineage_id, ACTOR)["nodes"]} == {root["resident_id"]}
 
 
 def test_concurrent_metadata_edits_keep_both_fields(future_creation_store, monkeypatch):
@@ -106,10 +114,10 @@ def test_concurrent_metadata_edits_keep_both_fields(future_creation_store, monke
     lineage_id = family("Team")["lineage_id"]
     hold_definition_writes(monkeypatch, lineage_id, 2)
     with ThreadPoolExecutor(max_workers=2) as pool:
-        list(pool.map(lambda change: graphs.update_lineage_metadata(lineage_id, change, ACTOR), [
+        list(pool.map(lambda change: lineage_lifecycle.update_lineage_metadata(lineage_id, change, ACTOR), [
             {"title": "Renamed"}, {"description": "Described"},
         ]))
-    current = graphs.get_lineage(lineage_id, ACTOR)
+    current = lineage_reads.get_lineage(lineage_id, ACTOR)
     assert (current["title"], current["description"]) == ("Renamed", "Described")
 
 
@@ -117,16 +125,16 @@ def test_changing_an_object_another_write_deleted_is_a_conflict(future_creation_
     """修改已被另一次写入删除的节点时报冲突，被删节点不会复活"""
     root = family("Team")
     lineage_id = root["lineage_id"]
-    member = graphs.create_lineage_resident(lineage_id, _new_session_payload("Member"), ACTOR)["resident"]
+    member = lineage_resident_nodes.create_lineage_resident(lineage_id, _new_session_payload("Member"), ACTOR)["resident"]
     stale = lineage_aggregate.read_lineage_state(lineage_id)
-    graphs.delete_lineage_graph_objects(lineage_id, {"resident_ids": [member["resident_id"]]}, ACTOR)
+    lineage_graph_edits.delete_lineage_graph_objects(lineage_id, {"resident_ids": [member["resident_id"]]}, ACTOR)
     renamed = copy.deepcopy(stale)
     next(node for node in renamed["nodes"] if node["id"] == member["resident_id"])["title"] = "Renamed"
     with pytest.raises(LineageConflictError, match=member["resident_id"]):
         resident_catalog.get_catalog().state_store.transaction(
-            lambda: graphs._persist_lineage_state(stale, renamed, "test rename of a deleted node"),
+            lambda: lineage_state._persist_lineage_state(stale, renamed, "test rename of a deleted node"),
         )
-    assert member["resident_id"] not in {node["id"] for node in graphs.get_lineage(lineage_id, ACTOR)["nodes"]}
+    assert member["resident_id"] not in {node["id"] for node in lineage_reads.get_lineage(lineage_id, ACTOR)["nodes"]}
 
 
 def test_same_revision_allows_only_one_concurrent_commit(future_creation_store):
@@ -135,7 +143,7 @@ def test_same_revision_allows_only_one_concurrent_commit(future_creation_store):
     :importance: P2"""
     reset_kernels()
     lineage_id = family("Concurrent revision")["lineage_id"]
-    revision = graphs.get_lineage(lineage_id, ACTOR)["revision"]
+    revision = lineage_reads.get_lineage(lineage_id, ACTOR)["revision"]
     barrier = threading.Barrier(2)
     def update(title):
         barrier.wait(timeout=10)
@@ -174,4 +182,4 @@ def test_merge_revalidates_new_wire_against_changed_target(future_creation_store
     assert run("UpdateComponent", {"lineage_id": lineage_id, "component_id": effect,
         "changes": {"endpoints": []}}).status == "committed"
     with pytest.raises(LineageConflictError):
-        resident_catalog.get_catalog().state_store.transaction(lambda: graphs._persist_lineage_state(base, ours, "stale wire"))
+        resident_catalog.get_catalog().state_store.transaction(lambda: lineage_state._persist_lineage_state(base, ours, "stale wire"))

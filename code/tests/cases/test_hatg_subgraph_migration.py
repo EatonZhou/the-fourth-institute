@@ -6,8 +6,11 @@ import pytest
 
 from management_portal.execution.agent_data_store import get_agent_data_store
 from management_portal.society_service import (
-    lineage_domain,
+    lineage_graph_edits,
+    lineage_lifecycle,
     lineage_program_runtime,
+    lineage_resident_nodes,
+    lineage_state,
     lineage_subgraph,
     resident_lifecycle_steps_domain,
 )
@@ -52,7 +55,7 @@ def moved(teams, ids, **arguments):
 
 
 def add_relations(lineage: dict, edges: list[dict]) -> None:
-    lineage_domain._apply_lineage_graph_patch(lineage["lineage_id"], {
+    lineage_graph_edits._apply_lineage_graph_patch(lineage["lineage_id"], {
         "patch": {"edges": edges}, "history_reason": "test relations",
     }, ACTOR, synchronize_external_projections=False)
 
@@ -63,7 +66,7 @@ def test_move_connected_objects_preserves_identity_and_replays(teams, empty_targ
     ids = setup_flow(teams)
     source, target, member = teams
     if empty_target:
-        target = lineage_domain.create_lineage({"title": "New", "project_id": source["project_id"]}, ACTOR)
+        target = lineage_lifecycle.create_lineage({"title": "New", "project_id": source["project_id"]}, ACTOR)
         teams = source, target, member
     before = [graph(source), graph(target)]
     _append_conversation_turn(member["resident_id"], 0)
@@ -133,7 +136,7 @@ def test_moving_the_whole_graph_leaves_an_empty_source_and_hands_over_its_coordi
     """迁走整个图后源 Lineage 为空，Leader 转到目标 Lineage"""
     ids = setup_flow(teams)
     source, _, member = teams
-    target = lineage_domain.create_lineage({"title": "New", "project_id": source["project_id"]}, ACTOR)
+    target = lineage_lifecycle.create_lineage({"title": "New", "project_id": source["project_id"]}, ACTOR)
     result = moved((source, target, member), ids + [source["resident_id"]])
     assert graph(source)["nodes"] == []
     assert graph(source)["leader_resident_id"] == ""
@@ -144,7 +147,7 @@ def test_moving_the_whole_graph_leaves_an_empty_source_and_hands_over_its_coordi
 def test_moving_the_leader_out_of_a_partial_selection_picks_a_new_leader(teams):
     """只迁走源 Leader 时源 Lineage 从剩余成员中选出新 Leader"""
     source, target, member = teams
-    second = lineage_domain.create_lineage_resident(
+    second = lineage_resident_nodes.create_lineage_resident(
         source["lineage_id"], _new_session_payload("Second member"), ACTOR,
     )["resident"]
     target_leader = graph(target)["leader_resident_id"]
@@ -158,14 +161,14 @@ def test_a_failed_commit_rolls_back_members_graphs_and_outbox(teams, monkeypatch
     """目标 Lineage 提交失败时对象迁移回滚成员、两边图和 outbox"""
     ids = setup_flow(teams)
     before = [graph(teams[0]), graph(teams[1])]
-    original = lineage_domain._persist_lineage_state
+    original = lineage_state._persist_lineage_state
 
     def fail_target(previous, current, *args, **kwargs):
         if current["lineage_id"] == teams[1]["lineage_id"]:
             raise ValueError("injected target failure")
         return original(previous, current, *args, **kwargs)
 
-    monkeypatch.setattr(lineage_domain, "_persist_lineage_state", fail_target)
+    monkeypatch.setattr(lineage_state, "_persist_lineage_state", fail_target)
     assert "injected" in execute(move_call(teams, ids)).error["message"]
     assert [graph(teams[0]), graph(teams[1])] == before
     assert resident_record_domain.find_resident(teams[2]["resident_id"])["lineage_id"] == teams[0]["lineage_id"]
@@ -236,7 +239,7 @@ def test_components_alone_can_move(teams):
 def test_inheritance_is_detached_without_reconnecting_or_losing_provenance(teams, monkeypatch, fail_commit):
     """迁移成员时断开跨边界的继承边，不重新连接且保留来源信息，提交失败时两边不变"""
     source, target, member = teams
-    child = lineage_domain.create_lineage_resident(
+    child = lineage_resident_nodes.create_lineage_resident(
         source["lineage_id"], _new_session_payload("Remaining child"), ACTOR,
     )["resident"]
     edges = [
@@ -247,14 +250,14 @@ def test_inheritance_is_detached_without_reconnecting_or_losing_provenance(teams
     before = [graph(source), graph(target)]
     original_record = resident_record_domain.find_resident(member["resident_id"])
     if fail_commit:
-        persist = lineage_domain._persist_lineage_state
+        persist = lineage_state._persist_lineage_state
 
         def reject_target(previous, current, *args, **kwargs):
             if current["lineage_id"] == target["lineage_id"]:
                 raise ValueError("injected migration failure")
             return persist(previous, current, *args, **kwargs)
 
-        monkeypatch.setattr(lineage_domain, "_persist_lineage_state", reject_target)
+        monkeypatch.setattr(lineage_state, "_persist_lineage_state", reject_target)
         assert "injected migration failure" in execute(move_call(teams, [member["resident_id"]])).error["message"]
         assert [graph(source), graph(target)] == before
         return

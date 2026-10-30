@@ -4,7 +4,13 @@ from management_portal.society_service.resident_domain_common import RESIDENT_RE
 
 import json
 
-from management_portal.society_service import lineage_domain, resident_domain, resident_record_domain
+from management_portal.society_service import (
+    lineage_domain,
+    lineage_reads,
+    lineage_state,
+    resident_domain,
+    resident_record_domain,
+)
 
 
 from management_portal.society_service import resident_directory_domain
@@ -156,7 +162,7 @@ def test_lineage_projection_is_bounded_and_omits_graph_internals(
         lambda _lineage_id: lineage,
     )
     monkeypatch.setattr(
-        lineage_domain.resident_catalog,
+        lineage_state.resident_catalog,
         "get_catalog",
         lambda: _Catalog(),
     )
@@ -174,7 +180,7 @@ def test_lineage_projection_is_bounded_and_omits_graph_internals(
         },
     )
 
-    payload = lineage_domain.get_lineage_resource_projection(lineage_id)
+    payload = lineage_reads.get_lineage_resource_projection(lineage_id)
     encoded = json.dumps(payload, ensure_ascii=False)
 
     assert payload["resource_id"] == lineage_id

@@ -93,7 +93,7 @@ def test_isa_fork_default_emits_full_to_the_lineage_owner(monkeypatch, provider)
     monkeypatch.setattr(residents, "_join_family", lambda *_: {})
     monkeypatch.setattr(residents, "lineage_of_resident", lambda _: "lineage_aaaaaaaaaaaa")
     monkeypatch.setattr(residents, "placement", lambda *_: {})
-    monkeypatch.setattr(residents, "domain", lambda: SimpleNamespace(
+    monkeypatch.setattr(residents, "lineage_branches", lambda: SimpleNamespace(
         fork_lineage_resident=lambda _lineage, payload, _actor: payloads.append(payload) or {
             "created_resident": {"id": "resident_bbbbbbbbbbbb"},
         },

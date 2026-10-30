@@ -16,7 +16,7 @@ from management_portal.society_service import (
     domain_ports,
     execution_client,
     invariant_locks,
-    lineage_domain,
+    lineage_state,
     lineage_storage,
     resident_backend,
     resident_lifecycle_steps_domain,
@@ -81,7 +81,7 @@ def integration(tmp_path, monkeypatch):
     neighbor_folder.mkdir()
     (neighbor_folder / "untouched.txt").write_text("neighbor original")
     neighbor_link = lineage_storage.bind_lineage_folder(NEIGHBOR, neighbor_folder, folder_root=canonical_root)
-    monkeypatch.setattr(lineage_domain, "LINEAGE_FOLDER_ROOT", canonical_root)
+    monkeypatch.setattr(lineage_state, "LINEAGE_FOLDER_ROOT", canonical_root)
     monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(canonical_root))
     definition = {"lineage_id": LINEAGE, "title": "Tombstone integration target", "nodes": [], "project_id": "FixtureLifecycle", "created_at": "2026-09-11T00:00:00Z", "updated_at": "2026-09-11T00:00:00Z"}
     neighbor_definition = {"lineage_id": NEIGHBOR, "title": "Neighbor retained", "nodes": [], "project_id": "FixtureLifecycle", "created_at": "2026-09-11T00:00:00Z", "updated_at": "2026-09-11T00:00:00Z"}

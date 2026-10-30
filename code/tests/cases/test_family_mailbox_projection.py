@@ -7,7 +7,7 @@ import pytest
 
 from management_portal.society_service import (
     family_facade,
-    lineage_domain,
+    lineage_resident_nodes,
     resident_conversation_stream,
     resident_execution_work,
     resident_mailbox,
@@ -91,7 +91,7 @@ def _messages(case):
 
 def _nest(case):
     inner_id = case.facade_id
-    outer = lineage_domain.create_lineage_resident(case.team.lineage_id, {
+    outer = lineage_resident_nodes.create_lineage_resident(case.team.lineage_id, {
         "title": "Outer facade", "backend": "codex", "mode": "new_session",
     }, ACTOR)["resident"]
     outer_id = outer["resident_id"]

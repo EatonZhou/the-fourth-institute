@@ -26,7 +26,7 @@ from management_portal.society_service import (
     domain_ports,
     execution_client,
     invariant_locks,
-    lineage_domain,
+    lineage_state,
     project_domain,
     resident_catalog,
     resident_domain_common,
@@ -126,7 +126,7 @@ def owners(tmp_path, monkeypatch):
     monkeypatch.setattr(project, "PROJECTS_ROOT", project_root)
     monkeypatch.setattr(project_domain, "PROJECTS_ROOT", project_root)
     monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", tmp_path / "lineage")
-    monkeypatch.setattr(lineage_domain, "LINEAGE_FOLDER_ROOT", tmp_path / "lineages")
+    monkeypatch.setattr(lineage_state, "LINEAGE_FOLDER_ROOT", tmp_path / "lineages")
     monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(tmp_path / "lineages"))
     for name, value in {"STAGING_ROOT": tmp_path, "AGENTS_ROOT": tmp_path / "agents", "PROJECTS_ROOT": project_root}.items():
         monkeypatch.setattr(resident_domain_common, name, value)

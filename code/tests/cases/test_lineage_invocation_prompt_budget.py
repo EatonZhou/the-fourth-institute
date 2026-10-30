@@ -8,11 +8,13 @@ import pytest
 from management_portal.society_service import lineage_program_backlog
 from management_portal.society_service import (
     lineage_domain,
+    lineage_graph_edits,
     lineage_operators,
     lineage_primitives as primitives,
     lineage_program,
     lineage_program_packet_routing,
     lineage_program_runtime,
+    lineage_reads,
 )
 from management_portal.society_service import lineage_program_execution
 from management_portal.hatg.catalog.lineage_run import INPUT_MAX_CHARS
@@ -35,9 +37,9 @@ def deliver_config(fixed):
 
 def _create(title, program):
     created = ok("CreateLineage", {"title": title, "project_id": "project_test"}, key=f"create:{title}")
-    lineage = lineage_domain.get_lineage(created["lineage_id"], ACTOR)
+    lineage = lineage_reads.get_lineage(created["lineage_id"], ACTOR)
     publish_test_members({**lineage, "nodes": [{"id": WORK_A, "title": "Worker"}]})
-    lineage_domain.apply_lineage_graph_patch(created["lineage_id"], {"patch": {"program": program}}, ACTOR)
+    lineage_graph_edits.apply_lineage_graph_patch(created["lineage_id"], {"patch": {"program": program}}, ACTOR)
     return created["lineage_id"]
 
 
@@ -68,7 +70,7 @@ def test_triggered_input_survives_dispatch_queue_edit_and_replay(isolated_instru
     monkeypatch.setattr(lineage_domain, "_node_has_active_execution", lambda *args, **kwargs: False)
     monkeypatch.setattr(lineage_test_support, "NODE_MESSAGE_SENDER", lambda node, prompt, actor: sent.append(prompt) or {"message_id": "msg_long_input"})
     lineage_id = _graph()
-    before = lineage_domain.get_lineage(lineage_id, ACTOR)
+    before = lineage_reads.get_lineage(lineage_id, ACTOR)
     result = trigger(lineage_id, TRIGGER_PROMPT, key="long-runtime-input").raise_for_error()
     expected = TRIGGER_PROMPT
     if queued:
@@ -88,7 +90,7 @@ def test_triggered_input_survives_dispatch_queue_edit_and_replay(isolated_instru
     replay = trigger(lineage_id, TRIGGER_PROMPT, key="long-runtime-input")
     assert replay.replayed and replay.result["event_id"] == result["event_id"]
     assert sent == ["FIXED\n\n" + expected]
-    after = lineage_domain.get_lineage(lineage_id, ACTOR)
+    after = lineage_reads.get_lineage(lineage_id, ACTOR)
     assert after["revision"] == before["revision"]
     assert after["program"] == before["program"]
 
@@ -144,12 +146,12 @@ def test_an_over_long_trigger_is_refused_without_delivery_or_definition_mutation
     monkeypatch.setattr(lineage_domain, "_node_has_active_execution", lambda *args, **kwargs: False)
     monkeypatch.setattr(lineage_test_support, "NODE_MESSAGE_SENDER", lambda *args: sent.append(args))
     lineage_id = _graph()
-    before = lineage_domain.get_lineage(lineage_id, ACTOR)
+    before = lineage_reads.get_lineage(lineage_id, ACTOR)
     # TriggerEvent input shares the 1,000,000-character delivery budget (decision_68215b3a825b).
     result = trigger(lineage_id, "x" * (INPUT_MAX_CHARS + 1))
     assert result.status == "failed" and result.error["code"] == "instruction.invalid_arguments"
     assert sent == []
-    after = lineage_domain.get_lineage(lineage_id, ACTOR)
+    after = lineage_reads.get_lineage(lineage_id, ACTOR)
     assert after["revision"] == before["revision"]
     assert after["program"] == before["program"]
 

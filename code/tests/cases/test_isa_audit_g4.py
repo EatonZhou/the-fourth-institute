@@ -10,8 +10,9 @@ import pytest
 
 from management_portal.hatg.contracts import InstructionCall, InstructionContext
 from management_portal.society_service import (
-    component_runtime, lineage_domain, lineage_primitives, lineage_program,
-    lineage_program_authoring, lineage_program_runtime, trigger_path_observation, trigger_paths,
+    component_runtime, lineage_domain, lineage_graph_edits, lineage_primitives, lineage_program,
+    lineage_program_authoring, lineage_program_runtime, lineage_reads, lineage_resident_controls,
+    lineage_state, trigger_path_observation, trigger_paths,
 )
 from management_portal.society_service.isa import build_kernel, definition, runs
 from management_portal.society_service.lineage_program_packet_routing import input_prompt
@@ -58,7 +59,7 @@ def test_isa_clone_commits_and_resolves_local_ref(primitive_store):
     assert result.status == "committed", result.error
     cloned_id = result.result["refs"]["copy"]
     assert cloned_id in result.result["created_ids"]
-    saved = lineage_domain.get_lineage(current["lineage_id"], ACTOR)
+    saved = lineage_reads.get_lineage(current["lineage_id"], ACTOR)
     assert next(c for c in saved["program"]["components"] if c["id"] == cloned_id)["title"] == "Renamed"
 
 
@@ -76,7 +77,7 @@ def test_resident_deletion_reports_removed_wire(primitive_store, monkeypatch):
     # Filesystem archiving belongs to Resident deletion; exercise the graph edit and its public result here.
     monkeypatch.setattr(lineage_domain.resident_domain, "delete_resident_identities", lambda *_, removed_family_ids=(): None)
     current = make_lineage([source()], [event_wire()])
-    result = lineage_domain.apply_lineage_changes(current["lineage_id"], {"resident_ids": [WORK_A]}, ACTOR)
+    result = lineage_graph_edits.apply_lineage_changes(current["lineage_id"], {"resident_ids": [WORK_A]}, ACTOR)
     assert {WORK_A, "wire_start"} <= set(result["deleted_ids"])
 
 
@@ -99,6 +100,7 @@ def test_direct_event_delivers_content_parts(primitive_store, monkeypatch):
     def send(node, prompt, actor, **kwargs):
         received.append({"text": prompt, "parts": kwargs.get("input_media")})
         return {"message_id": "message_g4"}
+    monkeypatch.setattr(lineage_resident_controls, "_send_node_message", send)
     monkeypatch.setattr(lineage_domain, "_send_node_message", send)
     current = make_lineage([source()], [event_wire()])
     parts = [{"type": "file", "path": "/tmp/input.txt"}]
@@ -242,10 +244,11 @@ def test_countdown_emits_time_reached(primitive_store, monkeypatch):
         def now(cls, tz=None):
             return cls.current
     monkeypatch.setattr(lineage_program_runtime, "datetime", Clock)
-    monkeypatch.setattr(lineage_domain, "datetime", Clock)
+    monkeypatch.setattr(lineage_state, "datetime", Clock)
     current = make_lineage([source({"event_type": "time.reached", "schedule_mode": "countdown", "delay_seconds": 1})])
     lineage_domain.reconcile_lineage_system_events(current["lineage_id"], ACTOR)
     Clock.current += timedelta(seconds=120)
+    monkeypatch.setattr(lineage_state, "_scheduled_time_reached", lambda _: True)
     monkeypatch.setattr(lineage_domain, "_scheduled_time_reached", lambda _: True)
     result = lineage_domain.reconcile_lineage_system_events(current["lineage_id"], ACTOR)
     assert result["events"][0]["event"]["type"] == "time.reached"
@@ -257,7 +260,7 @@ def test_deleted_operator_executor_leaves_diagnosable_operator(primitive_store, 
     current = make_lineage([{"id": "filter_test", "kind": "filter", "config": {
         "operator_implementation": "resident", "resident_executor_id": WORK_A,
     }}])
-    result = lineage_domain.apply_lineage_changes(current["lineage_id"], {"resident_ids": [WORK_A]}, ACTOR)
+    result = lineage_graph_edits.apply_lineage_changes(current["lineage_id"], {"resident_ids": [WORK_A]}, ACTOR)
     component = next(c for c in result["lineage"]["program"]["components"] if c["id"] == "filter_test")
     assert "resident_executor_id" not in component["config"]
     diagnostics = lineage_program.program_diagnostics(result["lineage"]["program"], result["lineage"]["nodes"])

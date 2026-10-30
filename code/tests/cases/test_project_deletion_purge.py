@@ -10,7 +10,7 @@ import pytest
 import yaml
 
 from management_portal.hatg.contracts import InstructionError
-from management_portal.society_service import lineage_domain, project_domain, resident_lifecycle_steps_domain
+from management_portal.society_service import lineage_lifecycle, project_domain, resident_lifecycle_steps_domain
 from management_portal.resources import isa as resource_isa
 from tests.cases.test_project_deletion import _configure_project
 
@@ -36,7 +36,7 @@ def test_already_moved_lineage_deletion_journal_can_finish(monkeypatch, tmp_path
     deleted_root = tmp_path / "deleted"
     target = deleted_root / "lineage_aaaaaaaaaaaa_lineage-delete_20261001"
     (target / "residents").mkdir(parents=True)
-    monkeypatch.setattr(lineage_domain, "_deleted_root", lambda: deleted_root)
+    monkeypatch.setattr(lineage_lifecycle, "_deleted_root", lambda: deleted_root)
 
     intent = {"lineage_id": "lineage_aaaaaaaaaaaa", "target_path": str(target),
               "source_path": str(tmp_path / 'original'), "operation_id": 'lineage-delete_20261001',
@@ -44,14 +44,14 @@ def test_already_moved_lineage_deletion_journal_can_finish(monkeypatch, tmp_path
     proof = json.dumps({key: intent[key] for key in (
         'operation_id', 'lineage_id', 'source_path', 'target_path',
     )}, sort_keys=True, separators=(',', ':'))
-    (target / lineage_domain.LINEAGE_DELETION_MARKER).write_text(proof)
-    lineage_domain._purge_deleted_lineage_folder(intent)
+    (target / lineage_lifecycle.LINEAGE_DELETION_MARKER).write_text(proof)
+    lineage_lifecycle._purge_deleted_lineage_folder(intent)
     assert not target.exists()
 
     outside = tmp_path / "elsewhere" / "lineage_aaaaaaaaaaaa_lineage-delete_20261001"
     outside.mkdir(parents=True)
     with pytest.raises(ValueError):
-        lineage_domain._purge_deleted_lineage_folder({**intent, "target_path": str(outside)})
+        lineage_lifecycle._purge_deleted_lineage_folder({**intent, "target_path": str(outside)})
     assert outside.exists()
 
 

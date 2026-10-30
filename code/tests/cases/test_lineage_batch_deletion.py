@@ -6,7 +6,10 @@ from unittest.mock import Mock
 import pytest
 
 from management_portal.society_service import (
-    lineage_domain,
+    lineage_graph_edits,
+    lineage_program_edits,
+    lineage_resident_nodes,
+    lineage_state,
     resident_catalog,
     resident_conversation_stream,
     resident_domain,
@@ -23,10 +26,10 @@ from tests.cases.test_resident_folder_creation_contract import future_creation_s
 @pytest.fixture
 def deletion_set(future_creation_store):
     lineage_id, leader_id, first_id = _family()
-    second_id = lineage_domain.create_lineage_resident(
+    second_id = lineage_resident_nodes.create_lineage_resident(
         lineage_id, _new_session_payload("Second member"), "sample_admin",
     )["resident"]["resident_id"]
-    component = lineage_domain.create_lineage_program_component(
+    component = lineage_program_edits.create_lineage_program_component(
         lineage_id, {"kind": "event_source", "title": "Batch event"}, "sample_admin",
     )["component"]
     store = resident_catalog.get_catalog().state_store
@@ -50,9 +53,9 @@ def test_batch_deletion_commits_identity_set_graph_and_effects_once(deletion_set
     before = store.lineage_definition(lineage_id)
     catalog_store = resident_catalog.get_catalog()
     remove = Mock(wraps=catalog_store.remove)
-    persist = Mock(wraps=lineage_domain._persist_lineage_state)
+    persist = Mock(wraps=lineage_state._persist_lineage_state)
     monkeypatch.setattr(catalog_store, "remove", remove)
-    monkeypatch.setattr(lineage_domain, "_persist_lineage_state", persist)
+    monkeypatch.setattr(lineage_state, "_persist_lineage_state", persist)
     args = {"resident_ids": ids, "component_ids": [component_id]}
     result = _execute(lineage_id, args)
     assert result.status == "committed", result
@@ -90,8 +93,8 @@ def test_batch_validation_failure_keeps_every_identity_and_graph(deletion_set, m
         args["component_ids"].append("event_source_missing")
     remove = Mock(wraps=resident_catalog.get_catalog().remove)
     monkeypatch.setattr(resident_catalog.get_catalog(), "remove", remove)
-    with pytest.raises((ValueError, KeyError, lineage_domain.LineageConflictError)):
-        lineage_domain.delete_lineage_graph_objects(lineage_id, args, "sample_admin")
+    with pytest.raises((ValueError, KeyError, lineage_state.LineageConflictError)):
+        lineage_graph_edits.delete_lineage_graph_objects(lineage_id, args, "sample_admin")
     remove.assert_not_called()
     assert store.lineage_definition(lineage_id) == before
     assert {row["resident_id"] for row in store.residents_for_lineage(lineage_id)} == {leader_id, *ids}
@@ -107,9 +110,9 @@ def test_batch_commit_failure_rolls_back_identities_graph_and_cleanup(deletion_s
             'SELECT count(*) FROM resident_lifecycle_operations WHERE resident_id IN (%s,%s)', ids,
         ).fetchone()[0]) == len(ids)
         raise RuntimeError("graph write failed")
-    monkeypatch.setattr(lineage_domain, "_persist_lineage_state", fail)
+    monkeypatch.setattr(lineage_state, "_persist_lineage_state", fail)
     with pytest.raises(RuntimeError, match="graph write failed"):
-        lineage_domain.delete_lineage_graph_objects(lineage_id, {
+        lineage_graph_edits.delete_lineage_graph_objects(lineage_id, {
             "resident_ids": ids, "component_ids": [component_id],
         }, "sample_admin")
     assert store.lineage_definition(lineage_id) == before
@@ -159,9 +162,9 @@ def test_resident_deletion_removes_only_its_watchboard(deletion_set, monkeypatch
     if entrypoint == "rollback":
         def fail(*_args, **_kwargs):
             raise RuntimeError("watchboard deletion rollback")
-        monkeypatch.setattr(lineage_domain, "_persist_lineage_state", fail)
+        monkeypatch.setattr(lineage_state, "_persist_lineage_state", fail)
         with pytest.raises(RuntimeError, match="watchboard deletion rollback"):
-            lineage_domain.delete_lineage_graph_objects(lineage_id, {"resident_ids": [ids[0]]}, "sample_admin")
+            lineage_graph_edits.delete_lineage_graph_objects(lineage_id, {"resident_ids": [ids[0]]}, "sample_admin")
         assert store.lineage_definition(lineage_id) == before
         assert resident_catalog.get_catalog().get(ids[0])["resident_id"] == ids[0]
         return
@@ -186,7 +189,7 @@ def test_apply_lineage_changes_returns_ids_without_building_full_lineage_view(de
     def fail_if_projected(*_args, **_kwargs):
         raise AssertionError("ApplyLineageChanges should not build a full Lineage view")
 
-    monkeypatch.setattr(lineage_domain, "_verified_lineage_view", fail_if_projected)
+    monkeypatch.setattr(lineage_state, "_verified_lineage_view", fail_if_projected)
     result = _execute(lineage_id, {"component_ids": [component_id]}, key="ids-only-batch")
 
     assert result.status == "committed", result
@@ -208,7 +211,7 @@ def test_malformed_batch_cannot_mutate_graph(deletion_set, args):
     lineage_id, leader_id, ids, _, store = deletion_set
     before = store.lineage_definition(lineage_id)
     with pytest.raises(ValueError):
-        lineage_domain.delete_lineage_graph_objects(lineage_id, args, "sample_admin")
+        lineage_graph_edits.delete_lineage_graph_objects(lineage_id, args, "sample_admin")
     assert store.lineage_definition(lineage_id) == before
     assert {row["resident_id"] for row in store.residents_for_lineage(lineage_id)} == {leader_id, *ids}
 

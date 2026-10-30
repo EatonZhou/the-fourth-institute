@@ -7,7 +7,7 @@ from types import SimpleNamespace
 import pytest
 
 from management_portal.society_service import resident_lineage, resident_catalog, lineage_catalog
-from management_portal.society_service import resource_client, lineage_domain
+from management_portal.society_service import resource_client, lineage_lifecycle
 from management_portal.society_service import lineage_aggregate
 
 R = 'resident_0123456789ab'
@@ -58,5 +58,5 @@ def test_interrupted_lineage_deletion_reads_canonical_fields(monkeypatch):
     canonical = {'lineage_id': L, 'revision': 7, 'title': 'Interrupted',
                  'deleted_at': '2026-10-10T00:00:00Z'}
     monkeypatch.setattr(lineage_aggregate, 'read_lineage_state', lambda target: copy.deepcopy(canonical))
-    got = lineage_domain._read_lineage_for_deletion(L, 'CASE-A')
+    got = lineage_lifecycle._read_lineage_for_deletion(L, 'CASE-A')
     assert got['title'] == 'Interrupted' and got['revision'] == 7

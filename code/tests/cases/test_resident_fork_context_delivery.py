@@ -9,7 +9,7 @@ import pytest
 
 from management_portal.society_service import (
     execution_client,
-    lineage_domain,
+    lineage_branches,
     resident_catalog,
     resident_conversation_stream,
     resident_domain,
@@ -505,7 +505,7 @@ def test_hatg_fork_preserves_context_and_creation_job(future_creation_store, mon
     source = _activate_created_resident(source['resident_id'])
     _append_conversation_turn(source['resident_id'], 0)
     _record_provider_turn(get_agent_data_store(), source, 0)
-    result = lineage_domain.create_lineage_branch(source['lineage_id'], {
+    result = lineage_branches.create_lineage_branch(source['lineage_id'], {
         'source_resident_id': source['resident_id'],
         'edge_id': 'edge_fork_context_regression', 'mode': 'full',
     }, 'sample_admin')

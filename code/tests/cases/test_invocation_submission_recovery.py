@@ -237,10 +237,10 @@ def test_real_kernel_record_and_persisted_path_recover_after_delivery_interrupti
     from management_portal.hatg.kernel import current_instruction_id
     from management_portal.hatg import routing
     import json
-    from management_portal.society_service import lineage_domain, trigger_paths, trigger_path_observation
+    from management_portal.society_service import lineage_domain, lineage_lifecycle, trigger_paths, trigger_path_observation
     from management_portal.society_service.isa import build_kernel, execution
 
-    graph = lineage_domain.create_lineage({"title": "Submission recovery fixture", "nodes": [], "edges": []}, ACTOR)
+    graph = lineage_lifecycle.create_lineage({"title": "Submission recovery fixture", "nodes": [], "edges": []}, ACTOR)
     binding = {**BINDING, "lineage_id": graph["lineage_id"]}
     kernel = build_kernel()
     calls, accepted = [], {}

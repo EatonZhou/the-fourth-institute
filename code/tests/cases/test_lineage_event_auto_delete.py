@@ -4,7 +4,14 @@ import pytest
 from datetime import datetime, timedelta, timezone
 
 from management_portal.society_service import lineage_program_backlog
-from management_portal.society_service import component_runtime, lineage_domain, lineage_program_runtime
+from management_portal.society_service import (
+    component_runtime,
+    lineage_domain,
+    lineage_program_edits,
+    lineage_program_runtime,
+    lineage_reads,
+    lineage_state,
+)
 from tests.cases import society_service_test_support as support
 from tests.cases.test_lineage_program_runtime_integration import (
     ACTOR, PRODUCER_A, WORK_A, WORK_B, _component, _packet_reply, _wire, _worker,
@@ -38,7 +45,7 @@ def emit(lineage_id):
 
 
 def source_exists(lineage_id):
-    return any(item["id"] == SOURCE for item in lineage_domain.get_lineage(
+    return any(item["id"] == SOURCE for item in lineage_reads.get_lineage(
         lineage_id, ACTOR,
     )["program"]["components"])
 
@@ -73,8 +80,8 @@ def test_final_occurrence_fans_out_before_source_and_wires_are_removed(runtime_s
     assert result["lineage"]["program"]["components"] == []
     assert result["lineage"]["program"]["wires"] == []
     revision = result["lineage"]["revision"]
-    assert lineage_domain._retire_exhausted_event_sources(lineage_id, ACTOR) == []
-    assert lineage_domain.get_lineage(lineage_id, ACTOR)["revision"] == revision
+    assert lineage_program_edits._retire_exhausted_event_sources(lineage_id, ACTOR) == []
+    assert lineage_reads.get_lineage(lineage_id, ACTOR)["revision"] == revision
 
 
 @pytest.mark.parametrize("disable_before_delivery", [False, True])
@@ -96,10 +103,10 @@ def test_queued_final_invocation_survives_until_delivery_then_retires(runtime_st
     assert sent == []
     persisted = lineage_program_runtime.read_runtime(lineage_id)
     assert persisted["event_sources"][SOURCE]["fanout_settled_generation"] == 0
-    assert lineage_domain._retire_exhausted_event_sources(lineage_id, ACTOR) == []
+    assert lineage_program_edits._retire_exhausted_event_sources(lineage_id, ACTOR) == []
     if disable_before_delivery:
-        current = lineage_domain.get_lineage(lineage_id, ACTOR)
-        lineage_domain.save_lineage_program_component(lineage_id, {
+        current = lineage_reads.get_lineage(lineage_id, ACTOR)
+        lineage_program_edits.save_lineage_program_component(lineage_id, {
             "component_id": SOURCE, "expected_revision": current["revision"],
             "component": {"config": {"event_type": "manual.triggered", "max_fires": 1,
                                       "auto_delete_on_exhaustion": False}},
@@ -120,10 +127,10 @@ def test_reset_fences_old_auto_delete_readiness(runtime_store):
     component_runtime.reset(lineage_id, SOURCE, ACTOR)
     lineage_program_runtime.mark_event_fanout_complete(lineage_id, SOURCE, generation=0, occurrence_count=1)
     lineage_program_runtime.claim_event_occurrence(lineage_id, SOURCE, "new", max_fires=1)
-    assert lineage_domain._retire_exhausted_event_sources(lineage_id, ACTOR) == []
+    assert lineage_program_edits._retire_exhausted_event_sources(lineage_id, ACTOR) == []
     assert source_exists(lineage_id)
     lineage_program_runtime.mark_event_fanout_complete(lineage_id, SOURCE, generation=1, occurrence_count=1)
-    assert lineage_domain._retire_exhausted_event_sources(lineage_id, ACTOR) == [SOURCE]
+    assert lineage_program_edits._retire_exhausted_event_sources(lineage_id, ACTOR) == [SOURCE]
 
 
 def test_older_fanout_cannot_mark_a_newer_occurrence_as_settled(runtime_store):
@@ -134,9 +141,9 @@ def test_older_fanout_cannot_mark_a_newer_occurrence_as_settled(runtime_store):
     lineage_program_runtime.mark_event_fanout_complete(lineage_id, SOURCE, generation=0, occurrence_count=1)
     lineage_program_runtime.claim_event_occurrence(lineage_id, SOURCE, "second", max_fires=2)
     lineage_program_runtime.mark_event_fanout_complete(lineage_id, SOURCE, generation=0, occurrence_count=1)
-    assert lineage_domain._retire_exhausted_event_sources(lineage_id, ACTOR) == []
+    assert lineage_program_edits._retire_exhausted_event_sources(lineage_id, ACTOR) == []
     lineage_program_runtime.mark_event_fanout_complete(lineage_id, SOURCE, generation=0, occurrence_count=2)
-    assert lineage_domain._retire_exhausted_event_sources(lineage_id, ACTOR) == [SOURCE]
+    assert lineage_program_edits._retire_exhausted_event_sources(lineage_id, ACTOR) == [SOURCE]
 
 
 @pytest.mark.parametrize("enabled,maximum", [(False, 1), (True, 2)])
@@ -145,13 +152,13 @@ def test_enabling_auto_delete_or_lowering_limit_keeps_existing_fire_count(runtim
     created = create(enabled=enabled, maximum=maximum)
     lineage_id = created["lineage_id"]
     result = emit(lineage_id)
-    lineage_domain.save_lineage_program_component(lineage_id, {
+    lineage_program_edits.save_lineage_program_component(lineage_id, {
         "component_id": SOURCE, "expected_revision": result["lineage"]["revision"],
         "component": {"config": {"event_type": "manual.triggered", "max_fires": 1,
                                   "auto_delete_on_exhaustion": True}},
     }, ACTOR)
     assert lineage_program_runtime.read_runtime(lineage_id)["event_sources"][SOURCE]["fire_count"] == 1
-    assert lineage_domain._retire_exhausted_event_sources(lineage_id, ACTOR) == [SOURCE]
+    assert lineage_program_edits._retire_exhausted_event_sources(lineage_id, ACTOR) == [SOURCE]
 
 
 def test_zero_budget_retires_during_reconcile_without_firing(runtime_store):
@@ -218,7 +225,7 @@ def test_recurring_timer_commits_final_tick_before_auto_delete(runtime_store, mo
             return cls.current if tz is None else cls.current.astimezone(tz)
 
     monkeypatch.setattr(lineage_program_runtime, "datetime", Clock)
-    monkeypatch.setattr(lineage_domain, "datetime", Clock)
+    monkeypatch.setattr(lineage_state, "datetime", Clock)
     created = support.create_lineage_with_resident_members({
         "title": "Recurring source retirement", "project_id": "project_test", "nodes": [_worker(WORK_A)],
         "program": {"components": [_component(
@@ -233,9 +240,9 @@ def test_recurring_timer_commits_final_tick_before_auto_delete(runtime_store, mo
     Clock.current += timedelta(seconds=60)
     lineage_domain.reconcile_lineage_system_events(lineage_id, ACTOR)
     assert not source_exists(lineage_id)
-    current = lineage_domain.get_lineage(lineage_id, ACTOR)
+    current = lineage_reads.get_lineage(lineage_id, ACTOR)
     lineage_domain.reconcile_lineage_system_events(lineage_id, ACTOR)
-    assert lineage_domain.get_lineage(lineage_id, ACTOR)["revision"] == current["revision"]
+    assert lineage_reads.get_lineage(lineage_id, ACTOR)["revision"] == current["revision"]
 
 
 def test_auto_delete_updates_collapsed_function_block_membership(runtime_store):

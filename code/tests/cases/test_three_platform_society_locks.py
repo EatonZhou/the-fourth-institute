@@ -18,7 +18,7 @@ from scripts import harness_lineage
 ROOT = Path(__file__).resolve().parents[2]
 FILES = [
     "management_portal/society_service/lineage_storage.py",
-    "management_portal/society_service/lineage_domain.py",
+    "management_portal/society_service/lineage_state.py",
     "management_portal/society_service/invariant_locks.py",
     "scripts/harness_lineage.py",
 ]
@@ -114,7 +114,7 @@ def test_projection_publication_lock_covers_read_sync_and_receipt(tmp_path, monk
     # Load the exact owner function with isolated ports; importing the complete
     # Society runtime is neither needed nor permitted for a lock-only probe.
     name = "_publish_lineage_resource_projection"
-    path = ROOT / "management_portal/society_service/lineage_domain.py"
+    path = ROOT / "management_portal/society_service/lineage_state.py"
     function = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.FunctionDef) and n.name == name)
     lock_path = tmp_path / "runtime/resource-projection.lock"
     events = []

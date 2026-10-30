@@ -10,7 +10,18 @@ from typing import Any, Iterator
 from management_portal.hatg.contracts import InstructionError, invalid, not_found
 from management_portal.hatg.kernel import Invocation
 
-from .common import domain, lineage_revision, placement, store
+from .common import (
+    lineage_branches,
+    lineage_graph_edits,
+    lineage_handoffs,
+    lineage_lifecycle,
+    lineage_program_edits,
+    lineage_reads,
+    lineage_revision,
+    lineage_state,
+    placement,
+    store,
+)
 
 
 STREAM_POLL_SECONDS = 1.0
@@ -32,7 +43,7 @@ def create_lineage(inv: Invocation) -> dict[str, Any]:
     if unknown:
         raise invalid("definition 只包含 nodes、edges、program", unknown_fields=unknown)
     payload.update(copy.deepcopy(definition))
-    lineage = domain().create_lineage(payload, inv.caller)
+    lineage = lineage_lifecycle().create_lineage(payload, inv.caller)
     lineage_id = str(lineage.get("lineage_id") or "")
     result = {"lineage_id": lineage_id}
     if inv.argument("familize", False):
@@ -49,7 +60,7 @@ def create_lineage(inv: Invocation) -> dict[str, Any]:
 
 
 def get_lineage(inv: Invocation) -> dict[str, Any]:
-    lineage = domain().get_lineage(inv.argument("lineage_id"), inv.caller)
+    lineage = lineage_reads().get_lineage(inv.argument("lineage_id"), inv.caller)
     return {"lineage": lineage}
 
 
@@ -65,7 +76,7 @@ def update_lineage(inv: Invocation) -> dict[str, Any]:
     avatar = changes.pop("avatar", None)
     metadata: dict[str, Any] = {"lineage_id": lineage_id}
     if changes:
-        result = domain().update_lineage_metadata(
+        result = lineage_lifecycle().update_lineage_metadata(
             lineage_id, changes, inv.caller,
         )
         lineage = result.get("lineage") if isinstance(result.get("lineage"), dict) else result
@@ -82,13 +93,13 @@ def update_lineage(inv: Invocation) -> dict[str, Any]:
 
 
 def update_lineage_layout(inv: Invocation) -> dict[str, Any]:
-    result = domain().update_lineage_layout(inv.argument("lineage_id"), {"positions": inv.argument("positions")}, inv.caller)
+    result = lineage_lifecycle().update_lineage_layout(inv.argument("lineage_id"), {"positions": inv.argument("positions")}, inv.caller)
     return {key: result[key] for key in ("applied", "missing_object_ids", "layout_revision", "layout_updated_at")}
 
 
 def delete_lineage(inv: Invocation) -> dict[str, Any]:
     lineage_id = inv.argument("lineage_id")
-    result = domain().delete_lineage(lineage_id, inv.caller)
+    result = lineage_lifecycle().delete_lineage(lineage_id, inv.caller)
     from management_portal.avatar_store import scope_avatar_store, scope_subject
 
     scope_avatar_store().delete(scope_subject("lineage", lineage_id))
@@ -128,7 +139,7 @@ def create_component(inv: Invocation) -> dict[str, Any]:
             payload[name] = inv.argument(name)
     if inv.context.is_resident and inv.entry != "lineage":
         payload["created_by_principal_id"] = inv.caller
-    result = domain().create_lineage_program_component(lineage_id, payload, inv.caller, full_view=False)
+    result = lineage_program_edits().create_lineage_program_component(lineage_id, payload, inv.caller, full_view=False)
     component = result.get("component") or {}
     return {"component_id": str(component.get("id") or ""), "component": component}
 
@@ -159,13 +170,13 @@ def update_component(inv: Invocation) -> dict[str, Any]:
         payload["effect_changes"] = copy.deepcopy(effect_changes)
     if "watch_subject" in changes:
         payload["watch_subject"] = changes["watch_subject"]
-    result = domain().save_lineage_program_component(lineage_id, payload, inv.caller, full_view=False)
+    result = lineage_program_edits().save_lineage_program_component(lineage_id, payload, inv.caller, full_view=False)
     return {"component": result.get("component") or {}}
 
 
 def delete_component(inv: Invocation) -> dict[str, Any]:
     lineage_id = inv.argument("lineage_id")
-    result = domain().delete_lineage_program_component(
+    result = lineage_program_edits().delete_lineage_program_component(
         lineage_id,
         {"component_id": inv.argument("component_id")},
         inv.caller,
@@ -184,7 +195,7 @@ def create_wire(inv: Invocation) -> dict[str, Any]:
         for name in ("source", "source_port", "target", "target_port", "kind", "config", "label", "client_key")
         if inv.argument(name) is not None
     }
-    result = domain().save_lineage_program_wire(
+    result = lineage_program_edits().save_lineage_program_wire(
         lineage_id, {"wire": wire}, inv.caller, operation="create", full_view=False,
     )
     return {"wire_id": str((result.get("wire") or {}).get("id") or ""), "wire": result.get("wire") or {}}
@@ -196,7 +207,7 @@ def update_wire(inv: Invocation) -> dict[str, Any]:
     unknown = sorted(set(changes) - {"source", "source_port", "target", "target_port", "kind", "config", "label", "client_key"})
     if unknown:
         raise invalid("changes 不接受字段：" + "、".join(unknown), unknown_fields=unknown)
-    result = domain().save_lineage_program_wire(
+    result = lineage_program_edits().save_lineage_program_wire(
         lineage_id,
         {"wire_id": inv.argument("wire_id"), "wire": dict(changes)},
         inv.caller,
@@ -207,7 +218,7 @@ def update_wire(inv: Invocation) -> dict[str, Any]:
 
 def delete_wire(inv: Invocation) -> dict[str, Any]:
     lineage_id = inv.argument("lineage_id")
-    domain().delete_lineage_program_wire(
+    lineage_program_edits().delete_lineage_program_wire(
         lineage_id, {"wire_id": inv.argument("wire_id")}, inv.caller, full_view=False,
     )
     return {"wire_id": inv.argument("wire_id")}
@@ -218,7 +229,7 @@ def delete_wire(inv: Invocation) -> dict[str, Any]:
 
 def create_candidate_fork(inv: Invocation) -> dict[str, Any]:
     seed_id = inv.argument("seed_id")
-    result = domain().set_candidate_fork(
+    result = lineage_branches().set_candidate_fork(
         inv.argument("lineage_id"), seed_id, inv.argument("source_resident_id"), inv.caller,
     )
     return {"edge_id": str((result.get("edge") or {}).get("id") or ""),
@@ -228,7 +239,7 @@ def create_candidate_fork(inv: Invocation) -> dict[str, Any]:
 def delete_candidate_fork(inv: Invocation) -> dict[str, Any]:
     seed_id = inv.argument("seed_id")
     try:
-        edge_id = domain().delete_candidate_fork(inv.argument("lineage_id"), seed_id, inv.caller)
+        edge_id = lineage_branches().delete_candidate_fork(inv.argument("lineage_id"), seed_id, inv.caller)
     except KeyError as exc:
         raise not_found(str(exc.args[0] if exc.args else exc)) from exc
     return {"edge_id": edge_id}
@@ -246,7 +257,7 @@ def _create_handoff(inv: Invocation, source: str, target: str) -> tuple[str, boo
     for name in ("items", "explanation", "label"):
         if inv.argument(name) is not None:
             payload[name] = inv.argument(name)
-    result = domain().create_handoff(lineage_id, payload, inv.caller, full_view=False, idempotent=True)
+    result = lineage_handoffs().create_handoff(lineage_id, payload, inv.caller, full_view=False, idempotent=True)
     return str((result.get("handoff") or {}).get("id") or ""), bool(result.get("created"))
 
 
@@ -260,14 +271,14 @@ def create_workspace_handoff(inv: Invocation) -> dict[str, Any]:
 def update_workspace_handoff(inv: Invocation) -> dict[str, Any]:
     handoff_id = inv.argument("handoff_id")
     lineage_id = inv.argument("lineage_id")
-    result = domain().update_handoff(lineage_id, handoff_id, inv.argument("changes") or {}, inv.caller, full_view=False)
+    result = lineage_handoffs().update_handoff(lineage_id, handoff_id, inv.argument("changes") or {}, inv.caller, full_view=False)
     return {"handoff": result.get("handoff") or {}}
 
 
 def delete_workspace_handoff(inv: Invocation) -> dict[str, Any]:
     handoff_id = inv.argument("handoff_id")
     lineage_id = inv.argument("lineage_id")
-    domain().delete_handoff(lineage_id, handoff_id, inv.caller, full_view=False)
+    lineage_handoffs().delete_handoff(lineage_id, handoff_id, inv.caller, full_view=False)
     return {"handoff_id": handoff_id}
 
 
@@ -292,11 +303,11 @@ def prepare_workspace_handoff(inv: Invocation) -> dict[str, Any]:
         )
     lineage_id = inv.argument("lineage_id")
     try:
-        result = domain().execute_handoff(lineage_id, handoff_id, inv.caller)
+        result = lineage_handoffs().execute_handoff(lineage_id, handoff_id, inv.caller)
     except Exception:
         # A failed preparation is recorded on the handoff with each item's
         # reason; that recorded state is this instruction's result.
-        handoff = domain().get_handoff(lineage_id, handoff_id, inv.caller).get("handoff") or {}
+        handoff = lineage_handoffs().get_handoff(lineage_id, handoff_id, inv.caller).get("handoff") or {}
         if handoff.get("status") != "failed":
             raise
         return _handoff_result(handoff)
@@ -306,7 +317,7 @@ def prepare_workspace_handoff(inv: Invocation) -> dict[str, Any]:
 def get_workspace_handoff(inv: Invocation) -> dict[str, Any]:
     handoff_id = inv.argument("handoff_id")
     lineage_id = _lineage_for_object(handoff_id)
-    handoff = domain().get_handoff(lineage_id, handoff_id, inv.caller, full_view=False)["handoff"]
+    handoff = lineage_handoffs().get_handoff(lineage_id, handoff_id, inv.caller, full_view=False)["handoff"]
     return {"handoff": handoff, **_handoff_result(handoff), "status": str(handoff.get("status") or "draft")}
 
 
@@ -319,7 +330,7 @@ def get_lineage_diagnostics(inv: Invocation) -> dict[str, Any]:
         _program_event_source_runtime_view, event_source_diagnostics,
     )
 
-    lineage = domain().get_lineage_definition_for_analysis(inv.argument("lineage_id"), inv.caller)
+    lineage = lineage_reads().get_lineage_definition_for_analysis(inv.argument("lineage_id"), inv.caller)
     plan = lineage_program.compile_program(lineage.get("program"), lineage.get("nodes") or [])
     diagnostics = lineage_program.program_diagnostics(
         lineage.get("program"), lineage.get("nodes") or [], _compiled_plan=plan,
@@ -416,7 +427,7 @@ def apply_lineage_changes(inv: Invocation) -> dict[str, Any]:
         "resident_ids": residents,
         **placement(inv, lineage_id),
     }
-    result = domain().apply_lineage_changes(lineage_id, payload, inv.caller, include_lineage=False)
+    result = lineage_graph_edits().apply_lineage_changes(lineage_id, payload, inv.caller, include_lineage=False)
     return {
         "created_ids": result.get("created_ids") or [],
         "updated_ids": result.get("updated_ids") or [],
@@ -428,7 +439,7 @@ def apply_lineage_changes(inv: Invocation) -> dict[str, Any]:
 def watch_lineage(inv: Invocation) -> Iterator[list[dict[str, Any]]]:
     lineage_id = inv.argument("lineage_id")
     # Ownership of the stream depends only on the Lineage identity projection.
-    domain()._ensure_visible(domain().lineage_access_projection(lineage_id), inv.caller)
+    lineage_state()._ensure_visible(lineage_state().lineage_access_projection(lineage_id), inv.caller)
     cursor = inv.argument("after_cursor")
     if cursor is None:
         cursor = lineage_revision(lineage_id)

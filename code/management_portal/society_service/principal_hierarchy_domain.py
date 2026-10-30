@@ -86,7 +86,7 @@ def delete_personal_ama(username: str, actor: str) -> dict[str, Any]:
     from management_common.principal import actor_principal
     from management_portal.portal_access_control import get_portal_access_store
     from management_portal.shared_state import exclusive_file_lock
-    from . import lineage_domain as graphs
+    from . import lineage_lifecycle
 
     owner = actor_principal(username)
     if owner.kind != "user":
@@ -98,7 +98,7 @@ def delete_personal_ama(username: str, actor: str) -> dict[str, Any]:
     with exclusive_file_lock(lineage_aggregate.DATA_ROOT / "locks" / "personal-ama" / f"{lock_name}.lock"):
         for graph in lineage_aggregate.lineage_catalog_store().listing_records():
             if graph.get("lineage_membership") == "personal" and str(graph.get("created_by") or "").casefold() == owner.id.casefold():
-                graphs.delete_lineage(graph["lineage_id"], "portal")
+                lineage_lifecycle.delete_lineage(graph["lineage_id"], "portal")
                 deleted.append(graph["lineage_id"])
     return {"username": owner.id, "deleted_lineage_ids": deleted}
 
@@ -138,14 +138,14 @@ def _finish_personal_ama(graph: dict[str, Any], owner_id: str) -> None:
     would. A partial registration may have published descriptor metadata;
     retries use the canonical Lineage.
     """
-    from . import lineage_domain as graphs, resident_catalog, resident_registration_domain
+    from . import lineage_state, resident_catalog, resident_registration_domain
 
     lineage_id = graph["lineage_id"]
     leader = str(graph.get("leader_resident_id") or "")
     if leader and resident_catalog.get_catalog().get(leader).get("registration_state") == "ready":
         resident_catalog.ensure_resident_agent(resident_catalog.get_catalog().get(leader), actor=owner_id)
         return
-    graphs._publish_lineage_resource_projection(
+    lineage_state._publish_lineage_resource_projection(
         lineage_id, None, creation=lineage_aggregate.read_lineage_state(lineage_id),
     )
     if leader:
@@ -206,7 +206,7 @@ def ensure_personal_assistant(username: str, ama_id: str, actor: str) -> dict[st
     """Resume one user's Family setup without touching their AMA session or history."""
     from management_common.principal import actor_principal
     from management_portal.shared_state import exclusive_file_lock
-    from . import lineage_domain as graphs, resident_catalog, lineage_graph_state
+    from . import lineage_state, lineage_graph_edits, resident_catalog, lineage_graph_state
     from .templates.familize import familize
 
     owner = actor_principal(username)
@@ -229,7 +229,7 @@ def ensure_personal_assistant(username: str, ama_id: str, actor: str) -> dict[st
                 if body["title"] == "Ask Me Anything":
                     body["title"] = personal_assistant.TITLE
                 return {}
-            graph, _ = graphs.commit_lineage_edit(lineage_id, actor, rename, reason="个人助手默认名称")
+            graph, _ = lineage_graph_edits.commit_lineage_edit(lineage_id, actor, rename, reason="个人助手默认名称")
         if not blocks:
             result = familize(lineage_id, [ama_id], actor, title=graph["title"], personal_ama_id=ama_id)
             graph = lineage_aggregate.read_lineage(lineage_id, actor=actor)
@@ -239,7 +239,7 @@ def ensure_personal_assistant(username: str, ama_id: str, actor: str) -> dict[st
         family = block["family"]
         # Publication can fail after the graph committed. Retry it,
         # keeping the original roles and migration boundary.
-        graphs._publish_lineage_resource_projection(lineage_id, None, actor=actor)
+        lineage_state._publish_lineage_resource_projection(lineage_id, None, actor=actor)
         key = personal_assistant.preferences_key(family["facade"])
         lineage_graph_state.update_cell(lineage_id, key, {"preferences": [], "my_teams": []}, expected_value=None)
         return {"resident_id": family["facade"], "lineage_id": lineage_id, "family_id": family["resource_id"]}

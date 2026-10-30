@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from management_portal.resources.workspace_store import get_workspace_store
-from management_portal.society_service import lineage_domain, resident_catalog
+from management_portal.society_service import lineage_graph_edits, lineage_lifecycle, lineage_resident_nodes, resident_catalog
 from management_portal.society_service import resident_workspace_domain as domain
 from management_portal.society_service.resident_workspace_retirement import remove_retired_folder
 from tests.cases.test_resident_folder_creation_contract import (
@@ -47,9 +47,9 @@ def test_shared_workspace_survives_member_and_lineage_deletion(
     junk.write_text('remove')
 
     if whole_lineage:
-        lineage_domain.delete_lineage(owner['lineage_id'], 'sample_admin')
+        lineage_lifecycle.delete_lineage(owner['lineage_id'], 'sample_admin')
     else:
-        lineage_domain.delete_lineage_graph_objects(
+        lineage_graph_edits.delete_lineage_graph_objects(
             owner['lineage_id'], {'resident_ids': [owner['resident_id']]}, 'sample_admin', include_lineage=False,
         )
     drain()
@@ -60,7 +60,7 @@ def test_shared_workspace_survives_member_and_lineage_deletion(
     assert not junk.exists()
     if not whole_lineage:
         # The empty-Lineage path must preserve exactly the same shared files.
-        lineage_domain.delete_lineage(owner['lineage_id'], 'sample_admin')
+        lineage_lifecycle.delete_lineage(owner['lineage_id'], 'sample_admin')
         assert evidence.read_text() == 'shared evidence'
 
 
@@ -80,13 +80,13 @@ def test_last_reference_collects_external_workspace_and_nested_shared_child_surv
     get_workspace_store().ensure(child, str(shared))
     domain.add_resident_reference_workspace(owner['resident_id'], str(parent), 'sample_admin', workspace_id=wid)
     domain.add_resident_reference_workspace(reader['resident_id'], str(shared), 'sample_admin', workspace_id=child)
-    lineage_domain.delete_lineage(owner['lineage_id'], 'sample_admin')
+    lineage_lifecycle.delete_lineage(owner['lineage_id'], 'sample_admin')
     drain()
     assert get_workspace_store().rows([wid]) == {}
     assert get_workspace_store().rows([child])
     assert not (parent / 'discard.txt').exists()
     assert (shared / 'keep.txt').read_text() == 'keep'
-    lineage_domain.delete_lineage(reader['lineage_id'], 'sample_admin')
+    lineage_lifecycle.delete_lineage(reader['lineage_id'], 'sample_admin')
     drain()
     assert get_workspace_store().rows([child]) == {}
     assert not shared.exists()
@@ -115,7 +115,7 @@ def test_cleanup_rechecks_new_registration_and_does_not_follow_symlinks(tmp_path
 def test_batch_deletion_ignores_references_from_other_deleted_members(future_creation_store):
     """整组删除按整批存活引用判断，待删除成员互相引用不会留下工作区"""
     first = resident_domain.register_resident(_new_session_payload('First'), 'sample_admin')
-    second = lineage_domain.create_lineage_resident(
+    second = lineage_resident_nodes.create_lineage_resident(
         first['lineage_id'], _new_session_payload('Second'), 'sample_admin',
     )['resident']
     for reader, owner in [(first, second), (second, first)]:
@@ -123,7 +123,7 @@ def test_batch_deletion_ignores_references_from_other_deleted_members(future_cre
             reader['resident_id'], owner['owned_workspace']['path'], 'sample_admin',
             workspace_id=owner['owned_workspace_id'],
         )
-    lineage_domain.delete_lineage(first['lineage_id'], 'sample_admin')
+    lineage_lifecycle.delete_lineage(first['lineage_id'], 'sample_admin')
     drain()
     ids = [r['owned_workspace_id'] for r in (first, second)]
     assert get_workspace_store().rows(ids) == {}
@@ -144,7 +144,7 @@ def test_external_workspace_cleanup_keeps_surviving_resident_system_files(future
     runtime = folder / 'runtime/keep.txt'
     runtime.parent.mkdir(exist_ok=True)
     runtime.write_text('surviving runtime')
-    lineage_domain.delete_lineage(owner['lineage_id'], 'sample_admin')
+    lineage_lifecycle.delete_lineage(owner['lineage_id'], 'sample_admin')
     drain()
     assert identity.read_text() == 'surviving identity'
     assert runtime.read_text() == 'surviving runtime'

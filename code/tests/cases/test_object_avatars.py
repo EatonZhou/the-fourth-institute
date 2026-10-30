@@ -82,7 +82,7 @@ def test_update_resident_changes_only_the_avatar_when_no_title_is_given(monkeypa
     :design: decision_5bc3fdfc7eec
     """
     rename = Mock()
-    monkeypatch.setattr(residents, "domain", lambda: SimpleNamespace(rename_lineage_resident=rename))
+    monkeypatch.setattr(residents, "lineage_resident_nodes", lambda: SimpleNamespace(rename_lineage_resident=rename))
     monkeypatch.setattr(residents, "protocol", lambda: SimpleNamespace(get_resident=lambda resident_id, caller: {"resident_id": resident_id}))
     result = residents.update_resident(invoke("UpdateResident", {"lineage_id": LINEAGE, "resident_id": RESIDENT, "avatar": {"sprite_index": 36}}))
     assert result["resident"]["avatar"] == avatar_store.sprite(36)
@@ -111,7 +111,13 @@ def test_lineage_and_project_avatars_are_set_and_cleared_through_their_updates(m
 
     :design: decision_5bc3fdfc7eec
     """
-    monkeypatch.setattr(definition, "domain", lambda: pytest.fail("an avatar-only change wrote the definition"))
+    monkeypatch.setattr(definition, "lineage_state", lambda: pytest.fail("an avatar-only change wrote the definition"))
+    monkeypatch.setattr(definition, "lineage_reads", lambda: pytest.fail("an avatar-only change wrote the definition"))
+    monkeypatch.setattr(definition, "lineage_lifecycle", lambda: pytest.fail("an avatar-only change wrote the definition"))
+    monkeypatch.setattr(definition, "lineage_graph_edits", lambda: pytest.fail("an avatar-only change wrote the definition"))
+    monkeypatch.setattr(definition, "lineage_program_edits", lambda: pytest.fail("an avatar-only change wrote the definition"))
+    monkeypatch.setattr(definition, "lineage_branches", lambda: pytest.fail("an avatar-only change wrote the definition"))
+    monkeypatch.setattr(definition, "lineage_handoffs", lambda: pytest.fail("an avatar-only change wrote the definition"))
     result = definition.update_lineage(invoke("UpdateLineage", {"lineage_id": LINEAGE, "changes": {"avatar": {"sprite_index": 5}}}))
     assert result == {"lineage": {"lineage_id": LINEAGE, "avatar": avatar_store.sprite(5)}}
     assert avatar_store.get_scope_avatar("lineage", LINEAGE) == avatar_store.sprite(5)

@@ -10,8 +10,9 @@ import pytest
 
 from management_portal.hatg.contracts import InstructionError
 from management_portal.society_service import (
-    lineage_domain as graphs, principal_hierarchy_domain,
-    project_domain, resident_catalog, resident_registration_domain, resource_client,
+    lineage_graph_edits, lineage_lifecycle, lineage_moves, lineage_program_edits, lineage_reads,
+    lineage_resident_nodes, lineage_state, principal_hierarchy_domain, project_domain,
+    resident_catalog, resident_registration_domain, resource_client,
 )
 from tests.cases.isa_test_support import ACTOR, ok, reset_kernels
 from tests.cases.test_hatg_move_resident import teams, request, execute, graph  # noqa: F401
@@ -27,14 +28,14 @@ def test_partial_project_deletion_has_failed_code_and_progress(monkeypatch, tmp_
     """删除 Project 中途失败时返回失败错误码并列出已删除的 Lineage"""
     first, second = "lineage_aaaaaaaaaaaa", "lineage_bbbbbbbbbbbb"
     root, _, _, deleted = _configure_project(monkeypatch, tmp_path, lineages=([first, second], []))
-    original = graphs.delete_lineage
+    original = lineage_lifecycle.delete_lineage
 
     def delete(identifier, actor, **options):
         if identifier == second:
             raise failure
         return original(identifier, actor, **options)
 
-    monkeypatch.setattr(graphs, "delete_lineage", delete)
+    monkeypatch.setattr(lineage_lifecycle, "delete_lineage", delete)
     with pytest.raises(InstructionError) as error:
         project_domain.delete_project("Example", "alice")
     assert error.value.code == "instruction.failed"
@@ -52,8 +53,8 @@ def test_ensure_project_principal_serializes_concurrent_creation(future_creation
     original_register = resident_registration_domain.register_resident_and_lineage
     project_root = future_creation_store.parent / project_id
     project_root.mkdir()
-    original_project_root = graphs.resource_port.project_root
-    monkeypatch.setattr(graphs.resource_port, "project_root", lambda identifier, *, actor:
+    original_project_root = lineage_state.resource_port.project_root
+    monkeypatch.setattr(lineage_state.resource_port, "project_root", lambda identifier, *, actor:
                         project_root if identifier == project_id else original_project_root(identifier, actor=actor))
     monkeypatch.setattr(resource_client, "_query_all", lambda *args, **kwargs: [{"resource_id": project_id}])
 
@@ -101,14 +102,14 @@ def test_allow_empty_source_is_permission_for_an_ordinary_member(teams):
 def test_personal_lineage_auto_move_preserves_membership(future_creation_store, project_id):
     """从个人 Lineage 迁出对象时自动新建的 Lineage 保持个人归属和原 Project"""
     reset_kernels()
-    source = graphs.create_lineage({"title": "Personal", "lineage_membership": "personal", "project_id": project_id}, ACTOR)
-    source = graphs.create_lineage_program_component(source["lineage_id"], {
+    source = lineage_lifecycle.create_lineage({"title": "Personal", "lineage_membership": "personal", "project_id": project_id}, ACTOR)
+    source = lineage_program_edits.create_lineage_program_component(source["lineage_id"], {
         "kind": "event_source", "config": {"event_type": "manual.triggered"},
         "expected_revision": source["revision"],
     }, ACTOR)["lineage"]
     component = source["program"]["components"][0]["id"]
     moved = ok("MoveLineageObjects", {"lineage_id": source["lineage_id"], "object_ids": [component]})
-    target = graphs.get_lineage(moved["target_lineage_id"], ACTOR)
+    target = lineage_reads.get_lineage(moved["target_lineage_id"], ACTOR)
     assert target["lineage_membership"] == "personal"
     assert target["project_id"] == project_id
     assert target["title"] == "Personal · 迁出"
@@ -129,20 +130,20 @@ def test_project_leader_transition_chooses_own_member(future_creation_store, mon
     from management_portal.society_service import lineage_subgraph
 
     project = family("Project")
-    remaining = graphs.create_lineage_resident(project["lineage_id"], _new_session_payload("Own successor"), ACTOR)["resident"]
+    remaining = lineage_resident_nodes.create_lineage_resident(project["lineage_id"], _new_session_payload("Own successor"), ACTOR)["resident"]
     family("Child")
     make_project_graph(project["lineage_id"])
     target = family("Target")
     # A deterministic adversarial choice makes reference candidates fail every time.
     monkeypatch.setattr(lineage_subgraph.secrets, "choice", lambda candidates: candidates[-1])
     if action == "move":
-        result = graphs.move_lineage_subgraph(project["lineage_id"], {
+        result = lineage_moves.move_lineage_subgraph(project["lineage_id"], {
             "object_ids": [project["resident_id"]], "target_lineage_id": target["lineage_id"],
         }, ACTOR)
         assert result["resident_ids"] == [project["resident_id"]]
     else:
-        graphs.delete_lineage_graph_objects(project["lineage_id"], {"resident_ids": [project["resident_id"]]}, ACTOR)
-    assert graphs.get_lineage(project["lineage_id"], ACTOR)["leader_resident_id"] == remaining["resident_id"]
+        lineage_graph_edits.delete_lineage_graph_objects(project["lineage_id"], {"resident_ids": [project["resident_id"]]}, ACTOR)
+    assert lineage_reads.get_lineage(project["lineage_id"], ACTOR)["leader_resident_id"] == remaining["resident_id"]
 
 
 def test_project_leader_move_without_own_successor_rolls_back(future_creation_store):
@@ -151,23 +152,23 @@ def test_project_leader_move_without_own_successor_rolls_back(future_creation_st
 
     project, _ = project_with_child()
     target = family("Target")
-    original = graphs.get_lineage(project["lineage_id"], ACTOR)
+    original = lineage_reads.get_lineage(project["lineage_id"], ACTOR)
     with pytest.raises(ValueError, match="Project leader"):
-        graphs.move_lineage_subgraph(project["lineage_id"], {
+        lineage_moves.move_lineage_subgraph(project["lineage_id"], {
             "object_ids": [project["resident_id"]], "target_lineage_id": target["lineage_id"],
         }, ACTOR)
     assert resident_catalog.get_catalog().get(project["resident_id"])["lineage_id"] == project["lineage_id"]
-    assert graphs.get_lineage(project["lineage_id"], ACTOR) == original
+    assert lineage_reads.get_lineage(project["lineage_id"], ACTOR) == original
 
 
 def test_the_only_resident_of_a_project_lineage_is_its_leader_and_stays(future_creation_store):
     """Project 层 Lineage 唯一的 Resident 是 Leader，不能被删除"""
     project, _ = project_with_child()
-    original = graphs.get_lineage(project["lineage_id"], ACTOR)
+    original = lineage_reads.get_lineage(project["lineage_id"], ACTOR)
     assert original["leader_resident_id"] == project["resident_id"]
     with pytest.raises(ValueError, match="Project 层 Lineage 必须有 Leader"):
-        graphs.delete_lineage_graph_objects(project["lineage_id"], {"resident_ids": [project["resident_id"]]}, ACTOR)
-    assert graphs.get_lineage(project["lineage_id"], ACTOR) == original
+        lineage_graph_edits.delete_lineage_graph_objects(project["lineage_id"], {"resident_ids": [project["resident_id"]]}, ACTOR)
+    assert lineage_reads.get_lineage(project["lineage_id"], ACTOR) == original
 
 
 

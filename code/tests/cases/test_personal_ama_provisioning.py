@@ -11,7 +11,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from management_portal.society_service import lineage_domain as graphs
+from management_portal.society_service import lineage_domain as graphs, lineage_reads, lineage_state
 from management_portal.society_service import (
     principal_hierarchy_domain,
     resident_catalog,
@@ -157,7 +157,7 @@ def test_personal_ama_is_created_once_in_the_users_name(future_creation_store):
     again = graphs.ensure_personal_ama("newcomer", "newcomer")
     assert first["created"] is True
     assert again == {**first, "created": False}
-    graph = graphs.get_lineage(first["lineage_id"], "newcomer")
+    graph = lineage_reads.get_lineage(first["lineage_id"], "newcomer")
     assert graph["lineage_membership"] == "personal"
     assert graph["project_id"] == ""
     assert "owner_ids" not in graph
@@ -251,7 +251,7 @@ def test_an_ama_left_by_a_busy_deletion_stops_running_and_is_deleted_later(futur
         resident_catalog.get_catalog().get(mine["resident_id"]))["descriptor"]}
     monkeypatch.setattr(personal_ama, "_DESCRIPTORS", SimpleNamespace(get=lambda rid: descriptors[rid]))
     monkeypatch.setattr(personal_ama, "_OWNERS", {})
-    graph = graphs.get_lineage(mine["lineage_id"], "newcomer")
+    graph = lineage_reads.get_lineage(mine["lineage_id"], "newcomer")
     assert lineage_automation_identity.runtime_actor(graph) == mine["resident_id"]
     status = {"newcomer": "deleted", "neighbour": "active"}
     store = portal_access_control.get_portal_access_store()
@@ -326,7 +326,7 @@ def test_asking_again_finishes_a_creation_whose_registration_failed(future_creat
     """
     from management_common.projection_receipts import CommittedProjectionError
 
-    original = graphs._sync_lineage_resource_identity
+    original = lineage_state._sync_lineage_resource_identity
     published = []
 
     def unplaced(projection):
@@ -334,10 +334,10 @@ def test_asking_again_finishes_a_creation_whose_registration_failed(future_creat
             original(projection)
         raise ValueError("已选择 project，规范归属无法解析：missing_canonical_parent")
 
-    monkeypatch.setattr(graphs, "_sync_lineage_resource_identity", unplaced)
+    monkeypatch.setattr(lineage_state, "_sync_lineage_resource_identity", unplaced)
     with pytest.raises(CommittedProjectionError):
         principal_hierarchy_domain.ensure_personal_ama("newcomer", "newcomer")
-    monkeypatch.setattr(graphs, "_sync_lineage_resource_identity",
+    monkeypatch.setattr(lineage_state, "_sync_lineage_resource_identity",
                         lambda projection: published.append(projection["lineage_id"]) or original(projection))
     healed = principal_hierarchy_domain.ensure_personal_ama("newcomer", "newcomer")
     assert healed["created"] is False
@@ -347,7 +347,7 @@ def test_asking_again_finishes_a_creation_whose_registration_failed(future_creat
     assert "owner_ids" not in lineage_aggregate.read_lineage_state(healed["lineage_id"])
     assert resident_catalog.get_catalog().get(healed["resident_id"])["principal_hierarchy"]["scope_ids"] == ["newcomer"]
     assert resident_catalog.get_catalog().get(healed["resident_id"])["registration_state"] == "ready"
-    assert graphs.get_lineage(healed["lineage_id"], "newcomer")["leader_resident_id"] == healed["resident_id"]
+    assert lineage_reads.get_lineage(healed["lineage_id"], "newcomer")["leader_resident_id"] == healed["resident_id"]
 
 
 @pytest.fixture

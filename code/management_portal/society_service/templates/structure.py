@@ -13,10 +13,22 @@ from .values import NAME, match_references, render, render_script
 from .. import lineage_aggregate
 
 
-def domain():
-    from .. import lineage_domain
+def lineage_resident_nodes():
+    from .. import lineage_resident_nodes
 
-    return lineage_domain
+    return lineage_resident_nodes
+
+
+def lineage_graph_edits():
+    from .. import lineage_graph_edits
+
+    return lineage_graph_edits
+
+
+def lineage_branches():
+    from .. import lineage_branches
+
+    return lineage_branches
 
 
 def _info(lineage):
@@ -52,7 +64,7 @@ def _created_roles(ctx):
         yield created
     except Exception:
         if created:
-            domain().commit_lineage_edit(
+            lineage_graph_edits().commit_lineage_edit(
                 ctx.lineage_id,
                 ctx.actor,
                 lambda body: None,
@@ -225,7 +237,7 @@ def create_role(ctx, role, roles, near=""):
             )
         if account:
             payload["backend_route_id"] = account
-        created = domain().create_lineage_resident(ctx.lineage_id, payload, ctx.actor)
+        created = lineage_resident_nodes().create_lineage_resident(ctx.lineage_id, payload, ctx.actor)
         resident_id = created["resident"]["resident_id"]
     else:
         payload = {
@@ -235,7 +247,7 @@ def create_role(ctx, role, roles, near=""):
         }
         if account:
             payload["backend_route_id"] = account
-        created = domain().fork_lineage_resident(ctx.lineage_id, payload, ctx.actor)
+        created = lineage_branches().fork_lineage_resident(ctx.lineage_id, payload, ctx.actor)
         resident_id = created["created_resident"]["id"]
         if settings:
             try:
@@ -245,7 +257,7 @@ def create_role(ctx, role, roles, near=""):
                     {"runtime_settings": _render(settings, ctx, roles)},
                 )
             except Exception:
-                domain().commit_lineage_edit(
+                lineage_graph_edits().commit_lineage_edit(
                     ctx.lineage_id,
                     ctx.actor,
                     lambda body: None,
@@ -618,7 +630,7 @@ class StructureKind:
                     )
                     outcome["function_block_ids"].append(block["id"])
                 else:
-                    domain().commit_lineage_edit(
+                    lineage_graph_edits().commit_lineage_edit(
                         ctx.lineage_id, ctx.actor, edit, reason="施加结构模板"
                     )
                 outcome["created"]["resident_ids"].extend(created)

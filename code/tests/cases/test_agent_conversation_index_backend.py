@@ -10,8 +10,8 @@ from management_portal import agent_conversation_index_backend as backend
 from management_portal import conversation_index_projection as lineage_projection
 from management_portal.conversation_completion import READ_SIGNATURE_PREFIX, completion_signature, marker_order
 from management_portal.society_service import (
-    lineage_domain,
     lineage_human_notifications,
+    lineage_state,
     resident_domain,
     resource_client,
     state_store,
@@ -840,7 +840,7 @@ def test_human_notifications_are_visible_in_the_conversation_index_only_to_reque
         with monkeypatch.context() as monkeypatch:
             tmp_path = case_path
             lineage_id = "lineage_333333333333"
-            monkeypatch.setattr(lineage_domain, "LINEAGE_FOLDER_ROOT", tmp_path / "Agents")
+            monkeypatch.setattr(lineage_state, "LINEAGE_FOLDER_ROOT", tmp_path / "Agents")
             monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(tmp_path / "Agents"))
             lineage_aggregate.lineage_catalog_store().upsert(
                 _lineage_definition(lineage_id, [])

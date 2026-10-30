@@ -139,9 +139,9 @@ def test_summary_changed_while_embedding_is_reindexed_instead_of_losing_update(c
 def test_discovery_forgets_only_recorded_removals(lineage, monkeypatch):
     """检索只移除已记录删除的 Resident，包括随 Lineage 删除和未知的 ID"""
     from types import SimpleNamespace
-    from management_portal.society_service import lineage_domain
+    from management_portal.society_service import lineage_reads
 
-    monkeypatch.setattr(lineage_domain, "get_portal_access_store",
+    monkeypatch.setattr(lineage_reads, "get_portal_access_store",
                         lambda: SimpleNamespace(is_service_actor=lambda actor: actor == "portal"))
     kept, deleted = resident(lineage, "Kept"), resident(lineage, "Deleted")
     ok("DeleteResident", {"lineage_id": lineage, "resident_id": deleted}, key="discovery-delete-resident")

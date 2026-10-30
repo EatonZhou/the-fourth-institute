@@ -7,7 +7,7 @@ from unittest.mock import Mock
 import pytest
 
 from management_portal import society_service, serve_management_portal
-from management_portal.society_service import contracts, lineage_domain, lineage_program
+from management_portal.society_service import contracts, lineage_program, lineage_reads
 from management_portal.society_service import lineage_aggregate
 from management_portal.resources.providers import collaboration
 from management_portal.resources.service import ResourceService
@@ -33,7 +33,7 @@ def program_resources(tmp_path, monkeypatch):
     catalog = Mock()
     catalog.get_state.return_value = (definition, {})
     monkeypatch.setattr(lineage_aggregate, "lineage_catalog_store", lambda: catalog)
-    projection = Mock(wraps=lineage_domain.get_lineage_program_resource_projection)
+    projection = Mock(wraps=lineage_reads.get_lineage_program_resource_projection)
     monkeypatch.setattr(society_service, "get_society_service", lambda: SimpleNamespace(
         lineage=SimpleNamespace(get_lineage_program_resource_projection=projection),
     ))

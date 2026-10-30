@@ -9,7 +9,12 @@ from __future__ import annotations
 import pytest
 
 from management_portal.execution.agent_data_store import get_agent_data_store
-from management_portal.society_service import lineage_domain, resident_catalog, resident_workspace_domain
+from management_portal.society_service import (
+    lineage_graph_edits,
+    lineage_resident_nodes,
+    resident_catalog,
+    resident_workspace_domain,
+)
 from management_portal.society_service.resident_workspace_storage import BINDING_FIELDS
 from management_portal.resources.workspace_store import get_workspace_store
 from tests.cases.test_resident_folder_creation_contract import (  # noqa: F401 - fixture
@@ -62,7 +67,7 @@ def test_deleting_a_resident_records_it_and_keeps_its_conversation(future_creati
         )["resident_id"]
         _add_created_resident_to_lineage(source, child)
     else:
-        child = lineage_domain.create_lineage_resident(
+        child = lineage_resident_nodes.create_lineage_resident(
             source["lineage_id"], _new_session_payload("Deletion member"), "sample_admin",
         )["resident"]["resident_id"]
     _append_conversation_turn(child, 0)
@@ -75,7 +80,7 @@ def test_deleting_a_resident_records_it_and_keeps_its_conversation(future_creati
     segments_before = agent_data.sequence_segment_ids(agent_before["trace_sequence_id"])
     assert before.get("fork_mode") == ("full" if entry == "fork" else None)
 
-    lineage_domain.delete_lineage_graph_objects(
+    lineage_graph_edits.delete_lineage_graph_objects(
         source["lineage_id"], {"resident_ids": [child]}, "sample_admin", include_lineage=False,
     )
 

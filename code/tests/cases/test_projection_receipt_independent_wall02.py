@@ -6,7 +6,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 
 
-from management_portal.society_service import changes, invariant_locks, lineage_domain
+from management_portal.society_service import changes, invariant_locks, lineage_state
 from management_portal.society_service import lineage_aggregate
 from tests.cases.test_hatg_projection_receipts import execution_record, projection_fixture, submit  # noqa: F401
 from tests.cases.isa_test_support import isolated_instruction_store  # noqa: F401 - fixture
@@ -22,14 +22,14 @@ def test_projection_retry_and_a_concurrent_commit_publish_in_order_and_end_curre
     Publications of one Lineage are serialized; the last one carries the current state."""
 
     before, request, _records = projection_fixture
-    original_projection = lineage_domain._sync_lineage_resource_identity
+    original_projection = lineage_state._sync_lineage_resource_identity
     notifications = []
     monkeypatch.setattr(changes, "lineage_changed", lambda *args, **kwargs: notifications.append(kwargs))
 
     def unavailable(_projection):
         raise OSError("isolated initial projection failure")
 
-    monkeypatch.setattr(lineage_domain, "_sync_lineage_resource_identity", unavailable)
+    monkeypatch.setattr(lineage_state, "_sync_lineage_resource_identity", unavailable)
     initial = submit(request)
     assert initial.error["code"] == "instruction.projection_pending"
     committed_revision = initial.error["details"]["projection_failures"][0]["committed_revision"]
@@ -41,7 +41,7 @@ def test_projection_retry_and_a_concurrent_commit_publish_in_order_and_end_curre
     allow_old_publish = threading.Event()
     newer_committed = threading.Event()
     projections = []
-    original_publish = lineage_domain._publish_lineage_resource_projection
+    original_publish = lineage_state._publish_lineage_resource_projection
 
     def observe_publish(lineage_id, revision, **kwargs):
         if revision is not None and revision > committed_revision:
@@ -56,8 +56,8 @@ def test_projection_retry_and_a_concurrent_commit_publish_in_order_and_end_curre
         original_projection(projection)
         projections.append(copy.deepcopy(projection))
 
-    monkeypatch.setattr(lineage_domain, "_sync_lineage_resource_identity", delayed_projection)
-    monkeypatch.setattr(lineage_domain, "_publish_lineage_resource_projection", observe_publish)
+    monkeypatch.setattr(lineage_state, "_sync_lineage_resource_identity", delayed_projection)
+    monkeypatch.setattr(lineage_state, "_publish_lineage_resource_projection", observe_publish)
     with ThreadPoolExecutor(max_workers=2) as executor:
         recovery = executor.submit(submit, copy.deepcopy(request))
         try:

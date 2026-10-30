@@ -7,7 +7,7 @@ from management_portal.society_service import business_fact_views
 import pytest
 
 from management_portal.execution.agent_data_store import AgentDataStore
-from management_portal.society_service import lineage_domain, lineage_human_notifications
+from management_portal.society_service import lineage_human_notifications, lineage_reads
 from management_portal.society_service.read_snapshot import read_snapshot_scope, request_cached
 from management_portal.society_service.state_store import LineageDataStore
 from management_portal.society_service import lineage_aggregate
@@ -86,12 +86,12 @@ def test_notification_query_skips_graphs_and_empty_lineages(tmp_path, monkeypatc
         hydrated.extend(item["lineage_id"] for item in items)
         return items
     monkeypatch.setattr(business_fact_views, "canonical_views", hydrate)
-    result = lineage_domain.list_lineage_human_notifications("CASE-A")
+    result = lineage_reads.list_lineage_human_notifications("CASE-A")
     # Recipients match case-insensitively; a recipient needs no manage permission.
     assert [item["lineage_id"] for item in result["lineages"]] == [identifiers[0], identifiers[2]]
     assert hydrated == [identifiers[0], identifiers[2]]
-    assert lineage_domain.list_lineage_human_notifications("CASE-A", []) == {"lineages": []}
-    assert lineage_domain.list_lineage_human_notifications("CASE-A", [identifiers[1]]) == {"lineages": []}
+    assert lineage_reads.list_lineage_human_notifications("CASE-A", []) == {"lineages": []}
+    assert lineage_reads.list_lineage_human_notifications("CASE-A", [identifiers[1]]) == {"lineages": []}
 
 
 def test_conversation_facts_follow_external_writes_equal_timestamps_and_forks():

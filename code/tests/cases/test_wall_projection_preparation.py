@@ -12,7 +12,13 @@ from psycopg import sql
 from psycopg.rows import dict_row
 
 from management_common.projection_receipts import CommittedProjectionError
-from management_portal.society_service import lineage_domain, resident_catalog, resident_domain
+from management_portal.society_service import (
+    lineage_reads,
+    lineage_resident_nodes,
+    lineage_state,
+    resident_catalog,
+    resident_domain,
+)
 from tests.cases.test_resident_folder_creation_contract import future_creation_store, _new_session_payload  # noqa: F401
 from tests.cases.test_wall import wall_project  # noqa: F401
 
@@ -25,7 +31,7 @@ def test_keyed_creation_is_committed_before_external_projection(future_creation_
     """
     parent = resident_domain.register_resident(_new_session_payload("Parent"), "sample_admin")
     store = resident_catalog.get_catalog().state_store
-    original = lineage_domain._sync_lineage_resource_identity
+    original = lineage_state._sync_lineage_resource_identity
     observations = []
 
     def independently_read(projection):
@@ -38,8 +44,8 @@ def test_keyed_creation_is_committed_before_external_projection(future_creation_
         assert row["revision"] == projection["revision"], "projection must see a committed graph"
         original(projection)
 
-    monkeypatch.setattr(lineage_domain, "_sync_lineage_resource_identity", independently_read)
-    result = lineage_domain.create_lineage_resident(
+    monkeypatch.setattr(lineage_state, "_sync_lineage_resource_identity", independently_read)
+    result = lineage_resident_nodes.create_lineage_resident(
         parent["lineage_id"], {**_new_session_payload("Child"), "creation_key": "wall-committed-test"}, "sample_admin",
     )
     assert result["resident"]["resident_id"] != parent["resident_id"]
@@ -57,7 +63,7 @@ def test_keyed_projection_retry_reuses_committed_identity(future_creation_store,
 
     parent = resident_domain.register_resident(_new_session_payload("Parent"), "sample_admin")
     store = resident_catalog.get_catalog().state_store
-    target, name = (lineage_domain, "_sync_lineage_resource_identity") if stage == "lineage" else (resource_client, "sync_resident_resource_bundles")
+    target, name = (lineage_state, "_sync_lineage_resource_identity") if stage == "lineage" else (resource_client, "sync_resident_resource_bundles")
     original = getattr(target, name)
 
     def unavailable(*args, **kwargs):
@@ -66,16 +72,16 @@ def test_keyed_projection_retry_reuses_committed_identity(future_creation_store,
     monkeypatch.setattr(target, name, unavailable)
     payload = {**_new_session_payload("Child"), "creation_key": "wall-recovery-test"}
     with pytest.raises(CommittedProjectionError) as first:
-        lineage_domain.create_lineage_resident(parent["lineage_id"], payload, "sample_admin")
+        lineage_resident_nodes.create_lineage_resident(parent["lineage_id"], payload, "sample_admin")
     receipt = store.resident_creation_operations.get(parent['lineage_id'], payload['creation_key'])
     rid = receipt["resident_id"]
     assert first.value.details["resident_creation"]["resident_id"] == rid
     assert store.resident_record(rid)["registration_state"] == "resource_pending"
     assert store.resident_resource_projection_pending(rid)
     with pytest.raises(CommittedProjectionError):
-        lineage_domain.create_lineage_resident(parent["lineage_id"], payload, "sample_admin")
+        lineage_resident_nodes.create_lineage_resident(parent["lineage_id"], payload, "sample_admin")
     monkeypatch.setattr(target, name, original)
-    result = lineage_domain.create_lineage_resident(parent["lineage_id"], payload, "sample_admin")
+    result = lineage_resident_nodes.create_lineage_resident(parent["lineage_id"], payload, "sample_admin")
     assert result["resident"]["resident_id"] == rid
     assert {n["id"] for n in result["lineage"]["nodes"]} == {parent["resident_id"], rid}
     assert store.resident_record(rid)["registration_state"] == "ready"
@@ -93,9 +99,9 @@ def test_concurrent_frozen_creation_request_allocates_once(future_creation_store
     parent = resident_domain.register_resident(_new_session_payload("Parent"), "sample_admin")
     payload = {**_new_session_payload("Child"), "creation_key": "wall-concurrent-test"}
     with ThreadPoolExecutor(max_workers=2) as pool:
-        results = list(pool.map(lambda _: lineage_domain.create_lineage_resident(parent["lineage_id"], payload, "sample_admin"), range(2)))
+        results = list(pool.map(lambda _: lineage_resident_nodes.create_lineage_resident(parent["lineage_id"], payload, "sample_admin"), range(2)))
     assert len({r["resident"]["resident_id"] for r in results}) == 1
-    assert len(lineage_domain.get_lineage(parent["lineage_id"], "sample_admin")["nodes"]) == 2
+    assert len(lineage_reads.get_lineage(parent["lineage_id"], "sample_admin")["nodes"]) == 2
 
 
 @pytest.mark.parametrize("state", ["committed", "unknown"])

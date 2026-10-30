@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from management_portal.society_service import lineage_domain
+from management_portal.society_service import lineage_reads
 from management_portal.society_service import resident_access
 
 
@@ -36,7 +36,7 @@ def test_lineage_access_is_uniform_for_valid_actors_contracts(monkeypatch, subte
             monkeypatch.setattr(lineage_aggregate, "lineage_catalog_store", lambda: _Catalog())
 
             for actor in ("alice", "bob"):
-                visible = lineage_domain.actor_lineage_access_records(actor)
+                visible = lineage_reads.actor_lineage_access_records(actor)
                 assert len(visible) == 1
                 assert visible[0]["lineage_node_ids"] == [LEADER_ID, MEMBER_ID]
                 assert "navigation_resident_ids" not in visible[0]

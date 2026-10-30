@@ -13,7 +13,8 @@ from tests.cases.isa_test_support import reset_kernels, run
 from management_portal.society_service import (
     changes,
     invariant_locks,
-    lineage_domain,
+    lineage_lifecycle,
+    lineage_state,
     resident_domain_common,
     resident_intake_domain,
     resource_client,
@@ -28,7 +29,7 @@ RESOURCE_METHODS = {
     name: getattr(resource_client, name)
     for name in ("sync_lineage",)
 }
-SYNC_LINEAGE_IDENTITY = lineage_domain._sync_lineage_resource_identity
+SYNC_LINEAGE_IDENTITY = lineage_state._sync_lineage_resource_identity
 ACTOR = "alice"
 
 
@@ -36,7 +37,7 @@ ACTOR = "alice"
 def fence_fixture(tmp_path, monkeypatch, isolate_portal_databases):
     monkeypatch.setenv("PORTAL_SOCIETY_SERVICE_PROCESS", "0")
     monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", tmp_path / "data")
-    monkeypatch.setattr(lineage_domain, "LINEAGE_FOLDER_ROOT", tmp_path / "lineages")
+    monkeypatch.setattr(lineage_state, "LINEAGE_FOLDER_ROOT", tmp_path / "lineages")
     monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(tmp_path / "lineages"))
     monkeypatch.setattr(resident_domain_common, "STAGING_ROOT", tmp_path)
     monkeypatch.setattr(invariant_locks, "_ROOT_PROVIDER", lambda: tmp_path / "locks")
@@ -50,7 +51,7 @@ def fence_fixture(tmp_path, monkeypatch, isolate_portal_databases):
     install_resource_boundary(monkeypatch)
     for name, method in RESOURCE_METHODS.items():
         monkeypatch.setattr(resource_client, name, method)
-    monkeypatch.setattr(lineage_domain, "_sync_lineage_resource_identity", SYNC_LINEAGE_IDENTITY)
+    monkeypatch.setattr(lineage_state, "_sync_lineage_resource_identity", SYNC_LINEAGE_IDENTITY)
     service = ResourceService(
 
         collaboration_store=CollaborationDescriptorStore(),
@@ -61,7 +62,7 @@ def fence_fixture(tmp_path, monkeypatch, isolate_portal_databases):
     monkeypatch.setattr(resource_client, "get_resource_service", lambda: service)
     monkeypatch.setattr(changes, "lineage_changed", lambda *args, **kwargs: notifications.append(kwargs))
     reset_kernels()
-    created = lineage_domain.create_lineage({"title": "publication fence fixture", "nodes": [], "edges": []}, ACTOR)
+    created = lineage_lifecycle.create_lineage({"title": "publication fence fixture", "nodes": [], "edges": []}, ACTOR)
     before = lineage_aggregate.read_lineage_state(created["lineage_id"])
     request = {
         "lineage_id": before["lineage_id"],
@@ -89,8 +90,8 @@ def test_a_commit_covered_by_a_newer_publication_does_not_publish_again(fence_fi
     验证一次提交的发布开始前更新的提交已经发布了当前状态时，这次提交不再发布，也不报告投影待确认。
     """
     before, request, _service, _mutations, notifications = fence_fixture
-    original_publish = lineage_domain._publish_lineage_resource_projection
-    original_sync = lineage_domain._sync_lineage_resource_identity
+    original_publish = lineage_state._publish_lineage_resource_projection
+    original_sync = lineage_state._sync_lineage_resource_identity
     old_committed = threading.Event()
     release_old = threading.Event()
     projected = []
@@ -108,8 +109,8 @@ def test_a_commit_covered_by_a_newer_publication_does_not_publish_again(fence_fi
         original_sync(projection)
         projected.append(projection["revision"])
 
-    monkeypatch.setattr(lineage_domain, "_publish_lineage_resource_projection", pause_normal)
-    monkeypatch.setattr(lineage_domain, "_sync_lineage_resource_identity", observe_sync)
+    monkeypatch.setattr(lineage_state, "_publish_lineage_resource_projection", pause_normal)
+    monkeypatch.setattr(lineage_state, "_sync_lineage_resource_identity", observe_sync)
     with ThreadPoolExecutor(max_workers=1) as executor:
         first = executor.submit(submit, copy.deepcopy(request))
         try:
@@ -146,12 +147,12 @@ def test_recovery_publishes_the_committed_revision_outside_the_lock_once(
 ):
     """投影恢复在锁外只发布一次已提交修订，重放不再发布"""
     before, request, service, mutations, notifications = fence_fixture
-    original_sync = lineage_domain._sync_lineage_resource_identity
+    original_sync = lineage_state._sync_lineage_resource_identity
 
     def unavailable(_projection):
         raise OSError("temporary Resource publication unavailable")
 
-    monkeypatch.setattr(lineage_domain, "_sync_lineage_resource_identity", unavailable)
+    monkeypatch.setattr(lineage_state, "_sync_lineage_resource_identity", unavailable)
     initial = submit(request)
     assert initial.error["code"] == "instruction.projection_pending"
     instruction_id = initial.error["details"]["instruction_id"]
@@ -174,7 +175,7 @@ def test_recovery_publishes_the_committed_revision_outside_the_lock_once(
             original_sync(projection)
             published.append(projection["revision"])
 
-    monkeypatch.setattr(lineage_domain, "_sync_lineage_resource_identity", pause_projection)
+    monkeypatch.setattr(lineage_state, "_sync_lineage_resource_identity", pause_projection)
     with ThreadPoolExecutor(max_workers=1) as executor:
         recovery = executor.submit(submit, copy.deepcopy(request))
         try:
@@ -225,7 +226,7 @@ def test_lineage_publications_keep_current_metadata(fence_fixture, monkeypatch):
 
     # A Lineage title change reaches ResourceService even when a later
     # commit's publication runs before the change's own publication.
-    original_publish = lineage_domain._publish_lineage_resource_projection
+    original_publish = lineage_state._publish_lineage_resource_projection
     title_change_committed, release = threading.Event(), threading.Event()
     title_revision = lineage_aggregate.read_lineage_state(lineage_id)["revision"] + 1
 
@@ -235,7 +236,7 @@ def test_lineage_publications_keep_current_metadata(fence_fixture, monkeypatch):
             assert release.wait(5)
         return original_publish(target, revision, **kwargs)
 
-    monkeypatch.setattr(lineage_domain, "_publish_lineage_resource_projection", hold_title_change)
+    monkeypatch.setattr(lineage_state, "_publish_lineage_resource_projection", hold_title_change)
     with ThreadPoolExecutor(max_workers=1) as executor:
         change = executor.submit(submit, {**request, "idempotency_key": "title", "changes": {"title": "Later published title"}})
         try:

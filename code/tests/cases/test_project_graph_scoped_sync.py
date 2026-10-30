@@ -12,7 +12,13 @@ from __future__ import annotations
 
 import pytest
 
-from management_portal.society_service import lineage_domain as graphs
+from management_portal.society_service import (
+    lineage_graph_edits,
+    lineage_lifecycle,
+    lineage_moves,
+    lineage_reads,
+    lineage_resident_nodes,
+)
 from management_portal.society_service import resident_catalog
 from management_portal.society_service.lineage_data_project_graphs import PROJECT_GRAPH_FILTER, ProjectGraphs
 from tests.cases.isa_test_support import ACTOR
@@ -46,13 +52,13 @@ def assert_every_project_graph_is_current():
 
 
 def node_ids(lineage_id):
-    return {node["id"] for node in graphs.get_lineage(lineage_id, ACTOR)["nodes"]}
+    return {node["id"] for node in lineage_reads.get_lineage(lineage_id, ACTOR)["nodes"]}
 
 
 def test_structural_operations_leave_no_project_graph_behind(future_creation_store):
     """结构操作后所有 Project 组织图无需再同步"""
     project, child = family("Project"), family("Child")
-    member = graphs.create_lineage_resident(
+    member = lineage_resident_nodes.create_lineage_resident(
         project["lineage_id"], _new_session_payload("Member"), ACTOR,
     )["resident"]
     make_project_graph(project["lineage_id"])
@@ -64,16 +70,16 @@ def test_structural_operations_leave_no_project_graph_behind(future_creation_sto
     assert_every_project_graph_is_current()
 
     # Changing a Leader replaces the contributed node.
-    successor = graphs.create_lineage_resident(
+    successor = lineage_resident_nodes.create_lineage_resident(
         child["lineage_id"], _new_session_payload("Successor"), ACTOR,
     )["resident"]
-    graphs.update_lineage_metadata(child["lineage_id"], {"leader_resident_id": successor["resident_id"]}, ACTOR)
+    lineage_lifecycle.update_lineage_metadata(child["lineage_id"], {"leader_resident_id": successor["resident_id"]}, ACTOR)
     assert {successor["resident_id"]} <= node_ids(project["lineage_id"])
     assert child["resident_id"] not in node_ids(project["lineage_id"])
     assert_every_project_graph_is_current()
 
     # A Resident that moves into the Project Lineage becomes a direct member.
-    graphs.move_lineage_subgraph(child["lineage_id"], {
+    lineage_moves.move_lineage_subgraph(child["lineage_id"], {
         "object_ids": [child["resident_id"]], "target_lineage_id": project["lineage_id"],
     }, ACTOR)
     assert child["resident_id"] in node_ids(project["lineage_id"])
@@ -81,15 +87,15 @@ def test_structural_operations_leave_no_project_graph_behind(future_creation_sto
 
     # Deleting a direct member and a contributing Leader.
     assert member["resident_id"] in node_ids(project["lineage_id"])
-    graphs.delete_lineage_graph_objects(project["lineage_id"], {"resident_ids": [member["resident_id"]]}, ACTOR)
-    graphs.delete_lineage_graph_objects(later["lineage_id"], {"resident_ids": [later["resident_id"]]}, ACTOR)
+    lineage_graph_edits.delete_lineage_graph_objects(project["lineage_id"], {"resident_ids": [member["resident_id"]]}, ACTOR)
+    lineage_graph_edits.delete_lineage_graph_objects(later["lineage_id"], {"resident_ids": [later["resident_id"]]}, ACTOR)
     assert not {member["resident_id"], later["resident_id"]} & node_ids(project["lineage_id"])
     assert_every_project_graph_is_current()
 
     # Deleting a whole ordinary Lineage removes its Leader.
     doomed = family("Doomed")
     assert doomed["resident_id"] in node_ids(project["lineage_id"])
-    graphs.delete_lineage(doomed["lineage_id"], ACTOR)
+    lineage_lifecycle.delete_lineage(doomed["lineage_id"], ACTOR)
     assert doomed["resident_id"] not in node_ids(project["lineage_id"])
     assert_every_project_graph_is_current()
 
@@ -106,9 +112,9 @@ def test_an_ordinary_edit_does_not_read_project_graphs(future_creation_store, mo
         return original(self, connection, lineage_id)
 
     monkeypatch.setattr(ProjectGraphs, "materialize_members", observe)
-    graphs.update_lineage_metadata(child["lineage_id"], {"description": "only the text changes"}, ACTOR)
+    lineage_lifecycle.update_lineage_metadata(child["lineage_id"], {"description": "only the text changes"}, ACTOR)
     assert materialized == []
-    graphs.update_lineage_metadata(project["lineage_id"], {"description": "the Project graph itself"}, ACTOR)
+    lineage_lifecycle.update_lineage_metadata(project["lineage_id"], {"description": "the Project graph itself"}, ACTOR)
     assert materialized == [project["lineage_id"]]
 
 

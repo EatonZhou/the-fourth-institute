@@ -77,7 +77,7 @@ def test_watch_coalesces_to_current_revision_and_reconnects(monkeypatch):
     """
     from management_portal.society_service.isa import definition
     from management_portal.hatg.contracts import not_found
-    monkeypatch.setattr(definition,'domain',lambda:SimpleNamespace(lineage_access_projection=lambda *_:{},_ensure_visible=lambda *_:None))
+    monkeypatch.setattr(definition,'lineage_state',lambda:SimpleNamespace(lineage_access_projection=lambda *_:{},_ensure_visible=lambda *_:None))
     values=iter([17,23])
     monkeypatch.setattr(definition,'lineage_revision',lambda _:next(values))
     args={'lineage_id':'lineage_001122334455','after_cursor':3}

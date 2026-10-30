@@ -10,6 +10,8 @@ import pytest
 from management_portal.society_service import (
     invariant_locks,
     lineage_domain,
+    lineage_reads,
+    lineage_state,
     resident_lifecycle_steps_domain,
     resident_record_domain,
 )
@@ -93,14 +95,14 @@ def test_operation_rechecks_both_read_grants_on_every_poll(teams, transfer, monk
         resident_record_domain.lifecycle_operations().run(operation_id, lambda *_: None)
     observed(operation_id)
     blocked = teams[side]["lineage_id"]
-    ensure_visible = lineage_domain._ensure_visible
+    ensure_visible = lineage_state._ensure_visible
 
     def check(lineage, actor):
         if lineage["lineage_id"] == blocked:
             raise PermissionError("无权访问该 Lineage")
         return ensure_visible(lineage, actor)
 
-    monkeypatch.setattr(lineage_domain, "_ensure_visible", check)
+    monkeypatch.setattr(lineage_state, "_ensure_visible", check)
     denied = query(operation_id)
     assert denied.status == "failed" and denied.error["code"] == "instruction.forbidden"
 
@@ -115,7 +117,7 @@ def test_operation_is_read_with_the_calling_residents_own_grants(teams, transfer
         if actor == principal:
             raise PermissionError("无权访问该 Lineage")
 
-    monkeypatch.setattr(lineage_domain, "_ensure_visible", check)
+    monkeypatch.setattr(lineage_state, "_ensure_visible", check)
     denied = query(transfer.result["operation_id"], actor=principal, entry="harness")
     assert denied.status == "failed" and "无权访问该 Lineage" in denied.error["message"]
     assert seen == [principal]
@@ -131,6 +133,8 @@ def test_operation_needs_read_permission_not_modify_permission(teams, transfer, 
             return True
         return False
 
+    monkeypatch.setattr(lineage_state, "_actor_can_manage_lineage", read_only)
+    monkeypatch.setattr(lineage_reads, "_actor_can_manage_lineage", read_only)
     monkeypatch.setattr(lineage_domain, "_actor_can_manage_lineage", read_only)
     monkeypatch.setattr(lineage_aggregate, "_actor_can_manage_lineage", read_only)
     assert observed(transfer.result["operation_id"])["terminal"] is False
@@ -244,7 +248,7 @@ def test_fork_keeps_the_source_account_unless_one_is_named(monkeypatch, entry, c
     monkeypatch.setattr(residents, "lineage_of_resident", lambda _: "lineage_aaaaaaaaaaaa")
     monkeypatch.setattr(residents, "placement", lambda *_: {})
     monkeypatch.setattr(lineage_aggregate, "read_lineage", lambda lineage_id, actor: {"program": {}})
-    monkeypatch.setattr(residents, "domain", lambda: SimpleNamespace(
+    monkeypatch.setattr(residents, "lineage_branches", lambda: SimpleNamespace(
         fork_lineage_resident=lambda lineage_id, payload, actor: payloads.append(payload) or {"created_resident": {"id": "resident_bbbbbbbbbbbb"}}))
     # GetResident's view: the account a Resident runs under is its "account".
     records = {source: {"provider": "codex", "account": "acct_source"},

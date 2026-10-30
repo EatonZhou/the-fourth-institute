@@ -54,14 +54,14 @@ def test_delete_family_waits_for_members_and_retries_without_partial_deletion(li
     """删除 Family 等待成员停止且冲突时不部分删除
 
     :module: lineage.hatg"""
-    from management_portal.society_service import lineage_domain, resident_lifecycle_domain
+    from management_portal.society_service import lineage_resident_controls, resident_lifecycle_domain
     from management_portal.society_service.templates import familize
 
     member = resident(lineage, "Busy member")
     family = ok("Familize", {"lineage_id": lineage, "resident_ids": [member]})
     before = graph(lineage)
     busy, stopped = {member}, set()
-    monkeypatch.setattr(lineage_domain, "quiesce_lineage_resident", lambda _l, p, _a: stopped.add(p["target"]))
+    monkeypatch.setattr(lineage_resident_controls, "quiesce_lineage_resident", lambda _l, p, _a: stopped.add(p["target"]))
     monkeypatch.setattr(resident_lifecycle_domain, "resident_has_pending_work", lambda rid: rid in busy)
     monkeypatch.setattr(familize, "ROLE_STOP_WAIT_SECONDS", 0)
     result = run("DeleteFamily", {"lineage_id": lineage, "family_id": family["family_id"]})
@@ -77,7 +77,7 @@ def test_delete_family_aborts_if_contents_change_while_stopping(lineage, charter
     """删除 Family 在停止期间内容变化时返回冲突
 
     :module: lineage.hatg"""
-    from management_portal.society_service import lineage_domain
+    from management_portal.society_service import lineage_resident_controls
 
     first, added = resident(lineage, "First"), resident(lineage, "Added while stopping")
     family = ok("Familize", {"lineage_id": lineage, "resident_ids": [first]})
@@ -87,7 +87,7 @@ def test_delete_family_aborts_if_contents_change_while_stopping(lineage, charter
         if not changed:
             changed.append(True)
             ok("UpdateFamily", {"lineage_id": lineage, "family_id": family["family_id"], "add_member_ids": [added]})
-    monkeypatch.setattr(lineage_domain, "quiesce_lineage_resident", quiesce)
+    monkeypatch.setattr(lineage_resident_controls, "quiesce_lineage_resident", quiesce)
     result = run("DeleteFamily", {"lineage_id": lineage, "family_id": family["family_id"]})
     assert result.error["code"] == "instruction.conflict"
     view = graph(lineage)

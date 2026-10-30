@@ -42,6 +42,26 @@ def _domain():
     return lineage_domain
 
 
+def _lineage_state():
+    from .. import lineage_state
+    return lineage_state
+
+
+def _lineage_resident_nodes():
+    from .. import lineage_resident_nodes
+    return lineage_resident_nodes
+
+
+def _lineage_graph_edits():
+    from .. import lineage_graph_edits
+    return lineage_graph_edits
+
+
+def _lineage_resident_controls():
+    from .. import lineage_resident_controls
+    return lineage_resident_controls
+
+
 def _read(lineage_id: str, actor: str) -> dict:
     return lineage_aggregate.read_lineage(lineage_id, actor=actor)
 
@@ -403,13 +423,13 @@ def sync_generated_structure(lineage_id: str) -> dict:
         families = [block for block in body.get("function_blocks") or [] if block.get("family")]
         for block in families:
             reconcile_in_body(body, block, actor)
-        changes = _changes(domain._normalize_lineage_payload(copy.deepcopy(body), before, actor), before)
+        changes = _changes(_lineage_state()._normalize_lineage_payload(copy.deepcopy(body), before, actor), before)
         if not changes:
             raise _Unchanged
         return [block["id"] for block in families], changes
 
     try:
-        _view, (family_ids, changes) = domain.commit_lineage_edit(
+        _view, (family_ids, changes) = _lineage_graph_edits().commit_lineage_edit(
             lineage_id, actor, edit, reason="模板结构同步：按当前 Family 模板重新生成", full_view=False)
     except _Unchanged:
         return {"lineage_id": lineage_id, "status": "unchanged"}
@@ -468,7 +488,7 @@ def _new_role(lineage_id: str, role: str, title: str, actor: str, near: str, set
         payload.update(placement)
     if chosen.get("account"):
         payload["backend_route_id"] = chosen["account"]
-    created = _domain().create_lineage_resident(lineage_id, payload, actor)
+    created = _lineage_resident_nodes().create_lineage_resident(lineage_id, payload, actor)
     return str((created.get("resident") or {}).get("resident_id") or created["node"]["id"])
 
 
@@ -579,7 +599,7 @@ def familize(lineage_id: str, resident_ids: Iterable[str], actor: str, *, title:
             body["leader_resident_id"] = roles["facade"]
         return {"family_id": block["id"], "rewired_wire_ids": _rewire(body, set(members), roles["facade"], block)}
 
-    view, outcome = _domain().commit_lineage_edit(lineage_id, actor, edit, reason="Familize：创建 Family")
+    view, outcome = _lineage_graph_edits().commit_lineage_edit(lineage_id, actor, edit, reason="Familize：创建 Family")
     block = facts.family_block(view, outcome["family_id"])
     family_task_dispatches.dispatch(roles["facade"], "organization", actor, facts={"change": "Family 已创建，检查分工并等待工作触发。"})
     return result(f"已创建 Family「{title}」", **outcome, resource_id=block["family"]["resource_id"], function_block_ids=[block["id"]],
@@ -635,11 +655,11 @@ def update_family(lineage_id: str, family_id: str, actor: str, *, add_member_ids
         rewired = _rewire(body, actually_added, family["facade"], block)
         return {"family_id": family_id, "rewired_wire_ids": rewired, "added": sorted(actually_added),
                 "removed": sorted(actually_removed)}
-    view, outcome = _domain().commit_lineage_edit(lineage_id, actor, edit, reason="UpdateFamily：更新 Family")
+    view, outcome = _lineage_graph_edits().commit_lineage_edit(lineage_id, actor, edit, reason="UpdateFamily：更新 Family")
     block = facts.family_block(view, family_id)
     family = block["family"]
     if title is not None:
-        _domain().rename_lineage_resident(lineage_id, {"resident_id": family["facade"], "title": family["title"]}, actor)
+        _lineage_resident_nodes().rename_lineage_resident(lineage_id, {"resident_id": family["facade"], "title": family["title"]}, actor)
     if outcome["added"] and canonical_actor_id(actor) != family["steward"]:
         creator_id = canonical_actor_id(actor)
         maker = str(facts.find_record(creator_id).get("title") or "") if creator_id.startswith("resident_") else ""
@@ -701,7 +721,7 @@ def unfamilize(lineage_id: str, family_id: str, actor: str, *, successor_id: str
                     reconcile_in_body(body, parent, actor)
             body["function_blocks"] = [b for b in body["function_blocks"] if b["id"] != family_id]
             return rewired
-        view, rewired = _domain().commit_lineage_edit(lineage_id, actor, edit, reason="Unfamilize：解除 Family", resident_ids=roles)
+        view, rewired = _lineage_graph_edits().commit_lineage_edit(lineage_id, actor, edit, reason="Unfamilize：解除 Family", resident_ids=roles)
     return {"family_id": family_id, "resource_id": family["resource_id"], "member_resident_ids": members, "deleted_resident_ids": roles,
             "leader_resident_id": view.get("leader_resident_id", ""), "rewired_wire_ids": rewired}
 
@@ -722,7 +742,7 @@ def delete_family(lineage_id: str, family_id: str, actor: str) -> dict:
                 raise FamilyBusy("Family 内容已改变，未执行删除，请重新核对后重试。")
             function_block_authoring.remove_elements_in_body(body, ids)
 
-        view, _ = _domain().commit_lineage_edit(lineage_id, actor, edit,
+        view, _ = _lineage_graph_edits().commit_lineage_edit(lineage_id, actor, edit,
             reason="DeleteFamily：删除 Family 及全部内部对象", resident_ids=sorted(residents))
     return {"family_id": family_id, "resource_id": block["family"]["resource_id"],
             "deleted_resident_ids": sorted(residents), "deleted_element_ids": sorted(ids),
@@ -837,7 +857,7 @@ def _stop_roles(lineage_id: str, resident_ids: list[str], actor: str, *, wait_se
     roles = [item for item in resident_ids if item]
     # Even an idle role must close intake before the family can be removed.
     for resident_id in roles:
-        _domain().quiesce_lineage_resident(lineage_id, {"target": resident_id}, actor)
+        _lineage_resident_controls().quiesce_lineage_resident(lineage_id, {"target": resident_id}, actor)
     busy = [item for item in roles if resident_lifecycle_domain.resident_has_pending_work(item)]
     deadline = time.monotonic() + (ROLE_STOP_WAIT_SECONDS if wait_seconds is None else wait_seconds)
     while busy and time.monotonic() < deadline:

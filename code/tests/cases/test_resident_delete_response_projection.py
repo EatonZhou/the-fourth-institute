@@ -9,7 +9,13 @@ import pytest
 
 from management_common.json_columns import json_value
 from management_portal.execution.agent_data_store import get_agent_data_store
-from management_portal.society_service import lineage_domain, resident_session_backend_domain, resident_workspace_domain
+from management_portal.society_service import (
+    lineage_graph_edits,
+    lineage_lifecycle,
+    lineage_state,
+    resident_session_backend_domain,
+    resident_workspace_domain,
+)
 from tests.cases.isa_test_support import run
 from tests.cases.test_lineage_batch_deletion import deletion_set, future_creation_store  # noqa: F401
 
@@ -25,7 +31,7 @@ def test_delete_resident_skips_unused_view_but_keeps_committed_effects(deletion_
     :design-point:
     """
     lineage_id, leader, members, _, store = deletion_set
-    lineage_domain.update_lineage_metadata(lineage_id, {"leader_resident_id": leader}, "sample_admin")
+    lineage_lifecycle.update_lineage_metadata(lineage_id, {"leader_resident_id": leader}, "sample_admin")
     target = leader if delete_leader else members[0]
     agent_data = get_agent_data_store()
     agent = agent_data.agent(target)
@@ -33,7 +39,7 @@ def test_delete_resident_skips_unused_view_but_keeps_committed_effects(deletion_
     confirmation = Mock(wraps=resident_workspace_domain._confirm_deleted_resident_resources)
     monkeypatch.setattr(resident_workspace_domain, '_confirm_deleted_resident_resources', confirmation)
     view = Mock(side_effect=AssertionError('DeleteResident must not build a discarded full graph response'))
-    monkeypatch.setattr(lineage_domain, '_verified_lineage_view', view)
+    monkeypatch.setattr(lineage_state, '_verified_lineage_view', view)
     release = Mock(side_effect=AssertionError('Provider cleanup must remain in the durable lifecycle worker'))
     monkeypatch.setattr(resident_session_backend_domain, 'run_backend_session_operation', release)
 
@@ -75,9 +81,9 @@ def test_graph_deletion_still_returns_verified_lineage(deletion_set, monkeypatch
     :design-point:
     """
     lineage_id, _, members, _, _ = deletion_set
-    view = Mock(wraps=lineage_domain._verified_lineage_view)
-    monkeypatch.setattr(lineage_domain, '_verified_lineage_view', view)
-    result = lineage_domain.delete_lineage_graph_objects(lineage_id, {'resident_ids': [members[0]]}, 'sample_admin')
+    view = Mock(wraps=lineage_state._verified_lineage_view)
+    monkeypatch.setattr(lineage_state, '_verified_lineage_view', view)
+    result = lineage_graph_edits.delete_lineage_graph_objects(lineage_id, {'resident_ids': [members[0]]}, 'sample_admin')
     assert result['lineage']['lineage_id'] == lineage_id
     assert members[0] not in {node['id'] for node in result['lineage']['nodes']}
     view.assert_called_once()

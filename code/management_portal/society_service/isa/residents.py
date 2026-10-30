@@ -10,8 +10,11 @@ from management_portal.society_service.resident_context.evidence import MAX_SUMM
 
 from .common import (
     caller_account,
-    domain,
+    lineage_branches,
+    lineage_graph_edits,
     lineage_of_resident,
+    lineage_resident_nodes,
+    lineage_resident_workspaces,
     placement,
     protocol,
     store,
@@ -69,7 +72,7 @@ def create_resident(inv: Invocation) -> dict[str, Any]:
         payload["runtime_settings"] = {**role_settings, **(inv.argument("settings") or {})}
     if inv.argument("workspace_paths"):
         payload["workspace_paths"] = inv.argument("workspace_paths")
-    result = domain().create_lineage_resident(lineage_id, payload, inv.caller)
+    result = lineage_resident_nodes().create_lineage_resident(lineage_id, payload, inv.caller)
     resident = result.get("resident") or {}
     resident_id = str(resident.get("resident_id") or (result.get("node") or {}).get("id") or "")
     return {
@@ -133,7 +136,7 @@ def fork_resident(inv: Invocation) -> dict[str, Any]:
         payload["backend_route_id"] = account
     if inv.idempotency_key:
         payload["idempotency_key"] = inv.idempotency_key
-    result = domain().fork_lineage_resident(lineage_id, payload, inv.caller)
+    result = lineage_branches().fork_lineage_resident(lineage_id, payload, inv.caller)
     resident_id = str((result.get("created_resident") or {}).get("id") or "")
     return {
         "resident_id": resident_id,
@@ -152,7 +155,7 @@ def promote_seed(inv: Invocation) -> dict[str, Any]:
         payload["child_title"] = inv.argument("title")
     if inv.argument("purpose"):
         payload["action_purpose"] = inv.argument("purpose")
-    result = domain().promote_seed_node(lineage_id, payload, inv.caller)
+    result = lineage_branches().promote_seed_node(lineage_id, payload, inv.caller)
     resident = result.get("resident") or {}
     resident_id = str(resident.get("id") or "")
     edge = next(
@@ -206,7 +209,7 @@ def update_resident(inv: Invocation) -> dict[str, Any]:
         title = str(inv.argument("title") or "").strip()
         if not title:
             raise invalid("title 不能为空")
-        domain().rename_lineage_resident(
+        lineage_resident_nodes().rename_lineage_resident(
             lineage_id,
             {"resident_id": resident_id, "title": title},
             inv.caller,
@@ -232,7 +235,7 @@ def delete_resident(inv: Invocation) -> dict[str, Any]:
     if resident_workspace_domain.retry_deleted_resident(resident_id, inv.caller) is not None:
         return {"resident_id": resident_id}
     lineage_id = inv.argument("lineage_id")
-    result = domain().delete_lineage_graph_objects(
+    result = lineage_graph_edits().delete_lineage_graph_objects(
         lineage_id,
         {"resident_ids": [resident_id]},
         inv.caller,
@@ -567,7 +570,7 @@ def bind_workspace(inv: Invocation) -> dict[str, Any]:
     payload = {"resident_id": resident_id, "path": inv.argument("path")}
     if inv.argument("purpose"):
         payload["purpose"] = inv.argument("purpose")
-    result = domain().bind_node_workspace(lineage_id, payload, inv.caller)
+    result = lineage_resident_workspaces().bind_node_workspace(lineage_id, payload, inv.caller)
     roots = (result.get("workspace") or {}).get("workspaces") or []
     from pathlib import Path
 
@@ -584,8 +587,8 @@ def unbind_workspace(inv: Invocation) -> dict[str, Any]:
     resident_id = inv.argument("resident_id")
     lineage_id = lineage_of_resident(resident_id)
     payload = {"resident_id": resident_id, "workspace_id": inv.argument("workspace_id")}
-    result = domain().unbind_node_workspace(lineage_id, payload, inv.caller)
-    workspaces = domain().get_node_workspaces(lineage_id, resident_id, inv.caller)
+    result = lineage_resident_workspaces().unbind_node_workspace(lineage_id, payload, inv.caller)
+    workspaces = lineage_resident_workspaces().get_node_workspaces(lineage_id, resident_id, inv.caller)
     bindings = workspaces.get("workspaces") if isinstance(workspaces, dict) else workspaces
     pending = result.get("workspace_binding") or {}
     return {"bindings": bindings or [], **{key: pending[key] for key in

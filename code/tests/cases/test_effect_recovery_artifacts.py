@@ -450,10 +450,10 @@ def test_removing_effect_node_settles_only_confirmed_activation(primitive_store,
 
     :design-point:
     """
-    from management_portal.society_service import lineage_domain
+    from management_portal.society_service import lineage_lifecycle, lineage_program_edits
     from tests.cases.test_lineage_generic_primitives import _worker, WORK_A, ACTOR
     effect_id = "effect_aaaaaaaaaaaa"
-    created = lineage_domain.create_lineage({"title": "Effect deletion receipt",
+    created = lineage_lifecycle.create_lineage({"title": "Effect deletion receipt",
         "nodes": [_worker(WORK_A)], "edges": [], "program": {"components": [{"id": effect_id, "kind": "effect",
         "config": {"script": f'GetResident resident_id="{WORK_A}"', "endpoints": []}}], "wires": []}}, ACTOR)
     lid = created["lineage_id"]
@@ -461,11 +461,11 @@ def test_removing_effect_node_settles_only_confirmed_activation(primitive_store,
     if in_flight:
         journal.record_call_started(lid, "key", "c1", {"instruction": "GetResident", "caller": ACTOR})
         with pytest.raises(journal.RecoveryPending):
-            lineage_domain.delete_lineage_program_component(lid, {"component_id": effect_id, "expected_revision": created["revision"]}, ACTOR)
+            lineage_program_edits.delete_lineage_program_component(lid, {"component_id": effect_id, "expected_revision": created["revision"]}, ACTOR)
         assert any(node["id"] == effect_id for node in get_lineage_data_store().lineage_definition(lid)["program"]["components"])
         assert not journal.trigger_paths.effect_finished(lid, "key")
     else:
-        lineage_domain.delete_lineage_program_component(lid, {"component_id": effect_id, "expected_revision": created["revision"]}, ACTOR)
+        lineage_program_edits.delete_lineage_program_component(lid, {"component_id": effect_id, "expected_revision": created["revision"]}, ACTOR)
         assert journal.trigger_paths.effect_finished(lid, "key")["status"] == "cancelled"
         assert not any(node["id"] == effect_id for node in get_lineage_data_store().lineage_definition(lid)["program"]["components"])
 

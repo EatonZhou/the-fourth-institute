@@ -6,9 +6,9 @@ from management_common.json_columns import json_value
 from management_common.principal import OperationIdentity
 from management_portal.hatg.contracts import InstructionCall, InstructionContext
 from management_portal.society_service import (
-    component_runtime, lineage_domain, lineage_program_runtime as runtime,
-    lineage_program_effect_execution as execution, lineage_effect_script_journal as journal,
-    lineage_primitives, trigger_path_observation,
+    component_runtime, lineage_domain, lineage_reads, lineage_resident_controls,
+    lineage_program_runtime as runtime, lineage_program_effect_execution as execution,
+    lineage_effect_script_journal as journal, lineage_primitives, trigger_path_observation,
 )
 from management_portal.society_service.isa import build_kernel
 from management_portal.society_service.state_store import get_lineage_data_store
@@ -31,20 +31,20 @@ def test_effect_switch_is_durable_and_does_not_change_definition(primitive_store
     """Effect 暂停状态持久化且不改变定义修订"""
     current = make_lineage([{"id": EFFECT, "kind": "effect", "config": {"script": ""}}])
     lid = current["lineage_id"]
-    before = lineage_domain.get_lineage(lid, ACTOR)
+    before = lineage_reads.get_lineage(lid, ACTOR)
     assert instruction("PauseComponent", lid, EFFECT, paused=True)["runtime"]["paused"] is True
     with get_lineage_data_store().database.read() as connection:
         row = connection.execute("SELECT checkpoint_json FROM operator_work WHERE lineage_id=%s AND operator_id=%s",
                                  (lid, EFFECT)).fetchone()
     assert json_value(row["checkpoint_json"])["paused"] is True
     assert instruction("GetComponentRuntime", lid, EFFECT)["components"][0]["state"] == "paused"
-    after = lineage_domain.get_lineage(lid, ACTOR)
+    after = lineage_reads.get_lineage(lid, ACTOR)
     assert after["revision"] == before["revision"]
     assert after["program"] == before["program"]
     assert after["program_effect_runtime"][EFFECT]["paused"] is True
     # paused=false resumes the same component.
     assert instruction("PauseComponent", lid, EFFECT, paused=False)["runtime"]["paused"] is False
-    assert lineage_domain.get_lineage(lid, ACTOR)["program_effect_runtime"][EFFECT]["paused"] is False
+    assert lineage_reads.get_lineage(lid, ACTOR)["program_effect_runtime"][EFFECT]["paused"] is False
     with pytest.raises(ValueError, match="没有可重置"):
         component_runtime.reset(lid, EFFECT, ACTOR)
 
@@ -52,6 +52,7 @@ def test_effect_switch_is_durable_and_does_not_change_definition(primitive_store
 def test_closed_event_cannot_create_trigger_path(primitive_store, monkeypatch):
     """暂停的事件源拒绝触发且不创建 Trigger Path"""
     sent = []
+    monkeypatch.setattr(lineage_resident_controls, "_send_node_message", lambda *a, **kw: sent.append(a))
     monkeypatch.setattr(lineage_domain, "_send_node_message", lambda *a, **kw: sent.append(a))
     current = make_lineage([source()], [event_wire()])
     lid = current["lineage_id"]

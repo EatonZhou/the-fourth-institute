@@ -428,8 +428,8 @@ def test_account_delete_preserves_lineage_definition(projection_fixture, account
 def test_page_machine_entry_rejects_missing_or_malformed_lineage(monkeypatch):
     """页面机器入口拒绝缺失或格式错误的 Lineage"""
     from management_portal import society_service, page_api_auth
-    from management_portal.society_service import lineage_domain
-    service = SimpleNamespace(lineage=SimpleNamespace(authorize_lineage_resident_principal=lineage_domain.authorize_lineage_resident_principal))
+    from management_portal.society_service import lineage_state
+    service = SimpleNamespace(lineage=SimpleNamespace(authorize_lineage_resident_principal=lineage_state.authorize_lineage_resident_principal))
     monkeypatch.setattr(society_service, "get_society_service", lambda: service)
     for lineage_id in ("", "not-a-lineage", "resident_123456789abc"):
         auth = {"type": "agent", "id": "resident_123456789abc", "lineage_id": lineage_id}

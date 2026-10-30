@@ -12,7 +12,7 @@ from management_portal.hatg.contracts import InstructionCall, InstructionContext
 from management_portal.hatg.kernel import Invocation
 from management_portal.society_service import (
     lineage_branch_transitions,
-    lineage_domain,
+    lineage_resident_controls,
     lineage_workspace_binding,
     resident_domain,
     resident_domain_common,
@@ -84,7 +84,7 @@ def test_bind_workspace_returns_the_selected_root_and_is_repeatable(tmp_path, mo
             node_resident=lambda node: node["id"],
         )
         return {"workspace": mounted["workspace"]}
-    monkeypatch.setattr(residents, "domain", lambda: SimpleNamespace(bind_node_workspace=bind))
+    monkeypatch.setattr(residents, "lineage_resident_workspaces", lambda: SimpleNamespace(bind_node_workspace=bind))
     monkeypatch.setattr(residents, "lineage_of_resident", lambda _: lineage_id)
     inv = invocation("BindWorkspace", resident_id=resident_id, path=path)
     first = residents.bind_workspace(inv)["binding"]
@@ -118,7 +118,7 @@ def _cancel_with(monkeypatch, cancel, states):
         return {"state": state}
 
     monkeypatch.setattr(execution, "lineage_of_resident", lambda _: "lineage_000000000001")
-    monkeypatch.setattr(execution, "domain", lambda: SimpleNamespace(
+    monkeypatch.setattr(execution, "lineage_resident_controls", lambda: SimpleNamespace(
         cancel_lineage_resident_execution=cancel,
     ))
     monkeypatch.setattr(execution, "protocol", lambda: SimpleNamespace(_stored_resident_input_state=stored))
@@ -167,7 +167,7 @@ def test_cancel_receipt_preserves_running_state_until_cancellation_is_confirmed(
 def test_inject_receipt_reports_delivery_outcome(monkeypatch, receipt, status):
     """InjectMailboxItem 的回执报告已注入、待投递或下一轮执行"""
     monkeypatch.setattr(execution, "lineage_of_resident", lambda _: "lineage_000000000001")
-    monkeypatch.setattr(execution, "domain", lambda: SimpleNamespace(inject_lineage_resident_queue_item_into_active_turn=lambda *_: receipt))
+    monkeypatch.setattr(execution, "lineage_resident_controls", lambda: SimpleNamespace(inject_lineage_resident_queue_item_into_active_turn=lambda *_: receipt))
     result = execution.inject_mailbox_item(invocation("InjectMailboxItem", resident_id="resident_aaaaaaaaaaaa", message_id="msg_one"))
     assert result["status"] == status
 
@@ -183,7 +183,7 @@ def test_quiesce_clears_closed_intake_waiting_inputs(resident_record, monkeypatc
     monkeypatch.setattr(resident_prompt_domain, "build_resident_prompt", lambda *_a, **_kw: "held prompt")
     delivered = [resident_domain.deliver_resident_message_content(resident_id, "CASE-A", content) for content in ("one", "two")]
     assert resident_protocol.get_resident_state(resident_id, "CASE-A")["state"]["active_message_id"] == ""
-    result = lineage_domain.quiesce_lineage_resident(resident_record["lineage_id"], {"target": resident_id}, "CASE-A")
+    result = lineage_resident_controls.quiesce_lineage_resident(resident_record["lineage_id"], {"target": resident_id}, "CASE-A")
     assert result["cleared_queue_count"] == 2
     assert [item for item in resident_protocol.get_resident_mailbox(resident_id, "CASE-A")["pending"] if item.get("kind") != "info"] == []
     assert [resident_protocol.get_resident_input_state(resident_id, "CASE-A", item["message_id"])["state"] for item in delivered] == ["cancelled", "cancelled"]

@@ -13,7 +13,13 @@ import pytest
 from management_portal.hatg.contracts import InstructionError
 
 from management_portal.society_service import lineage_program_backlog
-from management_portal.society_service import lineage_domain, lineage_program_identity
+from management_portal.society_service import (
+    lineage_domain,
+    lineage_program_edits,
+    lineage_program_identity,
+    lineage_reads,
+    lineage_state,
+)
 from management_portal.society_service import lineage_operator_runtime
 from management_portal.society_service import resident_message_contract
 from management_portal.society_service import lineage_program_runtime
@@ -55,7 +61,7 @@ def runtime_store(
 ) -> Path:
     root = tmp_path / "lineages"
     monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", root)
-    monkeypatch.setattr(lineage_domain, "LINEAGE_FOLDER_ROOT", root / "lineages")
+    monkeypatch.setattr(lineage_state, "LINEAGE_FOLDER_ROOT", root / "lineages")
     monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(root / "lineages"))
     install_resource_boundary(monkeypatch)
     lineage_test_support.install_registered_lineage_members(monkeypatch)
@@ -178,7 +184,7 @@ def _emit_output(lineage: dict, resident_id: str) -> dict:
     """
 
     lineage_id = lineage["lineage_id"]
-    current = lineage_domain.get_lineage(lineage_id, ACTOR)
+    current = lineage_reads.get_lineage(lineage_id, ACTOR)
     source_id = next(
         wire["source"] for wire in current["program"]["wires"]
         if wire["kind"] == "route" and wire["target"] == resident_id
@@ -386,7 +392,7 @@ def test_output_route_message_limit_and_reset(runtime_store: Path, monkeypatch, 
         return lineage_test_support.complete_resident_message(PRODUCER_A, ACTOR, message, lineage_id=lineage_id)
 
     def view():
-        return lineage_domain.get_lineage(lineage_id, ACTOR)["program_invoke_wire_runtime"]["wire_message_limit"]
+        return lineage_reads.get_lineage(lineage_id, ACTOR)["program_invoke_wire_runtime"]["wire_message_limit"]
 
     for message in ("job_first", "job_second", "job_third"):
         output(message)
@@ -400,12 +406,12 @@ def test_output_route_message_limit_and_reset(runtime_store: Path, monkeypatch, 
         ok("UpdateWire", {"lineage_id": lineage_id, "wire_id": "wire_message_limit",
                           "changes": {"config": {"max_messages": edited_limit, "include_envelope": False}}})
         assert view()["sent_count"] == expected
-    before = lineage_domain.get_lineage(lineage_id, ACTOR)["revision"]
+    before = lineage_reads.get_lineage(lineage_id, ACTOR)["revision"]
     reset_kernels()
     reset = ok("ResetComponentRuntime", {"lineage_id": lineage_id, "wire_id": "wire_message_limit"}, key="reset-delivery-count")
     assert reset["runtime"]["sent_count"] == 0
     assert reset["runtime"]["generation"] == 1
-    assert lineage_domain.get_lineage(lineage_id, ACTOR)["revision"] == before
+    assert lineage_reads.get_lineage(lineage_id, ACTOR)["revision"] == before
     ok("ResetComponentRuntime", {"lineage_id": lineage_id, "wire_id": "wire_message_limit"}, key="reset-delivery-count")
     assert view()["generation"] == 1
     lineage_domain.handle_resident_message_completion(PRODUCER_A, ACTOR, "job_first", lineage_id=lineage_id)
@@ -487,16 +493,16 @@ def test_queued_route_deliveries_share_the_message_budget(runtime_store: Path, m
     lineage_id = lineage["lineage_id"]
     for message in ("job_queue_one", "job_queue_two", "job_queue_three"):
         lineage_test_support.complete_resident_message(PRODUCER_A, ACTOR, message, lineage_id=lineage_id)
-    before = lineage_domain.get_lineage(lineage_id, ACTOR)["program_invoke_wire_runtime"]["wire_queued_limit"]
+    before = lineage_reads.get_lineage(lineage_id, ACTOR)["program_invoke_wire_runtime"]["wire_queued_limit"]
     assert (before["pending_count"], before["sent_count"]) == (3, 0)
     busy["value"] = False
     lineage_program_backlog.drain_event_backlog(lineage_id, ACTOR, authority=lineage_domain._program_control_authority())
-    failed = lineage_domain.get_lineage(lineage_id, ACTOR)["program_invoke_wire_runtime"]["wire_queued_limit"]
+    failed = lineage_reads.get_lineage(lineage_id, ACTOR)["program_invoke_wire_runtime"]["wire_queued_limit"]
     assert (failed["pending_count"], failed["sent_count"], failed["reserved_count"]) == (2, 0, 0)
     busy["value"] = False
     for _ in range(2):
         lineage_program_backlog.drain_event_backlog(lineage_id, ACTOR, authority=lineage_domain._program_control_authority())
-    after = lineage_domain.get_lineage(lineage_id, ACTOR)["program_invoke_wire_runtime"]["wire_queued_limit"]
+    after = lineage_reads.get_lineage(lineage_id, ACTOR)["program_invoke_wire_runtime"]["wire_queued_limit"]
     assert attempts == ["job_queue_one", "job_queue_two"]
     assert sent == ["job_queue_two"]
     assert (after["pending_count"], after["sent_count"], after["message_limit_reached"]) == (0, 1, True)
@@ -646,7 +652,7 @@ def test_effect_executes_against_external_residents_owned_lineage(
     outputs = result["results"][0]["typed_outputs"]
     assert outputs["message_id"] == "job_external_effect"
     assert outputs["resident_id"] == WORK_B
-    definition = lineage_domain.get_lineage(
+    definition = lineage_reads.get_lineage(
         authoring["lineage_id"],
         ACTOR,
     )
@@ -1175,7 +1181,7 @@ def test_completion_starts_a_new_path_and_does_not_wait_for_descendant_execution
     pending = trigger_paths.resident_inputs(created["lineage_id"])
     assert any(row["message_id"] == sent[2][1] and row["status"] != "completed" for row in pending)
 
-    current = lineage_domain.get_lineage(created["lineage_id"], ACTOR)
+    current = lineage_reads.get_lineage(created["lineage_id"], ACTOR)
     node_b = next(node for node in current["nodes"] if node["id"] == WORK_B)
     assert node_b["last_execution"]["status"] == "completed"
 
@@ -1246,7 +1252,7 @@ def test_packet_to_agent_uses_invoke_queue_and_route_envelope_policy(
 
     started = _emit_output(created, PRODUCER_A)
     assert sent == []
-    queued = lineage_domain.get_lineage(created["lineage_id"], ACTOR)
+    queued = lineage_reads.get_lineage(created["lineage_id"], ACTOR)
     runtime = queued["program_invoke_wire_runtime"][
         "wire_packet_agent"
     ]
@@ -1275,7 +1281,7 @@ def test_packet_to_agent_uses_invoke_queue_and_route_envelope_policy(
 
     assert drained["delivered_count"] == 1, json.dumps(drained)
     assert sent == [(WORK_A, prompt_override or "Apply the exact queued packet.")]
-    current = lineage_domain.get_lineage(created["lineage_id"], ACTOR)
+    current = lineage_reads.get_lineage(created["lineage_id"], ACTOR)
     assert current["program_invoke_wire_runtime"][
         "wire_packet_agent"
     ]["pending_count"] == 0
@@ -1810,7 +1816,7 @@ def test_reconcile_recovers_ordinary_program_resident_terminal_once(
         created["lineage_id"], WORK_A, "job_program_resident",
     )
     assert invocation["status"] == terminal_status
-    current = lineage_domain.get_lineage(created["lineage_id"], ACTOR)
+    current = lineage_reads.get_lineage(created["lineage_id"], ACTOR)
     worker = next(node for node in current["nodes"] if node["id"] == WORK_A)
     assert worker["status"] == "idle"
     assert worker["last_execution"]["status"] == terminal_status
@@ -2001,7 +2007,7 @@ def test_connecting_completion_wire_baselines_before_reconciler_can_replay(
     def connect() -> None:
         try:
             writer_result.update(
-                lineage_domain.save_lineage_program_wire(
+                lineage_program_edits.save_lineage_program_wire(
                     created["lineage_id"],
                     {'expected_revision': created['revision'], 'id': 'wire_atomic_work_target', 'kind': 'route', 'source': 'event_source_atomic_work_done', 'source_port': 'output', 'target': WORK_B, 'target_port': 'invoke'},
                     ACTOR,
@@ -2151,7 +2157,7 @@ def test_pending_delivery_commands_edit_delete_and_deliver_independently(
     lineage_id = created["lineage_id"]
     for _index in range(4):
         lineage_domain.emit_program_manual_event(lineage_id, {"event_source_id": "event_source_pending"}, ACTOR)
-    before = lineage_domain.get_lineage(lineage_id, ACTOR)
+    before = lineage_reads.get_lineage(lineage_id, ACTOR)
 
     def command(action, *, revision=None, **arguments):
         instruction = {
@@ -2171,7 +2177,7 @@ def test_pending_delivery_commands_edit_delete_and_deliver_independently(
     command("update", delivery_id=waiting[3]["delivery_id"], revision=1, prompt="")
     deleted = command("delete", delivery_id=waiting[1]["delivery_id"], revision=1)
     assert len(deleted["deliveries"]) == 3
-    assert lineage_domain.get_lineage(lineage_id, ACTOR)["revision"] == before["revision"]
+    assert lineage_reads.get_lineage(lineage_id, ACTOR)["revision"] == before["revision"]
     busy["value"] = False
     drained = lineage_program_backlog.drain_event_backlog(lineage_id, ACTOR, authority=lineage_domain._program_control_authority())
     assert drained["delivered_count"] == 3
@@ -2179,7 +2185,7 @@ def test_pending_delivery_commands_edit_delete_and_deliver_independently(
     assert command("list")["deliveries"] == []
     source = lineage_program_runtime.read_runtime(lineage_id)["event_sources"]["event_source_pending"]
     assert source["fire_count"] == 4
-    after = lineage_domain.get_lineage(lineage_id, ACTOR)
+    after = lineage_reads.get_lineage(lineage_id, ACTOR)
     assert after["program"] == before["program"]
 
 
@@ -2300,7 +2306,7 @@ def test_latest_wire_delivers_only_newest_event_when_worker_becomes_idle(
         for result in emitted
     ] == ["queued", "replaced", "replaced"]
     latest_event_id = emitted[-1]["event"]["id"]
-    queued_view = lineage_domain.get_lineage(
+    queued_view = lineage_reads.get_lineage(
         created["lineage_id"],
         ACTOR,
     )
@@ -2322,7 +2328,7 @@ def test_latest_wire_delivers_only_newest_event_when_worker_becomes_idle(
         result["event"]["id"] not in sent[0][1]
         for result in emitted[:-1]
     )
-    drained_view = lineage_domain.get_lineage(
+    drained_view = lineage_reads.get_lineage(
         created["lineage_id"],
         ACTOR,
     )
@@ -2360,11 +2366,11 @@ def test_work_finished_dispatch_rejects_contract_changed_after_match(
         captured_contracts.append(
             str(kwargs.get("expected_event_source_contract") or "")
         )
-        current = lineage_domain.get_lineage(
+        current = lineage_reads.get_lineage(
             created["lineage_id"],
             ACTOR,
         )
-        lineage_domain.save_lineage_program_wire(
+        lineage_program_edits.save_lineage_program_wire(
             created["lineage_id"],
             {
                 "expected_revision": current["revision"],
@@ -2412,7 +2418,7 @@ def test_file_event_signature_detects_same_size_content_with_restored_mtime(
     report.write_bytes(b"first")
     initial_stat = report.stat()
     monkeypatch.setattr(
-        lineage_domain,
+        lineage_state,
         "_node_workspace_path",
         lambda _lineage_id, _target_node: tmp_path,
     )
@@ -2644,7 +2650,7 @@ def test_countdown_timer_is_reconciled_when_due_by_runtime_repair(
 
     sent: list[str] = []
     monkeypatch.setattr(lineage_program_runtime, "datetime", Clock)
-    monkeypatch.setattr(lineage_domain, "datetime", Clock)
+    monkeypatch.setattr(lineage_state, "datetime", Clock)
     monkeypatch.setattr(
         lineage_test_support,
         "NODE_MESSAGE_SENDER",
@@ -2721,7 +2727,7 @@ def test_recurring_schedule_recovers_pending_after_restart_and_reconcile_is_idem
 
     sent: list[str] = []
     monkeypatch.setattr(lineage_program_runtime, "datetime", Clock)
-    monkeypatch.setattr(lineage_domain, "datetime", Clock)
+    monkeypatch.setattr(lineage_state, "datetime", Clock)
     monkeypatch.setattr(
         lineage_test_support,
         "NODE_MESSAGE_SENDER",
@@ -2814,7 +2820,7 @@ def test_recurring_jitter_due_time_survives_reconcile_and_runtime_reload(
             return cls.current if tz is None else cls.current.astimezone(tz)
 
     monkeypatch.setattr(lineage_program_runtime, "datetime", Clock)
-    monkeypatch.setattr(lineage_domain, "datetime", Clock)
+    monkeypatch.setattr(lineage_state, "datetime", Clock)
     sent: list[str] = []
     monkeypatch.setattr(
         lineage_test_support,
@@ -2914,7 +2920,7 @@ def test_created_recurring_jitter_survives_store_restart_and_revision_change(
         },
     }, actor=ACTOR, key="audit_recurring_jitter_revision")
     source_id = created["component"]["id"]
-    current = lineage_domain.get_lineage(lineage_id, ACTOR)
+    current = lineage_reads.get_lineage(lineage_id, ACTOR)
     before_plan = lineage_program.compile_program(
         current["program"], current["nodes"]
     )
@@ -2946,7 +2952,7 @@ def test_created_recurring_jitter_survives_store_restart_and_revision_change(
         lineage_id, source_id, config=before_source
     ) == pending
 
-    updated = lineage_domain.save_lineage_program_component(
+    updated = lineage_program_edits.save_lineage_program_component(
         lineage_id,
         {
             "expected_revision": current["revision"],
@@ -2996,7 +3002,7 @@ def test_recurring_pause_preserves_due_cursor_and_resume_skips_the_paused_window
             return cls.current if tz is None else cls.current.astimezone(tz)
 
     monkeypatch.setattr(lineage_program_runtime, "datetime", Clock)
-    monkeypatch.setattr(lineage_domain, "datetime", Clock)
+    monkeypatch.setattr(lineage_state, "datetime", Clock)
     monkeypatch.setattr(
         lineage_test_support,
         "NODE_ACTIVE_JOB_RESOLVER",
@@ -3034,18 +3040,18 @@ def test_recurring_pause_preserves_due_cursor_and_resume_skips_the_paused_window
     source_id = "event_source_recurring"
 
     def source_config() -> dict:
-        lineage = lineage_domain.get_lineage(lineage_id, ACTOR)
+        lineage = lineage_reads.get_lineage(lineage_id, ACTOR)
         return lineage_program.compile_program(
             lineage["program"], lineage["nodes"]
         )["event_sources"][source_id]
 
     def set_paused(paused: bool) -> None:
-        revision = lineage_domain.get_lineage(lineage_id, ACTOR)["revision"]
+        revision = lineage_reads.get_lineage(lineage_id, ACTOR)["revision"]
         ok("PauseComponent",
            {"lineage_id": lineage_id, "component_id": source_id, "paused": paused},
            actor=ACTOR, key=f"pause-{paused}-{Clock.current.isoformat()}")
         # Pausing is runtime state; the Lineage definition does not change.
-        assert lineage_domain.get_lineage(lineage_id, ACTOR)["revision"] == revision
+        assert lineage_reads.get_lineage(lineage_id, ACTOR)["revision"] == revision
 
     reset_kernels()
     configured = source_config()
@@ -3185,7 +3191,7 @@ def test_recurring_schedule_coalesces_misfires_with_payload_metadata(
             return cls.current if tz is None else cls.current.astimezone(tz)
 
     monkeypatch.setattr(lineage_program_runtime, "datetime", Clock)
-    monkeypatch.setattr(lineage_domain, "datetime", Clock)
+    monkeypatch.setattr(lineage_state, "datetime", Clock)
     monkeypatch.setattr(
         lineage_test_support,
         "NODE_MESSAGE_SENDER",
@@ -3258,7 +3264,7 @@ def test_recurring_overlap_is_bounded_while_target_is_busy(
             return cls.current if tz is None else cls.current.astimezone(tz)
 
     monkeypatch.setattr(lineage_program_runtime, "datetime", Clock)
-    monkeypatch.setattr(lineage_domain, "datetime", Clock)
+    monkeypatch.setattr(lineage_state, "datetime", Clock)
     monkeypatch.setattr(
         lineage_test_support,
         "NODE_ACTIVE_JOB_RESOLVER",
@@ -3377,7 +3383,7 @@ def test_recurring_config_change_fences_old_generation_wire_backlog(
             return cls.current if tz is None else cls.current.astimezone(tz)
 
     monkeypatch.setattr(lineage_program_runtime, "datetime", Clock)
-    monkeypatch.setattr(lineage_domain, "datetime", Clock)
+    monkeypatch.setattr(lineage_state, "datetime", Clock)
     monkeypatch.setattr(
         lineage_test_support,
         "NODE_ACTIVE_JOB_RESOLVER",
@@ -3417,8 +3423,8 @@ def test_recurring_config_change_fences_old_generation_wire_backlog(
         ]["pending_events"]
     ) == 1
 
-    current = lineage_domain.get_lineage(lineage_id, ACTOR)
-    lineage_domain.save_lineage_program_component(
+    current = lineage_reads.get_lineage(lineage_id, ACTOR)
+    lineage_program_edits.save_lineage_program_component(
         lineage_id,
         {
             "expected_revision": current["revision"],
@@ -3512,7 +3518,7 @@ def test_recurring_max_fires_advances_schedule_and_reset_only_restores_budget(
 
     sent: list[str] = []
     monkeypatch.setattr(lineage_program_runtime, "datetime", Clock)
-    monkeypatch.setattr(lineage_domain, "datetime", Clock)
+    monkeypatch.setattr(lineage_state, "datetime", Clock)
     monkeypatch.setattr(
         lineage_test_support,
         "NODE_MESSAGE_SENDER",

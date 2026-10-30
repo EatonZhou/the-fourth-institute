@@ -15,7 +15,13 @@ from pathlib import Path
 
 import pytest
 
-from management_portal.society_service import component_runtime, lineage_domain, lineage_program, lineage_program_runtime
+from management_portal.society_service import (
+    component_runtime,
+    lineage_domain,
+    lineage_lifecycle,
+    lineage_program,
+    lineage_program_runtime,
+)
 from tests.cases import society_service_test_support as lineage_test_support
 from tests.cases.test_lineage_generic_primitives import (  # noqa: F401 - primitive_store is a fixture
     ACTOR,
@@ -28,7 +34,7 @@ from tests.cases.test_lineage_generic_primitives import (  # noqa: F401 - primit
 
 
 def _watched_by_two(event_type: str, config: dict | None = None) -> dict:
-    return lineage_domain.create_lineage(
+    return lineage_lifecycle.create_lineage(
         {
             "title": "Watch several Residents",
             "nodes": [_worker(WORK_A), _worker(WORK_B), _worker(WORK_C)],

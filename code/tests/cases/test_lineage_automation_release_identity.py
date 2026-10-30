@@ -7,7 +7,7 @@ from management_common.operation_identity import current_operation_identity, ope
 from management_common.principal import OperationIdentity
 from management_common import portal_release_events as facts
 from management_portal.hatg import routing
-from management_portal.society_service import lineage_domain
+from management_portal.society_service import lineage_domain, lineage_graph_edits
 from management_portal.society_service.script_runs.service import ACTIVATION
 from tests.cases.isa_test_support import ok
 from tests.cases.test_isa_lineage_lifecycle import future_creation_store, lineage, resident, graph  # noqa: F401
@@ -18,7 +18,7 @@ def test_publication_reaches_runscript_without_ambient_identity(lineage, monkeyp
     """真实注册和事件→Effect链路使用当前 Leader，外层 User 不提供委托。"""
     first = resident(lineage, "Leader")
     second = resident(lineage, "Successor")
-    lineage_domain.update_lineage(lineage, {
+    lineage_graph_edits.update_lineage(lineage, {
         **graph(lineage),
         "program": {"components": [
             {"id": "event_source_release_identity", "kind": "event_source",

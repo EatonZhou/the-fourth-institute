@@ -20,6 +20,72 @@ def domain():
     return lineage_domain
 
 
+def lineage_state():
+    from management_portal.society_service import lineage_state
+
+    return lineage_state
+
+
+def lineage_reads():
+    from management_portal.society_service import lineage_reads
+
+    return lineage_reads
+
+
+def lineage_resident_nodes():
+    from management_portal.society_service import lineage_resident_nodes
+
+    return lineage_resident_nodes
+
+
+def lineage_lifecycle():
+    from management_portal.society_service import lineage_lifecycle
+
+    return lineage_lifecycle
+
+
+def lineage_graph_edits():
+    from management_portal.society_service import lineage_graph_edits
+
+    return lineage_graph_edits
+
+
+def lineage_program_edits():
+    from management_portal.society_service import lineage_program_edits
+
+    return lineage_program_edits
+
+
+def lineage_moves():
+    from management_portal.society_service import lineage_moves
+
+    return lineage_moves
+
+
+def lineage_resident_controls():
+    from management_portal.society_service import lineage_resident_controls
+
+    return lineage_resident_controls
+
+
+def lineage_branches():
+    from management_portal.society_service import lineage_branches
+
+    return lineage_branches
+
+
+def lineage_resident_workspaces():
+    from management_portal.society_service import lineage_resident_workspaces
+
+    return lineage_resident_workspaces
+
+
+def lineage_handoffs():
+    from management_portal.society_service import lineage_handoffs
+
+    return lineage_handoffs
+
+
 def protocol():
     from management_portal.society_service import resident_protocol
 
@@ -59,7 +125,7 @@ def placement(inv: Invocation, lineage_id: str) -> dict[str, Any]:
     fields = {name: inv.argument(name) for name in PLACEMENT_FIELDS if inv.call.arguments.get(name) is not None}
     if "near_resident_id" not in fields and inv.context.is_resident and inv.entry != "lineage":
         try:
-            members = domain().lineage_access_projection(lineage_id)["lineage_node_ids"]
+            members = lineage_state().lineage_access_projection(lineage_id)["lineage_node_ids"]
         except Exception:  # noqa: BLE001 - placement is best effort
             members = []
         if inv.caller in members:

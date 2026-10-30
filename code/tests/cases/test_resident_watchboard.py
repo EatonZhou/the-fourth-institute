@@ -12,7 +12,7 @@ from pathlib import Path
 from unittest import mock
 from types import SimpleNamespace
 
-from management_portal.society_service import lineage_domain
+from management_portal.society_service import lineage_state
 from management_portal.society_service import resident_domain as backend
 from management_portal.society_service import watchboard_lineage, lineage_program, resident_record_domain
 from management_portal.society_service import resident_watchboard_domain
@@ -64,12 +64,12 @@ class ResidentWatchboardTest(unittest.TestCase):
         self.graph = {"revision": 1, "program": {"components": [], "wires": []}}
         self.save_patch = mock.patch.object(watchboard_lineage, "definition", side_effect=lambda record: self.graph)
         self.lineages_root_patch = mock.patch.object(
-            lineage_domain,
+            lineage_state,
             "_lineages_root",
             return_value=self.root / "canonical-lineages",
         )
         self.lineage_access_patch = mock.patch.object(
-            lineage_domain,
+            lineage_state,
             "lineage_access_projection",
             return_value={
                 "lineage_id": self.record["lineage_id"],

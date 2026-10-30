@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from . import lineage_domain, lineage_storage
+from . import lineage_graph_edits, lineage_lifecycle, lineage_state, lineage_storage
 from . import lineage_aggregate
 
 
@@ -19,7 +19,7 @@ class LineageDeletionToken:
 
 
 def canonical_lineage_folder(lineage_id: str) -> Path:
-    return lineage_domain._lineage_dir(lineage_id)
+    return lineage_state._lineage_dir(lineage_id)
 
 
 def managed_lineage_definition(lineage_id: str, actor: str) -> dict[str, Any]:
@@ -32,7 +32,7 @@ def managed_lineage_definition(lineage_id: str, actor: str) -> dict[str, Any]:
 
 def bind_lineage_folder(lineage_id: str, target: Path) -> Path:
     return lineage_storage.bind_lineage_folder(
-        lineage_id, target, folder_root=lineage_domain._lineages_root(),
+        lineage_id, target, folder_root=lineage_state._lineages_root(),
     )
 
 
@@ -65,17 +65,17 @@ def commit_lineage_deletion(token: LineageDeletionToken) -> None:
 
 
 def project_lineage_deletion(step: dict[str, Any]) -> None:
-    lineage_domain._sync_deleted_lineage_resource_identity(
+    lineage_lifecycle._sync_deleted_lineage_resource_identity(
         step["definition"], step["actor"], step["deleted_at"],
     )
 
 
 def unbind_deleted_lineage_folder(step: dict[str, Any]) -> None:
     lineage_storage.unbind_lineage_folder(
-        step["lineage_id"], folder_root=lineage_domain._lineages_root(),
+        step["lineage_id"], folder_root=lineage_state._lineages_root(),
         expected_target=Path(step["folder"]),
     )
 
 
 def finalize_deleted_resident_detach(lineage_id: str) -> None:
-    lineage_domain._finalize_deleted_resident_projection(lineage_id)
+    lineage_graph_edits._finalize_deleted_resident_projection(lineage_id)

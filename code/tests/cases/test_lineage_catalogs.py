@@ -74,7 +74,7 @@ def _record(resident_id: str, *, lineage_id: str = LINEAGE_ID) -> dict[str, obje
 
 def test_stop_reads_only_access_facts_and_rejects_missing_members(monkeypatch):
     """停止成员执行只读访问信息，非成员、已删除成员或无调用者时拒绝"""
-    from management_portal.society_service import lineage_domain
+    from management_portal.society_service import lineage_domain, lineage_resident_controls
 
     store = LineageDataStore()
     catalog = LineageCatalog(store)
@@ -87,24 +87,24 @@ def test_stop_reads_only_access_facts_and_rejects_missing_members(monkeypatch):
     monkeypatch.setattr(lineage_domain.resident_protocol, "cancel_resident_input",
                         lambda *args: cancelled.append(args) or {"cancellation_requested": True})
     payload = {"resident_id": resident_id, "message_id": "msg_exact"}
-    assert lineage_domain.cancel_lineage_resident_execution(LINEAGE_ID, payload, "sample_admin")["cancellation_requested"]
+    assert lineage_resident_controls.cancel_lineage_resident_execution(LINEAGE_ID, payload, "sample_admin")["cancellation_requested"]
     assert cancelled == [(resident_id, "sample_admin", "msg_exact")]
 
     with pytest.raises(ValueError, match="Agent 节点"):
-        lineage_domain.cancel_lineage_resident_execution(
+        lineage_resident_controls.cancel_lineage_resident_execution(
             LINEAGE_ID, {**payload, "resident_id": "resident_bbbbbbbbbbbb"}, "sample_admin")
     with pytest.raises(PermissionError):
-        lineage_domain.cancel_lineage_resident_execution(LINEAGE_ID, payload, "")
+        lineage_resident_controls.cancel_lineage_resident_execution(LINEAGE_ID, payload, "")
     store.database.write(lambda connection: connection.execute(
         "UPDATE residents SET deleted_at=%s WHERE resident_id=%s", ("2026-10-13T00:00:00Z", resident_id)))
     with pytest.raises(ValueError, match="Agent 节点"):
-        lineage_domain.cancel_lineage_resident_execution(LINEAGE_ID, payload, "sample_admin")
+        lineage_resident_controls.cancel_lineage_resident_execution(LINEAGE_ID, payload, "sample_admin")
     assert len(cancelled) == 1
 
 
 def test_lineage_listing_projection_matches_full_summary(tmp_path, monkeypatch):
     """Lineage 列表的轻量投影与完整摘要一致，不读布局和运行数据"""
-    from management_portal.society_service import lineage_domain, lineage_state_domains
+    from management_portal.society_service import lineage_reads, lineage_state_domains
 
     store = LineageDataStore()
     catalog = LineageCatalog(store)
@@ -130,7 +130,7 @@ def test_lineage_listing_projection_matches_full_summary(tmp_path, monkeypatch):
     catalog.upsert(lineage_state_domains.definition_projection(definition))
     catalog.upsert(_lineage_definition(lineage_id=empty_id, title="Empty"))
     expected = {
-        target: lineage_domain._lineage_summary(catalog.get(target))
+        target: lineage_reads._lineage_summary(catalog.get(target))
         for target in (LINEAGE_ID, empty_id)
     }
     original_read = store.database.read
@@ -168,7 +168,7 @@ def test_lineage_listing_projection_matches_full_summary(tmp_path, monkeypatch):
     assert not any("nodes" in record or "program" in record for record in records)
     summaries = catalog.listing_graph_summaries([LINEAGE_ID, empty_id, LINEAGE_ID])
     actual = {
-        record["lineage_id"]: lineage_domain._lineage_summary(
+        record["lineage_id"]: lineage_reads._lineage_summary(
             record, graph_summary=summaries[record["lineage_id"]],
         )
         for record in records
@@ -195,7 +195,7 @@ def test_lineage_list_checks_actor_once_before_graph_summary(tmp_path, monkeypat
     :design: decision_71aa039e3211
     :design-point:
     """
-    from management_portal.society_service import lineage_domain
+    from management_portal.society_service import lineage_reads
 
     catalog = LineageCatalog(LineageDataStore())
     hidden_id = "lineage_222222222222"
@@ -225,11 +225,11 @@ def test_lineage_list_checks_actor_once_before_graph_summary(tmp_path, monkeypat
     monkeypatch.setattr(lineage_aggregate, "lineage_catalog_store", lambda: catalog)
     monkeypatch.setattr(business_fact_views, "canonical_views", canonical_views_stub)
     monkeypatch.setattr(
-        lineage_domain,
+        lineage_reads,
         "_actor_can_manage_lineages",
         authorize,
     )
-    result = lineage_domain.list_lineages("sample_admin")
+    result = lineage_reads.list_lineages("sample_admin")
     assert [record["lineage_id"] for record in result["lineages"]] == visible_ids
     assert calls == [visible_ids]
     assert authorizations == ["sample_admin"]

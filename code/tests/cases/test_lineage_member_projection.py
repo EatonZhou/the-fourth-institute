@@ -4,15 +4,22 @@ import copy
 
 import pytest
 
-from management_portal.society_service import lineage_domain, resident_catalog, resident_domain
+from management_portal.society_service import (
+    lineage_domain,
+    lineage_graph_edits,
+    lineage_lifecycle,
+    lineage_resident_nodes,
+    resident_catalog,
+    resident_domain,
+)
 from management_portal.society_service.state_store import LineageDataStore
 from management_portal.society_service.lineage_storage import canonical_lineage_folder
 from tests.cases.test_resident_folder_creation_contract import future_creation_store, _new_session_payload
 
 
 def _family():
-    lineage = lineage_domain.create_lineage({"title": "Complete membership view"}, "sample_admin")
-    root = lineage_domain.create_lineage_resident(lineage["lineage_id"], _new_session_payload("Root"), "sample_admin")["resident"]
+    lineage = lineage_lifecycle.create_lineage({"title": "Complete membership view"}, "sample_admin")
+    root = lineage_resident_nodes.create_lineage_resident(lineage["lineage_id"], _new_session_payload("Root"), "sample_admin")["resident"]
     fork = resident_domain.create_resident_full_context_fork(root["resident_id"], "sample_admin", defer_backend_start=True)
     return lineage["lineage_id"], root["resident_id"], fork["resident_id"]
 
@@ -73,6 +80,6 @@ def test_failed_graph_delete_keeps_identity_and_membership(future_creation_store
         raise RuntimeError("resident lifecycle refused deletion")
     monkeypatch.setattr(lineage_domain.resident_domain, "delete_resident_identities", fail)
     with pytest.raises(RuntimeError, match="lifecycle refused"):
-        lineage_domain.delete_lineage_graph_objects(lineage_id, {"resident_ids": [fork_id], "expected_revision": before["revision"]}, "sample_admin")
+        lineage_graph_edits.delete_lineage_graph_objects(lineage_id, {"resident_ids": [fork_id], "expected_revision": before["revision"]}, "sample_admin")
     assert store.lineage_definition(lineage_id) == before
     assert {record["resident_id"] for record in store.residents_for_lineage(lineage_id)} == {root_id, fork_id}

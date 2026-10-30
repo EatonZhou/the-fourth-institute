@@ -407,7 +407,7 @@ def test_monitor_definition_authorizes_before_returning_detached_minimal_fields(
     :importance: P1
     :design-point:
     """
-    from management_portal.society_service import lineage_domain as domain
+    from management_portal.society_service import lineage_domain as domain, lineage_reads, lineage_state
 
     source = lineage()
     source["nodes"][0].update(workspaces=[{"path": "/private"}], runtime_settings={"model": "private"})
@@ -426,14 +426,16 @@ def test_monitor_definition_authorizes_before_returning_detached_minimal_fields(
         raise AssertionError("full workbench view must not be assembled")
 
     monkeypatch.setattr(lineage_aggregate, "read_lineage", read)
+    monkeypatch.setattr(lineage_state, "_actor_can_manage_lineage", authorize)
+    monkeypatch.setattr(lineage_reads, "_actor_can_manage_lineage", authorize)
     monkeypatch.setattr(domain, "_actor_can_manage_lineage", authorize)
     monkeypatch.setattr(lineage_aggregate, "_actor_can_manage_lineage", authorize)
-    monkeypatch.setattr(domain, "_current_lineage_view_for_read", forbidden)
+    monkeypatch.setattr(lineage_reads, "_current_lineage_view_for_read", forbidden)
     if not allowed:
         with pytest.raises(PermissionError):
-            domain.get_lineage_monitor_definition(LINEAGE, "viewer")
+            lineage_reads.get_lineage_monitor_definition(LINEAGE, "viewer")
     else:
-        result = domain.get_lineage_monitor_definition(LINEAGE, "viewer")
+        result = lineage_reads.get_lineage_monitor_definition(LINEAGE, "viewer")
         assert set(result) == {"lineage_id", "title", "revision", "nodes", "program"}
         assert result["nodes"] == [{"id": RESIDENT, "title": "Worker"}]
         result["program"]["components"][0]["config"]["interval_seconds"] = 99
@@ -451,13 +453,13 @@ def test_monitor_definition_preserves_deletion_guard_and_read_rpc_contract(monke
     :importance: P1
     :design-point:
     """
-    from management_portal.society_service import lineage_domain as domain
+    from management_portal.society_service import lineage_reads
     from management_portal.society_service.contracts import operation_contract
     from management_portal.society_service.errors import LineageConflictError
 
     monkeypatch.setattr(lineage_aggregate, "lineage_deletion_intent", lambda lineage_id: {"phase": "deleting"})
     with pytest.raises(LineageConflictError):
-        domain.get_lineage_monitor_definition(LINEAGE, "viewer")
+        lineage_reads.get_lineage_monitor_definition(LINEAGE, "viewer")
     # Monitors read definitions through the batch RPC, which checks each Lineage on its own.
     operation = operation_contract("lineage", "get_lineage_monitor_definitions")
     assert (operation.mode, operation.authority) == ("read", "lineage")

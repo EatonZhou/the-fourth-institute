@@ -12,7 +12,10 @@ import pytest
 from management_portal.society_service import (
     changes,
     invariant_locks,
-    lineage_domain,
+    lineage_graph_edits,
+    lineage_lifecycle,
+    lineage_reads,
+    lineage_state,
     resident_conversation_stream,
     resident_domain,
     resident_domain_common,
@@ -38,7 +41,7 @@ def deletion_store(
 ) -> tuple[Path, dict[str, dict]]:
     data_root = tmp_path / "portal_lineages"
     monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", data_root)
-    monkeypatch.setattr(lineage_domain, "LINEAGE_FOLDER_ROOT", data_root / "lineages")
+    monkeypatch.setattr(lineage_state, "LINEAGE_FOLDER_ROOT", data_root / "lineages")
     monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(data_root / "lineages"))
     resource_records = install_resource_boundary(monkeypatch)
     from management_portal.society_service import resident_workspace_domain
@@ -74,7 +77,7 @@ def _resident_record(resident_id: str, folder: Path) -> dict:
 def _write_resident_facts(records: list[dict]) -> None:
     for record in records:
         resident_record_domain.save_resident_record(record)
-    lineage_domain.update_lineage(
+    lineage_graph_edits.update_lineage(
         LINEAGE_ID,
         {
             **lineage_aggregate.read_lineage(LINEAGE_ID, actor="sample_admin"),
@@ -85,9 +88,9 @@ def _write_resident_facts(records: list[dict]) -> None:
 
 
 def _write_lineage(folder: Path) -> None:
-    assert folder == lineage_domain._lineage_dir(LINEAGE_ID)
+    assert folder == lineage_state._lineage_dir(LINEAGE_ID)
     with lineage_aggregate.lineage_scope(LINEAGE_ID):
-        lineage_domain._create_lineage_in_scope(
+        lineage_lifecycle._create_lineage_in_scope(
             {
                 "title": "统一删除",
                 # Membership is published by _write_resident_facts; graph attributes
@@ -185,7 +188,7 @@ def test_lineage_page_delete_uses_resident_aggregate_delete(
     with monkeypatch.context() as scoped_patch:
         scoped_patch.setattr(resident_lineage, "all", reject_global_scan)
         with changes.collect_changes() as recorded_changes:
-            result = lineage_domain.delete_lineage(LINEAGE_ID, "sample_admin")
+            result = lineage_lifecycle.delete_lineage(LINEAGE_ID, "sample_admin")
 
     assert resident_lineage.all() == []
     assert result["deleted_resident_ids"] == [ROOT_ID, PEER_ID]
@@ -203,7 +206,7 @@ def test_lineage_page_delete_uses_resident_aggregate_delete(
         with pytest.raises(KeyError):
             resident_catalog.get_catalog().get(resident_id)
         assert resident_workspace_domain.retry_deleted_resident(resident_id, "sample_admin")["deleted_at"] == historical["deleted_at"]
-    assert lineage_domain.list_lineages("sample_admin")["lineages"] == []
+    assert lineage_reads.list_lineages("sample_admin")["lineages"] == []
     assert resource_records[LINEAGE_ID]["status"] == "deleted"
     state_store = resident_catalog.get_catalog().state_store
     assert not state_store.resident_resource_projection_pending(ROOT_ID)
@@ -255,7 +258,7 @@ def test_lineage_deletion_projection_precedes_blocked_provider_release(
         apply_step(operation_id, step)
 
     monkeypatch.setattr(resident_lifecycle_steps_domain, "apply_resident_lifecycle_step", blocked_release)
-    lineage_domain.delete_lineage(LINEAGE_ID, "sample_admin")
+    lineage_lifecycle.delete_lineage(LINEAGE_ID, "sample_admin")
     for operation_id in resident_domain.ready_resident_lifecycle_operations():
         assert not resident_domain.resume_resident_lifecycle_operation(operation_id)
 
@@ -263,7 +266,7 @@ def test_lineage_deletion_projection_precedes_blocked_provider_release(
     assert unbound == [], "Provider release must retain its original folder binding"
     assert applied[:2] == ["lineage_tombstone", "release"]
     assert folder.exists()
-    assert lineage_domain.list_lineages("sample_admin")["lineages"] == []
+    assert lineage_reads.list_lineages("sample_admin")["lineages"] == []
 
 
 @pytest.mark.parametrize("actor", ["sample_admin", ROOT_ID, PEER_ID])
@@ -292,7 +295,7 @@ def test_nonleader_resident_delete_removes_its_lineage_projection(
     )
 
     before = lineage_aggregate.read_lineage(LINEAGE_ID, actor="sample_admin")
-    lineage_domain.update_lineage_metadata(LINEAGE_ID, {
+    lineage_lifecycle.update_lineage_metadata(LINEAGE_ID, {
         "expected_revision": before["revision"],
     }, "sample_admin")
     result = _delete_member(PEER_ID, actor)
@@ -325,7 +328,7 @@ def test_nonleader_resident_delete_removes_its_lineage_projection(
         PEER_ID
     )
     with pytest.raises(PermissionError, match="不属于目标 Lineage"):
-        lineage_domain.authorize_lineage_resident_principal(
+        lineage_state.authorize_lineage_resident_principal(
             LINEAGE_ID,
             PEER_ID,
         )
@@ -351,7 +354,7 @@ def test_lineage_delete_is_rejected_before_moving_data_when_a_member_is_running(
     )
 
     with pytest.raises(ValueError, match=PEER_ID):
-        lineage_domain.delete_lineage(LINEAGE_ID, "sample_admin")
+        lineage_lifecycle.delete_lineage(LINEAGE_ID, "sample_admin")
 
     assert {
         item["resident_id"]
@@ -370,7 +373,7 @@ def test_lineage_cleanup_failure_preserves_deleted_identity_and_retryable_files(
     folder = data_root / "lineages" / LINEAGE_ID
     _write_lineage(folder)
     _write_resident_facts([_resident_record(ROOT_ID, folder)])
-    result = lineage_domain.delete_lineage(LINEAGE_ID, "sample_admin")
+    result = lineage_lifecycle.delete_lineage(LINEAGE_ID, "sample_admin")
     operation_id, = resident_domain.ready_resident_lifecycle_operations()
     with monkeypatch.context() as failure:
         from management_portal.society_service import resident_workspace_retirement
@@ -409,7 +412,7 @@ def test_lineage_cleanup_removes_results_an_agent_sealed_read_only(
     (sealed / "result.json").write_text("{}", encoding="utf-8")
     for path in (sealed / "result.json", sealed):
         path.chmod(0o555)
-    lineage_domain.delete_lineage(LINEAGE_ID, "sample_admin")
+    lineage_lifecycle.delete_lineage(LINEAGE_ID, "sample_admin")
     operation_id, = resident_domain.ready_resident_lifecycle_operations()
     assert resident_domain.resume_resident_lifecycle_operation(operation_id)
     assert not folder.exists()
@@ -438,7 +441,7 @@ def test_lineage_delete_rolls_back_every_authority_when_catalog_commit_fails(
     )
 
     with pytest.raises(OSError, match="catalog commit failed"):
-        lineage_domain.delete_lineage(LINEAGE_ID, "sample_admin")
+        lineage_lifecycle.delete_lineage(LINEAGE_ID, "sample_admin")
 
     assert folder.is_dir()
     assert resource_records[LINEAGE_ID]["status"] == "active"
@@ -454,7 +457,7 @@ def test_lineage_delete_rolls_back_every_authority_when_catalog_commit_fails(
 
 def _delete_member(resident_id: str, actor: str) -> dict:
     """Delete one member the way DeleteResident does."""
-    return lineage_domain.delete_lineage_graph_objects(
+    return lineage_graph_edits.delete_lineage_graph_objects(
         LINEAGE_ID, {"resident_ids": [resident_id]}, actor, include_lineage=False,
     )
 
@@ -483,7 +486,7 @@ def test_resident_delete_does_not_publish_a_rolled_back_graph(
     )
     published: list[str] = []
     monkeypatch.setattr(
-        lineage_domain,
+        lineage_state,
         "_sync_lineage_resource_identity",
         lambda lineage: published.append(str(lineage.get("lineage_id") or "")),
     )

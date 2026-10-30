@@ -364,10 +364,10 @@ def test_a_member_moved_to_another_lineage_leaves_the_family(lineage, charters):
     :module: lineage.team
     :design: decision_44cf587c1721, decision_6591e7793116
     """
-    from management_portal.society_service import lineage_domain
+    from management_portal.society_service import lineage_graph_edits
 
     first, second, third = (resident(lineage, name) for name in ("Auth", "Pages", "Menu"))
-    lineage_domain._apply_lineage_graph_patch(lineage, {"patch": {"edges": [
+    lineage_graph_edits._apply_lineage_graph_patch(lineage, {"patch": {"edges": [
         {"id": "edge_000000000001", "type": "inheritance", "source": first, "target": third},
     ]}, "history_reason": "test fork"}, ACTOR, synchronize_external_projections=False)
     family = ok("Familize", {"lineage_id": lineage, "resident_ids": [first, second, third]}, key="familize-move")
@@ -466,7 +466,7 @@ def test_unfamilize_stops_a_busy_steward_first_and_changes_nothing_while_it_is_s
     :design: decision_44cf587c1721
     """
 
-    from management_portal.society_service import lineage_domain, resident_lifecycle_domain
+    from management_portal.society_service import lineage_resident_controls, resident_lifecycle_domain
     from management_portal.society_service.templates import familize as family_familize
 
     first, second = (resident(lineage, name) for name in ("Front", "Back"))
@@ -480,7 +480,7 @@ def test_unfamilize_stops_a_busy_steward_first_and_changes_nothing_while_it_is_s
         return {}
 
     monkeypatch.setattr(resident_lifecycle_domain, "resident_has_pending_work", lambda resident_id: resident_id in busy)
-    monkeypatch.setattr(lineage_domain, "quiesce_lineage_resident", quiesce)
+    monkeypatch.setattr(lineage_resident_controls, "quiesce_lineage_resident", quiesce)
     monkeypatch.setattr(family_familize, "ROLE_STOP_WAIT_SECONDS", 0.0)
 
     still = run("Unfamilize", {"lineage_id": lineage, "family_id": family["family_id"]})
@@ -506,7 +506,7 @@ def test_a_family_speaks_to_its_steward_only_as_its_facade(lineage, charters, mo
     :design: decision_44cf587c1721
     """
 
-    from management_portal.society_service import lineage_domain, resident_domain
+    from management_portal.society_service import lineage_domain, lineage_resident_controls, resident_domain
     from management_portal.society_service.family_familize import facade_speaking_to
     from tests.cases.isa_test_support import ACTOR
 
@@ -527,6 +527,9 @@ def test_a_family_speaks_to_its_steward_only_as_its_facade(lineage, charters, mo
 
     monkeypatch.setattr(lineage_domain, "dispatch_lineage_program_event", observe_dispatch)
     sent = []
+    monkeypatch.setattr(lineage_resident_controls, "_send_node_message", lambda node, prompt, actor, **options: sent.append(
+        (str(node.get("id") or ""), actor, prompt),
+    ) or {"message_id": "msg_" + f"{len(sent):032x}"})
     monkeypatch.setattr(lineage_domain, "_send_node_message", lambda node, prompt, actor, **options: sent.append(
         (str(node.get("id") or ""), actor, prompt),
     ) or {"message_id": "msg_" + f"{len(sent):032x}"})

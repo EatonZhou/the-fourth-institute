@@ -59,7 +59,7 @@ def members(tmp_path, monkeypatch):
 
     monkeypatch.setattr(lineage_aggregate, 'read_lineage', lambda _, **_kwargs: {'lineage_id': lineage})
     monkeypatch.setattr(lineage_aggregate, 'ensure_manager', ensure_manager)
-    monkeypatch.setattr(graph_host.lineage_domain, '_lineage_dir', lambda _: folder)
+    monkeypatch.setattr(graph_host.lineage_state, '_lineage_dir', lambda _: folder)
     monkeypatch.setattr(workspace.resident_lineage_host_port, 'prepare_lineage_deletion', graph_host.ResidentLineageHost.prepare_lineage_deletion)
 
     def settled(_):

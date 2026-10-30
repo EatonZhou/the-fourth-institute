@@ -10,6 +10,7 @@ import pytest
 from management_portal.execution.agent_data_store import get_agent_data_store
 from management_portal.society_service import (
     lineage_domain,
+    lineage_resident_nodes,
     resident_backend,
     resident_domain,
     resident_lifecycle_steps_domain,
@@ -175,7 +176,7 @@ def test_move_empty_source_rolls_back_leader_membership_and_outbox(teams, monkey
     def fail(*args, **kwargs):
         raise ValueError("destination commit failed")
 
-    monkeypatch.setattr(lineage_domain, "_append_registered_resident_node_locked", fail)
+    monkeypatch.setattr(lineage_resident_nodes, "_append_registered_resident_node_locked", fail)
     assert "destination commit failed" in failure(call)["message"]
     unchanged(singleton, before)
 

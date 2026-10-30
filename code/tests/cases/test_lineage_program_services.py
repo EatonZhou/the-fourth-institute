@@ -14,6 +14,7 @@ from management_portal.society_service import (
     lineage_program_backlog,
     lineage_program_runtime,
     lineage_program_services as services,
+    lineage_resident_controls,
 )
 from management_portal.society_service import lineage_aggregate
 from tests.cases import society_service_test_support as support
@@ -61,6 +62,9 @@ def test_constructed_ports_keep_domain_authorization_and_scope_lifetime(monkeypa
 
     receipt = {"message_id": "original-input"}
     options = {"idempotency_key": "original-delivery"}
+    monkeypatch.setattr(lineage_resident_controls, "_send_node_message", lambda *args, **kwargs: (
+        calls.append((args, kwargs)) or receipt
+    ))
     monkeypatch.setattr(domain, "_send_node_message", lambda *args, **kwargs: (
         calls.append((args, kwargs)) or receipt
     ))

@@ -8,7 +8,7 @@ from management_portal.society_service import lineage_operators, lineage_program
 from management_portal.society_service.lineage_program_packet_routing import packet_envelopes
 from tests.cases.test_lineage_generic_primitives import primitive_store  # noqa: F401
 from tests.cases import society_service_test_support as support
-from management_portal.society_service import lineage_domain
+from management_portal.society_service import lineage_domain, lineage_lifecycle
 
 RESIDENT = "resident_111111111111"
 
@@ -125,7 +125,7 @@ def test_event_fanout_waits_for_both_packet_branches_before_reducing(primitive_s
              ("filter_left", "reducer_join"), ("filter_right", "reducer_join"), ("reducer_join", RESIDENT)]
     wires = [{"id": f"wire_branch_{i}", "kind": "route", "source": source, "target": target, "config": {"include_envelope": False}}
              for i, (source, target) in enumerate(pairs)]
-    lineage = lineage_domain.create_lineage({"title": "Packet join", "nodes": [{"id": RESIDENT, "title": "Consumer", "provider": "codex"}],
+    lineage = lineage_lifecycle.create_lineage({"title": "Packet join", "nodes": [{"id": RESIDENT, "title": "Consumer", "provider": "codex"}],
                                              "program": {"components": components, "wires": wires}}, "sample_admin")
     result = lineage_domain.emit_program_manual_event(lineage["lineage_id"], {"event_source_id": "event_source_start", "prompt": "Input"}, "sample_admin")
     assert result["matched_count"] == 2

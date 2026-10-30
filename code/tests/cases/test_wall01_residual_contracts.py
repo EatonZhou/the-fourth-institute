@@ -90,21 +90,21 @@ def test_empty_lineage_delete_releases_state_lock_before_external_effects(
     lineage_store, monkeypatch,
 ):
     """空 Lineage 删除在清理目录前释放状态锁"""
-    from management_portal.society_service import invariant_locks, lineage_domain
+    from management_portal.society_service import invariant_locks, lineage_lifecycle
 
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         {"title": "Isolated residual lock contract", "nodes": [], "edges": []},
         "sample_admin",
     )
     observed = []
-    move = lineage_domain._purge_deleted_lineage_folder
+    move = lineage_lifecycle._purge_deleted_lineage_folder
 
     def observe_move(*args, **kwargs):
         observed.append(("filesystem_purge", invariant_locks.lock_held()))
         return move(*args, **kwargs)
 
-    monkeypatch.setattr(lineage_domain, "_purge_deleted_lineage_folder", observe_move)
-    deleted = lineage_domain.delete_lineage(created["lineage_id"], "sample_admin")
+    monkeypatch.setattr(lineage_lifecycle, "_purge_deleted_lineage_folder", observe_move)
+    deleted = lineage_lifecycle.delete_lineage(created["lineage_id"], "sample_admin")
     assert deleted["lineage_id"] == created["lineage_id"]
     assert observed == [("filesystem_purge", False)]
 
@@ -113,13 +113,13 @@ def test_empty_lineage_delete_retries_the_same_intent_after_move_failure(
     lineage_store, monkeypatch,
 ):
     """空 Lineage 删除清理失败后复用原意图重试"""
-    from management_portal.society_service import lineage_domain
+    from management_portal.society_service import lineage_graph_edits, lineage_lifecycle, lineage_state
 
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         {"title": "Retryable empty deletion", "nodes": [], "edges": []},
         "sample_admin",
     )
-    move = lineage_domain._purge_deleted_lineage_folder
+    move = lineage_lifecycle._purge_deleted_lineage_folder
     attempts = []
 
     def fail_once(*args, **kwargs):
@@ -128,21 +128,21 @@ def test_empty_lineage_delete_retries_the_same_intent_after_move_failure(
             raise OSError("isolated move failure")
         return move(*args, **kwargs)
 
-    monkeypatch.setattr(lineage_domain, "_purge_deleted_lineage_folder", fail_once)
+    monkeypatch.setattr(lineage_lifecycle, "_purge_deleted_lineage_folder", fail_once)
     with pytest.raises(OSError, match="isolated move failure"):
-        lineage_domain.delete_lineage(created["lineage_id"], "sample_admin")
+        lineage_lifecycle.delete_lineage(created["lineage_id"], "sample_admin")
 
     intent = lineage_aggregate.lineage_deletion_intent(created["lineage_id"])
     assert intent["phase"] == "retryable"
     assert intent["operation_id"].startswith("lineage-delete_")
-    with pytest.raises(lineage_domain.LineageConflictError, match="deletion is in progress"):
-        lineage_domain.update_lineage(
+    with pytest.raises(lineage_state.LineageConflictError, match="deletion is in progress"):
+        lineage_graph_edits.update_lineage(
             created["lineage_id"],
             {**created, "title": "must not revive"},
             "sample_admin",
         )
 
-    deleted = lineage_domain.delete_lineage(created["lineage_id"], "sample_admin")
+    deleted = lineage_lifecycle.delete_lineage(created["lineage_id"], "sample_admin")
     assert deleted["operation_id"] == intent["operation_id"]
     assert len(attempts) == 2
     assert not lineage_aggregate.lineage_deletion_intent(created["lineage_id"])
@@ -155,13 +155,13 @@ def test_empty_lineage_delete_fences_concurrent_update_without_holding_state_loc
     lineage_store, monkeypatch,
 ):
     """空 Lineage 删除执行外部操作时无状态锁且阻止并发更新"""
-    from management_portal.society_service import invariant_locks, lineage_domain
+    from management_portal.society_service import invariant_locks, lineage_graph_edits, lineage_lifecycle, lineage_state
 
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         {"title": "Concurrent empty deletion", "nodes": [], "edges": []},
         "sample_admin",
     )
-    move = lineage_domain._purge_deleted_lineage_folder
+    move = lineage_lifecycle._purge_deleted_lineage_folder
     move_started = threading.Event()
     release_move = threading.Event()
     outcome = {}
@@ -174,22 +174,22 @@ def test_empty_lineage_delete_fences_concurrent_update_without_holding_state_loc
 
     def delete():
         try:
-            outcome["deleted"] = lineage_domain.delete_lineage(
+            outcome["deleted"] = lineage_lifecycle.delete_lineage(
                 created["lineage_id"], "sample_admin"
             )
         except BaseException as exc:
             outcome["error"] = exc
 
-    monkeypatch.setattr(lineage_domain, "_purge_deleted_lineage_folder", blocked_move)
+    monkeypatch.setattr(lineage_lifecycle, "_purge_deleted_lineage_folder", blocked_move)
     worker = threading.Thread(target=delete)
     worker.start()
     assert move_started.wait(timeout=5)
     try:
         with pytest.raises(
-            lineage_domain.LineageConflictError,
+            lineage_state.LineageConflictError,
             match="deletion is in progress",
         ):
-            lineage_domain.update_lineage(
+            lineage_graph_edits.update_lineage(
                 created["lineage_id"],
                 {**created, "title": "concurrent resurrection"},
                 "sample_admin",

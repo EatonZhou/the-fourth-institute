@@ -1417,7 +1417,7 @@ def test_withdrawing_or_stopping_a_relayed_request_reaches_the_member_doing_the_
     monkeypatch.setattr(family_facade, "is_facade", lambda record: (record or {}).get("resident_id") in links)
     monkeypatch.setattr(family_facade, "relay_links", lambda record: links.get(record["resident_id"], {}))
     monkeypatch.setattr(execution, "lineage_of_resident", lambda _: "lineage_000000000001")
-    monkeypatch.setattr(execution, "domain", lambda: SimpleNamespace(
+    monkeypatch.setattr(execution, "lineage_resident_controls", lambda: SimpleNamespace(
         cancel_lineage_resident_execution=cancel,
     ))
     monkeypatch.setattr(execution, "protocol", lambda: SimpleNamespace(

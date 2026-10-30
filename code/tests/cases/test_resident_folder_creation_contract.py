@@ -22,7 +22,11 @@ from management_portal.execution.agent_data_store import (
 )
 from management_portal.society_service import (
     invariant_locks,
-    lineage_domain,
+    lineage_state,
+    lineage_reads,
+    lineage_resident_nodes,
+    lineage_lifecycle,
+    lineage_graph_edits,
     resident_domain,
     resident_lineage,
     resident_execution_work,
@@ -35,7 +39,7 @@ from management_portal.society_service import resident_runtime_domain
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-CANONICAL_RESIDENT_TARGETS = lineage_domain._resident_targets
+CANONICAL_RESIDENT_TARGETS = lineage_state._resident_targets
 
 
 from management_portal.society_service import (
@@ -61,7 +65,7 @@ def future_creation_store(
     lineage_root = tmp_path / "portal_lineages"
     lineage_root.mkdir()
     monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", lineage_root)
-    monkeypatch.setattr(lineage_domain, "LINEAGE_FOLDER_ROOT", lineage_root / "lineages")
+    monkeypatch.setattr(lineage_state, "LINEAGE_FOLDER_ROOT", lineage_root / "lineages")
     monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(lineage_root / "lineages"))
     # Deleted Residents' quota overrides are forgotten in the Execution store.
     monkeypatch.setattr(execution_port, "forget_binding_quota_overrides", lambda binding_ids: {"removed": 0})
@@ -87,7 +91,7 @@ def _new_session_payload(title: str) -> dict:
 def _delete_member(resident_id: str, actor: str = "sample_admin") -> dict:
     """Delete one Lineage member the way DeleteResident does."""
     lineage_id = resident_catalog.get_catalog().get(resident_id)["lineage_id"]
-    return lineage_domain.delete_lineage_graph_objects(
+    return lineage_graph_edits.delete_lineage_graph_objects(
         lineage_id, {"resident_ids": [resident_id]}, actor, include_lineage=False,
     )
 
@@ -101,11 +105,11 @@ def test_registration_creates_identity_without_synthetic_message(
     parent = resident_domain.register_resident(_new_session_payload("Parent"), "sample_admin")
     payload = _new_session_payload("Registered without task")
     if member:
-        created = lineage_domain.create_lineage_resident(parent["lineage_id"], payload, "sample_admin")
+        created = lineage_resident_nodes.create_lineage_resident(parent["lineage_id"], payload, "sample_admin")
     else:
         created = resident_domain.register_resident(payload, "sample_admin")
     resident = created.get("resident") or created
-    lineage = created.get("lineage") or lineage_domain.get_lineage(
+    lineage = created.get("lineage") or lineage_reads.get_lineage(
         resident["lineage_id"], "sample_admin"
     )
     assert any(
@@ -130,7 +134,7 @@ def test_registration_does_not_hydrate_unrelated_residents(
     monkeypatch.setattr(resident_lineage, "all", unexpected_catalog_hydration)
     payload = _new_session_payload("Scoped registration")
     if member:
-        created = lineage_domain.create_lineage_resident(parent["lineage_id"], payload, "sample_admin")["resident"]
+        created = lineage_resident_nodes.create_lineage_resident(parent["lineage_id"], payload, "sample_admin")["resident"]
     else:
         created = resident_domain.register_resident(payload, "sample_admin")
     assert created["resident_id"] != parent["resident_id"]
@@ -172,7 +176,7 @@ def test_slow_registration_preparation_does_not_block_other_residents(
     def register(title):
         payload = _new_session_payload(title)
         if member:
-            return lineage_domain.create_lineage_resident(parent["lineage_id"], payload, "sample_admin")["resident"]
+            return lineage_resident_nodes.create_lineage_resident(parent["lineage_id"], payload, "sample_admin")["resident"]
         return resident_domain.register_resident(payload, "sample_admin")
 
     with ThreadPoolExecutor(max_workers=2) as pool:
@@ -243,10 +247,10 @@ def test_hatg_registration_keeps_a_creation_committed_during_its_preparation(fut
         prepare(record)
         if record["title"] == "Prepared creation":
             prepared.append(record["resident_id"])
-            lineage_domain.create_lineage_resident(lineage_id, _new_session_payload("Concurrent node"), "sample_admin")
+            lineage_resident_nodes.create_lineage_resident(lineage_id, _new_session_payload("Concurrent node"), "sample_admin")
 
     monkeypatch.setattr(resident_workspace_domain, "ensure_resident_workspace", graph_changed_during_preparation)
-    created = lineage_domain.create_lineage_resident(
+    created = lineage_resident_nodes.create_lineage_resident(
         lineage_id, _new_session_payload("Prepared creation"), "sample_admin",
     )["resident"]
     assert prepared == [created["resident_id"]]
@@ -264,7 +268,7 @@ def test_member_move_commits_graphs_then_recovers_unlocked_file_transfer(future_
     monkeypatch.setattr(project_folders, "project_root_for_id", lambda _: future_creation_store)
     source = resident_domain.register_resident(_new_session_payload("Move source"), "sample_admin")
     destination = resident_domain.register_resident(_new_session_payload("Move destination"), "sample_admin")
-    member = lineage_domain.create_lineage_resident(
+    member = lineage_resident_nodes.create_lineage_resident(
         source["lineage_id"], _new_session_payload("Moving member"), "sample_admin",
     )["resident"]
     resident_id = member["resident_id"]
@@ -322,7 +326,7 @@ def test_project_edit_does_not_move_the_lineage_owned_folder(future_creation_sto
     reloaded = resident_record_domain.find_resident(record["resident_id"])
     assert reloaded["workspace_path"] == original
     assert reloaded["project_id"] == record["project_id"]
-    assert lineage_domain.get_lineage(record["lineage_id"], "sample_admin")["project_id"] == record["project_id"]
+    assert lineage_reads.get_lineage(record["lineage_id"], "sample_admin")["project_id"] == record["project_id"]
 
 
 def test_reset_commits_intent_before_archiving_conversation(future_creation_store, monkeypatch):
@@ -363,7 +367,7 @@ def test_registration_failure_rolls_back_graph_and_identity(future_creation_stor
     """注册时身份提交失败会回滚新建的 Lineage 和 Resident 目录"""
     before = resident_catalog.get_catalog().snapshot()
     lineage_ids = []
-    initialize = lineage_domain.initialize_resident_lineage
+    initialize = lineage_lifecycle.initialize_resident_lineage
 
     def capture(record, actor, **options):
         lineage_ids.append(record["lineage_id"])
@@ -372,7 +376,7 @@ def test_registration_failure_rolls_back_graph_and_identity(future_creation_stor
     def fail(record):
         raise RuntimeError("identity commit failed")
 
-    monkeypatch.setattr(lineage_domain, "initialize_resident_lineage", capture)
+    monkeypatch.setattr(lineage_lifecycle, "initialize_resident_lineage", capture)
     monkeypatch.setattr(resident_record_domain, "save_resident_record", fail)
     with pytest.raises(RuntimeError, match="identity commit failed"):
         resident_domain.register_resident(_new_session_payload("Rollback registration"), "sample_admin")
@@ -401,7 +405,7 @@ def test_failed_registration_archives_only_new_resident_folder(future_creation_s
 
     monkeypatch.setattr(resident_workspace_domain, "ensure_resident_workspace", interrupted)
     with pytest.raises(RuntimeError, match="preparation interrupted"):
-        lineage_domain.create_lineage_resident(
+        lineage_resident_nodes.create_lineage_resident(
             parent["lineage_id"], _new_session_payload("Unpublished member"), "sample_admin",
         )
     assert created[0].exists(), "Failure must leave recovery evidence, not rmtree"
@@ -424,7 +428,7 @@ def _add_created_resident_to_lineage(
 ) -> None:
     created_resident_record = resident_catalog.get_catalog().get(created_resident_id)
     created_resident_record["workspace_path"] = root["workspace_path"]
-    updated = lineage_domain.add_registered_resident_node(
+    updated = lineage_resident_nodes.add_registered_resident_node(
         created_resident_record,
         actor,
     )
@@ -617,12 +621,12 @@ def test_resident_lineage_initialization_preserves_project(
     )
     persisted: list[dict] = []
     monkeypatch.setattr(
-        lineage_domain,
+        lineage_state,
         "_persist_lineage_state",
         lambda _previous, lineage, _reason: persisted.append(lineage),
     )
 
-    lineage = lineage_domain.initialize_resident_lineage(
+    lineage = lineage_lifecycle.initialize_resident_lineage(
         {
             "resident_id": "resident_123456789abc",
             "lineage_id": "lineage_123456789abc",
@@ -703,7 +707,7 @@ def test_new_resident_lineage_uses_the_registration_transaction_identity(
 ) -> None:
     """注册 Resident 时先规范化 Lineage 图，再在同一事务中提交 Resident 身份"""
     observed_catalog_state: list[bool] = []
-    normalize = lineage_domain._normalize_lineage_payload
+    normalize = lineage_state._normalize_lineage_payload
 
     def capture_registration_order(payload, previous, actor, **options):
         resident_id = str((payload.get("nodes") or [{}])[0].get("resident_id") or "")
@@ -716,7 +720,7 @@ def test_new_resident_lineage_uses_the_registration_transaction_identity(
         return normalize(payload, previous, actor, **options)
 
     monkeypatch.setattr(
-        lineage_domain,
+        lineage_state,
         "_normalize_lineage_payload",
         capture_registration_order,
     )
@@ -770,10 +774,10 @@ def test_lineage_project_move_reprojects_resident_and_workspace_resources(
     record = resident_domain.register_resident(payload, "sample_admin")
     lineage_id = record["lineage_id"]
     resident_id = record["resident_id"]
-    canonical = lineage_domain._lineage_dir(lineage_id)
+    canonical = lineage_state._lineage_dir(lineage_id)
     stored = resident_catalog.get_catalog().get(resident_id)
 
-    moved = lineage_domain.update_lineage_metadata(
+    moved = lineage_lifecycle.update_lineage_metadata(
         lineage_id,
         {
             "expected_revision": 1,
@@ -810,7 +814,7 @@ def test_lineage_project_move_reprojects_resident_and_workspace_resources(
         for binding in [queued["owned_workspace"], *queued.get("workspace_bindings", [])]
     }
 
-    remapped = lineage_domain.update_lineage_metadata(
+    remapped = lineage_lifecycle.update_lineage_metadata(
         lineage_id,
         {
             "expected_revision": moved["revision"],
@@ -854,7 +858,7 @@ def test_leader_resident_rename_preserves_lineage_identity_and_refreshes_hatg(
     lineage_id = record["lineage_id"]
     resident_id = record["resident_id"]
     # Prime the Lineage read cache before changing the Resident projection.
-    initial = lineage_domain.get_lineage(lineage_id, "sample_admin")
+    initial = lineage_reads.get_lineage(lineage_id, "sample_admin")
     assert initial["nodes"][0]["title"] == "Before rename"
 
     development_workspace = future_creation_store / "development-workspace"
@@ -881,10 +885,10 @@ def test_leader_resident_rename_preserves_lineage_identity_and_refreshes_hatg(
     assert resident_catalog.get_catalog().get(resident_id)["workspace_bindings"] == bindings_before
     assert [
         item["lineage_id"]
-        for item in lineage_domain.list_lineages("sample_admin")["lineages"]
+        for item in lineage_reads.list_lineages("sample_admin")["lineages"]
     ] == [lineage_id]
 
-    refreshed = lineage_domain.get_lineage(lineage_id, "sample_admin")
+    refreshed = lineage_reads.get_lineage(lineage_id, "sample_admin")
     resident_node = next(
         item
         for item in refreshed["nodes"]
@@ -919,12 +923,12 @@ def test_rename_instructions_update_canonical_title_and_replay(future_creation_s
     reset_kernels()
     record = resident_domain.register_resident(_new_session_payload("Original name"), "sample_admin")
     resident_id, lineage_id = record["resident_id"], record["lineage_id"]
-    before = lineage_domain.get_lineage(lineage_id, "sample_admin")
+    before = lineage_reads.get_lineage(lineage_id, "sample_admin")
     caller = resident_id if entry == "harness" else "sample_admin"
     result = _rename(name, record, "Renamed identity", key="rename-once",
                      version={lineage_id: before["revision"]}, caller=caller, entry=entry)
     assert result.status == "committed", result.error
-    after = lineage_domain.get_lineage(lineage_id, "sample_admin")
+    after = lineage_reads.get_lineage(lineage_id, "sample_admin")
     stored = resident_catalog.get_catalog().get(resident_id)
     node = next(node for node in after["nodes"] if node["id"] == resident_id)
     assert after["revision"] == before["revision"] + (name == "UpdateLineage")
@@ -941,7 +945,7 @@ def test_rename_instructions_update_canonical_title_and_replay(future_creation_s
     replay = _rename(name, record, "Renamed identity", key="rename-once",
                      version={lineage_id: before["revision"]}, caller=caller, entry=entry)
     assert replay.replayed is True
-    assert lineage_domain.get_lineage(lineage_id, "sample_admin")["revision"] == after["revision"]
+    assert lineage_reads.get_lineage(lineage_id, "sample_admin")["revision"] == after["revision"]
 
 
 def test_rename_is_refused_when_the_authorization_system_denies_the_target(future_creation_store, monkeypatch):
@@ -979,7 +983,7 @@ def test_a_resident_can_rename_another_member_of_its_lineage(future_creation_sto
 
     reset_kernels()
     caller = resident_domain.register_resident(_new_session_payload("Caller"), "sample_admin")
-    member = lineage_domain.create_lineage_resident(
+    member = lineage_resident_nodes.create_lineage_resident(
         caller["lineage_id"], _new_session_payload("Member"), "sample_admin",
     )["resident"]
     result = _rename("UpdateResident", member, "Renamed member", key="rename-member",
@@ -1137,12 +1141,12 @@ def test_hatg_graph_rename_updates_the_exact_resident_title(
     created_resident_id = detail["resident_id"]
     _add_created_resident_to_lineage(record, created_resident_id)
 
-    current = lineage_domain.get_lineage(record["lineage_id"], "sample_admin")
+    current = lineage_reads.get_lineage(record["lineage_id"], "sample_admin")
     child = next(
         node for node in current["nodes"] if node.get("id") == created_resident_id
     )
     child["title"] = "Evidence review"
-    updated = lineage_domain.update_lineage(
+    updated = lineage_graph_edits.update_lineage(
         record["lineage_id"],
         {
             "lineage": current,
@@ -1160,7 +1164,7 @@ def test_hatg_graph_rename_updates_the_exact_resident_title(
         if node.get("id") == created_resident_id
     )["title"] == "Evidence review"
 
-    reloaded = lineage_domain.get_lineage(record["lineage_id"], "sample_admin")
+    reloaded = lineage_reads.get_lineage(record["lineage_id"], "sample_admin")
     assert next(
         node
         for node in reloaded["nodes"]
@@ -1187,7 +1191,7 @@ def test_hatg_rename_rolls_back_resident_when_graph_write_fails(
     created_resident_id = str(detail["resident_id"])
     _add_created_resident_to_lineage(record, created_resident_id)
     lineage_id = str(record["lineage_id"])
-    current = lineage_domain.get_lineage(lineage_id, "sample_admin")
+    current = lineage_reads.get_lineage(lineage_id, "sample_admin")
     next(
         node
         for node in current["nodes"]
@@ -1205,7 +1209,7 @@ def test_hatg_rename_rolls_back_resident_when_graph_write_fails(
     monkeypatch.setitem(catalog.__dict__, "upsert", persist_then_fail)
 
     with pytest.raises(RuntimeError, match="injected graph write failure"):
-        lineage_domain.update_lineage(
+        lineage_graph_edits.update_lineage(
             lineage_id,
             {
                 "lineage": current,
@@ -1852,11 +1856,11 @@ def test_new_hatg_member_uses_identity_from_publication_transaction(
     """HATG 新增成员的 Resident 身份在图发布事务中即可解析"""
     # The generic fixture accepts arbitrary Resident IDs. Use the production
     # resolver so a separate committed read cannot invent an unpublished member.
-    monkeypatch.setattr(lineage_domain, "_resident_targets", CANONICAL_RESIDENT_TARGETS)
+    monkeypatch.setattr(lineage_state, "_resident_targets", CANONICAL_RESIDENT_TARGETS)
     first = resident_domain.register_resident(_new_session_payload("First member"), "sample_admin")
-    graph = lineage_domain.get_lineage(first["lineage_id"], "sample_admin")
+    graph = lineage_reads.get_lineage(first["lineage_id"], "sample_admin")
 
-    result = lineage_domain.create_lineage_resident(
+    result = lineage_resident_nodes.create_lineage_resident(
         first["lineage_id"],
         {**_new_session_payload("Second member"), "expected_revision": graph["revision"]},
         "sample_admin",
@@ -1876,12 +1880,12 @@ def test_lineage_node_creation_reuses_the_same_lineage_folder(
 ) -> None:
     """在已有 Lineage 中创建 Resident 节点沿用该 Lineage 文件夹，不另建 Lineage"""
     lineage_root = future_creation_store
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         {"title": "Atomic node creation", "nodes": [], "edges": []},
         "sample_admin",
     )
 
-    result = lineage_domain.create_lineage_resident(
+    result = lineage_resident_nodes.create_lineage_resident(
         created["lineage_id"],
         {
             **_new_session_payload("Independent node"),
@@ -1918,9 +1922,9 @@ def test_direct_lineage_resident_creation_uses_default_account_unless_overridden
     source_payload = _new_session_payload("Account inheritance source")
     source_payload["backend_route_id"] = "two"
     source = resident_domain.register_resident(source_payload, "sample_admin")
-    lineage = lineage_domain.get_lineage(source["lineage_id"], "sample_admin")
+    lineage = lineage_reads.get_lineage(source["lineage_id"], "sample_admin")
 
-    inherited = lineage_domain.create_lineage_resident(
+    inherited = lineage_resident_nodes.create_lineage_resident(
         source["lineage_id"],
         {
             **_new_session_payload("Default account child"),
@@ -1928,7 +1932,7 @@ def test_direct_lineage_resident_creation_uses_default_account_unless_overridden
         },
         "sample_admin",
     )
-    overridden = lineage_domain.create_lineage_resident(
+    overridden = lineage_resident_nodes.create_lineage_resident(
         source["lineage_id"],
         {
             **_new_session_payload("Explicit account child"),
@@ -1959,7 +1963,7 @@ def test_lineage_member_creation_adds_a_resident_without_an_edge(
         "sample_admin",
     )
 
-    result = lineage_domain.create_lineage_resident(
+    result = lineage_resident_nodes.create_lineage_resident(
         root["lineage_id"],
         {
             "title": "Independent Lineage member",
@@ -2002,7 +2006,7 @@ def test_non_leader_creates_and_manages_residents_through_hatg(
     leader = resident_domain.register_resident(
         _new_session_payload("HATG permission leader"), "sample_admin",
     )
-    member = lineage_domain.create_lineage_resident(
+    member = lineage_resident_nodes.create_lineage_resident(
         leader["lineage_id"], _new_session_payload("HATG permission member"), "sample_admin",
     )
     caller_id = member["resident"]["resident_id"]
@@ -2035,7 +2039,7 @@ def test_non_leader_creates_and_manages_residents_through_hatg(
     deleted = call("DeleteResident", {"lineage_id": lineage["lineage_id"], "resident_id": child_id}, key="member-delete-resident")
     assert deleted.status == "committed", deleted.error
     assert resident_record_domain.find_resident(child_id) is None
-    remaining = lineage_domain.get_lineage(lineage["lineage_id"], caller_id)
+    remaining = lineage_reads.get_lineage(lineage["lineage_id"], caller_id)
     assert {node["id"] for node in remaining["nodes"]} == {
         leader["resident_id"], caller_id,
     }
@@ -2049,7 +2053,7 @@ def test_resident_creation_uses_current_membership_without_project_role(
     :design: decision_3e07c6d35cac"""
     monkeypatch.setattr(project_folders, "project_root_for_id", lambda _: future_creation_store)
     leader = resident_domain.register_resident(_new_session_payload("Authority root"), "sample_admin")
-    caller = lineage_domain.create_lineage_resident(
+    caller = lineage_resident_nodes.create_lineage_resident(
         leader["lineage_id"], _new_session_payload("Ordinary member"), "sample_admin",
     )["resident"]
     foreign = resident_domain.register_resident(_new_session_payload("Foreign authority root"), "sample_admin")
@@ -2093,12 +2097,12 @@ def test_lineage_resident_created_team_uses_compact_default_hatg_positions(
         _new_session_payload("Positioned root"),
         "sample_admin",
     )
-    lineage = lineage_domain.get_lineage(root["lineage_id"], "sample_admin")
-    lineage_domain.update_lineage_layout(root["lineage_id"], {
+    lineage = lineage_reads.get_lineage(root["lineage_id"], "sample_admin")
+    lineage_lifecycle.update_lineage_layout(root["lineage_id"], {
         "positions": [{"id": root["resident_id"], "x": origin[0], "y": origin[1]}],
     }, "sample_admin")
     for member_number in range(1, 10):
-        created = lineage_domain.create_lineage_resident(
+        created = lineage_resident_nodes.create_lineage_resident(
             root["lineage_id"],
             {
                 **_new_session_payload(f"Team member {member_number}"),
@@ -2132,12 +2136,12 @@ def test_independent_resident_uses_requested_anchor_and_validates_before_registr
 ) -> None:
     """指定 near_resident_id 时新 Resident 放在锚点附近且不重叠，无效放置参数在注册前被拒绝"""
     root = resident_domain.register_resident(_new_session_payload("Leader"), "sample_admin")
-    source = lineage_domain.create_lineage_resident(root["lineage_id"], {
+    source = lineage_resident_nodes.create_lineage_resident(root["lineage_id"], {
         **_new_session_payload("Handoff source"), "x": 300, "y": -250,
     }, "sample_admin")["node"]
     sizes = {source["id"]: {"width": 32, "height": 28}}
     for index in range(5):
-        result = lineage_domain.create_lineage_resident(root["lineage_id"], {
+        result = lineage_resident_nodes.create_lineage_resident(root["lineage_id"], {
             **_new_session_payload(f"Handoff recipient {index}"),
             "near_resident_id": source["id"],
             "placement": {"node_sizes": sizes, "child_size": {"width": 32, "height": 28}},
@@ -2162,7 +2166,7 @@ def test_independent_resident_uses_requested_anchor_and_validates_before_registr
         {"placement": {"child_size": {"width": 0, "height": 28}}},
     ]:
         with pytest.raises(ValueError):
-            lineage_domain.create_lineage_resident(root["lineage_id"], {
+            lineage_resident_nodes.create_lineage_resident(root["lineage_id"], {
                 **_new_session_payload("Invalid placement"), **invalid,
             }, "sample_admin")
 
@@ -2170,23 +2174,23 @@ def test_independent_resident_uses_requested_anchor_and_validates_before_registr
 
 def test_existing_resident_id_cannot_cross_lineage_boundaries(future_creation_store: Path) -> None:
     """已有 Resident 不能作为其他 Lineage 的主体，也不能经图补丁加入其他 Lineage"""
-    first = lineage_domain.create_lineage({"title": "First", "nodes": [], "edges": []}, "sample_admin")
-    existing = lineage_domain.create_lineage_resident(first["lineage_id"], _new_session_payload("First resident"), "sample_admin")
-    second = lineage_domain.create_lineage({"title": "Second", "nodes": [], "edges": []}, "sample_admin")
+    first = lineage_lifecycle.create_lineage({"title": "First", "nodes": [], "edges": []}, "sample_admin")
+    existing = lineage_resident_nodes.create_lineage_resident(first["lineage_id"], _new_session_payload("First resident"), "sample_admin")
+    second = lineage_lifecycle.create_lineage({"title": "Second", "nodes": [], "edges": []}, "sample_admin")
     resident_id = existing["resident"]["resident_id"]
-    assert lineage_domain.authorize_lineage_resident_principal(first["lineage_id"], resident_id) == resident_id
+    assert lineage_state.authorize_lineage_resident_principal(first["lineage_id"], resident_id) == resident_id
     with pytest.raises(PermissionError, match="不属于目标 Lineage"):
-        lineage_domain.authorize_lineage_resident_principal(second["lineage_id"], resident_id)
+        lineage_state.authorize_lineage_resident_principal(second["lineage_id"], resident_id)
     with pytest.raises(ValueError, match="不能独立增加或移除"):
-        lineage_domain.apply_lineage_graph_patch(second["lineage_id"], {
+        lineage_graph_edits.apply_lineage_graph_patch(second["lineage_id"], {
             "patch": {"nodes": [existing["node"]]}, "expected_revision": second["revision"],
         }, "sample_admin")
 
 
 def test_fork_appears_in_lineage_without_separate_graph_membership(future_creation_store: Path) -> None:
     """fork 出的 Resident 直接出现在来源 Lineage 图中，不能经图补丁单独增删"""
-    created = lineage_domain.create_lineage({"title": "Fork family", "nodes": [], "edges": []}, "sample_admin")
-    root_result = lineage_domain.create_lineage_resident(created["lineage_id"], {
+    created = lineage_lifecycle.create_lineage({"title": "Fork family", "nodes": [], "edges": []}, "sample_admin")
+    root_result = lineage_resident_nodes.create_lineage_resident(created["lineage_id"], {
         **_new_session_payload("Fork root"), "x": 300, "y": -250,
     }, "sample_admin")
     root = root_result["resident"]
@@ -2211,14 +2215,14 @@ def test_fork_appears_in_lineage_without_separate_graph_membership(future_creati
     assert (nodes[generated_id]["x"], nodes[generated_id]["y"]) != (300, -250)
     assert before.get("edges", []) == root_result["lineage"].get("edges", [])
     assert before["leader_resident_id"] == root_result["lineage"]["leader_resident_id"]
-    viewed = lineage_domain.get_lineage(created["lineage_id"], "sample_admin")
+    viewed = lineage_reads.get_lineage(created["lineage_id"], "sample_admin")
     assert {node["id"] for node in viewed["nodes"]} == set(nodes)
     assert store.lineage_definition(created["lineage_id"]) == before
-    assert lineage_domain.authorize_lineage_resident_principal(created["lineage_id"], generated_id) == generated_id
+    assert lineage_state.authorize_lineage_resident_principal(created["lineage_id"], generated_id) == generated_id
     with pytest.raises(PermissionError, match="当前 Leader"):
-        lineage_domain.authorize_lineage_resident_principal(created["lineage_id"], generated_id, require_leader=True)
+        lineage_state.authorize_lineage_resident_principal(created["lineage_id"], generated_id, require_leader=True)
     with pytest.raises(ValueError, match="不能独立增加或移除"):
-        lineage_domain.apply_lineage_graph_patch(created["lineage_id"], {"patch": {"nodes": [nodes[root["resident_id"]]]}}, "sample_admin")
+        lineage_graph_edits.apply_lineage_graph_patch(created["lineage_id"], {"patch": {"nodes": [nodes[root["resident_id"]]]}}, "sample_admin")
 
 
 def _trace_prompt(record, job):

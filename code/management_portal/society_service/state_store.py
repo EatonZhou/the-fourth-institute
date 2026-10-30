@@ -433,7 +433,7 @@ class LineageDataStore:
         ):
             raise RuntimeError("Lineage data database does not match its schema")
 
-    # Read inside their own transaction by lineage_domain and resident_record_domain.
+    # Read inside their own transaction by lineage_state and resident_record_domain.
     @staticmethod
     def _lineage_definition_from_connection(connection: Any, lineage_id: str) -> dict[str, Any]:
         return lineage_data_definitions.definition_from_connection(connection, lineage_id)

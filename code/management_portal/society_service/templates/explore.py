@@ -17,14 +17,20 @@ MAX_SEEDS_PER_SET = 32
 DISMISSED_MARKER = '<!-- ' + MARKER_NAME + ' {"status":"dismissed"} -->'
 
 
-def _domain():
-    from .. import lineage_domain
+def _lineage_state():
+    from .. import lineage_state
 
-    return lineage_domain
+    return lineage_state
+
+
+def _lineage_graph_edits():
+    from .. import lineage_graph_edits
+
+    return lineage_graph_edits
 
 
 def _workspace(lineage_id, resident_id):
-    return _domain()._node_workspace_path(lineage_id, {"id": resident_id})
+    return _lineage_state()._node_workspace_path(lineage_id, {"id": resident_id})
 
 
 def _directory(explorer_id):
@@ -32,7 +38,7 @@ def _directory(explorer_id):
 
 
 def _shelf(lineage_id, explorer_id):
-    return _domain()._lineage_dir(lineage_id) / _directory(explorer_id)
+    return _lineage_state()._lineage_dir(lineage_id) / _directory(explorer_id)
 
 
 def _publish(source, target):
@@ -175,7 +181,7 @@ def sync_explorer(lineage_id, explorer_id, actor):
                     seed["config"]["dismissal_reason"] = str(dismissed["reason"])[:2000]
                 changed.append(seed["id"])
 
-        _domain().commit_lineage_edit(lineage_id, actor, edit, reason="同步探索候选")
+        _lineage_graph_edits().commit_lineage_edit(lineage_id, actor, edit, reason="同步探索候选")
         lineage = lineage_aggregate.read_lineage(lineage_id, actor=actor)
     kept = candidates(lineage)
     for path in files:
@@ -333,11 +339,11 @@ class ExploreKind:
                 _candidate_fork(source, seed["id"]) for seed in seeds
             )
 
-        _domain().commit_lineage_edit(
+        _lineage_graph_edits().commit_lineage_edit(
             ctx.lineage_id, ctx.actor, edit, reason="施加探索模板"
         )
         for path in paths:
-            _publish(workspace / path, _domain()._lineage_dir(ctx.lineage_id) / path)
+            _publish(workspace / path, _lineage_state()._lineage_dir(ctx.lineage_id) / path)
         instructions = "\n".join(
             f"{index}. {workspace / path}" for index, path in enumerate(paths, start=1)
         )

@@ -12,13 +12,13 @@ from __future__ import annotations
 
 import pytest
 
-from management_portal.society_service import lineage_domain, lineage_event_routing, lineage_primitives
+from management_portal.society_service import lineage_event_routing, lineage_lifecycle, lineage_primitives
 from management_portal.society_service import lineage_program_runtime as runtime, trigger_paths
 from tests.cases.test_lineage_generic_primitives import primitive_store, ACTOR, WORK_A, _worker  # noqa: F401
 
 
 def _lineage(wire_config: dict) -> str:
-    return lineage_domain.create_lineage({
+    return lineage_lifecycle.create_lineage({
         "title": "parallel wire", "nodes": [_worker(WORK_A)],
         "program": {
             "components": [
@@ -88,7 +88,7 @@ def test_only_a_wire_into_an_effect_can_be_parallel(primitive_store):
     """
     assert _lineage({"parallel": True})
     with pytest.raises(ValueError, match="只有指向 Effect 的 Invoke wire 可以并行投递"):
-        lineage_domain.create_lineage({
+        lineage_lifecycle.create_lineage({
             "title": "parallel to a Resident", "nodes": [_worker(WORK_A)],
             "program": {
                 "components": [{"id": "event_source_start", "kind": "event_source",

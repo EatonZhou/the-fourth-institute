@@ -19,9 +19,10 @@ from management_portal.execution.agent_data_store import get_agent_data_store
 from management_portal import conversation_index_projection
 from management_portal.society_service import (
     active_agent_projection,
-    lineage_domain,
     lineage_handoff_backend,
     lineage_primitives,
+    lineage_reads,
+    lineage_resident_nodes,
     resident_access,
     resident_domain,
     resident_execution_work,
@@ -56,7 +57,7 @@ def isolated_team(future_creation_store, tmp_path, monkeypatch):
     monkeypatch.setattr(project_folders, "project_root_for_id", lambda project_id: tmp_path)
 
     source = resident_domain.register_resident(_new_session_payload("Helper04 source"), ACTOR)
-    target = lineage_domain.create_lineage_resident(
+    target = lineage_resident_nodes.create_lineage_resident(
         source["lineage_id"], _new_session_payload("Helper04 target"), ACTOR,
     )["resident"]
     target = resident_record_domain.find_resident(target["resident_id"])
@@ -119,12 +120,12 @@ def test_human_notification_isa_persistence_idempotency_and_listing(isolated_tea
     duplicate = instruction(team, "CreateNotification", arguments).result
     assert first["created"] is True
     assert duplicate["created"] is False
-    listed = lineage_domain.list_lineage_human_notifications(ACTOR, [team.lineage_id])
+    listed = lineage_reads.list_lineage_human_notifications(ACTOR, [team.lineage_id])
     notices = [notice for lineage in listed["lineages"] for notice in lineage["notifications"]]
     assert len(notices) == 1
     assert notices[0]["message"] == "Synthetic notification"
     assert notices[0]["id"] == "human_notice_helper04"
-    denied = lineage_domain.list_lineage_human_notifications("fixture-stranger", [team.lineage_id])
+    denied = lineage_reads.list_lineage_human_notifications("fixture-stranger", [team.lineage_id])
     assert "Synthetic notification" not in json.dumps(denied)
 
 
@@ -464,7 +465,7 @@ def test_notification_index_produces_browser_contract_from_real_owner(isolated_t
     """通知索引从权威服务生成浏览器条目且不泄露他人通知"""
     team = isolated_team
     instruction(team, "CreateNotification", {"lineage_id": team.lineage_id, "title": "Helper04 browser notification", "message": "Only isolated notice bytes", "notification_id": "human_notice_helper04_browser"})
-    monkeypatch.setattr(conversation_index_projection, "get_society_service", lambda: SimpleNamespace(lineage=SimpleNamespace(list_lineage_human_notifications=lineage_domain.list_lineage_human_notifications)))
+    monkeypatch.setattr(conversation_index_projection, "get_society_service", lambda: SimpleNamespace(lineage=SimpleNamespace(list_lineage_human_notifications=lineage_reads.list_lineage_human_notifications)))
     entries = conversation_index_projection.lineage_human_notification_entries(ACTOR, {team.lineage_id})
     assert len(entries) == 1
     assert entries[0]["title"] == "Helper04 browser notification"

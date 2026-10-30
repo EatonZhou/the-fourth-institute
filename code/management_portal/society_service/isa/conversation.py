@@ -8,7 +8,7 @@ from typing import Any, Iterator
 from management_portal.hatg.contracts import InstructionError, invalid, not_found
 from management_portal.hatg.kernel import Invocation
 
-from .common import domain, lineage_of_resident, protocol
+from .common import domain, lineage_branches, lineage_of_resident, protocol
 from .. import resident_conversation_records
 
 
@@ -378,7 +378,7 @@ def absorb_context(inv: Invocation) -> dict[str, Any]:
     source = inv.argument("source_resident_id")
     target = inv.argument("target_resident_id")
     lineage_id = lineage_of_resident(target)
-    result = domain().absorb_lineage_node_context(
+    result = lineage_branches().absorb_lineage_node_context(
         lineage_id, {"source_resident_id": source, "target_resident_id": target}, inv.caller,
     )
     edge = result.get("edge") if isinstance(result.get("edge"), dict) else {}

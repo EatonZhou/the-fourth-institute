@@ -9,7 +9,7 @@ import pytest
 from management_common.projection_receipts import CommittedProjectionError
 from management_portal.execution.agent_data_store import get_agent_data_store
 from management_portal.society_service import (
-    lineage_domain,
+    lineage_resident_nodes,
     principal_hierarchy_domain,
     resident_catalog,
     resident_domain,
@@ -97,7 +97,7 @@ def test_registration_has_an_empty_independent_trace(future_creation_store, monk
     if entry in {"member", "fork"}:
         parent = resident_domain.register_resident(_new_session_payload("Parent"), "sample_admin")
         if entry == "member":
-            created = lineage_domain.create_lineage_resident(parent["lineage_id"], payload, "sample_admin")["resident"]
+            created = lineage_resident_nodes.create_lineage_resident(parent["lineage_id"], payload, "sample_admin")["resident"]
         else:
             created = resident_domain.create_resident_full_context_fork(parent["resident_id"], "sample_admin", defer_backend_start=True)
     elif entry == "personal":

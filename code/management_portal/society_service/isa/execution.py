@@ -7,7 +7,7 @@ from typing import Any
 from management_portal.hatg.contracts import InstructionError
 from management_portal.hatg.kernel import Invocation
 
-from .common import domain, lineage_of_resident, protocol
+from .common import lineage_of_resident, lineage_resident_controls, protocol
 
 
 def list_resident_states(inv: Invocation) -> dict[str, Any]:
@@ -66,7 +66,7 @@ def _change_intake(inv: Invocation, transition: str) -> dict[str, Any]:
                 last = {"previous": previous, "current": previous, "changed": False}
                 continue
             lineage_id = lineage_of_resident(resident_id)
-            result = domain().change_lineage_resident_state(
+            result = lineage_resident_controls().change_lineage_resident_state(
                 lineage_id,
                 {"resident_id": resident_id, "state_domain": "intake", "transition": transition},
                 inv.caller,
@@ -106,7 +106,7 @@ def _queue_call(function_name: str, inv: Invocation) -> dict[str, Any]:
     if inv.argument("message_id"):
         payload["message_id"] = inv.argument("message_id")
     try:
-        return getattr(domain(), function_name)(lineage_id, payload, inv.caller)
+        return getattr(lineage_resident_controls(), function_name)(lineage_id, payload, inv.caller)
     except ValueError as exc:
         text = str(exc)
         if any(word in text for word in ("已经", "不在队列", "已结束", "已开始", "not queued", "no longer")):
@@ -158,7 +158,7 @@ def cancel_input(inv: Invocation) -> dict[str, Any]:
     # The public input command resolves its durable owner, preserves terminal
     # results and handles queue-to-execution handoff under the same authority.
     try:
-        result = dict(domain().cancel_lineage_resident_execution(lineage_id, payload, inv.caller) or {})
+        result = dict(lineage_resident_controls().cancel_lineage_resident_execution(lineage_id, payload, inv.caller) or {})
     except (KeyError, ValueError) as exc:
         current = _stored_input_state(resident_id, message_id)
         if str(current.get("state") or "") in FINISHED_INPUT_STATES:

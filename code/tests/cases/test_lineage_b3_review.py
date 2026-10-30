@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from management_portal.society_service import lineage_domain as graphs
+from management_portal.society_service import lineage_lifecycle, lineage_reads
 from management_portal.society_service import lineage_program_runtime as runtime
 from management_portal.society_service import resident_conversation_stream, resident_execution_domain
 from management_portal.society_service.state_store import get_lineage_data_store
@@ -23,7 +23,7 @@ def test_versioned_multistep_external_stage_allows_other_lineage_writes(future_c
     """带版本前置条件的多步指令在外部阶段不锁 Lineage 定义，其他连接可以写入"""
     lineage_id = family("Unlocked external stage")["lineage_id"]
     store = get_lineage_data_store()
-    revision = graphs.get_lineage(lineage_id, ACTOR)["revision"]
+    revision = lineage_reads.get_lineage(lineage_id, ACTOR)["revision"]
     def external_stage():
         # A different connection can acquire the real definition row immediately.
         def probe(connection):
@@ -31,15 +31,15 @@ def test_versioned_multistep_external_stage_allows_other_lineage_writes(future_c
         with store.database.transaction() as connection:
             probe(connection)
         # Also prove that ISA does not retain in-process Lineage authorities.
-        graphs.update_lineage_metadata(lineage_id, {"description": "external progress"}, ACTOR)
+        lineage_lifecycle.update_lineage_metadata(lineage_id, {"description": "external progress"}, ACTOR)
 
     def multistep(_):
-        graphs.update_lineage_metadata(lineage_id, {"title": "first commit"}, ACTOR)
+        lineage_lifecycle.update_lineage_metadata(lineage_id, {"title": "first commit"}, ACTOR)
         with ThreadPoolExecutor(max_workers=1) as pool:
             pool.submit(external_stage).result(timeout=5)
-        graphs.update_lineage_metadata(lineage_id, {"title": "second commit"}, ACTOR)
+        lineage_lifecycle.update_lineage_metadata(lineage_id, {"title": "second commit"}, ACTOR)
     common.guard_definition_handler("ForkResident", multistep)(_inv(lineage_id, revision))
-    assert graphs.get_lineage(lineage_id, ACTOR)["description"] == "external progress"
+    assert lineage_reads.get_lineage(lineage_id, ACTOR)["description"] == "external progress"
 
 
 @pytest.mark.parametrize("status", ["completed", "failed", "cancelled"])
@@ -75,20 +75,20 @@ def test_aborted_commit_does_not_consume_version_precondition(future_creation_st
     from management_portal.hatg.contracts import InstructionError
     lineage_id = family("Aborted version check")["lineage_id"]
     store = get_lineage_data_store()
-    revision = graphs.get_lineage(lineage_id, ACTOR)["revision"]
+    revision = lineage_reads.get_lineage(lineage_id, ACTOR)["revision"]
     def handler(_):
         def abort():
-            graphs.update_lineage_metadata(lineage_id, {"title": "rolled back"}, ACTOR)
+            lineage_lifecycle.update_lineage_metadata(lineage_id, {"title": "rolled back"}, ACTOR)
             raise RuntimeError("abort")
         with pytest.raises(RuntimeError, match="abort"):
             store.transaction(abort)
         with ThreadPoolExecutor(max_workers=1) as pool:
-            pool.submit(graphs.update_lineage_metadata, lineage_id, {"title": "concurrent"}, ACTOR).result(timeout=5)
-        graphs.update_lineage_metadata(lineage_id, {"title": "must reject"}, ACTOR)
+            pool.submit(lineage_lifecycle.update_lineage_metadata, lineage_id, {"title": "concurrent"}, ACTOR).result(timeout=5)
+        lineage_lifecycle.update_lineage_metadata(lineage_id, {"title": "must reject"}, ACTOR)
     with pytest.raises(InstructionError) as error:
         common.guard_definition_handler("ForkResident", handler)(_inv(lineage_id, revision))
     assert error.value.code == "instruction.conflict"
-    assert graphs.get_lineage(lineage_id, ACTOR)["title"] == "concurrent"
+    assert lineage_reads.get_lineage(lineage_id, ACTOR)["title"] == "concurrent"
 
 
 @pytest.mark.parametrize("instruction", ["PrepareWorkspaceHandoff", "RunScript"])

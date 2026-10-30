@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import pytest
-from management_portal.society_service import lineage_domain
+from management_portal.society_service import lineage_lifecycle
 from management_portal.society_service import lineage_aggregate
 
 LINEAGE = 'lineage_0123456789ab'
@@ -19,7 +19,7 @@ def test_a_deletion_stopped_after_the_resource_tombstone_can_be_finished(monkeyp
     """
     canonical = {'lineage_id': LINEAGE, 'title': 'Interrupted', 'revision': 8}
     monkeypatch.setattr(lineage_aggregate, 'read_lineage_state', lambda rid: canonical)
-    result = lineage_domain._read_lineage_for_deletion(LINEAGE, 'sample_admin')
+    result = lineage_lifecycle._read_lineage_for_deletion(LINEAGE, 'sample_admin')
     assert result['title'] == 'Interrupted' and result['revision'] == 8
     assert canonical == {'lineage_id': LINEAGE, 'title': 'Interrupted', 'revision': 8}
 
@@ -30,11 +30,11 @@ def test_missing_canonical_lineage_stays_an_error_even_with_old_resource_observa
         raise KeyError(rid)
     monkeypatch.setattr(lineage_aggregate, 'read_lineage_state', absent)
     with pytest.raises(KeyError):
-        lineage_domain._read_lineage_for_deletion(LINEAGE, 'sample_admin')
+        lineage_lifecycle._read_lineage_for_deletion(LINEAGE, 'sample_admin')
 
 
 def test_unregistered_canonical_lineage_keeps_missing_direct_fields(monkeypatch):
     """为删除读取未登记的 Lineage 定义时不补出 owner 等缺失字段"""
     monkeypatch.setattr(lineage_aggregate, 'read_lineage_state', lambda rid: {'lineage_id': rid, 'revision': 3})
-    result = lineage_domain._read_lineage_for_deletion(LINEAGE, 'sample_admin')
+    result = lineage_lifecycle._read_lineage_for_deletion(LINEAGE, 'sample_admin')
     assert 'owner_ids' not in result and result['revision'] == 3

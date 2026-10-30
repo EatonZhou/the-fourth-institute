@@ -21,7 +21,7 @@ def test_intake_transition_uses_committed_state(monkeypatch):
     reads = []
     monkeypatch.setattr(execution, "_intake_state", lambda *_args: reads.append("state") or "closed")
     monkeypatch.setattr(execution, "lineage_of_resident", lambda _rid: "lineage")
-    monkeypatch.setattr(execution, "domain", lambda: SimpleNamespace(
+    monkeypatch.setattr(execution, "lineage_resident_controls", lambda: SimpleNamespace(
         change_lineage_resident_state=lambda *_args, **_kwargs: {"intake_state": "open"},
     ))
     args = {"resident_id": "resident_123456789abc"}
@@ -43,7 +43,7 @@ def _intake_fakes(monkeypatch, states):
 
     monkeypatch.setattr(execution, "_intake_state", lambda resident_id, _caller: states[resident_id])
     monkeypatch.setattr(execution, "lineage_of_resident", lambda _rid: "lineage")
-    monkeypatch.setattr(execution, "domain", lambda: SimpleNamespace(change_lineage_resident_state=change))
+    monkeypatch.setattr(execution, "lineage_resident_controls", lambda: SimpleNamespace(change_lineage_resident_state=change))
     return execution, transitions
 
 
@@ -105,7 +105,7 @@ def test_watch_lineage_checks_access_before_reading_revisions(monkeypatch):
     from management_portal.society_service.isa import definition
 
     accessed = []
-    monkeypatch.setattr(definition, "domain", lambda: SimpleNamespace(
+    monkeypatch.setattr(definition, "lineage_state", lambda: SimpleNamespace(
         lineage_access_projection=lambda lineage_id: accessed.append(lineage_id) or {"id": lineage_id},
         _ensure_visible=lambda *_args: (_ for _ in ()).throw(PermissionError("denied")),
     ))

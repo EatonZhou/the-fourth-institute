@@ -9,8 +9,14 @@ import pytest
 from management_portal.society_service import (
     changes,
     lineage_domain,
+    lineage_graph_edits,
+    lineage_lifecycle,
     lineage_placement,
     lineage_program,
+    lineage_program_edits,
+    lineage_reads,
+    lineage_resident_nodes,
+    lineage_state,
 )
 from management_portal.society_service import lineage_aggregate
 from tests.cases.society_service_test_support import install_resource_boundary
@@ -39,9 +45,11 @@ def component(kind, index=1, **fields):
 @pytest.fixture()
 def isolated_owner(tmp_path, monkeypatch):
     monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", tmp_path / "lineages")
-    monkeypatch.setattr(lineage_domain, "LINEAGE_FOLDER_ROOT", tmp_path / "folders")
+    monkeypatch.setattr(lineage_state, "LINEAGE_FOLDER_ROOT", tmp_path / "folders")
     monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(tmp_path / "folders"))
     install_resource_boundary(monkeypatch)
+    monkeypatch.setattr(lineage_state, "_actor_can_manage_lineage", lambda lineage, actor, **kwargs: actor == ACTOR and lineage["lineage_id"] == LINEAGE)
+    monkeypatch.setattr(lineage_reads, "_actor_can_manage_lineage", lambda lineage, actor, **kwargs: actor == ACTOR and lineage["lineage_id"] == LINEAGE)
     monkeypatch.setattr(lineage_domain, "_actor_can_manage_lineage", lambda lineage, actor, **kwargs: actor == ACTOR and lineage["lineage_id"] == LINEAGE)
     monkeypatch.setattr(lineage_aggregate, "_actor_can_manage_lineage", lambda lineage, actor, **kwargs: actor == ACTOR and lineage["lineage_id"] == LINEAGE)
     monkeypatch.setattr(
@@ -49,9 +57,10 @@ def isolated_owner(tmp_path, monkeypatch):
         "read_lineage",
         lambda lineage_id, **_kwargs: lineage_aggregate.read_lineage_state(lineage_id),
     )
+    monkeypatch.setattr(lineage_reads, "get_lineage", lambda lineage_id, actor, **kwargs: lineage_aggregate.read_lineage_state(lineage_id))
     monkeypatch.setattr(lineage_domain, "get_lineage", lambda lineage_id, actor, **kwargs: lineage_aggregate.read_lineage_state(lineage_id))
     monkeypatch.setattr(changes, "lineage_changed", lambda *args, **kwargs: None)
-    persist = lineage_domain._persist_lineage_state
+    persist = lineage_state._persist_lineage_state
 
     def isolated_persist(previous, lineage, reason, **kwargs):
         kwargs.update(synchronize_resource_identities=False, synchronize_resident_identities=False)
@@ -60,11 +69,11 @@ def isolated_owner(tmp_path, monkeypatch):
     def forbidden(*args, **kwargs):
         pytest.fail("Lifecycle/AI side effect is forbidden in the helper fixture")
 
-    monkeypatch.setattr(lineage_domain, "_persist_lineage_state", isolated_persist)
-    monkeypatch.setattr(lineage_domain, "_create_packet_operator_executor", forbidden)
-    monkeypatch.setattr(lineage_domain, "_execute_program_contract_cleanup", lambda *args, **kwargs: [])
+    monkeypatch.setattr(lineage_state, "_persist_lineage_state", isolated_persist)
+    monkeypatch.setattr(lineage_program_edits, "_create_packet_operator_executor", forbidden)
+    monkeypatch.setattr(lineage_state, "_execute_program_contract_cleanup", lambda *args, **kwargs: [])
     base = {"lineage_id": LINEAGE, "lineage_membership": "formal", "title": "wall07 isolated", "nodes": [], "edges": []}
-    state = lineage_domain._normalize_lineage_payload(base, base, ACTOR)
+    state = lineage_state._normalize_lineage_payload(base, base, ACTOR)
     isolated_persist(None, state, "test fixture initial facts")
     return lineage_aggregate.read_lineage_state
 
@@ -98,7 +107,7 @@ def test_resident_anchor_priority_without_lifecycle(subtests, isolated_portal_ca
                 selected = nodes[0]
                 actual = lineage_placement.node_position(lineage, selected, payload)
             else:
-                actual = lineage_domain._new_lineage_node_position(lineage, payload)
+                actual = lineage_resident_nodes._new_lineage_node_position(lineage, payload)
             if anchor in ("empty", "explicit"):
                 assert actual == (selected["x"], selected["y"])
             else:
@@ -150,7 +159,7 @@ def test_program_unconnected_and_competing_anchors(anchor):
 def test_single_create_real_owner_assigns_and_preserves_free_coordinates(isolated_owner, kind):
     """单个创建任一类组件时保留请求给出的空闲坐标并提升 revision"""
     previous = isolated_owner(LINEAGE)
-    created = lineage_domain.create_lineage_program_component(LINEAGE, {**component(kind), "expected_revision": previous["revision"], "x": 70, "y": 65}, ACTOR)
+    created = lineage_program_edits.create_lineage_program_component(LINEAGE, {**component(kind), "expected_revision": previous["revision"], "x": 70, "y": 65}, ACTOR)
     committed = isolated_owner(LINEAGE)
     assert committed["revision"] > previous["revision"]
     actual = committed["program"]["components"][-1]
@@ -170,15 +179,15 @@ def test_program_commit_paths_assign_missing_or_occupied_positions(isolated_owne
         assert all(item.get("x") is None and item.get("y") is None for item in normalized["components"])
         candidate = deepcopy(previous)
         candidate["program"] = normalized
-        lineage_domain._persist_lineage_state(None, candidate, "initial program fixture")
+        lineage_state._persist_lineage_state(None, candidate, "initial program fixture")
     elif entry == "patch":
-        lineage_domain._apply_lineage_graph_patch(LINEAGE, {"expected_revision": previous["revision"], "patch": {"program": {"components": components, "wires": []}}}, ACTOR, synchronize_external_projections=False)
+        lineage_graph_edits._apply_lineage_graph_patch(LINEAGE, {"expected_revision": previous["revision"], "patch": {"program": {"components": components, "wires": []}}}, ACTOR, synchronize_external_projections=False)
     else:
         operations = [{"op": "add", "kind": "component", "value": item} for item in components]
-        lineage_domain.apply_lineage_changes(LINEAGE, {"expected_revision": previous["revision"], "program_operations": operations}, ACTOR)
+        lineage_graph_edits.apply_lineage_changes(LINEAGE, {"expected_revision": previous["revision"], "program_operations": operations}, ACTOR)
         if entry == "clone":
             current = isolated_owner(LINEAGE)
-            lineage_domain.apply_lineage_changes(LINEAGE, {"expected_revision": current["revision"], "program_operations": [{"op": "clone", "kind": "component", "id": item["id"], "new_id": f"{item['kind']}_{index + 100:012x}"} for index, item in enumerate(components)]}, ACTOR)
+            lineage_graph_edits.apply_lineage_changes(LINEAGE, {"expected_revision": current["revision"], "program_operations": [{"op": "clone", "kind": "component", "id": item["id"], "new_id": f"{item['kind']}_{index + 100:012x}"} for index, item in enumerate(components)]}, ACTOR)
     committed = isolated_owner(LINEAGE)
     positions = [(item["x"], item["y"]) for item in committed["program"]["components"]]
     assert len(positions) == (12 if entry == "clone" else 6)
@@ -189,7 +198,7 @@ def test_program_commit_paths_assign_missing_or_occupied_positions(isolated_owne
 
 def test_layout_persists_without_program_compile_or_semantic_conflict(isolated_owner, monkeypatch):
     """布局更新只提升 layout_revision，不编译程序也不与程序 revision 冲突"""
-    created = lineage_domain.create_lineage_program_component(LINEAGE, {**component("event_source"), "expected_revision": isolated_owner(LINEAGE)["revision"]}, ACTOR)
+    created = lineage_program_edits.create_lineage_program_component(LINEAGE, {**component("event_source"), "expected_revision": isolated_owner(LINEAGE)["revision"]}, ACTOR)
     previous = isolated_owner(LINEAGE)
     identity = created["component"]["id"]
     compile_calls = []
@@ -200,20 +209,20 @@ def test_layout_persists_without_program_compile_or_semantic_conflict(isolated_o
         return real_compile(*args, **kwargs)
 
     monkeypatch.setattr(lineage_program, "compile_program", observe_compile)
-    result = lineage_domain.update_lineage_layout(LINEAGE, {"expected_revision": -999, "positions": [{"object_id": identity, "x": -50, "y": 125}]}, ACTOR)
+    result = lineage_lifecycle.update_lineage_layout(LINEAGE, {"expected_revision": -999, "positions": [{"object_id": identity, "x": -50, "y": 125}]}, ACTOR)
     assert compile_calls == []
     reloaded = isolated_owner(LINEAGE)
     assert reloaded["revision"] == previous["revision"]
     assert reloaded["layout_revision"] > previous["layout_revision"]
     assert result["layout_revision"] == reloaded["layout_revision"]
     assert (reloaded["program"]["components"][0]["x"], reloaded["program"]["components"][0]["y"]) == (-50, 125)
-    lineage_domain.create_lineage_program_component(LINEAGE, {**component("seed"), "expected_revision": previous["revision"]}, ACTOR)
+    lineage_program_edits.create_lineage_program_component(LINEAGE, {**component("seed"), "expected_revision": previous["revision"]}, ACTOR)
     assert isolated_owner(LINEAGE)["revision"] > previous["revision"]
 
 
 @pytest.fixture()
 def browser_owner_server(isolated_owner):
-    lineage_domain.create_lineage_program_component(LINEAGE, {**component("event_source"), "expected_revision": isolated_owner(LINEAGE)["revision"], "x": 30, "y": 40}, ACTOR)
+    lineage_program_edits.create_lineage_program_component(LINEAGE, {**component("event_source"), "expected_revision": isolated_owner(LINEAGE)["revision"], "x": 30, "y": 40}, ACTOR)
     released = threading.Event()
     released.set()
     received = []
@@ -260,10 +269,10 @@ def browser_owner_server(isolated_owner):
             try:
                 if self.path == "/lineage/api/program/components/create":
                     assert request["kind"] in ("event_source", "seed")
-                    response = lineage_domain.create_lineage_program_component(LINEAGE, request, ACTOR)
+                    response = lineage_program_edits.create_lineage_program_component(LINEAGE, request, ACTOR)
                 elif self.path == "/lineage/api/layout/positions":
                     assert released.wait(20), "Fixture layout gate was not released"
-                    response = lineage_domain.update_lineage_layout(LINEAGE, request, ACTOR)
+                    response = lineage_lifecycle.update_lineage_layout(LINEAGE, request, ACTOR)
                 else:
                     raise AssertionError(self.path)
                 event["response"] = response

@@ -29,7 +29,7 @@ def _configure_project(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, *,
     archive = tmp_path / "archive" / "project_deletions.json"
     deleted: list[str] = []
 
-    from management_portal.society_service import lineage_domain
+    from management_portal.society_service import lineage_lifecycle
 
     def delete_lineage(lineage_id, actor):
         deleted.append(lineage_id)
@@ -38,7 +38,7 @@ def _configure_project(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, *,
     monkeypatch.setattr(project_domain, "PROJECTS_ROOT", projects_root)
     monkeypatch.setattr(project_domain, "PROJECT_DELETION_AUDIT", archive)
     monkeypatch.setattr(project_domain, "_project_lineage_ids", lambda identities: lineages)
-    monkeypatch.setattr(lineage_domain, "delete_lineage", delete_lineage)
+    monkeypatch.setattr(lineage_lifecycle, "delete_lineage", delete_lineage)
     return project_root, registry, archive, deleted
 
 

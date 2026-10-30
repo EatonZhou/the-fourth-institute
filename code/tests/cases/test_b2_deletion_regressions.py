@@ -17,8 +17,8 @@ def test_deletion_retires_unused_independent_workspace(future_creation_store):
     folder.mkdir(parents=True)
     wid = 'workspace_eeeeeeeeeeee'
     get_workspace_store().ensure(wid, str(folder))
-    from management_portal.society_service import lineage_domain
-    lineage_domain.delete_lineage(record['lineage_id'], 'sample_admin')
+    from management_portal.society_service import lineage_lifecycle
+    lineage_lifecycle.delete_lineage(record['lineage_id'], 'sample_admin')
     for operation in resident_domain.ready_resident_lifecycle_operations():
         resident_domain.resume_resident_lifecycle_operation(operation)
     assert get_workspace_store().rows([wid]) == {}

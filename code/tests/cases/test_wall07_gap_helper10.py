@@ -12,6 +12,10 @@ import pytest
 from management_common.projection_receipts import CommittedProjectionError
 from management_portal.society_service import (
     lineage_domain,
+    lineage_state,
+    lineage_reads,
+    lineage_lifecycle,
+    lineage_graph_edits,
     lineage_program_runtime,
     lineage_program_effect_execution,
     domain_ports,
@@ -59,9 +63,9 @@ def test_empty_lineage_instruction_persists_catalog_and_revision(isolated_instru
     assert persisted['nodes'] == []
     assert persisted['edges'] == []
     assert persisted['revision'] == 1
-    assert lineage_domain._lineage_dir(lineage_id).is_relative_to(isolated_instruction_store)
-    assert lineage_domain._lineage_dir(lineage_id).is_dir()
-    listed = lineage_domain.list_lineages('sample_admin')['lineages']
+    assert lineage_state._lineage_dir(lineage_id).is_relative_to(isolated_instruction_store)
+    assert lineage_state._lineage_dir(lineage_id).is_dir()
+    listed = lineage_reads.list_lineages('sample_admin')['lineages']
     assert [item['lineage_id'] for item in listed] == [lineage_id]
     assert listed[0]['node_count'] == 0
 
@@ -69,7 +73,7 @@ def test_empty_lineage_instruction_persists_catalog_and_revision(isolated_instru
 def test_delete_effect_removes_its_wires_only(isolated_instruction_store):
     """DeleteComponent 删除 effect 时只移除连到它的连线，保留其他连线"""
     quiet = effect_config('ListComponentTypes', {}, [])
-    created = lineage_domain.create_lineage({
+    created = lineage_lifecycle.create_lineage({
         'title': 'helper10 delete contained effect',
         'program': {
             'components': [
@@ -177,16 +181,16 @@ def test_adjacent_owner_port_delegates_and_propagates_failure(name, method):
 
 def test_projection_failure_keeps_committed_definition_and_can_rebuild(lineage_store, monkeypatch):
     """资源投影失败时 Lineage 更新已提交并标明只需重建投影，之后可重建"""
-    created = lineage_domain.create_lineage({'title': 'helper10 projection', 'nodes': [], 'edges': []}, 'sample_admin')
-    original = lineage_domain._sync_lineage_resource_identity
+    created = lineage_lifecycle.create_lineage({'title': 'helper10 projection', 'nodes': [], 'edges': []}, 'sample_admin')
+    original = lineage_state._sync_lineage_resource_identity
 
     def failing_projection(*args, **kwargs):
         raise OSError('helper10 resource projection unavailable; retry projection')
 
-    monkeypatch.setattr(lineage_domain, '_sync_lineage_resource_identity', failing_projection)
+    monkeypatch.setattr(lineage_state, '_sync_lineage_resource_identity', failing_projection)
     candidate = {**created, 'description': 'committed before projection error'}
     with pytest.raises(CommittedProjectionError) as failure:
-        lineage_domain.update_lineage(created['lineage_id'], {'expected_revision': created['revision'], 'lineage': candidate}, 'sample_admin')
+        lineage_graph_edits.update_lineage(created['lineage_id'], {'expected_revision': created['revision'], 'lineage': candidate}, 'sample_admin')
     assert failure.value.details['domain_committed'] is True
     assert failure.value.details['recovery'] == 'projection_only'
     assert failure.value.details['committed_revision'] == created['revision'] + 1
@@ -195,9 +199,9 @@ def test_projection_failure_keeps_committed_definition_and_can_rebuild(lineage_s
     committed = lineage_aggregate.read_lineage_state(created['lineage_id'])
     assert committed['revision'] == created['revision'] + 1
     assert committed['description'] == candidate['description']
-    monkeypatch.setattr(lineage_domain, '_sync_lineage_resource_identity', original)
+    monkeypatch.setattr(lineage_state, '_sync_lineage_resource_identity', original)
     original(committed)
-    assert lineage_domain.get_lineage(created['lineage_id'], 'sample_admin')['description'] == candidate['description']
+    assert lineage_reads.get_lineage(created['lineage_id'], 'sample_admin')['description'] == candidate['description']
 
 
 def test_lifecycle_tombstone_precedes_release_and_recovery_cleanup(operations, tmp_path, monkeypatch):
@@ -246,23 +250,23 @@ def test_lifecycle_tombstone_precedes_release_and_recovery_cleanup(operations, t
 
 def test_markdown_projection_failure_and_rebuild_leave_definition_intact(lineage_store, monkeypatch):
     """README.md 投影写入失败与重建都不改动已持久化的 Lineage 定义"""
-    created = lineage_domain.create_lineage({'title': 'helper10 Markdown projection', 'nodes': [], 'edges': []}, 'sample_admin')
+    created = lineage_lifecycle.create_lineage({'title': 'helper10 Markdown projection', 'nodes': [], 'edges': []}, 'sample_admin')
     persisted = copy.deepcopy(lineage_aggregate.read_lineage_state(created['lineage_id']))
-    readme = lineage_domain._lineage_dir(created['lineage_id']) / 'README.md'
+    readme = lineage_state._lineage_dir(created['lineage_id']) / 'README.md'
     assert readme.is_relative_to(lineage_store)
     readme.unlink()
-    original = lineage_domain._write_text
+    original = lineage_state._write_text
 
     def unavailable(path, content):
         assert path == readme
         raise OSError('temporary Markdown projection storage failure')
 
-    monkeypatch.setattr(lineage_domain, '_write_text', unavailable)
+    monkeypatch.setattr(lineage_state, '_write_text', unavailable)
     with pytest.raises(OSError, match='Markdown projection'):
-        lineage_domain._ensure_lineage_folder_files(persisted)
+        lineage_state._ensure_lineage_folder_files(persisted)
     assert lineage_aggregate.read_lineage_state(created['lineage_id']) == persisted
-    monkeypatch.setattr(lineage_domain, '_write_text', original)
-    lineage_domain._ensure_lineage_folder_files(persisted)
+    monkeypatch.setattr(lineage_state, '_write_text', original)
+    lineage_state._ensure_lineage_folder_files(persisted)
     assert readme.is_file()
     assert lineage_aggregate.read_lineage_state(created['lineage_id']) == persisted
 

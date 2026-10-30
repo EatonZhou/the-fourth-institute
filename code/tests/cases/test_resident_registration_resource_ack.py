@@ -18,7 +18,8 @@ from management_common.projection_receipts import CommittedProjectionError
 from management_portal.hatg import routing
 from management_portal.society_service import (
     invariant_locks,
-    lineage_domain,
+    lineage_reads,
+    lineage_resident_nodes,
     resident_domain,
     resident_domain_common,
     resident_registration_domain,
@@ -67,7 +68,7 @@ def registration(isolated_instruction_store, monkeypatch, tmp_path):
 
 
 def _create_request(parent):
-    graph = lineage_domain.get_lineage(parent["lineage_id"], "sample_admin")
+    graph = lineage_reads.get_lineage(parent["lineage_id"], "sample_admin")
     return {"arguments": {"lineage_id": parent["lineage_id"], "title": "ACK child", "provider": "codex"},
             "key": "registration-ack-create", "version": {parent["lineage_id"]: graph["revision"]}}
 
@@ -276,7 +277,7 @@ def test_committed_registration_retries_only_publication_with_same_identity(regi
     resident_id = failure["resident_id"]
     store = resident_catalog.get_catalog().state_store
     committed = store.resident_record(resident_id)
-    graph = lineage_domain.get_lineage(committed["lineage_id"], "sample_admin")
+    graph = lineage_reads.get_lineage(committed["lineage_id"], "sample_admin")
     assert failure["committed_revision"] == graph["revision"]
     before_ids = {record["resident_id"] for record in store.all_residents()}
     assert attempts == [resident_id]
@@ -301,7 +302,7 @@ def test_committed_registration_retries_only_publication_with_same_identity(regi
     assert {record["resident_id"] for record in store.all_residents()} == before_ids
     assert not store.resident_resource_projection_pending(resident_id)
     assert store.resident_record(resident_id)["registration_state"] == "ready"
-    assert lineage_domain.get_lineage(committed["lineage_id"], "sample_admin")["revision"] == graph["revision"]
+    assert lineage_reads.get_lineage(committed["lineage_id"], "sample_admin")["revision"] == graph["revision"]
     assert attempts == [resident_id, resident_id]
 
 
@@ -312,7 +313,7 @@ def test_confirmation_rechecks_owner_and_deleted_identity(registration, monkeypa
     :aspects: functional
     """
     parent, _resources = registration
-    record = lineage_domain.create_lineage_resident(parent["lineage_id"], _new_session_payload("To remove"), "sample_admin")["resident"]
+    record = lineage_resident_nodes.create_lineage_resident(parent["lineage_id"], _new_session_payload("To remove"), "sample_admin")["resident"]
     assert resident_domain.confirm_resident_registration(record["resident_id"], "sample_admin")["resident_id"] == record["resident_id"]
     monkeypatch.setattr(resource_client, "sync_resident_resource_bundles", lambda *args, **kwargs: pytest.fail("forbidden publication"))
     with pytest.raises(PermissionError):
@@ -382,7 +383,7 @@ def test_missing_resident_resource_confirmation_can_be_recovered(registration, m
     开放模式下 Lineage 创建者、成员 Resident 与其他有效用户都可确认原身份。
     """
     parent, resources = registration
-    child = lineage_domain.create_lineage_resident(parent["lineage_id"], _new_session_payload("Resource pending"), "sample_admin")["resident"]
+    child = lineage_resident_nodes.create_lineage_resident(parent["lineage_id"], _new_session_payload("Resource pending"), "sample_admin")["resident"]
     store = resident_catalog.get_catalog().state_store
     record = store.resident_record(child["resident_id"])
     store.enqueue_resident_resource_projection(record["resident_id"], record)

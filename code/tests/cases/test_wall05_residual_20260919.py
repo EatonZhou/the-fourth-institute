@@ -11,7 +11,8 @@ from management_portal import agent_context_selection
 from management_portal.resource_refs import resolve_resource_references
 from tests.cases.test_resource_refs import _FakeResourceService
 from management_portal.society_service import (
-    lineage_domain,
+    lineage_handoffs,
+    lineage_resident_workspaces,
     resident_conversation_projection_domain,
     resident_domain,
     resident_execution_work,
@@ -115,7 +116,7 @@ def test_reference_workspace_inheritance_and_structured_cwd(future_creation_stor
     _append_conversation_turn(source["resident_id"], 0)
     reference = tmp_path / "reference"
     reference.mkdir()
-    lineage_domain.add_node_reference_workspace(source["lineage_id"], source["resident_id"], "sample_admin", str(reference))
+    lineage_resident_workspaces.add_node_reference_workspace(source["lineage_id"], source["resident_id"], "sample_admin", str(reference))
     source = resident_record_domain.find_resident(source["resident_id"])
     child_id = resident_domain.create_resident_full_context_fork(source["resident_id"], "sample_admin")["resident_id"]
     child = resident_record_domain.find_resident(child_id)
@@ -148,6 +149,6 @@ def test_handoff_rejects_same_and_foreign_lineage_peer(future_creation_store):
     foreign = resident_domain.register_resident(_new_session_payload("Foreign target"), "sample_admin")
     for target_id, expected in [(source["resident_id"], ValueError), (foreign["resident_id"], KeyError)]:
         with pytest.raises(expected):
-            lineage_domain.create_handoff(source["lineage_id"], {
+            lineage_handoffs.create_handoff(source["lineage_id"], {
                 "source_resident_id": source["resident_id"], "target_resident_id": target_id,
             }, "sample_admin")

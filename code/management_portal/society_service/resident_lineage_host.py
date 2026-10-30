@@ -3,7 +3,15 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Callable
 
-from . import lineage_domain, lineage_resident_operations
+from . import (
+    lineage_domain,
+    lineage_lifecycle,
+    lineage_moves,
+    lineage_reads,
+    lineage_resident_nodes,
+    lineage_resident_operations,
+    lineage_state,
+)
 
 
 class ResidentLineageHost:
@@ -11,7 +19,7 @@ class ResidentLineageHost:
 
     @staticmethod
     def authorize_lineage_resident_access(lineage_id: str, resident_id: str) -> str:
-        return lineage_domain.authorize_lineage_resident_access(lineage_id, resident_id)
+        return lineage_state.authorize_lineage_resident_access(lineage_id, resident_id)
 
     @staticmethod
     def canonical_lineage_folder(lineage_id: str) -> Path:
@@ -57,26 +65,26 @@ class ResidentLineageHost:
 
     @staticmethod
     def lineage_access_projection(lineage_id: str) -> dict[str, Any]:
-        return lineage_domain.lineage_access_projection(lineage_id)
+        return lineage_state.lineage_access_projection(lineage_id)
 
     @staticmethod
     def commit_resident_title_projection(resident_id: str, title: str, actor: str) -> dict[str, Any]:
-        return lineage_domain.commit_resident_title_projection(resident_id, title, actor)
+        return lineage_resident_nodes.commit_resident_title_projection(resident_id, title, actor)
 
     @staticmethod
     def initialize_resident_lineage(record: dict[str, Any], actor: str) -> dict[str, Any]:
-        return lineage_domain.initialize_resident_lineage(record, actor)
+        return lineage_lifecycle.initialize_resident_lineage(record, actor)
 
     @staticmethod
     def add_registered_resident_node(record: dict[str, Any], actor: str, *, node_options: dict[str, Any] | None=None) -> dict[str, Any] | None:
-        return lineage_domain.add_registered_resident_node(record, actor, node_options=node_options)
+        return lineage_resident_nodes.add_registered_resident_node(record, actor, node_options=node_options)
 
     @staticmethod
     def move_resident_membership(
         source_lineage_id: str, record: dict[str, Any], actor: str, *, allow_empty_source: bool = False,
         publish_identity: Callable[[], None],
     ) -> None:
-        lineage_domain.move_resident_membership(
+        lineage_moves.move_resident_membership(
             source_lineage_id, record, actor, allow_empty_source=allow_empty_source,
             publish_identity=publish_identity,
         )
@@ -91,8 +99,8 @@ class ResidentLineageHost:
 
     @staticmethod
     def invalidate_lineage_read_cache(lineage_id: str) -> None:
-        return lineage_domain.invalidate_lineage_read_cache(lineage_id)
+        return lineage_state.invalidate_lineage_read_cache(lineage_id)
 
     @staticmethod
     def actor_lineage_access_records(actor: str, lineage_ids: list[str] | None=None) -> list[dict[str, Any]]:
-        return lineage_domain.actor_lineage_access_records(actor, lineage_ids)
+        return lineage_reads.actor_lineage_access_records(actor, lineage_ids)

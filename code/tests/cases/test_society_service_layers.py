@@ -122,7 +122,10 @@ LAYERS = (
     """,
     # The Lineage domain.
     """
-    lineage_domain lineage_program_services lineage_read_cache lineage_view_projection
+    lineage_branches lineage_domain lineage_graph_edits lineage_handoffs lineage_lifecycle lineage_moves
+    lineage_program_edits lineage_program_services lineage_read_cache lineage_reads
+    lineage_resident_controls lineage_resident_nodes lineage_resident_workspaces lineage_state
+    lineage_view_projection
     """,
     # Family, template, Function Block, Project and principal operations.
     """
@@ -177,8 +180,10 @@ UPWARD = {
     ("lineage_domain", "principal_hierarchy_domain"):
         "the RPC operation table names lineage_domain for the principal operations it forwards",
     ("lineage_domain", "templates.explore"): "a Resident's finished turn syncs its exploration candidates",
-    ("lineage_domain", "templates.familize"):
-        "normalizing a definition reconciles Family wiring; a moved member's steward hears of it",
+    ("lineage_state", "templates.familize"):
+        "normalizing a definition reconciles Family wiring",
+    ("lineage_moves", "templates.familize"):
+        "a moved member's steward hears of it",
 }
 
 

@@ -4,7 +4,8 @@ import pytest
 
 from management_portal.society_service import lineage_domain
 from management_portal.society_service import (
-    lineage_domain,
+    lineage_reads,
+    lineage_state,
     resident_access,
     resident_protocol,
     resident_record_domain,
@@ -15,9 +16,9 @@ from management_portal.society_service import lineage_aggregate
 def test_internal_discovery_methods_are_service_only() -> None:
     """内部发现目录与可见性过滤只允许服务账号调用"""
     with pytest.raises(PermissionError, match="service actor"):
-        lineage_domain.list_resident_discovery_catalog("ordinary-user")
+        lineage_reads.list_resident_discovery_catalog("ordinary-user")
     with pytest.raises(PermissionError, match="service actor"):
-        lineage_domain.list_removed_discovery_residents("ordinary-user", ["resident_aaaaaaaaaaaa"])
+        lineage_reads.list_removed_discovery_residents("ordinary-user", ["resident_aaaaaaaaaaaa"])
     with pytest.raises(PermissionError, match="service actor"):
         resident_access.filter_visible_resident_ids(
             ["resident_aaaaaaaaaaaa"],
@@ -102,12 +103,12 @@ def test_resident_principal_requires_active_matching_lineage(
         lambda requested_id: {"lineage_id": requested_id},
     )
 
-    assert lineage_domain.authorize_lineage_resident_principal(lineage_id, resident_id) == resident_id
+    assert lineage_state.authorize_lineage_resident_principal(lineage_id, resident_id) == resident_id
     with pytest.raises(PermissionError, match="不属于"):
-        lineage_domain.authorize_lineage_resident_principal("lineage_bbbbbbbbbbbb", resident_id)
+        lineage_state.authorize_lineage_resident_principal("lineage_bbbbbbbbbbbb", resident_id)
     record["deleted_at"] = "2026-09-28T00:00:00Z"
     with pytest.raises(PermissionError, match="不属于"):
-        lineage_domain.authorize_lineage_resident_principal(lineage_id, resident_id)
+        lineage_state.authorize_lineage_resident_principal(lineage_id, resident_id)
 
 
 def test_internal_discovery_catalog_contains_all_formal_lineage_residents(
@@ -156,7 +157,7 @@ def test_internal_discovery_catalog_contains_all_formal_lineage_residents(
         },
     }
 
-    monkeypatch.setattr(lineage_domain, "get_portal_access_store", lambda: AccessStore())
+    monkeypatch.setattr(lineage_reads, "get_portal_access_store", lambda: AccessStore())
     monkeypatch.setattr(lineage_aggregate, "lineage_catalog_store", lambda: Catalog())
     monkeypatch.setattr(
         lineage_aggregate,
@@ -173,9 +174,9 @@ def test_internal_discovery_catalog_contains_all_formal_lineage_residents(
                 for resident_id in resident_ids if resident_id not in deleted_ids
             ]
 
-    monkeypatch.setattr(lineage_domain.resident_catalog, "get_catalog", lambda: ResidentCatalog())
+    monkeypatch.setattr(lineage_state.resident_catalog, "get_catalog", lambda: ResidentCatalog())
 
-    result = lineage_domain.list_resident_discovery_catalog("portal")
+    result = lineage_reads.list_resident_discovery_catalog("portal")
 
     assert result["schema"] == "tfi.resident-discovery-catalog.v1"
     assert [item["resident_id"] for item in result["residents"]] == [
@@ -185,7 +186,7 @@ def test_internal_discovery_catalog_contains_all_formal_lineage_residents(
     ]
     # Historical identity remains stored, while the active catalog excludes it.
     deleted_ids.add("resident_940bafd3df55")
-    assert [item["resident_id"] for item in lineage_domain.list_resident_discovery_catalog("portal")["residents"]] == [
+    assert [item["resident_id"] for item in lineage_reads.list_resident_discovery_catalog("portal")["residents"]] == [
         "resident_bbbbbbbbbbbb",
         "resident_ce3e24fc60e0",
     ]

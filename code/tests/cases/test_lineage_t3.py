@@ -136,7 +136,7 @@ def _effect_diagnostics(monkeypatch, script):
     from management_portal.society_service import lineage_program_runtime_projection as projection
 
     program = {"components": [{"id": "effect_aaaaaaaaaaaa", "kind": "effect", "config": {"script": script}}], "wires": []}
-    monkeypatch.setattr(definition, "domain", lambda: SimpleNamespace(get_lineage_definition_for_analysis=lambda *a: {"program": program, "nodes": []}))
+    monkeypatch.setattr(definition, "lineage_reads", lambda: SimpleNamespace(get_lineage_definition_for_analysis=lambda *a: {"program": program, "nodes": []}))
     monkeypatch.setattr(projection, "_program_event_source_runtime_view", lambda _lineage: {})
     result = definition.get_lineage_diagnostics(SimpleNamespace(caller="sample_admin", argument=lambda _: "lineage_aaaaaaaaaaaa"))
     return [item for item in result["diagnostics"] if item["item_id"] == "effect_aaaaaaaaaaaa"], result["runnable"]

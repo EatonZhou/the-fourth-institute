@@ -5,7 +5,13 @@ from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
-from management_portal.society_service import graph_storage, lineage_domain, resident_domain
+from management_portal.society_service import (
+    graph_storage,
+    lineage_graph_edits,
+    lineage_resident_nodes,
+    lineage_state,
+    resident_domain,
+)
 from management_portal.society_service.state_store import get_lineage_data_store
 from management_portal.society_service import lineage_aggregate
 from tests.cases.test_resident_folder_creation_contract import (  # noqa: F401
@@ -16,22 +22,22 @@ from tests.cases.test_resident_folder_creation_contract import (  # noqa: F401
 def test_definition_resolves_members_once_including_prepared_identity(future_creation_store, monkeypatch):
     """规范化 Lineage 定义时一次批量解析全部成员，预先准备的身份不再查询"""
     parent = resident_domain.register_resident(_new_session_payload("Batch owner"), "sample_admin")
-    child = lineage_domain.create_lineage_resident(
+    child = lineage_resident_nodes.create_lineage_resident(
         parent["lineage_id"], _new_session_payload("Existing member"), "sample_admin",
     )["resident"]
     before = lineage_aggregate.read_lineage_state(parent["lineage_id"])
     candidate = copy.deepcopy(before)
     pending = "resident_abcdefabcdef"
     candidate["nodes"].append({"id": pending, "title": "Prepared identity"})
-    resolve = lineage_domain._resident_targets
+    resolve = lineage_state._resident_targets
     calls = []
 
     def observed(ids):
         calls.append(tuple(ids))
         return resolve(ids)
 
-    monkeypatch.setattr(lineage_domain, "_resident_targets", observed)
-    normalized = lineage_domain._normalize_lineage_shape(
+    monkeypatch.setattr(lineage_state, "_resident_targets", observed)
+    normalized = lineage_state._normalize_lineage_shape(
         candidate, before, "sample_admin", resident_references={pending: {
             "resident_id": pending, "lineage_id": parent["lineage_id"], "title": "Prepared identity",
         }},
@@ -89,7 +95,7 @@ def test_concurrent_creation_merges_and_failed_delete_keeps_identity(future_crea
     """并发创建的成员都合并进图，删除时图提交失败则 Resident 身份保留"""
     parent = resident_domain.register_resident(_new_session_payload("Concurrent owner"), "sample_admin")
     lineage_id = parent["lineage_id"]
-    append = lineage_domain._append_registered_resident_node_locked
+    append = lineage_resident_nodes._append_registered_resident_node_locked
     ready = threading.Barrier(2)
 
     def append_after_both_read(lineage, record, actor, **kwargs):
@@ -97,14 +103,14 @@ def test_concurrent_creation_merges_and_failed_delete_keeps_identity(future_crea
         return append(lineage, record, actor, **kwargs)
 
     with monkeypatch.context() as patch:
-        patch.setattr(lineage_domain, "_append_registered_resident_node_locked", append_after_both_read)
+        patch.setattr(lineage_resident_nodes, "_append_registered_resident_node_locked", append_after_both_read)
         with ThreadPoolExecutor(max_workers=2) as pool:
-            futures = [pool.submit(lineage_domain.create_lineage_resident, lineage_id,
+            futures = [pool.submit(lineage_resident_nodes.create_lineage_resident, lineage_id,
                                    _new_session_payload(title), "sample_admin") for title in ("A", "B")]
             children = [f.result(timeout=20)["resident"]["resident_id"] for f in futures]
     store = get_lineage_data_store()
     assert {n["id"] for n in store.lineage_definition(lineage_id)["nodes"]} == {parent["resident_id"], *children}
-    persist = lineage_domain._persist_lineage_state
+    persist = lineage_state._persist_lineage_state
 
     def fail_graph_commit(previous, lineage, reason, **kwargs):
         if reason == "批量删除 HATG 对象及 Resident 身份":
@@ -112,12 +118,12 @@ def test_concurrent_creation_merges_and_failed_delete_keeps_identity(future_crea
         return persist(previous, lineage, reason, **kwargs)
 
     with monkeypatch.context() as patch:
-        patch.setattr(lineage_domain, "_persist_lineage_state", fail_graph_commit)
+        patch.setattr(lineage_state, "_persist_lineage_state", fail_graph_commit)
         with pytest.raises(RuntimeError, match="injected graph commit failure"):
-            lineage_domain.delete_lineage_graph_objects(lineage_id, {"resident_ids": [children[0]]}, "sample_admin")
+            lineage_graph_edits.delete_lineage_graph_objects(lineage_id, {"resident_ids": [children[0]]}, "sample_admin")
     assert not store.resident_record(children[0]).get("deleted_at")
     assert children[0] in {n["id"] for n in store.lineage_definition(lineage_id)["nodes"]}
-    lineage_domain.delete_lineage_graph_objects(lineage_id, {"resident_ids": [children[0]]}, "sample_admin")
+    lineage_graph_edits.delete_lineage_graph_objects(lineage_id, {"resident_ids": [children[0]]}, "sample_admin")
     assert store.resident_record(children[0], include_deleted=True)["deleted_at"]
     assert {n["id"] for n in store.lineage_definition(lineage_id)["nodes"]} == {parent["resident_id"], children[1]}
     with store.database.read() as connection:

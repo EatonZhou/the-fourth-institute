@@ -72,7 +72,7 @@ def test_artifact_selector_is_scoped_and_authorized(monkeypatch, tmp_path):
     """触发路径只在有查看权且 activation 匹配时返回 Effect 产物内容，默认观察不含产物
 
     :design-point:"""
-    from management_portal.society_service import effect_artifacts, lineage_domain
+    from management_portal.society_service import effect_artifacts, lineage_domain, lineage_state
     lid = lineage()
     monkeypatch.setenv("PORTAL_EFFECT_ARTIFACT_ROOT", str(tmp_path))
     reference = effect_artifacts.ArtifactStore().put(lid, "activation", {"text": "artifact body"}, purpose="output")
@@ -83,11 +83,11 @@ def test_artifact_selector_is_scoped_and_authorized(monkeypatch, tmp_path):
     monkeypatch.setattr(lineage_aggregate, "read_lineage", lambda *a, **kw: {})
     def deny(*_):
         raise PermissionError("denied")
-    monkeypatch.setattr(lineage_domain, "_ensure_visible", deny)
+    monkeypatch.setattr(lineage_state, "_ensure_visible", deny)
     payload = {"trigger_path_id": identity, "artifact_activation_key": "activation"}
     with pytest.raises(PermissionError):
         lineage_domain.observe_trigger_path(lid, payload, "visitor")
-    monkeypatch.setattr(lineage_domain, "_ensure_visible", lambda *_: None)
+    monkeypatch.setattr(lineage_state, "_ensure_visible", lambda *_: None)
     assert lineage_domain.observe_trigger_path(lid, payload, "reader")["artifact_output"] == {"text": "artifact body"}
     with pytest.raises(KeyError):
         observation.observe(lid, {**payload, "artifact_activation_key": "other"})

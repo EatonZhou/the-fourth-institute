@@ -8,7 +8,7 @@ import time
 import psycopg
 import pytest
 
-from management_portal.society_service import lineage_domain as graphs, resource_client
+from management_portal.society_service import lineage_branches, lineage_state, resource_client
 from management_portal.society_service.lineage_catalog import LineageCatalog
 from management_portal.society_service.resident_catalog import ResidentCatalog
 from management_portal.society_service import lineage_aggregate
@@ -16,7 +16,7 @@ from tests.cases.society_service_test_support import install_resource_boundary
 from tests.cases.test_lineage_object_state import LINEAGE_ID, _store
 
 
-TARGETS = graphs._resident_targets
+TARGETS = lineage_state._resident_targets
 SOURCE = "resident_111111111111"
 OTHER = "resident_222222222222"
 
@@ -32,8 +32,8 @@ def identity_store(monkeypatch, tmp_path):
     store = _store(tmp_path)
     catalog = ResidentCatalog(tmp_path, store)
     monkeypatch.setattr(lineage_aggregate, "lineage_catalog_store", lambda: LineageCatalog(store))
-    monkeypatch.setattr(graphs.resident_catalog, "get_catalog", lambda: catalog)
-    monkeypatch.setattr(graphs, "_resident_targets", TARGETS)
+    monkeypatch.setattr(lineage_state.resident_catalog, "get_catalog", lambda: catalog)
+    monkeypatch.setattr(lineage_state, "_resident_targets", TARGETS)
     # Authorization and read-view assembly are outside the commit under test.
     monkeypatch.setattr(lineage_aggregate, "ensure_manager", lambda *_: None)
     monkeypatch.setattr(lineage_aggregate, "read_lineage", lambda lid, **_: store.lineage_definition(lid))
@@ -41,7 +41,7 @@ def identity_store(monkeypatch, tmp_path):
 
 
 def _fork_preflight():
-    return graphs.fork_lineage_resident(LINEAGE_ID, {
+    return lineage_branches.fork_lineage_resident(LINEAGE_ID, {
         "source": SOURCE, "fork_mode": "recent-10", "child_title": "Isolated child",
         "idempotency_key": "isolated-parent-lock",
     }, "sample_admin")
@@ -89,7 +89,7 @@ def test_negative_control_full_projection_holds_fork_parent_lock(identity_store,
     # Controlled regression: use the real former full-record reader, not a
     # copied implementation of Fork, identity resolution or persistence.
     monkeypatch.setattr(catalog, "get_identity_records", catalog.get_many)
-    monkeypatch.setattr(graphs, "_create_derived_resident", prepared)
+    monkeypatch.setattr(lineage_branches, "_create_derived_resident", prepared)
     with ThreadPoolExecutor(max_workers=2) as pool:
         fork = pool.submit(_fork_preflight)
         try:
@@ -123,7 +123,7 @@ def test_fork_validation_and_layout_finish_while_workspace_projection_waits(iden
         raise PreparationReached
 
     monkeypatch.setattr(resource_client, "workspace_paths_many", blocked_paths)
-    monkeypatch.setattr(graphs, "_create_derived_resident", prepared)
+    monkeypatch.setattr(lineage_branches, "_create_derived_resident", prepared)
     with ThreadPoolExecutor(max_workers=3) as pool:
         view = pool.submit(catalog.get_many, [SOURCE])
         try:
@@ -159,7 +159,7 @@ def test_concurrent_definition_merge_uses_only_canonical_identity(identity_store
         raise AssertionError("definition commit entered Workspace projection")
 
     monkeypatch.setattr(resource_client, "workspace_paths_many", forbidden_projection)
-    assert graphs._resident_targets([OTHER, SOURCE, OTHER, "resident_ffffffffffff"]) == expected
+    assert lineage_state._resident_targets([OTHER, SOURCE, OTHER, "resident_ffffffffffff"]) == expected
     base = store.lineage_definition(LINEAGE_ID)
     theirs = copy.deepcopy(base)
     theirs.update(description="Concurrent description", revision=base["revision"] + 1)
@@ -167,7 +167,7 @@ def test_concurrent_definition_merge_uses_only_canonical_identity(identity_store
     ours = copy.deepcopy(base)
     ours["title"] = "Merged title"
     with store.database.transaction():
-        merged, did_merge = graphs._committed_definition(base, ours, graphs.lineage_state_domains.GRAPH)
+        merged, did_merge = lineage_state._committed_definition(base, ours, lineage_state.lineage_state_domains.GRAPH)
         assert did_merge
         store.put_lineage_definition(LINEAGE_ID, merged, store.lineage_snapshot(LINEAGE_ID)[1])
     saved = store.lineage_definition(LINEAGE_ID)
@@ -176,4 +176,4 @@ def test_concurrent_definition_merge_uses_only_canonical_identity(identity_store
     missing = copy.deepcopy(saved)
     missing["nodes"].append({"id": "resident_ffffffffffff"})
     with pytest.raises(ValueError, match="不存在或未注册"):
-        graphs._normalize_lineage_payload(missing, saved, "sample_admin")
+        lineage_state._normalize_lineage_payload(missing, saved, "sample_admin")

@@ -15,8 +15,17 @@ from pathlib import Path
 import pytest
 
 from management_portal.society_service import (
+    lineage_branches,
     lineage_domain,
+    lineage_graph_edits,
+    lineage_handoffs,
+    lineage_lifecycle,
+    lineage_program_edits,
     lineage_read_cache,
+    lineage_reads,
+    lineage_resident_controls,
+    lineage_resident_workspaces,
+    lineage_state,
     project_domain,
     resident_catalog,
     resident_conversation_stream,
@@ -40,7 +49,7 @@ from management_portal.society_service import lineage_aggregate
 def lineage_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     root = tmp_path / "lineages"
     monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", root)
-    monkeypatch.setattr(lineage_domain, "LINEAGE_FOLDER_ROOT", root / "lineages")
+    monkeypatch.setattr(lineage_state, "LINEAGE_FOLDER_ROOT", root / "lineages")
     monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(root / "lineages"))
     install_resource_boundary(monkeypatch)
     monkeypatch.setattr(resident_domain_common, "STAGING_ROOT", tmp_path)
@@ -133,7 +142,7 @@ def test_owner_can_create_more_than_forty_lineages(
 ) -> None:
     """同一用户可以创建超过 40 个 Lineage"""
     created = [
-        lineage_domain.create_lineage(
+        lineage_lifecycle.create_lineage(
             {"title": f"Unlimited Lineage {index}", "nodes": [], "edges": []},
             "sample_admin",
         )
@@ -148,11 +157,11 @@ def test_lineage_view_reads_canonical_state_and_view_once(
     lineage_store: Path, monkeypatch: pytest.MonkeyPatch, warm: bool,
 ) -> None:
     """读取 Lineage 视图时规范状态和业务事实视图各只读一次，缓存冷热都一样"""
-    lineage = lineage_domain.create_lineage({"title": "One read snapshot", "nodes": [], "edges": []}, "sample_admin")
+    lineage = lineage_lifecycle.create_lineage({"title": "One read snapshot", "nodes": [], "edges": []}, "sample_admin")
     lineage_id = lineage["lineage_id"]
-    lineage_domain.invalidate_lineage_read_cache(lineage_id)
+    lineage_state.invalidate_lineage_read_cache(lineage_id)
     if warm:
-        lineage_domain.get_lineage(lineage_id, "sample_admin")
+        lineage_reads.get_lineage(lineage_id, "sample_admin")
     counts = {"state": 0, "view": 0}
     read_state = lineage_aggregate.read_lineage_state
     canonical_view = business_fact_views.canonical_view
@@ -167,7 +176,7 @@ def test_lineage_view_reads_canonical_state_and_view_once(
 
     monkeypatch.setattr(lineage_aggregate, "read_lineage_state", counted_state)
     monkeypatch.setattr(business_fact_views, "canonical_view", counted_view)
-    assert lineage_domain.get_lineage(lineage_id, "sample_admin")["lineage_id"] == lineage_id
+    assert lineage_reads.get_lineage(lineage_id, "sample_admin")["lineage_id"] == lineage_id
     assert counts == {"state": 1, "view": 1}
 
 
@@ -189,28 +198,28 @@ def test_owner_cannot_move_lineage_back_to_no_project(
         lambda **_kwargs: {"project_robotcompany": project_root},
     )
     projected_projects: list[str] = []
-    sync_lineage = lineage_domain._sync_lineage_resource_identity
+    sync_lineage = lineage_state._sync_lineage_resource_identity
 
     def capture_project(lineage: dict) -> None:
         projected_projects.append(str(lineage.get("project_id") or ""))
         sync_lineage(lineage)
 
     monkeypatch.setattr(
-        lineage_domain,
+        lineage_state,
         "_sync_lineage_resource_identity",
         capture_project,
     )
 
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         {"title": "Project relocation", "nodes": [], "edges": []},
         "sample_admin",
     )
     lineage_id = created["lineage_id"]
-    canonical = lineage_domain._lineage_dir(lineage_id)
+    canonical = lineage_state._lineage_dir(lineage_id)
     marker = canonical / "LINEAGE.md"
     marker.write_text("keep me\n", encoding="utf-8")
 
-    moved = lineage_domain.update_lineage_metadata(
+    moved = lineage_lifecycle.update_lineage_metadata(
         lineage_id,
         {
             "expected_revision": created["revision"],
@@ -226,13 +235,13 @@ def test_owner_cannot_move_lineage_back_to_no_project(
     assert canonical.is_symlink()
     assert canonical.resolve() == project_folder.resolve()
     assert marker.read_text(encoding="utf-8") == "keep me\n"
-    assert lineage_domain.list_lineages("sample_admin")["lineages"][0][
+    assert lineage_reads.list_lineages("sample_admin")["lineages"][0][
         "project_id"
     ] == "project_robotcompany"
     assert projected_projects[-1] == "project_robotcompany"
 
     with pytest.raises(ValueError, match="必须属于 Project"):
-        lineage_domain.update_lineage_metadata(
+        lineage_lifecycle.update_lineage_metadata(
             lineage_id,
             {
                 "expected_revision": moved["revision"],
@@ -261,18 +270,18 @@ def test_lineage_project_move_rejects_active_resident_execution_work(
         lambda **_kwargs: {"project_robotcompany": project_root},
     )
     monkeypatch.setattr(
-        lineage_domain,
+        lineage_lifecycle,
         "_lineage_relocation_blockers",
         lambda _lineage_id: ["resident_0123456789ab"],
     )
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         {"title": "Busy project relocation", "nodes": [], "edges": []},
         "sample_admin",
     )
-    canonical = lineage_domain._lineage_dir(created["lineage_id"])
+    canonical = lineage_state._lineage_dir(created["lineage_id"])
 
     with pytest.raises(ValueError, match="仍有任务正在排队或处理"):
-        lineage_domain.update_lineage_metadata(
+        lineage_lifecycle.update_lineage_metadata(
             created["lineage_id"],
             {
                 "expected_revision": created["revision"],
@@ -283,7 +292,7 @@ def test_lineage_project_move_rejects_active_resident_execution_work(
 
     assert canonical.is_dir()
     assert not canonical.is_symlink()
-    assert lineage_domain.get_lineage(
+    assert lineage_reads.get_lineage(
         created["lineage_id"],
         "sample_admin",
     )["project_id"] == "project_test"
@@ -307,7 +316,7 @@ def test_create_lineage_in_project_binds_canonical_entry(
         lambda **_kwargs: {"project_robotcompany": project_root},
     )
 
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         {
             "title": "Project-native Lineage",
             "project_id": "project_robotcompany",
@@ -316,7 +325,7 @@ def test_create_lineage_in_project_binds_canonical_entry(
         },
         "sample_admin",
     )
-    canonical = lineage_domain._lineage_dir(created["lineage_id"])
+    canonical = lineage_state._lineage_dir(created["lineage_id"])
     expected = (
         project_root
         / "knowledge_base"
@@ -351,7 +360,7 @@ def test_owner_reconcile_skips_a_lineage_deleted_after_catalog_read(
 ) -> None:
     """对账期间 Lineage 被删除时，服务对账返回 missing 而不报错"""
     del lineage_store
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         {
             **sample_lineage_payload(),
             "title": "Delete race",
@@ -383,13 +392,13 @@ def test_owner_reconcile_skips_a_lineage_deleted_after_catalog_read(
 
 def test_scheduler_waits_for_leader_and_then_uses_it(lineage_store, monkeypatch):
     """空图不观测；带自动事件源的空图等待 Leader，成员注册后按 Leader 执行。"""
-    created = lineage_domain.create_lineage({"title": "Service poll", "nodes": [], "edges": []}, "sample_admin")
+    created = lineage_lifecycle.create_lineage({"title": "Service poll", "nodes": [], "edges": []}, "sample_admin")
     calls = []
     monkeypatch.setattr(lineage_domain, "reconcile_lineage_system_events",
                         lambda lid, actor, **kw: calls.append((lid, actor)) or {"event_count": 0})
     lineage_domain.reconcile_lineage_system_events_as_service(created["lineage_id"])
     assert calls == []  # A graph without automatic sources has nothing to observe.
-    created = lineage_domain.create_lineage({"title": "Automatic poll", "program": {"components": [
+    created = lineage_lifecycle.create_lineage({"title": "Automatic poll", "program": {"components": [
         {"id": "event_source_poll", "kind": "event_source",
          "config": {"event_type": "time.reached", "schedule_mode": "countdown", "delay_seconds": 60}},
     ], "wires": []}}, "sample_admin")
@@ -399,14 +408,14 @@ def test_scheduler_waits_for_leader_and_then_uses_it(lineage_store, monkeypatch)
     leader = "resident_aaaaaaaaaaaa"
     nodes = [{"id": leader}]
     lineage_test_support.publish_registered_lineage_members({**created, "nodes": nodes})
-    lineage_domain.update_lineage(created["lineage_id"], {**created, "nodes": nodes, "leader_resident_id": leader}, "sample_admin")
+    lineage_graph_edits.update_lineage(created["lineage_id"], {**created, "nodes": nodes, "leader_resident_id": leader}, "sample_admin")
     lineage_domain.reconcile_lineage_system_events_as_service(created["lineage_id"])
     assert calls == [(created["lineage_id"], leader)]
 
 
 def test_configured_automation_still_checks_principal(lineage_store, monkeypatch):
     """有 Leader 的 Lineage 对账仍检查运行身份是否获准。"""
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         {**sample_lineage_payload(),
          "program": {"components": [{"id": "event_source_principal", "kind": "event_source",
                       "config": {"event_type": "time.reached", "schedule_mode": "countdown", "delay_seconds": 60}}], "wires": []}},
@@ -434,7 +443,7 @@ def test_lineage_topology_can_exceed_previous_node_and_edge_caps(
         }
         for index, resident_id in enumerate(node_ids, start=1)
     ]
-    node_heavy = lineage_domain.create_lineage(
+    node_heavy = lineage_lifecycle.create_lineage(
         {"title": "Unbounded nodes", "nodes": nodes, "edges": []},
         "sample_admin",
     )
@@ -459,7 +468,7 @@ def test_lineage_topology_can_exceed_previous_node_and_edge_caps(
             start=1,
         )
     ]
-    edge_heavy = lineage_domain.create_lineage(
+    edge_heavy = lineage_lifecycle.create_lineage(
         {
             "title": "Unbounded edges",
             "nodes": edge_nodes,
@@ -479,7 +488,7 @@ def test_lineage_authoring_collections_have_no_aggregate_size_caps(
     source_id = "resident_aaaaaaaaaaaa"
     seed_count = 257
     fragment_count = 161
-    lineage = lineage_domain.create_lineage(
+    lineage = lineage_lifecycle.create_lineage(
         {
             "title": "Unbounded authoring collections",
             "nodes": [{
@@ -551,7 +560,7 @@ def test_lineage_refresh_and_absorption_contracts(subtests, isolated_portal_case
         definition_changed["nodes"][0]["title"] = "Renamed worker"
         assert lineage_read_cache.definition_refresh_signature(definition_changed) != baseline
     with subtests.test(contract='test_absorption_edges_only_keep_prompt_delivery_state'), isolated_portal_case() as case_path:
-        normalized = lineage_domain._normalize_edge(
+        normalized = lineage_state._normalize_edge(
             {
                 "id": "edge_absorb",
                 "source": "source",
@@ -584,7 +593,7 @@ def node_owned_workspace(lineage: dict, resident_id: str) -> Path:
     node = next(item for item in lineage["nodes"] if item["id"] == resident_id)
     resident_id = str(node.get("id") or "")
     return (
-        lineage_domain._lineage_dir(lineage["lineage_id"])
+        lineage_state._lineage_dir(lineage["lineage_id"])
         / "residents"
         / resident_id
         / "workspace"
@@ -597,26 +606,26 @@ def test_lineage_lifecycle_revision_and_recoverable_delete(
 ) -> None:
     """Lineage 每次更新 revision 递增且不要求版本前置条件，删除后移除目录并记录删除时间"""
     synced: list[dict] = []
-    original_sync = lineage_domain._sync_lineage_resource_identity
+    original_sync = lineage_state._sync_lineage_resource_identity
 
     def capture_sync(lineage: dict) -> None:
         synced.append(dict(lineage))
         original_sync(lineage)
 
     monkeypatch.setattr(
-        lineage_domain,
+        lineage_state,
         "_sync_lineage_resource_identity",
         capture_sync,
     )
-    created = lineage_domain.create_lineage(sample_lineage_payload(), "sample_admin")
+    created = lineage_lifecycle.create_lineage(sample_lineage_payload(), "sample_admin")
 
     assert created["lineage_id"].startswith("lineage_")
     assert created["revision"] == 1
     assert "owner_ids" not in created
-    assert lineage_domain._lineage_dir(created["lineage_id"]).is_dir()
-    assert lineage_domain.list_lineages("sample_admin")["lineages"][0]["node_count"] == 2
+    assert lineage_state._lineage_dir(created["lineage_id"]).is_dir()
+    assert lineage_reads.list_lineages("sample_admin")["lineages"][0]["node_count"] == 2
 
-    updated = lineage_domain.update_lineage(
+    updated = lineage_graph_edits.update_lineage(
         created["lineage_id"],
         {"lineage": {**created, "description": "已更新说明"}},
         "sample_admin",
@@ -626,18 +635,18 @@ def test_lineage_lifecycle_revision_and_recoverable_delete(
 
     # A Lineage has no version precondition: a body built from an older
     # read still commits, and the change counter keeps advancing.
-    renamed = lineage_domain.update_lineage(
+    renamed = lineage_graph_edits.update_lineage(
         created["lineage_id"],
         {"lineage": {**updated, "title": "改名后"}},
         "sample_admin",
     )
     assert (renamed["revision"], renamed["title"]) == (3, "改名后")
 
-    result = lineage_domain.delete_lineage(created["lineage_id"], "sample_admin")
+    result = lineage_lifecycle.delete_lineage(created["lineage_id"], "sample_admin")
     # Deletion removes the Lineage folder; nothing stays in the deleted root.
     assert "recoverable_path" not in result
-    assert not any(lineage_domain._deleted_root().glob(f"{created['lineage_id']}_*"))
-    assert lineage_domain.list_lineages("sample_admin")["lineages"] == []
+    assert not any(lineage_lifecycle._deleted_root().glob(f"{created['lineage_id']}_*"))
+    assert lineage_reads.list_lineages("sample_admin")["lineages"] == []
     assert synced[-1]["lineage_id"] == created["lineage_id"]
     assert result["deleted_at"]
     with lineage_aggregate.lineage_catalog_store().state_store.database.read() as connection:
@@ -651,19 +660,19 @@ def test_empty_lineage_delete_preserves_retryable_intent_when_cleanup_fails(
     """空 Lineage 原位清理失败时目录保留，删除意图可重试且不移动存活路径"""
     from management_portal.society_service import resident_workspace_retirement
 
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         {"title": "Cleanup failure", "nodes": [], "edges": []},
         "sample_admin",
     )
     synced: list[dict] = []
-    original_sync = lineage_domain._sync_lineage_resource_identity
+    original_sync = lineage_state._sync_lineage_resource_identity
 
     def capture_sync(lineage: dict) -> None:
         synced.append(dict(lineage))
         original_sync(lineage)
 
     monkeypatch.setattr(
-        lineage_domain,
+        lineage_state,
         "_sync_lineage_resource_identity",
         capture_sync,
     )
@@ -674,9 +683,9 @@ def test_empty_lineage_delete_preserves_retryable_intent_when_cleanup_fails(
     )
 
     with pytest.raises(OSError, match="cleanup failed"):
-        lineage_domain.delete_lineage(created["lineage_id"], "sample_admin")
+        lineage_lifecycle.delete_lineage(created["lineage_id"], "sample_admin")
 
-    assert lineage_domain._lineage_dir(created["lineage_id"]).is_dir()
+    assert lineage_state._lineage_dir(created["lineage_id"]).is_dir()
     assert len(synced) == 1
     assert synced[0]["deleted_at"]
     intent = lineage_aggregate.lineage_deletion_intent(created["lineage_id"])
@@ -688,12 +697,12 @@ def test_lineage_list_includes_every_owned_lineage(
     lineage_store: Path,
 ) -> None:
     """Lineage 列表包含所有者的正式和个人 Lineage，个人 Lineage 其他用户看不到"""
-    formal = lineage_domain.create_lineage(
+    formal = lineage_lifecycle.create_lineage(
         {"title": "Formal HATG"},
         "sample_admin",
     )
     with lineage_aggregate.lineage_scope("lineage_aaaaaaaaaaaa"):
-        personal = lineage_domain._create_lineage_in_scope(
+        personal = lineage_lifecycle._create_lineage_in_scope(
             {
                 "title": "Personal Resident Lineage",
                 "lineage_membership": "personal",
@@ -702,14 +711,14 @@ def test_lineage_list_includes_every_owned_lineage(
             "lineage_aaaaaaaaaaaa",
         )
 
-    listed = lineage_domain.list_lineages("sample_admin")["lineages"]
+    listed = lineage_reads.list_lineages("sample_admin")["lineages"]
 
     expected = {formal["lineage_id"], personal["lineage_id"]}
     assert {item["lineage_id"] for item in listed} == expected
     # A personal Lineage is its owner's alone (sample_admin 2026-10-12).
     assert {
         item["lineage_id"]
-        for item in lineage_domain.list_lineages("CASE-A")["lineages"]
+        for item in lineage_reads.list_lineages("CASE-A")["lineages"]
     } == {formal["lineage_id"]}
     assert personal["lineage_membership"] == "personal"
 
@@ -721,14 +730,14 @@ def test_lineage_list_offers_changes_only_where_the_permission_system_allows(
 
     contributor 能修改 Lineage、新建和修改 Resident，删除 Lineage 要 admin。
     """
-    created = lineage_domain.create_lineage(sample_lineage_payload(), "sample_admin")
+    created = lineage_lifecycle.create_lineage(sample_lineage_payload(), "sample_admin")
     lineage_id = created["lineage_id"]
     permissions.users("sample_admin", "CASE-A", category="intern")
     # sample_admin manages the Project he created, and with it the Lineage; creating the Lineage alone gives nothing.
     permissions.place(Fact("project", "Demo", creator="sample_admin"), Fact("lineage", lineage_id, {"project": "Demo"}, creator="CASE-A"))
 
     def listed(actor):
-        return {item["lineage_id"]: item for item in lineage_domain.list_lineages(actor)["lineages"]}[lineage_id]
+        return {item["lineage_id"]: item for item in lineage_reads.list_lineages(actor)["lineages"]}[lineage_id]
 
     assert all(listed("sample_admin")["allows"].values()) and "can_manage" not in listed("sample_admin")
     assert not any(listed("CASE-A")["allows"].values())
@@ -779,7 +788,7 @@ def test_lineage_fragments_persist_edit_and_delete_with_lineage_revision(
             "size": 128,
         }],
     }]
-    created = lineage_domain.create_lineage(payload, "sample_admin")
+    created = lineage_lifecycle.create_lineage(payload, "sample_admin")
 
     assert created["fragments"] == [{
         "id": "fragment_idea_01",
@@ -806,7 +815,7 @@ def test_lineage_fragments_persist_edit_and_delete_with_lineage_revision(
         "type": "plan",
         "content": "先实现卡片编辑，再验证原文与图片拖放。\n\n[image: /srv/fragment-image.png]",
     }]
-    edited = lineage_domain.update_lineage(
+    edited = lineage_graph_edits.update_lineage(
         created["lineage_id"],
         {
             "expected_revision": created["revision"],
@@ -820,7 +829,7 @@ def test_lineage_fragments_persist_edit_and_delete_with_lineage_revision(
     assert edited["fragments"][0]["attachments"] == created["fragments"][0]["attachments"]
     assert edited["fragments"][0]["created_at"] == created["fragments"][0]["created_at"]
 
-    deleted = lineage_domain.update_lineage(
+    deleted = lineage_graph_edits.update_lineage(
         created["lineage_id"],
         {
             "expected_revision": edited["revision"],
@@ -833,7 +842,7 @@ def test_lineage_fragments_persist_edit_and_delete_with_lineage_revision(
 
 def test_lineage_creation_uses_canonical_folder_layout(lineage_store: Path) -> None:
     """新建 Lineage 使用 v3 目录结构，含 residents 目录、LINEAGE.md 和 README.md"""
-    created = lineage_domain.create_lineage(sample_lineage_payload(), "sample_admin")
+    created = lineage_lifecycle.create_lineage(sample_lineage_payload(), "sample_admin")
 
     lineage_folder = lineage_store / "lineages" / created["lineage_id"]
     assert created["schema"] == "lineage-folder-v3"
@@ -861,13 +870,13 @@ def test_lineage_creation_attaches_canonical_resident_and_workspace_ids(
         return {key: mappings[key] for key in requested}
 
     monkeypatch.setattr(lineage_test_support, "RESIDENT_TARGET_RESOLVER", targets)
-    created = lineage_domain.create_lineage(sample_lineage_payload(), "sample_admin")
+    created = lineage_lifecycle.create_lineage(sample_lineage_payload(), "sample_admin")
 
     assert created["nodes"][0]["id"] == "resident_0123456789ab"
     assert created["nodes"][1]["id"] == "resident_222222222222"
     assert "fork_id" not in created["nodes"][1]
 
-    updated = lineage_domain.update_lineage(
+    updated = lineage_graph_edits.update_lineage(
         created["lineage_id"],
         {
             "expected_revision": created["revision"],
@@ -887,7 +896,7 @@ def test_lineage_node_metadata_authorizes_the_graph_node_and_uses_light_projecti
 ) -> None:
     """读取 Lineage 节点元数据只校验节点属于该图，不进写作用域也不读运行时状态"""
     del lineage_store
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         sample_lineage_payload(),
         "sample_admin",
     )
@@ -914,7 +923,7 @@ def test_lineage_node_metadata_authorizes_the_graph_node_and_uses_light_projecti
     )
     node = created["nodes"][1]
 
-    payload = lineage_domain.get_lineage_node_metadata(
+    payload = lineage_reads.get_lineage_node_metadata(
         created["lineage_id"],
         node["id"],
         "sample_admin",
@@ -930,7 +939,7 @@ def test_lineage_node_metadata_authorizes_the_graph_node_and_uses_light_projecti
         "lineage_resident_id": node["id"],
     }
     with pytest.raises(KeyError, match="Lineage node not found"):
-        lineage_domain.get_lineage_node_metadata(
+        lineage_reads.get_lineage_node_metadata(
             created["lineage_id"],
             "resident_ffffffffffff",
             "sample_admin",
@@ -947,7 +956,7 @@ def test_node_workspaces_list_the_resident_bindings_with_its_own_first(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """节点 Workspace 列出 Resident 的全部绑定，自有 Workspace 排在最前并作为默认启动目录"""
-    created = lineage_domain.create_lineage(sample_lineage_payload(), "sample_admin")
+    created = lineage_lifecycle.create_lineage(sample_lineage_payload(), "sample_admin")
     owned = node_owned_workspace(created, "resident_0123456789ab")
     owned.mkdir(parents=True)
     reference = tmp_path / "reference"
@@ -966,7 +975,7 @@ def test_node_workspaces_list_the_resident_bindings_with_its_own_first(
 
     monkeypatch.setattr(lineage_test_support, "NODE_WORKSPACE_FOLDER_RESOLVER", roots_resolver)
 
-    workspace = lineage_domain.get_node_workspaces(created["lineage_id"], "resident_0123456789ab", "sample_admin")
+    workspace = lineage_resident_workspaces.get_node_workspaces(created["lineage_id"], "resident_0123456789ab", "sample_admin")
     assert (workspace["node_id"], workspace["resident_id"]) == ("resident_0123456789ab", "resident_0123456789ab")
     assert workspace["default_cwd"] == str(owned)
     assert [item["workspace_id"] for item in workspace["workspaces"]] == ["workspace_000000000001", "workspace_000000000002"]
@@ -983,7 +992,7 @@ def test_node_primary_workspace_binding_requires_resident_owner(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """节点绑定参考 Workspace 不改 revision 和主 Workspace，非 owner 被拒绝"""
-    created = lineage_domain.create_lineage(sample_lineage_payload(), "sample_admin")
+    created = lineage_lifecycle.create_lineage(sample_lineage_payload(), "sample_admin")
     source = tmp_path / "portal-source"
     fallback = tmp_path / "resident-default"
     source.mkdir()
@@ -1019,7 +1028,7 @@ def test_node_primary_workspace_binding_requires_resident_owner(
             "added": True,
         },
     )
-    bound = lineage_domain.bind_node_workspace(
+    bound = lineage_resident_workspaces.bind_node_workspace(
         created["lineage_id"],
         {
             "resident_id": "resident_0123456789ab",
@@ -1046,7 +1055,7 @@ def test_node_primary_workspace_binding_requires_resident_owner(
         raise PermissionError("只有 Resident 的 owner 可以绑定")
     monkeypatch.setattr(lineage_test_support, "NODE_REFERENCE_WORKSPACE_MOUNTER", denied_mount)
     with pytest.raises(PermissionError, match="Resident 的 owner"):
-        lineage_domain.bind_node_workspace(
+        lineage_resident_workspaces.bind_node_workspace(
             created["lineage_id"],
             {
                 "resident_id": "resident_0123456789ab",
@@ -1072,7 +1081,7 @@ def test_workspace_binding_repairs_before_projecting_default_cwd(
         "nodes": [{"id": resident_id, "title": "Repair target"}],
     }
     monkeypatch.setattr(
-        lineage_domain,
+        lineage_resident_workspaces,
         "_node_workspace_context",
         lambda *_args: (lineage, lineage["nodes"][0]),
     )
@@ -1092,10 +1101,10 @@ def test_workspace_binding_repairs_before_projecting_default_cwd(
             "default_cwd": str(workspace),
         }
 
-    monkeypatch.setattr(lineage_domain, "_mount_resident_reference_workspace", mount)
-    monkeypatch.setattr(lineage_domain, "get_node_workspaces", project)
+    monkeypatch.setattr(lineage_resident_workspaces, "_mount_resident_reference_workspace", mount)
+    monkeypatch.setattr(lineage_resident_workspaces, "get_node_workspaces", project)
 
-    result = lineage_domain.add_node_reference_workspace(
+    result = lineage_resident_workspaces.add_node_reference_workspace(
         lineage_id,
         resident_id,
         "resident_aaaaaaaaaaaa",
@@ -1119,14 +1128,14 @@ def test_canonical_handoff_prepares_copy_binds_target_without_dispatch(
     """
     payload = sample_lineage_payload()
     payload["edges"] = []
-    created = lineage_domain.create_lineage(payload, "sample_admin")
+    created = lineage_lifecycle.create_lineage(payload, "sample_admin")
     source = tmp_path / "source"
     source.mkdir()
     (source / "README.md").write_text("handoff\n", encoding="utf-8")
     target_default = tmp_path / "target-default"
     target_default.mkdir()
-    copied = lineage_domain._lineage_dir(created["lineage_id"]) / "handoff-workspaces" / "copy-one"
-    copied_file = lineage_domain._lineage_dir(created["lineage_id"]) / "handoff-workspaces" / "copy-file"
+    copied = lineage_state._lineage_dir(created["lineage_id"]) / "handoff-workspaces" / "copy-one"
+    copied_file = lineage_state._lineage_dir(created["lineage_id"]) / "handoff-workspaces" / "copy-file"
     mounted = {
         "resident_0123456789ab": [source],
         "resident_222222222222": [target_default],
@@ -1163,8 +1172,8 @@ def test_canonical_handoff_prepares_copy_binds_target_without_dispatch(
             "added": True,
         }
 
-    monkeypatch.setattr(lineage_domain, "get_node_workspaces", workspace_view)
-    monkeypatch.setattr(lineage_domain, "add_node_reference_workspace", add_workspace)
+    monkeypatch.setattr(lineage_resident_workspaces, "get_node_workspaces", workspace_view)
+    monkeypatch.setattr(lineage_resident_workspaces, "add_node_reference_workspace", add_workspace)
     monkeypatch.setattr(
         lineage_test_support,
         "NODE_MESSAGE_SENDER",
@@ -1174,7 +1183,7 @@ def test_canonical_handoff_prepares_copy_binds_target_without_dispatch(
         ),
     )
 
-    response = lineage_domain.create_handoff(
+    response = lineage_handoffs.create_handoff(
         created["lineage_id"],
         {
             "expected_revision": created["revision"],
@@ -1229,7 +1238,7 @@ def test_canonical_handoff_failure_is_recorded_on_same_edge(
     """交接目标路径不在允许范围时执行失败，失败记在同一条交接边上且不发消息"""
     payload = sample_lineage_payload()
     payload["edges"] = []
-    created = lineage_domain.create_lineage(payload, "sample_admin")
+    created = lineage_lifecycle.create_lineage(payload, "sample_admin")
     source = tmp_path / "source"
     source.mkdir()
     outside = tmp_path / "outside" / "copy"
@@ -1250,13 +1259,13 @@ def test_canonical_handoff_failure_is_recorded_on_same_edge(
             }],
         }
 
-    monkeypatch.setattr(lineage_domain, "get_node_workspaces", workspace_view)
+    monkeypatch.setattr(lineage_resident_workspaces, "get_node_workspaces", workspace_view)
     monkeypatch.setattr(
         lineage_test_support,
         "NODE_MESSAGE_SENDER",
         lambda node, _prompt, _actor: sent.append(str(node["id"])),
     )
-    draft = lineage_domain.create_handoff(
+    draft = lineage_handoffs.create_handoff(
         created["lineage_id"],
         {
             "source_resident_id": "resident_0123456789ab",
@@ -1272,12 +1281,12 @@ def test_canonical_handoff_failure_is_recorded_on_same_edge(
     )
 
     with pytest.raises(PermissionError, match="允许"):
-        lineage_domain.execute_handoff(
+        lineage_handoffs.execute_handoff(
             created["lineage_id"],
             draft["handoff"]["id"],
             "sample_admin",
         )
-    current = lineage_domain.get_lineage(created["lineage_id"], "sample_admin")
+    current = lineage_reads.get_lineage(created["lineage_id"], "sample_admin")
     handoff = next(edge for edge in current["edges"] if edge["id"] == draft["handoff"]["id"])
     assert handoff["status"] == "failed"
     assert handoff["items"][0]["attempts"][0]["status"] == "failed"
@@ -1294,7 +1303,7 @@ def test_ready_handoff_keeps_items_but_accepts_explanation_changes(
     """已就绪的交接不能再改交接项，但可以修改说明"""
     payload = sample_lineage_payload()
     payload["edges"] = []
-    created = lineage_domain.create_lineage(payload, "sample_admin")
+    created = lineage_lifecycle.create_lineage(payload, "sample_admin")
     source = tmp_path / "source"
     source.mkdir()
     (source / "README.md").write_text("handoff\n", encoding="utf-8")
@@ -1314,16 +1323,16 @@ def test_ready_handoff_keeps_items_but_accepts_explanation_changes(
             }],
         }
 
-    monkeypatch.setattr(lineage_domain, "get_node_workspaces", workspace_view)
-    copied = lineage_domain._lineage_dir(created["lineage_id"]) / "handoff-workspaces" / "copy-ready"
+    monkeypatch.setattr(lineage_resident_workspaces, "get_node_workspaces", workspace_view)
+    copied = lineage_state._lineage_dir(created["lineage_id"]) / "handoff-workspaces" / "copy-ready"
 
     def add_workspace(lineage_id: str, resident_id: str, actor: str, path: str, **_kwargs: object) -> dict:
         view = workspace_view(lineage_id, resident_id, actor)
         view["workspaces"].append({"workspace_id": "workspace_copy_ready", "path": path})
         return {"workspace": view, "added": True}
 
-    monkeypatch.setattr(lineage_domain, "add_node_reference_workspace", add_workspace)
-    ready = lineage_domain.create_handoff(
+    monkeypatch.setattr(lineage_resident_workspaces, "add_node_reference_workspace", add_workspace)
+    ready = lineage_handoffs.create_handoff(
         created["lineage_id"],
         {
             "source_resident_id": "resident_0123456789ab",
@@ -1342,13 +1351,13 @@ def test_ready_handoff_keeps_items_but_accepts_explanation_changes(
     assert ready["handoff"]["status"] == "ready"
 
     with pytest.raises(ValueError, match="不能再修改交接项"):
-        lineage_domain.update_handoff(
+        lineage_handoffs.update_handoff(
             created["lineage_id"],
             handoff_id,
             {"items": [{"item_id": "other", "source": {"root_id": "work_1"}}]},
             "sample_admin",
         )
-    updated = lineage_domain.update_handoff(
+    updated = lineage_handoffs.update_handoff(
         created["lineage_id"], handoff_id, {"explanation": "README 说明入口"}, "sample_admin",
     )["handoff"]
     assert updated["status"] == "ready"
@@ -1380,7 +1389,7 @@ def test_handoff_execution_projects_exact_resident_message_completion(
         },
     )
 
-    view = lineage_domain._verified_lineage_view(lineage, "sample_admin")
+    view = lineage_state._verified_lineage_view(lineage, "sample_admin")
 
     execution = view["edges"][0]["execution"]
     assert execution["status"] == "completed"
@@ -1404,7 +1413,7 @@ def test_graph_resident_status_uses_native_state_after_terminal_input(
     monkeypatch.setattr(resident_protocol, "get_resident_input_state", lambda resident, actor, message: {
         "message_id": message, "state": input_status, "updated_at": "2026-09-12T08:04:09Z",
     })
-    view = lineage_domain._verified_lineage_view(lineage, "sample_admin")
+    view = lineage_state._verified_lineage_view(lineage, "sample_admin")
     projected = view["nodes"][0]
     assert projected["status"] == "idle"
     assert projected["last_execution"] == node["last_execution"]
@@ -1427,10 +1436,10 @@ def test_graph_resident_runtime_cache_tracks_native_cursor_without_graph_write(
     lineage = lineage_test_support.create_lineage_with_resident_members({
         "title": "Native state authority", "nodes": [{"id": resident_id, "title": "Worker"}], "edges": [],
     }, "sample_admin")
-    first = lineage_domain.get_lineage(lineage["lineage_id"], "sample_admin")
+    first = lineage_reads.get_lineage(lineage["lineage_id"], "sample_admin")
     assert first["nodes"][0]["status"] == "queued"
     snapshots[resident_id] = {"state": {"work_state": "idle", "active_message_id": "", "queued_count": 0, "intake_state": "open"}, "cursor": 2}
-    second = lineage_domain.get_lineage(lineage["lineage_id"], "sample_admin")
+    second = lineage_reads.get_lineage(lineage["lineage_id"], "sample_admin")
     assert second["nodes"][0]["status"] == "idle"
     assert second["revision"] == first["revision"]
     assert second["runtime_revision"] == first["runtime_revision"]
@@ -1451,7 +1460,7 @@ def test_graph_keeps_new_work_state_after_previous_run_completed(
     monkeypatch.setattr(resident_protocol, "get_resident_input_state", lambda resident, actor, message: {
         "state": "completed", "updated_at": "2026-09-12T08:04:09Z",
     })
-    view = lineage_domain._verified_lineage_view(lineage, "sample_admin")
+    view = lineage_state._verified_lineage_view(lineage, "sample_admin")
     assert view["nodes"][0]["status"] == work_state
     assert view["nodes"][0]["last_execution"]["status"] == "completed"
 
@@ -1460,10 +1469,10 @@ def test_seed_dismissal_updates_program_state_without_touching_its_markdown(
     lineage_store: Path,
 ) -> None:
     """驳回 Seed 只把组件状态改为 dismissed，Seed 的 Markdown 文件保留"""
-    created = lineage_domain.create_lineage(sample_lineage_payload(), "sample_admin")
+    created = lineage_lifecycle.create_lineage(sample_lineage_payload(), "sample_admin")
     artifact_path = "seeds/resident_222222222222/idea-01.md"
     # A Seed's Markdown is in the Lineage folder (decision_5b5653c3eaa5).
-    artifact_file = lineage_domain._lineage_dir(created["lineage_id"]) / artifact_path
+    artifact_file = lineage_state._lineage_dir(created["lineage_id"]) / artifact_path
     artifact_file.parent.mkdir(parents=True, exist_ok=True)
     artifact_file.write_text("# 重复的候选方向\n\n这份内容仍需保留用于审计。\n", encoding="utf-8")
     candidate = json.loads(json.dumps(created, ensure_ascii=False))
@@ -1482,14 +1491,14 @@ def test_seed_dismissal_updates_program_state_without_touching_its_markdown(
             "created_by": "sample_admin",
         },
     })
-    seeded = lineage_domain.update_lineage(
+    seeded = lineage_graph_edits.update_lineage(
         created["lineage_id"],
         {"expected_revision": created["revision"], "lineage": candidate},
         "sample_admin",
     )
     # Dismissing a Seed is a component update (decision_4637ca4a69e2).
     current = next(item for item in seeded["program"]["components"] if item["id"] == "seed_idea_dismiss_01")
-    dismissed = lineage_domain.save_lineage_program_component(
+    dismissed = lineage_program_edits.save_lineage_program_component(
         created["lineage_id"],
         {
             "expected_revision": seeded["revision"],
@@ -1514,7 +1523,7 @@ def test_seed_promotion_creates_an_idle_resident_without_starting_work(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """采纳 Seed 分叉出空闲 Resident 且不启动工作，候选分叉边转为继承边"""
-    created = lineage_domain.create_lineage(sample_lineage_payload(), "sample_admin")
+    created = lineage_lifecycle.create_lineage(sample_lineage_payload(), "sample_admin")
     candidate = json.loads(json.dumps(created, ensure_ascii=False))
     candidate.setdefault("program", {}).setdefault("components", []).append({
         "id": "seed_idea_promote_01",
@@ -1531,7 +1540,7 @@ def test_seed_promotion_creates_an_idle_resident_without_starting_work(
             "created_by": "sample_admin",
         },
     })
-    seeded = lineage_domain.update_lineage(
+    seeded = lineage_graph_edits.update_lineage(
         created["lineage_id"],
         {"expected_revision": created["revision"], "lineage": candidate},
         "sample_admin",
@@ -1552,7 +1561,7 @@ def test_seed_promotion_creates_an_idle_resident_without_starting_work(
     monkeypatch.setattr(lineage_test_support, "NODE_MESSAGE_SENDER",
                         lambda node, _prompt, _actor: sent.append(node["id"]) or {"message_id": "job"})
 
-    promoted = lineage_domain.promote_seed_node(
+    promoted = lineage_branches.promote_seed_node(
         created["lineage_id"],
         {
             "expected_revision": seeded["revision"],
@@ -1578,7 +1587,7 @@ def test_seed_promotion_creates_an_idle_resident_without_starting_work(
     assert promoted["seed"]["config"]["promoted_resident_id"] == child["id"]
     assert promoted["started"] is False and sent == []
     with pytest.raises(ValueError, match="已经被采纳"):
-        lineage_domain.promote_seed_node(
+        lineage_branches.promote_seed_node(
             created["lineage_id"],
             {"expected_revision": promoted["lineage"]["revision"], "seed_id": "seed_idea_promote_01"},
             "sample_admin",
@@ -1591,12 +1600,12 @@ def test_lineage_graph_validation(lineage_store: Path) -> None:
     invalid["nodes"][1]["id"] = "fork_invalid"
     invalid["nodes"][1]["id"] = "fork_invalid"
     with pytest.raises(ValueError, match="规范的 Resident ID"):
-        lineage_domain.create_lineage(invalid, "sample_admin")
+        lineage_lifecycle.create_lineage(invalid, "sample_admin")
 
     invalid = sample_lineage_payload()
     invalid["edges"][0]["target"] = "resident_ffffffffffff"
     with pytest.raises(ValueError, match="不存在的节点"):
-        lineage_domain.create_lineage(invalid, "sample_admin")
+        lineage_lifecycle.create_lineage(invalid, "sample_admin")
 
 
 def test_inheritance_edge_is_independent_from_resident_provenance(
@@ -1628,12 +1637,12 @@ def test_inheritance_edge_is_independent_from_resident_provenance(
         "contract": {"context_scope": "完整 Resident Session 上下文"},
     }]
 
-    created = lineage_domain.create_lineage(payload, "sample_admin")
+    created = lineage_lifecycle.create_lineage(payload, "sample_admin")
     edge = created["edges"][0]
     assert edge["source"] == root_id
     assert edge["target"] == target_id
     assert "truth" not in edge
-    normalized = lineage_domain._normalize_lineage_payload(
+    normalized = lineage_state._normalize_lineage_payload(
         created,
         created,
         "sample_admin",
@@ -1669,7 +1678,7 @@ def test_existing_lineage_accepts_canonical_inheritance_edges(
         "label": "从既有 Resident 轨迹分支",
         "contract": {},
     }]
-    created = lineage_domain.create_lineage(payload, "sample_admin")
+    created = lineage_lifecycle.create_lineage(payload, "sample_admin")
     assert created["edges"][0]["source"] == root_id
     assert created["edges"][0]["target"] == target_id
     assert "truth" not in created["edges"][0]
@@ -1704,7 +1713,7 @@ def test_lineage_branch_passes_selected_codex_account_to_every_fork_mode(
         create_fork,
     )
 
-    result = lineage_domain._create_derived_resident(
+    result = lineage_branches._create_derived_resident(
         {
             "id": "resident_200000000099",
         },
@@ -1726,7 +1735,7 @@ def test_lineage_branch_passes_selected_codex_account_to_every_fork_mode(
 
 def test_edge_normalization_preserves_stored_inheritance_label() -> None:
     """规范化继承边时保留已存的标签并去掉 contract"""
-    edge = lineage_domain._normalize_edge(
+    edge = lineage_state._normalize_edge(
         {
             "id": "edge_compressed_0123456789abcdef",
             "source": "resident_aaaaaaaaaaaa",
@@ -1763,7 +1772,7 @@ def test_lineage_message_branch_separates_graph_parent_from_context_source(
     graph_parent_id = "resident_200000000098"
     context_source_id = "resident_300000000098"
 
-    result = lineage_domain._create_derived_resident(
+    result = lineage_branches._create_derived_resident(
         {"id": graph_parent_id},
         {
             "mode": "message",
@@ -1839,7 +1848,7 @@ def test_lineage_branch_merges_latest_revision_and_is_idempotent(
     monkeypatch.setattr(lineage_test_support, "LINEAGE_BRANCH_FORK_CREATOR", execute_fork)
     monkeypatch.setattr(lineage_test_support, "LINEAGE_NODE_RENAME_RESOLVER", sync_resident_title)
 
-    created = lineage_domain.create_lineage({
+    created = lineage_lifecycle.create_lineage({
         "title": "原子分支测试",
         "description": "初始说明",
         "nodes": [{
@@ -1851,7 +1860,7 @@ def test_lineage_branch_merges_latest_revision_and_is_idempotent(
         "edges": [],
         "leader_resident_id": resident_id,
     }, "sample_admin")
-    latest = lineage_domain.update_lineage(
+    latest = lineage_graph_edits.update_lineage(
         created["lineage_id"],
         {
             "expected_revision": created["revision"],
@@ -1870,7 +1879,7 @@ def test_lineage_branch_merges_latest_revision_and_is_idempotent(
         "x": 45,
         "y": 55,
     }
-    result = lineage_domain.create_lineage_branch(
+    result = lineage_branches.create_lineage_branch(
         created["lineage_id"],
         request,
         "sample_admin",
@@ -1889,7 +1898,7 @@ def test_lineage_branch_merges_latest_revision_and_is_idempotent(
     assert len(creation_calls) == 1
     assert creation_calls[0][1]["context_source_resident_id"] == "resident_300000000010"
 
-    repeated = lineage_domain.create_lineage_branch(
+    repeated = lineage_branches.create_lineage_branch(
         created["lineage_id"],
         request,
         "sample_admin",
@@ -1910,7 +1919,7 @@ def test_lineage_forks_allocate_against_committed_graph_before_provider_creation
     payload = sample_lineage_payload()
     source = payload["nodes"][0]
     source.update(x=300, y=-250)
-    lineage = lineage_domain.create_lineage(payload, "sample_admin")
+    lineage = lineage_lifecycle.create_lineage(payload, "sample_admin")
     calls = []
 
     def create_child(_source, request, _actor, _lineage_source):
@@ -1936,7 +1945,7 @@ def test_lineage_forks_allocate_against_committed_graph_before_provider_creation
                 "node_sizes": {node["id"]: {"width": width, "height": height} for node in placed},
                 "child_size": {"width": width, "height": height},
             }
-        result = lineage_domain.create_lineage_branch(lineage["lineage_id"], request, "sample_admin")
+        result = lineage_branches.create_lineage_branch(lineage["lineage_id"], request, "sample_admin")
         child = result["created_resident"]
         for node in placed:
             assert (
@@ -1944,11 +1953,11 @@ def test_lineage_forks_allocate_against_committed_graph_before_provider_creation
                 or abs(node["y"] - child["y"]) >= height + 24 / 9 - 1e-9
             )
         placed.append(child)
-    persisted = lineage_domain.get_lineage(lineage["lineage_id"], "sample_admin")
+    persisted = lineage_reads.get_lineage(lineage["lineage_id"], "sample_admin")
     assert len(persisted["nodes"]) == len(payload["nodes"]) + 12
     assert next(node for node in persisted["nodes"] if node["id"] == source["id"])["x"] == 300
     with pytest.raises(ValueError, match="尺寸"):
-        lineage_domain.create_lineage_branch(lineage["lineage_id"], {
+        lineage_branches.create_lineage_branch(lineage["lineage_id"], {
             "source_resident_id": source["id"],
             "edge_id": "edge_invalid_placement",
             "placement": {"child_size": {"width": 0, "height": 20}},
@@ -1975,7 +1984,7 @@ def test_regular_lineage_branch_uses_graph_title_as_the_shared_fork_name(
             for item in resident_ids
         },
     )
-    created = lineage_domain.create_lineage({
+    created = lineage_lifecycle.create_lineage({
         "title": "普通 Lineage",
         "nodes": [{
             "id": root_id,
@@ -2003,7 +2012,7 @@ def test_regular_lineage_branch_uses_graph_title_as_the_shared_fork_name(
         "LINEAGE_NODE_RENAME_RESOLVER",
         lambda node, title, _actor: renamed.append((node["id"], title)),
     )
-    result = lineage_domain.create_lineage_branch(
+    result = lineage_branches.create_lineage_branch(
         created["lineage_id"],
         {
             "source_resident_id": root_id,
@@ -2026,7 +2035,7 @@ def test_lineage_branch_validates_existing_graph_before_provider_fork(
 ) -> None:
     """现有图含非规范 Resident ID 时，创建分支在调用 Provider 分叉前即报错"""
     resident_id = "resident_200000000021"
-    created = lineage_domain.create_lineage({
+    created = lineage_lifecycle.create_lineage({
         "title": "Broken Resident identity",
         "nodes": [{
             "id": resident_id,
@@ -2039,7 +2048,7 @@ def test_lineage_branch_validates_existing_graph_before_provider_fork(
         created["lineage_id"], actor="sample_admin"
     )
     broken["nodes"][0]["id"] = "fork_invalid"
-    monkeypatch.setattr(lineage_domain, "_locked_branch_definition", lambda *args, **kwargs: broken)
+    monkeypatch.setattr(lineage_branches, "_locked_branch_definition", lambda *args, **kwargs: broken)
     provider_calls: list[str] = []
     monkeypatch.setattr(
         lineage_test_support,
@@ -2048,7 +2057,7 @@ def test_lineage_branch_validates_existing_graph_before_provider_fork(
     )
 
     with pytest.raises(ValueError, match="规范的 Resident ID"):
-        lineage_domain.create_lineage_branch(
+        lineage_branches.create_lineage_branch(
             created["lineage_id"],
             {
                 "source_resident_id": resident_id,
@@ -2071,7 +2080,7 @@ def test_absorption_edge_is_removed_when_target_turn_becomes_terminal(
     payload = sample_lineage_payload()
     payload["edges"] = []
     payload["program"] = {}
-    created = lineage_domain.create_lineage(payload, "sample_admin")
+    created = lineage_lifecycle.create_lineage(payload, "sample_admin")
     target_message_id = f"job_absorption_{terminal_status}"
     monkeypatch.setattr(
         lineage_test_support,
@@ -2079,7 +2088,7 @@ def test_absorption_edge_is_removed_when_target_turn_becomes_terminal(
         lambda _node, _prompt, _actor: {"message_id": target_message_id},
     )
 
-    absorption = lineage_domain.absorb_lineage_node_context(
+    absorption = lineage_branches.absorb_lineage_node_context(
         created["lineage_id"],
         {
             "source_resident_id": "resident_0123456789ab",
@@ -2098,7 +2107,7 @@ def test_absorption_edge_is_removed_when_target_turn_becomes_terminal(
     )
 
     assert terminal["removed_absorption_count"] == 1
-    current = lineage_domain.get_lineage(created["lineage_id"], "sample_admin")
+    current = lineage_reads.get_lineage(created["lineage_id"], "sample_admin")
     assert all(edge["type"] != "absorption" for edge in current["edges"])
 
 
@@ -2116,14 +2125,14 @@ def test_reconcile_removes_stale_cancelled_absorption_edge_but_keeps_failure(
     payload = sample_lineage_payload()
     payload["edges"] = []
     payload["program"] = {}
-    created = lineage_domain.create_lineage(payload, "sample_admin")
+    created = lineage_lifecycle.create_lineage(payload, "sample_admin")
     target_message_id = f"job_stale_absorption_{terminal_status}"
     monkeypatch.setattr(
         lineage_test_support,
         "NODE_MESSAGE_SENDER",
         lambda _node, _prompt, _actor: {"message_id": target_message_id},
     )
-    lineage_domain.absorb_lineage_node_context(
+    lineage_branches.absorb_lineage_node_context(
         created["lineage_id"],
         {
             "source_resident_id": "resident_0123456789ab",
@@ -2157,7 +2166,7 @@ def test_reconcile_removes_stale_cancelled_absorption_edge_but_keeps_failure(
     )
 
     assert reconciled["removed_absorption_count"] == expected_removed
-    current = lineage_domain.get_lineage(created["lineage_id"], "sample_admin")
+    current = lineage_reads.get_lineage(created["lineage_id"], "sample_admin")
     absorption_edges = [
         edge for edge in current["edges"] if edge["type"] == "absorption"
     ]
@@ -2168,7 +2177,7 @@ def test_runtime_persistence_ignores_resident_observations_without_compiling_aut
     lineage_store: Path, monkeypatch,
 ) -> None:
     """保存运行时状态不编译图定义，也不把 Resident 观测状态写回定义"""
-    created = lineage_domain.create_lineage(
+    created = lineage_lifecycle.create_lineage(
         sample_lineage_payload(),
         "sample_admin",
     )
@@ -2189,8 +2198,11 @@ def test_runtime_persistence_ignores_resident_observations_without_compiling_aut
     runtime["nodes"][0]["status"] = "queued"
 
     with monkeypatch.context() as scope:
+        scope.setattr(lineage_state, "_compiled_program", lambda *a, **k: pytest.fail("runtime persistence compiled authoring"))
+        scope.setattr(lineage_lifecycle, "_compiled_program", lambda *a, **k: pytest.fail("runtime persistence compiled authoring"))
+        scope.setattr(lineage_program_edits, "_compiled_program", lambda *a, **k: pytest.fail("runtime persistence compiled authoring"))
         scope.setattr(lineage_domain, "_compiled_program", lambda *a, **k: pytest.fail("runtime persistence compiled authoring"))
-        lineage_domain._persist_lineage_runtime_state(persisted, runtime, "Runtime boundary test")
+        lineage_state._persist_lineage_runtime_state(persisted, runtime, "Runtime boundary test")
 
     saved = lineage_aggregate.read_lineage(
         created["lineage_id"], actor="sample_admin"
@@ -2232,7 +2244,7 @@ def test_node_absorption_sends_plain_resource_reference_prompt_and_keeps_failure
     payload["edges"][0]["source"] = source_resident_id
     payload["edges"][0]["target"] = target_resident_id
     payload["leader_resident_id"] = source_resident_id
-    created = lineage_domain.create_lineage(payload, "sample_admin")
+    created = lineage_lifecycle.create_lineage(payload, "sample_admin")
     attempted_prompts: list[str] = []
 
     def fail_send(_node: dict, prompt: str, _actor: str) -> None:
@@ -2240,7 +2252,7 @@ def test_node_absorption_sends_plain_resource_reference_prompt_and_keeps_failure
         raise RuntimeError("target runtime unavailable")
 
     monkeypatch.setattr(lineage_test_support, "NODE_MESSAGE_SENDER", fail_send)
-    result = lineage_domain.absorb_lineage_node_context(
+    result = lineage_branches.absorb_lineage_node_context(
             created["lineage_id"],
             {
                 "source_resident_id": source_resident_id,
@@ -2281,7 +2293,7 @@ def test_node_absorption_sends_plain_resource_reference_prompt_and_keeps_failure
         target_resident_id
     )
     assert "lookup_command" not in result["edge"]["absorption"]
-    persisted = lineage_domain.get_lineage(created["lineage_id"], "sample_admin")
+    persisted = lineage_reads.get_lineage(created["lineage_id"], "sample_admin")
     assert next(edge for edge in persisted["edges"] if edge["type"] == "absorption")["absorption"]["error"] == "target runtime unavailable"
 
 
@@ -2300,7 +2312,7 @@ def test_resident_completion_fact_and_async_lineage_notification(
     repository = resident_conversation_stream.get_repository()
     from tests.cases.isa_test_support import publish_test_members
 
-    lineage = lineage_domain.create_lineage({
+    lineage = lineage_lifecycle.create_lineage({
         "title": "Conversation facts",
         "nodes": [{"id": "resident_0123456789ab", "title": "Worker"}],
     }, "sample_admin")
@@ -2418,7 +2430,7 @@ def test_completed_references_read_a_bounded_window_of_newest_inputs(
     from tests.cases.isa_test_support import publish_test_members
 
     resident_id = "resident_0123456789ab"
-    publish_test_members(lineage_domain.create_lineage({
+    publish_test_members(lineage_lifecycle.create_lineage({
         "title": "Long history",
         "nodes": [{"id": resident_id, "title": "Worker"}],
     }, "sample_admin"))
@@ -2463,7 +2475,7 @@ def test_human_notification_records_its_creator_and_owner_recipients(
     lineage_store: Path,
 ) -> None:
     """Lineage 人工通知记录创建者，并以 owner 作为接收人"""
-    lineage = lineage_domain.create_lineage(sample_lineage_payload(), "sample_admin")
+    lineage = lineage_lifecycle.create_lineage(sample_lineage_payload(), "sample_admin")
 
     result = lineage_domain.create_lineage_human_notification(
         lineage["lineage_id"],
@@ -2505,7 +2517,7 @@ def test_failed_resident_message_references_are_actor_scoped_and_content_free(
     repository = resident_conversation_stream.get_repository()
     from tests.cases.isa_test_support import publish_test_members
 
-    lineage = lineage_domain.create_lineage({
+    lineage = lineage_lifecycle.create_lineage({
         "title": "Conversation facts",
         "nodes": [{"id": resident_id, "title": "Worker"}],
     }, "sample_admin")
@@ -2559,13 +2571,21 @@ def test_fork_resident_rejects_legacy_implicit_dispatch_parameters(monkeypatch, 
             with monkeypatch.context() as monkeypatch:
                 sent: list[str] = []
                 monkeypatch.setattr(
-                    lineage_domain,
+                    lineage_branches,
                     "create_lineage_branch",
                     lambda *_args, **_kwargs: {
                         "created": True,
                         "created_resident": {"id": "resident_111111111111"},
                         "lineage": {"lineage_id": "lineage_111111111111"},
                     },
+                )
+                monkeypatch.setattr(
+                    lineage_resident_controls,
+                    "_send_node_message",
+                    lambda _node, prompt, _actor, **_kwargs: (
+                        sent.append(prompt)
+                        or {"message": {"message_id": "message_prompt"}}
+                    ),
                 )
                 monkeypatch.setattr(
                     lineage_domain,
@@ -2577,7 +2597,7 @@ def test_fork_resident_rejects_legacy_implicit_dispatch_parameters(monkeypatch, 
                 )
 
                 with pytest.raises(ValueError, match="只创建普通 Resident"):
-                    lineage_domain.fork_lineage_resident(
+                    lineage_branches.fork_lineage_resident(
                         "lineage_111111111111",
                         {
                             "source": "resident_222222222222",
@@ -2604,11 +2624,11 @@ def test_fork_resident_requires_a_history_selector_for_message_mode(monkeypatch,
         with subtests.test(selector=selector), isolated_portal_case() as case_path:
             with monkeypatch.context() as monkeypatch:
                 monkeypatch.setattr(
-                    lineage_domain, "create_lineage_branch",
+                    lineage_branches, "create_lineage_branch",
                     lambda *_args, **_kwargs: pytest.fail("Invalid selector must not create a Resident"),
                 )
                 with pytest.raises(ValueError, match="历史截止点选择器"):
-                    lineage_domain.fork_lineage_resident(
+                    lineage_branches.fork_lineage_resident(
                         "lineage_111111111111",
                         {
                             "source": "resident_222222222222",
@@ -2630,15 +2650,15 @@ def test_a_fork_that_cannot_attach_its_child_deletes_the_child(
     Fork 在创建子 Resident 后、写入继承边前失败（冲突或无效）时，删除该子 Resident 并原样报告错误，失败的 Fork 不留下额外节点。
 
     An HTTP error from ForkResident leaves no child behind (TAU resident.fork-handoff)."""
-    lineage = lineage_domain.create_lineage(sample_lineage_payload(), "sample_admin")
+    lineage = lineage_lifecycle.create_lineage(sample_lineage_payload(), "sample_admin")
     source = lineage["nodes"][0]["id"]
     monkeypatch.setattr(lineage_test_support, "LINEAGE_BRANCH_FORK_CREATOR", lambda *_args: {
         "resident_id": "resident_700000000001", "label": "分支", "state": "active"})
     error = (
-        lineage_domain.LineageConflictError("edges 已被另一条指令删除")
+        lineage_state.LineageConflictError("edges 已被另一条指令删除")
         if failure == "conflict" else ValueError("Lineage 图无效")
     )
-    persisted = lineage_domain._persist_lineage_state
+    persisted = lineage_state._persist_lineage_state
 
     def persist(previous, current, reason, **kwargs):
         if reason == "创建轨迹分支":
@@ -2646,13 +2666,13 @@ def test_a_fork_that_cannot_attach_its_child_deletes_the_child(
         return persisted(previous, current, reason, **kwargs)
 
     discarded = []
-    monkeypatch.setattr(lineage_domain, "_persist_lineage_state", persist)
-    monkeypatch.setattr(lineage_domain, "delete_lineage_graph_objects",
+    monkeypatch.setattr(lineage_state, "_persist_lineage_state", persist)
+    monkeypatch.setattr(lineage_graph_edits, "delete_lineage_graph_objects",
                         lambda lineage_id, payload, actor: discarded.append((lineage_id, payload, actor)))
     with pytest.raises(type(error)):
-        lineage_domain.create_lineage_branch(lineage["lineage_id"], {
+        lineage_branches.create_lineage_branch(lineage["lineage_id"], {
             "source_resident_id": source, "edge_id": "edge_failed_branch", "mode": "full",
         }, "sample_admin")
     assert discarded == [(lineage["lineage_id"], {"resident_ids": ["resident_700000000001"]}, "sample_admin")]
     assert "edge_failed_branch" not in {
-        edge["id"] for edge in lineage_domain.get_lineage(lineage["lineage_id"], "sample_admin")["edges"]}
+        edge["id"] for edge in lineage_reads.get_lineage(lineage["lineage_id"], "sample_admin")["edges"]}

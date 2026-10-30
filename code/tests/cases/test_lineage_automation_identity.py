@@ -6,7 +6,7 @@ import pytest
 from management_common.operation_identity import operation_identity_scope
 from management_common.principal import OperationIdentity
 from management_portal.society_service import lineage_automation_identity as identity
-from management_portal.society_service import lineage_domain, lineage_program_runtime
+from management_portal.society_service import lineage_graph_edits, lineage_lifecycle, lineage_program_runtime
 from management_portal.society_service import lineage_aggregate
 from tests.cases.isa_test_support import ok, run
 from tests.cases.test_isa_lineage_lifecycle import future_creation_store, lineage, resident, graph  # noqa: F401
@@ -89,12 +89,12 @@ def test_registered_leader_change_preserves_accepted_runtime_and_graph_edits(lin
 def test_domain_cannot_reintroduce_removed_user_configuration(lineage, entry):
     with pytest.raises(ValueError, match="run_as_principal"):
         if entry == "create":
-            lineage_domain.create_lineage({"run_as_principal": USER}, "sample_admin")
+            lineage_lifecycle.create_lineage({"run_as_principal": USER}, "sample_admin")
         elif entry == "metadata":
-            lineage_domain.update_lineage_metadata(lineage, {"run_as_principal": None}, "sample_admin")
+            lineage_lifecycle.update_lineage_metadata(lineage, {"run_as_principal": None}, "sample_admin")
         else:
             current = lineage_aggregate.read_lineage_state(lineage)
-            lineage_domain.update_lineage(lineage, {**current, "run_as_principal": USER}, "sample_admin")
+            lineage_graph_edits.update_lineage(lineage, {**current, "run_as_principal": USER}, "sample_admin")
 
 
 def test_registered_leader_without_permission_cannot_borrow_ambient_user(lineage, permissions):

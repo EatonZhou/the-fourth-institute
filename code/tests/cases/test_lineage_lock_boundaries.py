@@ -8,6 +8,7 @@ import pytest
 from management_portal.society_service import (
     invariant_locks,
     lineage_domain,
+    lineage_state,
     resident_lineage,
     resident_execution_work,
     resident_protocol,
@@ -260,13 +261,13 @@ def test_resident_mutation_lock_does_not_hold_an_identity_snapshot_contracts(mon
             second_entered = threading.Event()
 
             def hold_function_blocks() -> None:
-                with lineage_domain._catalog_mutation_lock("function-blocks"):
+                with lineage_state._catalog_mutation_lock("function-blocks"):
                     first_entered.set()
                     release_first.wait(timeout=2)
 
             def enter_role_templates() -> None:
                 first_entered.wait(timeout=2)
-                with lineage_domain._catalog_mutation_lock("role-templates"):
+                with lineage_state._catalog_mutation_lock("role-templates"):
                     second_entered.set()
 
             first = threading.Thread(target=hold_function_blocks)
@@ -288,7 +289,7 @@ def test_resident_mutation_lock_does_not_hold_an_identity_snapshot_contracts(mon
                 "read_lineage",
                 lambda lineage_id, *, actor=None: {"lineage_id": lineage_id},
             )
-            monkeypatch.setattr(lineage_domain, "_ensure_visible", lambda *_args: None)
+            monkeypatch.setattr(lineage_state, "_ensure_visible", lambda *_args: None)
             monkeypatch.setattr(
                 lineage_graph_state,
                 "read_state",

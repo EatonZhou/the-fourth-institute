@@ -193,7 +193,7 @@ def test_create_resident_resolves_role_and_keeps_explicit_settings(monkeypatch):
     def create(lineage, payload, actor):
         created.append(payload)
         return {"resident": {"resident_id": "resident_000000000001"}}
-    monkeypatch.setattr(residents, "domain", lambda: SimpleNamespace(create_lineage_resident=create))
+    monkeypatch.setattr(residents, "lineage_resident_nodes", lambda: SimpleNamespace(create_lineage_resident=create))
     monkeypatch.setattr(residents, "_family_to_join", lambda *a: "")
     monkeypatch.setattr(residents, "placement", lambda *a: {})
     args = {"lineage_id": "lineage_000000000001", "title": "test", "backend_role": "missing", "account_id": "two", "settings": {"model": "explicit-model"}}

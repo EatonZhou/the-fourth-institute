@@ -395,7 +395,7 @@ def test_watch_instructions_wake_when_the_owner_stops(monkeypatch, name):
 
     monkeypatch.setattr(conversation, "protocol", lambda: SimpleNamespace(
         get_resident_events=lambda *args, **kwargs: observed({"events": [], "cursor": 0})))
-    monkeypatch.setattr(definition, "domain", lambda: SimpleNamespace(
+    monkeypatch.setattr(definition, "lineage_state", lambda: SimpleNamespace(
         lineage_access_projection=lambda *args: {}, _ensure_visible=lambda *args: None))
     monkeypatch.setattr(definition, "lineage_revision", lambda *args: observed(0))
     monkeypatch.setattr(runs, "_observe", lambda *args, **kwargs: observed({"path": {"status": "active", "cursor": 0}}))

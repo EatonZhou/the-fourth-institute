@@ -7,6 +7,7 @@ from management_portal.society_service import (
     invariant_locks,
     lineage_domain,
     lineage_program_effect_execution,
+    lineage_reads,
     resident_conversation_stream,
     resident_domain,
     resident_message_contract,
@@ -75,7 +76,7 @@ def test_deliver_message_effect_uses_the_formal_receipt_under_the_outer_lock_and
     resident_id = delivery_resident["resident_id"]
     lineage_id = delivery_resident["lineage_id"]
     primitives = lineage_domain.lineage_primitives
-    lineage = lineage_domain.get_lineage(lineage_id, "sample_admin")
+    lineage = lineage_reads.get_lineage(lineage_id, "sample_admin")
     effect_id = "effect_delivery_receipt"
     # The compiled plan's shape: the declared endpoint and the Resident its Target wire connects.
     plan = {"effects": {effect_id: {

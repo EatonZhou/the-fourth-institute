@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from management_portal.society_service import lineage_domain
+from management_portal.society_service import lineage_lifecycle, lineage_program_edits, lineage_reads, lineage_state
 from management_portal.society_service import lineage_program
 from management_portal.society_service import lineage_recurring_schedule
 from management_portal.society_service import lineage_aggregate
@@ -204,14 +204,14 @@ def backend_store(
 ) -> Path:
     root = tmp_path / "lineages"
     monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", root)
-    monkeypatch.setattr(lineage_domain, "LINEAGE_FOLDER_ROOT", root / "lineages")
+    monkeypatch.setattr(lineage_state, "LINEAGE_FOLDER_ROOT", root / "lineages")
     monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(root / "lineages"))
     install_resource_boundary(monkeypatch)
     return root
 
 
 def _authoring_round_trip_lineage() -> dict:
-    return lineage_domain.create_lineage(
+    return lineage_lifecycle.create_lineage(
         {
             "title": "Program authoring round trip",
             "project_id": "project_test",
@@ -666,7 +666,7 @@ def test_wire_client_key_change_preserves_committed_graph(
     """连线拒绝修改已保存的 client_key 且保留已提交图"""
     created = _authoring_round_trip_lineage()
     lineage_id = created["lineage_id"]
-    saved = lineage_domain.save_lineage_program_wire(
+    saved = lineage_program_edits.save_lineage_program_wire(
         lineage_id,
         {
             "expected_revision": created["revision"],
@@ -677,7 +677,7 @@ def test_wire_client_key_change_preserves_committed_graph(
         operation="update",
     )
     with pytest.raises(ValueError, match="client_key"):
-        lineage_domain.save_lineage_program_wire(
+        lineage_program_edits.save_lineage_program_wire(
             lineage_id,
             {
                 "expected_revision": saved["lineage"]["revision"],
@@ -687,7 +687,7 @@ def test_wire_client_key_change_preserves_committed_graph(
             ACTOR,
             operation="update",
         )
-    current = lineage_domain.get_lineage(lineage_id, ACTOR)
+    current = lineage_reads.get_lineage(lineage_id, ACTOR)
     assert current["revision"] == saved["lineage"]["revision"]
     assert next(
         wire for wire in current["program"]["wires"]
@@ -702,7 +702,7 @@ def test_event_component_save_config_is_authoritative_across_type_changes(
     created = _authoring_round_trip_lineage()
     lineage_id = created["lineage_id"]
 
-    file_changed = lineage_domain.save_lineage_program_component(
+    file_changed = lineage_program_edits.save_lineage_program_component(
         lineage_id,
         {
             "expected_revision": created["revision"],
@@ -730,14 +730,14 @@ def test_event_component_save_config_is_authoritative_across_type_changes(
     assert file_watch["target"] == WORK_C
     assert (
         _stored_program_item(
-            lineage_domain.get_lineage(lineage_id, ACTOR),
+            lineage_reads.get_lineage(lineage_id, ACTOR),
             "components",
             "event_source_round_trip",
         )
         == file_component
     )
 
-    time_reached = lineage_domain.save_lineage_program_component(
+    time_reached = lineage_program_edits.save_lineage_program_component(
         lineage_id,
         {
             "expected_revision": file_changed["lineage"]["revision"],
@@ -767,7 +767,7 @@ def test_event_component_save_config_is_authoritative_across_type_changes(
         for wire in time_reached["lineage"]["program"]["wires"]
     )
 
-    manual = lineage_domain.save_lineage_program_component(
+    manual = lineage_program_edits.save_lineage_program_component(
         lineage_id,
         {
             "expected_revision": time_reached["lineage"]["revision"],
@@ -790,7 +790,7 @@ def test_event_component_save_config_is_authoritative_across_type_changes(
     } & set(manual_component["config"])
     assert (
         _stored_program_item(
-            lineage_domain.get_lineage(lineage_id, ACTOR),
+            lineage_reads.get_lineage(lineage_id, ACTOR),
             "components",
             "event_source_round_trip",
         )

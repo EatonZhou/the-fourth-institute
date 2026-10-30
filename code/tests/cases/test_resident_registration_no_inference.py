@@ -12,7 +12,7 @@ from management_portal.execution.agent_data_store import get_agent_data_store
 from management_portal.execution.agent_data_session_capture import persist_provider_compaction
 from management_portal.execution.service import ExecutionService
 from management_portal.society_service import (
-    lineage_domain,
+    lineage_resident_nodes,
     resident_backend,
     resident_conversation_stream,
     resident_domain,
@@ -69,7 +69,7 @@ def test_registration_and_retry_do_not_start_a_model_turn(
         payload["backend_route_id"] = "claude_one"
     if member:
         parent = resident_domain.register_resident(_new_session_payload("Parent"), "sample_admin")
-        created = lineage_domain.create_lineage_resident(parent["lineage_id"], payload, "sample_admin")["resident"]
+        created = lineage_resident_nodes.create_lineage_resident(parent["lineage_id"], payload, "sample_admin")["resident"]
     else:
         created = resident_domain.register_resident(payload, "sample_admin")
     assert_unstarted(created)

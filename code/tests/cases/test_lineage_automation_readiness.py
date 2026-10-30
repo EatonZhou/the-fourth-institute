@@ -4,7 +4,7 @@ from copy import deepcopy
 import pytest
 
 from management_portal.hatg.contracts import InstructionCall, InstructionContext
-from management_portal.society_service import lineage_domain, lineage_program_runtime
+from management_portal.society_service import lineage_domain, lineage_graph_edits, lineage_program_runtime
 from management_portal.society_service.isa import build_kernel
 from tests.cases.test_isa_lineage_lifecycle import future_creation_store, lineage, resident, graph  # noqa: F401
 
@@ -26,7 +26,7 @@ def create(lineage_id):
         {"id": TIMER, "kind": "event_source", "config": CONFIG},
         {"id": MANUAL, "kind": "event_source", "config": {"event_type": "manual.triggered"}},
     ], "wires": []}}
-    lineage_domain.update_lineage(lineage_id, definition, "sample_admin")
+    lineage_graph_edits.update_lineage(lineage_id, definition, "sample_admin")
     return lineage_id
 
 

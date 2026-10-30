@@ -5,7 +5,7 @@ import pytest
 
 from management_portal.execution.agent_data_store import AgentDataStore
 from management_portal.society_service import (
-    conversation_projection, lineage_domain, resident_protocol, server,
+    conversation_projection, lineage_state, resident_protocol, server,
 )
 from management_portal.society_service.resident_conversation_stream import ResidentConversationRepository
 from management_portal.society_service.runtime.contracts import ResidentTerminalFact
@@ -113,19 +113,19 @@ def test_membership_rejects_deleted_foreign_and_nonleader(monkeypatch):
     """Lineage 成员授权拒绝已删除、外属与非 Leader 身份"""
     member = {'lineage_id': LINEAGE}
     monkeypatch.setattr(lineage_aggregate, 'read_lineage_state', lambda lineage_id: {'leader_resident_id': RESIDENT})
-    monkeypatch.setattr(lineage_domain.resident_catalog, 'get_catalog', lambda: SimpleNamespace(get=lambda principal: member))
-    assert lineage_domain.authorize_lineage_resident_principal(LINEAGE, RESIDENT, require_leader=True) == RESIDENT
+    monkeypatch.setattr(lineage_state.resident_catalog, 'get_catalog', lambda: SimpleNamespace(get=lambda principal: member))
+    assert lineage_state.authorize_lineage_resident_principal(LINEAGE, RESIDENT, require_leader=True) == RESIDENT
     with pytest.raises(PermissionError):
-        lineage_domain.authorize_lineage_resident_principal(LINEAGE, 'owner-name')
+        lineage_state.authorize_lineage_resident_principal(LINEAGE, 'owner-name')
     with pytest.raises(PermissionError, match='Leader'):
-        lineage_domain.authorize_lineage_resident_principal(LINEAGE, 'resident_070707070707', require_leader=True)
+        lineage_state.authorize_lineage_resident_principal(LINEAGE, 'resident_070707070707', require_leader=True)
     member['deleted_at'] = 'fixture'
     with pytest.raises(PermissionError):
-        lineage_domain.authorize_lineage_resident_principal(LINEAGE, RESIDENT)
+        lineage_state.authorize_lineage_resident_principal(LINEAGE, RESIDENT)
     member.pop('deleted_at')
     member['lineage_id'] = 'lineage_070707070707'
     with pytest.raises(PermissionError):
-        lineage_domain.authorize_lineage_resident_principal(LINEAGE, RESIDENT)
+        lineage_state.authorize_lineage_resident_principal(LINEAGE, RESIDENT)
 
 
 def test_context_delta_and_bounds_use_both_snapshots(monkeypatch):

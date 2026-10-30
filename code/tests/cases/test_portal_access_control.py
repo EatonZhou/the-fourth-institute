@@ -13,6 +13,8 @@ from management_portal.resources import access as resource_access
 from management_portal.resources.service import ResourceService
 from management_portal.society_service import (
     lineage_domain,
+    lineage_reads,
+    lineage_state,
     resource_client,
 )
 from management_portal.portal_access_control import (
@@ -73,7 +75,7 @@ def test_open_mode_collaboration_and_resource_read_access_agree(
         "attributes": {},
     }, actor) is resource_allowed
     if collaboration_allowed:
-        lineage_domain._ensure_visible(lineage, actor)
+        lineage_state._ensure_visible(lineage, actor)
         lineage_aggregate.ensure_manager(lineage, actor)
     else:
         with pytest.raises(PermissionError):
@@ -477,7 +479,7 @@ def test_open_mode_lets_any_user_view_and_manage_lineages_and_residents(
             actor="CASE-A",
 
         )
-    monkeypatch.setattr(lineage_domain, "get_portal_access_store", lambda: store)
+    monkeypatch.setattr(lineage_reads, "get_portal_access_store", lambda: store)
     monkeypatch.setattr(resident_access, "get_portal_access_store", lambda: store)
     lineage = {
         "lineage_id": "lineage_0123456789ab",
@@ -488,7 +490,7 @@ def test_open_mode_lets_any_user_view_and_manage_lineages_and_residents(
     resource_client.sync_lineage(lineage)
 
     for actor in ("viewer", "contributor", "project-admin", "outsider"):
-        lineage_domain._ensure_visible(lineage, actor)
+        lineage_state._ensure_visible(lineage, actor)
         lineage_aggregate.ensure_manager(lineage, actor)
 
     resident = {
@@ -499,7 +501,7 @@ def test_open_mode_lets_any_user_view_and_manage_lineages_and_residents(
     }
     resource_client.sync_resident(resident)
     monkeypatch.setattr(
-        lineage_domain,
+        lineage_state,
         "lineage_access_projection",
         lambda _lineage_id: {
             **lineage,

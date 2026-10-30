@@ -19,7 +19,7 @@ from __future__ import annotations
 import pytest
 
 from management_portal.hatg.contracts import InstructionError
-from management_portal.society_service import lineage_domain
+from management_portal.society_service import lineage_graph_edits
 from tests.cases.isa_test_support import ACTOR, ok, run
 from tests.cases.test_isa_lineage_lifecycle import (  # noqa: F401 - lineage is a fixture
     future_creation_store,
@@ -111,12 +111,12 @@ def test_only_a_candidate_fork_ends_on_a_seed_and_starts_in_the_lineage(lineage)
         body["edges"].append({"source": source, "target": seed, "type": "inheritance"})
 
     with pytest.raises(ValueError, match="不存在的节点"):
-        lineage_domain.commit_lineage_edit(lineage, ACTOR, inherit_into_seed, reason="test")
+        lineage_graph_edits.commit_lineage_edit(lineage, ACTOR, inherit_into_seed, reason="test")
 
     def fork_into_resident(body: dict) -> None:
         body["edges"].append({"source": source, "target": source, "type": "candidate_fork"})
 
-    lineage_domain.commit_lineage_edit(lineage, ACTOR, fork_into_resident, reason="test")
+    lineage_graph_edits.commit_lineage_edit(lineage, ACTOR, fork_into_resident, reason="test")
     assert not [edge for edge in graph(lineage)["edges"] if edge["type"] == "candidate_fork"]
 
 

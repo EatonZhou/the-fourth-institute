@@ -5,7 +5,8 @@ import threading
 import pytest
 
 from management_portal.society_service import (
-    invariant_locks, lineage_domain, resident_catalog, resident_domain, resource_client,
+    invariant_locks, lineage_branches, lineage_reads, resident_catalog, resident_domain,
+    resource_client,
 )
 from tests.cases.isa_test_support import isolated_instruction_store, run  # noqa: F401
 from tests.cases.test_resident_registration_resource_ack import registration  # noqa: F401
@@ -20,7 +21,7 @@ def fork_request(parent, mode="full"):
     }
     if mode == "message":
         arguments["message"] = {"message_id": f"msg_{1:032x}"}
-    revision = lineage_domain.get_lineage(parent["lineage_id"], "sample_admin")["revision"]
+    revision = lineage_reads.get_lineage(parent["lineage_id"], "sample_admin")["revision"]
     return lambda: run("ForkResident", arguments, key="fork-resource-ack", version={parent["lineage_id"]: revision})
 
 
@@ -83,7 +84,7 @@ def test_fork_publication_failure_replays_same_child_without_recreating(registra
     revision = store.lineage_definition(parent["lineage_id"])["revision"]
     assert child_id not in resources
     assert any(edge["target"] == child_id for edge in store.lineage_definition(parent["lineage_id"])["edges"])
-    monkeypatch.setattr(lineage_domain, "_create_derived_resident", lambda *a, **kw: pytest.fail("Fork recreated"))
+    monkeypatch.setattr(lineage_branches, "_create_derived_resident", lambda *a, **kw: pytest.fail("Fork recreated"))
     assert fork().error["code"] == "instruction.projection_pending"
     monkeypatch.setattr(resource_client, "sync_resident_resource_bundles", publish)
     recovered = fork()

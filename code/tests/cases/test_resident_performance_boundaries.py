@@ -13,7 +13,7 @@ import threading
 
 import pytest
 
-from management_portal.society_service import lineage_domain
+from management_portal.society_service import lineage_state
 from management_portal.society_service import resident_domain as backend
 from management_portal.society_service import resident_directory_domain
 from management_portal.society_service import resident_runtime_domain
@@ -132,7 +132,7 @@ def test_resident_folder_opens_one_lineage_identity_snapshot(
             resident_runtime_domain.lineage_identity_record(record)
         return registry["residents"]
 
-    monkeypatch.setattr(lineage_domain, "lineage_access_projection", lineage_identity)
+    monkeypatch.setattr(lineage_state, "lineage_access_projection", lineage_identity)
     monkeypatch.setattr(resident_record_domain, "find_resident", lambda _resident_id: record)
     monkeypatch.setattr(
         resident_access,
@@ -185,7 +185,7 @@ def test_context_pressure_query_does_not_rebuild_resident_runtime_projection(
         lambda: [record],
     )
     monkeypatch.setattr(
-        lineage_domain,
+        lineage_state,
         "lineage_access_projection",
         lambda _lineage_id: {
             "lineage_id": record["lineage_id"],

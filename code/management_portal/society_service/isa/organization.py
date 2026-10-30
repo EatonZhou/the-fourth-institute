@@ -6,7 +6,7 @@ from typing import Any
 from management_portal.hatg.contracts import InstructionError, invalid
 from management_portal.hatg.kernel import Invocation
 
-from .common import domain
+from .common import lineage_moves
 
 
 def move_resident(inv: Invocation) -> dict[str, Any]:
@@ -18,7 +18,7 @@ def move_resident(inv: Invocation) -> dict[str, Any]:
         "target_lineage_id": target,
         "allow_empty_source": bool(inv.argument("allow_empty_source")),
     }
-    result = domain().move_lineage_resident(source, payload, inv.caller)
+    result = lineage_moves().move_lineage_resident(source, payload, inv.caller)
     return {**result, "operation_id": str(result.get("operation_id") or "")}
 
 
@@ -29,7 +29,7 @@ def move_lineage_objects(inv: Invocation) -> dict[str, Any]:
     source = inv.argument("lineage_id")
     target = inv.argument("target_lineage_id") or ""
     payload: dict[str, Any] = {"object_ids": object_ids, "target_lineage_id": target}
-    result = domain().move_lineage_subgraph(source, payload, inv.caller)
+    result = lineage_moves().move_lineage_subgraph(source, payload, inv.caller)
     target = str(result.get("target_lineage_id") or target)
     return {
         **result,
@@ -41,7 +41,7 @@ def move_lineage_objects(inv: Invocation) -> dict[str, Any]:
 
 
 def get_move_operation(inv: Invocation) -> dict[str, Any]:
-    result = domain().get_move_operation(inv.argument("operation_id"), inv.caller)
+    result = lineage_moves().get_move_operation(inv.argument("operation_id"), inv.caller)
     return {**result, "phase": str(result.get("phase") or ""), "status": str(result.get("status") or "")}
 
 

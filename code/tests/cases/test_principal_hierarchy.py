@@ -12,7 +12,13 @@ import copy
 
 import pytest
 
-from management_portal.society_service import lineage_domain as graphs
+from management_portal.society_service import (
+    lineage_graph_edits,
+    lineage_lifecycle,
+    lineage_reads,
+    lineage_resident_nodes,
+    lineage_state,
+)
 from management_portal.society_service import principal_hierarchy as hierarchy
 from management_portal.society_service import lineage_aggregate
 from management_portal.society_service import project_folders
@@ -20,11 +26,11 @@ from tests.cases.test_resident_folder_creation_contract import future_creation_s
 
 
 def family(title):
-    graph = graphs.create_lineage({"title": title, "project_id": "project_test"}, "sample_admin")
-    root = graphs.create_lineage_resident(graph["lineage_id"], _new_session_payload(title), "sample_admin")["resident"]
-    graph = graphs.get_lineage(graph["lineage_id"], "sample_admin")
+    graph = lineage_lifecycle.create_lineage({"title": title, "project_id": "project_test"}, "sample_admin")
+    root = lineage_resident_nodes.create_lineage_resident(graph["lineage_id"], _new_session_payload(title), "sample_admin")["resident"]
+    graph = lineage_reads.get_lineage(graph["lineage_id"], "sample_admin")
     if graph["leader_resident_id"] != root["resident_id"]:
-        graphs.update_lineage_metadata(graph["lineage_id"], {"leader_resident_id": root["resident_id"], "expected_revision": graph["revision"]}, "sample_admin")
+        lineage_lifecycle.update_lineage_metadata(graph["lineage_id"], {"leader_resident_id": root["resident_id"], "expected_revision": graph["revision"]}, "sample_admin")
     return root
 
 
@@ -36,14 +42,14 @@ def make_project_graph(lineage_id, project_id="project_test"):
     through the Lineage state transaction, where the store keeps one principal
     graph per Project.
     """
-    with graphs.catalog_mutation_lock("principal-hierarchy", operation="test"), lineage_aggregate.lineage_scope(lineage_id):
+    with lineage_state.catalog_mutation_lock("principal-hierarchy", operation="test"), lineage_aggregate.lineage_scope(lineage_id):
         current = lineage_aggregate.read_lineage(lineage_id, actor="sample_admin")
         candidate = copy.deepcopy(current)
         candidate[hierarchy.FIELD] = hierarchy.lineage_scope(
             {"level": "project", "scope_id": project_id}, project_id=current["project_id"],
         )
         resident_catalog.get_catalog().state_store.transaction(
-            lambda: graphs._persist_lineage_state_transaction(current, candidate, "principal_hierarchy"),
+            lambda: lineage_state._persist_lineage_state_transaction(current, candidate, "principal_hierarchy"),
         )
 
 
@@ -53,7 +59,7 @@ def test_project_graph_reuses_identity_and_tracks_child_leaders(future_creation_
     catalog = resident_catalog.get_catalog()
     original = copy.deepcopy(catalog.get(child["resident_id"]))
     make_project_graph(project["lineage_id"])
-    projected = graphs.get_lineage(project["lineage_id"], "sample_admin")
+    projected = lineage_reads.get_lineage(project["lineage_id"], "sample_admin")
     assert {node["id"] for node in projected["nodes"]} == {project["resident_id"], child["resident_id"]}
     node = next(node for node in projected["nodes"] if node["id"] == child["resident_id"])
     assert node["home_lineage_id"] == child["lineage_id"]
@@ -61,12 +67,12 @@ def test_project_graph_reuses_identity_and_tracks_child_leaders(future_creation_
     assert catalog.get(child["resident_id"]) == original
     assert catalog.state_store.lineage_ids_for_resident(child["resident_id"]) == [child["lineage_id"]]
     later = family("Later")
-    assert later["resident_id"] in {node["id"] for node in graphs.get_lineage(project["lineage_id"], "sample_admin")["nodes"]}
-    listing = next(row for row in graphs.list_lineages("sample_admin")["lineages"] if row["lineage_id"] == project["lineage_id"])
+    assert later["resident_id"] in {node["id"] for node in lineage_reads.get_lineage(project["lineage_id"], "sample_admin")["nodes"]}
+    listing = next(row for row in lineage_reads.list_lineages("sample_admin")["lineages"] if row["lineage_id"] == project["lineage_id"])
     assert listing["principal_hierarchy"]["level"] == "project"
     with pytest.raises(ValueError, match="Project references"):
-        graphs.delete_lineage_graph_objects(project["lineage_id"], {"resident_ids": [child["resident_id"]],
-            "expected_revision": graphs.get_lineage(project["lineage_id"], "sample_admin")["revision"]}, "sample_admin")
+        lineage_graph_edits.delete_lineage_graph_objects(project["lineage_id"], {"resident_ids": [child["resident_id"]],
+            "expected_revision": lineage_reads.get_lineage(project["lineage_id"], "sample_admin")["revision"]}, "sample_admin")
 
 
 def test_project_scope_is_unique_and_rejected_change_rolls_back(future_creation_store):
@@ -75,7 +81,7 @@ def test_project_scope_is_unique_and_rejected_change_rolls_back(future_creation_
     make_project_graph(one["lineage_id"])
     with pytest.raises(ValueError, match="only one"):
         make_project_graph(two["lineage_id"])
-    assert graphs.get_lineage(two["lineage_id"], "sample_admin")["principal_hierarchy"]["level"] == "lineage"
+    assert lineage_reads.get_lineage(two["lineage_id"], "sample_admin")["principal_hierarchy"]["level"] == "lineage"
 
 
 def test_denied_child_exposes_only_topology():
@@ -114,7 +120,7 @@ def test_ensure_project_principal_creates_once_without_starting_execution(future
     again = principal_hierarchy_domain.ensure_project("project_test", "sample_admin")
     assert first["created"] is True and again["created"] is False
     assert first["resident_id"] == again["resident_id"]
-    graph = graphs.get_lineage(first["lineage_id"], "sample_admin")
+    graph = lineage_reads.get_lineage(first["lineage_id"], "sample_admin")
     assert graph["leader_resident_id"] == first["resident_id"]
     assert child["resident_id"] in {node["id"] for node in graph["nodes"]}
     assert resident_conversation_stream.get_repository().read_messages(first["resident_id"]) == []
@@ -125,6 +131,6 @@ def test_new_residents_receive_their_home_scope_without_copying_leadership(futur
     root = family("Shared service")
     catalog = resident_catalog.get_catalog()
     assert catalog.get(root["resident_id"])["principal_hierarchy"]["level"] == "lineage"
-    member = graphs.create_lineage_resident(root["lineage_id"], _new_session_payload("New shared worker"), "sample_admin")["resident"]
+    member = lineage_resident_nodes.create_lineage_resident(root["lineage_id"], _new_session_payload("New shared worker"), "sample_admin")["resident"]
     assert catalog.get(member["resident_id"])["principal_hierarchy"]["level"] == "resident"
     assert catalog.get(member["resident_id"])["lineage_id"] == root["lineage_id"]
