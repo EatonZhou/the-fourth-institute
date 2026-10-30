@@ -31,6 +31,7 @@ from management_portal.execution.provider_catalog import AGENT_PROVIDERS
 from management_portal.execution.scheduler import Scheduler
 from management_portal.kimi_code_client import KimiCodeClient, KimiCodeDetached
 from management_portal.native_agent_transport import NativeAgentClient, NativeAgentDetached, ToolCallHandedOver
+from tests.cases import capability_contracts
 
 TURN_ID = "job-recovered"
 
@@ -38,11 +39,13 @@ TURN_ID = "job-recovered"
 def test_no_provider_resends_a_turns_input() -> None:
     """没有 Provider 会重发一轮的输入
 
-    Provider 目录不再有 interrupted_turn_recovery，Claude Code、DSH 和 Kimi Code 都声明交接时保留这一轮。
+    Provider 目录不再有 interrupted_turn_recovery，Claude Code、DSH 和 Kimi Code 都声明交接时保留这一轮；Antigravity 交付不确定时让这一轮失败（capability_contracts.WITHHELD）。
     """
     assert not any(hasattr(provider, "interrupted_turn_recovery") for provider in AGENT_PROVIDERS.values())
-    # A Provider's process keeps the turn its retiring Worker leaves (each Adapter's tests show how).
-    assert all(provider.handover_keeps_turn for provider in AGENT_PROVIDERS.values())
+    # A Provider's process keeps the turn its retiring Worker leaves (each Adapter's tests show how);
+    # test_antigravity's test_disconnect_checkpoint_refuses_to_replay_input shows the exception.
+    for name, provider in AGENT_PROVIDERS.items():
+        assert provider.handover_keeps_turn != capability_contracts.withheld(name, "handover_keeps_turn"), name
 
 
 @pytest.mark.parametrize("provider", ["kimi", "dsh"])

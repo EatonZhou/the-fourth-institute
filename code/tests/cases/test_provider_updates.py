@@ -360,6 +360,10 @@ def test_failed_service_restart_restores_previous_runtime(monkeypatch, tmp_path)
     link.symlink_to(old)
     monkeypatch.setattr(updates, "_active_executions", lambda provider: 0)
     monkeypatch.setattr(updates.KimiRuntime, "link", lambda self: link)
+    # The installation's own service and account processes are not the test's.
+    monkeypatch.setattr(updates.KimiRuntime, "services", ("portal-kimi-code.service",))
+    monkeypatch.setattr(updates.KimiRuntime, "account_processes", lambda self: ())
+    monkeypatch.setattr(updates.KimiRuntime, "busy", lambda self: False)
     calls = []
 
     def restart(*command, **kwargs):

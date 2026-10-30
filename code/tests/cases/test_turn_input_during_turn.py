@@ -176,9 +176,10 @@ def test_a_failing_provider_call_counts_as_not_delivered() -> None:
 def test_every_backend_takes_input_during_a_turn(provider: str) -> None:
     """每个 Backend 都能在轮内接收输入
 
-    所有 Backend 都声明并实现了轮内输入。
+    所有 Backend 都声明并实现了轮内输入，Design 说明不声明的除外（capability_contracts.WITHHELD）。
     """
-    assert ACTIVE_TURN_INPUT in AGENT_PROVIDERS[provider].harness_capabilities()
+    declared = ACTIVE_TURN_INPUT in AGENT_PROVIDERS[provider].harness_capabilities()
+    assert declared != capability_contracts.withheld(provider, ACTIVE_TURN_INPUT)
 
 
 @pytest.mark.parametrize("provider", ["claude", "dsh", "kimi"])

@@ -23,12 +23,17 @@ from management_portal.execution.provider_catalog import AGENT_PROVIDERS
 from management_portal.society_service.resident_session_backend_domain import (
     compact_portal_result as _compact_portal_result,
 )
+from tests.cases import capability_contracts
 from tests.cases.claude_sdk_support import load_claude_module
 
 
 def test_every_session_provider_compacts_on_demand() -> None:
-    """每种会话型 Provider 都支持按需压缩会话历史"""
-    assert all("compact" in provider.operations for provider in AGENT_PROVIDERS.values())
+    """每种会话型 Provider 都支持按需压缩会话历史
+
+    Design 说明不提供压缩的除外（capability_contracts.WITHHELD）。
+    """
+    for name, provider in AGENT_PROVIDERS.items():
+        assert ("compact" in provider.operations) != capability_contracts.withheld(name, "compact"), name
 
 
 # --- the Adapters -------------------------------------------------------------------------------

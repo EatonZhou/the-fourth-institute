@@ -99,6 +99,27 @@ ADAPTER_TESTS: dict[str, dict[str, str]] = {
         "opencode": "tests/cases/test_opencode_adapter.py::test_opencode_stops_one_subagent_by_aborting_its_child_session_while_the_turn_goes_on",
     },
 }
+# What a Provider's Design leaves undeclared on purpose, and why.  The tests that
+# hold every Provider to one of these (a capability, the ``compact`` operation,
+# ``handover_keeps_turn``) let a Provider listed here go without it.
+_ANTIGRAVITY = "decision_44f8f67d7390"
+WITHHELD: dict[str, dict[str, str]] = {
+    "antigravity": {
+        capabilities.ACTIVE_TURN_INPUT: f"{_ANTIGRAVITY}: input during a running turn is unverified",
+        capabilities.ERROR_CONTINUATION: f"{_ANTIGRAVITY}: a failure keeps its first reason and starts no model retry",
+        "compact": f"{_ANTIGRAVITY}: native compaction is unverified",
+        "handover_keeps_turn": f"{_ANTIGRAVITY}: a handover whose delivery is uncertain fails the turn; "
+                               "the input is never sent again",
+    },
+}
+
+
+def withheld(provider: str, feature: str) -> bool:
+    """Whether ``provider``'s Design leaves ``feature`` out on purpose (``WITHHELD``)."""
+
+    return feature in WITHHELD.get(provider, {})
+
+
 # The check each Adapter test of these capabilities hands its events to.
 EVENT_CHECKS = {
     capabilities.NATIVE_TOOL_EVENTS: "check_tool_events",

@@ -21,6 +21,7 @@ from management_portal.execution.harness_capabilities import ERROR_CONTINUATION
 from management_portal.execution.provider_catalog import AGENT_PROVIDERS
 from management_portal.kimi_code_client import KimiCodeTurnFailed, KimiCodeUnavailable
 from management_portal.native_agent_transport import NativeAgentUnavailable
+from tests.cases import capability_contracts
 
 TURN_STARTED = {"method": "turn/started", "params": {"threadId": "session-1", "turn": {"id": "turn-1"}}}
 ANSWER = SimpleNamespace(response="done", session_id="session-1", turn_id="turn-1:continue1", usage={})
@@ -87,11 +88,12 @@ def _run_native(
 def test_every_backend_declares_continuation(provider: str) -> None:
     """每个 Backend 都声明错误后继续的方式
 
-    Codex 在自己的 Adapter 中继续，Claude Code 与 DSH 共用原生 socket Adapter，Kimi Code 有自己的实现。
+    Codex 在自己的 Adapter 中继续，Claude Code 与 DSH 共用原生 socket Adapter，Kimi Code 有自己的实现；Design 说明不声明的除外（capability_contracts.WITHHELD）。
     """
     # Codex continues in its own Adapter; Claude Code and DSH share the native-socket
     # Adapter and Kimi Code has its own, both exercised below.
-    assert ERROR_CONTINUATION in AGENT_PROVIDERS[provider].harness_capabilities()
+    declared = ERROR_CONTINUATION in AGENT_PROVIDERS[provider].harness_capabilities()
+    assert declared != capability_contracts.withheld(provider, ERROR_CONTINUATION)
 
 
 def test_a_failed_turn_is_continued_once_in_the_same_session() -> None:
@@ -533,19 +535,20 @@ def test_kimi_probe_uses_the_server_registry_and_profile(monkeypatch) -> None:
 def test_each_route_declares_the_service_it_reaches() -> None:
     """每条路线声明自己到达的服务
 
-    Codex 到 OpenAI、Kimi 到 Moonshot、DSH 与 Claude 的 DeepSeek 路线到 DeepSeek、Claude 订阅路线到 Anthropic；只有 Anthropic 限制访问地点；每个 Provider 声明的服务都有探测入口。
+    Codex 到 OpenAI、Kimi 到 Moonshot、DSH 与 Claude 的 DeepSeek 路线到 DeepSeek、Claude 订阅路线到 Anthropic、Antigravity 到 Google；只有 Google 与 Anthropic 限制访问地点；每个 Provider 声明的服务都有探测入口。
 
     :module: execution.providers
     :design: decision_3948ce9b9443
     """
     from management_portal.execution.provider_egress import UPSTREAMS, route_upstream
 
-    assert {name: route_upstream(name) for name in ("claude", "codex", "dsh", "kimi")} == {
-        "claude": "deepseek", "codex": "openai", "dsh": "deepseek", "kimi": "moonshot"}
+    assert {name: route_upstream(name) for name in ("antigravity", "claude", "codex", "dsh", "kimi")} == {
+        "antigravity": "google", "claude": "deepseek", "codex": "openai", "dsh": "deepseek", "kimi": "moonshot"}
     assert route_upstream("claude", SUBSCRIPTION) == "anthropic"
     # Every Provider names its service; Portal checks the egress of those it has a probe for.
     assert all(p.upstream for p in AGENT_PROVIDERS.values())
-    assert [name for name, upstream in UPSTREAMS.items() if upstream.location_restricted] == ["anthropic"]
+    assert sorted(name for name, upstream in UPSTREAMS.items() if upstream.location_restricted) == [
+        "anthropic", "google"]
 
 
 def test_only_the_refusal_for_the_location_counts_as_an_egress_block() -> None:
