@@ -18,7 +18,7 @@ from management_portal.society_service import (
     resident_input_queue_domain,
 )
 from management_portal.society_service.state_store import get_lineage_data_store
-from tests.cases.test_resident_execution_protocol import resident_record  # noqa: F401 - fixture
+from tests.cases.resident_execution_test_support import resident_record  # noqa: F401 - fixture
 
 
 def test_messages_queued_during_the_first_turn_run_after_it(resident_record):  # noqa: F811

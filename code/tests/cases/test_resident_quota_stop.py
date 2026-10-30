@@ -8,7 +8,7 @@ import uuid
 
 import pytest
 
-from tests.cases.test_resident_execution_protocol import resident_record
+from tests.cases.resident_execution_test_support import resident_record
 from tests.cases.resident_delivery_test_support import published_delivery
 from tests.cases.isa_test_support import reset_kernels, run
 from tests.cases.permission_test_support import Fact, permissions  # noqa: F401

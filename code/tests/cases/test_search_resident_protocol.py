@@ -228,7 +228,7 @@ def test_scope_is_immutable_and_payload_cannot_override_authorized_input(runtime
 
 
 # The actual intake/queue owner is exercised separately from the provider simulator.
-from tests.cases.test_resident_execution_protocol import resident_record
+from tests.cases.resident_execution_test_support import resident_record
 
 
 def test_isolated_input_uses_bound_codex_resident_account_and_model(resident_record, monkeypatch):

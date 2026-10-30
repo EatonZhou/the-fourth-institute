@@ -27,7 +27,7 @@ from management_portal.society_service import (
 )
 from management_portal.society_service.domain_ports import execution_port
 from management_portal.society_service.state_store import LineageDataStore
-from tests.cases.test_execution_layer import _stack, _close
+from tests.cases.execution_layer_test_support import _stack, _close
 from tests.cases.test_lineage_catalogs import _lineage_definition, _record
 from tests.cases.test_session_restart import _restart_domain
 

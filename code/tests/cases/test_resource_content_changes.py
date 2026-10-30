@@ -24,7 +24,7 @@ from management_portal.society_service import (
     resident_execution_engine_domain,
 )
 from tests.cases.test_knowledge_versioning import KNOWLEDGE_ID, _markdown
-from tests.cases.test_resident_execution_protocol import resident_record
+from tests.cases.resident_execution_test_support import resident_record
 from knowledge_board_lan import knowledge_backend
 
 

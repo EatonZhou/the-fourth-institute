@@ -25,7 +25,7 @@ from management_portal.society_service import (
     execution_client,
     resident_execution_engine_domain,
 )
-from tests.cases.test_resident_execution_protocol import resident_record
+from tests.cases.resident_execution_test_support import resident_record
 
 
 

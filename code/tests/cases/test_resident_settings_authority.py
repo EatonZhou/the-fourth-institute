@@ -21,7 +21,7 @@ from management_portal.society_service.resident_settings_contract import (
 from management_common.postgres_database import PostgresDatabase
 from management_portal.society_service import resident_storage
 from management_portal.society_service import resident_catalog, resident_workspace_domain
-from tests.cases.test_resident_execution_protocol import resident_record  # noqa: F401 - shared registered Resident fixture
+from tests.cases.resident_execution_test_support import resident_record  # noqa: F401 - shared registered Resident fixture
 from management_portal.society_service.state_store import LineageDataStore
 
 

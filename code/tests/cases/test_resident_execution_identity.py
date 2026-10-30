@@ -1,7 +1,7 @@
 """:importance: P1"""
 import pytest
 
-from tests.cases.test_resident_execution_protocol import resident_record
+from tests.cases.resident_execution_test_support import resident_record
 from management_portal.society_service import resident_execution_work as work, trigger_paths
 from management_portal.execution import execution_inputs
 from management_portal.execution.agent_data_store import get_agent_data_store

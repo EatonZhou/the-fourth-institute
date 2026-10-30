@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from management_portal.society_service import resident_conversation_stream, resident_held_infos, resident_execution_work
 from management_portal.society_service import resident_domain as backend
-from tests.cases.test_resident_execution_protocol import input_delivery, resident_record  # noqa: F401
+from tests.cases.resident_execution_test_support import input_delivery, resident_record  # noqa: F401
 
 
 def test_info_message_is_held_without_starting_a_turn(input_delivery):

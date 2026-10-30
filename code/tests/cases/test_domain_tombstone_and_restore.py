@@ -16,7 +16,7 @@ from management_portal.resources.collaboration_registry import CollaborationDesc
 from management_portal.resources.registry_store import get_registry_store
 from management_portal.resources.service import ResourceService
 from management_portal.society_service import resource_client, resident_catalog
-from tests.cases.test_resident_execution_protocol import resident_record  # noqa: F401
+from tests.cases.resident_execution_test_support import resident_record  # noqa: F401
 
 R = 'resident_111111111111'
 L = 'lineage_222222222222'

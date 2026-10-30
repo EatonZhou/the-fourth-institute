@@ -23,7 +23,9 @@ CLASS_CHECKED = frozenset({capabilities.AUTO_COMPACT_THRESHOLD})
 
 _TURN_INPUT = "tests/cases/test_turn_input_during_turn.py"
 _CONTINUATION = "tests/cases/test_provider_error_continuation.py"
-_EXECUTION = "tests/cases/test_execution_layer.py"
+_CODEX_TURNS = "tests/cases/test_codex_backend_turns.py"
+_CODEX_CONTINUATION = "tests/cases/test_codex_backend_continuation.py"
+_CODEX_OPTIONS = "tests/cases/test_codex_backend_options.py"
 _CAPABILITIES = "tests/cases/test_harness_capabilities.py"
 _SUBAGENTS = "tests/cases/test_subagent_trace.py"
 _NATIVE_TOOLS = "tests/cases/test_claude_harness_tools.py::test_a_native_socket_turn_offers_portal_tools_and_hands_their_results_to_the_harness"
@@ -31,7 +33,7 @@ _NATIVE_TOOLS = "tests/cases/test_claude_harness_tools.py::test_a_native_socket_
 ADAPTER_TESTS: dict[str, dict[str, str]] = {
     capabilities.CONTEXT_USAGE_EVENTS: {
         "antigravity": "tests/cases/test_antigravity.py::test_turn_serves_portal_tools_and_reports_native_events_and_usage",
-        "codex": f"{_EXECUTION}::test_codex_backend_projects_current_context_usage_from_token_events",
+        "codex": f"{_CODEX_TURNS}::test_codex_backend_projects_current_context_usage_from_token_events",
         "claude": "tests/cases/test_claude_code_daemon.py::ClaudeCodeDaemonTest::test_context_usage_reports_current_window_and_rejects_stale_turn",
         "kimi": "tests/cases/test_live_provider_ingress.py::test_kimi_live_context_reports_latest_main_request_including_cached_input",
         "dsh": "tests/cases/test_dsh_bridge_handover.py::test_a_retiring_worker_leaves_the_turn_and_its_tool_call_to_the_next_worker",
@@ -48,28 +50,28 @@ ADAPTER_TESTS: dict[str, dict[str, str]] = {
     capabilities.NATIVE_TOOL_EVENTS: {
         "antigravity": "tests/cases/test_antigravity.py::test_turn_serves_portal_tools_and_reports_native_events_and_usage",
         "claude": f"{_TURN_INPUT}::test_native_text_and_reasoning_reach_the_governor_as_activity",
-        "codex": f"{_EXECUTION}::test_codex_backend_bridges_native_events_and_turn_controls",
+        "codex": f"{_CODEX_TURNS}::test_codex_backend_bridges_native_events_and_turn_controls",
         "dsh": f"{_TURN_INPUT}::test_native_text_and_reasoning_reach_the_governor_as_activity",
         "kimi": f"{_TURN_INPUT}::test_kimi_reports_the_main_agents_tool_calls_live_in_the_common_shape",
         "opencode": "tests/cases/test_opencode_adapter.py::test_an_opencode_turn_serves_its_portal_tools_and_reports_its_own_tool_calls",
     },
     capabilities.ACTIVE_TURN_INPUT: {
         "claude": f"{_TURN_INPUT}::test_a_native_turn_takes_send_now_while_it_runs",
-        "codex": f"{_EXECUTION}::test_codex_backend_maps_execution_input_control_to_native_steer",
+        "codex": f"{_CODEX_TURNS}::test_codex_backend_maps_execution_input_control_to_native_steer",
         "dsh": f"{_TURN_INPUT}::test_a_native_turn_takes_send_now_while_it_runs",
         "kimi": f"{_TURN_INPUT}::test_kimi_backend_hands_send_now_to_the_running_prompt",
         "opencode": "tests/cases/test_opencode_adapter.py::test_an_opencode_turn_takes_send_now_while_it_runs",
     },
     capabilities.ERROR_CONTINUATION: {
         "claude": f"{_CONTINUATION}::test_a_connection_failure_while_anthropic_answers_is_an_ordinary_provider_error",
-        "codex": f"{_EXECUTION}::test_codex_backend_continues_capacity_failure_once",
+        "codex": f"{_CODEX_CONTINUATION}::test_codex_backend_continues_capacity_failure_once",
         "dsh": f"{_CONTINUATION}::test_a_failed_turn_is_continued_once_in_the_same_session",
         "kimi": f"{_CONTINUATION}::test_a_failed_kimi_turn_is_continued_in_its_session",
         "opencode": "tests/cases/test_opencode_adapter.py::test_a_failed_opencode_turn_is_continued_in_its_session",
     },
     capabilities.NATIVE_IMAGE_INPUT: {
         "claude": "tests/cases/test_claude_native_integration.py::test_claude_images_reach_native_client_and_common_composer",
-        "codex": f"{_EXECUTION}::test_codex_backend_maps_input_media_to_native_app_server_images",
+        "codex": f"{_CODEX_TURNS}::test_codex_backend_maps_input_media_to_native_app_server_images",
     },
     capabilities.INPUT_IMAGE_DETAIL: {
         "codex": f"{_CAPABILITIES}::test_codex_takes_a_reasoning_effort_and_an_image_detail_for_each_turn",
@@ -79,7 +81,7 @@ ADAPTER_TESTS: dict[str, dict[str, str]] = {
     },
     capabilities.SUBAGENTS: {
         "claude": f"{_SUBAGENTS}::test_providers_that_can_start_subagents_declare_it_and_follow_the_setting",
-        "codex": f"{_EXECUTION}::test_codex_backend_enables_subagents_only_when_explicitly_allowed_contracts",
+        "codex": f"{_CODEX_OPTIONS}::test_codex_backend_enables_subagents_only_when_explicitly_allowed_contracts",
         "kimi": f"{_SUBAGENTS}::test_kimi_without_subagents_has_no_agent_tools",
         "dsh": "tests/cases/test_dsh_backend.py::test_dsh_subagents_follow_the_residents_setting",
         "opencode": "tests/cases/test_opencode_adapter.py::test_opencode_subagents_follow_the_residents_setting",

@@ -25,8 +25,8 @@ from management_portal.society_service import (
 )
 from management_portal.society_service import resident_domain as backend
 from management_portal.society_service import resident_execution_domain
-from tests.cases.test_execution_layer import _stack, _close
-from tests.cases.test_resident_execution_protocol import resident_record  # noqa: F401
+from tests.cases.execution_layer_test_support import _stack, _close
+from tests.cases.resident_execution_test_support import resident_record  # noqa: F401
 
 
 @pytest.mark.parametrize("close_phase", [

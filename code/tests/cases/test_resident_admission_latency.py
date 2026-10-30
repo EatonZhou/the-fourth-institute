@@ -23,7 +23,7 @@ from management_portal.society_service import (
     resident_input_queue_domain,
 )
 from management_portal.society_service.domain_ports import execution_port
-from tests.cases.test_resident_execution_protocol import resident_record, input_delivery  # noqa: F401
+from tests.cases.resident_execution_test_support import resident_record, input_delivery  # noqa: F401
 
 
 def send(record, suffix="a", text="A durable input"):

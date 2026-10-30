@@ -10,7 +10,7 @@ from management_portal.society_service import (
     resident_runtime_domain,
 )
 from management_portal.society_service import resident_domain as backend
-from tests.cases.test_resident_execution_protocol import resident_record  # noqa: F401 - fixture
+from tests.cases.resident_execution_test_support import resident_record  # noqa: F401 - fixture
 
 INHERITED_KEYS = (
     "model", "reasoning_effort", "service_tier",

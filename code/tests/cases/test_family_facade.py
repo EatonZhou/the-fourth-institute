@@ -20,8 +20,8 @@ from management_portal.society_service import resident_directory_domain
 from management_portal.society_service import resident_domain as backend
 from management_portal.society_service.resident_record_domain import find_resident as _find_resident
 from management_portal.society_service import resident_conversation_records
-from tests.cases.test_resident_execution_protocol import VALID_PNG_BYTES as PNG
-from tests.cases.test_resident_execution_protocol import input_delivery, resident_record  # noqa: F401
+from tests.cases.resident_execution_test_support import VALID_PNG_BYTES as PNG
+from tests.cases.resident_execution_test_support import input_delivery, resident_record  # noqa: F401
 from tests.cases.permission_test_support import Fact, permissions  # noqa: F401
 
 MEMBER = "resident_bbbbbbbbbbbb"

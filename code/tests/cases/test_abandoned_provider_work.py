@@ -31,7 +31,7 @@ from management_portal.execution.scheduler import SchedulerClient
 from management_portal.execution.worker import ExecutionWorker
 from tests.cases.database_test_support import connect
 from tests.cases.model_api_test_support import claude_subscription, register_apis
-from tests.cases.test_execution_layer import _close, _stack
+from tests.cases.execution_layer_test_support import _close, _stack
 
 
 # One Worker slot is active at a time; the restarted Worker takes it over.

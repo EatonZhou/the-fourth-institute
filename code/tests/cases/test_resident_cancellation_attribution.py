@@ -16,7 +16,7 @@ from management_portal.society_service import (
     resident_lifecycle_domain,
     resident_protocol,
 )
-from tests.cases.test_resident_execution_protocol import resident_record  # noqa: F401
+from tests.cases.resident_execution_test_support import resident_record  # noqa: F401
 
 MID = 'msg_' + 'a' * 32
 EID = 'execution-' + 'a' * 24

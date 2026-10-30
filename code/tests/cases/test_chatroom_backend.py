@@ -7,7 +7,7 @@ import pytest
 
 from management_portal import chatroom_backend
 import management_portal.resources.isa as resource_isa
-from tests.cases.test_resident_execution_protocol import input_delivery, resident_record  # noqa: F401
+from tests.cases.resident_execution_test_support import input_delivery, resident_record  # noqa: F401
 
 from management_portal.society_service import resident_conversation_records
 

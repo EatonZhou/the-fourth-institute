@@ -5,7 +5,7 @@ import secrets
 import pytest
 
 from management_portal.execution.contracts import ExecutionRequest, SessionOptions
-from tests.cases.test_execution_layer import _stack, _close
+from tests.cases.execution_layer_test_support import _stack, _close
 from tests.cases.test_quota_wait_restart_handoff import (
     resident, RID, MID,
     test_original_deferred_request_advances_and_preserves_original_input as _roundtrip,

@@ -12,7 +12,7 @@ from management_portal.society_service import (
 from management_portal.society_service.errors import LineageConflictError
 from management_portal.society_service.isa import residents
 from tests.cases.test_prompt_injection import _invocation
-from tests.cases.test_resident_execution_protocol import resident_record  # noqa: F401
+from tests.cases.resident_execution_test_support import resident_record  # noqa: F401
 from tests.cases.test_resident_capability_assembly import Context, Invocation, Request
 
 

@@ -22,7 +22,7 @@ from management_portal.execution.contracts import (
 )
 from management_portal.execution.injection_plan import plan_injection
 from management_portal.execution.runtime import ExecutionRuntime
-from tests.cases.test_resident_execution_protocol import resident_record  # noqa: F401 - fixture
+from tests.cases.resident_execution_test_support import resident_record  # noqa: F401 - fixture
 
 
 def test_presets_resolve_and_single_changes_become_custom() -> None:

@@ -23,7 +23,7 @@ from management_portal.society_service import (
     resident_queue_control_domain,
 )
 from management_portal.society_service.resident_questions import prepare_question_answer
-from tests.cases.test_resident_execution_protocol import resident_record
+from tests.cases.resident_execution_test_support import resident_record
 from management_portal.execution import slash_commands
 
 

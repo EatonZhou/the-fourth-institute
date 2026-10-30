@@ -13,7 +13,8 @@ from management_portal import ai_socket_relay as relay
 from management_portal.execution.runtime import ExecutionRuntime
 from management_portal.execution.worker import ExecutionWorker
 from tests.cases.model_api_test_support import register_apis, register_relay_resources
-from tests.cases.test_execution_layer import _stack, _close, SchedulerClient
+from tests.cases.execution_layer_test_support import _stack, _close
+from management_portal.execution.scheduler import SchedulerClient
 
 
 def test_relay_executes_each_request_with_its_own_model_and_messages(tmp_path, monkeypatch):

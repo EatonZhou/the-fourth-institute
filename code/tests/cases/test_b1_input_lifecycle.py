@@ -19,7 +19,7 @@ from management_portal.society_service.domain_ports import execution_port
 from management_portal.execution.agent_data_store import get_agent_data_store
 from management_portal.society_service.state_store import LineageDataStore
 from tests.cases.test_lineage_catalogs import _lineage_definition, _record
-from tests.cases.test_resident_execution_protocol import resident_record  # noqa: F401
+from tests.cases.resident_execution_test_support import resident_record  # noqa: F401
 
 
 @pytest.mark.parametrize('fail_delete', [False, True])

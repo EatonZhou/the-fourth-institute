@@ -27,7 +27,7 @@ from management_portal.society_service import (
     resident_record_domain,
 )
 from tests.cases.test_codex_user_input import native_client
-from tests.cases.test_resident_execution_protocol import resident_record
+from tests.cases.resident_execution_test_support import resident_record
 
 
 from management_portal.society_service import resident_execution_domain

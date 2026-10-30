@@ -23,7 +23,7 @@ from management_portal.society_service import (
 )
 from management_portal.society_service.isa import execution, residents
 from management_portal.society_service.domain_ports import execution_port
-from tests.cases.test_resident_execution_protocol import resident_record  # noqa: F401
+from tests.cases.resident_execution_test_support import resident_record  # noqa: F401
 from tests.cases.test_session_restart import _restart_domain
 from management_portal.execution import slash_commands
 

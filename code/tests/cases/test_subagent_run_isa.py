@@ -12,7 +12,7 @@ import pytest
 
 from management_portal.society_service import execution_client, resident_access, resident_conversation_stream, resident_protocol
 from management_portal.society_service import resident_conversation_records
-from tests.cases.test_resident_execution_protocol import resident_record  # noqa: F401
+from tests.cases.resident_execution_test_support import resident_record  # noqa: F401
 from tests.cases.test_subagent_trace import _turn
 
 

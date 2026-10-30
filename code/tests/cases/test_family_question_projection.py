@@ -14,7 +14,7 @@ from management_portal.society_service import (
 )
 from management_portal.society_service.resident_questions import prepare_question_answer
 from tests.cases.test_family_facade import facade, MEMBER, _register_test_member  # noqa: F401
-from tests.cases.test_resident_execution_protocol import input_delivery, resident_record  # noqa: F401
+from tests.cases.resident_execution_test_support import input_delivery, resident_record  # noqa: F401
 from tests.cases.test_codex_user_input import request_params
 
 

@@ -14,7 +14,7 @@ from management_portal.society_service import lineage_execution_authority as loc
 from management_portal.society_service import lineage_program_execution as owner
 from management_portal.society_service import lineage_primitives, resident_intake_admission as intake
 from management_portal.society_service import family_familize, resident_intake_domain
-from tests.cases.test_resident_execution_protocol import resident_record, input_delivery  # noqa: F401
+from tests.cases.resident_execution_test_support import resident_record, input_delivery  # noqa: F401
 
 
 @pytest.mark.parametrize('change', ['none', 'delete', 'reconnect'])

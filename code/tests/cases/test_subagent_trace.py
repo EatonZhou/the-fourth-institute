@@ -29,7 +29,7 @@ from management_portal.execution.claude_backend import ClaudeBackend
 from management_portal.execution.contracts import ExecutionRequest, SessionOptions
 from management_portal.execution.session_manager import RuntimeSession
 from tests.cases import capability_contracts
-from tests.cases.test_resident_execution_protocol import resident_record  # noqa: F401 - fixture
+from tests.cases.resident_execution_test_support import resident_record  # noqa: F401 - fixture
 from management_portal.society_service import resident_execution_engine_domain, resident_record_domain
 
 AGENT = "resident_subagent_trace"

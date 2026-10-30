@@ -31,7 +31,7 @@ from management_portal.society_service import (
 )
 from management_portal.society_service import resident_execution_domain
 from management_portal.society_service import resident_runtime_domain
-from tests.cases.test_resident_execution_protocol import resident_record
+from tests.cases.resident_execution_test_support import resident_record
 from scripts import resident_hatg_instruction
 
 

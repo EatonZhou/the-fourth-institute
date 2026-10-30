@@ -18,7 +18,7 @@ from management_portal.society_service import (
     resident_execution_domain,
     resident_execution_engine_domain,
 )
-from tests.cases.test_resident_execution_protocol import resident_record  # noqa: F401 - fixture
+from tests.cases.resident_execution_test_support import resident_record  # noqa: F401 - fixture
 
 
 def _edits(*calls: tuple[str, dict, bool]) -> ToolEditArtifacts:

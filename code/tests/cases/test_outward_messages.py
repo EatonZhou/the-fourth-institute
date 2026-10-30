@@ -33,7 +33,7 @@ from tests.cases.permission_test_support import Fact, permissions  # noqa: F401
 from tests.cases.test_agent_data_store import _chat
 from tests.cases.test_family_facade import _upload
 from tests.cases.test_resident_delivery_receipts import delivery_resident  # noqa: F401
-from tests.cases.test_resident_execution_protocol import VALID_PNG_BYTES as PNG
+from tests.cases.resident_execution_test_support import VALID_PNG_BYTES as PNG
 from tests.cases.test_resident_folder_creation_contract import (  # noqa: F401
     _new_session_payload,
     future_creation_store,
