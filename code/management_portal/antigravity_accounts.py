@@ -3,9 +3,11 @@ from __future__ import annotations
 
 import json
 import queue
+import re
 import sys
 import threading
 import time
+from datetime import datetime, timezone
 from urllib.parse import parse_qs, urlsplit
 from urllib.request import ProxyHandler, build_opener
 
@@ -80,6 +82,87 @@ def logged_in(account_id):
         return True
     except AuthenticationRequired:
         return False
+    except AcpError:
+        raise ValueError("Antigravity authentication status is unavailable") from None
+
+
+def quota_windows(report, observed_at):
+    """Normalize the official ACP /usage report, not session token totals.
+
+    ACP 1.4.5 exposes quota as a Markdown command response, not structured
+    metadata. Unknown formats stay unknown; absolute units are not percentages.
+    """
+    section = report.partition("### Quota Limits\n")[2]
+    group, windows = "", []
+    for line in section.splitlines():
+        if line.startswith("### "):
+            break
+        heading = re.fullmatch(r"- \*\*(.+)\*\*", line)
+        if heading:
+            group = heading[1]
+            continue
+        bucket = re.fullmatch(r"  - \*\*(.+):\*\* (.+)", line)
+        if not group or not bucket or bucket[2].startswith("Disabled"):
+            continue
+        label, value = bucket.groups()
+        percent = re.fullmatch(r"(\d+(?:\.\d+)?)% remaining(?: \(resets (.+)\))?", value)
+        remaining = float(percent[1]) if percent else None
+        if remaining is not None and not 0 <= remaining <= 100:
+            remaining = None
+        reset = None
+        if percent and percent[2]:
+            try:
+                reset = datetime.strptime(percent[2], "%b %d, %Y, %H:%M UTC").replace(tzinfo=timezone.utc).timestamp()
+            except ValueError:
+                pass
+        windows.append({"id": f"{group}/{label}", "label": f"{group} · {label}",
+                        "remaining_percent": remaining, "resets_at": reset,
+                        "observed_at": observed_at, "stale": False})
+    return windows
+
+
+def observe_account(account_id):
+    """Read native auth and quota without an LLM turn or a Resident session."""
+    session_id, commands, chunks = "", set(), []
+    def update(params):
+        item = params.get("update") or {}
+        if item.get("sessionUpdate") == "available_commands_update":
+            commands.update(c.get("name") for c in item.get("availableCommands", []))
+        if params.get("sessionId") == session_id and item.get("sessionUpdate") == "agent_message_chunk":
+            content = item.get("content") or {}
+            if content.get("type") == "text":
+                chunks.append(content.get("text", ""))
+
+    sample = {"status": "unknown", "rate_limits": []}
+    try:
+        with AcpClient(command(), env=environment(account_id), on_update=update) as client:
+            client.initialize()
+            client.call("authenticate", {"methodId": "oauth-personal"})
+            sample.update(login_observation="logged_in", login_observed_at=datetime.now(timezone.utc).isoformat())
+            try:
+                result = client.call("session/new", {"cwd": str(account_home("antigravity", account_id)),
+                    "mcpServers": [], "_meta": {"antigravity": {"enabledTools": []}}})
+                session_id = result["sessionId"]
+                # Do not turn a missing native slash command into an LLM prompt.
+                if "usage" not in commands:
+                    sample.update(error_code="quota_unsupported", error="当前 Antigravity 运行时未提供额度查询")
+                    return sample
+                result = client.call("session/prompt", {"sessionId": session_id,
+                    "prompt": [{"type": "text", "text": "/usage"}]}, timeout=30)
+                if result.get("stopReason") != "end_turn":
+                    raise ValueError("Incomplete quota response")
+                windows = quota_windows("".join(chunks), time.time())
+                if not windows:
+                    raise ValueError("No quota windows reported")
+                sample.update(status="ok", rate_limits=windows)
+            except (AcpError, TimeoutError, ValueError, KeyError):
+                # Quota failure is not evidence of logout. Raw native errors and
+                # the report must not cross the account-observation boundary.
+                sample.update(error_code="quota_unavailable", error="Antigravity 额度暂不可读取")
+            return sample
+    except AuthenticationRequired:
+        return {"status": "unknown", "rate_limits": [], "login_observation": "logged_out",
+                "login_observed_at": datetime.now(timezone.utc).isoformat()}
     except AcpError:
         raise ValueError("Antigravity authentication status is unavailable") from None
 

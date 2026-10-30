@@ -27,6 +27,20 @@ def update(sid, **value):
 def prompt(identifier, params):
     sid = params["sessionId"]
     text = params["prompt"][0]["text"]
+    if text == "/usage":
+        if os.environ.get("FAKE_USAGE_FAIL"):
+            send({"id": identifier, "error": {"code": -32000, "message": "access_token=secret"}})
+            return
+        report_file = root / "quota_report.txt"
+        report = report_file.read_text() if report_file.exists() else (
+            "## Usage\n### Token Usage\n- Total: 23456\n### Quota Limits\n"
+            "- **Gemini Models**\n  - **Five Hour Limit:** 73% remaining (resets Nov 01, 2026, 08:30 UTC)\n"
+            "  - **Weekly Limit:** 91% remaining (resets Nov 06, 2026, 08:30 UTC)\n")
+        update("unrelated-session", sessionUpdate="agent_message_chunk", content={"type": "text", "text": "wrong"})
+        for part in (report[:25], report[25:]):
+            update(sid, sessionUpdate="agent_message_chunk", content={"type": "text", "text": part})
+        send({"id": identifier, "result": {"stopReason": "end_turn"}})
+        return
     if text == "disconnect":
         os._exit(7)
     if text == "wait":
@@ -85,6 +99,8 @@ for line in sys.stdin:
     elif method in {"session/new", "session/load"}:
         session = params
         sid = params.get("sessionId", "google-session-1")
+        if not os.environ.get("FAKE_NO_USAGE"):
+            update(sid, sessionUpdate="available_commands_update", availableCommands=[{"name": "usage"}])
         if method == "session/load":
             update(sid, sessionUpdate="agent_message_chunk", content={"type": "text", "text": "old history"})
         result = {"sessionId": sid, "models": {"currentModelId": "gemini-test", "availableModels": [{"modelId": "gemini-test"}]}}

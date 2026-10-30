@@ -191,8 +191,9 @@ def test_native_file_edit_is_recorded_as_a_turn_artifact(agent):
 def test_execution_control_errors_cross_acp_reader_unchanged(agent, error_name):
     from management_portal.execution import transport
     failure = getattr(transport, error_name)("control plane unavailable")
-    def failed_observer(_):
-        raise failure
+    def failed_observer(params):
+        if params["update"]["sessionUpdate"] != "available_commands_update":
+            raise failure
     with AcpClient([sys.executable, str(FAKE)], env={"GEMINI_HOME": str(agent)}, on_update=failed_observer) as client:
         client.initialize()
         client.call("session/new", {"cwd": str(agent), "mcpServers": []})
@@ -237,9 +238,50 @@ def test_account_monitor_records_native_login_instead_of_runtime_availability(ag
 def test_account_observation_failure_does_not_invent_login_state(monkeypatch):
     from management_portal.execution.account_adapters import AntigravityAccounts
     adapter = object.__new__(AntigravityAccounts)
-    monkeypatch.setattr(accounts, "logged_in", mock.Mock(side_effect=ValueError("status unavailable")))
+    monkeypatch.setattr(accounts, "observe_account", mock.Mock(side_effect=ValueError("status unavailable")))
     with pytest.raises(ValueError, match="status unavailable"):
         adapter.observe(SimpleNamespace(account_id="antigravity_one"))
+
+
+def test_account_quota_uses_native_command_without_model_tools_or_resident_history(agent):
+    from datetime import datetime, timezone
+    sample = accounts.observe_account("antigravity_one")
+    assert sample["login_observation"] == "logged_in"
+    assert sample["status"] == "ok"
+    assert [w["remaining_percent"] for w in sample["rate_limits"]] == [73, 91]
+    assert sample["rate_limits"][0]["resets_at"] == datetime(2026, 11, 1, 8, 30, tzinfo=timezone.utc).timestamp()
+    assert sample["rate_limits"][0]["label"] == "Gemini Models · Five Hour Limit"
+    calls = requests(agent)
+    assert [c["method"] for c in calls] == ["initialize", "authenticate", "session/new", "session/prompt"]
+    assert calls[2]["params"]["mcpServers"] == []
+    assert calls[2]["params"]["_meta"]["antigravity"]["enabledTools"] == []
+    assert calls[3]["params"]["prompt"] == [{"type": "text", "text": "/usage"}]
+
+
+@pytest.mark.parametrize("setting,code,prompted", [
+    ("FAKE_USAGE_FAIL", "quota_unavailable", True), ("FAKE_NO_USAGE", "quota_unsupported", False)])
+def test_quota_failure_retains_auth_without_exposing_errors_or_falling_back_to_llm(agent, monkeypatch, setting, code, prompted):
+    monkeypatch.setattr(accounts, "environment", lambda _: {"GEMINI_HOME": str(agent), setting: "1"})
+    sample = accounts.observe_account("antigravity_one")
+    assert sample["login_observation"] == "logged_in"
+    assert sample["error_code"] == code
+    assert sample["rate_limits"] == []
+    assert "secret" not in json.dumps(sample)
+    assert any(c["method"] == "session/prompt" for c in requests(agent)) is prompted
+
+
+def test_quota_parser_does_not_invent_percentages_for_unknown_units_disabled_or_malformed_data():
+    report = ("### Quota Limits\n- **Gemini**\n"
+              "  - **Daily:** 0% remaining (resets invalid)\n"
+              "  - **Weekly:** 100% remaining\n"
+              "  - **Unused:** Disabled\n"
+              "  - **Absolute:** 1,200 units remaining\n"
+              "  - **Broken:** 101% remaining\n"
+              "### Token Usage\n  - **Tokens:** 90% remaining\n")
+    windows = accounts.quota_windows(report, 123)
+    assert [w["remaining_percent"] for w in windows] == [0, 100, None, None]
+    assert all(w["resets_at"] is None and w["observed_at"] == 123 for w in windows)
+    assert accounts.quota_windows("### Quota Limits\n- Unable to retrieve quota status (secret)", 1) == []
 
 
 def test_login_diagnostics_only_expose_known_failure_categories():

@@ -10,8 +10,10 @@ const context = vm.createContext({
   formatDateTime: value => value ? new Date(value).toISOString() : '',
 });
 const source = fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static/home.js'), 'utf8');
-const fn = babelParse(source, 'home.js').program.body.find(n => n.type === 'FunctionDeclaration' && n.id.name === 'accountCreditsHtml');
-vm.runInContext(source.slice(fn.start, fn.end), context);
+for (const name of ['accountCreditsHtml', 'accountQuotaWindow', 'accountQuotaWindowIsStale']) {
+  const fn = babelParse(source, 'home.js').program.body.find(n => n.type === 'FunctionDeclaration' && n.id.name === name);
+  vm.runInContext(source.slice(fn.start, fn.end), context);
+}
 const render = account => {
   dom.window.document.querySelector('main').innerHTML = context.accountCreditsHtml(account);
   return dom.window.document.querySelector('[data-account-credits]');
@@ -29,5 +31,16 @@ try {
   assert.match(unknown.title, /采样时间未知/);
   assert.match(unknown.textContent, /—/);
   assert.equal(render({}), null);
+  const quota = {id: 'Gemini/Five Hour', label: 'Gemini · Five Hour', remaining_percent: 73,
+    observed_at: Date.now() / 1000, resets_at: Date.now() / 1000 + 3600, stale: false};
+  const account = {account_id: 'antigravity_one'};
+  dom.window.document.querySelector('main').innerHTML = context.accountQuotaWindow(account, quota);
+  const meter = dom.window.document.querySelector('[role="meter"]');
+  assert.equal(meter.getAttribute('aria-valuenow'), '73');
+  assert.match(dom.window.document.querySelector('[data-account-quota-window]').title, /重置/);
+  assert.match(dom.window.document.querySelector('main').textContent, /Gemini · Five Hour.*73%/s);
+  dom.window.document.querySelector('main').innerHTML = context.accountQuotaWindow(account, {...quota, remaining_percent: null});
+  assert.equal(dom.window.document.querySelector('[role="meter"]'), null);
+  assert.match(dom.window.document.querySelector('main').textContent, /—/);
   console.log('Credits retain their own sampling identity, stale value and unknown-time display');
 } finally { dom.window.close(); }
