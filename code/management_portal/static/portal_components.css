@@ -4639,7 +4639,7 @@ button.portalFileLink {
 }
 .subagentLiveGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
   gap: 10px;
   min-width: 0;
 }
@@ -4647,6 +4647,7 @@ button.portalFileLink {
 .subagentLiveCard {
   position: relative;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
   min-width: 0;
   padding: 12px 14px 10px;
