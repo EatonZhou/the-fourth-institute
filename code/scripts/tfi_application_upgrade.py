@@ -264,6 +264,13 @@ class ApplicationUpgrade:
         # possible. Never restore a stale cold database after this boundary.
         self.save(journal, 'resuming', resume_states=records, resume_outcome=outcome)
         self.start(records)
+        if outcome == 'complete':
+            # Dependency preparation persisted "prepared". Only successful
+            # startup/health may finalize the new installation generation;
+            # restoring an old pair must retain its original metadata.
+            for state in records:
+                self.api.save_stage(state, 'application_upgrade_health', 'installed',
+                                    upgrade_id=journal['id'])
         self.save(journal, outcome)
 
     def restore_admission_in_runtime(self, records, entries):
@@ -503,9 +510,11 @@ class ApplicationUpgrade:
                 return {'status': 'installed', 'run_id': manifest['run_id'],
                     'manifest_sha256': journal['manifest_sha256'], 'backup': str(parent / 'backup')}
             except Exception:
-                if journal.get('phase') == 'resuming':
+                if journal.get('phase') in {'resuming', 'complete'}:
                     # Already admitted work may have progressed. Retry startup
                     # through application-recover, never roll back its data.
+                    # save() sets the in-memory phase before publishing it, so
+                    # a failed final journal write has the same boundary.
                     raise
                 # The saved stopped pair, never a seed or reverse SQL, is the
                 # authority for recovery. A failed generation is retained too.

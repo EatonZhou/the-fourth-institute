@@ -80,7 +80,8 @@ def transaction(application, tmp_path, monkeypatch):
     monkeypatch.setattr(owner, 'start', Mock())
     monkeypatch.setattr(owner, 'schema', Mock())
     monkeypatch.setattr(owner, 'detach_codex', Mock(return_value=[]))
-    monkeypatch.setattr(installer, 'prepare_dependencies', Mock())
+    monkeypatch.setattr(installer, 'prepare_dependencies', Mock(side_effect=lambda state, manifest:
+        installer.save_stage(state, 'dependencies', 'prepared')))
     monkeypatch.setattr(installer, 'service_controller', lambda: Mock())
     monkeypatch.setattr(installer, 'wait_database', Mock())
     from scripts import tfi_application_work as work
@@ -123,6 +124,8 @@ def test_success_keeps_identity_and_credentials_without_importing_seed(transacti
     current = upgrade.states(owner.application)[0]
     assert current['target'] == state['target']
     assert current['version_run_id'] == 'new-run'
+    assert current['status'] == 'installed'
+    assert current['stages'][-1]['phase'] == 'application_upgrade_health'
     assert (owner.application / 'instance/one/data/database/business').read_text() == 'local rows'
     assert (owner.application / 'instance/one/data/accounts/sentinel').read_text() == 'private fixture'
     assert (owner.application / 'code/version').read_text() == 'new'
@@ -162,11 +165,53 @@ def test_admitted_start_failure_recovers_forward_without_replaying_backup(transa
     with pytest.raises(RuntimeError, match='startup health failed'):
         owner.upgrade(path)
     assert installer.read_json(owner.journal_path)['phase'] == 'resuming'
+    assert upgrade.states(owner.application)[0]['status'] == 'prepared'
     assert (owner.application / 'code/version').read_text() == 'new'
     owner.start.side_effect = None
     assert owner.recover()['status'] == 'complete'
+    assert upgrade.states(owner.application)[0]['status'] == 'installed'
     assert business.read_text() == 'waiting input progressed after admission'
     assert not upgrade.pending(owner.application)
+
+
+@pytest.mark.parametrize('failed_write', ['installation', 'complete_journal'])
+def test_completion_write_failure_recovers_forward_without_restoring_data(transaction, monkeypatch, failed_write):
+    owner, path, _ = transaction
+    business = owner.application / 'instance/one/data/database/business'
+    owner.start.side_effect = lambda records: business.write_text('new admitted work')
+    save_stage = installer.save_stage
+    write_journal = upgrade.atomic_write_private_bytes
+
+    def fail_state(state, phase, status, **details):
+        if phase == 'application_upgrade_health':
+            raise OSError('completion write failed')
+        save_stage(state, phase, status, **details)
+
+    def fail_journal(path, content):
+        if path == owner.journal_path and json.loads(content)['phase'] == 'complete':
+            raise OSError('completion write failed')
+        write_journal(path, content)
+
+    monkeypatch.setattr(installer, 'save_stage', fail_state if failed_write == 'installation' else save_stage)
+    monkeypatch.setattr(upgrade, 'atomic_write_private_bytes',
+                        fail_journal if failed_write == 'complete_journal' else write_journal)
+    with pytest.raises(OSError, match='completion write failed'):
+        owner.upgrade(path)
+    assert installer.read_json(owner.journal_path)['phase'] == 'resuming'
+    assert business.read_text() == 'new admitted work'
+    assert (owner.application / 'code/version').read_text() == 'new'
+    assert upgrade.states(owner.application)[0]['status'] == (
+        'prepared' if failed_write == 'installation' else 'installed')
+    monkeypatch.setattr(installer, 'save_stage', save_stage)
+    monkeypatch.setattr(upgrade, 'atomic_write_private_bytes', write_journal)
+    owner.start.side_effect = None
+    assert owner.recover()['status'] == 'complete'
+    current = upgrade.states(owner.application)[0]
+    assert current['status'] == 'installed'
+    assert current['version_run_id'] == 'new-run'
+    assert business.read_text() == 'new admitted work'
+    assert owner.recover()['status'] == 'complete'
+    assert upgrade.states(owner.application)[0] == current
 
 
 def test_unknown_database_client_restores_service_availability_without_backup(transaction, monkeypatch):
@@ -178,6 +223,7 @@ def test_unknown_database_client_restores_service_availability_without_backup(tr
     assert journal['phase'] == 'prebackup_failed'
     assert not (owner.paths(journal) / 'backup').exists()
     assert (owner.application / 'code/version').read_text() == 'original'
+    assert upgrade.states(owner.application)[0]['status'] == 'installed'
     owner.start.assert_called_once()
 
 
