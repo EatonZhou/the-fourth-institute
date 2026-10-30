@@ -59,6 +59,13 @@ def new_instruction_id(owner: str) -> str:
     return f"inst_{OWNER_MARKS[owner]}_{secrets.token_hex(10)}"
 
 
+def is_instruction_id(value: Any, owner: str) -> bool:
+    """Whether ``value`` has the shape of an ID ``owner`` would assign."""
+    import re
+
+    return isinstance(value, str) and re.fullmatch(rf"inst_{OWNER_MARKS[owner]}_[0-9a-f]{{20}}", value) is not None
+
+
 def owner_of_instruction_id(instruction_id: str) -> str:
     parts = str(instruction_id or "").split("_")
     if len(parts) != 3 or parts[0] != "inst":
@@ -317,11 +324,7 @@ class InstructionKernel:
         self, call: InstructionCall, context: InstructionContext, *, instruction_id: str = "",
     ) -> InstructionResult:
         if instruction_id != "":
-            import re
-
-            if not isinstance(instruction_id, str) or not re.fullmatch(
-                rf"inst_{OWNER_MARKS[self.owner]}_[0-9a-f]{{20}}", instruction_id,
-            ):
+            if not is_instruction_id(instruction_id, self.owner):
                 return failed_result(new_instruction_id(self.owner), call.instruction,
                                      InstructionError("instruction.invalid_arguments", "执行 ID 与指令 owner 不匹配"))
         else:

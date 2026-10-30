@@ -32,9 +32,9 @@ def test_publication_reaches_runscript_without_ambient_identity(lineage, monkeyp
     observed = []
     original_execute = routing.execute
 
-    def execute(call, context):
+    def execute(call, context, instruction_id=""):
         if call["instruction"] != "RunScript":
-            return original_execute(call, context)
+            return original_execute(call, context, instruction_id=instruction_id)
         observed.append({"call": deepcopy(call), "caller": context.caller,
                          "activation": deepcopy(ACTIVATION.get()),
                          "identity": current_operation_identity().to_dict()})

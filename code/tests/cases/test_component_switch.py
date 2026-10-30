@@ -74,7 +74,7 @@ def test_effect_pause_blocks_initial_execution_and_recovery_between_calls(primit
     activation = lineage_primitives.EffectInvocation(id="switch_invocation", activation=
         lineage_primitives.make_event("manual.triggered", payload={}, identity=OperationIdentity.for_actor(ACTOR).to_dict()))
     calls = []
-    def execute(call, context):
+    def execute(call, context, instruction_id=""):
         calls.append(call["instruction"])
         if call["instruction"] == "Ping":
             component_runtime.set_paused(lid, EFFECT, True, ACTOR)
@@ -102,7 +102,7 @@ def test_queued_effect_waits_while_closed_and_executes_once_after_open(primitive
     """排队的 Effect 暂停时保留事件并在恢复后执行一次"""
     from management_portal.society_service import lineage_program_backlog
     calls = []
-    monkeypatch.setattr(routing, "execute", lambda call, context: (
+    monkeypatch.setattr(routing, "execute", lambda call, context, **_: (
         calls.append(call["instruction"]) or _Outcome("committed", {}, instruction_id="inst_switch_queue")))
     current = make_lineage([source(), {"id": EFFECT, "kind": "effect", "config": {"script": "GetLineage"}}],
                            [{**event_wire(), "target": EFFECT}])

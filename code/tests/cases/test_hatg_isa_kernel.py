@@ -265,9 +265,9 @@ def test_routing_sends_each_call_to_its_owner(monkeypatch, kernel, fake):
     monkeypatch.setenv("PORTAL_ISA_ROUTING", "socket")
     from management_portal.hatg import socket_rpc
 
-    def call_remote(owner, call, context):
+    def call_remote(owner, call, context, instruction_id=""):
         remote.append((owner, call.instruction, context.caller))
-        return kernel.execute(call, context)
+        return kernel.execute(call, context, instruction_id=instruction_id)
 
     monkeypatch.setattr(socket_rpc, "call_remote", call_remote)
     routing.execute({"instruction": "GetLineage", "arguments": {"lineage_id": "lineage_aaaaaaaaaaaa"}}, CONTEXT)
@@ -292,7 +292,7 @@ def test_clear_mailbox_runs_where_its_target_mailbox_is_held(monkeypatch):
     remote = []
     monkeypatch.setattr(kernel_module, "_KERNELS", {})
     monkeypatch.setenv("PORTAL_ISA_ROUTING", "socket")
-    monkeypatch.setattr(socket_rpc, "call_remote", lambda owner, call, context: remote.append(owner) or "sent")
+    monkeypatch.setattr(socket_rpc, "call_remote", lambda owner, call, context, **_: remote.append(owner) or "sent")
     assert routing.execute({"instruction": "ClearMailbox", "arguments": {"resident_id": "resident_aaaaaaaaaaaa"}}, CONTEXT) == "sent"
     assert routing.execute({"instruction": "ClearMailbox", "arguments": {"user_id": "alice", "mode": "all"}}, CONTEXT) == "sent"
     assert remote == ["lineage", "web"]

@@ -319,7 +319,7 @@ def test_script_targets_use_applying_actor_and_leave_no_component(lineage, monke
     calls = []
     original = routing.execute
 
-    def execute(call, context):
+    def execute(call, context, instruction_id=""):
         if call["instruction"] == "DeliverMessage":
             calls.append((call, context))
             return InstructionResult(
@@ -328,7 +328,7 @@ def test_script_targets_use_applying_actor_and_leave_no_component(lineage, monke
                 status="committed",
                 result={"resident_id": target, "message_id": "msg_test"},
             )
-        return original(call, context)
+        return original(call, context, instruction_id=instruction_id)
 
     monkeypatch.setattr(routing, "execute", execute)
     before = graph(lineage)["program"]

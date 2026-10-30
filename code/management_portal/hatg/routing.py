@@ -28,7 +28,14 @@ from .contracts import (
     failed_result,
     normalize_error,
 )
-from .kernel import InstructionKernel, local_kernel, new_instruction_id, owner_of_instruction_id, register_kernel
+from .kernel import (
+    InstructionKernel,
+    is_instruction_id,
+    local_kernel,
+    new_instruction_id,
+    owner_of_instruction_id,
+    register_kernel,
+)
 
 
 KERNEL_BUILDERS = {
@@ -67,8 +74,33 @@ def _as_call(call: InstructionCall | Mapping[str, Any]) -> InstructionCall:
     return call if isinstance(call, InstructionCall) else InstructionCall.from_payload(call)
 
 
-def execute(call: InstructionCall | Mapping[str, Any], context: InstructionContext) -> InstructionResult:
-    """Execute one call from any entry and return the v2 result."""
+def assign_instruction_id(call: InstructionCall | Mapping[str, Any], *, reuse: str = "") -> str:
+    """An owner-routable ID a caller can journal before :func:`execute`.
+
+    The owner records the call under this ID, so a caller interrupted before
+    the result arrives still knows which record holds its recovery dependency.
+    ``reuse`` (the ID an interrupted attempt journaled) is kept when the same
+    owner could have assigned it. Empty when the call cannot be routed.
+    """
+    try:
+        parsed = _as_call(call)
+        declaration = declaration_for(parsed.instruction)
+    except Exception:  # noqa: BLE001 - execute reports the same error
+        return ""
+    if declaration.owner == "entry":
+        return ""
+    owner = declaration.owner_for(parsed.arguments)
+    return reuse if is_instruction_id(reuse, owner) else new_instruction_id(owner)
+
+
+def execute(
+    call: InstructionCall | Mapping[str, Any], context: InstructionContext, *, instruction_id: str = "",
+) -> InstructionResult:
+    """Execute one call from any entry and return the v2 result.
+
+    ``instruction_id`` comes from :func:`assign_instruction_id`; empty lets
+    the owner assign one.
+    """
 
     from dataclasses import replace
     from management_common.resource_lifecycle import current_lifecycle
@@ -87,13 +119,13 @@ def execute(call: InstructionCall | Mapping[str, Any], context: InstructionConte
     owner = declaration.owner_for(parsed.arguments)
     kernel = kernel_for(owner)
     if kernel is not None:
-        return kernel.execute(parsed, context)
+        return kernel.execute(parsed, context, instruction_id=instruction_id)
     from .socket_rpc import call_remote
 
     try:
-        return call_remote(owner, parsed, context)
+        return call_remote(owner, parsed, context, instruction_id=instruction_id)
     except Exception as exc:  # noqa: BLE001
-        return failed_result(new_instruction_id("entry"), parsed.instruction, normalize_error(exc))
+        return failed_result(instruction_id or new_instruction_id("entry"), parsed.instruction, normalize_error(exc))
 
 
 def execute_local(

@@ -346,7 +346,7 @@ def test_a_reclaimed_activation_reuses_completed_calls_and_registers_each_delive
     executed = []
     crash = {"on": True}
 
-    def fake_execute(call, context):
+    def fake_execute(call, context, instruction_id=""):
         executed.append((call["instruction"], call["idempotency_key"]))
         if call["instruction"] == "Crash":
             if crash["on"]:
@@ -405,7 +405,7 @@ def test_a_failed_script_reports_the_line_and_completed_calls(monkeypatch):
     activation = lineage_primitives.EffectInvocation(id="invocation_fail_1", activation=event, arguments={})
     plan = _plan('Ping\nBoom\nPing')
 
-    def fake_execute(call, context):
+    def fake_execute(call, context, instruction_id=""):
         if call["instruction"] == "Boom":
             return _Outcome("failed", error={"code": "instruction.invalid_arguments", "message": "bad", "retryable": False})
         return _Outcome("committed", {}, instruction_id="inst_ping")
@@ -433,7 +433,7 @@ def test_transient_call_failure_resumes_with_the_same_key_without_repeating_succ
     plan = _plan('Ping\nDeliverMessage resident_id="${endpoint.target}" message="hi"')
     calls = []
 
-    def fake_execute(call, context):
+    def fake_execute(call, context, instruction_id=""):
         calls.append((call["instruction"], call["idempotency_key"]))
         if len(calls) == 2:
             return _Outcome("failed", error={"code": "instruction.in_progress", "message": "busy", "retryable": True})
@@ -477,7 +477,7 @@ def test_a_script_changed_mid_activation_is_not_resumed_on_the_new_text(monkeypa
     lineage = _lineage("lineage_effectscript3")
     event = lineage_primitives.LineageEvent(id="event_change_1", type="manual.triggered", payload={}, identity=OperationIdentity.for_actor("CASE-A").to_dict())
     activation = lineage_primitives.EffectInvocation(id="invocation_change_1", activation=event, arguments={})
-    monkeypatch.setattr(routing, "execute", lambda call, context: (_ for _ in ()).throw(SystemExit("handover")))
+    monkeypatch.setattr(routing, "execute", lambda call, context, **_: (_ for _ in ()).throw(SystemExit("handover")))
     with pytest.raises(SystemExit):
         execution._execute_program_effect_component(lineage, _plan("Ping"), "effect_aaaaaaaaaaaa", activation, "CASE-A", host=_Host())
     monkeypatch.setattr(execution.lineage_program_runtime, "effect_result_projection", lambda *a, **k: {})
@@ -497,7 +497,7 @@ def test_a_failed_invocation_registration_propagates_and_is_retried_on_reclaim(m
     plan = _plan('DeliverMessage resident_id="${endpoint.target}" message="hi"')
     executed = []
 
-    def fake_execute(call, context):
+    def fake_execute(call, context, instruction_id=""):
         executed.append(call["instruction"])
         return _Outcome("committed", {"resident_id": "resident_bbbbbbbbbbbb", "message_id": "msg_reg"}, instruction_id="inst_reg")
 
@@ -536,7 +536,7 @@ def test_workflow_bindings_read_the_receipt_a_delivering_effect_returns(monkeypa
     activation = lineage_primitives.EffectInvocation(id="invocation_workflow_9", activation=event, arguments={"prompt": "today"})
     delivered = {"resident_id": resident_id, "message_id": "msg_0123456789abcdef",
                  "input_state": {"message_id": "msg_0123456789abcdef", "state": "queued", "reply_message_ids": []}}
-    monkeypatch.setattr(routing, "execute", lambda call, context: _Outcome("committed", dict(delivered), instruction_id="inst_9"))
+    monkeypatch.setattr(routing, "execute", lambda call, context, **_: _Outcome("committed", dict(delivered), instruction_id="inst_9"))
     monkeypatch.setattr(execution.lineage_program_runtime, "effect_result_projection", lambda *a, **k: {"calls": k.get("calls")})
     result = execution._execute_program_effect_component(
         lineage, _plan(deliver_message_script("Fixed prompt")), effect_id, activation, "CASE-A", host=_Host(),

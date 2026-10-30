@@ -43,7 +43,7 @@ def test_large_call_restarts_without_repeating_and_preserves_business_summary(mo
     count = []
     stopping = [True]
 
-    def execute(call, context):
+    def execute(call, context, instruction_id=""):
         assert context.recovery_key
         count.append(call["instruction"])
         if call["instruction"] == "Crash" and stopping[0]:
@@ -135,13 +135,45 @@ def test_failed_release_has_durable_retry_and_does_not_erase_outputs(monkeypatch
     assert journal.recover_cleanup(lid) == {}
 
 
+def test_interrupted_call_keeps_its_instruction_id_so_disposition_releases_the_hold(monkeypatch):
+    """调用途中中断的 Effect 已在派发前记下执行 ID，重试沿用同一 ID，人工处置后按该 ID 释放恢复依赖
+
+    :importance: P1
+    :design-point:
+    """
+    lineage = _lineage("lineage_interrupted_hold")
+    lid = lineage["lineage_id"]
+    inv = activation()
+    sent = []
+
+    def interrupted(call, context, instruction_id=""):
+        sent.append(instruction_id)
+        raise SystemExit("handover")
+
+    monkeypatch.setattr(routing, "execute", interrupted)
+    for _ in range(2):
+        with pytest.raises(SystemExit):
+            execution._execute_program_effect_component(lineage, _plan("GetLineage"), "effect_aaaaaaaaaaaa", inv,
+                                                        "CASE-A", host=_Host())
+    key = execution.effect_idempotency_key(lid, "effect_aaaaaaaaaaaa", inv)
+    [entry] = journal.load(lid, key)["calls"].values()
+    assert entry["status"] == "executing"
+    assert routing.owner_of_instruction_id(sent[0]) == "lineage"
+    assert sent == [sent[0], sent[0]] and entry["instruction_id"] == sent[0]
+    released = []
+    monkeypatch.setattr(routing, "release_recovery", lambda key_, ids, ctx: released.append((key_, ids, ctx.caller)))
+    from management_portal.society_service import effect_disposition
+    effect_disposition.resolve(lid, key, "failed", "CASE-A", note="interrupted mid-call")
+    assert released == [(key, [sent[0]], entry["caller"])]
+
+
 @pytest.mark.parametrize("state", ["unknown", "committed"])
 def test_uncertain_or_projection_pending_call_is_not_terminal(monkeypatch, state):
     """提交状态未知或投影待定的调用让 Effect 挂起待恢复，调用记为 unresolved
 
     :design-point:"""
     lineage = _lineage("lineage_unknown_" + state)
-    monkeypatch.setattr(routing, "execute", lambda *a: _Outcome("projection_pending", error={"code": "instruction.projection_pending", "commit_state": state}, instruction_id="inst_lin_unknown"))
+    monkeypatch.setattr(routing, "execute", lambda *a, **k: _Outcome("projection_pending", error={"code": "instruction.projection_pending", "commit_state": state}, instruction_id="inst_lin_unknown"))
     with pytest.raises(journal.RecoveryPending):
         execution._execute_program_effect_component(lineage, _plan("Ping"), "effect_aaaaaaaaaaaa", activation(), "CASE-A", host=_Host())
     assert not journal.trigger_paths.effect_finished(lineage["lineage_id"], execution.effect_idempotency_key(lineage["lineage_id"], "effect_aaaaaaaaaaaa", activation()))
@@ -156,7 +188,7 @@ def test_known_not_committed_disposition_remains_explicit(monkeypatch, code):
     :design-point:"""
     lineage = _lineage("lineage_" + code.split(".")[-1])
     error = {"code": code, "message": "confirmed by owner", "retryable": False, "commit_state": "not_committed"}
-    monkeypatch.setattr(routing, "execute", lambda *a: _Outcome("failed", error=error, instruction_id="inst_lin_final"))
+    monkeypatch.setattr(routing, "execute", lambda *a, **k: _Outcome("failed", error=error, instruction_id="inst_lin_final"))
     monkeypatch.setattr(execution.lineage_program_runtime, "effect_result_projection", lambda *a, **kw: {})
     result = execution._execute_program_effect_component(lineage, _plan("Ping"), "effect_aaaaaaaaaaaa", activation(), "CASE-A", host=_Host())
     assert result["status"] == "failed" and result["calls"][0]["error"] == error
@@ -261,7 +293,7 @@ def test_recovery_release_preserves_delegated_callers_and_waits_for_history(monk
         return replace(original, caller=facade) if instruction == "FacadeCall" else original
     monkeypatch.setattr(execution, "_family_note_context", context)
     observed = []
-    def execute(call, ctx):
+    def execute(call, ctx, instruction_id=""):
         observed.append((call["instruction"], ctx.caller, ctx.recovery_key))
         return _Outcome("committed", {}, instruction_id="inst_lin_" + call["instruction"])
     monkeypatch.setattr(routing, "execute", execute)
@@ -363,7 +395,7 @@ def test_success_receipt_integrity_failure_never_calls_router(monkeypatch, kind)
         else:
             path.write_text('{"incorrect":"bytes"}')
     called = []
-    monkeypatch.setattr(routing, "execute", lambda *a: called.append(a))
+    monkeypatch.setattr(routing, "execute", lambda *a, **k: called.append(a))
     with pytest.raises(journal.RecoveryPending):
         execution._execute_program_effect_component(lineage, plan, "effect_aaaaaaaaaaaa", inv, "CASE-A", host=_Host())
     assert not called

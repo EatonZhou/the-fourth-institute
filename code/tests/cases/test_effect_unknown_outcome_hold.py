@@ -52,7 +52,7 @@ def _setup(monkeypatch, answers):
 
     monkeypatch.setattr(outward_messages, "post_platform_notice", post)
 
-    def execute(call, context):
+    def execute(call, context, instruction_id=""):
         calls.append(call["instruction"])
         answer = answers[min(len(calls), len(answers)) - 1]
         return answer() if callable(answer) else answer

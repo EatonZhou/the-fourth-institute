@@ -262,7 +262,7 @@ def _execute(monkeypatch, definition, *, initialize=True):
         is_configured=lambda actor: actor == "CASE-A", is_active=lambda actor: actor == "CASE-A"))
     calls = []
 
-    def fake_execute(call, context):
+    def fake_execute(call, context, instruction_id=""):
         calls.append(call)
         return SimpleNamespace(status="committed", result={"resident_id": TARGET, "message_id": "msg_target"},
                                error={}, instruction_id=f"inst_target_{len(calls)}", replayed=False)

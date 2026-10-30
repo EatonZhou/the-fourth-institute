@@ -467,7 +467,10 @@ class _EffectRun:
             if entry.get("ok") and request.instruction == DELIVER_MESSAGE and not entry.get("invocation_registered"):
                 self._register_delivery(request.position, dict(entry.get("result") or {}))
             return _call_result(entry, str(entry.get("instruction_id") or ""))
-        attempt = _CallAttempt(context=self.call_context, started_at=_now())
+        # A retry keeps the ID an interrupted attempt journaled: the owner's
+        # record of that attempt, and its recovery hold, carry this ID.
+        attempt = _CallAttempt(context=self.call_context, started_at=_now(),
+                               instruction_id=str((entry or {}).get("instruction_id") or ""))
         entry = self._attempt_call(request, attempt)
         self._record_call(request, attempt, entry)
         if entry.get("status") == "unresolved":
@@ -483,6 +486,9 @@ class _EffectRun:
             arguments = prepare_call_arguments(request.instruction, request.arguments, self.invocation)
             attempt.context = _family_note_context(self.lineage, self.effect_id, request.instruction, arguments,
                                                    self.call_context, lineage_id=self.lineage_id, event=self.event)
+            from management_portal.hatg import routing
+            attempt.instruction_id = routing.assign_instruction_id(
+                {"instruction": request.instruction, "arguments": arguments}, reuse=attempt.instruction_id)
             self._admit_call(request, attempt)
             return attempt.executed_entry(self._dispatch_call(request, arguments, attempt))
         except lineage_effect_script_journal.RecoveryPending:
@@ -500,6 +506,7 @@ class _EffectRun:
                     raise _EffectPaused("Effect 已关闭")
                 lineage_effect_script_journal.record_call_started(self.lineage_id, self.activation_key, request.position,
                     {"instruction": request.instruction, "index": request.index, "line": request.line,
+                     "instruction_id": attempt.instruction_id,
                      "caller": attempt.context.caller, "started_at": attempt.started_at, "sequence": self.sequence + 1})
         except _EffectPaused:
             raise
@@ -523,6 +530,7 @@ class _EffectRun:
                     "idempotency_key": effect_call_key(self.activation_key, request.position),
                 },
                 attempt.context,
+                instruction_id=attempt.instruction_id,
             )
         finally:
             ACTIVATION.reset(activation_token)

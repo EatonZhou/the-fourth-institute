@@ -680,8 +680,8 @@ def test_resident_invoke_and_effect_share_isa_delivery_and_durable_path(runtime_
     calls = []
     execute = routing.execute
 
-    def dispatch(call, context):
-        result = execute(call, context)
+    def dispatch(call, context, instruction_id=""):
+        result = execute(call, context, instruction_id=instruction_id)
         if call.get("instruction") == "DeliverMessage":
             calls.append((call, context, result))
         return result
@@ -915,14 +915,14 @@ def test_work_finished_delivery_failure_remains_pending_until_persisted(
     attempts = 0
     execute = routing.execute
 
-    def dispatch(call, context):
+    def dispatch(call, context, instruction_id=""):
         nonlocal attempts
         attempts += 1
         if attempts == 1:
             # Transport failure before reaching the instruction owner leaves no stored receipt.
             return failed_result("inst_lin_unavailable", "DeliverMessage", InstructionError(
                 "instruction.owner_unavailable", "Resident input store unavailable", retryable=True))
-        return execute(call, context)
+        return execute(call, context, instruction_id=instruction_id)
 
     monkeypatch.setattr(routing, "execute", dispatch)
     monkeypatch.setattr(lineage_test_support, "NODE_MESSAGE_SENDER", lambda *_: {"message_id": "msg_durable_work_finished"})

@@ -106,7 +106,7 @@ def test_running_external_call_cannot_be_disposed_and_holds_no_definition_lock(a
     inv = activation()
     from management_portal.society_service.lineage_program_effect_rules import effect_idempotency_key
     key = effect_idempotency_key(lineage["lineage_id"], "effect_aaaaaaaaaaaa", inv)
-    def external(*args):
+    def external(*args, **kwargs):
         entered.set()
         assert release.wait(10)
         return _Outcome("failed", error={"commit_state": "unknown"})
@@ -126,7 +126,7 @@ def test_running_external_call_cannot_be_disposed_and_holds_no_definition_lock(a
         with pytest.raises(journal.RecoveryPending):
             future.result()
     result = disposition.resolve(lineage["lineage_id"], key, "succeeded", "admin-subject")
-    monkeypatch.setattr(routing, "execute", lambda *a: pytest.fail("Must not reexecute"))
+    monkeypatch.setattr(routing, "execute", lambda *a, **k: pytest.fail("Must not reexecute"))
     replay = execution._execute_program_effect_component(lineage, _plan("Ping"), "effect_aaaaaaaaaaaa", inv,
                                                        "CASE-A", host=_Host())
     assert replay["disposition"] == result["disposition"] and replay["replayed"]

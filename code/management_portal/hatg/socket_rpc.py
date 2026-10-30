@@ -170,12 +170,13 @@ def _decode(owner: str, raw: bytes, request_id: str) -> dict[str, Any]:
 
 def call_remote(
     owner: str, call: InstructionCall, context: InstructionContext, *, timeout: float = DEFAULT_TIMEOUT_SECONDS,
+    instruction_id: str = "",
 ) -> InstructionResult:
     from .kernel import new_instruction_id
 
     # This ID is authenticated with the request and reserved by the owner.
     # A lost response still gives the caller an owner-routable lookup handle.
-    instruction_id = new_instruction_id(owner)
+    instruction_id = instruction_id or new_instruction_id(owner)
     request_id = f"isa-{secrets.token_hex(10)}"
     params = request_params(call, context)
     params["instruction_id"] = instruction_id
