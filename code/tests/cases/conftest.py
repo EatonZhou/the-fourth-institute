@@ -122,8 +122,10 @@ os.environ["PORTAL_RESOURCE_INDEX_WATCH"] = "0"
 # Domain tests use the in-process notification hub, not a deployed NATS
 # server. Transport cases explicitly enable or replace their own client.
 os.environ["PORTAL_NATS_ENABLED"] = "0"
-# Cases run ResourceService and every HATG owner in process over the
-# namespaced test database, even when started from a deployed Worker.
+# Cases run SocietyService, ResourceService and every HATG owner in process
+# over the namespaced test database, even when started from a deployed Worker
+# or a Resident, whose environment selects the deployed services' clients.
+os.environ["PORTAL_SOCIETY_SERVICE_MODE"] = "local"
 os.environ["PORTAL_RESOURCE_SERVICE_MODE"] = "local"
 os.environ["PORTAL_ISA_ROUTING"] = "local"
 
