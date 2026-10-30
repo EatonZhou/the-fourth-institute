@@ -303,9 +303,11 @@ def reconcile_in_body(body: dict, block: dict, actor: str) -> None:
         source = put(key, "event_source", title="Family 触发失败", config={"event_type": event_type})
         put("watch_" + key, "watch", source=source, target=target, config={})
         recovery_route("recover_" + key, source)
+    # A fallback only: arrival, failure and intake Events detect promptly, so
+    # five minutes bounds the delay without a Trigger Path every minute.
     timer = put("recovery_timer", "event_source", title="待恢复任务复查", config={
         "event_type": "time.reached", "schedule_mode": "recurring", "recurrence_kind": "interval",
-        "interval_seconds": 60, "misfire_policy": "coalesce_latest", "overlap_policy": "drop"})
+        "interval_seconds": 300, "misfire_policy": "coalesce_latest", "overlap_policy": "drop"})
     recovery_route("recheck_recovery", timer)
     availability = put("role_availability", "effect", title="保障 Router／Steward 可接单", config={
         "script": 'CheckFamilyRoleAvailability lineage_id="${arguments.lineage_id}" family_id="${arguments.family_id}"',

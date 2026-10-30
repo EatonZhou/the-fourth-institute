@@ -2,14 +2,16 @@
 
 Graph work is stored once, in typed path/step relations. Resident status and
 output are read from Agent storage; accepting a Resident input ends propagation.
+Finished paths are kept for RETENTION_DAYS, except each Effect's latest one.
 """
 from __future__ import annotations
 
 import json
+import time
 from management_common.database_time import decode_times, iso_time
 from management_common.json_columns import json_value
 from copy import deepcopy
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Iterable, Mapping
 
 from management_common.portal_database import _database_schema
@@ -18,6 +20,8 @@ from .domain_ports import failure_notification_port
 from management_portal.execution import input_continuations
 
 TERMINAL = storage.TERMINAL
+RETENTION_DAYS = 30
+PRUNE_BATCH_SIZE = 200
 
 
 def data_store():
@@ -151,6 +155,29 @@ def settle(identity: str) -> bool:
     with data_store().database.transaction() as connection:
         row = storage._lock(connection, identity)
         return row["status"] == "active" and _settle(connection, identity) in TERMINAL
+
+
+def prune_finished(*, now: datetime | None = None, time_budget_seconds: float = 2.0) -> int:
+    """Delete paths finished more than RETENTION_DAYS ago, in small transactions.
+
+    Housekeeping calls this repeatedly; a backlog drains over several rounds.
+    """
+    before = (now or datetime.now(timezone.utc)) - timedelta(days=RETENTION_DAYS)
+    deadline = time.monotonic() + time_budget_seconds
+    database = data_store().database
+    with database.read() as connection:
+        lineage_ids = storage.finished_lineage_ids(connection)
+    removed = 0
+    for lineage_id in lineage_ids:
+        while time.monotonic() < deadline:
+            with database.transaction() as connection:
+                count = storage.prune_finished(connection, lineage_id=lineage_id, before=before, limit=PRUNE_BATCH_SIZE)
+            removed += count
+            if count < PRUNE_BATCH_SIZE:
+                break
+        if time.monotonic() >= deadline:
+            break
+    return removed
 
 
 def event_input(lineage_id: str, event_id: str) -> dict[str, Any] | None:
@@ -536,6 +563,21 @@ def settle_disposed_delivery(lineage_id: str, activation_key: str) -> None:
                 result={**json_value(delivery["result_json"]), "disposition": disposition},
             )
         _settle(connection, identity)
+
+
+def dispose_open_steps(lineage_id: str, identity: str, disposition: Mapping[str, Any]) -> str:
+    """Fail the path's remaining open steps under an admin disposition, then settle it."""
+    with data_store().database.transaction() as connection:
+        path = storage._lock(connection, identity)
+        if path["lineage_id"] != lineage_id:
+            raise ValueError("Trigger Path belongs to another Lineage")
+        if path["status"] != "active":
+            return path["status"]
+        for step in connection.execute("SELECT step_id,result_json FROM trigger_path_steps WHERE trigger_path_id=%s "
+                                       "AND status IN ('pending','running','waiting')", (identity,)).fetchall():
+            storage.transition_step(connection, step["step_id"], status="failed", at=disposition["occurred_at"],
+                                    result={**json_value(step["result_json"]), "disposition": dict(disposition)})
+        return _settle(connection, identity)
 
 
 def delivery_waiting(lineage_id: str, wire_id: str, delivery: Mapping[str, Any]) -> None:

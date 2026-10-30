@@ -219,7 +219,7 @@ Resident 的当前归属以 `lineage_nodes.lineage_id` 为唯一事实，通过 
 
 完成后以 `(lineage_id, activation_key, expected instructions_json)` 做比较后删除（CAS）；本轮处理期间若任务已并入新指令 ID，旧处理者不能把新任务删掉。该表没有指向 Lineage 的外键，不随 Lineage 删除级联移除；独立维护者仍可 drain 已删除 Lineage 的任务。该队列由 Effect 清理领域独立管理。
 
-Artifact 使用正式 Lineage owner namespace；临时 recovery 产物与保留 output 的归属、引用与清理规则由 Effect 规范 decision_4adcc1ff2f2c 定义。本篇只规定队列和事务边界，不复制 artifact 文件协议。长期 Trigger Path 事实与 Agent trace 不受 ISA 恢复窗口清理影响，不要求引入历史图版本。
+Artifact 使用正式 Lineage owner namespace；临时 recovery 产物与保留 output 的归属、引用与清理规则由 Effect 规范 decision_4adcc1ff2f2c 定义。本篇只规定队列和事务边界，不复制 artifact 文件协议。长期 Trigger Path 事实与 Agent trace 不受 ISA 恢复窗口清理影响，不要求引入历史图版本。Trigger Path 有自己的保留期：已结束的流程保留 30 天，SocietyService 例行维护分批删除更早结束的流程及其步骤、因果边和 Execution 引用，每个 Effect 最近一次结束的激活所在流程保留；进行中的流程不受影响（decision_68215b3a825b）。
 
 ## Lineage 定义、布局和删除
 
@@ -313,7 +313,7 @@ LineageData 通过显式事务、行锁和条件更新保护领域提交，外�
 
 删除流程按数据职责清理当前可执行关系、配置、绑定和待运行状态，不以通用外键级联抹掉历史。Resident 身份在 `residents` 同一行标记 `deleted_at`、`deleted_by`，保留已知历史归属；删除后停止接单和调度，对话与 Agent trace、Execution 及长期 Trigger Path 事实仍按原稳定 ID 读取。需要表示删除的 ResourceService 投影由删除流程协调（decision_0f57656a2acd、decision_1b2bdf5c33d6）。
 
-删除 Lineage 不删除长期 Trigger Path 表，也不删除无 Lineage 外键的 `effect_recovery_cleanup`。待确认的 Effect 调用先核对结果，不能用删除动作逃过恢复保护；已经提交的终态清理继续由独立维护者推进，原 Lineage 不存在不构成清理完成。
+删除 Lineage 不删除长期 Trigger Path 表，也不删除无 Lineage 外键的 `effect_recovery_cleanup`；这些流程同样按 30 天保留期到期删除。待确认的 Effect 调用先核对结果，不能用删除动作逃过恢复保护；已经提交的终态清理继续由独立维护者推进，原 Lineage 不存在不构成清理完成。
 
 进程重启后，服务从结构版本、当前表记录、未完成的待发件箱、生命周期操作与独立 Effect 清理队列恢复，不需要通知历史。
 

@@ -260,6 +260,11 @@ def test_familize_needs_one_member_and_updates_the_live_roster(lineage, charters
                     if b["id"] == family["family_id"] for e in b["elements"]}
             assert not {"member_queue", "notify_member_queue"} & keys
             assert {"member_failed", "recovery_finished", "recovery_timer"} <= keys
+            # The timer is a fallback behind the arrival and failure Events.
+            timer = next(e["id"] for b in graph(lineage)["function_blocks"] if b["id"] == family["family_id"]
+                         for e in b["elements"] if e.get("key") == "recovery_timer")
+            assert next(c for c in graph(lineage)["program"]["components"]
+                        if c["id"] == timer)["config"]["interval_seconds"] == 300
         diagnostics = ok("GetLineageDiagnostics", {"lineage_id": lineage})
         assert diagnostics["runnable"], diagnostics["diagnostics"]
 

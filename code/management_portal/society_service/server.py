@@ -568,6 +568,8 @@ class SocietyServiceServer(LocalServiceSocketMixin, DrainingStreamServer):
             get_resident_conversation_stream().prune_event_deliveries(
                 older_than=delivered_before.isoformat(timespec="milliseconds").replace("+00:00", "Z"),
             )
+            from . import trigger_paths
+            trigger_paths.prune_finished(time_budget_seconds=2.0)
             orphaned = principal_hierarchy_domain.delete_orphaned_personal_amas()
             if orphaned["failed"]:
                 raise RuntimeError(

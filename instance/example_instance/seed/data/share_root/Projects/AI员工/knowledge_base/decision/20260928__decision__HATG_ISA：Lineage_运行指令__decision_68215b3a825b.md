@@ -52,6 +52,7 @@ Event 目录、调度和恢复机制见 decision_4adcc1ff2f2c。触发根与原�
 | --- | --- | --- | --- |
 | `TriggerEvent` | 是 | 手动触发一个事件源，开始一次运行 | 对 `lineage_id` 有 @contributor |
 | `ResolveEffectActivation` | 是 | 由 Lineage admin 人工终结结果未知的 Effect 激活 | 对 `lineage_id` 有 @admin |
+| `ResolveTriggerPath` | 是 | 由 Lineage admin 把无法自行结束的触发流程按失败关闭 | 对 `lineage_id` 有 @admin |
 | `GetComponentRuntime` | 否 | 读取事件源、Effect 与循环组件的运行状态 | 对 `lineage_id` 有 @viewer |
 | `PauseComponent` | 是 | 关闭或打开事件源与 Effect，暂停或恢复循环组件 | 对 `lineage_id` 有 @contributor |
 | `ResetComponentRuntime` | 是 | 清零事件源的触发次数、循环的轮数，或 Route 的已发送消息次数 | 对 `lineage_id` 有 @contributor |
@@ -133,6 +134,18 @@ Event 目录、调度和恢复机制见 decision_4adcc1ff2f2c。触发根与原�
 - 重试只会读回执行方保存的同一张结果未知的回执时，平台停止重试：这次待投递项等待处置，不再挡住连线上后面的 Event，并以 Leader 署名请 Effect 的失败收件人（没有时为 Lineage 管理员）处置。ListPendingDeliveries 把它列为 `blocked`，`recovery_blocked.requires_resolution` 为 true，并带 `activation_key`（decision_4adcc1ff2f2c）。
 - 处置结束本次脚本，不执行剩余调用，也不产生 `effect.succeeded` 或 `effect.failed` 下游 Event。外部业务的实际结果需要处置人自行核实；已有调用结果与已产生的业务事实保持不变。
 
+## 人工关闭停住的触发流程
+
+### `ResolveTriggerPath`
+
+**由 Lineage 的 admin 把一条无法自行结束的触发流程按失败关闭。** 例如 Event 已登记却从未派发、Resident 步骤因无法恢复被挡住、Effect 激活停在执行中但已没有执行者继续推进。这类流程一直保持进行中，恢复轮询也不会再推进它。
+
+- 参数：`lineage_id`、`trigger_path_id`、`note`（必填，写明关闭原因，最多 4000 字符）。
+- 权限：该 Lineage 的 `admin`，与 `ResolveEffectActivation` 相同。
+- 效果：流程中所有仍未结束的步骤记为失败，`result.disposition` 保存 `actor`、`status`（`failed`）、`note`、`scope`（`trigger_path`）与 `occurred_at`；仍有执行日志的 Effect 激活按 `ResolveEffectActivation` 的同一事务终结，释放本次排队项和恢复依赖。随后流程按常规规则结束为失败。不重试任何工作，也不产生下游 Event。
+- 带 `scope=trigger_path` 处置的流程不发 Lineage 自动执行失败通知，流程中更早失败的步骤也包括在这次人工决定里。
+- 拒绝条件，全部在改动前检查：流程中有结果未知的 Effect 调用时先用 `ResolveEffectActivation` 逐个处置；Effect 激活仍在执行、Resident 仍在处理流程中的输入、关联的 Execution 尚未结束，或流程仍有排队中的投递（先用 `DeletePendingDelivery`）时返回 `instruction.conflict`。流程不存在返回 `instruction.not_found`；已结束的流程原样返回。
+
 ## 运行观察
 
 读取以一次数据库快照组织根记录、步骤、边和 Execution 引用。状态来自各自的唯一责任表，流程中不复制聊天正文或执行结果。分页 limit 默认 50，范围 1–200；Resident 过滤先于分页。
@@ -148,6 +161,8 @@ Event 目录、调度和恢复机制见 decision_4adcc1ff2f2c。触发根与原�
 cause_kind 区分 input、timer、execution、instruction、step、external。Event 源节点 ID 表示配置身份；occurrence_id 标识本次发生，同一事件源再次触发产生另一个 Trigger Path。根记录同时承担“这次触发发生了什么、为何发生”的记录职责。
 
 流程在全部步骤结束且已关联 Execution 均达到终态后结算。没有待处理步骤的空事件也可完成。失败或过期按失败结算，取消按取消结算。执行中的 Resident 后续产生新流程时，只保留明确的触发原因，原流程不等待新流程。
+
+已结束的流程保留 30 天。SocietyService 的例行维护分批删除结束超过 30 天的流程及其步骤、因果边和 Execution 引用；每个 Effect 最近一次结束的激活所在的流程保留，GetLineage 用它显示该 Effect 的最近结果。进行中的流程不受保留期影响。超过保留期的 trigger_path_id 再读取时返回 `instruction.not_found`。
 
 Effect 的激活身份、状态、错误和有限输出保存在步骤中，指令调用日志仍由 ISA 负责。artifact_activation_key 只允许选择本流程中实际发生的 Effect 激活，经权限与归属校验后返回 artifact_output；普通查询只返回引用，不读取大正文。
 
@@ -180,6 +195,7 @@ Effect 的激活身份、状态、错误和有限输出保存在步骤中，指�
 | 指令名 | arguments 参数名 |
 | --- | --- |
 | `ResolveEffectActivation` | `lineage_id`、`activation_key`、`status`、`note` |
+| `ResolveTriggerPath` | `lineage_id`、`trigger_path_id`、`note` |
 | `TriggerEvent` | `lineage_id`、`event_source_id`、`wire_id`、`prompt`、`content_parts`、`event_name`、`subject_resident_id`、`payload` |
 | `GetComponentRuntime` | `lineage_id`、`component_id` |
 | `PauseComponent` | `lineage_id`、`component_id`、`paused` |

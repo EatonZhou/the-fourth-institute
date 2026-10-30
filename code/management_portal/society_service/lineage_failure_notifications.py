@@ -221,6 +221,8 @@ def notify_failed_path(identity: str) -> None:
             "WHERE l.step_id=s.step_id AND e.status='failed') AS execution_failed_at "
             "FROM trigger_path_steps s WHERE s.trigger_path_id=%s", (identity,),
         ).fetchall()]
+    if any((json_value(step["result_json"] or "{}").get("disposition") or {}).get("scope") == "trigger_path" for step in steps):
+        return  # An administrator closed the whole path (ResolveTriggerPath), earlier failures included.
     if path["root_kind"] == "event":
         source = lineage_program_runtime.read_runtime(path["lineage_id"])["event_sources"].get(path["root_node_id"], {})
         if source.get("paused"):

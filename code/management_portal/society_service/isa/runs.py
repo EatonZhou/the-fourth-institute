@@ -60,6 +60,13 @@ def resolve_effect_activation(inv: Invocation) -> dict[str, Any]:
                                   inv.argument("status"), inv.caller, note=inv.argument("note") or "")}
 
 
+def resolve_trigger_path(inv: Invocation) -> dict[str, Any]:
+    from ..effect_disposition import resolve_path
+
+    return {"path": resolve_path(inv.argument("lineage_id"), inv.argument("trigger_path_id"), inv.caller,
+                                 note=inv.argument("note") or "")}
+
+
 def get_component_runtime(inv: Invocation) -> dict[str, Any]:
     from management_portal.society_service import component_runtime
 
@@ -163,6 +170,7 @@ def delete_pending_delivery(inv: Invocation) -> dict[str, Any]:
 
 HANDLERS = {
     "ResolveEffectActivation": resolve_effect_activation,
+    "ResolveTriggerPath": resolve_trigger_path,
     "TriggerEvent": trigger_event,
     "GetComponentRuntime": get_component_runtime,
     "PauseComponent": pause_component,

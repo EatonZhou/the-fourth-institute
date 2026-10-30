@@ -731,6 +731,9 @@
     "ResolveEffectActivation": {
       "a": "@admin"
     },
+    "ResolveTriggerPath": {
+      "a": "@admin"
+    },
     "RestartSession": {
       "a": "@contributor"
     },

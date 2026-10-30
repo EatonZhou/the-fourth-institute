@@ -49,7 +49,7 @@ Family 内部机制指令是一个 Family 自己运转时使用的步骤：Route
 
 它先核验门面是否暂停，再恢复 Router／Steward 接单，返回已有迁移状态。返回 `family_id`、`paused`、`waiting_count`，未暂停时另有 `roles`（resident_id、status、reason、intake）。waiting_count 统计已有迁移记录；本指令不读取额度、不发起迁移，全程无需模型任务。
 
-触发入口为两角色的 `resident.state_changed(intake)` 及每 60 秒 timer 接单补查。额度随待执行原输入进入平台准入检查；不另设 usage Event。所有 Resident 共用 ExecutionService 额度准入；Router／Steward 执行前另按既有策略决定有限迁移。具体职责、执行入口和脚本见角色工作流。
+触发入口为两角色的 `resident.state_changed(intake)` 及每 5 分钟 timer 接单补查。额度随待执行原输入进入平台准入检查；不另设 usage Event。所有 Resident 共用 ExecutionService 额度准入；Router／Steward 执行前另按既有策略决定有限迁移。具体职责、执行入口和脚本见角色工作流。
 
 ## 派发场景任务
 

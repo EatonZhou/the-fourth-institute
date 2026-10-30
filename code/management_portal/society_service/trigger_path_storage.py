@@ -217,7 +217,8 @@ def transition_step(connection: Any, identity: str, *, status: str, at: str,
     elif checkpoint is not None:
         changes["checkpoint_json"] = encode(checkpoint)
     if result is not None:
-        if row["kind"] == "resident" and result:
+        # An administrator's disposition is graph evidence, not Resident output.
+        if row["kind"] == "resident" and set(result) - {"disposition"}:
             raise ValueError("Resident output belongs to Agent execution history")
         changes["result_json"] = encode(result)
     connection.execute("UPDATE trigger_path_steps SET " + ",".join(key + "=%s" for key in changes) + " WHERE step_id=%s",
@@ -310,6 +311,46 @@ def cancel(connection: Any, identity: str, *, at: str) -> None:
                        "WHERE trigger_path_id=%s AND status IN ('pending','running','waiting')", (at, identity))
     connection.execute("UPDATE trigger_paths SET status='cancelled',finished_at=%s,revision=revision+1 WHERE trigger_path_id=%s",
                        (at, identity))
+
+
+def finished_lineage_ids(connection: Any) -> list[str]:
+    """Lineages holding finished paths, by a skip scan over the finished-path index.
+
+    Paths outlive their Lineage, so the Lineage table cannot enumerate them.
+    """
+    return [row["lineage_id"] for row in connection.execute(
+        "WITH RECURSIVE l(lineage_id) AS ("
+        "(SELECT lineage_id FROM trigger_paths WHERE status<>'active' ORDER BY lineage_id LIMIT 1) "
+        "UNION ALL SELECT (SELECT p.lineage_id FROM trigger_paths p WHERE p.status<>'active' "
+        "AND p.lineage_id>l.lineage_id ORDER BY p.lineage_id LIMIT 1) FROM l WHERE l.lineage_id IS NOT NULL) "
+        "SELECT lineage_id FROM l WHERE lineage_id IS NOT NULL"
+    ).fetchall()]
+
+
+def prune_finished(connection: Any, *, lineage_id: str, before: Any, limit: int) -> int:
+    """Delete up to ``limit`` of one Lineage's paths that finished before ``before``.
+
+    A path holding an Effect's latest finished activation stays: GetLineage
+    shows that activation as the Effect's last result. Active paths never go.
+    """
+    rows = connection.execute(
+        "SELECT p.trigger_path_id FROM trigger_paths p WHERE p.lineage_id=%s AND p.status<>'active' "
+        "AND p.finished_at<%s AND NOT EXISTS (SELECT 1 FROM trigger_path_steps s "
+        "WHERE s.trigger_path_id=p.trigger_path_id AND s.kind='effect' AND s.step_id=("
+        "SELECT l.step_id FROM trigger_path_steps l WHERE l.node_id=s.node_id AND l.kind='effect' "
+        "AND l.status IN ('completed','failed','cancelled') ORDER BY l.finished_at DESC,l.step_id DESC LIMIT 1)) "
+        "ORDER BY p.finished_at LIMIT %s FOR UPDATE OF p SKIP LOCKED",
+        (lineage_id, instant(before), limit),
+    ).fetchall()
+    identities = [row["trigger_path_id"] for row in rows]
+    if not identities:
+        return 0
+    connection.execute("DELETE FROM trigger_path_execution_links l USING trigger_path_steps s "
+                       "WHERE l.step_id=s.step_id AND s.trigger_path_id=ANY(%s)", (identities,))
+    connection.execute("DELETE FROM trigger_path_step_edges WHERE trigger_path_id=ANY(%s)", (identities,))
+    connection.execute("DELETE FROM trigger_path_steps WHERE trigger_path_id=ANY(%s)", (identities,))
+    connection.execute("DELETE FROM trigger_paths WHERE trigger_path_id=ANY(%s)", (identities,))
+    return len(identities)
 
 
 def read(connection: Any, identity: str) -> dict[str, Any] | None:

@@ -24,6 +24,12 @@ DECLARATIONS = (
         R("lineage_id", description="Effect 所在的 Lineage"), R("activation_key", description="GetTriggerPath 返回的 Effect 激活键"),
         R("status", description="处置结果：成功或失败；已终结的激活不能改成另一结果", enum=("succeeded", "failed")), P("note", description="处置说明", max_length=4000),
     ), (R("activation", "object", "终态记录，包含 disposition 处置人、结果、说明和时间"),), mutates=True),
+    _d("ResolveTriggerPath", "由 Lineage admin 把无法自行结束的触发流程按失败关闭：仍未结束的步骤记为失败并写入处置人与原因，"
+        "流程随之结束；不重试任何工作。流程中有结果未知的 Effect 调用时先用 ResolveEffectActivation；"
+        "仍在执行的 Effect、Resident 仍在处理的输入、未结束的执行或排队中的投递会使请求被拒绝。", (
+        R("lineage_id", description="流程所在的 Lineage"), R("trigger_path_id", description="要关闭的触发流程"),
+        R("note", description="关闭原因", max_length=4000),
+    ), (R("path", "object", "关闭后的触发流程，含步骤及各步骤的 disposition"),), mutates=True),
     _d("TriggerEvent", "手动触发一个 manual.triggered 事件源，并带上本次运行的输入；"
         "其他类型的 Event 由运行时根据真实事实产生，不能手动触发。", (
         R("lineage_id", description="事件源所在的 Lineage"),
