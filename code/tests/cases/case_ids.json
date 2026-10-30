@@ -1572,6 +1572,7 @@
     "tests/cases/test_home_conversation_performance.py::test_off_page_pins_still_load_and_release_only_missing_targets": "test_e1ec29b71ef5",
     "tests/cases/test_home_conversation_performance.py::test_page_residents_are_not_hydrated_again_for_overlapping_pins": "test_faf3f7524eb0",
     "tests/cases/test_home_frontend_contract.py::test_activity_icons_keep_identity_links_with_fallback_avatars": "test_ebdfa00d8ead",
+    "tests/cases/test_home_frontend_contract.py::test_home_quota_summary_and_complete_details_fit_in_browser": "test_142351c86f08",
     "tests/cases/test_home_frontend_contract.py::test_home_shell_reads_only_the_current_user": "test_c88be46ea780",
     "tests/cases/test_home_scheduled_triggered_contract.py::test_scheduled_triggered_browser_contract": "test_79e16549f212",
     "tests/cases/test_home_usage_grouping.py::test_account_gap_counts_only_in_the_view_with_cache_for_every_period": "test_f5b86bdbf7f1",
