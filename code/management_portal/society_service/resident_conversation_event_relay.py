@@ -204,26 +204,29 @@ class ResidentConversationEventRelay:
     def _publish_chatroom_progress(self, event: dict[str, Any]) -> None:
         # A Chatroom shows the progress of each Resident it called
         # (decision_a6bebf4ac283); its view reloads when such an input moves
-        # in the queue or the Resident's live work on it changes.
+        # in the queue or the Resident's live work on it changes.  Features
+        # declare the inputs they deliver (portal_features ``resident.inputs``).
         resident_id = str(event.get("resident_id") or "")
         try:
+            from management_portal import portal_features
+
             inputs = dict.fromkeys((resident_id, message_id) for message_id in event_input_ids(event))
             for source_id, message_id in list(inputs):
                 if family_facade.parse_relay_mark(self._business_ref(source_id, message_id)):
                     inputs.update(dict.fromkeys(family_facade.relay_sources_of(source_id, message_id)))
             for source_id, message_id in inputs:
                 business_ref = self._business_ref(source_id, message_id)
-                if business_ref.startswith("chatroom_"):
-                    from management_portal import chatroom_backend
-
-                    chatroom_backend.handle_resident_progress(
+                for _feature, delivered in portal_features.contributions("resident.inputs"):
+                    if not business_ref.startswith(delivered.BUSINESS_REF_PREFIX):
+                        continue
+                    delivered.handle_resident_progress(
                         business_ref=business_ref, resident_id=source_id, message_id=message_id,
                     )
                     if event.get("event_type") == resident_conversation_records.INPUT_STATE_CHANGED:
                         # Members carry a Family relay ref, not the Chatroom ref.
                         # Reconcile the original call even with no browser open;
                         # GetInputState decides whether routing or work finished.
-                        chatroom_backend.handle_resident_terminal(
+                        delivered.handle_resident_terminal(
                             business_ref=business_ref, resident_id=source_id, message_id=message_id,
                         )
         except Exception:

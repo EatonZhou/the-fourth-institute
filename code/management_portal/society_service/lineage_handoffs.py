@@ -6,10 +6,11 @@ import os
 from pathlib import Path
 from typing import Any
 
+from management_portal.resources.workspace_files import MAX_WORKSPACE_COPY_BYTES, MAX_WORKSPACE_COPY_FILES
+
 from .errors import LineageConflictError
 from .lineage_values import _bool, _clone_json, _item_id, _safe_actor, _text
 from . import lineage_handoff_preparation, lineage_handoff_execution, lineage_node_workspaces
-from .lineage_workspace_files import MAX_WORKSPACE_COPY_BYTES, MAX_WORKSPACE_COPY_FILES
 from . import lineage_aggregate
 from . import lineage_state, lineage_resident_workspaces
 

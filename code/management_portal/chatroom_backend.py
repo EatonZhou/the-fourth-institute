@@ -38,6 +38,12 @@ LOGGER = logging.getLogger(__name__)
 
 SCHEMA = "tfi.chatroom.v2"
 CHATROOM_ID_RE = re.compile(r"chatroom_[0-9a-f]{12}")
+# The Resident inputs a Chatroom delivers carry ``<chatroom_id>/<message_id>`` as their
+# business_ref; SocietyService reports their progress and end here (portal_features
+# ``resident.inputs``).  ForwardMessages reads an item naming a Chatroom with
+# ``forward_source`` (``conversation.forwarding``).
+BUSINESS_REF_PREFIX = "chatroom_"
+FORWARD_FIELD = "chatroom_id"
 RESIDENT_ID_RE = re.compile(r"resident_[0-9a-f]{12}")
 UPLOAD_ID_RE = re.compile(r"upload_[0-9a-f]+")
 MENTION_RE = re.compile(r"(?<![A-Za-z0-9_])@(resident_[0-9a-f]{12})(?![0-9a-z_])")

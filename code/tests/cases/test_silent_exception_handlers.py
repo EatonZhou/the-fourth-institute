@@ -103,7 +103,6 @@ ALLOWED: dict[str, tuple[int, str]] = {
     "management_portal/execution/provider_catalog.py::AgentProvider._route_takes_images": (1, _C1),
     "management_portal/execution/provider_catalog.py::AgentProvider.upstream_for": (1, _C1),
     "management_portal/resources/isa.py::reads_only": (1, _C1),
-    "management_portal/society_service/runtime/backend_adapter.py::_chatroom_terminal": (1, _C1),
     "management_portal/society_service/runtime/backend_adapter.py::_mailbox_terminal": (1, _C1),
     "management_portal/society_service/lineage_event_reconciliation.py::_with_facade_activity": (1, _L2),
     "management_portal/society_service/lineage_message_events.py::wake_watchers": (1, _L2),

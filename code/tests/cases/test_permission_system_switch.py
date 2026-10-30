@@ -52,7 +52,8 @@ assert ps.allows("alice", "UpdatePermissionScheme") and not ps.owners_only()
 assert dict(ps.permitted("alice", "UpdateLineage", "lineage_id", [lineage])) == {lineage: True}
 assert ps.permitted_ids("alice", "GetProject", "project_id", ["AI员工"]) == {"AI员工"}
 # A personal AMA stays its owner's: Society's own rule, which asks nothing of the permission system.
-from management_portal.society_service import lineage_access_policy, personal_ama
+from management_portal.permission_system import personal_ama
+from management_portal.society_service import lineage_access_policy
 assert lineage_access_policy.changeable_ids("alice", {lineage: "bob"}, "GetLineage", "lineage_id") == set()
 assert lineage_access_policy.changeable_ids("bob", {lineage: "bob"}, "GetLineage", "lineage_id") == {lineage}
 assert not personal_ama.reaches("alice", "bob") and personal_ama.hidden("alice", {lineage: "bob"}) == {lineage}
@@ -257,7 +258,7 @@ def test_turning_it_on_completes_the_instance_before_checks_resume(monkeypatch):
         calls.append(("complete", actor, settings.permission_system_enabled()))
         return report
 
-    monkeypatch.setattr(permission_system, "reconcile_before_enabling", complete)
+    monkeypatch.setattr(system_workflows, "reconcile_before_enabling", complete)
     try:
         off, reconciled = system_workflows._switch_permission_system(False, "alice")
         assert off["permission_system_enabled"] is False and reconciled is None

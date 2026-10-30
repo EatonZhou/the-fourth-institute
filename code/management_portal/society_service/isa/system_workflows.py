@@ -1,4 +1,6 @@
 """Administrator settings commands whose installed authority is a Lineage Event."""
+from typing import Any
+
 from management_portal.execution.service_settings import RETENTION_DAYS, ExecutionSettings
 from management_portal.hatg.contracts import InstructionError, invalid
 from management_portal.hatg.kernel import Invocation
@@ -37,6 +39,13 @@ def update_execution_settings(inv: Invocation) -> dict:
     return {"settings": settings} if reconciled is None else {"settings": settings, "reconciled": reconciled}
 
 
+def reconcile_before_enabling(actor: str) -> dict[str, Any]:
+    """While the permission system is off, bring the active scheme's instance up to date (补齐) so it can be turned on."""
+    from management_portal.resources import get_resource_service
+
+    return get_resource_service().prepare_permissions(actor=actor)
+
+
 def _switch_permission_system(enabled: bool, actor: str) -> tuple[dict, dict | None]:
     """Turn the permission system on or off for the whole Portal.
 
@@ -51,7 +60,7 @@ def _switch_permission_system(enabled: bool, actor: str) -> tuple[dict, dict | N
     settings = ExecutionSettings()
     if enabled == settings.permission_system_enabled():
         return settings.get(), None
-    report = permission_system.reconcile_before_enabling(actor) if enabled else None
+    report = reconcile_before_enabling(actor) if enabled else None
     result = settings.update_permission_system(enabled)
     permission_system.forget_mode()
     return result, report

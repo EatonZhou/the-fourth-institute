@@ -187,7 +187,7 @@ _MODEL_API_SYSTEM_PLACE = "到期时作为第一条 system 消息"
 
 
 def resident_md_transport(provider: str) -> str:
-    from management_portal.society_service.resident_execution_provider import initial_instructions_transport_for
+    from management_portal.execution.provider_catalog import initial_instructions_transport_for
 
     return initial_instructions_transport_for(provider)
 

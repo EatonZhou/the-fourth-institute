@@ -194,11 +194,12 @@ def _forwarded_item(caller: str, item: Any) -> dict[str, Any]:
 
     if not isinstance(item, dict):
         raise invalid("messages 的每一项必须包含 resident_id 与 message_id")
-    if item.get("chatroom_id"):
-        # A Chatroom message (decision_a6bebf4ac283), read as a member of that Chatroom.
-        from management_portal import chatroom_backend
+    from management_portal import portal_features
 
-        return chatroom_backend.forward_source(caller, item.get("chatroom_id"), item.get("message_id"))
+    for _feature, source in portal_features.contributions("conversation.forwarding"):
+        if item.get(source.FORWARD_FIELD):
+            # A Chatroom message (decision_a6bebf4ac283), read as a member of that Chatroom.
+            return source.forward_source(caller, item.get(source.FORWARD_FIELD), item.get("message_id"))
     resident_id = str(item.get("resident_id") or "").strip().lower()
     message_id = str(item.get("message_id") or "").strip()
     if not resident_id or not message_id:

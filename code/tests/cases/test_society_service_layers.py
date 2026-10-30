@@ -37,7 +37,7 @@ LAYERS = (
     """
     application_target_configuration changes config contracts domain_ports effect_artifacts errors
     family_definition folder_removal identity_contract invariant_locks lineage_effect_syntax
-    lineage_execution_authority lineage_member_projection lineage_placement lineage_values personal_ama
+    lineage_execution_authority lineage_member_projection lineage_placement lineage_values
     principal_hierarchy project_folders read_snapshot resident_backend resident_capability_materials
     resident_context resident_context.embedder resident_context.evidence resident_context.summary_layers
     resident_default_backend resident_hatg_credentials resident_intake_admission resident_message_contract
@@ -71,7 +71,7 @@ LAYERS = (
     lineage_program_fields lineage_program_graph_mutation lineage_program_identity
     lineage_program_packet_routing lineage_program_queries lineage_program_vocabulary
     lineage_program_wires lineage_recurring_schedule lineage_subgraph lineage_workspace_binding
-    lineage_workspace_files result_contracts
+    result_contracts
     """,
     # Records, catalogs, the Conversation stream and the service clients.
     """

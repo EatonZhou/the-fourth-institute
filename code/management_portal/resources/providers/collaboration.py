@@ -14,7 +14,7 @@ READABLE_TYPES = frozenset({"resident", "lineage", "family"})
 
 
 def _resolution(service: "ResourceService", address: object, **context: Any):
-    from management_portal import resource_identity_backend
+    from .. import indexed_content
 
     clean_address = str(address or "").strip()
     root_id, _, suffix = clean_address.partition("/")
@@ -26,7 +26,7 @@ def _resolution(service: "ResourceService", address: object, **context: Any):
         from ..portal import portal_url_for_address
 
         resolved = canonical_resolution(
-            resource_identity_backend.resolve_indexed_resource_address(
+            indexed_content.resolve_indexed_resource_address(
                 root_id,
                 actor=str(context.get("actor") or ""),
                 resource_service=service,
@@ -55,7 +55,7 @@ def _resolution(service: "ResourceService", address: object, **context: Any):
     if parts is not None:
         return _folder_file(service, clean_address, root_id, parts, str(context.get("actor") or ""))
     return canonical_resolution(
-        resource_identity_backend.resolve_indexed_resource_address(
+        indexed_content.resolve_indexed_resource_address(
             str(address or "").strip(),
             actor=str(context.get("actor") or ""),
             resource_service=service,
@@ -72,11 +72,12 @@ def _folder_root(resolved: dict[str, Any]):
 
 def _folder_file(service: "ResourceService", address: str, root_id: str, parts: tuple[str, ...], actor: str):
     """A file in a Resident Folder or Lineage Folder: readable by whoever may read the Resident or Lineage."""
-    from management_portal import resource_identity_backend
     from management_portal.society_service.lineage_access_policy import file_reaches, is_personal_lineage
 
+    from .. import indexed_content
+
     resolved = canonical_resolution(
-        resource_identity_backend.resolve_indexed_resource_address(root_id, actor=actor, resource_service=service)
+        indexed_content.resolve_indexed_resource_address(root_id, actor=actor, resource_service=service)
     )
     attributes = (resolved.get("record") or {}).get("attributes") or {}
     if resolved["resource_type"] == "lineage":

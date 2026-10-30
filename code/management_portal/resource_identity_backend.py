@@ -11,7 +11,7 @@ import re
 import stat
 import subprocess
 from contextlib import contextmanager
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 from typing import Any, Iterable, Iterator
 from urllib.parse import unquote
 
@@ -19,6 +19,8 @@ from urllib.parse import unquote
 from management_portal.resources import get_resource_service
 from management_portal.resources.registry_store import announce_registry_changes, get_registry_store
 from management_portal.resources.errors import GitCheckoutRequired
+from management_portal.resources import indexed_content
+from management_portal.resources.indexed_content import _safe_repo_relative_path
 
 from . import registry_sync
 
@@ -820,73 +822,6 @@ def _select_checkout(record: dict[str, Any]) -> dict[str, Any]:
     raise FileNotFoundError(f"repo has no checkout: {record.get('id')}")
 
 
-def _safe_repo_relative_path(raw_path: str) -> str:
-    decoded = unquote(raw_path)
-    if not decoded or "\x00" in decoded or "\n" in decoded or "\r" in decoded:
-        raise ValueError("invalid repo-relative path")
-    pure = PurePosixPath(decoded)
-    if pure.is_absolute() or any(part in {"", ".", ".."} for part in pure.parts):
-        raise ValueError("repo-relative path must not escape the checkout")
-    return pure.as_posix()
-
-
-def resolve_indexed_resource_address(
-    clean_address: str,
-    *,
-    actor: str = "",
-    resource_service: Any,
-) -> dict[str, Any]:
-    root_id, separator, suffix = clean_address.partition("/")
-    record = resource_service.get(root_id, actor=actor)
-    if "knowledge" in set(record.get("facets") or []):
-        from knowledge_board_lan import knowledge_backend
-
-        return knowledge_backend.resolve_knowledge_address(clean_address, actor=actor)
-    source = record.get("source") if isinstance(record.get("source"), dict) else {}
-    attributes = record.get("attributes") if isinstance(record.get("attributes"), dict) else {}
-    deleted = any(
-        stripped_text(value.get("status")) == "deleted" or stripped_text(value.get("deleted_at"))
-        for value in (record, attributes)
-    )
-    source_path = Path(stripped_text(source.get("path"))).expanduser().resolve(strict=False)
-    result: dict[str, Any] = {
-        "schema": "tfi.resource_resolution.v2",
-        "address": clean_address,
-        "root_id": root_id,
-        "resource_type": stripped_text(record.get("resource_type")),
-        "target_kind": stripped_text(record.get("resource_type")) or "resource",
-        "record": record,
-        "portal_url": stripped_text(record.get("url")),
-        "resolved_path": str(source_path) if stripped_text(source.get("path")) else "",
-        "exists": not deleted and (source_path.exists() if stripped_text(source.get("path")) else True),
-    }
-    if not separator:
-        return result
-
-    parts = suffix.split("/")
-    if len(parts) < 2 or parts[0] != "file":
-        raise ValueError(f"unsupported nested resource address: {clean_address}")
-    raw_root = stripped_text(attributes.get("content_root"))
-    if not raw_root:
-        raise ValueError(f"resource does not expose nested files: {root_id}")
-    content_root = Path(raw_root).expanduser().resolve(strict=False)
-    relative_path = _safe_repo_relative_path("/".join(parts[1:]))
-    target = (content_root / relative_path).resolve(strict=False)
-    try:
-        target.relative_to(content_root)
-    except ValueError as exc:
-        raise ValueError("resource-relative path escapes the content root") from exc
-    result.update(
-        {
-            "target_kind": "file",
-            "relative_path": relative_path,
-            "resolved_path": str(target),
-            "exists": not deleted and target.is_file(),
-        }
-    )
-    return result
-
-
 def resolve_repo_address(address: str) -> dict[str, Any]:
     clean_address = unquote(stripped_text(address)).strip("/")
     root_id, separator, suffix = clean_address.partition("/")
@@ -958,23 +893,6 @@ def read_resolved_resource_content(
     max_bytes: int = 4 * 1024 * 1024,
 ) -> tuple[bytes, str, dict[str, Any]]:
     kind = resolved["target_kind"]
-    resolved_path = stripped_text(resolved.get("resolved_path"))
-    if kind == "file" or (
-        kind not in {"git_file", "article_section"}
-        and resolved_path
-        and Path(resolved_path).is_file()
-    ):
-        path = Path(resolved_path)
-        if not path.is_file():
-            raise FileNotFoundError(path)
-        size = path.stat().st_size
-        if size > max_bytes:
-            raise ValueError(f"resource exceeds {max_bytes} byte content limit")
-        data = path.read_bytes()
-        content_type = mimetypes.guess_type(str(path))[0] or "application/octet-stream"
-        if content_type == "application/x-tex":
-            content_type = "text/x-tex"
-        return data, content_type, resolved
     if kind == "git_file":
         if not resolved.get("exists"):
             raise FileNotFoundError(address)
@@ -1001,4 +919,5 @@ def read_resolved_resource_content(
     if kind == "article_section":
         from . import article_sections
         return article_sections.read_article_section(resolved, max_bytes=max_bytes)
-    raise ValueError(f"{resolved.get('resource_type') or 'resource'} root has no byte content")
+    return indexed_content.read_resolved_resource_content(
+        resolved, address=address, actor=actor, max_bytes=max_bytes)

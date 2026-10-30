@@ -1,30 +1,38 @@
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from .contracts import ResidentTerminalFact
 from .ports import LineageRuntimePorts
+
+LOGGER = logging.getLogger(__name__)
 
 
 def _chatroom_terminal(fact: ResidentTerminalFact) -> dict[str, Any]:
     """Bring a Chatroom delivery's reply back as soon as its input ends (decision_a6bebf4ac283).
 
     Chatroom reads finish the same delivery when this wake-up is lost, so a
-    failure here never fails the terminal fact itself.
+    failure here never fails the terminal fact itself.  Features declare the
+    inputs they deliver (portal_features ``resident.inputs``).
     """
 
-    if not str(fact.business_ref or "").startswith("chatroom_"):
-        return {}
+    business_ref = str(fact.business_ref or "")
     try:
-        from management_portal import chatroom_backend
+        from management_portal import portal_features
 
-        return chatroom_backend.handle_resident_terminal(
-            business_ref=fact.business_ref,
-            resident_id=fact.resident_id,
-            message_id=fact.message_id,
-        )
-    except Exception:  # noqa: BLE001
+        for _feature, delivered in portal_features.contributions("resident.inputs"):
+            if business_ref.startswith(delivered.BUSINESS_REF_PREFIX):
+                return delivered.handle_resident_terminal(
+                    business_ref=fact.business_ref,
+                    resident_id=fact.resident_id,
+                    message_id=fact.message_id,
+                )
+    except Exception:  # noqa: BLE001 - the feature's own reads finish the delivery later
+        LOGGER.warning("the end of input %s of %s did not reach its feature", fact.message_id,
+                       fact.resident_id, exc_info=True)
         return {}
+    return {}
 
 
 def _mailbox_terminal(fact: ResidentTerminalFact) -> list[str]:

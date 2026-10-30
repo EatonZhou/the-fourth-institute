@@ -15,6 +15,7 @@ from typing import Any, Callable, Iterable, Iterator, Mapping
 
 from management_common.file_lock import lock_stream
 from management_common.projection_receipts import project_committed
+from management_portal.resources.workspace_files import _write_text
 
 from .errors import LineageConflictError
 from .lineage_program_queries import _compiled_program
@@ -27,7 +28,6 @@ from . import lineage_access_policy, lineage_view_projection
 from .lineage_access_policy import actor_can_manage_lineage as _actor_can_manage_lineage
 from .lineage_view_projection import node_resident_id as _node_resident_id
 from .lineage_program_fields import _position
-from .lineage_workspace_files import _write_text
 from . import (
     identity_contract,
     invariant_locks,

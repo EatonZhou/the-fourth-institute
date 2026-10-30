@@ -513,7 +513,8 @@ def test_indexed_knowledge_documents_open_with_real_content_and_keep_paper_revie
     """已索引的 todo 和 review 知识文档打开时显示原文，论文的 review 对象仍走论文页面
 
     :importance: P2"""
-    from management_portal import resource_index_backend, resource_identity_backend, resource_views
+    from management_portal import resource_index_backend, resource_views
+    from management_portal.resources import indexed_content
     resource_id = kind + "_0123456789ab"
     root = tmp_path / "Example" / "knowledge_base" / kind
     root.mkdir(parents=True)
@@ -546,6 +547,6 @@ def test_indexed_knowledge_documents_open_with_real_content_and_keep_paper_revie
     if kind == "review":
         paper_record = {**record, "facets": ["paper", "review"], "url": "/paper?paper=paper_0123456789ab"}
         index.get_resource.return_value = paper_record
-        paper = resource_identity_backend.resolve_indexed_resource_address(resource_id, actor="tester", resource_service=service)
+        paper = indexed_content.resolve_indexed_resource_address(resource_id, actor="tester", resource_service=service)
         assert "detail" not in paper
         assert paper["portal_url"] == paper_record["url"]

@@ -36,7 +36,8 @@ def test_personal_family_can_precede_first_ai_account(future_creation_store, mon
     assert account_registrations.roles() == []
     accounts = []
     monkeypatch.setattr(execution_port, "service", lambda: SimpleNamespace(accounts=lambda: {"accounts": accounts}))
-    from management_portal.society_service import personal_ama, resource_client
+    from management_portal.permission_system import personal_ama
+    from management_portal.society_service import resource_client
     # The isolated resource boundary must expose the real personal-owner
     # descriptor for deliveries between the newly created Family roles.
     monkeypatch.setattr(personal_ama, "_DESCRIPTORS", SimpleNamespace(get=lambda rid:

@@ -6,9 +6,10 @@ from typing import Any
 
 from management_common.actor_identity import canonical_actor_id
 from management_common.principal import actor_principal
+from management_portal.permission_system import personal_ama
 from management_portal.portal_access_control import get_portal_access_store
 
-from . import personal_ama, resident_catalog, resident_lineage
+from . import resident_catalog, resident_lineage
 from .domain_ports import resident_lineage_host_port
 
 

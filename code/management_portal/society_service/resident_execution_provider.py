@@ -133,11 +133,6 @@ def _provider_for_key(
     return provider
 
 
-def initial_instructions_transport_for(backend: object) -> str:
-    """Instruction transport is a Provider contract, independent of its account or live Session."""
-    return _provider_for_key(provider_name(backend), None).initial_instructions_transport
-
-
 def provider_for(record: Mapping[str, Any]) -> ExecutionProvider:
     backend = provider_name(record.get("backend"))
     # The canonical Resident stores its backend. Execution mode belongs to that

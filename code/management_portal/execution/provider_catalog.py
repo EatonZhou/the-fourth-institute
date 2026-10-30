@@ -53,7 +53,8 @@ class AgentProvider:
     default_concurrency: int = 8
     # Where a Resident's resident.md travels: ``user_prompt`` in front of the
     # turn's user message, or ``system_instructions`` with Portal's system
-    # instructions (resident_execution_provider.INITIAL_INSTRUCTION_TRANSPORTS).
+    # instructions (resident_execution_provider.INITIAL_INSTRUCTION_TRANSPORTS,
+    # ``initial_instructions_transport_for``).
     initial_instructions_transport: str = "user_prompt"
     # Portal's system instructions reach this Provider as process
     # configuration its session history does not keep: Claude Code is given
@@ -317,3 +318,16 @@ def provider_name(value: object) -> str:
     return str(value or "").strip().lower()
 
 
+def initial_instructions_transport_for(backend: object) -> str:
+    """Instruction transport is a Provider contract, independent of its account or live Session.
+
+    A Model API Resident (``provider_api``) gets its resident.md with Portal's system
+    instructions, as ``resident_execution_provider.ProviderApiExecutionProvider`` says.
+    """
+    backend = provider_name(backend)
+    if backend == "provider_api":
+        return "system_instructions"
+    definition = AGENT_PROVIDERS.get(backend)
+    if definition is None:
+        raise ValueError(f"Unsupported Resident execution provider: {backend}")
+    return definition.initial_instructions_transport

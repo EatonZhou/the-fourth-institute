@@ -25,7 +25,7 @@ MARKDOWN_REGISTERABLE_RESOURCE_TYPES = tuple(
 
 def install_resolver(service: "ResourceService", *, resource_types=None) -> None:
     import knowledge_board_lan.knowledge_backend as knowledge_backend
-    from management_portal import resource_identity_backend
+    from .. import indexed_content
 
     service.register_resolver(
         tuple(resource_types) if resource_types is not None else MUTABLE_RESOURCE_TYPES,
@@ -35,7 +35,7 @@ def install_resolver(service: "ResourceService", *, resource_types=None) -> None
                 actor=str(context.get("actor") or ""),
             )
         ),
-        read_content=resource_identity_backend.read_resolved_resource_content,
+        read_content=indexed_content.read_resolved_resource_content,
     )
 
 

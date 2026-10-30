@@ -52,7 +52,7 @@ def resident_folder(resident_id: str, record: dict[str, Any]) -> Path:
 
 
 def hidden(parts: tuple[str, ...]) -> bool:
-    from management_portal.society_service.lineage_workspace_files import _hidden_workspace_path
+    from ..workspace_files import _hidden_workspace_path
 
     return bool(parts) and _hidden_workspace_path("/".join(parts))
 
@@ -86,7 +86,7 @@ def _modified_at(info: os.stat_result) -> str:
 
 
 def entry_kind(name: str, info: os.stat_result) -> str:
-    from management_portal.society_service.lineage_workspace_files import workspace_file_kind
+    from ..workspace_files import workspace_file_kind
 
     if stat.S_ISDIR(info.st_mode):
         return "directory"

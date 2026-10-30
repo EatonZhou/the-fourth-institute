@@ -14,7 +14,7 @@ import json
 import pytest
 
 from management_portal import permission_system
-from management_portal.society_service import personal_ama
+from management_portal.permission_system import personal_ama
 from tests.cases import permission_test_support
 from tests.cases.test_resident_delivery_receipts import delivery_resident  # noqa: F401 - fixture
 from tests.cases.test_resident_folder_creation_contract import future_creation_store  # noqa: F401 - fixture

@@ -8,8 +8,8 @@ from __future__ import annotations
 from collections.abc import Mapping
 
 from management_portal import portal_access_control
+from management_portal.permission_system import personal_ama
 
-from . import personal_ama
 from .identity_contract import is_valid_id
 
 

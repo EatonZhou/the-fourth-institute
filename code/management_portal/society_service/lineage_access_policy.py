@@ -13,7 +13,9 @@ from management_common.principal import actor_principal, is_user_or_resident
 
 from typing import Any, Mapping
 
-from . import identity_contract, personal_ama, resident_catalog
+from management_portal.permission_system import personal_ama
+
+from . import identity_contract, resident_catalog
 from .lineage_values import _safe_actor, _text
 
 

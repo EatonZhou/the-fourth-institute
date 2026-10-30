@@ -40,7 +40,7 @@ from .resident_runtime_payload import runtime_settings_updates_from_payload as _
 from dataclasses import dataclass, field, replace
 from management_common.actor_identity import canonical_actor_id
 from management_portal.execution.contracts import ExecutionRequest, InputMedia
-from management_portal.execution.provider_catalog import AGENT_PROVIDERS
+from management_portal.execution.provider_catalog import AGENT_PROVIDERS, initial_instructions_transport_for
 from management_portal.execution.requests import (
     build_agent_turn_request,
     build_chat_completion_request,
@@ -1327,7 +1327,7 @@ def resident_system_instructions(
             allow_subagents=allow_subagents,
         )
         parts.extend(rules.parts)
-    transport = resident_execution_provider.initial_instructions_transport_for(record.get("backend"))
+    transport = initial_instructions_transport_for(record.get("backend"))
     resident_md = (
         resident_agents_instruction_block(record).strip() if choices["resident_md"] != "off" else ""
     )

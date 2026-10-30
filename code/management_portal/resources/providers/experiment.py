@@ -48,9 +48,9 @@ def _importance(value: object) -> int:
 
 
 def _project_roots() -> list[tuple[str, Path]]:
-    from management_portal import resource_identity_backend
+    from management_portal import project_registry
 
-    return resource_identity_backend.project_roots()
+    return project_registry.project_roots()
 
 
 def _project_root(project_id: str) -> Path:

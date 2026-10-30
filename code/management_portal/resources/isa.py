@@ -142,7 +142,7 @@ _PREVIEW_BINARY_KINDS = frozenset({"binary", "image", "pdf"})
 
 def _file_metadata(resolved: dict[str, Any]) -> dict[str, Any]:
     """Name, preview kind and modification time of the file a resolution names, and its Portal content address."""
-    from management_portal.society_service.lineage_workspace_files import workspace_file_kind
+    from .workspace_files import workspace_file_kind
 
     mtime_ns = int(resolved.get("content_mtime_ns") or 0)
     name = str(resolved.get("filename") or "")

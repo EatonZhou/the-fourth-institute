@@ -26,7 +26,7 @@ it calls.
 A personal AMA's Resident is judged as its owner User, in both modes and
 under every scheme (decision_b820faf42218 §5.5).  That a personal AMA is
 known only to its owner is a rule of personal AMAs, kept by Society
-(``society_service.personal_ama``), not asked here.  In both modes and
+(``personal_ama``), not asked here.  In both modes and
 under every scheme, a Portal 管理员 may turn the switch and activate a scheme,
 and only a Portal 管理员 changes the administrator list
 (``administrators.py``, §3.1).  Every User has a
@@ -359,13 +359,6 @@ def end_task_credentials(connection: Any, resident_id: str, message_id: str) -> 
     from .inline import end_with_input
 
     return end_with_input(connection, str(resident_id or "").strip(), str(message_id or "").strip())
-
-
-def reconcile_before_enabling(actor: str) -> dict[str, Any]:
-    """While the permission system is off, bring the active scheme's instance up to date (补齐) so it can be turned on."""
-    from management_portal.resources import get_resource_service
-
-    return get_resource_service().prepare_permissions(actor=actor)
 
 
 def maintain() -> None:

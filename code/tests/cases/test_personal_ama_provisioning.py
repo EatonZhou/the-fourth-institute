@@ -182,7 +182,8 @@ def test_personal_ama_and_nested_forks_represent_the_registered_owner(future_cre
     :importance: P2
     :design: decision_bd5217d08c09, decision_b820faf42218
     """
-    from management_portal.society_service import lineage_access_policy, personal_ama, resident_domain, resource_client
+    from management_portal.permission_system import personal_ama
+    from management_portal.society_service import lineage_access_policy, resident_domain, resource_client
 
     first = principal_hierarchy_domain.ensure_personal_ama('newcomer', 'newcomer')
     residents = [first['resident_id']]
@@ -242,8 +243,9 @@ def test_an_ama_left_by_a_busy_deletion_stops_running_and_is_deleted_later(futur
     :design: decision_bd5217d08c09
     """
     from management_portal import portal_access_control
+    from management_portal.permission_system import personal_ama
     from management_portal.society_service import (
-        lineage_automation_identity, personal_ama, resident_lifecycle_domain, resource_client,
+        lineage_automation_identity, resident_lifecycle_domain, resource_client,
     )
 
     mine = principal_hierarchy_domain.ensure_personal_ama("newcomer", "newcomer")
