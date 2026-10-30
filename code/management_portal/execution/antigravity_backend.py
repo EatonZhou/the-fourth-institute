@@ -4,6 +4,7 @@ from __future__ import annotations
 from contextlib import ExitStack
 import threading
 
+from management_common.provider_turn_artifacts import ToolEditArtifacts
 from management_portal import antigravity_accounts as accounts
 from management_portal.antigravity_client import AcpClient, ToolServer
 from management_portal.antigravity_runtime import command
@@ -13,7 +14,44 @@ from .context_seed import realize_portable_seed
 from .native_harness_tools import prepare_tools
 from .native_options import NativeOptions
 from .resident_capability_assembly import require_offered_tools
-from .native_socket_backend import _report_tool_events, _report_context_usage
+from .native_socket_backend import _report_tool_events, _observe_tool_edit_artifacts
+from .native_tool_events import tool_started, tool_completed
+
+
+def _tool_arguments(item):
+    """Translate ACP's documented file/command arguments to Portal's vocabulary."""
+    name = item.get("title") or item.get("kind") or "Antigravity tool"
+    raw = item.get("rawInput") or {}
+    args = dict(raw) if isinstance(raw, dict) else {}
+    path = next((args[k] for k in ("file_path", "path", "TargetFile", "target_file", "AbsolutePath", "absolute_path", "FilePath")
+                 if isinstance(args.get(k), str)), "")
+    if path:
+        args["file_path"] = path
+    if item.get("kind") == "execute":
+        args["command"] = next((args[k] for k in ("command", "cmd", "CommandLine", "command_line")
+                                if isinstance(args.get(k), str)), name)
+        return "run_command", args
+    # ACP includes the actual before/after text when available. Do not read a
+    # file after the tool ran to invent its previous contents.
+    diffs = [v for v in item.get("content", []) if v.get("type") == "diff"]
+    if len(diffs) == 1 and isinstance(diffs[0].get("newText"), str):
+        diff = diffs[0]
+        args = {"file_path": diff["path"]}
+        if isinstance(diff.get("oldText"), str):
+            return "edit", {**args, "old_string": diff["oldText"], "new_string": diff["newText"]}
+        return "write", {**args, "content": diff["newText"]}
+    if name in {"create_file", "edit_file", "write_file", "write_to_file"}:
+        content = next((args[k] for k in ("code_content", "CodeContent", "new_text", "content", "text")
+                        if isinstance(args.get(k), str)), None)
+        if path and content is not None:
+            return "write", {"file_path": path, "content": content}
+    if name == "replace_file_content" and path:
+        old = args.get("TargetContent", args.get("target_content"))
+        new = args.get("ReplacementContent", args.get("replacement_content"))
+        if isinstance(old, str) and isinstance(new, str):
+            return "edit", {"file_path": path, "old_string": old, "new_string": new,
+                            "replace_all": args.get("AllowMultiple", args.get("allow_multiple")) is True}
+    return name, args
 
 
 class AntigravityOptions(NativeOptions):
@@ -50,7 +88,8 @@ class AntigravityBackend:
         prior = invocation.recovery_checkpoint.get("provider_recovery_state") or {}
         if prior.get("turn_id") == request.execution_id:
             if prior.get("phase") == "completed":
-                return BackendResult(prior["output"], prior["session_id"], route, prior.get("usage", {}))
+                return BackendResult(prior["output"], prior["session_id"], route, prior.get("usage", {}),
+                                     frozenset(prior.get("available_harness_tool_names", [])))
             if prior.get("phase") == "prompt_sent":
                 raise RuntimeError("Antigravity input delivery is uncertain after disconnection; refusing to replay it")
         row = accounts.account_for_route(route)
@@ -62,15 +101,25 @@ class AntigravityBackend:
         require_offered_tools(invocation, {tool["name"] for tool in catalog})
         sid = session.backend_session_id
         active_turn = False
+        accepted = False
         segment = 0
         after_tool = False
         text_parts, tools = [], {}
         turn_id = request.execution_id
+        tool_edits = ToolEditArtifacts(request.cwd)
 
         def emit(method, **params):
             event = {"method": method, "params": {"threadId": sid, "turnId": turn_id, **params}}
+            tool_edits.observe(event)
             _report_tool_events(invocation, [event])
             context.observe_provider_event(event, provider=self.provider_id, backend_session_id=sid, backend_route_id=route)
+
+        def accept():
+            nonlocal accepted
+            if not accepted:
+                context.bind_input(provider=self.provider_id, backend_session_id=sid, turn_id=turn_id, backend_route_id=route)
+                emit("turn/started", turn={"id": turn_id})
+                accepted = True
 
         def update(params):
             nonlocal segment, after_tool
@@ -78,6 +127,8 @@ class AntigravityBackend:
                 return  # session/load may replay historical updates.
             item = params.get("update") or {}
             kind = item.get("sessionUpdate")
+            if kind in {"agent_message_chunk", "agent_thought_chunk", "tool_call", "tool_call_update"}:
+                accept()
             if kind in {"agent_message_chunk", "agent_thought_chunk"}:
                 content = item.get("content") or {}
                 if content.get("type") != "text":
@@ -103,21 +154,24 @@ class AntigravityBackend:
                 before = tools.get(tool_id)
                 merged = {**(before or {}), **item}
                 tools[tool_id] = merged
-                native_item = {"id": tool_id, "type": "dynamicToolCall", "tool": merged.get("title") or merged.get("kind") or "Antigravity tool",
-                               "arguments": merged.get("rawInput") or {}, "status": "inProgress"}
+                name, arguments = _tool_arguments(merged)
                 if before is None:
-                    emit("item/started", item=native_item)
+                    event = tool_started(tool_id, name, arguments, cwd=request.cwd)
+                    emit(event["method"], **event["params"])
                 if merged.get("status") in {"completed", "failed"} and (before or {}).get("status") not in {"completed", "failed"}:
-                    emit("item/completed", item={**native_item, "status": merged["status"],
-                                                "output": merged.get("rawOutput", merged.get("content", []))})
+                    event = tool_completed(tool_id, name, arguments, merged.get("rawOutput", merged.get("content", [])),
+                                           failed=merged["status"] == "failed", cwd=request.cwd)
+                    emit(event["method"], **event["params"])
             elif kind == "usage_update":
                 usage = {"input_tokens": int(item.get("used", 0))}
                 context.observe_context_usage(usage, int(item.get("size", 0)))
-                _report_context_usage(invocation, {"context": {"inputTokens": usage["input_tokens"]},
-                                                    "modelContextWindow": int(item.get("size", 0))})
+                emit("thread/tokenUsage/updated", tokenUsage={"context": {"inputTokens": usage["input_tokens"]},
+                                                              "modelContextWindow": int(item.get("size", 0))})
 
         def client_request(method, params):
             if method == "session/request_permission":
+                if active_turn and params.get("sessionId") == sid:
+                    accept()
                 if (not sid or params.get("sessionId") == sid) and native and not context.is_cancelled():
                     option = next((p for p in params.get("options", []) if p.get("kind") == "allow_once"), None)
                     if option:
@@ -160,36 +214,38 @@ class AntigravityBackend:
             if context.is_cancelled():
                 raise InterruptedError("Antigravity execution cancelled before prompt")
             context.set_provider_recovery_state({"phase": "prompt_sent", "turn_id": turn_id, "session_id": sid})
-            context.bind_input(provider=self.provider_id, backend_session_id=sid, turn_id=turn_id, backend_route_id=route)
             with self._lock:
-                self._active[(route, sid)] = client
+                self._active[(route, sid, turn_id)] = client
             active_turn = True
-            emit("turn/started", turn={"id": turn_id})
             try:
                 result = client.call("session/prompt", {"sessionId": sid, "prompt": [{"type": "text", "text": invocation.user_prompt}]},
                                      timeout=None, cancelled=context.is_cancelled, session_id=sid)
                 if result.get("stopReason") == "cancelled" or context.is_cancelled():
                     raise InterruptedError("Antigravity turn cancelled")
+                accept()
                 output = {"message": "".join(text_parts), "provider": self.provider_id,
-                          "operation": "turn", "stop_reason": result.get("stopReason", "")}
+                          "operation": "turn", "turn_id": turn_id, "stop_reason": result.get("stopReason", "")}
                 raw = result.get("usage") or {}
                 usage = {target: int(raw[source]) for source, target in
                          (("inputTokens", "input_tokens"), ("outputTokens", "output_tokens"),
                           ("cachedReadTokens", "cached_input_tokens"), ("thoughtTokens", "reasoning_output_tokens"),
                           ("totalTokens", "total_tokens")) if isinstance(raw.get(source), (int, float))}
                 emit("item/completed", item={"id": f"{turn_id}:answer:{segment}", "type": "agentMessage", "text": output["message"], "phase": "final_answer"})
+                _observe_tool_edit_artifacts(context, tool_edits, provider=self.provider_id, session_id=sid,
+                                             turn_id=turn_id, status="completed")
                 emit("turn/completed", turn={"id": turn_id, "status": "completed"})
                 context.set_provider_recovery_state({"phase": "completed", "turn_id": turn_id, "session_id": sid,
-                                                     "output": output, "usage": usage})
+                                                     "output": output, "usage": usage,
+                                                     "available_harness_tool_names": [tool["name"] for tool in catalog]})
                 return BackendResult(output, sid, route, usage, frozenset(tool["name"] for tool in catalog))
             finally:
                 active_turn = False
                 with self._lock:
-                    self._active.pop((route, sid), None)
+                    self._active.pop((route, sid, turn_id), None)
 
     def interrupt(self, *, backend_session_id, turn_id, backend_route_id, runtime_options):
         with self._lock:
-            client = self._active.get((backend_route_id, backend_session_id))
+            client = self._active.get((backend_route_id, backend_session_id, turn_id))
         if client:
             client.notify("session/cancel", {"sessionId": backend_session_id})
             return True

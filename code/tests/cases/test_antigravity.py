@@ -10,6 +10,8 @@ import json
 from pathlib import Path
 import sys
 import threading
+import time
+from concurrent.futures import ThreadPoolExecutor
 from types import SimpleNamespace
 from unittest import mock
 import zipfile
@@ -50,8 +52,8 @@ def invocation(root, text="hello", *, sid="", tools=(), owner=True, execution="e
 
 
 def context(cancel=None):
-    events, state = [], {}
-    result = BackendContext(emit_event=lambda *args: None, cancellation_requested=cancel or (lambda: False),
+    events, state = [], {"execution_events": []}
+    result = BackendContext(emit_event=lambda *args: state["execution_events"].append(args), cancellation_requested=cancel or (lambda: False),
         set_interrupt_target=lambda *args: None, set_provider_recovery_state=lambda value: state.update(value),
         provider_event_observer=lambda p, s, r, e: events.append(e),
         update_context_usage=lambda usage, window: state.update(context=usage, window=window))
@@ -76,6 +78,9 @@ def test_turn_serves_portal_tools_and_reports_native_events_and_usage(agent):
     observed = [call.args[0] for call in inv.provider_event_processor.process_event.call_args_list]
     capability_contracts.check_tool_events(observed)
     assert any(e["method"] == "thread/tokenUsage/updated" for e in observed)
+    assert sum(e["method"] == "thread/tokenUsage/updated" for e in observed) == 1
+    assert any(e["method"] == "thread/tokenUsage/updated" for e in events)
+    assert sum(kind == "provider_input_bound" for kind, _ in state["execution_events"]) == 1
     assert state["context"] == {"input_tokens": 80} and state["window"] == 1000
     assert state["phase"] == "completed"
     created = next(r["params"] for r in requests(agent) if r["method"] == "session/new")
@@ -131,10 +136,71 @@ def test_disconnect_checkpoint_refuses_to_replay_input(agent):
     with pytest.raises(AcpError):
         AntigravityBackend().execute(inv, ctx)
     assert state["phase"] == "prompt_sent"
+    assert not any(kind == "provider_input_bound" for kind, _ in state["execution_events"])
     inv.recovery_checkpoint = {"provider_recovery_state": state}
     with pytest.raises(RuntimeError, match="refusing to replay"):
         AntigravityBackend().execute(inv, context()[0])
     assert sum(r["method"] == "session/prompt" for r in requests(agent)) == 1
+
+
+def test_completed_recovery_preserves_tool_capabilities_without_new_prompt(agent):
+    tool = HarnessTool("read_resource", "Read", {"type": "object"}, lambda _: "text")
+    inv = invocation(agent, tools=[tool])
+    ctx, _, state = context()
+    first = AntigravityBackend().execute(inv, ctx)
+    inv.recovery_checkpoint = {"provider_recovery_state": state}
+    second = AntigravityBackend().execute(inv, context()[0])
+    assert second == first
+    assert second.available_harness_tool_names == frozenset({"read_resource"})
+    assert sum(r["method"] == "session/prompt" for r in requests(agent)) == 1
+
+
+def test_stale_interrupt_cannot_cancel_a_later_turn_in_same_session(agent):
+    backend = AntigravityBackend()
+    inv = invocation(agent, "wait", sid="google-session-1", execution="current-turn")
+    with ThreadPoolExecutor(1) as pool:
+        running = pool.submit(backend.execute, inv, context()[0])
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline:
+            if (agent / "requests.jsonl").exists() and any(r["method"] == "session/prompt" for r in requests(agent)):
+                break
+            time.sleep(.01)
+        else:
+            pytest.fail("Native prompt did not start")
+        args = dict(backend_session_id="google-session-1", backend_route_id="one", runtime_options={})
+        assert not backend.interrupt(turn_id="previous-turn", **args)
+        assert not any(r["method"] == "session/cancel" for r in requests(agent))
+        assert backend.interrupt(turn_id="current-turn", **args)
+        with pytest.raises(InterruptedError):
+            running.result(timeout=5)
+
+
+def test_native_file_edit_is_recorded_as_a_turn_artifact(agent):
+    ctx, events, _ = context()
+    AntigravityBackend().execute(invocation(agent, "file-edit"), ctx)
+    edits = [e["params"]["item"] for e in events if e["method"] == "item/completed"
+             and e["params"]["item"].get("tool") == "edit"]
+    assert edits[0]["arguments"] == {"file_path": "file.txt", "old_string": "old", "new_string": "new", "replace_all": False}
+    artifacts = [e["params"]["item"] for e in events if e["method"] == "item/completed"
+                 and e["params"]["item"].get("type") == "turnArtifacts"]
+    assert "-old" in artifacts[0]["artifacts"]["diff"] and "+new" in artifacts[0]["artifacts"]["diff"]
+    assert events[-1]["method"] == "turn/completed"
+
+
+@pytest.mark.parametrize("error_name", ["ExecutionClaimOwnershipLost", "ExecutionServiceUnavailable", "ExecutionResponseUnknown"])
+def test_execution_control_errors_cross_acp_reader_unchanged(agent, error_name):
+    from management_portal.execution import transport
+    failure = getattr(transport, error_name)("control plane unavailable")
+    def failed_observer(_):
+        raise failure
+    with AcpClient([sys.executable, str(FAKE)], env={"GEMINI_HOME": str(agent)}, on_update=failed_observer) as client:
+        client.initialize()
+        client.call("session/new", {"cwd": str(agent), "mcpServers": []})
+        with pytest.raises(type(failure)) as caught:
+            client.call("session/prompt", {"sessionId": "google-session-1", "prompt": [{"type": "text", "text": "hello"}]})
+        assert caught.value is failure
+        with pytest.raises(type(failure)):
+            client.call("session/new", {})
 
 
 def test_ordinary_request_never_waits_for_interactive_login(agent):

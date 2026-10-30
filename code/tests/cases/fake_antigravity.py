@@ -41,6 +41,10 @@ def prompt(identifier, params):
     if text == "multi-step":
         update(sid, sessionUpdate="agent_message_chunk", content={"type": "text", "text": "Checking a file."})
         text = "Final answer."
+    if text == "file-edit":
+        update(sid, sessionUpdate="tool_call", toolCallId="edit-1", title="replace_file_content", kind="edit",
+               status="in_progress", rawInput={"TargetFile": "file.txt", "TargetContent": "old", "ReplacementContent": "new"})
+        update(sid, sessionUpdate="tool_call_update", toolCallId="edit-1", status="completed", rawOutput="written")
     for server in session.get("mcpServers", []):
         headers = {item["name"]: item["value"] for item in server["headers"]}
         headers["Content-Type"] = "application/json"

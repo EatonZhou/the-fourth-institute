@@ -53,6 +53,8 @@ class AcpClient:
 
     def _fail(self, error):
         with self._lock:
+            if self._failure is not None:
+                return
             self._failure = error
             for pending in self._pending.values():
                 pending.put(error)
@@ -75,13 +77,23 @@ class AcpClient:
                 if message.get("method"):
                     method, params = message["method"], message.get("params") or {}
                     if "id" in message:
-                        result = self.on_request(method, params)
+                        try:
+                            result = self.on_request(method, params)
+                        except Exception as exc:
+                            self._fail(exc)
+                            return
                         reply = {"jsonrpc": "2.0", "id": message["id"]}
                         reply.update({"result": result} if result is not None else
                                      {"error": {"code": -32601, "message": "Client method not supported"}})
                         self._send(reply)
                     elif method == "session/update":
-                        self.on_update(params)
+                        try:
+                            self.on_update(params)
+                        except Exception as exc:
+                            # Execution ownership and service failures belong to
+                            # the caller, not to Google's protocol/error recovery.
+                            self._fail(exc)
+                            return
                 else:
                     with self._lock:
                         pending = self._pending.get(message.get("id"))
