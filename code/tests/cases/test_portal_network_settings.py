@@ -196,22 +196,18 @@ def test_unit_environment_file_is_last_and_optional(network, tmp_path, monkeypat
 
 
 def test_native_and_login_use_explicit_proxy_or_direct_without_leaking_credentials(network, monkeypatch, tmp_path):
-    from management_portal import provider_timing
     from management_portal.execution import account_login
     monkeypatch.setattr(account_login, "account_home", lambda *a: tmp_path / "account")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "do-not-inherit")
-    assert provider_timing.native_egress() == "http://legacy.invalid:3128"
     assert account_login.login_environment("codex", "test")["HTTPS_PROXY"] == "http://legacy.invalid:3128"
     proxy = {"http": "", "https": "", "all": "http://new.invalid:8080", "no_proxy": ""}
     save(network, proxy=proxy)
-    assert provider_timing.native_egress() == "http://new.invalid:8080"
     env = account_login.login_environment("codex", "test")
     assert env["ALL_PROXY"] == proxy["all"]
     assert env["HTTPS_PROXY"] == env["HTTP_PROXY"] == proxy["all"]
     assert network.read_settings()["proxy"]["https"] == "", "fallback must not overwrite the editable value"
     assert "ANTHROPIC_API_KEY" not in env
     save(network, proxy={"http": "", "https": "", "all": "", "no_proxy": ""})
-    assert provider_timing.native_egress() == ""
     assert account_login.login_environment("codex", "test")["HTTPS_PROXY"] == ""
 
 

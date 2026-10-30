@@ -91,8 +91,3 @@ def test_scheduler_restart_preserves_independently_owned_service_settings():
     Scheduler()
     Scheduler()
     assert ExecutionSettings().get()['model_request_timing_enabled'] is False
-
-
-def test_legacy_routes_cannot_advertise_or_reenable_observation():
-    """旧的计时代理路线设置固定为关闭，不能重新开启"""
-    assert request_timing.LegacyRouteSettings().get() == {'provider_timing_proxy_enabled': False}

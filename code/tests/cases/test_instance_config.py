@@ -145,6 +145,13 @@ class InstanceConfigurationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Paired service configuration drift'):
             config.check(self.root)
 
+    def test_paired_web_and_router_run_ahead_of_agent_commands(self):
+        """配对的 dev-web 与 router 也是处理请求的服务，CPUWeight 为 1000"""
+        self.prepare_pair()
+        for name in ('dev-web', 'router'):
+            unit = self.units / (self.target['service_prefix'] + '-' + name + '.service')
+            self.assertIn('\nCPUWeight=1000\n', unit.read_text())
+
     def test_import_removes_duplicate_target_and_preserves_runtime_values(self):
         before = {name: (self.root / name).read_bytes() for name in config.projections(self.root, self.target)}
         result = self.adopt()

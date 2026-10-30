@@ -718,9 +718,7 @@ class ExecutionServiceServer(LocalServiceSocketMixin, socketserver.ThreadingTCPS
         build_id: str = "",
         preparation: ExecutionPreparation | None = None,
         agent_data: AgentDataStore | None = None,
-        timing_proxy: Any = None,
         request_timing: Any = None,
-        inherited_socket: int | None = None,
         maintenance_interval_seconds: float = (
             EXECUTION_MAINTENANCE_INTERVAL_SECONDS
         ),
@@ -729,16 +727,12 @@ class ExecutionServiceServer(LocalServiceSocketMixin, socketserver.ThreadingTCPS
         from management_common.service_endpoint import service_endpoint
         self.endpoint = service_endpoint(self.socket_path)
         self.address_family = self.endpoint.family
-        if inherited_socket is not None and not self.endpoint.is_unix:
-            raise ValueError("Inherited ExecutionService sockets require a Unix endpoint")
         from management_common.rpc_auth import RpcAuthenticator
         self.rpc_auth = RpcAuthenticator(self.socket_path)
         self.socket_path.parent.mkdir(parents=True, exist_ok=True)
-        self.preserve_socket = inherited_socket is not None
-        if inherited_socket is None and self.endpoint.is_unix:
+        if self.endpoint.is_unix:
             self.socket_path.unlink(missing_ok=True)
         self.scheduler = scheduler
-        self.timing_proxy = timing_proxy
         from .request_timing import RequestTimingModule
         self.request_timing = request_timing if request_timing is not None else RequestTimingModule()
         self.agent_data = agent_data or get_agent_data_store()
@@ -758,14 +752,7 @@ class ExecutionServiceServer(LocalServiceSocketMixin, socketserver.ThreadingTCPS
         self._next_maintenance_at = time.monotonic()
         self.started = threading.Event()
         self._closing = threading.Event()
-        super().__init__(self.endpoint.address, _ExecutionRequestHandler,
-                         bind_and_activate=inherited_socket is None)
-        if inherited_socket is not None:
-            self.socket.close()
-            self.socket = socket.socket(fileno=inherited_socket)
-        # Generations briefly share the accept queue during handover. A second
-        # acceptor can consume readiness, so accept must not block shutdown.
-        self.socket.setblocking(False)
+        super().__init__(self.endpoint.address, _ExecutionRequestHandler)
         if self.endpoint.is_unix:
             os.chmod(self.socket_path, 0o660)
         from management_portal.hatg.kernel import register_kernel
@@ -779,8 +766,6 @@ class ExecutionServiceServer(LocalServiceSocketMixin, socketserver.ThreadingTCPS
         self.instruction_maintenance = InstructionMaintenance(kernel)
 
     def serve_forever(self, poll_interval: float = 0.2) -> None:
-        if self.timing_proxy is not None:
-            self.timing_proxy.start()
         self.instruction_maintenance.start()
         self.quota_monitor.start()
         self._next_maintenance_at = time.monotonic()
@@ -842,10 +827,8 @@ class ExecutionServiceServer(LocalServiceSocketMixin, socketserver.ThreadingTCPS
             maintenance.stop()
         self._closing.set()
         self.quota_monitor.close()
-        if self.timing_proxy is not None:
-            self.timing_proxy.close()
         super().server_close()
-        if not self.preserve_socket and self.endpoint.is_unix:
+        if self.endpoint.is_unix:
             self.socket_path.unlink(missing_ok=True)
 
     def publish_change(self, snapshot: dict[str, Any]) -> dict[str, Any]:
@@ -993,10 +976,7 @@ def parser() -> argparse.ArgumentParser:
 def main() -> int:
     loaded_modules.track()
     args = parser().parse_args()
-    from .provider_timing_proxy import TimingProxyModule
-    from .request_timing import LegacyRouteSettings
-    from .service_lifecycle import ServiceLifecycle, inherited_descriptors
-    inherited = inherited_descriptors()
+    from .service_lifecycle import ServiceLifecycle
     accounts = default_execution_accounts()
     scheduler = Scheduler(
         accounts=accounts,
@@ -1015,13 +995,8 @@ def main() -> int:
         instance=os.getenv("PORTAL_INSTANCE", ""),
         build_id=os.getenv("PORTAL_BUILD_ID", ""),
         agent_data=get_agent_data_store(),
-        # Carry only already-issued routes through a live upgrade. No fresh
-        # process starts a timing proxy and no adapter issues new routes.
-        timing_proxy=(TimingProxyModule(LegacyRouteSettings(), inherited=inherited['proxy'])
-                      if inherited.get('proxy') else None),
-        inherited_socket=inherited.get('rpc'),
     )
-    return ServiceLifecycle(server, inherited).run()
+    return ServiceLifecycle(server).run()
 
 
 if __name__ == "__main__":

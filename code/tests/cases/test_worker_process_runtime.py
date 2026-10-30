@@ -241,7 +241,7 @@ def test_lifecycle_restores_handlers_even_on_startup_failure(monkeypatch, owner)
     with pytest.raises(RuntimeError, match="startup failed"):
         item.run()
     assert calls[-1] is previous
-    assert set(calls[0][1]) == ({"reload", "restart"} if owner == "manager" else {"reload"} if owner == "service" else set())
+    assert set(calls[0][1]) == ({"reload", "restart"} if owner == "manager" else set())
 
 
 def test_worker_spawn_is_managed_and_starts_standby(manager, monkeypatch):
@@ -315,52 +315,10 @@ def test_platform_signal_contract_preserves_programmatic_controls(monkeypatch, p
     item._run = run
     assert item.run() == 0
     expected = {2, 15, 21} if profile == "windows" else {2, 15}
-    if profile == "macos" and owner != "worker":
-        expected.add(1)
-        if owner == "manager":
-            expected.add(30)
+    if profile == "macos" and owner == "manager":
+        expected |= {1, 30}
     assert set(observed) == expected
     assert set(registered.values()) == {"original"}
-
-
-class Channel:
-    def __init__(self, ready):
-        self.ready = ready
-        self.closed = False
-    def fileno(self):
-        return 42
-    def close(self):
-        self.closed = True
-    def settimeout(self, value):
-        pass
-    def recv(self, size):
-        return self.ready
-
-
-@pytest.mark.parametrize("ready", [b"R", b""])
-def test_service_successor_ownership_and_failed_tree_cleanup(monkeypatch, ready):
-    """成功继任者独立于旧世代 Job；失败继任者即使父已退仍清理树。"""
-    channels = [Channel(ready), Channel(ready)]
-    monkeypatch.setattr(service_lifecycle.socket, "socketpair", lambda: channels)
-    monkeypatch.setattr(service_lifecycle, "notify", lambda message: None)
-    monkeypatch.setattr(service_lifecycle, "TimingRelay", lambda channel: SimpleNamespace())
-    server = SimpleNamespace(socket=channels[0], timing_proxy=None, preserve_socket=False)
-    lifecycle = service_lifecycle.ServiceLifecycle(server, command=["fixture"])
-    calls = []
-    process = Process(0)
-    monkeypatch.setattr(process_runtime, "spawn_process", lambda *args, **kwargs: calls.append(("spawn", kwargs)) or process)
-    monkeypatch.setattr(process_runtime, "terminate_process_tree", lambda p, **kwargs: calls.append(("stop", p)))
-    if ready:
-        lifecycle.replace()
-        assert server.preserve_socket
-        assert len(calls) == 1
-    else:
-        with pytest.raises(RuntimeError, match="before readiness"):
-            lifecycle.replace()
-        assert calls[-1] == ("stop", process)
-        assert all(channel.closed for channel in channels)
-        assert not server.preserve_socket
-    assert calls[0][1]["kill_on_owner_exit"] is False
 
 
 @pytest.mark.skipif(sys.platform != "linux", reason="Linux native process-tree validation")
@@ -405,100 +363,3 @@ def test_native_worker_shutdown_handler_wakes_graceful_drain():
         assert daemon._stopping.is_set() and daemon._draining_started_at
     finally:
         process_runtime.restore_shutdown_handlers(previous)
-
-
-@pytest.mark.skipif(sys.platform != "linux", reason="Linux native descriptor handover")
-def test_real_service_successor_survives_previous_generation_exit(monkeypatch, tmp_path):
-    """真实服务连续换代后旧进程退出，新会话/进程组仍继续接单。"""
-    socket_path = str(tmp_path / "service.sock")
-    monkeypatch.setenv("PROBE_SOCKET", socket_path)
-    monkeypatch.setenv("NO_TIMING_PROXY", "1")
-    monkeypatch.delenv("NOTIFY_SOCKET", raising=False)
-    command = [sys.executable, "-c", "from tests.cases.test_worker_process_runtime import run_service_probe; run_service_probe()"]
-    log_path = tmp_path / "service.log"
-    with log_path.open("w") as log:
-        root = process_runtime.spawn_process(command, stdout=log, stderr=log)
-    successors = []
-    def serving_pid(previous=None):
-        deadline = time.monotonic() + 8
-        while time.monotonic() < deadline:
-            if not successors and previous is None and root.poll() is not None:
-                raise AssertionError(log_path.read_text())
-            try:
-                with socket.socket(socket.AF_UNIX) as stream:
-                    stream.settimeout(.2)
-                    stream.connect(socket_path)
-                    pid = int(stream.recv(100))
-                if pid != previous:
-                    return pid
-            except (OSError, ValueError):
-                pass
-            time.sleep(.02)
-        raise AssertionError("No new service generation became ready: " + log_path.read_text())
-    try:
-        first = serving_pid()
-        assert first == root.pid
-        os.kill(first, signal.SIGHUP)
-        second = serving_pid(first)
-        successors.append(second)
-        root.wait(timeout=8)
-        assert serving_pid() == second
-        assert os.getpgid(second) == second
-        os.kill(second, signal.SIGHUP)
-        third = serving_pid(second)
-        successors.append(third)
-        deadline = time.monotonic() + 8
-        while process_runtime.process_alive(second) and time.monotonic() < deadline:
-            time.sleep(.02)
-        assert not process_runtime.process_alive(second)
-        assert process_runtime.process_alive(third) and os.getpgid(third) == third
-    finally:
-        for pid in reversed(successors):
-            # IDs were obtained only from this private probe socket; every
-            # successor is a new session, unlike the historical test fixture.
-            process_runtime.terminate_process_tree(pid, force=True)
-        process_runtime.terminate_process_tree(root, force=True)
-
-
-def run_service_probe():
-    """A private stdlib listener; all generation behavior is production code."""
-    import socketserver
-    inherited = service_lifecycle.inherited_descriptors()
-    class Handler(socketserver.StreamRequestHandler):
-        def handle(self):
-            self.wfile.write(f"{os.getpid()}\n".encode())
-    class Server(socketserver.ThreadingUnixStreamServer):
-        def __init__(self):
-            self.started = threading.Event()
-            self.timing_proxy = None
-            self.preserve_socket = bool(inherited)
-            super().__init__(os.environ["PROBE_SOCKET"], Handler, bind_and_activate=not inherited)
-            if inherited:
-                self.socket.close()
-                self.socket = socket.socket(fileno=inherited["rpc"])
-        def serve_forever(self):
-            self.started.set()
-            super().serve_forever(poll_interval=.02)
-    command = [sys.executable, "-c", "from tests.cases.test_worker_process_runtime import run_service_probe; run_service_probe()"]
-    service_lifecycle.ServiceLifecycle(Server(), inherited, command=command).run()
-
-
-@pytest.mark.skipif(sys.platform != "linux", reason="Linux native failed successor cleanup")
-def test_real_failed_service_successor_cleans_descendant(tmp_path):
-    """继任启动失败且父已退出时，真实后代也在保留旧 listener 前清理。"""
-    pid_file = tmp_path / "child.pid"
-    code = ('import subprocess,sys,time; from pathlib import Path; '
-            'subprocess.Popen([sys.executable,"-c",'
-            '"import os,time; from pathlib import Path; '
-            f'Path({str(pid_file)!r}).write_text(str(os.getpid())); time.sleep(60)"]); '
-            f'p=Path({str(pid_file)!r}); '
-            '\nwhile not p.exists(): time.sleep(.01)\n'
-            'sys.exit(3)')
-    with socket.socket() as listener:
-        server = SimpleNamespace(socket=listener, timing_proxy=None, preserve_socket=False)
-        lifecycle = service_lifecycle.ServiceLifecycle(server, command=[sys.executable, '-c', code])
-        with pytest.raises(RuntimeError, match="before readiness"):
-            lifecycle.replace()
-        descendant = int(pid_file.read_text())
-        assert not process_runtime.process_alive(descendant)
-        assert not server.preserve_socket and listener.fileno() >= 0

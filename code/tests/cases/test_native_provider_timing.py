@@ -1,4 +1,4 @@
-"""Real local transport and installed native clients, using only fake credentials.
+"""Installed native clients reach a local fake upstream directly, using only fake credentials.
 
 :module: execution.harness
 :importance: P1
@@ -6,10 +6,9 @@
 """
 import asyncio
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 import os
-from pathlib import Path
 import queue
 import signal
 import subprocess
@@ -18,10 +17,11 @@ import time
 import uuid
 
 import pytest
-from aiohttp import ClientSession, DummyCookieJar, WSMsgType, web
+from aiohttp import web
 
-from management_portal import provider_timing as timing
-from management_portal.execution.provider_timing_proxy import Proxy, ResponseObserver, Timings, application, now
+
+def now() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec='microseconds')
 
 
 @contextmanager
@@ -82,8 +82,7 @@ def sse(event):
 
 
 @pytest.fixture
-def native_upstream(tmp_path, monkeypatch):
-    monkeypatch.setenv('PORTAL_PROVIDER_TIMING_ROOT', str(tmp_path / 'timing'))
+def native_upstream():
     records = []
 
     async def upstream(request):
@@ -122,270 +121,6 @@ def native_upstream(tmp_path, monkeypatch):
     app.router.add_route('*', '/{path:.*}', upstream)
     with serving(app) as upstream_url:
         yield records, upstream_url
-
-
-@pytest.fixture
-def transport(native_upstream, monkeypatch):
-    records, upstream_url = native_upstream
-    with serving(application()) as proxy:
-        monkeypatch.setenv('PORTAL_PROVIDER_TIMING_PORT', proxy.rsplit(':', 1)[1])
-        yield records, lambda provider: timing.route_url(provider, upstream_url)
-
-
-@pytest.mark.parametrize('provider,path', [('codex','responses'), ('claude','messages'), ('kimi','chat/completions'), ('opencode','chat/completions')])
-def test_transport_stream_retry_and_parallel_output_identity(transport, provider, path):
-    """Provider 代理保持流式字节、重试与并发请求身份"""
-    records, route = transport
-    url = route(provider) + '/' + path
-
-    async def run():
-        async with ClientSession() as client:
-            async with client.get(timing.endpoint() + '/timing') as response:
-                assert response.status == 403
-            async with client.post(url.replace('/p/', '/p/tampered')) as response:
-                assert response.status == 403
-            async with client.post(url, json={'retry': True}) as response:
-                assert response.status == 500
-            async def one(index):
-                payload = json.dumps({'request': index}).encode()
-                async with client.post(url, data=payload, headers={'Authorization': 'Bearer fake', 'x-portal-output-id': 'local-' + str(index)}) as response:
-                    first = await response.content.read(101)
-                    assert len(first) == 101
-                    assert not response.content.at_eof()
-                    result = first + await response.read()
-                    return payload, result
-            return await asyncio.gather(one(1), one(2))
-    results = asyncio.run(run())
-    for index, (raw, payload) in enumerate(results, 1):
-        record = next(r for r in records if r.get('raw') == raw)
-        assert record['auth'] == 'Bearer fake' and record['internal_header'] is None
-        assert payload == record['payload']
-        value = timing.lookup(provider, 'local-' + str(index))
-        assert value['started_at'] <= record['received'] < value['finished_at']
-    assert timing.lookup(provider, 'missing') == {}
-
-
-@pytest.mark.parametrize('encoding,encoded', [
-    ('zstd', '28b52ffd04582902007b226d6f64656c223a2270726f6265222c22696e707574223a5b7b22726f6c65223a2275736572222c22636f6e74656e74223a22636f6d706163742070726f6265227d5d7d7e16017c'),
-    ('gzip', '1f8b0800000000000203ab56cacd4f49cd51b2522a28ca4f4a55d251cacc2b282d51b28aae562acacf49054a9416a71601c593f3f34a52f3803240566e416272890244476d6c2d00df8b05d945000000'),
-])
-def test_compact_compressed_request_and_response_pass_through(monkeypatch, tmp_path, encoding, encoded):
-    """Codex compact 的 zstd 与 gzip 请求响应原样透传
-
-    Forward compressed bytes unchanged even without optional decoding libraries."""
-    monkeypatch.setenv('PORTAL_PROVIDER_TIMING_ROOT', str(tmp_path))
-    body = bytes.fromhex(encoded)
-    received = []
-
-    async def compact(request):
-        received.append((request.path, request.headers.get('Content-Encoding'),
-                         request.headers.get('Content-Length'), await request.read()))
-        return web.Response(body=body, headers={'Content-Encoding': encoding,
-                                                'Content-Type': 'application/json'})
-
-    upstream = web.Application(handler_args={'auto_decompress': False})
-    upstream.router.add_post('/responses/compact', compact)
-    with serving(upstream) as upstream_url, serving(application()) as proxy:
-        monkeypatch.setenv('PORTAL_PROVIDER_TIMING_PORT', proxy.rsplit(':', 1)[1])
-        url = timing.route_url('codex', upstream_url) + '/responses/compact'
-
-        async def run():
-            async with ClientSession(auto_decompress=False) as client:
-                async with client.post(url, data=body, headers={'Content-Encoding': encoding,
-                                                              'Content-Type': 'application/json'}) as response:
-                    assert response.status == 200
-                    assert response.headers['Content-Encoding'] == encoding
-                    assert await response.read() == body
-        asyncio.run(run())
-    assert received == [('/responses/compact', encoding, str(len(body)), body)]
-
-
-def test_websocket_warmup_and_each_response_have_separate_dispatch(transport):
-    """WebSocket 预热与各模型请求分别计时"""
-    records, route = transport
-    async def run():
-        async with ClientSession() as client, client.ws_connect(route('codex') + '/responses') as ws:
-            for generate in (False, True, True):
-                await ws.send_json({'type': 'response.create', 'generate': generate})
-                while (await ws.receive_json())['type'] != 'response.completed':
-                    pass
-    asyncio.run(run())
-    assert timing.lookup('codex', 'msg_' + records[0]['id']) == {}
-    for record in records[1:]:
-        value = timing.lookup('codex', 'msg_' + record['id'])
-        assert value['started_at'] <= record['received'] <= value['finished_at']
-    assert timing.lookup('codex', 'msg_' + records[1]['id'])['started_at'] < timing.lookup('codex', 'msg_' + records[2]['id'])['started_at']
-
-
-def test_upload_streams_and_preserves_escaped_target(monkeypatch, tmp_path):
-    """计时代理边收边转发请求体并保留 URL 转义"""
-    monkeypatch.setenv('PORTAL_PROVIDER_TIMING_ROOT', str(tmp_path))
-    first_arrived = threading.Event()
-    received = []
-
-    async def upstream(request):
-        first = await request.content.readexactly(5)
-        first_arrived.set()
-        received.append((request.raw_path, first + await request.read()))
-        return web.Response(body=b'ok')
-
-    app = web.Application()
-    app.router.add_route('*', '/{tail:.*}', upstream)
-    with serving(app) as upstream_url, serving(application()) as proxy:
-        monkeypatch.setenv('PORTAL_PROVIDER_TIMING_PORT', proxy.rsplit(':', 1)[1])
-        url = timing.route_url('codex', upstream_url)
-
-        async def run():
-            from yarl import URL
-            async def upload():
-                yield b'first'
-                assert await asyncio.to_thread(first_arrived.wait, 3), 'proxy buffered the upload'
-                yield b'last'
-            async with ClientSession() as client:
-                async with client.post(URL(url + '/a%2Fb?x=%2F&x=a+b', encoded=True), data=upload()) as response:
-                    assert response.status == 200
-                    assert await response.read() == b'ok'
-        asyncio.run(run())
-    assert received == [('/a%2Fb?x=%2F&x=a+b', b'firstlast')]
-
-
-def test_http_preserves_negotiation_headers_without_shared_cookie_state(monkeypatch, tmp_path):
-    """计时代理保留协商和重复头且不共享 Cookie"""
-    monkeypatch.setenv('PORTAL_PROVIDER_TIMING_ROOT', str(tmp_path))
-    requests = []
-
-    async def upstream(request):
-        requests.append(request.headers.copy())
-        return web.Response(body=b'ok', headers=[('Set-Cookie', 'one=1; Path=/'),
-            ('Set-Cookie', 'two=2; Path=/'), ('X-Response', 'a'), ('X-Response', 'b')])
-
-    app = web.Application()
-    app.router.add_get('/probe', upstream)
-    with serving(app) as upstream_url, serving(application()) as proxy:
-        monkeypatch.setenv('PORTAL_PROVIDER_TIMING_PORT', proxy.rsplit(':', 1)[1])
-        url = timing.route_url('codex', upstream_url) + '/probe'
-
-        async def run():
-            async with ClientSession(cookie_jar=DummyCookieJar(),
-                    skip_auto_headers={'Accept', 'Accept-Encoding', 'User-Agent'}) as client:
-                headers = [('Accept-Encoding', 'zstd, gzip'), ('Accept', 'application/json'),
-                           ('X-Repeated', 'a'), ('X-Repeated', 'b'), ('Connection', 'X-Hop'), ('X-Hop', 'omit')]
-                async with client.get(url, headers=headers) as response:
-                    assert await response.read() == b'ok'
-                    assert response.headers.getall('Set-Cookie') == ['one=1; Path=/', 'two=2; Path=/']
-                    assert response.headers.getall('X-Response') == ['a', 'b']
-                async with client.get(url) as response:
-                    assert await response.read() == b'ok'
-        asyncio.run(run())
-    assert requests[0]['Accept-Encoding'] == 'zstd, gzip'
-    assert requests[0]['Accept'] == 'application/json'
-    assert requests[0].getall('X-Repeated') == ['a', 'b']
-    assert 'X-Hop' not in requests[0]
-    assert all(name not in requests[1] for name in ('Cookie', 'Accept-Encoding', 'Accept', 'User-Agent', 'Content-Type'))
-
-
-@pytest.mark.parametrize('fault', ['parser', 'cache', 'unknown_protocol', 'oversized'])
-def test_observation_failure_never_interrupts_http(monkeypatch, tmp_path, fault):
-    """解析异常、未知协议和观察超限不阻断响应"""
-    monkeypatch.setenv('PORTAL_PROVIDER_TIMING_ROOT', str(tmp_path))
-    payload = sse({'type': 'message_start', 'message': {'id': 'observed'}})
-    if fault == 'unknown_protocol':
-        payload = sse({'type': 'message_start', 'message': ['unexpected', 'shape']})
-    elif fault == 'oversized':
-        payload = b'data: ' + b'x' * (2 * 1024 * 1024) + b'\n\n'
-    else:
-        def fail(*_args, **_kwargs):
-            raise RuntimeError('injected observation failure')
-        monkeypatch.setattr(ResponseObserver if fault == 'parser' else Timings, 'feed' if fault == 'parser' else 'put', fail)
-    payload += b'data: [DONE]\n\n'
-
-    async def upstream(_request):
-        return web.Response(body=payload, content_type='text/event-stream')
-
-    app = web.Application()
-    app.router.add_get('/responses', upstream)
-    with serving(app) as upstream_url, serving(application()) as proxy:
-        monkeypatch.setenv('PORTAL_PROVIDER_TIMING_PORT', proxy.rsplit(':', 1)[1])
-        url = timing.route_url('codex', upstream_url) + '/responses'
-
-        async def run():
-            async with ClientSession() as client:
-                async with client.get(url) as response:
-                    assert response.status == 200
-                    assert await response.read() == payload
-        asyncio.run(run())
-
-
-def test_websocket_preserves_control_frames_and_opaque_messages(monkeypatch, tmp_path):
-    """计时代理传递 WebSocket 控制帧、大消息和关闭原因"""
-    monkeypatch.setenv('PORTAL_PROVIDER_TIMING_ROOT', str(tmp_path))
-    opaque = '[' + ' ' * (2 * 1024 * 1024) + ']'
-
-    async def upstream(request):
-        ws = web.WebSocketResponse(protocols=['probe'], autoping=False, max_msg_size=0)
-        await ws.prepare(request)
-        message = await ws.receive()
-        assert message.type == WSMsgType.PING and message.data == b'alive'
-        await ws.pong(message.data)
-        assert await ws.receive_str() == opaque
-        await ws.send_str(opaque)
-        await ws.send_str('{"type":"message_start","message":[]}')
-        await ws.close(code=4001, message=b'provider-finished')
-        return ws
-
-    app = web.Application()
-    app.router.add_get('/responses', upstream)
-    with serving(app) as upstream_url, serving(application()) as proxy:
-        monkeypatch.setenv('PORTAL_PROVIDER_TIMING_PORT', proxy.rsplit(':', 1)[1])
-        url = timing.route_url('codex', upstream_url) + '/responses'
-
-        async def run():
-            async with ClientSession() as client, client.ws_connect(url, protocols=['probe'], autoping=False, max_msg_size=0) as ws:
-                assert ws.protocol == 'probe'
-                await ws.ping(b'alive')
-                message = await ws.receive(timeout=3)
-                assert message.type == WSMsgType.PONG and message.data == b'alive'
-                await ws.send_str(opaque)
-                assert await ws.receive_str(timeout=3) == opaque
-                assert await ws.receive_str(timeout=3) == '{"type":"message_start","message":[]}'
-                close = await ws.receive(timeout=3)
-                assert close.type == WSMsgType.CLOSE and close.data == 4001
-                assert close.extra == 'provider-finished'
-        asyncio.run(run())
-
-
-@pytest.mark.parametrize('reply', ['[]', '{"started_at":false}', 'incomplete'])
-def test_timing_lookup_failure_does_not_change_completed_output(monkeypatch, tmp_path, reply):
-    """计时查询损坏或中断不改变已完成模型输出"""
-    import io
-    from http.client import IncompleteRead
-    monkeypatch.setenv('PORTAL_PROVIDER_TIMING_ROOT', str(tmp_path))
-    timing.signing_key()
-
-    def lookup(*_args, **_kwargs):
-        if reply == 'incomplete':
-            raise IncompleteRead(b'{')
-        return io.BytesIO(reply.encode())
-
-    monkeypatch.setattr(timing._local, 'open', lookup)
-    output = {'item': {'id': 'output', 'type': 'agentMessage', 'text': 'unchanged'}}
-    assert timing.attach(output, 'codex') == output
-
-
-def test_observation_keeps_first_completion_and_bounds_cache():
-    """请求计时保留首次完成时间并限制缓存容量"""
-    cache = Timings(limit=3)
-    observer = ResponseObserver(cache, 'kimi', now(), 'assistant')
-    for event in events('chat', 'first'):
-        for byte in sse(event):
-            observer.feed(bytes([byte]))
-    completed = cache.get('kimi', 'assistant')
-    observer.event({'id': 'chatcmpl_first', 'choices': [], 'usage': {}})
-    observer.finish()
-    assert cache.get('kimi', 'assistant') == completed
-    for i in range(6):
-        cache.put('kimi', str(i), {})
-    assert len(cache.entries) == 3
 
 
 def native_process(command, root, env, interact=None):

@@ -26,14 +26,3 @@ def observed_timing(value):
     except Exception:
         # A broken observation setting must not discard a model's response.
         return {}
-
-
-class LegacyRouteSettings:
-    """Only for inherited old routes while their native sessions finish.
-
-    No route is advertised and no content is observed. New installations do
-    not start this listener; a live upgrade may inherit it to avoid breaking
-    previously pinned Provider sessions.
-    """
-    def get(self):
-        return {'provider_timing_proxy_enabled': False}

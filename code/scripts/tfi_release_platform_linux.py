@@ -40,6 +40,20 @@ def unit_path(directory, name):
     return directory / name
 
 
+# Services on the request path run ahead of agent shells (default weight 100)
+# and test runs (management_portal.test_framework.executor, weight 20).
+REQUEST_PATH_CPU_WEIGHT = "CPUWeight=1000\n"
+
+
+def _without_cpu_weight(text):
+    return "".join(line for line in text.splitlines(keepends=True) if not line.startswith("CPUWeight="))
+
+
+def owns_definition(installed, expected):
+    """A definition from an older installer may differ from the current one only in its CPU weight."""
+    return _without_cpu_weight(installed) == _without_cpu_weight(expected)
+
+
 def unit_text(target, component, components):
     root = Path(target["install_root"])
     arguments = [target["python"], str(installer_path(target)), "_component",
@@ -51,21 +65,31 @@ def unit_text(target, component, components):
         working_directory = json.dumps(working_directory)
     # NATS 2.10 treats SIGTERM as failure; SIGINT is its clean shutdown path.
     stop_signal = "KillSignal=SIGINT\n" if component == "nats" else ""
+    # The Worker Manager runs Provider adapters, which keep the default weight.
+    weight = "" if component == "worker" else REQUEST_PATH_CPU_WEIGHT
     return (f"[Unit]\nDescription=TFI isolated {component} ({target['run_id']})\nAfter={after}\n"
             f"[Service]\nType=simple\nUMask=0077\nWorkingDirectory={working_directory}\n"
             f"ExecStart={exec_start}\nRestart=on-failure\nRestartSec=3\nKillMode=control-group\n"
-            f"{stop_signal}TimeoutStopSec=270\n[Install]\nWantedBy=default.target\n")
+            f"{stop_signal}{weight}TimeoutStopSec=270\n[Install]\nWantedBy=default.target\n")
 
 
 def register_services(directory, units):
+    """Create missing definitions and bring owned ones to the current text.
+
+    systemd applies a changed CPU weight to running services at daemon-reload.
+    """
     directory.mkdir(parents=True, exist_ok=True)
-    created = []
+    created, replaced = [], {}
     try:
         for name, content in units.items():
             path = directory / name
             if path.exists() or path.is_symlink():
-                if path.is_symlink() or path.read_text() != content:
+                installed = "" if path.is_symlink() else path.read_text()
+                if path.is_symlink() or not owns_definition(installed, content):
                     raise ValueError(f"Refusing to replace another service: {path.name}")
+                if installed != content:
+                    replaced[name] = installed
+                    path.write_text(content)
             else:
                 with path.open("x") as stream:
                     stream.write(content)
@@ -74,7 +98,9 @@ def register_services(directory, units):
     except Exception:
         for name in created:
             (directory / name).unlink(missing_ok=True)
-        if created:
+        for name, installed in replaced.items():
+            (directory / name).write_text(installed)
+        if created or replaced:
             subprocess.run(["systemctl", "--user", "daemon-reload"], check=False, capture_output=True)
         raise
     return created

@@ -91,6 +91,7 @@ def paired_outputs(root, target, directory):
     if not dev:
         return {}
     from scripts.tfi_release_dependencies import runtime_python
+    from scripts.tfi_release_platform_linux import REQUEST_PATH_CPU_WEIGHT
     previous = read_installation(root)['target']
     python = runtime_python(previous)
     script = Path(dev['release_code']) / 'scripts/tfi_development_runtime.py'
@@ -100,7 +101,7 @@ def paired_outputs(root, target, directory):
         content = (f"[Unit]\nDescription=TFI paired {name}\n"
                    f"[Service]\nType=simple\nUMask=0077\nWorkingDirectory={dev['dev_code']}\n"
                    f"ExecStart={' '.join(json.dumps(v) for v in command)}\n"
-                   "Restart=on-failure\nRestartSec=3\nTimeoutStopSec=90\n"
+                   f"Restart=on-failure\nRestartSec=3\n{REQUEST_PATH_CPU_WEIGHT}TimeoutStopSec=90\n"
                    "[Install]\nWantedBy=default.target\n")
         path = directory / (target['service_prefix'] + '-' + name + '.service')
         if path.exists() and 'Description=TFI paired ' not in path.read_text():

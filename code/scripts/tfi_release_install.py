@@ -409,7 +409,8 @@ def check_available(target, *, existing=False):
         adapter = platform_adapter()
         path = adapter.unit_path(unit_directory(), name)
         if existing:
-            if path.exists() and (path.is_symlink() or path.read_text(encoding="utf-8") != unit_text(target, component)):
+            owns = getattr(adapter, "owns_definition", str.__eq__)
+            if path.exists() and (path.is_symlink() or not owns(path.read_text(encoding="utf-8"), unit_text(target, component))):
                 raise ValueError(f"Service definition ownership mismatch: {name}")
             if path.exists() and hasattr(adapter, "verify_service"):
                 adapter.verify_service(name, path.read_text(encoding="utf-8"))

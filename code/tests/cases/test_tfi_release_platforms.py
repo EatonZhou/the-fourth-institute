@@ -25,6 +25,36 @@ def test_linux_unit_quotes_install_root_with_spaces(tmp_path):
     assert '"/opt/Python Env/bin/python"' in unit
 
 
+def test_request_path_units_run_ahead_of_agent_commands_and_tests(tmp_path):
+    """处理请求的服务单元 CPUWeight 为 1000，优先于 agent 命令和测试；Worker 保持默认"""
+    # Agent shells keep the default weight; test runs use 20 (management_portal.test_framework.executor).
+    target = {"install_root": str(tmp_path), "python": "/usr/bin/python3",
+              "service_prefix": "tfi-weight", "run_id": "run-1"}
+    for component in install.COMPONENTS:
+        weighted = "\nCPUWeight=1000\n" in linux.unit_text(target, component, install.COMPONENTS)
+        assert weighted is (component != "worker"), component
+
+
+def test_an_owned_unit_from_before_the_cpu_weight_is_brought_up_to_date(tmp_path, monkeypatch):
+    """CPUWeight 之前安装的单元仍属于本实例，注册时改写为当前定义；其他差异仍拒绝替换"""
+    target = {"install_root": str(tmp_path), "python": "/usr/bin/python3",
+              "service_prefix": "tfi-weight", "run_id": "run-1"}
+    reloads = []
+    monkeypatch.setattr(linux.subprocess, "run", lambda command, **kwargs: reloads.append(command))
+    current = linux.unit_text(target, "web", install.COMPONENTS)
+    earlier = current.replace("CPUWeight=1000\n", "")
+    assert earlier != current and linux.owns_definition(earlier, current)
+    directory = tmp_path / "units"
+    directory.mkdir()
+    (directory / "tfi-weight-web.service").write_text(earlier)
+    assert linux.register_services(directory, {"tfi-weight-web.service": current}) == []
+    assert (directory / "tfi-weight-web.service").read_text() == current
+    assert reloads == [["systemctl", "--user", "daemon-reload"]]
+    (directory / "tfi-weight-web.service").write_text(current.replace("RestartSec=3", "RestartSec=9"))
+    with pytest.raises(ValueError, match="Refusing to replace another service"):
+        linux.register_services(directory, {"tfi-weight-web.service": current})
+
+
 def test_macos_launchd_definition_and_registration_are_passive(tmp_path):
     root = tmp_path / "TFI release"
     target = {"install_root": str(root), "python": "/opt/Python Env/bin/python",
