@@ -138,7 +138,8 @@ def test_retained_work_mismatch_rolls_back_before_admission(transaction, monkeyp
     owner, path, _ = transaction
     from scripts import tfi_application_work as work
     monkeypatch.setattr(work, 'inspect', Mock(side_effect=[
-        {'retained': 'original'}, {'retained': 'changed'}, {'retained': 'original'}]))
+        {'retained': 'original'}, {'retained': 'original'},
+        {'retained': 'changed'}, {'retained': 'original'}]))
     with pytest.raises(ValueError, match='Retained waiting work changed'):
         owner.upgrade(path)
     assert (owner.application / 'code/version').read_text() == 'original'
@@ -167,6 +168,19 @@ def test_unknown_database_client_restores_service_availability_without_backup(tr
     owner, path, _ = transaction
     monkeypatch.setattr(upgrade.barrier, 'assert_no_clients', Mock(side_effect=RuntimeError('other client')))
     with pytest.raises(RuntimeError, match='other client'):
+        owner.upgrade(path)
+    journal = installer.read_json(owner.journal_path)
+    assert journal['phase'] == 'prebackup_failed'
+    assert not (owner.paths(journal) / 'backup').exists()
+    assert (owner.application / 'code/version').read_text() == 'original'
+    owner.start.assert_called_once()
+
+
+def test_work_changed_during_shutdown_refuses_before_backup(transaction, monkeypatch):
+    owner, path, _ = transaction
+    from scripts import tfi_application_work as work
+    monkeypatch.setattr(work, 'inspect', Mock(side_effect=[{'retained': 'old'}, {'retained': 'changed'}]))
+    with pytest.raises(ValueError, match='changed during service shutdown'):
         owner.upgrade(path)
     journal = installer.read_json(owner.journal_path)
     assert journal['phase'] == 'prebackup_failed'

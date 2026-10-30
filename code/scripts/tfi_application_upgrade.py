@@ -23,6 +23,7 @@ from management_common.instance_config import read_installation
 from scripts import tfi_application_snapshot as snapshot
 from scripts import tfi_release_provider_services as providers
 from scripts import tfi_application_freeze as barrier
+from scripts import tfi_application_clients as clients
 from scripts.tfi_instance_layout import database_root
 
 
@@ -397,10 +398,15 @@ class ApplicationUpgrade:
                     proofs = [work.inspect(self.api, state['target'], connection=connection)
                               for state, connection in zip(records, connections, strict=True)]
                     # Refusal above occurs before any service stop or journal.
-                    self.save(journal, 'quiescing', waiting_work=proofs)
-                    self.stop(records, keep_database=True)
-                    for connection in connections:
-                        barrier.assert_no_clients(connection)
+                    with clients.owned_clients(self.api, records, connections) as clear_disconnected:
+                        self.save(journal, 'quiescing', waiting_work=proofs)
+                        self.stop(records, keep_database=True)
+                        cleaned = clear_disconnected() if clear_disconnected else []
+                        for state, proof, connection in zip(records, proofs, connections, strict=True):
+                            barrier.assert_no_clients(connection)
+                            if work.inspect(self.api, state['target'], connection=connection) != proof:
+                                raise ValueError('Waiting work changed during service shutdown')
+                        self.save(journal, 'quiescing', disconnected_sql_waits=cleaned)
                     self.stop(records)
                 self.save(journal, 'backing_up')
                 inventory = snapshot.create_backup(self.application, parent / 'backup')
