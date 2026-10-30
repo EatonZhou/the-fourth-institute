@@ -52,3 +52,25 @@ def assert_no_clients(connection):
         if time.monotonic() >= deadline:
             raise RuntimeError('Database still has other client sessions; offline maintenance refused')
         time.sleep(.05)
+
+
+def verify(api, records, expected):
+    """Compare the complete sealed work while only the databases are running."""
+    from scripts import tfi_application_work as work
+    with freeze(api, records) as connections:
+        for state, proof, connection in zip(records, expected, connections, strict=True):
+            assert_no_clients(connection)
+            if work.inspect(api, state['target'], connection=connection) != proof:
+                raise ValueError('Retained waiting work changed; service admission refused')
+
+
+if __name__ == '__main__':
+    # Recovery must not execute in the application venv that it may remove.
+    # Its base-Python parent invokes this only after restoring that runtime.
+    # Targets/proofs travel through stdin, never through process arguments.
+    import json
+    import sys
+    from scripts import tfi_release_install as api
+    request = json.load(sys.stdin)
+    verify(api, request['records'], request['expected'])
+    print(json.dumps({'status': 'verified', 'instances': len(request['records'])}))

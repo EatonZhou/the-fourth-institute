@@ -87,6 +87,8 @@ def transaction(application, tmp_path, monkeypatch):
     monkeypatch.setattr(work, 'inspect', Mock(return_value={'retained': 'stable'}))
     monkeypatch.setattr(upgrade.barrier, 'freeze', lambda *_: nullcontext([Mock()]))
     monkeypatch.setattr(upgrade.barrier, 'assert_no_clients', Mock())
+    monkeypatch.setattr(owner, 'verify_work_in_runtime',
+                        lambda records, expected: upgrade.barrier.verify(installer, records, expected))
     return owner, path, state
 
 
@@ -206,6 +208,41 @@ def test_windows_maintenance_reexec_waits_and_returns_child_exit(transaction, mo
     assert installer.main(['application-check', '--root', str(owner.application), '--manifest', str(manifest)]) == 17
     assert child.call_args.args[0][:2] == ['/different/runtime-python', '-B']
     assert child.call_args.kwargs['env']['PYTHONDONTWRITEBYTECODE'] == '1'
+
+
+@pytest.mark.parametrize('child_succeeds', [True, False])
+def test_base_python_recovery_verifies_in_restored_runtime_before_admission(transaction, monkeypatch, child_succeeds):
+    owner, manifest, _ = transaction
+    owner.schema.side_effect = KeyboardInterrupt('after migration')
+    with pytest.raises(KeyboardInterrupt):
+        owner.upgrade(manifest)
+    monkeypatch.setattr(owner, 'verify_work_in_runtime',
+                        upgrade.ApplicationUpgrade.verify_work_in_runtime.__get__(owner))
+    monkeypatch.setattr(installer, 'runtime_python',
+                        lambda _: '/runtime/' + (owner.application / 'code/version').read_text())
+    monkeypatch.setattr(installer, 'clean_environment',
+                        lambda _: {'PORTAL_DATABASE_NAMESPACE': 'foreign', 'PORTAL_DATABASE_URL': 'private-dsn'})
+    def child(command, **kwargs):
+        assert command == ['/runtime/original', '-B', '-m', 'scripts.tfi_application_freeze']
+        assert 'private-dsn' not in ' '.join(command)
+        assert 'PORTAL_DATABASE_NAMESPACE' not in kwargs['env']
+        assert kwargs['env']['PYTHONPATH'] == str(Path(upgrade.__file__).resolve().parents[1])
+        assert json.loads(kwargs['input'])['expected'] == [{'retained': 'stable'}]
+        owner.start.assert_not_called()
+        return Mock(returncode=0 if child_succeeds else 1,
+                    stdout=json.dumps({'status': 'verified', 'instances': 1}), stderr='private diagnostic')
+    monkeypatch.setattr(upgrade.subprocess, 'run', child)
+    with monkeypatch.context() as base_python:
+        base_python.setitem(installer.sys.modules, 'psycopg', None)
+        if child_succeeds:
+            assert owner.recover()['status'] == 'restored'
+            owner.start.assert_called_once()
+        else:
+            with pytest.raises(ValueError, match='Retained work verification failed'):
+                owner.recover()
+            assert installer.read_json(owner.journal_path)['phase'] == 'restoring'
+            assert (owner.control / 'work-error.log').read_text() == 'private diagnostic'
+            owner.start.assert_not_called()
 
 
 def test_flat_backup_preserves_deep_paths_without_expanding_them(application, tmp_path):

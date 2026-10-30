@@ -227,17 +227,33 @@ class ApplicationUpgrade:
 
     def verify_work(self, records, expected):
         """Only PostgreSQL runs while the immutable waiting work is checked."""
-        from scripts import tfi_application_work as work
         control = self.api.service_controller()
         for state in records:
             target = state['target']
             control.start(self.api.unit_name(target, 'postgres'))
             self.api.wait_database(target)
-        with barrier.freeze(self.api, records) as connections:
-            for state, proof, connection in zip(records, expected, connections, strict=True):
-                barrier.assert_no_clients(connection)
-                if work.inspect(self.api, state['target'], connection=connection) != proof:
-                    raise ValueError('Retained waiting work changed; service admission refused')
+        self.verify_work_in_runtime(records, expected)
+
+    def verify_work_in_runtime(self, records, expected):
+        # The recovery parent deliberately stays in base Python: restoring a
+        # venv while running its executable/DLLs would lock those files on
+        # Windows. Resolve the runtime *after* restoration and keep all database
+        # imports and locks in this short-lived child, before any admission.
+        target = records[0]['target']
+        code = Path(__file__).resolve().parents[1]
+        env = self.api.clean_environment(target)
+        env.pop('PORTAL_DATABASE_NAMESPACE', None)
+        env['PYTHONPATH'] = str(code)
+        result = subprocess.run(
+            [self.api.runtime_python(target), '-B', '-m', 'scripts.tfi_application_freeze'],
+            input=json.dumps({'records': records, 'expected': expected}),
+            env=env, cwd=code, text=True, encoding='utf-8', capture_output=True, timeout=120)
+        if result.returncode:
+            ensure_private_directory(self.control)
+            atomic_write_private_bytes(self.control / 'work-error.log', result.stderr.encode('utf-8'))
+            raise ValueError('Retained work verification failed; inspect private work-error.log')
+        if json.loads(result.stdout) != {'status': 'verified', 'instances': len(records)}:
+            raise ValueError('Unexpected retained work verification result; service admission refused')
 
     def resume(self, journal, records, outcome):
         # Once a consumer can see retained inputs, a new business write is
