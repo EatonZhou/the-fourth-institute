@@ -21,10 +21,10 @@ from tests.cases.database_test_support import guard_queries
 
 
 @pytest.mark.parametrize('allowed', [True, False])
-def test_state_batch_includes_canonical_deterministic_resident(monkeypatch, allowed):
-    """批量状态包含规范化的确定性 Resident
+def test_state_batch_resolves_each_residents_backend_capabilities(monkeypatch, allowed):
+    """批量状态按各 Resident 的后端解析可用操作
 
-    同时读取仅保存后端的 portal 与 Codex Resident，使用真实后端能力解析，验证整批成功、仅一次状态读取及各自可用操作。
+    同时读取仅保存后端的 Provider API 与 Codex Resident，使用真实后端能力解析，验证整批成功、仅一次状态读取及各自可用操作。
 
     :module: resident.identity
     :importance: P1
@@ -33,7 +33,7 @@ def test_state_batch_includes_canonical_deterministic_resident(monkeypatch, allo
     :design-point:
     """
     records = [
-        {'resident_id': 'resident_111111111111', 'backend': 'portal'},
+        {'resident_id': 'resident_111111111111', 'backend': 'provider_api'},
         {'resident_id': 'resident_222222222222', 'backend': 'codex'},
     ]
     ids = [record['resident_id'] for record in records]

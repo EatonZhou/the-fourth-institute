@@ -54,8 +54,7 @@ def project_states(snapshots, *, resident_records=None):
             # The identity can disappear between the state and catalog reads.
             # Never substitute the installation's default account for it.
             gates[rid] = {'state': 'unknown', 'reason': 'account_unavailable'}
-        elif (family_facade.is_facade(records[rid])
-              or resident_backend.execution_backend(records[rid]) == 'portal'):
+        elif family_facade.is_facade(records[rid]):
             # A facade never submits model execution. Its retained backend is
             # not an admission gate; Family role health is projected separately.
             gates[rid] = {'state': 'open', 'reason': ''}

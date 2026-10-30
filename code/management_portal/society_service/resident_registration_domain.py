@@ -94,16 +94,12 @@ def register_resident_and_lineage(
     payload, awaiting_default = _with_default_backend(payload)
     backend = str(payload.get("backend") or "codex").strip() or "codex"
     mode = str(payload.get("mode") or "new_session").strip().lower()
-    execution_provider = resident_execution_provider.validate_registration(
-        backend,
-        mode,
-    )
+    resident_execution_provider.validate_registration(backend, mode)
     backend_route_id = _registration_route(payload, backend, awaiting_default)
     _refuse_supplied_session_ids(payload)
     record, workspace_path = _new_resident_record(
         payload, actor_id,
         title=title, project_id=project_id, backend=backend, backend_route_id=backend_route_id,
-        synchronous=execution_provider.capabilities.synchronous_delivery,
         project_principal=project_principal, owner=personal_owner or personal_member_owner,
     )
     if awaiting_default:
@@ -240,7 +236,6 @@ def _new_resident_record(
     project_id: str,
     backend: str,
     backend_route_id: str,
-    synchronous: bool,
     project_principal: bool,
     owner: str,
 ) -> tuple[dict[str, Any], Path]:
@@ -275,7 +270,6 @@ def _new_resident_record(
         if isinstance(item, dict) and str(item.get("path") or "").strip()
     ]
     now = resident_domain_common.now_iso()
-    session_state = "active" if synchronous else "pending_create"
     record = {
         "resident_id": resident_id,
         "folder_schema": resident_domain_common.LINEAGE_FOLDER_SCHEMA_VERSION,
@@ -290,7 +284,7 @@ def _new_resident_record(
         "workspace_path": str(workspace_path),
         "workspace_paths": workspace_paths,
         "workspace_bindings": requested_workspace_bindings,
-        "session_state": session_state,
+        "session_state": "pending_create",
         "registration_state": "initializing",
         "created_at": now,
         "updated_at": now,

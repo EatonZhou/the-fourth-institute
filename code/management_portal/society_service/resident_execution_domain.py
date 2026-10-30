@@ -1534,10 +1534,6 @@ def _build_resident_execution_request(
     resident_runtime_domain.resident_working_directory(record)
     record = resident_runtime_domain.reconcile_resident_codex_runtime_configuration(record)
     default_cwd = resident_runtime_domain.resident_working_directory(record)
-    if resident_execution_provider.provider_for(
-        record
-    ).capabilities.synchronous_delivery:
-        raise RuntimeError("同步 ExecutionProvider 不提交 Execution 请求")
     actor = resident_execution_work.request_actor(job)
     is_owner = resident_access.has_resident_workspace_authority(record, actor)
     lineage_id = resident_lineage.lineage_id(record)
@@ -1961,10 +1957,6 @@ def _run_resident_session_operation(
     operation: str,
 ) -> dict[str, Any]:
     def build_request() -> ExecutionRequest:
-        if resident_execution_provider.provider_for(
-            record
-        ).capabilities.synchronous_delivery:
-            raise RuntimeError("同步 ExecutionProvider 不提交 Execution 请求")
         if not resident_backend.record_session_id(record):
             raise RuntimeError(f"Resident backend session missing for {operation}")
         return resident_session_backend_domain.build_backend_session_operation_request(

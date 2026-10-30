@@ -197,12 +197,10 @@ def placements(provider: str) -> dict[str, str]:
     from management_portal.execution.provider_catalog import AGENT_PROVIDERS
 
     definition = AGENT_PROVIDERS.get(str(provider or ""))
-    transport = resident_md_transport(provider)
-    system = (definition.system_instructions_place if definition
-              else _MODEL_API_SYSTEM_PLACE if transport == "system_instructions" else "不附加")
+    system = definition.system_instructions_place if definition else _MODEL_API_SYSTEM_PLACE
     return {
         "core_rules": system,
-        "resident_md": system if transport == "system_instructions" else "不附加" if transport == "none" else "本轮消息前",
+        "resident_md": system if resident_md_transport(provider) == "system_instructions" else "本轮消息前",
         "runtime_identity": "本轮消息前",
         "authorization_context": "本轮消息后",
         "message_envelope": "包住本轮消息",

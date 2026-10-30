@@ -317,96 +317,6 @@ def _ensure_backend_accepts_context_refs(record: dict[str, Any], context_refs: o
         raise ValueError("Claude Code + DeepSeek 当前不支持图片输入；请改用文字或文本文件")
 
 
-def _send_synchronous_provider_message(
-    record: dict[str, Any],
-    actor_id: str,
-    message: str,
-    *,
-    message_id: str,
-    user_message: Mapping[str, Any],
-) -> dict:
-    """Record a deterministic provider invocation as one Agent Execution."""
-    provider = resident_execution_provider.provider_for(record)
-    resident_id = resident_domain_common.record_resident_id(record)
-
-    # Keep the Resident registry lock out of the Lineage mutation boundary.
-    # Resident registration takes Lineage -> Resident locks, so the reverse
-    # order here could deadlock with a concurrent node creation.
-
-    from uuid import uuid4
-    from management_portal.execution.agent_data_store import get_agent_data_store
-    from management_portal.execution import execution_inputs
-    execution_id = "execution-" + uuid4().hex[:24]
-    store = get_agent_data_store()
-    started_at = resident_domain_common.now_iso()
-    with store.database.transaction():
-        store.begin_execution(execution_id=execution_id, agent_id=resident_id,
-                              actor_ref=actor_id, provider="portal", started_at=started_at)
-        execution_inputs.attach(store, execution_id, [{
-            "message_id": message_id, "role": "primary", "accepted_at": started_at,
-        }])
-    try:
-        outcome = provider.deliver(
-            resident_execution_provider.DeliveryRequest(
-                lineage_id=str(record.get("lineage_id") or ""),
-                resident_id=str(record.get("resident_id") or ""),
-                message=message,
-                actor_id=actor_id,
-                resident=record,
-                delivery=user_message,
-            )
-        )
-        reply = outcome.reply.strip()
-        if not reply:
-            raise RuntimeError("Synchronous ExecutionProvider did not produce a reply")
-
-        with resident_record_domain.state_lock(resident_id):
-            current = resident_record_domain.find_resident(str(record.get("resident_id") or ""))
-            if not current:
-                raise KeyError("resident not found")
-            if not _resident_deliverable_to_actor(current, actor_id):
-                raise KeyError("resident not found")
-            if not resident_execution_provider.provider_for(
-                current
-            ).capabilities.synchronous_delivery:
-                raise ValueError("Resident 已不再使用同步 ExecutionProvider")
-
-            user_item = dict(user_message)
-            resident_lifecycle_domain.append_conversation_message(
-                resident_domain_common.record_resident_id(current),
-                {**resident_input_queue_domain.build_message(
-                    "agent",
-                    reply,
-                    message_id=resident_message_contract.derived_message_identity(
-                        "portal-resident-reply",
-                        str(user_item.get("message_id") or ""),
-                        "final",
-                    ),
-                    reply_to_message_id=str(user_item.get("message_id") or ""),
-                ), "execution_id": execution_id},
-            )
-            store.finish_execution(execution_id, status="completed", finished_at=resident_domain_common.now_iso())
-            resident_conversation_stream.get_repository().set_input_state(
-                resident_domain_common.record_resident_id(current),
-                str(user_item.get("message_id") or ""),
-                "completed",
-            )
-            current["session_state"] = "active"
-            current["last_error"] = ""
-            current["updated_at"] = resident_domain_common.now_iso()
-            resident_record_domain.save_resident_record(current)
-
-    except Exception:
-        if (store.execution(execution_id) or {}).get("status") not in {"completed", "failed", "cancelled"}:
-            store.finish_execution(execution_id, status="failed", finished_at=resident_domain_common.now_iso())
-        raise
-
-    return _resident_message_delivery_result(
-        str(record.get("resident_id") or ""),
-        message_id,
-    )
-
-
 def _resident_message_cwd(
     record: dict[str, Any],
     working_directory: object,
@@ -674,7 +584,7 @@ def persist_resident_input(
     if request.requested_quote not in (None, {}) and (activation.waits_as_info or isolated):
         raise ValueError("info 消息和授权调用的输入不带引用")
     quote_record = resident_record_domain.find_resident_for_admission(resident_id) or {"resident_id": resident_id}
-    return _admit_input(_with_accepted_quote(request, quote_record), quote_record)
+    return _admit_input(_with_accepted_quote(request, quote_record))
 
 
 def _check_isolated_input(
@@ -727,11 +637,11 @@ def _with_accepted_quote(request: ResidentInput, quote_record: Mapping[str, Any]
     return replace(request, protocol_input=protocol_input, quote=quote)
 
 
-def _admit_input(request: ResidentInput, quote_record: Mapping[str, Any]) -> dict[str, Any]:
-    """Admit the input under the Resident's state lock; then deliver it at once or queue it."""
+def _admit_input(request: ResidentInput) -> dict[str, Any]:
+    """Admit the input under the Resident's state lock; then queue it."""
 
     has_media = bool(request.input_media or resident_media_domain.RESIDENT_IMAGE_MARKER_RE.search(request.message))
-    environment = _execution_environment(request, quote_record, has_media)
+    environment = _execution_environment(request, has_media)
     resident_id, message_id = request.resident_id, request.message_id
     with resident_intake_admission.scope(resident_id, message_id), resident_record_domain.state_lock(resident_id):
         record = _deliverable_record(request)
@@ -746,24 +656,14 @@ def _admit_input(request: ResidentInput, quote_record: Mapping[str, Any]) -> dic
         if request.activation.joins_active_turn and _already_in_active_turn(request, record, capabilities):
             return _receipt(request)
         _require_supported_input(request, capabilities)
-        if capabilities.synchronous_delivery:
-            started = _start_synchronous_delivery(request, environment or record)
-            if started is None:
-                return _receipt(request)
-        else:
-            started, input_record = None, copy.deepcopy(record)
-    if started is not None:
-        return _deliver_synchronously(request, *started)
+        input_record = copy.deepcopy(record)
     return _queue_input(request, input_record, environment, has_media)
 
 
-def _execution_environment(
-    request: ResidentInput, quote_record: Mapping[str, Any], has_media: bool,
-) -> dict[str, Any] | None:
+def _execution_environment(request: ResidentInput, has_media: bool) -> dict[str, Any] | None:
     # File attachments/explicit cwd require the execution environment. Plain
     # messages need only persisted identity/configuration; resolve paths later.
-    if (has_media or request.working_directory or request.message.lstrip().startswith("/")
-            or resident_execution_provider.provider_for(quote_record).capabilities.synchronous_delivery):
+    if has_media or request.working_directory or request.message.lstrip().startswith("/"):
         return resident_record_domain.find_resident(request.resident_id)
     return None
 
@@ -979,12 +879,6 @@ def _already_in_active_turn(request: ResidentInput, record: dict[str, Any], capa
 
 
 def _require_supported_input(request: ResidentInput, capabilities: Any) -> None:
-    if request.context_refs and not capabilities.supports_context:
-        raise ValueError("该 Resident ExecutionProvider 不接受 Context 引用")
-    if request.runtime_context and not capabilities.supports_context:
-        raise ValueError("该 Resident ExecutionProvider 不接受 runtime context")
-    if request.additional_skills and not capabilities.supports_skills:
-        raise ValueError("该 Resident ExecutionProvider 不加载执行层 Skill")
     input_media = request.input_media
     if input_media is not None and not isinstance(input_media, (list, tuple)):
         raise ValueError("input_media must be an array")
@@ -997,60 +891,6 @@ def _require_supported_input(request: ResidentInput, capabilities: Any) -> None:
             raise ValueError("该 Resident ExecutionProvider 不读取本地文件附件")
         if media_type != "file" and not capabilities.supports_media:
             raise ValueError("该 Resident ExecutionProvider 不读取图片输入")
-
-
-def _start_synchronous_delivery(
-    request: ResidentInput, record: dict[str, Any],
-) -> tuple[dict[str, Any], dict[str, Any]] | None:
-    """Persist an input a synchronous ExecutionProvider answers and mark it running.
-
-    Returns the Resident and the persisted message, or None for a retry
-    that finds the input delivered already.
-    """
-
-    record_id = resident_domain_common.record_resident_id(record)
-    message = request.with_business_ref(request.user_message(record_id))
-    if existing_resident_delivery(record_id, message):
-        return None
-    message = request.with_business_ref(resident_lifecycle_domain.persist_resident_user_message(record_id, message))
-    resident_conversation_stream.get_repository().set_input_state(record_id, request.message_id, "running")
-    record["session_state"] = "running"
-    record["updated_at"] = resident_domain_common.now_iso()
-    _save_admitted_record(record)
-    started = copy.deepcopy(record)
-    resident_intake_admission.committed(request.resident_id, request.message_id)
-    return started, message
-
-
-def _deliver_synchronously(
-    request: ResidentInput, record: dict[str, Any], message: dict[str, Any],
-) -> dict[str, Any]:
-    """Let the synchronous ExecutionProvider answer; its failure fails the input."""
-
-    try:
-        _send_synchronous_provider_message(
-            record,
-            request.actor_id,
-            message_quotes.with_quote(request.message, request.quote),
-            message_id=request.message_id,
-            user_message=message,
-        )
-    except Exception as exc:
-        with resident_record_domain.state_lock(request.resident_id):
-            resident_conversation_stream.get_repository().set_input_state(
-                request.resident_id,
-                request.message_id,
-                "failed",
-                error=resident_record_domain.runtime_error_payload(str(exc)),
-            )
-            current = resident_record_domain.find_resident_for_admission(request.resident_id)
-            if current:
-                current["session_state"] = "active"
-                current["last_error"] = str(exc)
-                current["updated_at"] = resident_domain_common.now_iso()
-                _save_admitted_record(current)
-        raise
-    return _receipt(request)
 
 
 def _queue_input(

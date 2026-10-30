@@ -49,8 +49,6 @@ def backend_label(record: Mapping[str, Any]) -> str:
     if execution_backend(record) == "provider_api":
         provider_id = execution_provider(record)
         return provider_id or "Model API"
-    if execution_backend(record) == "portal":
-        return "Portal 规则"
     provider = AGENT_PROVIDERS.get(execution_backend(record))
     # A deleted Resident may have no backend left.
     return provider.label if provider else "未知"

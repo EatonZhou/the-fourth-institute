@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Any, Callable
 
 from . import (
-    lineage_domain,
     lineage_lifecycle,
     lineage_moves,
     lineage_reads,
@@ -92,10 +91,6 @@ class ResidentLineageHost:
     @staticmethod
     def finalize_deleted_resident_detach(lineage_id: str) -> None:
         lineage_resident_operations.finalize_deleted_resident_detach(lineage_id)
-
-    @staticmethod
-    def handle_deterministic_resident_message(lineage_id: str, resident_id: str, message: str, actor: str) -> dict[str, Any]:
-        return lineage_domain.handle_deterministic_resident_message(lineage_id, resident_id, message, actor)
 
     @staticmethod
     def invalidate_lineage_read_cache(lineage_id: str) -> None:

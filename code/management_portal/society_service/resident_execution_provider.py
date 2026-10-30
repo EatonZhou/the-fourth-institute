@@ -5,15 +5,10 @@ from typing import Any, Callable, Mapping, Protocol
 
 from management_portal.execution.provider_catalog import AGENT_PROVIDERS, provider_name
 
-from .domain_ports import resident_lineage_host_port
-
 
 @dataclass(frozen=True)
 class ExecutionCapabilities:
-    synchronous_delivery: bool = False
-    supports_context: bool = True
     supports_media: bool = True
-    supports_skills: bool = True
     supports_fork: bool = True
     supports_session_restart: bool = True
     supports_active_turn_input: bool = False
@@ -47,9 +42,8 @@ class DeliveryResult:
 #   Provider session's history (Codex, DSH);
 # ``system_instructions`` - with Portal's system instructions, sent by the same
 #   policy and placed by the Provider adapter (Claude Code, whose system prompt is
-#   given at every process start, Kimi Code, Provider API);
-# ``none`` - a Resident without a model session.
-INITIAL_INSTRUCTION_TRANSPORTS = frozenset({"user_prompt", "system_instructions", "none"})
+#   given at every process start, Kimi Code, Provider API).
+INITIAL_INSTRUCTION_TRANSPORTS = frozenset({"user_prompt", "system_instructions"})
 
 
 class ExecutionProvider(Protocol):
@@ -82,7 +76,7 @@ class SessionExecutionProvider:
         *,
         initial_instructions_transport: str = "system_instructions",
     ) -> None:
-        if initial_instructions_transport not in INITIAL_INSTRUCTION_TRANSPORTS - {"none"}:
+        if initial_instructions_transport not in INITIAL_INSTRUCTION_TRANSPORTS:
             raise ValueError(
                 "Unsupported initial instruction transport: "
                 f"{initial_instructions_transport}"
@@ -115,38 +109,6 @@ class ProviderApiExecutionProvider(SessionExecutionProvider):
         )
 
 
-class DeterministicExecutionProvider:
-    backend = "portal"
-    mode = "deterministic"
-    initial_instructions_transport = "none"
-    capabilities = ExecutionCapabilities(
-        synchronous_delivery=True,
-        supports_context=False,
-        supports_media=False,
-        supports_skills=False,
-        supports_fork=False,
-        supports_session_restart=False,
-        native_chat=False,
-        local_tools=False,
-        workspace_write=False,
-        native_permissions=False,
-    )
-
-    def deliver(self, request: DeliveryRequest) -> DeliveryResult:
-        result = resident_lineage_host_port.handle_deterministic_resident_message(
-            request.lineage_id,
-            request.resident_id,
-            request.message,
-            request.actor_id,
-        )
-        reply = str(
-            result.get("reply") if isinstance(result, Mapping) else result
-        ).strip()
-        if not reply:
-            raise RuntimeError("Deterministic Resident did not produce a reply")
-        return DeliveryResult(reply=reply)
-
-
 # A Fork receives the source's effective context from AgentData, so any agent
 # backend that can open a new session with that context (an explicit create
 # operation, or on its first turn) supports Forks; no native fork is needed.
@@ -156,7 +118,6 @@ _PROVIDERS: dict[str, ExecutionProvider] = {
         supports_active_turn_input=p.active_turn_input, runtime_settings=p.runtime_settings,
     ), initial_instructions_transport=p.initial_instructions_transport) for p in AGENT_PROVIDERS.values()},
     "provider_api": ProviderApiExecutionProvider(),
-    "portal": DeterministicExecutionProvider(),
 }
 
 def _provider_for_key(
@@ -225,15 +186,8 @@ def capability_projection(record: Mapping[str, Any]) -> dict[str, Any]:
         "portal_fork": capabilities.supports_fork,
         "native_permissions": capabilities.native_permissions,
         "image_input": capabilities.supports_media,
-        "context_input": capabilities.supports_context,
         "session_restart": capabilities.supports_session_restart,
         "active_turn_input": capabilities.supports_active_turn_input,
-        "synchronous_delivery": capabilities.synchronous_delivery,
         "runtime_settings": list(capabilities.runtime_settings),
         "runtime_capabilities": runtime_capabilities,
-        **(
-            {"deterministic": True}
-            if capabilities.synchronous_delivery
-            else {}
-        ),
     }

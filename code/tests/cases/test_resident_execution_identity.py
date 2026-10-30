@@ -5,44 +5,8 @@ from tests.cases.test_resident_execution_protocol import resident_record
 from management_portal.society_service import resident_execution_work as work, trigger_paths
 from management_portal.execution import execution_inputs
 from management_portal.execution.agent_data_store import get_agent_data_store
-from management_portal.society_service import resident_record_domain
 
 AT = "2026-10-14T00:00:00Z"
-
-
-@pytest.mark.parametrize("fails", [False, True])
-def test_deterministic_provider_records_an_execution(resident_record, monkeypatch, fails):
-    """同步投递的 Provider 也记录一次执行，按成功或失败结束并关联回复
-
-    :design: decision_71aa039e3211"""
-    from types import SimpleNamespace
-    from management_portal.society_service import resident_intake_domain, resident_execution_provider
-    from management_portal.society_service import resident_lifecycle_domain, resident_workspace_domain
-    resident = resident_record["resident_id"]
-    replies = []
-
-    def deliver(request):
-        assert execution_inputs.latest(get_agent_data_store(), resident, "msg_sync")["status"] == "running"
-        if fails:
-            raise RuntimeError("deterministic failure")
-        return SimpleNamespace(reply="completed")
-
-    monkeypatch.setattr(resident_execution_provider, "provider_for", lambda record: SimpleNamespace(
-        capabilities=SimpleNamespace(synchronous_delivery=True), deliver=deliver))
-    monkeypatch.setattr(resident_record_domain, "save_resident_record", lambda *args: None)
-    monkeypatch.setattr(resident_lifecycle_domain, "append_conversation_message", lambda rid, message: replies.append(message))
-    monkeypatch.setattr(resident_intake_domain, "_resident_message_delivery_result", lambda *args: {})
-    call = lambda: resident_intake_domain._send_synchronous_provider_message(
-        resident_record, "sample_admin", "inspect", message_id="msg_sync", user_message={"message_id": "msg_sync"})
-    if fails:
-        with pytest.raises(RuntimeError, match="deterministic failure"):
-            call()
-    else:
-        call()
-    execution = execution_inputs.latest(get_agent_data_store(), resident, "msg_sync")
-    assert execution["status"] == ("failed" if fails else "completed")
-    if not fails:
-        assert replies[0]["execution_id"] == execution["execution_id"]
 
 
 def preparation(message="msg_primary"):

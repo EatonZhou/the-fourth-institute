@@ -5,7 +5,7 @@ from management_portal.hatg.contracts import InstructionError
 
 
 def configuration(record, binding):
-    if record.get("backend") in {"portal", "kimi"} or record.get("backend_route_id"):
+    if record.get("backend") == "kimi" or record.get("backend_route_id"):
         return None
     if any(binding.get(key) for key in ("backend_route_id", "backend_session_id", "provider_session_ref")):
         return None

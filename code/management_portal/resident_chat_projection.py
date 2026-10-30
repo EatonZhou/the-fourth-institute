@@ -19,8 +19,6 @@ def _backend_label(backend: object, provider: object = "") -> str:
     backend_id = provider_name(backend)
     if backend_id == "provider_api":
         return str(provider or "Model API").strip() or "Model API"
-    if backend_id == "portal":
-        return "Portal 规则"
     definition = AGENT_PROVIDERS.get(backend_id)
     return definition.label if definition else (backend_id or "未知")
 
@@ -67,15 +65,13 @@ def project_session(value: object, actor: str = "") -> dict[str, Any]:
     ]
     can_send = bool(actor and allows.get("DeliverMessage"))
     supports_media = bool(capabilities.get("image_input"))
-    supports_context = bool(capabilities.get("context_input", True))
-    synchronous = bool(capabilities.get("synchronous_delivery"))
     runtime_setting_names = capabilities.get("runtime_settings") or []
     supports_restart = bool(capabilities.get("session_restart"))
     composer = {
         "can_send": can_send,
         "can_stop": False,
         "can_attach": supports_media,
-        "refs_enabled": supports_context,
+        "refs_enabled": True,
         "attachment_upload_context": {"resident_id": resident_id},
         "runtime_backend": backend,
         "runtime_settings": copy.deepcopy(_dict(source.get("runtime_settings"))),
@@ -103,9 +99,11 @@ def project_session(value: object, actor: str = "") -> dict[str, Any]:
         }
     chat_capabilities = [
         *(["attachments", "images"] if supports_media else []),
-        *(["refs"] if supports_context else []),
+        "refs",
         "history",
-        *([] if synchronous else ["stop", "queue", "identity_toggle"]),
+        "stop",
+        "queue",
+        "identity_toggle",
         "refresh",
         "message_actions",
         "forward",

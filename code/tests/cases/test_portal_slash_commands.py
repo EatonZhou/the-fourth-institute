@@ -322,8 +322,8 @@ class PortalSlashCommandsTest(unittest.TestCase):
         shortcut = next(line for line in help_text.splitlines() if "上一个 Portal 页面" in line)
         self.assertTrue(shortcut.startswith("- `Ctrl` + 反引号键"), shortcut)
         self.assertNotIn("\\", help_text)
-        # A session without a Provider (a Portal rules Resident) has Portal's own commands only.
-        unknown = slash_commands.handle_slash_command("/status", {}, backend="portal")
+        # A backend that declares no commands (a Model API Resident) has Portal's own commands only.
+        unknown = slash_commands.handle_slash_command("/status", {}, backend="provider_api")
         self.assertEqual(unknown["title"], "Unknown slash command")
         self.assertIn("`/portal-help`、`/portal-tokens`", unknown["content"])
         self.assertNotIn("`/status`", unknown["content"].split("支持", 1)[1])

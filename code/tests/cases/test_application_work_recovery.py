@@ -16,7 +16,7 @@ constitute a Windows/v60 migration test. The first-turn ``bootstrap_session``
 flag is preserved; the installer must independently verify no durable
 submission or Provider start. This helper grants no upgrade approval.
 
-:module: execution.resident
+:module: execution.persistence
 """
 from __future__ import annotations
 

@@ -3109,10 +3109,6 @@
     "en": "Details",
     "zh-CN": "详情"
   },
-  "Deterministic Resident did not produce a reply": {
-    "en": "Deterministic Resident did not produce a reply",
-    "zh-CN": "确定性 Resident 未产生回复"
-  },
   "Dev": {
     "en": "Dev",
     "zh-CN": "Dev"
@@ -9381,10 +9377,6 @@
     "en": "Resident work was canceled",
     "zh-CN": "Resident 工作被取消"
   },
-  "Resident 已不再使用同步 ExecutionProvider": {
-    "en": "Resident no longer uses the synchronous ExecutionProvider",
-    "zh-CN": "Resident 已不再使用同步 ExecutionProvider"
-  },
   "Resident 已删除，这条消息不会被处理": {
     "en": "Resident has been deleted; this message will not be processed",
     "zh-CN": "Resident 已删除，这条消息不会被处理"
@@ -10480,10 +10472,6 @@
   "Switching to {p0}...": {
     "en": "Switching to {p0}...",
     "zh-CN": "正在切换到 {p0}..."
-  },
-  "Synchronous ExecutionProvider did not produce a reply": {
-    "en": "Synchronous ExecutionProvider did not produce a reply",
-    "zh-CN": "同步 ExecutionProvider 未产生回复"
   },
   "Syncing": {
     "en": "Syncing",
@@ -23461,10 +23449,6 @@
     "en": "Also used as the project name",
     "zh-CN": "同时作为项目名称"
   },
-  "同步 ExecutionProvider 不提交 Execution 请求": {
-    "en": "Synchronous ExecutionProvider does not submit Execution requests",
-    "zh-CN": "同步 ExecutionProvider 不提交 Execution 请求"
-  },
   "同步失败：{p0}": {
     "en": "Sync failed: {p0}",
     "zh-CN": "同步失败：{p0}"
@@ -34288,18 +34272,6 @@
   "该 Lineage 没有可用的 Resident 节点": {
     "en": "This Lineage has no available Resident nodes",
     "zh-CN": "该 Lineage 没有可用的 Resident 节点"
-  },
-  "该 Resident ExecutionProvider 不加载执行层 Skill": {
-    "en": "This Resident ExecutionProvider does not load execution-layer Skills",
-    "zh-CN": "该 Resident ExecutionProvider 不加载执行层 Skill"
-  },
-  "该 Resident ExecutionProvider 不接受 Context 引用": {
-    "en": "This Resident ExecutionProvider does not accept Context references",
-    "zh-CN": "该 Resident ExecutionProvider 不接受 Context 引用"
-  },
-  "该 Resident ExecutionProvider 不接受 runtime context": {
-    "en": "This Resident ExecutionProvider does not accept runtime context",
-    "zh-CN": "该 Resident ExecutionProvider 不接受 runtime context"
   },
   "该 Resident ExecutionProvider 不支持 fork": {
     "en": "This Resident ExecutionProvider does not support fork",

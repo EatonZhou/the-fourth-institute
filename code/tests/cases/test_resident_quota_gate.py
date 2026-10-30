@@ -18,7 +18,7 @@ from tests.cases.execution_test_support import patch_scheduler_time
 
 
 def test_idle_quota_gate_preserves_manual_intake_and_original_queue(catalog, scheduler, monkeypatch):
-    ids = populate(3, routes=[('codex', 'one'), ('codex', 'two'), ('portal', '')])
+    ids = populate(2, routes=[('codex', 'one'), ('codex', 'two')])
     service = SimpleNamespace(binding_quota_states=lambda bindings: scheduler.binding_quota_states(bindings))
     monkeypatch.setattr(execution_port, 'service', lambda: service)
     scheduler.configure_capacity('codex:one', 8, 0, 0, actor=ACTOR, close_threshold={'value': 0, 'unit': '%'})
@@ -33,7 +33,6 @@ def test_idle_quota_gate_preserves_manual_intake_and_original_queue(catalog, sch
     assert items[0]['controls']['can_send'] is True
     assert '额度' in items[0]['controls']['send_hint']
     assert items[1]['state']['execution_gate']['state'] == 'open'
-    assert items[2]['state']['execution_gate']['state'] == 'open'
     assert resident_catalog.get_catalog().get(ids[0]) == before
     original = submit(scheduler, binding_id='resident:' + ids[0])
     assert claim(scheduler)['reason'] == 'quota_reserve'

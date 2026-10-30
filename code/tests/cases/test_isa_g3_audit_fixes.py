@@ -39,25 +39,6 @@ def test_bootstrap_delivery_keeps_the_business_reference(delivery_resident):
 
 
 
-def test_synchronous_delivery_persists_the_business_reference(delivery_resident, monkeypatch):
-    """同步投递的消息也保存 business_ref"""
-    from management_portal.society_service import resident_conversation_stream, resident_execution_provider
-
-    provider = SimpleNamespace(
-        capabilities=resident_execution_provider.ExecutionCapabilities(synchronous_delivery=True),
-        deliver=lambda request: resident_execution_provider.DeliveryResult(reply="done"),
-    )
-    monkeypatch.setattr(resident_execution_provider, "provider_for", lambda record: provider)
-    delivered = run("DeliverMessage", {
-        "resident_id": delivery_resident["resident_id"], "business_ref": "paper_0123456789ab",
-        "message": {"content_parts": [{"type": "text", "text": "One synchronous input"}]},
-    }).raise_for_error()
-    stored = resident_conversation_stream.get_repository().agent_data.chat_message(
-        delivery_resident["resident_id"], delivered["message_id"],
-    )
-    assert stored["business_ref"] == "paper_0123456789ab"
-
-
 def test_reusing_a_message_id_with_different_content_reports_conflict(delivery_resident):
     """用同一个 message_id 投递不同内容时返回冲突，原消息不变"""
     resident_id = delivery_resident["resident_id"]

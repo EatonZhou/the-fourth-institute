@@ -936,7 +936,7 @@ def test_conversation_summary_exposes_actor_specific_chat_engagement_contracts(t
         assert sample_peer["last_user_actor"] == "sample_admin"
         assert sample_peer["actor_last_user_message_at"] == "2026-08-15T09:00:00Z"
         assert other["actor_last_user_message_at"] == ""
-    with subtests.test(contract='test_deterministic_resident_reply_is_an_actor_scoped_completion'), isolated_portal_case() as case_path:
+    with subtests.test(contract='test_a_reply_to_the_input_is_an_actor_scoped_completion'), isolated_portal_case() as case_path:
         tmp_path = case_path
         resident_id = "resident_222222222222"
         _register_protocol_resident(resident_id)
