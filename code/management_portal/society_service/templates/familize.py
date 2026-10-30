@@ -198,6 +198,11 @@ def reconcile_in_body(body: dict, block: dict, actor: str) -> None:
         if kind == "event_source" and item.get("config"):
             # The event editor owns schedule/threshold choices. Roster sync owns watches.
             fields["config"] = {**fields.get("config", {}), **item["config"]}
+            # One-time cutover (2026-10-30): the recovery timer default moved from
+            # 60 s to 300 s; a timer still at the old default follows it. Retire
+            # once every Family is synced.
+            if key == "recovery_timer" and item["config"].get("interval_seconds") == 60:
+                fields["config"]["interval_seconds"] = 300
         tasks = family_tasks.defaults(key, personal=personal) if kind == "route" else {}
         if tasks:
             old_profiles = item.get("config", {}).get("invoke_profiles", {})
