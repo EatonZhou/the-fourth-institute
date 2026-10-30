@@ -374,3 +374,90 @@ def test_complete_but_late_capture_never_authorizes_shutdown(monkeypatch, stage)
         processes.tcp = delayed
     with pytest.raises(ValueError, match='bounded capture'):
         clients.capture(connection, processes, {11: (200, 10, 100)})
+
+
+class RootProcesses(Processes):
+    def __init__(self):
+        super().__init__()
+        self.absent = set()
+        self.errors = {}
+    def pin(self, pid, *, allow_exited=False):
+        if pid in self.errors or pid in self.absent:
+            error = OSError('SENSITIVE process details')
+            error.winerror = self.errors.get(pid, 87)
+            raise error
+        if not allow_exited and pid in self.dead:
+            raise ValueError('Client process exited during ownership capture')
+        return self.stamps[pid]
+    def parents(self):
+        return {k: v for k, v in self.tree.items() if k not in self.absent}
+
+
+def root_record():
+    return json.dumps({'pid': 10, 'created': 100, 'child_pid': 11, 'child_created': 200})
+
+
+@pytest.mark.parametrize('kind', ['live', 'absent', 'exited', 'mixed_gone', 'no_record'])
+def test_service_root_classifies_without_granting_stale_authority(kind):
+    p = RootProcesses()
+    if kind == 'absent': p.absent = {10, 11}
+    if kind == 'exited': p.dead = {10, 11}
+    if kind == 'mixed_gone': p.dead = {10}; p.absent = {11}
+    root, diagnostic = clients.service_root(p, lambda: None if kind == 'no_record' else root_record())
+    assert root == ((11, (200, 10, 100)) if kind == 'live' else None)
+    assert diagnostic['classification'] == ('live_root' if kind == 'live' else 'no_record' if kind == 'no_record' else 'stale_record')
+    if kind not in ('live', 'no_record'):
+        with pytest.raises((ValueError, KeyError, OSError)):
+            clients.ancestry(p, 12, {})  # orphan descendants gain no authority
+
+
+@pytest.mark.parametrize('case', ['permission', 'unknown_error', 'snapshot_conflict', 'reuse',
+    'one_live', 'changed_record', 'appearing_pid', 'bad_ancestry', 'exited_during_read',
+    'enumeration_error', 'malformed', 'zero_pid', 'boolean_pid', 'oversized_pid', 'missing_stamp'])
+def test_service_root_refuses_ambiguous_or_unreadable_records(case):
+    p = RootProcesses(); values = [root_record()]
+    if case == 'permission': p.errors[10] = 5
+    if case == 'unknown_error': p.errors[10] = 6
+    if case == 'snapshot_conflict': p.errors[10] = 87
+    if case == 'reuse': p.stamps[10] = 101
+    if case == 'one_live': p.absent = {11}
+    if case == 'changed_record': values.append(root_record() + ' ')
+    if case == 'appearing_pid':
+        p.absent = {10, 11}; snapshots = iter([{}, {10: 1}]); p.parents = lambda: next(snapshots)
+    if case == 'bad_ancestry': p.tree[11] = 999
+    if case == 'exited_during_read':
+        snapshots = iter([False, False, True]); p.exited = lambda _: next(snapshots)
+    if case == 'enumeration_error':
+        def denied(): raise OSError('SENSITIVE enumeration')
+        p.parents = denied
+    if case == 'malformed': values = ['SENSITIVE malformed']
+    if case in ('zero_pid', 'boolean_pid', 'oversized_pid', 'missing_stamp'):
+        state = json.loads(values[0]); state['pid'] = {'zero_pid': 0, 'boolean_pid': True, 'oversized_pid': 2**32, 'missing_stamp':10}[case]
+        if case == 'missing_stamp': del state['created']
+        values = [json.dumps(state)]
+    calls = [0]
+    def read():
+        value = values[min(calls[0], len(values)-1)]; calls[0] += 1; return value
+    with pytest.raises(clients.ClientProofError) as caught:
+        clients.service_root(p, read)
+    assert caught.value.diagnostic['stage'] == 'service_roots'
+    assert caught.value.diagnostic['signals_sent'] == 0
+    assert 'SENSITIVE' not in json.dumps(caught.value.diagnostic) + str(caught.value)
+
+
+def test_root_failure_is_wrapped_before_capture_and_releases_handles(monkeypatch):
+    from scripts import tfi_windows_user_services as services
+    from scripts import tfi_release_provider_services as providers
+    p = RootProcesses(); p.errors[10] = 5; p.close = Mock()
+    api = Mock(COMPONENTS=['worker']); api.service_controller().definition.return_value = {}
+    monkeypatch.setattr(clients.sys, 'platform', 'win32')
+    monkeypatch.setattr(clients, 'WindowsProcesses', lambda: p)
+    monkeypatch.setattr(providers, 'owned_services', lambda *_: {})
+    monkeypatch.setattr(services, 'state_path', lambda _: 'private')
+    monkeypatch.setattr(services, 'read_record', lambda _: root_record())
+    capture = Mock(); monkeypatch.setattr(clients, 'capture', capture)
+    with pytest.raises(clients.ClientProofError) as caught:
+        with clients.owned_clients(api, [{'target': {'windows_service_mode': 'user'}}], [Mock()]):
+            pytest.fail('must refuse before stop')
+    assert caught.value.diagnostic['service_ordinal'] == 1
+    capture.assert_not_called(); p.close.assert_called_once_with()

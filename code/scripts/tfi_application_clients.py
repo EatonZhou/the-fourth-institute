@@ -36,7 +36,7 @@ class WindowsProcesses:
             self.api.CloseHandle(handle)
         self.handles.clear()
 
-    def pin(self, pid):
+    def pin(self, pid, *, allow_exited=False):
         if pid not in self.handles:
             handle = self.api.OpenProcess(0x1000 | 0x100000, False, pid)
             if not handle:
@@ -49,7 +49,7 @@ class WindowsProcesses:
             except BaseException:
                 self.api.CloseHandle(handle)
                 raise
-        if self.exited(pid):
+        if self.exited(pid) and not allow_exited:
             raise ValueError('Client process exited during ownership capture')
         return self.handles[pid][1]
 
@@ -279,8 +279,11 @@ class ClientProofError(RuntimeError):
     """A non-sensitive, per-predicate refusal receipt; never an authorization."""
     def __init__(self, diagnostic):
         self.diagnostic = diagnostic
-        reasons = sorted({reason for item in diagnostic['clients'] for reason in item['reasons']})
-        super().__init__('Residual database client is not a proven disconnected service wait; '
+        reasons = sorted({reason for item in diagnostic.get('clients', []) + diagnostic.get('service_roots', [])
+                          for reason in item['reasons']})
+        message = ('Owned service root could not be classified; ' if diagnostic.get('stage') == 'service_roots'
+                   else 'Residual database client is not a proven disconnected service wait; ')
+        super().__init__(message
                          + ','.join(reasons))
 
 
@@ -424,6 +427,76 @@ def clear_all(connections, processes, evidence):
     return results
 
 
+def service_root(processes, read):
+    """A stale record supplies no ownership authority, including for descendants.
+
+    Only positive DWORD PIDs absent in both complete snapshots AND OpenProcess
+    ERROR_INVALID_PARAMETER, or pinned matching exited objects, count as gone.
+    Permissions, reuse, mixed live/dead pairs and changed records refuse.
+    """
+    diagnostic = {'classification': 'unknown', 'supervisor': 'not_checked',
+                  'child': 'not_checked', 'record_stable': None, 'reasons': []}
+    def refuse(reason):
+        diagnostic['reasons'].append(reason)
+        raise ClientProofError({'stage': 'service_roots', 'signals_sent': 0,
+                                'clients': [], 'service_roots': [diagnostic]})
+    try:
+        raw = read()
+        if raw is None:
+            diagnostic['classification'] = 'no_record'
+            return None, diagnostic
+        state = json.loads(raw)
+        if (not isinstance(state, dict)
+                or set(state) != {'pid', 'created', 'child_pid', 'child_created'}
+                or any(type(state[k]) is not int or not 0 < state[k] <= 0xffffffff
+                       for k in ('pid', 'child_pid'))
+                or any(type(state[k]) is not int or state[k] <= 0
+                       for k in ('created', 'child_created'))
+                or state['pid'] == state['child_pid']):
+            refuse('invalid_record')
+        before = processes.parents()
+        for label, pid_key, stamp_key in [('supervisor', 'pid', 'created'),
+                                          ('child', 'child_pid', 'child_created')]:
+            pid = state[pid_key]
+            try:
+                stamp = processes.pin(pid, allow_exited=True)
+            except OSError as exc:
+                diagnostic[label] = 'read_error'
+                if getattr(exc, 'winerror', None) != 87 or pid in before:
+                    refuse('process_read_error')
+                diagnostic[label] = 'absent_candidate'
+                continue
+            if stamp != state[stamp_key]:
+                diagnostic[label] = 'identity_mismatch'
+                refuse('process_identity_changed')
+            diagnostic[label] = 'exited' if processes.exited(pid) else 'live'
+        after = processes.parents()
+        diagnostic['record_stable'] = read() == raw
+        if not diagnostic['record_stable']:
+            refuse('record_changed')
+        for label, key in [('supervisor', 'pid'), ('child', 'child_pid')]:
+            if diagnostic[label] == 'absent_candidate':
+                if state[key] in after:
+                    refuse('process_snapshot_changed')
+                diagnostic[label] = 'absent'
+        pair = [diagnostic['supervisor'], diagnostic['child']]
+        if all(value in {'absent', 'exited'} for value in pair):
+            diagnostic['classification'] = 'stale_record'
+            return None, diagnostic
+        if pair != ['live', 'live']:
+            refuse('partially_live_record')
+        if (before.get(state['child_pid']) != state['pid']
+                or after.get(state['child_pid']) != state['pid']
+                or processes.exited(state['pid']) or processes.exited(state['child_pid'])):
+            refuse('service_ancestry_changed')
+        diagnostic['classification'] = 'live_root'
+        return (state['child_pid'], (state['child_created'], state['pid'], state['created'])), diagnostic
+    except ClientProofError:
+        raise
+    except (OSError, ValueError, KeyError, TypeError):
+        refuse('root_read_error')
+
+
 @contextmanager
 def owned_clients(api, records, connections):
     """Scope is Windows user services; other configurations retain strict refusal."""
@@ -436,24 +509,34 @@ def owned_clients(api, records, connections):
     try:
         control = api.service_controller()
         roots = {}
+        ordinal = 0
         for record in records:
             target = record['target']
             api.check_available(target, existing=True)
             plan = providers.owned_services(target, api.unit_directory()) or {}
             names = [api.unit_name(target, c) for c in api.COMPONENTS if c != 'postgres'] + plan.get('names', [])
             for name in names:
+                ordinal += 1
                 controller = plan.get('controllers', {}).get(name, control)
-                definition = controller.definition(name)
-                if definition is None:
-                    continue
                 try:
-                    state = json.loads(services.read_record(services.state_path(definition)))
-                except FileNotFoundError:
-                    continue
-                if (processes.pin(state['pid']) != state['created']
-                        or processes.pin(state['child_pid']) != state['child_created']):
-                    raise ValueError('Owned service process identity changed')
-                roots[state['child_pid']] = (state['child_created'], state['pid'], state['created'])
+                    definition = controller.definition(name)
+                    if definition is None:
+                        continue
+                    def read():
+                        try:
+                            return services.read_record(services.state_path(definition))
+                        except FileNotFoundError:
+                            return None
+                    root, _ = service_root(processes, read)
+                    if root is not None:
+                        roots[root[0]] = root[1]
+                except (OSError, ValueError, KeyError, TypeError, ClientProofError) as exc:
+                    if isinstance(exc, ClientProofError):
+                        exc.diagnostic['service_ordinal'] = ordinal
+                        raise
+                    raise ClientProofError({'stage': 'service_roots', 'signals_sent': 0,
+                        'service_ordinal': ordinal, 'clients': [], 'service_roots': [
+                            {'classification': 'unknown', 'reasons': ['service_record_read_error']}]}) from None
         evidence = [capture(c, processes, roots) for c in connections]
         yield lambda: clear_all(connections, processes, evidence)
     finally:
