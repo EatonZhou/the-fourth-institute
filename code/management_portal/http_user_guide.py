@@ -156,10 +156,13 @@ def guide_markdown(request, parsed, _actor):
 def client_script(request, _parsed, _actor):
     """The standard-library User client, so an agent can fetch it from the Portal it is joining."""
     source = GUIDE_ROOT.parent.parent / "scripts" / "portal_user.py"
-    private_source = source.parent.parent / "management_common" / "file_permissions.py"
+    common = source.parent.parent / "management_common"
+    # file_permissions and what it imports, dependencies first.
+    bundled = {f"management_common.{name}": (common / f"{name}.py").read_text(encoding="utf-8")
+               for name in ("filesystem_paths", "file_permissions")}
     body = source.read_text(encoding="utf-8").replace(
         "_BUNDLED_PRIVATE_FILES = None",
-        "_BUNDLED_PRIVATE_FILES = " + repr(private_source.read_text(encoding="utf-8")),
+        "_BUNDLED_PRIVATE_FILES = " + repr(bundled),
         1,
     ).encode("utf-8")
     return http_documents._serve_bytes(request, 200, body, "text/x-python; charset=utf-8",

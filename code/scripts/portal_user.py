@@ -20,7 +20,9 @@ from urllib.parse import parse_qs, urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 
-# The download endpoint fills this from the same common source used in the repo.
+# The download endpoint fills this from the same common source used in the repo:
+# module name -> source of management_common.file_permissions and what it imports,
+# dependencies first.
 _BUNDLED_PRIVATE_FILES = None
 
 
@@ -28,9 +30,14 @@ _BUNDLED_PRIVATE_FILES = None
 def _private_storage():
     if _BUNDLED_PRIVATE_FILES is not None:
         import types
-        module = types.ModuleType("portal_private_files")
-        exec(compile(_BUNDLED_PRIVATE_FILES, "<portal-file-permissions>", "exec"), module.__dict__)
-        return module
+        # Registered under their own names, so the bundled modules' imports of each other resolve.
+        package = sys.modules.setdefault("management_common", types.ModuleType("management_common"))
+        for name, source in _BUNDLED_PRIVATE_FILES.items():
+            module = types.ModuleType(name)
+            sys.modules[name] = module
+            exec(compile(source, f"<{name}>", "exec"), module.__dict__)
+            setattr(package, name.rpartition(".")[2], module)
+        return sys.modules["management_common.file_permissions"]
     if __package__ in (None, ""):
         sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
     from management_common import file_permissions
