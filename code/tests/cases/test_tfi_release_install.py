@@ -105,7 +105,9 @@ class InstallationIsolationTests(unittest.TestCase):
                     installer.main(args)
                 program, argv, environment = execute.call_args.args
                 self.assertEqual(program, "/test-instance/venv/bin/python")
-                self.assertEqual(argv[2:], args)
+                # -B: maintenance writes no bytecode into the installed tree.
+                self.assertEqual(argv[:2], [program, "-B"])
+                self.assertEqual(argv[3:], args)
                 for key in ("HOME", "XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS"):
                     self.assertEqual(environment[key], operator[key])
                 self.assertNotIn("XDG_CONFIG_HOME", environment)
