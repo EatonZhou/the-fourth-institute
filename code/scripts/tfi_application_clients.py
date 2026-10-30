@@ -173,25 +173,68 @@ def capture(connection, processes, roots):
     if not server or not ipaddress.ip_address(server).is_loopback or ':' in server:
         raise ValueError('Disconnected-client cleanup requires local IPv4 PostgreSQL')
     captured = {}
-    for row in clients(connection):
-        endpoint = (row['client_addr'], row['client_port'], server, port)
-        if not row['client_addr'] or not ipaddress.ip_address(row['client_addr']).is_loopback:
-            raise ValueError('Database client is not local')
-        matches = [r for r in processes.tcp() if r[:4] == endpoint and r[5] == 5]
-        if len(matches) != 1:
-            raise ValueError('Database client TCP ownership is ambiguous')
-        tcp_row = matches[0]
-        chain = ancestry(processes, tcp_row[4], roots)
-        processes.pin(row['pid'])  # Pin the server process too, preventing a PID reuse signal race.
-        if tcp_row not in processes.tcp() or any(processes.exited(pid) for pid, _ in chain):
-            raise ValueError('Database client changed during ownership capture')
-        captured[row['pid']] = {'identity': {k: row[k] for k in IDENTITY},
-                              'endpoint': endpoint, 'chain': chain}
-    # PostgreSQL's snapshot is refreshed; no new or changed backend is silently authorized.
-    if {r['pid']: {k: r[k] for k in IDENTITY} for r in clients(connection)} != {
-            pid: value['identity'] for pid, value in captured.items()}:
-        raise ValueError('Database clients changed during ownership capture')
-    return {'barrier_pid': barrier_pid, 'clients': captured}
+    deadline = time.monotonic() + 5
+    sampling = {'rounds': 0, 'departed': 0, 'deferred': 0}
+
+    def identities():
+        return {r['pid']: {k: r[k] for k in IDENTITY} for r in clients(connection)}
+
+    # SHARE locks freeze writes, not connection creation/closure. Accumulate
+    # individually proven identities instead of requiring one immutable online
+    # client set throughout all OS reads. This never authorizes an unproven row.
+    for _ in range(64):
+        sampling['rounds'] += 1
+        before = identities()
+        captured = {pid: e for pid, e in captured.items() if before.get(pid) == e['identity']}
+        tcp = processes.tcp()
+        candidates = {}
+        for pid, identity in before.items():
+            if pid in captured:
+                continue
+            endpoint = (identity['client_addr'], identity['client_port'], server, port)
+            try:
+                if not identity['client_addr'] or not ipaddress.ip_address(identity['client_addr']).is_loopback:
+                    raise ValueError('Database client is not local')
+                matches = [r for r in tcp if r[:4] == endpoint and r[5] == 5]
+                if not matches:
+                    # A closing socket can precede removal from pg_stat_activity.
+                    # Wait for fresh evidence or actual disappearance, never infer ownership.
+                    sampling['deferred'] += 1
+                    continue
+                if len(matches) != 1:
+                    raise ValueError('Database client TCP ownership is ambiguous')
+                tcp_row = matches[0]
+                chain = ancestry(processes, tcp_row[4], roots)
+                processes.pin(pid)  # Pin the PG process as well as its client chain.
+                candidates[pid] = ({'identity': identity, 'endpoint': endpoint, 'chain': chain}, tcp_row)
+            except (OSError, ValueError):
+                # An error for a still-present identity remains a hard refusal.
+                # A departed identity grants no cancellation authority.
+                if identities().get(pid) == identity:
+                    raise
+                sampling['departed'] += 1
+        tcp_after = processes.tcp()
+        assert_no_foreign_clients(connection)
+        after = identities()
+        for pid, (evidence, tcp_row) in candidates.items():
+            if after.get(pid) != evidence['identity']:
+                sampling['departed'] += 1
+                continue
+            matches = [r for r in tcp_after if r[:4] == evidence['endpoint'] and r[5] == 5]
+            if len(matches) > 1:
+                raise ValueError('Database client TCP ownership is ambiguous')
+            if (matches == [tcp_row] and not processes.exited(pid)
+                    and not any(processes.exited(p) for p, _ in evidence['chain'])):
+                captured[pid] = evidence
+            else:
+                sampling['deferred'] += 1
+        captured = {pid: e for pid, e in captured.items() if after.get(pid) == e['identity']}
+        if after == {pid: e['identity'] for pid, e in captured.items()}:
+            return {'barrier_pid': barrier_pid, 'clients': captured, 'sampling': sampling}
+        if time.monotonic() >= deadline:
+            break
+        time.sleep(.05)
+    raise ValueError('Database client ownership did not converge during bounded capture')
 
 
 def assert_no_foreign_clients(connection):

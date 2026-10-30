@@ -146,3 +146,151 @@ def test_unknown_or_nonconflicting_relation_lock_refuses(rows):
     connection.execute.return_value.fetchall.return_value = rows
     with pytest.raises(RuntimeError, match='held application relation barrier'):
         clients.lock_requests(connection, 20, 30)
+
+
+def capture_fixture(monkeypatch, snapshots):
+    processes = Processes()
+    connection = Mock()
+    connection.execute.return_value.fetchone.return_value = ('127.0.0.1', 5432, 30)
+    pending = iter(snapshots)
+    last = []
+    def read(_):
+        nonlocal last
+        last = next(pending, last)
+        return copy.deepcopy(last)
+    monkeypatch.setattr(clients, 'clients', read)
+    monkeypatch.setattr(clients, 'assert_no_foreign_clients', lambda *_: None)
+    monkeypatch.setattr(clients.time, 'sleep', lambda _: None)
+    return connection, processes
+
+
+def test_departed_socket_requires_actual_backend_disappearance(monkeypatch):
+    connection, processes = capture_fixture(monkeypatch, [[row()], []])
+    processes.rows = []
+    evidence = clients.capture(connection, processes, {11: (200, 10, 100)})
+    assert evidence['clients'] == {}
+    assert evidence['sampling']['deferred'] == 1
+    assert not any('pg_cancel_backend' in c.args[0] for c in connection.execute.call_args_list)
+
+
+def test_arriving_connection_is_proven_without_recapturing_stable_client(monkeypatch):
+    other = {**row(), 'pid': 21, 'client_port': 43211}
+    connection, processes = capture_fixture(monkeypatch, [[row()], [row(), other], [row(), other]])
+    processes.stamps[21] = 450
+    processes.rows.append(('127.0.0.1', 43211, '127.0.0.1', 5432, 12, 5))
+    ancestry = clients.ancestry
+    seen = []
+    def observe(*args):
+        seen.append(args[1])
+        return ancestry(*args)
+    monkeypatch.setattr(clients, 'ancestry', observe)
+    evidence = clients.capture(connection, processes, {11: (200, 10, 100)})
+    assert set(evidence['clients']) == {20, 21}
+    assert evidence['sampling']['rounds'] == 2
+    assert seen == [12, 12]  # One proof for each connection, not a global restart.
+
+
+def test_new_unknown_connection_is_not_hidden_by_capture_churn(monkeypatch):
+    other = {**row(), 'pid': 21, 'client_port': 43211}
+    connection, processes = capture_fixture(monkeypatch, [[row()], [row(), other], [row(), other]])
+    processes.rows.append(('127.0.0.1', 43211, '127.0.0.1', 5432, 99, 5))
+    processes.stamps[99] = 350
+    with pytest.raises(ValueError, match='not a proven owned'):
+        clients.capture(connection, processes, {11: (200, 10, 100)})
+    assert not any('pg_cancel_backend' in c.args[0] for c in connection.execute.call_args_list)
+
+
+@pytest.mark.parametrize('case', ['missing', 'closing', 'continuous_arrival'])
+def test_unproven_persistent_or_never_converging_clients_refuse_with_bound(monkeypatch, case):
+    connection, processes = capture_fixture(monkeypatch, [[row()]])
+    if case == 'missing': processes.rows = []
+    if case == 'closing': processes.rows = [(*processes.rows[0][:5], 8)]
+    if case == 'continuous_arrival':
+        calls = []
+        def changing(_):
+            calls.append(1)
+            pid = 20 + len(calls)
+            processes.stamps[pid] = 400
+            return [{**row(), 'pid': pid}]
+        monkeypatch.setattr(clients, 'clients', changing)
+    monkeypatch.setattr(clients.time, 'monotonic', lambda: 0)  # Round cap also bounds a frozen clock.
+    with pytest.raises(ValueError, match='bounded capture'):
+        clients.capture(connection, processes, {11: (200, 10, 100)})
+    if case == 'continuous_arrival': assert len(calls) == 128
+
+
+@pytest.mark.parametrize('case', ['duplicate', 'permission', 'recycled_parent'])
+def test_still_present_ambiguity_or_bad_identity_is_not_retried(monkeypatch, case):
+    connection, processes = capture_fixture(monkeypatch, [[row()]])
+    if case == 'duplicate': processes.rows.append((*processes.rows[0][:4], 99, 5))
+    if case == 'permission':
+        def denied(*_): raise PermissionError('denied')
+        processes.pin = denied
+    if case == 'recycled_parent': processes.stamps[11] = 500
+    monkeypatch.setattr(clients.time, 'sleep', lambda _: pytest.fail('must refuse immediately'))
+    with pytest.raises((ValueError, PermissionError)):
+        clients.capture(connection, processes, {11: (200, 10, 100)})
+
+
+def test_pin_failure_only_discarded_after_exact_backend_disappears(monkeypatch):
+    connection, processes = capture_fixture(monkeypatch, [[row()], [], []])
+    def vanished(*_): raise OSError('process exited')
+    processes.pin = vanished
+    evidence = clients.capture(connection, processes, {11: (200, 10, 100)})
+    assert evidence['clients'] == {}
+    assert evidence['sampling']['departed'] == 1
+
+
+def test_tcp_change_cannot_commit_partial_identity_proof(monkeypatch):
+    connection, processes = capture_fixture(monkeypatch, [[row()]])
+    rows = processes.rows
+    samples = iter([rows, [], [], []])
+    processes.tcp = lambda: next(samples, [])
+    clock = iter([0, 1, 6])
+    monkeypatch.setattr(clients.time, 'monotonic', lambda: next(clock))
+    with pytest.raises(ValueError, match='bounded capture'):
+        clients.capture(connection, processes, {11: (200, 10, 100)})
+
+
+def test_missing_socket_must_later_obtain_full_proof(monkeypatch):
+    connection, processes = capture_fixture(monkeypatch, [[row()]])
+    calls = iter([[], [], processes.rows, processes.rows])
+    processes.tcp = lambda: next(calls)
+    evidence = clients.capture(connection, processes, {11: (200, 10, 100)})
+    assert evidence['sampling']['rounds'] == 2
+    assert evidence['clients'][20]['chain'] == [(12, 300), (11, 200), (10, 100)]
+
+
+def test_same_pid_changed_identity_never_inherits_prior_ownership(monkeypatch):
+    changed = {**row(), 'backend_start': 'another generation', 'client_port': 43211}
+    connection, processes = capture_fixture(monkeypatch, [[row()], [changed], [changed]])
+    processes.rows.append(('127.0.0.1', 43211, '127.0.0.1', 5432, 99, 5))
+    processes.stamps[99] = 350
+    with pytest.raises(ValueError, match='not a proven owned'):
+        clients.capture(connection, processes, {11: (200, 10, 100)})
+
+
+def test_foreign_database_client_at_capture_end_still_refuses(monkeypatch):
+    connection, processes = capture_fixture(monkeypatch, [[row()]])
+    checks = []
+    def foreign(_):
+        checks.append(1)
+        if len(checks) > 1: raise RuntimeError('Other database')
+    monkeypatch.setattr(clients, 'assert_no_foreign_clients', foreign)
+    with pytest.raises(RuntimeError, match='Other database'):
+        clients.capture(connection, processes, {11: (200, 10, 100)})
+
+
+def test_context_releases_all_pins_when_capture_fails(monkeypatch):
+    processes = Mock()
+    api = Mock(COMPONENTS=[])
+    monkeypatch.setattr(clients.sys, 'platform', 'win32')
+    monkeypatch.setattr(clients, 'WindowsProcesses', lambda: processes)
+    from scripts import tfi_release_provider_services as providers
+    monkeypatch.setattr(providers, 'owned_services', lambda *_: {})
+    def failed(*_): raise ValueError('bounded capture')
+    monkeypatch.setattr(clients, 'capture', failed)
+    with pytest.raises(ValueError, match='bounded capture'):
+        with clients.owned_clients(api, [{'target': {'windows_service_mode': 'user'}}], [Mock()]):
+            pytest.fail('must not yield partial ownership')
+    processes.close.assert_called_once_with()
