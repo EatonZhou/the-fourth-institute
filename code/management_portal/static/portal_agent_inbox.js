@@ -211,11 +211,14 @@
       || (state.activePanel === "assistant" && assistantInteractions.size));
     const assistantOpen = expanded && state.activePanel === "assistant" && !!state.assistant;
     const mailboxOpen = expanded && !assistantOpen;
+    const mobileOverlayOpen = expanded && usesTouchExpansion();
     const todo = state.filter === "todo";
     store()?.setInboxOpen?.(mailboxOpen && !todo);
     todoPanel?.setView({ visible: mailboxOpen, active: mailboxOpen && todo });
     root.dataset.expanded = expanded ? "true" : "false";
     root.dataset.activePanel = state.activePanel;
+    root.dataset.mobileOverlay = mobileOverlayOpen ? "true" : "false";
+    document.body?.classList.toggle("portalAgentInboxOverlayOpen", mobileOverlayOpen);
     root.querySelector("[data-agent-conversation-trigger]")?.setAttribute("aria-expanded", String(mailboxOpen));
     root.querySelector("[data-agent-conversation-trigger]")?.setAttribute("aria-label", window.PortalI18n.t(mailboxOpen ? "收起我的 Mailbox" : "展开我的 Mailbox"));
     root.querySelector("[data-personal-assistant-trigger]")?.setAttribute("aria-expanded", String(assistantOpen));
@@ -223,6 +226,11 @@
     root.querySelector(".portalPersonalAssistantPanel").inert = !assistantOpen;
     if (assistantChat && assistantChat.presented !== assistantOpen) assistantChat.setPresented(assistantOpen);
     root.querySelector(".portalAgentInboxPanel:not(.portalPersonalAssistantPanel)").inert = !mailboxOpen;
+    const mobileClose = root.querySelector("[data-agent-inbox-mobile-close]");
+    if (mobileClose) {
+      mobileClose.hidden = !mobileOverlayOpen;
+      mobileClose.setAttribute("aria-label", window.PortalI18n.t(assistantOpen ? "关闭个人助手并返回当前页面" : "关闭 Mailbox 并返回当前页面"));
+    }
     const assistantUnread = snapshot.entries.some(entry => entry.resident_id === state.assistant?.resident_id && entry.unread);
     root.querySelector("[data-personal-assistant-unread]").hidden = !assistantUnread;
     if (assistantOpen) void mountAssistantChat();
@@ -726,7 +734,8 @@
       <div class="portalAgentInboxError" data-agent-conversation-error role="status" hidden></div>
       <div class="portalAgentInboxList" data-agent-conversation-list><div class="portalAgentInboxEmpty">正在读取 Mailbox…</div></div></section>
       <button class="portalAgentInboxTrigger portalPersonalAssistantTrigger" type="button" data-personal-assistant-trigger aria-label="展开个人助手" aria-expanded="false" data-portal-icon="octopus" hidden><span class="portalAgentInboxUnreadDot" data-personal-assistant-unread aria-label="未读" hidden></span></button>
-      <section class="portalAgentInboxPanel portalPersonalAssistantPanel" aria-label="个人助手" inert><div data-personal-assistant-chat></div></section>`;
+      <section class="portalAgentInboxPanel portalPersonalAssistantPanel" aria-label="个人助手" inert><div data-personal-assistant-chat></div></section>
+      <button class="portalAgentInboxMobileClose" type="button" data-agent-inbox-mobile-close data-portal-icon="close" aria-label="关闭并返回当前页面" hidden><span>关闭</span></button>`;
     document.body.appendChild(root);
     todoPanel = window.PortalMailboxTodos.create(root.querySelector("[data-mailbox-todos]"), { onChange: () => updateChrome() });
     document.body.classList.add("portalAgentInboxMounted");
@@ -846,6 +855,16 @@
       }, 0);
     }, { signal });
     root.addEventListener("click", event => {
+      const mobileClose = event.target.closest("[data-agent-inbox-mobile-close]");
+      if (mobileClose) {
+        state.touchExpanded = false;
+        state.hovered = false;
+        state.focused = false;
+        closePinMenu();
+        mobileClose.blur();
+        updateChrome();
+        return;
+      }
       const trigger = event.target.closest(".portalAgentInboxTrigger");
       if (trigger) {
         if (performance.now() < state.suppressTriggerClickUntil) {
@@ -939,6 +958,7 @@
     root?.remove();
     root = null;
     document.body?.classList.remove("portalAgentInboxMounted");
+    document.body?.classList.remove("portalAgentInboxOverlayOpen");
   }
 
   window.PortalAgentInbox = Object.freeze({

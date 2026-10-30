@@ -3630,6 +3630,10 @@ button.portalFileLink {
   backdrop-filter: blur(12px);
 }
 
+.portalAgentInboxMobileClose {
+  display: none;
+}
+
 .portalAgentInbox[data-panel-placement="below"] .portalAgentInboxPanel {
   top: 0;
   bottom: auto;
@@ -4193,6 +4197,11 @@ button.portalFileLink {
 }
 
 @media (max-width: 640px) {
+  body.portalAgentInboxOverlayOpen {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
   .portalAgentInbox {
     width: 38px;
     height: 40px;
@@ -4213,20 +4222,95 @@ button.portalFileLink {
 
   .portalAgentInboxPanel {
     position: fixed;
-    top: auto !important;
+    z-index: 1;
+    top: max(8px, env(safe-area-inset-top)) !important;
     right: max(8px, env(safe-area-inset-right));
-    bottom: calc(58px + env(safe-area-inset-bottom));
+    bottom: max(8px, env(safe-area-inset-bottom));
     left: max(8px, env(safe-area-inset-left));
     width: auto;
-    height: min(620px, calc(100dvh - 132px - env(safe-area-inset-bottom)));
-    max-height: calc(100dvh - 132px - env(safe-area-inset-bottom));
+    height: auto;
+    max-height: none;
+    grid-template-rows: 52px 44px auto minmax(0, 1fr) auto;
     border-radius: 12px;
-    transform: translateY(10px);
+    background: var(--panel, #fff);
+    backdrop-filter: none;
+    transform: translateY(12px) scale(.985);
   }
 
   .portalAgentInbox[data-expanded="true"][data-active-panel="mailbox"] .portalAgentInboxPanel:not(.portalPersonalAssistantPanel),
   .portalAgentInbox[data-expanded="true"][data-active-panel="assistant"] .portalPersonalAssistantPanel {
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
+  }
+
+  .portalAgentInbox[data-mobile-overlay="true"] > .portalAgentInboxTrigger {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .portalAgentInboxMobileClose {
+    appearance: none;
+    position: fixed;
+    z-index: 2;
+    top: max(14px, calc(env(safe-area-inset-top) + 6px));
+    right: max(14px, calc(env(safe-area-inset-right) + 6px));
+    display: inline-flex;
+    width: 64px;
+    height: 40px;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 0;
+    border: 1px solid color-mix(in srgb, var(--border, #cbd5e1) 88%, transparent);
+    border-radius: 9px;
+    color: var(--text, #111827);
+    background: color-mix(in srgb, var(--panel, #fff) 96%, transparent);
+    box-shadow: 0 4px 14px color-mix(in srgb, #0b1020 18%, transparent);
+    pointer-events: auto;
+  }
+
+  .portalAgentInboxMobileClose[hidden] {
+    display: none;
+  }
+
+  .portalAgentInboxMobileClose .portalIcon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .portalAgentInboxMobileClose > span {
+    font-size: 12px;
+    font-weight: 720;
+  }
+
+  .portalAgentInboxPanel:not(.portalPersonalAssistantPanel) > header {
+    padding-right: 72px;
+  }
+
+  .portalAgentInboxHeaderSummary {
+    display: none;
+  }
+
+  .portalAgentInboxPanel > header button {
+    width: 40px;
+    height: 40px;
+  }
+
+  .portalAgentInboxPanel > header .portalAgentInboxHeaderAction {
+    width: auto;
+    height: 36px;
+    min-height: 36px;
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+
+  .portalAgentInboxFilters button {
+    min-height: 36px;
+  }
+
+  .portalAgentInboxList {
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
   }
 }
 
