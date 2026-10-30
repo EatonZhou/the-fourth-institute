@@ -257,11 +257,37 @@ class ApplicationUpgrade:
             raise ValueError('Unexpected retained work verification result; service admission refused')
 
     def resume(self, journal, records, outcome):
+        if journal.get('database_admission') and not journal.get('admission_restored'):
+            self.restore_admission_in_runtime(records, journal['database_admission'])
+            self.save(journal, journal['phase'], admission_restored=True)
         # Once a consumer can see retained inputs, a new business write is
         # possible. Never restore a stale cold database after this boundary.
         self.save(journal, 'resuming', resume_states=records, resume_outcome=outcome)
         self.start(records)
         self.save(journal, outcome)
+
+    def restore_admission_in_runtime(self, records, entries):
+        # A pre-backup crash can leave database admission closed. Recovery
+        # still runs in base Python, so the unchanged target runtime performs
+        # this catalog-only operation before any service admission.
+        control = self.api.service_controller()
+        for state in records:
+            control.start(self.api.unit_name(state['target'], 'postgres'))
+        target = records[0]['target']
+        code = Path(__file__).resolve().parents[1]
+        env = self.api.clean_environment(target)
+        env.pop('PORTAL_DATABASE_NAMESPACE', None)
+        env['PYTHONPATH'] = str(code)
+        result = subprocess.run(
+            [self.api.runtime_python(target), '-B', '-m', 'scripts.tfi_application_admission'],
+            input=json.dumps({'records': records, 'entries': entries}), env=env, cwd=code,
+            text=True, encoding='utf-8', capture_output=True, timeout=120)
+        if result.returncode:
+            ensure_private_directory(self.control)
+            atomic_write_private_bytes(self.control / 'admission-error.log', result.stderr.encode('utf-8'))
+            raise ValueError('Database admission recovery failed; inspect private admission-error.log')
+        if json.loads(result.stdout) != {'status': 'restored', 'instances': len(records)}:
+            raise ValueError('Unexpected database admission recovery result; service admission refused')
 
     def detach_codex(self, records):
         """Retire stopped account definitions before changing the runtime pin.
@@ -373,7 +399,8 @@ class ApplicationUpgrade:
                 self.resume(journal, journal['resume_states'], journal['resume_outcome'])
                 return {'status': journal['resume_outcome']}
             if journal['phase'] in {'quiescing', 'backing_up'}:
-                # No code or database mutation is allowed before backup_ready.
+                # Business rows/code are unchanged; a closed connection gate
+                # must be restored from its journal before starting services.
                 self.resume(journal, current, 'prebackup_failed')
                 return {'status': 'prebackup_failed'}
             return self.restore(journal)
@@ -393,13 +420,20 @@ class ApplicationUpgrade:
             if states(self.application) != records or pending(self.application):
                 raise ValueError('Installation changed while acquiring upgrade locks')
             from scripts import tfi_application_work as work
+            from scripts import tfi_application_admission as admission
             try:
                 with barrier.freeze(self.api, records) as connections:
                     proofs = [work.inspect(self.api, state['target'], connection=connection)
                               for state, connection in zip(records, connections, strict=True)]
-                    # Refusal above occurs before any service stop or journal.
+                    # Close connection admission before capturing ownership:
+                    # serial service shutdown must not continually introduce
+                    # new clients after the captured set. Startup races remain
+                    # subject to the unchanged unknown-client guard.
+                    entries = admission.prepare(self.api, records, connections)
+                    self.save(journal, 'quiescing', waiting_work=proofs,
+                              database_admission=entries, admission_restored=False)
+                    admission.close(self.api, records, entries)
                     with clients.owned_clients(self.api, records, connections) as clear_disconnected:
-                        self.save(journal, 'quiescing', waiting_work=proofs)
                         self.stop(records, keep_database=True)
                         cleaned = clear_disconnected() if clear_disconnected else []
                         for state, proof, connection in zip(records, proofs, connections, strict=True):
@@ -407,13 +441,29 @@ class ApplicationUpgrade:
                             if work.inspect(self.api, state['target'], connection=connection) != proof:
                                 raise ValueError('Waiting work changed during service shutdown')
                         self.save(journal, 'quiescing', disconnected_sql_waits=cleaned)
+                    admission.restore(self.api, records, entries)
+                    # Maintenance connections have closed; all consumers are
+                    # still stopped and every write barrier remains held.
+                    for state, proof, connection in zip(records, proofs, connections, strict=True):
+                        barrier.assert_no_clients(connection)
+                        if work.inspect(self.api, state['target'], connection=connection) != proof:
+                            raise ValueError('Waiting work changed while restoring database admission')
+                    self.save(journal, 'quiescing', admission_restored=True)
                     self.stop(records)
                 self.save(journal, 'backing_up')
                 inventory = snapshot.create_backup(self.application, parent / 'backup')
                 self.api.write_json(parent / 'inventory.json', inventory)
                 self.save(journal, 'backup_ready')
-            except Exception:
+            except Exception as exc:
                 if journal.get('phase') in {'quiescing', 'backing_up'}:
+                    if isinstance(exc, clients.ClientProofError):
+                        # Preserve the refusing predicates before automatic
+                        # recovery changes the processes and database sessions.
+                        try:
+                            self.save(journal, journal['phase'], client_failure=exc.diagnostic)
+                        finally:
+                            self.resume(journal, records, 'prebackup_failed')
+                        raise
                     self.resume(journal, records, 'prebackup_failed')
                 raise
             try:

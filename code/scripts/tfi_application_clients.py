@@ -275,22 +275,85 @@ def lock_requests(connection, pid, blocker):
     return [f'{db}:{relation}:{mode}' for db, relation, mode, _ in rows]
 
 
+class ClientProofError(RuntimeError):
+    """A non-sensitive, per-predicate refusal receipt; never an authorization."""
+    def __init__(self, diagnostic):
+        self.diagnostic = diagnostic
+        reasons = sorted({reason for item in diagnostic['clients'] for reason in item['reasons']})
+        super().__init__('Residual database client is not a proven disconnected service wait; '
+                         + ','.join(reasons))
+
+
+def residual_checks(row, processes, known, barrier_pid, tcp):
+    """No PIDs, addresses, names, SQL text, account values or timestamp values."""
+    checks = {'captured': known is not None,
+        'identity_matches': bool(known and all(row[k] == known['identity'][k] for k in IDENTITY)),
+        'backend_alive': None, 'client_chain_exited': None, 'tcp_absent': None,
+        'active': row['state'] == 'active', 'lock_wait': row['wait_event_type'] == 'Lock',
+        'relation_wait': row['wait_event'] == 'relation',
+        'query_timestamp_present': bool(row['query_start']), 'transaction_timestamp_present': bool(row['xact_start']),
+        'sole_barrier': row['blockers'] == [barrier_pid]}
+    observations = {name: ('not_checked' if value is None else 'observed')
+                    for name, value in checks.items()}
+    if known and checks['identity_matches']:
+        try:
+            checks['backend_alive'] = not processes.exited(row['pid'])
+            observations['backend_alive'] = 'observed'
+        except (OSError, ValueError, KeyError):
+            observations['backend_alive'] = 'read_error'
+        try:
+            checks['client_chain_exited'] = all(processes.exited(pid) for pid, _ in known['chain'])
+            observations['client_chain_exited'] = 'observed'
+        except (OSError, ValueError, KeyError):
+            observations['client_chain_exited'] = 'read_error'
+        if tcp is not None:
+            checks['tcp_absent'] = not any(r[:4] == known['endpoint'] for r in tcp)
+            observations['tcp_absent'] = 'observed'
+        else:
+            observations['tcp_absent'] = 'read_error'
+    return checks, observations
+
+
 def plan_disconnected(connection, processes, evidence):
     """Validate all candidates without issuing any signal."""
     assert_no_foreign_clients(connection)
     residual = clients(connection)
     locks = {}
-    for row in residual:
+    try:
+        tcp = processes.tcp() if residual else []
+    except (OSError, ValueError):
+        tcp = None
+    diagnostics = []
+    for ordinal, row in enumerate(residual, 1):
         known = evidence['clients'].get(row['pid'])
-        if (known is None or any(row[k] != known['identity'][k] for k in IDENTITY)
-                or processes.exited(row['pid'])
-                or not all(processes.exited(pid) for pid, _ in known['chain'])
-                or any(r[:4] == known['endpoint'] for r in processes.tcp())
-                or row['state'] != 'active' or row['wait_event_type'] != 'Lock'
-                or row['wait_event'] != 'relation' or not row['query_start'] or not row['xact_start']
-                or row['blockers'] != [evidence['barrier_pid']]):
-            raise RuntimeError('Residual database client is not a proven disconnected service wait')
-        locks[row['pid']] = lock_requests(connection, row['pid'], evidence['barrier_pid'])
+        checks, observations = residual_checks(row, processes, known, evidence['barrier_pid'], tcp)
+        observations['barrier_relation_locks'] = 'not_checked'
+        if all(value is True for value in checks.values()):
+            try:
+                locks[row['pid']] = lock_requests(connection, row['pid'], evidence['barrier_pid'])
+                checks['barrier_relation_locks'] = True
+                observations['barrier_relation_locks'] = 'observed'
+            except RuntimeError:
+                checks['barrier_relation_locks'] = False
+                observations['barrier_relation_locks'] = 'observed'
+            except Exception:
+                checks['barrier_relation_locks'] = None
+                observations['barrier_relation_locks'] = 'read_error'
+        diagnostics.append({'ordinal': ordinal, 'checks': checks, 'observations': observations,
+                            'reasons': [name for name, passed in checks.items() if passed is not True]})
+    if any(item['reasons'] for item in diagnostics):
+        # Observe disappearance separately; it never turns a failed check into
+        # cancellation authority. The receipt describes the refusing snapshot.
+        try:
+            fresh = {r['pid']: {k: r[k] for k in IDENTITY} for r in clients(connection)}
+        except Exception:
+            fresh = None
+        for row, item in zip(residual, diagnostics, strict=True):
+            item['fresh_identity_present'] = (None if fresh is None else
+                fresh.get(row['pid']) == {k: row[k] for k in IDENTITY})
+            item['fresh_observation'] = 'read_error' if fresh is None else 'observed_after_refusal'
+        raise ClientProofError({'schema': 'tfi.application-client-proof.v1', 'stage': 'plan_disconnected',
+            'captured_count': len(evidence['clients']), 'observed_count': len(residual), 'clients': diagnostics})
     return residual, locks
 
 
@@ -340,9 +403,25 @@ def clear_disconnected(connection, processes, evidence, plan=None):
 def clear_all(connections, processes, evidence):
     # An unknown client in a later instance must refuse before any instance is
     # signalled. Each action then revalidates; final cluster-zero guards remain.
-    plans = [plan_disconnected(c, processes, e) for c, e in zip(connections, evidence, strict=True)]
-    return [clear_disconnected(c, processes, e, p)
-            for c, e, p in zip(connections, evidence, plans, strict=True)]
+    plans = []
+    for index, (c, e) in enumerate(zip(connections, evidence, strict=True)):
+        try:
+            plans.append(plan_disconnected(c, processes, e))
+        except ClientProofError as exc:
+            exc.diagnostic.update(stage='all_instance_plan', instance_ordinal=index + 1,
+                instances=len(connections), validated_instances=index, signals_sent=0)
+            raise
+    results = []
+    for index, (c, e, p) in enumerate(zip(connections, evidence, plans, strict=True)):
+        try:
+            results.append(clear_disconnected(c, processes, e, p))
+        except ClientProofError as exc:
+            # This error is raised by the pre-action revalidation, before any
+            # signal in this instance. Earlier instances may have sent signals.
+            exc.diagnostic.update(stage='action_revalidation', instance_ordinal=index + 1,
+                instances=len(connections), signals_sent=sum(results))
+            raise
+    return results
 
 
 @contextmanager

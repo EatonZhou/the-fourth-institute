@@ -89,6 +89,11 @@ def transaction(application, tmp_path, monkeypatch):
     monkeypatch.setattr(upgrade.barrier, 'assert_no_clients', Mock())
     monkeypatch.setattr(owner, 'verify_work_in_runtime',
                         lambda records, expected: upgrade.barrier.verify(installer, records, expected))
+    from scripts import tfi_application_admission as admission
+    monkeypatch.setattr(admission, 'prepare', Mock(return_value=[{'test_gate': True}]))
+    monkeypatch.setattr(admission, 'close', Mock())
+    monkeypatch.setattr(admission, 'restore', Mock())
+    monkeypatch.setattr(owner, 'restore_admission_in_runtime', Mock())
     return owner, path, state
 
 
@@ -139,7 +144,7 @@ def test_retained_work_mismatch_rolls_back_before_admission(transaction, monkeyp
     from scripts import tfi_application_work as work
     monkeypatch.setattr(work, 'inspect', Mock(side_effect=[
         {'retained': 'original'}, {'retained': 'original'},
-        {'retained': 'changed'}, {'retained': 'original'}]))
+        {'retained': 'original'}, {'retained': 'changed'}, {'retained': 'original'}]))
     with pytest.raises(ValueError, match='Retained waiting work changed'):
         owner.upgrade(path)
     assert (owner.application / 'code/version').read_text() == 'original'
@@ -174,6 +179,34 @@ def test_unknown_database_client_restores_service_availability_without_backup(tr
     assert not (owner.paths(journal) / 'backup').exists()
     assert (owner.application / 'code/version').read_text() == 'original'
     owner.start.assert_called_once()
+
+
+@pytest.mark.parametrize('write_fails', [False, True])
+def test_client_refusal_is_sealed_before_service_recovery_even_if_diagnostic_write_fails(transaction, monkeypatch, write_fails):
+    owner, path, _ = transaction
+    report = {'schema': 'tfi.application-client-proof.v1', 'stage': 'plan_disconnected',
+              'clients': [{'ordinal': 1, 'reasons': ['captured'], 'checks': {'captured': False}}]}
+    error = upgrade.clients.ClientProofError(report)
+    clear = Mock(side_effect=error)
+    monkeypatch.setattr(upgrade.clients, 'owned_clients', lambda *_: nullcontext(clear))
+    original_save = owner.save
+    def save(*args, **kwargs):
+        if write_fails and 'client_failure' in kwargs:
+            raise OSError('diagnostic disk failure')
+        return original_save(*args, **kwargs)
+    monkeypatch.setattr(owner, 'save', save)
+    def check_on_restart(*_):
+        journal = installer.read_json(owner.journal_path)
+        assert journal['phase'] == 'resuming'
+        if not write_fails: assert journal['client_failure'] == report
+    owner.start.side_effect = check_on_restart
+    with pytest.raises(OSError if write_fails else upgrade.clients.ClientProofError):
+        owner.upgrade(path)
+    journal = installer.read_json(owner.journal_path)
+    assert journal['phase'] == 'prebackup_failed'
+    assert not (owner.paths(journal) / 'backup').exists()
+    owner.start.assert_called_once()
+    owner.schema.assert_not_called()
 
 
 def test_work_changed_during_shutdown_refuses_before_backup(transaction, monkeypatch):
@@ -338,3 +371,90 @@ def test_live_inventory_does_not_read_provider_locked_bytes(application, monkeyp
     assert metadata['instance/one/data/share/alias']['link'] == 'instance/one/data/share/content-directory'
     with pytest.raises(PermissionError):
         snapshot.inventory(app)
+
+
+def test_gate_intent_is_durable_before_closing_and_restored_before_snapshot(transaction, monkeypatch):
+    from scripts import tfi_application_admission as admission
+    owner, path, _ = transaction
+    order = []
+    def close(*_):
+        saved = installer.read_json(owner.journal_path)
+        assert saved['phase'] == 'quiescing'
+        assert saved['database_admission'] and saved['admission_restored'] is False
+        order.append('close')
+    def capture(*_):
+        assert order == ['close']
+        order.append('capture')
+        return nullcontext(None)
+    def restore(*_):
+        owner.stop.assert_called_once()
+        assert order == ['close', 'capture']
+        order.append('restore')
+    real_backup = snapshot.create_backup
+    def backup(*args, **kwargs):
+        assert order == ['close', 'capture', 'restore']
+        assert installer.read_json(owner.journal_path)['admission_restored'] is True
+        return real_backup(*args, **kwargs)
+    monkeypatch.setattr(admission, 'close', close)
+    monkeypatch.setattr(admission, 'restore', restore)
+    monkeypatch.setattr(upgrade.clients, 'owned_clients', capture)
+    monkeypatch.setattr(snapshot, 'create_backup', backup)
+    owner.upgrade(path)
+    assert installer.read_json(owner.journal_path)['phase'] == 'complete'
+
+
+def test_interrupted_gate_is_reopened_before_recovery_admits_services(transaction, monkeypatch):
+    from scripts import tfi_application_admission as admission
+    owner, path, _ = transaction
+    monkeypatch.setattr(admission, 'close', Mock(side_effect=SystemExit('crashed after catalog commit')))
+    with pytest.raises(SystemExit):
+        owner.upgrade(path)
+    journal = installer.read_json(owner.journal_path)
+    assert journal['phase'] == 'quiescing' and journal['admission_restored'] is False
+    assert not (owner.paths(journal) / 'backup').exists()
+    owner.start.assert_not_called()
+    owner.restore_admission_in_runtime.side_effect = ValueError('cannot restore gate')
+    with pytest.raises(ValueError, match='cannot restore gate'):
+        owner.recover()
+    owner.start.assert_not_called()
+    assert installer.read_json(owner.journal_path)['phase'] == 'quiescing'
+    owner.restore_admission_in_runtime.side_effect = None
+    def start(*_):
+        assert installer.read_json(owner.journal_path)['admission_restored'] is True
+    owner.start.side_effect = start
+    assert owner.recover()['status'] == 'prebackup_failed'
+    owner.start.assert_called_once()
+
+
+def test_gate_close_failure_restores_partial_gate_without_backup(transaction, monkeypatch):
+    from scripts import tfi_application_admission as admission
+    owner, path, _ = transaction
+    monkeypatch.setattr(admission, 'close', Mock(side_effect=ValueError('partial gate failure')))
+    with pytest.raises(ValueError, match='partial gate failure'):
+        owner.upgrade(path)
+    owner.stop.assert_not_called()
+    owner.restore_admission_in_runtime.assert_called_once()
+    owner.start.assert_called_once()
+    journal = installer.read_json(owner.journal_path)
+    assert journal['phase'] == 'prebackup_failed' and journal['admission_restored']
+    assert not (owner.paths(journal) / 'backup').exists()
+
+
+@pytest.mark.parametrize('result', [
+    {'returncode': 1, 'stdout': '', 'stderr': 'child refused'},
+    {'returncode': 0, 'stdout': '{"status":"restored","instances":0}', 'stderr': ''},
+    {'returncode': 0, 'stdout': 'partial-json', 'stderr': ''},
+])
+def test_admission_recovery_child_must_return_complete_matching_receipt(transaction, monkeypatch, result):
+    owner, _, state = transaction
+    monkeypatch.setattr(installer, 'runtime_python', lambda _: 'restored-runtime-python')
+    monkeypatch.setattr(installer, 'clean_environment', lambda _: {'PORTAL_DATABASE_NAMESPACE': 'source'})
+    def run(command, **kwargs):
+        assert command == ['restored-runtime-python', '-B', '-m', 'scripts.tfi_application_admission']
+        assert 'PORTAL_DATABASE_NAMESPACE' not in kwargs['env']
+        assert json.loads(kwargs['input']) == {'records': [state], 'entries': [{'gate': 'test'}]}
+        return Mock(**result)
+    monkeypatch.setattr(upgrade.subprocess, 'run', run)
+    with pytest.raises(ValueError):
+        upgrade.ApplicationUpgrade.restore_admission_in_runtime(owner, [state], [{'gate': 'test'}])
+    owner.start.assert_not_called()

@@ -1,5 +1,6 @@
 """Only a disconnected, pinned service SQL wait may receive a cancel signal."""
 import copy
+import json
 import socket
 import struct
 from unittest.mock import Mock
@@ -120,14 +121,70 @@ def test_unknown_among_known_clients_prevents_all_signals(monkeypatch):
     connection.execute.assert_not_called()
 
 
+def test_refusal_receipt_preserves_exact_failed_checks_without_identity_values(monkeypatch):
+    connection, processes, current, evidence = captured(monkeypatch)
+    current[0]['state'] = 'idle'
+    processes.rows = Processes().rows
+    with pytest.raises(clients.ClientProofError) as caught:
+        clients.plan_disconnected(connection, processes, evidence)
+    receipt = caught.value.diagnostic
+    assert receipt['clients'][0]['reasons'] == ['tcp_absent', 'active']
+    assert receipt['clients'][0]['fresh_identity_present'] is True
+    text = json.dumps(receipt) + str(caught.value)
+    for private in ('127.0.0.1', '43210', row()['backend_start'], row()['query_start']):
+        assert private not in text
+    connection.execute.assert_not_called()
+
+
+def test_process_read_error_is_unknown_not_exited_and_never_authorizes_signal(monkeypatch):
+    connection, processes, current, evidence = captured(monkeypatch)
+    def denied(_): raise PermissionError('private system details')
+    processes.exited = denied
+    with pytest.raises(clients.ClientProofError) as caught:
+        clients.plan_disconnected(connection, processes, evidence)
+    checks = caught.value.diagnostic['clients'][0]['checks']
+    assert checks['backend_alive'] is None and checks['client_chain_exited'] is None
+    assert caught.value.diagnostic['clients'][0]['observations']['client_chain_exited'] == 'read_error'
+    assert 'private system details' not in json.dumps(caught.value.diagnostic)
+    connection.execute.assert_not_called()
+
+
+def test_diagnostic_distinguishes_disappeared_identity_without_signalling(monkeypatch):
+    connection, processes, current, evidence = captured(monkeypatch)
+    processes.dead.add(20)
+    snapshots = iter([copy.deepcopy(current), []])
+    monkeypatch.setattr(clients, 'clients', lambda _: next(snapshots))
+    with pytest.raises(clients.ClientProofError) as caught:
+        clients.plan_disconnected(connection, processes, evidence)
+    assert caught.value.diagnostic['clients'][0]['reasons'] == ['backend_alive']
+    assert caught.value.diagnostic['clients'][0]['fresh_identity_present'] is False
+    connection.execute.assert_not_called()
+
+
 def test_second_instance_unknown_prevents_first_instance_signals(monkeypatch):
     connection, processes, current, evidence = captured(monkeypatch)
     other = Mock()
     monkeypatch.setattr(clients, 'clients', lambda c: copy.deepcopy(current if c is connection else [{**row(), 'pid':21}]))
-    with pytest.raises(RuntimeError, match='not a proven'):
+    with pytest.raises(clients.ClientProofError, match='not a proven') as caught:
         clients.clear_all([connection, other], processes, [evidence, evidence])
+    report = caught.value.diagnostic
+    assert report['stage'] == 'all_instance_plan' and report['instance_ordinal'] == 2
+    assert report['signals_sent'] == 0
+    assert report['clients'][0]['observations']['client_chain_exited'] == 'not_checked'
     connection.execute.assert_not_called()
     other.execute.assert_not_called()
+
+
+def test_lock_read_failure_remains_a_private_free_refusal(monkeypatch):
+    connection, processes, current, evidence = captured(monkeypatch)
+    monkeypatch.setattr(clients, 'lock_requests', Mock(side_effect=ValueError('private DB diagnostics')))
+    with pytest.raises(clients.ClientProofError) as caught:
+        clients.plan_disconnected(connection, processes, evidence)
+    report = caught.value.diagnostic
+    assert report['clients'][0]['checks']['barrier_relation_locks'] is None
+    assert report['clients'][0]['observations']['barrier_relation_locks'] == 'read_error'
+    assert 'private DB diagnostics' not in json.dumps(report)
+    connection.execute.assert_not_called()
 
 
 def test_query_change_after_global_validation_is_not_cancelled(monkeypatch):
