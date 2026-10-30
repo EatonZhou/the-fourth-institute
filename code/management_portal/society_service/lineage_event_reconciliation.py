@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import logging
 from typing import Any, Callable
 
 from management_common.limit_contract import limit_reached, normalize_optional_limit
@@ -31,6 +32,8 @@ from .lineage_event_conditions import (
     _resident_context_pressure_event_sources,
 )
 from .lineage_event_observers import OBSERVERS, Facts, Scan, Source
+
+LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -325,6 +328,8 @@ def _with_facade_activity(snapshot: dict[str, Any], activity_sources: list[dict[
         try:
             activity = family_facade.relay_activity(subject_id)
         except Exception:  # noqa: BLE001 - the facade's own activity stays as read
+            LOGGER.warning("Relay activity of facade %s unreadable; its own activity stays as read", subject_id,
+                           exc_info=True)
             continue
         if activity is not None:
             residents[subject_id] = {**dict(residents.get(subject_id) or {}), **activity}

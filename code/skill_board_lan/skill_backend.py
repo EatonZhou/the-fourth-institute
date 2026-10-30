@@ -80,13 +80,13 @@ def _parse_front_matter(md_text: str) -> tuple[dict[str, str], str]:
 def _read_text(path: Path, max_bytes: int = 2_000_000) -> str:
     try:
         size = path.stat().st_size
-    except Exception:
+    except (OSError, ValueError):  # missing or unreadable file, or a NUL in the path
         size = 0
     try:
         if size and size > max_bytes:
             return path.read_bytes()[:max_bytes].decode("utf-8", errors="replace")
         return path.read_text(encoding="utf-8", errors="replace")
-    except Exception:
+    except (OSError, ValueError):
         return ""
 
 
@@ -123,12 +123,9 @@ def _title_from_filename(path: Path, item_type: str = "skill") -> str:
     marker = f"__{item_type}__"
     suffix = f"__{item_type}_"
     if marker in name and suffix in name:
-        try:
-            title_part = name.split(marker, 1)[1].split(suffix, 1)[0].strip()
-            if title_part:
-                return title_part
-        except Exception:
-            pass
+        title_part = name.split(marker, 1)[1].split(suffix, 1)[0].strip()
+        if title_part:
+            return title_part
     if path.name.upper() == "SKILL.MD" and path.parent.name:
         return path.parent.name
     return path.stem
@@ -271,7 +268,7 @@ def _parse_projects(active_only: bool = False) -> list[dict[str, Any]]:
 def _safe_rel(path: Path, root: Path) -> str:
     try:
         return str(path.relative_to(root))
-    except Exception:
+    except ValueError:  # not under root
         return path.name
 
 
@@ -306,11 +303,11 @@ def _build_item(
         preview = preview[:260].rstrip() + "..."
     try:
         importance = int(str(meta.get("importance") or "0"))
-    except Exception:
+    except ValueError:  # not an integer
         importance = 0
     try:
         mtime = int(primary_path.stat().st_mtime)
-    except Exception:
+    except (OSError, ValueError):
         mtime = 0
     file_id = _file_id_for_path(primary_path)
     companion_files = [
@@ -362,7 +359,7 @@ def _get_item_cached(root: Path, primary_path: Path, files: list[Path], project:
     abs_path = primary_path.resolve()
     try:
         mtime = abs_path.stat().st_mtime
-    except Exception:
+    except OSError:  # the file went away
         _MD_CACHE.pop(str(abs_path), None)
         return {}
     cache_key = str(abs_path)
@@ -518,7 +515,7 @@ def scan_index_source(active_only: bool = False) -> dict[str, Any]:
 def _path_is_allowed(path: Path, *, text_only: bool = False) -> bool:
     try:
         resolved = path.resolve()
-    except Exception:
+    except (OSError, RuntimeError, ValueError):  # unreadable, a symlink loop, or a NUL in the path
         return False
     allowed_roots = [
         SHARED_SKILLS_ROOT.resolve(),

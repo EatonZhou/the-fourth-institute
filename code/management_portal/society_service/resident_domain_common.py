@@ -111,7 +111,7 @@ def parse_iso(value: str) -> datetime | None:
         if parsed.tzinfo is None:
             parsed = parsed.replace(tzinfo=timezone.utc)
         return parsed.astimezone(timezone.utc)
-    except Exception:
+    except (ValueError, OverflowError):  # not ISO 8601, or out of range once moved to UTC
         return None
 
 
@@ -201,7 +201,7 @@ def _slugify(value: str) -> str:
 def nonnegative_int(value: object, default: int = 0) -> int:
     try:
         number = int(value)
-    except Exception:
+    except (TypeError, ValueError, OverflowError):
         return default
     return number if number >= 0 else default
 

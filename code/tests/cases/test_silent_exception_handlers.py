@@ -57,10 +57,7 @@ FAILURE_CALL = re.compile(r"(error|fail|unavailable|reject|notif|alert)", re.IGN
 COLLECT = {"append", "add", "extend", "update", "setdefault", "insert", "put"}
 
 _C1 = "owned by area C1 in round 4"
-_K = "owned by area K in round 4"
-_L2 = "owned by area L2 in round 4"
 _R2 = "owned by area R2 in round 4"
-_R3 = "owned by area R3 in round 4"
 
 # path::qualified function -> (silent broad handlers in it, why they stay silent)
 ALLOWED: dict[str, tuple[int, str]] = {
@@ -85,18 +82,9 @@ ALLOWED: dict[str, tuple[int, str]] = {
     "scripts/tfi_release_windows_service.py::run_command_service.service_main": (
         1, "forced stop of the child after the error was written to the .error.log"),
     # Files other round-4 areas are changing: fixed after that area lands.
-    "skill_board_lan/skill_backend.py::_build_item": (2, _K),
-    "skill_board_lan/skill_backend.py::_get_item_cached": (1, _K),
-    "skill_board_lan/skill_backend.py::_path_is_allowed": (1, _K),
-    "skill_board_lan/skill_backend.py::_read_text": (2, _K),
-    "skill_board_lan/skill_backend.py::_safe_rel": (1, _K),
-    "skill_board_lan/skill_backend.py::_title_from_filename": (1, _K),
-    "management_portal/society_service/resident_domain_common.py::nonnegative_int": (1, _K),
-    "management_portal/society_service/resident_domain_common.py::parse_iso": (1, _K),
     "management_portal/resource_backup_backend.py::ResourceBackupBackend._schedule_status": (1, _R2),
     "management_portal/resource_index_backend.py::AdapterLayer._scan_paths": (1, _R2),
     "management_portal/resource_index_backend.py::DeviceRegistryAdapter.scan_changes": (1, _R2),
-    "management_portal/http_agent_workbench.py::AgentWorkbenchHttp.get_link_file": (1, _R3),
     "management_portal/chatroom_backend.py::_active_deliveries": (1, "owned by areas C1 and R3 in round 4"),
     "management_portal/chatroom_backend.py::_publish": (1, "owned by areas C1 and R3 in round 4"),
     "management_portal/chatroom_backend.py::reconcile_deliveries": (1, "owned by areas C1 and R3 in round 4"),
@@ -104,8 +92,6 @@ ALLOWED: dict[str, tuple[int, str]] = {
     "management_portal/execution/provider_catalog.py::AgentProvider.upstream_for": (1, _C1),
     "management_portal/resources/isa.py::reads_only": (1, _C1),
     "management_portal/society_service/runtime/backend_adapter.py::_mailbox_terminal": (1, _C1),
-    "management_portal/society_service/lineage_event_reconciliation.py::_with_facade_activity": (1, _L2),
-    "management_portal/society_service/lineage_message_events.py::wake_watchers": (1, _L2),
 }
 
 

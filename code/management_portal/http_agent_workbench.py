@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from urllib.parse import parse_qs
 
@@ -9,6 +10,8 @@ from management_portal.society_service import SocietyServiceUnavailable
 from management_portal.society_service.errors import SocietyServiceBusy
 from management_portal.resources.errors import ResourceServiceUnavailable
 from management_portal.http_routes import RouteDefinition
+
+LOGGER = logging.getLogger(__name__)
 
 
 class AgentWorkbenchHttp:
@@ -307,8 +310,11 @@ class AgentWorkbenchHttp:
                     result['knowledge_item'] = {'kb_id': kb_id, 'title': str(item.get('title') or ''), 'project': str(item.get('project') or ''), 'type': str(item.get('type') or '')}
                     if item.get('title'):
                         result['title'] = str(item.get('title') or '')
-                except Exception:
+                except (KeyError, ValueError):  # a Markdown file that is no knowledge item
                     pass
+                except Exception:  # the file is still served, without its knowledge metadata
+                    LOGGER.warning('Knowledge metadata of linked Markdown file %s unreadable',
+                                   result.get('path'), exc_info=True)
         except PermissionError:
             return self.link_permission_denied(request)
         except FileNotFoundError as exc:

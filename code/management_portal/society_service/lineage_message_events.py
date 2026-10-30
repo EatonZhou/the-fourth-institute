@@ -21,6 +21,7 @@ a message a Family Router delivered carries ``business_ref`` =
 from __future__ import annotations
 
 import hashlib
+import logging
 import re
 from typing import Any, Callable, Iterable, Mapping
 
@@ -30,6 +31,7 @@ from . import (
 )
 from . import resident_conversation_records
 
+LOGGER = logging.getLogger(__name__)
 MESSAGE_RECEIVED_EVENT = "resident.message_received"
 ARRIVAL_STATES = frozenset({"queued", "running"})
 # One pass reads at most this many log entries per source; the next pass continues.
@@ -383,7 +385,11 @@ def wake_watchers(record: Mapping[str, Any], message_id: str = "") -> bool:
         return False
     try:
         definition = get_lineage_data_store().lineage_definition(lineage_id)
+    except KeyError:  # the Lineage is gone
+        return False
     except Exception:  # noqa: BLE001 - a missed wake only delays the Event until the next pass
+        LOGGER.warning("Lineage %s definition unreadable; the message wake of %s waits for the next pass",
+                       lineage_id, resident_id, exc_info=True)
         return False
     if not watched_by_message_sources(definition, resident_id):
         return False
