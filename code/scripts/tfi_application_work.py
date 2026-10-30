@@ -65,7 +65,7 @@ def fingerprint(rows):
 EMPTY_TABLES = (
     'resident_execution_release_work', 'resident_delivery_work',
     'resident_lifecycle_operations', 'pending_event_deliveries', 'pending_expiry_notices',
-    'effect_work', 'effect_recovery_cleanup', 'resident_creation_operations',
+    'effect_work', 'effect_recovery_cleanup',
     'lineage_deletion_operations', 'lineage_move_operations', 'resident_workspace_transfers',
 )
 RETAINED_TABLES = (
@@ -75,6 +75,7 @@ RETAINED_TABLES = (
     'family_residents', 'family_relays', 'family_quota_reviews',
     'trigger_paths', 'trigger_path_steps', 'trigger_path_step_edges',
     'trigger_path_execution_links', 'wire_delivery_receipts',
+    'resident_creation_operations',
 )
 # promote_queue_item writes started_at/dispatched_at when reserving preparation;
 # neither is the Provider's start (agent.executions.started_at). Submission is
@@ -143,6 +144,24 @@ def _inspect(cursor):
             'unknown_input_state')
     residents = {r['resident_id']: r for r in data['residents']}
     nodes = {r['node_id']: r for r in data['lineage_nodes']}
+    # Keyed creation commits this permanent association with identity and graph
+    # membership. It is reused after success, not deleted like pending work.
+    # The association alone does not acknowledge Resource publication: require
+    # the live, ready identity and absence of its publication outbox as well.
+    publishing = {r['resident_id'] for r in rows('lineage', 'resident_resource_projection_outbox')}
+    for row in data['resident_creation_operations']:
+        receipt = object_value(row['operation_json'])
+        rid = receipt.get('resident_id')
+        require(set(receipt) == {'resident_id'} and isinstance(rid, str) and bool(rid)
+                and isinstance(row['creation_key'], str) and bool(row['creation_key'].strip()),
+                'creation_receipt_unknown_or_incomplete')
+        resident, node = residents.get(rid), nodes.get(rid)
+        require(resident is not None and resident['deleted_at'] is None
+                and resident['registration_state'] == 'ready'
+                and node is not None and node['node_type'] == 'resident'
+                and node['deleted_at'] is None and node['lineage_id'] == row['lineage_id'],
+                'creation_identity_not_ready')
+        require(rid not in publishing, 'creation_publication_pending')
     mail = {(r['resident_id'], r['message_id']): r for r in data['resident_mailbox']}
     work = {r['resident_id']: r for r in data['resident_execution_work']}
     progress = {(r['lineage_id'], r['resident_id']): object_value(r['progress_json'])

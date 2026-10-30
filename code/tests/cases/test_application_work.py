@@ -118,6 +118,64 @@ def test_waiting_proof_is_read_only_private_and_equal_across_real_migration(data
         assert work.inspect(None, None, connection=c) == before
 
 
+def creation_receipt(connection, payload=None):
+    connection.execute("INSERT INTO lineage.resident_creation_operations VALUES('kept','fixture-create',%s)",
+        (Jsonb({'resident_id': 'resident_000000000000'} if payload is None else payload),))
+
+
+def test_completed_creation_receipt_is_retained_across_migration(database):
+    from scripts.tfi_release_schema import upgrade
+    dsn, api = database
+    empty = work.inspect(api, {})
+    with psycopg.connect(dsn) as c:
+        creation_receipt(c)
+    before = work.inspect(api, {})
+    assert before['retained']['resident_creation_operations']['count'] == 1
+    assert before != empty
+    assert 'fixture-create' not in json.dumps(before)
+    with psycopg.connect(dsn) as c:
+        c.execute('SET LOCAL search_path TO lineage')
+        upgrade(SchemaConnection(c))
+    assert work.inspect(api, {}) == before
+    with psycopg.connect(dsn) as c:
+        c.execute("UPDATE lineage.resident_creation_operations SET creation_key='another-request'")
+    changed_key = work.inspect(api, {})
+    assert changed_key != before
+    with psycopg.connect(dsn) as c:
+        c.execute("UPDATE lineage.resident_creation_operations SET operation_json=%s",
+                  (Jsonb({'resident_id': 'resident_000000000001'}),))
+    assert work.inspect(api, {}) != changed_key
+
+
+@pytest.mark.parametrize('payload', [
+    {}, {'resident_id': ''}, {'resident_id': 7}, {'resident_id': 'missing'},
+    {'resident_id': 'resident_000000000000', 'status': 'completed'},
+])
+def test_unproven_creation_receipt_refuses(database, payload):
+    dsn, api = database
+    with psycopg.connect(dsn) as c:
+        creation_receipt(c, payload)
+    with pytest.raises(work.WorkProofError, match='creation_'):
+        work.inspect(api, {})
+
+
+@pytest.mark.parametrize('mutation', [
+    "UPDATE lineage.residents SET registration_state='resource_pending' WHERE resident_id='resident_000000000000'",
+    "UPDATE lineage.residents SET deleted_at=now() WHERE resident_id='resident_000000000000'",
+    "UPDATE lineage.lineage_nodes SET node_type=NULL,deleted_at=now() WHERE node_id='resident_000000000000'",
+    "UPDATE lineage.lineage_nodes SET lineage_id='other' WHERE node_id='resident_000000000000'",
+    "INSERT INTO lineage.resident_resource_projection_outbox(resident_id,revision,payload_json,enqueued_at,attempt_count,available_at,lease_token,last_error) VALUES('resident_000000000000',1,'{}',now(),0,now(),'','')",
+])
+def test_creation_identity_and_publication_must_be_complete(database, mutation):
+    dsn, api = database
+    with psycopg.connect(dsn) as c:
+        creation_receipt(c)
+        c.execute("INSERT INTO lineage.lineages(lineage_id,title) VALUES('other','Other fixture')")
+        c.execute(mutation)
+    with pytest.raises(work.WorkProofError, match='creation_'):
+        work.inspect(api, {})
+
+
 @pytest.mark.parametrize('key,value', [
     ('submitted_at', STAMP), ('execution_acknowledged', True), ('continuation_id', 'waiting-thread'),
     ('continuation_started_at', STAMP), ('outcome', 'failed'),

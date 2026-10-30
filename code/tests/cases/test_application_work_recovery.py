@@ -144,6 +144,13 @@ def domain_waiting(owners, monkeypatch):
 
 
 def test_domain_constructor_has_real_mailbox_links_and_preparing_executions(owners, domain_waiting):
+    # Successful keyed creation keeps a permanent same-identity receipt.
+    from management_portal.society_service import lineage_resident_nodes
+    keyed = {'title': 'Completed keyed creation', 'backend': 'codex',
+             'creation_key': 'upgrade-completed-creation'}
+    first = lineage_resident_nodes.create_lineage_resident(owners.lineage_id, keyed, ACTOR)
+    repeated = lineage_resident_nodes.create_lineage_resident(owners.lineage_id, keyed, ACTOR)
+    assert repeated['resident']['resident_id'] == first['resident']['resident_id']
     receipt = domain_waiting
     repo = resident_conversation_stream.get_repository()
     for item in receipt["residents"]:
@@ -180,6 +187,7 @@ def test_domain_constructor_has_real_mailbox_links_and_preparing_executions(owne
                     sql.Identifier(database.schema), sql.Identifier(name)))
             proof = inspect(None, None, connection=connection)
             assert proof["counts"] == {"queued": 4, "preparing": 2}
+            assert proof['retained']['resident_creation_operations']['count'] == 1
             assert inspect(None, None, connection=connection) == proof
         finally:
             connection.rollback()
