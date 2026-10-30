@@ -15,7 +15,7 @@ import pytest
 
 from management_portal import article_identity_backend as article
 from management_portal import paper_assets, paper_ccf_enrichment, paper_figure_jobs, paper_resources
-from management_portal import project_rename, repo_workspace_backend as repo
+from management_portal import project_rename, repo_workspace_checkout, repo_workspace_network
 from management_portal.resources.providers import folder_files
 from management_portal.workbench_projections import host_directories
 from management_common import secure_paths
@@ -24,7 +24,7 @@ from knowledge_board_lan import knowledge_backend
 
 
 @pytest.mark.parametrize("value", ["../secret", "a/../secret", "/absolute"])
-@pytest.mark.parametrize("cleaner", [article._safe_relative_path, paper_resources._safe_paper_relative_path, repo._safe_relative_path])
+@pytest.mark.parametrize("cleaner", [article._safe_relative_path, paper_resources._safe_paper_relative_path, repo_workspace_checkout._safe_relative_path])
 def test_resource_relative_names_cannot_become_native_absolute_or_alias_paths(value, cleaner):
     with pytest.raises(ValueError):
         cleaner(value)
@@ -37,7 +37,7 @@ def test_folder_addresses_reject_native_path_escape(value, monkeypatch):
         folder_files.file_parts(value)
 
 
-@pytest.mark.parametrize("cleaner", [article._safe_relative_path, paper_resources._safe_paper_relative_path, repo._safe_relative_path])
+@pytest.mark.parametrize("cleaner", [article._safe_relative_path, paper_resources._safe_paper_relative_path, repo_workspace_checkout._safe_relative_path])
 @pytest.mark.parametrize("value", ["C:/outside.txt", "C:outside.txt", r"a\..\secret", "note:stream", "NUL", "COM1"])
 def test_consumer_windows_names_refuse_native_escape(cleaner, value, monkeypatch):
     monkeypatch.setattr(secure_paths, "os", SimpleNamespace(**{**vars(os), "name": "nt"}))
@@ -63,9 +63,9 @@ def test_posix_consumer_name_compatibility_is_preserved():
     for cleaner in (article._safe_relative_path, paper_resources._safe_paper_relative_path):
         assert cleaner(r"dir:label/literal\name") == r"dir:label/literal\name"
         assert cleaner("dir//./file") == "dir/file"
-    assert repo._safe_relative_path("dir:label/.Git/file") == "dir:label/.Git/file"
+    assert repo_workspace_checkout._safe_relative_path("dir:label/.Git/file") == "dir:label/.Git/file"
     with pytest.raises(ValueError):
-        repo._safe_relative_path(r"literal\name")  # Existing Repo contract.
+        repo_workspace_checkout._safe_relative_path(r"literal\name")  # Existing Repo contract.
 
 
 def test_paper_images_require_a_path_component_boundary(tmp_path, monkeypatch):
@@ -293,7 +293,7 @@ def test_tex_lookup_uses_installed_user_platform_directory(tmp_path, monkeypatch
 @pytest.mark.parametrize("deny", [False, True])
 def test_git_credential_permissions_precede_payload_and_cleanup(tmp_path, monkeypatch, deny):
     paths = []
-    create = repo.tempfile.mkstemp
+    create = repo_workspace_network.tempfile.mkstemp
     def temporary(**kwargs):
         return create(**kwargs, dir=tmp_path)
     def permissions(path, mode):
@@ -301,14 +301,14 @@ def test_git_credential_permissions_precede_payload_and_cleanup(tmp_path, monkey
         assert mode == 0o600 and path.read_bytes() == b""
         if deny:
             raise PermissionError("ACL unavailable")
-    monkeypatch.setattr(repo.tempfile, "mkstemp", temporary)
+    monkeypatch.setattr(repo_workspace_network.tempfile, "mkstemp", temporary)
     monkeypatch.setattr(file_permissions, "set_created_file_permissions", permissions)
     if deny:
         with pytest.raises(PermissionError, match="ACL unavailable"):
-            with repo._git_credential_material({}, username="fixture", secret="synthetic-test"):
+            with repo_workspace_network._git_credential_material({}, username="fixture", secret="synthetic-test"):
                 pytest.fail("unprotected credential returned")
     else:
-        with repo._git_credential_material({}, username="fixture", secret="synthetic-test") as path:
+        with repo_workspace_network._git_credential_material({}, username="fixture", secret="synthetic-test") as path:
             assert paths == [path] and "synthetic-test" in path.read_text()
     assert len(paths) == 1 and not paths[0].exists()
 

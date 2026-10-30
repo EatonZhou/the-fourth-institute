@@ -109,7 +109,7 @@ def test_avatar_canonical_root_and_records_only(isolated,monkeypatch,kind,subjec
 
 def test_tool_defaults_follow_user_home(isolated,monkeypatch):
     home,_=isolated
-    from management_portal import resource_identity_backend as rid,repo_workspace_backend as repo,article_identity_backend as article,article_texlab_backend as texlab
+    from management_portal import resource_identity_backend as rid,repo_workspace_network as repo,article_identity_backend as article,article_texlab_backend as texlab
     importlib.reload(rid);importlib.reload(repo);importlib.reload(article)
     assert rid.DEFAULT_SSH_KEY_ROOT==repo._SSH_KEY_ROOT==home/'.ssh'
     assert all(str(p).startswith(str(home)) for p in article.TEX_BIN_DIRS)
@@ -149,7 +149,7 @@ def test_invalid_new_config_never_reads_legacy(isolated):
     assert stamp(old)==old_state and stamp(new)==new_state
 
 def test_ssh_selected_existing_key_preserves_bytes(isolated,monkeypatch):
-    from management_portal import resource_identity_backend as rid,repo_workspace_backend as repo
+    from management_portal import resource_identity_backend as rid,repo_workspace_checkout as checkout,repo_workspace_network as repo
     home,_=isolated
     importlib.reload(rid);importlib.reload(repo)
     private=put(home/'.ssh/id_fixture','test-only-not-a-key\n')
@@ -157,7 +157,7 @@ def test_ssh_selected_existing_key_preserves_bytes(isolated,monkeypatch):
     before=(stamp(private),stamp(public))
     assert repo._repo_ssh_identity({'ssh_key':'id_fixture'})==private
     assert (stamp(private),stamp(public))==before
-    with pytest.raises(repo.RepoWorkspaceConflict):repo._repo_ssh_identity({'ssh_key':'../wrong'})
+    with pytest.raises(checkout.RepoWorkspaceConflict):repo._repo_ssh_identity({'ssh_key':'../wrong'})
 
 
 from tests.cases.compatibility_test_support import setUpModule, tearDownModule, site_environ

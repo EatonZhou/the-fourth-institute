@@ -157,7 +157,7 @@ def test_downloaded_cli_carries_private_owner_and_works_without_repo(tmp_path, m
 
 
 def test_git_launches_helper_through_current_python_with_spaces(tmp_path, monkeypatch):
-    from management_portal import repo_workspace_backend as repo
+    from management_portal import repo_workspace_network as repo
     alias=tmp_path/'helper with spaces.py'
     alias.write_text('import runpy\nrunpy.run_path('+repr(str(Path(helper.__file__)))+', run_name="__main__")\n')
     monkeypatch.setattr(repo, '_GIT_CREDENTIAL_HELPER', alias)
@@ -179,7 +179,7 @@ def test_git_launches_helper_through_current_python_with_spaces(tmp_path, monkey
 
 
 def test_ssh_launcher_uses_python_and_cleans_up_after_failure(tmp_path, monkeypatch):
-    from management_portal import repo_workspace_backend as repo
+    from management_portal import repo_workspace_network as repo
     seen=[]
     def git(checkout,*args,env_overrides,**kw):
         path=Path(env_overrides['SSH_ASKPASS']); material_path=Path(env_overrides['PORTAL_GIT_CREDENTIAL_FILE'])
@@ -195,7 +195,7 @@ def test_ssh_launcher_uses_python_and_cleans_up_after_failure(tmp_path, monkeypa
 
 
 def test_windows_askpass_selects_git_posix_launcher_or_rejects(tmp_path, monkeypatch):
-    from management_portal import repo_workspace_backend as repo
+    from management_portal import repo_workspace_git, repo_workspace_network as repo
     root=tmp_path/'Git with spaces'; (root/'cmd').mkdir(parents=True); (root/'usr/bin').mkdir(parents=True)
     git=root/'cmd/git.exe'; git.touch()
     ssh=root/'usr/bin/ssh.exe'; ssh.touch(); (root/'usr/bin/sh.exe').touch()
@@ -205,4 +205,4 @@ def test_windows_askpass_selects_git_posix_launcher_or_rejects(tmp_path, monkeyp
     import shlex
     assert shlex.split(command)[0] == ssh.as_posix()
     ssh.unlink()
-    with pytest.raises(repo.GitOperationError): repo._ssh_command(identity_file=None,batch_mode=False)
+    with pytest.raises(repo_workspace_git.GitOperationError): repo._ssh_command(identity_file=None,batch_mode=False)

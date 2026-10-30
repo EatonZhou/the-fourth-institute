@@ -8,7 +8,7 @@ import pytest
 from management_portal import knowledge_item_chat_backend as chat
 from management_portal import resident_handoff as invocation
 from management_portal import resource_lineages as routing
-from management_portal import repo_workspace_backend as repo
+from management_portal import repo_workspace_ai as repo
 
 
 def test_resource_page_types_resolve_shared_ordinary_lineages(monkeypatch, subtests):

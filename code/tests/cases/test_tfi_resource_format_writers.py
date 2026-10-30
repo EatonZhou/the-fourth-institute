@@ -322,7 +322,9 @@ from management_portal import paper_collection_jobs, paper_figure_jobs, paper_st
 from management_portal import paper_collector as prw_collector
 from management_portal import paper_projection as prw_projection
 from management_portal import repo_credentials_backend as prw_credentials
-from management_portal import repo_workspace_backend as prw_workspace
+from management_portal import repo_workspace_auto_commit as prw_workspace
+from management_portal import repo_workspace_descriptions as prw_descriptions
+from management_portal import repo_workspace_network as prw_network
 
 
 def _prw_file_state(path):
@@ -538,6 +540,8 @@ def test_repo_writer_responses_and_clean_retry(tmp_path, monkeypatch):
     monkeypatch.setattr(prw_workspace, "_checkout", lambda value: ({"id": repo_id}, tmp_path))
     monkeypatch.setattr(prw_workspace, "_status_payload", lambda checkout: {"dirty": False, "conflict_count": 0})
     monkeypatch.setattr(prw_workspace, "_remote_records", lambda checkout: [])
+    monkeypatch.setattr(prw_network, "_checkout", lambda value: ({"id": repo_id}, tmp_path))
+    monkeypatch.setattr(prw_network, "_remote_records", lambda checkout: [])
     monkeypatch.setattr(prw_workspace, "_branch_name", lambda checkout: "main")
     monkeypatch.setattr(prw_workspace, "_automation_status_payload", lambda *args: {"id": repo_id, "dirty": False})
     monkeypatch.setattr(prw_workspace, "commit_repo_changes", _prw_forbid_write)
@@ -546,8 +550,8 @@ def test_repo_writer_responses_and_clean_retry(tmp_path, monkeypatch):
     assert clean["schema"] == "tfi.repo-auto-commit.v1"
     assert not clean["committed"] and not clean["pushed"] and clean["outcome"] == "clean"
     assert prw_workspace.auto_commit_repo(repo_id, actor="writer-fixture") == clean
-    assert prw_workspace.generate_repo_descriptions()["schema"] == "tfi.repo-descriptions.v1"
-    settings = prw_workspace.list_repo_credentials(repo_id, actor="writer-fixture",
+    assert prw_descriptions.generate_repo_descriptions()["schema"] == "tfi.repo-descriptions.v1"
+    settings = prw_network.list_repo_credentials(repo_id, actor="writer-fixture",
                                                   credential_root=tmp_path / "empty", credential_key_path=tmp_path / "missing.key")
     assert settings == {"schema": "tfi.repo-git-credential-settings.v1", "repo_id": repo_id, "remotes": [], "credentials": []}
 

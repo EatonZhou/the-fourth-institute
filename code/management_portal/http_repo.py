@@ -4,7 +4,11 @@ import re
 from pathlib import Path
 from urllib.parse import parse_qs
 
-from management_portal import repo_workspace_backend
+from management_portal import (
+    repo_workspace_ai, repo_workspace_auto_commit, repo_workspace_checkout, repo_workspace_descriptions,
+    repo_workspace_files, repo_workspace_git, repo_workspace_history, repo_workspace_network,
+    repo_workspace_operations, repo_workspace_overview, repo_workspace_statistics,
+)
 from management_portal.http_routes import ROUTE_NOT_FOUND, RouteDefinition
 
 ROOT = Path(__file__).resolve().parent
@@ -30,7 +34,7 @@ class RepoHttp:
         elif actor:
             visible_repo_ids = {str(item.get('resource_id') or '') for item in self.resource_service().query(resource_types=['repo'], actor=actor, limit=5000).get('resources') or []}
             repo_ids = [repo_id for repo_id in repo_ids if repo_id in visible_repo_ids]
-        return self.respond(request, 200, repo_workspace_backend.repo_automation_status(repo_ids))
+        return self.respond(request, 200, repo_workspace_overview.repo_automation_status(repo_ids))
 
     def workspace_get(self, request, parsed, route_actor, params):
         repo_id = params['repo_id']
@@ -42,37 +46,37 @@ class RepoHttp:
         try:
             self.require_resource(repo_id, actor)
             if not action:
-                result = repo_workspace_backend.repo_overview(repo_id)
+                result = repo_workspace_overview.repo_overview(repo_id)
             elif action == 'tree':
-                result = repo_workspace_backend.list_repo_tree(repo_id, str((qs.get('path') or [''])[0]))
+                result = repo_workspace_files.list_repo_tree(repo_id, str((qs.get('path') or [''])[0]))
             elif action == 'stats':
-                result = repo_workspace_backend.repo_statistics(repo_id, str((qs.get('path') or [''])[0]))
+                result = repo_workspace_statistics.repo_statistics(repo_id, str((qs.get('path') or [''])[0]))
             elif action == 'file':
-                result = repo_workspace_backend.read_repo_file(repo_id, str((qs.get('path') or [''])[0]))
+                result = repo_workspace_files.read_repo_file(repo_id, str((qs.get('path') or [''])[0]))
             elif action == 'search':
-                result = repo_workspace_backend.search_repo_files(repo_id, str((qs.get('q') or [''])[0]), limit=int(str((qs.get('limit') or ['120'])[0]) or 120))
+                result = repo_workspace_files.search_repo_files(repo_id, str((qs.get('q') or [''])[0]), limit=int(str((qs.get('limit') or ['120'])[0]) or 120))
             elif action == 'commits':
-                result = repo_workspace_backend.list_repo_commits(repo_id, path=str((qs.get('path') or [''])[0]), limit=int(str((qs.get('limit') or ['40'])[0]) or 40), offset=int(str((qs.get('offset') or ['0'])[0]) or 0), revision=str((qs.get('revision') or ['HEAD'])[0]))
+                result = repo_workspace_history.list_repo_commits(repo_id, path=str((qs.get('path') or [''])[0]), limit=int(str((qs.get('limit') or ['40'])[0]) or 40), offset=int(str((qs.get('offset') or ['0'])[0]) or 0), revision=str((qs.get('revision') or ['HEAD'])[0]))
             elif action == 'commit':
-                result = repo_workspace_backend.read_commit(repo_id, str((qs.get('sha') or [''])[0]))
+                result = repo_workspace_history.read_commit(repo_id, str((qs.get('sha') or [''])[0]))
             elif action == 'blame':
-                result = repo_workspace_backend.blame_repo_file(repo_id, str((qs.get('path') or [''])[0]))
+                result = repo_workspace_history.blame_repo_file(repo_id, str((qs.get('path') or [''])[0]))
             elif action == 'credentials':
-                result = repo_workspace_backend.list_repo_credentials(repo_id, actor=actor)
+                result = repo_workspace_network.list_repo_credentials(repo_id, actor=actor)
             else:
-                result = repo_workspace_backend.working_diff(repo_id, str((qs.get('path') or [''])[0]))
+                result = repo_workspace_history.working_diff(repo_id, str((qs.get('path') or [''])[0]))
             return self.respond(request, 200, result)
         except KeyError:
             return self.respond(request, 404, {'error': 'repo not found'})
         except FileNotFoundError as exc:
             return self.respond(request, 404, {'error': str(exc)})
-        except repo_workspace_backend.RepoWorkspaceConflict as exc:
+        except repo_workspace_checkout.RepoWorkspaceConflict as exc:
             return self.respond(request, 409, {'error': str(exc)})
         except PermissionError as exc:
             return self.respond(request, 403, {'error': str(exc)})
         except ValueError as exc:
             return self.respond(request, 400, {'error': str(exc)})
-        except repo_workspace_backend.GitOperationError as exc:
+        except repo_workspace_git.GitOperationError as exc:
             return self.respond(request, 422, {'error': str(exc)})
         except Exception as exc:
             return self.exception_response(request, exc)
@@ -88,7 +92,7 @@ class RepoHttp:
         try:
             for repo_id in raw_repo_ids:
                 self.require_resource(str(repo_id), actor)
-            result = repo_workspace_backend.generate_repo_descriptions([str(value) for value in raw_repo_ids], force=bool(payload.get('force')), provider_id=str(payload.get('provider') or ''), actor=actor)
+            result = repo_workspace_descriptions.generate_repo_descriptions([str(value) for value in raw_repo_ids], force=bool(payload.get('force')), provider_id=str(payload.get('provider') or ''), actor=actor)
             if result.get('generated_count'):
                 self.notify_index(resource_type='repo', kind='updated')
             return self.respond(request, 200, result)
@@ -96,7 +100,7 @@ class RepoHttp:
             return self.respond(request, 400, {'error': str(exc)})
         except PermissionError as exc:
             return self.respond(request, 403, {'error': str(exc)})
-        except repo_workspace_backend.RepoDescriptionGenerationError as exc:
+        except repo_workspace_ai.RepoDescriptionGenerationError as exc:
             return self.respond(request, 502, {'error': str(exc)})
         except Exception as exc:
             return self.exception_response(request, exc)
@@ -114,42 +118,42 @@ class RepoHttp:
         try:
             self.require_resource(repo_id, actor)
             if action == 'file':
-                result = repo_workspace_backend.write_repo_file(repo_id, str(payload.get('path') or ''), str(payload.get('content') or ''), expected_hash=str(payload.get('expected_hash') or ''))
+                result = repo_workspace_files.write_repo_file(repo_id, str(payload.get('path') or ''), str(payload.get('content') or ''), expected_hash=str(payload.get('expected_hash') or ''))
                 status = 200
             elif action == 'entry':
                 operation = str(payload.get('operation') or 'create').strip()
                 if operation == 'delete':
-                    result = repo_workspace_backend.delete_repo_file(repo_id, str(payload.get('path') or ''))
+                    result = repo_workspace_files.delete_repo_file(repo_id, str(payload.get('path') or ''))
                     status = 200
                 elif operation == 'create':
-                    result = repo_workspace_backend.create_repo_entry(repo_id, str(payload.get('path') or ''), kind=str(payload.get('kind') or 'file'), content=str(payload.get('content') or ''))
+                    result = repo_workspace_files.create_repo_entry(repo_id, str(payload.get('path') or ''), kind=str(payload.get('kind') or 'file'), content=str(payload.get('content') or ''))
                     status = 201
                 else:
                     raise ValueError('entry operation must be create or delete')
             elif action == 'move':
-                result = repo_workspace_backend.move_repo_entry(repo_id, str(payload.get('path') or ''), str(payload.get('destination') or ''))
+                result = repo_workspace_files.move_repo_entry(repo_id, str(payload.get('path') or ''), str(payload.get('destination') or ''))
                 status = 200
             elif action == 'commit':
-                result = repo_workspace_backend.commit_repo_changes(repo_id, str(payload.get('message') or ''), description=str(payload.get('description') or ''), actor=actor)
+                result = repo_workspace_operations.commit_repo_changes(repo_id, str(payload.get('message') or ''), description=str(payload.get('description') or ''), actor=actor)
                 status = 201
             elif action == 'auto-commit':
-                result = repo_workspace_backend.auto_commit_repo(repo_id, actor=actor, provider_id=str(payload.get('provider') or ''))
+                result = repo_workspace_auto_commit.auto_commit_repo(repo_id, actor=actor, provider_id=str(payload.get('provider') or ''))
                 status = 201 if result.get('committed') else 200
             elif action == 'branch':
-                result = repo_workspace_backend.update_repo_branch(repo_id, str(payload.get('operation') or ''), str(payload.get('name') or ''), start_point=str(payload.get('start_point') or 'HEAD'))
+                result = repo_workspace_operations.update_repo_branch(repo_id, str(payload.get('operation') or ''), str(payload.get('name') or ''), start_point=str(payload.get('start_point') or 'HEAD'))
                 status = 200
             elif action == 'sync':
                 raw_credential = payload.get('credential')
                 credential = dict(raw_credential) if isinstance(raw_credential, dict) else None
-                result = repo_workspace_backend.sync_repo(repo_id, str(payload.get('operation') or ''), remote=str(payload.get('remote') or ''), branch=str(payload.get('branch') or ''), actor=actor, credential=credential, remember_credential=bool(payload.get('remember_credential')))
+                result = repo_workspace_operations.sync_repo(repo_id, str(payload.get('operation') or ''), remote=str(payload.get('remote') or ''), branch=str(payload.get('branch') or ''), actor=actor, credential=credential, remember_credential=bool(payload.get('remember_credential')))
                 status = 200
             elif action == 'discard':
-                result = repo_workspace_backend.discard_repo_changes(repo_id)
+                result = repo_workspace_operations.discard_repo_changes(repo_id)
                 status = 200
             else:
                 if str(payload.get('operation') or '').strip() != 'delete':
                     raise ValueError('credential operation must be delete')
-                result = repo_workspace_backend.delete_repo_credential(repo_id, str(payload.get('credential_id') or ''), actor=actor)
+                result = repo_workspace_network.delete_repo_credential(repo_id, str(payload.get('credential_id') or ''), actor=actor)
                 status = 200
             self.notify_index(resource_id=repo_id, resource_type='repo', kind='updated')
             return self.respond(request, status, result)
@@ -159,17 +163,17 @@ class RepoHttp:
             return self.respond(request, 404, {'error': str(exc)})
         except FileExistsError as exc:
             return self.respond(request, 409, {'error': f'already exists: {exc}'})
-        except repo_workspace_backend.RepoWorkspaceConflict as exc:
+        except repo_workspace_checkout.RepoWorkspaceConflict as exc:
             return self.respond(request, 409, {'error': str(exc)})
         except PermissionError as exc:
             return self.respond(request, 403, {'error': str(exc)})
         except ValueError as exc:
             return self.respond(request, 400, {'error': str(exc)})
-        except repo_workspace_backend.GitAuthenticationRequired as exc:
+        except repo_workspace_git.GitAuthenticationRequired as exc:
             return self.respond(request, 409, {'error': str(exc), 'code': 'git_auth_required', 'auth_challenge': exc.challenge})
-        except repo_workspace_backend.GitOperationError as exc:
+        except repo_workspace_git.GitOperationError as exc:
             return self.respond(request, 422, {'error': str(exc)})
-        except repo_workspace_backend.CommitMessageGenerationError as exc:
+        except repo_workspace_ai.CommitMessageGenerationError as exc:
             return self.respond(request, 502, {'error': str(exc)})
         except Exception as exc:
             return self.exception_response(request, exc)

@@ -12,7 +12,9 @@ from unittest import mock
 import pytest
 
 from management_portal import (
-    http_resources, repo_workspace_backend, resource_backup_backend, semantic_search_jobs, serve_management_portal,
+    http_resources, repo_workspace_auto_commit, repo_workspace_descriptions, repo_workspace_files,
+    repo_workspace_operations, repo_workspace_overview, resource_backup_backend, semantic_search_jobs,
+    serve_management_portal,
 )
 from management_portal.hatg.contracts import InstructionError
 from management_portal.portal_access_control import PortalAccessStore
@@ -866,32 +868,32 @@ def test_repo_workspace_routes_dispatch_git_reads_and_mutations() -> None:
                 return_value=True,
             ),
             mock.patch.object(
-                repo_workspace_backend,
+                repo_workspace_overview,
                 "repo_overview",
                 return_value=overview,
             ) as get_overview,
             mock.patch.object(
-                repo_workspace_backend,
+                repo_workspace_files,
                 "list_repo_tree",
                 return_value={"id": repo_id, "path": "src", "entries": []},
             ) as list_tree,
             mock.patch.object(
-                repo_workspace_backend,
+                repo_workspace_files,
                 "read_repo_file",
                 return_value={"id": repo_id, "path": "src/app.py", "content": "pass\n"},
             ) as read_file,
             mock.patch.object(
-                repo_workspace_backend,
+                repo_workspace_files,
                 "write_repo_file",
                 return_value={"id": repo_id, "path": "src/app.py"},
             ) as write_file,
             mock.patch.object(
-                repo_workspace_backend,
+                repo_workspace_operations,
                 "commit_repo_changes",
                 return_value={"id": repo_id, "commit": {"short_sha": "abc1234"}},
             ) as commit_changes,
             mock.patch.object(
-                repo_workspace_backend,
+                repo_workspace_operations,
                 "discard_repo_changes",
                 return_value={
                     "id": repo_id,
@@ -901,7 +903,7 @@ def test_repo_workspace_routes_dispatch_git_reads_and_mutations() -> None:
                 },
             ) as discard_changes,
             mock.patch.object(
-                repo_workspace_backend,
+                repo_workspace_overview,
                 "repo_automation_status",
                 return_value={
                     "repos": [{"id": repo_id, "dirty": True, "actionable": True}],
@@ -909,7 +911,7 @@ def test_repo_workspace_routes_dispatch_git_reads_and_mutations() -> None:
                 },
             ) as automation_status,
             mock.patch.object(
-                repo_workspace_backend,
+                repo_workspace_auto_commit,
                 "auto_commit_repo",
                 return_value={
                     "id": repo_id,
@@ -1043,7 +1045,7 @@ def test_repo_description_route_generates_and_notifies_resource_index() -> None:
                 return_value=True,
             ),
             mock.patch.object(
-                repo_workspace_backend,
+                repo_workspace_descriptions,
                 "generate_repo_descriptions",
                 return_value=generated,
             ) as generate,

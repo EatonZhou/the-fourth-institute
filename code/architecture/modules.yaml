@@ -470,7 +470,7 @@ modules:
       - "management_portal/article_build_store.py"
       - "management_portal/device_identity_backend.py"
       - "management_portal/repo_credentials_backend.py"
-      - "management_portal/repo_workspace_backend.py"
+      - "management_portal/repo_workspace_*.py"
       - "management_portal/search_identity_backend.py"
       - "skill_board_lan/skill_backend.py"
     designs:

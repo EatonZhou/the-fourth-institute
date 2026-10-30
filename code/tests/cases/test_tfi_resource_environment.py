@@ -20,7 +20,7 @@ SETTINGS = [
     ('device_identity_backend', 'DEFAULT_DEVICE_SECRET_ROOT', 'DEVICE_SECRET_ROOT'),
     ('repo_credentials_backend', 'DEFAULT_CREDENTIAL_ROOT', 'REPO_CREDENTIAL_ROOT'),
     ('repo_credentials_backend', 'DEFAULT_KEY_PATH', 'REPO_CREDENTIAL_KEY_PATH'),
-    ('repo_workspace_backend', '_SSH_KEY_ROOT', 'SSH_KEY_ROOT'),
+    ('repo_workspace_network', '_SSH_KEY_ROOT', 'SSH_KEY_ROOT'),
     ('resources.providers.project', 'SHARE_ROOT', 'SHARE_ROOT'),
     ('resources.providers.project', 'PROJECTS_ROOT', 'PROJECTS_ROOT'),
 ]
@@ -150,7 +150,7 @@ def test_standalone_credential_environment(helper, mode, tmp_path):
 
 
 def test_git_and_device_inject_canonical_child_values(tmp_path, monkeypatch):
-    from management_portal import device_identity_backend as device, repo_workspace_backend as repo
+    from management_portal import device_identity_backend as device, repo_workspace_network as repo
     captured = []
     monkeypatch.setenv('PORTAL_GIT_CREDENTIAL_FILE', 'stale-new')
     monkeypatch.setenv('ARCHIVE_GIT_CREDENTIAL_FILE', 'stale-old')

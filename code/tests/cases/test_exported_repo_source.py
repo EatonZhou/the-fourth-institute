@@ -13,7 +13,8 @@ from urllib.parse import urlparse, urlencode
 
 import pytest
 
-from management_portal import resource_auto_registration, resource_identity_backend, repo_workspace_backend
+from management_portal import resource_auto_registration, resource_identity_backend
+from management_portal import repo_workspace_files, repo_workspace_git, repo_workspace_history, repo_workspace_state
 from management_portal.resources import ResourceService
 from management_portal.resources.providers import install_mutation_providers
 from management_portal.resources.providers.repo import install_resolver
@@ -71,7 +72,8 @@ def test_exported_workspace_http_browses_source_without_git(tmp_path, monkeypatc
     record, root = _source(tmp_path)
     if git_location:
         subprocess.run(["git", "init", "-q", str(root if git_location == "root" else tmp_path)], check=True)
-    monkeypatch.setattr(repo_workspace_backend, "_git_bytes", lambda *_a, **_k: pytest.fail("exported browse invoked Git"))
+    for module in (repo_workspace_git, repo_workspace_state, repo_workspace_files):
+        monkeypatch.setattr(module, "_git_bytes", lambda *_a, **_k: pytest.fail("exported browse invoked Git"))
     http = _workspace_http()
     def get(action="", path=""):
         return http.workspace_get(None, urlparse("/?" + urlencode({"path": path})), "", {"repo_id": record["id"], "action": action})
@@ -144,10 +146,10 @@ def test_exported_workspace_paths_do_not_expose_outside_or_git_metadata(tmp_path
         for path in ("../private/secret", str(outside), "escape/secret", ".git/config", "metadata/config", "a\\b", "bad\x00name"):
             status, _ = http.workspace_get(None, urlparse("/?" + urlencode({"path": path})), "", {"repo_id": record["id"], "action": action})
             assert status == 400, (action, path, status)
-    tree = repo_workspace_backend.list_repo_tree(record["id"])
+    tree = repo_workspace_files.list_repo_tree(record["id"])
     assert tree["readme"] is None
     assert ".git" not in {item["name"] for item in tree["entries"]}
-    link = repo_workspace_backend.read_repo_file(record["id"], "linked.txt")
+    link = repo_workspace_files.read_repo_file(record["id"], "linked.txt")
     assert link["kind"] == "symlink" and link["content"] == "" and not link["editable"]
 
 
@@ -364,8 +366,8 @@ def test_exported_tree_refuses_git_history_and_mutation_even_with_git_nearby(tmp
     operations = [
         lambda: resource_identity_backend.resolve_repo_address(record["id"] + "/commit/" + sha + "/file/" + relative),
         lambda: resource_identity_backend.update_repo_remote(record["id"], name="origin", url="https://example.invalid/repo.git"),
-        lambda: repo_workspace_backend.list_repo_commits(record["id"]),
-        lambda: repo_workspace_backend.write_repo_file(record["id"], "new.txt", "must not write"),
+        lambda: repo_workspace_history.list_repo_commits(record["id"]),
+        lambda: repo_workspace_files.write_repo_file(record["id"], "new.txt", "must not write"),
     ]
     before = (git_root / ".git" / "config").read_bytes()
     for operation in operations:

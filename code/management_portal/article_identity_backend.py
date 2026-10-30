@@ -27,7 +27,7 @@ from management_portal.resources import get_resource_service
 from management_portal.resources.registry_store import announce_registry_changes, get_registry_store
 
 from . import registry_sync
-from . import repo_workspace_backend as git_workspace_backend
+from . import repo_workspace_scoped_git as git_workspace_backend
 from . import resource_identity_backend as repo_backend
 
 

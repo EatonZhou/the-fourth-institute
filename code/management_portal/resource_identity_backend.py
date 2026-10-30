@@ -106,7 +106,7 @@ def normalize_remote_url(raw_url: object, *, checkout: Path | None = None) -> st
 def _run_git(
     checkout: Path, *args: str, check: bool = True, env_overrides: dict[str, str] | None = None,
 ) -> str:
-    from .repo_workspace_backend import _git, GitOperationError
+    from .repo_workspace_git import _git, GitOperationError
 
     try:
         return _git(checkout, *args, timeout=45, env_overrides=env_overrides)

@@ -5,7 +5,11 @@ from unittest.mock import Mock
 import pytest
 from starlette.requests import Request
 
-from management_portal import agent_token_auth, asgi, repo_workspace_backend as repo, web_isa
+from management_portal import agent_token_auth, asgi, web_isa
+from management_portal import (
+    repo_workspace_auto_commit, repo_workspace_checkout, repo_workspace_files, repo_workspace_operations,
+    repo_workspace_scoped_git,
+)
 from management_portal import permission_system
 from management_portal.hatg.contracts import InstructionCall, InstructionContext
 from tests.cases.permission_test_support import permissions  # noqa: F401
@@ -96,9 +100,9 @@ def test_sync_rejects_git_option_and_refspec_injection(tmp_path, monkeypatch, op
     """
     repo_id, _ = _repo(tmp_path, with_remote=True)
     network = Mock()
-    monkeypatch.setattr(repo, "_network_git", network)
+    monkeypatch.setattr(repo_workspace_operations, "_network_git", network)
     with pytest.raises(ValueError, match="invalid branch name"):
-        repo.sync_repo(repo_id, operation, remote="origin", branch=branch)
+        repo_workspace_operations.sync_repo(repo_id, operation, remote="origin", branch=branch)
     network.assert_not_called()
 
 
@@ -117,7 +121,7 @@ def test_scoped_staging_treats_pathspec_magic_literally(tmp_path, staged):
     literal.write_text("inside")
     if not staged:
         _git(checkout, "add", "-A")
-    repo.stage_scoped_git_paths(workspace, [":(top)"], staged=staged)
+    repo_workspace_scoped_git.stage_scoped_git_paths(workspace, [":(top)"], staged=staged)
     paths = _git(checkout, "diff", "--cached", "--name-only").splitlines()
     assert ("outside.txt" in paths) is (not staged)
     assert ("src/:(top)" in paths) is staged
@@ -177,7 +181,7 @@ def test_repo_search_preserves_dotted_directory(tmp_path):
     directory = checkout / 'version.1'
     directory.mkdir()
     (directory / 'example.txt').write_text('example')
-    result = repo.search_repo_files(repo_id, query='example')
+    result = repo_workspace_files.search_repo_files(repo_id, query='example')
     assert result['results'][0]['directory'] == 'version.1'
 
 
@@ -189,7 +193,7 @@ def test_auto_commit_generation_does_not_hold_repo_lock(tmp_path):
     acquired = threading.Event()
     def generator(context):
         def edit():
-            with repo._repo_lock(repo_id):
+            with repo_workspace_checkout._repo_lock(repo_id):
                 (checkout / 'notes.txt').write_text('new concurrent change')
                 acquired.set()
         thread = threading.Thread(target=edit, daemon=True)
@@ -197,5 +201,5 @@ def test_auto_commit_generation_does_not_hold_repo_lock(tmp_path):
         assert acquired.wait(2), 'generation held the repository write lock'
         thread.join()
         return {'subject': 'test', 'reason': 'test'}
-    with pytest.raises(repo.RepoWorkspaceConflict, match='变化'):
-        repo.auto_commit_repo(repo_id, message_generator=generator)
+    with pytest.raises(repo_workspace_checkout.RepoWorkspaceConflict, match='变化'):
+        repo_workspace_auto_commit.auto_commit_repo(repo_id, message_generator=generator)

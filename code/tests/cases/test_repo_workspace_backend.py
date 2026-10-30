@@ -8,7 +8,11 @@ from pathlib import Path
 
 import pytest
 
-from management_portal import repo_credentials_backend, repo_workspace_backend
+from management_portal import (
+    repo_credentials_backend, repo_workspace_auto_commit, repo_workspace_checkout, repo_workspace_files,
+    repo_workspace_git, repo_workspace_history, repo_workspace_network, repo_workspace_operations,
+    repo_workspace_overview, repo_workspace_state, repo_workspace_statistics,
+)
 from management_portal import resource_identity_backend
 
 
@@ -20,7 +24,7 @@ def ssh_key(tmp_path, monkeypatch):
     key.write_text("test fixture; not a usable private key")
     key.with_suffix(".pub").write_text("test public key fixture")
     monkeypatch.setattr(resource_identity_backend, "DEFAULT_SSH_KEY_ROOT", root)
-    monkeypatch.setattr(repo_workspace_backend, "_SSH_KEY_ROOT", root)
+    monkeypatch.setattr(repo_workspace_network, "_SSH_KEY_ROOT", root)
     return key
 
 
@@ -77,9 +81,9 @@ def _repo(tmp_path: Path, *, with_remote: bool = False) -> tuple[str, Path]:
 def test_no_remote_does_not_treat_current_branch_as_default(tmp_path: Path) -> None:
     """仓库没有远端时，默认分支留空而不取当前分支"""
     repo_id, checkout = _repo(tmp_path)
-    assert repo_workspace_backend.repo_overview(repo_id)["default_branch"] == ""
+    assert repo_workspace_overview.repo_overview(repo_id)["default_branch"] == ""
     _git(checkout, "switch", "feature/navigation")
-    overview = repo_workspace_backend.repo_overview(repo_id)
+    overview = repo_workspace_overview.repo_overview(repo_id)
     assert overview["current_branch"] == "feature/navigation"
     assert overview["default_branch"] == ""
 
@@ -90,19 +94,19 @@ def test_remote_records_include_sanitized_web_url_contracts(tmp_path, subtests, 
         tmp_path = case_path
         _repo_id, checkout = _repo(tmp_path)
         _git(checkout, 'remote', 'add', 'origin', 'https://user:token@gitee.com/org/repo.git')
-        records = repo_workspace_backend._remote_records(checkout)
+        records = repo_workspace_state._remote_records(checkout)
         assert records == [{'name': 'origin', 'url': 'https://gitee.com/org/repo.git', 'push_url': 'https://gitee.com/org/repo.git', 'web_url': 'https://gitee.com/org/repo', 'credentials_redacted': True}]
         assert 'user' not in repr(records)
         assert 'token' not in repr(records)
     with subtests.test(contract='test_workspace_fetch_and_push_use_registered_remotes'), isolated_portal_case() as case_path:
         tmp_path = case_path
         repo_id, checkout = _repo(tmp_path, with_remote=True)
-        fetched = repo_workspace_backend.sync_repo(repo_id, 'fetch', remote='origin')
+        fetched = repo_workspace_operations.sync_repo(repo_id, 'fetch', remote='origin')
         assert fetched['operation'] == 'fetch'
         assert fetched['workspace']['upstream'] == 'origin/main'
         (checkout / 'sync.txt').write_text('push through Portal\n', encoding='utf-8')
-        repo_workspace_backend.commit_repo_changes(repo_id, 'Add sync fixture', actor='portal')
-        pushed = repo_workspace_backend.sync_repo(repo_id, 'push', remote='origin')
+        repo_workspace_operations.commit_repo_changes(repo_id, 'Add sync fixture', actor='portal')
+        pushed = repo_workspace_operations.sync_repo(repo_id, 'push', remote='origin')
         assert pushed['operation'] == 'push'
         assert pushed['workspace']['status']['ahead'] == 0
     with subtests.test(contract='test_repo_push_policy_blocks_push_and_keeps_auto_commit_local'), isolated_portal_case() as case_path:
@@ -110,11 +114,11 @@ def test_remote_records_include_sanitized_web_url_contracts(tmp_path, subtests, 
         repo_id, checkout = _repo(tmp_path, with_remote=True)
         updated = resource_identity_backend.update_repo_policy(repo_id, push_enabled=False)
         assert updated['push_enabled'] is False
-        assert repo_workspace_backend.repo_overview(repo_id)['push_enabled'] is False
-        with pytest.raises(repo_workspace_backend.RepoWorkspaceConflict, match='禁用 Push'):
-            repo_workspace_backend.sync_repo(repo_id, 'push')
+        assert repo_workspace_overview.repo_overview(repo_id)['push_enabled'] is False
+        with pytest.raises(repo_workspace_checkout.RepoWorkspaceConflict, match='禁用 Push'):
+            repo_workspace_operations.sync_repo(repo_id, 'push')
         (checkout / 'src' / 'app.py').write_text("def hello():\n    return 'local only'\n", encoding='utf-8')
-        result = repo_workspace_backend.auto_commit_repo(repo_id, actor='portal', message_generator=lambda _context: {'subject': 'Keep third-party changes local', 'reason': 'This checkout is configured as pull-only.'})
+        result = repo_workspace_auto_commit.auto_commit_repo(repo_id, actor='portal', message_generator=lambda _context: {'subject': 'Keep third-party changes local', 'reason': 'This checkout is configured as pull-only.'})
         assert result['outcome'] == 'committed'
         assert result['pushed'] is False
         assert result['push']['attempted'] is False
@@ -126,7 +130,7 @@ def test_remote_records_include_sanitized_web_url_contracts(tmp_path, subtests, 
         (checkout / 'src' / 'app.py').write_text('changed\n', encoding='utf-8')
         (checkout / 'scratch').mkdir()
         (checkout / 'scratch' / 'note.txt').write_text('remove me\n', encoding='utf-8')
-        result = repo_workspace_backend.discard_repo_changes(repo_id)
+        result = repo_workspace_operations.discard_repo_changes(repo_id)
         assert result['discarded_count'] == 2
         assert result['workspace']['status']['dirty'] is False
         assert (checkout / 'src' / 'app.py').read_text(encoding='utf-8') == original
@@ -135,8 +139,8 @@ def test_remote_records_include_sanitized_web_url_contracts(tmp_path, subtests, 
         tmp_path = case_path
         repo_id, checkout = _repo(tmp_path)
         (checkout / '.env.local').write_text('TOKEN=do-not-send\n', encoding='utf-8')
-        with pytest.raises(repo_workspace_backend.RepoWorkspaceConflict, match='可能包含凭据'):
-            repo_workspace_backend.auto_commit_repo(repo_id, message_generator=lambda _context: pytest.fail('sensitive content should not be sent to AI'))
+        with pytest.raises(repo_workspace_checkout.RepoWorkspaceConflict, match='可能包含凭据'):
+            repo_workspace_auto_commit.auto_commit_repo(repo_id, message_generator=lambda _context: pytest.fail('sensitive content should not be sent to AI'))
         assert _git(checkout, 'status', '--porcelain') == '?? .env.local'
 
 
@@ -153,7 +157,7 @@ def test_workspace_reads_tree_files_history_search_and_blame(tmp_path: Path, ssh
         encoding="utf-8",
     )
 
-    overview = repo_workspace_backend.repo_overview(
+    overview = repo_workspace_overview.repo_overview(
         repo_id,
     )
     assert overview["name"] == "sample"
@@ -166,7 +170,7 @@ def test_workspace_reads_tree_files_history_search_and_blame(tmp_path: Path, ssh
     assert ssh_key.name in overview["available_ssh_keys"]
     assert "code_line_count" not in overview
     assert "repository_size_bytes" not in overview
-    statistics = repo_workspace_backend.repo_statistics(repo_id)
+    statistics = repo_workspace_statistics.repo_statistics(repo_id)
     assert {item["name"] for item in statistics["languages"]} == {"Python", "CSS"}
     assert round(sum(item["percent"] for item in statistics["languages"])) == 100
     assert statistics["code_line_count"] == 5
@@ -179,22 +183,22 @@ def test_workspace_reads_tree_files_history_search_and_blame(tmp_path: Path, ssh
         )
     )
 
-    root = repo_workspace_backend.list_repo_tree(
+    root = repo_workspace_files.list_repo_tree(
         repo_id,
     )
     assert [item["name"] for item in root["entries"]] == ["src", "README.md"]
     assert root["readme"]["content"].startswith("# Sample")
     assert root["entries"][0]["last_commit"]["subject"] == "Initial workspace"
-    src_tree = repo_workspace_backend.list_repo_tree(
+    src_tree = repo_workspace_files.list_repo_tree(
         repo_id,
         "src",
     )
     assert "code_line_count" not in src_tree
-    src_statistics = repo_workspace_backend.repo_statistics(repo_id, "src")
+    src_statistics = repo_workspace_statistics.repo_statistics(repo_id, "src")
     assert src_statistics["code_line_count"] == 5
     assert {item["name"] for item in src_statistics["languages"]} == {"Python", "CSS"}
 
-    file_payload = repo_workspace_backend.read_repo_file(
+    file_payload = repo_workspace_files.read_repo_file(
         repo_id,
         "src/app.py",
     )
@@ -202,7 +206,7 @@ def test_workspace_reads_tree_files_history_search_and_blame(tmp_path: Path, ssh
     assert "def hello" in file_payload["content"]
     assert len(file_payload["hash"]) == 64
 
-    search = repo_workspace_backend.search_repo_files(
+    search = repo_workspace_files.search_repo_files(
         repo_id,
         "app",
     )
@@ -210,12 +214,12 @@ def test_workspace_reads_tree_files_history_search_and_blame(tmp_path: Path, ssh
         {"path": "src/app.py", "name": "app.py", "directory": "src"}
     ]
 
-    history = repo_workspace_backend.list_repo_commits(
+    history = repo_workspace_history.list_repo_commits(
         repo_id,
         path="src/app.py",
     )
     assert history["commits"][0]["subject"] == "Initial workspace"
-    detail = repo_workspace_backend.read_commit(
+    detail = repo_workspace_history.read_commit(
         repo_id,
         history["commits"][0]["sha"],
     )
@@ -231,7 +235,7 @@ def test_workspace_reads_tree_files_history_search_and_blame(tmp_path: Path, ssh
         item for item in detail["files"] if item["path"] == "src/app.py"
     )["patch"].startswith("diff --git ")
 
-    blame = repo_workspace_backend.blame_repo_file(
+    blame = repo_workspace_history.blame_repo_file(
         repo_id,
         "src/app.py",
     )
@@ -240,7 +244,7 @@ def test_workspace_reads_tree_files_history_search_and_blame(tmp_path: Path, ssh
 
     _git(checkout, "mv", "src/theme.css", "src/portal.css")
     _git(checkout, "commit", "-qm", "Rename theme")
-    renamed = repo_workspace_backend.read_commit(
+    renamed = repo_workspace_history.read_commit(
         repo_id,
         _git(checkout, "rev-parse", "HEAD"),
     )
@@ -255,10 +259,10 @@ def test_workspace_reads_tree_files_history_search_and_blame(tmp_path: Path, ssh
 def test_large_repo_file_preview_is_streamed_and_marked_truncated(tmp_path: Path) -> None:
     """超过文本上限的仓库文件不给预览内容，标为截断并给出大小与哈希"""
     repo_id, checkout = _repo(tmp_path)
-    content = b"x" * (repo_workspace_backend.MAX_TEXT_BYTES + 257)
+    content = b"x" * (repo_workspace_files.MAX_TEXT_BYTES + 257)
     (checkout / "large.log").write_bytes(content)
 
-    result = repo_workspace_backend.read_repo_file(
+    result = repo_workspace_files.read_repo_file(
         repo_id,
         "large.log",
     )
@@ -274,12 +278,12 @@ def test_large_repo_file_preview_is_streamed_and_marked_truncated(tmp_path: Path
 def test_workspace_edit_move_delete_diff_commit_and_branches(tmp_path: Path) -> None:
     """仓库工作区支持编辑、移动、删除、查看差异、提交与切换分支，过期哈希的写入被拒绝"""
     repo_id, _checkout = _repo(tmp_path)
-    original = repo_workspace_backend.read_repo_file(
+    original = repo_workspace_files.read_repo_file(
         repo_id,
         "src/app.py",
     )
 
-    saved = repo_workspace_backend.write_repo_file(
+    saved = repo_workspace_files.write_repo_file(
         repo_id,
         "src/app.py",
         "def hello():\n    return 'updated'\n",
@@ -296,17 +300,17 @@ def test_workspace_edit_move_delete_diff_commit_and_branches(tmp_path: Path) -> 
     )
 
     with pytest.raises(
-        repo_workspace_backend.RepoWorkspaceConflict,
+        repo_workspace_checkout.RepoWorkspaceConflict,
         match="其他操作修改",
     ):
-        repo_workspace_backend.write_repo_file(
+        repo_workspace_files.write_repo_file(
             repo_id,
             "src/app.py",
             "stale",
             expected_hash=original["hash"],
         )
 
-    created = repo_workspace_backend.create_repo_entry(
+    created = repo_workspace_files.create_repo_entry(
         repo_id,
         "notes/plan.md",
         content="# Plan\n",
@@ -318,21 +322,21 @@ def test_workspace_edit_move_delete_diff_commit_and_branches(tmp_path: Path) -> 
         if item["path"] == "notes/plan.md"
     )
     assert created_change["modified_at"]
-    moved = repo_workspace_backend.move_repo_entry(
+    moved = repo_workspace_files.move_repo_entry(
         repo_id,
         "notes/plan.md",
         "notes/roadmap.md",
     )
     assert moved["destination"] == "notes/roadmap.md"
 
-    diff = repo_workspace_backend.working_diff(
+    diff = repo_workspace_history.working_diff(
         repo_id,
         "src/app.py",
     )
     assert "-    return 'hello'" in diff["diff"]
     assert "+    return 'updated'" in diff["diff"]
 
-    committed = repo_workspace_backend.commit_repo_changes(
+    committed = repo_workspace_operations.commit_repo_changes(
         repo_id,
         "Update workspace",
         description="Exercise the Portal commit flow.",
@@ -341,20 +345,20 @@ def test_workspace_edit_move_delete_diff_commit_and_branches(tmp_path: Path) -> 
     assert committed["commit"]["subject"] == "Update workspace"
     assert committed["status"]["dirty"] is False
 
-    created_branch = repo_workspace_backend.update_repo_branch(
+    created_branch = repo_workspace_operations.update_repo_branch(
         repo_id,
         "create",
         "feature/portal",
     )
     assert created_branch["current_branch"] == "feature/portal"
-    switched = repo_workspace_backend.update_repo_branch(
+    switched = repo_workspace_operations.update_repo_branch(
         repo_id,
         "switch",
         "main",
     )
     assert switched["current_branch"] == "main"
 
-    deleted = repo_workspace_backend.delete_repo_file(
+    deleted = repo_workspace_files.delete_repo_file(
         repo_id,
         "notes/roadmap.md",
     )
@@ -376,17 +380,17 @@ def test_push_permission_denial_automatically_disables_repo_push(
     repo_id, _checkout = _repo(tmp_path, with_remote=True)
 
     def reject_push(*_args, **_kwargs):
-        raise repo_workspace_backend.GitOperationError(
+        raise repo_workspace_git.GitOperationError(
             "remote: Write access to repository not granted."
         )
 
-    monkeypatch.setattr(repo_workspace_backend, "_network_git", reject_push)
+    monkeypatch.setattr(repo_workspace_operations, "_network_git", reject_push)
 
     with pytest.raises(
-        repo_workspace_backend.GitOperationError,
+        repo_workspace_git.GitOperationError,
         match="自动关闭",
     ):
-        repo_workspace_backend.sync_repo(
+        repo_workspace_operations.sync_repo(
             repo_id,
             "push",
             remote="origin",
@@ -418,8 +422,8 @@ def test_repo_ssh_key_is_applied_to_network_git(
             "credential_id": "",
         }
 
-    monkeypatch.setattr(repo_workspace_backend, "_network_git", complete_push)
-    repo_workspace_backend.sync_repo(
+    monkeypatch.setattr(repo_workspace_operations, "_network_git", complete_push)
+    repo_workspace_operations.sync_repo(
         repo_id,
         "push",
         remote="origin",
@@ -448,7 +452,7 @@ def test_auto_commit_uses_generated_reason_and_pushes_remote(
             "model": "kimi-test",
         }
 
-    result = repo_workspace_backend.auto_commit_repo(
+    result = repo_workspace_auto_commit.auto_commit_repo(
         repo_id,
         actor="test-actor",
         message_generator=generate,
@@ -485,7 +489,7 @@ def test_network_git_prompts_then_saves_and_reuses_valid_credential(
     """网络 git 缺凭证时要求输入，验证通过后保存并复用，凭证失效后标为 invalid"""
     credential_root = tmp_path / "credentials"
     credential_key = tmp_path / "credential.master-key"
-    context = repo_workspace_backend._remote_auth_context_from_url(
+    context = repo_workspace_state._remote_auth_context_from_url(
         "https://github.com/example/portal.git"
     )
     supplied_material: list[dict] = []
@@ -503,7 +507,7 @@ def test_network_git_prompts_then_saves_and_reuses_valid_credential(
         assert "fixture-valid-token" not in repr(environment)
         material_path = environment.get("PORTAL_GIT_CREDENTIAL_FILE")
         if not material_path:
-            raise repo_workspace_backend.GitOperationError(
+            raise repo_workspace_git.GitOperationError(
                 "fatal: could not read Username for 'https://github.com': "
                 "terminal prompts disabled"
             )
@@ -513,16 +517,16 @@ def test_network_git_prompts_then_saves_and_reuses_valid_credential(
             material["secret"] != "fixture-valid-token"
             or not accept_valid_token["value"]
         ):
-            raise repo_workspace_backend.GitOperationError(
+            raise repo_workspace_git.GitOperationError(
                 "fatal: Authentication failed for "
                 "'https://github.com/example/portal.git'"
             )
         return "push completed"
 
-    monkeypatch.setattr(repo_workspace_backend, "_git", fake_git)
+    monkeypatch.setattr(repo_workspace_network, "_git", fake_git)
 
-    with pytest.raises(repo_workspace_backend.GitAuthenticationRequired) as missing:
-        repo_workspace_backend._network_git(
+    with pytest.raises(repo_workspace_git.GitAuthenticationRequired) as missing:
+        repo_workspace_network._network_git(
             tmp_path,
             "push",
             "origin",
@@ -540,8 +544,8 @@ def test_network_git_prompts_then_saves_and_reuses_valid_credential(
     assert missing.value.challenge["secret_label"] == "Personal access token"
     assert missing.value.challenge["rejected"] is False
 
-    with pytest.raises(repo_workspace_backend.GitAuthenticationRequired) as rejected:
-        repo_workspace_backend._network_git(
+    with pytest.raises(repo_workspace_git.GitAuthenticationRequired) as rejected:
+        repo_workspace_network._network_git(
             tmp_path,
             "push",
             "origin",
@@ -567,7 +571,7 @@ def test_network_git_prompts_then_saves_and_reuses_valid_credential(
         key_path=credential_key,
     )["credentials"] == []
 
-    output, credential_result = repo_workspace_backend._network_git(
+    output, credential_result = repo_workspace_network._network_git(
         tmp_path,
         "push",
         "origin",
@@ -589,7 +593,7 @@ def test_network_git_prompts_then_saves_and_reuses_valid_credential(
     assert output == "push completed"
     assert credential_result["saved"] is True
 
-    output, reused = repo_workspace_backend._network_git(
+    output, reused = repo_workspace_network._network_git(
         tmp_path,
         "push",
         "origin",
@@ -612,8 +616,8 @@ def test_network_git_prompts_then_saves_and_reuses_valid_credential(
     ]
 
     accept_valid_token["value"] = False
-    with pytest.raises(repo_workspace_backend.GitAuthenticationRequired) as expired:
-        repo_workspace_backend._network_git(
+    with pytest.raises(repo_workspace_git.GitAuthenticationRequired) as expired:
+        repo_workspace_network._network_git(
             tmp_path,
             "push",
             "origin",
@@ -654,7 +658,7 @@ def test_workspace_rejects_paths_outside_the_checkout(tmp_path, subtests, isolat
             tmp_path = case_path
             repo_id, _checkout = _repo(tmp_path)
             with pytest.raises(ValueError):
-                repo_workspace_backend.read_repo_file(
+                repo_workspace_files.read_repo_file(
                     repo_id,
                     path,
                 )
@@ -665,9 +669,9 @@ from tests.cases.compatibility_test_support import setUpModule, tearDownModule, 
 
 def test_repo_overview_without_ssh_directory(tmp_path, monkeypatch):
     """新实例尚无 SSH 目录时，仓库仍能打开且没有可选密钥"""
-    monkeypatch.setattr(repo_workspace_backend, "_SSH_KEY_ROOT", tmp_path / "missing-ssh")
+    monkeypatch.setattr(repo_workspace_network, "_SSH_KEY_ROOT", tmp_path / "missing-ssh")
     repo_id, _ = _repo(tmp_path)
-    assert repo_workspace_backend.repo_overview(repo_id)["available_ssh_keys"] == []
+    assert repo_workspace_overview.repo_overview(repo_id)["available_ssh_keys"] == []
 
 
 def test_unreadable_ssh_directory_returns_no_keys(tmp_path, monkeypatch):
@@ -676,5 +680,5 @@ def test_unreadable_ssh_directory_returns_no_keys(tmp_path, monkeypatch):
         raise PermissionError("unreadable test directory")
         yield
     from types import SimpleNamespace
-    monkeypatch.setattr(repo_workspace_backend, "_SSH_KEY_ROOT", SimpleNamespace(iterdir=denied))
-    assert repo_workspace_backend._available_ssh_keys() == []
+    monkeypatch.setattr(repo_workspace_network, "_SSH_KEY_ROOT", SimpleNamespace(iterdir=denied))
+    assert repo_workspace_network._available_ssh_keys() == []
