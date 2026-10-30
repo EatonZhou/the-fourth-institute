@@ -11,6 +11,7 @@ import yaml
 
 from management_portal.hatg.contracts import InstructionError
 from management_portal.society_service import lineage_lifecycle, project_domain, resident_lifecycle_steps_domain
+from management_portal.society_service.state_store import get_lineage_data_store
 from management_portal.resources import isa as resource_isa
 from tests.cases.test_project_deletion import _configure_project
 
@@ -22,6 +23,8 @@ def test_the_archive_step_of_a_project_deletion_removes_the_resident_folder(tmp_
     folder = tmp_path / "residents" / "resident_aaaaaaaaaaaa"
     (folder / "workspace").mkdir(parents=True)
     (folder / "resident.md").write_text("identity\n", encoding="utf-8")
+    # Removing the folder keeps live Residents' Workspaces, so it reads the Lineage tables.
+    get_lineage_data_store()
 
     resident_lifecycle_steps_domain.apply_resident_lifecycle_step("operation", {"kind": "remove", "source": str(folder)})
 
