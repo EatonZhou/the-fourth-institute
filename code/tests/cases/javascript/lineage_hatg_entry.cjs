@@ -7,7 +7,7 @@ const {readHatgModule, createHatgModule} = require('./hatg_modules.cjs');
 
 const staticRoot = path.resolve(__dirname, '../../../management_portal/static');
 const source = fs.readFileSync(path.join(staticRoot, 'lineage_workbench.js'), 'utf8');
-const hatgSource = fs.readFileSync(path.join(staticRoot, 'hatg_panel.js'), 'utf8');
+const hatgSource = fs.readFileSync(path.join(staticRoot, 'hatg_panel_mount.js'), 'utf8');
 function owner(text, name) {
   const match = new RegExp(`^( +)(?:async )?function ${name}\\(`, 'm').exec(text);
   assert(match, `Missing production function ${name}`);
@@ -220,7 +220,7 @@ test('failed primitive prerequisite reaches the retry boundary and can initializ
     },
     mountTemplates: noop, setSyncStatus: value => statuses.push(value), toast: noop,
     $id: () => null, bindModals: () => { bound++; }, bindActions: noop,
-    initHatgGraph: noop, renderLineageSurface: noop, hatgComponentRoot: {},
+    initHatgGraph: noop, renderLineageSurface: noop, panelHost: {hatgComponentRoot: {}},
     loadLineagePageData: async () => {}, state: {}, lineageCatalogHydrated: false,
   });
   vm.runInContext(owner(hatgSource, 'init'), context);

@@ -19,7 +19,7 @@ for (const refreshed of [true, false]) test(`conflict preserves dirty form and $
   let rendered = 0;
   const context = vm.createContext({ state, definitionRevisions: revisions, detachedRoots: new Set(),
     window: {PortalI18n: {t: text => text}},
-    hatgComponentRoot: panel,
+    panelHost: { hatgComponentRoot: panel },
     $id: () => panel, $queryAll: () => [form],
     // The refreshed read enters the panel, and redraws it, through commitLineage.
     commitLineage(next) { state.lineage = { ...state.lineage, ...next }; rendered++; },

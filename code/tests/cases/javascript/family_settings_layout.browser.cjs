@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { chromium } = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
+const { RESIDENT_MENU_SCRIPTS } = require('./resident_menu_scripts.cjs');
 const root = path.resolve(__dirname, '../../../management_portal/static');
 (async () => {
   const browser = await chromium.launch({ headless: true });
@@ -25,7 +26,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
       await page.addStyleTag({ url: '/static/' + name + '.css' });
     }
     for (const name of ['portal_text', 'portal_state', 'portal_translations', 'portal_i18n', 'portal_ui_primitives',
-      'portal_overlay', 'portal_ui', 'portal_detail_surface', 'portal_society_service', 'portal_resident_menu',
+      'portal_overlay', 'portal_ui', 'portal_detail_surface', 'portal_society_service', ...RESIDENT_MENU_SCRIPTS,
       'resident_protocol', 'chat_workspace_family_status']) {
       await page.addScriptTag({ url: '/static/' + name + '.js' });
     }

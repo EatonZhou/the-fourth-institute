@@ -5,7 +5,8 @@ const path = require('node:path');
 const vm = require('node:vm');
 const {readHatgModule, createHatgModule} = require('./hatg_modules.cjs');
 const root = path.resolve(__dirname, '../../../management_portal/static');
-const menu = fs.readFileSync(path.join(root, 'portal_resident_menu.js'), 'utf8');
+// The Menu's scripts in load order; each function comes from the script that declares it.
+const menu = require('./resident_menu_scripts.cjs').residentMenuSource();
 const hatg = fs.readFileSync(path.join(root, 'hatg_panel.js'), 'utf8');
 function owner(source, name, indent) {
   const start = source.indexOf(`\n${' '.repeat(indent)}${name === 'removeResident' || name === 'open' || name === 'removeSelectedNode' ? 'async ' : ''}function ${name}(`);
@@ -23,6 +24,8 @@ function menuHarness() {
     window: {PortalI18n: i18n},
   });
   ctx.dialog = {close: () => { closed.push(ctx.nodeMenuContext?.residentId); ctx.disposeNodeMenu(); }};
+  // The parts read the Menu's shared state from menuState; the context stands for it.
+  ctx.menuState = ctx;
   vm.runInContext(['disposeNodeMenu', 'retireResidents', 'removeResident'].map(n => owner(menu, n, 4)).join('\n'), ctx);
   const show = id => {
     ctx.nodeMenuContext = {residentId: id, unobserveSession: () => released.push(id)};
@@ -38,10 +41,10 @@ test('committed deletion releases Session before a pending owner refresh and can
   const refresh = new Promise(resolve => { finish = resolve; });
   const graph = vm.createContext({
     window: {PortalResidentMenu: {retireResidents: ids => h.ctx.retireResidents(new Set(ids))}},
-    hatgComponentOptions: {onResidentsDeleted: () => {
+    panelHost: {hatgComponentOptions: {onResidentsDeleted: () => {
       assert.deepEqual(h.released, ['resident_deleted']);
       return refresh;
-    }},
+    }}},
   });
   vm.runInContext(owner(hatg, 'retireDeletedResidents', 2), graph);
   h.ctx.options.onDelete = async () => { await graph.retireDeletedResidents(['resident_deleted']); return true; };

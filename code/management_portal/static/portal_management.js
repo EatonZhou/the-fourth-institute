@@ -382,6 +382,36 @@
     };
   }
 
+  // mount builds Portal Management in root. Its parts live in module scripts
+  // that load before this one; managementPart(name) returns what a script
+  // registers:
+  //   portal_management_layout.js  the tabs, the stage with one pane per
+  //     view and the sections in the panes
+  //   portal_management_paths.js  the data directories form and path
+  //     migrations
+  //   portal_management_execution.js  the execution settings: reading them
+  //     when the tab opens and saving an input when it changes
+  //   portal_management_services.js  Telepus, WALL scheduling, the feature
+  //     switches and Resident semantic search
+  //   portal_management_permission_system.js  the scheme in use and turning
+  //     the permission system on or off
+  //   portal_management_guards.js  form baselines, the account dialogs, user
+  //     drafts, leaving unsaved changes and running account actions
+  //   portal_management_sections.js  mounting the views and opening a section
+  //   portal_management_users.js  the notice, the user list, the editor, the
+  //     audit, reading the directory and saving a user's profile
+  //   portal_management_accounts.js  password resets, session revocation,
+  //     deleting and creating users
+  // mount checks the caller's access, writes the panel's markup, mounts the
+  // invitations, holds the state the parts share, creates the parts in that
+  // order, opens the first view and owns teardown; a part that calls a
+  // function of a part created after it gets an arrow forwarding the call.
+  function managementPart(name) {
+    const part = window[name];
+    if (!part) throw new Error(`${name} is not loaded.`);
+    return part;
+  }
+
   async function mount(root, options = {}) {
     if (!root) throw new Error("Portal Management panel host is unavailable.");
     const me = options.me || await window.PortalIdentity.load();
@@ -398,1014 +428,80 @@
       if (!nodes.has(name)) nodes.set(name, root.querySelector(`[data-access-${name}]`));
       return nodes.get(name);
     };
-    const userCategoryTitle = category => window.PortalI18n.t(
-      {portal_admin: "Portal 管理员", member: "一般用户", intern: "实习用户"}[category] || category);
     const state = { access: null, selectedUsername: "" };
-    let destroyed = false;
-    let pending = 0;
-    let confirming = false;
-    let currentView = "users";
-    let currentPrincipalId = "";
-    let navigationVersion = 0;
-    const entries = new Map();
     const userDrafts = new Map();
-    const layout = document.createElement("div");
-    layout.className = "managementLayout";
-    const tabs = root.querySelector(".managementTabs");
-    tabs.setAttribute("aria-orientation", "vertical");
-    const stage = root.querySelector("[data-management-permission-host]");
-    stage.hidden = false;
-    stage.removeAttribute("role");
-    stage.className = "managementStage";
-    for (const view of ["users", "backend", "execution", "resource-types", "schemes", "entries", "paths", "network", "instances"]) {
-      const pane = document.createElement("section");
-      pane.className = "managementView"; pane.dataset.managementView = view;
-      pane.setAttribute("role", "tabpanel"); pane.hidden = view !== "users";
-      const container = document.createElement("div");
-      container.dataset.managementComponent = view;
-      pane.append(container); stage.append(pane);
-      entries.set(view, {pane, container, instance: null, promise: null, target: "", invalidation: null, syncing: false});
-    }
-    entries.get("users").pane.append(root.querySelector("[data-management-users]"));
-    const executionSection = root.querySelector("[data-management-execution]");
-    // Both views use the same setting, authorization, confirmation and save path.
-    const permissionRow = executionSection.querySelector('[data-execution-setting="permission_system_enabled"]').closest("label").cloneNode(true);
-    permissionRow.querySelector("small").textContent = window.PortalI18n.t("关闭时方案不参与权限判定；开启时使用下方选定方案。");
-    const permissionStatus = document.createElement("p");
-    permissionStatus.setAttribute("role", "status");
-    permissionStatus.dataset.permissionSettingsStatus = "";
-    permissionStatus.hidden = true;
-    entries.get("schemes").pane.prepend(permissionRow, permissionStatus);
-    entries.get("execution").pane.append(executionSection);
-    entries.get("paths").pane.append(root.querySelector("[data-management-paths]"));
-    // With the permission system off there are no permission entries to manage;
-    // the scheme page stays and explains that schemes take effect once it is on.
-    const permissionViews = new Set(["entries"]);
-    let permissionsOff = me.access?.permission_system === "open";
-    if (permissionsOff) {
-      tabs.querySelectorAll("[data-management-tab]").forEach(tab => { tab.hidden = permissionViews.has(tab.dataset.managementTab); });
-      $("view-permissions").hidden = true;
-      root.querySelector(".managementCreationPermissions h3").hidden = true;
-      root.querySelector("[data-management-users] header p").firstChild.textContent = `${window.PortalI18n.t("管理账户资料与业务关联；权限系统关闭时不限制访问。")} `;
-    }
-    layout.append(tabs, stage); root.prepend(layout);
-    tabs.querySelector('[data-management-tab="users"]').hidden = allows.CreateUser !== true;
-    tabs.querySelector('[data-management-tab="resource-types"]').hidden = allows.ListResourceTypes !== true && !permissionsOff;
-    tabs.querySelector('[data-management-tab="backend"]').hidden = allows.ListProviders !== true && allows.ListProviderAccounts !== true && allows.UpdateProviderAccount !== true && allows.RegisterProviderAccount !== true && !permissionsOff;
-    tabs.querySelector('[data-management-tab="paths"]').hidden = me.access?.user_category !== "portal_admin";
-    tabs.querySelector('[data-management-tab="network"]').hidden = !portalAdmin;
-    tabs.querySelector('[data-management-tab="instances"]').hidden = !portalAdmin;
-    const pathsForm = root.querySelector("[data-management-paths-form]");
-    const pathsStatus = root.querySelector("[data-management-paths-status]");
-    const pathInputs = [...pathsForm.querySelectorAll("[data-path-key]")];
-    let pathsRead = false, pathMigrationState = "";
-    let savedPaths = {};
-    const readPaths = async () => {
-      if (pathsRead) return;
-      pathsRead = true;
-      try {
-        const response = await fetch("/api/admin/paths", {credentials: "same-origin"});
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.error || window.PortalI18n.t("无法读取目录配置"));
-        savedPaths = result.paths;
-        pathInputs.forEach(input => { input.value = savedPaths[input.dataset.pathKey] || ""; });
-        if (pathMigrationState !== "completed") pathsStatus.textContent = "";
-      } catch (error) { pathsRead = false; pathsStatus.textContent = error.message; }
+    // The state the parts share: whether the panel is destroyed, how many
+    // account and settings actions are in flight, whether a discard is being
+    // confirmed, the principal of the current view, whether the permission
+    // system is off, the execution settings last read or saved, and whether
+    // and how often the permission switch changed. The part that computes a
+    // field's first value sets it; each part keeps the rest of its state to
+    // itself.
+    const panelState = {
+      destroyed: false, pending: 0, confirming: false, currentPrincipalId: "", permissionsOff: null,
+      savedExecution: {}, permissionSaving: false, permissionRevision: 0,
     };
-    const pollPathMigration = async jobId => {
-      if (destroyed) return;
-      try {
-        const response = await fetch(`/api/admin/paths/migration?id=${encodeURIComponent(jobId)}`, {credentials: "same-origin"});
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.error || window.PortalI18n.t("无法读取迁移进度"));
-        pathMigrationState = result.state; const labels = {queued: window.PortalI18n.t("排队中"), stopping: window.PortalI18n.t("正在停止服务"), copying: window.PortalI18n.t("正在复制并校验数据"), switching: window.PortalI18n.t("正在切换目录"), restarting: window.PortalI18n.t("正在重启服务"), completed: window.PortalI18n.t("迁移完成"), failed: window.PortalI18n.t("迁移失败")};
-        pathsStatus.textContent = `${labels[result.state] || result.state}${result.error ? `：${result.error}` : ""}`;
-        if (result.state === "completed" || result.state === "failed") {
-          sessionStorage.removeItem("portal-path-migration");
-          pathsForm.querySelector('[type="submit"]').disabled = false;
-          if (result.state === "completed") { pathsRead = false; await readPaths(); }
-          return;
-        }
-      } catch (_) { pathsStatus.textContent = window.PortalI18n.t("Portal 服务暂不可用，迁移状态将在服务恢复后刷新。"); }
-      setTimeout(() => pollPathMigration(jobId), 2000);
-    };
-    pathsForm.addEventListener("submit", async event => {
-      event.preventDefault();
-      const proposed = Object.fromEntries(pathInputs.map(input => [input.dataset.pathKey, input.value.trim()]));
-      const changed = pathInputs.filter(input => proposed[input.dataset.pathKey] !== savedPaths[input.dataset.pathKey]);
-      if (!changed.length) { pathsStatus.textContent = window.PortalI18n.t("目录没有变化。"); return; }
-      const description = changed.map(input => `${input.previousElementSibling?.textContent || input.dataset.pathKey}: ${savedPaths[input.dataset.pathKey]} → ${proposed[input.dataset.pathKey]}`).join("\n");
-      if (!window.confirm(window.PortalI18n.text`要迁移现有数据并重启 Portal 服务吗？\n\n${description}\n\n迁移期间 Portal 将暂时不可用。`)) {
-        pathsStatus.textContent = window.PortalI18n.t("未保存新路径。修改目录必须同时迁移数据。");
-        pathInputs.forEach(input => { input.value = savedPaths[input.dataset.pathKey] || ""; });
-        return;
-      }
-      const submit = pathsForm.querySelector('[type="submit"]');
-      submit.disabled = true;
-      pathsStatus.textContent = window.PortalI18n.t("正在启动独立迁移任务…");
-      try {
-        const response = await fetch("/api/admin/paths", {method: "POST", credentials: "same-origin", headers: {"Content-Type": "application/json"}, body: JSON.stringify({paths: proposed, migrate: true})});
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.error || window.PortalI18n.t("无法启动迁移"));
-        sessionStorage.setItem("portal-path-migration", result.id);
-        pollPathMigration(result.id);
-      } catch (error) { pathsStatus.textContent = error.message; submit.disabled = false; }
+
+    const {
+      entries, executionSection, permissionStatus, permissionViews, tabs,
+    } = managementPart("PortalManagementLayout").createLayout({ $, allows, me, panelState, portalAdmin, root });
+    const { readPaths } = managementPart("PortalManagementPaths").createPaths({ panelState, root });
+    const {
+      acceptExecution, executionStatus, included, maySwitch, permissionSwitches, readExecutionSettings, showSetting,
+      startExecutionInputs, switchMessages,
+    } = managementPart("PortalManagementExecution").createExecution({
+      allows, executionSection, me, panelState, readEmbeddings: (...args) => readEmbeddings(...args),
+      readFeatureSwitches: (...args) => readFeatureSwitches(...args), readSchemes: (...args) => readSchemes(...args),
+      readTelepus: (...args) => readTelepus(...args), readWallScheduling: (...args) => readWallScheduling(...args),
+      root, savePermissionSystem: (...args) => savePermissionSystem(...args),
+      showReadNote: (...args) => showReadNote(...args),
+      syncPermissionSystem: (...args) => syncPermissionSystem(...args),
     });
-    const pendingPathJob = sessionStorage.getItem("portal-path-migration");
-    if (pendingPathJob) pollPathMigration(pendingPathJob);
-    // Portal-wide execution settings; read when the tab first opens, each control saved on change.
-    const included = name => !Array.isArray(window.__PORTAL_FRONTEND__?.distribution_features) || window.__PORTAL_FRONTEND__.distribution_features.includes(name);
-    const executionInputs = [...root.querySelectorAll("[data-execution-setting]")].filter(input => {
-      const feature = input.dataset.executionSetting.startsWith("harness_") ? "harness_recording" : input.dataset.executionSetting === "model_request_timing_enabled" ? "model_request_timing" : null;
-      if (!feature || included(feature)) return true;
-      input.closest("label").hidden = true;
-      return false;
+    const {
+      readEmbeddings, readFeatureSwitches, readTelepus, readWallScheduling,
+    } = managementPart("PortalManagementServices").createServices({
+      allows, executionSection, included, me, panelState, portalAdmin,
     });
-    const executionStatus = executionSection.querySelector("[data-management-execution-status]");
-    const embeddingsSection = executionSection.querySelector("[data-management-embeddings]");
-    const embeddingsToggle = embeddingsSection.querySelector("[data-embeddings-enabled]");
-    const embeddingsStatus = embeddingsSection.querySelector("[data-embeddings-status]");
-    embeddingsSection.hidden = !included("resident_semantic_search") || me.access?.user_category !== "portal_admin";
-    const telepusSection = executionSection.querySelector("[data-management-telepus]");
-    const telepusToggle = telepusSection.querySelector("[data-telepus-enabled]");
-    const telepusStatus = telepusSection.querySelector("[data-telepus-status]");
-    telepusSection.hidden = !portalAdmin || allows.GetTelepusStatus !== true;
-    const maySwitchTelepus = allows.SetTelepusEnabled === true;
-    let telepusBusy = false;
-    const renderTelepus = status => {
-      telepusToggle.checked = status.enabled === true;
-      telepusToggle.disabled = telepusBusy || !maySwitchTelepus || status.available !== true
-        || (status.missing?.length > 0 && !status.enabled);
-      const incomplete = (status.units || []).filter(unit => !unit.active || !unit.enabled).map(unit => unit.name);
-      telepusStatus.textContent = status.available !== true
-        ? window.PortalI18n.t("Telepus 服务状态不可用：{p0}", {p0: status.error || "systemd"})
-        : status.missing?.length
-          ? window.PortalI18n.t("缺少 Telepus 服务：{p0}。", {p0: status.missing.join("、")})
-          : status.complete ? window.PortalI18n.t("Telepus 已开启，三个服务正在运行。")
-            : status.enabled ? window.PortalI18n.t("Telepus 部分开启；需检查：{p0}。", {p0: incomplete.join("、")})
-              : window.PortalI18n.t("Telepus 已关闭，三个服务已停止并取消开机自启。");
-    };
-    const readTelepus = async () => {
-      if (telepusSection.hidden || destroyed || telepusBusy) return;
-      try {
-        const result = await window.PortalInstructionClient.execute("GetTelepusStatus", {});
-        if (!destroyed) renderTelepus(result.status);
-      } catch (error) {
-        if (!destroyed) { telepusToggle.disabled = true; telepusStatus.textContent = error.message; }
-      }
-    };
-    telepusToggle.addEventListener("change", async () => {
-      const requested = telepusToggle.checked;
-      telepusBusy = true;
-      telepusToggle.disabled = true;
-      telepusStatus.textContent = window.PortalI18n.t(requested ? "正在启动 Telepus 服务…" : "正在停止 Telepus 服务…");
-      try {
-        const result = await window.PortalInstructionClient.execute("SetTelepusEnabled", {enabled: requested},
-          {idempotencyKey: `telepus-enabled:${globalThis.PortalUIPrimitives.randomUUID()}`});
-        if (!destroyed) { telepusBusy = false; renderTelepus(result.status); }
-      } catch (error) {
-        if (!destroyed) {
-          telepusBusy = false;
-          await readTelepus();
-          telepusStatus.textContent = error.message;
-        }
-      }
+    const {
+      readSchemes, savePermissionSystem, showReadNote, syncPermissionSystem,
+    } = managementPart("PortalManagementPermissionSystem").createPermissionSystem({
+      $, acceptExecution, entries, executionSection, executionStatus, maySwitch, me, panelState, permissionStatus,
+      permissionSwitches, root, showSetting, switchMessages, tabs,
     });
-    const wallSchedulingSection = executionSection.querySelector("[data-management-wall-scheduling]");
-    const wallSchedulingToggle = wallSchedulingSection.querySelector("[data-wall-scheduling-enabled]");
-    const wallSchedulingStatus = wallSchedulingSection.querySelector("[data-wall-scheduling-status]");
-    wallSchedulingSection.hidden = !portalAdmin;
-    const wallSchedulingRequest = async enabled => {
-      const response = await fetch("/api/admin/wall-scheduling", {
-        method: enabled === undefined ? "GET" : "POST", credentials: "same-origin",
-        ...(enabled === undefined ? {} : {headers: {"Content-Type": "application/json"}, body: JSON.stringify({enabled})}),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || window.PortalI18n.t("无法读取 WALL 定时任务状态"));
-      return result;
-    };
-    const readWallScheduling = async () => {
-      if (wallSchedulingSection.hidden || destroyed) return;
-      try {
-        const result = await wallSchedulingRequest();
-        if (destroyed) return;
-        wallSchedulingToggle.checked = result.enabled === true;
-        wallSchedulingToggle.disabled = false;
-        wallSchedulingStatus.textContent = window.PortalI18n.t(result.enabled ? "WALL 定时任务已开启。" : "WALL 定时任务已暂停；各工程的计划配置保留。");
-      } catch (error) {
-        wallSchedulingToggle.disabled = true;
-        wallSchedulingStatus.textContent = error.message;
-      }
-    };
-    wallSchedulingToggle.addEventListener("change", async () => {
-      const enabled = wallSchedulingToggle.checked;
-      wallSchedulingToggle.disabled = true;
-      try {
-        const result = await wallSchedulingRequest(enabled);
-        wallSchedulingToggle.checked = result.enabled === true;
-        wallSchedulingToggle.disabled = false;
-        wallSchedulingStatus.textContent = window.PortalI18n.t(result.enabled ? "WALL 定时任务已开启。" : "WALL 定时任务已暂停；各工程的计划配置保留。");
-      } catch (error) {
-        await readWallScheduling();
-        wallSchedulingStatus.textContent = error.message;
-      }
-    });
-    const featureSwitches = [...executionSection.querySelectorAll("[data-management-feature-switch]")].map(section => {
-      const name = section.dataset.managementFeatureSwitch;
-      const toggle = section.querySelector("[data-feature-switch-enabled]");
-      const status = section.querySelector("[data-feature-switch-status]");
-      section.hidden = !portalAdmin || (name === "pulse" && !included("pulse"));
-      const request = async enabled => {
-        const response = await fetch(enabled === undefined
-          ? `/api/admin/feature-switch?name=${encodeURIComponent(name)}` : "/api/admin/feature-switch", {
-          method: enabled === undefined ? "GET" : "POST", credentials: "same-origin",
-          ...(enabled === undefined ? {} : {headers: {"Content-Type": "application/json"}, body: JSON.stringify({name, enabled})}),
-        });
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.error || window.PortalI18n.t("无法读取功能状态"));
-        return result;
-      };
-      const render = result => {
-        toggle.checked = result.enabled === true;
-        toggle.indeterminate = result.partial === true;
-        toggle.disabled = false;
-        status.textContent = window.PortalI18n.t(result.partial ? "部分触发源已暂停，请重新切换以统一状态。"
-          : result.enabled ? "已开启。" : "已关闭；已有结果保留。");
-      };
-      const read = async () => {
-        if (section.hidden || destroyed) return;
-        try {
-          const result = await request();
-          if (!destroyed) render(result);
-        } catch (error) {
-          if (!destroyed) { toggle.disabled = true; status.textContent = error.message; }
-        }
-      };
-      toggle.addEventListener("change", async () => {
-        const enabled = toggle.checked;
-        toggle.disabled = true;
-        try { if (!destroyed) render(await request(enabled)); }
-        catch (error) { await read(); status.textContent = error.message; }
-      });
-      return read;
-    });
-    const readFeatureSwitches = () => featureSwitches.forEach(read => { void read(); });
-    let embeddingPoll = 0;
-    const embeddingRequest = async (url, body) => {
-      const response = await fetch(url, {
-        method: body === undefined ? "GET" : "POST", credentials: "same-origin",
-        ...(body === undefined ? {} : {headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)}),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || window.PortalI18n.t("无法读取语义搜索设置"));
-      return result;
-    };
-    let embeddingInstalling = false;
-    const renderEmbeddings = state => {
-      embeddingInstalling = state.job?.state === "running";
-      embeddingsToggle.checked = state.enabled === true;
-      embeddingsToggle.disabled = state.job?.state === "running";
-      const missing = Array.isArray(state.missing) ? state.missing : [];
-      embeddingsStatus.textContent = state.job?.state === "running"
-        ? window.PortalI18n.t("正在后台安装语义搜索包和模型；完成后请再次打开开关。")
-        : state.job?.state === "failed"
-          ? window.PortalI18n.text`安装失败：${state.job.error || window.PortalI18n.t("请查看安装日志")}`
-          : state.platform_issue ? window.PortalI18n.text`此设备暂不支持自动安装语义搜索：${state.platform_issue}`
-          : state.active ? window.PortalI18n.t("语义搜索已开启。") : missing.length
-            ? window.PortalI18n.text`语义搜索已关闭。缺少：${missing.join("、")}。`
-            : window.PortalI18n.t("语义搜索已关闭；所需包和模型已就绪。");
-      window.clearTimeout(embeddingPoll);
-      if (state.job?.state === "running" && !destroyed) {
-        embeddingPoll = window.setTimeout(() => { void readEmbeddings(); }, 2500);
-      }
-    };
-    const readEmbeddings = async () => {
-      if (embeddingsSection.hidden || destroyed) return;
-      try { renderEmbeddings(await embeddingRequest("/api/admin/embeddings")); }
-      catch (error) { embeddingsStatus.textContent = error.message; }
-    };
-    embeddingsToggle.addEventListener("change", async () => {
-      const requested = embeddingsToggle.checked;
-      embeddingsToggle.disabled = true;
-      try {
-        const state = await embeddingRequest("/api/admin/embeddings", {enabled: requested});
-        renderEmbeddings(state);
-        if (requested && state.needs_install) {
-          const approved = await window.PortalUI.confirm({
-            title: window.PortalI18n.t("安装 Resident 语义搜索？"),
-            message: window.PortalI18n.text`本机缺少：${state.missing.join("、")}。安装会下载模型并安装 Python 包；完成后请再次打开开关。`,
-            confirmLabel: window.PortalI18n.t("安装"),
-          });
-          if (approved) {
-            await embeddingRequest("/api/admin/embeddings/install", {});
-            await readEmbeddings();
-          }
-        }
-      } catch (error) { embeddingsStatus.textContent = error.message; await readEmbeddings(); }
-      finally {
-        if (!destroyed && !embeddingInstalling) embeddingsToggle.disabled = false;
-      }
-    });
-    const switchMessages = {
-      model_request_timing_enabled: on => on ? window.PortalI18n.t("请求时间记录已开启。") : window.PortalI18n.t("请求时间记录已关闭，缺失的时间保持未知。"),
-      harness_recording_enabled: on => on ? window.PortalI18n.t("Harness 记录已开启。") : window.PortalI18n.t("Harness 记录已关闭，已有记录按保留天数清理。"),
-      permission_system_enabled: on => on ? window.PortalI18n.t("权限系统已开启，启用方案的实例已补齐。") : window.PortalI18n.t("权限系统已关闭，方案暂不参与判定。"),
-    };
-    let executionRead = false;
-    let savedExecution = {};
-    let permissionSaving = false;
-    let permissionRevision = 0;
-    const showSetting = input => {
-      const value = savedExecution[input.dataset.executionSetting];
-      if (input.type === "checkbox") input.checked = value === true;
-      else input.value = typeof value === "number" ? String(value) : "";
-      const state = input.dataset.executionSetting === "permission_system_enabled" && input.closest("label").querySelector("[data-permission-system-state]");
-      if (state) {
-        state.hidden = typeof value !== "boolean";
-        state.textContent = window.PortalI18n.t(value ? "当前：已开启" : "当前：已关闭");
-      }
-    };
-    // Only the given controls are redrawn, so a value typed into another one survives a save.
-    const acceptExecution = (settings, inputs) => {
-      for (const input of inputs) {
-        if (typeof settings?.[input.dataset.executionSetting] !== (input.type === "checkbox" ? "boolean" : "number")) {
-          throw new Error(window.PortalI18n.t("未能读取执行设置"));
-        }
-      }
-      const accepted = {...settings};
-      // An unrelated setting's older response cannot undo a newer permission toggle.
-      if (!inputs.some(input => input.dataset.executionSetting === "permission_system_enabled")) delete accepted.permission_system_enabled;
-      savedExecution = {...savedExecution, ...accepted};
-      inputs.forEach(showSetting);
-      if (typeof accepted.permission_system_enabled === "boolean") syncPermissionSystem(accepted.permission_system_enabled);
-    };
-    // The scheme in use; activating another one brings its saved instance up to date first (ActivatePermissionScheme).
-    const schemeSelect = executionSection.querySelector("[data-permission-scheme]");
-    let activeScheme = "";
-    // The settings read and the scheme list read answer in either order; their failures share the status line.
-    const readNotes = {settings: "", schemes: ""};
-    const showReadNote = (key, text) => {
-      readNotes[key] = text;
-      executionStatus.textContent = [readNotes.settings, readNotes.schemes].filter(Boolean).join(" ");
-    };
-    // Portal 管理员 always list the schemes (8fd7ed6f); anyone else a scheme refuses sees the refusal as it is.
-    const readSchemes = () => {
-      void window.PortalInstructionClient.execute("ListPermissionSchemes", {}).then(result => {
-        if (destroyed) return;
-        const schemes = Array.isArray(result.schemes) ? result.schemes : [];
-        activeScheme = schemes.find(item => item.active)?.scheme_id || "";
-        schemeSelect.replaceChildren(...schemes.map(item => {
-          const option = document.createElement("option");
-          option.value = item.scheme_id;
-          option.textContent = item.title || item.scheme_id;
-          option.selected = item.active === true;
-          return option;
-        }));
-        schemeSelect.disabled = !schemes.length;
-        readNotes.schemes = "";
-      }).catch(error => { if (!destroyed) showReadNote("schemes", error.message); });
-    };
-    // The 授权差 of an activation (b820 §5.12), as rows of the confirmation: the scheme page's wording, with
-    // the A levels titled from the scheme's rules when they can be read. It only informs.
-    const authDiffRows = async (schemeId, report) => {
-      if (!report) return [];
-      try {
-        await window.PortalUIPrimitives.loadAsset("/static/portal_permission_schemes.js", {ready: () => window.PortalPermissionSchemes});
-        const rules = report.groups?.items?.length
-          ? (await window.PortalInstructionClient.execute("GetPermissionScheme", {scheme_id: schemeId}).catch(() => null))?.rules : null;
-        const parts = window.PortalPermissionSchemes.authDiffParts(report, rules);
-        const t = window.PortalI18n.t;
-        return [
-          {label: t("授权差"), value: parts.head}, {label: t("未算完"), value: parts.incomplete},
-          ...parts.groups.map(item => ({label: item.kindLabel, value: item.text})), {label: t("其余"), value: parts.more},
-          ...parts.remapped.map(item => ({label: t("归类改变"), value: `${item.instruction}：${item.lines.join(t("；"))}`})), {label: t("其余"), value: parts.remappedMore},
-        ];
-      } catch (_error) { return []; }
-    };
-    schemeSelect.addEventListener("change", async () => {
-      const schemeId = schemeSelect.value;
-      if (!schemeId || schemeId === activeScheme) return;
-      pending++;
-      schemeSelect.disabled = true;
-      try {
-        const impact = await window.PortalInstructionClient.execute("ActivatePermissionScheme", {scheme_id: schemeId, dry_run: true, diff_limit: 8});
-        if (destroyed) return;
-        const authRows = await authDiffRows(schemeId, impact.auth_diff);
-        if (destroyed) return;
-        // While the system is off, activating only records the scheme; its instance is brought up to date when it is turned on.
-        const t = window.PortalI18n.t;
-        const work = impact.regenerate
-          ? t("这份方案还没有按当前规则生成的实例，将按 Portal 现有对象生成：{p0} 个节点、{p1} 条表项。", {p0: impact.added_nodes || 0, p1: impact.added_entries || 0})
-          : t("先把这份方案的实例补齐到 Portal 现有对象：新增 {p0} 条、删除 {p1} 条表项，移动 {p2} 个节点；实例中的修改原样保留。",
-            {p0: impact.added_entries || 0, p1: impact.removed_entries || 0, p2: impact.moved_nodes || 0});
-        const approved = await window.PortalUI.confirm(permissionsOff ? {
-          title: t("开启权限系统时使用 {p0}？", {p0: impact.title || schemeId}),
-          message: [t("权限系统仍保持关闭，现在不影响任何判定；在“执行设置”中开启权限系统时，Portal 按这份方案判定。"), work].join(" "),
-          metadata: authRows, confirmLabel: t("设为开启时使用"),
-        } : {
-          title: t("启用权限方案「{p0}」？", {p0: impact.title || schemeId}),
-          message: [work, t("之后所有判定按这份方案进行。")].join(" "),
-          metadata: authRows, confirmLabel: t("启用"), tone: "danger",
-        });
-        if (destroyed) return;
-        if (!approved) { schemeSelect.value = activeScheme; return; }
-        if (!permissionsOff) executionStatus.textContent = t("正在补齐权限实例…");
-        await window.PortalInstructionClient.execute("ActivatePermissionScheme", {scheme_id: schemeId},
-          {idempotencyKey: `permission-scheme:${globalThis.PortalUIPrimitives.randomUUID()}`});
-        if (destroyed) return;
-        activeScheme = schemeId;
-        executionStatus.textContent = t(permissionsOff ? "开启权限系统时将使用这份方案。" : "权限方案已切换。");
-      } catch (error) {
-        if (!destroyed) { schemeSelect.value = activeScheme; executionStatus.textContent = error.message; }
-      } finally {
-        pending--;
-        if (!destroyed) schemeSelect.disabled = false;
-      }
-    });
-    // /api/me asks UpdateExecutionSettings about the switch alone, which a Portal 管理员 always passes
-    // whatever the scheme (b820 §3.1); the switch shows /api/me's mode, so a scheme that refuses
-    // GetExecutionSettings cannot take it away.
-    const permissionSwitches = executionInputs.filter(input => input.dataset.executionSetting === "permission_system_enabled");
-    const switchInput = permissionSwitches[0];
-    const maySwitch = allows.UpdateExecutionSettings === true;
-    const syncPermissionSystem = enabled => {
-      if (destroyed || typeof enabled !== "boolean") return;
-      permissionRevision++;
-      permissionsOff = !enabled;
-      savedExecution.permission_system_enabled = enabled;
-      permissionSwitches.forEach(input => { showSetting(input); input.disabled = !maySwitch || permissionSaving; });
-      tabs.querySelector('[data-management-tab="entries"]').hidden = !enabled;
-      $("view-permissions").hidden = !enabled;
-      root.querySelector(".managementCreationPermissions h3").hidden = !enabled;
-      root.querySelector("[data-management-users] header p").firstChild.textContent = `${window.PortalI18n.t(enabled
-        ? "管理账户资料与业务关联；各类资源的实际权限在“权限表项”分栏中查看。"
-        : "管理账户资料与业务关联；权限系统关闭时不限制访问。")} `;
-      entries.get("schemes").instance?.setSystemEnabled?.(enabled);
-    };
-    const showPermissionMessage = message => {
-      executionStatus.textContent = message;
-      permissionStatus.textContent = message;
-      permissionStatus.hidden = !message;
-    };
-    const savePermissionSystem = async value => {
-      if (!maySwitch || permissionSaving || destroyed) { permissionSwitches.forEach(showSetting); return; }
-      permissionSaving = true;
-      pending++;
-      permissionSwitches.forEach(input => { input.disabled = true; });
-      try {
-        const approved = await window.PortalUI.confirm(value
-          ? {title: window.PortalI18n.t("开启权限系统？"), message: window.PortalI18n.t("先把启用方案的实例补齐到 Portal 现有对象，再对所有调用恢复检查。对象较多时需要等待一会儿。"), confirmLabel: window.PortalI18n.t("开启")}
-          : {title: window.PortalI18n.t("关闭权限系统？"), message: window.PortalI18n.t("所有已登录的 User 与 Resident 将可以查看、使用、修改和删除所有对象。权限方案的实例和临时凭证保留，重新开启时补齐后继续生效。"), confirmLabel: window.PortalI18n.t("关闭"), tone: "danger"});
-        if (!approved || destroyed) return;
-        showPermissionMessage(window.PortalI18n.t(value ? "正在重建权限实例…" : "正在关闭权限系统…"));
-        const result = await window.PortalInstructionClient.execute("UpdateExecutionSettings", {permission_system_enabled: value},
-          {idempotencyKey: `execution-settings:${globalThis.PortalUIPrimitives.randomUUID()}`});
-        if (destroyed) return;
-        acceptExecution(result.settings, permissionSwitches);
-        showPermissionMessage(switchMessages.permission_system_enabled(savedExecution.permission_system_enabled));
-        if (!savedExecution.permission_system_enabled) readSchemes();
-      } catch (error) {
-        if (!destroyed) showPermissionMessage(error.message);
-      } finally {
-        pending--;
-        permissionSaving = false;
-        if (!destroyed) permissionSwitches.forEach(input => { showSetting(input); input.disabled = !maySwitch; });
-      }
-    };
-    if (typeof me.access?.permission_system === "string") syncPermissionSystem(!permissionsOff);
-    const readExecutionSettings = () => {
-      if (executionRead) { void readTelepus(); void readWallScheduling(); readFeatureSwitches(); return; }
-      executionRead = true;
-      void readEmbeddings();
-      void readTelepus();
-      void readWallScheduling();
-      readFeatureSwitches();
-      readSchemes();
-      if (maySwitch && typeof me.access?.permission_system === "string" && typeof savedExecution.permission_system_enabled !== "boolean") {
-        savedExecution.permission_system_enabled = me.access.permission_system !== "open";
-        showSetting(switchInput);
-        switchInput.disabled = false;
-      }
-      const revision = permissionRevision;
-      void window.PortalInstructionClient.execute("GetExecutionSettings", {}).then(result => {
-        if (destroyed) return;
-        const settings = {...result.settings};
-        if (revision !== permissionRevision) settings.permission_system_enabled = savedExecution.permission_system_enabled;
-        acceptExecution(settings, executionInputs);
-        showReadNote("settings", "");
-        executionInputs.forEach(input => { input.disabled = permissionSwitches.includes(input) && (!maySwitch || permissionSaving); });
-      }).catch(error => {
-        if (destroyed) return;
-        // Opening the tab again reads again.
-        executionRead = false;
-        showReadNote("settings", switchInput.disabled ? error.message
-          : window.PortalI18n.t("{p0} 权限系统开关仍可使用。", {p0: error.message}));
-      });
-    };
-    for (const input of executionInputs) {
-      input.addEventListener("change", async () => {
-        const field = input.dataset.executionSetting;
-        let value = input.checked;
-        if (field === "permission_system_enabled") { await savePermissionSystem(value); return; }
-        if (input.type === "number") {
-          value = Number(input.value);
-          const minimum = Number(input.min), maximum = Number(input.max);
-          if (!input.value.trim() || !Number.isInteger(value) || value < minimum || value > maximum) {
-            executionStatus.textContent = window.PortalI18n.t("请输入 {p0}–{p1} 之间的整数天数", {p0: minimum, p1: maximum});
-            showSetting(input);
-            return;
-          }
-          if (value === savedExecution[field]) return;
-        }
-        pending++;
-        input.disabled = true;
-        try {
-          const result = await window.PortalInstructionClient.execute("UpdateExecutionSettings", {[field]: value},
-            {idempotencyKey: `execution-settings:${globalThis.PortalUIPrimitives.randomUUID()}`});
-          if (destroyed) return;
-          acceptExecution(result.settings, [input]);
-          executionStatus.textContent = window.PortalI18n.t(switchMessages[field]?.(value) || "保留天数已保存。");
-        } catch (error) {
-          if (!destroyed) { showSetting(input); executionStatus.textContent = error.message; }
-        } finally {
-          pending--;
-          if (!destroyed) input.disabled = false;
-        }
-      });
-    }
+    startExecutionInputs();
     const noticeElement = $("notice"); root.prepend(noticeElement);
-    const baselines = new WeakMap();
-    const snapshot = form => JSON.stringify([...form.querySelectorAll("input,select,textarea")].map(input => (
-      input.type === "checkbox" || input.type === "radio" ? input.checked : input.value
-    )));
-    const remember = form => baselines.set(form, snapshot(form));
-    const dirty = form => baselines.has(form) && snapshot(form) !== baselines.get(form);
-    const accountDialogs = new Map([...root.querySelectorAll("dialog")].map(dialog => [dialog,
-      window.PortalUI.createDialogController({
-        modal: dialog, escapeClose: true, initialFocus: () => dialog.querySelector("input"),
-        requestClose: async () => {
-          const form = dialog.querySelector("form");
-          if (!(await allowLeave([form]))) return;
-          closeAccountDialog(dialog); form.reset();
-        },
-      }),
-    ]));
-    const openAccountDialog = dialog => accountDialogs.get(dialog).open();
-    const closeAccountDialog = dialog => accountDialogs.get(dialog).close({force: true});
-    const activeForms = () => [
-      ...(!$("editor").hidden ? [$("editor")] : []),
-      ...[...root.querySelectorAll("dialog[open] form")],
-    ];
-    const isBusy = () => pending > 0 || enrollment.isBusy() || [...entries.values()].some(entry => entry.syncing || entry.instance?.isBusy?.() === true);
-    const hasUnsavedChanges = () => {
-      saveUserDraft();
-      return enrollment.hasUnsavedChanges() || activeForms().some(dirty) || userDrafts.size > 0 || [...entries.values()].some(entry => entry.instance?.hasUnsavedChanges?.() === true);
-    };
-    const saveUserDraft = () => {
-      if (!state.selectedUsername || $("editor").hidden) return;
-      const form = $("editor");
-      if (dirty(form)) userDrafts.set(state.selectedUsername, {values: snapshot(form), baseline: baselines.get(form)});
-      else userDrafts.delete(state.selectedUsername);
-    };
-    const allowLeave = async (forms = null) => {
-      if (destroyed || confirming) return false;
-      if (isBusy()) { notice(window.PortalI18n.t("操作正在处理，请稍后再试。"), "error"); return false; }
-      if (!(forms ? forms.some(dirty) : hasUnsavedChanges())) return true;
-      confirming = true;
-      const dialogs = [...root.querySelectorAll("dialog[open]")];
-      dialogs.forEach(closeAccountDialog);
-      try {
-        const approved = await window.PortalUI.confirm({title: window.PortalI18n.t("放弃未保存的修改？"), message: window.PortalI18n.t("离开后将清除未保存的修改。"), confirmLabel: window.PortalI18n.t("放弃修改"), tone: "danger"});
-        return approved && !destroyed && !isBusy();
-      } finally {
-        if (!destroyed) dialogs.forEach(openAccountDialog);
-        confirming = false;
-      }
-    };
-    const run = callback => async event => {
-      event?.preventDefault?.();
-      if (destroyed || confirming || isBusy()) return;
-      pending++;
-      try { await callback(event); } finally { pending--; }
-    };
-    const disposePermission = () => {
-      navigationVersion++;
-      for (const entry of entries.values()) {
-        entry.instance?.destroy?.(); entry.instance = null;
-      }
-    };
-    const showView = () => {
-      for (const [view, entry] of entries) entry.pane.hidden = view !== currentView;
-      root.querySelectorAll("[data-management-tab]").forEach(tab => {
-        const selected = tab.dataset.managementTab === currentView;
-        tab.setAttribute("aria-selected", String(selected)); tab.classList.toggle("is-primary", selected);
-      });
-    };
-    const ensureEntry = async (view, principalId) => {
-      const entry = entries.get(view);
-      if (!entry.promise) {
-        entry.target = principalId;
-        entry.container.textContent = window.PortalI18n.t("正在加载…");
-        entry.promise = Promise.resolve().then(async () => {
-          if (view === "network") return mountNetwork(entry.container);
-          if (view === "instances") return (await import("/static/portal_management_instances.js")).mount(entry.container);
-          if (view === "resource-types") return (await import("/static/portal_management_resource_types.js")).mount(entry.container, {me});
-          if (view === "backend") return (await import("/static/portal_management_backend.js")).mount(entry.container, {me, accountId: options.accountId});
-          return window.PortalNav.mountPermissionManagement({container: entry.container, principalId, view, onSystemChange: syncPermissionSystem});
-        }).then(instance => {
-          if (destroyed) { instance?.destroy?.(); return null; }
-          entry.instance = instance;
-          return instance;
-        }).catch(error => {
-          if (!destroyed) entry.container.textContent = error.message || window.PortalI18n.t("无法加载权限管理。");
-          entry.promise = null;
-          return null;
-        });
-      }
-      return entry.promise;
-    };
-    const refreshEntry = async entry => {
-      if (!entry.invalidation || !entry.instance?.refresh || entry.syncing || entry.instance.isBusy?.()) return;
-      const invalidation = entry.invalidation;
-      const selected = entry.instance.getPrincipalId?.() ?? entry.target;
-      if (invalidation.principalId && invalidation.principalId !== selected) return;
-      entry.syncing = true;
-      try {
-        const refreshed = await entry.instance.refresh(invalidation);
-        if (refreshed !== false && entry.invalidation === invalidation) entry.invalidation = null;
-      } catch (error) { notice(error.message || window.PortalI18n.t("部分内容待刷新，请稍后重试。"), "error"); }
-      finally { entry.syncing = false; }
-    };
-    const invalidate = ({views = [], principalId, reason = "changed"} = {}) => {
-      for (const view of views) {
-        const entry = entries.get(view);
-        if (entry && view !== "users") entry.invalidation = {principalId, reason};
-      }
-    };
-    const openSection = async ({view = "users", principalId, accountId, createAccount = false} = {}) => {
-      if (!entries.has(view)) throw new Error("Unknown Portal Management view.");
-      if (["network", "instances"].includes(view) && !portalAdmin) return false;
-      if (permissionsOff && permissionViews.has(view)) { view = "users"; principalId = undefined; }
-      if (destroyed || confirming) return false;
-      const current = entries.get(currentView);
-      const targetPrincipal = principalId === undefined
-        ? (view === "users" || currentView === "users" ? state.selectedUsername : (current.instance?.getPrincipalId?.() ?? currentPrincipalId))
-        : String(principalId || "");
-      const entry = entries.get(view);
-      if (view === "users" && targetPrincipal !== state.selectedUsername) {
-        if (pending > 0) { notice(window.PortalI18n.t("账户操作正在处理，请稍后切换用户。"), "error"); return false; }
-        if (!accessUser(targetPrincipal)) { notice(window.PortalI18n.t("用户目录中没有该账户。"), "error"); return false; }
-        saveUserDraft(); state.selectedUsername = targetPrincipal;
-        renderUserList(); renderEditor();
-      }
-      const principalView = view === "entries" || view === "schemes";
-      if (principalView && entry.instance && targetPrincipal !== (entry.instance.getPrincipalId?.() ?? entry.target)) {
-        if (entry.syncing || entry.instance.isBusy?.()) { notice(window.PortalI18n.t("目标资料正在处理，请稍后切换。"), "error"); return false; }
-        if (!entry.instance.setPrincipalId) { notice(window.PortalI18n.t("该视图暂不支持保留草案切换主体。"), "error"); return false; }
-      }
-      const version = ++navigationVersion;
-      const previousView = currentView;
-      currentView = view; currentPrincipalId = targetPrincipal; showView();
-      if (view === "users") return true;
-      if (view === "execution") { readExecutionSettings(); return true; }
-      if (view === "paths") { readPaths(); return true; }
-      const alreadyMounted = Boolean(entry.instance);
-      const instance = await ensureEntry(view, targetPrincipal);
-      if (!instance || destroyed || version !== navigationVersion) return false;
-      if (view === "schemes" && alreadyMounted) await instance.refreshSystem?.();
-      if (view === "backend") {
-        instance.focusAccount?.(accountId);
-        if (createAccount) instance.openAccountEditor?.();
-      }
-      if (principalView && targetPrincipal !== (instance.getPrincipalId?.() ?? entry.target)) {
-        if (entry.syncing || instance.isBusy?.() || !instance.setPrincipalId) return false;
-        entry.syncing = true;
-        try {
-          if (await instance.setPrincipalId(targetPrincipal) === false) {
-            if (!destroyed && version === navigationVersion) { currentView = previousView; showView(); }
-            return false;
-          }
-          entry.target = targetPrincipal;
-        } catch (error) { notice(error.message || window.PortalI18n.t("无法切换目标主体。"), "error"); return false; }
-        finally { entry.syncing = false; }
-      }
-      await refreshEntry(entry);
-      return !destroyed && version === navigationVersion;
-    };
-    root.querySelectorAll("[data-management-tab]").forEach(tab => tab.addEventListener("click", () => openSection({view: tab.dataset.managementTab})));
-    $("view-permissions").addEventListener("click", () => openSection({view: "entries", principalId: state.selectedUsername}));
-
-
-    const notice = (message, tone = "") => {
-      if (destroyed) return;
-      const box = $("notice");
-      box.hidden = !message;
-      box.className = `settingsNotice${tone ? ` ${tone}` : ""}`;
-      box.textContent = message || "";
-    };
-    const accessUser = (username = state.selectedUsername) => (
-      state.access?.users?.find(user => user.username === username) || null
-    );
-    const renderUserList = () => {
-      const host = $("user-list");
-      host.replaceChildren();
-      for (const user of state.access?.users || []) {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "accessUserRow";
-        button.setAttribute("aria-current", user.username === state.selectedUsername ? "true" : "false");
-        const name = document.createElement("strong");
-        name.textContent = user.display_name || user.username;
-        const meta = document.createElement("small");
-        meta.textContent = user.category && user.category !== "member"
-          ? `${user.username} · ${userCategoryTitle(user.category)}`
-          : `${user.username} · ${user.status}`;
-        button.append(name, meta);
-        button.addEventListener("click", () => openSection({view: "users", principalId: user.username}));
-        host.append(button);
-      }
-    };
-    const renderEditor = () => {
-      const user = accessUser();
-      $("editor").hidden = !user;
-      $("empty").hidden = Boolean(user);
-      if (!user) return;
-      $("editor-name").textContent = user.display_name || user.username;
-      $("editor-meta").textContent = user.username;
-      $("display-name").value = user.display_name || user.username;
-      $("email").value = user.email || "";
-      $("status").value = user.status || "active";
-      $("category").value = user.category || "member";
-      // Saving runs UpdateUser on this username, category included; each user row carries the
-      // server's answer for the caller (allows.UpdateUser), and the form is editable only when it allows it.
-      const mayUpdate = user.allows?.UpdateUser === true;
-      ["display-name", "email", "status", "category"].forEach(name => { $(name).disabled = !mayUpdate; });
-      $("editor").querySelector('button[type="submit"]').disabled = !mayUpdate;
-      // The administrator list is for Portal 管理员 alone and never their own row, in either mode
-      // and under every scheme (b820 §3.1): the category and status of an administrator's row,
-      // its deletion, and making anyone an administrator.
-      const callerAdmin = me.access?.user_category === "portal_admin";
-      const rowAdmin = user.category === "portal_admin";
-      const own = user.username.toLowerCase() === String(me.username || "").toLowerCase();
-      const listLocked = rowAdmin && (!callerAdmin || own);
-      if (listLocked) { $("status").disabled = true; $("category").disabled = true; }
-      $("category").querySelector('option[value="portal_admin"]').disabled = !callerAdmin && !rowAdmin;
-      $("remove-user-button").hidden = listLocked;
-      $("admin-note").hidden = !listLocked;
-      $("admin-note").textContent = !listLocked ? ""
-        : window.PortalI18n.t(own ? "不能取消、停用或删除自己的 Portal 管理员身份；需要时由另一位 Portal 管理员操作。"
-          : "只有 Portal 管理员能修改管理员名单：这位 Portal 管理员的分类和状态不能在这里修改，也不能删除。");
-      $("reset-password-button").hidden = user.username === me.username;
-      const draft = userDrafts.get(user.username);
-      if (draft) {
-        const values = JSON.parse(draft.values);
-        $("editor").querySelectorAll("input,select,textarea").forEach((input, index) => {
-          if (input.type === "checkbox" || input.type === "radio") input.checked = values[index];
-          else input.value = values[index];
-        });
-        baselines.set($("editor"), draft.baseline);
-      } else remember($("editor"));
-    };
-    const renderAudit = () => {
-      const host = $("audit-list");
-      host.replaceChildren();
-      for (const event of state.access?.audit || []) {
-        const row = document.createElement("div");
-        row.className = "accessAuditEvent";
-        const at = document.createElement("span");
-        at.textContent = window.PortalUI.formatDateTime(event.at);
-        const actor = document.createElement("code");
-        actor.textContent = event.actor || "system";
-        const action = document.createElement("span");
-        action.textContent = `${event.action || "update"}${event.target ? ` · ${event.target}` : ""}`;
-        row.append(at, actor, action);
-        host.append(row);
-      }
-    };
-    const renderAccess = () => {
-      renderUserList();
-      renderEditor();
-      renderAudit();
-    };
-    const loadAccess = async (preferredUsername = "", discardUser = "") => {
-      saveUserDraft();
-      if (discardUser) userDrafts.delete(discardUser);
-      const access = await window.PortalAPI.get("/api/admin/access-control");
-      if (destroyed) return;
-      state.access = access;
-      $("password-reset-status").textContent = state.access.password_reset?.email_configured
-        ? window.PortalI18n.t("Email recovery is enabled.")
-        : window.PortalI18n.t("Email recovery is waiting for SMTP configuration.");
-      if (preferredUsername && accessUser(preferredUsername)) state.selectedUsername = preferredUsername;
-      if (!accessUser()) state.selectedUsername = state.access.users?.[0]?.username || "";
-      renderAccess();
-    };
-    // Profile updates and removal use HATG ISA; password reset and
-    // session revocation use the account security route.
-    const userInstruction = (name, args) => window.PortalInstructionClient.execute(name, args, {
-      idempotencyKey: `user:${name}:${globalThis.PortalUIPrimitives.randomUUID()}`,
+    const {
+      accountDialogs, allowLeave, baselines, closeAccountDialog, hasUnsavedChanges, isBusy, openAccountDialog,
+      remember, run, saveUserDraft,
+    } = managementPart("PortalManagementGuards").createGuards({
+      $, enrollment, entries, notice: (...args) => notice(...args), panelState, root, state, userDrafts,
     });
-    const saveAccess = async event => {
-      event.preventDefault();
-      const user = accessUser();
-      if (!user) return;
-      try {
-        // Status and category go only when changed: on an administrator's row either one is a
-        // change to the administrator list, which a profile edit must not ask for.
-        const category = $("category").value;
-        const status = $("status").value;
-        await userInstruction("UpdateUser", {
-          user_id: user.username,
-          changes: {
-            display_name: $("display-name").value.trim(),
-            recovery_email: $("email").value.trim(),
-            ...(status !== (user.status || "active") ? {status} : {}),
-            ...(category !== (user.category || "member") ? {category} : {}),
-          },
-        });
-        await loadAccess(user.username, user.username);
-        invalidate({views: ["entries"], principalId: user.username, reason: "user.updated"});
-        notice(window.PortalI18n.text`Access saved for ${user.username}.`, "success");
-      } catch (error) {
-        notice(error.message || window.PortalI18n.t("Unable to save access."), "error");
-      }
-    };
-    const openResetPassword = () => {
-      if (destroyed || confirming || isBusy()) return;
-      const user = accessUser();
-      if (!user || user.username === me.username) return;
-      $("reset-password-form").reset();
-      $("reset-password-user").textContent = window.PortalI18n.text`Set a new password for ${user.username}. Existing sessions will be revoked.`;
-      remember($("reset-password-form"));
-      openAccountDialog($("reset-password-dialog"));
-      $("reset-password-input").focus();
-    };
-    const submitResetPassword = async event => {
-      event.preventDefault();
-      const user = accessUser();
-      if (!user) return;
-      const password = $("reset-password-input").value;
-      const strengthError = window.PortalIdentity.passwordStrengthError(password);
-      if (strengthError) {
-        notice(strengthError, "error");
-        $("reset-password-input").focus();
-        return;
-      }
-      try {
-        await userInstruction("ResetUserPassword", {
-          user_id: user.username,
-          new_password: password,
-        });
-        closeAccountDialog($("reset-password-dialog"));
-        await loadAccess(user.username);
-        notice(window.PortalI18n.text`Password reset and sessions revoked for ${user.username}.`, "success");
-      } catch (error) {
-        notice(error.message || window.PortalI18n.t("Unable to reset password."), "error");
-      }
-    };
-    const revokeSessions = async () => {
-      const user = accessUser();
-      if (!user) return;
-      const approved = await window.PortalUI.confirm({
-        title: window.PortalI18n.t("Revoke sessions?"),
-        message: `${user.username} will need to sign in again on every device.`,
-        confirmLabel: window.PortalI18n.t("Revoke sessions"),
-        tone: "danger",
-      });
-      if (!approved) return;
-      try {
-        await userInstruction("RevokeUserSessions", {
-          user_id: user.username,
-        });
-        await loadAccess(user.username);
-        notice(window.PortalI18n.text`Sessions revoked for ${user.username}.`, "success");
-      } catch (error) {
-        notice(error.message || window.PortalI18n.t("Unable to revoke sessions."), "error");
-      }
-    };
-    const syncRemovalDialog = () => {
-      const user = accessUser();
-      $("remove-user-submit").disabled = !user || $("delete-confirm-input").value !== user.username;
-    };
-    const openRemoveUser = () => {
-      if (destroyed || confirming || isBusy()) return;
-      const user = accessUser();
-      if (!user) return;
-      $("remove-user-form").reset();
-      $("remove-user-name").textContent = window.PortalI18n.text`Delete ${user.username}.`;
-      $("delete-confirm-label").textContent = window.PortalI18n.text`Type ${user.username} to confirm permanent deletion`;
-      syncRemovalDialog();
-      remember($("remove-user-form"));
-      openAccountDialog($("remove-user-dialog"));
-    };
-    const submitRemoveUser = async event => {
-      event.preventDefault();
-      const user = accessUser();
-      if (!user) return;
-      if ($("delete-confirm-input").value !== user.username) return;
-      $("remove-user-submit").disabled = true;
-      try {
-        await userInstruction("DeleteUser", {user_id: user.username});
-        closeAccountDialog($("remove-user-dialog"));
-        await loadAccess();
-        notice(window.PortalI18n.text`User ${user.username} and personal data deleted. Shared content and history were retained.`, "success");
-      } catch (error) {
-        notice(error.message || window.PortalI18n.t("Unable to remove user."), "error");
-        syncRemovalDialog();
-      }
-    };
-    let creationSubmitted = false;
-    const creationMessage = message => { if (!destroyed) $("create-permission-status").textContent = message; };
-    const accountInput = () => ({
-      username: $("create-username").value.trim(),
-      display_name: $("create-display-name").value.trim() || $("create-username").value.trim(),
-      email: $("create-email").value.trim(), status: "active",
+    const {
+      disposePermission, invalidate, openSection, showView,
+    } = managementPart("PortalManagementSections").createSections({
+      $, accessUser: (...args) => accessUser(...args), entries, me, mountNetwork,
+      notice: (...args) => notice(...args), options, panelState, permissionViews, portalAdmin, readExecutionSettings,
+      readPaths, renderEditor: (...args) => renderEditor(...args),
+      renderUserList: (...args) => renderUserList(...args), root, saveUserDraft, state, syncPermissionSystem,
     });
-    const openCreateUser = () => {
-      if (destroyed || confirming || isBusy()) return;
-      $("create-user-form").reset();
-      creationSubmitted = false;
-      $("create-submit").disabled = false;
-      $("create-open-credentials").hidden = true;
-      $("create-open-credentials").dataset.principalId = "";
-      remember($("create-user-form"));
-      openAccountDialog($("create-user-dialog"));
-      creationMessage(permissionsOff ? "" : window.PortalI18n.t("新账号的权限由启用的权限方案决定：本人对自己的账号和个人空间有 admin，其余按方案规则。"));
-    };
-    const createUser = async event => {
-      event.preventDefault();
-      if (creationSubmitted || !$("create-username").reportValidity()) return;
-      const password = $("create-password").value;
-      const strengthError = window.PortalIdentity.passwordStrengthError(password);
-      if (strengthError) { creationMessage(strengthError); $("create-password").focus(); return; }
-      try {
-        const account = accountInput();
-        const payload = {user_id: account.username, display_name: account.display_name,
-          recovery_email: account.email, initial_password: password};
-        $("create-submit").disabled = true;
-        const result = await userInstruction("CreateUser", payload);
-        if (destroyed) return;
-        if (!result.user) throw new Error("服务端没有确认账号已创建，请核对后再操作。");
-        creationSubmitted = true; $("create-password").value = "";
-        const username = payload.user_id;
-        const message = permissionsOff ? window.PortalI18n.text`账号 ${username} 已创建。`
-          : window.PortalI18n.text`账号 ${username} 已创建；需要方案规则以外的权限时，在它的权限表项中添加。`;
-        creationMessage(message);
-        $("create-open-credentials").dataset.principalId = username;
-        $("create-open-credentials").hidden = permissionsOff;
-        remember($("create-user-form"));
-        try { await loadAccess(username); }
-        catch (error) { notice(window.PortalI18n.text`${message} 账户目录刷新失败：${error.message}`, "error"); }
-        invalidate({views: ["entries"], principalId: username, reason: "user.created"});
-        notice(message, "success");
-      } catch (error) {
-        $("create-submit").disabled = false;
-        creationMessage(window.PortalI18n.text`${error.message || window.PortalI18n.t("创建未完成")}。请核对账号状态；不会自动重试。`);
-      }
-    };
-    $("create-open-credentials").addEventListener("click", async () => {
-      const principalId = $("create-open-credentials").dataset.principalId;
-      if (!creationSubmitted || !principalId || !(await allowLeave([$("create-user-form")]))) return;
-      if (await openSection({view: "entries", principalId})) closeAccountDialog($("create-user-dialog"));
+    const {
+      accessUser, loadAccess, notice, renderEditor, renderUserList, saveAccess, userInstruction,
+    } = managementPart("PortalManagementUsers").createUsers({
+      $, baselines, invalidate, me, openSection, panelState, remember, saveUserDraft, state, userDrafts,
     });
-
-
-    $("editor").addEventListener("submit", run(saveAccess));
-    $("reset-password-button").addEventListener("click", openResetPassword);
-    $("reset-password-form").addEventListener("submit", run(submitResetPassword));
-    $("revoke-sessions-button").addEventListener("click", run(revokeSessions));
-    $("remove-user-button").addEventListener("click", openRemoveUser);
-    $("remove-user-form").addEventListener("submit", run(submitRemoveUser));
-    $("remove-user-form").addEventListener("change", syncRemovalDialog);
-    $("delete-confirm-input").addEventListener("input", syncRemovalDialog);
-    $("create-user-button").addEventListener("click", openCreateUser);
-    $("create-user-form").addEventListener("submit", run(createUser));
-    for (const name of ["close-create-user", "cancel-create-user"]) {
-      $(name).addEventListener("click", async () => {
-        if (await allowLeave([$("create-user-form")])) {
-          closeAccountDialog($("create-user-dialog")); $("create-user-form").reset();
-        }
-      });
-    }
-    for (const name of ["close-reset-password", "cancel-reset-password"]) {
-      $(name).addEventListener("click", async () => {
-        if (await allowLeave([$("reset-password-form")])) { closeAccountDialog($("reset-password-dialog")); $("reset-password-form").reset(); }
-      });
-    }
-    for (const name of ["close-remove-user", "cancel-remove-user"]) {
-      $(name).addEventListener("click", async () => {
-        if (await allowLeave([$("remove-user-form")])) { closeAccountDialog($("remove-user-dialog")); $("remove-user-form").reset(); }
-      });
-    }
+    managementPart("PortalManagementAccounts").createAccounts({
+      $, accessUser, allowLeave, closeAccountDialog, invalidate, isBusy, loadAccess, me, notice, openAccountDialog,
+      openSection, panelState, remember, run, saveAccess, userInstruction,
+    });
 
     if (allows.CreateUser === true) await loadAccess(options.principalId || me.username || "");
-    currentPrincipalId = state.selectedUsername;
+    panelState.currentPrincipalId = state.selectedUsername;
     showView();
     const initialView = allows.CreateUser === true ? "users" : allows.ListResourceTypes === true ? "resource-types" : (allows.ListProviders === true || allows.RegisterProviderAccount === true) ? "backend" : (allows.GetExecutionSettings === true || allows.UpdateExecutionSettings === true) ? "execution" : "network";
     await openSection({view: options.view || initialView, principalId: options.principalId, accountId: options.accountId, createAccount: options.createAccount});
     return { username: String(me.username || ""), openSection, invalidate, isBusy, hasUnsavedChanges,
       destroy() {
-        destroyed = true; disposePermission();
+        panelState.destroyed = true; disposePermission();
         enrollment.destroy();
         for (const [dialog, controller] of accountDialogs) {
           closeAccountDialog(dialog); controller.destroy();

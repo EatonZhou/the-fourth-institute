@@ -389,6 +389,44 @@ def test_lazy_chat_loader_loads_the_workbench_parts_of_its_script_group():
     assert loader.index('WORKBENCH_PARTS.map') < loader.index('["portal_workbench", "PortalWorkbench"]')
 
 
+# Scripts split into a root and the part scripts it creates, which a loader
+# requests on demand: (loader, root script, the root's part lookup).
+LAZY_SPLIT_ROOTS = (
+    ("portal_nav.js", "portal_permission_schemes", "schemesPart"),
+    ("portal_nav.js", "portal_resident_menu", "menuPart"),
+    ("portal_nav.js", "portal_management", "managementPart"),
+    ("portal_hatg_loader.js", "hatg_program_inspector", "inspectorPart"),
+    ("portal_hatg_loader.js", "hatg_panel", "hatgModule"),
+)
+
+
+def test_lazy_loaders_request_every_part_before_the_script_that_creates_it():
+    """按需加载拆分的根脚本时，加载方先请求根脚本创建的每个部件所在的脚本；管理面板的部件名单与 Portal 管理页一致"""
+    for loader, root, lookup in LAZY_SPLIT_ROOTS:
+        source = (STATIC / loader).read_text(encoding="utf-8")
+        # Scripts the loader names ("/static/x.js", or "x" in a [script, global] pair), in its order.
+        requested = [name for name in re.findall(r'"(?:/static/)?([a-z][a-z0-9_]*)(?:\.js)?"', source)
+                     if (STATIC / f"{name}.js").is_file()]
+        assert root in requested, (loader, root)
+        registered = {name: set(re.findall(r"window\.(\w+) = Object\.freeze\(", (STATIC / f"{name}.js").read_text(encoding="utf-8")))
+                      for name in requested}
+        parts = set(re.findall(rf'\b{lookup}\("(\w+)"\)', (STATIC / f"{root}.js").read_text(encoding="utf-8")))
+        assert parts, root
+        # A loader may also load the root alone for a module-level function that
+        # creates no part (the Resident Menu's removeFamily); one request has
+        # every part before it.
+        missing = [parts - set().union(*(registered[name] for name in requested[:at]))
+                   for at, name in enumerate(requested) if name == root]
+        assert min(missing, key=len) == set(), (loader, root, sorted(min(missing, key=len)))
+    nav = (STATIC / "portal_nav.js").read_text(encoding="utf-8")
+    listed = re.search(r'kind === "management"[^}]*?parts: \[(.*?)\]', nav, re.S)
+    assert listed, "portal_nav.js lists the management panel's parts"
+    page = (ROOT / "management_portal" / "portal_management.html").read_text(encoding="utf-8")
+    scripts = re.findall(r'<script src="(/static/portal_management(?:_[a-z_]+)?\.js)"', page)
+    assert scripts[-1] == "/static/portal_management.js"
+    assert re.findall(r'"(/static/[a-z_]+\.js)"', listed[1]) == scripts[:-1]
+
+
 def test_resource_sections_share_one_header_and_style_owner():
     """资源分区页共用同一页头和样式来源，样式表按固定顺序加载"""
     for path in RESOURCE_SECTION_HOSTS:

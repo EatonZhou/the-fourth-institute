@@ -6,7 +6,7 @@ const {LINEAGE_GRAPH_SCRIPTS} = require('./lineage_graph_scripts.cjs');
 const {chromium} = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
 const root = path.resolve(__dirname, '../../../management_portal/static');
 const parts = {};
-for (const file of ['hatg_panel.js', 'portal_resident_service.js', 'lineage_workbench.js', ...workbenchModuleFiles()]) {
+for (const file of ['hatg_panel_mount.js', 'portal_resident_service.js', 'lineage_workbench.js', ...workbenchModuleFiles()]) {
   const source = fs.readFileSync(path.join(root, file), 'utf8');
   traverse(babelParse(source), {
     FunctionDeclaration(p) {

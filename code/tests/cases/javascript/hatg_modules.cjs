@@ -7,12 +7,24 @@ const { createModulePart } = require('./module_parts.cjs');
 
 const STATIC = path.resolve(__dirname, '../../../management_portal/static');
 
-// Module scripts the runtime asks for, in the loader's order.
+// Module scripts the runtime asks for, in the loader's order: the parts it
+// names with hatgModule("<global>"), and the parts those scripts create in turn
+// through their own lookup, such as inspectorPart("<global>").
 function hatgModuleFiles() {
   const panel = fs.readFileSync(path.join(STATIC, 'hatg_panel.js'), 'utf8');
   const globals = new Set([...panel.matchAll(/hatgModule\("([A-Za-z]+)"\)/g)].map(match => match[1]));
   const loader = fs.readFileSync(path.join(STATIC, 'portal_hatg_loader.js'), 'utf8');
   const files = [...loader.matchAll(/"\/static\/(hatg_[a-z_]+\.js)"/g)].map(match => match[1]);
+  for (let grown = true; grown;) {
+    grown = false;
+    for (const file of files) {
+      const source = fs.readFileSync(path.join(STATIC, file), 'utf8');
+      if (![...globals].some(name => source.includes(`window.${name} = Object.freeze(`))) continue;
+      for (const [, name] of source.matchAll(/\b[a-z][A-Za-z]*Part\("([A-Za-z]+)"\)/g)) {
+        if (!globals.has(name)) { globals.add(name); grown = true; }
+      }
+    }
+  }
   const modules = files.filter(file => {
     const source = fs.readFileSync(path.join(STATIC, file), 'utf8');
     return [...globals].some(name => source.includes(`window.${name} = Object.freeze(`));

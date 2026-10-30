@@ -168,11 +168,11 @@ test('Resident owner quarantines confirmed deletion and 404, not permission or t
 });
 
 test('HATG quarantines only current GetLineage 404, not other reads or stale requests', async () => {
-  const hatgSource = source('hatg_panel.js');
+  const hatgSource = source('hatg_panel_lineage_loading.js');
   const fn = expression(hatgSource, n => n.type === 'FunctionDeclaration' && n.id.name === 'selectLineage');
   for (const [status, fromPreference, stale] of [[404,false,false],[403,false,false],[500,false,false],[404,true,false],[404,false,true]]) {
     const events = []; const state = {detailSeq:0, graphViewRequestSeq:0, workspaceGraphLoadSeq:0};
-    const ctx = vm.createContext({state, $id: () => null, hatgComponentOptions: {emit:e => events.push(e)},
+    const ctx = vm.createContext({state, $id: () => null, panelHost: {hatgComponentOptions: {emit:e => events.push(e)}},
       societyService: {loadLineage: async () => {if(stale) state.detailSeq++; if(!fromPreference) throw {status}; return {}; }},
       loadHatgViewPreference: async () => {if(fromPreference) throw {status}; return {};},
       setWorkspaceViewLoading:noop, activateLineageEdits:noop, setSyncStatus:noop, renderNoLineage:noop, toast:noop,

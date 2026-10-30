@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs'), path = require('node:path'), vm = require('node:vm');
 const {JSDOM} = require('jsdom');
 const {babelParse} = require('./babel_parse.cjs');
+const {PORTAL_MANAGEMENT_SCRIPTS} = require('./portal_management_scripts.cjs');
 const dom = new JSDOM('<section id="home"></section><main></main>', {url: 'http://portal.invalid/', runScripts: 'outside-only'});
 const w = dom.window, context = dom.getInternalVMContext();
 const source = name => fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static', name), 'utf8');
@@ -50,7 +51,7 @@ const flush = async () => { for (let i = 0; i < 10; i++) await new Promise(r => 
     this.setExport('mountEnrollment', () => ({isBusy: () => false, hasUnsavedChanges: () => false, destroy() {}}));
   }, {context});
   for (const mod of [backend, enrollment]) { await mod.link(() => { throw Error('Unexpected dependency'); }); await mod.evaluate(); }
-  new vm.Script(source('portal_management.js'), {importModuleDynamically: async specifier => {
+  for (const file of PORTAL_MANAGEMENT_SCRIPTS) new vm.Script(source(file), {importModuleDynamically: async specifier => {
     if (specifier === '/static/portal_user_enrollment.js') return enrollment;
     assert.equal(specifier, '/static/portal_management_backend.js'); return backend;
   }}).runInContext(context);

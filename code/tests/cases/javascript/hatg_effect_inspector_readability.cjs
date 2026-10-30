@@ -2,6 +2,7 @@
 const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path');
 const {chromium} = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
 const portal = path.resolve(__dirname, '../../../management_portal');
+const {HATG_PROGRAM_INSPECTOR_SCRIPTS} = require('./hatg_program_inspector_scripts.cjs');
 // The production program inspector draws a saved Effect and reads its
 // diagnostics; only the inspector's listed dependencies are provided.
 (async () => {
@@ -16,7 +17,7 @@ const portal = path.resolve(__dirname, '../../../management_portal');
     });
     await page.goto('http://effect-inspector.fixture.invalid');
     for (const name of ['portal_design_system', 'portal_themes', 'hatg_panel']) await page.addStyleTag({url: '/static/' + name + '.css'});
-    for (const name of ['portal_text', 'portal_state', 'portal_translations', 'portal_i18n', 'portal_ui_primitives', 'lineage_element_fields', 'hatg_program_inspector']) await page.addScriptTag({url: '/static/' + name + '.js'});
+    for (const name of ['portal_text', 'portal_state', 'portal_translations', 'portal_i18n', 'portal_ui_primitives', 'lineage_element_fields', ...HATG_PROGRAM_INSPECTOR_SCRIPTS]) await page.addScriptTag({url: '/static/' + name + '.js'});
     await page.addStyleTag({content: 'html,body{margin:0;height:100%}.portalHatgPanelComponent{height:100vh}#agentLineageShell{height:100%;display:block}#hatgPane{height:100%;display:flex;flex-direction:column}'});
     await page.evaluate(() => {
       // The server boundary: the script editor's instruction and user catalogs are empty.

@@ -5,8 +5,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const { JSDOM } = require('jsdom');
+const { PORTAL_MANAGEMENT_SCRIPTS } = require('./portal_management_scripts.cjs');
 
-const source = fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static/portal_management.js'), 'utf8');
+// The panel's part scripts and portal_management.js, in the page's order.
+const sources = PORTAL_MANAGEMENT_SCRIPTS.map(file => [file, fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static', file), 'utf8')]);
 const state = (overrides = {}) => ({
   version: 'v1',
   access: { mode: 'local', port: 18084, urls: ['http://127.0.0.1:18084'], legacy_restriction: false },
@@ -40,7 +42,7 @@ async function harness(t, { category = 'portal_admin', view = 'users' } = {}) {
   }, { context });
   await enrollment.link(() => { throw Error('Unexpected enrollment dependency'); });
   await enrollment.evaluate();
-  new vm.Script(source, { filename: 'portal_management.js', importModuleDynamically: async specifier => {
+  for (const [filename, source] of sources) new vm.Script(source, { filename, importModuleDynamically: async specifier => {
     assert.equal(specifier, '/static/portal_user_enrollment.js');
     return enrollment;
   } }).runInContext(context);

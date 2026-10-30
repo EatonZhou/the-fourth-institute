@@ -2,7 +2,8 @@ const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
-const source = fs.readFileSync(require('node:path').join(__dirname, '../../../management_portal/static/portal_resident_menu.js'), 'utf8');
+// The Menu's scripts in load order; each function comes from the part that declares it.
+const source = require('./resident_menu_scripts.cjs').residentMenuSource();
 function fn(name, text = source) {
   const start = text.search(new RegExp('    (?:async )?function ' + name + '\\('));
   assert(start >= 0);
@@ -19,6 +20,8 @@ function harness(flag) {
     $id:()=>root,disposeFamilySettings(){},openFamilyMemberPicker(){},changeFamily(){},changed:async x=>notices.push(x),
     window:{PortalI18n:{t:x=>x,html:(p,...v)=>String.raw({raw:p},...v)},PortalChatWorkspace:{mountFamilyStatus:()=>({})},PortalResidentProjection:{invalidate(){}},
       PortalInstructionClient:{execute:async(name,args,options)=>{calls.push({name,args,options});if(name==='GetLineage')return{lineage:{revision:17,function_blocks:[block]}};return{function_block:{...block,family:{...block.family,auto_migrate:args.auto_migrate}}};}}}});
+  // The parts read the Menu's shared state from menuState; the context stands for it.
+  ctx.menuState=ctx;
   vm.runInContext(fn('renderFamilySettings')+'\n'+fn('saveFamilyAutoMigrate'),ctx);
   ctx.renderFamilySettings(ctx.nodeMenuContext);
   return {ctx,root,calls,notices};

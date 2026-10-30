@@ -6,6 +6,7 @@
 """
 import json
 from pathlib import Path
+import re
 
 from scripts import portal_release_units as units
 
@@ -58,6 +59,23 @@ def test_workspace_surface_root_and_parts_publish_together():
     assert 'management_portal/static/portal_workspace_surface.js' in scripts and scripts == files
     for selected in scripts:
         assert expand(selected) == scripts
+
+
+def test_management_panel_and_scheme_page_publish_with_their_parts():
+    """选中 Portal 管理页、其根脚本或任一部件脚本时，页面加载的管理脚本与页面整组发布；权限方案的根脚本和部件脚本也整组发布；按需导入的管理模块不随行"""
+    page = 'management_portal/portal_management.html'
+    html = (ROOT / page).read_text(encoding='utf-8')
+    management = {page, *(f'management_portal{source}' for source in
+                          re.findall(r'(?:src|href)="(/static/portal_management[a-z_]*\.(?:js|css))"', html))}
+    assert 'management_portal/static/portal_management.js' in management and len(management) > 3
+    for selected in management:
+        assert expand(selected) == management
+    schemes = {path.relative_to(ROOT).as_posix()
+               for path in (ROOT / 'management_portal/static').glob('portal_permission_schemes*.js')}
+    assert 'management_portal/static/portal_permission_schemes.js' in schemes and len(schemes) > 1
+    for selected in schemes:
+        assert expand(selected) == schemes
+    assert 'management_portal/static/portal_management_backend.js' not in expand('management_portal/static/portal_management.js')
 
 
 def test_page_scripts_publish_with_their_page():

@@ -1,6 +1,7 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const code=path.resolve(__dirname,'../../..'),staticDir=path.join(code,'management_portal/static');
+const {RESIDENT_MENU_SCRIPTS} = require('./resident_menu_scripts.cjs');
 const {chromium}=require(path.join(code,'management_portal/test_framework/tau_runtime/node_modules/playwright'));
 
 // Isolate the original entry contract, not saving settings or restarting a session.
@@ -15,7 +16,7 @@ const {chromium}=require(path.join(code,'management_portal/test_framework/tau_ru
    p.on('request',r=>requests.push(r.url()));p.on('pageerror',e=>errors.push(e.message));
    await p.setContent('<!doctype html><main>Local runtime entry</main>');
    for(const name of ['portal_design_system','portal_themes','portal_components','portal_resident_menu'])await p.addStyleTag({path:path.join(staticDir,name+'.css')});
-   for(const name of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','portal_overlay','portal_ui','portal_detail_surface','portal_model_api_settings','portal_resident_menu','chat_workspace_runtime_settings','portal_resident_runtime_controller'])await p.addScriptTag({path:path.join(staticDir,name+'.js')});
+   for(const name of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','portal_overlay','portal_ui','portal_detail_surface','portal_model_api_settings',...RESIDENT_MENU_SCRIPTS,'chat_workspace_runtime_settings','portal_resident_runtime_controller'])await p.addScriptTag({path:path.join(staticDir,name+'.js')});
    await p.evaluate(async restart=>{
     PortalI18n.apply('en');window.calls=[];const residentId='resident_runtime_fixture';
     const settings={model:'model_fixture',prompt_context:{history:{enabled:true,max_tokens:8000}},backend_options:{timeout_seconds:360,max_retries:0,parameters:{}}};

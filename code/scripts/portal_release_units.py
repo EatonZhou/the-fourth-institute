@@ -46,6 +46,15 @@ LINEAGE_WORKBENCH_RELEASE_UNIT = (
     'management_portal/static/lineage_workbench_recent.js',
     'management_portal/static/portal_lineage_catalogs.js',
     'management_portal/static/portal_hatg_loader.js',
+    'management_portal/static/portal_resident_menu_tabs.js',
+    'management_portal/static/portal_resident_menu_resident.js',
+    'management_portal/static/portal_resident_menu_transfer.js',
+    'management_portal/static/portal_resident_menu_family.js',
+    'management_portal/static/portal_resident_menu_group.js',
+    'management_portal/static/portal_resident_menu_identity.js',
+    'management_portal/static/portal_resident_menu_journal.js',
+    'management_portal/static/portal_resident_menu_runtime.js',
+    'management_portal/static/portal_resident_menu_events.js',
     'management_portal/static/portal_resident_menu.js',
     'management_portal/static/portal_resident_menu.css',
     'management_portal/static/portal_scope_menu.js',
@@ -57,6 +66,13 @@ LINEAGE_WORKBENCH_RELEASE_UNIT = (
     'management_portal/static/hatg_node_status.js',
     'management_portal/static/hatg_canvas_selection.js',
     'management_portal/static/hatg_function_block_menu.js',
+    'management_portal/static/hatg_program_inspector_references.js',
+    'management_portal/static/hatg_program_inspector_primitive_fields.js',
+    'management_portal/static/hatg_program_inspector_delivery.js',
+    'management_portal/static/hatg_program_inspector_observation.js',
+    'management_portal/static/hatg_program_inspector_manual_events.js',
+    'management_portal/static/hatg_program_inspector_saving.js',
+    'management_portal/static/hatg_program_inspector_render.js',
     'management_portal/static/hatg_program_inspector.js',
     'management_portal/static/hatg_relations.js',
     'management_portal/static/hatg_layout.js',
@@ -70,6 +86,10 @@ LINEAGE_WORKBENCH_RELEASE_UNIT = (
     'management_portal/static/hatg_seeds.js',
     'management_portal/static/hatg_leader.js',
     'management_portal/static/hatg_graph_search.js',
+    'management_portal/static/hatg_panel_lineage_loading.js',
+    'management_portal/static/hatg_panel_template_shelf.js',
+    'management_portal/static/hatg_panel_bindings.js',
+    'management_portal/static/hatg_panel_mount.js',
     'management_portal/static/hatg_panel.js',
     'management_portal/static/hatg_panel_features.js',
     'management_portal/static/hatg_panel_state.js',
@@ -171,10 +191,28 @@ def page_unit(root: Path, page: str, prefix: str) -> tuple[str, ...]:
     return (page, *(f'management_portal/static/{name}' for name in dict.fromkeys(names)))
 
 
+# The Portal Management panel (portal_management.js) and the permission scheme
+# page (portal_permission_schemes.js) create their parts from module scripts
+# loaded before them, so each root script and its parts are one unit: the
+# management scripts portal_management.html loads, with the page, and every
+# portal_permission_schemes script. The management panel's other modules,
+# which it imports when a section opens, stay outside.
+MANAGEMENT_PAGE = ('management_portal/portal_management.html', 'portal_management')
+PERMISSION_SCHEMES_PREFIX = 'portal_permission_schemes'
+
+
+def prefix_unit(root: Path, prefix: str) -> tuple[str, ...]:
+    """The static scripts named ``prefix``.js or ``prefix``_*.js, as source paths under ``root``."""
+    static = root / 'management_portal/static'
+    return tuple(sorted(f'management_portal/static/{path.name}' for path in static.glob(f'{prefix}*.js')
+                        if path.stem == prefix or path.stem.startswith(f'{prefix}_')))
+
+
 def release_units(root: Path) -> tuple[tuple[str, ...], ...]:
     return (LINEAGE_WORKBENCH_RELEASE_UNIT, chat_workspace_unit(root),
             *(script_group_unit(root, group) for group in PART_SCRIPT_GROUPS),
-            *(page_unit(root, page, prefix) for page, prefix in PAGES))
+            *(page_unit(root, page, prefix) for page, prefix in PAGES),
+            page_unit(root, *MANAGEMENT_PAGE), prefix_unit(root, PERMISSION_SCHEMES_PREFIX))
 
 
 def expand_release_unit_paths(paths: Iterable[str], root: Path,

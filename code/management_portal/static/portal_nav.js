@@ -822,8 +822,27 @@
     if (!container.isConnected) return null;
     if (view === "schemes") {
       // The permission scheme page edits the schemes' rules and instances (decision_b820faf42218 §5).
+      // Its parts load before portal_permission_schemes.js, whose mount creates them.
+      const schemeParts = [
+        ["portal_permission_schemes_lookups", "PortalPermissionSchemesLookups"],
+        ["portal_permission_schemes_loading", "PortalPermissionSchemesLoading"],
+        ["portal_permission_schemes_compile", "PortalPermissionSchemesCompile"],
+        ["portal_permission_schemes_edits", "PortalPermissionSchemesEdits"],
+        ["portal_permission_schemes_drag", "PortalPermissionSchemesDrag"],
+        ["portal_permission_schemes_merge_notes", "PortalPermissionSchemesMergeNotes"],
+        ["portal_permission_schemes_review", "PortalPermissionSchemesReview"],
+        ["portal_permission_schemes_trees", "PortalPermissionSchemesTrees"],
+        ["portal_permission_schemes_entries", "PortalPermissionSchemesEntries"],
+        ["portal_permission_schemes_instructions", "PortalPermissionSchemesInstructions"],
+        ["portal_permission_schemes_instance", "PortalPermissionSchemesInstance"],
+        ["portal_permission_schemes_check", "PortalPermissionSchemesCheck"],
+        ["portal_permission_schemes_render", "PortalPermissionSchemesRender"],
+        ["portal_permission_schemes_editor_events", "PortalPermissionSchemesEditorEvents"],
+        ["portal_permission_schemes_actions", "PortalPermissionSchemesActions"],
+      ];
       await Promise.all([
         loadBackpackAsset("/static/portal_permission_schemes.css"),
+        ...schemeParts.map(([name, globalName]) => loadBackpackAsset(`/static/${name}.js`, globalName)),
         loadBackpackAsset("/static/portal_permission_schemes.js", "PortalPermissionSchemes"),
       ]);
       if (!container.isConnected) return null;
@@ -865,6 +884,16 @@
           ["portal_resident_runtime_controller", "PortalResidentRuntimeController"],
           ["portal_chat_workspace", "PortalChatWorkspace"],
           ["hatg_mailbox_panel", "PortalMailboxPanel"],
+          // The Menu's parts load before the script that creates them.
+          ["portal_resident_menu_tabs", "PortalResidentMenuTabs"],
+          ["portal_resident_menu_resident", "PortalResidentMenuResident"],
+          ["portal_resident_menu_transfer", "PortalResidentMenuTransfer"],
+          ["portal_resident_menu_family", "PortalResidentMenuFamily"],
+          ["portal_resident_menu_group", "PortalResidentMenuGroup"],
+          ["portal_resident_menu_identity", "PortalResidentMenuIdentity"],
+          ["portal_resident_menu_journal", "PortalResidentMenuJournal"],
+          ["portal_resident_menu_runtime", "PortalResidentMenuRuntime"],
+          ["portal_resident_menu_events", "PortalResidentMenuEvents"],
           ["portal_resident_menu", "PortalResidentMenu"],
         ].map(([path, name]) => loadBackpackAsset(`/static/${path}.js`, name)),
       ]);
@@ -910,6 +939,18 @@
     return kind === "management"
       ? {
           title: window.PortalI18n.t("Portal Management"),
+          // The panel's part scripts, which load before the script that creates them.
+          parts: [
+            "/static/portal_management_layout.js",
+            "/static/portal_management_paths.js",
+            "/static/portal_management_execution.js",
+            "/static/portal_management_services.js",
+            "/static/portal_management_permission_system.js",
+            "/static/portal_management_guards.js",
+            "/static/portal_management_sections.js",
+            "/static/portal_management_users.js",
+            "/static/portal_management_accounts.js",
+          ],
           script: "/static/portal_management.js",
           globalName: "PortalManagementPanel",
         }
@@ -922,9 +963,12 @@
 
   function loadAccountPanelModule(kind) {
     const definition = accountPanelDefinition(kind);
-    return window.PortalUIPrimitives.loadAsset(definition.script, {
-      ready: () => !!window[definition.globalName]?.mount,
-    }).then(() => {
+    return Promise.all([
+      ...(definition.parts || []).map(part => window.PortalUIPrimitives.loadAsset(part)),
+      window.PortalUIPrimitives.loadAsset(definition.script, {
+        ready: () => !!window[definition.globalName]?.mount,
+      }),
+    ]).then(() => {
       const module = window[definition.globalName];
       if (!module?.mount) throw new Error(`${definition.title} is unavailable.`);
       return module;

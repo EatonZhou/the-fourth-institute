@@ -1,6 +1,7 @@
 'use strict';
 const assert=require('node:assert/strict'),path=require('node:path');
 const code=process.env.TAU_CODE_ROOT||path.resolve(__dirname,'../../..');
+const {RESIDENT_MENU_SCRIPTS}=require(path.join(code,'tests/cases/javascript/resident_menu_scripts.cjs'));
 const {chromium}=require(path.join(code,'management_portal/test_framework/tau_runtime/node_modules/playwright'));
 const baseline=!!process.env.TAU_FAMILY_MENU_BASELINE;
 const read=baseline?null:require(path.join(code,'management_portal/test_framework/tau_function_block_menu_evidence')).readFunctionBlockMenuReady;
@@ -11,7 +12,7 @@ const read=baseline?null:require(path.join(code,'management_portal/test_framewor
   p.on('request',r=>requests.push(r.url()));p.on('pageerror',e=>errors.push(e.message));
   await p.setContent('<!doctype html><main><button id="trigger">Local fixture</button></main>');
   for(const name of ['portal_design_system','portal_themes','hatg_panel','lineage_function_blocks','portal_resident_menu'])await p.addStyleTag({path:path.join(code,'management_portal/static',name+'.css')});
-  for(const name of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','portal_overlay','portal_ui','portal_detail_surface','lineage_element_fields','portal_resident_menu','hatg_function_block_menu'])await p.addScriptTag({path:path.join(code,'management_portal/static',name+'.js')});
+  for(const name of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','portal_overlay','portal_ui','portal_detail_surface','lineage_element_fields',...RESIDENT_MENU_SCRIPTS,'hatg_function_block_menu'])await p.addScriptTag({path:path.join(code,'management_portal/static',name+'.js')});
   await p.evaluate(()=>{
    PortalI18n.apply('en');
    window.instructionCalls=[];

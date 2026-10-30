@@ -3,6 +3,7 @@ const assert = require('node:assert/strict'), fs = require('node:fs'), path = re
 const portal = path.resolve(__dirname, '../../../management_portal');
 const {chromium} = require(path.join(portal, 'test_framework/tau_runtime/node_modules/playwright'));
 const {readEventCategorySelection} = require(path.join(portal,'test_framework/tau_event_category_evidence.js'));
+const {HATG_PROGRAM_INSPECTOR_SCRIPTS} = require('./hatg_program_inspector_scripts.cjs');
 const L = 'lineage_111111111111', E = 'event_source_222222222222';
 const report = {scope:'Native HATG template, program/primitive Inspector, manifest, i18n and CSS; local graph/header/runtime dependencies. No business requests.', formal_acceptance:false};
 
@@ -18,7 +19,7 @@ const report = {scope:'Native HATG template, program/primitive Inspector, manife
       await page.addStyleTag({content:fs.readFileSync(path.join(portal,'static',n+'.css'),'utf8')});
     await page.addStyleTag({content:'html,body{margin:0;height:100%}#panel{height:100vh}#agentLineageShell{height:100%;display:block}#hatgPane{height:100%;display:flex;flex-direction:column}'});
     await page.evaluate(()=>{window.__PORTAL_LANGUAGE__='en';});
-    for (const n of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','lineage_program','lineage_element_fields','lineage_primitive_inspector','hatg_program_inspector'])
+    for (const n of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','lineage_program','lineage_element_fields','lineage_primitive_inspector',...HATG_PROGRAM_INSPECTOR_SCRIPTS])
       await page.addScriptTag({content:fs.readFileSync(path.join(portal,'static',n+'.js'),'utf8')});
     const definitions=JSON.parse(fs.readFileSync(path.join(portal,'static/lineage_primitive_definitions.json'),'utf8'));
     await page.evaluate(async ({L,E,definitions})=>{

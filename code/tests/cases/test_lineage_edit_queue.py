@@ -9,12 +9,19 @@ from tests.cases.test_wall07_gap_helper06 import (
 )
 
 
+# The HATG panel runtime: hatg_panel.js and the parts it creates.
+PANEL_SCRIPTS = [
+    "hatg_panel.js", "hatg_panel_lineage_loading.js", "hatg_panel_template_shelf.js",
+    "hatg_panel_bindings.js", "hatg_panel_mount.js",
+]
+
+
 def panel_functions(names):
-    """The named top-level functions of hatg_panel.js, to run under node."""
-    source = (ROOT / "management_portal/static/hatg_panel.js").read_text()
+    """The named functions of the HATG panel's Lineage loading part, to run under node."""
+    source = (ROOT / "management_portal/static/hatg_panel_lineage_loading.js").read_text()
     result = []
     for name in names:
-        found = re.search(r"^  (?:async )?function " + re.escape(name) + r"\([^\n]*.*?^  }$", source, re.M | re.S)
+        found = re.search(r"^    (?:async )?function " + re.escape(name) + r"\([^\n]*.*?^    }$", source, re.M | re.S)
         assert found, name
         result.append(found.group())
     return "\n".join(result)
@@ -67,10 +74,10 @@ def test_navigation_hooks_invalidate_lineage_edit_intents():
     """切换、清空或销毁 Lineage 面板时作废未完成的编辑意图，不等待布局保存"""
     selecting = panel_functions(["selectLineage"])
     empty = panel_functions(["renderNoLineage"])
-    source = (ROOT / "management_portal/static/hatg_panel.js").read_text()
+    source = "".join((ROOT / "management_portal/static" / name).read_text() for name in PANEL_SCRIPTS)
     assert "activateLineageEdits(lineageId)" in selecting
     assert "await state.layoutSaveInFlight" not in selecting
     assert "activateLineageEdits()" in empty
-    destroy_body = source.split("destroy() {\n        destroyed = true;", 1)[1].split("\n      },", 1)[0]
+    destroy_body = source.split("destroy() {\n          destroyed = true;", 1)[1].split("\n        },", 1)[0]
     assert "activateLineageEdits();" in destroy_body
     assert "programMutationTail" not in source
