@@ -134,3 +134,45 @@ def test_a_probe_reports_what_an_unsaved_endpoint_does_not_serve(gateway):
     with pytest.raises(InstructionError) as error:
         _call(isa.probe_model_api, api_id="missing")
     assert error.value.code == "instruction.not_found"
+
+
+@pytest.mark.parametrize("provider,base_path,protocol_path,override_path,expected_path", [
+    pytest.param("deepseek", "", None, None, "/anthropic/v1/messages", id="legacy-deepseek"),
+    pytest.param("deepseek", "/v1", None, None, "/anthropic/v1/messages", id="legacy-v1"),
+    pytest.param("deepseek", "/anthropic", None, None, "/anthropic/v1/messages", id="legacy-anthropic"),
+    pytest.param("deepseek", "/v1", "/declared/", None, "/declared/v1/messages", id="declared"),
+    pytest.param("deepseek", "/v1", "", None, "/v1/messages", id="declared-default"),
+    pytest.param("deepseek", "/v1", False, None, "/v1/messages", id="explicit-no-messages"),
+    pytest.param("gateway", "/v1", None, None, "/v1/messages", id="ordinary-undeclared"),
+    pytest.param("deepseek", "/v1", None, "/override/", "/override/v1/messages", id="override-legacy"),
+    pytest.param("deepseek", "/v1", "/declared", "/override/", "/override/v1/messages", id="override-declared"),
+])
+def test_messages_probe_uses_the_harness_endpoint_or_explicit_override(
+        gateway, provider, base_path, protocol_path, override_path, expected_path):
+    """注册接口沿用 Harness 地址；未声明协议仍可探测，显式探测地址优先且不修改登记。"""
+    def answers(request):
+        if request["path"] == expected_path:
+            return 200, "application/json", {"type": "message", "role": "assistant", "content": []}
+        return 404, "application/json", {"error": "no route"}
+
+    server = gateway(answers)
+    root = f"http://127.0.0.1:{server.server_port}"
+    registration = {"provider": provider, "base_url": root + base_path,
+                    "default_model": "deepseek-v4-flash", "secret": KEY}
+    if protocol_path is False:
+        registration["protocols"] = {}
+    elif protocol_path is not None:
+        registration["protocols"] = {"anthropic_messages": (
+            {"base_url": root + protocol_path} if protocol_path else {})}
+    _call(isa.create_model_api, api_id="endpoint-probe", **registration)
+    before = _call(isa.list_model_apis)
+    overrides = {"anthropic_base_url": root + override_path} if override_path else {}
+    result = _call(isa.probe_model_api, api_id="endpoint-probe", **overrides)
+
+    assert result["results"]["anthropic_messages"] == {
+        "status": "supported", "http_status": 200, "auth": "bearer"}
+    assert [request["path"] for request in server.requests] == [
+        base_path + "/chat/completions",
+        base_path + "/responses", expected_path]
+    assert {request["model"] for request in server.requests} == {"deepseek-v4-flash"}
+    assert _call(isa.list_model_apis) == before

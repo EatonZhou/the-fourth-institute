@@ -24,7 +24,7 @@ from management_portal.native_agent_transport import NativeAgentClient, NativeAg
 from management_portal import dsh_provider_catalog
 from management_portal.dsh_subagent_cards import DshSubagentCards
 from management_common.provider_subagent_runs import STOPPING_METHOD
-from management_portal.resident_shell_environment import resident_process_environment
+from management_portal.resident_shell_environment import resident_identity_fingerprint, resident_process_environment
 from management_portal.ai_provider_registry import shared_ai_provider_registry
 
 _PROVIDERS = read_site_config().get("deployment", {}).get("providers", {})
@@ -252,6 +252,9 @@ class DshClient:
         params["model"], params["effort"] = self._settings(params)
         if not params.get("is_owner") or params.get("permission_profile") not in {"owner", "danger-full-access"}:
             raise ValueError("DSH profile requires an authorized full-access execution")
+        # Use the same validated representation as the launch fingerprint,
+        # including on reattachment to a process started by an earlier Worker.
+        params["resident_environment"] = resident_identity_fingerprint(params.get("resident_environment"))
         session_id = params.get("session_id") or session_id_for(params["turn_id"])
         params["session_id"] = session_id
         transport = self._start(session_id, params)
@@ -279,6 +282,7 @@ class DshClient:
         """
 
         params["model"], params["effort"] = self._settings(params)
+        params["resident_environment"] = resident_identity_fingerprint(params.get("resident_environment"))
         request = {key: params[key] for key in (
             "cwd", "provider_profile", "model", "effort", "resident_environment") if key in params}
         return self._start(session_id, params)._request(

@@ -95,9 +95,15 @@ def probe(entry: dict[str, Any], secret: str, *, anthropic_base_url: str = "") -
         "openai_responses": _attempt(f"{base}/responses", headers, {
             "model": model, "input": PROMPT, "max_output_tokens": 16, "store": False}, _responses, secret),
     }
-    # Claude Code appends /v1/messages to ANTHROPIC_BASE_URL.
-    declared = ((entry.get("protocols") or {}).get("anthropic_messages") or {}).get("base_url") or ""
-    anthropic = (str(anthropic_base_url or declared).strip().rstrip("/") or base.removesuffix("/v1")) + "/v1/messages"
+    # Use the harness address, including the legacy DeepSeek /anthropic route.
+    # Undeclared protocols can still be probed at their conventional address.
+    anthropic_base = str(anthropic_base_url).strip().rstrip("/")
+    if not anthropic_base:
+        if "anthropic_messages" in AIProviderRegistry.harness_protocols(entry):
+            anthropic_base, _ = AIProviderRegistry.harness_endpoint(entry, "anthropic_messages")
+        else:
+            anthropic_base = base.removesuffix("/v1")
+    anthropic = anthropic_base + "/v1/messages"
     payload = {"model": model, "max_tokens": 16, "messages": [{"role": "user", "content": PROMPT}]}
     attempts = {}
     for auth in ("bearer", "x-api-key"):

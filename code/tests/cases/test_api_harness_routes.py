@@ -195,12 +195,16 @@ def test_native_dsh_custom_messages_api(model_server, installed_provider_paths, 
     client = dsh_client.DshClient()
     turn_id = uuid.uuid4().hex
     session_id = dsh_client.session_id_for(turn_id)
+    # JSON object order can change when execution options pass through JSONB.
+    # The launch environment canonicalizes Resident before Lineage; the wire
+    # identity must denote that same Resident regardless of its original order.
+    identity = {"PORTAL_LINEAGE_ID": "lineage_123456789abc", "PORTAL_RESIDENT_ID": "resident_123456789abc"}
     try:
         target = tmp_path / "written.txt"
         model_server.next_tool = {"name": "write", "arguments": {"file_path": str(target), "content": "native-tool-ok"}}
         result = _bounded(lambda: client.run_turn(turn_id=turn_id, provider_profile=row["route_id"],
             cwd=str(tmp_path), model=model_server.model, prompt="Say hello.", is_owner=True,
-            permission_profile="owner", allow_subagents=False))
+            permission_profile="owner", allow_subagents=False, resident_environment=identity))
         assert model_server.reply in result.response
         assert target.read_text() == "native-tool-ok"
         headers = {k.lower(): v for k, v in model_server.headers[-1].items()}
@@ -210,6 +214,34 @@ def test_native_dsh_custom_messages_api(model_server, installed_provider_paths, 
         import yaml
         [patch] = yaml.safe_load((tmp_path / "state" / session_id / "profiles/portal-resident/cordis.patch.yml").read_text())
         assert not any(row["id"] == "dsh-web-search-deepseek" for row in patch["insert"])
+        # A new Worker can attach to the existing process with either key order.
+        resumed = dsh_client.DshClient()
+        common = dict(session_id=session_id, provider_profile=row["route_id"], cwd=str(tmp_path),
+            model=model_server.model, allow_subagents=False)
+        continued = _bounded(lambda: resumed.run_turn(**common, turn_id=uuid.uuid4().hex,
+            prompt="Continue.", is_owner=True, permission_profile="owner",
+            resident_environment=dict(reversed(list(identity.items())))))
+        assert model_server.reply in continued.response
+        _bounded(lambda: resumed.compact_session(**common, resident_environment=identity))
+
+        # Normalization must never permit a different Resident/Lineage, a
+        # missing identity, or extra environment fields on a cached process.
+        from management_portal.native_agent_transport import NativeAgentError
+        before = len(model_server.calls)
+        for field, other in (("PORTAL_RESIDENT_ID", "resident_abcdef123456"),
+                             ("PORTAL_LINEAGE_ID", "lineage_abcdef123456")):
+            wrong = {**identity, field: other}
+            with pytest.raises(NativeAgentError, match="Resident identity mismatch"):
+                resumed.run_turn(**common, turn_id=uuid.uuid4().hex, prompt="Do not run.",
+                    is_owner=True, permission_profile="owner", resident_environment=wrong)
+            with pytest.raises(NativeAgentError, match="Resident identity mismatch"):
+                resumed.compact_session(**common, resident_environment=wrong)
+        with pytest.raises(NativeAgentError, match="Resident identity mismatch"):
+            resumed.compact_session(**common)
+        with pytest.raises(ValueError, match="Unexpected Resident environment field"):
+            resumed.run_turn(**common, turn_id=uuid.uuid4().hex, prompt="Do not run.",
+                is_owner=True, permission_profile="owner", resident_environment={**identity, "EXTRA": "value"})
+        assert len(model_server.calls) == before
     finally:
         client.close_session("", session_id)
 
