@@ -35,6 +35,9 @@ window.PortalInstructionClient = {execute: async (name, args, options) => {
       if (holdCheck) return new Promise(resolve => { finishCheck = resolve; });
       return {execution_id: 'execution_check'};
     case 'OpenProviderAccountLogin': return {session: {state: 'pending'}};
+    case 'UpdateProviderAccountLogin':
+      assert.equal(args.authorization_code, 'http://localhost:1234/?code=synthetic&state=test');
+      return {session: {state: 'succeeded'}};
     case 'CancelProviderAccountLogin': return {};
     case 'GetProviderAccountLogin':
       if (loginError) throw new Error('暂时无法读取登录状态');
@@ -236,5 +239,21 @@ const click = text => {
   assert.equal(intervals.size, 0);
   assert([...window.document.querySelectorAll('button')].find(el => el.textContent === '取消登录').disabled);
   retryLogin.close();
+  loginCancelled = false;
+  const googleLogin = context.openLogin('antigravity_one'); await flush();
+  loginSession = {state: 'awaiting_user', requires_code_input: true, input_kind: 'callback_url',
+    input_hint: '使用 Google 登录后，若浏览器无法打开 localhost，请粘贴地址栏中的完整回调 URL。',
+    verification_url: 'https://accounts.google.com/o/oauth2/auth?state=test'};
+  tick(); await flush();
+  const callbackInput = window.document.querySelector('input[name=authorization_code]');
+  assert.equal(callbackInput.type, 'password');
+  assert.match(window.document.getElementById(callbackInput.getAttribute('aria-describedby')).textContent, /完整回调 URL/);
+  assert.match(callbackInput.parentElement.textContent, /浏览器返回的完整地址/);
+  callbackInput.value = 'http://localhost:1234/?code=synthetic&state=test';
+  click('提交回调地址'); await flush();
+  assert.equal(callbackInput.value, '');
+  assert(!('authorization_code' in calls.find(c => c.name === 'UpdateProviderAccountLogin').args));
+  assert.match(window.document.querySelector('[data-backend-login-state]').textContent, /登录成功/);
+  googleLogin.close();
   console.log('provider onboarding UI passed');
 })().catch(error => {console.error(error); process.exitCode = 1;});

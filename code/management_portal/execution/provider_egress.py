@@ -28,6 +28,7 @@ class Upstream:
 
 PROBE_TIMEOUT_SECONDS = 30.0
 UPSTREAMS = {
+    "google": Upstream("https://cloudcode-pa.googleapis.com/", location_restricted=True),
     "anthropic": Upstream("https://api.anthropic.com/v1/models", location_restricted=True),
     "openai": Upstream("https://chatgpt.com/backend-api/models"),
     "moonshot": Upstream(""),

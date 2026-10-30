@@ -224,6 +224,16 @@ class AgentProvider:
 
 AGENT_PROVIDERS = {
     p.provider: p for p in (
+        AgentProvider("antigravity", "Google Antigravity", frozenset({"create", "turn", "release"}),
+                      ("model", "permissions"), "management_portal.antigravity_accounts",
+                      adapter="management_portal.execution.antigravity_backend.AntigravityBackend",
+                      options_adapter="management_portal.execution.antigravity_backend.AntigravityOptions",
+                      initial_instructions_transport="system_instructions", system_context_every_turn=True,
+                      harness=frozenset({PORTAL_TOOLS, NATIVE_TOOL_EVENTS, CONTEXT_USAGE_EVENTS}),
+                      upstream="google", default_concurrency=4,
+                      system_instructions_place="ACP session 的 systemPrompt.append，恢复时完整替换",
+                      credential_globs=(".gemini*",),
+                      runtime_updater="management_portal.antigravity_runtime.AntigravityRuntime"),
         AgentProvider("codex", "Codex", frozenset({"create", "turn", "fork", "compact", "release"}),
                       ("model", "reasoning_effort", "service_tier", "permissions", "collaboration_mode"), media=True, active_turn_input=True, adapter="management_portal.execution.codex_backend.CodexBackend", account_adapter="CodexAccounts", options_adapter="CodexOptions", native_review=True, native_goals=True, local_catalog=False, seeded_compaction=True,
                       # App-server owns the running turn and its native processes.

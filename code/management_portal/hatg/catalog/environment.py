@@ -152,7 +152,7 @@ DECLARATIONS = (
        (R("session", "any", "取消后的会话；尚未开始时为 null"),), mutates=True, target="account_id", owner="execution"),
     _d("RegisterProviderAccount", FIXED, "登记执行账号并创建 Provider 目录与服务。", (
         R("account_id", description="新执行账号 ID：小写字母开头，可含数字、_ 和 -"),
-        R("provider", description="codex、claude、kimi、dsh、opencode 或 provider_api"),
+        R("provider", description="ListProviders 返回的 Provider 名称"),
         R("kind", description="账号种类，须是该 Provider 支持的种类", enum=("subscription_login", "api_profile", "service")),
         P("route_id", description="执行路由 ID；省略时由账号 ID 得出（codex 去掉 codex_ 前缀），provider_api 与 kimi 留空"),
         P("config", "object", "Provider 专属设置：api_profile 为 api_id；codex 为 fallback_account_ids、is_default；"

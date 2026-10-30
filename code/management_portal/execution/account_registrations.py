@@ -17,6 +17,7 @@ from management_portal.hatg.contracts import InstructionError, invalid, not_foun
 from management_portal.model_api_store import now
 
 PROVIDER_KINDS = {
+    "antigravity": ("subscription_login",),
     "codex": ("subscription_login", "api_profile"), "claude": ("subscription_login", "api_profile"),
     "kimi": ("subscription_login", "service", "api_profile"), "dsh": ("api_profile",),
     "opencode": ("service", "api_profile"), "provider_api": ("api_profile",),

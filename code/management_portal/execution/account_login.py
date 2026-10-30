@@ -169,7 +169,8 @@ def local_login_environment(provider, account_id):
     else:
         env['BROWSER'] = '/bin/true'
     home = account_home(provider, account_id)
-    env["CODEX_HOME" if provider == "codex" else "CLAUDE_CONFIG_DIR"] = str(home)
+    home_key = {"codex": "CODEX_HOME", "claude": "CLAUDE_CONFIG_DIR", "antigravity": "GEMINI_HOME"}[provider]
+    env[home_key] = str(home)
     return env
 
 
@@ -232,6 +233,12 @@ def provider_binary(provider):
 
 
 def login_command(provider, *, status=False):
+    if provider == "antigravity":
+        from management_portal.antigravity_runtime import command
+        native_command = command()  # Validate installation before creating a login session.
+        if status:
+            raise ValueError("Antigravity login status is queried over ACP")
+        return [sys.executable, str(Path(__file__).resolve().parents[2] / "scripts" / "antigravity_account.py"), *native_command]
     binary = provider_binary(provider)
     if provider == "codex":
         return [binary, "login", "status" if status else "--device-auth"]
@@ -239,6 +246,9 @@ def login_command(provider, *, status=False):
 
 
 def provider_logged_in(provider, account_id):
+    if provider == "antigravity":
+        from management_portal.antigravity_accounts import logged_in
+        return logged_in(account_id)
     if provider == "kimi":
         from .kimi_account_login import logged_in
         return logged_in(account_id)
@@ -273,7 +283,8 @@ class LoginOutputParser:
             for candidate in re.findall(r"https://[^\s\x1b<>]+", line):
                 candidate = candidate.rstrip(".,;)")
                 parts = urlsplit(candidate)
-                allowed = ({"auth.openai.com", "chatgpt.com"} if self.provider == "codex"
+                allowed = ({"accounts.google.com"} if self.provider == "antigravity" else
+                           {"auth.openai.com", "chatgpt.com"} if self.provider == "codex"
                            else {"claude.ai", "claude.com", "console.anthropic.com", "platform.claude.com"})
                 if parts.hostname in allowed and ("oauth" in parts.path or "device" in parts.path):
                     # Never accept credential-bearing callback URLs as public login prompts.
@@ -381,7 +392,7 @@ class LoginManager:
                                     break
                                 submitted += chunk
                             code = submitted.rstrip(b"\n")
-                            if (registration["provider"] == "claude" and current["state"] == "awaiting_user"
+                            if (registration["provider"] in {"claude", "antigravity"} and current["state"] == "awaiting_user"
                                     and 0 < len(code) <= 4096 and b"\n" not in code and b"\r" not in code
                                     and process.poll() is None):
                                 process.stdin.write(code + b"\n")
@@ -438,7 +449,7 @@ class LoginManager:
 
     def submit_code(self, registration, code):
         session = self.store.get(registration["account_id"])
-        if registration["provider"] != "claude" or not session or session["state"] != "awaiting_user":
+        if registration["provider"] not in {"claude", "antigravity"} or not session or session["state"] != "awaiting_user":
             raise InstructionError("instruction.conflict", "该账号当前没有等待授权码的登录会话",
                                    details={"reason": "account.login_not_awaiting"})
         if not isinstance(code, str) or not code.strip() or len(code.encode()) > 4096 or any(c in code for c in "\r\n\0"):
@@ -487,13 +498,18 @@ def _registration(inv):
     registration = read_registration(inv.argument("account_id"))
     if not registration:
         raise not_found("执行账号不存在")
-    if registration["kind"] != "subscription_login" or registration["provider"] not in {"codex", "claude", "kimi"}:
+    if registration["kind"] != "subscription_login" or registration["provider"] not in {"codex", "claude", "kimi", "antigravity"}:
         raise invalid("该账号不支持订阅登录")
     return registration
 
 
 def _session_result(registration, session):
-    return {**session, "requires_code_input": registration["provider"] == "claude"} if session else None
+    if not session:
+        return None
+    return {**session, "requires_code_input": registration["provider"] in {"claude", "antigravity"},
+            "input_kind": "callback_url" if registration["provider"] == "antigravity" else "authorization_code",
+            "input_hint": ("使用 Google 登录后，若浏览器无法打开 localhost，请粘贴地址栏中的完整回调 URL。"
+                           if registration["provider"] == "antigravity" else "")}
 
 
 def open_provider_account_login(inv):

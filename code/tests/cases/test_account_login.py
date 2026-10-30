@@ -212,7 +212,8 @@ def test_kimi_missing_runtime_keeps_registration_and_onboarding_readable(isolate
 
 
 @pytest.mark.parametrize("transport", [None, "unix", "tcp"])
-def test_claude_code_submission_is_ephemeral_and_single_session(isolated_login, monkeypatch, capsys, transport):
+@pytest.mark.parametrize("provider", ["claude", "antigravity"])
+def test_claude_code_submission_is_ephemeral_and_single_session(isolated_login, monkeypatch, capsys, transport, provider):
     """同账号复用活跃登录，另一服务实例提交授权码后由 Provider 确认成功且不回显
 
     :design: decision_7956d7cb4bde
@@ -223,10 +224,10 @@ def test_claude_code_submission_is_ephemeral_and_single_session(isolated_login, 
     # the harness's long TMPDIR. Default transport deliberately keeps that path
     # to exercise the automatic authenticated fallback during authorization.
     with tempfile.TemporaryDirectory(prefix="tfi-login-", dir="/tmp") as ipc_root:
-        return _claude_code_submission(store, monkeypatch, capsys, transport, ipc_root)
+        return _claude_code_submission(store, monkeypatch, capsys, transport, ipc_root, provider)
 
 
-def _claude_code_submission(store, monkeypatch, capsys, transport, ipc_root):
+def _claude_code_submission(store, monkeypatch, capsys, transport, ipc_root, provider):
     if transport == "unix":
         monkeypatch.setenv("PORTAL_INSTANCES_ROOT", ipc_root)
     elif transport is None:
@@ -234,10 +235,11 @@ def _claude_code_submission(store, monkeypatch, capsys, transport, ipc_root):
     from management_common import local_ipc
     monkeypatch.setattr(login, "LocalListener", lambda path, **kwargs: local_ipc.LocalListener(path, transport=transport, **kwargs))
     monkeypatch.setattr(login, "connect_local", lambda path, **kwargs: local_ipc.connect_local(path, transport=transport, **kwargs))
-    script = "import sys; print('https://claude.com/cai/oauth/authorize?state=example',flush=True); code=input(); sys.exit(0 if code=='synthetic-authorization' else 1)"
+    url = "https://accounts.google.com/o/oauth2/auth?state=example" if provider == "antigravity" else "https://claude.com/cai/oauth/authorize?state=example"
+    script = f"import sys; print({url!r},flush=True); code=input(); sys.exit(0 if code=='synthetic-authorization' else 1)"
     monkeypatch.setattr(login, "login_command", lambda *args, **kwargs: [sys.executable, "-c", script])
     monkeypatch.setattr(login, "provider_logged_in", lambda *_: True)
-    registration = {"account_id": "login_claude", "provider": "claude", "kind": "subscription_login", "enabled": True}
+    registration = {"account_id": "login_claude", "provider": provider, "kind": "subscription_login", "enabled": True}
     from management_portal.execution import account_registrations
     monkeypatch.setattr(account_registrations, "registration", lambda _: registration)
     second = login.LoginManager(store)

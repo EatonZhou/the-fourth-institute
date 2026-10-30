@@ -30,6 +30,7 @@ _NATIVE_TOOLS = "tests/cases/test_claude_harness_tools.py::test_a_native_socket_
 
 ADAPTER_TESTS: dict[str, dict[str, str]] = {
     capabilities.CONTEXT_USAGE_EVENTS: {
+        "antigravity": "tests/cases/test_antigravity.py::test_turn_serves_portal_tools_and_reports_native_events_and_usage",
         "codex": f"{_EXECUTION}::test_codex_backend_projects_current_context_usage_from_token_events",
         "claude": "tests/cases/test_claude_code_daemon.py::ClaudeCodeDaemonTest::test_context_usage_reports_current_window_and_rejects_stale_turn",
         "kimi": "tests/cases/test_live_provider_ingress.py::test_kimi_live_context_reports_latest_main_request_including_cached_input",
@@ -37,6 +38,7 @@ ADAPTER_TESTS: dict[str, dict[str, str]] = {
         "opencode": "tests/cases/test_opencode_adapter.py::test_an_opencode_turn_serves_its_portal_tools_and_reports_its_own_tool_calls",
     },
     capabilities.PORTAL_TOOLS: {
+        "antigravity": "tests/cases/test_antigravity.py::test_turn_serves_portal_tools_and_reports_native_events_and_usage",
         "claude": _NATIVE_TOOLS,
         "codex": "tests/cases/test_agent_harness.py::test_codex_harness_tool_result_passes_through_tool_batch_lifecycle",
         "dsh": _NATIVE_TOOLS,
@@ -44,6 +46,7 @@ ADAPTER_TESTS: dict[str, dict[str, str]] = {
         "opencode": "tests/cases/test_opencode_adapter.py::test_an_opencode_turn_serves_its_portal_tools_and_reports_its_own_tool_calls",
     },
     capabilities.NATIVE_TOOL_EVENTS: {
+        "antigravity": "tests/cases/test_antigravity.py::test_turn_serves_portal_tools_and_reports_native_events_and_usage",
         "claude": f"{_TURN_INPUT}::test_native_text_and_reasoning_reach_the_governor_as_activity",
         "codex": f"{_EXECUTION}::test_codex_backend_bridges_native_events_and_turn_controls",
         "dsh": f"{_TURN_INPUT}::test_native_text_and_reasoning_reach_the_governor_as_activity",

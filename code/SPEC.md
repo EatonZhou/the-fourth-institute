@@ -102,6 +102,7 @@
 - [Provider 运行时的安装、依赖更新与 Codex App Server 部署](/r/decision_e587fe1c472e)
 - [Kimi Code Provider 的 Session 接入](/r/decision_6b9e42f1c8a7)
 - [Claude Code Provider daemon 与 Session 接入](/r/decision_3948ce9b9443)
+- [Antigravity Provider 的 ACP 会话与订阅账号接入](/r/decision_44f8f67d7390)
 - [DeepSeek Harness Provider 的会话接入](/r/decision_276105b5d67b)
 - [Codex 账号路由、会话归属与故障切换](/r/decision_3dd52c0692c1)
 - [LLM API Registry 与直连 Model API Backend](/r/decision_6c2f91a7d84e)

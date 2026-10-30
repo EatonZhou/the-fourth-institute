@@ -1,0 +1,205 @@
+"""Antigravity's ACP boundary, account isolation and official runtime installation.
+
+:module: spec.design-governance
+:design: decision_44f8f67d7390
+:importance: P2
+"""
+import hashlib
+import io
+import json
+from pathlib import Path
+import sys
+import threading
+from types import SimpleNamespace
+from unittest import mock
+import zipfile
+
+import pytest
+
+from management_portal import antigravity_accounts as accounts, antigravity_runtime as runtime
+from management_portal.antigravity_client import AcpClient, AcpError, AuthenticationRequired
+from management_portal.execution.antigravity_backend import AntigravityBackend
+from management_portal.execution.backend_contracts import BackendContext
+from management_portal.execution.harness import HarnessTool
+from tests.cases import capability_contracts
+
+FAKE = Path(__file__).with_name("fake_antigravity.py")
+
+
+@pytest.fixture
+def agent(monkeypatch, tmp_path):
+    from management_portal.execution import antigravity_backend as backend
+    monkeypatch.setattr(backend, "command", lambda: [sys.executable, str(FAKE)])
+    monkeypatch.setattr(accounts, "command", lambda: [sys.executable, str(FAKE)])
+    monkeypatch.setattr(accounts, "account_for_route", lambda route: {"account_id": "antigravity_one", "route_id": "one"})
+    monkeypatch.setattr(accounts, "account_home", lambda provider, account: tmp_path)
+    monkeypatch.setattr(accounts, "environment", lambda account: {"GEMINI_HOME": str(tmp_path)})
+    monkeypatch.setattr(backend, "resident_process_environment", lambda options: ({}, {}))
+    return tmp_path
+
+
+def invocation(root, text="hello", *, sid="", tools=(), owner=True, execution="execution-test"):
+    return SimpleNamespace(
+        request=SimpleNamespace(runtime_options={"provider_profile": "one", "model": "gemini-test"},
+            operation="turn", execution_id=execution, cwd=str(root), provider="antigravity",
+            permission_profile="owner" if owner else "restricted"),
+        session=SimpleNamespace(backend_route_id="one", backend_session_id=sid),
+        user_prompt=text, system_context="Portal rules", session_system_context="All Portal rules",
+        attach_system_context=True, recovery_checkpoint={}, harness_tools=tuple(tools),
+        available_harness_tool_names=frozenset(), tool_batch_processor=None, provider_event_processor=mock.Mock())
+
+
+def context(cancel=None):
+    events, state = [], {}
+    result = BackendContext(emit_event=lambda *args: None, cancellation_requested=cancel or (lambda: False),
+        set_interrupt_target=lambda *args: None, set_provider_recovery_state=lambda value: state.update(value),
+        provider_event_observer=lambda p, s, r, e: events.append(e),
+        update_context_usage=lambda usage, window: state.update(context=usage, window=window))
+    return result, events, state
+
+
+def requests(root):
+    return [json.loads(line) for line in (root / "requests.jsonl").read_text().splitlines()]
+
+
+def test_turn_serves_portal_tools_and_reports_native_events_and_usage(agent):
+    seen = []
+    tool = HarnessTool("read_resource", "Read resource", {"type": "object"}, lambda args: seen.append(args) or "resource text")
+    inv = invocation(agent, tools=[tool])
+    ctx, events, state = context()
+    result = AntigravityBackend().execute(inv, ctx)
+    assert result.output["message"] == "hello:resource text"
+    assert result.backend_session_id == "google-session-1"
+    assert result.usage == {"input_tokens": 80, "output_tokens": 6, "total_tokens": 86}
+    assert seen == [{"id": "resource-one"}]
+    capability_contracts.check_tool_events(events)
+    observed = [call.args[0] for call in inv.provider_event_processor.process_event.call_args_list]
+    capability_contracts.check_tool_events(observed)
+    assert any(e["method"] == "thread/tokenUsage/updated" for e in observed)
+    assert state["context"] == {"input_tokens": 80} and state["window"] == 1000
+    assert state["phase"] == "completed"
+    created = next(r["params"] for r in requests(agent) if r["method"] == "session/new")
+    assert created["_meta"]["antigravity"]["systemPrompt"] == {"append": "All Portal rules"}
+    assert "start_subagent" in created["_meta"]["antigravity"]["disabledTools"]
+
+
+def test_resume_uses_native_history_without_replaying_it(agent):
+    backend = AntigravityBackend()
+    first = backend.execute(invocation(agent), context()[0])
+    second = backend.execute(invocation(agent, "next", sid=first.backend_session_id, execution="execution-next"), context()[0])
+    assert second.backend_session_id == first.backend_session_id
+    assert second.output["message"] == "next"
+    rows = requests(agent)
+    assert [r["params"]["prompt"][0]["text"] for r in rows if r["method"] == "session/prompt"] == ["hello", "next"]
+    assert len([r for r in rows if r["method"] == "session/load"]) == 1
+
+
+def test_tool_progress_is_separate_from_final_answer(agent):
+    ctx, events, _ = context()
+    result = AntigravityBackend().execute(invocation(agent, "multi-step"), ctx)
+    assert result.output["message"] == "Final answer."
+    messages = [e["params"]["item"] for e in events if e["method"] == "item/completed"
+                and e["params"]["item"]["type"] == "agentMessage"]
+    assert [(m["text"], m["phase"]) for m in messages] == [
+        ("Checking a file.", "commentary"), ("Final answer.", "final_answer")]
+    assert messages[0]["id"] != messages[1]["id"]
+
+
+@pytest.mark.parametrize("owner,outcome", [(True, "selected"), (False, "cancelled")])
+def test_permissions_are_enforced_in_protocol_not_prompt(agent, owner, outcome):
+    result = AntigravityBackend().execute(invocation(agent, "permission", owner=owner), context()[0])
+    assert result.output["message"] == outcome
+    meta = next(r["params"]["_meta"]["antigravity"] for r in requests(agent) if r["method"] == "session/new")
+    assert ("enabledTools" not in meta) if owner else meta["enabledTools"] == []
+
+
+def test_cancel_delivers_native_cancel_and_suppresses_late_answer(agent):
+    cancel = threading.Event()
+    timer = threading.Timer(.5, cancel.set)
+    timer.start()
+    try:
+        with pytest.raises(InterruptedError):
+            AntigravityBackend().execute(invocation(agent, "wait"), context(cancel.is_set)[0])
+    finally:
+        timer.cancel()
+    assert any(r["method"] == "session/cancel" for r in requests(agent))
+
+
+def test_disconnect_checkpoint_refuses_to_replay_input(agent):
+    inv = invocation(agent, "disconnect")
+    ctx, _, state = context()
+    with pytest.raises(AcpError):
+        AntigravityBackend().execute(inv, ctx)
+    assert state["phase"] == "prompt_sent"
+    inv.recovery_checkpoint = {"provider_recovery_state": state}
+    with pytest.raises(RuntimeError, match="refusing to replay"):
+        AntigravityBackend().execute(inv, context()[0])
+    assert sum(r["method"] == "session/prompt" for r in requests(agent)) == 1
+
+
+def test_ordinary_request_never_waits_for_interactive_login(agent):
+    with AcpClient([sys.executable, str(FAKE)], env={"GEMINI_HOME": str(agent), "FAKE_LOGIN": "1"}) as client:
+        client.initialize()
+        with pytest.raises(AuthenticationRequired):
+            client.call("authenticate", {"methodId": "oauth-personal"})
+
+
+def test_callback_relay_accepts_only_its_google_loopback_and_state():
+    auth = "https://accounts.google.com/o/oauth2/auth?state=right&redirect_uri=http%3A%2F%2Flocalhost%3A23456%2F"
+    with mock.patch.object(accounts, "build_opener") as opener:
+        accounts.complete_loopback_login(auth, "http://localhost:23456/?state=right&code=secret")
+        assert opener.return_value.open.call_count == 1
+        for invalid in ["http://localhost:23457/?state=right&code=x", "http://localhost:23456/?state=wrong&code=x",
+                        "https://example.com/?state=right&code=x", "http://localhost:23456/other?state=right"]:
+            with pytest.raises(ValueError):
+                accounts.complete_loopback_login(auth, invalid)
+        assert opener.return_value.open.call_count == 1
+
+
+def test_account_environment_and_login_parser_are_isolated(monkeypatch, tmp_path):
+    from management_portal.execution import account_login as login
+    monkeypatch.setattr(login, "account_home", lambda p, a: tmp_path / a)
+    monkeypatch.setenv("GEMINI_API_KEY", "must-not-leak")
+    env = login.local_login_environment("antigravity", "antigravity_one")
+    assert env["GEMINI_HOME"] == str(tmp_path / "antigravity_one")
+    assert "GEMINI_API_KEY" not in env and "CLAUDE_CONFIG_DIR" not in env
+    parser = login.LoginOutputParser("antigravity")
+    _, url = parser.feed("https://accounts.google.com/o/oauth2/auth?state=123\n")
+    assert url.endswith("state=123")
+    assert login._session_result({"provider": "antigravity"}, {"state": "pending"})["requires_code_input"]
+
+
+def test_installer_verifies_archive_before_activation(monkeypatch, tmp_path):
+    data = io.BytesIO()
+    with zipfile.ZipFile(data, "w") as bundle:
+        bundle.writestr("agy_acp_server.par", b"test")
+    raw = data.getvalue()
+    item = {"archive": "https://dl.google.com/test.zip", "cmd": "./agy_acp_server.par", "sha256": hashlib.sha256(raw).hexdigest()}
+    monkeypatch.setattr(runtime, "manifest", lambda: {"version": "1.4.5", "distribution": {"binary": {"linux-x86_64": item}}})
+    monkeypatch.setattr(runtime, "platform_key", lambda: "linux-x86_64")
+    monkeypatch.setattr(runtime.updates, "RUNTIMES", tmp_path)
+    monkeypatch.setattr(runtime, "urlopen", lambda *a, **k: io.BytesIO(raw))
+    with mock.patch("management_portal.antigravity_client.AcpClient") as client:
+        client.return_value.__enter__.return_value.initialize.return_value = {"agentInfo": {"version": "1.4.5"}}
+        root = runtime.AntigravityRuntime().stage(("1.4.5",))
+        assert (root / ".portal-validated").is_file()
+    (root / ".portal-validated").unlink()
+    item["sha256"] = "0" * 64
+    with pytest.raises(ValueError, match="checksum"):
+        runtime.AntigravityRuntime().stage(("1.4.5",))
+    assert not (root / ".portal-validated").exists()
+
+
+def test_installer_rejects_archive_path_escape(monkeypatch, tmp_path):
+    data = io.BytesIO()
+    with zipfile.ZipFile(data, "w") as bundle:
+        bundle.writestr("../outside", b"untrusted")
+    raw = data.getvalue()
+    item = {"archive": "https://dl.google.com/test.zip", "cmd": "./agy_acp_server.par", "sha256": hashlib.sha256(raw).hexdigest()}
+    monkeypatch.setattr(runtime, "manifest", lambda: {"version": "1.4.5", "distribution": {"binary": {"linux-x86_64": item}}})
+    monkeypatch.setattr(runtime, "platform_key", lambda: "linux-x86_64")
+    monkeypatch.setattr(runtime.updates, "RUNTIMES", tmp_path)
+    monkeypatch.setattr(runtime, "urlopen", lambda *a, **k: io.BytesIO(raw))
+    with pytest.raises(ValueError, match="Unsafe path"):
+        runtime.AntigravityRuntime().stage(("1.4.5",))
+    assert not (tmp_path / "outside").exists()

@@ -95,6 +95,8 @@ export function openLogin(accountId, {onChanged = () => {}} = {}) {
   const link = node("a", t("打开授权页面"), {target: "_blank", rel: "noopener noreferrer", hidden: true});
   const authorization = node("form", undefined, {class: "backendForm", hidden: true});
   const response = field(authorization, "浏览器返回的授权码", "authorization_code", "", {type: "password", required: true, autocomplete: "off"});
+  const inputHelp = node("small", "", {class: "backendHint", id: "backend-login-help", hidden: true});
+  response.setAttribute("aria-describedby", inputHelp.id); response.parentElement.append(inputHelp);
   const submit = node("button", t("提交授权码"), {type: "submit", class: "portalButton"}); authorization.append(submit);
   authorization.addEventListener("submit", async event => {
     event.preventDefault();
@@ -134,6 +136,12 @@ export function openLogin(accountId, {onChanged = () => {}} = {}) {
     if (terminal) clearInterval(progressTimer);
     cancel.disabled = terminal;
     authorization.hidden = terminal || !session.requires_code_input;
+    const callback = session.input_kind === "callback_url";
+    response.parentElement.querySelector("span").textContent = t(callback ? "浏览器返回的完整地址" : "浏览器返回的授权码");
+    submit.textContent = t(callback ? "提交回调地址" : "提交授权码");
+    inputHelp.textContent = session.input_hint || ""; inputHelp.hidden = !session.input_hint;
+    response.placeholder = session.input_hint || "";
+    response.title = session.input_hint || "";
     submit.disabled = session.state !== "awaiting_user";
     if (session.state === "succeeded") { code.textContent = ""; link.hidden = true; onChanged(); }
     if (!terminal) timer = setTimeout(poll, 2000);
