@@ -12,6 +12,15 @@ import pytest
 from management_portal.resources.portal import portal_route_script
 
 
+def test_family_mix_state_stays_stable_during_save_and_refresh():
+    """M/S 各入口共享保存状态；迟到读取及旧快照不回滚按钮，失败可重试。"""
+    result = subprocess.run(
+        ['node', str(Path(__file__).with_name('javascript') / 'family_mix_sync.cjs')],
+        capture_output=True, text=True, timeout=30,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 def test_family_status_members_quota_intake_and_mounting():
     """Family 状态面板显示成员工作状态、执行账号与周额度，可以切换接单、展开详情和打开成员设置
 

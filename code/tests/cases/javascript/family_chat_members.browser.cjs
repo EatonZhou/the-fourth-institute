@@ -75,7 +75,14 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
         state: () => ({}), load: async () => ({detail: {resident: {backend: 'codex'}, allows: {OpenIntake: true}}, settings: {}}), close() {}, destroy() {},
       })};
       window.PortalResidentProtocol = {...PortalResidentProtocol,
-        loadSnapshot: async (id, opts) => { calls.push(['snapshot', id, opts]); assertFacade(id); },
+        loadSnapshot: async (id, opts) => {
+          calls.push(['snapshot', id, opts]); assertFacade(id);
+          if (window.slowRefresh) {
+            panel.updateFamilyStatus(window.staleFamily);
+            await new Promise(resolve => { window.finishRefresh = resolve; });
+            panel.updateFamilyStatus(facadeDetail());
+          }
+        },
         acquire: id => ({load: async () => ({state: {work_state: 'idle', intake_state: intake[id] || 'open'}, messages: []}), destroy() {}}),
       };
       window.panel = PortalChatWorkspace.panelPackage.create({root: document.getElementById('chat'), id: 'chat', title: 'Chat Workspace · 架构与实现', autoLoad: false, target: {resident_id: 'member_0'}});
@@ -117,13 +124,13 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     for (const role of ['facade', 'router', 'steward', 'independent']) {
       await page.evaluate(role => panel.updateFamilyStatus(role === 'facade' ? facadeDetail() : memberDetail('other', role)), role);
       assert.equal(await own.isVisible(), false, role + ' must not have title M/S');
-      assert.equal(await page.evaluate(() => watchers.size), 0, 'switching Chat releases the parent subscription');
+      assert.equal(await page.evaluate(() => watchers.size), role === 'facade' ? 1 : 0, 'only the current Family control owner remains subscribed');
     }
     // A slow lookup must not put member buttons back on a facade after switching.
     await page.evaluate(() => { panel.updateFamilyStatus(memberDetail()); panel.updateFamilyStatus(facadeDetail()); });
     await page.waitForTimeout(30);
     assert.equal(await own.isVisible(), false);
-    assert.equal(await page.evaluate(() => watchers.size), 0);
+    assert.equal(await page.evaluate(() => watchers.size), 1, 'facade controls own their one shared subscription');
     await page.evaluate(() => panel.updateFamilyStatus(memberDetail()));
     await pressed('member_0', 'mute', true);
     // A denied read clears the controls instead of applying someone else's state.
@@ -156,6 +163,27 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     ]));
     const footer = page.locator('[data-family-reply-member="member_0"]');
     await pressed('member_0', 'mute', true, footer);
+    // Hold the refresh while stale conversation data arrives. The pending
+    // controls retain their nodes, full opacity and the saved color each frame.
+    await page.evaluate(() => {
+      window.slowRefresh = true; window.staleFamily = facadeDetail();
+      window.trackedButton = document.querySelector('[data-family-reply-member="member_0"] [data-family-mix="solo"]');
+      window.mixFrames = [];
+      const sample = () => {
+        const current = document.querySelector('[data-family-reply-member="member_0"] [data-family-mix="solo"]');
+        mixFrames.push({same: current === trackedButton, pressed: current.getAttribute('aria-pressed'),
+          opacity: getComputedStyle(current).opacity, color: getComputedStyle(current).backgroundColor});
+        if (slowRefresh) requestAnimationFrame(sample);
+      };
+      trackedButton.click(); requestAnimationFrame(sample);
+    });
+    await page.waitForFunction(() => window.finishRefresh && mixFrames.length >= 4);
+    const frames = await page.evaluate(() => mixFrames);
+    assert.ok(frames.every(frame => frame.same && frame.pressed === 'true' && frame.opacity === '1'), JSON.stringify(frames));
+    assert.equal(new Set(frames.map(frame => frame.color)).size, 1, 'saved color never flashes back during refresh');
+    await page.evaluate(() => { slowRefresh = false; finishRefresh(); });
+    await pressed('member_0', 'solo', true, footer);
+    await button('member_0', 'solo', footer).click(); await pressed('member_0', 'solo', false, footer);
     assert.equal(await footer.locator('[data-family-reply-source] + [data-family-reply-controls]').count(), 1, 'M/S immediately follow attribution');
     assert.equal(await page.locator('[data-family-reply-member="former"] button').count(), 0);
     assert.equal(await page.locator('[data-family-reply-member="nested"] [data-member="member_1"]').count(), 2, 'nested replies control their direct Family member');

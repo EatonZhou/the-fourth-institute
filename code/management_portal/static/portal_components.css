@@ -5366,6 +5366,7 @@ button.messageQuote:focus-visible {
 .familyMemberMixButton[data-family-mix="mute"][aria-pressed="true"] { background: #317f94; color: white; }
 .familyMemberMixButton[data-family-mix="solo"][aria-pressed="true"] { background: #a37a20; color: white; }
 .familyMemberMixButton:disabled { opacity: .5; cursor: default; }
+.familyMemberMix[aria-busy="true"] > .familyMemberMixButton:disabled { opacity: 1; }
 .familyMemberMixButton:focus-visible { position: relative; outline: 2px solid var(--accent); outline-offset: 2px; z-index: 1; }
 .familyReply .familyRelayStatus { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
 [data-family-reply-controls] { display: inline-flex; flex-shrink: 0; }
