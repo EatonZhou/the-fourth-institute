@@ -65,6 +65,7 @@
 - [Resident 输入、执行与 Conversation 运行架构](/r/decision_edc470e09f5a)
 - [Portal Resident Invocation 的共享业务调用与结果收敛](/r/decision_725dedbe89b2)
 - [Family：把多个 Resident 组合为对外一个 Resident](/r/decision_44cf587c1721)
+- [Family 消息路由与对外对话（含个人 Mute／Solo 与界面入口）](/r/decision_9ad68dd077d4)
 - [Resident Conversation、Input 与运行控制协议（含异步受理及后台媒体清理）](/r/decision_c524c775e0be)
 - [Mailbox：Resident 和 User 的收件](/r/decision_15f7df737ed5)
 - [Chatroom：用户聊天室与 @ Resident 投递](/r/decision_a6bebf4ac283)

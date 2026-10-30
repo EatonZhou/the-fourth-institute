@@ -1,4 +1,6 @@
 {
+  "门面展示": {"en": "Facade display", "zh-CN": "门面展示"},
+  "{p1} · 工作详情": {"en": "{p1} · Work details", "zh-CN": "{p1} · 工作详情"},
   "置顶消息": {"en": "Pin message", "zh-CN": "置顶消息"},
   "跳到置顶消息": {"en": "Go to pinned message", "zh-CN": "跳到置顶消息"},
   "取消置顶": {"en": "Unpin", "zh-CN": "取消置顶"},

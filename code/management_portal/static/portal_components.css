@@ -5303,26 +5303,27 @@ button.messageQuote:focus-visible {
 .familyStatusPanel th, .familyStatusPanel td { text-align: left; padding: 4px 6px; border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent); vertical-align: middle; }
 .familyStatusPanel th { position: sticky; top: -6px; z-index: 1; color: var(--muted); font-size: 11px; font-weight: 500; white-space: normal; overflow-wrap: normal; word-break: normal; line-height: 1.35; background: var(--panel-2); padding-block: 7px; }
 .familyStatusPanel th:first-child { border-radius: 5px 0 0 5px; }
-.familyStatusPanel th:nth-child(2) { width: 96px; }
-.familyStatusPanel th:nth-child(3) { width: 180px; }
-.familyStatusPanel th:nth-child(4) { width: 92px; }
+.familyStatusPanel th:nth-child(2) { width: 180px; }
+.familyStatusPanel th:nth-child(3) { width: 92px; }
+.familyStatusPanel th:nth-child(4) { width: 100px; }
 .familyStatusPanel th:last-child { width: 76px; border-radius: 0 5px 5px 0; }
 .familyStatusPanel tbody > tr:last-child > td { border-bottom: 0; }
 .familyStatusPanel [data-family-status-row]:hover { background: color-mix(in srgb, var(--accent) 4%, var(--panel)); }
 .familyStatusPanel .familyStatusName { display: block; font-size: 12px; font-weight: 500; line-height: 1.5; white-space: normal; overflow-wrap: anywhere; }
 .familyStatusPanel td .portalButton { min-width: 0; min-height: 24px; max-width: 100%; padding: 2px 3px; font-size: 12px; }
-.familyStatusWork { flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; }
-.familyStatusWork .status-badge { display: block; max-width: 100%; line-height: 1.35; white-space: normal; }
-.familyStatusQueue { color: var(--muted); font-size: 11px; font-weight: 400; }
 .familyStatusPanel td .familyStatusAccount { font-weight: 500; text-align: left; }
 .familyStatusPanel td .familyStatusAccount, .familyStatusPanel td .familyStatusRuntime { min-height: 20px; line-height: 16px; padding-block: 1px; }
 .familyStatusAccount > span:first-child, .familyStatusRuntime > span:first-child { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
 .familyStatusAccount > span:last-child, .familyStatusRuntime > span:last-child { flex-shrink: 0; }
 .familyStatusRuntime { display: flex; margin-top: 0; color: var(--muted); font-weight: 400; white-space: nowrap; text-align: left; }
 .familyStatusPanel td .familyStatusRuntime { font-size: 11px; font-weight: 400; }
-.familyStatusIntake { min-width: 38px; }
+.familyStatusPanel td .familyStatusIntake { display: inline-flex; align-items: center; gap: 5px; padding: 2px 0; border: 0; background: transparent; box-shadow: none; font-size: 11px; cursor: default; }
+.familyIntakeTrack { position: relative; width: 25px; height: 14px; border-radius: 8px; background: var(--muted); flex-shrink: 0; }
+.familyIntakeTrack::after { content: ""; position: absolute; left: 2px; top: 2px; width: 10px; height: 10px; border-radius: 50%; background: var(--panel); transition: transform .12s ease; }
+.familyStatusIntake[aria-checked="true"] .familyIntakeTrack { background: var(--accent); }
+.familyStatusIntake[aria-checked="true"] .familyIntakeTrack::after { transform: translateX(11px); }
 .familyStatusIntakeNote { flex-shrink: 0; margin: 0; padding: 8px 12px; border-top: 1px solid var(--border); color: var(--muted); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
-.familyStatusIntake[aria-checked="true"] { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 30%, var(--border)); background: color-mix(in srgb, var(--accent) 8%, var(--panel)); }
+.familyStatusIntake[aria-checked="true"] { color: var(--accent); }
 .familyStatusQuotaValue { display: flex; align-items: center; gap: 5px; font-variant-numeric: tabular-nums; }
 .familyStatusQuotaTrack { display: block; height: 3px; margin-top: 5px; border-radius: 99px; overflow: hidden; background: var(--panel-2); }
 .familyStatusQuotaTrack > span { display: block; height: 100%; border-radius: inherit; background: var(--accent); }
@@ -5358,15 +5359,21 @@ button.messageQuote:focus-visible {
 .portalModelApiSettings [data-jev-questions] { display: grid; gap: 10px; }
 .portalApiHistory { display: flex; align-items: center; gap: 8px; }
 
-.familyMemberMix { display: inline-flex; gap: 4px; margin-top: 3px; }
-.familyMemberMixButton { width: 24px; height: 22px; padding: 0; border: 1px solid var(--border); border-radius: 4px; background: transparent; color: inherit; font-size: 11px; font-weight: 600; line-height: 1; cursor: pointer; }
-.familyMemberMixButton[aria-pressed="true"] { background: #267960; border-color: #267960; color: white; }
-.familyMemberMixButton:disabled { opacity: .5; cursor: wait; }
-.familyMemberMixButton:focus-visible { outline: 2px solid #267960; outline-offset: 2px; }
+.familyMemberMix { display: inline-flex; vertical-align: middle; border: 1px solid color-mix(in srgb, var(--text) 20%, var(--panel)); border-radius: 5px; background: var(--panel-2); }
+.familyMemberMixButton { display: inline-flex; align-items: center; justify-content: center; width: 23px; height: 19px; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--muted); font: 600 10px/1 ui-sans-serif,system-ui,sans-serif; cursor: default; }
+.familyMemberMixButton:first-child { border-radius: 4px 0 0 4px; }
+.familyMemberMixButton:last-child { border-left: 1px solid color-mix(in srgb, var(--text) 15%, transparent); border-radius: 0 4px 4px 0; }
+.familyMemberMixButton[data-family-mix="mute"][aria-pressed="true"] { background: #317f94; color: white; }
+.familyMemberMixButton[data-family-mix="solo"][aria-pressed="true"] { background: #a37a20; color: white; }
+.familyMemberMixButton:disabled { opacity: .5; cursor: default; }
+.familyMemberMixButton:focus-visible { position: relative; outline: 2px solid var(--accent); outline-offset: 2px; z-index: 1; }
+.familyReply .familyRelayStatus { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+[data-family-reply-controls] { display: inline-flex; flex-shrink: 0; }
+[data-family-reply-controls][hidden] { display: none; }
 
 .familyMemberIdentity { display: flex; align-items: center; gap: 6px; }
 .familyMemberIdentity .familyStatusName { flex: 1; min-width: 0; }
-.familyMemberIdentity .familyMemberMix { flex-shrink: 0; margin-top: 0; }
+.familyStatusPanel td .familyStatusDetailsToggle { flex-shrink: 0; padding: 0 3px; color: var(--muted); }
 .chatTitleLine { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; min-width: 0; }
 .chatTitleLine .paneTitle { min-width: 0; }
 .familyMemberChatMix { display: inline-flex; flex-shrink: 0; }

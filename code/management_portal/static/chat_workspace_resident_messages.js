@@ -174,7 +174,8 @@
       const sourceLink = residentId && messageId
         ? window.PortalI18n.html`<a class="messageMetaLink" href="${escapeHtml(href)}" data-family-reply-source title="在成员对话中定位这条回复">${label}</a>`
         : label;
-      return window.PortalI18n.html`<div class="familyRelay familyReply" data-family-reply-member="${escapeHtml(residentId)}"><div class="familyRelayStatus">${sourceLink}</div></div>`;
+      const chain = [...(reply.via || []).map(member => member.resident_id), residentId];
+      return window.PortalI18n.html`<div class="familyRelay familyReply" data-family-reply-member="${escapeHtml(residentId)}"><div class="familyRelayStatus">${sourceLink}<span data-family-reply-controls data-family-reply-chain="${escapeHtml(JSON.stringify(chain))}" hidden></span></div></div>`;
     }
 
     // Infos delivered with a request were read as one input with it: shown inside it, collapsed (concept_43c793b4f3ab).

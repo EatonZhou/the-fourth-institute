@@ -198,7 +198,7 @@
   } = chatWorkspaceModule("PortalChatWorkspaceReadObserver").createReadObserver();
 
   const {
-    createFamilyStatusView, createFamilyMemberChatControls, mountFamilyStatus, openFamilyStatus,
+    createFamilyStatusView, createFamilyMemberChatControls, createFamilyReplyControls, mountFamilyStatus, openFamilyStatus,
   } = chatWorkspaceModule("PortalChatWorkspaceFamilyStatus").createFamilyStatus({
     escapeHtml, footerTime, sessionRestartActive,
   });
@@ -1796,6 +1796,7 @@
           : this.messageAction(action, key)),
         onMessagesRendered: (root, _controller, _workspace, incremental = false) => {
           this.bindMessageSelection(root);
+          this.familyReplyControls?.render();
           if (!incremental) this.questions?.render(this.snapshot() || {});
           this.readObserver?.schedule();
           this.conversationView()?.onMessagesRendered?.(root, this);
@@ -2758,6 +2759,12 @@
       }
       this.familyStatusFamily = family?.family_id ? family : null;
       this.familyStatusResidentId = this.familyStatusFamily ? residentId : "";
+      if (this.familyReplyControlsResidentId !== this.familyStatusResidentId) {
+        this.familyReplyControls?.destroy(); this.familyReplyControls = null;
+        this.familyReplyControlsResidentId = this.familyStatusResidentId;
+        if (this.familyStatusResidentId) this.familyReplyControls = createFamilyReplyControls(residentId, this.workspace.root);
+      }
+      this.familyReplyControls?.update(this.familyStatusFamily);
       const member = detail?.snapshot?.resident || detail?.resident;
       const memberKey = !family && member?.family?.role === 'member'
         ? JSON.stringify([member.resident_id, member.lineage_id, member.family.family_id]) : '';

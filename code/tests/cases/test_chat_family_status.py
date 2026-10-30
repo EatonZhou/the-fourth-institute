@@ -38,7 +38,7 @@ def test_family_settings_scroll_stays_inside_content_column():
 
 
 def test_family_chat_members_controls():
-    """成员自己 Chat 的标题后提供 M/S，门面无成员栏；与 Menu 同步，离开页面释放订阅。"""
+    """成员 Chat 标题与门面回复归属行提供 M/S，与 Menu 同步；开关失败可重试，窄屏排版正常。"""
     result = subprocess.run(
         ['node', str(Path(__file__).with_name('javascript') / 'family_chat_members.browser.cjs')],
         input=json.dumps({'routeScript': portal_route_script().decode()}),

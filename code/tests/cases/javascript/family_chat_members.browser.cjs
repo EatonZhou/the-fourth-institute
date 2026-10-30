@@ -21,7 +21,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
         body: fs.readFileSync(path.join(root, url.pathname.slice(8))),
         contentType: url.pathname.endsWith('.css') ? 'text/css' : 'text/javascript',
       });
-      return route.fulfill({contentType: 'text/html', body: '<!doctype html><html lang="zh-CN"><meta charset="utf-8"><body><section id="chat" style="height:90vh;min-width:0"></section></body></html>'});
+      return route.fulfill({contentType: 'text/html', body: '<!doctype html><html lang="zh-CN" data-portal-theme="light"><meta charset="utf-8"><body><section id="chat" style="height:90vh;min-width:0"></section></body></html>'});
     });
     await page.goto('http://family.fixture.invalid');
     for (const name of ['portal_components', 'portal_workbench', 'portal_design_system', 'portal_themes']) {
@@ -66,13 +66,17 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
         return {...policy};
       }};
       window.PortalAPI = {get: async () => ({accounts: []})};
-      window.PortalResidentService = {projection: async () => facadeDetail()};
+      const intake = {};
+      window.PortalResidentService = {projection: async () => facadeDetail(), setIntake: async args => {
+        if (window.failIntake) { window.failIntake = false; throw new Error('Intake failed'); }
+        intake[args.resident_id] = args.open ? 'open' : 'closed';
+      }};
       window.PortalResidentRuntimeController = {bind: () => ({
-        state: () => ({}), load: async () => ({detail: {resident: {backend: 'codex'}}, settings: {}}), close() {}, destroy() {},
+        state: () => ({}), load: async () => ({detail: {resident: {backend: 'codex'}, allows: {OpenIntake: true}}, settings: {}}), close() {}, destroy() {},
       })};
       window.PortalResidentProtocol = {...PortalResidentProtocol,
         loadSnapshot: async (id, opts) => { calls.push(['snapshot', id, opts]); assertFacade(id); },
-        acquire: () => ({load: async () => ({state: {work_state: 'idle'}, messages: []}), destroy() {}}),
+        acquire: id => ({load: async () => ({state: {work_state: 'idle', intake_state: intake[id] || 'open'}, messages: []}), destroy() {}}),
       };
       window.panel = PortalChatWorkspace.panelPackage.create({root: document.getElementById('chat'), id: 'chat', title: 'Chat Workspace · 架构与实现', autoLoad: false, target: {resident_id: 'member_0'}});
       panel.updateFamilyStatus(memberDetail());
@@ -142,6 +146,54 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
       console.log(JSON.stringify({width, ...metrics}));
     }
     await page.evaluate(() => panel.updateFamilyStatus(facadeDetail()));
+    await page.evaluate(() => panel.workspace.setMessages([
+      {id: 'reply_0', role: 'agent', content: '这是成员的回复。',
+        family_reply: {resident_id: 'member_0', title: '架构与实现', message_id: 'original_reply', request_message_id: 'request_0'}},
+      {id: 'reply_nested', role: 'agent', content: '嵌套成员回复。',
+        family_reply: {resident_id: 'nested', title: '内部成员', via: [{resident_id: 'member_1'}], request_message_id: 'request_1'}},
+      {id: 'reply_left', role: 'agent', content: '已离开的成员。',
+        family_reply: {resident_id: 'former', title: '已离开', request_message_id: 'request_2'}},
+    ]));
+    const footer = page.locator('[data-family-reply-member="member_0"]');
+    await pressed('member_0', 'mute', true, footer);
+    assert.equal(await footer.locator('[data-family-reply-source] + [data-family-reply-controls]').count(), 1, 'M/S immediately follow attribution');
+    assert.equal(await page.locator('[data-family-reply-member="former"] button').count(), 0);
+    assert.equal(await page.locator('[data-family-reply-member="nested"] [data-member="member_1"]').count(), 2, 'nested replies control their direct Family member');
+    await button('member_0', 'mute', footer).click(); await pressed('member_0', 'mute', false, footer);
+    await page.evaluate(() => { failNext = true; });
+    await button('member_0', 'solo', footer).click(); await pressed('member_0', 'solo', false, footer);
+    await button('member_0', 'solo', footer).click(); await pressed('member_0', 'solo', true, footer);
+    assert.equal(await button('member_0', 'solo', footer).evaluate(node => getComputedStyle(node).cursor), 'default');
+    await page.evaluate(async () => { menu = await PortalChatWorkspace.openFamilyStatus('facade', {anchor: document.getElementById('family-anchor')}); });
+    await pressed('member_0', 'solo', true, popover);
+    assert.deepEqual(await popover.locator('th').allTextContents(), ['节点', 'backend', '周剩余', '工作状态', '门面展示']);
+    assert.equal(await popover.locator('[data-family-status-row="member_0"] td:last-child [data-family-mix]').count(), 2);
+    const intakeSwitch = popover.locator('[data-family-status-intake="member_0"]');
+    await intakeSwitch.click();
+    await page.waitForFunction(() => document.querySelector('[data-family-status-intake="member_0"]').getAttribute('aria-checked') === 'false');
+    assert.equal(await intakeSwitch.innerText(), 'closed');
+    await page.evaluate(() => { failIntake = true; });
+    await intakeSwitch.click();
+    await page.waitForFunction(() => toasts.includes('Intake failed'));
+    assert.equal(await intakeSwitch.isEnabled(), true);
+    await intakeSwitch.click();
+    await page.waitForFunction(() => document.querySelector('[data-family-status-intake="member_0"]').getAttribute('aria-checked') === 'true');
+    if (process.env.FAMILY_CHAT_SCREENSHOTS) {
+      await page.setViewportSize({width: 1200, height: 900});
+      await popover.screenshot({path: path.join(process.env.FAMILY_CHAT_SCREENSHOTS, 'member-menu.png')});
+    }
+    await button('member_0', 'solo', popover).click();
+    await page.evaluate(() => { panel.updateFamilyStatus(facadeDetail()); menu.close(); });
+    await pressed('member_0', 'solo', false, footer);
+    for (const width of [1200, 390]) {
+      await page.setViewportSize({width, height: 900});
+      const metrics = await footer.locator('.familyMemberMix').evaluate(node => {
+        const rect = node.getBoundingClientRect();
+        return {width: rect.width, height: rect.height, right: rect.right, viewport: innerWidth};
+      });
+      assert.ok(metrics.width <= 50 && metrics.height <= 24 && metrics.right <= width, JSON.stringify(metrics));
+      if (process.env.FAMILY_CHAT_SCREENSHOTS) await page.screenshot({path: path.join(process.env.FAMILY_CHAT_SCREENSHOTS, `reply-controls-${width}.png`)});
+    }
     if (process.env.FAMILY_CHAT_SCREENSHOTS) await page.screenshot({path: path.join(process.env.FAMILY_CHAT_SCREENSHOTS, 'facade-no-controls.png')});
     assert.equal(new URL(page.url()).pathname, '/', 'M/S never navigates');
     assert.deepEqual(errors, []);

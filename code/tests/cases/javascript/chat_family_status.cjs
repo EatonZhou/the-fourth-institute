@@ -138,7 +138,7 @@ const familyStatus = w.PortalChatWorkspaceFamilyStatus.createFamilyStatus({
 });
 const row = (root, id) => root.querySelector(`[data-family-status-row="${id}"]`);
 const cells = (root, id) => [...row(root, id).children];
-const work = (root, id) => text(cells(root, id)[1].querySelector('.status-badge'));
+const work = (root, id) => row(root, id).querySelector('[data-family-status-detail]').title.split(' · ')[0];
 
 async function membersQuotaAndSummary() {
   const summaries = [];
@@ -161,24 +161,16 @@ async function membersQuotaAndSummary() {
     runtimes.get('res_wait').handlers.onState({ restart: { status: 'accepted', phase: 'waiting_current_execution', restart_id: 'r2' } });
     assert.deepEqual(nodes.map(node => work(root(), node.resident_id)),
       ['空闲', '工作中', '等待执行', '停止中', '空闲', '失败', '迁移中', '等待本轮后迁移']);
-    assert.deepEqual(nodes.map(node => cells(root(), node.resident_id)[1].querySelector('.status-badge').className),
-      ['status-badge idle', 'status-badge running', 'status-badge queued', 'status-badge running', 'status-badge idle',
-        'status-badge failed', 'status-badge queued', 'status-badge queued']);
-    assert.equal(text(cells(root(), 'res_run')[1].querySelector('.familyStatusQueue')), '· 排队 2');
-    const gate = id => cells(root(), id)[1].querySelector('[data-execution-gate]');
-    assert.equal(gate('res_run'), null, 'an open gate shows nothing');
-    assert.equal(text(gate('res_stop')), 'CLOSED');
-    assert.equal(gate('res_stop').getAttribute('title'), 'CLOSED · 账号额度已用尽');
-    assert.equal(gate('res_idle').getAttribute('title'), 'CLOSED · 人工接单已关闭');
+    assert.deepEqual([...root().querySelectorAll('th')].map(text), ['节点', 'backend', '周剩余', '工作状态', '门面展示']);
     assert.equal(summaries.at(-1), '运行 2 · 排队 3 · 需关注 5', 'the summary counts work, queue and members that need attention');
 
-    const quota = id => cells(root(), id)[3];
+    const quota = id => cells(root(), id)[2];
     assert.equal(text(quota('res_run').querySelector('.familyStatusQuotaValue')), '35%', 'the lowest weekly window counts');
     assert.equal(quota('res_run').getAttribute('title'), '周额度重置：at 2026-11-01T00:00:00Z');
     assert.equal(quota('res_run').querySelector('.familyStatusQuotaTrack span').getAttribute('style'), 'width:35%');
     assert.equal(text(quota('res_queue')), '未知', 'a stale reading shows no number');
     assert.equal(quota('res_queue').getAttribute('title'), '观测过期，待刷新');
-    assert.equal(text(cells(root(), 'res_queue')[2].querySelector('span span')), 'claude · Routed account', 'a routed member finds its account by route');
+    assert.equal(text(cells(root(), 'res_queue')[1].querySelector('span span')), 'claude · Routed account', 'a routed member finds its account by route');
     assert.equal(text(quota('res_fail')), '未知', 'an expired reading shows no number');
     assert.equal(quota('res_fail').getAttribute('title'), '无有效周额度观测');
     assert.equal(text(quota('res_idle')), '12.5 USD', 'a balance account shows its balance');
@@ -198,13 +190,13 @@ async function membersQuotaAndSummary() {
     assert.equal(mix('res_run', 'mute').getAttribute('aria-pressed'), 'false');
     mix('res_run', 'solo').click(); await settle();
     assert.equal(mix('res_run', 'mute').getAttribute('aria-pressed'), 'true', 'exit Solo restores M');
-    const intake = id => cells(root(), id)[4].querySelector('button');
-    assert.equal(text(intake('res_run')), '开');
+    const intake = id => cells(root(), id)[3].querySelector('button');
+    assert.equal(text(intake('res_run')), 'open');
     assert.equal(intake('res_run').getAttribute('aria-checked'), 'true');
-    assert.equal(text(intake('res_idle')), '关');
-    assert.equal(text(intake('res_move')), '迁移暂关', 'a member being moved takes no work');
+    assert.equal(text(intake('res_idle')), 'closed');
+    assert.equal(text(intake('res_move')), 'closed', 'a member being moved takes no work');
     assert.equal(intake('res_move').disabled, true);
-    const settings = id => cells(root(), id)[2].querySelector('[data-family-status-settings]');
+    const settings = id => cells(root(), id)[1].querySelector('[data-family-status-settings]');
     assert.equal(settings('res_move').disabled, true, 'nor settings while it moves');
     assert.equal(settings('res_idle').disabled, true, 'a member whose runtime cannot be changed has no settings');
     assert.match(text(settings('res_run').querySelector('.familyStatusRuntime')), /model-x/, 'the member model is visible without expanding details');
@@ -229,21 +221,21 @@ async function membersQuotaAndSummary() {
     await settle();
     assert.deepEqual(runtimes.get('res_run').opened, [settings('res_run')], 'settings open for the member with its button to return to');
 
-    cells(root(), 'res_run')[1].querySelector('button').click();
+    row(root(), 'res_run').querySelector('[data-family-status-detail]').click();
     const details = row(root(), 'res_run').nextElementSibling.querySelector('dl');
     const pairs = Object.fromEntries([...details.querySelectorAll('dt')].map(dt => [text(dt), text(dt.nextElementSibling)]));
     assert.deepEqual({ ...pairs }, {
-      职责: 'Runner duties', 模型: 'model-x · high', 当前任务: 'Write the tests', 开始处理: 'at 2026-10-26T01:00:00Z',
+      工作状态: '工作中 · 排队 2', 职责: 'Runner duties', 模型: 'model-x · high', 当前任务: 'Write the tests', 开始处理: 'at 2026-10-26T01:00:00Z',
       最近活动: '—', 周额度重置: 'at 2026-11-01T00:00:00Z',
     }, 'the details show the member’s work');
-    assert.equal(cells(root(), 'res_run')[1].querySelector('button').getAttribute('aria-expanded'), 'true');
-    cells(root(), 'res_fail')[1].querySelector('button').click();
+    assert.equal(row(root(), 'res_run').querySelector('[data-family-status-detail]').getAttribute('aria-expanded'), 'true');
+    row(root(), 'res_fail').querySelector('[data-family-status-detail]').click();
     const failure = row(root(), 'res_fail').nextElementSibling;
     assert.match(text(failure), /错误model refused/);
-    assert.match(text(row(root(), 'res_queue')), /等待执行/);
-    cells(root(), 'res_queue')[1].querySelector('button').click();
+    assert.equal(work(root(), 'res_queue'), '等待执行');
+    row(root(), 'res_queue').querySelector('[data-family-status-detail]').click();
     assert.match(text(row(root(), 'res_queue').nextElementSibling), /当前任务Fetched task/, 'the fetched active message is the task');
-    cells(root(), 'res_run')[1].querySelector('button').click();
+    row(root(), 'res_run').querySelector('[data-family-status-detail]').click();
     assert.equal(row(root(), 'res_run').nextElementSibling.dataset.familyStatusRow, 'res_queue', 'a second click folds the details');
 
     const projections = calls.filter(call => call[0] === 'projection').length;
@@ -335,15 +327,18 @@ async function openedAndMounted() {
   }
 }
 
+const watchdog = setTimeout(() => { console.error('Family status test did not complete'); process.exit(1); }, 15000);
 (async () => {
   try {
     if (w.document.readyState === 'loading') await new Promise(resolve => w.document.addEventListener('DOMContentLoaded', resolve, { once: true }));
     await membersQuotaAndSummary();
     await openedAndMounted();
+    console.log('PASS: Family status, quota, intake, details and lifecycle');
   } finally {
     observers.forEach(observer => observer.disconnect());
     await settle();
     w.close();
+    clearTimeout(watchdog);
   }
 })().catch(error => {
   console.error(error);
